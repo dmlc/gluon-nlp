@@ -25,6 +25,9 @@ class _TranslationDataset(ArrayDataset):
         self._src_lang = src_lang
         self._tgt_lang = tgt_lang
         self._pair_key = _get_pair_key(src_lang, tgt_lang)
+        root = os.path.expanduser(root)
+        if not os.path.isdir(root):
+            os.makedirs(root)
         self._root = root
         [self._src_corpus_path, self._tgt_corpus_path] = self._get_data()
         src_corpus = CorpusDataset(self._src_corpus_path)
