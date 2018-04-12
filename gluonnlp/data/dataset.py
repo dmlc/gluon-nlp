@@ -81,7 +81,7 @@ class CorpusDataset(SimpleDataset):
     def _read(self):
         with io.open(self._filename, 'r', encoding=self._encoding) as fin:
             content = fin.read()
-        samples = (s.strip() for s in self._sample_splitter(content))
+        samples = self._sample_splitter(content)
         if self._tokenizer:
             samples = [self._process(self._tokenizer(s)) for s in samples
                        if s or not self._skip_empty]
