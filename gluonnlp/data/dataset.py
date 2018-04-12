@@ -45,7 +45,7 @@ class CorpusDataset(SimpleDataset):
         File encoding format.
     flatten : bool, default False
         Whether to return all samples as flattened tokens. If True, each sample is a token.
-    skip_empty : bool, default True
+    skip_empty : bool, default False
         Whether to skip the empty samples produced from sample_splitters. If False, `bos` and `eos`
         will be added in empty samples.
     sample_splitter : function, default str.splitlines
@@ -60,7 +60,7 @@ class CorpusDataset(SimpleDataset):
         The token to add at the end of each sequence. If None, or if tokenizer is not
         specified, then nothing is added.
     """
-    def __init__(self, filename, encoding='utf8', flatten=False, skip_empty=True,
+    def __init__(self, filename, encoding='utf8', flatten=False, skip_empty=False,
                  sample_splitter=lambda s: s.splitlines(), tokenizer=lambda s: s.split(),
                  bos=None, eos=None):
         assert sample_splitter, 'sample_splitter must be specified.'

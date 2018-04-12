@@ -65,8 +65,8 @@ class _TranslationDataset(ArrayDataset):
         return self._fetch_data_path([(src_corpus_file_name, src_corpus_hash),
                                       (tgt_corpus_file_name, tgt_corpus_hash)])
 
-    def _get_vocab(self):
-        """
+    def get_vocab(self):
+        """ Get the default vocabulary.
 
         Returns
         -------
@@ -79,12 +79,11 @@ class _TranslationDataset(ArrayDataset):
             self._data_file[self._pair_key]['vocab' + "_" + self._src_lang]
         tgt_vocab_file_name, tgt_vocab_hash = \
             self._data_file[self._pair_key]['vocab' + "_" + self._tgt_lang]
-        [src_vocab_path, tgt_vocab_path] = self._fetch_data_path([(src_vocab_file_name, src_vocab_hash),
-                                                        (tgt_vocab_file_name, tgt_vocab_hash)])
-        return Vocab.from_json(io.open(src_vocab_path,
-                                       'r', encoding='utf-8').read()),\
-               Vocab.from_json(io.open(tgt_vocab_path,
-                                       'r', encoding='utf-8').read())
+        [src_vocab_path, tgt_vocab_path] =\
+            self._fetch_data_path([(src_vocab_file_name, src_vocab_hash),
+                                   (tgt_vocab_file_name, tgt_vocab_hash)])
+        return Vocab.from_json(io.open(src_vocab_path, 'r', encoding='utf-8').read()),\
+               Vocab.from_json(io.open(tgt_vocab_path, 'r', encoding='utf-8').read())
 
 
 class IWSLT2015(_TranslationDataset):
@@ -116,7 +115,7 @@ class IWSLT2015(_TranslationDataset):
 
 
 class WMT2016(_TranslationDataset):
-    def __init__(self, segment, src_lang="en", tgt_lang="de",
+    def __init__(self, segment="train", src_lang="en", tgt_lang="de",
                  root=os.path.join('~', '.mxnet', 'datasets', 'wmt2016')):
         assert segment in ['train', 'val', 'test'], \
             "Only supports `train`, `val`, `test` for the segment. Received segment=%s" % segment
