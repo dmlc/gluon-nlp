@@ -20,7 +20,7 @@ class _TranslationDataset(ArrayDataset):
             "The given language combination: src_lang=%s, tgt_lang=%s, is not supported. " \
             "Only supports language pairs = %s." \
             % (src_lang, tgt_lang, str(self._archive_file.keys()))
-        self._namespace = namespace
+        self._namespace = 'gluon/dataset/{}'.format(namespace)
         self._segment = segment
         self._src_lang = src_lang
         self._tgt_lang = tgt_lang
