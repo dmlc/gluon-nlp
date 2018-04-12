@@ -62,6 +62,8 @@ class AWDRNN(Block):
         Dropout rate to on the output of intermediate layers of encoder.
     drop_i : float
         Dropout rate to on the output of embedding.
+    drop_e : float
+        Dropout rate to use on the embedding layer.
     """
     def __init__(self, mode, vocab_size, embed_size, hidden_size, num_layers,
                  tie_weights=False, dropout=0.5, weight_drop=0, drop_h=0.5, drop_i=0.5, drop_e=0,

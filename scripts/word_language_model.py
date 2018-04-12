@@ -28,17 +28,19 @@ By using the existing data pipeline tools and building blocks, the process is gr
 import argparse
 import time
 import math
-import mxnet as mx
-from mxnet import gluon, autograd
 import os
 import sys
-curr_path = os.path.dirname(os.path.abspath(os.path.expanduser(__file__)))
-sys.path.append(os.path.join(curr_path, '..', '..'))
+import mxnet as mx
+from mxnet import gluon, autograd
 from gluonnlp import Vocab
 from gluonnlp.model.language_model import StandardRNN, AWDRNN
 from gluonnlp.data import language_model, Counter
+curr_path = os.path.dirname(os.path.abspath(os.path.expanduser(__file__)))
+sys.path.append(os.path.join(curr_path, '..', '..'))
 
-parser = argparse.ArgumentParser(description='MXNet Autograd RNN/LSTM Language Model on Wikitext-2.')
+
+parser = argparse.ArgumentParser(description=
+                                 'MXNet Autograd RNN/LSTM Language Model on Wikitext-2.')
 parser.add_argument('--model', type=str, default='lstm',
                     help='type of recurrent net (rnn_tanh, rnn_relu, lstm, gru)')
 parser.add_argument('--emsize', type=int, default=400,
@@ -76,19 +78,21 @@ parser.add_argument('--save', type=str, default='model.params',
 parser.add_argument('--eval_only', action='store_true',
                     help='Whether to only evaluate the trained model')
 parser.add_argument('--gpus', type=str,
-                    help='list of gpus to run, e.g. 0 or 0,2,5. empty means using cpu. (the result of multi-gpu training might be slightly different compared to single-gpu training, still need to be finalized)')
+                    help='list of gpus to run, e.g. 0 or 0,2,5. empty means using cpu.')
 parser.add_argument('--lr_update_interval', type=int, default=30,
                     help='lr udpate interval')
 parser.add_argument('--lr_update_factor', type=float, default=0.1,
                     help='lr udpate factor')
-parser.add_argument('--optimizer', type=str,  default='sgd',
+parser.add_argument('--optimizer', type=str, default='sgd',
                     help='optimizer to use (sgd, adam)')
 parser.add_argument('--wdecay', type=float, default=1.2e-6,
                     help='weight decay applied to all weights')
 parser.add_argument('--alpha', type=float, default=2,
-                    help='alpha L2 regularization on RNN activation (alpha = 0 means no regularization)')
+                    help='alpha L2 regularization on RNN activation '
+                         '(alpha = 0 means no regularization)')
 parser.add_argument('--beta', type=float, default=1,
-                    help='beta slowness regularization applied on RNN activiation (beta = 0 means no regularization)')
+                    help='beta slowness regularization applied on RNN activiation '
+                         '(beta = 0 means no regularization)')
 args = parser.parse_args()
 
 print(args)
@@ -101,13 +105,16 @@ print(args)
 context = [mx.cpu()] if args.gpus is None or args.gpus == "" else \
           [mx.gpu(int(i)) for i in args.gpus.split(',')]
 
-assert args.batch_size % len(context) == 0, "Total batch size must be multiple of the number of devices"
+assert args.batch_size % len(context) == 0, \
+    "Total batch size must be multiple of the number of devices"
 
-train_dataset, val_dataset, test_dataset = [language_model.WikiText2(segment=segment,
-                                                               skip_empty=False, bos=None, eos='<eos>')
-                                            for segment in ['train', 'val', 'test']]
+train_dataset, val_dataset, test_dataset = \
+    [language_model.WikiText2(segment=segment,
+                              skip_empty=False, bos=None, eos='<eos>')
+     for segment in ['train', 'val', 'test']]
 
-vocab = Vocab(counter=Counter(train_dataset[0]), unknown_token='<unk>', padding_token=None, bos_token=None, eos_token='<eos>', reserved_tokens=None)
+vocab = Vocab(counter=Counter(train_dataset[0]), unknown_token='<unk>',
+              padding_token=None, bos_token=None, eos_token='<eos>', reserved_tokens=None)
 
 train_data = train_dataset.batchify(vocab, args.batch_size)
 val_batch_size = 10
@@ -126,7 +133,8 @@ ntokens = len(vocab)
 if args.weight_dropout > 0:
     print("Use weight_drop!")
     model = AWDRNN(args.model, len(vocab), args.emsize, args.nhid, args.nlayers,
-                   args.tied, args.dropout, args.weight_dropout, args.dropout_h, args.dropout_i, args.dropout_e)
+                   args.tied, args.dropout, args.weight_dropout, args.dropout_h,
+                   args.dropout_i, args.dropout_e)
 else:
     model = StandardRNN(args.model, len(vocab), args.emsize, args.nhid, args.nlayers, args.dropout,
                         args.tied)
@@ -165,6 +173,22 @@ def detach(hidden):
     return hidden
 
 def evaluate(data_source, batch_size, ctx=None):
+    """Evaluate the model on the dataset.
+
+    Parameters
+    ----------
+    data_source : NDArray
+        The dataset is evaluated on.
+    batch_size : int
+        The size of the mini-batch.
+    ctx : mx.cpu() or mx.gpu()
+        The context of the computation.
+
+    Returns
+    -------
+    loss: float
+        The loss on the dataset
+    """
     total_L = 0.0
     ntotal = 0
     hidden = model.begin_state(batch_size, func=mx.nd.zeros, ctx=context[0])
@@ -181,7 +205,27 @@ def evaluate(data_source, batch_size, ctx=None):
     return total_L / ntotal
 
 
-def awd_forward(model, inputs, begin_state=None):
+def awd_forward(inputs, begin_state=None):
+    """Implement forward computation using awd language model.
+
+    Parameters
+    ----------
+    inputs : NDArray
+        The training dataset.
+    begin_state : list
+        The initial hidden states.
+
+    Returns
+    -------
+    out: NDArray
+        The output of the model.
+    out_states: list
+        The list of output states of the model's encoder.
+    encoded_raw: list
+        The list of outputs of the model's encoder.
+    encoded_dropped: list
+        The list of outputs with dropout of the model's encoder.
+    """
     encoded = model.embedding(inputs)
     if not begin_state:
         begin_state = model.begin_state(batch_size=inputs.shape[1])
@@ -202,23 +246,50 @@ def awd_forward(model, inputs, begin_state=None):
     return out, out_states, encoded_raw, encoded_dropped
 
 def criterion(output, target, encoder_hs, dropped_encoder_hs):
+    """Compute regularized (optional) loss of the language model in training mode.
+
+        Parameters
+        ----------
+        output: NDArray
+            The output of the model.
+        target: list
+            The list of output states of the model's encoder.
+        encoder_hs: list
+            The list of outputs of the model's encoder.
+        dropped_encoder_hs: list
+            The list of outputs with dropout of the model's encoder.
+
+        Returns
+        -------
+        l: NDArray
+            The loss per word/token.
+            If both args.alpha and args.beta are zeros, the loss is the standard cross entropy.
+            If args.alpha is not zero, the standard loss is regularized with activation.
+            If args.beta is not zero, the standard loss is regularized with temporal activation.
+    """
     l = loss(output.reshape(-3, -1), target.reshape(-1,))
     if args.alpha:
-        dropped_means = [args.alpha*dropped_encoder_h.__pow__(2).mean() for dropped_encoder_h in dropped_encoder_hs[-1:]]
+        dropped_means = [args.alpha*dropped_encoder_h.__pow__(2).mean()
+                         for dropped_encoder_h in dropped_encoder_hs[-1:]]
         l = l + mx.nd.add_n(*dropped_means)
     if args.beta:
-        means = [args.beta*(encoder_h[1:] - encoder_h[:-1]).__pow__(2).mean() for encoder_h in encoder_hs[-1:]]
+        means = [args.beta*(encoder_h[1:] - encoder_h[:-1]).__pow__(2).mean()
+                 for encoder_h in encoder_hs[-1:]]
         l = l + mx.nd.add_n(*means)
     return l
 
 def train():
+    """Training loop for awd language model.
+
+    """
     best_val = float("Inf")
     start_train_time = time.time()
     for epoch in range(args.epochs):
         total_L = 0.0
         start_epoch_time = time.time()
         start_log_interval_time = time.time()
-        hiddens = [model.begin_state(args.batch_size//len(context), func=mx.nd.zeros, ctx=ctx) for ctx in context]
+        hiddens = [model.begin_state(args.batch_size//len(context),
+                                     func=mx.nd.zeros, ctx=ctx) for ctx in context]
         batch_i, i = 0, 0
         while i < len(train_data) - 1 - 1:
             bptt = args.bptt if mx.nd.random.uniform().asscalar() < 0.95 else args.bptt / 2
@@ -234,7 +305,7 @@ def train():
             with autograd.record():
                 for j, (X, y, h) in enumerate(zip(data_list, target_list, hiddens)):
                     if args.weight_dropout > 0:
-                        output, h, encoder_hs, dropped_encoder_hs = awd_forward(model, X, h)
+                        output, h, encoder_hs, dropped_encoder_hs = awd_forward(X, h)
                         l = criterion(output, y, encoder_hs, dropped_encoder_hs)
                     else:
                         output, h = model(X, h)
@@ -253,9 +324,11 @@ def train():
             trainer.set_learning_rate(lr_batch_start)
             if batch_i % args.log_interval == 0 and batch_i > 0:
                 cur_L = total_L / args.log_interval
-                print('[Epoch %d Batch %d/%d] loss %.2f, ppl %.2f, throughput %.2f samples/s, lr %.2f'%(
-                    epoch, batch_i, len(train_data)//args.bptt, cur_L, math.exp(cur_L),
-                    args.batch_size*args.log_interval/(time.time()-start_log_interval_time), lr_batch_start*seq_len/args.bptt))
+                print('[Epoch %d Batch %d/%d] loss %.2f, ppl %.2f, '
+                      'throughput %.2f samples/s, lr %.2f'
+                      %(epoch, batch_i, len(train_data)//args.bptt, cur_L, math.exp(cur_L),
+                        args.batch_size*args.log_interval/(time.time()-start_log_interval_time),
+                        lr_batch_start*seq_len/args.bptt))
                 total_L = 0.0
                 start_log_interval_time = time.time()
             i += seq_len
@@ -264,7 +337,7 @@ def train():
         mx.nd.waitall()
 
         print('[Epoch %d] throughput %.2f samples/s'%(
-                    epoch, (args.batch_size * len(train_data)) / (time.time() - start_epoch_time)))
+            epoch, (args.batch_size * len(train_data)) / (time.time() - start_epoch_time)))
         val_L = evaluate(val_data, val_batch_size, context[0])
         print('[Epoch %d] time cost %.2fs, valid loss %.2f, valid ppl %.2f'%(
             epoch, time.time()-start_epoch_time, val_L, math.exp(val_L)))
@@ -283,8 +356,8 @@ def train():
                 trainer.set_learning_rate(lr_scale)
                 update_lr_epoch = 0
 
-    print('Total training throughput %.2f samples/s'%(
-                            (args.batch_size * len(train_data) * args.epochs) / (time.time() - start_train_time)))
+    print('Total training throughput %.2f samples/s'
+          %((args.batch_size * len(train_data) * args.epochs) / (time.time() - start_train_time)))
 
 
 if __name__ == '__main__':
@@ -292,8 +365,8 @@ if __name__ == '__main__':
     if not args.eval_only:
         train()
     model.load_params(args.save, context)
-    val_L = evaluate(val_data, val_batch_size, context[0])
-    test_L = evaluate(test_data, test_batch_size, context[0])
-    print('Best validation loss %.2f, val ppl %.2f'%(val_L, math.exp(val_L)))
-    print('Best test loss %.2f, test ppl %.2f'%(test_L, math.exp(test_L)))
+    final_val_L = evaluate(val_data, val_batch_size, context[0])
+    final_test_L = evaluate(test_data, test_batch_size, context[0])
+    print('Best validation loss %.2f, val ppl %.2f'%(final_val_L, math.exp(final_val_L)))
+    print('Best test loss %.2f, test ppl %.2f'%(final_test_L, math.exp(final_test_L)))
     print('Total time cost %.2fs'%(time.time()-start_pipeline_time))
