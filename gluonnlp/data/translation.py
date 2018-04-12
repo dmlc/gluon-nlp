@@ -32,10 +32,6 @@ class _TranslationDataset(ArrayDataset):
         [self._src_corpus_path, self._tgt_corpus_path] = self._get_data()
         src_corpus = CorpusDataset(self._src_corpus_path)
         tgt_corpus = CorpusDataset(self._tgt_corpus_path)
-        self._src_vocab = Vocab.from_json(io.open(self._src_vocab_path,
-                                                  'r', encoding='utf-8').read())
-        self._tgt_vocab = Vocab.from_json(io.open(self._tgt_vocab_path,
-                                                  'r', encoding='utf-8').read())
         super(_TranslationDataset, self).__init__(src_corpus, tgt_corpus)
 
     def _fetch_data_path(self, file_name_hashs):
@@ -83,9 +79,12 @@ class _TranslationDataset(ArrayDataset):
             self._data_file[self._pair_key]['vocab' + "_" + self._src_lang]
         tgt_vocab_file_name, tgt_vocab_hash = \
             self._data_file[self._pair_key]['vocab' + "_" + self._tgt_lang]
-        [src_vocab, tgt_vocab] = self._fetch_data_path([(src_vocab_file_name, src_vocab_hash),
+        [src_vocab_path, tgt_vocab_path] = self._fetch_data_path([(src_vocab_file_name, src_vocab_hash),
                                                         (tgt_vocab_file_name, tgt_vocab_hash)])
-        return src_vocab, tgt_vocab
+        return Vocab.from_json(io.open(src_vocab_path,
+                                       'r', encoding='utf-8').read()),\
+               Vocab.from_json(io.open(tgt_vocab_path,
+                                       'r', encoding='utf-8').read())
 
 
 class IWSLT2015(_TranslationDataset):
