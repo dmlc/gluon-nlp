@@ -100,6 +100,44 @@ def test_imdb():
         assert score == 0
 
 
+def test_iwlst2015():
+    # Test en to vi
+    train_en_vi = nlp.data.IWSLT2015(segment='train', root='tests/data/iwlst2015')
+    val_en_vi = nlp.data.IWSLT2015(segment='val', root='tests/data/iwlst2015')
+    test_en_vi = nlp.data.IWSLT2015(segment='test', root='tests/data/iwlst2015')
+    assert len(train_en_vi) == 133317
+    assert len(val_en_vi) == 1553
+    assert len(test_en_vi) == 1268
+
+    en_vocab, vi_vocab = train_en_vi.get_vocab()
+    assert len(en_vocab) == 17191
+    assert len(vi_vocab) == 7709
+
+    train_vi_en = nlp.data.IWSLT2015(segment='train', src_lang='vi', tgt_lang='en',
+                                     root='tests/data/iwlst2015')
+    vi_vocab, en_vocab = train_vi_en.get_vocab()
+    assert len(en_vocab) == 17191
+    assert len(vi_vocab) == 7709
+    for i in range(10):
+        lhs = train_en_vi[i]
+        rhs = train_vi_en[i]
+        assert lhs[0] == rhs[1] and rhs[0] == lhs[1]
+
+
+def test_wmt2016():
+    train = nlp.data.WMT2016(segment='train', src_lang='en', tgt_lang='de',
+                             root='tests/data/wmt2016')
+    val = nlp.data.WMT2016(segment='val', src_lang='en', tgt_lang='de',
+                           root='tests/data/wmt2016')
+    test = nlp.data.WMT2016(segment='test', src_lang='en', tgt_lang='de',
+                            root='tests/data/wmt2016')
+    assert len(train) == 4500966
+    assert len(val) == 3000
+    assert len(test) == 2169
+    en_vocab, de_vocab = train.get_vocab()
+    assert len(en_vocab) == 36548
+    assert len(de_vocab) == 36548
+
 
 if __name__ == '__main__':
     import nose
