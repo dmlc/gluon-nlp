@@ -6,7 +6,9 @@ dependencies:
   - python
   - sphinx=1.7.2
   - sphinx-gallery
+  - sphinx_rtd_theme
   - nbsphinx
+  - recommonmark
   - spacy
   - nltk
   - pip:
