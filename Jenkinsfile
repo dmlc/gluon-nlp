@@ -13,32 +13,36 @@ stage("Sanity Check") {
 }
 
 stage("Unit Test") {
-  node {
-    ws('workspace/gluon-nlp-py2') {
-      checkout scm
-      sh """#!/bin/bash
-      conda env update -f env/py2.yml
-      source activate gluon_nlp_py2
-      conda list
-      python -m spacy download en
-      python -m nltk.downloader all
-      python setup.py install
-      nosetests -v --nocapture --with-timer tests/unittest
-      """
+  parallel 'Python 2': {
+    node {
+      ws('workspace/gluon-nlp-py2') {
+        checkout scm
+        sh """#!/bin/bash
+        conda env update -f env/py2.yml
+        source activate gluon_nlp_py2
+        conda list
+        python -m spacy download en
+        python -m nltk.downloader all
+        python setup.py install
+        nosetests -v --nocapture --with-timer tests/unittest
+        """
+      }
     }
-  }
-  node {
-    ws('workspace/gluon-nlp-py3') {
-      checkout scm
-      sh """#!/bin/bash
-      conda env update -f env/py3.yml
-      source activate gluon_nlp_py3
-      conda list
-      python -m spacy download en
-      python -m nltk.downloader all
-      python setup.py install
-      nosetests -v --nocapture --with-timer tests/unittest
-      """
+  },
+  'Python 3': {
+    node {
+      ws('workspace/gluon-nlp-py3') {
+        checkout scm
+        sh """#!/bin/bash
+        conda env update -f env/py3.yml
+        source activate gluon_nlp_py3
+        conda list
+        python -m spacy download en
+        python -m nltk.downloader all
+        python setup.py install
+        nosetests -v --nocapture --with-timer tests/unittest
+        """
+      }
     }
   }
 }
