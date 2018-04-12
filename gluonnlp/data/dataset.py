@@ -61,7 +61,7 @@ class CorpusDataset(SimpleDataset):
         specified, then nothing is added.
     """
     def __init__(self, filename, encoding='utf8', flatten=False, skip_empty=False,
-                 sample_splitter=lambda s: s.splitlines(), tokenizer=lambda s: s.split(),
+                 sample_splitter=str.splitlines, tokenizer=str.split,
                  bos=None, eos=None):
         assert sample_splitter, 'sample_splitter must be specified.'
         self._filename = os.path.expanduser(filename)
