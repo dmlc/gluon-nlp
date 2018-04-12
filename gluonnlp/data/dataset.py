@@ -71,8 +71,7 @@ class CorpusDataset(SimpleDataset):
         self._sample_splitter = sample_splitter
         self._tokenizer = tokenizer
         def process(s):
-            tokens = [bos] if bos else []
-            tokens.extend(s)
+            tokens = [bos] + s if bos else s
             if eos:
                 tokens.append(eos)
             return tokens
