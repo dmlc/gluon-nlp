@@ -24,11 +24,12 @@ import os
 import warnings
 
 from mxnet.gluon.model_zoo.model_store import get_model_file
-from mxnet import init, nd, cpu
+from mxnet import init, nd, cpu, autograd
 from mxnet.gluon import nn, Block
 from mxnet.gluon.model_zoo import model_store
 
 from .utils import _get_rnn_layer
+from .utils import apply_weight_drop
 from ..data.utils import _load_pretrained_vocab
 
 
@@ -63,7 +64,7 @@ class AWDRNN(Block):
         Dropout rate to on the output of embedding.
     """
     def __init__(self, mode, vocab_size, embed_size, hidden_size, num_layers,
-                 tie_weights=False, dropout=0.5, weight_drop=0, drop_h=0.5, drop_i=0.5,
+                 tie_weights=False, dropout=0.5, weight_drop=0, drop_h=0.5, drop_i=0.5, drop_e=0,
                  **kwargs):
         super(AWDRNN, self).__init__(**kwargs)
         self._mode = mode
@@ -74,6 +75,7 @@ class AWDRNN(Block):
         self._dropout = dropout
         self._drop_h = drop_h
         self._drop_i = drop_i
+        self._drop_e = drop_e
         self._weight_drop = weight_drop
         self._tie_weights = tie_weights
 
@@ -87,6 +89,8 @@ class AWDRNN(Block):
         with embedding.name_scope():
             embedding_block = nn.Embedding(self._vocab_size, self._embed_size,
                                            weight_initializer=init.Uniform(0.1))
+            if self._drop_e:
+                apply_weight_drop(embedding_block, 'weight', self._drop_e, axes=(1,))
             embedding.add(embedding_block)
             if self._drop_i:
                 embedding.add(nn.Dropout(self._drop_i, axes=(0,)))
@@ -105,7 +109,6 @@ class AWDRNN(Block):
     def _get_decoder(self):
         output = nn.HybridSequential()
         with output.name_scope():
-            output.add(nn.Dropout(self._dropout, axes=(0,)))
             if self._tie_weights:
                 output.add(nn.Dense(self._vocab_size, flatten=False,
                                     params=self.embedding[0].params))
@@ -117,8 +120,6 @@ class AWDRNN(Block):
         return [c.begin_state(*args, **kwargs) for c in self.encoder]
 
     def forward(self, inputs, begin_state=None): # pylint: disable=arguments-differ
-        """Defines the forward computation. Arguments can be either
-        :py:class:`NDArray` or :py:class:`Symbol`."""
         encoded = self.embedding(inputs)
         if not begin_state:
             begin_state = self.begin_state(batch_size=inputs.shape[1])
@@ -128,7 +129,9 @@ class AWDRNN(Block):
             out_states.append(state)
             if self._drop_h and i != len(self.encoder)-1:
                 encoded = nd.Dropout(encoded, p=self._drop_h, axes=(0,))
-        out = self.decoder(encoded)
+        encoded = nd.Dropout(encoded, p=self._dropout, axes=(0,))
+        with autograd.predict_mode():
+            out = self.decoder(encoded)
         return out, out_states
 
 
@@ -201,8 +204,6 @@ class StandardRNN(Block):
         return self.encoder.begin_state(*args, **kwargs)
 
     def forward(self, inputs, begin_state=None): # pylint: disable=arguments-differ
-        """Defines the forward computation. Arguments can be either
-        :py:class:`NDArray` or :py:class:`Symbol`."""
         embedded_inputs = self.embedding(inputs)
         if not begin_state:
             begin_state = self.begin_state(batch_size=inputs.shape[1])
