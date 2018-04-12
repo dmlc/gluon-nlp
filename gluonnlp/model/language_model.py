@@ -122,6 +122,22 @@ class AWDRNN(Block):
         return [c.begin_state(*args, **kwargs) for c in self.encoder]
 
     def forward(self, inputs, begin_state=None): # pylint: disable=arguments-differ
+        """Implement forward computation.
+
+        Parameters
+        ----------
+        inputs : NDArray
+            The training dataset.
+        begin_state : list
+            The initial hidden states.
+
+        Returns
+        -------
+        out: NDArray
+            The output of the model.
+        out_states: list
+            The list of output states of the model's encoder.
+        """
         encoded = self.embedding(inputs)
         if not begin_state:
             begin_state = self.begin_state(batch_size=inputs.shape[1])
