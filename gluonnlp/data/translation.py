@@ -30,8 +30,8 @@ class _TranslationDataset(ArrayDataset):
             os.makedirs(root)
         self._root = root
         [self._src_corpus_path, self._tgt_corpus_path] = self._get_data()
-        src_corpus = CorpusDataset(self._src_corpus_path)
-        tgt_corpus = CorpusDataset(self._tgt_corpus_path)
+        src_corpus = CorpusDataset(self._src_corpus_path, skip_empty=False)
+        tgt_corpus = CorpusDataset(self._tgt_corpus_path, skip_empty=False)
         super(_TranslationDataset, self).__init__(src_corpus, tgt_corpus)
 
     def _fetch_data_path(self, file_name_hashs):
