@@ -6,7 +6,7 @@ import io
 from mxnet.gluon.utils import download, check_sha1, _get_repo_file_url
 from mxnet.gluon.data import ArrayDataset
 
-from .dataset import CorpusDataset
+from .dataset import TextLineDataset
 from ..vocab import Vocab
 
 
@@ -30,8 +30,8 @@ class _TranslationDataset(ArrayDataset):
             os.makedirs(root)
         self._root = root
         [self._src_corpus_path, self._tgt_corpus_path] = self._get_data()
-        src_corpus = CorpusDataset(self._src_corpus_path, tokenizer=None)
-        tgt_corpus = CorpusDataset(self._tgt_corpus_path, tokenizer=None)
+        src_corpus = TextLineDataset(self._src_corpus_path)
+        tgt_corpus = TextLineDataset(self._tgt_corpus_path)
         super(_TranslationDataset, self).__init__(src_corpus, tgt_corpus)
 
     def _fetch_data_path(self, file_name_hashs):

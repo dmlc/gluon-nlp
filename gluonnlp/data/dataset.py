@@ -30,6 +30,24 @@ from mxnet.gluon.data import SimpleDataset
 from .utils import concat_sequence, slice_sequence, _slice_pad_length
 
 
+class TextLineDataset(SimpleDataset):
+    """Dataset that comprises lines in a file. Each line will be stripped.
+
+    Parameters
+    ----------
+    filename : str
+        Path to the input text file.
+    encoding : str, default 'utf8'
+        File encoding format.
+    """
+    def __init__(self, filename, encoding='utf8'):
+        lines = []
+        with io.open(filename, 'r', encoding=encoding) as in_file:
+            for line in in_file:
+                lines.append(line.strip())
+        super(TextLineDataset, self).__init__(lines)
+
+
 class CorpusDataset(SimpleDataset):
     """Common text dataset that reads a whole corpus based on provided sample splitter
     and word tokenizer.
