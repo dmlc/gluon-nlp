@@ -1,3 +1,28 @@
+# coding: utf-8
+
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+
+# pylint: disable=
+"""Machine translation datasets."""
+
+__all__ = ['IWSLT2015', 'WMT2016']
+
+
 import os
 import zipfile
 import shutil
@@ -90,7 +115,22 @@ class _TranslationDataset(ArrayDataset):
 
 
 class IWSLT2015(_TranslationDataset):
-    def __init__(self, segment="train", src_lang="en", tgt_lang="vi",
+    """IWSLT English-Vietnamese Translation Dataset.
+
+    We use the preprocessed version provided in https://nlp.stanford.edu/projects/nmt/
+
+    Parameters
+    ----------
+    segment : str, default 'train'
+        Dataset segment. Options are 'train', 'val', 'test'.
+    src_lang : str, default 'en'
+        The source language. Option for source and target languages are 'en' <-> 'vi'
+    tgt_lang : str, default 'vi'
+        The target language. Option for source and target languages are 'en' <-> 'vi'
+    root : str, default '~/.mxnet/datasets/iwslt2015'
+        Path to temp folder for storing data.
+    """
+    def __init__(self, segment='train', src_lang='en', tgt_lang='vi',
                  root=os.path.join('~', '.mxnet', 'datasets', 'iwslt2015')):
         assert segment in ['train', 'val', 'test'],\
             "Only supports `train`, `val`, `test` for the segment. Received segment=%s" %segment
@@ -118,7 +158,23 @@ class IWSLT2015(_TranslationDataset):
 
 
 class WMT2016(_TranslationDataset):
-    def __init__(self, segment="train", src_lang="en", tgt_lang="de",
+    """Translation Corpuses In the WMT2016 Evaluation Campaign
+
+    We use the preprocessed version by
+    https://github.com/tensorflow/nmt/blob/master/nmt/scripts/wmt16_en_de.sh
+
+    Parameters
+    ----------
+    segment : str, default 'train'
+        Dataset segment. Options are 'train', 'val', 'test'.
+    src_lang : str, default 'en'
+        The source language. Option for source and target languages are 'en' <-> 'de'
+    tgt_lang : str, default 'de'
+        The target language. Option for source and target languages are 'en' <-> 'de'
+    root : str, default '~/.mxnet/datasets/wmt2016'
+        Path to temp folder for storing data.
+    """
+    def __init__(self, segment='train', src_lang='en', tgt_lang='de',
                  root=os.path.join('~', '.mxnet', 'datasets', 'wmt2016')):
         assert segment in ['train', 'val', 'test'], \
             "Only supports `train`, `val`, `test` for the segment. Received segment=%s" % segment

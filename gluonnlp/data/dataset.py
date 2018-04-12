@@ -20,7 +20,7 @@
 # pylint: disable=undefined-all-variable
 """NLP Toolkit Dataset API. It allows easy and customizable loading of corpora and dataset files.
 Files can be loaded into formats that are immediately ready for training and evaluation."""
-__all__ = ['CorpusDataset', 'LanguageModelDataset']
+__all__ = ['TextLineDataset', 'CorpusDataset', 'LanguageModelDataset']
 
 import io
 import os
