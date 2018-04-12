@@ -1,0 +1,4 @@
+name: gluon_nlp_pylint
+dependencies:
+  - python
+  - pylint

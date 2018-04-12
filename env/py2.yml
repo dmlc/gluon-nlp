@@ -1,0 +1,13 @@
+name: gluon_nlp_py2
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=2.7
+  - sphinx=1.7.2
+  - spacy
+  - nltk
+  - nose
+  - nose-timer
+  - pip:
+    - mxnet==1.2.0b20180411
