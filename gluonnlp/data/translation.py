@@ -113,7 +113,7 @@ class IWSLT2015(_TranslationDataset):
                                         tgt_lang=tgt_lang, root=root)
 
 
- class WMT2016(_TranslationDataset):
+class WMT2016(_TranslationDataset):
     def __init__(self, segment, src_lang="en", tgt_lang="de",
                  root=os.path.join('~', '.mxnet', 'datasets', 'wmt2016')):
         assert segment in ['train', 'val', 'test'], \
