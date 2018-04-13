@@ -58,7 +58,7 @@ class _WikiText(LanguageModelDataset):
                     if filename:
                         dest = os.path.join(root, filename)
                         with zf.open(member) as source, \
-                             open(dest, "wb") as target:
+                             open(dest, 'wb') as target:
                             shutil.copyfileobj(source, target)
         return path
 

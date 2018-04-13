@@ -95,10 +95,10 @@ print(args)
 
 pretrained = not args.no_pretrained
 if args.gpu is None:
-    print("Use cpu")
+    print('Use cpu')
     context = mx.cpu()
 else:
-    print("Use gpu%d" % args.gpu)
+    print('Use gpu%d' % args.gpu)
     context = mx.gpu(args.gpu)
 
 class AggregationLayer(HybridBlock):
@@ -168,7 +168,7 @@ def get_length(x):
 train_dataset, test_dataset = [IMDB(root='data/imdb', segment=segment)
                                for segment in ('train', 'test')]
 train_dataset, valid_dataset = train_valid_split(train_dataset, args.valid_ratio)
-print("Tokenize using spaCy...")
+print('Tokenize using spaCy...')
 
 def preprocess_dataset(dataset):
     start = time.time()
@@ -187,22 +187,22 @@ test_dataset, test_data_lengths = preprocess_dataset(test_dataset)
 # Construct the DataLoader
 batchify_fn = bf.Tuple(bf.Pad(axis=0, ret_length=True), bf.Stack())  # Pad data and stack label
 if args.bucket_type is None:
-    print("Bucketing strategy is not used!")
+    print('Bucketing strategy is not used!')
     train_dataloader = DataLoader(dataset=train_dataset,
                                   batch_size=args.batch_size,
                                   shuffle=True,
                                   batchify_fn=batchify_fn)
 else:
-    if args.bucket_type == "fixed":
-        print("Use FixedBucketSampler")
+    if args.bucket_type == 'fixed':
+        print('Use FixedBucketSampler')
         batch_sampler = FixedBucketSampler(train_data_lengths,
                                            batch_size=args.batch_size,
                                            num_buckets=args.bucket_num,
                                            ratio=args.bucket_ratio,
                                            shuffle=True)
         print(batch_sampler.stats())
-    elif args.bucket_type == "sorted":
-        print("Use SortedBucketSampler")
+    elif args.bucket_type == 'sorted':
+        print('Use SortedBucketSampler')
         batch_sampler = SortedBucketSampler(train_data_lengths,
                                             batch_size=args.batch_size,
                                             mult=args.bucket_mult,
@@ -323,13 +323,13 @@ def train():
                   epoch_wc / 1000 / (end_epoch_time - start_epoch_time)))
 
         if valid_acc < best_valid_acc:
-            print("No Improvement.")
+            print('No Improvement.')
             stop_early += 1
             if stop_early == 3:
                 break
         else:
             # Reset stop_early if the validation loss finds a new low value
-            print("Observe Improvement")
+            print('Observed Improvement.')
             stop_early = 0
             net.save_params(args.save_prefix + '_{:04d}.params'.format(epoch))
             best_valid_acc = valid_acc
@@ -342,5 +342,5 @@ def train():
     print('Total time cost %.2fs'%(time.time()-start_pipeline_time))
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     train()

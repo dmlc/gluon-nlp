@@ -155,9 +155,9 @@ class StandardRNN(Block):
     def __init__(self, mode, vocab_size, embed_size, hidden_size,
                  num_layers, dropout=0.5, tie_weights=False, **kwargs):
         if tie_weights:
-            assert embed_size == hidden_size, "Embedding dimension must be equal to " \
-                                              "hidden dimension in order to tie weights. " \
-                                              "Got: emb: {}, hid: {}.".format(embed_size,
+            assert embed_size == hidden_size, 'Embedding dimension must be equal to ' \
+                                              'hidden dimension in order to tie weights. ' \
+                                              'Got: emb: {}, hid: {}.'.format(embed_size,
                                                                               hidden_size)
         super(StandardRNN, self).__init__(**kwargs)
         self._mode = mode
@@ -218,7 +218,7 @@ def _load_vocab(dataset_name, vocab, root):
                           'Input "vocab" argument will be ignored.')
         vocab = _load_pretrained_vocab(dataset_name, root)
     else:
-        assert vocab is not None, "Must specify vocab if not loading from predefined datasets."
+        assert vocab is not None, 'Must specify vocab if not loading from predefined datasets.'
     return vocab
 
 
@@ -276,7 +276,7 @@ def awd_lstm_lm_1150(dataset_name=None, vocab=None, pretrained=False, ctx=cpu(),
                        'drop_i': 0.65}
     mutable_args = frozenset(['dropout', 'weight_drop', 'drop_h', 'drop_i'])
     assert all((k not in kwargs or k in mutable_args) for k in predefined_args), \
-           "Cannot override predefined model settings."
+           'Cannot override predefined model settings.'
     predefined_args.update(kwargs)
     return _get_rnn_model(AWDRNN, 'awd_lstm_lm_1150', dataset_name, vocab, pretrained,
                           ctx, root, **predefined_args)
@@ -319,7 +319,7 @@ def standard_lstm_lm_200(dataset_name=None, vocab=None, pretrained=False, ctx=cp
                        'dropout': 0.2}
     mutable_args = ['dropout']
     assert all((k not in kwargs or k in mutable_args) for k in predefined_args), \
-           "Cannot override predefined model settings."
+           'Cannot override predefined model settings.'
     predefined_args.update(kwargs)
     return _get_rnn_model(StandardRNN, 'standard_lstm_lm_200', dataset_name, vocab, pretrained,
                           ctx, root, **predefined_args)
@@ -362,7 +362,7 @@ def standard_lstm_lm_650(dataset_name=None, vocab=None, pretrained=False, ctx=cp
                        'dropout': 0.5}
     mutable_args = ['dropout']
     assert all((k not in kwargs or k in mutable_args) for k in predefined_args), \
-           "Cannot override predefined model settings."
+           'Cannot override predefined model settings.'
     predefined_args.update(kwargs)
     return _get_rnn_model(StandardRNN, 'standard_lstm_lm_650', dataset_name, vocab, pretrained,
                           ctx, root, **predefined_args)
@@ -405,7 +405,7 @@ def standard_lstm_lm_1500(dataset_name=None, vocab=None, pretrained=False, ctx=c
                        'dropout': 0.65}
     mutable_args = ['dropout']
     assert all((k not in kwargs or k in mutable_args) for k in predefined_args), \
-           "Cannot override predefined model settings."
+           'Cannot override predefined model settings.'
     predefined_args.update(kwargs)
     return _get_rnn_model(StandardRNN, 'standard_lstm_lm_1500', dataset_name, vocab, pretrained,
                           ctx, root, **predefined_args)
