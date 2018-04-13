@@ -140,7 +140,7 @@ print(args)
 ntokens = len(vocab)
 
 if args.weight_dropout > 0:
-    print('Use AWDRNN!')
+    print('Use AWDRNN')
     model = AWDRNN(args.model, len(vocab), args.emsize, args.nhid, args.nlayers,
                    args.tied, args.dropout, args.weight_dropout, args.dropout_h,
                    args.dropout_i, args.dropout_e)
@@ -322,7 +322,7 @@ def train():
                     else:
                         output, h = model(X, h)
                         l = loss(output.reshape(-3, -1), y.reshape(-1,))
-                    L += l / X.size
+                    L += l.as_in_context(context[0]) / X.size
                     Ls.append(l/X.size)
                     hiddens[j] = h
             L.backward()
