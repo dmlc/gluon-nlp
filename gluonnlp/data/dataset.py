@@ -66,9 +66,9 @@ class CorpusDataset(SimpleDataset):
     skip_empty : bool, default True
         Whether to skip the empty samples produced from sample_splitters. If False, `bos` and `eos`
         will be added in empty samples.
-    sample_splitter : function, default str.splitlines
+    sample_splitter : function, default lambda s: s.splitlines()
         A function that splits the dataset string into samples.
-    tokenizer : function or None, default str.split
+    tokenizer : function or None, default lambda s: s.split()
         A function that splits each sample string into list of tokens. If None, raw samples are
         returned according to `sample_splitter`.
     bos : str or None, default None
@@ -79,7 +79,7 @@ class CorpusDataset(SimpleDataset):
         specified, then nothing is added.
     """
     def __init__(self, filename, encoding='utf8', flatten=False, skip_empty=True,
-                 sample_splitter=str.splitlines, tokenizer=str.split,
+                 sample_splitter=lambda s: s.splitlines(), tokenizer=lambda s: s.split(),
                  bos=None, eos=None):
         assert sample_splitter, 'sample_splitter must be specified.'
         self._filename = os.path.expanduser(filename)
