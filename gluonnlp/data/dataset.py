@@ -118,7 +118,7 @@ class LanguageModelDataset(CorpusDataset):
     def __init__(self, filename, encoding='utf8', skip_empty=True,
                  sample_splitter=lambda s: s.splitlines(),
                  tokenizer=lambda s: s.split(), bos=None, eos=None):
-        assert tokenizer, "Tokenizer must be specified for reading language model corpus."
+        assert tokenizer, 'Tokenizer must be specified for reading language model corpus.'
         super(LanguageModelDataset, self).__init__(filename, encoding, True, skip_empty,
                                                    sample_splitter, tokenizer, bos, eos)
 

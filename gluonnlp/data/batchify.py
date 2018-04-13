@@ -207,8 +207,8 @@ class Pad(object):
     """
     def __init__(self, axis=0, pad_val=0, ret_length=False):
         self._axis = axis
-        assert isinstance(axis, int), "axis must be an integer! " \
-                                      "Received axis=%s, type=%s." % (str(axis),
+        assert isinstance(axis, int), 'axis must be an integer! ' \
+                                      'Received axis=%s, type=%s.' % (str(axis),
                                                                       str(type(axis)))
         self._pad_val = pad_val
         self._ret_length = ret_length
@@ -298,15 +298,15 @@ class Tuple(object):
     """
     def __init__(self, fn, *args):
         if isinstance(fn, (list, tuple)):
-            assert len(args) == 0, "Input pattern not understood. The input of Tuple can be " \
-                                   "Tuple(A, B, C) or Tuple([A, B, C]) or Tuple((A, B, C)). " \
-                                   "Received fn=%s, args=%s" % (str(fn), str(args))
+            assert len(args) == 0, 'Input pattern not understood. The input of Tuple can be ' \
+                                   'Tuple(A, B, C) or Tuple([A, B, C]) or Tuple((A, B, C)). ' \
+                                   'Received fn=%s, args=%s' % (str(fn), str(args))
             self._fn = fn
         else:
             self._fn = (fn, ) + args
         for i, ele_fn in enumerate(self._fn):
-            assert hasattr(ele_fn, '__call__'), "Batchify functions must be callable! " \
-                                                "type(fn[%d]) = %s" % (i, str(type(ele_fn)))
+            assert hasattr(ele_fn, '__call__'), 'Batchify functions must be callable! ' \
+                                                'type(fn[%d]) = %s' % (i, str(type(ele_fn)))
 
     def __call__(self, data):
         """Batchify the input data.
@@ -322,7 +322,7 @@ class Tuple(object):
             A tuple of length N. Contains the batchified result of each attribute in the input.
         """
         assert len(data[0]) == len(self._fn),\
-            "The number of attributes in each data sample should contains %d elements"
+            'The number of attributes in each data sample should contains %d elements'
         ret = []
         for i, ele_fn in enumerate(self._fn):
             ret.append(ele_fn([ele[i] for ele in data]))

@@ -184,7 +184,7 @@ def train_valid_split(dataset, valid_ratio=0.05):
     valid : SimpleDataset
     """
     if not 0.0 <= valid_ratio <= 1.0:
-        raise ValueError("valid_ratio should be in [0, 1]")
+        raise ValueError('valid_ratio should be in [0, 1]')
 
     num_train = len(dataset)
     num_valid = np.ceil(num_train * valid_ratio).astype('int')
@@ -249,6 +249,6 @@ def _load_pretrained_vocab(name, root=os.path.join('~', '.mxnet', 'models')):
         raise ValueError('Downloaded file has different hash. Please try again.')
 
 def _load_vocab_file(file_path):
-    with open(file_path, "r") as f:
+    with open(file_path, 'r') as f:
         from ..vocab import Vocab
         return Vocab.from_json(f.read())
