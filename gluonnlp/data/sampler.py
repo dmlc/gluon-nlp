@@ -100,7 +100,7 @@ class FixedBucketSampler(Sampler):
 
         .. math::
 
-            B_i = \max(\alpha B \max_j \frac{sum(K_j}{sum(K_i)}, B)
+            B_i = \max(\alpha B \times \max_j \frac{sum(K_j)}{sum(K_i)}, B)
 
         Thus, setting this to a value larger than 0, like 0.5, will scale up the batch size of the
         smaller buckets.
