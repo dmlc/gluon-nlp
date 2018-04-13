@@ -105,7 +105,7 @@ def test_iwlst2015():
     train_en_vi = nlp.data.IWSLT2015(segment='train', root='tests/data/iwlst2015')
     val_en_vi = nlp.data.IWSLT2015(segment='val', root='tests/data/iwlst2015')
     test_en_vi = nlp.data.IWSLT2015(segment='test', root='tests/data/iwlst2015')
-    assert len(train_en_vi) == 133317
+    assert len(train_en_vi) == 133166
     assert len(val_en_vi) == 1553
     assert len(test_en_vi) == 1268
 
