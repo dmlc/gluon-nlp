@@ -94,7 +94,7 @@ parser.add_argument('--alpha', type=float, default=2,
 parser.add_argument('--beta', type=float, default=1,
                     help='beta slowness regularization applied on RNN activiation '
                          '(beta = 0 means no regularization)')
-parser.add_argument('--test_mode', action='store_false',
+parser.add_argument('--test_mode', action='store_true',
                     help='Whether to run through the script with few examples')
 args = parser.parse_args()
 
@@ -102,11 +102,11 @@ args = parser.parse_args()
 # Load data
 ###############################################################################
 
-context = [mx.cpu()] if args.gpus is None or args.gpus == "" else \
+context = [mx.cpu()] if args.gpus is None or args.gpus == '' else \
           [mx.gpu(int(i)) for i in args.gpus.split(',')]
 
 assert args.batch_size % len(context) == 0, \
-    "Total batch size must be multiple of the number of devices"
+    'Total batch size must be multiple of the number of devices'
 
 train_dataset, val_dataset, test_dataset = \
     [language_model.WikiText2(segment=segment,
@@ -140,7 +140,7 @@ print(args)
 ntokens = len(vocab)
 
 if args.weight_dropout > 0:
-    print("Use weight_drop!")
+    print('Use AWDRNN!')
     model = AWDRNN(args.model, len(vocab), args.emsize, args.nhid, args.nlayers,
                    args.tied, args.dropout, args.weight_dropout, args.dropout_h,
                    args.dropout_i, args.dropout_e)
@@ -292,7 +292,7 @@ def train():
     """Training loop for awd language model.
 
     """
-    best_val = float("Inf")
+    best_val = float('Inf')
     start_train_time = time.time()
     parameters = model.collect_params().values()
     for epoch in range(args.epochs):
