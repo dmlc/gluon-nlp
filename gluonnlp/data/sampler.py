@@ -44,9 +44,9 @@ def _match_bucket_keys(bucket_keys, seq_lengths):
         masked_pad_val = np.ma.array(pad_val, mask=1 - is_valid_bucket)
         batch_bucket_id = masked_pad_val.argmin(axis=1).tolist()
         if len(seq_ids_not_found) > 0:
-            raise ValueError("Find elements in seq_lengths that cannot fit in the "
-                             "given buckets, seq_length=%s, bucket_keys=%s. " \
-                             "You must increase the bucket size."
+            raise ValueError('Find elements in seq_lengths that cannot fit in the '
+                             'given buckets, seq_length=%s, bucket_keys=%s. ' \
+                             'You must increase the bucket size.'
                              % (str(seq_lengths[seq_ids_not_found]), str(bucket_keys)))
         for i, bucket_id in enumerate(batch_bucket_id):
             bucket_sample_ids[bucket_id].append(i + begin)
@@ -128,9 +128,9 @@ class FixedBucketSampler(Sampler):
     """
     def __init__(self, lengths, batch_size, num_buckets=10, bucket_keys=None,
                  ratio=0, shuffle=False):
-        assert len(lengths) > 0, "FixedBucketSampler does not support empty lengths."
-        assert batch_size > 0, "Batch size must be larger than 0"
-        assert ratio >= 0, "ratio to scale up the batchi size cannot be negative!"
+        assert len(lengths) > 0, 'FixedBucketSampler does not support empty lengths.'
+        assert batch_size > 0, 'Batch size must be larger than 0.'
+        assert ratio >= 0, 'batch size scaling ratio cannot be negative.'
         self._batch_size = batch_size
         self._ratio = ratio
         self._lengths = np.array(lengths, dtype=np.int32)
@@ -139,22 +139,22 @@ class FixedBucketSampler(Sampler):
             attr_num = 1
         else:
             assert self._lengths.ndim == 2, \
-                "Elements in lengths must be either int or tuple/list of int. " \
-                "Recieved lengths=%s" % str(lengths)
+                'Elements in lengths must be either int or tuple/list of int. ' \
+                'Received lengths=%s' % str(lengths)
             self._single_element = False
             attr_num = self._lengths.shape[1]
         self._shuffle = shuffle
         max_lengths = self._lengths.max(axis=0)
         min_lengths = self._lengths.min(axis=0)
         if self._single_element:
-            assert min_lengths > 0, "Sequence lengths must all be larger than 0."
+            assert min_lengths > 0, 'Sequence lengths must all be larger than 0.'
         else:
             for _, ele in enumerate(min_lengths):
-                assert ele > 0, "Sequence lengths must all be larger than 0."
+                assert ele > 0, 'Sequence lengths must all be larger than 0.'
         # Generate the buckets
         if bucket_keys is None:
-            assert num_buckets > 0, "num_buckets must be set when bucket_keys is None. Recieved " \
-                                    "num_buckets=%d" % num_buckets
+            assert num_buckets > 0, 'num_buckets must be set when bucket_keys is None. Received ' \
+                                    'num_buckets=%d' % num_buckets
             if not self._single_element:
                 bucket_width_l = [max((max_len - min_len) // max(num_buckets - 1, 1), 1)
                                   for max_len, min_len in
@@ -169,8 +169,8 @@ class FixedBucketSampler(Sampler):
                                for i in range(num_buckets)]
         else:
             if num_buckets is not None:
-                warnings.warn("num_buckets will not be used if bucket_keys is not None. "
-                              "bucket_keys=%s, num_buckets=%d" % (str(bucket_keys), num_buckets))
+                warnings.warn('num_buckets will not be used if bucket_keys is not None. '
+                              'bucket_keys=%s, num_buckets=%d' % (str(bucket_keys), num_buckets))
             assert len(bucket_keys) > 0
             if self._single_element:
                 assert isinstance(bucket_keys[0], int)
@@ -183,7 +183,7 @@ class FixedBucketSampler(Sampler):
         unused_bucket_keys = [key for key, sample_ids in zip(bucket_keys, bucket_sample_ids)
                               if len(sample_ids) == 0]
         if len(unused_bucket_keys) > 0:
-            warnings.warn("Some buckets are empty and will be removed. Unused bucket keys=%s" %
+            warnings.warn('Some buckets are empty and will be removed. Unused bucket keys=%s' %
                           str(unused_bucket_keys))
         # Remove empty buckets
         self._bucket_keys = [key for key, sample_ids in zip(bucket_keys, bucket_sample_ids)
@@ -225,11 +225,11 @@ class FixedBucketSampler(Sampler):
         ret : str
             String representing the statistics of the buckets.
         """
-        ret = "{name}:\n" \
-            "  sample_num={sample_num}, batch_num={batch_num}\n" \
-            "  key={bucket_keys}\n" \
-            "  cnt={bucket_counts}\n" \
-            "  batch_size={bucket_batch_sizes}"\
+        ret = '{name}:\n' \
+            '  sample_num={sample_num}, batch_num={batch_num}\n' \
+            '  key={bucket_keys}\n' \
+            '  cnt={bucket_counts}\n' \
+            '  batch_size={bucket_batch_sizes}'\
             .format(name=self.__class__.__name__,
                     sample_num=len(self._lengths),
                     batch_num=self._batch_num,
@@ -274,7 +274,7 @@ class SortedBucketSampler(Sampler):
     def __init__(self, sort_keys, batch_size, mult=100, reverse=True, shuffle=False):
         assert len(sort_keys) > 0
         assert batch_size > 0
-        assert mult >= 1, "Bucket size multiplier must be larger than 1"
+        assert mult >= 1, 'Bucket size multiplier must be larger than 1'
         self._sort_keys = sort_keys
         self._batch_size = batch_size
         self._mult = mult

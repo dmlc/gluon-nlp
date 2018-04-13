@@ -120,13 +120,13 @@ class PadSequence(object):
             elif isinstance(sample, np.ndarray):
                 pad_width = [(0, self._length - sample_length)] +\
                             [(0, 0) for _ in range(sample.ndim - 1)]
-                return np.pad(sample, mode="constant", constant_values=self._pad_val,
+                return np.pad(sample, mode='constant', constant_values=self._pad_val,
                               pad_width=pad_width)
             elif isinstance(sample, list):
                 return sample + [self._pad_val for _ in range(self._length - sample_length)]
             else:
-                raise NotImplementedError("The input must be 1) list or 2) numpy.ndarray or 3) "
-                                          "mxnet.NDArray, received type=%s" % str(type(sample)))
+                raise NotImplementedError('The input must be 1) list or 2) numpy.ndarray or 3) '
+                                          'mxnet.NDArray, received type=%s' % str(type(sample)))
 
 
 class NLTKMosesTokenizer(object):
@@ -167,9 +167,9 @@ class NLTKMosesTokenizer(object):
         try:
             from nltk.tokenize.moses import MosesTokenizer
         except ImportError:
-            raise ImportError("NLTK is not installed. You must install NLTK in order to use the "
-                              "NLTKMosesTokenizer. You can refer to the official installation "
-                              "guide in https://www.nltk.org/install.html .")
+            raise ImportError('NLTK is not installed. You must install NLTK in order to use the '
+                              'NLTKMosesTokenizer. You can refer to the official installation '
+                              'guide in https://www.nltk.org/install.html .')
         self._tokenizer = MosesTokenizer()
 
     def __call__(self, sample):
@@ -230,16 +230,16 @@ class SpacyTokenizer(object):
      'Verfügung',
      '.']
     """
-    def __init__(self, lang="en"):
+    def __init__(self, lang='en'):
         try:
             import spacy
             from pkg_resources import parse_version
             assert parse_version(spacy.__version__) >= parse_version('2.0.0'),\
-                "We only support spacy>=2.0.0"
+                'We only support spacy>=2.0.0'
         except ImportError:
-            raise ImportError("spaCy is not installed. You must install spaCy in order to use the "
-                              "SpacyTokenizer. You can refer to the official installation guide "
-                              "in https://spacy.io/usage/ .")
+            raise ImportError('spaCy is not installed. You must install spaCy in order to use the '
+                              'SpacyTokenizer. You can refer to the official installation guide '
+                              'in https://spacy.io/usage/.')
         try:
             self._nlp = spacy.load(lang, disable=['parser', 'tagger', 'ner'])
         except IOError:
