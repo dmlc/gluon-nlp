@@ -127,13 +127,11 @@ def test_iwlst2015():
 def test_wmt2016():
     train = nlp.data.WMT2016(segment='train', src_lang='en', tgt_lang='de',
                              root='tests/data/wmt2016')
-    val = nlp.data.WMT2016(segment='val', src_lang='en', tgt_lang='de',
-                           root='tests/data/wmt2016')
-    test = nlp.data.WMT2016(segment='test', src_lang='en', tgt_lang='de',
-                            root='tests/data/wmt2016')
+    newstests = [nlp.data.WMT2016(segment='newstest%d' %i, src_lang='en', tgt_lang='de',
+                                  root='tests/data/wmt2016') for i in range(2012, 2017)]
     assert len(train) == 4500966
-    assert len(val) == 3000
-    assert len(test) == 2169
+    assert tuple(len(ele) for ele in newstests) == (3003, 3000, 3003, 2169, 2999)
+
     en_vocab, de_vocab = train.get_vocab()
     assert len(en_vocab) == 36548
     assert len(de_vocab) == 36548

@@ -166,7 +166,8 @@ class WMT2016(_TranslationDataset):
     Parameters
     ----------
     segment : str, default 'train'
-        Dataset segment. Options are 'train', 'val', 'test'.
+        Dataset segment. Options are 'train', 'newstest2012', 'newstest2013',
+         'newstest2014', 'newstest2015', 'newstest2016'.
     src_lang : str, default 'en'
         The source language. Option for source and target languages are 'en' <-> 'de'
     tgt_lang : str, default 'de'
@@ -176,8 +177,10 @@ class WMT2016(_TranslationDataset):
     """
     def __init__(self, segment='train', src_lang='en', tgt_lang='de',
                  root=os.path.join('~', '.mxnet', 'datasets', 'wmt2016')):
-        assert segment in ['train', 'val', 'test'], \
-            "Only supports `train`, `val`, `test` for the segment. Received segment=%s" % segment
+        supported_segments = ['train']
+        supported_segments += ['newstest%d' % i for i in range(2012, 2017)]
+        assert segment in supported_segments, \
+            "Only supports %s for the segment. Received segment=%s" % (supported_segments, segment)
         self._archive_file = {_get_pair_key("de", "en"):
                                   ('wmt2016_de_en.zip',
                                    '8cf0dbf6a102381443a472bcf9f181299231b496')}
@@ -186,14 +189,26 @@ class WMT2016(_TranslationDataset):
                                              '56f37cb4d68c2f83efd6a0c555275d1fe09f36b5'),
                                 'train_de': ('train.tok.clean.bpe.32000.de',
                                              '58f30a0ba7f80a8840a5cf3deff3c147de7d3f68'),
-                                'val_en': ('newstest2013.tok.bpe.32000.en',
-                                           'fa03fe189fe68cb25014c5e64096ac8daf2919fa'),
-                                'val_de': ('newstest2013.tok.bpe.32000.de',
-                                           '7d10a884499d352c2fea6f1badafb40473737640'),
-                                'test_en': ('newstest2015.tok.bpe.32000.en',
-                                            'ca335076f67b2f9b98848f8abc2cd424386f2309'),
-                                'test_de': ('newstest2015.tok.bpe.32000.de',
-                                            'e633a3fb74506eb498fcad654d82c9b1a0a347b3'),
+                                'newstest2012_en': ('newstest2012.tok.bpe.3200.en',
+                                                    '25ed9ad228a236f57f97bf81db1bb004bedb7f33'),
+                                'newstest2012_de': ('newstest2012.tok.bpe.3200.de',
+                                                    'bb5622831ceea1894966fa993ebcd882cc461943'),
+                                'newstest2013_en': ('newstest2013.tok.bpe.32000.en',
+                                                    'fa03fe189fe68cb25014c5e64096ac8daf2919fa'),
+                                'newstest2013_de': ('newstest2013.tok.bpe.32000.de',
+                                                    '7d10a884499d352c2fea6f1badafb40473737640'),
+                                'newstest2014_en': ('newstest2014.tok.bpe.32000.en',
+                                                    '7b8ea824021cc5291e6a54bb32a1fc27c2955588'),
+                                'newstest2014_de': ('newstest2014.tok.bpe.32000.de',
+                                                    'd84497d4c425fa4e9b2b6be4b62c763086410aad'),
+                                'newstest2015_en': ('newstest2015.tok.bpe.32000.en',
+                                                    'ca335076f67b2f9b98848f8abc2cd424386f2309'),
+                                'newstest2015_de': ('newstest2015.tok.bpe.32000.de',
+                                                    'e633a3fb74506eb498fcad654d82c9b1a0a347b3'),
+                                'newstest2016_en': ('newstest2016.tok.bpe.32000.en',
+                                                    '5a5e36a6285823035b642aef7c1a9ec218da59f7'),
+                                'newstest2016_de': ('newstest2016.tok.bpe.32000.de',
+                                                    '135a79acb6a4f8fad0cbf5f74a15d9c0b5bf8c73'),
                                 'vocab_en': ('vocab.bpe.32000.json',
                                              '1c5aea0a77cad592c4e9c1136ec3b70ceeff4e8c'),
                                 'vocab_de': ('vocab.bpe.32000.json',
