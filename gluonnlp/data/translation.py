@@ -74,7 +74,14 @@ class _TranslationDataset(ArrayDataset):
                 [src_corpus_path, tgt_corpus_path] = self._get_data(ele_segment)
                 src_corpus.extend(TextLineDataset(src_corpus_path))
                 tgt_corpus.extend(TextLineDataset(tgt_corpus_path))
-        super(_TranslationDataset, self).__init__(src_corpus, tgt_corpus)
+        # Filter 0-length src/tgt sentences
+        src_lines = []
+        tgt_lines = []
+        for src_line, tgt_line in zip(list(src_corpus), list(tgt_corpus)):
+            if len(src_line) > 0 and len(tgt_line) > 0:
+                src_lines.append(src_line)
+                tgt_lines.append(tgt_line)
+        super(_TranslationDataset, self).__init__(src_lines, tgt_lines)
 
     def _fetch_data_path(self, file_name_hashs):
         archive_file_name, archive_hash = self._archive_file[self._pair_key]
