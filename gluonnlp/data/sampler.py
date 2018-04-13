@@ -93,13 +93,14 @@ class FixedBucketSampler(Sampler):
         lengths of the data.
     ratio : float, default 0
         Ratio to scale up the batch size of smaller buckets.
-        Assume the :math:`i`th key is :math:`K_i`,
-        the default batch size is :math:`B`, the ratio to scale the batch size is :math:`\alpha` and
-        the batch size corresponds to the :math:`i`th bucket is :math:`B_i`. We have:
+        Assume the :math:`i` th key is :math:`K_i` ,
+        the default batch size is :math:`B` , the ratio to scale the batch size is
+        :math:`\alpha` and
+        the batch size corresponds to the :math:`i` th bucket is :math:`B_i` . We have:
 
         .. math::
 
-            B_i = \max(\max_j sum(K_j) / sum(K_i) * B * \alpha, B)
+            B_i = \max(\alpha B \times \frac{\max_j sum(K_j)}{sum(K_i)}, B)
 
         Thus, setting this to a value larger than 0, like 0.5, will scale up the batch size of the
         smaller buckets.
@@ -196,26 +197,24 @@ class FixedBucketSampler(Sampler):
         self._bucket_batch_sizes = [max(int(max_scale_up_key / float(scale_up_key)
                                             * self._ratio * batch_size), batch_size)
                                     for scale_up_key in scale_up_keys]
-        self._batch_num =\
-            sum((len(sample_ids) + bucket_batch_size - 1) // bucket_batch_size
-                for sample_ids, bucket_batch_size in
-                zip(self._bucket_sample_ids, self._bucket_batch_sizes))
+        self._batch_infos = []
+        for bucket_id, sample_ids, bucket_batch_size in\
+                zip(range(len(self._bucket_keys) - 1, -1, -1),
+                        self._bucket_sample_ids[::-1],
+                        self._bucket_batch_sizes[::-1]):
+            for i in range(0, len(sample_ids), bucket_batch_size):
+                self._batch_infos.append((bucket_id, i))
 
     def __iter__(self):
-        bucket_num = len(self._bucket_keys)
-        bucket_ids = list(range(bucket_num - 1, -1, -1))
         if self._shuffle:
-            np.random.shuffle(bucket_ids)
-            for i in range(bucket_num):
-                np.random.shuffle(self._bucket_sample_ids[i])
-        for bucket_id in bucket_ids:
+            np.random.shuffle(self._batch_infos)
+        for bucket_id, batch_begin in self._batch_infos:
             batch_size = self._bucket_batch_sizes[bucket_id]
-            for batch_begin in range(0, len(self._bucket_sample_ids[bucket_id]), batch_size):
-                batch_end = min(batch_begin + batch_size, len(self._bucket_sample_ids[bucket_id]))
-                yield self._bucket_sample_ids[bucket_id][batch_begin:batch_end]
+            batch_end = min(batch_begin + batch_size, len(self._bucket_sample_ids[bucket_id]))
+            yield self._bucket_sample_ids[bucket_id][batch_begin:batch_end]
 
     def __len__(self):
-        return self._batch_num
+        return len(self._batch_infos)
 
     def stats(self):
         """Return a string representing the statistics of the bucketing sampler.
@@ -232,7 +231,7 @@ class FixedBucketSampler(Sampler):
             '  batch_size={bucket_batch_sizes}'\
             .format(name=self.__class__.__name__,
                     sample_num=len(self._lengths),
-                    batch_num=self._batch_num,
+                    batch_num=len(self._batch_infos),
                     bucket_keys=self._bucket_keys,
                     bucket_counts=[len(sample_ids) for sample_ids in self._bucket_sample_ids],
                     bucket_batch_sizes=self._bucket_batch_sizes)
@@ -292,7 +291,10 @@ class SortedBucketSampler(Sampler):
             bucket_end = min(bucket_begin + bucket_size, self._total_sample_num)
             sorted_sample_ids = sorted(sample_ids[bucket_begin:bucket_end],
                                        key=lambda i: self._sort_keys[i], reverse=self._reverse)
-            for batch_begin in range(0, len(sorted_sample_ids), self._batch_size):
+            batch_begins = list(range(0, len(sorted_sample_ids), self._batch_size))
+            if self._shuffle:
+                np.random.shuffle(batch_begins)
+            for batch_begin in batch_begins:
                 batch_end = min(batch_begin + self._batch_size, len(sorted_sample_ids))
                 yield sorted_sample_ids[batch_begin:batch_end]
 
