@@ -94,10 +94,9 @@ parser.add_argument('--alpha', type=float, default=2,
 parser.add_argument('--beta', type=float, default=1,
                     help='beta slowness regularization applied on RNN activiation '
                          '(beta = 0 means no regularization)')
+parser.add_argument('--test_mode', action='store_false',
+                    help='Whether to run through the script with few examples')
 args = parser.parse_args()
-
-print(args)
-
 
 ###############################################################################
 # Load data
@@ -122,6 +121,16 @@ val_data = val_dataset.batchify(vocab, val_batch_size)
 test_batch_size = 1
 test_data = test_dataset.batchify(vocab, test_batch_size)
 
+if args.test_mode:
+    args.emsize = 200
+    args.nhid = 200
+    args.nlayers = 1
+    args.epochs = 3
+    train_data = train_data[0:100]
+    val_data = val_data[0:100]
+    test_data = test_data[0:100]
+
+print(args)
 
 ###############################################################################
 # Build the model
