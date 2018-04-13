@@ -45,6 +45,15 @@ class _TranslationDataset(ArrayDataset):
             "The given language combination: src_lang=%s, tgt_lang=%s, is not supported. " \
             "Only supports language pairs = %s." \
             % (src_lang, tgt_lang, str(self._archive_file.keys()))
+        if isinstance(segment, str):
+            assert segment in self._supported_segments, \
+                "Only supports %s for the segment. Received segment=%s"\
+                % (self._supported_segments, segment)
+        else:
+            for ele_segment in segment:
+                assert ele_segment in self._supported_segments, \
+                    "segment should only contain elements in %s. Received segment=%s" \
+                    % (self._supported_segments, segment)
         self._namespace = 'gluon/dataset/{}'.format(namespace)
         self._segment = segment
         self._src_lang = src_lang
@@ -54,9 +63,17 @@ class _TranslationDataset(ArrayDataset):
         if not os.path.isdir(root):
             os.makedirs(root)
         self._root = root
-        [self._src_corpus_path, self._tgt_corpus_path] = self._get_data()
-        src_corpus = TextLineDataset(self._src_corpus_path)
-        tgt_corpus = TextLineDataset(self._tgt_corpus_path)
+        if isinstance(segment, str):
+            [src_corpus_path, tgt_corpus_path] = self._get_data(segment)
+            src_corpus = TextLineDataset(src_corpus_path)
+            tgt_corpus = TextLineDataset(tgt_corpus_path)
+        else:
+            src_corpus = []
+            tgt_corpus = []
+            for ele_segment in segment:
+                [src_corpus_path, tgt_corpus_path] = self._get_data(ele_segment)
+                src_corpus.extend(TextLineDataset(src_corpus_path))
+                tgt_corpus.extend(TextLineDataset(tgt_corpus_path))
         super(_TranslationDataset, self).__init__(src_corpus, tgt_corpus)
 
     def _fetch_data_path(self, file_name_hashs):
@@ -82,11 +99,11 @@ class _TranslationDataset(ArrayDataset):
             paths.append(path)
         return paths
 
-    def _get_data(self):
+    def _get_data(self, segment):
         src_corpus_file_name, src_corpus_hash =\
-            self._data_file[self._pair_key][self._segment + "_" + self._src_lang]
+            self._data_file[self._pair_key][segment + "_" + self._src_lang]
         tgt_corpus_file_name, tgt_corpus_hash =\
-            self._data_file[self._pair_key][self._segment + "_" + self._tgt_lang]
+            self._data_file[self._pair_key][segment + "_" + self._tgt_lang]
         return self._fetch_data_path([(src_corpus_file_name, src_corpus_hash),
                                       (tgt_corpus_file_name, tgt_corpus_hash)])
 
@@ -121,8 +138,8 @@ class IWSLT2015(_TranslationDataset):
 
     Parameters
     ----------
-    segment : str, default 'train'
-        Dataset segment. Options are 'train', 'val', 'test'.
+    segment : str or list of str, default 'train'
+        Dataset segment. Options are 'train', 'val', 'test' or their combinations.
     src_lang : str, default 'en'
         The source language. Option for source and target languages are 'en' <-> 'vi'
     tgt_lang : str, default 'vi'
@@ -132,8 +149,7 @@ class IWSLT2015(_TranslationDataset):
     """
     def __init__(self, segment='train', src_lang='en', tgt_lang='vi',
                  root=os.path.join('~', '.mxnet', 'datasets', 'iwslt2015')):
-        assert segment in ['train', 'val', 'test'],\
-            "Only supports `train`, `val`, `test` for the segment. Received segment=%s" %segment
+        self._supported_segments = ['train', 'val', 'test']
         self._archive_file = {_get_pair_key("en", "vi"):
                                   ('iwslt15.zip', '15a05df23caccb1db458fb3f9d156308b97a217b')}
         self._data_file = {_get_pair_key("en", "vi"):
@@ -167,7 +183,7 @@ class WMT2016(_TranslationDataset):
     ----------
     segment : str, default 'train'
         Dataset segment. Options are 'train', 'newstest2012', 'newstest2013',
-         'newstest2014', 'newstest2015', 'newstest2016'.
+         'newstest2014', 'newstest2015', 'newstest2016' or their combinations
     src_lang : str, default 'en'
         The source language. Option for source and target languages are 'en' <-> 'de'
     tgt_lang : str, default 'de'
@@ -177,10 +193,7 @@ class WMT2016(_TranslationDataset):
     """
     def __init__(self, segment='train', src_lang='en', tgt_lang='de',
                  root=os.path.join('~', '.mxnet', 'datasets', 'wmt2016')):
-        supported_segments = ['train']
-        supported_segments += ['newstest%d' % i for i in range(2012, 2017)]
-        assert segment in supported_segments, \
-            "Only supports %s for the segment. Received segment=%s" % (supported_segments, segment)
+        self._supported_segments = ['train'] + ['newstest%d' % i for i in range(2012, 2017)]
         self._archive_file = {_get_pair_key("de", "en"):
                                   ('wmt2016_de_en.zip',
                                    '8cf0dbf6a102381443a472bcf9f181299231b496')}

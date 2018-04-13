@@ -132,6 +132,9 @@ def test_wmt2016():
     assert len(train) == 4500966
     assert tuple(len(ele) for ele in newstests) == (3003, 3000, 3003, 2169, 2999)
 
+    newstest_2012_2015 = nlp.data.WMT2016(segment=['newstest%d' %i for i in range(2012, 2016)],
+                                          src_lang='en', tgt_lang='de', root='tests/data/wmt2016')
+    assert len(newstest_2012_2015) == 3003 + 3000 + 3003 + 2169
     en_vocab, de_vocab = train.get_vocab()
     assert len(en_vocab) == 36548
     assert len(de_vocab) == 36548
