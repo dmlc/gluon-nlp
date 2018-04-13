@@ -93,13 +93,14 @@ class FixedBucketSampler(Sampler):
         lengths of the data.
     ratio : float, default 0
         Ratio to scale up the batch size of smaller buckets.
-        Assume the :math:`i`th key is :math:`K_i`,
-        the default batch size is :math:`B`, the ratio to scale the batch size is :math:`\alpha` and
-        the batch size corresponds to the :math:`i`th bucket is :math:`B_i`. We have:
+        Assume the :math:`i` th key is :math:`K_i` ,
+        the default batch size is :math:`B` , the ratio to scale the batch size is
+        :math:`\alpha` and
+        the batch size corresponds to the :math:`i` th bucket is :math:`B_i` . We have:
 
         .. math::
 
-            B_i = \max(\max_j sum(K_j) / sum(K_i) * B * \alpha, B)
+            B_i = \max(\alpha B \max_j \frac{sum(K_j}{sum(K_i)}, B)
 
         Thus, setting this to a value larger than 0, like 0.5, will scale up the batch size of the
         smaller buckets.
