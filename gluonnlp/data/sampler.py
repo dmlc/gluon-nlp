@@ -229,7 +229,7 @@ class FixedBucketSampler(Sampler):
             "  batch_size={bucket_batch_sizes}"\
             .format(name=self.__class__.__name__,
                     sample_num=len(self._lengths),
-                    batch_num=self._batch_num,
+                    batch_num=len(self._batch_infos),
                     bucket_keys=self._bucket_keys,
                     bucket_counts=[len(sample_ids) for sample_ids in self._bucket_sample_ids],
                     bucket_batch_sizes=self._bucket_batch_sizes)
