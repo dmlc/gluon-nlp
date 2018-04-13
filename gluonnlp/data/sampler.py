@@ -196,26 +196,23 @@ class FixedBucketSampler(Sampler):
         self._bucket_batch_sizes = [max(int(max_scale_up_key / float(scale_up_key)
                                             * self._ratio * batch_size), batch_size)
                                     for scale_up_key in scale_up_keys]
-        self._batch_num =\
-            sum((len(sample_ids) + bucket_batch_size - 1) // bucket_batch_size
-                for sample_ids, bucket_batch_size in
-                zip(self._bucket_sample_ids, self._bucket_batch_sizes))
+        self._batch_infos = []
+        for bucket_id, sample_ids, bucket_batch_size in zip(range(len(self._bucket_keys) - 1, -1),
+                                                            self._bucket_sample_ids[::-1],
+                                                            self._bucket_batch_sizes[::-1]):
+            for i in range(0, len(sample_ids), bucket_batch_size):
+                self._batch_infos.append((bucket_id, i))
 
     def __iter__(self):
-        bucket_num = len(self._bucket_keys)
-        bucket_ids = list(range(bucket_num - 1, -1, -1))
         if self._shuffle:
-            np.random.shuffle(bucket_ids)
-            for i in range(bucket_num):
-                np.random.shuffle(self._bucket_sample_ids[i])
-        for bucket_id in bucket_ids:
+            np.random.shuffle(self._batch_infos)
+        for bucket_id, batch_begin in self._batch_infos:
             batch_size = self._bucket_batch_sizes[bucket_id]
-            for batch_begin in range(0, len(self._bucket_sample_ids[bucket_id]), batch_size):
-                batch_end = min(batch_begin + batch_size, len(self._bucket_sample_ids[bucket_id]))
-                yield self._bucket_sample_ids[bucket_id][batch_begin:batch_end]
+            batch_end = min(batch_begin + batch_size, len(self._bucket_sample_ids[bucket_id]))
+            yield self._bucket_sample_ids[bucket_id][batch_begin:batch_end]
 
     def __len__(self):
-        return self._batch_num
+        return len(self._batch_infos)
 
     def stats(self):
         """Return a string representing the statistics of the bucketing sampler.
