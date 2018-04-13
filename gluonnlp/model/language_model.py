@@ -147,7 +147,8 @@ class AWDRNN(Block):
             out_states.append(state)
             if self._drop_h and i != len(self.encoder)-1:
                 encoded = nd.Dropout(encoded, p=self._drop_h, axes=(0,))
-        encoded = nd.Dropout(encoded, p=self._dropout, axes=(0,))
+        if self._dropout:
+            encoded = nd.Dropout(encoded, p=self._dropout, axes=(0,))
         with autograd.predict_mode():
             out = self.decoder(encoded)
         return out, out_states
@@ -222,6 +223,8 @@ class StandardRNN(Block):
         return self.encoder.begin_state(*args, **kwargs)
 
     def forward(self, inputs, begin_state=None): # pylint: disable=arguments-differ
+        """Defines the forward computation. Arguments can be either
+        :py:class:`NDArray` or :py:class:`Symbol`."""
         embedded_inputs = self.embedding(inputs)
         if not begin_state:
             begin_state = self.begin_state(batch_size=inputs.shape[1])

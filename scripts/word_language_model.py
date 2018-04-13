@@ -78,14 +78,15 @@ parser.add_argument('--save', type=str, default='model.params',
 parser.add_argument('--eval_only', action='store_true',
                     help='Whether to only evaluate the trained model')
 parser.add_argument('--gpus', type=str,
-                    help='list of gpus to run, e.g. 0 or 0,2,5. empty means using cpu.')
+                    help='list of gpus to run, e.g. 0 or 0,2,5. empty means using cpu.'
+                         '(using single gpu is suggested)')
 parser.add_argument('--lr_update_interval', type=int, default=30,
                     help='lr udpate interval')
 parser.add_argument('--lr_update_factor', type=float, default=0.1,
                     help='lr udpate factor')
 parser.add_argument('--optimizer', type=str, default='sgd',
                     help='optimizer to use (sgd, adam)')
-parser.add_argument('--wdecay', type=float, default=1.2e-6,
+parser.add_argument('--wd', type=float, default=1.2e-6,
                     help='weight decay applied to all weights')
 parser.add_argument('--alpha', type=float, default=2,
                     help='alpha L2 regularization on RNN activation '
@@ -113,8 +114,7 @@ train_dataset, val_dataset, test_dataset = \
                               skip_empty=False, bos=None, eos='<eos>')
      for segment in ['train', 'val', 'test']]
 
-vocab = Vocab(counter=Counter(train_dataset[0]), unknown_token='<unk>',
-              padding_token=None, bos_token=None, eos_token='<eos>', reserved_tokens=None)
+vocab = Vocab(counter=Counter(train_dataset[0]), padding_token=None, bos_token=None)
 
 train_data = train_dataset.batchify(vocab, args.batch_size)
 val_batch_size = 10
@@ -142,17 +142,17 @@ else:
 model.initialize(mx.init.Xavier(), ctx=context)
 
 if args.optimizer == 'sgd':
-    trainer = gluon.Trainer(model.collect_params(), args.optimizer,
-                            {'learning_rate': args.lr,
-                             'momentum': 0,
-                             'wd': args.wdecay})
+    trainer_params = {'learning_rate': args.lr,
+                      'momentum': 0,
+                      'wd': args.wd}
 elif args.optimizer == 'adam':
-    trainer = gluon.Trainer(model.collect_params(), args.optimizer,
-                            {'learning_rate': args.lr,
-                             'wd': args.wdecay,
-                             'beta1': 0,
-                             'beta2': 0.999,
-                             'epsilon': 1e-9})
+    trainer_params = {'learning_rate': args.lr,
+                      'wd': args.wd,
+                      'beta1': 0,
+                      'beta2': 0.999,
+                      'epsilon': 1e-9}
+
+trainer = gluon.Trainer(model.collect_params(), args.optimizer, trainer_params)
 loss = gluon.loss.SoftmaxCrossEntropyLoss()
 
 ###############################################################################
@@ -239,7 +239,8 @@ def awd_forward(inputs, begin_state=None):
         if model._drop_h and i != len(model.encoder)-1:
             encoded = mx.nd.Dropout(encoded, p=model._drop_h, axes=(0,))
             encoded_dropped.append(encoded)
-    encoded = mx.nd.Dropout(encoded, p=model._dropout, axes=(0,))
+    if model._dropout:
+        encoded = mx.nd.Dropout(encoded, p=model._dropout, axes=(0,))
     encoded_dropped.append(encoded)
     with autograd.predict_mode():
         out = model.decoder(encoded)
@@ -284,6 +285,7 @@ def train():
     """
     best_val = float("Inf")
     start_train_time = time.time()
+    parameters = model.collect_params().values()
     for epoch in range(args.epochs):
         total_L = 0.0
         start_epoch_time = time.time()
@@ -302,6 +304,7 @@ def train():
             target_list = gluon.utils.split_and_load(target, context, batch_axis=1, even_split=True)
             hiddens = detach(hiddens)
             Ls = []
+            L = 0
             with autograd.record():
                 for j, (X, y, h) in enumerate(zip(data_list, target_list, hiddens)):
                     if args.weight_dropout > 0:
@@ -310,12 +313,12 @@ def train():
                     else:
                         output, h = model(X, h)
                         l = loss(output.reshape(-3, -1), y.reshape(-1,))
+                    L += l / X.size
                     Ls.append(l/X.size)
                     hiddens[j] = h
-            for l in Ls:
-                l.backward()
+            L.backward()
             for ctx in context:
-                grads = [p.grad(ctx) for p in model.collect_params().values()]
+                grads = [p.grad(ctx) for p in parameters]
                 gluon.utils.clip_global_norm(grads, args.clip)
 
             trainer.step(1)
