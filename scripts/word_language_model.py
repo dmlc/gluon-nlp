@@ -322,7 +322,7 @@ def train():
                     else:
                         output, h = model(X, h)
                         l = loss(output.reshape(-3, -1), y.reshape(-1,))
-                    L += l.as_in_context(context[0]) / X.size
+                    L = L + l.as_in_context(context[0]) / X.size
                     Ls.append(l/X.size)
                     hiddens[j] = h
             L.backward()
