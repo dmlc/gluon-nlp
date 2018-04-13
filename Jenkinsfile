@@ -57,6 +57,7 @@ stage("Deploy") {
       conda list
       python setup.py install
       export LD_LIBRARY_PATH=/usr/local/cuda/lib64
+      make -C docs clean
       make -C docs html
       if [[ ${env.BRANCH_NAME} == PR-* ]]; then
           echo "Uploading doc to s3://gluon-nlp-staging/${env.BRANCH_NAME}/${env.BUILD_NUMBER}/"
