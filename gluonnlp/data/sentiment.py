@@ -37,10 +37,10 @@ class IMDB(SimpleDataset):
 
     Parameters
     ----------
-    root : str, default '~/.mxnet/datasets/imdb'
-        Path to temp folder for storing data.
     segment : str, default 'train'
         Dataset segment. Options are 'train', 'test', and 'unsup' for unsupervised.
+    root : str, default '~/.mxnet/datasets/imdb'
+        Path to temp folder for storing data.
     """
     def __init__(self, segment='train', root=os.path.join('~', '.mxnet', 'datasets', 'imdb')):
         self._data_file = {'train': ('train.json',

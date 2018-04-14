@@ -33,12 +33,13 @@ from .dataset import LanguageModelDataset
 
 
 class _WikiText(LanguageModelDataset):
-    def __init__(self, namespace, bos, eos, skip_empty, root):
+    def __init__(self, namespace, segment, bos, eos, skip_empty, root):
         root = os.path.expanduser(root)
         if not os.path.isdir(root):
             os.makedirs(root)
         self._root = root
         self._namespace = 'gluon/dataset/{}'.format(namespace)
+        self._segment = segment
         super(_WikiText, self).__init__(self._get_data(), bos=bos, eos=eos,
                                         skip_empty=skip_empty)
 
@@ -73,8 +74,8 @@ class WikiText2(_WikiText):
 
     Parameters
     ----------
-    segment : str, default 'train'
-        Dataset segment. Options are 'train', 'val', 'test'.
+    segment : {'train', 'val', 'test'}, default 'train'
+        Dataset segment.
     skip_empty : bool, default True
         Whether to skip the empty samples produced from sample_splitters. If False, `bos` and `eos`
         will be added in empty samples.
@@ -94,8 +95,7 @@ class WikiText2(_WikiText):
                                    '0418625c8b4da6e4b5c7a0b9e78d4ae8f7ee5422'),
                            'test': ('wiki.test.tokens',
                                     'c7b8ce0aa086fb34dab808c5c49224211eb2b172')}
-        self._segment = segment
-        super(WikiText2, self).__init__('wikitext-2', bos, eos, skip_empty, root)
+        super(WikiText2, self).__init__('wikitext-2', segment, bos, eos, skip_empty, root)
 
 
 class WikiText103(_WikiText):
@@ -108,8 +108,8 @@ class WikiText103(_WikiText):
 
     Parameters
     ----------
-    segment : str, default 'train'
-        Dataset segment. Options are 'train', 'val', 'test'.
+    segment : {'train', 'val', 'test'}, default 'train'
+        Dataset segment.
     skip_empty : bool, default True
         Whether to skip the empty samples produced from sample_splitters. If False, `bos` and `eos`
         will be added in empty samples.
@@ -129,5 +129,4 @@ class WikiText103(_WikiText):
                                    'c326ac59dc587676d58c422eb8a03e119582f92b'),
                            'test': ('wiki.test.tokens',
                                     '8a5befc548865cec54ed4273cf87dbbad60d1e47')}
-        self._segment = segment
-        super(WikiText103, self).__init__('wikitext-103', bos, eos, skip_empty, root)
+        super(WikiText103, self).__init__('wikitext-103', segment, bos, eos, skip_empty, root)
