@@ -25,6 +25,7 @@ from __future__ import print_function
 
 __all__ = ['Vocab']
 
+import collections
 import json
 import warnings
 
@@ -32,7 +33,6 @@ from mxnet import nd
 
 from . import _constants as C
 from . import embedding as emb
-from .data.utils import Counter
 
 
 class Vocab(object):
@@ -194,7 +194,7 @@ class Vocab(object):
         `min_freq`.
         """
 
-        assert isinstance(counter, Counter), \
+        assert isinstance(counter, collections.Counter), \
             '`counter` must be an instance of Counter.'
 
         unknown_and_special_tokens = set(special_tokens) if special_tokens else set()

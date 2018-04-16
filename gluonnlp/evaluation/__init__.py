@@ -20,23 +20,8 @@
 # pylint: disable=wildcard-import
 """This module includes common utilities such as data readers and counter."""
 
-from .utils import *
+from .word_embedding import *
 
-from .transforms import *
+from . import word_embedding
 
-from .sampler import *
-
-from .dataset import *
-
-from .language_model import *
-
-from .sentiment import *
-
-from .word_embedding_evaluation import *
-
-from . import dataset, utils, transforms, sampler, batchify, \
-    word_embedding_evaluation
-
-__all__ = utils.__all__ + transforms.__all__ + sampler.__all__ + dataset.__all__ + \
-          language_model.__all__ + sentiment.__all__ + \
-          word_embedding_evaluation.__all__
+__all__ = word_embedding

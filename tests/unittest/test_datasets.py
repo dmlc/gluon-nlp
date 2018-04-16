@@ -20,6 +20,7 @@
 from __future__ import print_function
 import json
 import mxnet as mx
+import numpy as np
 import gluonnlp as nlp
 
 
@@ -99,6 +100,99 @@ def test_imdb():
         assert isinstance(data, str_types)
         assert score == 0
 
+
+###############################################################################
+# Word similarity and relatedness datasets
+###############################################################################
+def _assert_similarity_dataset(data):
+    # Check datatypes
+    assert isinstance(data[0][0], str)
+    assert isinstance(data[0][1], str)
+    assert np.isfinite(data[0][2])
+
+    # Check score magnitude
+    assert np.all(data._data[data.score] <= data.max)
+    assert np.all(data._data[data.score] >= data.min)
+
+
+def test_wordsim353():
+    for segment, length in (("all", 252 + 203), ("relatedness", 252),
+                            ("similarity", 203)):
+        data = nlp.data.WordSim353(
+            segment=segment, root='tests/data/wordsim353')
+        assert len(data) == length, len(data)
+        _assert_similarity_dataset(data)
+
+
+def test_men():
+    for segment, length in [("full", 3000), ("dev", 2000), ("test", 1000)]:
+        data = nlp.data.MEN(root='tests/data/men', segment=segment)
+        assert len(data) == length, len(data)
+        _assert_similarity_dataset(data)
+
+
+def test_radinsky_mturk():
+    data = nlp.data.RadinskyMTurk(root='tests/data/radinsky')
+    assert len(data) == 287
+    _assert_similarity_dataset(data)
+
+
+def test_verb143():
+    data = nlp.data.BakerVerb143(root='tests/data/verb143')
+    assert len(data) == 143
+    _assert_similarity_dataset(data)
+
+
+def test_verb130():
+    data = nlp.data.YangPowersVerb130(root='tests/data/verb130')
+    assert len(data) == 130
+    _assert_similarity_dataset(data)
+
+
+def test_rare_words():
+    data = nlp.data.RareWords(root='tests/data/rarewords')
+    assert len(data) == 2034
+    _assert_similarity_dataset(data)
+
+
+def test_simlex999():
+    data = nlp.data.SimLex999(root='tests/data/simlex999')
+    assert len(data) == 999
+    _assert_similarity_dataset(data)
+
+
+def test_simverb3500():
+    data = nlp.data.SimVerb3500(root='tests/data/simverb3500')
+    assert len(data) == 3500
+    _assert_similarity_dataset(data)
+
+
+def test_semeval17task2():
+    for segment, length in [("trial", 18), ("test", 500)]:
+        data = nlp.data.SemEval17Task2(
+            root='tests/data/semeval17task2', segment=segment)
+        assert len(data) == length
+        _assert_similarity_dataset(data)
+
+
+###############################################################################
+# Word analogy datasets
+###############################################################################
+def test_googleanalogy():
+    data = nlp.data.GoogleAnalogyTestSet(root='tests/data/google_analogy')
+
+    df = data._data
+    assert len(df[df["group"] == "syntactic"]) == 10675
+    assert len(df[df["group"] == "semantic"]) == 8869
+
+    assert data[0].shape == (4, )
+
+
+def test_bigger_analogy():
+    data = nlp.data.BiggerAnalogyTestSet(root='tests/data/bigger_analogy')
+
+    assert data[0].shape == (4, )
+    assert len(data) == 98000
 
 
 if __name__ == '__main__':

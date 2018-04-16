@@ -30,6 +30,9 @@ VERSION = find_version('gluonnlp', '__init__.py')
 
 requirements = [
     'numpy',
+    'scipy',
+    'pandas'
+    'attrs'
 ]
 
 setup(

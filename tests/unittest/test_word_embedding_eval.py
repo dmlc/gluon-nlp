@@ -17,26 +17,33 @@
 # specific language governing permissions and limitations
 # under the License.
 
-# pylint: disable=wildcard-import
-"""This module includes common utilities such as data readers and counter."""
+from __future__ import print_function
 
-from .utils import *
+import collections
+import json
 
-from .transforms import *
+import mxnet as mx
 
-from .sampler import *
+import gluonnlp as nlp
 
-from .dataset import *
 
-from .language_model import *
+def test_similarity():
+    token_embedding = nlp.embedding.create("glove", source="glove.6B.300d.txt")
 
-from .sentiment import *
+    # Construct vocabulary
+    counter = collections.Counter(token_embedding._token_to_idx.keys())
+    vocab = nlp.vocab.Vocab(counter)
+    vocab.set_embedding(token_embedding)
 
-from .word_embedding_evaluation import *
+    for name, cls, score in [("WordSim353", nlp.data.WordSim353, 0.65),
+                             ("RW", nlp.data.RareWords, 0.38)]:
+        data = cls()
+        evaluator = nlp.evaluation.WordEmbeddingSimilarityEvaluator(
+            data, vocab)
+        r = evaluator(token_embedding)
+        print(name, r, score)
 
-from . import dataset, utils, transforms, sampler, batchify, \
-    word_embedding_evaluation
 
-__all__ = utils.__all__ + transforms.__all__ + sampler.__all__ + dataset.__all__ + \
-          language_model.__all__ + sentiment.__all__ + \
-          word_embedding_evaluation.__all__
+if __name__ == '__main__':
+    import nose
+    nose.runmodule()
