@@ -32,7 +32,6 @@ requirements = [
     'numpy',
     'scipy',
     'pandas'
-    'attrs'
 ]
 
 setup(

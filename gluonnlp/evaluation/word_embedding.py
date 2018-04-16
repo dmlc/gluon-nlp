@@ -20,7 +20,6 @@
 # pylint: disable=
 """Evaluation helpers for word embeddings."""
 
-import attr
 import mxnet as mx
 import numpy as np
 from scipy import stats
@@ -28,18 +27,15 @@ from scipy import stats
 __all__ = ['WordEmbeddingSimilarityEvaluator']
 
 
-@attr.s()
 class WordEmbeddingEvaluator(object):
     """Helper class to evaluate word embeddings."""
-    dataset = attr.ib()
-    vocabulary = attr.ib()
+
+    def __init__(self, dataset, vocabulary):
+        self.dataset = dataset
+        self.vocabulary = vocabulary
 
 
-@attr.s()
 class WordEmbeddingSimilarityEvaluator(WordEmbeddingEvaluator):
-    correlation_coefficient = attr.ib(
-        default='spearmanr',
-        validator=attr.validators.in_(['spearmanr', 'pearsonr']))
 
     # Words and ground truth scores
     _w1s = None
@@ -47,7 +43,12 @@ class WordEmbeddingSimilarityEvaluator(WordEmbeddingEvaluator):
     _scores = None
     _context = None
 
-    def __attrs_post_init__(self):
+    def __init__(self, dataset, vocabulary, correlation_coefficient):
+        super(WordEmbeddingSimilarityEvaluator, self).__init__(
+            dataset=dataset, vocabulary=vocabulary)
+        assert correlation_coefficient in ['spearmanr', 'pearsonr']
+        self.correlation_coefficient = correlation_coefficient
+
         # Construct nd arrays from dataset
         w1s = []
         w2s = []
