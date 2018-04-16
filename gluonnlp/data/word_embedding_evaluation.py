@@ -17,7 +17,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-# pylint: disable=
+# pylint: disable=too-many-lines
 """Word embedding evaluation datasets."""
 
 import os
@@ -52,8 +52,11 @@ class _Dataset(Dataset):
     def __len__(self):
         return len(self._data)
 
+    def __getitem__(self, idx):
+        raise NotImplementedError
+
     def _get_data(self):
-        archive_file_name, archive_hash = self._archive_file
+        _, archive_hash = self._archive_file
         for name, checksum in self._checksums.items():
             path = os.path.join(self.root, name)
             if not os.path.exists(path) or not check_sha1(path, checksum):
@@ -725,7 +728,7 @@ class BakerVerb143(_WordSimilarityEvaluationDataset):
 
     def __init__(self, root=os.path.join('~', '.mxnet', 'datasets',
                                          'verb143')):
-        super(WordSim353, self).__init__(root=root)
+        super(BakerVerb143, self).__init__(root=root)
 
         path = os.path.join(self.root, 'verb_similarity dataset.txt')
         df = pd.read_table(
@@ -803,8 +806,8 @@ class YangPowersVerb130(_WordSimilarityEvaluationDataset):
     min = 0
     max = 4
 
-    def __init__(self,
-                 root=os.path.join('~', '.mxnet', 'datasets', 'verb130')):
+    def __init__(self, root=os.path.join('~', '.mxnet', 'datasets',
+                                         'verb130')):
         super(YangPowersVerb130, self).__init__(root=root)
         df = pd.DataFrame.from_records(
             dict(word1=self._words1, word2=self._words2))
@@ -1038,7 +1041,6 @@ class BiggerAnalogyTestSet(_WordAnalogyEvaluationDataset):
     def __init__(self,
                  form_analogy_pairs=True,
                  drop_alternative_solutions=True,
-                 segment='full',
                  root=os.path.join('~', '.mxnet', 'datasets', 'simverb3500')):
         super(BiggerAnalogyTestSet, self).__init__(root=root)
 

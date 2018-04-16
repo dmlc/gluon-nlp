@@ -36,6 +36,7 @@ class WordEmbeddingEvaluator(object):
 
 
 class WordEmbeddingSimilarityEvaluator(WordEmbeddingEvaluator):
+    """Helper class to evaluate word embeddings based on similarity task."""
 
     # Words and ground truth scores
     _w1s = None
