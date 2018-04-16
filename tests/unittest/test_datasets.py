@@ -111,8 +111,7 @@ def _assert_similarity_dataset(data):
     assert np.isfinite(data[0][2])
 
     # Check score magnitude
-    assert np.all(data._data[data.score] <= data.max)
-    assert np.all(data._data[data.score] >= data.min)
+    assert all(data.min <= row[2] <= data.max for row in data)
 
 
 def test_wordsim353():
@@ -139,7 +138,7 @@ def test_radinsky_mturk():
 
 def test_verb143():
     data = nlp.data.BakerVerb143(root='tests/data/verb143')
-    assert len(data) == 143
+    assert len(data) == 144
     _assert_similarity_dataset(data)
 
 
@@ -180,18 +179,13 @@ def test_semeval17task2():
 ###############################################################################
 def test_googleanalogy():
     data = nlp.data.GoogleAnalogyTestSet(root='tests/data/google_analogy')
-
-    df = data._data
-    assert len(df[df["group"] == "syntactic"]) == 10675
-    assert len(df[df["group"] == "semantic"]) == 8869
-
-    assert data[0].shape == (4, )
+    assert len(data[0]) == 4
+    assert len(data) == 10675 + 8869
 
 
 def test_bigger_analogy():
     data = nlp.data.BiggerAnalogyTestSet(root='tests/data/bigger_analogy')
-
-    assert data[0].shape == (4, )
+    assert len(data[0]) == 4
     assert len(data) == 98000
 
 

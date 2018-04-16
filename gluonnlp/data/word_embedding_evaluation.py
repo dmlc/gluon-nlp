@@ -32,16 +32,17 @@ except ImportError:
 
     requests = requests_failed_to_import
 
-import pandas as pd
 from mxnet.gluon.data.dataset import Dataset
 from mxnet.gluon.utils import check_sha1
+
+from .dataset import CorpusDataset
 
 word_similarity_datasets = [
     'WordSim353', 'MEN', 'RadinskyMTurk', 'RareWords', 'SimLex999',
     'SimVerb3500', 'SemEval17Task2', 'BakerVerb143', 'YangPowersVerb130'
 ]
 word_analogy_datasets = ['GoogleAnalogyTestSet', 'BiggerAnalogyTestSet']
-__all__ = word_similarity_datasets
+__all__ = word_similarity_datasets + word_analogy_datasets
 
 
 # TODO Remove once verify support is merged in mxnet.gluon.utils.download
@@ -103,7 +104,7 @@ def download(url, path=None, overwrite=False, sha1_hash=None, verify=True):
 
 class _Dataset(Dataset):
     _url = None  # Dataset is retrieved from here if not cached
-    _archive_file = None  # Archive name and checksum
+    _archive_file = (None, None)  # Archive name and checksum
     _checksums = None  # Checksum of archive contents
     _verify_ssl = True  # Verify SSL certificates when downloading from self._url
 
@@ -119,7 +120,7 @@ class _Dataset(Dataset):
         return len(self._data)
 
     def __getitem__(self, idx):
-        raise NotImplementedError
+        return self._data[idx]
 
     def _get_data(self):
         _, archive_hash = self._archive_file
@@ -150,13 +151,10 @@ class _Dataset(Dataset):
 # Word similarity and relatedness datasets
 ###############################################################################
 class _WordSimilarityEvaluationDataset(_Dataset):
-    word1 = 'word1'
-    word2 = 'word2'
-    score = 'score'
+    columns = ['word1', 'word2', 'score']
 
-    def __getitem__(self, idx):
-        row = self._data.iloc[idx]
-        return row[[self.word1, self.word2, self.score]].values
+    def _cast_score_to_float(self):
+        self._data = [[row[0], row[1], float(row[2])] for row in self._data]
 
 
 class WordSim353(_WordSimilarityEvaluationDataset):
@@ -221,28 +219,23 @@ class WordSim353(_WordSimilarityEvaluationDataset):
         super(WordSim353, self).__init__(root=root)
         self._segment = segment
 
-        paths = []
+        data = []
         if segment == 'relatedness' or segment == 'all':
-            paths.append(
+            dataset = CorpusDataset(
                 os.path.join(
                     self.root,
                     'wordsim353_sim_rel/wordsim_relatedness_goldstandard.txt'))
+            data += dataset._data
         if segment == 'similarity' or segment == 'all':
-            paths.append(
+            dataset = CorpusDataset(
                 os.path.join(
                     self.root,
                     'wordsim353_sim_rel/wordsim_similarity_goldstandard.txt'))
+            data += dataset._data
 
-        dfs = [
-            pd.read_table(
-                p,
-                delimiter='\t',
-                header=None,
-                names=('word1', 'word2', 'score')) for p in paths
-        ]
-        df = pd.concat(dfs)
+        self._data = data
 
-        self._data = df
+        self._cast_score_to_float()
 
 
 class MEN(_WordSimilarityEvaluationDataset):
@@ -306,17 +299,12 @@ class MEN(_WordSimilarityEvaluationDataset):
         self._segment = segment
 
         datafilepath = os.path.join(self.root, self._segment_file[segment])
-        df = pd.read_table(
-            datafilepath,
-            delimiter=' ',
-            header=None,
-            names=('word1', 'word2', 'score'))
+        dataset = CorpusDataset(datafilepath)
 
         # Remove lemma information
-        df['word1'] = df['word1'].str.slice(0, -2)
-        df['word2'] = df['word2'].str.slice(0, -2)
+        self._data = [[row[0][:-2], row[1][:-2], row[2]] for row in dataset]
 
-        self._data = df
+        self._cast_score_to_float()
 
 
 class RadinskyMTurk(_WordSimilarityEvaluationDataset):
@@ -348,12 +336,11 @@ class RadinskyMTurk(_WordSimilarityEvaluationDataset):
                                    'radinskymturk')):
         super(RadinskyMTurk, self).__init__(root=root)
         datafilepath = os.path.join(self.root, self._archive_file[0])
-        df = pd.read_table(
-            datafilepath,
-            delimiter=',',
-            header=None,
-            names=('word1', 'word2', 'score'))
-        self._data = df
+
+        dataset = CorpusDataset(datafilepath, tokenizer=lambda x: x.split(','))
+        self._data = dataset._data
+
+        self._cast_score_to_float()
 
 
 class RareWords(_WordSimilarityEvaluationDataset):
@@ -384,13 +371,11 @@ class RareWords(_WordSimilarityEvaluationDataset):
                  root=os.path.join('~', '.mxnet', 'datasets', 'rarewords')):
         super(RareWords, self).__init__(root=root)
         datafilepath = os.path.join(self.root, 'rw/rw.txt')
-        df = pd.read_table(
-            datafilepath,
-            delimiter='\t',
-            header=None,
-            usecols=(0, 1, 2),
-            names=('word1', 'word2', 'score'))
-        self._data = df
+
+        dataset = CorpusDataset(datafilepath)
+        self._data = [[row[0], row[1], row[2]] for row in dataset]
+
+        self._cast_score_to_float()
 
 
 class SimLex999(_WordSimilarityEvaluationDataset):
@@ -454,10 +439,12 @@ class SimLex999(_WordSimilarityEvaluationDataset):
                  root=os.path.join('~', '.mxnet', 'datasets', 'simlex999')):
         super(SimLex999, self).__init__(root=root)
 
-        df = pd.read_table(
-            os.path.join(self.root, 'SimLex-999/SimLex-999.txt'),
-            delimiter='\t')
-        self._data = df
+        dataset = CorpusDataset(
+            os.path.join(self.root, 'SimLex-999/SimLex-999.txt'))
+        dataset = dataset._data[1:]  # Throw away header
+        self._data = [[row[0], row[1], row[3]] for row in dataset]
+
+        self._cast_score_to_float()
 
 
 class SimVerb3500(_WordSimilarityEvaluationDataset):
@@ -523,12 +510,11 @@ class SimVerb3500(_WordSimilarityEvaluationDataset):
         super(SimVerb3500, self).__init__(root=root)
         self._segment = segment
 
-        df = pd.read_table(
-            os.path.join(self.root, self._segment_file[segment]),
-            header=None,
-            delimiter='\t',
-            names=('word1', 'word2', 'POS', 'score', 'relation'))
-        self._data = df
+        dataset = CorpusDataset(
+            os.path.join(self.root, self._segment_file[segment]))
+        self._data = [[row[0], row[1], row[3]] for row in dataset]
+
+        self._cast_score_to_float()
 
 
 class SemEval17Task2(_WordSimilarityEvaluationDataset):
@@ -757,11 +743,13 @@ class SemEval17Task2(_WordSimilarityEvaluationDataset):
         keys = self._keytemplate.format(
             segment=self._segment, language=self._language)
         keys = os.path.join(self.root, keys)
-        df_data = pd.read_table(data, header=None)
-        df_keys = pd.read_table(keys, header=None)
-        df = pd.concat([df_data, df_keys], axis=1)
-        df.columns = ['word1', 'word2', 'score']
-        self._data = df
+
+        data_dataset = CorpusDataset(data)
+        keys_dataset = CorpusDataset(keys)
+        self._data = [[d[0], d[1], k[0]]
+                      for d, k in zip(data_dataset, keys_dataset)]
+
+        self._cast_score_to_float()
 
 
 class BakerVerb143(_WordSimilarityEvaluationDataset):
@@ -774,7 +762,7 @@ class BakerVerb143(_WordSimilarityEvaluationDataset):
       Qatar, {A} meeting of SIGDAT, a Special Interest Group of the {ACL (pp.
       278–289). : ACL.
 
-    143 pairs of verbs annotated by 10 annotators following the WS-353
+    144 pairs of verbs annotated by 10 annotators following the WS-353
     guidelines.
 
     License: unspecified
@@ -801,14 +789,11 @@ class BakerVerb143(_WordSimilarityEvaluationDataset):
         super(BakerVerb143, self).__init__(root=root)
 
         path = os.path.join(self.root, 'verb_similarity dataset.txt')
-        df = pd.read_table(
-            path,
-            delimiter='\t',
-            header=None,
-            usecols=(0, 1, 12),
-            names=('word1', 'word2', 'score'))
 
-        self._data = df
+        dataset = CorpusDataset(path)
+        self._data = [[row[0], row[1], row[12]] for row in dataset]
+
+        self._cast_score_to_float()
 
 
 class YangPowersVerb130(_WordSimilarityEvaluationDataset):
@@ -880,12 +865,8 @@ class YangPowersVerb130(_WordSimilarityEvaluationDataset):
     def __init__(self, root=os.path.join('~', '.mxnet', 'datasets',
                                          'verb130')):
         super(YangPowersVerb130, self).__init__(root=root)
-        df = pd.DataFrame.from_records(
-            dict(word1=self._words1, word2=self._words2))
-        df['score'] = 0
-        for i, score in enumerate(range(4, 0, -1)):
-            df.loc[i * 26:(i + 1) * 26, 'score'] = score
-        self._data = df
+        scores = [4] * 26 + [3] * 26 + [2] * 26 + [1] * 26 + [0] * 26
+        self._data = list(zip(self._words1, self._words2, scores))
 
     def _get_data(self):
         pass
@@ -895,14 +876,7 @@ class YangPowersVerb130(_WordSimilarityEvaluationDataset):
 # Word analogy datasets
 ###############################################################################
 class _WordAnalogyEvaluationDataset(_Dataset):
-    word1 = 'word1'
-    word2 = 'word2'
-    word3 = 'word3'
-    word4 = 'word4'
-
-    def __getitem__(self, idx):
-        row = self._data.iloc[idx]
-        return row[[self.word1, self.word2, self.word3, self.word4]].values
+    columns = ['word1', 'word2', 'word3', 'word4']
 
 
 class GoogleAnalogyTestSet(_WordAnalogyEvaluationDataset):
@@ -923,28 +897,43 @@ class GoogleAnalogyTestSet(_WordAnalogyEvaluationDataset):
     }
     _url = 'http://download.tensorflow.org/data/questions-words.txt'
 
+    groups = ['syntactic', 'semantic']
+    categories = [
+        'capital-common-countries', 'capital-world', 'currency',
+        'city-in-state', 'family', 'gram1-adjective-to-adverb',
+        'gram2-opposite', 'gram3-comparative', 'gram4-superlative',
+        'gram5-present-participle', 'gram6-nationality-adjective',
+        'gram7-past-tense', 'gram8-plural', 'gram9-plural-verbs'
+    ]
+
     def __init__(self,
+                 group=None,
+                 category=None,
                  root=os.path.join('~', '.mxnet', 'datasets',
                                    'google_analogy')):
         super(GoogleAnalogyTestSet, self).__init__(root=root)
+
+        assert group is None or group in self.groups
+        assert category is None or category in self.categories
 
         words = []
         with open(os.path.join(self.root, self._archive_file[0])) as f:
             for line in f:
                 if line.startswith(':'):
-                    category = line.split()[1]
-                    if 'gram' in category:
-                        group = 'syntactic'
+                    current_category = line.split()[1]
+                    if 'gram' in current_category:
+                        current_group = 'syntactic'
                     else:
-                        group = 'semantic'
+                        current_group = 'semantic'
                 else:
-                    words.append(line.split() + [group, category])
+                    if group is not None and group != current_group:
+                        continue
+                    if category is not None and category != current_category:
+                        continue
 
-        df = pd.DataFrame(
-            words,
-            columns=['word1', 'word2', 'word3', 'word4', 'group', 'category'])
+                    words.append(line.split())
 
-        self._data = df
+        self._data = words
 
 
 class BiggerAnalogyTestSet(_WordAnalogyEvaluationDataset):
@@ -1115,7 +1104,7 @@ class BiggerAnalogyTestSet(_WordAnalogyEvaluationDataset):
                  root=os.path.join('~', '.mxnet', 'datasets', 'simverb3500')):
         super(BiggerAnalogyTestSet, self).__init__(root=root)
 
-        dfs = []
+        datasets = []
         for category in self._categories:
             group = self._category_group_map[category[0]]
             category_name = self._categories[category]
@@ -1125,26 +1114,18 @@ class BiggerAnalogyTestSet(_WordAnalogyEvaluationDataset):
                     group=group,
                     category=category,
                     category_name=category_name))
-            df = pd.read_table(
-                path, header=None, delimiter='\t', names=('word1', 'word2'))
-            df['word2'] = df['word2'].str.split('/')
+            dataset = CorpusDataset(path)
+            dataset = [[row[0], row[1].split('/')] for row in dataset]
             # Drop alternative solutions seperated by '/' from word2 column
             if drop_alternative_solutions:
-                df['word2'] = df['word2'].str[0]
+                dataset = [[row[0], row[1][0]] for row in dataset]
 
             # Final dataset consists of all analogy pairs per category
             if form_analogy_pairs:
-                df['_joinc'] = 1
-                df = pd.merge(df.reset_index(), df.reset_index(), on='_joinc')
-                df = df[df.index_x !=
-                        df.index_y]  # Drop A : B = A : B analogies
-                df = df[['word1_x', 'word2_x', 'word1_y', 'word2_y']]
-                df.columns = ['word1', 'word2', 'word3', 'word4']
+                dataset = [[arow[0], arow[1], brow[0], brow[1]]
+                           for arow in dataset for brow in dataset
+                           if arow != brow]
 
-            df['group'] = group
-            df['category'] = category
-            df['category_name'] = category_name
-            dfs.append(df)
+            datasets += dataset
 
-        df = pd.concat(dfs)
-        self._data = df
+        self._data = datasets

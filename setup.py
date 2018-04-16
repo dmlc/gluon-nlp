@@ -28,11 +28,7 @@ readme = open('README.md').read()
 
 VERSION = find_version('gluonnlp', '__init__.py')
 
-requirements = [
-    'numpy',
-    'scipy',
-    'pandas'
-]
+requirements = ['numpy', 'scipy']
 
 setup(
     # Metadata
