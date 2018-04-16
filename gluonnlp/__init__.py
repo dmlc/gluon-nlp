@@ -23,7 +23,6 @@
 from . import data
 from . import model
 from . import embedding
-from . import evaluation
 from .vocab import *
 
 __version__ = '0.1.0'
@@ -31,5 +30,4 @@ __version__ = '0.1.0'
 __all__ = ['data',
            'model',
            'embedding',
-           'evaluation',
            'Vocab']
