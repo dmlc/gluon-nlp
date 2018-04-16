@@ -28,7 +28,7 @@ readme = open('README.md').read()
 
 VERSION = find_version('gluonnlp', '__init__.py')
 
-requirements = ['numpy', 'scipy']
+requirements = ['numpy']
 
 setup(
     # Metadata
@@ -42,8 +42,7 @@ setup(
     license='Apache-2.0',
 
     # Package info
-    packages=find_packages(exclude=('tests',)),
-
+    packages=find_packages(exclude=('tests', )),
     zip_safe=True,
     install_requires=requirements,
-)
+    extras_require={'wordembeddingevaluation': ['scipy']})
