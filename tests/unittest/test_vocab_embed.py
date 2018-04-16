@@ -22,6 +22,8 @@ from __future__ import print_function
 
 import re
 
+from nose.tools import assert_raises
+
 from gluonnlp.data.utils import Counter
 
 from common import assertRaises
@@ -731,6 +733,15 @@ def test_download_embed():
     assert_almost_equal(test_embed['hello'].asnumpy(), (nd.arange(5) + 1).asnumpy())
     assert_almost_equal(test_embed['world'].asnumpy(), (nd.arange(5) + 6).asnumpy())
     assert_almost_equal(test_embed['<unk>'].asnumpy(), nd.zeros((5,)).asnumpy())
+
+
+
+def test_serialization():
+    # Preserving unknown_token behaviour
+    vocab = Vocab(unknown_token=None)
+    assert_raises(KeyError, vocab.__getitem__, 'hello')
+    loaded_vocab = Vocab.from_json(vocab.to_json())
+    assert_raises(KeyError, loaded_vocab.__getitem__, 'hello')
 
 
 if __name__ == '__main__':

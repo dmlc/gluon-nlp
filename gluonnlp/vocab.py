@@ -417,12 +417,12 @@ class Vocab(object):
         -------
         Vocab
         """
-        vocab = Vocab()
         vocab_dict = json.loads(json_str)
+
+        vocab = Vocab(unknown_token=vocab_dict.get('unknown_token'))
         vocab._idx_to_token = vocab_dict.get('idx_to_token')
         vocab._token_to_idx = vocab_dict.get('token_to_idx')
         vocab._reserved_tokens = vocab_dict.get('reserved_tokens')
-        vocab._unknown_token = vocab_dict.get('unknown_token')
         vocab._padding_token = vocab_dict.get('padding_token')
         vocab._bos_token = vocab_dict.get('bos_token')
         vocab._eos_token = vocab_dict.get('eos_token')
