@@ -55,7 +55,7 @@ A Quick Example
 
 Here is a quick example that download and create a word embedding model and then
 compare the similarity between two words. (You can click the go button on the
-left bottom corner to run this example.)
+right bottom corner to run this example.)
 
 .. raw:: html
 
@@ -64,6 +64,8 @@ left bottom corner to run this example.)
    frameborder="no" allowtransparency="true" allowfullscreen="true"
    sandbox="allow-forms allow-pointer-lock allow-popups allow-same-origin
    allow-scripts allow-modals"></iframe>
+
+   <p></p>
 
 Contents
 --------
