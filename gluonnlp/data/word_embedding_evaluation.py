@@ -26,8 +26,10 @@ import zipfile
 try:
     import requests
 except ImportError:
+
     class requests_failed_to_import(object):
         pass
+
     requests = requests_failed_to_import
 
 import pandas as pd
@@ -311,8 +313,8 @@ class MEN(_WordSimilarityEvaluationDataset):
             names=('word1', 'word2', 'score'))
 
         # Remove lemma information
-        df['word1'].str.slice(0, -2)
-        df['word2'].str.slice(0, -2)
+        df['word1'] = df['word1'].str.slice(0, -2)
+        df['word2'] = df['word2'].str.slice(0, -2)
 
         self._data = df
 
@@ -803,6 +805,7 @@ class BakerVerb143(_WordSimilarityEvaluationDataset):
             path,
             delimiter='\t',
             header=None,
+            usecols=(0, 1, 12),
             names=('word1', 'word2', 'score'))
 
         self._data = df
@@ -881,7 +884,7 @@ class YangPowersVerb130(_WordSimilarityEvaluationDataset):
             dict(word1=self._words1, word2=self._words2))
         df['score'] = 0
         for i, score in enumerate(range(4, 0, -1)):
-            df['score'].iloc[i * 26:(i + 1) * 26] = score
+            df.loc[i * 26:(i + 1) * 26, 'score'] = score
         self._data = df
 
     def _get_data(self):
