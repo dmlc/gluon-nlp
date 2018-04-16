@@ -25,7 +25,6 @@ from __future__ import print_function
 
 __all__ = ['Vocab']
 
-import collections
 import json
 import warnings
 
@@ -193,9 +192,6 @@ class Vocab(object):
         Indexes keys of `counter` according to frequency thresholds such as `max_size` and
         `min_freq`.
         """
-
-        assert isinstance(counter, collections.Counter), \
-            '`counter` must be an instance of Counter.'
 
         unknown_and_special_tokens = set(special_tokens) if special_tokens else set()
 
