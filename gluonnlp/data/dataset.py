@@ -20,7 +20,7 @@
 # pylint: disable=undefined-all-variable
 """NLP Toolkit Dataset API. It allows easy and customizable loading of corpora and dataset files.
 Files can be loaded into formats that are immediately ready for training and evaluation."""
-__all__ = ['CorpusDataset', 'LanguageModelDataset']
+__all__ = ['TextLineDataset', 'CorpusDataset', 'LanguageModelDataset']
 
 import io
 import os
@@ -28,6 +28,24 @@ import os
 import mxnet as mx
 from mxnet.gluon.data import SimpleDataset
 from .utils import concat_sequence, slice_sequence, _slice_pad_length
+
+
+class TextLineDataset(SimpleDataset):
+    """Dataset that comprises lines in a file. Each line will be stripped.
+
+    Parameters
+    ----------
+    filename : str
+        Path to the input text file.
+    encoding : str, default 'utf8'
+        File encoding format.
+    """
+    def __init__(self, filename, encoding='utf8'):
+        lines = []
+        with io.open(filename, 'r', encoding=encoding) as in_file:
+            for line in in_file:
+                lines.append(line.strip())
+        super(TextLineDataset, self).__init__(lines)
 
 
 class CorpusDataset(SimpleDataset):
@@ -48,9 +66,9 @@ class CorpusDataset(SimpleDataset):
     skip_empty : bool, default True
         Whether to skip the empty samples produced from sample_splitters. If False, `bos` and `eos`
         will be added in empty samples.
-    sample_splitter : function, default str.splitlines
+    sample_splitter : function, default lambda s: s.splitlines()
         A function that splits the dataset string into samples.
-    tokenizer : function or None, default str.split
+    tokenizer : function or None, default lambda s: s.split()
         A function that splits each sample string into list of tokens. If None, raw samples are
         returned according to `sample_splitter`.
     bos : str or None, default None
@@ -71,8 +89,7 @@ class CorpusDataset(SimpleDataset):
         self._sample_splitter = sample_splitter
         self._tokenizer = tokenizer
         def process(s):
-            tokens = [bos] if bos else []
-            tokens.extend(s)
+            tokens = [bos] + s if bos else s
             if eos:
                 tokens.append(eos)
             return tokens
@@ -88,8 +105,6 @@ class CorpusDataset(SimpleDataset):
                        if s or not self._skip_empty]
             if self._flatten:
                 samples = concat_sequence(samples)
-        else:
-            samples = filter(None, samples)
         return samples
 
 
