@@ -125,7 +125,8 @@ class _Dataset(Dataset):
     def _get_data(self):
         _, archive_hash = self._archive_file
         for name, checksum in self._checksums.items():
-            path = os.path.join(self.root, name)
+            name = name.split('/')
+            path = os.path.join(self.root, *name)
             if not os.path.exists(path) or not check_sha1(path, checksum):
                 downloaded_file_path = download(
                     self._url,
@@ -298,7 +299,8 @@ class MEN(_WordSimilarityEvaluationDataset):
         super(MEN, self).__init__(root=root)
         self._segment = segment
 
-        datafilepath = os.path.join(self.root, self._segment_file[segment])
+        datafilepath = os.path.join(self.root,
+                                    *self._segment_file[segment].split('/'))
         dataset = CorpusDataset(datafilepath)
 
         # Remove lemma information
@@ -370,7 +372,7 @@ class RareWords(_WordSimilarityEvaluationDataset):
     def __init__(self,
                  root=os.path.join('~', '.mxnet', 'datasets', 'rarewords')):
         super(RareWords, self).__init__(root=root)
-        datafilepath = os.path.join(self.root, 'rw/rw.txt')
+        datafilepath = os.path.join(self.root, 'rw', 'rw.txt')
 
         dataset = CorpusDataset(datafilepath)
         self._data = [[row[0], row[1], row[2]] for row in dataset]
@@ -440,7 +442,7 @@ class SimLex999(_WordSimilarityEvaluationDataset):
         super(SimLex999, self).__init__(root=root)
 
         dataset = CorpusDataset(
-            os.path.join(self.root, 'SimLex-999/SimLex-999.txt'))
+            os.path.join(self.root, 'SimLex-999', 'SimLex-999.txt'))
         dataset = dataset._data[1:]  # Throw away header
         self._data = [[row[0], row[1], row[3]] for row in dataset]
 
@@ -511,7 +513,7 @@ class SimVerb3500(_WordSimilarityEvaluationDataset):
         self._segment = segment
 
         dataset = CorpusDataset(
-            os.path.join(self.root, self._segment_file[segment]))
+            os.path.join(self.root, *self._segment_file[segment].split('/')))
         self._data = [[row[0], row[1], row[3]] for row in dataset]
 
         self._cast_score_to_float()
@@ -739,10 +741,10 @@ class SemEval17Task2(_WordSimilarityEvaluationDataset):
 
         data = self._datatemplate.format(
             segment=self._segment, language=self._language)
-        data = os.path.join(self.root, data)
+        data = os.path.join(self.root, *data.split('/'))
         keys = self._keytemplate.format(
             segment=self._segment, language=self._language)
-        keys = os.path.join(self.root, keys)
+        keys = os.path.join(self.root, *keys.split('/'))
 
         data_dataset = CorpusDataset(data)
         keys_dataset = CorpusDataset(keys)
@@ -1114,10 +1116,10 @@ class BiggerAnalogyTestSet(_WordAnalogyEvaluationDataset):
             category_name = self._categories[category]
             path = os.path.join(
                 self.root,
-                'BATS_3.0/{group}/{category} {category_name}.txt'.format(
+                *('BATS_3.0/{group}/{category} {category_name}.txt'.format(
                     group=group,
                     category=category,
-                    category_name=category_name))
+                    category_name=category_name).split('/')))
             dataset = CorpusDataset(path)
             dataset = [[row[0], row[1].split('/')] for row in dataset]
             # Drop alternative solutions seperated by '/' from word2 column

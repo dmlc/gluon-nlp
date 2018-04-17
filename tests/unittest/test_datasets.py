@@ -18,12 +18,16 @@
 # under the License.
 
 from __future__ import print_function
+
 import json
+import os
+import sys
+
 import mxnet as mx
 import numpy as np
+
 import gluonnlp as nlp
 
-import sys
 if sys.version_info[0] == 3:
     _str_types = (str, )
 else:
@@ -31,9 +35,12 @@ else:
 
 
 def test_wikitext2():
-    train = nlp.data.WikiText2(segment='train', root='tests/data/wikitext-2')
-    val = nlp.data.WikiText2(segment='val', root='tests/data/wikitext-2')
-    test = nlp.data.WikiText2(segment='test', root='tests/data/wikitext-2')
+    train = nlp.data.WikiText2(
+        segment='train', root=os.path.join('tests', 'data', 'wikitext-2'))
+    val = nlp.data.WikiText2(
+        segment='val', root=os.path.join('tests', 'data', 'wikitext-2'))
+    test = nlp.data.WikiText2(
+        segment='test', root=os.path.join('tests', 'data', 'wikitext-2'))
     train_freq, val_freq, test_freq = [nlp.data.utils.Counter(x) for x in [train[0], val[0], test[0]]]
     assert len(train[0]) == 2075677, len(train[0])
     assert len(train_freq) == 33278, len(train_freq)
@@ -62,13 +69,19 @@ def test_wikitext2():
         mx.test_utils.assert_almost_equal(data[1:].asnumpy(), target[:-1].asnumpy())
         assert data.shape == target.shape
 
-    train = nlp.data.WikiText2(segment='train', skip_empty=False,
-                               root='tests/data/wikitext-2')
-    val = nlp.data.WikiText2(segment='val', skip_empty=False,
-                             root='tests/data/wikitext-2')
-    test = nlp.data.WikiText2(segment='test', skip_empty=False,
-                              root='tests/data/wikitext-2')
     train_freq, val_freq, test_freq = [nlp.data.utils.Counter(x) for x in [train[0], val[0], test[0]]]
+    train = nlp.data.WikiText2(
+        segment='train',
+        skip_empty=False,
+        root=os.path.join('tests', 'data', 'wikitext-2'))
+    val = nlp.data.WikiText2(
+        segment='val',
+        skip_empty=False,
+        root=os.path.join('tests', 'data', 'wikitext-2'))
+    test = nlp.data.WikiText2(
+        segment='test',
+        skip_empty=False,
+        root=os.path.join('tests', 'data', 'wikitext-2'))
     assert len(train[0]) == 2088628, len(train[0])
     assert len(train_freq) == 33278, len(train_freq)
     assert len(val[0]) == 217646, len(val[0])
@@ -81,9 +94,12 @@ def test_wikitext2():
 
 
 def test_imdb():
-    train = nlp.data.IMDB(root='tests/data/imdb', segment='train')
-    test = nlp.data.IMDB(root='tests/data/imdb', segment='test')
-    unsup = nlp.data.IMDB(root='tests/data/imdb', segment='unsup')
+    train = nlp.data.IMDB(
+        root=os.path.join('tests', 'data', 'imdb'), segment='train')
+    test = nlp.data.IMDB(
+        root=os.path.join('tests', 'data', 'imdb'), segment='test')
+    unsup = nlp.data.IMDB(
+        root=os.path.join('tests', 'data', 'imdb'), segment='unsup')
     assert len(train) == 25000, len(train)
     assert len(test) == 25000, len(test)
     assert len(unsup) == 50000, len(unsup)
@@ -118,50 +134,54 @@ def test_wordsim353():
     for segment, length in (("all", 252 + 203), ("relatedness", 252),
                             ("similarity", 203)):
         data = nlp.data.WordSim353(
-            segment=segment, root='tests/data/wordsim353')
+            segment=segment, root=os.path.join('tests', 'data', 'wordsim353'))
         assert len(data) == length, len(data)
         _assert_similarity_dataset(data)
 
 
 def test_men():
     for segment, length in [("full", 3000), ("dev", 2000), ("test", 1000)]:
-        data = nlp.data.MEN(root='tests/data/men', segment=segment)
+        data = nlp.data.MEN(
+            root=os.path.join('tests', 'data', 'men'), segment=segment)
         assert len(data) == length, len(data)
         _assert_similarity_dataset(data)
 
 
 def test_radinsky_mturk():
-    data = nlp.data.RadinskyMTurk(root='tests/data/radinsky')
+    data = nlp.data.RadinskyMTurk(
+        root=os.path.join('tests', 'data', 'radinsky'))
     assert len(data) == 287
     _assert_similarity_dataset(data)
 
 
 def test_verb143():
-    data = nlp.data.BakerVerb143(root='tests/data/verb143')
+    data = nlp.data.BakerVerb143(root=os.path.join('tests', 'data', 'verb143'))
     assert len(data) == 144
     _assert_similarity_dataset(data)
 
 
 def test_verb130():
-    data = nlp.data.YangPowersVerb130(root='tests/data/verb130')
+    data = nlp.data.YangPowersVerb130(
+        root=os.path.join('tests', 'data', 'verb130'))
     assert len(data) == 130
     _assert_similarity_dataset(data)
 
 
 def test_rare_words():
-    data = nlp.data.RareWords(root='tests/data/rarewords')
+    data = nlp.data.RareWords(root=os.path.join('tests', 'data', 'rarewords'))
     assert len(data) == 2034
     _assert_similarity_dataset(data)
 
 
 def test_simlex999():
-    data = nlp.data.SimLex999(root='tests/data/simlex999')
+    data = nlp.data.SimLex999(root=os.path.join('tests', 'data', 'simlex999'))
     assert len(data) == 999
     _assert_similarity_dataset(data)
 
 
 def test_simverb3500():
-    data = nlp.data.SimVerb3500(root='tests/data/simverb3500')
+    data = nlp.data.SimVerb3500(
+        root=os.path.join('tests', 'data', 'simverb3500'))
     assert len(data) == 3500
     _assert_similarity_dataset(data)
 
@@ -169,7 +189,8 @@ def test_simverb3500():
 def test_semeval17task2():
     for segment, length in [("trial", 18), ("test", 500)]:
         data = nlp.data.SemEval17Task2(
-            root='tests/data/semeval17task2', segment=segment)
+            root=os.path.join('tests', 'data', 'semeval17task2'),
+            segment=segment)
         assert len(data) == length
         _assert_similarity_dataset(data)
 
@@ -178,13 +199,15 @@ def test_semeval17task2():
 # Word analogy datasets
 ###############################################################################
 def test_googleanalogy():
-    data = nlp.data.GoogleAnalogyTestSet(root='tests/data/google_analogy')
+    data = nlp.data.GoogleAnalogyTestSet(
+        root=os.path.join('tests', 'data', 'google_analogy'))
     assert len(data[0]) == 4
     assert len(data) == 10675 + 8869
 
 
 def test_bigger_analogy():
-    data = nlp.data.BiggerAnalogyTestSet(root='tests/data/bigger_analogy')
+    data = nlp.data.BiggerAnalogyTestSet(
+        root=os.path.join('tests', 'data', 'bigger_analogy'))
     assert len(data[0]) == 4
     assert len(data) == 98000
 
