@@ -53,18 +53,37 @@ A Quick Example
 ----------------
 
 Here is a quick example that download and create a word embedding model and then
-compare the similarity between two words. (You can click the go button on the
-right bottom corner to run this example.)
+compare the similarity between two words.
 
-.. raw:: html
+..
+   (You can click the go button on the
+   right bottom corner to run this example.)
 
-   <iframe height="400px" width="100%"
-   src="https://repl.it/@mli/gluon-nlp?lite=true" scrolling="no"
-   frameborder="no" allowtransparency="true" allowfullscreen="true"
-   sandbox="allow-forms allow-pointer-lock allow-popups allow-same-origin
-   allow-scripts allow-modals"></iframe>
+..
+   .. raw:: html
 
-   <p></p>
+      <iframe height="400px" width="100%"
+      src="https://repl.it/@mli/gluon-nlp?lite=true" scrolling="no"
+      frameborder="no" allowtransparency="true" allowfullscreen="true"
+      sandbox="allow-forms allow-pointer-lock allow-popups allow-same-origin
+      allow-scripts allow-modals"></iframe>
+
+      <p></p>
+
+
+.. code-block:: python
+
+   import mxnet as mx
+   import gluonnlp as nlp
+
+   glove = nlp.embedding.create('glove', source='glove.6B.50d.txt')
+   baby, infant = glove['baby'], glove['infant']
+
+   def cos_similarity(vec1, vec2):
+       return mx.nd.dot(vec1, vec2) / (vec1.norm() * vec2.norm())
+
+   print(cos_similarity(baby, infant))
+
 
 Contents
 --------
