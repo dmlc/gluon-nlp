@@ -94,8 +94,8 @@ class CorpusDataset(SimpleDataset):
                            if s or not self._skip_empty]
                 if self._flatten:
                     samples = concat_sequence(samples)
-            else:
-                samples = filter(None, samples)
+            elif self._skip_empty:
+                samples = [s for s in samples if s]
 
             all_samples += samples
         return all_samples
