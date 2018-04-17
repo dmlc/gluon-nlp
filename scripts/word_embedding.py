@@ -17,7 +17,6 @@
 # specific language governing permissions and limitations
 # under the License.
 # pylint: disable=eval-used, redefined-outer-name
-
 """Word Embeddings
 ===============
 
@@ -25,7 +24,6 @@ This example shows how to load and perform intrinsic evaluatio of word
 embeddings using a variety of datasets all part of the Gluon NLP Toolkit.
 
 """
-
 
 import argparse
 import time
@@ -75,222 +73,184 @@ embedding_name, source = args.embedding_name.split(':')
 print('Loading embedding ', args.embedding_name)
 token_embedding = nlp.embedding.create(embedding_name, source=source)
 
-# Construct a vocabulary encompassing all tokens in the TokenEmbedding
-counter = nlp.data.utils.Counter(token_embedding.idx_to_token)
-vocab = nlp.vocab.Vocab(counter)
+
+###############################################################################
+# Metrics
+###############################################################################
+@mx.metric.register
+@mx.metric.alias('spearmanr')
+class SpearmanRankCorrelation(mx.metric.EvalMetric):
+    """Computes Spearman rank correlation.
+
+    The Spearman correlation coefficient is defined as the Pearson correlation
+    coefficient between the ranked variables.
+
+    .. math::
+        \\frac{cov(\\operatorname{rg}_y, \\operatorname{rg}_\\hat{y})}
+        {\\sigma{\\operatorname{rg}_y}\\sigma{\\operatorname{rg}_\\hat{y}}}
+
+    Parameters
+    ----------
+    name : str
+        Name of this metric instance for display.
+    output_names : list of str, or None
+        Name of predictions that should be used when updating with update_dict.
+        By default include all predictions.
+    label_names : list of str, or None
+        Name of labels that should be used when updating with update_dict.
+        By default include all labels.
+
+    Examples
+    --------
+    >>> predicts = [mx.nd.array([[0.3, 0.7], [0, 1.], [0.4, 0.6]])]
+    >>> labels   = [mx.nd.array([[1, 0], [0, 1], [0, 1]])]
+    >>> pr = SpearmanRankCorrelation()
+    >>> pr.update(labels, predicts)
+    >>> print pr.get()
+    ('spearmanr', 0.42163704544016178)
+
+    """
+
+    def __init__(self, name='spearmanr', output_names=None, label_names=None):
+        super(SpearmanRankCorrelation, self).__init__(
+            name, output_names=output_names, label_names=label_names)
+
+    def update(self, labels, preds):
+        """Updates the internal evaluation result.
+
+        Parameters
+        ----------
+        labels : list of `NDArray`
+            The labels of the data.
+        preds : list of `NDArray`
+            Predicted values.
+        """
+        labels, preds = mx.metric.check_label_shapes(labels, preds, True)
+
+        for label, pred in zip(labels, preds):
+            mx.metric.check_label_shapes(label, pred, False, True)
+            label = label.asnumpy()
+            pred = pred.asnumpy()
+            self.sum_metric += stats.spearmanr(pred.ravel(),
+                                               label.ravel()).correlation
+            self.num_inst += 1
+
+
+###############################################################################
+# Similarity functions
+###############################################################################
+def cosine_similarity(w1s_embedding, w2s_embedding):
+    w1s_embedding = mx.nd.L2Normalization(w1s_embedding)
+    w2s_embedding = mx.nd.L2Normalization(w2s_embedding)
+
+    batch_size, embedding_size = w1s_embedding.shape
+
+    similarity = mx.nd.batch_dot(
+        w1s_embedding.reshape((batch_size, 1, embedding_size)),
+        w2s_embedding.reshape((batch_size, embedding_size, 1)))
+    return similarity.reshape((-1, ))
 
 
 ###############################################################################
 # Evaluators
 ###############################################################################
-class _WordEmbeddingEvaluator(object):
-    """Helper class to evaluate word embeddings."""
+class WordEmbeddingSimilarityEvaluator(object):
+    """Helper class to evaluate word embeddings based on similarity task.
 
-    def __init__(self, dataset, vocabulary):
-        self.dataset = dataset
-        self.vocabulary = vocabulary
+    The Evaluator must be initialized, giving the option to adapt the
+    parameters listed below. An Evaluator object can be called with the
+    signature defined at Call Signature.
 
+    Parameters
+    ----------
+    binary_score_metric : mx.metric.EvalMetric
+        Metric for computing the overall score given the list of predicted
+        similarities and ground truth similarities. Defaults to
+        SpearmanRankCorrelation.
+    similarity_function : function
+        Given to mx.nd.NDArray's of shape (dataset_size, embedding_size),
+        compute a similarity score.
 
-class WordEmbeddingSimilarityEvaluator(_WordEmbeddingEvaluator):
-    """Helper class to evaluate word embeddings based on similarity task."""
+    Call Signature
+    --------------
+    token_embedding : gluonnlp.embedding.TokenEmbedding
+        Embedding to evaluate.
+    dataset : mx.gluon.Dataset
+        Dataset consisting of rows with 3 elements: [word1, word2, score]
 
-    # Words and ground truth scores
-    _w1s = None
-    _w2s = None
-    _scores = None
-    _context = None
+    """
 
     def __init__(self,
-                 dataset,
-                 vocabulary,
-                 correlation_coefficient='spearmanr'):
-        super(WordEmbeddingSimilarityEvaluator, self).__init__(
-            dataset=dataset, vocabulary=vocabulary)
-        assert correlation_coefficient in ['spearmanr', 'pearsonr']
-        self.correlation_coefficient = correlation_coefficient
+                 binary_score_metric=SpearmanRankCorrelation(),
+                 similarity_function=cosine_similarity):
+        super(WordEmbeddingSimilarityEvaluator, self).__init__()
+        self.binary_score_metric = binary_score_metric
+        self.similarity_function = similarity_function
 
+        if isinstance(self.similarity_function, str):
+            assert self.similarity_function in ['cosinesimilarity']
+
+    def __call__(self, token_embedding, dataset):
         # Construct nd arrays from dataset
         w1s = []
         w2s = []
-        scores = []
-        for word1, word2, score in self.dataset:
-            if (word1 in self.vocabulary and word2 in self.vocabulary):
+        groundtruth_scores = []
+        for word1, word2, score in dataset:
+            if (word1 in token_embedding and word2 in token_embedding):
                 w1s.append(word1)
                 w2s.append(word2)
-                scores.append(score)
+                groundtruth_scores.append(score)
 
         print(('Using {num_use} of {num_total} word pairs '
                'from {ds} for evaluation.').format(
                    num_use=len(w1s),
-                   num_total=len(self.dataset),
-                   ds=self.dataset.__class__.__name__))
+                   num_total=len(dataset),
+                   ds=dataset.__class__.__name__))
 
-        self._w1s = w1s
-        self._w2s = w2s
-        self._scores = np.array(scores)
-
-    def __len__(self):
-        return len(self._w1s)
-
-    def __call__(self, token_embedding):
-        if not len(self):
+        if not len(w1s):
             return 0
 
-        w1s_embedding = mx.nd.L2Normalization(token_embedding[self._w1s])
-        w2s_embedding = mx.nd.L2Normalization(token_embedding[self._w2s])
+        w1s_embedding = mx.nd.L2Normalization(token_embedding[w1s])
+        w2s_embedding = mx.nd.L2Normalization(token_embedding[w2s])
+        groundtruth_scores = mx.nd.array(groundtruth_scores)
 
-        batch_size, embedding_size = w1s_embedding.shape
+        similarity_pred = self.similarity_function(w1s_embedding,
+                                                   w2s_embedding)
+        score = self.binary_score_metric.update(similarity_pred,
+                                                groundtruth_scores)
 
-        cosine_similarity = mx.nd.batch_dot(
-            w1s_embedding.reshape((batch_size, 1, embedding_size)),
-            w2s_embedding.reshape((batch_size, embedding_size, 1)))
-        cosine_similarity_np = cosine_similarity.asnumpy().flatten()
+        return self.binary_score_metric.get()
 
-        if self.correlation_coefficient == 'spearmanr':
-            r = stats.spearmanr(cosine_similarity_np, self._scores).correlation
-        elif self.correlation_coefficient == 'pearsonr':
-            r = stats.pearsonr(cosine_similarity_np, self._scores).correlation
-        else:
-            raise ValueError('Invalid correlation_coefficient: {}'.format(
-                self.correlation_coefficient))
-
-        return r
-
-
-# @attr.s()
-# class WordEmbeddingNearestNeighborEvaluator(WordEmbeddingEvaluator):
-#     num_base_words = attr.ib(default=5)
-#     num_nearest_neighbors = attr.ib(default=5)
-
-#     # Words and ground truth scores
-#     _words = None
-#     _indices = None
-
-#     def __attrs_post_init__(self):
-#         # Construct nd arrays from dataset
-#         self._words = []
-#         for word1, word2, score in self.dataset:
-#             for word in [word1, word2]:
-#                 if word in self.token_embedding.token_to_idx:
-#                     self._words.append(words)
-#         random.shuffle(self._words)
-#         self._indices = mx.nd.array(
-#             [self.token_embedding.token_to_idx[w] for w in self._words],
-#             ctx=mx.cpu())
-
-#         print('Using ' + str(self._words[:self.num_base_words]) +
-#               ' as seeds for NN evaluation.')
-
-#     def __len__(self):
-#         return self._indices.shape[0]
-
-#     def __call__(self, embedding):
-#         words = self._indices.as_in_context(embedding.weight.list_ctx()[0])
-#         embedding = mx.nd.L2Normalization(embedding(words))
-
-#         similarity = mx.nd.dot(embedding, embedding.T).argsort(
-#             axis=1, is_ascend=0)
-
-#         eval_strs = []
-#         for i in range(self.num_nearest_neighbors):
-#             eval_strs.append(' '.join(
-#                 words[int(idx.asscalar())]
-#                 for idx in similarity[i][:self.num_nearest_neighbors]))
-#         return '\n'.join(eval_strs)
-
-# @attr.s()
-# class WordEmbeddingAnalogyEvaluator(WordEmbeddingEvaluator):
-#     analogy = attr.ib(
-#         default='3CosMul',
-#         validator=attr.validators.in_(['3CosMul', '3CosAdd', 'PairDirection']))
-
-#     # Words and ground truth scores
-#     _w1s = None
-#     _w2s = None
-#     _scores = None
-
-#     def __attrs_post_init__(self):
-#         # Construct nd arrays from dataset
-#         w1s = []
-#         w2s = []
-#         scores = []
-#         for word1, word2, score in self.dataset:
-#             if (word1 in self.token_embedding.token_to_idx
-#                     and word2 in self.token_embedding.token_to_idx):
-#                 w1s.append(self.token_embedding.token_to_idx[word1])
-#                 w2s.append(self.token_embedding.token_to_idx[word2])
-#                 scores.append(score)
-
-#         print(('Using {num_use} of {num_total} word pairs '
-#                'from {ds} for evaluation.').format(
-#                    num_use=len(w1s),
-#                    num_total=len(self.dataset),
-#                    ds=self.dataset.__class__.__name__))
-
-#         self._w1s = mx.nd.array(w1s, ctx=mx.cpu())
-#         self._w2s = mx.nd.array(w2s, ctx=mx.cpu())
-#         self._scores_np = np.array(scores)
-
-#     def __len__(self):
-#         return self._w1s.shape[0]
-
-#     def __call__(self, embedding):
-#         w1s = self._w1s.as_in_context(embedding.weight.list_ctx()[0])
-#         w2s = self._w2s.as_in_context(embedding.weight.list_ctx()[0])
-
-#         w1s_embedding = mx.nd.L2Normalization(embedding(w1s))
-#         w2s_embedding = mx.nd.L2Normalization(embedding(w2s))
-
-#         batch_size, embedding_size = w1s_embedding.shape
-
-#         cosine_similarity = mx.nd.batch_dot(
-#             w1s_embedding.reshape((batch_size, 1, embedding_size)),
-#             w2s_embedding.reshape((batch_size, embedding_size, 1)))
-#         cosine_similarity_np = cosine_similarity.asnumpy().flatten()
-#         pearson_r = np.corrcoef(cosine_similarity_np, self._scores_np)[0, 1]
-#         return pearson_r
 
 ###############################################################################
 # Evaluation code
 ###############################################################################
 
-evaluators = []
-
 # Word similarity based evaluation
+similarity_evaluator = WordEmbeddingSimilarityEvaluator()
+similarity_datasets = []
 if args.eval_similarity:
-    similarity_datasets = \
+    similarity_datasets_classnames = \
         nlp.data.word_embedding_evaluation.word_similarity_datasets
     if args.eval_similarity == '*':
-        args.eval_similarity = similarity_datasets
+        args.eval_similarity = similarity_datasets_classnames
 
     for ds in args.eval_similarity:
-        if ds not in similarity_datasets:
+        if ds not in similarity_datasets_classnames:
             print(('{ds} is not a supported dataset. '
                    'Only {supported} are supported').format(
-                       ds=ds, supported=', '.join(similarity_datasets)))
+                       ds=ds,
+                       supported=', '.join(similarity_datasets_classnames)))
             continue
 
         ds_class = eval('nlp.data.{ds}'.format(ds=ds))
-        evaluator = WordEmbeddingSimilarityEvaluator(
-            dataset=ds_class(), vocabulary=vocab)
-        if len(evaluator):
-            evaluators.append(evaluator)
-
-# # Nearest neighbor printing based evaluation
-# TODO
-# if not args.disable_eval_nearest_neighbors:
-#     nn_evaluator = nlp.evaluation.WordEmbeddingNearestNeighborEvaluator(
-#         dataset=nlp.data.SimVerb3500(), token_to_idx=sgdataset._token_to_idx)
+        similarity_datasets.append(ds_class())
 
 
 def evaluate():
-    eval_dict = {}
-    for evaluator in evaluators:
-        score = evaluator(token_embedding)
-        eval_dict[evaluator.dataset.__class__.__name__] = score
-        print(evaluator.dataset.__class__.__name__, score)
-
-    return eval_dict
+    # Similarity based evaluation
+    for dataset in similarity_datasets:
+        print(similarity_evaluator(token_embedding, dataset))
 
 
 if __name__ == '__main__':
