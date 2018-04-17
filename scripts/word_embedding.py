@@ -20,7 +20,7 @@
 """Word Embeddings
 ===============
 
-This example shows how to load and perform intrinsic evaluatio of word
+This example shows how to load and perform intrinsic evaluation of word
 embeddings using a variety of datasets all part of the Gluon NLP Toolkit.
 
 """
@@ -101,12 +101,12 @@ class SpearmanRankCorrelation(mx.metric.EvalMetric):
 
     Examples
     --------
-    >>> predicts = [mx.nd.array([[0.3, 0.7], [0, 1.], [0.4, 0.6]])]
-    >>> labels   = [mx.nd.array([[1, 0], [0, 1], [0, 1]])]
+    >>> predicts = [mx.nd.array([1,2,3,4,5])]
+    >>> labels   = [mx.nd.array([5,6,7,8,7])]
     >>> pr = SpearmanRankCorrelation()
     >>> pr.update(labels, predicts)
     >>> print pr.get()
-    ('spearmanr', 0.42163704544016178)
+    ('spearmanr', 0.82078268166812329)
 
     """
 
