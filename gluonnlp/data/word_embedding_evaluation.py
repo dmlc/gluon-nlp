@@ -131,11 +131,9 @@ class _Dataset(Dataset):
             name = name.split('/')
             path = os.path.join(self.root, *name)
             if not os.path.exists(path) or not check_sha1(path, checksum):
-                downloaded_file_path = download(
-                    self._url,
-                    path=self.root,
-                    sha1_hash=archive_hash,
-                    verify=self._verify_ssl)
+                downloaded_file_path = download(self._url, path=self.root,
+                                                sha1_hash=archive_hash,
+                                                verify=self._verify_ssl)
 
                 if downloaded_file_path.lower().endswith('zip'):
                     with zipfile.ZipFile(downloaded_file_path, 'r') as zf:
@@ -223,9 +221,8 @@ class WordSim353(WordSimilarityEvaluationDataset):
     min = 0
     max = 10
 
-    def __init__(self,
-                 segment='all',
-                 root=os.path.join('~', '.mxnet', 'datasets', 'wordsim353')):
+    def __init__(self, segment='all', root=os.path.join(
+            '~', '.mxnet', 'datasets', 'wordsim353')):
         super(WordSim353, self).__init__(root=root)
         self._segment = segment
 
@@ -299,9 +296,8 @@ class MEN(WordSimilarityEvaluationDataset):
     min = 0
     max = 50
 
-    def __init__(self,
-                 segment='dev',
-                 root=os.path.join('~', '.mxnet', 'datasets', 'men')):
+    def __init__(self, segment='dev', root=os.path.join(
+            '~', '.mxnet', 'datasets', 'men')):
         super(MEN, self).__init__(root=root)
         self._segment = segment
 
@@ -339,9 +335,8 @@ class RadinskyMTurk(WordSimilarityEvaluationDataset):
     min = 1
     max = 5
 
-    def __init__(self,
-                 root=os.path.join('~', '.mxnet', 'datasets',
-                                   'radinskymturk')):
+    def __init__(self, root=os.path.join('~', '.mxnet', 'datasets',
+                                         'radinskymturk')):
         super(RadinskyMTurk, self).__init__(root=root)
         datafilepath = os.path.join(self.root, self._archive_file[0])
 
@@ -375,8 +370,8 @@ class RareWords(WordSimilarityEvaluationDataset):
     min = 0
     max = 10
 
-    def __init__(self,
-                 root=os.path.join('~', '.mxnet', 'datasets', 'rarewords')):
+    def __init__(self, root=os.path.join('~', '.mxnet', 'datasets',
+                                         'rarewords')):
         super(RareWords, self).__init__(root=root)
         datafilepath = os.path.join(self.root, 'rw', 'rw.txt')
 
@@ -443,8 +438,8 @@ class SimLex999(WordSimilarityEvaluationDataset):
 
     score = 'SimLex999'
 
-    def __init__(self,
-                 root=os.path.join('~', '.mxnet', 'datasets', 'simlex999')):
+    def __init__(self, root=os.path.join('~', '.mxnet', 'datasets',
+                                         'simlex999')):
         super(SimLex999, self).__init__(root=root)
 
         dataset = CorpusDataset(
@@ -512,9 +507,8 @@ class SimVerb3500(WordSimilarityEvaluationDataset):
     min = 0
     max = 10
 
-    def __init__(self,
-                 segment='full',
-                 root=os.path.join('~', '.mxnet', 'datasets', 'simverb3500')):
+    def __init__(self, segment='full', root=os.path.join(
+            '~', '.mxnet', 'datasets', 'simverb3500')):
         super(SimVerb3500, self).__init__(root=root)
         self._segment = segment
 
@@ -733,11 +727,8 @@ class SemEval17Task2(WordSimilarityEvaluationDataset):
     segments = ('trial', 'test')
     languages = ('en', 'es', 'de', 'it', 'fa')
 
-    def __init__(self,
-                 segment='trial',
-                 language='en',
-                 root=os.path.join('~', '.mxnet', 'datasets',
-                                   'semeval17task2')):
+    def __init__(self, segment='trial', language='en', root=os.path.join(
+            '~', '.mxnet', 'datasets', 'semeval17task2')):
         assert segment in self.segments
         assert language in self.languages
         super(SemEval17Task2, self).__init__(root=root)
@@ -745,11 +736,11 @@ class SemEval17Task2(WordSimilarityEvaluationDataset):
         self._language = language
         self._segment = segment
 
-        data = self._datatemplate.format(
-            segment=self._segment, language=self._language)
+        data = self._datatemplate.format(segment=self._segment,
+                                         language=self._language)
         data = os.path.join(self.root, *data.split('/'))
-        keys = self._keytemplate.format(
-            segment=self._segment, language=self._language)
+        keys = self._keytemplate.format(segment=self._segment,
+                                        language=self._language)
         keys = os.path.join(self.root, *keys.split('/'))
 
         data_dataset = CorpusDataset(data)
@@ -920,12 +911,9 @@ class GoogleAnalogyTestSet(WordAnalogyEvaluationDataset):
         'gram7-past-tense', 'gram8-plural', 'gram9-plural-verbs'
     ]
 
-    def __init__(self,
-                 group=None,
-                 category=None,
-                 lowercase=True,
-                 root=os.path.join('~', '.mxnet', 'datasets',
-                                   'google_analogy')):
+    def __init__(self, group=None,
+                 category=None, lowercase=True, root=os.path.join(
+                     '~', '.mxnet', 'datasets', 'google_analogy')):
         super(GoogleAnalogyTestSet, self).__init__(root=root)
 
         assert group is None or group in self.groups
@@ -1116,10 +1104,9 @@ class BiggerAnalogyTestSet(WordAnalogyEvaluationDataset):
         'L10': '[antonyms - binary]'
     }
 
-    def __init__(self,
-                 form_analogy_pairs=True,
-                 drop_alternative_solutions=True,
-                 root=os.path.join('~', '.mxnet', 'datasets', 'simverb3500')):
+    def __init__(self, form_analogy_pairs=True,
+                 drop_alternative_solutions=True, root=os.path.join(
+                     '~', '.mxnet', 'datasets', 'simverb3500')):
         super(BiggerAnalogyTestSet, self).__init__(root=root)
 
         datasets = []
@@ -1129,8 +1116,7 @@ class BiggerAnalogyTestSet(WordAnalogyEvaluationDataset):
             path = os.path.join(
                 self.root,
                 *('BATS_3.0/{group}/{category} {category_name}.txt'.format(
-                    group=group,
-                    category=category,
+                    group=group, category=category,
                     category_name=category_name).split('/')))
             dataset = CorpusDataset(path)
             dataset = [[row[0], row[1].split('/')] for row in dataset]
