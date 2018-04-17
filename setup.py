@@ -28,7 +28,9 @@ readme = open('README.md').read()
 
 VERSION = find_version('gluonnlp', '__init__.py')
 
-requirements = ['numpy']
+requirements = [
+    'numpy',
+]
 
 setup(
     # Metadata
@@ -42,6 +44,10 @@ setup(
     license='Apache-2.0',
 
     # Package info
-    packages=find_packages(exclude=('tests', 'scripts')),
+    packages=find_packages(exclude=(
+        'tests',
+        'scripts',
+    )),
     zip_safe=True,
-    install_requires=requirements)
+    install_requires=requirements,
+)
