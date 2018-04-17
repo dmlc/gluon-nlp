@@ -145,7 +145,6 @@ def _get_rnn_layer(mode, num_layers, input_size, hidden_size, dropout, weight_dr
                       input_size=input_size)
 
     if weight_dropout:
-        print(block)
         apply_weight_drop(block, 'h2h_weight', rate=weight_dropout)
 
     return block
