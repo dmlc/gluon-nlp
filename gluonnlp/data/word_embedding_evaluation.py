@@ -220,22 +220,19 @@ class WordSim353(_WordSimilarityEvaluationDataset):
         super(WordSim353, self).__init__(root=root)
         self._segment = segment
 
-        data = []
+        paths = []
         if segment == 'relatedness' or segment == 'all':
-            dataset = CorpusDataset(
+            paths.append(
                 os.path.join(
                     self.root,
                     'wordsim353_sim_rel/wordsim_relatedness_goldstandard.txt'))
-            data += dataset._data
         if segment == 'similarity' or segment == 'all':
-            dataset = CorpusDataset(
+            paths.append(
                 os.path.join(
                     self.root,
                     'wordsim353_sim_rel/wordsim_similarity_goldstandard.txt'))
-            data += dataset._data
 
-        self._data = data
-
+        self._data = CorpusDataset(paths)._data
         self._cast_score_to_float()
 
 
