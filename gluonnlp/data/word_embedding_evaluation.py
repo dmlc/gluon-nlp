@@ -37,12 +37,15 @@ from mxnet.gluon.utils import check_sha1
 
 from .dataset import CorpusDataset
 
+base_datasets = [
+    'WordSimilarityEvaluationDataset', 'WordAnalogyEvaluationDataset'
+]
 word_similarity_datasets = [
     'WordSim353', 'MEN', 'RadinskyMTurk', 'RareWords', 'SimLex999',
     'SimVerb3500', 'SemEval17Task2', 'BakerVerb143', 'YangPowersVerb130'
 ]
 word_analogy_datasets = ['GoogleAnalogyTestSet', 'BiggerAnalogyTestSet']
-__all__ = word_similarity_datasets + word_analogy_datasets
+__all__ = base_datasets + word_similarity_datasets + word_analogy_datasets
 
 
 # TODO Remove once verify support is merged in mxnet.gluon.utils.download
@@ -151,14 +154,20 @@ class _Dataset(Dataset):
 ###############################################################################
 # Word similarity and relatedness datasets
 ###############################################################################
-class _WordSimilarityEvaluationDataset(_Dataset):
-    columns = ['word1', 'word2', 'score']
+class WordSimilarityEvaluationDataset(_Dataset):
+    """Base class for word similarity or relatedness task datasets.
+
+    Inheriting classes are assumed to implement datasets of the form ['word1',
+    'word2', score] where score is a numerical similarity or relatedness score
+    with respect to 'word1' and 'word2'.
+
+    """
 
     def _cast_score_to_float(self):
         self._data = [[row[0], row[1], float(row[2])] for row in self._data]
 
 
-class WordSim353(_WordSimilarityEvaluationDataset):
+class WordSim353(WordSimilarityEvaluationDataset):
     """WordSim353 dataset.
 
     The dataset was collected by Finkelstein et al.
@@ -236,7 +245,7 @@ class WordSim353(_WordSimilarityEvaluationDataset):
         self._cast_score_to_float()
 
 
-class MEN(_WordSimilarityEvaluationDataset):
+class MEN(WordSimilarityEvaluationDataset):
     """MEN dataset for word-similarity and relatedness.
 
     The dataset was collected by Bruni et al.
@@ -306,7 +315,7 @@ class MEN(_WordSimilarityEvaluationDataset):
         self._cast_score_to_float()
 
 
-class RadinskyMTurk(_WordSimilarityEvaluationDataset):
+class RadinskyMTurk(WordSimilarityEvaluationDataset):
     """MTurk dataset for word-similarity and relatedness by Radinsky et al..
 
     - Radinsky, K., Agichtein, E., Gabrilovich, E., & Markovitch, S. (2011). A word
@@ -342,7 +351,7 @@ class RadinskyMTurk(_WordSimilarityEvaluationDataset):
         self._cast_score_to_float()
 
 
-class RareWords(_WordSimilarityEvaluationDataset):
+class RareWords(WordSimilarityEvaluationDataset):
     """Rare words dataset word-similarity and relatedness.
 
     - Luong, T., Socher, R., & Manning, C. D. (2013). Better word representations
@@ -377,7 +386,7 @@ class RareWords(_WordSimilarityEvaluationDataset):
         self._cast_score_to_float()
 
 
-class SimLex999(_WordSimilarityEvaluationDataset):
+class SimLex999(WordSimilarityEvaluationDataset):
     """SimLex999 dataset word-similarity.
 
     - Hill, F., Reichart, R., & Korhonen, A. (2015). Simlex-999: evaluating
@@ -446,7 +455,7 @@ class SimLex999(_WordSimilarityEvaluationDataset):
         self._cast_score_to_float()
 
 
-class SimVerb3500(_WordSimilarityEvaluationDataset):
+class SimVerb3500(WordSimilarityEvaluationDataset):
     """SimVerb3500 dataset word-similarity.
 
     - Hill, F., Reichart, R., & Korhonen, A. (2015). Simlex-999: evaluating
@@ -516,7 +525,7 @@ class SimVerb3500(_WordSimilarityEvaluationDataset):
         self._cast_score_to_float()
 
 
-class SemEval17Task2(_WordSimilarityEvaluationDataset):
+class SemEval17Task2(WordSimilarityEvaluationDataset):
     """SemEval17Task2 dataset for word-similarity.
 
     The dataset was collected by Finkelstein et al.
@@ -751,7 +760,7 @@ class SemEval17Task2(_WordSimilarityEvaluationDataset):
         self._cast_score_to_float()
 
 
-class BakerVerb143(_WordSimilarityEvaluationDataset):
+class BakerVerb143(WordSimilarityEvaluationDataset):
     """Verb143 dataset.
 
     - Baker, S., Reichart, R., & Korhonen, A. (2014). An unsupervised model for
@@ -795,7 +804,7 @@ class BakerVerb143(_WordSimilarityEvaluationDataset):
         self._cast_score_to_float()
 
 
-class YangPowersVerb130(_WordSimilarityEvaluationDataset):
+class YangPowersVerb130(WordSimilarityEvaluationDataset):
     """Verb-130 dataset.
 
     - Yang, D., & Powers, D. M. (2006). Verb similarity on the taxonomy of
@@ -874,11 +883,17 @@ class YangPowersVerb130(_WordSimilarityEvaluationDataset):
 ###############################################################################
 # Word analogy datasets
 ###############################################################################
-class _WordAnalogyEvaluationDataset(_Dataset):
-    columns = ['word1', 'word2', 'word3', 'word4']
+class WordAnalogyEvaluationDataset(_Dataset):
+    """Base class for word analogy task datasets.
+
+    Inheriting classes are assumed to implement datasets of the form ['word1',
+    'word2', 'word3', 'word4'] or ['word1', [ 'word2a', 'word2b', ... ],
+    'word3', [ 'word4a', 'word4b', ... ]].
+
+    """
 
 
-class GoogleAnalogyTestSet(_WordAnalogyEvaluationDataset):
+class GoogleAnalogyTestSet(WordAnalogyEvaluationDataset):
     """Google analogy test set
 
     - Mikolov, T., Chen, K., Corrado, G., & Dean, J. (2013). Efficient
@@ -939,7 +954,7 @@ class GoogleAnalogyTestSet(_WordAnalogyEvaluationDataset):
         self._data = words
 
 
-class BiggerAnalogyTestSet(_WordAnalogyEvaluationDataset):
+class BiggerAnalogyTestSet(WordAnalogyEvaluationDataset):
     """SimVerb3500 dataset word-similarity.
 
     - Hill, F., Reichart, R., & Korhonen, A. (2015). Simlex-999: evaluating
