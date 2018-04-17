@@ -6,14 +6,14 @@ all requested pre-trained weights are downloaded from public repo and stored in 
 
 Language Modeling
 -----------------
-.. automodule:: gluonnlp.models.language_model
+.. automodule:: gluonnlp.model.language_model
     :members:
 
 Modeling Utilities
 ------------------
-.. automodule:: gluonnlp.models.parameter
+.. automodule:: gluonnlp.model.parameter
     :members:
-.. automodule:: gluonnlp.models.utils
+.. automodule:: gluonnlp.model.utils
     :members:
-.. automodule:: gluonnlp.models.block
+.. automodule:: gluonnlp.model.block
     :members:
