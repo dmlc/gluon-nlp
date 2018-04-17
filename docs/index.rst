@@ -1,7 +1,7 @@
 GluonNLP: a Deep Learning Toolkit for NLP
 =========================================
 
-GluonNLP provides implementations of the sate-of-the-art (SOTA) deep learning
+GluonNLP provides implementations of the state-of-the-art (SOTA) deep learning
 models in NLP. It is designed for engineers, researchers, and
 students to fast prototype products and research ideas based on these
 models. This toolkit offers four main features:
@@ -18,8 +18,8 @@ CS224n <http://web.stanford.edu/class/cs224n/>`_.
 
 .. note::
 
-   This project is still at an early stage. Please expect that it will
-   be updated frequently. We also welcome any contributions.
+   This project is at an early stage and is under active development.
+   Please expect that it will be updated frequently. Contributions are welcome.
 
 Installation
 ------------------
@@ -46,8 +46,7 @@ Then install the GluonNLP toolkit by
 
 .. code-block:: bash
 
-
-   pip install -U --pre http://gluon-nlp-dist.s3-accelerate.dualstack.amazonaws.com/gluonnlp-0.1.0.tar.gz
+   pip install gluonnlp
 
 
 A Quick Example
@@ -73,6 +72,7 @@ Contents
 .. toctree::
    :maxdepth: 2
 
+   get_started/vocab_emb
    examples/index
    api/index
    scripts/index
