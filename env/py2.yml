@@ -10,4 +10,4 @@ dependencies:
   - nose
   - nose-timer
   - pip:
-    - mxnet==1.2.0b20180411
+    - mxnet>=1.2.0b20180415
