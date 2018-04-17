@@ -72,7 +72,7 @@ Contents
 .. toctree::
    :maxdepth: 2
 
-   get_started/vocab_emb
+   get_started/index
    examples/index
    api/index
    scripts/index
