@@ -909,6 +909,7 @@ class GoogleAnalogyTestSet(_WordAnalogyEvaluationDataset):
     def __init__(self,
                  group=None,
                  category=None,
+                 lowercase=True,
                  root=os.path.join('~', '.mxnet', 'datasets',
                                    'google_analogy')):
         super(GoogleAnalogyTestSet, self).__init__(root=root)
@@ -930,6 +931,9 @@ class GoogleAnalogyTestSet(_WordAnalogyEvaluationDataset):
                         continue
                     if category is not None and category != current_category:
                         continue
+
+                    if lowercase:
+                        line = line.lower()
 
                     words.append(line.split())
 
