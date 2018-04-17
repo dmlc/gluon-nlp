@@ -232,7 +232,7 @@ class WordSim353(_WordSimilarityEvaluationDataset):
                     self.root,
                     'wordsim353_sim_rel/wordsim_similarity_goldstandard.txt'))
 
-        self._data = CorpusDataset(paths)._data
+        self._data = [row for row in CorpusDataset(paths)]
         self._cast_score_to_float()
 
 
@@ -337,7 +337,7 @@ class RadinskyMTurk(_WordSimilarityEvaluationDataset):
         datafilepath = os.path.join(self.root, self._archive_file[0])
 
         dataset = CorpusDataset(datafilepath, tokenizer=lambda x: x.split(','))
-        self._data = dataset._data
+        self._data = [row for row in dataset]
 
         self._cast_score_to_float()
 
@@ -440,8 +440,8 @@ class SimLex999(_WordSimilarityEvaluationDataset):
 
         dataset = CorpusDataset(
             os.path.join(self.root, 'SimLex-999', 'SimLex-999.txt'))
-        dataset = dataset._data[1:]  # Throw away header
-        self._data = [[row[0], row[1], row[3]] for row in dataset]
+        self._data = [[row[0], row[1], row[3]] for i, row in enumerate(dataset)
+                      if i != 0]  # Throw away header
 
         self._cast_score_to_float()
 
