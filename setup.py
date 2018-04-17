@@ -42,7 +42,6 @@ setup(
     license='Apache-2.0',
 
     # Package info
-    packages=find_packages(exclude=('tests', )),
+    packages=find_packages(exclude=('tests', 'scripts')),
     zip_safe=True,
-    install_requires=requirements,
-    extras_require={'wordembeddingevaluation': ['scipy']})
+    install_requires=requirements)
