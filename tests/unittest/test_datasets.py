@@ -23,6 +23,12 @@ import mxnet as mx
 import numpy as np
 import gluonnlp as nlp
 
+import sys
+if sys.version_info[0] == 3:
+    _str_types = (str, )
+else:
+    _str_types = (str, unicode)
+
 
 def test_wikitext2():
     train = nlp.data.WikiText2(segment='train', root='tests/data/wikitext-2')
@@ -82,22 +88,16 @@ def test_imdb():
     assert len(test) == 25000, len(test)
     assert len(unsup) == 50000, len(unsup)
 
-    import sys
-    if sys.version_info[0] == 3:
-        str_types = (str,)
-    else:
-        str_types = (str, unicode)
-
     for i, (data, score) in enumerate(train):
-        assert isinstance(data, str_types)
+        assert isinstance(data, _str_types)
         assert score <= 4 or score >= 7
 
     for i, (data, score) in enumerate(test):
-        assert isinstance(data, str_types)
+        assert isinstance(data, _str_types)
         assert score <= 4 or score >= 7
 
     for i, (data, score) in enumerate(unsup):
-        assert isinstance(data, str_types)
+        assert isinstance(data, _str_types)
         assert score == 0
 
 
@@ -106,8 +106,8 @@ def test_imdb():
 ###############################################################################
 def _assert_similarity_dataset(data):
     # Check datatypes
-    assert isinstance(data[0][0], str)
-    assert isinstance(data[0][1], str)
+    assert isinstance(data[0][0], _str_types)
+    assert isinstance(data[0][1], _str_types)
     assert np.isfinite(data[0][2])
 
     # Check score magnitude
