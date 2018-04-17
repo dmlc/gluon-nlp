@@ -29,7 +29,6 @@ import argparse
 import time
 
 import mxnet as mx
-import numpy as np
 from scipy import stats
 
 import gluonnlp as nlp
