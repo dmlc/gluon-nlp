@@ -39,8 +39,8 @@ class CorpusDataset(SimpleDataset):
 
     Parameters
     ----------
-    filename : str
-        Path to the input text file.
+    filename : str or list of str
+        Path to the input text file or list of paths to the input text files.
     encoding : str, default 'utf8'
         File encoding format.
     flatten : bool, default False
@@ -64,7 +64,11 @@ class CorpusDataset(SimpleDataset):
                  sample_splitter=lambda s: s.splitlines(), tokenizer=lambda s: s.split(),
                  bos=None, eos=None):
         assert sample_splitter, 'sample_splitter must be specified.'
-        self._filename = os.path.expanduser(filename)
+
+        if not isinstance(filename, (tuple, list)):
+            filename = (filename, )
+
+        self._filenames = [os.path.expanduser(f) for f in filename]
         self._encoding = encoding
         self._flatten = flatten
         self._skip_empty = skip_empty
@@ -80,17 +84,21 @@ class CorpusDataset(SimpleDataset):
         super(CorpusDataset, self).__init__(self._read())
 
     def _read(self):
-        with io.open(self._filename, 'r', encoding=self._encoding) as fin:
-            content = fin.read()
-        samples = (s.strip() for s in self._sample_splitter(content))
-        if self._tokenizer:
-            samples = [self._process(self._tokenizer(s)) for s in samples
-                       if s or not self._skip_empty]
-            if self._flatten:
-                samples = concat_sequence(samples)
-        else:
-            samples = filter(None, samples)
-        return samples
+        all_samples = []
+        for filename in self._filenames:
+            with io.open(filename, 'r', encoding=self._encoding) as fin:
+                content = fin.read()
+            samples = (s.strip() for s in self._sample_splitter(content))
+            if self._tokenizer:
+                samples = [self._process(self._tokenizer(s)) for s in samples
+                           if s or not self._skip_empty]
+                if self._flatten:
+                    samples = concat_sequence(samples)
+            elif self._skip_empty:
+                samples = [s for s in samples if s]
+
+            all_samples += samples
+        return all_samples
 
 
 class LanguageModelDataset(CorpusDataset):

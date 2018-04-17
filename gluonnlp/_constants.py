@@ -16,7 +16,6 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-
 """Constants."""
 
 UNK_TOKEN = '<unk>'
@@ -708,3 +707,241 @@ FAST_TEXT_FILE_SHA1 = \
      'wiki.zh.vec': '117ab34faa80e381641fbabf3a24bc8cfba44050',
      'wiki.zh_yue.vec': 'd2ac1ab9eb1a908797644f83f259c90cb3c1a350',
      'wiki.zu.vec': '4b244b9697a8280e6646842c5fc81bb3a6bc8ec7'}
+
+BATS_CHECKSUMS = \
+    {'BATS_3.0/1_Inflectional_morphology/I01 [noun - plural_reg].txt':
+     'cfcba2835edf81abf11b84defd2f4daa3ca0b0bf',
+     'BATS_3.0/1_Inflectional_morphology/I02 [noun - plural_irreg].txt':
+     '44dbc56432b79ff5ce2ef80b6840a8aa916524f9',
+     'BATS_3.0/1_Inflectional_morphology/I03 [adj - comparative].txt':
+     'dc530918e98b467b8102a7dab772a66d3db32a73',
+     'BATS_3.0/1_Inflectional_morphology/I04 [adj - superlative].txt':
+     '6c6fdfb6c733bc9b298d95013765163f42faf6fb',
+     'BATS_3.0/1_Inflectional_morphology/I05 [verb_inf - 3pSg].txt':
+     '39fa47ec7238ddb3f9818bc586f23f55b55418d8',
+     'BATS_3.0/1_Inflectional_morphology/I06 [verb_inf - Ving].txt':
+     '8fabeb9f5af6c3e7154a220b7034bbe5b900c36f',
+     'BATS_3.0/1_Inflectional_morphology/I07 [verb_inf - Ved].txt':
+     'aa04df95aa2edb436cbcc03c7b15bc492ece52d6',
+     'BATS_3.0/1_Inflectional_morphology/I08 [verb_Ving - 3pSg].txt':
+     '5f22d8121a5043ce76d3b6b53a49a7bb3fe33920',
+     'BATS_3.0/1_Inflectional_morphology/I09 [verb_Ving - Ved].txt':
+     '377777c1e793c638e72c010228156d01f916708e',
+     'BATS_3.0/1_Inflectional_morphology/I10 [verb_3pSg - Ved].txt':
+     '051c0c3c633e10900f827991dac14cf76da7f022',
+     'BATS_3.0/2_Derivational_morphology/D01 [noun+less_reg].txt':
+     '5d6839e9d34ee1e9fddb5bbf6516cf6420b85d8d',
+     'BATS_3.0/2_Derivational_morphology/D02 [un+adj_reg].txt':
+     '80b82227a0d5f7377f1e8cebe28c582bfeb1afb5',
+     'BATS_3.0/2_Derivational_morphology/D03 [adj+ly_reg].txt':
+     '223e120bd61b3116298a253f392654c15ad5a39a',
+     'BATS_3.0/2_Derivational_morphology/D04 [over+adj_reg].txt':
+     'a56f8685af489bcd09c36f864eba1657ce0a7c28',
+     'BATS_3.0/2_Derivational_morphology/D05 [adj+ness_reg].txt':
+     '5da99b1f1781ecfb4a1a7448c715abf07451917b',
+     'BATS_3.0/2_Derivational_morphology/D06 [re+verb_reg].txt':
+     '4c5e1796091fade503fbf0bfc2fae2c7f98b5dd2',
+     'BATS_3.0/2_Derivational_morphology/D07 [verb+able_reg].txt':
+     'a6218162bc257d98e875fc667c23edfac59e19fd',
+     'BATS_3.0/2_Derivational_morphology/D08 [verb+er_irreg].txt':
+     '9a4236c3bbc23903e101a42fb5ad6e15e552fadf',
+     'BATS_3.0/2_Derivational_morphology/D09 [verb+tion_irreg].txt':
+     '3ab0153926d5cf890cf08a4077da6d9946133874',
+     'BATS_3.0/2_Derivational_morphology/D10 [verb+ment_irreg].txt':
+     '2a012b87a9a60e128e064c5fe24b60f99e16ddce',
+     'BATS_3.0/3_Encyclopedic_semantics/E01 [country - capital].txt':
+     '9890315d3c4e6a38b8ae5fc441858564be3d3dc4',
+     'BATS_3.0/3_Encyclopedic_semantics/E02 [country - language].txt':
+     'ef08a00e8ff7802811ace8f00fabac41b5d03678',
+     'BATS_3.0/3_Encyclopedic_semantics/E03 [UK_city - county].txt':
+     '754957101c93a25b438785bd4458404cd9010259',
+     'BATS_3.0/3_Encyclopedic_semantics/E04 [name - nationality].txt':
+     '71a6562c34fb6154992a7c3e499375fcc3529c96',
+     'BATS_3.0/3_Encyclopedic_semantics/E05 [name - occupation].txt':
+     'a9a6f9f1af959aef83106f3dbd6bed16dfe9a3ea',
+     'BATS_3.0/3_Encyclopedic_semantics/E06 [animal - young].txt':
+     '12d5b51c7b76b9136eadc719abc8cf4806c67b73',
+     'BATS_3.0/3_Encyclopedic_semantics/E07 [animal - sound].txt':
+     '91991b007a35f45bd42bd7d0d465c6f8311df911',
+     'BATS_3.0/3_Encyclopedic_semantics/E08 [animal - shelter].txt':
+     'e5af11e216db392986ba0cbb597d861066c29adb',
+     'BATS_3.0/3_Encyclopedic_semantics/E09 [things - color].txt':
+     'd30b2eb2fc7a60f19afda7c54582e30f6fe28f51',
+     'BATS_3.0/3_Encyclopedic_semantics/E10 [male - female].txt':
+     '247a588671bc1da8f615e14076bd42573d24b4b3',
+     'BATS_3.0/4_Lexicographic_semantics/L01 [hypernyms - animals].txt':
+     '4b5c4dabe2c9c038fafee85d8d3958f1b1dec987',
+     'BATS_3.0/4_Lexicographic_semantics/L02 [hypernyms - misc].txt':
+     '83d5ecad78d9de28fd70347731c7ee5918ba43c9',
+     'BATS_3.0/4_Lexicographic_semantics/L03 [hyponyms - misc].txt':
+     'a8319856ae2f76b4d4c030ac7e899bb3a06a9a48',
+     'BATS_3.0/4_Lexicographic_semantics/L04 [meronyms - substance].txt':
+     'c081e1104e1b40725063f4b39d13d1ec12496bfd',
+     'BATS_3.0/4_Lexicographic_semantics/L05 [meronyms - member].txt':
+     'bcbf05f3be76cef990a74674a9999a0bb9790a07',
+     'BATS_3.0/4_Lexicographic_semantics/L06 [meronyms - part].txt':
+     '2f9bdcc74b881e1c54b391c9a6e7ea6243b3accc',
+     'BATS_3.0/4_Lexicographic_semantics/L07 [synonyms - intensity].txt':
+     '8fa287860b096bef004fe0f6557e4f686e3da81a',
+     'BATS_3.0/4_Lexicographic_semantics/L08 [synonyms - exact].txt':
+     'a17c591961bddefd97ae5df71f9d1559ce7900f4',
+     'BATS_3.0/4_Lexicographic_semantics/L09 [antonyms - gradable].txt':
+     '117fbb86504c192b33a5469f2f282e741d9c016d',
+     'BATS_3.0/4_Lexicographic_semantics/L10 [antonyms - binary].txt':
+     '3cde2f2c2a0606777b8d7d11d099f316416a7224'}
+
+SEMEVAL17_CHECKSUMS = \
+    {'SemEval17-Task2/README.txt':
+     'ad02d4c22fff8a39c9e89a92ba449ec78750af6b',
+     'SemEval17-Task2/task2-scorer.jar':
+     '145ef73ce955656d59e3b67b41f8152e8ee018d8',
+     'SemEval17-Task2/test/subtask1-monolingual/data/de.test.data.txt':
+     '6fc840f989d2274509549e472a68fb88dd2e149f',
+     'SemEval17-Task2/test/subtask1-monolingual/data/en.test.data.txt':
+     '05293fcbd80b2f4aad9b6518ce1a546ad8f61f33',
+     'SemEval17-Task2/test/subtask1-monolingual/data/es.test.data.txt':
+     '552904b5988f9951311290ca8fa0441dd4351d4b',
+     'SemEval17-Task2/test/subtask1-monolingual/data/fa.test.data.txt':
+     '29d5970feac5982961bd6ab621ba31f83d3bff77',
+     'SemEval17-Task2/test/subtask1-monolingual/data/it.test.data.txt':
+     'c95fe2be8fab37e9c70610117bdedc48a0a8e95c',
+     'SemEval17-Task2/test/subtask1-monolingual/keys/de.test.gold.txt':
+     'c51463460495a242cc726d41713c5e00b66fdd18',
+     'SemEval17-Task2/test/subtask1-monolingual/keys/en.test.gold.txt':
+     '2d2bb2ed41308cc60e7953cc9036f7dc89141b48',
+     'SemEval17-Task2/test/subtask1-monolingual/keys/es.test.gold.txt':
+     'a5842ff17fe3847d15414924826a8eb236018bcc',
+     'SemEval17-Task2/test/subtask1-monolingual/keys/fa.test.gold.txt':
+     '717bbe035d8ae2bad59416eb3dd4feb7238b97d4',
+     'SemEval17-Task2/test/subtask1-monolingual/keys/it.test.gold.txt':
+     'a342b950109c73afdc86a7829e17c1d8f7c482f0',
+     'SemEval17-Task2/test/subtask2-crosslingual/data/de-es.test.data.txt':
+     'ef92b1375762f68c700e050d214d3241ccde2319',
+     'SemEval17-Task2/test/subtask2-crosslingual/data/de-fa.test.data.txt':
+     '17aa103981f3193960309bb9b4cc151acaf8136c',
+     'SemEval17-Task2/test/subtask2-crosslingual/data/de-it.test.data.txt':
+     'eced15e8565689dd67605a82a782d19ee846222a',
+     'SemEval17-Task2/test/subtask2-crosslingual/data/en-de.test.data.txt':
+     '5cb69370a46385a7a3d37cdf2018744be77203a0',
+     'SemEval17-Task2/test/subtask2-crosslingual/data/en-es.test.data.txt':
+     '402f7fed52b60e915fb1be49f935395488cf7a7b',
+     'SemEval17-Task2/test/subtask2-crosslingual/data/en-fa.test.data.txt':
+     '9bdddbbde3da755f2a700bddfc3ed1cd9324ad48',
+     'SemEval17-Task2/test/subtask2-crosslingual/data/en-it.test.data.txt':
+     'd3b37aac79ca10311352309ef9b172f686ecbb80',
+     'SemEval17-Task2/test/subtask2-crosslingual/data/es-fa.test.data.txt':
+     'a2959aec346c26475a4a6ad4d950ee0545f2381e',
+     'SemEval17-Task2/test/subtask2-crosslingual/data/es-it.test.data.txt':
+     'ca627c30143d9f82a37a8776fabf2cee226dd35c',
+     'SemEval17-Task2/test/subtask2-crosslingual/data/it-fa.test.data.txt':
+     'a03d79a6ce7b798356b53b4e85dbe828247b97ef',
+     'SemEval17-Task2/test/subtask2-crosslingual/keys/de-es.test.gold.txt':
+     '7564130011d38daad582b83135010a2a58796df6',
+     'SemEval17-Task2/test/subtask2-crosslingual/keys/de-fa.test.gold.txt':
+     'c9e23c2e5e970e7f95550fbac3362d85b82cc569',
+     'SemEval17-Task2/test/subtask2-crosslingual/keys/de-it.test.gold.txt':
+     'b74cc2609b2bd2ceb5e076f504882a2e0a996a3c',
+     'SemEval17-Task2/test/subtask2-crosslingual/keys/en-de.test.gold.txt':
+     '428dfdad2a144642c13c24b845e6b7de6bf5f663',
+     'SemEval17-Task2/test/subtask2-crosslingual/keys/en-es.test.gold.txt':
+     '1dd7ab08a10552486299151cdd32ed19b56db682',
+     'SemEval17-Task2/test/subtask2-crosslingual/keys/en-fa.test.gold.txt':
+     '17451ac2165aa9b695dae9b1aba20eb8609fb400',
+     'SemEval17-Task2/test/subtask2-crosslingual/keys/en-it.test.gold.txt':
+     '5041c0b84a603ed85aa0a5cbe4b1c34f69a2fa7c',
+     'SemEval17-Task2/test/subtask2-crosslingual/keys/es-fa.test.gold.txt':
+     '8c09a219670dc32ab3864078bf0c28a287accabc',
+     'SemEval17-Task2/test/subtask2-crosslingual/keys/es-it.test.gold.txt':
+     'b1cdd13209354cc2fc2f4226c80aaa85558daf4a',
+     'SemEval17-Task2/test/subtask2-crosslingual/keys/it-fa.test.gold.txt':
+     'e0b560bb1d2db39ce45e841c8aad611734dc94f1',
+     'SemEval17-Task2/trial/subtask1-monolingual/data/de.trial.data.txt':
+     'dd071fd90f59bec8d271a447d86ee2e462941f52',
+     'SemEval17-Task2/trial/subtask1-monolingual/data/en.trial.data.txt':
+     'e8e5add0850b3dec07f102be26b8791a5e9bbbcf',
+     'SemEval17-Task2/trial/subtask1-monolingual/data/es.trial.data.txt':
+     '8956c78ff9ceae1d923a57816e55392c6a7dfc49',
+     'SemEval17-Task2/trial/subtask1-monolingual/data/fa.trial.data.txt':
+     '2f7c4247cde0d918b3508e90f6b49a1f5031c81b',
+     'SemEval17-Task2/trial/subtask1-monolingual/data/it.trial.data.txt':
+     'c11e0b5b55f94fc97c7b11fa455e71b071be879f',
+     'SemEval17-Task2/trial/subtask1-monolingual/keys/de.trial.gold.txt':
+     'ce5567b1accf3eb07da53229dfcb2a8a1dfac380',
+     'SemEval17-Task2/trial/subtask1-monolingual/keys/en.trial.gold.txt':
+     '693cb5928e807c79e39136dc0981dadca7832ae6',
+     'SemEval17-Task2/trial/subtask1-monolingual/keys/es.trial.gold.txt':
+     '8241ca66bf5ba55f77607e9bcfae8e34902715d8',
+     'SemEval17-Task2/trial/subtask1-monolingual/keys/fa.trial.gold.txt':
+     'd30701a93c8c5500b82ac2334ed8410f9a23864b',
+     'SemEval17-Task2/trial/subtask1-monolingual/keys/it.trial.gold.txt':
+     'bad225573e1216ba8b35429e9fa520a20e8ce031',
+     'SemEval17-Task2/trial/subtask1-monolingual/output/de.trial.sample.output.txt':
+     'f85cba9f6690d61736623c16e620826b09384aa5',
+     'SemEval17-Task2/trial/subtask1-monolingual/output/en.trial.sample.output.txt':
+     'f85cba9f6690d61736623c16e620826b09384aa5',
+     'SemEval17-Task2/trial/subtask1-monolingual/output/es.trial.sample.output.txt':
+     'f85cba9f6690d61736623c16e620826b09384aa5',
+     'SemEval17-Task2/trial/subtask1-monolingual/output/fa.trial.sample.output.txt':
+     'f85cba9f6690d61736623c16e620826b09384aa5',
+     'SemEval17-Task2/trial/subtask1-monolingual/output/it.trial.sample.output.txt':
+     'f85cba9f6690d61736623c16e620826b09384aa5',
+     'SemEval17-Task2/trial/subtask2-crosslingual/data/de-es.trial.data.txt':
+     'c27c8977d8d4434fdc3e59a7b0121d87e0a03237',
+     'SemEval17-Task2/trial/subtask2-crosslingual/data/de-fa.trial.data.txt':
+     '88a6f6dd1bba309f7cae7281405e37f442782983',
+     'SemEval17-Task2/trial/subtask2-crosslingual/data/de-it.trial.data.txt':
+     'ebdab0859f3b349fa0120fc8ab98be3394f0d73d',
+     'SemEval17-Task2/trial/subtask2-crosslingual/data/en-de.trial.data.txt':
+     '128d1a460fe9836b66f0fcdf59455b02edb9f258',
+     'SemEval17-Task2/trial/subtask2-crosslingual/data/en-es.trial.data.txt':
+     '508c5dde8ffcc32ee3009a0d020c7c96a338e1d1',
+     'SemEval17-Task2/trial/subtask2-crosslingual/data/en-fa.trial.data.txt':
+     '1a3640eb5facfe15b1e23a07183a2e62ed80c7d9',
+     'SemEval17-Task2/trial/subtask2-crosslingual/data/en-it.trial.data.txt':
+     '141c83d591b0292016583d9c23a2cc5514a006aa',
+     'SemEval17-Task2/trial/subtask2-crosslingual/data/es-fa.trial.data.txt':
+     'a0a548cd698c389ee80c34d6ec72abed5f1625e5',
+     'SemEval17-Task2/trial/subtask2-crosslingual/data/es-it.trial.data.txt':
+     '8d42bed8a43ff93d26ca95794758d9392ca707ed',
+     'SemEval17-Task2/trial/subtask2-crosslingual/data/it-fa.trial.data.txt':
+     '9c85223f1f734de61c28157df0ce417bb0537803',
+     'SemEval17-Task2/trial/subtask2-crosslingual/keys/de-es.trial.gold.txt':
+     '126c92b2fb3b8f2784dd4ae2a4c52b02a87a8196',
+     'SemEval17-Task2/trial/subtask2-crosslingual/keys/de-fa.trial.gold.txt':
+     '1db6201c2c8f19744c39dbde8bd4a803859d64c1',
+     'SemEval17-Task2/trial/subtask2-crosslingual/keys/de-it.trial.gold.txt':
+     '5300bf2ead163ff3981fb41ec5d0e291c287c9e0',
+     'SemEval17-Task2/trial/subtask2-crosslingual/keys/en-de.trial.gold.txt':
+     'd4f5205de929bb0c4020e1502a3f2204b5accd51',
+     'SemEval17-Task2/trial/subtask2-crosslingual/keys/en-es.trial.gold.txt':
+     '3237e11c3a0d9c0f5d583f8dc1d025b97a1f8bfe',
+     'SemEval17-Task2/trial/subtask2-crosslingual/keys/en-fa.trial.gold.txt':
+     'c14de7bf326907336a02d499c9b92ab229f3f4f8',
+     'SemEval17-Task2/trial/subtask2-crosslingual/keys/en-it.trial.gold.txt':
+     '3c0276c4b4e7a6d8a618bbe1ab0f30ad7b07929c',
+     'SemEval17-Task2/trial/subtask2-crosslingual/keys/es-fa.trial.gold.txt':
+     '359f69e9dfd6411a936baa3392b8f05c398a7707',
+     'SemEval17-Task2/trial/subtask2-crosslingual/keys/es-it.trial.gold.txt':
+     '44090607fabe5a26926a384e521ef1317f6f00d0',
+     'SemEval17-Task2/trial/subtask2-crosslingual/keys/it-fa.trial.gold.txt':
+     '97b09ffa11803023c2143fd4a4ac4bbc9775e645',
+     'SemEval17-Task2/trial/subtask2-crosslingual/output/de-es.trial.sample.output.txt':
+     'a0735361a692be357963959728dacef85ea08240',
+     'SemEval17-Task2/trial/subtask2-crosslingual/output/de-fa.trial.sample.output.txt':
+     'b71166d8615e921ee689cefc81419398d341167f',
+     'SemEval17-Task2/trial/subtask2-crosslingual/output/de-it.trial.sample.output.txt':
+     'b71166d8615e921ee689cefc81419398d341167f',
+     'SemEval17-Task2/trial/subtask2-crosslingual/output/en-de.trial.sample.output.txt':
+     'b71166d8615e921ee689cefc81419398d341167f',
+     'SemEval17-Task2/trial/subtask2-crosslingual/output/en-es.trial.sample.output.txt':
+     'b71166d8615e921ee689cefc81419398d341167f',
+     'SemEval17-Task2/trial/subtask2-crosslingual/output/en-fa.trial.sample.output.txt':
+     'a0735361a692be357963959728dacef85ea08240',
+     'SemEval17-Task2/trial/subtask2-crosslingual/output/en-it.trial.sample.output.txt':
+     'a0735361a692be357963959728dacef85ea08240',
+     'SemEval17-Task2/trial/subtask2-crosslingual/output/es-fa.trial.sample.output.txt':
+     'b71166d8615e921ee689cefc81419398d341167f',
+     'SemEval17-Task2/trial/subtask2-crosslingual/output/es-it.trial.sample.output.txt':
+     'b71166d8615e921ee689cefc81419398d341167f',
+     'SemEval17-Task2/trial/subtask2-crosslingual/output/it-fa.trial.sample.output.txt':
+     'a0735361a692be357963959728dacef85ea08240'}

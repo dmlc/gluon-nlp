@@ -32,7 +32,6 @@ from mxnet import nd
 
 from . import _constants as C
 from . import embedding as emb
-from .data.utils import Counter
 
 
 class Vocab(object):
@@ -193,9 +192,6 @@ class Vocab(object):
         Indexes keys of `counter` according to frequency thresholds such as `max_size` and
         `min_freq`.
         """
-
-        assert isinstance(counter, Counter), \
-            '`counter` must be an instance of Counter.'
 
         unknown_and_special_tokens = set(special_tokens) if special_tokens else set()
 
