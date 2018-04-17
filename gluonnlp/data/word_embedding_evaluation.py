@@ -328,7 +328,7 @@ class RadinskyMTurk(WordSimilarityEvaluationDataset):
 
     Parameters
     ----------
-    root : str, default '~/.mxnet/datasets/men'
+    root : str, default '~/.mxnet/datasets/radinskymturk'
         Path to temp folder for storing data.
 
     """
