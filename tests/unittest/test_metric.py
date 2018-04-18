@@ -17,18 +17,25 @@
 # specific language governing permissions and limitations
 # under the License.
 
-# pylint: disable=wildcard-import
-"""NLP toolkit."""
+import mxnet as mx
 
-from . import data
-from . import embedding
-from . import metric
-from . import model
-from .vocab import *
+import gluonnlp as nlp
 
-__version__ = '0.1.0'
 
-__all__ = ['data',
-           'model',
-           'embedding',
-           'Vocab']
+def test_spearmanr():
+    pr = nlp.metric.SpearmanRankCorrelation()
+
+    predicts = [mx.nd.array([1, 2, 3, 4, 5])]
+    labels = [mx.nd.array([5, 6, 7, 8, 7])]
+    pr.update(labels, predicts)
+    assert pr.get() == ('spearmanr', 0.82078268166812329)
+    pr.reset()
+
+    predicts = [mx.nd.array([1, 2, 3])]
+    labels = [mx.nd.array([5, 6, 7])]
+    pr.update(labels, predicts)
+    predicts = [mx.nd.array([4, 5])]
+    labels = [mx.nd.array([8, 7])]
+    pr.update(labels, predicts)
+    assert pr.get() == ('spearmanr', 0.82078268166812329)
+    pr.reset()
