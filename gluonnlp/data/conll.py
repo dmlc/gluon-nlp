@@ -37,13 +37,11 @@ from .. import _constants as C
 
 
 class _CoNLLSequenceTagging(SimpleDataset):
-    def __init__(self, base_url, segment, codec, root, has_comment=False):
+    def __init__(self, segment, root, has_comment=False):
         root = os.path.expanduser(root)
         if not os.path.isdir(root):
             os.makedirs(root)
-        self._base_url = base_url
         self._segment = segment
-        self._codec = codec
         self._root = root
         self._has_comment = has_comment
         super(_CoNLLSequenceTagging, self).__init__(self._read_data())
@@ -67,7 +65,7 @@ class _CoNLLSequenceTagging(SimpleDataset):
             root = self._root
             path = os.path.join(root, data_file_name)
             if not os.path.exists(path) or not check_sha1(path, data_hash):
-                download(self._base_url + archive_file_name,
+                download(self.base_url + archive_file_name,
                          path=root, sha1_hash=archive_hash)
                 self._extract_archive()
             paths.append(path)
@@ -78,7 +76,7 @@ class _CoNLLSequenceTagging(SimpleDataset):
         results = []
         for path in paths:
             with gzip.open(path, 'r') if path.endswith('gz') else io.open(path, 'rb') as f:
-                line_iter = codecs.getreader(self._codec)(io.BufferedReader(f))
+                line_iter = codecs.getreader(self.codec)(io.BufferedReader(f))
                 results.append(self._process_iter(line_iter))
         return list([x for field in item for x in field] for item in zip(*results))
 
@@ -119,8 +117,10 @@ class CoNLL2000(_CoNLLSequenceTagging):
                                      '9f31cf936554cebf558d07cce923dca0b7f31864'),
                            'test': ('test.txt.gz',
                                     'dc57527f1f60eeafad03da51235185141152f849')}
-        base_url = 'http://www.clips.uantwerpen.be/conll2000/chunking/'
-        super(CoNLL2000, self).__init__(base_url, segment, 'utf-8', root)
+        super(CoNLL2000, self).__init__(segment, root)
+
+    base_url = 'http://www.clips.uantwerpen.be/conll2000/chunking/'
+    codec = 'utf-8'
 
 class CoNLL2001(_CoNLLSequenceTagging):
     """CoNLL2001 Clause Identification dataset.
@@ -162,8 +162,10 @@ class CoNLL2001(_CoNLLSequenceTagging):
              'testb': ('testb3',
                        'a37f3ca89eb4db08fc576f50161f6c2945302541')}
             ]
-        base_url = 'https://www.clips.uantwerpen.be/conll2001/clauses/data/'
-        super(CoNLL2001, self).__init__(base_url, segment, 'utf-8', root)
+        super(CoNLL2001, self).__init__(segment, root)
+
+    base_url = 'https://www.clips.uantwerpen.be/conll2001/clauses/data/'
+    codec = 'utf-8'
 
     def _get_data_file_hash(self):
         assert self._part in [1, 2, 3], \
@@ -209,8 +211,10 @@ class CoNLL2002(_CoNLLSequenceTagging):
                               '7584cbf55692d3b0c133de6d7411ad04ae0e710a'),
                     'testb': ('ned.testb.gz',
                               '4d07c576f99aae8a305855a9cbf40163c0b8d84e')}}
-        base_url = 'https://www.clips.uantwerpen.be/conll2002/ner/data/'
-        super(CoNLL2002, self).__init__(base_url, segment, 'latin-1', root)
+        super(CoNLL2002, self).__init__(segment, root)
+
+    base_url = 'https://www.clips.uantwerpen.be/conll2002/ner/data/'
+    codec = 'latin-1'
 
     def _get_data_file_hash(self):
         assert self._lang in self._data_file, \
@@ -268,8 +272,10 @@ class CoNLL2004(_CoNLLSequenceTagging):
                       'test': ('props.test.gz',
                                '639d54e24cebd7476b05c0efc0cbb019ebe52d8e')}}
 
-        base_url = 'http://www.cs.upc.edu/~srlconll/st04/'
-        super(CoNLL2004, self).__init__(base_url, segment, 'utf-8', root)
+        super(CoNLL2004, self).__init__(segment, root)
+
+    base_url = 'http://www.cs.upc.edu/~srlconll/st04/'
+    codec = 'utf-8'
 
     def _get_data_file_hash(self):
         available_segments = self._data_file['ne'].keys()
@@ -316,8 +322,10 @@ class UniversalDependencies21(_CoNLLSequenceTagging):
         self._lang = lang
         self._data_file = C.UD21_DATA_FILE_SHA1
 
-        base_url = 'https://lindat.mff.cuni.cz/repository/xmlui/bitstream/handle/11234/1-2515/'
-        super(UniversalDependencies21, self).__init__(base_url, segment, 'utf-8', root, True)
+        super(UniversalDependencies21, self).__init__(segment, root, True)
+
+    base_url = 'https://lindat.mff.cuni.cz/repository/xmlui/bitstream/handle/11234/1-2515/'
+    codec = 'utf-8'
 
     def _get_data_file_hash(self):
         assert self._lang in self._data_file, \
