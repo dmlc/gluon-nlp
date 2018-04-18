@@ -227,7 +227,8 @@ class _BeamSearchStepUpdate(HybridBlock):
         # Update the states
         new_states = _choose_states(F, states, prev_states,
                                     F.reshape(batch_beam_indices +
-                                              use_prev_states * batch_size * beam_size,
+                                              F.broadcast_mul(use_prev_states, batch_size)
+                                              * beam_size,
                                               shape=(-1,)))
         # Update the alive mask.
         beam_alive_mask = F.reshape(F.take(F.reshape(beam_alive_mask, shape=(-1,)),
