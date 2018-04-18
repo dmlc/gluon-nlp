@@ -12,11 +12,12 @@ Language Modeling
 Beam Search
 -----------
 .. automodule:: gluonnlp.model.beam_search
+
     .. autoclass:: gluonnlp.model.beam_search.BeamSearchScorer
-        :special-members: __call__
+        :members:
 
     .. autoclass:: gluonnlp.model.beam_search.BeamSearchSampler
-        :special-members: __call__
+        :members:
 
 
 Modeling Utilities
