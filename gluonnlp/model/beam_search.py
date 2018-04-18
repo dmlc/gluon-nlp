@@ -29,12 +29,13 @@ from .._constants import LARGE_NEGATIVE_FLOAT
 
 
 class BeamSearchScorer(HybridBlock):
-    """Score function used in beam search.
+    r"""Score function used in beam search.
 
     Implements the length-penalized score function used in the GNMT paper.
 
     scores = (log_probs + scores) / length_penalty
-    length_penalty = (K + length)^\alpha / (K + 1)^\alpha
+
+    length_penalty = (K + length)^:math:\alpha / (K + 1)^:math:\alpha
 
     Parameters
     ----------
@@ -52,7 +53,7 @@ class BeamSearchScorer(HybridBlock):
         Parameters
         ----------
         log_probs : NDArray or Symbol
-            The log probabilities of the candidates. Shape ((..., |V|)
+            The log probabilities of the candidates. Shape (..., V)
         scores : NDArray or Symbol
             The original scores of the beams. Shape (...,)
         step : NDArray or Symbol
@@ -60,7 +61,7 @@ class BeamSearchScorer(HybridBlock):
         Returns
         -------
         candidate_scores : NDArray or Symbol
-            The scores of all the candidates. Shape (..., |V|)
+            The scores of all the candidates. Shape (..., V)
         """
         return super(BeamSearchScorer, self).__call__(log_probs, scores, step)
 
@@ -160,7 +161,7 @@ class _BeamSearchStepUpdate(HybridBlock):
         valid_length : NDArray or Symbol
             The current valid lengths of the samples
         log_probs : NDArray or Symbol
-            Log probability of the current step. Shape (batch_size * beam_size, |V|)
+            Log probability of the current step. Shape (batch_size * beam_size, V)
         scores : NDArray or Symbol
             The previous scores. Shape (batch_size, beam_size)
         step : NDArray or Symbol
