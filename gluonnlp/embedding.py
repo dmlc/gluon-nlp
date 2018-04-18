@@ -225,7 +225,45 @@ class TokenEmbedding(object):
                     tar.extractall(path=embedding_dir)
         return pretrained_file_path
 
-    def _load_embedding(self, pretrained_file_path, elem_delim, init_unknown_vec, encoding='utf8'):
+    def _load_embedding(self, pretrained_file_path, elem_delim,
+                        init_unknown_vec, encoding='utf8'):
+        """Load embedding vectors from a pre-trained token embedding file.
+
+        Both text files and TokenEmbedding serialization files are supported.
+        Encoding is ignored for non-text files.
+
+        For every unknown token, if its representation `self.unknown_token` is encountered in the
+        pre-trained token embedding file, index 0 of `self.idx_to_vec` maps to the pre-trained token
+        embedding vector loaded from the file; otherwise, index 0 of `self.idx_to_vec` maps to the
+        text embedding vector initialized by `init_unknown_vec`.
+
+        If a token is encountered multiple times in the pre-trained text embedding file, only the
+        first-encountered token embedding vector will be loaded and the rest will be skipped.
+
+        """
+
+        pretrained_file_path = os.path.expanduser(pretrained_file_path)
+
+        if not os.path.isfile(pretrained_file_path):
+            raise ValueError(
+                '`pretrained_file_path` must be a valid path to the pre-trained '
+                'token embedding file.')
+
+        logging.info('Loading pre-trained token embedding vectors from %s',
+                     pretrained_file_path)
+
+        if pretrained_file_path.endswith('.npz'):
+            return self._load_embedding_serialized(
+                pretrained_file_path=pretrained_file_path,
+                init_unknown_vec=init_unknown_vec)
+        else:
+            return self._load_embedding_txt(
+                pretrained_file_path=pretrained_file_path,
+                elem_delim=elem_delim, init_unknown_vec=init_unknown_vec,
+                encoding=encoding)
+
+    def _load_embedding_txt(self, pretrained_file_path, elem_delim,
+                            init_unknown_vec, encoding='utf8'):
         """Load embedding vectors from a pre-trained token embedding file.
 
 
@@ -238,13 +276,6 @@ class TokenEmbedding(object):
         first-encountered token embedding vector will be loaded and the rest will be skipped.
         """
 
-        pretrained_file_path = os.path.expanduser(pretrained_file_path)
-
-        if not os.path.isfile(pretrained_file_path):
-            raise ValueError('`pretrained_file_path` must be a valid path to the pre-trained '
-                             'token embedding file.')
-
-        logging.info('Loading pre-trained token embedding vectors from %s', pretrained_file_path)
         vec_len = None
         all_elems = []
         tokens = set()
@@ -294,6 +325,52 @@ class TokenEmbedding(object):
             else:
                 self._idx_to_vec[C.UNK_IDX] = nd.array(loaded_unknown_vec)
 
+    def _load_embedding_serialized(self, pretrained_file_path,
+                                   init_unknown_vec):
+        """Load embedding vectors from a pre-trained token embedding file.
+
+        For every unknown token, if its representation `self.unknown_token` is encountered in the
+        pre-trained token embedding file, index 0 of `self.idx_to_vec` maps to the pre-trained token
+        embedding vector loaded from the file; otherwise, index 0 of `self.idx_to_vec` maps to the
+        text embedding vector initialized by `init_unknown_vec`.
+
+        ValueError is raised if a token occurs multiple times.
+        """
+
+        deserialized_embedding = self.deserialize(pretrained_file_path)
+        if deserialized_embedding.unknown_token:
+            raise ValueError(
+                'Creating a new embedding from npz format requires '
+                'that npz serialization was done from original embedding, '
+                'ie. that no unknown_token and associated vectors were inserted.'
+            )
+
+        idx_to_token = deserialized_embedding.idx_to_token
+        idx_to_vec = deserialized_embedding.idx_to_vec
+
+        if not np.all(np.unique(idx_to_token, return_counts=True)[1] == 1):
+            raise ValueError('Serialized embedding invalid. '
+                             'It contains duplicate tokens.')
+
+        if self.unknown_token:
+            try:
+                unknown_token_idx = deserialized_embedding.idx_to_token.index(
+                    self.unknown_token)
+                idx_to_token[C.UNK_IDX], idx_to_token[
+                    unknown_token_idx] = idx_to_token[
+                        unknown_token_idx], idx_to_token[C.UNK_IDX]
+                idxs = [C.UNK_IDX, unknown_token_idx]
+                idx_to_vec[idxs] = idx_to_vec[idxs[::-1]]
+            except ValueError:
+                vec_len = idx_to_vec.shape[1]
+                idx_to_token.insert(0, self.unknown_token)
+                idx_to_vec = nd.concat(
+                    init_unknown_vec(shape=vec_len).reshape((1, -1)),
+                    idx_to_vec, dim=0)
+
+        self._idx_to_token = idx_to_token
+        self._idx_to_vec = idx_to_vec
+
     @property
     def idx_to_token(self):
         return self._idx_to_token
@@ -311,8 +388,8 @@ class TokenEmbedding(object):
 
     def __eq__(self, other):
         if isinstance(other, TokenEmbedding):
-            return (self.unknown_token, self.idx_to_token) == (
-                other.unknown_token, other.idx_to_token) and ((
+            return self.unknown_token == other.unknown_token and np.all(
+                self.idx_to_token == other.idx_to_token) and ((
                     self.idx_to_vec == other.idx_to_vec).min().asscalar() == 1)
         else:
             return NotImplemented
@@ -421,7 +498,8 @@ class TokenEmbedding(object):
                                ', '.join(cls.pretrained_file_name_sha1.keys())))
 
     @staticmethod
-    def from_file(file_path, elem_delim=' ', encoding='utf8', init_unknown_vec=nd.zeros, **kwargs):
+    def from_file(file_path, elem_delim=' ', encoding='utf8',
+                  init_unknown_vec=nd.zeros, **kwargs):
         """Creates a user-defined token embedding from a pre-trained embedding file.
 
 
@@ -454,7 +532,9 @@ class TokenEmbedding(object):
             The user-defined token embedding instance.
         """
         embedding = TokenEmbedding(**kwargs)
-        embedding._load_embedding(file_path, elem_delim, init_unknown_vec, encoding)
+        embedding._load_embedding(file_path, elem_delim=elem_delim,
+                                  init_unknown_vec=init_unknown_vec,
+                                  encoding=encoding)
         return embedding
 
     def serialize(self, file_path, compress=True):
@@ -480,6 +560,11 @@ class TokenEmbedding(object):
         unknown_token = np.array(self.unknown_token)
         idx_to_token = np.array(self.idx_to_token)
         idx_to_vec = self.idx_to_vec.asnumpy()
+
+        if not unknown_token:  # Store empty string instead of None
+            unknown_token = ''
+        else:
+            assert unknown_token == idx_to_token[0]
 
         if not compress:
             np.savez(file=file_path, unknown_token=unknown_token,
@@ -512,9 +597,16 @@ class TokenEmbedding(object):
         """
         npz_dict = np.load(file_path, allow_pickle=False)
 
-        embedding = cls(unknown_token=str(npz_dict['unknown_token']))
-        embedding._idx_to_token = npz_dict['idx_to_token'].tolist()
-        embedding._idx_to_vec = nd.array(npz_dict['idx_to_vec'])
+        unknown_token = str(npz_dict['unknown_token'])
+        idx_to_token = npz_dict['idx_to_token'].tolist()
+        idx_to_vec = nd.array(npz_dict['idx_to_vec'])
+
+        if unknown_token:
+            assert unknown_token == idx_to_token[0]
+
+        embedding = cls(unknown_token=unknown_token)
+        embedding._idx_to_token = idx_to_token
+        embedding._idx_to_vec = idx_to_vec
 
         return embedding
 
@@ -589,7 +681,8 @@ class GloVe(TokenEmbedding):
         super(GloVe, self).__init__(**kwargs)
         pretrained_file_path = GloVe._get_pretrained_file(embedding_root, source)
 
-        self._load_embedding(pretrained_file_path, ' ', init_unknown_vec)
+        self._load_embedding(pretrained_file_path, elem_delim=' ',
+                             init_unknown_vec=init_unknown_vec)
 
 
 @register
@@ -672,4 +765,5 @@ class FastText(TokenEmbedding):
         super(FastText, self).__init__(**kwargs)
         pretrained_file_path = FastText._get_pretrained_file(embedding_root, source)
 
-        self._load_embedding(pretrained_file_path, ' ', init_unknown_vec)
+        self._load_embedding(pretrained_file_path, elem_delim=' ',
+                             init_unknown_vec=init_unknown_vec)

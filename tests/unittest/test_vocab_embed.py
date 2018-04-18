@@ -440,6 +440,37 @@ def test_token_embedding_from_file():
                  elem_delim)
 
 
+def test_token_embedding_from_serialized_file():
+    embed_root = 'tests/data/embedding'
+    embed_name = 'my_embed'
+    elem_delim = '\t'
+    pretrain_file = 'my_pretrain_file.txt'
+    serialize_file = 'my_pretrain_file.npz'
+
+    _mk_my_pretrain_file(
+        os.path.join(embed_root, embed_name), elem_delim, pretrain_file)
+
+    pretrain_file_path = os.path.join(embed_root, embed_name, pretrain_file)
+    serialize_file_path = os.path.join(embed_root, embed_name, serialize_file)
+
+    # Serialize the embedding in format suitable for storage on S3 and test if
+    # loading the serialized file always results in the same as loading the
+    # text file would
+    my_embed_for_serialization = embedding.TokenEmbedding.from_file(
+        pretrain_file_path, elem_delim=elem_delim, unknown_token=None)
+    my_embed_for_serialization.serialize(serialize_file_path)
+
+    # Test w/wo unknown token
+    known_unknown_token = my_embed_for_serialization.idx_to_token[-1]
+    for unknown_token in [None, '<some_unknown_token>', known_unknown_token]:
+        my_embed_text = embedding.TokenEmbedding.from_file(
+            pretrain_file_path, elem_delim=elem_delim,
+            unknown_token=unknown_token)
+        my_embed_serialize = embedding.TokenEmbedding.from_file(
+            serialize_file_path, unknown_token=unknown_token)
+        assert my_embed_serialize == my_embed_text
+
+
 def test_embedding_get_and_pretrain_file_names():
     assert len(embedding.list_sources(embedding_name='fasttext')) == 327
     assert len(embedding.list_sources(embedding_name='glove')) == 10
