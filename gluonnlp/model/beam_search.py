@@ -17,6 +17,9 @@
 # specific language governing permissions and limitations
 # under the License.
 """Implements the beam search sampler."""
+from __future__ import absolute_import
+from __future__ import print_function
+
 __all__ = ['BeamSearchScorer', 'BeamSearchSampler']
 
 import numpy as np
