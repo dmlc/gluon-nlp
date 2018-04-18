@@ -1,15 +1,31 @@
+# coding: utf-8
+
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+
+from __future__ import print_function
+
 import string
-import sys
 import os
 import re
 import subprocess
 import codecs
 import numpy as np
-import gluonnlp
 from numpy.testing import assert_allclose
-
-path = os.path.realpath(os.path.join(os.path.dirname(gluonnlp.__file__), '..', 'scripts', 'nmt'))
-sys.path.append(path)
 from bleu import compute_bleu
 
 
@@ -49,7 +65,7 @@ def _sample_translation_corpus(reference_corpus, max_len):
 
 def _sample_reference_corpus(vocabulary, n, max_len, n_refs=5):
     reference_corpus = []
-    for i in range(n):
+    for _ in range(n):
         references = []
         for _ in range(n_refs):
             ref_len = np.random.randint(1, max_len + 1)
@@ -61,7 +77,7 @@ def _sample_reference_corpus(vocabulary, n, max_len, n_refs=5):
 
 def _write_translaton(translations, path='hypothesis'):
     out_file = codecs.open(path, 'w', 'utf-8')
-    preds = [" ".join(translation) for translation in translations]
+    preds = [' '.join(translation) for translation in translations]
     out_file.write('\n'.join(preds) + '\n')
     out_file.flush()
     out_file.close()
@@ -70,7 +86,7 @@ def _write_translaton(translations, path='hypothesis'):
 def _write_reference(references, path='reference'):
     for i, reference in enumerate(zip(*references)):
         out_file = codecs.open(path + str(i), 'w', 'utf-8')
-        refs = [" ".join(ref) for ref in reference]
+        refs = [' '.join(ref) for ref in reference]
         out_file.write('\n'.join(refs) + '\n')
         out_file.flush()
         out_file.close()
@@ -80,19 +96,19 @@ def test_bleu():
     n = 100
     max_len = 50
     n_refs = 5
-    test_path = os.path.dirname(os.path.realpath(__file__))
-    ref_path = os.path.join(test_path, 'reference')
-    trans_path = os.path.join(test_path, 'hypothesis')
+    path = os.path.dirname(os.path.realpath(__file__))
+    ref_path = os.path.join(path, 'reference')
+    trans_path = os.path.join(path, 'hypothesis')
     vocabulary = list(string.ascii_lowercase)
     reference_corpus = _sample_reference_corpus(vocabulary, n, max_len, n_refs)
     translation_corpus = _sample_translation_corpus(reference_corpus, max_len)
     _write_reference(reference_corpus, path=ref_path)
     _write_translaton(translation_corpus, path=trans_path)
     ret_bleu, _, _, _, _ = compute_bleu(reference_corpus, translation_corpus)
-    mose_ret = subprocess.check_output("perl %s/multi-bleu.perl %s < %s"
-                                       % (test_path, ref_path, trans_path),
-                                       shell=True).decode("utf-8")
-    m = re.search("BLEU = (.+?),", mose_ret)
+    mose_ret = subprocess.check_output('perl %s/multi-bleu.perl %s < %s'
+                                       % (path, ref_path, trans_path),
+                                       shell=True).decode('utf-8')
+    m = re.search('BLEU = (.+?),', mose_ret)
     gt_bleu = float(m.group(1))
     assert_allclose(round(ret_bleu * 100, 2), gt_bleu)
     os.remove(trans_path)
@@ -100,6 +116,6 @@ def test_bleu():
         os.remove(ref_path + str(i))
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     import nose
     nose.runmodule()
