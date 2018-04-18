@@ -62,7 +62,7 @@ class BeamSearchScorer(HybridBlock):
         candidate_scores : NDArray or Symbol
             The scores of all the candidates. Shape (..., |V|)
         """
-        super(BeamSearchScorer, self).__call__(log_probs, scores, step)
+        return super(BeamSearchScorer, self).__call__(log_probs, scores, step)
 
     def hybrid_forward(self, F, log_probs, scores, step):   # pylint: disable=arguments-differ
         prev_lp = (self._K + step - 1) ** self._alpha / (self._K + 1) ** self._alpha
