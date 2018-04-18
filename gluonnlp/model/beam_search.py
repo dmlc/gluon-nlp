@@ -1,10 +1,28 @@
+# coding: utf-8
+
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+"""Implements the beam search sampler."""
+__all__ = ['BeamSearchScorer', 'BeamSearchSampler']
+
 import numpy as np
 import mxnet as mx
 from mxnet.gluon import HybridBlock
 from .._constants import LARGE_NEGATIVE_FLOAT
-
-__all__ = ["BeamSearchScorer", "BeamSearchSampler"]
-
 
 class BeamSearchScorer(HybridBlock):
     """Score function used in beam search.
@@ -24,7 +42,7 @@ class BeamSearchScorer(HybridBlock):
         self._alpha = alpha
         self._K = K
 
-    def hybrid_forward(self, F, log_probs, scores, step):
+    def hybrid_forward(self, F, log_probs, scores, step):   # pylint: disable=arguments-differ
         """Compute new scores of each candidate
 
         Parameters
@@ -77,8 +95,8 @@ def _expand_to_beam_size(data, beam_size, batch_size):
         return {k: _expand_to_beam_size(v, beam_size, batch_size) for k, v in data.items()}
     elif isinstance(data, mx.nd.NDArray):
         if data.shape[0] != batch_size:
-            raise ValueError("The leading dimension of all the inner elements in states must be "
-                             "{}, Find shape={}".format(batch_size, data.shape))
+            raise ValueError('The leading dimension of all the inner elements in states must be '
+                             '{}, Find shape={}'.format(batch_size, data.shape))
         return data.reshape((batch_size, 1) + data.shape[1:])\
                    .broadcast_axes(axis=1, size=beam_size)\
                    .reshape((batch_size * beam_size,) + data.shape[1:])
@@ -127,7 +145,7 @@ class _BeamSearchStepUpdate(HybridBlock):
         self._scorer = scorer
         assert eos_id >= 0, 'eos_id cannot be negative! Received eos_id={}'.format(eos_id)
 
-    def hybrid_forward(self, F, samples, valid_length, log_probs, scores, step, beam_alive_mask,
+    def hybrid_forward(self, F, samples, valid_length, log_probs, scores, step, beam_alive_mask,   # pylint: disable=arguments-differ
                        states, prev_states, vocab_num, batch_size, batch_shift):
         """
 
@@ -169,8 +187,6 @@ class _BeamSearchStepUpdate(HybridBlock):
         chosen_word_ids : NDArray or Symbol
             The chosen word ids of the step. Shape (batch_size, beam_size). If it's negative,
             no word will be appended to the beam.
-        beam_ids : NDArray or Symbol
-            The chosen beam_ids for the results. Shape (batch_size, beam_size)
         beam_alive_mask : NDArray or Symbol
             Shape (batch_size, beam_size)
         new_states : nested structure of NDArrays/Symbols
@@ -219,7 +235,7 @@ class _BeamSearchStepUpdate(HybridBlock):
                                     shape=(-1, beam_size)) * (chosen_word_ids != self._eos_id)
 
         return new_samples, new_valid_length, new_scores,\
-               chosen_word_ids, beam_ids, beam_alive_mask, new_states
+               chosen_word_ids, beam_alive_mask, new_states
 
 
 class BeamSearchSampler(object):
@@ -297,8 +313,7 @@ class BeamSearchSampler(object):
             vocab_num_nd = mx.nd.array([log_probs.shape[1]], ctx=ctx)
             batch_shift_nd = mx.nd.arange(0, batch_size * beam_size, beam_size, ctx=ctx)
             step_nd = mx.nd.array([i + 1], ctx=ctx)
-            samples, valid_length, scores, chosen_word_ids, beam_ids,\
-            beam_alive_mask, states = \
+            samples, valid_length, scores, chosen_word_ids, beam_alive_mask, states = \
                 self._updater(samples, valid_length, log_probs, scores, step_nd, beam_alive_mask,
                               new_states, states, vocab_num_nd, batch_size_nd, batch_shift_nd)
             step_input = mx.nd.relu(chosen_word_ids).reshape((-1,))
@@ -307,10 +322,10 @@ class BeamSearchSampler(object):
                        scores,\
                        mx.nd.round(valid_length).astype(np.int32)
         final_word = mx.nd.where(beam_alive_mask,
-                                   mx.nd.full(shape=(batch_size, beam_size),
-                                              val=self._eos_id, ctx=ctx),
-                                   mx.nd.full(shape=(batch_size, beam_size),
-                                              val=-1, ctx=ctx))
+                                 mx.nd.full(shape=(batch_size, beam_size),
+                                            val=self._eos_id, ctx=ctx),
+                                 mx.nd.full(shape=(batch_size, beam_size),
+                                            val=-1, ctx=ctx))
         samples = mx.nd.concat(samples, final_word.reshape((0, 0, 1)), dim=2)
         valid_length += beam_alive_mask
         return mx.nd.round(samples).astype(np.int32),\
