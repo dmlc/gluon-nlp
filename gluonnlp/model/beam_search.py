@@ -242,10 +242,7 @@ class _BeamSearchStepUpdate(HybridBlock):
 
 
 class BeamSearchSampler(object):
-    """Draw samples from the decoder by beam search.
-
-    The goal of beam search is to solve \argmax_{Y} S(Y, X). Assume that we know how to
-    generetate.
+    r"""Draw samples from the decoder by beam search.
 
     Parameters
     ----------
@@ -253,16 +250,20 @@ class BeamSearchSampler(object):
     decoder : callable
         Function of the one-step-ahead decoder, should have the form:
 
-        ```log_probs, new_states = decoder(step_input, states)```
+        ``log_probs, new_states = decoder(step_input, states)``
 
         The log_probs, input should follow these rules:
+
         - step_input has shape (batch_size,),
         - log_probs has shape (batch_size, |V|),
         - states and new_states have the same structure and the leading
           dimension of the inner NDArrays is the batch dimension.
     eos_id : int
+        Id of the EOS token. No other elements will be appended to the sample if it reaches eos_id.
     scorer : BeamSearchScorer, default BeamSearchScorer(alpha=1.0, K=5)
+        The score function used in beam search.
     max_length : int, default 100
+        The maximum search length.
     """
     def __init__(self, beam_size, decoder, eos_id, scorer=BeamSearchScorer(alpha=1.0, K=5),
                  max_length=100):
@@ -287,12 +288,12 @@ class BeamSearchSampler(object):
         Returns
         -------
         samples : NDArray
-            Samples draw by beam search. Shape (batch_size, beam_size, length). Type will be int32.
+            Samples draw by beam search. Shape (batch_size, beam_size, length). dtype is int32.
         scores : NDArray
             Scores of the samples. Shape (batch_size, beam_size). We make sure that scores[i, :] are
             in descending order.
         valid_length : NDArray
-            The valid length of the samples. Shape (batch_size, beam_size). Type will be int32.
+            The valid length of the samples. Shape (batch_size, beam_size). dtype will be int32.
         """
         batch_size = inputs.shape[0]
         beam_size = self._beam_size
