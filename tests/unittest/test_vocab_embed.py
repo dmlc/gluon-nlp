@@ -20,6 +20,9 @@
 from __future__ import absolute_import
 from __future__ import print_function
 
+import os
+import tempfile
+import time
 import re
 
 from nose.tools import assert_raises
@@ -736,12 +739,41 @@ def test_download_embed():
 
 
 
-def test_serialization():
+def test_vocabulary_serialization():
     # Preserving unknown_token behaviour
     vocab = Vocab(unknown_token=None)
     assert_raises(KeyError, vocab.__getitem__, 'hello')
     loaded_vocab = Vocab.from_json(vocab.to_json())
     assert_raises(KeyError, loaded_vocab.__getitem__, 'hello')
+
+
+def test_token_embedding_serialization():
+    start_time = time.time()
+    emb = embedding.create("fasttext", source="wiki.simple.vec")
+    print("Took {} seconds to load fasttext embeddings.".format(
+        time.time() - start_time))
+    tmp_directory = tempfile.mkdtemp()
+    print("Saving serialized embeddings in temporary directory ",
+          tmp_directory)
+
+    # Test uncompressed serialization
+    file_path = os.path.join(tmp_directory, "embeddings.npz")
+    emb.serialize(file_path, compress=False)
+    start_time = time.time()
+    loaded_emb = embedding.TokenEmbedding.deserialize(file_path)
+    print(("Took {} seconds to load serialized uncompressed "
+           "fasttext embeddings.").format(time.time() - start_time))
+    assert loaded_emb == emb
+
+    # Test compressed serialization
+    file_path_compressed = os.path.join(tmp_directory,
+                                        "embeddings_compressed.npz")
+    emb.serialize(file_path_compressed, compress=True)
+    start_time = time.time()
+    loaded_emb = embedding.TokenEmbedding.deserialize(file_path)
+    print(("Took {} seconds to load serialized compressed "
+           "fasttext embeddings.").format(time.time() - start_time))
+    assert loaded_emb == emb
 
 
 if __name__ == '__main__':

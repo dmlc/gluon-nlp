@@ -33,6 +33,7 @@ import tarfile
 import warnings
 import zipfile
 
+import numpy as np
 from mxnet import nd, registry
 from mxnet.gluon.utils import download, check_sha1, _get_repo_file_url
 
@@ -308,6 +309,21 @@ class TokenEmbedding(object):
     def __contains__(self, x):
         return x in self._token_to_idx
 
+    def __eq__(self, other):
+        if isinstance(other, TokenEmbedding):
+            return (self.unknown_token, self.idx_to_token) == (
+                other.unknown_token, other.idx_to_token) and ((
+                    self.idx_to_vec == other.idx_to_vec).min().asscalar() == 1)
+        else:
+            return NotImplemented
+
+    def __ne__(self, other):
+        result = self.__eq__(other)
+        if result is NotImplemented:
+            return NotImplemented
+        else:
+            return not result
+
     def __getitem__(self, tokens):
         """Looks up embedding vectors of text tokens.
 
@@ -439,6 +455,66 @@ class TokenEmbedding(object):
         """
         embedding = TokenEmbedding(**kwargs)
         embedding._load_embedding(file_path, elem_delim, init_unknown_vec, encoding)
+        return embedding
+
+    def serialize(self, file_path, compress=True):
+        """Serializes the TokenEmbedding to a file specified by file_path.
+
+        TokenEmbedding is serialized by converting the list of tokens, the
+        array of word embeddings and other metadata to numpy arrays, saving all
+        in a single (optionally compressed) Zipfile. See
+        https://docs.scipy.org/doc/numpy/neps/npy-format.html for more
+        information on the format.
+
+
+        Parameters
+        ----------
+        file_path : str or file
+            The path at which to create the file holding the serialized
+            TokenEmbedding. If file is a string or a Path, the .npz extension
+            will be appended to the file name if it is not already there.
+        compress : bool, default True
+            Compress the Zipfile or leave it uncompressed.
+
+        """
+        unknown_token = np.array(self.unknown_token)
+        idx_to_token = np.array(self.idx_to_token)
+        idx_to_vec = self.idx_to_vec.asnumpy()
+
+        if not compress:
+            np.savez(file=file_path, unknown_token=unknown_token,
+                     idx_to_token=idx_to_token, idx_to_vec=idx_to_vec)
+        else:
+            np.savez_compressed(file=file_path, unknown_token=unknown_token,
+                                idx_to_token=idx_to_token,
+                                idx_to_vec=idx_to_vec)
+
+    @classmethod
+    def deserialize(cls, file_path):
+        """Serializes the TokenEmbedding to a file specified by file_path.
+
+        TokenEmbedding is serialized by converting the list of tokens, the
+        array of word embeddings and other metadata to numpy arrays, saving all
+        in a single (optionally compressed) Zipfile. See
+        https://docs.scipy.org/doc/numpy/neps/npy-format.html for more
+        information on the format.
+
+
+        Parameters
+        ----------
+        file_path : str or file
+            The path at which to create the file holding the serialized
+            TokenEmbedding. If file is a string or a Path, the .npz extension
+            will be appended to the file name if it is not already there.
+        compress : bool, default False
+            Compress the Zipfile or leave it uncompressed.
+
+        """
+        npz_dict = np.load(file_path, allow_pickle=False)
+
+        embedding = cls(unknown_token=str(npz_dict['unknown_token']))
+        embedding._idx_to_token = npz_dict['idx_to_token'].tolist()
+        embedding._idx_to_vec = nd.array(npz_dict['idx_to_vec'])
 
         return embedding
 
