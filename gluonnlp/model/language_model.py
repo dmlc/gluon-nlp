@@ -24,11 +24,12 @@ import os
 import warnings
 
 from mxnet.gluon.model_zoo.model_store import get_model_file
-from mxnet import init, nd, cpu
+from mxnet import init, nd, cpu, autograd
 from mxnet.gluon import nn, Block
 from mxnet.gluon.model_zoo import model_store
 
 from .utils import _get_rnn_layer
+from .utils import apply_weight_drop
 from ..data.utils import _load_pretrained_vocab
 
 
@@ -61,9 +62,11 @@ class AWDRNN(Block):
         Dropout rate to on the output of intermediate layers of encoder.
     drop_i : float
         Dropout rate to on the output of embedding.
+    drop_e : float
+        Dropout rate to use on the embedding layer.
     """
     def __init__(self, mode, vocab_size, embed_size, hidden_size, num_layers,
-                 tie_weights=False, dropout=0.5, weight_drop=0, drop_h=0.5, drop_i=0.5,
+                 tie_weights=False, dropout=0.5, weight_drop=0, drop_h=0.5, drop_i=0.5, drop_e=0,
                  **kwargs):
         super(AWDRNN, self).__init__(**kwargs)
         self._mode = mode
@@ -74,6 +77,7 @@ class AWDRNN(Block):
         self._dropout = dropout
         self._drop_h = drop_h
         self._drop_i = drop_i
+        self._drop_e = drop_e
         self._weight_drop = weight_drop
         self._tie_weights = tie_weights
 
@@ -87,6 +91,8 @@ class AWDRNN(Block):
         with embedding.name_scope():
             embedding_block = nn.Embedding(self._vocab_size, self._embed_size,
                                            weight_initializer=init.Uniform(0.1))
+            if self._drop_e:
+                apply_weight_drop(embedding_block, 'weight', self._drop_e, axes=(1,))
             embedding.add(embedding_block)
             if self._drop_i:
                 embedding.add(nn.Dropout(self._drop_i, axes=(0,)))
@@ -105,7 +111,6 @@ class AWDRNN(Block):
     def _get_decoder(self):
         output = nn.HybridSequential()
         with output.name_scope():
-            output.add(nn.Dropout(self._dropout, axes=(0,)))
             if self._tie_weights:
                 output.add(nn.Dense(self._vocab_size, flatten=False,
                                     params=self.embedding[0].params))
@@ -117,8 +122,22 @@ class AWDRNN(Block):
         return [c.begin_state(*args, **kwargs) for c in self.encoder]
 
     def forward(self, inputs, begin_state=None): # pylint: disable=arguments-differ
-        """Defines the forward computation. Arguments can be either
-        :py:class:`NDArray` or :py:class:`Symbol`."""
+        """Implement forward computation.
+
+        Parameters
+        ----------
+        inputs : NDArray
+            The training dataset.
+        begin_state : list
+            The initial hidden states.
+
+        Returns
+        -------
+        out: NDArray
+            The output of the model.
+        out_states: list
+            The list of output states of the model's encoder.
+        """
         encoded = self.embedding(inputs)
         if not begin_state:
             begin_state = self.begin_state(batch_size=inputs.shape[1])
@@ -128,7 +147,10 @@ class AWDRNN(Block):
             out_states.append(state)
             if self._drop_h and i != len(self.encoder)-1:
                 encoded = nd.Dropout(encoded, p=self._drop_h, axes=(0,))
-        out = self.decoder(encoded)
+        if self._dropout:
+            encoded = nd.Dropout(encoded, p=self._dropout, axes=(0,))
+        with autograd.predict_mode():
+            out = self.decoder(encoded)
         return out, out_states
 
 
@@ -155,9 +177,9 @@ class StandardRNN(Block):
     def __init__(self, mode, vocab_size, embed_size, hidden_size,
                  num_layers, dropout=0.5, tie_weights=False, **kwargs):
         if tie_weights:
-            assert embed_size == hidden_size, "Embedding dimension must be equal to " \
-                                              "hidden dimension in order to tie weights. " \
-                                              "Got: emb: {}, hid: {}.".format(embed_size,
+            assert embed_size == hidden_size, 'Embedding dimension must be equal to ' \
+                                              'hidden dimension in order to tie weights. ' \
+                                              'Got: emb: {}, hid: {}.'.format(embed_size,
                                                                               hidden_size)
         super(StandardRNN, self).__init__(**kwargs)
         self._mode = mode
@@ -218,7 +240,7 @@ def _load_vocab(dataset_name, vocab, root):
                           'Input "vocab" argument will be ignored.')
         vocab = _load_pretrained_vocab(dataset_name, root)
     else:
-        assert vocab is not None, "Must specify vocab if not loading from predefined datasets."
+        assert vocab is not None, 'Must specify vocab if not loading from predefined datasets.'
     return vocab
 
 
@@ -276,7 +298,7 @@ def awd_lstm_lm_1150(dataset_name=None, vocab=None, pretrained=False, ctx=cpu(),
                        'drop_i': 0.65}
     mutable_args = frozenset(['dropout', 'weight_drop', 'drop_h', 'drop_i'])
     assert all((k not in kwargs or k in mutable_args) for k in predefined_args), \
-           "Cannot override predefined model settings."
+           'Cannot override predefined model settings.'
     predefined_args.update(kwargs)
     return _get_rnn_model(AWDRNN, 'awd_lstm_lm_1150', dataset_name, vocab, pretrained,
                           ctx, root, **predefined_args)
@@ -319,7 +341,7 @@ def standard_lstm_lm_200(dataset_name=None, vocab=None, pretrained=False, ctx=cp
                        'dropout': 0.2}
     mutable_args = ['dropout']
     assert all((k not in kwargs or k in mutable_args) for k in predefined_args), \
-           "Cannot override predefined model settings."
+           'Cannot override predefined model settings.'
     predefined_args.update(kwargs)
     return _get_rnn_model(StandardRNN, 'standard_lstm_lm_200', dataset_name, vocab, pretrained,
                           ctx, root, **predefined_args)
@@ -362,7 +384,7 @@ def standard_lstm_lm_650(dataset_name=None, vocab=None, pretrained=False, ctx=cp
                        'dropout': 0.5}
     mutable_args = ['dropout']
     assert all((k not in kwargs or k in mutable_args) for k in predefined_args), \
-           "Cannot override predefined model settings."
+           'Cannot override predefined model settings.'
     predefined_args.update(kwargs)
     return _get_rnn_model(StandardRNN, 'standard_lstm_lm_650', dataset_name, vocab, pretrained,
                           ctx, root, **predefined_args)
@@ -405,12 +427,14 @@ def standard_lstm_lm_1500(dataset_name=None, vocab=None, pretrained=False, ctx=c
                        'dropout': 0.65}
     mutable_args = ['dropout']
     assert all((k not in kwargs or k in mutable_args) for k in predefined_args), \
-           "Cannot override predefined model settings."
+           'Cannot override predefined model settings.'
     predefined_args.update(kwargs)
     return _get_rnn_model(StandardRNN, 'standard_lstm_lm_1500', dataset_name, vocab, pretrained,
                           ctx, root, **predefined_args)
 
 model_store._model_sha1.update(
     {name: checksum for checksum, name in [
-        ('8201d769d4afad75b890bae3d86f0aadcd8668be', 'standard_lstm_lm_650_wikitext-2'),
-        ('b423cea394915b007f17125049f5130298086f38', 'standard_lstm_lm_200_wikitext-2')]})
+        ('140416672f27691173523a7535b13cb3adf050a1', 'standard_lstm_lm_650_wikitext-2'),
+        ('700b532dc96a29e39f45cb7dd632ce44e377a752', 'standard_lstm_lm_200_wikitext-2'),
+        ('45d6df33f35715fb760ec8d18ed567016a897df7', 'awd_lstm_lm_1150_wikitext-2')
+    ]})

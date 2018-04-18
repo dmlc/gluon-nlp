@@ -20,7 +20,7 @@
 # pylint: disable=undefined-all-variable
 """NLP Toolkit Dataset API. It allows easy and customizable loading of corpora and dataset files.
 Files can be loaded into formats that are immediately ready for training and evaluation."""
-__all__ = ['TextLineDataset', 'CorpusDataset', 'LanguageModelDataset']
+__all__ = ['CorpusDataset', 'LanguageModelDataset']
 
 import io
 import os
@@ -28,24 +28,6 @@ import os
 import mxnet as mx
 from mxnet.gluon.data import SimpleDataset
 from .utils import concat_sequence, slice_sequence, _slice_pad_length
-
-
-class TextLineDataset(SimpleDataset):
-    """Dataset that comprises lines in a file. Each line will be stripped.
-
-    Parameters
-    ----------
-    filename : str
-        Path to the input text file.
-    encoding : str, default 'utf8'
-        File encoding format.
-    """
-    def __init__(self, filename, encoding='utf8'):
-        lines = []
-        with io.open(filename, 'r', encoding=encoding) as in_file:
-            for line in in_file:
-                lines.append(line.strip())
-        super(TextLineDataset, self).__init__(lines)
 
 
 class CorpusDataset(SimpleDataset):
@@ -57,13 +39,13 @@ class CorpusDataset(SimpleDataset):
 
     Parameters
     ----------
-    filename : str
-        Path to the input text file.
+    filename : str or list of str
+        Path to the input text file or list of paths to the input text files.
     encoding : str, default 'utf8'
         File encoding format.
     flatten : bool, default False
         Whether to return all samples as flattened tokens. If True, each sample is a token.
-    skip_empty : bool, default False
+    skip_empty : bool, default True
         Whether to skip the empty samples produced from sample_splitters. If False, `bos` and `eos`
         will be added in empty samples.
     sample_splitter : function, default str.splitlines
@@ -78,18 +60,23 @@ class CorpusDataset(SimpleDataset):
         The token to add at the end of each sequence. If None, or if tokenizer is not
         specified, then nothing is added.
     """
-    def __init__(self, filename, encoding='utf8', flatten=False, skip_empty=False,
-                 sample_splitter=str.splitlines, tokenizer=str.split,
+    def __init__(self, filename, encoding='utf8', flatten=False, skip_empty=True,
+                 sample_splitter=lambda s: s.splitlines(), tokenizer=lambda s: s.split(),
                  bos=None, eos=None):
         assert sample_splitter, 'sample_splitter must be specified.'
-        self._filename = os.path.expanduser(filename)
+
+        if not isinstance(filename, (tuple, list)):
+            filename = (filename, )
+
+        self._filenames = [os.path.expanduser(f) for f in filename]
         self._encoding = encoding
         self._flatten = flatten
         self._skip_empty = skip_empty
         self._sample_splitter = sample_splitter
         self._tokenizer = tokenizer
         def process(s):
-            tokens = [bos] + s if bos else s
+            tokens = [bos] if bos else []
+            tokens.extend(s)
             if eos:
                 tokens.append(eos)
             return tokens
@@ -97,15 +84,21 @@ class CorpusDataset(SimpleDataset):
         super(CorpusDataset, self).__init__(self._read())
 
     def _read(self):
-        with io.open(self._filename, 'r', encoding=self._encoding) as fin:
-            content = fin.read()
-        samples = self._sample_splitter(content)
-        if self._tokenizer:
-            samples = [self._process(self._tokenizer(s)) for s in samples
-                       if s or not self._skip_empty]
-            if self._flatten:
-                samples = concat_sequence(samples)
-        return samples
+        all_samples = []
+        for filename in self._filenames:
+            with io.open(filename, 'r', encoding=self._encoding) as fin:
+                content = fin.read()
+            samples = (s.strip() for s in self._sample_splitter(content))
+            if self._tokenizer:
+                samples = [self._process(self._tokenizer(s)) for s in samples
+                           if s or not self._skip_empty]
+                if self._flatten:
+                    samples = concat_sequence(samples)
+            elif self._skip_empty:
+                samples = [s for s in samples if s]
+
+            all_samples += samples
+        return all_samples
 
 
 class LanguageModelDataset(CorpusDataset):
@@ -133,7 +126,7 @@ class LanguageModelDataset(CorpusDataset):
     def __init__(self, filename, encoding='utf8', skip_empty=True,
                  sample_splitter=lambda s: s.splitlines(),
                  tokenizer=lambda s: s.split(), bos=None, eos=None):
-        assert tokenizer, "Tokenizer must be specified for reading language model corpus."
+        assert tokenizer, 'Tokenizer must be specified for reading language model corpus.'
         super(LanguageModelDataset, self).__init__(filename, encoding, True, skip_empty,
                                                    sample_splitter, tokenizer, bos, eos)
 

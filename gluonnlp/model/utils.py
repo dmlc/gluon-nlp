@@ -88,7 +88,11 @@ def _find_param(block, full_param_name, local_param_name):
                 break
 
     if block._children:
-        for c in block._children:
+        if isinstance(block._children, list):
+            children = block._children
+        elif isinstance(block._children, dict):
+            children = block._children.values()
+        for c in children:
             pd, rd = _find_param(c, full_param_name, local_param_name)
             param_dict_results.extend(pd)
             reg_dict_results.extend(rd)

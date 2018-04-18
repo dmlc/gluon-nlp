@@ -27,21 +27,22 @@ sys.path.insert(0, os.path.join(curr_path, '..'))
 
 # -- General configuration ------------------------------------------------
 
+# Version information.
+import gluonnlp as nlp
+version = nlp.__version__
+release = nlp.__version__
+
 # General information about the project.
 project = u'gluonnlp'
 author = u'%s developers' % project
 copyright = u'2018, %s' % author
-github_doc_root = 'http://gluon-nlp.s3-accelerate.dualstack.amazonaws.com/'
+github_doc_root = 'http://gluon-nlp.mxnet.io/{}/'.format(str(version))
 
 # add markdown parser
 CommonMarkParser.github_doc_root = github_doc_root
 source_parsers = {
     '.md': CommonMarkParser
 }
-# Version information.
-import gluonnlp as nlp
-version = nlp.__version__
-release = nlp.__version__
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom ones

@@ -30,10 +30,6 @@ VERSION = find_version('gluonnlp', '__init__.py')
 
 requirements = [
     'numpy',
-    'tqdm',
-    'requests',
-    'spacy',
-    'nltk',
 ]
 
 setup(
@@ -41,15 +37,17 @@ setup(
     name='gluonnlp',
     version=VERSION,
     author='Gluon NLP Toolkit Contributors',
-    author_email='hzaws@amazon.com',
-    url='https://github.com/dmlc/gluon-nlp-toolkit',
+    author_email='mxnet-gluon@amazon.com',
+    url='https://github.com/dmlc/gluon-nlp',
     description='MXNet Gluon NLP Toolkit',
     long_description=readme,
     license='Apache-2.0',
 
     # Package info
-    packages=find_packages(exclude=('tests',)),
-
+    packages=find_packages(exclude=(
+        'tests',
+        'scripts',
+    )),
     zip_safe=True,
     install_requires=requirements,
 )

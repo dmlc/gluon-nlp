@@ -28,18 +28,22 @@ zoo, and reuse the language model encoder for sentiment analysis on IMDB movie r
 import argparse
 import time
 import random
+import glob
+import multiprocessing as mp
+
 import numpy as np
+
 import mxnet as mx
 from mxnet import gluon, autograd
 from mxnet.gluon import Block, HybridBlock
-from mxnet.gluon.data import SimpleDataset, ArrayDataset, DataLoader
+from mxnet.gluon.data import DataLoader
+
 import gluonnlp
 from gluonnlp.data.sentiment import IMDB
 from gluonnlp.data import batchify as bf
 from gluonnlp.data.transforms import SpacyTokenizer, ClipSequence
 from gluonnlp.data.sampler import FixedBucketSampler, SortedBucketSampler, SortedSampler
 from gluonnlp.data.utils import train_valid_split
-import multiprocessing as mp
 
 np.random.seed(100)
 random.seed(100)
@@ -49,83 +53,62 @@ tokenizer = SpacyTokenizer('en')
 length_clip = ClipSequence(500)
 
 
-def parse_args():
-    parser = argparse.ArgumentParser(description='MXNet Sentiment Analysis Example on IMDB. '
-                                                 'We load a LSTM model that is pretrained on WikiText '
-                                                 'as our encoder.')
-    parser.add_argument('--lm_model', type=str, default='standard_lstm_lm_200',
-                        help='type of the pretrained model to load, can be "standard_lstm_200", '
-                             '"standard_lstm_200", etc.')
-    parser.add_argument('--use-mean-pool', type=bool, default=True, help="whether to use mean pooling to aggregate the states from different timestamps.")
-    parser.add_argument('--no_pretrained', action='store_true', help='Turn on the option to just use the structure and not load the pretrained weights.')
-    parser.add_argument('--lr', type=float, default=2.5E-3,
-                        help='initial learning rate')
-    parser.add_argument('--clip', type=float, default=None, help='gradient clipping')
-    parser.add_argument('--bucket_type', type=str, default=None,
-                        help='Can be "fixed" or "sorted"')
-    parser.add_argument('--bucket_num', type=int, default=10, help='The bucket_num if bucket_type is '
-                                                                   '"fixed".')
-    parser.add_argument('--bucket_ratio', type=float, default=0.0,
-                        help='The ratio used in the FixedBucketSampler.')
-    parser.add_argument('--bucket_mult', type=int, default=100,
-                        help='The mult used in the SortedBucketSampler.')
-    parser.add_argument('--valid_ratio', type=float, default=0.05,
-                        help='Proportion [0, 1] of training samples to use for validation set.')
-    parser.add_argument('--epochs', type=int, default=20,
-                        help='upper epoch limit')
-    parser.add_argument('--batch_size', type=int, default=16, metavar='N',
-                        help='batch size')
-    parser.add_argument('--dropout', type=float, default=0.,
-                        help='dropout applied to layers (0 = no dropout)')
-    parser.add_argument('--log-interval', type=int, default=30, metavar='N',
-                        help='report interval')
-    parser.add_argument('--save', type=str, default='model.params',
+parser = argparse.ArgumentParser(description='MXNet Sentiment Analysis Example on IMDB. '
+                                             'We load a LSTM model that is pretrained on '
+                                             'WikiText as our encoder.')
+parser.add_argument('--lm_model', type=str, default='standard_lstm_lm_200',
+                    help='type of the pretrained model to load, can be "standard_lstm_200", '
+                         '"standard_lstm_200", etc.')
+parser.add_argument('--use-mean-pool', type=bool, default=True,
+                    help='whether to use mean pooling to aggregate the states from '
+                         'different timestamps.')
+parser.add_argument('--no_pretrained', action='store_true',
+                    help='Turn on the option to just use the structure and '
+                         'not load the pretrained weights.')
+parser.add_argument('--lr', type=float, default=2.5E-3,
+                    help='initial learning rate')
+parser.add_argument('--clip', type=float, default=None, help='gradient clipping')
+parser.add_argument('--bucket_type', type=str, default=None,
+                    help='Can be "fixed" or "sorted"')
+parser.add_argument('--bucket_num', type=int, default=10,
+                    help='The bucket_num if bucket_type is "fixed".')
+parser.add_argument('--bucket_ratio', type=float, default=0.0,
+                    help='The ratio used in the FixedBucketSampler.')
+parser.add_argument('--bucket_mult', type=int, default=100,
+                    help='The mult used in the SortedBucketSampler.')
+parser.add_argument('--valid_ratio', type=float, default=0.05,
+                    help='Proportion [0, 1] of training samples to use for validation set.')
+parser.add_argument('--epochs', type=int, default=20,
+                    help='upper epoch limit')
+parser.add_argument('--batch_size', type=int, default=16, metavar='N',
+                    help='batch size')
+parser.add_argument('--dropout', type=float, default=0.,
+                    help='dropout applied to layers (0 = no dropout)')
+parser.add_argument('--log-interval', type=int, default=30, metavar='N',
+                    help='report interval')
+parser.add_argument('--save-prefix', type=str, default='sa-model',
                     help='path to save the final model')
-    parser.add_argument('--gpu', type=int, default=None,
-                        help='id of the gpu to use. Set it to empty means to use cpu.')
-    args = parser.parse_args()
-    return args
+parser.add_argument('--gpu', type=int, default=None,
+                    help='id of the gpu to use. Set it to empty means to use cpu.')
+args = parser.parse_args()
+print(args)
 
-
-def preprocess(x):
-    data, label = x
-    label = int(label > 5)
-    data = vocab[length_clip(tokenizer(data))]
-    return data, label
-
-
-def get_length(x):
-    return float(len(x[0]))
-
-
-def load_data():
-    # Load the dataset
-    train_dataset, test_dataset = [IMDB(root='data/imdb', segment=segment) for segment in ('train', 'test')]
-    train_dataset, valid_dataset = train_valid_split(train_dataset, args.valid_ratio)
-    print("Tokenize using spaCy...")
-
-    def preprocess_dataset(dataset):
-        start = time.time()
-        with mp.Pool(8) as pool:
-            dataset = gluon.data.SimpleDataset(pool.map(preprocess, dataset))
-            lengths = gluon.data.SimpleDataset(pool.map(get_length, dataset))
-        end = time.time()
-        print('Done! Tokenizing Time={:.2f}s, #Sentences={}'.format(end - start, len(dataset)))
-        return dataset, lengths
-
-    # Preprocess the dataset
-    train_dataset, train_data_lengths = preprocess_dataset(train_dataset)
-    valid_dataset, valid_data_lengths = preprocess_dataset(valid_dataset)
-    test_dataset, test_data_lengths = preprocess_dataset(test_dataset)
-    return train_dataset, train_data_lengths, valid_dataset, valid_data_lengths, test_dataset, test_data_lengths
-
+pretrained = not args.no_pretrained
+if args.gpu is None:
+    print('Use cpu')
+    context = mx.cpu()
+else:
+    print('Use gpu%d' % args.gpu)
+    context = mx.gpu(args.gpu)
 
 class AggregationLayer(HybridBlock):
+    """A block for different ways of aggregating encoder features"""
     def __init__(self, use_mean_pool=False, prefix=None, params=None):
         super(AggregationLayer, self).__init__(prefix=prefix, params=params)
         self._use_mean_pool = use_mean_pool
 
-    def hybrid_forward(self, F, data, valid_length):
+    def hybrid_forward(self, F, data, valid_length): # pylint: disable=arguments-differ
+        """Forward logic"""
         # Data will have shape (T, N, C)
         if self._use_mean_pool:
             masked_encoded = F.SequenceMask(data,
@@ -141,27 +124,120 @@ class AggregationLayer(HybridBlock):
 
 
 class SentimentNet(Block):
-    def __init__(self, lm_model, dropout, use_mean_pool=False, prefix=None, params=None):
+    """Network for sentiment analysis."""
+    def __init__(self, dropout, use_mean_pool=False, prefix=None, params=None):
         super(SentimentNet, self).__init__(prefix=prefix, params=params)
         self._use_mean_pool = use_mean_pool
         with self.name_scope():
-            self.embedding = lm_model.embedding
-            self.encoder = lm_model.encoder
+            self.embedding = None
+            self.encoder = None
             self.agg_layer = AggregationLayer(use_mean_pool=use_mean_pool)
-            self.out_layer = gluon.nn.HybridSequential()
-            with self.out_layer.name_scope():
-                self.out_layer.add(gluon.nn.Dropout(dropout))
-                self.out_layer.add(gluon.nn.Dense(1, flatten=False))
+            self.output = gluon.nn.HybridSequential()
+            with self.output.name_scope():
+                self.output.add(gluon.nn.Dropout(dropout))
+                self.output.add(gluon.nn.Dense(1, flatten=False))
 
-    def forward(self, data, valid_length):
+    def forward(self, data, valid_length): # pylint: disable=arguments-differ
         encoded = self.encoder(self.embedding(data))  # Shape(T, N, C)
         agg_state = self.agg_layer(encoded, valid_length)
-        out = self.out_layer(agg_state)
+        out = self.output(agg_state)
         return out
 
+net = SentimentNet(dropout=args.dropout, use_mean_pool=args.use_mean_pool)
+with net.name_scope():
+    lm_model, vocab = gluonnlp.model.get_model(name=args.lm_model,
+                                               dataset_name='wikitext-2',
+                                               pretrained=pretrained,
+                                               ctx=context,
+                                               dropout=args.dropout)
+net.embedding = lm_model.embedding
+net.encoder = lm_model.encoder
 
-def evaluate(net, dataloader, context):
-    loss = gluon.loss.SigmoidBCELoss()
+
+# Dataset preprocessing
+def preprocess(x):
+    data, label = x
+    label = int(label > 5)
+    data = vocab[length_clip(tokenizer(data))]
+    return data, label
+
+def get_length(x):
+    return float(len(x[0]))
+
+# Load the dataset
+train_dataset, test_dataset = [IMDB(root='data/imdb', segment=segment)
+                               for segment in ('train', 'test')]
+train_dataset, valid_dataset = train_valid_split(train_dataset, args.valid_ratio)
+print('Tokenize using spaCy...')
+
+def preprocess_dataset(dataset):
+    start = time.time()
+    pool = mp.Pool(8)
+    dataset = gluon.data.SimpleDataset(pool.map(preprocess, dataset))
+    lengths = gluon.data.SimpleDataset(pool.map(get_length, dataset))
+    end = time.time()
+    print('Done! Tokenizing Time={:.2f}s, #Sentences={}'.format(end - start, len(dataset)))
+    return dataset, lengths
+
+# Preprocess the dataset
+train_dataset, train_data_lengths = preprocess_dataset(train_dataset)
+valid_dataset, valid_data_lengths = preprocess_dataset(valid_dataset)
+test_dataset, test_data_lengths = preprocess_dataset(test_dataset)
+
+# Construct the DataLoader
+batchify_fn = bf.Tuple(bf.Pad(axis=0, ret_length=True), bf.Stack())  # Pad data and stack label
+if args.bucket_type is None:
+    print('Bucketing strategy is not used!')
+    train_dataloader = DataLoader(dataset=train_dataset,
+                                  batch_size=args.batch_size,
+                                  shuffle=True,
+                                  batchify_fn=batchify_fn)
+else:
+    if args.bucket_type == 'fixed':
+        print('Use FixedBucketSampler')
+        batch_sampler = FixedBucketSampler(train_data_lengths,
+                                           batch_size=args.batch_size,
+                                           num_buckets=args.bucket_num,
+                                           ratio=args.bucket_ratio,
+                                           shuffle=True)
+        print(batch_sampler.stats())
+    elif args.bucket_type == 'sorted':
+        print('Use SortedBucketSampler')
+        batch_sampler = SortedBucketSampler(train_data_lengths,
+                                            batch_size=args.batch_size,
+                                            mult=args.bucket_mult,
+                                            shuffle=True)
+    else:
+        raise NotImplementedError
+    train_dataloader = DataLoader(dataset=train_dataset,
+                                  batch_sampler=batch_sampler,
+                                  batchify_fn=batchify_fn)
+
+valid_dataloader = DataLoader(dataset=valid_dataset,
+                              batch_size=args.batch_size,
+                              shuffle=False,
+                              sampler=SortedSampler(valid_data_lengths),
+                              batchify_fn=batchify_fn)
+
+test_dataloader = DataLoader(dataset=test_dataset,
+                             batch_size=args.batch_size,
+                             shuffle=False,
+                             sampler=SortedSampler(test_data_lengths),
+                             batchify_fn=batchify_fn)
+
+
+net.hybridize()
+print(net)
+if args.no_pretrained:
+    net.initialize(mx.init.Xavier(), ctx=context)
+else:
+    net.output.initialize(mx.init.Xavier(), ctx=context)
+trainer = gluon.Trainer(net.collect_params(), 'ftml', {'learning_rate': args.lr})
+loss = gluon.loss.SigmoidBCELoss()
+
+
+def evaluate(dataloader):
+    """Evaluate network on the specified dataset"""
     total_L = 0.0
     total_sample_num = 0
     total_correct_num = 0
@@ -186,81 +262,9 @@ def evaluate(net, dataloader, context):
     return avg_L, acc
 
 
-args = parse_args()
-print(args)
-pretrained = not args.no_pretrained
-# Load the pretrained model
-if args.gpu is None:
-    print("Use cpu")
-    context = mx.cpu()
-else:
-    print("Use gpu%d" % args.gpu)
-    context = mx.gpu(args.gpu)
-lm_model, vocab = gluonnlp.model.get_model(name=args.lm_model,
-                                           dataset_name='wikitext-2',
-                                           pretrained=pretrained,
-                                           ctx=context,
-                                           dropout=args.dropout,
-                                           prefix='sent_net_')
-# Load and preprocess the dataset
-train_dataset, train_data_lengths, \
-valid_dataset, valid_data_lengths, \
-test_dataset, test_data_lengths = load_data()
-
-
 def train():
+    """Training process"""
     start_pipeline_time = time.time()
-    net = SentimentNet(lm_model=lm_model, dropout=args.dropout, use_mean_pool=args.use_mean_pool,
-                       prefix='sent_net_')
-    net.hybridize()
-    print(net)
-    if args.no_pretrained:
-        net.collect_params().initialize(mx.init.Xavier(), ctx=context)
-    else:
-        net.out_layer.initialize(mx.init.Xavier(), ctx=context)
-    trainer = gluon.Trainer(net.collect_params(), 'ftml', {'learning_rate': args.lr})
-    loss = gluon.loss.SigmoidBCELoss()
-
-    # Construct the DataLoader
-    batchify_fn = bf.Tuple(bf.Pad(axis=0, ret_length=True), bf.Stack())  # Pad data and stack label
-    if args.bucket_type is None:
-        print("Bucketing strategy is not used!")
-        train_dataloader = DataLoader(dataset=train_dataset,
-                                      batch_size=args.batch_size,
-                                      shuffle=True,
-                                      batchify_fn=batchify_fn)
-    else:
-        if args.bucket_type == "fixed":
-            print("Use FixedBucketSampler")
-            batch_sampler = FixedBucketSampler(train_data_lengths,
-                                               batch_size=args.batch_size,
-                                               num_buckets=args.bucket_num,
-                                               ratio=args.bucket_ratio,
-                                               shuffle=True)
-            print(batch_sampler.stats())
-        elif args.bucket_type == "sorted":
-            print("Use SortedBucketSampler")
-            batch_sampler = SortedBucketSampler(train_data_lengths,
-                                                batch_size=args.batch_size,
-                                                mult=args.bucket_mult,
-                                                shuffle=True)
-        else:
-            raise NotImplementedError
-        train_dataloader = DataLoader(dataset=train_dataset,
-                                      batch_sampler=batch_sampler,
-                                      batchify_fn=batchify_fn)
-
-    valid_dataloader = DataLoader(dataset=valid_dataset,
-                                 batch_size=args.batch_size,
-                                 shuffle=False,
-                                 sampler=SortedSampler(valid_data_lengths),
-                                 batchify_fn=batchify_fn)
-
-    test_dataloader = DataLoader(dataset=test_dataset,
-                                 batch_size=args.batch_size,
-                                 shuffle=False,
-                                 sampler=SortedSampler(test_data_lengths),
-                                 batchify_fn=batchify_fn)
 
     # Training/Testing
     best_valid_acc = 0
@@ -309,33 +313,34 @@ def train():
                 log_interval_sent_num = 0
                 log_interval_L = 0
         end_epoch_time = time.time()
-        valid_avg_L, valid_acc = evaluate(net, valid_dataloader, context)
-        test_avg_L, test_acc = evaluate(net, test_dataloader, context)
-        print('[Epoch %d] train avg loss %g, valid acc %.4f, valid avg loss %g, test acc %.4f, test avg loss %g, throughput %gK wps' % (
-            epoch, epoch_L / epoch_sent_num,
-            valid_acc, valid_avg_L, test_acc, test_avg_L,
-            epoch_wc / 1000 / (end_epoch_time - start_epoch_time)))
+        valid_avg_L, valid_acc = evaluate(valid_dataloader)
+        test_avg_L, test_acc = evaluate(test_dataloader)
+        print('[Epoch %d] train avg loss %g, '
+              'valid acc %.4f, valid avg loss %g, '
+              'test acc %.4f, test avg loss %g, throughput %gK wps' % (
+                  epoch, epoch_L / epoch_sent_num,
+                  valid_acc, valid_avg_L, test_acc, test_avg_L,
+                  epoch_wc / 1000 / (end_epoch_time - start_epoch_time)))
 
         if valid_acc < best_valid_acc:
-            print("No Improvement.")
+            print('No Improvement.')
             stop_early += 1
             if stop_early == 3:
                 break
         else:
             # Reset stop_early if the validation loss finds a new low value
-            print("Observe Improvement")
+            print('Observed Improvement.')
             stop_early = 0
-            net.save_params(args.save)
+            net.save_params(args.save_prefix + '_{:04d}.params'.format(epoch))
             best_valid_acc = valid_acc
 
-    net.load_params(args.save, context)
-    valid_avg_L, valid_acc = evaluate(net, valid_dataloader, context)
-    test_avg_L, test_acc = evaluate(net, test_dataloader, context)
+    net.load_params(glob.glob(args.save_prefix+'_*.params')[-1], context)
+    valid_avg_L, valid_acc = evaluate(valid_dataloader)
+    test_avg_L, test_acc = evaluate(test_dataloader)
     print('Best validation loss %g, validation acc %.4f'%(valid_avg_L, valid_acc))
     print('Best test loss %g, test acc %.4f'%(test_avg_L, test_acc))
     print('Total time cost %.2fs'%(time.time()-start_pipeline_time))
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     train()
-

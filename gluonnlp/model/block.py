@@ -38,7 +38,7 @@ class RNNCellLayer(Block):
         super(RNNCellLayer, self).__init__(**kwargs)
         self.cell = rnn_cell
         assert layout == 'TNC' or layout == 'NTC', \
-            "Invalid layout %s; must be one of ['TNC' or 'NTC']"%layout
+            'Invalid layout %s; must be one of ["TNC" or "NTC"]'%layout
         self._layout = layout
         self._axis = layout.find('T')
         self._batch_axis = layout.find('N')
@@ -55,7 +55,7 @@ class RNNCellLayer(Block):
         for state, info in zip(states, self.cell.state_info(batch_size)):
             if state.shape != info['shape']:
                 raise ValueError(
-                    "Invalid recurrent state shape. Expecting %s, got %s."%(
+                    'Invalid recurrent state shape. Expecting %s, got %s.'%(
                         str(info['shape']), str(state.shape)))
         states = sum(zip(*((j for j in i) for i in states)), ())
         outputs, states = self.cell.unroll(
