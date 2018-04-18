@@ -248,10 +248,11 @@ class BeamSearchSampler(object):
     Parameters
     ----------
     beam_size : int
+        The beam size.
     decoder : callable
-        Function of the one-step-ahead decoder, should have the form:
+        Function of the one-step-ahead decoder, should have the form::
 
-        ``log_probs, new_states = decoder(step_input, states)``
+            log_probs, new_states = decoder(step_input, states)
 
         The log_probs, input should follow these rules:
 
@@ -269,6 +270,8 @@ class BeamSearchSampler(object):
     def __init__(self, beam_size, decoder, eos_id, scorer=BeamSearchScorer(alpha=1.0, K=5),
                  max_length=100):
         self._beam_size = beam_size
+        assert beam_size > 0,\
+            "beam_size must be larger than 0. Received beam_size={}".format(beam_size)
         self._decoder = decoder
         self._eos_id = eos_id
         assert eos_id >= 0, 'eos_id cannot be negative! Received eos_id={}'.format(eos_id)
