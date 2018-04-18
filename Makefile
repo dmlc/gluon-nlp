@@ -18,7 +18,7 @@
 ROOTDIR = $(CURDIR)
 
 pylint:
-	pylint --rcfile=$(ROOTDIR)/.pylintrc gluonnlp scripts/*.py
+	pylint --rcfile=$(ROOTDIR)/.pylintrc gluonnlp scripts/*/*.py
 
 docs:
 	make -C docs html

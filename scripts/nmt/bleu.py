@@ -1,3 +1,23 @@
+# coding: utf-8
+
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+
+"""BLEU."""
 import math
 from collections import Counter
 
@@ -48,7 +68,8 @@ def compute_bleu(reference_corpus, translation_corpus, max_n=4, smooth=False, lo
     precision_numerators = Counter()
     precision_denominators = Counter()
     ref_length, trans_length = 0, 0
-    assert len(reference_corpus) == len(translation_corpus), "The number of translations and their references do not match"
+    assert len(reference_corpus) == len(translation_corpus), \
+        'The number of translations and their references do not match'
 
     for references, translation in zip(reference_corpus, translation_corpus):
         if lower_case:
@@ -154,7 +175,8 @@ def _closest_ref_length(references, trans_length):
         Length of the reference that is closest to the translation.
     """
     ref_lengths = (len(reference) for reference in references)
-    closest_ref_len = min(ref_lengths, key=lambda ref_length: (abs(ref_length - trans_length), ref_length))
+    closest_ref_len = min(ref_lengths,
+                          key=lambda ref_length: (abs(ref_length - trans_length), ref_length))
 
     return closest_ref_len
 
