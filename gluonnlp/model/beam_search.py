@@ -193,7 +193,7 @@ class _BeamSearchStepUpdate(HybridBlock):
         """
         beam_size = self._beam_size
         beam_alive_mask_bcast = F.expand_dims(beam_alive_mask, axis=2)
-        candidate_scores = self._scorer(F.reshape(log_probs, shape=(-4, -1, beam_size, 0)),
+        candidate_scores = self._scorer(log_probs.reshape(shape=(-4, -1, beam_size, 0)),
                                         scores, step)
         # Concat the candidate scores and the scores of the finished beams
         # The resulting candidate score will have shape (batch_size, beam_size * |V| + beam_size)
@@ -202,7 +202,7 @@ class _BeamSearchStepUpdate(HybridBlock):
                                            F.ones_like(candidate_scores) * LARGE_NEGATIVE_FLOAT)
         finished_scores = F.where(beam_alive_mask,
                                   F.ones_like(scores) * LARGE_NEGATIVE_FLOAT, scores)
-        candidate_scores = F.concat(F.reshape(candidate_scores, shape=(0, -1)),
+        candidate_scores = F.concat(candidate_scores.reshape(shape=(0, -1)),
                                     finished_scores, dim=1)
         # Get the top K scores
         new_scores, indices = F.topk(candidate_scores, axis=1, k=beam_size, ret_typ='both')
@@ -216,23 +216,22 @@ class _BeamSearchStepUpdate(HybridBlock):
                                   -F.ones_like(indices),
                                   chosen_word_ids)
         # Update the samples and vaild_length
-        new_samples = F.reshape(F.concat(F.take(F.reshape(samples, shape=(-3, 0)),
-                                                F.reshape(batch_beam_indices, shape=(-1,))),
-                                         F.reshape(chosen_word_ids, shape=(-1, 1)), dim=1),
-                                shape=(-4, -1, beam_size, 0))
-        new_valid_length = F.reshape(F.take(F.reshape(valid_length, shape=(-1,)),
-                                            F.reshape(batch_beam_indices, shape=(-1,))),
-                                     shape=(-1, beam_size)) + 1 - use_prev_states
+        new_samples = F.concat(F.take(samples.reshape(shape=(-3, 0)),
+                                      batch_beam_indices.reshape(shape=(-1,))),
+                               chosen_word_ids.reshape(shape=(-1, 1)), dim=1)\
+                       .reshape(shape=(-4, -1, beam_size, 0))
+        new_valid_length = F.take(valid_length.reshape(shape=(-1,)),
+                                  batch_beam_indices.reshape(shape=(-1,))).reshape((-1, beam_size))\
+                           + 1 - use_prev_states
         # Update the states
         new_states = _choose_states(F, states, prev_states,
-                                    F.reshape(batch_beam_indices +
-                                              F.broadcast_mul(use_prev_states, batch_size)
-                                              * beam_size,
-                                              shape=(-1,)))
+                                    (batch_beam_indices +
+                                     F.broadcast_mul(use_prev_states, batch_size) * beam_size)
+                                    .reshape(shape=(-1,)))
         # Update the alive mask.
-        beam_alive_mask = F.reshape(F.take(F.reshape(beam_alive_mask, shape=(-1,)),
-                                           F.reshape(batch_beam_indices, shape=(-1,))),
-                                    shape=(-1, beam_size)) * (chosen_word_ids != self._eos_id)
+        beam_alive_mask = F.take(beam_alive_mask.reshape(shape=(-1,)),
+                                 batch_beam_indices.reshape(shape=(-1,)))\
+                              .reshape(shape=(-1, beam_size)) * (chosen_word_ids != self._eos_id)
 
         return new_samples, new_valid_length, new_scores,\
                chosen_word_ids, beam_alive_mask, new_states
