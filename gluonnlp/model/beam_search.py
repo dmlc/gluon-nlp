@@ -33,9 +33,10 @@ class BeamSearchScorer(HybridBlock):
 
     Implements the length-penalized score function used in the GNMT paper.
 
+    ``
     scores = (log_probs + scores) / length_penalty
-
-    length_penalty = (K + length)^:math:\alpha / (K + 1)^:math:\alpha
+    length_penalty = (K + length)^\alpha / (K + 1)^\alpha
+    ``
 
     Parameters
     ----------
@@ -53,15 +54,15 @@ class BeamSearchScorer(HybridBlock):
         Parameters
         ----------
         log_probs : NDArray or Symbol
-            The log probabilities of the candidates. Shape (..., V)
+            The log probabilities of the candidates. Shape (d1, d2, ..., dn, V)
         scores : NDArray or Symbol
-            The original scores of the beams. Shape (...,)
+            The original scores of the beams. Shape (d1, d2, ..., dn)
         step : NDArray or Symbol
             Step to calculate the score function. It starts from 1. Shape (1,)
         Returns
         -------
         candidate_scores : NDArray or Symbol
-            The scores of all the candidates. Shape (..., V)
+            The scores of all the candidates. Shape (d1, d2, ..., dn, V)
         """
         return super(BeamSearchScorer, self).__call__(log_probs, scores, step)
 
