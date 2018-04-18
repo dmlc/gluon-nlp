@@ -230,7 +230,7 @@ class TokenEmbedding(object):
         """Load embedding vectors from a pre-trained token embedding file.
 
         Both text files and TokenEmbedding serialization files are supported.
-        Encoding is ignored for non-text files.
+        elem_delim and encoding are ignored for non-text files.
 
         For every unknown token, if its representation `self.unknown_token` is encountered in the
         pre-trained token embedding file, index 0 of `self.idx_to_vec` maps to the pre-trained token
@@ -245,9 +245,8 @@ class TokenEmbedding(object):
         pretrained_file_path = os.path.expanduser(pretrained_file_path)
 
         if not os.path.isfile(pretrained_file_path):
-            raise ValueError(
-                '`pretrained_file_path` must be a valid path to the pre-trained '
-                'token embedding file.')
+            raise ValueError('`pretrained_file_path` must be a valid path '
+                             'to the pre-trained token embedding file.')
 
         logging.info('Loading pre-trained token embedding vectors from %s',
                      pretrained_file_path)
@@ -265,7 +264,6 @@ class TokenEmbedding(object):
     def _load_embedding_txt(self, pretrained_file_path, elem_delim,
                             init_unknown_vec, encoding='utf8'):
         """Load embedding vectors from a pre-trained token embedding file.
-
 
         For every unknown token, if its representation `self.unknown_token` is encountered in the
         pre-trained token embedding file, index 0 of `self.idx_to_vec` maps to the pre-trained token
