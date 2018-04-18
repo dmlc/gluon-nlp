@@ -574,7 +574,7 @@ class TokenEmbedding(object):
 
     @classmethod
     def deserialize(cls, file_path):
-        """Serializes the TokenEmbedding to a file specified by file_path.
+        """Create a new TokenEmbedding from a serialized one.
 
         TokenEmbedding is serialized by converting the list of tokens, the
         array of word embeddings and other metadata to numpy arrays, saving all
@@ -586,12 +586,7 @@ class TokenEmbedding(object):
         Parameters
         ----------
         file_path : str or file
-            The path at which to create the file holding the serialized
-            TokenEmbedding. If file is a string or a Path, the .npz extension
-            will be appended to the file name if it is not already there.
-        compress : bool, default False
-            Compress the Zipfile or leave it uncompressed.
-
+            The path to a file that holds the serialized TokenEmbedding.
         """
         npz_dict = np.load(file_path, allow_pickle=False)
 
