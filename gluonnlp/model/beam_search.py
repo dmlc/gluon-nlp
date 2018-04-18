@@ -31,12 +31,11 @@ from .._constants import LARGE_NEGATIVE_FLOAT
 class BeamSearchScorer(HybridBlock):
     r"""Score function used in beam search.
 
-    Implements the length-penalized score function used in the GNMT paper.
+    Implements the length-penalized score function used in the GNMT paper::
 
-    ``
-    scores = (log_probs + scores) / length_penalty
-    length_penalty = (K + length)^\alpha / (K + 1)^\alpha
-    ``
+        scores = (log_probs + scores) / length_penalty
+        length_penalty = (K + length)^\alpha / (K + 1)^\alpha
+
 
     Parameters
     ----------
@@ -257,7 +256,7 @@ class BeamSearchSampler(object):
         The log_probs, input should follow these rules:
 
         - step_input has shape (batch_size,),
-        - log_probs has shape (batch_size, |V|),
+        - log_probs has shape (batch_size, V),
         - states and new_states have the same structure and the leading
           dimension of the inner NDArrays is the batch dimension.
     eos_id : int
@@ -284,7 +283,7 @@ class BeamSearchSampler(object):
         Parameters
         ----------
         inputs : NDArray
-            The initial input of the decoder. Shape is (batch_size, 1).
+            The initial input of the decoder. Shape is (batch_size,).
         states : Object that contains NDArrays
             The initial states of the decoder.
         Returns
