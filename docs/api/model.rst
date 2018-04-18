@@ -14,10 +14,10 @@ Beam Search
 .. automodule:: gluonnlp.model.beam_search
 
     .. autoclass:: gluonnlp.model.beam_search.BeamSearchScorer
-        :members:
+        :special-members: __call__
 
     .. autoclass:: gluonnlp.model.beam_search.BeamSearchSampler
-        :members:
+        :special-members: __call__
 
 
 Modeling Utilities
