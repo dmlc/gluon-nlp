@@ -90,7 +90,7 @@ def test_bleu():
     _write_translaton(translation_corpus, path=trans_path)
     ret_bleu, _, _, _, _ = compute_bleu(reference_corpus, translation_corpus)
     mose_ret = subprocess.check_output("perl %s/multi-bleu.perl %s < %s"
-                                       % (path, ref_path, trans_path),
+                                       % (test_path, ref_path, trans_path),
                                        shell=True).decode("utf-8")
     m = re.search("BLEU = (.+?),", mose_ret)
     gt_bleu = float(m.group(1))
