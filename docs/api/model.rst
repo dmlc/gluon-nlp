@@ -9,10 +9,15 @@ Language Modeling
 .. automodule:: gluonnlp.model.language_model
     :members:
 
-Machine Translation
--------------------
+Beam Search
+-----------
 .. automodule:: gluonnlp.model.beam_search
-    :members:
+    .. autoclass:: BeamSearchScorer
+        :special-members: __call__
+
+    .. autoclass:: BeamSearchSampler
+        :special-members: __call__
+
 
 Modeling Utilities
 ------------------
