@@ -2,7 +2,7 @@ import numpy as np
 import mxnet as mx
 from mxnet.gluon.rnn import RNNCell
 from mxnet.gluon import nn, HybridBlock
-from gluon_nmt.beam_search import BeamSearchSampler, BeamSearchScorer
+from gluonnlp.model import BeamSearchSampler, BeamSearchScorer
 from numpy.testing import assert_allclose
 import functools
 
