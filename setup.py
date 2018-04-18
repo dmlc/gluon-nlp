@@ -51,4 +51,8 @@ setup(
     zip_safe=True,
     include_package_data=True,
     install_requires=requirements,
+    extras_require={
+        'SpacyTokenizer': ['spacy'],
+        'NLTKMosesTokenizer': ['nltk'],
+    },
 )
