@@ -303,7 +303,9 @@ class BeamSearchSampler(object):
                               new_states, states, vocab_num_nd, batch_size_nd, batch_shift_nd)
             step_input = mx.nd.relu(chosen_word_ids).reshape((-1,))
             if mx.nd.sum(beam_alive_mask).asscalar() == 0:
-                return samples, scores, mx.nd.round(valid_length).astype(np.int32)
+                return mx.nd.round(samples).astype(np.int32),\
+                       scores,\
+                       mx.nd.round(valid_length).astype(np.int32)
         final_word = mx.nd.where(beam_alive_mask,
                                    mx.nd.full(shape=(batch_size, beam_size),
                                               val=self._eos_id, ctx=ctx),
@@ -311,4 +313,6 @@ class BeamSearchSampler(object):
                                               val=-1, ctx=ctx))
         samples = mx.nd.concat(samples, final_word.reshape((0, 0, 1)), dim=2)
         valid_length += beam_alive_mask
-        return samples, scores, mx.nd.round(valid_length).astype(np.int32)
+        return mx.nd.round(samples).astype(np.int32),\
+               scores,\
+               mx.nd.round(valid_length).astype(np.int32)
