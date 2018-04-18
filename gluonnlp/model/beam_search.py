@@ -269,11 +269,11 @@ class BeamSearchSampler(object):
         Returns
         -------
         samples : NDArray
-            Samples draw by beam search. Shape (batch_size, beam_size, length)
+            Samples draw by beam search. Shape (batch_size, beam_size, length). Type will be int32.
         scores : NDArray
             Scores of the samples. Shape (batch_size, beam_size)
         valid_length : NDArray
-            The valid length of the samples. Shape (batch_size, beam_size)
+            The valid length of the samples. Shape (batch_size, beam_size). Type will be int32.
         """
         batch_size = inputs.shape[0]
         beam_size = self._beam_size
