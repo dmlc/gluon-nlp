@@ -58,17 +58,13 @@ class BeamSearchScorer(HybridBlock):
         candidate_scores : NDArray or Symbol
             The scores of all the candidates. Shape ((..., |V|)
         """
-        if self._alpha == 0:
-            # No length penalty
-            return F.broadcast_add(log_probs, F.expand_dims(scores, axis=-1))
-        else:
-            prev_lp = (self._K + step - 1) ** self._alpha / (self._K + 1) ** self._alpha
-            prev_lp = prev_lp * (step != 1) + (step == 1)
-            scores = F.broadcast_mul(scores, prev_lp)
-            lp = (self._K + step) ** self._alpha / (self._K + 1) ** self._alpha
-            candidate_scores = F.broadcast_add(log_probs, F.expand_dims(scores, axis=-1))
-            candidate_scores = F.broadcast_div(candidate_scores, lp)
-            return candidate_scores
+        prev_lp = (self._K + step - 1) ** self._alpha / (self._K + 1) ** self._alpha
+        prev_lp = prev_lp * (step != 1) + (step == 1)
+        scores = F.broadcast_mul(scores, prev_lp)
+        lp = (self._K + step) ** self._alpha / (self._K + 1) ** self._alpha
+        candidate_scores = F.broadcast_add(log_probs, F.expand_dims(scores, axis=-1))
+        candidate_scores = F.broadcast_div(candidate_scores, lp)
+        return candidate_scores
 
 
 def _expand_to_beam_size(data, beam_size, batch_size):
