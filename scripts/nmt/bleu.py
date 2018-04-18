@@ -17,6 +17,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
+"""BLEU."""
 import math
 from collections import Counter
 

@@ -17,6 +17,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
+"""Test BLEU."""
 from __future__ import print_function
 
 import string
@@ -93,6 +94,7 @@ def _write_reference(references, path='reference'):
 
 
 def test_bleu():
+    """Test BLEU utility against multi-bleu.perl."""
     n = 100
     max_len = 50
     n_refs = 5
