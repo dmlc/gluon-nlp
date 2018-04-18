@@ -255,7 +255,7 @@ class BeamSearchSampler(object):
         self._max_length = max_length
         self._scorer = scorer
         self._updater = _BeamSearchStepUpdate(beam_size=beam_size, eos_id=eos_id, scorer=scorer)
-        # self._updater.hybridize()
+        self._updater.hybridize()
 
     def __call__(self, inputs, states):
         """Sample by beam search.
