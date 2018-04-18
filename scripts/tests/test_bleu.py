@@ -27,7 +27,7 @@ import subprocess
 import codecs
 import numpy as np
 from numpy.testing import assert_allclose
-from bleu import compute_bleu
+from scripts.nmt.bleu import compute_bleu
 
 
 actions = ['deletion', 'replacement', 'add']
