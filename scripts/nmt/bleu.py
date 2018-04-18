@@ -135,7 +135,7 @@ def _brevity_penalty(ref_length, trans_length):
     elif trans_length == 0:
         return 0
     else:
-        return math.exp(1 - ref_length / trans_length)
+        return math.exp(1 - float(ref_length) / trans_length)
 
 
 def _closest_ref_length(references, trans_length):
@@ -177,7 +177,7 @@ def _smoothing(precision_fractions, c=1):
     ratios = [0] * len(precision_fractions)
     for i, precision_fraction in enumerate(precision_fractions):
         if precision_fraction[1] > 0:
-            ratios[i] = (precision_fraction[0] + c) / (precision_fraction[1] + c)
+            ratios[i] = float(precision_fraction[0] + c) / (precision_fraction[1] + c)
         else:
             ratios[i] = 0.0
 
