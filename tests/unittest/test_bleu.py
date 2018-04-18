@@ -7,7 +7,10 @@ import codecs
 import numpy as np
 import gluonnlp
 from numpy.testing import assert_allclose
-from gluon_nmt.utils.bleu import compute_bleu
+
+path = os.path.realpath(os.path.join(os.path.dirname(gluonnlp.__file__), '..', 'scripts', 'nmt'))
+sys.path.append(path)
+from bleu import compute_bleu
 
 
 actions = ['deletion', 'replacement', 'add']
@@ -85,9 +88,8 @@ def test_bleu():
     translation_corpus = _sample_translation_corpus(reference_corpus, max_len)
     _write_reference(reference_corpus, path=ref_path)
     _write_translaton(translation_corpus, path=trans_path)
-    path = os.path.realpath(os.path.join(os.path.dirname(gluonnlp.__file__), '..'))
     ret_bleu, _, _, _, _ = compute_bleu(reference_corpus, translation_corpus)
-    mose_ret = subprocess.check_output("perl %s/scripts/nmt//multi-bleu.perl %s < %s"
+    mose_ret = subprocess.check_output("perl %s/multi-bleu.perl %s < %s"
                                        % (path, ref_path, trans_path),
                                        shell=True).decode("utf-8")
     m = re.search("BLEU = (.+?),", mose_ret)
