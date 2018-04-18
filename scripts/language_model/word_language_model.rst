@@ -9,7 +9,7 @@ Use the following command to run the AWDRNN language model setting
 
    $ python word_language_model.py --tied --gpus 0 --save awd_lstm_lm_1150_wikitext-2 # Val PPL 73.32 Test PPL 69.74
 
-Use the following command to run the StandardRNN language model setting (emsize=1500, nhid=1500)
+Use the following command to run the StandardRNN language model setting (emsize=1,500, nhid=1,500)
 
 .. code-block:: bash
 
