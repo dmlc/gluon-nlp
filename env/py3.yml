@@ -8,7 +8,6 @@ dependencies:
   - sphinx=1.7.2
   - spacy
   - nltk
-  - nose>=1.3.7
-  - nose-timer
+  - pytest
   - pip:
     - mxnet>=1.2.0b20180415
