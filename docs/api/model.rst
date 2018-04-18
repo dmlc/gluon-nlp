@@ -9,6 +9,11 @@ Language Modeling
 .. automodule:: gluonnlp.model.language_model
     :members:
 
+Machine Translation
+-------------------
+.. automodule:: gluonnlp.model.beam_search
+    :members:
+
 Modeling Utilities
 ------------------
 .. automodule:: gluonnlp.model.parameter

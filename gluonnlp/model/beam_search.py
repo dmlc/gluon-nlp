@@ -27,6 +27,7 @@ import mxnet as mx
 from mxnet.gluon import HybridBlock
 from .._constants import LARGE_NEGATIVE_FLOAT
 
+
 class BeamSearchScorer(HybridBlock):
     """Score function used in beam search.
 
@@ -45,7 +46,7 @@ class BeamSearchScorer(HybridBlock):
         self._alpha = alpha
         self._K = K
 
-    def hybrid_forward(self, F, log_probs, scores, step):   # pylint: disable=arguments-differ
+    def __call__(self, log_probs, scores, step):
         """Compute new scores of each candidate
 
         Parameters
@@ -59,8 +60,11 @@ class BeamSearchScorer(HybridBlock):
         Returns
         -------
         candidate_scores : NDArray or Symbol
-            The scores of all the candidates. Shape ((..., |V|)
+            The scores of all the candidates. Shape (..., |V|)
         """
+        super(BeamSearchScorer, self).__call__(log_probs, scores, step)
+
+    def hybrid_forward(self, F, log_probs, scores, step):   # pylint: disable=arguments-differ
         prev_lp = (self._K + step - 1) ** self._alpha / (self._K + 1) ** self._alpha
         prev_lp = prev_lp * (step != 1) + (step == 1)
         scores = F.broadcast_mul(scores, prev_lp)
@@ -243,26 +247,25 @@ class BeamSearchSampler(object):
     The goal of beam search is to solve \argmax_{Y} S(Y, X). Assume that we know how to
     generetate.
 
+    Parameters
+    ----------
+    beam_size : int
+    decoder : callable
+        Function of the one-step-ahead decoder, should have the form:
+
+        ```log_probs, new_states = decoder(step_input, states)```
+
+        The log_probs, input should follow these rules:
+        - step_input has shape (batch_size,),
+        - log_probs has shape (batch_size, |V|),
+        - states and new_states have the same structure and the leading
+          dimension of the inner NDArrays is the batch dimension.
+    eos_id : int
+    scorer : BeamSearchScorer, default BeamSearchScorer(alpha=1.0, K=5)
+    max_length : int, default 100
     """
     def __init__(self, beam_size, decoder, eos_id, scorer=BeamSearchScorer(alpha=1.0, K=5),
                  max_length=100):
-        """
-
-        Parameters
-        ----------
-        beam_size : int
-        decoder : callable
-            Function of the one-step-ahead decoder, should have the form:
-                log_probs, new_states = decoder(step_input, states)
-            The log_probs, input should follow these rules:
-            - step_input has shape (batch_size,),
-            - log_probs has shape (batch_size, |V|),
-            - states and new_states have the same structure and the leading
-            dimension of the inner NDArrays is the batch dimension.
-        eos_id : int
-        scorer : BeamSearchScorer, default BeamSearchScorer(alpha=1.0, K=5)
-        max_length : int, default 100
-        """
         self._beam_size = beam_size
         self._decoder = decoder
         self._eos_id = eos_id
@@ -278,15 +281,16 @@ class BeamSearchSampler(object):
         Parameters
         ----------
         inputs : NDArray
-            The initial input of the decoder. Shape is (batch_size, 1)
+            The initial input of the decoder. Shape is (batch_size, 1).
         states : Object that contains NDArrays
-            The initial states of the decoder
+            The initial states of the decoder.
         Returns
         -------
         samples : NDArray
             Samples draw by beam search. Shape (batch_size, beam_size, length). Type will be int32.
         scores : NDArray
-            Scores of the samples. Shape (batch_size, beam_size)
+            Scores of the samples. Shape (batch_size, beam_size). We make sure that scores[i, :] are
+            in descending order.
         valid_length : NDArray
             The valid length of the samples. Shape (batch_size, beam_size). Type will be int32.
         """
