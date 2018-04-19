@@ -1,3 +1,5 @@
+# coding: utf-8
+
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -15,16 +17,5 @@
 # specific language governing permissions and limitations
 # under the License.
 
-ROOTDIR = $(CURDIR)
-
-pylint:
-	pylint --rcfile=$(ROOTDIR)/.pylintrc gluonnlp scripts/*/*.py
-
-docs:
-	make -C docs html
-
-test:
-	nosetests -v --nocapture tests scripts
-
-release:
-	python setup.py sdist
+# pylint: disable=wildcard-import
+"""NLP examples."""
