@@ -24,7 +24,7 @@ stage("Unit Test") {
         python -m spacy download en
         python -m nltk.downloader all
         python setup.py install
-        nosetests -v --nocapture --with-timer tests/unittest scripts/tests
+        nosetests -v --nocapture --with-timer scripts/*/test_*.py tests/unittest
         """
       }
     }
@@ -40,7 +40,7 @@ stage("Unit Test") {
         python -m spacy download en
         python -m nltk.downloader all
         python setup.py install
-        nosetests -v --nocapture --with-timer tests/unittest scripts/tests
+        nosetests -v --nocapture --with-timer scripts/*/test_*.py tests/unittest
         """
       }
     }
