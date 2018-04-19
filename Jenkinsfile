@@ -25,6 +25,7 @@ stage("Unit Test") {
         python -m nltk.downloader all
         python setup.py install
         nosetests -v --nocapture --with-timer tests/unittest
+        nosetests -v --nocapture --with-timer scripts
         """
       }
     }
@@ -41,6 +42,7 @@ stage("Unit Test") {
         python -m nltk.downloader all
         python setup.py install
         nosetests -v --nocapture --with-timer tests/unittest
+        nosetests -v --nocapture --with-timer scripts
         """
       }
     }
