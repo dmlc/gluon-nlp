@@ -23,10 +23,13 @@ import json
 import os
 import sys
 
+import random
 import mxnet as mx
 import numpy as np
 
 import gluonnlp as nlp
+
+from common import with_seed
 
 if sys.version_info[0] == 3:
     _str_types = (str, )
@@ -210,6 +213,100 @@ def test_bigger_analogy():
         root=os.path.join('tests', 'data', 'bigger_analogy'))
     assert len(data[0]) == 4
     assert len(data) == 98000
+
+
+def test_conll2000():
+    train = nlp.data.CoNLL2000(segment='train', root='tests/data/conll2000')
+    test = nlp.data.CoNLL2000(segment='test', root='tests/data/conll2000')
+    assert len(train) == 8936, len(train)
+    assert len(test) == 2012, len(test)
+
+    for i, (data, pos, chk) in enumerate(train):
+        assert all(isinstance(d, _str_types) for d in data), data
+        assert all(isinstance(p, _str_types) for p in pos), pos
+        assert all(isinstance(c, _str_types) for c in chk), chk
+
+    for i, (data, pos, chk) in enumerate(test):
+        assert all(isinstance(d, _str_types) for d in data), data
+        assert all(isinstance(p, _str_types) for p in pos), pos
+        assert all(isinstance(c, _str_types) for c in chk), chk
+
+
+def test_conll2001():
+    for part in range(1, 4):
+        train = nlp.data.CoNLL2001(part, segment='train', root='tests/data/conll2001')
+        testa = nlp.data.CoNLL2001(part, segment='testa', root='tests/data/conll2001')
+        testb = nlp.data.CoNLL2001(part, segment='testb', root='tests/data/conll2001')
+        assert len(train) == 8936, len(train)
+        assert len(testa) == 2012, len(testa)
+        assert len(testb) == 1671, len(testb)
+
+        for dataset in [train, testa, testb]:
+            for i, (data, pos, chk, clause) in enumerate(dataset):
+                assert all(isinstance(d, _str_types) for d in data), data
+                assert all(isinstance(p, _str_types) for p in pos), pos
+                assert all(isinstance(c, _str_types) for c in chk), chk
+                assert all(isinstance(i, _str_types) for i in clause), clause
+
+
+def test_conll2002():
+    train = nlp.data.CoNLL2002('ned', segment='train', root='tests/data/conll2002')
+    testa = nlp.data.CoNLL2002('ned', segment='testa', root='tests/data/conll2002')
+    testb = nlp.data.CoNLL2002('ned', segment='testb', root='tests/data/conll2002')
+    assert len(train) == 15806, len(train)
+    assert len(testa) == 2895, len(testa)
+    assert len(testb) == 5195, len(testb)
+
+    for dataset in [train, testa, testb]:
+        for i, (data, pos, ner) in enumerate(dataset):
+            assert all(isinstance(d, _str_types) for d in data), data
+            assert all(isinstance(p, _str_types) for p in pos), pos
+            assert all(isinstance(n, _str_types) for n in ner), ner
+
+    train = nlp.data.CoNLL2002('esp', segment='train', root='tests/data/conll2002')
+    testa = nlp.data.CoNLL2002('esp', segment='testa', root='tests/data/conll2002')
+    testb = nlp.data.CoNLL2002('esp', segment='testb', root='tests/data/conll2002')
+    assert len(train) == 8323, len(train)
+    assert len(testa) == 1915, len(testa)
+    assert len(testb) == 1517, len(testb)
+
+    for dataset in [train, testa, testb]:
+        for i, (data, ner) in enumerate(dataset):
+            assert all(isinstance(d, _str_types) for d in data), data
+            assert all(isinstance(n, _str_types) for n in ner), ner
+
+
+def test_conll2004():
+    train = nlp.data.CoNLL2004(segment='train', root='tests/data/conll2004')
+    dev = nlp.data.CoNLL2004(segment='dev', root='tests/data/conll2004')
+    test = nlp.data.CoNLL2004(segment='test', root='tests/data/conll2004')
+    assert len(train) == 8936, len(train)
+    assert len(dev) == 2012, len(dev)
+    assert len(test) == 1671, len(test)
+
+    for dataset in [train, dev, test]:
+        for i, x in enumerate(dataset):
+            assert len(x) >= 6, x
+            assert all(isinstance(d, _str_types) for f in x for d in f), x
+            assert max(len(f) for f in x) == min(len(f) for f in x), x
+
+
+@with_seed()
+def test_ud21():
+    test_langs = list(nlp._constants.UD21_DATA_FILE_SHA1.items())
+    random.shuffle(test_langs)
+    test_langs = test_langs[:30]
+    for lang, segments in test_langs:
+        segment = list(segments.keys())
+        random.shuffle(segment)
+        segment = segment[0]
+        dataset = nlp.data.UniversalDependencies21(lang=lang, segment=segment, root='tests/data/ud2.1')
+
+        print('processing {}: {}'.format(lang, segment))
+        for i, x in enumerate(dataset):
+            assert len(x) >= 9, x
+            assert all(isinstance(d, _str_types) for f in x for d in f), x
+            assert max(len(f) for f in x) == min(len(f) for f in x)
 
 
 if __name__ == '__main__':

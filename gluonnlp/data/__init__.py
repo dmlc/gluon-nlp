@@ -34,8 +34,10 @@ from .sentiment import *
 
 from .word_embedding_evaluation import *
 
+from .conll import *
+
 from . import dataset, utils, transforms, sampler, batchify
 
 __all__ = (utils.__all__ + transforms.__all__ + sampler.__all__ +
            dataset.__all__ + language_model.__all__ + sentiment.__all__ +
-           word_embedding_evaluation.__all__)
+           word_embedding_evaluation.__all__ + conll.__all__)

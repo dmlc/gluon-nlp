@@ -68,6 +68,28 @@ Analogy-based evaluation datasets include:
 .. autoclass:: gluonnlp.data.BiggerAnalogyTestSet
     :members:
 
+CoNLL Datasets
+~~~~~~~~~~~~~~
+The `CoNLL <http://www.conll.org/previous-tasks>`_ datasets are from a series of annual
+competitions held at the top tier conference of the same name. The conference is organized by SIGNLL.
+
+These datasets include data for the shared tasks, such as part-of-speech (POS) tagging, chunking,
+named entity recognition (NER), semantic role labeling (SRL), etc.
+
+We provide built in support for CoNLL 2000 -- 2002, 2004, as well as the Universal Dependencies
+dataset which is used in the 2017 and 2018 competitions.
+
+.. autoclass:: gluonnlp.data.CoNLL2000
+
+.. autoclass:: gluonnlp.data.CoNLL2001
+
+.. autoclass:: gluonnlp.data.CoNLL2002
+
+.. autoclass:: gluonnlp.data.CoNLL2004
+
+.. autoclass:: gluonnlp.data.UniversalDependencies21
+
+
 Datasets
 --------
 
