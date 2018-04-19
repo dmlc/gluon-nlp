@@ -45,9 +45,9 @@ setup(
 
     # Package info
     packages=find_packages(exclude=(
+        '*.tests',
+        'tests.*',
         'tests',
-        '*.scripts',
-        '*.scripts.*',
         'scripts.*',
         'scripts',
     )),

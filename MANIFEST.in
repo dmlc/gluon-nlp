@@ -3,4 +3,3 @@ include LICENSE
 include README.md
 recursive-exclude tests *
 recursive-exclude scripts *
-prune scripts/
