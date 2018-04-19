@@ -21,7 +21,7 @@ from __future__ import print_function
 
 import sys
 
-import pytest
+import numpy as np
 import mxnet as mx
 import gluonnlp as nlp
 from gluonnlp.model import get_model as get_text_model
@@ -55,30 +55,71 @@ def test_text_models():
         output.wait_to_read()
 
 
-def test_word_embedding_evaluation_models():
-    word_similarity_dataset = nlp.data.WordSim353()
+def test_word_embedding_similarity_evaluation_models():
+    dataset = nlp.data.WordSim353()
 
-    counter = nlp.data.utils.Counter(
-        w for wpair in word_similarity_dataset for w in wpair[:2])
+    counter = nlp.data.utils.Counter(w for wpair in dataset for w in wpair[:2])
     vocab = nlp.vocab.Vocab(counter)
     vocab.set_embedding(
         nlp.embedding.create("fasttext", source="wiki.simple.vec"))
 
-    data = [[vocab[d[0]], vocab[d[1]], d[2]] for d in word_similarity_dataset]
+    data = [[vocab[d[0]], vocab[d[1]], d[2]] for d in dataset]
     words1, words2, scores = zip(*data)
 
-    similarity_evaluator = nlp.model.WordEmbeddingSimilarity(
+    evaluator = nlp.model.WordEmbeddingSimilarity(
         vocab_size=len(vocab), embed_size=vocab.embedding.idx_to_vec.shape[1])
-    similarity_evaluator.initialize()
-    similarity_evaluator.embedding.weight.set_data(vocab.embedding.idx_to_vec)
+    evaluator.initialize()
+    evaluator.embedding.weight.set_data(vocab.embedding.idx_to_vec)
 
-    pred_similarity = similarity_evaluator(
-        mx.nd.array(words1), mx.nd.array(words2))
+    pred_similarity = evaluator(mx.nd.array(words1), mx.nd.array(words2))
 
     sr = nlp.metric.SpearmanRankCorrelation()
     sr.update(mx.nd.array(scores), pred_similarity)
 
-    assert 0.6194264760578906 == pytest.approx(sr.get()[1])
+    assert np.isclose(0.6194264760578906, sr.get()[1])
+
+
+def test_word_embedding_analogy_evaluation_models():
+    dataset = nlp.data.GoogleAnalogyTestSet()
+    dataset = [d for i, d in enumerate(dataset) if i < 100]
+
+    counter = nlp.data.utils.Counter(w for wpair in dataset for w in wpair[:4])
+    vocab = nlp.vocab.Vocab(counter)
+    vocab.set_embedding(
+        nlp.embedding.create("fasttext", source="wiki.simple.vec"))
+
+    dataset_coded = [[vocab[d[0]], vocab[d[1]], vocab[d[2]], vocab[d[3]]]
+                     for d in dataset]
+    words1, words2, words3, words4 = zip(*dataset_coded)
+
+    for k in [1, 3]:
+        for exclude_inputs in [True, False]:
+            evaluator = nlp.model.WordEmbeddingAnalogy(
+                vocab_size=len(vocab),
+                embed_size=vocab.embedding.idx_to_vec.shape[1], k=k,
+                exclude_inputs=exclude_inputs)
+            evaluator.initialize()
+            evaluator.embedding.weight.set_data(vocab.embedding.idx_to_vec)
+
+            pred_idxs = evaluator(
+                mx.nd.array(words1), mx.nd.array(words2), mx.nd.array(words3))
+
+            # If we don't exclude inputs most predictions should be wrong
+            accuracy = mx.nd.mean(pred_idxs[:, 0] == mx.nd.array(words4))
+            accuracy = accuracy.asscalar()
+            if exclude_inputs == False:
+                assert accuracy <= 0.1
+
+                # Instead the model would predict W3 most of the time
+                accuracy_w3 = mx.nd.mean(
+                    pred_idxs[:, 0] == mx.nd.array(words3))
+                assert accuracy_w3.asscalar() >= 0.9
+
+            elif exclude_inputs == True:
+                assert accuracy >= 0.9
+
+            # Assert output shape
+            assert pred_idxs.shape[1] == k
 
 
 if __name__ == '__main__':
