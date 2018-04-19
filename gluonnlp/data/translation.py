@@ -20,7 +20,7 @@
 # pylint: disable=
 """Machine translation datasets."""
 
-__all__ = ['IWSLT2015', 'WMT2016']
+__all__ = ['IWSLT2015', 'WMT2016BPE']
 
 
 import os
@@ -58,6 +58,8 @@ class _TranslationDataset(ArrayDataset):
         self._segment = segment
         self._src_lang = src_lang
         self._tgt_lang = tgt_lang
+        self._src_vocab = None
+        self._tgt_vocab = None
         self._pair_key = _get_pair_key(src_lang, tgt_lang)
         root = os.path.expanduser(root)
         if not os.path.isdir(root):
@@ -114,32 +116,47 @@ class _TranslationDataset(ArrayDataset):
         return self._fetch_data_path([(src_corpus_file_name, src_corpus_hash),
                                       (tgt_corpus_file_name, tgt_corpus_hash)])
 
-    def get_vocab(self):
-        """ Get the default vocabulary.
+    @property
+    def src_vocab(self):
+        """Source Vocabulary of the Dataset.
 
         Returns
         -------
         src_vocab : Vocab
-            Source vocabulary along with the dataset
-        tgt_vocab : Vocab
-            Target vocabulary along with the dataset
+            Source vocabulary.
         """
-        src_vocab_file_name, src_vocab_hash =\
-            self._data_file[self._pair_key]['vocab' + "_" + self._src_lang]
-        tgt_vocab_file_name, tgt_vocab_hash = \
-            self._data_file[self._pair_key]['vocab' + "_" + self._tgt_lang]
-        [src_vocab_path, tgt_vocab_path] =\
-            self._fetch_data_path([(src_vocab_file_name, src_vocab_hash),
-                                   (tgt_vocab_file_name, tgt_vocab_hash)])
-        with io.open(src_vocab_path, 'r', encoding='utf-8') as in_file:
-            src_vocab = Vocab.from_json(in_file.read())
-        with io.open(tgt_vocab_path, 'r', encoding='utf-8') as in_file:
-            tgt_vocab = Vocab.from_json(in_file.read())
-        return src_vocab, tgt_vocab
+        if self._src_vocab is not None:
+            return self._src_vocab
+        else:
+            src_vocab_file_name, src_vocab_hash = \
+                self._data_file[self._pair_key]['vocab' + "_" + self._src_lang]
+            [src_vocab_path] = self._fetch_data_path([(src_vocab_file_name, src_vocab_hash)])
+            with io.open(src_vocab_path, 'r', encoding='utf-8') as in_file:
+                self._src_vocab = Vocab.from_json(in_file.read())
+            return self._src_vocab
+
+    @property
+    def tgt_vocab(self):
+        """Target Vocabulary of the Dataset.
+
+        Returns
+        -------
+        tgt_vocab : Vocab
+            Target vocabulary.
+        """
+        if self._tgt_vocab is not None:
+            return self._tgt_vocab
+        else:
+            tgt_vocab_file_name, tgt_vocab_hash = \
+                self._data_file[self._pair_key]['vocab' + "_" + self._tgt_lang]
+            [tgt_vocab_path] = self._fetch_data_path([(tgt_vocab_file_name, tgt_vocab_hash)])
+            with io.open(tgt_vocab_path, 'r', encoding='utf-8') as in_file:
+                self._tgt_vocab = Vocab.from_json(in_file.read())
+            return self._tgt_vocab
 
 
 class IWSLT2015(_TranslationDataset):
-    """IWSLT English-Vietnamese Translation Dataset.
+    """Preprocessed IWSLT English-Vietnamese Translation Dataset.
 
     We use the preprocessed version provided in https://nlp.stanford.edu/projects/nmt/
 
@@ -180,10 +197,10 @@ class IWSLT2015(_TranslationDataset):
                                         tgt_lang=tgt_lang, root=root)
 
 
-class WMT2016(_TranslationDataset):
-    """Translation Corpuses In the WMT2016 Evaluation Campaign
+class WMT2016BPE(_TranslationDataset):
+    """Preprocessed Translation Corpus of the WMT2016 Evaluation Campaign.
 
-    We use the preprocessed version by
+    We use the preprocessing script in
     https://github.com/tensorflow/nmt/blob/master/nmt/scripts/wmt16_en_de.sh
 
     Parameters
@@ -233,6 +250,6 @@ class WMT2016(_TranslationDataset):
                                              '1c5aea0a77cad592c4e9c1136ec3b70ceeff4e8c'),
                                 'vocab_de': ('vocab.bpe.32000.json',
                                              '1c5aea0a77cad592c4e9c1136ec3b70ceeff4e8c')}}
-        super(WMT2016, self).__init__('wmt2016', segment=segment, src_lang=src_lang,
-                                      tgt_lang=tgt_lang,
-                                      root=os.path.join(root, _get_pair_key(src_lang, tgt_lang)))
+        super(WMT2016BPE, self).__init__('WMT2016BPE', segment=segment, src_lang=src_lang,
+                                         tgt_lang=tgt_lang,
+                                         root=os.path.join(root, _get_pair_key(src_lang, tgt_lang)))
