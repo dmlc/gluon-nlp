@@ -28,11 +28,7 @@ clean:
 	make -C docs clean
 
 test:
-<<<<<<< HEAD
 	nosetests -v --nocapture --with-timer scripts/*/test_*.py tests/unittest
-=======
-	nosetests -v --nocapture --with-timer scripts/tests/test*.py tests/unittest
->>>>>>> a1aef6c5614e7c0e398b3a95a1f6ec3fee891e8a
 
 release:
 	python setup.py sdist
