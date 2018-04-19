@@ -22,10 +22,10 @@ from __future__ import print_function
 
 __all__ = ['AttentionCell', 'MultiHeadAttentionCell', 'MLPAttentionCell', 'DotProductAttentionCell']
 
+import math
 import mxnet as mx
 from mxnet.gluon.block import HybridBlock
 from mxnet.gluon import nn
-import math
 from .block import L2Normalization
 
 # TODO(sxjscience) Add mask flag to softmax operator. Think about how to accelerate the kernel
@@ -108,13 +108,13 @@ class AttentionCell(HybridBlock):
         """
         return F.batch_dot(att_weights, value)
 
-    def forward(self, query, key, value, mask=None):
+    def forward(self, query, key, value, mask=None):  # pylint: disable=arguments-differ
         if mask is None:
             return super(AttentionCell, self).forward(query, key, value)
         else:
             return super(AttentionCell, self).forward(query, key, value, mask)
 
-    def hybrid_forward(self, F, query, key, value, mask=None):
+    def hybrid_forward(self, F, query, key, value, mask=None):  # pylint: disable=arguments-differ
         """
 
         Parameters
@@ -145,38 +145,39 @@ class AttentionCell(HybridBlock):
 
 
 class MultiHeadAttentionCell(AttentionCell):
+    r"""Multi-head Attention Cell
+
+    In the MultiHeadAttentionCell, the input query/key/value will be linearly projected
+    for `num_heads` times with different projection matrices. Each projected key, value, query
+    will be used to calculate the attention weights and values. The output of each head will be
+    concatenated to form the final output.
+
+    The idea is first proposed in "[Arxiv2014] Neural Turing Machines" and
+    is later adopted in "[NIPS2017] Attention is All You Need" to solve the
+    Neural Machine Translation problem.
+
+    Parameters
+    ----------
+    base_cell : AttentionCell
+    query_units : int
+        Total number of projected units for query. Must be divided exactly by num_heads.
+    key_units : int
+        Total number of projected units for key. Must be divided exactly by num_heads.
+    value_units : int
+        Total number of projected units for value. Must be divided exactly by num_heads.
+    num_heads : int
+        Number of parallel attention heads
+    use_bias : bool, default True
+        Whether to use bias when projecting the query/key/values
+    weight_initializer : str or `Initializer` or None, default None
+    bias_initializer : str or `Initializer`, default 'zeros'
+    prefix : str or None, default None
+        See document of `Block`.
+    params : str or None, default None
+        See document of `Block`.
+    """
     def __init__(self, base_cell, query_units, key_units, value_units, num_heads, use_bias=True,
                  weight_initializer=None, bias_initializer='zeros', prefix=None, params=None):
-        r"""In the MultiHeadAttentionCell, the input query/key/value will be linearly projected
-        for `num_heads` times with different projection matrices. Each projected key, value, query
-        will be used to calculate the attention weights and values. The output of each head will be
-        concatenated to form the final output.
-
-        The idea is first proposed in "[Arxiv2014] Neural Turing Machines" and
-        is later adopted in "[NIPS2017] Attention is All You Need" to solve the
-        Neural Machine Translation problem.
-
-
-        Parameters
-        ----------
-        base_cell : AttentionCell
-        query_units : int
-            Total number of projected units for query. Must be divided exactly by num_heads.
-        key_units : int
-            Total number of projected units for key. Must be divided exactly by num_heads.
-        value_units : int
-            Total number of projected units for value. Must be divided exactly by num_heads.
-        num_heads : int
-            Number of parallel attention heads
-        use_bias : bool
-            Whether to use bias when projecting the query/key/values
-        weight_initializer : str or `Initializer`
-        bias_initializer : str or `Initializer`
-        prefix : str or None
-            See document of `Block`.
-        params : str or None
-            See document of `Block`.
-        """
         super(MultiHeadAttentionCell, self).__init__(prefix=prefix, params=params)
         self._base_cell = base_cell
         self._query_units = query_units
@@ -185,19 +186,19 @@ class MultiHeadAttentionCell(AttentionCell):
         self._num_heads = num_heads
         self._use_bias = use_bias
         if self._query_units % self._num_heads != 0:
-            raise ValueError("In MultiHeadAttetion, the query_units should be divided exactly"
-                             " by the number of heads. Received query_units=%d, num_heads=%d"
-                             % (key_units, num_heads))
+            raise ValueError('In MultiHeadAttetion, the query_units should be divided exactly'
+                             ' by the number of heads. Received query_units={}, num_heads={}'
+                             .format(key_units, num_heads))
 
         if self._key_units % self._num_heads != 0:
-            raise ValueError("In MultiHeadAttetion, the key_units should be divided exactly"
-                             " by the number of heads. Received key_units=%d, num_heads=%d"
-                             % (key_units, num_heads))
+            raise ValueError('In MultiHeadAttetion, the key_units should be divided exactly'
+                             ' by the number of heads. Received key_units={}, num_heads={}'
+                             .format(key_units, num_heads))
 
         if self._value_units % self._num_heads != 0:
-            raise ValueError("In MultiHeadAttetion, the value_units should be divided exactly"
-                             " by the number of heads. Received value_units=%d, num_heads=%d"
-                             % (value_units, num_heads))
+            raise ValueError('In MultiHeadAttetion, the value_units should be divided exactly'
+                             ' by the number of heads. Received value_units={}, num_heads={}'
+                             .format(value_units, num_heads))
 
         with self.name_scope():
             self.proj_query = nn.Dense(units=self._query_units, use_bias=self._use_bias,
@@ -254,27 +255,29 @@ class MLPAttentionCell(AttentionCell):
         score = g v / ||v||_2 tanh(W [h_q, h_k] + b)
 
     This type of attention is first proposed in
-    Bahdanau et al., Neural Machine Translation by Jointly Learning to Align and Translate. ICLR 2015
+
+    .. Bahdanau et al., Neural Machine Translation by Jointly Learning to Align and Translate.
+    ICLR 2015
 
     Parameters
     ----------
     units : int
-    act : Activation
-    normalized : bool
+    act : Activation, default nn.Activation('tanh')
+    normalized : bool, default False
         Whether to normalize the weight that maps the embedded
         hidden states to the final score. This strategy can be interpreted as a type of
         "[NIPS2016] Weight Normalization".
     dropout : float, default 0.0
         Attention dropout.
-    weight_initializer : str or `Initializer`
-    bias_initializer : str or `Initializer`
-    prefix : str or None
+    weight_initializer : str or `Initializer` or None, default None
+    bias_initializer : str or `Initializer`, default 'zeros'
+    prefix : str or None, default None
         See document of `Block`.
-    params : ParameterDict or None
+    params : ParameterDict or None, default None
         See document of `Block`.
     """
 
-    def __init__(self, units, act=nn.Activation("tanh"), normalized=False, dropout=0.0,
+    def __init__(self, units, act=nn.Activation('tanh'), normalized=False, dropout=0.0,
                  weight_initializer=None, bias_initializer='zeros', prefix=None, params=None):
         # Define a temporary class to implement the normalized version
         # TODO(sxjscience) Find a better solution
@@ -288,7 +291,7 @@ class MLPAttentionCell(AttentionCell):
                                          init=weight_initializer,
                                          allow_deferred_init=True)
 
-            def hybrid_forward(self, F, x, g, v):
+            def hybrid_forward(self, F, x, g, v):  # pylint: disable=arguments-differ
                 v = F.broadcast_div(v, F.sqrt(F.dot(v, v, transpose_b=True)))
                 weight = F.broadcast_mul(g, v)
                 out = F.FullyConnected(x, weight, None, no_bias=True, num_hidden=1,
@@ -340,7 +343,7 @@ class _DivSqrtDim(mx.operator.CustomOp):
         self.assign(in_grad[0], req[0], out_grad[0] / math.sqrt(float(out_grad[0].shape[-1])))
 
 
-@mx.operator.register("_div_sqrt_dim")
+@mx.operator.register('_div_sqrt_dim')
 class _DivSqrtDimProp(mx.operator.CustomOpProp):
     def __init__(self):
         super(_DivSqrtDimProp, self).__init__(True)
@@ -351,8 +354,8 @@ class _DivSqrtDimProp(mx.operator.CustomOpProp):
     def list_outputs(self):
         return ['output']
 
-    def infer_shape(self, in_shapes):
-        data_shape = in_shapes[0]
+    def infer_shape(self, in_shape):
+        data_shape = in_shape[0]
         output_shape = data_shape
         return (data_shape,), (output_shape,), ()
 
@@ -420,8 +423,8 @@ class DotProductAttentionCell(AttentionCell):
         self._luong_style = luong_style
         self._dropout = dropout
         if self._luong_style:
-            assert units is not None, "Luong style attention is not available without explicitly " \
-                                      "setting the units"
+            assert units is not None, 'Luong style attention is not available without explicitly ' \
+                                      'setting the units'
         with self.name_scope():
             self._dropout_layer = nn.Dropout(dropout)
         if units is not None:
