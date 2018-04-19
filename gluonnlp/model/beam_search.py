@@ -115,14 +115,13 @@ def _choose_states(F, states, indices):
     ----------
     F : ndarray or symbol
     states : Object contains NDArrays/Symbols
-        Each NDArray/Symbol should have shape (N, ...)
+        Each NDArray/Symbol should have shape (N, ...).
     indices : NDArray or Symbol
-        Indices of the states to take. Shape (N,). If the values are in [0, N), they will be taken
-        from states. If the values are in [N, 2N), they will be take from
+        Indices of the states to take. Shape (N,).
     Returns
     -------
     new_states : Object contains NDArrays/Symbols
-        Each NDArray/Symbol should have shape (N, ...)
+        Each NDArray/Symbol should have shape (N, ...).
     """
     if isinstance(states, list):
         return [_choose_states(F, ele, indices) for ele in states]
@@ -221,7 +220,7 @@ class _BeamSearchStepUpdate(HybridBlock):
                                   batch_beam_indices.reshape(shape=(-1,))).reshape((-1, beam_size))\
                            + 1 - use_prev
         # Update the states
-        new_states = _choose_states(F, states, batch_beam_indices)
+        new_states = _choose_states(F, states, batch_beam_indices.reshape((-1,)))
         # Update the alive mask.
         beam_alive_mask = F.take(beam_alive_mask.reshape(shape=(-1,)),
                                  batch_beam_indices.reshape(shape=(-1,)))\
