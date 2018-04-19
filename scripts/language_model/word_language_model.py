@@ -4,6 +4,19 @@ Word Language Model
 
 This example shows how to build a word-level language model on WikiText-2 with Gluon NLP Toolkit.
 By using the existing data pipeline tools and building blocks, the process is greatly simplified.
+
+We implement the AWD LSTM language model proposed in the following work.
+
+@article{merityRegOpt,
+  title={{Regularizing and Optimizing LSTM Language Models}},
+  author={Merity, Stephen and Keskar, Nitish Shirish and Socher, Richard},
+  journal={ICLR},
+  year={2018}
+}
+
+Note that we are using standard SGD as the optimizer for code simpilification.
+Once NT-ASGD in the work is implemented and used as the optimizer.
+Our implementation should yield identical results.
 """
 
 # coding: utf-8
@@ -103,7 +116,7 @@ args = parser.parse_args()
 ###############################################################################
 
 context = [mx.cpu()] if args.gpus is None or args.gpus == '' else \
-          [mx.gpu(int(i)) for i in args.gpus.split(',')]
+          [mx.gpu(int(x)) for x in args.gpus.split(',')]
 
 assert args.batch_size % len(context) == 0, \
     'Total batch size must be multiple of the number of devices'
@@ -176,7 +189,7 @@ def get_batch(data_source, i, seq_len=None):
 
 def detach(hidden):
     if isinstance(hidden, (tuple, list)):
-        hidden = [detach(i) for i in hidden]
+        hidden = [detach(h) for h in hidden]
     else:
         hidden = hidden.detach()
     return hidden
