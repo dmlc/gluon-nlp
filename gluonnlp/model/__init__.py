@@ -59,6 +59,8 @@ from .language_model import *
 
 from .beam_search import *
 
+from .word_embedding_evaluation import *
+
 def get_model(name, dataset_name='wikitext-2', **kwargs):
     """Returns a pre-defined model by name.
 
