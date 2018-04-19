@@ -36,7 +36,7 @@ from ..vocab import Vocab
 
 
 def _get_pair_key(src_lang, tgt_lang):
-    return "_".join(sorted([src_lang, tgt_lang]))
+    return '_'.join(sorted([src_lang, tgt_lang]))
 
 
 class _TranslationDataset(ArrayDataset):
