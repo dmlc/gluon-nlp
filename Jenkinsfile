@@ -6,6 +6,7 @@ stage("Sanity Check") {
       conda env update -f env/pylint.yml
       source activate gluon_nlp_pylint
       conda list
+      make clean
       make pylint
       """
     }
@@ -23,8 +24,9 @@ stage("Unit Test") {
         conda list
         python -m spacy download en
         python -m nltk.downloader all
+        make clean
         python setup.py install
-        nosetests -v --nocapture --with-timer tests/unittest
+        nosetests -v --nocapture --with-timer scripts/*/test_*.py tests/unittest
         """
       }
     }
@@ -39,8 +41,9 @@ stage("Unit Test") {
         conda list
         python -m spacy download en
         python -m nltk.downloader all
+        make clean
         python setup.py install
-        nosetests -v --nocapture --with-timer tests/unittest
+        nosetests -v --nocapture --with-timer scripts/*/test_*.py tests/unittest
         """
       }
     }
@@ -57,7 +60,7 @@ stage("Deploy") {
       conda list
       python setup.py install
       export LD_LIBRARY_PATH=/usr/local/cuda/lib64
-      make -C docs clean
+      make clean
       make -C docs html"""
 
       if (env.BRANCH_NAME.startsWith("PR-")) {
