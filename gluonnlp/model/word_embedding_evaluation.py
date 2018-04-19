@@ -19,25 +19,14 @@
 # pylint: disable=eval-used, redefined-outer-name
 """Models for intrinsic and extrinsic word embedding evaluation"""
 
-import os
-import warnings
-
-import numpy as np
-
-from mxnet.gluon.model_zoo.model_store import get_model_file
-from mxnet import init, nd, cpu, autograd
-from mxnet.gluon import nn, Block, HybridBlock
-from mxnet.gluon.model_zoo import model_store
-
-from .utils import _get_rnn_layer
-from .utils import apply_weight_drop
-from ..data.utils import _load_pretrained_vocab
+from mxnet import init, nd
+from mxnet.gluon import HybridBlock, nn
 
 
 class CosineSimilarity(HybridBlock):
     """Computes the cosine similarity."""
 
-    def hybrid_forward(self, F, x, y):
+    def hybrid_forward(self, F, x, y):  # pylint: disable=arguments-differ
         """Implement forward computation."""
         x = F.L2Normalization(x)
         y = F.L2Normalization(y)
@@ -47,61 +36,51 @@ class CosineSimilarity(HybridBlock):
 
 
 class WordEmbeddingSimilarity(HybridBlock):
-    """Helper class to evaluate word embeddings based on similarity task.
-
-    The Evaluator must be initialized, giving the option to adapt the
-    parameters listed below. An Evaluator object can be called with the
-    signature defined at Call Signature.
+    """Word embeddings similarity task evaluator.
 
     Parameters
     ----------
-    metric : mx.metric.EvalMetric
-        Metric for computing the overall score given the list of predicted
-        similarities and ground truth similarities. Defaults to
-        SpearmanRankCorrelation.
-    similarity_function : function
-        Given two mx.nd.NDArray's of shape (dataset_size, embedding_size),
-        compute a similarity score.
+    vocab_size : int
+        Size of the vocabulary.
+    embed_size : int
+        Dimensionality of the embeddings.
+    similarity_function : mxnet.gluon.Block
+        Given two mx.nd.NDArray's of word embeddings compute a similarity
+        score.
+    embeddings_params : mx.gluon.ParameterDict (optional)
+        Parameters of the internal WordEmbeddingSimilarity.embedding Block.
 
-    Call Signature
-    --------------
-    token_embedding : gluonnlp.embedding.TokenEmbedding
-        Embedding to evaluate.
-    dataset : mx.gluon.Dataset
-        Dataset consisting of rows with 3 elements: [word1, word2, score]
-
-    Reference: https://github.com/salesforce/awd-lstm-lm
-
-    License: BSD 3-Clause
-
-    Parameters
-    ----------
     """
 
-    def __init__(self, vocab_size, embed_size, similarity=CosineSimilarity(),
-                 embedding_params=None, **kwargs):
+    def __init__(self, vocab_size, embed_size,
+                 similarity_function=CosineSimilarity, embedding_params=None,
+                 **kwargs):
         super(WordEmbeddingSimilarity, self).__init__(**kwargs)
 
-        self.similarity = similarity
+        self.vocab_size = vocab_size
+        self.embed_size = embed_size
+        self.similarity_function = similarity_function
+
         with self.name_scope():
-            self.embedding = nn.Embedding(vocab_size, embed_size,
+            self.embedding = nn.Embedding(self.vocab_size, self.embed_size,
                                           weight_initializer=init.Uniform(0.1),
                                           params=embedding_params)
+            self.similarity = similarity_function()
 
     def hybrid_forward(self, F, words1, words2):  # pylint: disable=arguments-differ
-        """Implement forward computation.
+        """Predict the similarity of words1 and words2.
 
         Parameters
         ----------
-        inputs : NDArray
-            The training dataset.
-        begin_state : list
-            The initial hidden states.
+        words1 : Symbol or NDArray
+            The indices of the words the we wish to compare to the words in words2.
+        words2 : Symbol or NDArray
+            The indices of the words the we wish to compare to the words in words1.
 
         Returns
         -------
-        similarity : NDArray
-            The output of the model.
+        similarity : Symbol or NDArray
+            The similarity computed by WordEmbeddingSimilarity.similarity_function.
         """
         embeddings_words1 = self.embedding(words1)
         embeddings_words2 = self.embedding(words2)
@@ -186,7 +165,7 @@ class NormalizedDense(HybridBlock):
             else:
                 self.act = None
 
-    def hybrid_forward(self, F, x, weight, bias=None):
+    def hybrid_forward(self, F, x, weight, bias=None):  # pylint: disable=arguments-differ
         x = F.L2Normalization(x)
         weight = F.L2Normalization(weight)
 
@@ -206,10 +185,16 @@ class NormalizedDense(HybridBlock):
 
 
 class ThreeCosMul(HybridBlock):
-    """Computes the word analogies according to 3CosMul."""
+    """The 3CosMul analogy function.
 
-    def __init__(self, vocab_size, embed_size, embedding_params=None, k=1,
-                 epsilon=0.001, **kwargs):
+    The 3CosMul analogy function is defined as
+    .. math::
+        \\arg\\max_{b^* ∈ V}\\frac{\\cos(b^∗, b) \\cos(b^*, a)}{cos(b^*, a^*) + ε}
+
+    """
+
+    def __init__(self, vocab_size, embedding_params=None, k=1, epsilon=0.001,
+                 **kwargs):
         super(ThreeCosMul, self).__init__(**kwargs)
 
         self.epsilon = epsilon
@@ -219,7 +204,7 @@ class ThreeCosMul(HybridBlock):
                                                    params=embedding_params)
 
     def hybrid_forward(self, F, embeddings_words1, embeddings_words2,
-                       embeddings_words3):
+                       embeddings_words3):  # pylint: disable=arguments-differ
         """Implement forward computation."""
         all_embeddings = F.concat(embeddings_words1, embeddings_words2,
                                   embeddings_words3, dim=0)
@@ -237,7 +222,21 @@ class ThreeCosMul(HybridBlock):
 
 
 class WordEmbeddingAnalogy(HybridBlock):
-    """Helper class to evaluate word embeddings based on the analogy task.
+    """Word embeddings analogy task evaluator.
+
+    Parameters
+    ----------
+    vocab_size : int
+        Size of the vocabulary.
+    embed_size : int
+        Dimensionality of the embeddings.
+    analogy_function : mxnet.gluon.Block
+        Given three mx.nd.NDArray's of word embeddings predict k analogies.
+        Vocab_size, embed_size, embedding_params and k are passed in the
+        constructor
+    embeddings_params : mx.gluon.ParameterDict (optional)
+        Parameters of the internal WordEmbeddingSimilarity.embedding Block.
+
     """
 
     def __init__(self, vocab_size, embed_size, analogy_function=ThreeCosMul,
@@ -256,8 +255,8 @@ class WordEmbeddingAnalogy(HybridBlock):
                                           weight_initializer=init.Uniform(0.1),
                                           params=embedding_params)
             self.analogy = analogy_function(
-                vocab_size=vocab_size, embed_size=embed_size,
-                k=self._internal_k, embedding_params=self.embedding.params)
+                vocab_size=vocab_size, k=self._internal_k,
+                embedding_params=self.embedding.params)
 
     def forward(self, words1, words2, words3):  # pylint: disable=arguments-differ
         """Implement forward computation.
