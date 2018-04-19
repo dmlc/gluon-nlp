@@ -387,8 +387,10 @@ class Vocab(object):
         This method does not serialize the underlying embedding.
         """
         if self._embedding:
-            warnings.warn('Serialization of attached embedding is not supported. '
-                          'Please save separately')
+            warnings.warn('Serialization of attached embedding '
+                          'to json is not supported. '
+                          'You may serialize the embedding to a binary format '
+                          'separately using vocab.embedding.serialize')
         vocab_dict = {}
         vocab_dict['idx_to_token'] = self._idx_to_token
         vocab_dict['token_to_idx'] = self._token_to_idx

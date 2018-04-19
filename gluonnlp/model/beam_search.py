@@ -17,6 +17,9 @@
 # specific language governing permissions and limitations
 # under the License.
 """Implements the beam search sampler."""
+from __future__ import absolute_import
+from __future__ import print_function
+
 __all__ = ['BeamSearchScorer', 'BeamSearchSampler']
 
 import numpy as np
@@ -24,13 +27,15 @@ import mxnet as mx
 from mxnet.gluon import HybridBlock
 from .._constants import LARGE_NEGATIVE_FLOAT
 
+
 class BeamSearchScorer(HybridBlock):
-    """Score function used in beam search.
+    r"""Score function used in beam search.
 
-    Implements the length-penalized score function used in the GNMT paper.
+    Implements the length-penalized score function used in the GNMT paper::
 
-    scores = (log_probs + scores) / length_penalty
-    length_penalty = (K + length)^\alpha / (K + 1)^\alpha
+        scores = (log_probs + scores) / length_penalty
+        length_penalty = (K + length)^\alpha / (K + 1)^\alpha
+
 
     Parameters
     ----------
@@ -42,22 +47,25 @@ class BeamSearchScorer(HybridBlock):
         self._alpha = alpha
         self._K = K
 
-    def hybrid_forward(self, F, log_probs, scores, step):   # pylint: disable=arguments-differ
+    def __call__(self, log_probs, scores, step):
         """Compute new scores of each candidate
 
         Parameters
         ----------
         log_probs : NDArray or Symbol
-            The log probabilities of the candidates. Shape ((..., |V|)
+            The log probabilities of the candidates. Shape (d1, d2, ..., dn, V)
         scores : NDArray or Symbol
-            The original scores of the beams. Shape (...,)
+            The original scores of the beams. Shape (d1, d2, ..., dn)
         step : NDArray or Symbol
             Step to calculate the score function. It starts from 1. Shape (1,)
         Returns
         -------
         candidate_scores : NDArray or Symbol
-            The scores of all the candidates. Shape ((..., |V|)
+            The scores of all the candidates. Shape (d1, d2, ..., dn, V)
         """
+        return super(BeamSearchScorer, self).__call__(log_probs, scores, step)
+
+    def hybrid_forward(self, F, log_probs, scores, step):   # pylint: disable=arguments-differ
         prev_lp = (self._K + step - 1) ** self._alpha / (self._K + 1) ** self._alpha
         prev_lp = prev_lp * (step != 1) + (step == 1)
         scores = F.broadcast_mul(scores, prev_lp)
@@ -153,7 +161,7 @@ class _BeamSearchStepUpdate(HybridBlock):
         valid_length : NDArray or Symbol
             The current valid lengths of the samples
         log_probs : NDArray or Symbol
-            Log probability of the current step. Shape (batch_size * beam_size, |V|)
+            Log probability of the current step. Shape (batch_size * beam_size, V)
         scores : NDArray or Symbol
             The previous scores. Shape (batch_size, beam_size)
         step : NDArray or Symbol
@@ -190,7 +198,7 @@ class _BeamSearchStepUpdate(HybridBlock):
         """
         beam_size = self._beam_size
         beam_alive_mask_bcast = F.expand_dims(beam_alive_mask, axis=2)
-        candidate_scores = self._scorer(F.reshape(log_probs, shape=(-4, -1, beam_size, 0)),
+        candidate_scores = self._scorer(log_probs.reshape(shape=(-4, -1, beam_size, 0)),
                                         scores, step)
         # Concat the candidate scores and the scores of the finished beams
         # The resulting candidate score will have shape (batch_size, beam_size * |V| + beam_size)
@@ -199,7 +207,7 @@ class _BeamSearchStepUpdate(HybridBlock):
                                            F.ones_like(candidate_scores) * LARGE_NEGATIVE_FLOAT)
         finished_scores = F.where(beam_alive_mask,
                                   F.ones_like(scores) * LARGE_NEGATIVE_FLOAT, scores)
-        candidate_scores = F.concat(F.reshape(candidate_scores, shape=(0, -1)),
+        candidate_scores = F.concat(candidate_scores.reshape(shape=(0, -1)),
                                     finished_scores, dim=1)
         # Get the top K scores
         new_scores, indices = F.topk(candidate_scores, axis=1, k=beam_size, ret_typ='both')
@@ -213,55 +221,57 @@ class _BeamSearchStepUpdate(HybridBlock):
                                   -F.ones_like(indices),
                                   chosen_word_ids)
         # Update the samples and vaild_length
-        new_samples = F.reshape(F.concat(F.take(F.reshape(samples, shape=(-3, 0)),
-                                                F.reshape(batch_beam_indices, shape=(-1,))),
-                                         F.reshape(chosen_word_ids, shape=(-1, 1)), dim=1),
-                                shape=(-4, -1, beam_size, 0))
-        new_valid_length = F.reshape(F.take(F.reshape(valid_length, shape=(-1,)),
-                                            F.reshape(batch_beam_indices, shape=(-1,))),
-                                     shape=(-1, beam_size)) + 1 - use_prev_states
+        new_samples = F.concat(F.take(samples.reshape(shape=(-3, 0)),
+                                      batch_beam_indices.reshape(shape=(-1,))),
+                               chosen_word_ids.reshape(shape=(-1, 1)), dim=1)\
+                       .reshape(shape=(-4, -1, beam_size, 0))
+        new_valid_length = F.take(valid_length.reshape(shape=(-1,)),
+                                  batch_beam_indices.reshape(shape=(-1,))).reshape((-1, beam_size))\
+                           + 1 - use_prev_states
         # Update the states
         new_states = _choose_states(F, states, prev_states,
-                                    F.reshape(batch_beam_indices +
-                                              F.broadcast_mul(use_prev_states, batch_size)
-                                              * beam_size,
-                                              shape=(-1,)))
+                                    (batch_beam_indices +
+                                     F.broadcast_mul(use_prev_states, batch_size) * beam_size)
+                                    .reshape(shape=(-1,)))
         # Update the alive mask.
-        beam_alive_mask = F.reshape(F.take(F.reshape(beam_alive_mask, shape=(-1,)),
-                                           F.reshape(batch_beam_indices, shape=(-1,))),
-                                    shape=(-1, beam_size)) * (chosen_word_ids != self._eos_id)
+        beam_alive_mask = F.take(beam_alive_mask.reshape(shape=(-1,)),
+                                 batch_beam_indices.reshape(shape=(-1,)))\
+                              .reshape(shape=(-1, beam_size)) * (chosen_word_ids != self._eos_id)
 
         return new_samples, new_valid_length, new_scores,\
                chosen_word_ids, beam_alive_mask, new_states
 
 
 class BeamSearchSampler(object):
-    """Draw samples from the decoder by beam search.
+    r"""Draw samples from the decoder by beam search.
 
-    The goal of beam search is to solve \argmax_{Y} S(Y, X). Assume that we know how to
-    generetate.
+    Parameters
+    ----------
+    beam_size : int
+        The beam size.
+    decoder : callable
+        Function of the one-step-ahead decoder, should have the form::
 
+            log_probs, new_states = decoder(step_input, states)
+
+        The log_probs, input should follow these rules:
+
+        - step_input has shape (batch_size,),
+        - log_probs has shape (batch_size, V),
+        - states and new_states have the same structure and the leading
+          dimension of the inner NDArrays is the batch dimension.
+    eos_id : int
+        Id of the EOS token. No other elements will be appended to the sample if it reaches eos_id.
+    scorer : BeamSearchScorer, default BeamSearchScorer(alpha=1.0, K=5)
+        The score function used in beam search.
+    max_length : int, default 100
+        The maximum search length.
     """
     def __init__(self, beam_size, decoder, eos_id, scorer=BeamSearchScorer(alpha=1.0, K=5),
                  max_length=100):
-        """
-
-        Parameters
-        ----------
-        beam_size : int
-        decoder : callable
-            Function of the one-step-ahead decoder, should have the form:
-                log_probs, new_states = decoder(step_input, states)
-            The log_probs, input should follow these rules:
-            - step_input has shape (batch_size,),
-            - log_probs has shape (batch_size, |V|),
-            - states and new_states have the same structure and the leading
-            dimension of the inner NDArrays is the batch dimension.
-        eos_id : int
-        scorer : BeamSearchScorer, default BeamSearchScorer(alpha=1.0, K=5)
-        max_length : int, default 100
-        """
         self._beam_size = beam_size
+        assert beam_size > 0,\
+            'beam_size must be larger than 0. Received beam_size={}'.format(beam_size)
         self._decoder = decoder
         self._eos_id = eos_id
         assert eos_id >= 0, 'eos_id cannot be negative! Received eos_id={}'.format(eos_id)
@@ -276,17 +286,18 @@ class BeamSearchSampler(object):
         Parameters
         ----------
         inputs : NDArray
-            The initial input of the decoder. Shape is (batch_size, 1)
+            The initial input of the decoder. Shape is (batch_size,).
         states : Object that contains NDArrays
-            The initial states of the decoder
+            The initial states of the decoder.
         Returns
         -------
         samples : NDArray
-            Samples draw by beam search. Shape (batch_size, beam_size, length). Type will be int32.
+            Samples draw by beam search. Shape (batch_size, beam_size, length). dtype is int32.
         scores : NDArray
-            Scores of the samples. Shape (batch_size, beam_size)
+            Scores of the samples. Shape (batch_size, beam_size). We make sure that scores[i, :] are
+            in descending order.
         valid_length : NDArray
-            The valid length of the samples. Shape (batch_size, beam_size). Type will be int32.
+            The valid length of the samples. Shape (batch_size, beam_size). dtype will be int32.
         """
         batch_size = inputs.shape[0]
         beam_size = self._beam_size

@@ -20,6 +20,9 @@
 from __future__ import absolute_import
 from __future__ import print_function
 
+import os
+import tempfile
+import time
 import re
 
 from nose.tools import assert_raises
@@ -437,6 +440,37 @@ def test_token_embedding_from_file():
                  elem_delim)
 
 
+def test_token_embedding_from_serialized_file():
+    embed_root = 'tests/data/embedding'
+    embed_name = 'my_embed'
+    elem_delim = '\t'
+    pretrain_file = 'my_pretrain_file.txt'
+    serialize_file = 'my_pretrain_file.npz'
+
+    _mk_my_pretrain_file(
+        os.path.join(embed_root, embed_name), elem_delim, pretrain_file)
+
+    pretrain_file_path = os.path.join(embed_root, embed_name, pretrain_file)
+    serialize_file_path = os.path.join(embed_root, embed_name, serialize_file)
+
+    # Serialize the embedding in format suitable for storage on S3 and test if
+    # loading the serialized file always results in the same as loading the
+    # text file would
+    my_embed_for_serialization = embedding.TokenEmbedding.from_file(
+        pretrain_file_path, elem_delim=elem_delim, unknown_token=None)
+    my_embed_for_serialization.serialize(serialize_file_path)
+
+    # Test w/wo unknown token
+    known_unknown_token = my_embed_for_serialization.idx_to_token[-1]
+    for unknown_token in [None, '<some_unknown_token>', known_unknown_token]:
+        my_embed_text = embedding.TokenEmbedding.from_file(
+            pretrain_file_path, elem_delim=elem_delim,
+            unknown_token=unknown_token)
+        my_embed_serialize = embedding.TokenEmbedding.from_file(
+            serialize_file_path, unknown_token=unknown_token)
+        assert my_embed_serialize == my_embed_text
+
+
 def test_embedding_get_and_pretrain_file_names():
     assert len(embedding.list_sources(embedding_name='fasttext')) == 327
     assert len(embedding.list_sources(embedding_name='glove')) == 10
@@ -736,12 +770,41 @@ def test_download_embed():
 
 
 
-def test_serialization():
+def test_vocabulary_serialization():
     # Preserving unknown_token behaviour
     vocab = Vocab(unknown_token=None)
     assert_raises(KeyError, vocab.__getitem__, 'hello')
     loaded_vocab = Vocab.from_json(vocab.to_json())
     assert_raises(KeyError, loaded_vocab.__getitem__, 'hello')
+
+
+def test_token_embedding_serialization():
+    start_time = time.time()
+    emb = embedding.create("fasttext", source="wiki.simple.vec")
+    print("Took {} seconds to load fasttext embeddings.".format(
+        time.time() - start_time))
+    tmp_directory = tempfile.mkdtemp()
+    print("Saving serialized embeddings in temporary directory ",
+          tmp_directory)
+
+    # Test uncompressed serialization
+    file_path = os.path.join(tmp_directory, "embeddings.npz")
+    emb.serialize(file_path, compress=False)
+    start_time = time.time()
+    loaded_emb = embedding.TokenEmbedding.deserialize(file_path)
+    print(("Took {} seconds to load serialized uncompressed "
+           "fasttext embeddings.").format(time.time() - start_time))
+    assert loaded_emb == emb
+
+    # Test compressed serialization
+    file_path_compressed = os.path.join(tmp_directory,
+                                        "embeddings_compressed.npz")
+    emb.serialize(file_path_compressed, compress=True)
+    start_time = time.time()
+    loaded_emb = embedding.TokenEmbedding.deserialize(file_path)
+    print(("Took {} seconds to load serialized compressed "
+           "fasttext embeddings.").format(time.time() - start_time))
+    assert loaded_emb == emb
 
 
 if __name__ == '__main__':
