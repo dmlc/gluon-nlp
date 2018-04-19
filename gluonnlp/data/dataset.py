@@ -20,7 +20,7 @@
 # pylint: disable=undefined-all-variable
 """NLP Toolkit Dataset API. It allows easy and customizable loading of corpora and dataset files.
 Files can be loaded into formats that are immediately ready for training and evaluation."""
-__all__ = ['CorpusDataset', 'LanguageModelDataset']
+__all__ = ['TextLineDataset', 'CorpusDataset', 'LanguageModelDataset']
 
 import io
 import os
@@ -28,6 +28,24 @@ import os
 import mxnet as mx
 from mxnet.gluon.data import SimpleDataset
 from .utils import concat_sequence, slice_sequence, _slice_pad_length
+
+
+class TextLineDataset(SimpleDataset):
+    """Dataset that comprises lines in a file. Each line will be stripped.
+
+    Parameters
+    ----------
+    filename : str
+        Path to the input text file.
+    encoding : str, default 'utf8'
+        File encoding format.
+    """
+    def __init__(self, filename, encoding='utf8'):
+        lines = []
+        with io.open(filename, 'r', encoding=encoding) as in_file:
+            for line in in_file:
+                lines.append(line.strip())
+        super(TextLineDataset, self).__init__(lines)
 
 
 class CorpusDataset(SimpleDataset):
