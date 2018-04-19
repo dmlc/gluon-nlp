@@ -108,35 +108,30 @@ def _expand_to_beam_size(data, beam_size, batch_size):
         raise NotImplementedError
 
 
-def _choose_states(F, states, prev_states, indices):
+def _choose_states(F, states, indices):
     """
 
     Parameters
     ----------
     F : ndarray or symbol
     states : Object contains NDArrays/Symbols
-        Each NDArray/Symbol should have shape (N, ...)
-    prev_states : Object contains NDArrays/Symbols
-        Each NDArray/Symbol should have shape (N, ...)
+        Each NDArray/Symbol should have shape (N, ...).
     indices : NDArray or Symbol
-        Indices of the states to take. Shape (N,). If the values are in [0, N), they will be taken
-        from states. If the values are in [N, 2N), they will be take from
+        Indices of the states to take. Shape (N,).
     Returns
     -------
     new_states : Object contains NDArrays/Symbols
-        Each NDArray/Symbol should have shape (N, ...)
+        Each NDArray/Symbol should have shape (N, ...).
     """
     if isinstance(states, list):
-        return [_choose_states(F, lhs, rhs, indices)
-                for lhs, rhs in zip(states, prev_states)]
+        return [_choose_states(F, ele, indices) for ele in states]
     elif isinstance(states, tuple):
-        return tuple(_choose_states(F, lhs, rhs, indices)
-                     for lhs, rhs in zip(states, prev_states))
+        return tuple(_choose_states(F, ele, indices) for ele in states)
     elif isinstance(states, dict):
-        return {k: _choose_states(F, states[k], prev_states[k], indices)
-                for k in states}
+        return {k: _choose_states(F, v, indices)
+                for k, v in states.items()}
     elif isinstance(states, (mx.nd.NDArray, mx.sym.Symbol)):
-        return F.take(F.concat(states, prev_states, dim=0), indices)
+        return F.take(states, indices)
     else:
         raise NotImplementedError
 
@@ -150,7 +145,7 @@ class _BeamSearchStepUpdate(HybridBlock):
         assert eos_id >= 0, 'eos_id cannot be negative! Received eos_id={}'.format(eos_id)
 
     def hybrid_forward(self, F, samples, valid_length, log_probs, scores, step, beam_alive_mask,   # pylint: disable=arguments-differ
-                       states, prev_states, vocab_num, batch_size, batch_shift):
+                       states, vocab_num, batch_shift):
         """
 
         Parameters
@@ -170,11 +165,7 @@ class _BeamSearchStepUpdate(HybridBlock):
             Shape (batch_size, beam_size)
         states : nested structure of NDArrays/Symbols
             Inner NDArrays have shape (batch_size * beam_size, ...)
-        prev_states : nested structure of NDArrays/Symbols
-            Inner NDArrays have shape (batch_size * beam_size, ...)
         vocab_num : NDArray or Symbol
-            Shape (1,)
-        batch_size : NDArray or Symbol
             Shape (1,)
         batch_shift : NDArray or Symbol
             Contains [0, beam_size, 2 * beam_size, (batch_size - 1) * beam_size].
@@ -211,13 +202,13 @@ class _BeamSearchStepUpdate(HybridBlock):
                                     finished_scores, dim=1)
         # Get the top K scores
         new_scores, indices = F.topk(candidate_scores, axis=1, k=beam_size, ret_typ='both')
-        use_prev_states = F.broadcast_greater_equal(indices, beam_size * vocab_num)
+        use_prev = F.broadcast_greater_equal(indices, beam_size * vocab_num)
         chosen_word_ids = F.broadcast_mod(indices, vocab_num)
-        beam_ids = F.where(use_prev_states,
+        beam_ids = F.where(use_prev,
                            F.broadcast_minus(indices, beam_size * vocab_num),
                            F.floor(F.broadcast_div(indices, vocab_num)))
         batch_beam_indices = F.broadcast_add(beam_ids, F.expand_dims(batch_shift, axis=1))
-        chosen_word_ids = F.where(use_prev_states,
+        chosen_word_ids = F.where(use_prev,
                                   -F.ones_like(indices),
                                   chosen_word_ids)
         # Update the samples and vaild_length
@@ -227,12 +218,9 @@ class _BeamSearchStepUpdate(HybridBlock):
                        .reshape(shape=(-4, -1, beam_size, 0))
         new_valid_length = F.take(valid_length.reshape(shape=(-1,)),
                                   batch_beam_indices.reshape(shape=(-1,))).reshape((-1, beam_size))\
-                           + 1 - use_prev_states
+                           + 1 - use_prev
         # Update the states
-        new_states = _choose_states(F, states, prev_states,
-                                    (batch_beam_indices +
-                                     F.broadcast_mul(use_prev_states, batch_size) * beam_size)
-                                    .reshape(shape=(-1,)))
+        new_states = _choose_states(F, states, batch_beam_indices.reshape((-1,)))
         # Update the alive mask.
         beam_alive_mask = F.take(beam_alive_mask.reshape(shape=(-1,)),
                                  batch_beam_indices.reshape(shape=(-1,)))\
@@ -302,7 +290,6 @@ class BeamSearchSampler(object):
         batch_size = inputs.shape[0]
         beam_size = self._beam_size
         ctx = inputs.context
-        batch_size_nd = mx.nd.array([batch_size], ctx=ctx)
         # Tile the states and inputs to have shape (batch_size * beam_size, ...)
         states = _expand_to_beam_size(states, beam_size=beam_size, batch_size=batch_size)
         step_input = _expand_to_beam_size(inputs, beam_size=beam_size, batch_size=batch_size)
@@ -323,7 +310,7 @@ class BeamSearchSampler(object):
             step_nd = mx.nd.array([i + 1], ctx=ctx)
             samples, valid_length, scores, chosen_word_ids, beam_alive_mask, states = \
                 self._updater(samples, valid_length, log_probs, scores, step_nd, beam_alive_mask,
-                              new_states, states, vocab_num_nd, batch_size_nd, batch_shift_nd)
+                              new_states, vocab_num_nd, batch_shift_nd)
             step_input = mx.nd.relu(chosen_word_ids).reshape((-1,))
             if mx.nd.sum(beam_alive_mask).asscalar() == 0:
                 return mx.nd.round(samples).astype(np.int32),\
