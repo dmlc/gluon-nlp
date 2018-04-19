@@ -24,7 +24,7 @@ docs:
 	make -C docs html
 
 test:
-	nosetests -v --nocapture tests scripts
+	nosetests -v --nocapture --with-timer scripts/*/test_*.py tests/unittest
 
 release:
 	python setup.py sdist
