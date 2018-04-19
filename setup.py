@@ -24,7 +24,7 @@ def find_version(*file_paths):
     raise RuntimeError("Unable to find version string.")
 
 
-readme = open('README.md').read()
+readme = open('README.rst').read()
 
 VERSION = find_version('gluonnlp', '__init__.py')
 
@@ -49,5 +49,6 @@ setup(
         'scripts',
     )),
     zip_safe=True,
+    include_package_data=True,
     install_requires=requirements,
 )

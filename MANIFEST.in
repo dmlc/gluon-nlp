@@ -1,0 +1,5 @@
+recursive-include gluonnlp *.py
+include LICENSE
+include README.rst
+recursive-exclude tests *
+recursive-exclude scripts *
