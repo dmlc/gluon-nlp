@@ -27,7 +27,11 @@ import subprocess
 import codecs
 import numpy as np
 from numpy.testing import assert_allclose
+<<<<<<< HEAD:scripts/tests/test_bleu.py
 from scripts.nmt.bleu import compute_bleu
+=======
+from ..nmt.bleu import compute_bleu
+>>>>>>> a1aef6c5614e7c0e398b3a95a1f6ec3fee891e8a:scripts/tests/test_bleu.py
 
 
 actions = ['deletion', 'replacement', 'add']
@@ -94,7 +98,6 @@ def _write_reference(references, path='reference'):
 
 
 def test_bleu():
-    """Test BLEU utility against multi-bleu.perl."""
     n = 100
     max_len = 50
     n_refs = 5
