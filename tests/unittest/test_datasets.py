@@ -309,6 +309,46 @@ def test_ud21():
             assert max(len(f) for f in x) == min(len(f) for f in x)
 
 
+def test_iwlst2015():
+    # Test en to vi
+    train_en_vi = nlp.data.IWSLT2015(segment='train', root='tests/data/iwlst2015')
+    val_en_vi = nlp.data.IWSLT2015(segment='val', root='tests/data/iwlst2015')
+    test_en_vi = nlp.data.IWSLT2015(segment='test', root='tests/data/iwlst2015')
+    assert len(train_en_vi) == 133166
+    assert len(val_en_vi) == 1553
+    assert len(test_en_vi) == 1268
+
+    en_vocab, vi_vocab = train_en_vi.src_vocab, train_en_vi.tgt_vocab
+    assert len(en_vocab) == 17191
+    assert len(vi_vocab) == 7709
+
+    train_vi_en = nlp.data.IWSLT2015(segment='train', src_lang='vi', tgt_lang='en',
+                                     root='tests/data/iwlst2015')
+    vi_vocab, en_vocab = train_vi_en.src_vocab, train_vi_en.tgt_vocab
+    assert len(en_vocab) == 17191
+    assert len(vi_vocab) == 7709
+    for i in range(10):
+        lhs = train_en_vi[i]
+        rhs = train_vi_en[i]
+        assert lhs[0] == rhs[1] and rhs[0] == lhs[1]
+
+
+def test_wmt2016bpe():
+    train = nlp.data.WMT2016BPE(segment='train', src_lang='en', tgt_lang='de',
+                                root='tests/data/wmt2016')
+    newstests = [nlp.data.WMT2016BPE(segment='newstest%d' %i, src_lang='en', tgt_lang='de',
+                                     root='tests/data/wmt2016') for i in range(2012, 2017)]
+    assert len(train) == 4500966
+    assert tuple(len(ele) for ele in newstests) == (3003, 3000, 3003, 2169, 2999)
+
+    newstest_2012_2015 = nlp.data.WMT2016BPE(segment=['newstest%d' %i for i in range(2012, 2016)],
+                                             src_lang='en', tgt_lang='de', root='tests/data/wmt2016')
+    assert len(newstest_2012_2015) == 3003 + 3000 + 3003 + 2169
+    en_vocab, de_vocab = train.src_vocab, train.tgt_vocab
+    assert len(en_vocab) == 36548
+    assert len(de_vocab) == 36548
+
+
 if __name__ == '__main__':
     import nose
     nose.runmodule()
