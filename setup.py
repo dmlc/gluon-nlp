@@ -46,6 +46,7 @@ setup(
     # Package info
     packages=find_packages(exclude=(
         'tests',
+        'scripts.*',
         'scripts',
     )),
     zip_safe=True,
