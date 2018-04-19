@@ -125,15 +125,13 @@ class _TranslationDataset(ArrayDataset):
         src_vocab : Vocab
             Source vocabulary.
         """
-        if self._src_vocab is not None:
-            return self._src_vocab
-        else:
+        if self._src_vocab is None:
             src_vocab_file_name, src_vocab_hash = \
                 self._data_file[self._pair_key]['vocab' + "_" + self._src_lang]
             [src_vocab_path] = self._fetch_data_path([(src_vocab_file_name, src_vocab_hash)])
             with io.open(src_vocab_path, 'r', encoding='utf-8') as in_file:
                 self._src_vocab = Vocab.from_json(in_file.read())
-            return self._src_vocab
+        return self._src_vocab
 
     @property
     def tgt_vocab(self):
@@ -144,15 +142,13 @@ class _TranslationDataset(ArrayDataset):
         tgt_vocab : Vocab
             Target vocabulary.
         """
-        if self._tgt_vocab is not None:
-            return self._tgt_vocab
-        else:
+        if self._tgt_vocab is None:
             tgt_vocab_file_name, tgt_vocab_hash = \
                 self._data_file[self._pair_key]['vocab' + "_" + self._tgt_lang]
             [tgt_vocab_path] = self._fetch_data_path([(tgt_vocab_file_name, tgt_vocab_hash)])
             with io.open(tgt_vocab_path, 'r', encoding='utf-8') as in_file:
                 self._tgt_vocab = Vocab.from_json(in_file.read())
-            return self._tgt_vocab
+        return self._tgt_vocab
 
 
 class IWSLT2015(_TranslationDataset):

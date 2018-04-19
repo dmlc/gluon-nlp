@@ -318,13 +318,13 @@ def test_iwlst2015():
     assert len(val_en_vi) == 1553
     assert len(test_en_vi) == 1268
 
-    en_vocab, vi_vocab = train_en_vi.get_vocab()
+    en_vocab, vi_vocab = train_en_vi.src_vocab, train_en_vi.tgt_vocab
     assert len(en_vocab) == 17191
     assert len(vi_vocab) == 7709
 
     train_vi_en = nlp.data.IWSLT2015(segment='train', src_lang='vi', tgt_lang='en',
                                      root='tests/data/iwlst2015')
-    vi_vocab, en_vocab = train_vi_en.get_vocab()
+    vi_vocab, en_vocab = train_vi_en.src_vocab, train_vi_en.tgt_vocab
     assert len(en_vocab) == 17191
     assert len(vi_vocab) == 7709
     for i in range(10):
@@ -344,7 +344,7 @@ def test_wmt2016bpe():
     newstest_2012_2015 = nlp.data.WMT2016BPE(segment=['newstest%d' %i for i in range(2012, 2016)],
                                              src_lang='en', tgt_lang='de', root='tests/data/wmt2016')
     assert len(newstest_2012_2015) == 3003 + 3000 + 3003 + 2169
-    en_vocab, de_vocab = train.get_vocab()
+    en_vocab, de_vocab = train.src_vocab, train.tgt_vocab
     assert len(en_vocab) == 36548
     assert len(de_vocab) == 36548
 
