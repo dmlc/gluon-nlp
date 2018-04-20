@@ -50,11 +50,11 @@ class TrainValDataTransform(object):
 
 
 def process_dataset(dataset, src_vocab, tgt_vocab):
+    transform = TrainValDataTransform(src_vocab, tgt_vocab)
     start = time.time()
     with mp.Pool(4) as pool:
         dataset_processed = \
-            SimpleDataset(pool.map(TrainValDataTransform(src_vocab, tgt_vocab),
-                                   dataset))
+            SimpleDataset(pool.map(transform, dataset))
     end = time.time()
     print('Processing Time spent: {}'.format(end - start))
     return dataset_processed
