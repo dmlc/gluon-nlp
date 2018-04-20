@@ -48,8 +48,8 @@ class TrainValDataTransform(object):
         src_sentence.append(self._src_vocab[self._src_vocab.eos_token])
         tgt_sentence.insert(0, self._tgt_vocab[self._tgt_vocab.bos_token])
         tgt_sentence.append(self._tgt_vocab[self._tgt_vocab.eos_token])
-        src_npy = np.array(src_sentence, dtype=np.int32)
-        tgt_npy = np.array(tgt_sentence, dtype=np.int32)
+        src_npy = np.array([src_sentence], dtype=np.int32)
+        tgt_npy = np.array([tgt_sentence], dtype=np.int32)
         return src_npy, tgt_npy
 
 
@@ -115,5 +115,6 @@ val_data_loader = DataLoader(data_val,
                              num_workers=4)
 
 for (src_seq, src_valid_length), (tgt_seq, tgt_valid_length) in train_data_loader:
+    print(src_seq.shape)
     out, _ = model(src_seq, tgt_seq, src_valid_length, tgt_valid_length)
     print(out)
