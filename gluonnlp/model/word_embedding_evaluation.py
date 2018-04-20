@@ -20,11 +20,161 @@
 """Models for intrinsic and extrinsic word embedding evaluation"""
 
 import mxnet as mx
-from mxnet import nd
+from mxnet import nd, registry
 from mxnet.gluon import HybridBlock, Block
 
+__all__ = [
+    'register', 'create', 'list_evaluation_functions',
+    'WordEmbeddingSimilarityFunction', 'WordEmbeddingAnalogyFunction',
+    'CosineSimilarity', 'ThreeCosMul', 'WordEmbeddingSimilarity',
+    'WordEmbeddingAnalogy'
+]
 
-class CosineSimilarity(HybridBlock):
+
+class _WordEmbeddingEvaluationFunction(HybridBlock):  # pylint: disable=abstract-method
+    """Base class for word embedding evaluation functions."""
+    pass
+
+
+class WordEmbeddingSimilarityFunction(_WordEmbeddingEvaluationFunction):  # pylint: disable=abstract-method
+    """Base class for word embedding similarity functions."""
+    pass
+
+
+class WordEmbeddingAnalogyFunction(_WordEmbeddingEvaluationFunction):  # pylint: disable=abstract-method
+    """Base class for word embedding analogy functions."""
+    pass
+
+
+###############################################################################
+# Similarity and analogy functions registry helpers
+###############################################################################
+_REGSITRY_KIND_CLASS_MAP = {
+    'similarity': WordEmbeddingSimilarityFunction,
+    'analogy': WordEmbeddingAnalogyFunction
+}
+
+
+def register(class_):
+    """Registers a new word embedding evaluation function.
+
+    Once registered, we can create an instance with
+    :func:`~gluonnlp.model.word_embedding_evaluation.create`.
+
+    Examples
+    --------
+    >>> @gluonnlp.model.word_embedding_evaluation.register
+    ... class MySimilarityFunction(WordEmbeddingSimilarityFunction):
+    ...     def __init__(self, eps=1e-10):
+    ...         pass
+    >>> similarity_function = gluonnlp.embedding.create('MySimilarityFunction')
+    >>> print(type(similarity_function))
+    <class '__main__.MySimilarityFunction'>
+
+    >>> @gluonnlp.model.word_embedding_evaluation.register
+    ... class MyAnalogyFunction(WordEmbeddingAnalogyFunction):
+    ...     def __init__(self, idx_to_vec, k=1, eps=1E-10):
+    ...         pass
+    >>> analogy_function = gluonnlp.embedding.create('MyAnalogyFunction')
+    >>> print(type(analogy_function))
+    <class '__main__.MyAnalogyFunction'>
+
+    """
+
+    if issubclass(class_, WordEmbeddingSimilarityFunction):
+        register_ = registry.get_register_func(
+            WordEmbeddingSimilarityFunction,
+            'word embedding similarity evaluation function')
+    elif issubclass(class_, WordEmbeddingAnalogyFunction):
+        register_ = registry.get_register_func(
+            WordEmbeddingAnalogyFunction,
+            'word embedding analogy evaluation function')
+    else:
+        raise RuntimeError(
+            'The custom function must either subclass '
+            'WordEmbeddingSimilarityFunction or WordEmbeddingAnalogyFunction')
+
+    return register_(class_)
+
+
+def create(kind, name, **kwargs):
+    """Creates an instance of a registered word embedding evaluation function.
+
+    Parameters
+    ----------
+    kind : ['similarity', 'analogy', None]
+        Return only valid names for similarity, analogy or both kinds of functions.
+    name : str
+        The evaluation function name (case-insensitive).
+
+
+    Returns
+    -------
+    An instance of
+    :class:`gluonnlp.model.word_embedding_evaluation.WordEmbeddingAnalogyFunction`:
+    or
+    :class:`gluonnlp.model.word_embedding_evaluation.WordEmbeddingSimilarityFunction`:
+        An instance of the specified evaluation function.
+
+    """
+    if not kind in _REGSITRY_KIND_CLASS_MAP.keys():
+        raise KeyError('Cannot find `kind` {}. Use '
+                       '`list_sources(kind=None).keys()` to get all the valid'
+                       'kinds of evaluation functions.'.format(kind))
+
+    create_ = registry.get_create_func(
+        _REGSITRY_KIND_CLASS_MAP[kind],
+        'word embedding {} evaluation function'.format(kind))
+
+    return create_(name, **kwargs)
+
+
+def list_evaluation_functions(kind=None):
+    """Get valid word embedding functions names.
+
+    Parameters
+    ----------
+    kind : ['similarity', 'analogy', None]
+        Return only valid names for similarity, analogy or both kinds of functions.
+
+    Returns
+    -------
+    dict or list:
+        A list of all the valid evaluation function names for the specified
+        kind. If kind is set to None, returns a dict mapping each valid name to
+        its respective output list. The valid names can be plugged in
+        `gluonnlp.model.word_evaluation_model.create(name)`.
+
+    """
+
+    if kind is None:
+        kind = tuple(_REGSITRY_KIND_CLASS_MAP.keys())
+
+    if not isinstance(kind, tuple):
+        if kind not in _REGSITRY_KIND_CLASS_MAP.keys():
+            raise KeyError(
+                'Cannot find `kind` {}. Use '
+                '`list_sources(kind=None).keys()` to get all the valid'
+                'kinds of evaluation functions.'.format(kind))
+
+        reg = registry.get_registry(_REGSITRY_KIND_CLASS_MAP[kind])
+        return list(reg.keys())
+    else:
+        return {
+            embedding_name:
+            list(embedding_cls.pretrained_file_name_sha1.keys())
+            for embedding_name, embedding_cls in registry.get_registry(
+                TokenEmbedding).items()
+        }
+
+
+###############################################################################
+# Word embedding similarity functions
+###############################################################################
+
+
+@register
+class CosineSimilarity(WordEmbeddingSimilarityFunction):
     """Computes the cosine similarity.
 
     Parameters
@@ -63,6 +213,59 @@ class CosineSimilarity(HybridBlock):
         return F.batch_dot(x, y).reshape((-1, ))
 
 
+###############################################################################
+# Word embedding analogy functions
+###############################################################################
+@register
+class ThreeCosMul(WordEmbeddingAnalogyFunction):
+    """The 3CosMul analogy function.
+
+    The 3CosMul analogy function is defined as
+    .. math::
+        \\arg\\max_{b^* ∈ V}\\frac{\\cos(b^∗, b) \\cos(b^*, a)}{cos(b^*, a^*) + ε}
+
+    Parameters
+    ----------
+    eps : float, optional, default=1e-10
+        A small constant for numerical stability.
+
+    """
+
+    def __init__(self, idx_to_vec, k=1, eps=1E-10, **kwargs):
+        super(ThreeCosMul, self).__init__(**kwargs)
+
+        self.k = k
+        self.eps = eps
+
+        self._vocab_size, self._embed_size = idx_to_vec.shape
+
+        idx_to_vec = mx.nd.L2Normalization(idx_to_vec, eps=self.eps)
+        with self.name_scope():
+            self.weight = self.params.get_constant('weight', idx_to_vec)
+
+    def hybrid_forward(self, F, words1, words2, words3, weight):  # pylint: disable=arguments-differ
+        """Implement forward computation."""
+        words123 = F.concat(words1, words2, words3, dim=0)
+        embeddings_words123 = F.Embedding(words123, weight,
+                                          input_dim=self._vocab_size,
+                                          output_dim=self._embed_size)
+        similarities = F.FullyConnected(
+            embeddings_words123, weight, no_bias=True,
+            num_hidden=self._vocab_size, flatten=False)
+        # Map cosine similarities to [0, 1]
+        similarities = (similarities + 1) / 2
+
+        sim_w1w4, sim_w2w4, sim_w3w4 = F.split(similarities, num_outputs=3,
+                                               axis=0)
+
+        pred_idxs = F.topk((sim_w2w4 * sim_w3w4) / (sim_w1w4 + self.eps),
+                           k=self.k)
+        return pred_idxs
+
+
+###############################################################################
+# Evaluation blocks
+###############################################################################
 class WordEmbeddingSimilarity(HybridBlock):
     """Word embeddings similarity task evaluator.
 
@@ -70,15 +273,14 @@ class WordEmbeddingSimilarity(HybridBlock):
     ----------
     idx_to_vec : mxnet.ndarray.NDArray
         Embedding matrix.
-    similarity_function : mxnet.gluon.Block
-        Given two mx.nd.NDArray's of word embeddings compute a similarity
-        score.
+    similarity_function : str, default 'CosineSimilarity'
+        Name of a registered WordEmbeddingSimilarityFunction.
     eps : float, optional, default=1e-10
         A small constant for numerical stability.
 
     """
 
-    def __init__(self, idx_to_vec, similarity_function=CosineSimilarity,
+    def __init__(self, idx_to_vec, similarity_function='CosineSimilarity',
                  eps=1e-10, **kwargs):
         super(WordEmbeddingSimilarity, self).__init__(**kwargs)
 
@@ -87,7 +289,12 @@ class WordEmbeddingSimilarity(HybridBlock):
 
         with self.name_scope():
             self.weight = self.params.get_constant('weight', idx_to_vec)
-            self.similarity = similarity_function(eps=self.eps)
+            self.similarity = create(kind='similarity',
+                                     name=similarity_function, eps=self.eps)
+
+        if not isinstance(self.similarity, WordEmbeddingSimilarityFunction):
+            raise RuntimeError(
+                '{} is not a WordEmbeddingAnalogyFunction'.format(name))
 
     def hybrid_forward(self, F, words1, words2, weight):  # pylint: disable=arguments-differ
         """Predict the similarity of words1 and words2.
@@ -114,61 +321,6 @@ class WordEmbeddingSimilarity(HybridBlock):
         return similarity
 
 
-class ThreeCosMul(HybridBlock):
-    """The 3CosMul analogy function.
-
-    The 3CosMul analogy function is defined as
-    .. math::
-        \\arg\\max_{b^* ∈ V}\\frac{\\cos(b^∗, b) \\cos(b^*, a)}{cos(b^*, a^*) + ε}
-
-    Parameters
-    ----------
-    eps : float, optional, default=1e-10
-        A small constant for numerical stability.
-
-    """
-
-    def __init__(self, idx_to_vec, k=1, eps=1E-10, **kwargs):
-        super(ThreeCosMul, self).__init__(**kwargs)
-
-        self.k = k
-        self.eps = eps
-
-        self._vocab_size, self._embed_size = idx_to_vec.shape
-
-        normalized_idx_to_vec = mx.nd.L2Normalization(idx_to_vec, eps=self.eps)
-        with self.name_scope():
-            self.weight = self.params.get_constant('weight',
-                                                   normalized_idx_to_vec)
-
-    def hybrid_forward(self, F, words1, words2, words3, weight):  # pylint: disable=arguments-differ
-        """Implement forward computation."""
-        embeddings_words1 = F.Embedding(words1, weight,
-                                        input_dim=self._vocab_size,
-                                        output_dim=self._embed_size)
-        embeddings_words2 = F.Embedding(words2, weight,
-                                        input_dim=self._vocab_size,
-                                        output_dim=self._embed_size)
-        embeddings_words3 = F.Embedding(words3, weight,
-                                        input_dim=self._vocab_size,
-                                        output_dim=self._embed_size)
-        embeddings_words123 = F.concat(embeddings_words1, embeddings_words2,
-                                       embeddings_words3, dim=0)
-
-        similarities = F.FullyConnected(
-            embeddings_words123, weight, no_bias=True,
-            num_hidden=self._vocab_size, flatten=False)
-        # Map cosine similarities to [0, 1]
-        similarities = (similarities + 1) / 2
-
-        sim_w1w4, sim_w2w4, sim_w3w4 = F.split(similarities, num_outputs=3,
-                                               axis=0)
-
-        pred_idxs = F.topk((sim_w2w4 * sim_w3w4) / (sim_w1w4 + self.eps),
-                           k=self.k)
-        return pred_idxs
-
-
 class WordEmbeddingAnalogy(Block):
     """Word embeddings analogy task evaluator.
 
@@ -176,9 +328,8 @@ class WordEmbeddingAnalogy(Block):
     ----------
     idx_to_vec : mxnet.ndarray.NDArray
         Embedding matrix.
-    analogy_function : mxnet.gluon.Block
-        Given three mx.nd.NDArray's of word embeddings predict k analogies.
-        idx_to_vec and k are passed on to its constructor.
+    analogy_function : str, default 'ThreeCosMul'
+        Name of a registered WordEmbeddingAnalogyFunction.
     k : int (1)
         Number of analogies to predict per input triple.
     exclude_inputs : bool (True)
@@ -186,7 +337,7 @@ class WordEmbeddingAnalogy(Block):
 
     """
 
-    def __init__(self, idx_to_vec, analogy_function=ThreeCosMul, k=1,
+    def __init__(self, idx_to_vec, analogy_function='ThreeCosMul', k=1,
                  exclude_inputs=True, **kwargs):
         super(WordEmbeddingAnalogy, self).__init__(**kwargs)
 
@@ -197,8 +348,12 @@ class WordEmbeddingAnalogy(Block):
         self._internal_k = self.k + 3 * self.exclude_inputs
 
         with self.name_scope():
-            self.analogy = analogy_function(idx_to_vec=idx_to_vec,
-                                            k=self._internal_k)
+            self.analogy = create(kind='analogy', name=analogy_function,
+                                  idx_to_vec=idx_to_vec, k=self._internal_k)
+
+        if not isinstance(self.analogy, WordEmbeddingAnalogyFunction):
+            raise RuntimeError(
+                '{} is not a WordEmbeddingAnalogyFunction'.format(name))
 
     def forward(self, words1, words2, words3):  # pylint: disable=arguments-differ
         """Implement forward computation.

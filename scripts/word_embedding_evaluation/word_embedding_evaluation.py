@@ -48,7 +48,8 @@ except ImportError:
     stats = None
 
 parser = argparse.ArgumentParser(
-    description='Word embedding training with Gluon.')
+    description='Word embedding training with Gluon.',
+    formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
 # Embeddings arguments
 group = parser.add_argument_group('Embedding arguments')
@@ -68,17 +69,25 @@ group.add_argument('--ignore_oov', action='store_true',
                    help='Drop OOV words from evaluation datasets.')
 ## Datasets
 group.add_argument(
-    '--similarity_datasets', type=str, default='*', nargs='*',
-    help='Word similarity datasets to use for intrinsic evaluation. '
-    '"*" selects all datasets. Empty argument disables.  Or specify by name: '
-    '{}'.format(' '.join(
-        nlp.data.word_embedding_evaluation.word_similarity_datasets)))
+    '--similarity_datasets', type=str,
+    default=nlp.data.word_embedding_evaluation.word_similarity_datasets,
+    nargs='*',
+    help='Word similarity datasets to use for intrinsic evaluation.')
 group.add_argument(
-    '--analogy_datasets', type=str, default='*', nargs='*',
-    help='Word similarity datasets to use for intrinsic evaluation. '
-    '"*" selects all datasets. Empty argument disables. Or specify by name: '
-    '{}'.format(' '.join(
-        nlp.data.word_embedding_evaluation.word_analogy_datasets)))
+    '--similarity_functions', type=str,
+    default=nlp.model.word_embedding_evaluation.list_evaluation_functions(
+        'similarity'), nargs='+',
+    help='Word similarity functions to use for intrinsic evaluation.')
+group.add_argument(
+    '--analogy_datasets', type=str,
+    default=nlp.data.word_embedding_evaluation.word_analogy_datasets,
+    nargs='*',
+    help='Word similarity datasets to use for intrinsic evaluation.')
+group.add_argument(
+    '--analogy_functions', type=str,
+    default=nlp.model.word_embedding_evaluation.list_evaluation_functions(
+        'analogy'), nargs='+',
+    help='Word analogy functions to use for intrinsic evaluation. ')
 ## Analogy evaluation specific arguments
 group.add_argument(
     '--analogy_dont_exclude_inputs', action='store_true',
@@ -158,7 +167,8 @@ logging.getLogger().setLevel(logging.INFO)
 ###############################################################################
 # Evaluation
 ###############################################################################
-def evaluate_similarity(token_embedding, dataset):
+def evaluate_similarity(token_embedding, dataset,
+                        similarity_function='CosineSimilarity'):
     """Evaluation on similarity task."""
     # Closed vocabulary: Only need the words occuring in the dataset
     counter = nlp.data.utils.Counter(w for wpair in dataset for w in wpair[:2])
@@ -177,7 +187,8 @@ def evaluate_similarity(token_embedding, dataset):
     words1, words2, scores = zip(*dataset_coded)
 
     evaluator = nlp.model.WordEmbeddingSimilarity(
-        idx_to_vec=vocab.embedding.idx_to_vec)
+        idx_to_vec=vocab.embedding.idx_to_vec,
+        similarity_function=similarity_function)
     evaluator.initialize(ctx=context)
     if not args.dont_hybridize:
         evaluator.hybridize()
@@ -190,7 +201,7 @@ def evaluate_similarity(token_embedding, dataset):
                  dataset.__class__.__name__, sr)
 
 
-def evaluate_analogy(token_embedding, dataset):
+def evaluate_analogy(token_embedding, dataset, analogy_function='ThreeCosMul'):
     """Evaluation on analogy task."""
     # Open vocabulary: Use all known words
     counter = nlp.data.utils.Counter(token_embedding.idx_to_token)
@@ -214,7 +225,8 @@ def evaluate_analogy(token_embedding, dataset):
         dataset_coded, batch_size=args.batch_size)
     exclude_inputs = not args.analogy_dont_exclude_inputs
     evaluator = nlp.model.WordEmbeddingAnalogy(
-        idx_to_vec=vocab.embedding.idx_to_vec, exclude_inputs=exclude_inputs)
+        idx_to_vec=vocab.embedding.idx_to_vec, exclude_inputs=exclude_inputs,
+        analogy_function=analogy_function)
     evaluator.initialize(ctx=context)
     if not args.dont_hybridize:
         evaluator.hybridize()
@@ -250,13 +262,17 @@ def evaluate():
 
         logging.info('Starting evaluation of %s', dataset_class.__name__)
         dataset = dataset_class()
-        evaluate_similarity(token_embedding, dataset)
+        for similarity_function in args.similarity_functions:
+            logging.info('Evaluating with  %s', similarity_function)
+            evaluate_similarity(token_embedding, dataset, similarity_function)
 
     # Analogy based evaluation
     for dataset_class in analogy_datasets:
         logging.info('Starting evaluation of %s', dataset_class.__name__)
         dataset = dataset_class()
-        evaluate_analogy(token_embedding, dataset)
+        for analogy_function in args.analogy_functions:
+            logging.info('Evaluating with  %s', analogy_function)
+            evaluate_analogy(token_embedding, dataset, analogy_function)
 
 
 if __name__ == '__main__':
