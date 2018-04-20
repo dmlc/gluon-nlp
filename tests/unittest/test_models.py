@@ -66,12 +66,11 @@ def test_word_embedding_similarity_evaluation_models():
     data = [[vocab[d[0]], vocab[d[1]], d[2]] for d in dataset]
     words1, words2, scores = zip(*data)
 
-    evaluator = nlp.model.WordEmbeddingSimilarity(
-        vocab_size=len(vocab), embed_size=vocab.embedding.idx_to_vec.shape[1])
+    evaluator = nlp.model.WordEmbeddingSimilarity(vocab.embedding.idx_to_vec)
     evaluator.initialize()
-    evaluator.embedding.weight.set_data(vocab.embedding.idx_to_vec)
 
-    pred_similarity = evaluator(mx.nd.array(words1), mx.nd.array(words2))
+    words1, words2 = mx.nd.array(words1), mx.nd.array(words2)
+    pred_similarity = evaluator(words1, words2)
 
     sr = nlp.metric.SpearmanRankCorrelation()
     sr.update(mx.nd.array(scores), pred_similarity)
@@ -83,28 +82,29 @@ def test_word_embedding_analogy_evaluation_models():
     dataset = nlp.data.GoogleAnalogyTestSet()
     dataset = [d for i, d in enumerate(dataset) if i < 100]
 
-    counter = nlp.data.utils.Counter(w for wpair in dataset for w in wpair[:4])
+    embedding = nlp.embedding.create("fasttext", source="wiki.simple.vec")
+    counter = nlp.data.utils.Counter(embedding.idx_to_token)
     vocab = nlp.vocab.Vocab(counter)
-    vocab.set_embedding(
-        nlp.embedding.create("fasttext", source="wiki.simple.vec"))
+    vocab.set_embedding(embedding)
 
     dataset_coded = [[vocab[d[0]], vocab[d[1]], vocab[d[2]], vocab[d[3]]]
                      for d in dataset]
-    words1, words2, words3, words4 = zip(*dataset_coded)
+    dataset_coded_nd = mx.nd.array(dataset_coded)
 
     for k in [1, 3]:
         for exclude_inputs in [True, False]:
             evaluator = nlp.model.WordEmbeddingAnalogy(
-                vocab_size=len(vocab),
-                embed_size=vocab.embedding.idx_to_vec.shape[1], k=k,
+                idx_to_vec=vocab.embedding.idx_to_vec, k=k,
                 exclude_inputs=exclude_inputs)
             evaluator.initialize()
-            evaluator.embedding.weight.set_data(vocab.embedding.idx_to_vec)
 
-            pred_idxs = evaluator(
-                mx.nd.array(words1), mx.nd.array(words2), mx.nd.array(words3))
+            words1 = dataset_coded_nd[:, 0]
+            words2 = dataset_coded_nd[:, 1]
+            words3 = dataset_coded_nd[:, 2]
+            pred_idxs = evaluator(words1, words2, words3)
 
             # If we don't exclude inputs most predictions should be wrong
+            words4 = dataset_coded_nd[:, 3]
             accuracy = mx.nd.mean(pred_idxs[:, 0] == mx.nd.array(words4))
             accuracy = accuracy.asscalar()
             if exclude_inputs == False:
@@ -116,7 +116,8 @@ def test_word_embedding_analogy_evaluation_models():
                 assert accuracy_w3.asscalar() >= 0.9
 
             elif exclude_inputs == True:
-                assert accuracy >= 0.9
+                # The wiki.simple.vec vectors don't perform too good
+                assert accuracy >= 0.5
 
             # Assert output shape
             assert pred_idxs.shape[1] == k
