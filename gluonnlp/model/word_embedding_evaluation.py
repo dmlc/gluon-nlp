@@ -278,6 +278,73 @@ class ThreeCosMul(WordEmbeddingAnalogyFunction):
         return pred_idxs
 
 
+@register
+class ThreeCosAdd(WordEmbeddingAnalogyFunction):
+    """The 3CosAdd analogy function.
+
+    The 3CosAdd analogy function is defined as
+
+    .. math::
+        \\arg\\max_{b^* ∈ V}[\\cos(b^∗, b - a + a^*)]
+
+    Parameters
+    ----------
+    idx_to_vec : mxnet.ndarray.NDArray
+        Embedding matrix.
+    normalize : bool, default True
+        Normalize all word embeddings before computing the analogy.
+    k : int, default 1
+        Number of analogies to predict per input triple.
+    eps : float, optional, default=1e-10
+        A small constant for numerical stability.
+
+
+    """
+
+    def __init__(self, idx_to_vec, normalize=True, k=1, eps=1E-10, **kwargs):
+        super(ThreeCosAdd, self).__init__(**kwargs)
+
+        self.k = k
+        self.eps = eps
+        self.normalize = normalize
+
+        self._vocab_size, self._embed_size = idx_to_vec.shape
+
+        if self.normalize:
+            idx_to_vec = mx.nd.L2Normalization(idx_to_vec, eps=self.eps)
+
+        with self.name_scope():
+            self.weight = self.params.get_constant('weight', idx_to_vec)
+
+    def hybrid_forward(self, F, words1, words2, words3, weight):  # pylint: disable=arguments-differ
+        """Implement forward computation."""
+        if self.normalize:
+            words123 = F.concat(words1, words2, words3, dim=0)
+            embeddings_words123 = F.Embedding(words123, weight,
+                                              input_dim=self._vocab_size,
+                                              output_dim=self._embed_size)
+            similarities = F.FullyConnected(
+                embeddings_words123, weight, no_bias=True,
+                num_hidden=self._vocab_size, flatten=False)
+            sim_w1w4, sim_w2w4, sim_w3w4 = F.split(similarities, num_outputs=3,
+                                                   axis=0)
+            pred_idxs = F.topk(sim_w3w4 - sim_w1w4 + sim_w2w4, k=self.k)
+        else:
+            words123 = F.concat(words1, words2, words3, dim=0)
+            embeddings_words123 = F.Embedding(words123, weight,
+                                              input_dim=self._vocab_size,
+                                              output_dim=self._embed_size)
+
+            embeddings_word1, embeddings_word2, embeddings_word3 = F.split(
+                similarities, num_outputs=3, axis=0)
+            vector = (embeddings_word3 - embeddings_word1 + embeddings_word2)
+            similarities = F.FullyConnected(vector, weight, no_bias=True,
+                                            num_hidden=self._vocab_size,
+                                            flatten=False)
+            pred_idxs = F.topk(similarities, k=self.k)
+        return pred_idxs
+
+
 ###############################################################################
 # Evaluation blocks
 ###############################################################################
