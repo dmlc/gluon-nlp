@@ -158,15 +158,19 @@ class NMTModel(Block):
         step_output = self.tgt_proj(step_output)
         return step_output, states, step_additional_outputs
 
-    def forward(self, src_sequence, tgt_sequence, src_valid_length=None, tgt_valid_length=None):
-        """Generate the prediction given the src_sequence and tgt_sequence.
+    def __call__(self, src_seq, tgt_seq, src_valid_length=None, tgt_valid_length=None):
+        return super(NMTModel, self).__call__(src_seq, tgt_seq,
+                                              src_valid_length, tgt_valid_length)
+
+    def forward(self, src_seq, tgt_seq, src_valid_length=None, tgt_valid_length=None):
+        """Generate the prediction given the src_seq and tgt_seq.
 
         This is used in training an NMT model.
 
         Parameters
         ----------
-        src_sequence : NDArray
-        tgt_sequence : NDArray
+        src_seq : NDArray
+        tgt_seq : NDArray
         src_valid_length : NDArray or None
         tgt_valid_length : NDArray or None
 
@@ -177,9 +181,9 @@ class NMTModel(Block):
         additional_outputs : list
             Additional outputs, e.g, the attention weights
         """
-        encoder_outputs = self.encode(src_sequence, src_valid_length)
+        encoder_outputs = self.encode(src_seq, src_valid_length)
         decoder_states = self.decoder.init_state_from_encoder(encoder_outputs,
                                                               encoder_valid_length=src_valid_length)
         outputs, _, additional_outputs =\
-            self.decode_seq(tgt_sequence, decoder_states, tgt_valid_length)
+            self.decode_seq(tgt_seq, decoder_states, tgt_valid_length)
         return outputs, additional_outputs

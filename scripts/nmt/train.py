@@ -1,12 +1,13 @@
-from gluonnlp.model.encoder_decoder import get_gnmt_encoder_decoder
-from gluonnlp.model.translation import NMTModel
+
 import numpy as np
 import time
 import os
-import multiprocessing as mp
 from mxnet.gluon.data import ArrayDataset, SimpleDataset
-from gluonnlp import Vocab
-from gluonnlp.data.utils import Counter
+from mxnet.gluon.data import DataLoader
+import gluonnlp.data.batchify as btf
+from gluonnlp.data import FixedBucketSampler
+from gluonnlp.model.encoder_decoder import get_gnmt_encoder_decoder
+from gluonnlp.model.translation import NMTModel
 from gluonnlp.data import IWSLT2015
 import _constants as _C
 
@@ -75,8 +76,44 @@ def load_IWSLT2015(src_lang='en', tgt_lang='vi'):
     if not data_val_processed:
         data_val_processed = process_dataset(data_val, src_vocab, tgt_vocab)
         cache_dataset(data_val_processed, common_prefix + '_val')
-    data_test_processed = data_test.transform(lambda src, tgt: (src.split(), tgt.split()),
-                                              lazy=False)
-    return data_train_processed, data_val_processed, data_test_processed
+    raw_transform = lambda src, tgt: (src.split(), tgt.split())
+    data_val_raw = data_val.transform(raw_transform, lazy=False)
+    data_test_raw = data_test.transform(raw_transform, lazy=False)
+    return data_train_processed, data_val_processed, data_val_raw, data_test_raw, src_vocab, tgt_vocab
 
-data_train, data_val, data_test = load_IWSLT2015()
+
+def get_data_lengths(dataset):
+    return list(dataset.transform(lambda srg, tgt: (len(srg), len(tgt))))
+
+
+data_train, data_val, data_val_raw, data_test_raw, src_vocab, tgt_vocab = load_IWSLT2015()
+
+hidden_size = 128
+dropout = 0.2
+num_buckets = 5
+train_batch_size = 128
+test_batch_size = 32
+
+encoder, decoder = get_gnmt_encoder_decoder(hidden_size=hidden_size)
+model = NMTModel(src_vocab=src_vocab, tgt_vocab=tgt_vocab, encoder=encoder, decoder=decoder,
+                 embed_size=128)
+batchify_fn = btf.Tuple(btf.Pad(ret_length=True), btf.Pad(ret_length=True))
+train_batch_sampler = FixedBucketSampler(lengths=get_data_lengths(data_train),
+                                         batch_size=train_batch_size,
+                                         num_buckets=num_buckets, shuffle=True)
+train_data_loader = DataLoader(data_train,
+                               batch_sampler=train_batch_sampler,
+                               batchify_fn=batchify_fn,
+                               num_workers=4)
+
+val_batch_sampler = FixedBucketSampler(lengths=get_data_lengths(data_val),
+                                       batch_size=train_batch_size,
+                                       num_buckets=num_buckets, shuffle=False)
+val_data_loader = DataLoader(data_val,
+                             batch_sampler=val_batch_sampler,
+                             batchify_fn=batchify_fn,
+                             num_workers=4)
+
+for (src_seq, src_valid_length), (tgt_seq, tgt_valid_length) in train_data_loader:
+    out, _ = model(src_seq, tgt_seq, src_valid_length, tgt_valid_length)
+    print(out)
