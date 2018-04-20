@@ -36,24 +36,24 @@ from ..vocab import Vocab
 
 
 def _get_pair_key(src_lang, tgt_lang):
-    return "_".join(sorted([src_lang, tgt_lang]))
+    return '_'.join(sorted([src_lang, tgt_lang]))
 
 
 class _TranslationDataset(ArrayDataset):
     def __init__(self, namespace, segment, src_lang, tgt_lang, root):
         assert _get_pair_key(src_lang, tgt_lang) in self._archive_file, \
-            "The given language combination: src_lang=%s, tgt_lang=%s, is not supported. " \
-            "Only supports language pairs = %s." \
-            % (src_lang, tgt_lang, str(self._archive_file.keys()))
+            'The given language combination: src_lang={}, tgt_lang={}, is not supported. ' \
+            'Only supports language pairs = {}.'.format(
+                src_lang, tgt_lang, str(self._archive_file.keys()))
         if isinstance(segment, str):
             assert segment in self._supported_segments, \
-                "Only supports %s for the segment. Received segment=%s"\
-                % (self._supported_segments, segment)
+                'Only supports {} for the segment. Received segment={}'.format(
+                    self._supported_segments, segment)
         else:
             for ele_segment in segment:
                 assert ele_segment in self._supported_segments, \
-                    "segment should only contain elements in %s. Received segment=%s" \
-                    % (self._supported_segments, segment)
+                    'segment should only contain elements in {}. Received segment={}'.format(
+                        self._supported_segments, segment)
         self._namespace = 'gluon/dataset/{}'.format(namespace)
         self._segment = segment
         self._src_lang = src_lang
@@ -66,16 +66,13 @@ class _TranslationDataset(ArrayDataset):
             os.makedirs(root)
         self._root = root
         if isinstance(segment, str):
-            [src_corpus_path, tgt_corpus_path] = self._get_data(segment)
-            src_corpus = TextLineDataset(src_corpus_path)
-            tgt_corpus = TextLineDataset(tgt_corpus_path)
-        else:
-            src_corpus = []
-            tgt_corpus = []
-            for ele_segment in segment:
-                [src_corpus_path, tgt_corpus_path] = self._get_data(ele_segment)
-                src_corpus.extend(TextLineDataset(src_corpus_path))
-                tgt_corpus.extend(TextLineDataset(tgt_corpus_path))
+            segment = [segment]
+        src_corpus = []
+        tgt_corpus = []
+        for ele_segment in segment:
+            [src_corpus_path, tgt_corpus_path] = self._get_data(ele_segment)
+            src_corpus.extend(TextLineDataset(src_corpus_path))
+            tgt_corpus.extend(TextLineDataset(tgt_corpus_path))
         # Filter 0-length src/tgt sentences
         src_lines = []
         tgt_lines = []
@@ -103,16 +100,16 @@ class _TranslationDataset(ArrayDataset):
                         if filename:
                             dest = os.path.join(root, filename)
                             with zf.open(member) as source, \
-                                    open(dest, "wb") as target:
+                                    open(dest, 'wb') as target:
                                 shutil.copyfileobj(source, target)
             paths.append(path)
         return paths
 
     def _get_data(self, segment):
         src_corpus_file_name, src_corpus_hash =\
-            self._data_file[self._pair_key][segment + "_" + self._src_lang]
+            self._data_file[self._pair_key][segment + '_' + self._src_lang]
         tgt_corpus_file_name, tgt_corpus_hash =\
-            self._data_file[self._pair_key][segment + "_" + self._tgt_lang]
+            self._data_file[self._pair_key][segment + '_' + self._tgt_lang]
         return self._fetch_data_path([(src_corpus_file_name, src_corpus_hash),
                                       (tgt_corpus_file_name, tgt_corpus_hash)])
 
@@ -127,7 +124,7 @@ class _TranslationDataset(ArrayDataset):
         """
         if self._src_vocab is None:
             src_vocab_file_name, src_vocab_hash = \
-                self._data_file[self._pair_key]['vocab' + "_" + self._src_lang]
+                self._data_file[self._pair_key]['vocab' + '_' + self._src_lang]
             [src_vocab_path] = self._fetch_data_path([(src_vocab_file_name, src_vocab_hash)])
             with io.open(src_vocab_path, 'r', encoding='utf-8') as in_file:
                 self._src_vocab = Vocab.from_json(in_file.read())
@@ -144,7 +141,7 @@ class _TranslationDataset(ArrayDataset):
         """
         if self._tgt_vocab is None:
             tgt_vocab_file_name, tgt_vocab_hash = \
-                self._data_file[self._pair_key]['vocab' + "_" + self._tgt_lang]
+                self._data_file[self._pair_key]['vocab' + '_' + self._tgt_lang]
             [tgt_vocab_path] = self._fetch_data_path([(tgt_vocab_file_name, tgt_vocab_hash)])
             with io.open(tgt_vocab_path, 'r', encoding='utf-8') as in_file:
                 self._tgt_vocab = Vocab.from_json(in_file.read())
@@ -170,9 +167,9 @@ class IWSLT2015(_TranslationDataset):
     def __init__(self, segment='train', src_lang='en', tgt_lang='vi',
                  root=os.path.join('~', '.mxnet', 'datasets', 'iwslt2015')):
         self._supported_segments = ['train', 'val', 'test']
-        self._archive_file = {_get_pair_key("en", "vi"):
+        self._archive_file = {_get_pair_key('en', 'vi'):
                                   ('iwslt15.zip', '15a05df23caccb1db458fb3f9d156308b97a217b')}
-        self._data_file = {_get_pair_key("en", "vi"):
+        self._data_file = {_get_pair_key('en', 'vi'):
                                {'train_en': ('train.en',
                                              '675d16d057f2b6268fb294124b1646d311477325'),
                                 'train_vi': ('train.vi',
@@ -214,10 +211,10 @@ class WMT2016BPE(_TranslationDataset):
     def __init__(self, segment='train', src_lang='en', tgt_lang='de',
                  root=os.path.join('~', '.mxnet', 'datasets', 'wmt2016')):
         self._supported_segments = ['train'] + ['newstest%d' % i for i in range(2012, 2017)]
-        self._archive_file = {_get_pair_key("de", "en"):
+        self._archive_file = {_get_pair_key('de', 'en'):
                                   ('wmt2016_de_en.zip',
                                    '8cf0dbf6a102381443a472bcf9f181299231b496')}
-        self._data_file = {_get_pair_key("de", "en"):
+        self._data_file = {_get_pair_key('de', 'en'):
                                {'train_en': ('train.tok.clean.bpe.32000.en',
                                              '56f37cb4d68c2f83efd6a0c555275d1fe09f36b5'),
                                 'train_de': ('train.tok.clean.bpe.32000.de',
@@ -246,6 +243,6 @@ class WMT2016BPE(_TranslationDataset):
                                              '1c5aea0a77cad592c4e9c1136ec3b70ceeff4e8c'),
                                 'vocab_de': ('vocab.bpe.32000.json',
                                              '1c5aea0a77cad592c4e9c1136ec3b70ceeff4e8c')}}
-        super(WMT2016BPE, self).__init__('WMT2016BPE', segment=segment, src_lang=src_lang,
+        super(WMT2016BPE, self).__init__('WMT2016', segment=segment, src_lang=src_lang,
                                          tgt_lang=tgt_lang,
                                          root=os.path.join(root, _get_pair_key(src_lang, tgt_lang)))

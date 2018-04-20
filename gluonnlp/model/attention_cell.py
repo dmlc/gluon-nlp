@@ -16,16 +16,16 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-"""Implements the beam search sampler."""
+"""Attention cells."""
 from __future__ import absolute_import
 from __future__ import print_function
 
 __all__ = ['AttentionCell', 'MultiHeadAttentionCell', 'MLPAttentionCell', 'DotProductAttentionCell']
 
+import math
 import mxnet as mx
 from mxnet.gluon.block import HybridBlock
 from mxnet.gluon import nn
-import math
 from .block import L2Normalization
 
 # TODO(sxjscience) Add mask flag to softmax operator. Think about how to accelerate the kernel
@@ -103,80 +103,87 @@ class AttentionCell(HybridBlock):
 
         Returns
         -------
-        read_value: Symbol or NDArray
-            Shape (batch_size, query_length, read_value_dim)
+        context_vec: Symbol or NDArray
+            Shape (batch_size, query_length, context_vec_dim)
         """
         return F.batch_dot(att_weights, value)
 
-    def forward(self, query, key, value, mask=None):
+    def __call__(self, query, key, value=None, mask=None):  # pylint: disable=arguments-differ
+        """Compute the attention.
+
+        Parameters
+        ----------
+        query : Symbol or NDArray
+            Query vector. Shape (batch_size, query_length, query_dim)
+        key : Symbol or NDArray
+            Key of the memory. Shape (batch_size, memory_length, key_dim)
+        value : Symbol or NDArray or None, default None
+            Value of the memory. If set to None, the value will be set as the key.
+            Shape (batch_size, memory_length, value_dim)
+        mask : Symbol or NDArray or None, default None
+            Mask of the memory slots. Shape (batch_size, query_length, memory_length)
+            Only contains 0 or 1 where 0 means that the memory slot will not be used.
+            If set to None. No mask will be used.
+
+        Returns
+        -------
+        context_vec : Symbol or NDArray
+            Shape (batch_size, query_length, context_vec_dim)
+        att_weights : Symbol or NDArray
+            Attention weights. Shape (batch_size, query_length, memory_length)
+        """
+        return super(AttentionCell, self).__call__(query, key, value, mask)
+
+    def forward(self, query, key, value=None, mask=None):  # pylint: disable=arguments-differ
+        if value is None:
+            value = key
         if mask is None:
             return super(AttentionCell, self).forward(query, key, value)
         else:
             return super(AttentionCell, self).forward(query, key, value, mask)
 
-    def hybrid_forward(self, F, query, key, value, mask=None):
-        """
-
-        Parameters
-        ----------
-        F : symbol or ndarray
-        query : Symbol or NDArray
-            Shape (batch_size, query_length, query_dim)
-        key : Symbol or NDArray
-            Shape (batch_size, memory_length, key_dim)
-        value : Symbol or NDArray
-            Shape (batch_size, memory_length, value_dim)
-        mask : Symbol or NDArray or None
-            Shape (batch_size, memory_length)
-
-        Returns
-        -------
-        read_value : Symbol or NDArray
-            Shape (batch_size, query_length, read_value_dim)
-        att_weights : Symbol or NDArray
-            For single-head attention,
-                Shape (batch_size, query_length, memory_length)
-            For multi-head attention,
-                Shape (batch_size, num_heads, query_length, memory_length)
-        """
+    def hybrid_forward(self, F, query, key, value, mask=None):  # pylint: disable=arguments-differ
         att_weights = self._compute_weight(F, query, key, mask)
-        read_value = self._read_by_weight(F, att_weights, value)
-        return read_value, att_weights
+        context_vec = self._read_by_weight(F, att_weights, value)
+        return context_vec, att_weights
 
 
 class MultiHeadAttentionCell(AttentionCell):
+    r"""Multi-head Attention Cell.
+
+    In the MultiHeadAttentionCell, the input query/key/value will be linearly projected
+    for `num_heads` times with different projection matrices. Each projected key, value, query
+    will be used to calculate the attention weights and values. The output of each head will be
+    concatenated to form the final output.
+
+    The idea is first proposed in "[Arxiv2014] Neural Turing Machines" and
+    is later adopted in "[NIPS2017] Attention is All You Need" to solve the
+    Neural Machine Translation problem.
+
+    Parameters
+    ----------
+    base_cell : AttentionCell
+    query_units : int
+        Total number of projected units for query. Must be divided exactly by num_heads.
+    key_units : int
+        Total number of projected units for key. Must be divided exactly by num_heads.
+    value_units : int
+        Total number of projected units for value. Must be divided exactly by num_heads.
+    num_heads : int
+        Number of parallel attention heads
+    use_bias : bool, default True
+        Whether to use bias when projecting the query/key/values
+    weight_initializer : str or `Initializer` or None, default None
+        Initializer of the weights.
+    bias_initializer : str or `Initializer`, default 'zeros'
+        Initializer of the bias.
+    prefix : str or None, default None
+        See document of `Block`.
+    params : str or None, default None
+        See document of `Block`.
+    """
     def __init__(self, base_cell, query_units, key_units, value_units, num_heads, use_bias=True,
                  weight_initializer=None, bias_initializer='zeros', prefix=None, params=None):
-        r"""In the MultiHeadAttentionCell, the input query/key/value will be linearly projected
-        for `num_heads` times with different projection matrices. Each projected key, value, query
-        will be used to calculate the attention weights and values. The output of each head will be
-        concatenated to form the final output.
-
-        The idea is first proposed in "[Arxiv2014] Neural Turing Machines" and
-        is later adopted in "[NIPS2017] Attention is All You Need" to solve the
-        Neural Machine Translation problem.
-
-
-        Parameters
-        ----------
-        base_cell : AttentionCell
-        query_units : int
-            Total number of projected units for query. Must be divided exactly by num_heads.
-        key_units : int
-            Total number of projected units for key. Must be divided exactly by num_heads.
-        value_units : int
-            Total number of projected units for value. Must be divided exactly by num_heads.
-        num_heads : int
-            Number of parallel attention heads
-        use_bias : bool
-            Whether to use bias when projecting the query/key/values
-        weight_initializer : str or `Initializer`
-        bias_initializer : str or `Initializer`
-        prefix : str or None
-            See document of `Block`.
-        params : str or None
-            See document of `Block`.
-        """
         super(MultiHeadAttentionCell, self).__init__(prefix=prefix, params=params)
         self._base_cell = base_cell
         self._query_units = query_units
@@ -185,19 +192,19 @@ class MultiHeadAttentionCell(AttentionCell):
         self._num_heads = num_heads
         self._use_bias = use_bias
         if self._query_units % self._num_heads != 0:
-            raise ValueError("In MultiHeadAttetion, the query_units should be divided exactly"
-                             " by the number of heads. Received query_units=%d, num_heads=%d"
-                             % (key_units, num_heads))
+            raise ValueError('In MultiHeadAttetion, the query_units should be divided exactly'
+                             ' by the number of heads. Received query_units={}, num_heads={}'
+                             .format(key_units, num_heads))
 
         if self._key_units % self._num_heads != 0:
-            raise ValueError("In MultiHeadAttetion, the key_units should be divided exactly"
-                             " by the number of heads. Received key_units=%d, num_heads=%d"
-                             % (key_units, num_heads))
+            raise ValueError('In MultiHeadAttetion, the key_units should be divided exactly'
+                             ' by the number of heads. Received key_units={}, num_heads={}'
+                             .format(key_units, num_heads))
 
         if self._value_units % self._num_heads != 0:
-            raise ValueError("In MultiHeadAttetion, the value_units should be divided exactly"
-                             " by the number of heads. Received value_units=%d, num_heads=%d"
-                             % (value_units, num_heads))
+            raise ValueError('In MultiHeadAttetion, the value_units should be divided exactly'
+                             ' by the number of heads. Received value_units={}, num_heads={}'
+                             .format(value_units, num_heads))
 
         with self.name_scope():
             self.proj_query = nn.Dense(units=self._query_units, use_bias=self._use_bias,
@@ -210,35 +217,59 @@ class MultiHeadAttentionCell(AttentionCell):
                                        flatten=False, weight_initializer=weight_initializer,
                                        bias_initializer=bias_initializer, prefix='value_')
 
+    def __call__(self, query, key, value=None, mask=None):
+        """Compute the attention.
+
+        Parameters
+        ----------
+        query : Symbol or NDArray
+            Query vector. Shape (batch_size, query_length, query_dim)
+        key : Symbol or NDArray
+            Key of the memory. Shape (batch_size, memory_length, key_dim)
+        value : Symbol or NDArray or None, default None
+            Value of the memory. If set to None, the value will be set as the key.
+            Shape (batch_size, memory_length, value_dim)
+        mask : Symbol or NDArray or None, default None
+            Mask of the memory slots. Shape (batch_size, query_length, memory_length)
+            Only contains 0 or 1 where 0 means that the memory slot will not be used.
+            If set to None. No mask will be used.
+
+        Returns
+        -------
+        context_vec : Symbol or NDArray
+            Shape (batch_size, query_length, context_vec_dim)
+        att_weights : Symbol or NDArray
+            Attention weights of multiple heads.
+            Shape (batch_size, num_heads, query_length, memory_length)
+        """
+        return super(MultiHeadAttentionCell, self).__call__(query, key, value, mask)
+
     def _compute_weight(self, F, query, key, mask=None):
         query = self.proj_query(query)  # Shape (batch_size, query_length, query_units)
-        query = F.reshape(F.transpose(F.reshape(query, shape=(0, 0, self._num_heads, -1)),
-                                      axes=(0, 2, 1, 3)),
-                          shape=(-1, 0, 0),
-                          reverse=True)  # Shape (batch_size * num_heads, query_length, ele_units)
+        # Shape (batch_size * num_heads, query_length, ele_units)
+        query = F.transpose(query.reshape(shape=(0, 0, self._num_heads, -1)),
+                            axes=(0, 2, 1, 3))\
+                 .reshape(shape=(-1, 0, 0), reverse=True)
         key = self.proj_key(key)
-        key = F.reshape(F.transpose(F.reshape(key, shape=(0, 0, self._num_heads, -1)),
-                                    axes=(0, 2, 1, 3)),
-                        shape=(-1, 0, 0), reverse=True)
+        key = F.transpose(key.reshape(shape=(0, 0, self._num_heads, -1)),
+                          axes=(0, 2, 1, 3)).reshape(shape=(-1, 0, 0), reverse=True)
         if mask is not None:
-            mask = F.reshape(F.broadcast_axis(F.expand_dims(mask, axis=1),
-                                              axis=1, size=self._num_heads),
-                             shape=(-1, 0, 0), reverse=True)
+            mask = F.broadcast_axis(F.expand_dims(mask, axis=1),
+                                    axis=1, size=self._num_heads)\
+                    .reshape(shape=(-1, 0, 0), reverse=True)
         att_weights = self._base_cell._compute_weight(F, query, key, mask)
-        return F.reshape(att_weights, shape=(-1, self._num_heads, 0, 0), reverse=True)
+        return att_weights.reshape(shape=(-1, self._num_heads, 0, 0), reverse=True)
 
     def _read_by_weight(self, F, att_weights, value):
-        att_weights = F.reshape(att_weights, shape=(-1, 0, 0), reverse=True)
+        att_weights = att_weights.reshape(shape=(-1, 0, 0), reverse=True)
         value = self.proj_value(value)
-        value = F.reshape(F.transpose(F.reshape(value, shape=(0, 0, self._num_heads, -1)),
-                                      axes=(0, 2, 1, 3)),
-                          shape=(-1, 0, 0), reverse=True)
-        read_value = self._base_cell._read_by_weight(F, att_weights, value)
-        read_value = F.reshape(F.transpose(F.reshape(read_value,
-                                                     shape=(-1, self._num_heads, 0, 0),
-                                                     reverse=True), axes=(0, 2, 1, 3)),
-                               shape=(0, 0, -1))
-        return read_value
+        value = F.transpose(value.reshape(shape=(0, 0, self._num_heads, -1)),
+                            axes=(0, 2, 1, 3)).reshape(shape=(-1, 0, 0), reverse=True)
+        context_vec = self._base_cell._read_by_weight(F, att_weights, value)
+        context_vec = F.transpose(context_vec.reshape(shape=(-1, self._num_heads, 0, 0),
+                                                      reverse=True),
+                                  axes=(0, 2, 1, 3)).reshape(shape=(0, 0, -1))
+        return context_vec
 
 
 class MLPAttentionCell(AttentionCell):
@@ -254,27 +285,31 @@ class MLPAttentionCell(AttentionCell):
         score = g v / ||v||_2 tanh(W [h_q, h_k] + b)
 
     This type of attention is first proposed in
-    Bahdanau et al., Neural Machine Translation by Jointly Learning to Align and Translate. ICLR 2015
+
+    .. Bahdanau et al., Neural Machine Translation by Jointly Learning to Align and Translate.
+    ICLR 2015
 
     Parameters
     ----------
     units : int
-    act : Activation
-    normalized : bool
+    act : Activation, default nn.Activation('tanh')
+    normalized : bool, default False
         Whether to normalize the weight that maps the embedded
         hidden states to the final score. This strategy can be interpreted as a type of
         "[NIPS2016] Weight Normalization".
     dropout : float, default 0.0
         Attention dropout.
-    weight_initializer : str or `Initializer`
-    bias_initializer : str or `Initializer`
-    prefix : str or None
+    weight_initializer : str or `Initializer` or None, default None
+        Initializer of the weights.
+    bias_initializer : str or `Initializer`, default 'zeros'
+        Initializer of the bias.
+    prefix : str or None, default None
         See document of `Block`.
-    params : ParameterDict or None
+    params : ParameterDict or None, default None
         See document of `Block`.
     """
 
-    def __init__(self, units, act=nn.Activation("tanh"), normalized=False, dropout=0.0,
+    def __init__(self, units, act=nn.Activation('tanh'), normalized=False, dropout=0.0,
                  weight_initializer=None, bias_initializer='zeros', prefix=None, params=None):
         # Define a temporary class to implement the normalized version
         # TODO(sxjscience) Find a better solution
@@ -288,7 +323,7 @@ class MLPAttentionCell(AttentionCell):
                                          init=weight_initializer,
                                          allow_deferred_init=True)
 
-            def hybrid_forward(self, F, x, g, v):
+            def hybrid_forward(self, F, x, g, v):  # pylint: disable=arguments-differ
                 v = F.broadcast_div(v, F.sqrt(F.dot(v, v, transpose_b=True)))
                 weight = F.broadcast_mul(g, v)
                 out = F.FullyConnected(x, weight, None, no_bias=True, num_hidden=1,
@@ -326,12 +361,13 @@ class MLPAttentionCell(AttentionCell):
         mid_feat = F.broadcast_add(F.expand_dims(mapped_query, axis=2),
                                    F.expand_dims(mapped_key, axis=1))
         mid_feat = self._act(mid_feat)
-        att_score = F.reshape(self._attention_score(mid_feat), shape=(0, 0, 0))
+        att_score = self._attention_score(mid_feat).reshape(shape=(0, 0, 0))
         att_weights = self._dropout_layer(_masked_softmax(F, att_score, mask))
         return att_weights
 
 
 # TODO(sxjscience) Move _DivSqrtDim to contrib
+# pylint: disable=unused-argument
 class _DivSqrtDim(mx.operator.CustomOp):
     def forward(self, is_train, req, in_data, out_data, aux):
         self.assign(out_data[0], req[0], in_data[0] / math.sqrt(float(in_data[0].shape[-1])))
@@ -340,7 +376,7 @@ class _DivSqrtDim(mx.operator.CustomOp):
         self.assign(in_grad[0], req[0], out_grad[0] / math.sqrt(float(out_grad[0].shape[-1])))
 
 
-@mx.operator.register("_div_sqrt_dim")
+@mx.operator.register('_div_sqrt_dim')
 class _DivSqrtDimProp(mx.operator.CustomOpProp):
     def __init__(self):
         super(_DivSqrtDimProp, self).__init__(True)
@@ -351,8 +387,8 @@ class _DivSqrtDimProp(mx.operator.CustomOpProp):
     def list_outputs(self):
         return ['output']
 
-    def infer_shape(self, in_shapes):
-        data_shape = in_shapes[0]
+    def infer_shape(self, in_shape):
+        data_shape = in_shape[0]
         output_shape = data_shape
         return (data_shape,), (output_shape,), ()
 
@@ -362,7 +398,7 @@ class _DivSqrtDimProp(mx.operator.CustomOpProp):
     def create_operator(self, ctx, in_shapes, in_dtypes):
         #  create and return the CustomOp class.
         return _DivSqrtDim()
-
+# pylint: enable=unused-argument
 
 class DotProductAttentionCell(AttentionCell):
     r"""Dot product attention between the query and the key::
@@ -376,37 +412,47 @@ class DotProductAttentionCell(AttentionCell):
 
     Parameters
     ----------
-    units: int or None
+    units: int or None, default None
         Project the query and key to vectors with `units` dimension
         before applying the attention. If set to None,
         the query vector and the key vector are directly used to compute the attention and
-        should have the same dimension.
-        If the units is None,
-            score = <h_q, h_k>
-        Else if the units is not None and luong_style is False:
-            score = <W_q h_q, W_k, h_k>
-        Else if the units is not None and luong_style is True:
+        should have the same dimension::
+
+            If the units is None,
+                score = <h_q, h_k>
+            Else if the units is not None and luong_style is False:
+                score = <W_q h_q, W_k, h_k>
+            Else if the units is not None and luong_style is True:
+                score = <W h_q, h_k>
+
+    luong_style: bool, default False
+        If turned on, the score will be::
+
             score = <W h_q, h_k>
-    luong_style: bool
-        If turned on, the score will be
-            score = <W h_q, h_k>
+
         `units` must be the same as the dimension of the key vector
-    scaled: bool
+    scaled: bool, default True
         Whether to divide the attention weights by the sqrt of the query dimension.
-        This is first proposed in "[NIPS2017] Attention is all you need."
-        score = <h_q, h_k> / sqrt(dim_q)
-    normalized: bool
-        If turned on, the cosine distance is used, i.e
+        This is first proposed in "[NIPS2017] Attention is all you need."::
+
+            score = <h_q, h_k> / sqrt(dim_q)
+
+    normalized: bool, default False
+        If turned on, the cosine distance is used, i.e::
+
             score = <h_q / ||h_q||, h_k / ||h_k||>
-    use_bias : bool
+
+    use_bias : bool, default True
         Whether to use bias in the projection layers.
-    dropout : float
+    dropout : float, default 0.0
         Attention dropout
-    weight_initializer : str or `Initializer`
-    bias_initializer : str or `Initializer`
-    prefix : str or None
+    weight_initializer : str or `Initializer` or None, default None
+        Initializer of the weights
+    bias_initializer : str or `Initializer`, default 'zeros'
+        Initializer of the bias
+    prefix : str or None, default None
         See document of `Block`.
-    params : str or None
+    params : str or None, default None
         See document of `Block`.
     """
     def __init__(self, units=None, luong_style=False, scaled=True, normalized=False, use_bias=True,
@@ -420,8 +466,8 @@ class DotProductAttentionCell(AttentionCell):
         self._luong_style = luong_style
         self._dropout = dropout
         if self._luong_style:
-            assert units is not None, "Luong style attention is not available without explicitly " \
-                                      "setting the units"
+            assert units is not None, 'Luong style attention is not available without explicitly ' \
+                                      'setting the units'
         with self.name_scope():
             self._dropout_layer = nn.Dropout(dropout)
         if units is not None:

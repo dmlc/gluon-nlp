@@ -9,6 +9,27 @@ Language Modeling
 .. automodule:: gluonnlp.model.language_model
     :members:
 
+Building Blocks
+===============
+
+Gluon NLP Toolkit provides building blocks for NLP models.
+
+Attention Cell
+--------------
+.. automodule:: gluonnlp.model.attention_cell
+
+    .. autoclass:: gluonnlp.model.attention_cell.AttentionCell
+        :members: __call__
+
+    .. autoclass:: gluonnlp.model.attention_cell.MultiHeadAttentionCell
+        :members: __call__
+
+    .. autoclass:: gluonnlp.model.attention_cell.MLPAttentionCell
+        :members: __call__
+
+    .. autoclass:: gluonnlp.model.attention_cell.DotProductAttentionCell
+        :members: __call__
+
 Beam Search
 -----------
 .. automodule:: gluonnlp.model.beam_search
@@ -20,8 +41,8 @@ Beam Search
         :members: __call__
 
 
-Modeling Utilities
-------------------
+Other Modeling Utilities
+------------------------
 .. automodule:: gluonnlp.model.parameter
     :members:
 .. automodule:: gluonnlp.model.utils
