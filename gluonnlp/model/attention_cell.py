@@ -335,7 +335,7 @@ class MLPAttentionCell(AttentionCell):
 
 
 # TODO(sxjscience) Move _DivSqrtDim to contrib
-# pylint: disable=unused-arguments
+# pylint: disable=unused-argument
 class _DivSqrtDim(mx.operator.CustomOp):
     def forward(self, is_train, req, in_data, out_data, aux):
         self.assign(out_data[0], req[0], in_data[0] / math.sqrt(float(in_data[0].shape[-1])))
@@ -366,7 +366,7 @@ class _DivSqrtDimProp(mx.operator.CustomOpProp):
     def create_operator(self, ctx, in_shapes, in_dtypes):
         #  create and return the CustomOp class.
         return _DivSqrtDim()
-# pylint: enable=unused-arguments
+# pylint: enable=unused-argument
 
 class DotProductAttentionCell(AttentionCell):
     r"""Dot product attention between the query and the key::
