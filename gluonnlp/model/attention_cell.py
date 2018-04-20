@@ -121,7 +121,9 @@ class AttentionCell(HybridBlock):
             Value of the memory. If set to None, the value will be set as the key.
             Shape (batch_size, memory_length, value_dim)
         mask : Symbol or NDArray or None
-            Shape (batch_size, memory_length)
+            Mask the memory slots. Shape (batch_size, query_length, memory_length)
+            Only contains 0 or 1 where 0 means that the memory slot will not be used.
+            If set to None. No mask will be used.
 
         Returns
         -------
