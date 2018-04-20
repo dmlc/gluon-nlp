@@ -90,6 +90,14 @@ dataset which is used in the 2017 and 2018 competitions.
 .. autoclass:: gluonnlp.data.UniversalDependencies21
 
 
+Machine Translation Datasets
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+We provide several standard datasets for machine translation.
+
+.. autoclass:: gluonnlp.data.IWSLT2015
+
+.. autoclass:: gluonnlp.data.WMT2016BPE
+
 Datasets
 --------
 
