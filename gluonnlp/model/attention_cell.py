@@ -108,23 +108,17 @@ class AttentionCell(HybridBlock):
         """
         return F.batch_dot(att_weights, value)
 
-    def forward(self, query, key, value, mask=None):  # pylint: disable=arguments-differ
-        if mask is None:
-            return super(AttentionCell, self).forward(query, key, value)
-        else:
-            return super(AttentionCell, self).forward(query, key, value, mask)
-
-    def hybrid_forward(self, F, query, key, value, mask=None):  # pylint: disable=arguments-differ
-        """
+    def __call__(self, query, key, value=None, mask=None):  # pylint: disable=arguments-differ
+        """Compute the attention value.
 
         Parameters
         ----------
-        F : symbol or ndarray
         query : Symbol or NDArray
-            Shape (batch_size, query_length, query_dim)
+            Query vector. Shape (batch_size, query_length, query_dim)
         key : Symbol or NDArray
-            Shape (batch_size, memory_length, key_dim)
-        value : Symbol or NDArray
+            Key of the memory. Shape (batch_size, memory_length, key_dim)
+        value : Symbol or NDArray or None
+            Value of the memory. If set to None, the value will be set as the key.
             Shape (batch_size, memory_length, value_dim)
         mask : Symbol or NDArray or None
             Shape (batch_size, memory_length)
@@ -139,13 +133,24 @@ class AttentionCell(HybridBlock):
             For multi-head attention,
                 Shape (batch_size, num_heads, query_length, memory_length)
         """
+        return super(AttentionCell, self).__call__(query, key, value, mask)
+
+    def forward(self, query, key, value=None, mask=None):  # pylint: disable=arguments-differ
+        if value is None:
+            value = key
+        if mask is None:
+            return super(AttentionCell, self).forward(query, key, value)
+        else:
+            return super(AttentionCell, self).forward(query, key, value, mask)
+
+    def hybrid_forward(self, F, query, key, value, mask=None):  # pylint: disable=arguments-differ
         att_weights = self._compute_weight(F, query, key, mask)
         read_value = self._read_by_weight(F, att_weights, value)
         return read_value, att_weights
 
 
 class MultiHeadAttentionCell(AttentionCell):
-    r"""Multi-head Attention Cell
+    r"""Multi-head Attention Cell.
 
     In the MultiHeadAttentionCell, the input query/key/value will be linearly projected
     for `num_heads` times with different projection matrices. Each projected key, value, query
