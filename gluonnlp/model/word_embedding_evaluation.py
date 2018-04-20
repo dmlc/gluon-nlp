@@ -20,8 +20,8 @@
 """Models for intrinsic and extrinsic word embedding evaluation"""
 
 import mxnet as mx
-from mxnet import init, nd
-from mxnet.gluon import HybridBlock, nn
+from mxnet import nd
+from mxnet.gluon import HybridBlock, Block
 
 
 class CosineSimilarity(HybridBlock):
@@ -138,7 +138,7 @@ class ThreeCosMul(HybridBlock):
         return pred_idxs
 
 
-class WordEmbeddingAnalogy(HybridBlock):
+class WordEmbeddingAnalogy(Block):
     """Word embeddings analogy task evaluator.
 
     Parameters

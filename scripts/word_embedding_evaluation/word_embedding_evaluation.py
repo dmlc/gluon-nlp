@@ -16,7 +16,7 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-# pylint: disable=eval-used, redefined-outer-name
+# pylint: disable=eval-used, logging-too-many-args
 """Word Embeddings
 ===============
 
@@ -26,13 +26,12 @@ embeddings using a variety of datasets all part of the Gluon NLP Toolkit.
 """
 
 import argparse
-import time
-import sys
 import logging
+import sys
+import time
 
-import numpy as np
 import mxnet as mx
-from scipy import stats
+import numpy as np
 
 import gluonnlp as nlp
 
@@ -104,8 +103,8 @@ if args.list_embedding_sources:
           'list sources of other embeddings')
     print('')
     if args.embedding_name not in nlp.embedding.list_sources().keys():
-        print("Invalid embedding name.")
-        print("Only {} are supported.".format(', '.join(
+        print('Invalid embedding name.')
+        print('Only {} are supported.'.format(', '.join(
             nlp.embedding.list_sources().keys())))
         sys.exit(1)
     print(' '.join(nlp.embedding.list_sources()[args.embedding_name]))
@@ -151,10 +150,12 @@ else:
 logging.basicConfig()
 logging.getLogger().setLevel(logging.INFO)
 
+
 ###############################################################################
 # Evaluation
 ###############################################################################
 def evaluate_similarity(token_embedding, dataset):
+    """Evaluation on similarity task."""
     # Closed vocabulary: Only need the words occuring in the dataset
     counter = nlp.data.utils.Counter(w for wpair in dataset for w in wpair[:2])
     vocab = nlp.vocab.Vocab(counter)
@@ -165,8 +166,8 @@ def evaluate_similarity(token_embedding, dataset):
         dataset = [d for d in dataset if d[0] in vocab and d[1] in vocab]
         num_dropped = initial_length - len(dataset)
         if num_dropped:
-            logging.warning("Dropped {} pairs from {} as the were OOV.".format(
-                num_dropped, dataset.__class__.__name__))
+            logging.warning('Dropped %s pairs from %s as the were OOV.',
+                            num_dropped, dataset.__class__.__name__)
 
     dataset_coded = [[vocab[d[0]], vocab[d[1]], d[2]] for d in dataset]
     words1, words2, scores = zip(*dataset_coded)
@@ -182,12 +183,13 @@ def evaluate_similarity(token_embedding, dataset):
 
     sr = nlp.metric.SpearmanRankCorrelation()
     sr.update(mx.nd.array(scores), pred_similarity.as_in_context(mx.cpu()))
-    logging.info('Spearman rank correlation on {}: {}'.format(
-        dataset.__class__.__name__,
-        sr.get()[1]))
+    logging.info('Spearman rank correlation on %s: %s',
+                 dataset.__class__.__name__,
+                 sr.get()[1])
 
 
 def evaluate_analogy(token_embedding, dataset):
+    """Evaluation on analogy task."""
     # Open vocabulary: Use all known words
     counter = nlp.data.utils.Counter(token_embedding.idx_to_token)
     vocab = nlp.vocab.Vocab(counter)
@@ -201,8 +203,8 @@ def evaluate_analogy(token_embedding, dataset):
         ]
         num_dropped = initial_length - len(dataset)
         if num_dropped:
-            logging.warning("Dropped {} pairs from {} as the were OOV.".format(
-                num_dropped, dataset.__class__.__name__))
+            logging.warning('Dropped %s pairs from %s as the were OOV.',
+                            num_dropped, dataset.__class__.__name__)
 
     dataset_coded = [[vocab[d[0]], vocab[d[1]], vocab[d[2]], vocab[d[3]]]
                      for d in dataset]
@@ -225,11 +227,12 @@ def evaluate_analogy(token_embedding, dataset):
         pred_idxs = evaluator(words1, words2, words3)
         acc.update(pred_idxs[:, 0], words4.astype(np.float32))
 
-    logging.info('Accuracy on {}: {}'.format(dataset.__class__.__name__,
-                                             acc.get()[1]))
+    logging.info('Accuracy on %s: %s', dataset.__class__.__name__,
+                 acc.get()[1])
 
 
 def evaluate():
+    """Main evaluation function."""
     # Load pretrained embeddings
     print('Loading embedding ', args.embedding_name, ' from ',
           args.embedding_source)
@@ -238,15 +241,13 @@ def evaluate():
 
     # Similarity based evaluation
     for dataset_class in similarity_datasets:
-        logging.info('Starting evaluation of {}'.format(
-            dataset_class.__name__))
+        logging.info('Starting evaluation of %s', dataset_class.__name__)
         dataset = dataset_class()
         evaluate_similarity(token_embedding, dataset)
 
     # Analogy based evaluation
     for dataset_class in analogy_datasets:
-        logging.info('Starting evaluation of {}'.format(
-            dataset_class.__name__))
+        logging.info('Starting evaluation of %s', dataset_class.__name__)
         dataset = dataset_class()
         evaluate_analogy(token_embedding, dataset)
 
