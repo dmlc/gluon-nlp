@@ -110,7 +110,7 @@ class NMTModel(Block):
         outputs : list
             Outputs of the encoder.
         """
-        return self.encoder(inputs, valid_length, states)
+        return self.encoder(self.src_embed(inputs), valid_length, states)
 
     def decode_seq(self, inputs, states, valid_length=None):
         """Decode given the input sequence.
