@@ -66,16 +66,13 @@ class _TranslationDataset(ArrayDataset):
             os.makedirs(root)
         self._root = root
         if isinstance(segment, str):
-            [src_corpus_path, tgt_corpus_path] = self._get_data(segment)
-            src_corpus = TextLineDataset(src_corpus_path)
-            tgt_corpus = TextLineDataset(tgt_corpus_path)
-        else:
-            src_corpus = []
-            tgt_corpus = []
-            for ele_segment in segment:
-                [src_corpus_path, tgt_corpus_path] = self._get_data(ele_segment)
-                src_corpus.extend(TextLineDataset(src_corpus_path))
-                tgt_corpus.extend(TextLineDataset(tgt_corpus_path))
+            segment = [segment]
+        src_corpus = []
+        tgt_corpus = []
+        for ele_segment in segment:
+            [src_corpus_path, tgt_corpus_path] = self._get_data(ele_segment)
+            src_corpus.extend(TextLineDataset(src_corpus_path))
+            tgt_corpus.extend(TextLineDataset(tgt_corpus_path))
         # Filter 0-length src/tgt sentences
         src_lines = []
         tgt_lines = []
