@@ -28,7 +28,7 @@ def get_tokenized_dataset(dataset, tokenizer=lambda ele: ele.split(), vocab=None
     data = []
     indptr = [0]
     for line in dataset:
-        inds = vocab[tokenizer(line)]
+        inds = [vocab[ele] for ele in tokenizer(line)]
         data.extend(inds)
         indptr.append(indptr[-1] + len(inds))
     return TokenizedDataset(data, indptr, words)
