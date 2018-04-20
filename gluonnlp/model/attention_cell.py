@@ -130,10 +130,7 @@ class AttentionCell(HybridBlock):
         context_vec : Symbol or NDArray
             Shape (batch_size, query_length, context_vec_dim)
         att_weights : Symbol or NDArray
-            For single-head attention,
-                Shape (batch_size, query_length, memory_length)
-            For multi-head attention,
-                Shape (batch_size, num_heads, query_length, memory_length)
+            Attention weights. Shape (batch_size, query_length, memory_length)
         """
         return super(AttentionCell, self).__call__(query, key, value, mask)
 
@@ -177,7 +174,9 @@ class MultiHeadAttentionCell(AttentionCell):
     use_bias : bool, default True
         Whether to use bias when projecting the query/key/values
     weight_initializer : str or `Initializer` or None, default None
+        Initializer of the weights.
     bias_initializer : str or `Initializer`, default 'zeros'
+        Initializer of the bias.
     prefix : str or None, default None
         See document of `Block`.
     params : str or None, default None
@@ -217,6 +216,33 @@ class MultiHeadAttentionCell(AttentionCell):
             self.proj_value = nn.Dense(units=self._value_units, use_bias=self._use_bias,
                                        flatten=False, weight_initializer=weight_initializer,
                                        bias_initializer=bias_initializer, prefix='value_')
+
+    def __call__(self, query, key, value=None, mask=None):
+        """Compute the attention.
+
+        Parameters
+        ----------
+        query : Symbol or NDArray
+            Query vector. Shape (batch_size, query_length, query_dim)
+        key : Symbol or NDArray
+            Key of the memory. Shape (batch_size, memory_length, key_dim)
+        value : Symbol or NDArray or None
+            Value of the memory. If set to None, the value will be set as the key.
+            Shape (batch_size, memory_length, value_dim)
+        mask : Symbol or NDArray or None
+            Mask the memory slots. Shape (batch_size, query_length, memory_length)
+            Only contains 0 or 1 where 0 means that the memory slot will not be used.
+            If set to None. No mask will be used.
+
+        Returns
+        -------
+        context_vec : Symbol or NDArray
+            Shape (batch_size, query_length, context_vec_dim)
+        att_weights : Symbol or NDArray
+            Attention weights of multiple heads.
+            Shape (batch_size, num_heads, query_length, memory_length)
+        """
+        return super(MultiHeadAttentionCell, self).__call__(query, key, value, mask)
 
     def _compute_weight(self, F, query, key, mask=None):
         query = self.proj_query(query)  # Shape (batch_size, query_length, query_units)
@@ -274,7 +300,9 @@ class MLPAttentionCell(AttentionCell):
     dropout : float, default 0.0
         Attention dropout.
     weight_initializer : str or `Initializer` or None, default None
+        Initializer of the weights.
     bias_initializer : str or `Initializer`, default 'zeros'
+        Initializer of the bias.
     prefix : str or None, default None
         See document of `Block`.
     params : ParameterDict or None, default None
@@ -384,37 +412,47 @@ class DotProductAttentionCell(AttentionCell):
 
     Parameters
     ----------
-    units: int or None
+    units: int or None, default None
         Project the query and key to vectors with `units` dimension
         before applying the attention. If set to None,
         the query vector and the key vector are directly used to compute the attention and
-        should have the same dimension.
-        If the units is None,
-            score = <h_q, h_k>
-        Else if the units is not None and luong_style is False:
-            score = <W_q h_q, W_k, h_k>
-        Else if the units is not None and luong_style is True:
+        should have the same dimension::
+
+            If the units is None,
+                score = <h_q, h_k>
+            Else if the units is not None and luong_style is False:
+                score = <W_q h_q, W_k, h_k>
+            Else if the units is not None and luong_style is True:
+                score = <W h_q, h_k>
+
+    luong_style: bool, default False
+        If turned on, the score will be::
+
             score = <W h_q, h_k>
-    luong_style: bool
-        If turned on, the score will be
-            score = <W h_q, h_k>
+
         `units` must be the same as the dimension of the key vector
-    scaled: bool
+    scaled: bool, default True
         Whether to divide the attention weights by the sqrt of the query dimension.
-        This is first proposed in "[NIPS2017] Attention is all you need."
-        score = <h_q, h_k> / sqrt(dim_q)
-    normalized: bool
-        If turned on, the cosine distance is used, i.e
+        This is first proposed in "[NIPS2017] Attention is all you need."::
+
+            score = <h_q, h_k> / sqrt(dim_q)
+
+    normalized: bool, default False
+        If turned on, the cosine distance is used, i.e::
+
             score = <h_q / ||h_q||, h_k / ||h_k||>
-    use_bias : bool
+
+    use_bias : bool, default True
         Whether to use bias in the projection layers.
-    dropout : float
+    dropout : float, default 0.0
         Attention dropout
-    weight_initializer : str or `Initializer`
-    bias_initializer : str or `Initializer`
-    prefix : str or None
+    weight_initializer : str or `Initializer` or None, default None
+        Initializer of the weights
+    bias_initializer : str or `Initializer`, default 'zeros'
+        Initializer of the bias
+    prefix : str or None, default None
         See document of `Block`.
-    params : str or None
+    params : str or None, default None
         See document of `Block`.
     """
     def __init__(self, units=None, luong_style=False, scaled=True, normalized=False, use_bias=True,
