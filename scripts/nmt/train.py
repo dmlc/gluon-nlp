@@ -40,9 +40,9 @@ class TrainValDataTransform(object):
         self._src_vocab = src_vocab
         self._tgt_vocab = tgt_vocab
 
-    def __call__(self, ele):
-        src_sentence = self._src_vocab[ele[0].split()]
-        tgt_sentence = self._tgt_vocab[ele[1].split()]
+    def __call__(self, src, tgt):
+        src_sentence = self._src_vocab[src.split()]
+        tgt_sentence = self._tgt_vocab[tgt.split()]
         src_sentence.append(self._src_vocab[self._src_vocab.eos_token])
         tgt_sentence.insert(0, self._tgt_vocab[self._tgt_vocab.bos_token])
         tgt_sentence.append(self._tgt_vocab[self._tgt_vocab.eos_token])
