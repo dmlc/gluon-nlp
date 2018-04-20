@@ -38,6 +38,7 @@ from mxnet import nd, registry
 from mxnet.gluon.utils import download, check_sha1, _get_repo_file_url
 
 from . import _constants as C
+from .data.utils import DefaultLookupDict
 
 
 def register(embedding_cls):
@@ -174,13 +175,12 @@ class TokenEmbedding(object):
     def __init__(self, unknown_token='<unk>'):
         self._unknown_token = unknown_token
         self._idx_to_token = [unknown_token] if unknown_token else []
-        self._token_to_idx = {token: idx for idx, token in enumerate(self._idx_to_token)}
-        self._idx_to_vec = None
-
         if unknown_token:
-            self._to_idx = lambda x: self._token_to_idx.get(x, C.UNK_IDX)
+            self._token_to_idx = DefaultLookupDict(C.UNK_IDX)
         else:
-            self._to_idx = lambda x: self._token_to_idx[x]
+            self._token_to_idx = {}
+        self._token_to_idx.update((token, idx) for idx, token in enumerate(self._idx_to_token))
+        self._idx_to_vec = None
 
     @classmethod
     def _get_download_file_name(cls, file_name):
@@ -421,7 +421,7 @@ class TokenEmbedding(object):
         if to_reduce:
             tokens = [tokens]
 
-        indices = [self._to_idx(token) for token in tokens]
+        indices = [self._token_to_idx[token] for token in tokens]
 
         vecs = nd.Embedding(nd.array(indices), self.idx_to_vec, self.idx_to_vec.shape[0],
                             self.idx_to_vec.shape[1])

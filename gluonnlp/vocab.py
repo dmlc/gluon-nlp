@@ -30,6 +30,7 @@ import warnings
 
 from mxnet import nd
 
+from .data.utils import DefaultLookupDict
 from . import _constants as C
 from . import embedding as emb
 
@@ -165,11 +166,6 @@ class Vocab(object):
         if counter:
             self._index_counter_keys(counter, unknown_token, special_tokens, max_size, min_freq)
 
-        if unknown_token:
-            self._to_idx = lambda x: self._token_to_idx.get(x, C.UNK_IDX)
-        else:
-            self._to_idx = lambda x: self._token_to_idx[x]
-
         self._embedding = None
 
     def _index_special_tokens(self, unknown_token, special_tokens):
@@ -182,7 +178,11 @@ class Vocab(object):
             self._reserved_tokens = special_tokens[:]
             self._idx_to_token.extend(special_tokens)
 
-        self._token_to_idx = {token: idx for idx, token in enumerate(self._idx_to_token)}
+        if unknown_token:
+            self._token_to_idx = DefaultLookupDict(C.UNK_IDX)
+        else:
+            self._token_to_idx = {}
+        self._token_to_idx.update((token, idx) for idx, token in enumerate(self._idx_to_token))
 
     def _index_counter_keys(self, counter, unknown_token, special_tokens, max_size,
                             min_freq):
@@ -279,9 +279,9 @@ class Vocab(object):
         """
 
         if not isinstance(tokens, (list, tuple)):
-            return self._to_idx(tokens)
+            return self._token_to_idx[tokens]
         else:
-            return [self._to_idx(token) for token in tokens]
+            return [self._token_to_idx[token] for token in tokens]
 
     def __len__(self):
         return len(self._idx_to_token)
@@ -360,6 +360,24 @@ class Vocab(object):
         return tokens[0] if to_reduce else tokens
 
     def to_indices(self, tokens):
+        """Looks up indices of text tokens according to the vocabulary.
+
+
+        Parameters
+        ----------
+        tokens : str or list of strs
+            A source token or tokens to be converted.
+
+
+        Returns
+        -------
+        int or list of ints
+            A token index or a list of token indices according to the vocabulary.
+        """
+
+        return self[tokens]
+
+    def __call__(self, tokens):
         """Looks up indices of text tokens according to the vocabulary.
 
 

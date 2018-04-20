@@ -47,7 +47,7 @@ class BeamSearchScorer(HybridBlock):
         self._alpha = alpha
         self._K = K
 
-    def __call__(self, log_probs, scores, step):
+    def __call__(self, log_probs, scores, step): # pylint: disable=arguments-differ
         """Compute new scores of each candidate
 
         Parameters

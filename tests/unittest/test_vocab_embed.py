@@ -24,6 +24,7 @@ import os
 import tempfile
 import time
 import re
+import pickle
 
 from nose.tools import assert_raises
 
@@ -111,6 +112,8 @@ def test_vocabulary_getitem():
 
     assertRaises(KeyError, no_unk_vocab.to_indices, ['a', 'non-exist', 'a', 'b'])
 
+    pickle.dumps(Vocab())
+
 
 def test_vocabulary_to_tokens():
     counter = Counter(['a', 'b', 'b', 'c', 'c', 'c', 'some_word$'])
@@ -132,6 +135,8 @@ def test_vocabulary_to_tokens():
     assertRaises(ValueError, vocab.to_tokens, 6)
     assertRaises(ValueError, vocab.to_tokens, [6, 7])
 
+    pickle.dumps(Vocab())
+
 
 def test_vocabulary():
     counter = Counter(['a', 'b', 'b', 'c', 'c', 'c', 'some_word$'])
@@ -146,6 +151,7 @@ def test_vocabulary():
     assert v1.embedding is None
     assert 'a' in v1
     assert v1.unknown_token in v1
+    pickle.dumps(v1)
 
     v2 = Vocab(counter, max_size=None, min_freq=2, unknown_token='<unk>',
                padding_token=None, bos_token=None, eos_token=None, reserved_tokens=None)
@@ -157,6 +163,7 @@ def test_vocabulary():
     assert v2.embedding is None
     assert 'a' not in v2
     assert v2.unknown_token in v2
+    pickle.dumps(v2)
 
     v3 = Vocab(counter, max_size=None, min_freq=100, unknown_token='<unk>',
                padding_token=None, bos_token=None, eos_token=None, reserved_tokens=None)
@@ -167,6 +174,7 @@ def test_vocabulary():
     assert v3.reserved_tokens is None
     assert v3.embedding is None
     assert 'a' not in v3
+    pickle.dumps(v3)
 
     v4 = Vocab(counter, max_size=2, min_freq=1, unknown_token='<unk>',
                padding_token=None, bos_token=None, eos_token=None, reserved_tokens=None)
@@ -177,6 +185,7 @@ def test_vocabulary():
     assert v4.reserved_tokens is None
     assert v4.embedding is None
     assert 'a' not in v4
+    pickle.dumps(v4)
 
     v5 = Vocab(counter, max_size=3, min_freq=1, unknown_token='<unk>',
                padding_token=None, bos_token=None, eos_token=None, reserved_tokens=None)
@@ -187,6 +196,7 @@ def test_vocabulary():
     assert v5.reserved_tokens is None
     assert v5.embedding is None
     assert 'a' in v5
+    pickle.dumps(v5)
 
     v6 = Vocab(counter, max_size=100, min_freq=1, unknown_token='<unk>',
                padding_token=None, bos_token=None, eos_token=None, reserved_tokens=None)
@@ -198,6 +208,7 @@ def test_vocabulary():
     assert v6.reserved_tokens is None
     assert v6.embedding is None
     assert 'a' in v6
+    pickle.dumps(v6)
 
     v7 = Vocab(counter, max_size=1, min_freq=2, unknown_token='<unk>',
                padding_token=None, bos_token=None, eos_token=None, reserved_tokens=None)
@@ -208,6 +219,7 @@ def test_vocabulary():
     assert v7.reserved_tokens is None
     assert v7.embedding is None
     assert 'a' not in v7
+    pickle.dumps(v7)
 
     assertRaises(AssertionError, Vocab, counter, max_size=None,
                  min_freq=0, unknown_token='<unknown>', reserved_tokens=['b'])
@@ -227,6 +239,7 @@ def test_vocabulary():
     assert v8.reserved_tokens == ['b']
     assert v8.embedding is None
     assert 'a' in v8
+    pickle.dumps(v8)
 
     v9 = Vocab(counter, max_size=None, min_freq=2, unknown_token='<unk>',
                padding_token=None, bos_token=None, eos_token=None, reserved_tokens=['b', 'a'])
@@ -237,6 +250,7 @@ def test_vocabulary():
     assert v9.reserved_tokens == ['b', 'a']
     assert v9.embedding is None
     assert 'a' in v9
+    pickle.dumps(v9)
 
     v10 = Vocab(counter, max_size=None, min_freq=100, unknown_token='<unk>',
                 padding_token=None, bos_token=None, eos_token=None, reserved_tokens=['b', 'c'])
@@ -247,6 +261,7 @@ def test_vocabulary():
     assert v10.reserved_tokens == ['b', 'c']
     assert v10.embedding is None
     assert 'a' not in v10
+    pickle.dumps(v10)
 
     v11 = Vocab(counter, max_size=1, min_freq=2, unknown_token='<unk>',
                 padding_token=None, bos_token=None, eos_token=None, reserved_tokens=['<pad>', 'b'])
@@ -257,6 +272,7 @@ def test_vocabulary():
     assert v11.reserved_tokens == ['<pad>', 'b']
     assert v11.embedding is None
     assert 'a' not in v11
+    pickle.dumps(v11)
 
     v12 = Vocab(counter, max_size=None, min_freq=2, unknown_token='b',
                 padding_token=None, bos_token=None, eos_token=None, reserved_tokens=['<pad>'])
@@ -267,6 +283,7 @@ def test_vocabulary():
     assert v12.reserved_tokens == ['<pad>']
     assert v12.embedding is None
     assert 'a' not in v12
+    pickle.dumps(v12)
 
     v13 = Vocab(counter, max_size=None, min_freq=2, unknown_token='a',
                 padding_token=None, bos_token=None, eos_token=None, reserved_tokens=['<pad>'])
@@ -277,6 +294,7 @@ def test_vocabulary():
     assert v13.reserved_tokens == ['<pad>']
     assert v13.embedding is None
     assert 'a' in v13
+    pickle.dumps(v13)
 
     counter_tuple = Counter([('a', 'a'), ('b', 'b'), ('b', 'b'), ('c', 'c'), ('c', 'c'), ('c', 'c'),
                              ('some_word$', 'some_word$')])
@@ -292,6 +310,7 @@ def test_vocabulary():
     assert v14.embedding is None
     assert ('a', 'a') in v14
     assert ('<unk>', '<unk>') in v14
+    pickle.dumps(v14)
 
 
 def _mk_my_pretrain_file(path, token_delim, pretrain_file):
