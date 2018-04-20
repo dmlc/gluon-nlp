@@ -220,32 +220,28 @@ class MultiHeadAttentionCell(AttentionCell):
 
     def _compute_weight(self, F, query, key, mask=None):
         query = self.proj_query(query)  # Shape (batch_size, query_length, query_units)
-        query = F.reshape(F.transpose(F.reshape(query, shape=(0, 0, self._num_heads, -1)),
-                                      axes=(0, 2, 1, 3)),
-                          shape=(-1, 0, 0),
-                          reverse=True)  # Shape (batch_size * num_heads, query_length, ele_units)
+        query = F.transpose(query.reshape(shape=(0, 0, self._num_heads, -1)),
+                            axes=(0, 2, 1, 3))\
+                 .reshape(shape=(-1, 0, 0), reverse=True)  # Shape (batch_size * num_heads, query_length, ele_units)
         key = self.proj_key(key)
-        key = F.reshape(F.transpose(F.reshape(key, shape=(0, 0, self._num_heads, -1)),
-                                    axes=(0, 2, 1, 3)),
-                        shape=(-1, 0, 0), reverse=True)
+        key = F.transpose(key.reshape(shape=(0, 0, self._num_heads, -1)),
+                          axes=(0, 2, 1, 3)).reshape(shape=(-1, 0, 0), reverse=True)
         if mask is not None:
-            mask = F.reshape(F.broadcast_axis(F.expand_dims(mask, axis=1),
-                                              axis=1, size=self._num_heads),
-                             shape=(-1, 0, 0), reverse=True)
+            mask = F.broadcast_axis(F.expand_dims(mask, axis=1),
+                                    axis=1, size=self._num_heads)\
+                    .reshape(shape=(-1, 0, 0), reverse=True)
         att_weights = self._base_cell._compute_weight(F, query, key, mask)
-        return F.reshape(att_weights, shape=(-1, self._num_heads, 0, 0), reverse=True)
+        return att_weights.reshape(shape=(-1, self._num_heads, 0, 0), reverse=True)
 
     def _read_by_weight(self, F, att_weights, value):
-        att_weights = F.reshape(att_weights, shape=(-1, 0, 0), reverse=True)
+        att_weights = att_weights.reshape(shape=(-1, 0, 0), reverse=True)
         value = self.proj_value(value)
-        value = F.reshape(F.transpose(F.reshape(value, shape=(0, 0, self._num_heads, -1)),
-                                      axes=(0, 2, 1, 3)),
-                          shape=(-1, 0, 0), reverse=True)
+        value = F.transpose(value.reshape(shape=(0, 0, self._num_heads, -1)),
+                            axes=(0, 2, 1, 3)).reshape(shape=(-1, 0, 0), reverse=True)
         context_vec = self._base_cell._read_by_weight(F, att_weights, value)
-        context_vec = F.reshape(F.transpose(F.reshape(context_vec,
-                                                      shape=(-1, self._num_heads, 0, 0),
-                                                      reverse=True), axes=(0, 2, 1, 3)),
-                                shape=(0, 0, -1))
+        context_vec = F.transpose(context_vec.reshape(shape=(-1, self._num_heads, 0, 0),
+                                                      reverse=True),
+                                  axes=(0, 2, 1, 3)).reshape(shape=(0, 0, -1))
         return context_vec
 
 
@@ -336,7 +332,7 @@ class MLPAttentionCell(AttentionCell):
         mid_feat = F.broadcast_add(F.expand_dims(mapped_query, axis=2),
                                    F.expand_dims(mapped_key, axis=1))
         mid_feat = self._act(mid_feat)
-        att_score = F.reshape(self._attention_score(mid_feat), shape=(0, 0, 0))
+        att_score = self._attention_score(mid_feat).reshape(shape=(0, 0, 0))
         att_weights = self._dropout_layer(_masked_softmax(F, att_score, mask))
         return att_weights
 
