@@ -121,6 +121,10 @@ val_data_loader = DataLoader(data_val,
                              num_workers=4)
 
 for (src_seq, src_valid_length), (tgt_seq, tgt_valid_length) in train_data_loader:
-    print(src_seq.shape)
+    src_seq = mx.nd.array(src_seq, ctx=ctx)
+    src_valid_length = mx.nd.array(src_valid_length, ctx=ctx)
+    tgt_seq = mx.nd.array(tgt_seq, ctx=ctx)
+    tgt_valid_length = mx.nd.array(tgt_valid_length, ctx=ctx)
     out, _ = net(src_seq, tgt_seq[:, :-1], src_valid_length, tgt_valid_length - 1)
+    gt_seq = tgt_seq[:, 1:]
     print(out)
