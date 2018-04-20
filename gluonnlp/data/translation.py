@@ -243,6 +243,6 @@ class WMT2016BPE(_TranslationDataset):
                                              '1c5aea0a77cad592c4e9c1136ec3b70ceeff4e8c'),
                                 'vocab_de': ('vocab.bpe.32000.json',
                                              '1c5aea0a77cad592c4e9c1136ec3b70ceeff4e8c')}}
-        super(WMT2016BPE, self).__init__('WMT2016', segment=segment, src_lang=src_lang,
+        super(WMT2016BPE, self).__init__('wmt2016', segment=segment, src_lang=src_lang,
                                          tgt_lang=tgt_lang,
                                          root=os.path.join(root, _get_pair_key(src_lang, tgt_lang)))

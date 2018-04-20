@@ -25,6 +25,7 @@ docs:
 
 clean:
 	rm -rf gluonnlp.egg-info build dist | true
+	rm -rf tests/data
 	make -C docs clean
 
 test:
