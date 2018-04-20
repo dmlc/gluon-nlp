@@ -339,7 +339,7 @@ def train():
                     Ls.append(l/X.size)
                     hiddens[j] = h
             L.backward()
-            grads = [p.grad(x.context) for p in parameters for x in data_list]
+            grads = [p.grad(d.context) for p in parameters for d in data_list]
             gluon.utils.clip_global_norm(grads, args.clip)
 
             trainer.step(1)

@@ -37,6 +37,16 @@ from .. import _constants as C
 class Counter(collections.Counter): # pylint: disable=abstract-method
     """Counter class for keeping token frequencies."""
 
+class DefaultLookupDict(dict):
+    """Dictionary class with fall-back look-up with default value set in the constructor."""
+
+    def __init__(self, default):
+        super(DefaultLookupDict, self).__init__()
+        self._default = default
+
+    def __getitem__(self, k):
+        return self.get(k, self._default)
+
 
 def count_tokens(tokens, to_lower=False, counter=None):
     r"""Counts tokens in the specified string.
