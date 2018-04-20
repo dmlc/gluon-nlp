@@ -25,7 +25,18 @@ from mxnet.gluon import HybridBlock, Block
 
 
 class CosineSimilarity(HybridBlock):
-    """Computes the cosine similarity."""
+    """Computes the cosine similarity.
+
+    Parameters
+    ----------
+    eps : float, optional, default=1e-10
+        A small constant for numerical stability.
+
+    """
+
+    def __init__(self, eps=1e-10):
+        super(CosineSimilarity, self).__init__(**kwargs)
+        self.eps = eps
 
     def hybrid_forward(self, F, x, y):  # pylint: disable=arguments-differ
         """Compute the cosine similarity between two batches of vectors.
@@ -45,8 +56,8 @@ class CosineSimilarity(HybridBlock):
 
         """
 
-        x = F.L2Normalization(x)
-        y = F.L2Normalization(y)
+        x = F.L2Normalization(x, eps=self.eps)
+        y = F.L2Normalization(y, eps=self.eps)
         x = F.expand_dims(x, axis=1)
         y = F.expand_dims(y, axis=2)
         return F.batch_dot(x, y).reshape((-1, ))
@@ -62,19 +73,21 @@ class WordEmbeddingSimilarity(HybridBlock):
     similarity_function : mxnet.gluon.Block
         Given two mx.nd.NDArray's of word embeddings compute a similarity
         score.
+    eps : float, optional, default=1e-10
+        A small constant for numerical stability.
 
     """
 
     def __init__(self, idx_to_vec, similarity_function=CosineSimilarity,
-                 **kwargs):
+                 eps=1e-10, **kwargs):
         super(WordEmbeddingSimilarity, self).__init__(**kwargs)
 
+        self.eps = eps
         self._vocab_size, self._embed_size = idx_to_vec.shape
 
         with self.name_scope():
-            self.weight = self.params.get_constant(
-                'weight', mx.nd.L2Normalization(idx_to_vec))
-            self.similarity = similarity_function()
+            self.weight = self.params.get_constant('weight', idx_to_vec)
+            self.similarity = similarity_function(eps=self.eps)
 
     def hybrid_forward(self, F, words1, words2, weight):  # pylint: disable=arguments-differ
         """Predict the similarity of words1 and words2.
@@ -108,19 +121,25 @@ class ThreeCosMul(HybridBlock):
     .. math::
         \\arg\\max_{b^* ∈ V}\\frac{\\cos(b^∗, b) \\cos(b^*, a)}{cos(b^*, a^*) + ε}
 
+    Parameters
+    ----------
+    eps : float, optional, default=1e-10
+        A small constant for numerical stability.
+
     """
 
-    def __init__(self, idx_to_vec, k=1, epsilon=0.001, **kwargs):
+    def __init__(self, idx_to_vec, k=1, eps=1E-10, **kwargs):
         super(ThreeCosMul, self).__init__(**kwargs)
 
         self.k = k
-        self.epsilon = epsilon
+        self.eps = eps
 
         self._vocab_size, self._embed_size = idx_to_vec.shape
 
+        normalized_idx_to_vec = mx.nd.L2Normalization(idx_to_vec, eps=self.eps)
         with self.name_scope():
-            self.weight = self.params.get_constant(
-                'weight', mx.nd.L2Normalization(idx_to_vec))
+            self.weight = self.params.get_constant('weight',
+                                                   normalized_idx_to_vec)
 
     def hybrid_forward(self, F, words1, words2, words3, weight):  # pylint: disable=arguments-differ
         """Implement forward computation."""
@@ -145,7 +164,7 @@ class ThreeCosMul(HybridBlock):
         sim_w1w4, sim_w2w4, sim_w3w4 = F.split(similarities, num_outputs=3,
                                                axis=0)
 
-        pred_idxs = F.topk((sim_w2w4 * sim_w3w4) / (sim_w1w4 + self.epsilon),
+        pred_idxs = F.topk((sim_w2w4 * sim_w3w4) / (sim_w1w4 + self.eps),
                            k=self.k)
         return pred_idxs
 
