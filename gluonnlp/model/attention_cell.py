@@ -117,11 +117,11 @@ class AttentionCell(HybridBlock):
             Query vector. Shape (batch_size, query_length, query_dim)
         key : Symbol or NDArray
             Key of the memory. Shape (batch_size, memory_length, key_dim)
-        value : Symbol or NDArray or None
+        value : Symbol or NDArray or None, default None
             Value of the memory. If set to None, the value will be set as the key.
             Shape (batch_size, memory_length, value_dim)
-        mask : Symbol or NDArray or None
-            Mask the memory slots. Shape (batch_size, query_length, memory_length)
+        mask : Symbol or NDArray or None, default None
+            Mask of the memory slots. Shape (batch_size, query_length, memory_length)
             Only contains 0 or 1 where 0 means that the memory slot will not be used.
             If set to None. No mask will be used.
 
@@ -226,11 +226,11 @@ class MultiHeadAttentionCell(AttentionCell):
             Query vector. Shape (batch_size, query_length, query_dim)
         key : Symbol or NDArray
             Key of the memory. Shape (batch_size, memory_length, key_dim)
-        value : Symbol or NDArray or None
+        value : Symbol or NDArray or None, default None
             Value of the memory. If set to None, the value will be set as the key.
             Shape (batch_size, memory_length, value_dim)
-        mask : Symbol or NDArray or None
-            Mask the memory slots. Shape (batch_size, query_length, memory_length)
+        mask : Symbol or NDArray or None, default None
+            Mask of the memory slots. Shape (batch_size, query_length, memory_length)
             Only contains 0 or 1 where 0 means that the memory slot will not be used.
             If set to None. No mask will be used.
 
