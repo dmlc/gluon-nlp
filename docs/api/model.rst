@@ -9,8 +9,8 @@ Language Modeling
 .. automodule:: gluonnlp.model.language_model
     :members:
 
-Model Building Blocks
-=====================
+Building Blocks
+===============
 
 Gluon NLP Toolkit provides building blocks for NLP models.
 
