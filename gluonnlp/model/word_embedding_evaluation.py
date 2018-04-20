@@ -28,7 +28,23 @@ class CosineSimilarity(HybridBlock):
     """Computes the cosine similarity."""
 
     def hybrid_forward(self, F, x, y):  # pylint: disable=arguments-differ
-        """Implement forward computation."""
+        """Compute the cosine similarity between two batches of vectors.
+
+        The cosine similarity is the dot product between the L2 normalized
+        vectors.
+
+        Parameters
+        ----------
+        x : Symbol or NDArray
+        y : Symbol or NDArray
+
+        Returns
+        -------
+        similarity : Symbol or NDArray
+            The similarity computed by WordEmbeddingSimilarity.similarity_function.
+
+        """
+
         x = F.L2Normalization(x)
         y = F.L2Normalization(y)
         x = F.expand_dims(x, axis=1)
@@ -41,15 +57,11 @@ class WordEmbeddingSimilarity(HybridBlock):
 
     Parameters
     ----------
-    vocab_size : int
-        Size of the vocabulary.
-    embed_size : int
-        Dimensionality of the embeddings.
+    idx_to_vec : mxnet.ndarray.NDArray
+        Embedding matrix.
     similarity_function : mxnet.gluon.Block
         Given two mx.nd.NDArray's of word embeddings compute a similarity
         score.
-    embeddings_params : mx.gluon.ParameterDict (optional)
-        Parameters of the internal WordEmbeddingSimilarity.embedding Block.
 
     """
 
@@ -143,16 +155,15 @@ class WordEmbeddingAnalogy(Block):
 
     Parameters
     ----------
-    vocab_size : int
-        Size of the vocabulary.
-    embed_size : int
-        Dimensionality of the embeddings.
+    idx_to_vec : mxnet.ndarray.NDArray
+        Embedding matrix.
     analogy_function : mxnet.gluon.Block
         Given three mx.nd.NDArray's of word embeddings predict k analogies.
-        Vocab_size, embed_size, embedding_params and k are passed in the
-        constructor
-    embeddings_params : mx.gluon.ParameterDict (optional)
-        Parameters of the internal WordEmbeddingSimilarity.embedding Block.
+        idx_to_vec and k are passed on to its constructor.
+    k : int (1)
+        Number of analogies to predict per input triple.
+    exclude_inputs : bool (True)
+        Exclude the 3 input words from being a valid analogy output.
 
     """
 
@@ -175,15 +186,17 @@ class WordEmbeddingAnalogy(Block):
 
         Parameters
         ----------
-        inputs : NDArray
-            The training dataset.
-        begin_state : list
-            The initial hidden states.
+        words1 : NDArray
+            Word indices.
+        words2 : NDArray
+            Word indices.
+        words3 : NDArray
+            Word indices.
 
         Returns
         -------
-        similarity : NDArray
-            The output of the model.
+        predicted_indices : NDArray
+            Predicted indices of shape (batch_size, k)
         """
         pred_idxs = self.analogy(words1, words2, words3)
 
