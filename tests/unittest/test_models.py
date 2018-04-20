@@ -95,10 +95,10 @@ def test_word_embedding_analogy_evaluation_models():
     dataset_coded_nd = mx.nd.array(dataset_coded)
 
     for k in [1, 3]:
-        for exclude_inputs in [True, False]:
+        for exclude_question_words in [True, False]:
             evaluator = nlp.model.WordEmbeddingAnalogy(
                 idx_to_vec=vocab.embedding.idx_to_vec, k=k,
-                exclude_inputs=exclude_inputs)
+                exclude_question_words=exclude_question_words)
             evaluator.initialize()
 
             words1 = dataset_coded_nd[:, 0]
@@ -110,7 +110,7 @@ def test_word_embedding_analogy_evaluation_models():
             words4 = dataset_coded_nd[:, 3]
             accuracy = mx.nd.mean(pred_idxs[:, 0] == mx.nd.array(words4))
             accuracy = accuracy.asscalar()
-            if exclude_inputs == False:
+            if exclude_question_words == False:
                 assert accuracy <= 0.1
 
                 # Instead the model would predict W3 most of the time
@@ -118,7 +118,7 @@ def test_word_embedding_analogy_evaluation_models():
                     pred_idxs[:, 0] == mx.nd.array(words3))
                 assert accuracy_w3.asscalar() >= 0.9
 
-            elif exclude_inputs == True:
+            elif exclude_question_words == True:
                 # The wiki.simple.vec vectors don't perform too good
                 assert accuracy >= 0.5
 

@@ -42,7 +42,17 @@ class WordEmbeddingSimilarityFunction(_WordEmbeddingEvaluationFunction):  # pyli
 
 
 class WordEmbeddingAnalogyFunction(_WordEmbeddingEvaluationFunction):  # pylint: disable=abstract-method
-    """Base class for word embedding analogy functions."""
+    """Base class for word embedding analogy functions.
+
+    Parameters
+    ----------
+    idx_to_vec : mxnet.ndarray.NDArray
+        Embedding matrix.
+    k : int, default 1
+        Number of analogies to predict per input triple.
+    eps : float, optional, default=1e-10
+        A small constant for numerical stability.
+    """
     pass
 
 
@@ -221,11 +231,16 @@ class ThreeCosMul(WordEmbeddingAnalogyFunction):
     """The 3CosMul analogy function.
 
     The 3CosMul analogy function is defined as
+
     .. math::
         \\arg\\max_{b^* ∈ V}\\frac{\\cos(b^∗, b) \\cos(b^*, a)}{cos(b^*, a^*) + ε}
 
     Parameters
     ----------
+    idx_to_vec : mxnet.ndarray.NDArray
+        Embedding matrix.
+    k : int, default 1
+        Number of analogies to predict per input triple.
     eps : float, optional, default=1e-10
         A small constant for numerical stability.
 
@@ -330,22 +345,22 @@ class WordEmbeddingAnalogy(Block):
         Embedding matrix.
     analogy_function : str, default 'ThreeCosMul'
         Name of a registered WordEmbeddingAnalogyFunction.
-    k : int (1)
+    k : int, default 1
         Number of analogies to predict per input triple.
-    exclude_inputs : bool (True)
-        Exclude the 3 input words from being a valid analogy output.
+    exclude_question_words : bool (True)
+        Exclude the 3 question words from being a valid answer.
 
     """
 
     def __init__(self, idx_to_vec, analogy_function='ThreeCosMul', k=1,
-                 exclude_inputs=True, **kwargs):
+                 exclude_question_words=True, **kwargs):
         super(WordEmbeddingAnalogy, self).__init__(**kwargs)
 
         assert k >= 1
         self.k = k
-        self.exclude_inputs = exclude_inputs
+        self.exclude_question_words = exclude_question_words
 
-        self._internal_k = self.k + 3 * self.exclude_inputs
+        self._internal_k = self.k + 3 * self.exclude_question_words
 
         with self.name_scope():
             self.analogy = create(kind='analogy', name=analogy_function,
@@ -374,7 +389,7 @@ class WordEmbeddingAnalogy(Block):
         """
         pred_idxs = self.analogy(words1, words2, words3)
 
-        if self.exclude_inputs:
+        if self.exclude_question_words:
             orig_context = pred_idxs.context
             pred_idxs = pred_idxs.asnumpy().tolist()
             pred_idxs = [[

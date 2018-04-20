@@ -90,7 +90,7 @@ group.add_argument(
     help='Word analogy functions to use for intrinsic evaluation. ')
 ## Analogy evaluation specific arguments
 group.add_argument(
-    '--analogy_dont_exclude_inputs', action='store_true',
+    '--analogy_dont_exclude_question_words', action='store_true',
     help=('Exclude input words from valid output analogies.'
           'The performance of word embeddings on the analogy task '
           'is around 0% accuracy if input words are not excluded.'))
@@ -223,9 +223,10 @@ def evaluate_analogy(token_embedding, dataset, analogy_function='ThreeCosMul'):
                      for d in dataset]
     dataset_coded_batched = mx.gluon.data.DataLoader(
         dataset_coded, batch_size=args.batch_size)
-    exclude_inputs = not args.analogy_dont_exclude_inputs
+    exclude_question_words = not args.analogy_dont_exclude_question_words
     evaluator = nlp.model.WordEmbeddingAnalogy(
-        idx_to_vec=vocab.embedding.idx_to_vec, exclude_inputs=exclude_inputs,
+        idx_to_vec=vocab.embedding.idx_to_vec,
+        exclude_question_words=exclude_question_words,
         analogy_function=analogy_function)
     evaluator.initialize(ctx=context)
     if not args.dont_hybridize:
