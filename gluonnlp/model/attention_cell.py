@@ -127,8 +127,8 @@ class AttentionCell(HybridBlock):
 
         Returns
         -------
-        read_value : Symbol or NDArray
-            Shape (batch_size, query_length, read_value_dim)
+        context_vec : Symbol or NDArray
+            Shape (batch_size, query_length, context_vec_dim)
         att_weights : Symbol or NDArray
             For single-head attention,
                 Shape (batch_size, query_length, memory_length)
@@ -147,8 +147,8 @@ class AttentionCell(HybridBlock):
 
     def hybrid_forward(self, F, query, key, value, mask=None):  # pylint: disable=arguments-differ
         att_weights = self._compute_weight(F, query, key, mask)
-        read_value = self._read_by_weight(F, att_weights, value)
-        return read_value, att_weights
+        context_vec = self._read_by_weight(F, att_weights, value)
+        return context_vec, att_weights
 
 
 class MultiHeadAttentionCell(AttentionCell):
@@ -241,12 +241,12 @@ class MultiHeadAttentionCell(AttentionCell):
         value = F.reshape(F.transpose(F.reshape(value, shape=(0, 0, self._num_heads, -1)),
                                       axes=(0, 2, 1, 3)),
                           shape=(-1, 0, 0), reverse=True)
-        read_value = self._base_cell._read_by_weight(F, att_weights, value)
-        read_value = F.reshape(F.transpose(F.reshape(read_value,
-                                                     shape=(-1, self._num_heads, 0, 0),
-                                                     reverse=True), axes=(0, 2, 1, 3)),
-                               shape=(0, 0, -1))
-        return read_value
+        context_vec = self._base_cell._read_by_weight(F, att_weights, value)
+        context_vec = F.reshape(F.transpose(F.reshape(context_vec,
+                                                      shape=(-1, self._num_heads, 0, 0),
+                                                      reverse=True), axes=(0, 2, 1, 3)),
+                                shape=(0, 0, -1))
+        return context_vec
 
 
 class MLPAttentionCell(AttentionCell):
