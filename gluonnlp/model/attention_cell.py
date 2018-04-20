@@ -336,10 +336,10 @@ class MLPAttentionCell(AttentionCell):
 
 # TODO(sxjscience) Move _DivSqrtDim to contrib
 class _DivSqrtDim(mx.operator.CustomOp):
-    def forward(self, _, req, in_data, out_data, _):
+    def forward(self, is_train, req, in_data, out_data, aux):  # pylint: disable=unused-arguments
         self.assign(out_data[0], req[0], in_data[0] / math.sqrt(float(in_data[0].shape[-1])))
 
-    def backward(self, req, out_grad, _, _, in_grad, _):
+    def backward(self, req, out_grad, in_data, out_data, in_grad, aux):  # pylint: disable=unused-arguments
         self.assign(in_grad[0], req[0], out_grad[0] / math.sqrt(float(out_grad[0].shape[-1])))
 
 
@@ -359,10 +359,10 @@ class _DivSqrtDimProp(mx.operator.CustomOpProp):
         output_shape = data_shape
         return (data_shape,), (output_shape,), ()
 
-    def declare_backward_dependency(self, out_grad, _, _):
+    def declare_backward_dependency(self, out_grad, in_data, out_data):  # pylint: disable=unused-arguments
         return out_grad
 
-    def create_operator(self, _, _, _):
+    def create_operator(self, ctx, in_shapes, in_dtypes):  # pylint: disable=unused-arguments
         #  create and return the CustomOp class.
         return _DivSqrtDim()
 
