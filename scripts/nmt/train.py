@@ -72,7 +72,7 @@ def load_IWSLT2015(src_lang='en', tgt_lang='vi'):
         cache_dataset(data_train_processed, common_prefix + '_train')
 
     data_val_processed = load_cached_dataset(common_prefix + '_val')
-    if not data_train_processed:
+    if not data_val_processed:
         data_val_processed = process_dataset(data_val, src_vocab, tgt_vocab)
         cache_dataset(data_val_processed, common_prefix + '_val')
     data_test_processed = data_test.transform(lambda src, tgt: (src.split(), tgt.split()),
