@@ -103,8 +103,8 @@ class AttentionCell(HybridBlock):
 
         Returns
         -------
-        read_value: Symbol or NDArray
-            Shape (batch_size, query_length, read_value_dim)
+        context_vec: Symbol or NDArray
+            Shape (batch_size, query_length, context_vec_dim)
         """
         return F.batch_dot(att_weights, value)
 
