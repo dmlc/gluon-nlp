@@ -65,8 +65,8 @@ def compute_bleu(reference_corpus, translation_corpus, max_n=4, smooth=False, lo
     5-Tuple with the BLEU score, n-gram precisions, brevity penalty,
         reference length, and translation length
     """
-    precision_numerators = Counter()
-    precision_denominators = Counter()
+    precision_numerators = [0 for _ in range(max_n)]
+    precision_denominators = [0 for _ in range(max_n)]
     ref_length, trans_length = 0, 0
     assert len(reference_corpus) == len(translation_corpus), \
         'The number of translations and their references do not match'
