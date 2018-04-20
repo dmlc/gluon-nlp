@@ -27,6 +27,9 @@ import time
 
 from nose.tools import assert_raises
 
+import gluonnlp as nlp
+from gluonnlp.data.utils import Counter
+
 from common import assertRaises
 import gluonnlp as nlp
 from mxnet import ndarray as nd
@@ -806,6 +809,78 @@ def test_token_embedding_serialization():
     print(("Took {} seconds to load serialized compressed "
            "fasttext embeddings.").format(time.time() - start_time))
     assert loaded_emb == emb
+
+
+def test_word_embedding_similarity_evaluation_models():
+    try:
+        from scipy import stats
+    except ImportError:
+        raise ImportError('This testcase requires scipy.')
+
+    dataset = nlp.data.WordSim353()
+
+    counter = nlp.data.utils.Counter(w for wpair in dataset for w in wpair[:2])
+    vocab = nlp.vocab.Vocab(counter)
+    vocab.set_embedding(
+        nlp.embedding.create("fasttext", source="wiki.simple.vec"))
+
+    data = [[vocab[d[0]], vocab[d[1]], d[2]] for d in dataset]
+    words1, words2, scores = zip(*data)
+
+    evaluator = nlp.embedding.evaluation.WordEmbeddingSimilarity(
+        vocab.embedding.idx_to_vec)
+    evaluator.initialize()
+
+    words1, words2 = mx.nd.array(words1), mx.nd.array(words2)
+    pred_similarity = evaluator(words1, words2)
+
+    sr = stats.spearmanr(pred_similarity.asnumpy(), np.array(scores))
+    assert np.isclose(0.6194264760578906, sr.correlation)
+
+
+def test_word_embedding_analogy_evaluation_models():
+    dataset = nlp.data.GoogleAnalogyTestSet()
+    dataset = [d for i, d in enumerate(dataset) if i < 100]
+
+    embedding = nlp.embedding.create("fasttext", source="wiki.simple.vec")
+    counter = nlp.data.utils.Counter(embedding.idx_to_token)
+    vocab = nlp.vocab.Vocab(counter)
+    vocab.set_embedding(embedding)
+
+    dataset_coded = [[vocab[d[0]], vocab[d[1]], vocab[d[2]], vocab[d[3]]]
+                     for d in dataset]
+    dataset_coded_nd = mx.nd.array(dataset_coded)
+
+    for k in [1, 3]:
+        for exclude_question_words in [True, False]:
+            evaluator = nlp.embedding.evaluation.WordEmbeddingAnalogy(
+                idx_to_vec=vocab.embedding.idx_to_vec, k=k,
+                exclude_question_words=exclude_question_words)
+            evaluator.initialize()
+
+            words1 = dataset_coded_nd[:, 0]
+            words2 = dataset_coded_nd[:, 1]
+            words3 = dataset_coded_nd[:, 2]
+            pred_idxs = evaluator(words1, words2, words3)
+
+            # If we don't exclude inputs most predictions should be wrong
+            words4 = dataset_coded_nd[:, 3]
+            accuracy = mx.nd.mean(pred_idxs[:, 0] == mx.nd.array(words4))
+            accuracy = accuracy.asscalar()
+            if exclude_question_words == False:
+                assert accuracy <= 0.1
+
+                # Instead the model would predict W3 most of the time
+                accuracy_w3 = mx.nd.mean(
+                    pred_idxs[:, 0] == mx.nd.array(words3))
+                assert accuracy_w3.asscalar() >= 0.9
+
+            elif exclude_question_words == True:
+                # The wiki.simple.vec vectors don't perform too good
+                assert accuracy >= 0.5
+
+            # Assert output shape
+            assert pred_idxs.shape[1] == k
 
 
 if __name__ == '__main__':

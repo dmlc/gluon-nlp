@@ -40,11 +40,6 @@ Beam Search
     .. autoclass:: gluonnlp.model.beam_search.BeamSearchSampler
         :members: __call__
 
-Word embeddings evaluation
---------------------------
-.. automodule:: gluonnlp.model.word_embedding_evaluation
-    :members:
-
 Other Modeling Utilities
 ------------------------
 .. automodule:: gluonnlp.model.parameter

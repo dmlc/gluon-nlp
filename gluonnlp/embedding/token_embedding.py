@@ -37,8 +37,8 @@ import numpy as np
 from mxnet import nd, registry
 from mxnet.gluon.utils import download, check_sha1, _get_repo_file_url
 
-from . import _constants as C
-from .data.utils import DefaultLookupDict
+from .. import _constants as C
+from ..data.utils import DefaultLookupDict
 
 
 def register(embedding_cls):

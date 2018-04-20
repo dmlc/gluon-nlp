@@ -69,11 +69,11 @@ def register(class_):
     """Registers a new word embedding evaluation function.
 
     Once registered, we can create an instance with
-    :func:`~gluonnlp.model.word_embedding_evaluation.create`.
+    :func:`~gluonnlp.embedding.evaluation.create`.
 
     Examples
     --------
-    >>> @gluonnlp.model.word_embedding_evaluation.register
+    >>> @gluonnlp.embedding.evaluation.register
     ... class MySimilarityFunction(WordEmbeddingSimilarityFunction):
     ...     def __init__(self, eps=1e-10):
     ...         pass
@@ -81,7 +81,7 @@ def register(class_):
     >>> print(type(similarity_function))
     <class '__main__.MySimilarityFunction'>
 
-    >>> @gluonnlp.model.word_embedding_evaluation.register
+    >>> @gluonnlp.embedding.evaluation.register
     ... class MyAnalogyFunction(WordEmbeddingAnalogyFunction):
     ...     def __init__(self, idx_to_vec, k=1, eps=1E-10):
     ...         pass
@@ -121,9 +121,9 @@ def create(kind, name, **kwargs):
     Returns
     -------
     An instance of
-    :class:`gluonnlp.model.word_embedding_evaluation.WordEmbeddingAnalogyFunction`:
+    :class:`gluonnlp.embedding.evaluation.WordEmbeddingAnalogyFunction`:
     or
-    :class:`gluonnlp.model.word_embedding_evaluation.WordEmbeddingSimilarityFunction`:
+    :class:`gluonnlp.embedding.evaluation.WordEmbeddingSimilarityFunction`:
         An instance of the specified evaluation function.
 
     """

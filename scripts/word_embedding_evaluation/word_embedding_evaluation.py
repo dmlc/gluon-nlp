@@ -75,7 +75,7 @@ group.add_argument(
     help='Word similarity datasets to use for intrinsic evaluation.')
 group.add_argument(
     '--similarity_functions', type=str,
-    default=nlp.model.word_embedding_evaluation.list_evaluation_functions(
+    default=nlp.embedding.evaluation.list_evaluation_functions(
         'similarity'), nargs='+',
     help='Word similarity functions to use for intrinsic evaluation.')
 group.add_argument(
@@ -85,7 +85,7 @@ group.add_argument(
     help='Word similarity datasets to use for intrinsic evaluation.')
 group.add_argument(
     '--analogy_functions', type=str,
-    default=nlp.model.word_embedding_evaluation.list_evaluation_functions(
+    default=nlp.embedding.evaluation.list_evaluation_functions(
         'analogy'), nargs='+',
     help='Word analogy functions to use for intrinsic evaluation. ')
 ## Analogy evaluation specific arguments
@@ -186,7 +186,7 @@ def evaluate_similarity(token_embedding, dataset,
     dataset_coded = [[vocab[d[0]], vocab[d[1]], d[2]] for d in dataset]
     words1, words2, scores = zip(*dataset_coded)
 
-    evaluator = nlp.model.WordEmbeddingSimilarity(
+    evaluator = nlp.embedding.evaluation.WordEmbeddingSimilarity(
         idx_to_vec=vocab.embedding.idx_to_vec,
         similarity_function=similarity_function)
     evaluator.initialize(ctx=context)
@@ -224,7 +224,7 @@ def evaluate_analogy(token_embedding, dataset, analogy_function='ThreeCosMul'):
     dataset_coded_batched = mx.gluon.data.DataLoader(
         dataset_coded, batch_size=args.batch_size)
     exclude_question_words = not args.analogy_dont_exclude_question_words
-    evaluator = nlp.model.WordEmbeddingAnalogy(
+    evaluator = nlp.embedding.evaluation.WordEmbeddingAnalogy(
         idx_to_vec=vocab.embedding.idx_to_vec,
         exclude_question_words=exclude_question_words,
         analogy_function=analogy_function)

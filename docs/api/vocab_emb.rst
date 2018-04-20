@@ -193,6 +193,11 @@ For a new ``embedding``, create a subclass of
 ``@gluonnlp.embedding.register`` before this
 class.
 
+Word embeddings evaluation
+--------------------------
+.. automodule:: gluonnlp.embedding.evaluation
+    :members:
+
 API Reference
 -------------
 
