@@ -31,6 +31,12 @@ def get_tokenized_dataset(dataset, tokenizer=lambda ele: ele.split(), vocab=None
         inds = [vocab[ele] for ele in tokenizer(line)]
         data.extend(inds)
         indptr.append(indptr[-1] + len(inds))
+    data = np.array(data, dtype=np.int32)
+    if indptr[-1] > np.iinfo(np.int32).max:
+        assert indptr[-1] <= np.iinfo(np.int64).max, "Too many elements!"
+        indptr = np.array(indptr, dtype=np.int64)
+    else:
+        indptr = np.array(indptr, dtype=np.int32)
     return TokenizedDataset(data, indptr, words)
 
 
