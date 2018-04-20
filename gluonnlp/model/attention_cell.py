@@ -109,7 +109,7 @@ class AttentionCell(HybridBlock):
         return F.batch_dot(att_weights, value)
 
     def __call__(self, query, key, value=None, mask=None):  # pylint: disable=arguments-differ
-        """Compute the attention value.
+        """Compute the attention.
 
         Parameters
         ----------
