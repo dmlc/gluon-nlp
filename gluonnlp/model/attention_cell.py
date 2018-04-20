@@ -220,9 +220,10 @@ class MultiHeadAttentionCell(AttentionCell):
 
     def _compute_weight(self, F, query, key, mask=None):
         query = self.proj_query(query)  # Shape (batch_size, query_length, query_units)
+        # Shape (batch_size * num_heads, query_length, ele_units)
         query = F.transpose(query.reshape(shape=(0, 0, self._num_heads, -1)),
                             axes=(0, 2, 1, 3))\
-                 .reshape(shape=(-1, 0, 0), reverse=True)  # Shape (batch_size * num_heads, query_length, ele_units)
+                 .reshape(shape=(-1, 0, 0), reverse=True)
         key = self.proj_key(key)
         key = F.transpose(key.reshape(shape=(0, 0, self._num_heads, -1)),
                           axes=(0, 2, 1, 3)).reshape(shape=(-1, 0, 0), reverse=True)
