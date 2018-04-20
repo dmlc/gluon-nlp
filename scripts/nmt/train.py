@@ -25,6 +25,7 @@ def cache_dataset(dataset, prefix):
     tgt_data = np.array([ele[1] for ele in dataset])
     np.savez(os.path.join(_C.CACHE_PATH, prefix + '.npz'), src_data=src_data, tgt_data=tgt_data)
 
+
 def load_cached_dataset(prefix):
     cached_file_path = os.path.join(_C.CACHE_PATH, prefix + '.npz')
     if os.path.exists(cached_file_path):
@@ -32,6 +33,7 @@ def load_cached_dataset(prefix):
         return ArrayDataset(np.array(dat['src_data']), np.array(dat['tgt_data']))
     else:
         return None
+
 
 class TrainValDataTransform(object):
     def __init__(self, src_vocab, tgt_vocab):
@@ -50,11 +52,8 @@ class TrainValDataTransform(object):
 
 
 def process_dataset(dataset, src_vocab, tgt_vocab):
-    transform = TrainValDataTransform(src_vocab, tgt_vocab)
     start = time.time()
-    with mp.Pool(4) as pool:
-        dataset_processed = \
-            SimpleDataset(pool.map(transform, dataset))
+    dataset_processed = dataset.transform(TrainValDataTransform(src_vocab, tgt_vocab), lazy=False)
     end = time.time()
     print('Processing Time spent: {}'.format(end - start))
     return dataset_processed
