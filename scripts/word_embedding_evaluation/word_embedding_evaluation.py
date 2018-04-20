@@ -42,6 +42,10 @@ except ImportError:
         'progressbar not installed. '
         ' Install via `pip install progressbar2` for better usability.')
     progressbar = None
+try:
+    from scipy import stats
+except ImportError:
+    stats = None
 
 parser = argparse.ArgumentParser(
     description='Word embedding training with Gluon.')
@@ -181,11 +185,9 @@ def evaluate_similarity(token_embedding, dataset):
     pred_similarity = evaluator(
         mx.nd.array(words1, ctx=context), mx.nd.array(words2, ctx=context))
 
-    sr = nlp.metric.SpearmanRankCorrelation()
-    sr.update(mx.nd.array(scores), pred_similarity.as_in_context(mx.cpu()))
+    sr = stats.spearmanr(pred_similarity.asnumpy(), np.array(scores))
     logging.info('Spearman rank correlation on %s: %s',
-                 dataset.__class__.__name__,
-                 sr.get()[1])
+                 dataset.__class__.__name__, sr)
 
 
 def evaluate_analogy(token_embedding, dataset):
@@ -241,6 +243,11 @@ def evaluate():
 
     # Similarity based evaluation
     for dataset_class in similarity_datasets:
+        if stats is None:
+            raise RuntimeError(
+                'Similarity evaluation requires scipy.'
+                'You may install scipy via `pip install scipy`.')
+
         logging.info('Starting evaluation of %s', dataset_class.__name__)
         dataset = dataset_class()
         evaluate_similarity(token_embedding, dataset)

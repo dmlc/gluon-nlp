@@ -34,7 +34,7 @@ class CosineSimilarity(HybridBlock):
 
     """
 
-    def __init__(self, eps=1e-10):
+    def __init__(self, eps=1e-10, **kwargs):
         super(CosineSimilarity, self).__init__(**kwargs)
         self.eps = eps
 

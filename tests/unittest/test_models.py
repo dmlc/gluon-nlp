@@ -56,6 +56,11 @@ def test_text_models():
 
 
 def test_word_embedding_similarity_evaluation_models():
+    try:
+        from scipy import stats
+    except ImportError:
+        raise ImportError('This testcase requires scipy.')
+
     dataset = nlp.data.WordSim353()
 
     counter = nlp.data.utils.Counter(w for wpair in dataset for w in wpair[:2])
@@ -72,10 +77,8 @@ def test_word_embedding_similarity_evaluation_models():
     words1, words2 = mx.nd.array(words1), mx.nd.array(words2)
     pred_similarity = evaluator(words1, words2)
 
-    sr = nlp.metric.SpearmanRankCorrelation()
-    sr.update(mx.nd.array(scores), pred_similarity)
-
-    assert np.isclose(0.6194264760578906, sr.get()[1])
+    sr = stats.spearmanr(pred_similarity.asnumpy(), np.array(scores))
+    assert np.isclose(0.6194264760578906, sr.correlation)
 
 
 def test_word_embedding_analogy_evaluation_models():

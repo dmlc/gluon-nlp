@@ -22,7 +22,6 @@
 
 from . import data
 from . import embedding
-from . import metric
 from . import model
 from .vocab import *
 
