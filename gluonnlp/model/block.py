@@ -18,10 +18,10 @@
 # under the License.
 
 """Building blocks and utility for models."""
-__all__ = ['RNNCellLayer']
+__all__ = ['RNNCellLayer', 'L2Normalization']
 
 from mxnet import ndarray
-from mxnet.gluon import Block
+from mxnet.gluon import Block, HybridBlock
 
 
 class RNNCellLayer(Block):
@@ -65,3 +65,14 @@ class RNNCellLayer(Block):
         if skip_states:
             return outputs
         return outputs, states
+
+
+class L2Normalization(HybridBlock):
+    def __init__(self, axis=-1, eps=1E-6, prefix=None, params=None):
+        super(L2Normalization, self).__init__(prefix=prefix, params=params)
+        self._axis = axis
+        self._eps = eps
+
+    def hybrid_forward(self, F, x):  # pylint: disable=arguments-differ
+        ret = F.broadcast_div(x, F.norm(x, axis=self._axis, keepdims=True) + self._eps)
+        return ret

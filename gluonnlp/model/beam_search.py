@@ -39,8 +39,8 @@ class BeamSearchScorer(HybridBlock):
 
     Parameters
     ----------
-    alpha : float
-    K : float
+    alpha : float, default 1.0
+    K : float, default 5.0
     """
     def __init__(self, alpha=1.0, K=5.0, prefix=None, params=None):
         super(BeamSearchScorer, self).__init__(prefix=prefix, params=params)
