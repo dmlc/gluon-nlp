@@ -95,11 +95,12 @@ dropout = 0.2
 num_buckets = 5
 train_batch_size = 128
 test_batch_size = 32
+ctx = mx.gpu()
 
 encoder, decoder = get_gnmt_encoder_decoder(hidden_size=hidden_size)
 net = NMTModel(src_vocab=src_vocab, tgt_vocab=tgt_vocab, encoder=encoder, decoder=decoder,
                embed_size=embed_size)
-net.initialize(init=mx.init.Xavier())
+net.initialize(init=mx.init.Xavier(), ctx=ctx)
 net.hybridize()
 
 batchify_fn = btf.Tuple(btf.Pad(ret_length=True), btf.Pad(ret_length=True))
@@ -121,5 +122,5 @@ val_data_loader = DataLoader(data_val,
 
 for (src_seq, src_valid_length), (tgt_seq, tgt_valid_length) in train_data_loader:
     print(src_seq.shape)
-    out, _ = net(src_seq, tgt_seq, src_valid_length, tgt_valid_length)
+    out, _ = net(src_seq, tgt_seq[:, :-1], src_valid_length, tgt_valid_length - 1)
     print(out)
