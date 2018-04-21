@@ -27,7 +27,8 @@ parser.add_argument('--epochs', type=int, default=5,
                     help='upper epoch limit')
 parser.add_argument('--num-hidden', type=int, default=128, help='Dimension of the embedding '
                                                                 'vectors and states.')
-parser.add_argument('--dropout', type=float, default=0.2, help='Dropout rate.')
+parser.add_argument('--dropout', type=float, default=0.2,
+                    help='dropout applied to layers (0 = no dropout)')
 parser.add_argument('--num-layers', type=int, default=2, help='number of layers in the encoder'
                                                               ' and decoder')
 parser.add_argument('--num-bi-layers', type=int, default=1,
@@ -41,17 +42,13 @@ parser.add_argument('--src-max-len', type=int, default=50, help='Maximum length 
                                                                 'sentence')
 parser.add_argument('--tgt-max-len', type=int, default=50, help='Maximum length of the target '
                                                                 'sentence')
+parser.add_argument('--optimizer', type=str, default='adam', help='optimization algorithm')
+parser.add_argument('--lr', type=float, default=1E-3, help='initial learning rate')
+parser.add_argument('--clip', type=float, default=5.0, help='gradient clipping')
 parser.add_argument('--log-interval', type=int, default=100, metavar='N',
                     help='report interval')
 parser.add_argument('--save-dir', type=str, default='out_dir',
                     help='directory path to save the final model and training log')
-parser.add_argument('--num-bi-layers', type=int, default=1,
-                    help='number of bidireciontal layers in the encoder')
-parser.add_argument('--optimizer', type=str, default='adam', help='optimization algorithm')
-parser.add_argument('--lr', type=float, default=1E-3, help='initial learning rate')
-parser.add_argument('--clip', type=float, default=5.0, help='gradient clipping')
-parser.add_argument('--dropout', type=float, default=0.,
-                    help='dropout applied to layers (0 = no dropout)')
 args = parser.parse_args()
 print(args)
 logging_config(args.save_dir)
