@@ -80,7 +80,7 @@ parser.add_argument('--dropout_i', type=float, default=0.65,
                     help='dropout applied to input layer (0 = no dropout)')
 parser.add_argument('--dropout_e', type=float, default=0.1,
                     help='dropout applied to embedding layer (0 = no dropout)')
-parser.add_argument('--weight_dropout', type=float, default=0.5,
+parser.add_argument('--weight_dropout', type=float, default=0,
                     help='weight dropout applied to h2h weight matrix (0 = no weight dropout)')
 parser.add_argument('--tied', action='store_true',
                     help='tie the word embedding and softmax weights')
@@ -101,7 +101,7 @@ parser.add_argument('--optimizer', type=str, default='sgd',
                     help='optimizer to use (sgd, adam)')
 parser.add_argument('--wd', type=float, default=1.2e-6,
                     help='weight decay applied to all weights')
-parser.add_argument('--alpha', type=float, default=2,
+parser.add_argument('--alpha', type=float, default=0,
                     help='alpha L2 regularization on RNN activation '
                          '(alpha = 0 means no regularization)')
 parser.add_argument('--beta', type=float, default=1,
@@ -121,7 +121,7 @@ context = [mx.cpu()] if args.gpus is None or args.gpus == '' else \
 assert args.batch_size % len(context) == 0, \
     'Total batch size must be multiple of the number of devices'
 
-assert args.weight_dropout == 0 and args.alpha != 0, \
+assert args.weight_dropout > 0 or (args.weight_dropout == 0 and args.alpha == 0), \
     'The alpha L2 regularization cannot be used with standard RNN, please set alpha to 0'
 
 train_dataset, val_dataset, test_dataset = \
@@ -257,23 +257,29 @@ def forward(inputs, begin_state=None):
     out_states = []
     encoded_raw = []
     encoded_dropped = []
-    for i, (e, s) in enumerate(zip(model.encoder, begin_state)):
-        encoded, state = e(encoded, s)
-        encoded_raw.append(encoded)
-        out_states.append(state)
-        if args.weight_drop > 0:
+    if args.weight_dropout > 0:
+        for i, (e, s) in enumerate(zip(model.encoder, begin_state)):
+            encoded, state = e(encoded, s)
+            encoded_raw.append(encoded)
+            out_states.append(state)
             if model._drop_h and i != len(model.encoder)-1:
                 encoded = mx.nd.Dropout(encoded, p=model._drop_h, axes=(0,))
                 encoded_dropped.append(encoded)
+    else:
+        encoded, state = model.encoder(encoded, begin_state)
+        encoded_raw.append(encoded)
     if model._dropout:
         encoded = mx.nd.Dropout(encoded, p=model._dropout, axes=(0,))
-    if args.weight_drop > 0:
+    if args.weight_dropout > 0:
         encoded_dropped.append(encoded)
         with autograd.predict_mode():
             out = model.decoder(encoded)
     else:
         out = model.decoder(encoded)
-    return out, out_states, encoded_raw, encoded_dropped
+    if args.weight_dropout > 0:
+        return out, out_states, encoded_raw, encoded_dropped
+    else:
+        return out, state, encoded_raw, encoded_dropped
 
 def criterion(output, target, encoder_hs, dropped_encoder_hs):
     """Compute regularized (optional) loss of the language model in training mode.

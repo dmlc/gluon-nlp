@@ -226,10 +226,10 @@ class StandardRNN(Block):
         :py:class:`NDArray` or :py:class:`Symbol`."""
         """Defines the forward computation. Arguments can be either
                 :py:class:`NDArray` or :py:class:`Symbol`."""
-        embedded_inputs = self.embedding(inputs)
+        encoded = self.embedding(inputs)
         if not begin_state:
             begin_state = self.begin_state(batch_size=inputs.shape[1])
-        encoded, state = self.encoder(embedded_inputs, begin_state)
+        encoded, state = self.encoder(encoded, begin_state)
         if self._dropout:
             encoded = nd.Dropout(encoded, p=self._dropout, axes=(0,))
         out = self.decoder(encoded)
