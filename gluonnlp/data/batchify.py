@@ -41,6 +41,7 @@ def _pad_arrs_to_max_length(arrs, pad_axis, pad_val, use_shared_mem=False):
     """
     if not isinstance(arrs[0], (mx.nd.NDArray, np.ndarray)):
         arrs = [np.asarray(ele) for ele in arrs]
+    ctx = arrs[0].context if isinstance(arrs[0], mx.nd.NDArray) else mx.cpu()
     original_length = [ele.shape[pad_axis] for ele in arrs]
     max_size = max(original_length)
     ret_shape = list(arrs[0].shape)
@@ -52,7 +53,7 @@ def _pad_arrs_to_max_length(arrs, pad_axis, pad_val, use_shared_mem=False):
         original_length = mx.nd.array(original_length, ctx=mx.Context('cpu_shared', 0),
                                       dtype=np.int32)
     else:
-        ret = mx.nd.full(shape=ret_shape, val=pad_val, dtype=arrs[0].dtype)
+        ret = mx.nd.full(shape=ret_shape, val=pad_val, ctx=ctx, dtype=arrs[0].dtype)
         original_length = mx.nd.array(original_length, dtype=np.int32)
     for i, arr in enumerate(arrs):
         if arr.shape[pad_axis] == max_size:
