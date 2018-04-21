@@ -121,6 +121,9 @@ context = [mx.cpu()] if args.gpus is None or args.gpus == '' else \
 assert args.batch_size % len(context) == 0, \
     'Total batch size must be multiple of the number of devices'
 
+assert args.weight_dropout == 0 and args.alpha != 0, \
+    'The alpha L2 regularization cannot be used with standard RNN, please set alpha to 0'
+
 train_dataset, val_dataset, test_dataset = \
     [language_model.WikiText2(segment=segment,
                               skip_empty=False, bos=None, eos='<eos>')
@@ -227,7 +230,7 @@ def evaluate(data_source, batch_size, ctx=None):
     return total_L / ntotal
 
 
-def awd_forward(inputs, begin_state=None):
+def forward(inputs, begin_state=None):
     """Implement forward computation using awd language model.
 
     Parameters
@@ -258,13 +261,17 @@ def awd_forward(inputs, begin_state=None):
         encoded, state = e(encoded, s)
         encoded_raw.append(encoded)
         out_states.append(state)
-        if model._drop_h and i != len(model.encoder)-1:
-            encoded = mx.nd.Dropout(encoded, p=model._drop_h, axes=(0,))
-            encoded_dropped.append(encoded)
+        if args.weight_drop > 0:
+            if model._drop_h and i != len(model.encoder)-1:
+                encoded = mx.nd.Dropout(encoded, p=model._drop_h, axes=(0,))
+                encoded_dropped.append(encoded)
     if model._dropout:
         encoded = mx.nd.Dropout(encoded, p=model._dropout, axes=(0,))
-    encoded_dropped.append(encoded)
-    with autograd.predict_mode():
+    if args.weight_drop > 0:
+        encoded_dropped.append(encoded)
+        with autograd.predict_mode():
+            out = model.decoder(encoded)
+    else:
         out = model.decoder(encoded)
     return out, out_states, encoded_raw, encoded_dropped
 
@@ -329,12 +336,8 @@ def train():
             L = 0
             with autograd.record():
                 for j, (X, y, h) in enumerate(zip(data_list, target_list, hiddens)):
-                    if args.weight_dropout > 0:
-                        output, h, encoder_hs, dropped_encoder_hs = awd_forward(X, h)
-                        l = criterion(output, y, encoder_hs, dropped_encoder_hs)
-                    else:
-                        output, h = model(X, h)
-                        l = loss(output.reshape(-3, -1), y.reshape(-1,))
+                    output, h, encoder_hs, dropped_encoder_hs = forward(X, h)
+                    l = criterion(output, y, encoder_hs, dropped_encoder_hs)
                     L = L + l.as_in_context(context[0]) / X.size
                     Ls.append(l/X.size)
                     hiddens[j] = h
