@@ -11,6 +11,7 @@ from gluonnlp.data import FixedBucketSampler
 from gluonnlp.model.encoder_decoder import get_gnmt_encoder_decoder
 from gluonnlp.model.translation import NMTModel
 from gluonnlp.data import IWSLT2015
+from loss import SoftmaxCEMaskedLoss
 import _constants as _C
 
 
@@ -109,7 +110,7 @@ net = NMTModel(src_vocab=src_vocab, tgt_vocab=tgt_vocab, encoder=encoder, decode
 net.initialize(init=mx.init.Xavier(), ctx=ctx)
 net.hybridize()
 
-loss_function = SoftmaxCELoss()
+loss_function = SoftmaxCEMaskedLoss()
 loss_function.hybridize()
 
 batchify_fn = btf.Tuple(btf.Pad(), btf.Pad(), btf.Pad(), btf.Stack(), btf.Stack())
@@ -138,9 +139,7 @@ for batch_id, (src_seq, tgt_seq, gt_seq, src_valid_length, tgt_valid_length)\
     gt_seq = mx.nd.array(gt_seq, ctx=ctx)
     src_valid_length = mx.nd.array(src_valid_length, ctx=ctx)
     tgt_valid_length = mx.nd.array(tgt_valid_length, ctx=ctx)
-    print(tgt_seq.shape)
-    print(tgt_valid_length)
     out, _ = net(src_seq, tgt_seq, src_valid_length, tgt_valid_length)
     print(out.shape)
-    loss = loss_function(out, gt_seq).mean()
+    loss = loss_function(out, gt_seq, tgt_valid_length).mean()
     print(loss)
