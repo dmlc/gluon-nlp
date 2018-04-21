@@ -22,7 +22,7 @@ class SoftmaxCEMaskedLoss(SoftmaxCELoss):
         loss : Symbol or NDArray
             Shape (batch_size,)
         """
-        sample_weight = F.ones_like(label)
+        sample_weight = F.expand_dims(F.ones_like(label), axis=-1)
         sample_weight = F.SequenceMask(sample_weight,
                                        sequence_length=valid_length,
                                        use_sequence_length=True,
