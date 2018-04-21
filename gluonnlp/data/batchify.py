@@ -131,7 +131,7 @@ class Stack(object):
         -------
         batch_data : NDArray
         """
-        return _stack_arrs(data)
+        return _stack_arrs(data, True)
 
 
 class Pad(object):
@@ -232,7 +232,7 @@ class Pad(object):
         """
         if isinstance(data[0], (mx.nd.NDArray, np.ndarray, list)):
             padded_arr, original_length = _pad_arrs_to_max_length(data, self._axis,
-                                                                  self._pad_val)
+                                                                  self._pad_val, True)
             if self._ret_length:
                 return padded_arr, original_length
             else:
@@ -322,7 +322,8 @@ class Tuple(object):
             A tuple of length N. Contains the batchified result of each attribute in the input.
         """
         assert len(data[0]) == len(self._fn),\
-            'The number of attributes in each data sample should contains %d elements'
+            'The number of attributes in each data sample should contains' \
+            ' {} elements'.format(len(self._fn))
         ret = []
         for i, ele_fn in enumerate(self._fn):
             ret.append(ele_fn([ele[i] for ele in data]))
