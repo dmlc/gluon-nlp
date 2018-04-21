@@ -163,7 +163,7 @@ for batch_id, (src_seq, tgt_seq, gt_seq, src_valid_length, tgt_valid_length)\
     tgt_seq = mx.nd.array(tgt_seq, ctx=ctx)
     gt_seq = mx.nd.array(gt_seq, ctx=ctx)
     src_valid_length = mx.nd.array(src_valid_length, ctx=ctx)
-    tgt_valid_length = mx.nd.array(tgt_valid_length, ctx=ctx)
+    tgt_valid_length = mx.nd.array(tgt_valid_length, ctx=ctx, dtype=np.int32)
     with mx.autograd.record():
         out, _ = model(src_seq, tgt_seq, src_valid_length, tgt_valid_length)
         print(out.shape)
