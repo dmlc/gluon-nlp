@@ -23,12 +23,16 @@ mx.random.seed(10000)
 
 parser = argparse.ArgumentParser(description='Neural Machine Translation Example on IWSLT2015.'
                                              'We train the Google NMT model')
+parser.add_argument('--epochs', type=int, default=5,
+                    help='upper epoch limit')
 parser.add_argument('--num-layers', type=int, default=2, help='number of layers in the encoder'
                                                               ' and decoder')
 parser.add_argument('--src-max-len', type=int, default=50, help='Maximum length of the source '
                                                                 'sentence')
 parser.add_argument('--tgt-max-len', type=int, default=50, help='Maximum length of the target '
                                                                 'sentence')
+parser.add_argument('--log-interval', type=int, default=100, metavar='N',
+                    help='report interval')
 parser.add_argument('--save-dir', type=str, default='out_dir',
                     help='directory path to save the final model and training log')
 parser.add_argument('--num-bi-layers', type=int, default=1,
@@ -165,20 +169,41 @@ val_data_loader = DataLoader(data_val,
                              batch_sampler=val_batch_sampler,
                              batchify_fn=batchify_fn,
                              num_workers=4)
+for epoch_id in range(args.epochs):
+    epoch_wc = 0
+    log_avg_loss = 0
+    log_avg_gnorm = 0
+    log_wc = 0
+    log_start_time = time.time()
+    epoch_start_time = time.time()
+    for batch_id, (src_seq, tgt_seq_no_last, gt_seq, src_valid_length, tgt_valid_length)\
+            in enumerate(train_data_loader):
+        src_seq = mx.nd.array(src_seq, ctx=ctx)
+        tgt_seq_no_last = mx.nd.array(tgt_seq_no_last, ctx=ctx)
+        gt_seq = mx.nd.array(gt_seq, ctx=ctx)
+        src_valid_length = mx.nd.array(src_valid_length, ctx=ctx)
+        tgt_valid_length = mx.nd.array(tgt_valid_length, ctx=ctx)
+        with mx.autograd.record():
+            out, _ = model(src_seq, tgt_seq_no_last, src_valid_length, tgt_valid_length - 1)
+            loss = loss_function(out, gt_seq, tgt_valid_length - 1).mean()
+            loss = loss * (gt_seq.shape[1] / (tgt_valid_length - 1).mean())
+            loss.backward()
+        grads = [p.grad(ctx) for p in model.collect_params().values()]
+        gnorm = gluon.utils.clip_global_norm(grads, args.clip)
+        trainer.step(1)
+        step_wc = (src_valid_length.sum() + (tgt_valid_length - 1).sum()).asscalar()
+        step_loss = loss.asscalar()
+        log_avg_loss += loss.asscalar()
+        log_avg_gnorm += gnorm
+        log_wc += step_wc
+        epoch_wc += step_wc
+        if (batch_id + 1) % args.log_interval == 0:
+            wps = log_wc / (time.time() - log_start_time)
+            logging.info('[Epoch {} Batch {}/{}] loss={}, gnorm={}, throughput={} wps, wc={}'
+                         .format(epoch_id, batch_id + 1, len(train_data_loader),
+                                 log_avg_loss, log_avg_gnorm, wps, log_wc))
+            log_start_time = time.time()
+            log_avg_loss = 0
+            log_avg_gnorm = 0
+            log_wc = 0
 
-for batch_id, (src_seq, tgt_seq_no_last, gt_seq, src_valid_length, tgt_valid_length)\
-        in enumerate(train_data_loader):
-    src_seq = mx.nd.array(src_seq, ctx=ctx)
-    tgt_seq_no_last = mx.nd.array(tgt_seq_no_last, ctx=ctx)
-    gt_seq = mx.nd.array(gt_seq, ctx=ctx)
-    src_valid_length = mx.nd.array(src_valid_length, ctx=ctx)
-    tgt_valid_length = mx.nd.array(tgt_valid_length, ctx=ctx)
-    with mx.autograd.record():
-        out, _ = model(src_seq, tgt_seq_no_last, src_valid_length, tgt_valid_length - 1)
-        loss = loss_function(out, gt_seq, tgt_valid_length - 1).mean()
-        loss = loss * (gt_seq.shape[1] / (tgt_valid_length - 1).mean())
-        loss.backward()
-    grads = [p.grad(ctx) for p in model.collect_params().values()]
-    gnorm = gluon.utils.clip_global_norm(grads, args.clip)
-    trainer.step(1)
-    logging.info('Loss={}, Gradient Norm={}'.format(loss.asscalar(), gnorm))
