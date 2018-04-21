@@ -440,7 +440,8 @@ class Vocab(object):
         vocab._idx_to_token = vocab_dict.get('idx_to_token')
         vocab._token_to_idx = vocab_dict.get('token_to_idx')
         if unknown_token:
-            vocab._token_to_idx = DefaultLookupDict(unknown_token, vocab._token_to_idx)
+            vocab._token_to_idx = DefaultLookupDict(vocab._token_to_idx[unknown_token],
+                                                    vocab._token_to_idx)
         vocab._reserved_tokens = vocab_dict.get('reserved_tokens')
         vocab._padding_token = vocab_dict.get('padding_token')
         vocab._bos_token = vocab_dict.get('bos_token')
