@@ -199,8 +199,8 @@ for epoch_id in range(args.epochs):
         epoch_wc += step_wc
         if (batch_id + 1) % args.log_interval == 0:
             wps = log_wc / (time.time() - log_start_time)
-            logging.info('[Epoch {} Batch {}/{}] loss={0:.4f}, ppl={0:.4f}, gnorm={0:.4f}, '
-                         'throughput={0:.2f}K wps, wc={0:.2}K'
+            logging.info('[Epoch {} Batch {}/{}] loss={:.4f}, ppl={:.4f}, gnorm={:.4f}, '
+                         'throughput={:.2f}K wps, wc={:.2}K'
                          .format(epoch_id, batch_id + 1, len(train_data_loader),
                                  log_avg_loss / args.log_interval,
                                  np.exp(log_avg_loss / args.log_interval),
