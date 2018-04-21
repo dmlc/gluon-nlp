@@ -188,11 +188,11 @@ for epoch_id in range(args.epochs):
     for batch_id, (src_seq, tgt_seq_no_last, gt_seq, src_valid_length, tgt_valid_length)\
             in enumerate(train_data_loader):
         # logging.info(src_seq.context)
-        src_seq = mx.nd.array(src_seq, ctx=ctx)
-        tgt_seq_no_last = mx.nd.array(tgt_seq_no_last, ctx=ctx)
-        gt_seq = mx.nd.array(gt_seq, ctx=ctx)
-        src_valid_length = mx.nd.array(src_valid_length, ctx=ctx)
-        tgt_valid_length = mx.nd.array(tgt_valid_length, ctx=ctx)
+        src_seq = src_seq.as_in_context(ctx)
+        tgt_seq_no_last = tgt_seq_no_last.as_in_context(ctx)
+        gt_seq = gt_seq.as_in_context(ctx)
+        src_valid_length = src_valid_length.as_in_context(ctx)
+        tgt_valid_length = tgt_valid_length.as_in_context(ctx)
         with mx.autograd.record():
             out, _ = model(src_seq, tgt_seq_no_last, src_valid_length, tgt_valid_length - 1)
             loss = loss_function(out, gt_seq, tgt_valid_length - 1).mean()
