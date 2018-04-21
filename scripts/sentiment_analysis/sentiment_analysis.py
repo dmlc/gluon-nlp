@@ -38,19 +38,14 @@ from mxnet import gluon, autograd
 from mxnet.gluon import Block, HybridBlock
 from mxnet.gluon.data import DataLoader
 
-import gluonnlp
-from gluonnlp.data.sentiment import IMDB
-from gluonnlp.data import batchify as bf
-from gluonnlp.data.transforms import SpacyTokenizer, ClipSequence
-from gluonnlp.data.sampler import FixedBucketSampler, SortedBucketSampler, SortedSampler
-from gluonnlp.data.utils import train_valid_split
+import gluonnlp as nlp
 
 np.random.seed(100)
 random.seed(100)
 mx.random.seed(10000)
 
-tokenizer = SpacyTokenizer('en')
-length_clip = ClipSequence(500)
+tokenizer = nlp.data.SpacyTokenizer('en')
+length_clip = nlp.data.ClipSequence(500)
 
 
 parser = argparse.ArgumentParser(description='MXNet Sentiment Analysis Example on IMDB. '
@@ -145,11 +140,12 @@ class SentimentNet(Block):
 
 net = SentimentNet(dropout=args.dropout, use_mean_pool=args.use_mean_pool)
 with net.name_scope():
-    lm_model, vocab = gluonnlp.model.get_model(name=args.lm_model,
-                                               dataset_name='wikitext-2',
-                                               pretrained=pretrained,
-                                               ctx=context,
-                                               dropout=args.dropout)
+    lm_model, vocab = nlp.model.get_model(name=args.lm_model,
+                                          dataset_name='wikitext-2',
+                                          pretrained=pretrained,
+                                          ctx=context,
+                                          dropout=args.dropout)
+
 net.embedding = lm_model.embedding
 net.encoder = lm_model.encoder
 
@@ -165,9 +161,9 @@ def get_length(x):
     return float(len(x[0]))
 
 # Load the dataset
-train_dataset, test_dataset = [IMDB(root='data/imdb', segment=segment)
+train_dataset, test_dataset = [nlp.data.IMDB(root='data/imdb', segment=segment)
                                for segment in ('train', 'test')]
-train_dataset, valid_dataset = train_valid_split(train_dataset, args.valid_ratio)
+train_dataset, valid_dataset = nlp.data.train_valid_split(train_dataset, args.valid_ratio)
 print('Tokenize using spaCy...')
 
 def preprocess_dataset(dataset):
@@ -185,7 +181,8 @@ valid_dataset, valid_data_lengths = preprocess_dataset(valid_dataset)
 test_dataset, test_data_lengths = preprocess_dataset(test_dataset)
 
 # Construct the DataLoader
-batchify_fn = bf.Tuple(bf.Pad(axis=0, ret_length=True), bf.Stack())  # Pad data and stack label
+batchify_fn = nlp.data.batchify.Tuple(nlp.data.batchify.Pad(axis=0, ret_length=True),
+                                      nlp.data.batchify.Stack())  # Pad data and stack label
 if args.bucket_type is None:
     print('Bucketing strategy is not used!')
     train_dataloader = DataLoader(dataset=train_dataset,
@@ -195,18 +192,18 @@ if args.bucket_type is None:
 else:
     if args.bucket_type == 'fixed':
         print('Use FixedBucketSampler')
-        batch_sampler = FixedBucketSampler(train_data_lengths,
-                                           batch_size=args.batch_size,
-                                           num_buckets=args.bucket_num,
-                                           ratio=args.bucket_ratio,
-                                           shuffle=True)
+        batch_sampler = nlp.data.FixedBucketSampler(train_data_lengths,
+                                                    batch_size=args.batch_size,
+                                                    num_buckets=args.bucket_num,
+                                                    ratio=args.bucket_ratio,
+                                                    shuffle=True)
         print(batch_sampler.stats())
     elif args.bucket_type == 'sorted':
         print('Use SortedBucketSampler')
-        batch_sampler = SortedBucketSampler(train_data_lengths,
-                                            batch_size=args.batch_size,
-                                            mult=args.bucket_mult,
-                                            shuffle=True)
+        batch_sampler = nlp.data.SortedBucketSampler(train_data_lengths,
+                                                     batch_size=args.batch_size,
+                                                     mult=args.bucket_mult,
+                                                     shuffle=True)
     else:
         raise NotImplementedError
     train_dataloader = DataLoader(dataset=train_dataset,
@@ -216,13 +213,13 @@ else:
 valid_dataloader = DataLoader(dataset=valid_dataset,
                               batch_size=args.batch_size,
                               shuffle=False,
-                              sampler=SortedSampler(valid_data_lengths),
+                              sampler=nlp.data.SortedSampler(valid_data_lengths),
                               batchify_fn=batchify_fn)
 
 test_dataloader = DataLoader(dataset=test_dataset,
                              batch_size=args.batch_size,
                              shuffle=False,
-                             sampler=SortedSampler(test_data_lengths),
+                             sampler=nlp.data.SortedSampler(test_data_lengths),
                              batchify_fn=batchify_fn)
 
 
