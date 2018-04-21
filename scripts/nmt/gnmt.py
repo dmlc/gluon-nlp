@@ -142,7 +142,7 @@ batchify_fn = btf.Tuple(btf.Pad(), btf.Pad(), btf.Pad(), btf.Stack(), btf.Stack(
 train_batch_sampler = FixedBucketSampler(lengths=data_train_lengths,
                                          batch_size=train_batch_size,
                                          num_buckets=num_buckets, shuffle=True)
-print('Train:', train_batch_sampler.stats())
+logging.info('Train Batch Sampler:\n{}'.format(train_batch_sampler.stats()))
 train_data_loader = DataLoader(data_train,
                                batch_sampler=train_batch_sampler,
                                batchify_fn=batchify_fn,
@@ -151,7 +151,7 @@ train_data_loader = DataLoader(data_train,
 val_batch_sampler = FixedBucketSampler(lengths=data_val_lengths,
                                        batch_size=train_batch_size,
                                        num_buckets=num_buckets, shuffle=False)
-print('Valid:', train_batch_sampler.stats())
+logging.info('Valid Batch Sampler:\n{}'.format(train_batch_sampler.stats()))
 val_data_loader = DataLoader(data_val,
                              batch_sampler=val_batch_sampler,
                              batchify_fn=batchify_fn,
