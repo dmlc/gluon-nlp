@@ -422,8 +422,9 @@ class GNMTDecoder(HybridBlock, Seq2SeqDecoder):
         decoder_states = [rnn_states, attention_vec, mem_value]
         mem_length = mem_value.shape[1]
         if encoder_valid_length is not None:
-            mem_masks = mx.nd.broadcast_lesser(mx.nd.expand_dims(mx.nd.arange(mem_length), axis=0),
-                                               mx.nd.expand_dims(encoder_valid_length, axis=1))
+            mem_masks = mx.nd.broadcast_lesser(
+                mx.nd.arange(mem_length, ctx=encoder_valid_length.context).reshape((1, -1)),
+                encoder_valid_length.reshape((-1, 1)))
             decoder_states.append(mem_masks)
         return decoder_states
 
