@@ -724,17 +724,17 @@ def test_download_embed():
     @nlp.embedding.register
     class Test(nlp.embedding.TokenEmbedding):
         # 33 bytes.
-        pretrained_file_name_sha1 = \
+        source_file_hash = \
             {'embedding_test.vec': '29b9a6511cf4b5aae293c44a9ec1365b74f2a2f8'}
         namespace = 'test'
 
         def __init__(self, embedding_root='embedding', init_unknown_vec=nd.zeros, **kwargs):
-            file_name = 'embedding_test.vec'
-            Test._check_pretrained_file_names(file_name)
+            source = 'embedding_test.vec'
+            Test._check_source(source)
 
             super(Test, self).__init__(**kwargs)
 
-            file_path = Test._get_pretrained_file(embedding_root, file_name)
+            file_path = Test._get_file_path(embedding_root, source)
 
             self._load_embedding(file_path, ' ', init_unknown_vec)
 
@@ -791,30 +791,35 @@ def test_token_embedding_from_serialized_file():
 
 
 def test_token_embedding_serialization(tmpdir):
-    tmpdir = str(tmpdir)  # py.path.local not supported by gluonnlp
+    @nlp.embedding.register
+    class Test(nlp.embedding.TokenEmbedding):
+        # 33 bytes.
+        source_file_hash = \
+            {'embedding_test.vec': '29b9a6511cf4b5aae293c44a9ec1365b74f2a2f8'}
+        namespace = 'test'
 
-    start_time = time.time()
-    emb = nlp.embedding.create("fasttext", source="wiki.simple.vec")
-    print("Took {} seconds to load fasttext embeddings.".format(
-        time.time() - start_time))
-    print("Saving serialized embeddings in temporary directory ", tmpdir)
+        def __init__(self, embedding_root='embedding', init_unknown_vec=nd.zeros, **kwargs):
+            source = 'embedding_test.vec'
+            Test._check_source(source)
+
+            super(Test, self).__init__(**kwargs)
+
+            file_path = Test._get_file_path(embedding_root, source)
+
+            self._load_embedding(file_path, ' ', init_unknown_vec)
+
+    emb = nlp.embedding.create('test', embedding_root='tests/data/embedding')
 
     # Test uncompressed serialization
-    file_path = os.path.join(tmpdir, "embeddings.npz")
+    file_path = os.path.join('tests', 'data', 'embedding', 'embeddings.npz')
     emb.serialize(file_path, compress=False)
-    start_time = time.time()
-    loaded_emb = nlp.embedding.TokenEmbedding.deserialize(file_path)
-    print(("Took {} seconds to load serialized uncompressed "
-           "fasttext embeddings.").format(time.time() - start_time))
+    loaded_emb = Test.deserialize(file_path)
     assert loaded_emb == emb
 
     # Test compressed serialization
-    file_path_compressed = os.path.join(tmpdir, "embeddings_compressed.npz")
+    file_path_compressed = os.path.join('tests', 'data', 'embedding', 'embeddings_compressed.npz')
     emb.serialize(file_path_compressed, compress=True)
-    start_time = time.time()
-    loaded_emb = nlp.embedding.TokenEmbedding.deserialize(file_path)
-    print(("Took {} seconds to load serialized compressed "
-           "fasttext embeddings.").format(time.time() - start_time))
+    loaded_emb = Test.deserialize(file_path)
     assert loaded_emb == emb
 
 
@@ -829,7 +834,7 @@ def test_word_embedding_similarity_evaluation_models():
     counter = nlp.data.utils.Counter(w for wpair in dataset for w in wpair[:2])
     vocab = nlp.vocab.Vocab(counter)
     vocab.set_embedding(
-        nlp.embedding.create("fasttext", source="wiki.simple.vec"))
+        nlp.embedding.create("fasttext", source="wiki.simple"))
 
     data = [[vocab[d[0]], vocab[d[1]], d[2]] for d in dataset]
     words1, words2, scores = zip(*data)
@@ -849,7 +854,7 @@ def test_word_embedding_analogy_evaluation_models():
     dataset = nlp.data.GoogleAnalogyTestSet()
     dataset = [d for i, d in enumerate(dataset) if i < 100]
 
-    embedding = nlp.embedding.create("fasttext", source="wiki.simple.vec")
+    embedding = nlp.embedding.create('fasttext', source='wiki.simple')
     counter = nlp.data.utils.Counter(embedding.idx_to_token)
     vocab = nlp.vocab.Vocab(counter)
     vocab.set_embedding(embedding)
@@ -883,7 +888,7 @@ def test_word_embedding_analogy_evaluation_models():
                 assert accuracy_w3.asscalar() >= 0.9
 
             elif exclude_question_words == True:
-                # The wiki.simple.vec vectors don't perform too good
+                # The wiki.simple vectors don't perform too good
                 assert accuracy >= 0.5
 
             # Assert output shape
