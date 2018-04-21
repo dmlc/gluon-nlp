@@ -1,3 +1,4 @@
+import numpy as np
 from mxnet.gluon.loss import SoftmaxCELoss
 
 
@@ -24,7 +25,7 @@ class SoftmaxCEMaskedLoss(SoftmaxCELoss):
         """
         sample_weight = F.expand_dims(F.ones_like(label), axis=-1)
         sample_weight = F.SequenceMask(sample_weight,
-                                       sequence_length=valid_length,
+                                       sequence_length=F.cast(valid_length, dtype=np.int32),
                                        use_sequence_length=True,
                                        axis=1)
         return super(SoftmaxCEMaskedLoss, self).hybrid_forward(F, pred, label, sample_weight)
