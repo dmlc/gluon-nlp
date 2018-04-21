@@ -25,15 +25,18 @@ parser = argparse.ArgumentParser(description='Neural Machine Translation Example
                                              'We train the Google NMT model')
 parser.add_argument('--epochs', type=int, default=5,
                     help='upper epoch limit')
-parser.add_argument('--nhid', type=int, default=128, help='Dimension of the embedding '
-                                                          'vectors and states.')
+parser.add_argument('--num-hidden', type=int, default=128, help='Dimension of the embedding '
+                                                                'vectors and states.')
 parser.add_argument('--dropout', type=float, default=0.2, help='Dropout rate.')
-parser.add_argument('--nlayers', type=int, default=2, help='number of layers in the encoder'
-                                                           ' and decoder')
-parser.add_argument('--nblayers', type=int, default=1, help='number of bidirectional layers in '
-                                                            'the encoder and decoder')
-parser.add_argument('--nlayers', type=int, default=2, help='number of layers in the encoder'
-                                                           ' and decoder')
+parser.add_argument('--num-layers', type=int, default=2, help='number of layers in the encoder'
+                                                              ' and decoder')
+parser.add_argument('--num-bi-layers', type=int, default=1,
+                    help='number of bidirectional layers in the encoder and decoder')
+parser.add_argument('--batch-size', type=int, default=128, help='Batch size')
+parser.add_argument('--test-batch-size', type=int, default=32, help='Test batch size')
+parser.add_argument('--num-buckets', type=int, default=5, help='Bucket number')
+parser.add_argument('--bucket-ratio', type=float, default=0.0, help='Ratio for increasing the '
+                                                                    'throughput of the bucketing')
 parser.add_argument('--src-max-len', type=int, default=50, help='Maximum length of the source '
                                                                 'sentence')
 parser.add_argument('--tgt-max-len', type=int, default=50, help='Maximum length of the target '
@@ -126,7 +129,8 @@ def load_IWSLT2015(src_lang='en', tgt_lang='vi'):
     raw_transform = lambda src, tgt: (src.split(), tgt.split())
     data_val_raw = data_val.transform(raw_transform, lazy=False)
     data_test_raw = data_test.transform(raw_transform, lazy=False)
-    return data_train_processed, data_val_processed, data_val_raw, data_test_raw, src_vocab, tgt_vocab
+    return data_train_processed, data_val_processed, data_val_raw, data_test_raw,\
+           src_vocab, tgt_vocab
 
 
 def get_data_lengths(dataset):
@@ -139,10 +143,6 @@ data_val_lengths = get_data_lengths(data_val)
 data_train = data_train.transform(lambda src, tgt: (src, tgt[:-1], tgt[1:], len(src), len(tgt)))
 data_val = data_val.transform(lambda src, tgt: (src, tgt[:-1], tgt[1:], len(src), len(tgt)))
 
-
-num_buckets = 5
-train_batch_size = 128
-test_batch_size = 32
 ctx = mx.gpu()
 
 encoder, decoder = get_gnmt_encoder_decoder(hidden_size=args.nhid, dropout=args.dropout)
@@ -158,8 +158,10 @@ trainer = gluon.Trainer(model.collect_params(), args.optimizer, {'learning_rate'
 
 batchify_fn = btf.Tuple(btf.Pad(), btf.Pad(), btf.Pad(), btf.Stack(), btf.Stack())
 train_batch_sampler = FixedBucketSampler(lengths=data_train_lengths,
-                                         batch_size=train_batch_size,
-                                         num_buckets=num_buckets, shuffle=True)
+                                         batch_size=args.batch_size,
+                                         num_buckets=args.num_buckets,
+                                         ratio=args.bucket_ratio,
+                                         shuffle=True)
 logging.info('Train Batch Sampler:\n{}'.format(train_batch_sampler.stats()))
 train_data_loader = DataLoader(data_train,
                                batch_sampler=train_batch_sampler,
@@ -167,8 +169,10 @@ train_data_loader = DataLoader(data_train,
                                num_workers=8)
 
 val_batch_sampler = FixedBucketSampler(lengths=data_val_lengths,
-                                       batch_size=train_batch_size,
-                                       num_buckets=num_buckets, shuffle=False)
+                                       batch_size=args.batch_size,
+                                       num_buckets=args.num_buckets,
+                                       ratio=args.bucket_ratio,
+                                       shuffle=False)
 logging.info('Valid Batch Sampler:\n{}'.format(train_batch_sampler.stats()))
 val_data_loader = DataLoader(data_val,
                              batch_sampler=val_batch_sampler,
