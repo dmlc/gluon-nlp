@@ -584,10 +584,10 @@ class TokenEmbedding(object):
             unknown_token = None
         else:
             if isinstance(unknown_token, np.ndarray):
-                unknown_token = unknown_token.tobytes()
-            if isinstance(unknown_token, bytes):
-                unknown_token = unknown_token.decode()
-            unknown_token = str(unknown_token)
+                if unknown_token.dtype.kind == 'S':
+                    unknown_token = unknown_token.tobytes().decode()
+                else:
+                    unknown_token = str(unknown_token)
         idx_to_token = npz_dict['idx_to_token'].tolist()
         idx_to_vec = nd.array(npz_dict['idx_to_vec'])
 
