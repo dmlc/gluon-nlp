@@ -592,35 +592,3 @@ def get_gnmt_encoder_decoder(cell_type="lstm", attention_cell="scaled_luong", nu
                           h2h_bias_initializer=h2h_bias_initializer,
                           prefix=prefix + "dec_", params=params)
     return encoder, decoder
-
-
-class ConvS2SEncoder(Seq2SeqEncoder):
-    """
-
-    """
-    def __init__(self):
-        pass
-
-
-class ConvS2SDecoder(Seq2SeqDecoder):
-    """
-
-    """
-    def __init__(self):
-        pass
-
-
-class TransformerEncoder(Seq2SeqEncoder):
-    """
-
-    """
-    def __init__(self):
-        pass
-
-
-class TransformerDecoder(Seq2SeqDecoder):
-    """
-
-    """
-    def __init__(self):
-        pass
