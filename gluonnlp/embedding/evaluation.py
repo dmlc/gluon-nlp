@@ -460,7 +460,7 @@ class WordEmbeddingAnalogy(Block):
             orig_context = pred_idxs.context
             pred_idxs = pred_idxs.asnumpy().tolist()
             pred_idxs = [[
-                idx for i, idx in enumerate(row)
+                idx for idx in row
                 if idx != w1 and idx != w2 and idx != w3
             ] for row, w1, w2, w3 in zip(pred_idxs, words1, words2, words3)]
             pred_idxs = [p[:self.k] for p in pred_idxs]

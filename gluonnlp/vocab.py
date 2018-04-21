@@ -411,7 +411,7 @@ class Vocab(object):
                           'separately using vocab.embedding.serialize')
         vocab_dict = {}
         vocab_dict['idx_to_token'] = self._idx_to_token
-        vocab_dict['token_to_idx'] = self._token_to_idx
+        vocab_dict['token_to_idx'] = dict(self._token_to_idx)
         vocab_dict['reserved_tokens'] = self._reserved_tokens
         vocab_dict['unknown_token'] = self._unknown_token
         vocab_dict['padding_token'] = self._padding_token
@@ -435,9 +435,15 @@ class Vocab(object):
         """
         vocab_dict = json.loads(json_str)
 
-        vocab = Vocab(unknown_token=vocab_dict.get('unknown_token'))
+        unknown_token = vocab_dict.get('unknown_token')
+        vocab = Vocab(unknown_token=unknown_token)
         vocab._idx_to_token = vocab_dict.get('idx_to_token')
-        vocab._token_to_idx = vocab_dict.get('token_to_idx')
+        token_to_idx = vocab_dict.get('token_to_idx')
+        if unknown_token:
+            vocab._token_to_idx = DefaultLookupDict(unknown_token)
+            vocab._token_to_idx.update(token_to_idx)
+        else:
+            vocab._token_to_idx = token_to_idx
         vocab._reserved_tokens = vocab_dict.get('reserved_tokens')
         vocab._padding_token = vocab_dict.get('padding_token')
         vocab._bos_token = vocab_dict.get('bos_token')

@@ -749,6 +749,11 @@ def test_vocab_serialization():
     loaded_vocab = nlp.Vocab.from_json(vocab.to_json())
     assert_raises(KeyError, loaded_vocab.__getitem__, 'hello')
 
+    vocab = nlp.Vocab(unknown_token='abc')
+    vocab['hello']
+    loaded_vocab = nlp.Vocab.from_json(vocab.to_json())
+    loaded_vocab['hello']
+
 
 def test_token_embedding_from_serialized_file():
     embed_root = 'tests/data/embedding'
