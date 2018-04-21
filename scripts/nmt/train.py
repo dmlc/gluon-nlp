@@ -5,6 +5,7 @@ import os
 import mxnet as mx
 from mxnet.gluon.data import ArrayDataset, SimpleDataset
 from mxnet.gluon.data import DataLoader
+from mxnet.gluon.loss import SoftmaxCELoss
 import gluonnlp.data.batchify as btf
 from gluonnlp.data import FixedBucketSampler
 from gluonnlp.model.encoder_decoder import get_gnmt_encoder_decoder
@@ -108,6 +109,9 @@ net = NMTModel(src_vocab=src_vocab, tgt_vocab=tgt_vocab, encoder=encoder, decode
 net.initialize(init=mx.init.Xavier(), ctx=ctx)
 net.hybridize()
 
+loss_function = SoftmaxCELoss()
+loss_function.hybridize()
+
 batchify_fn = btf.Tuple(btf.Pad(), btf.Pad(), btf.Pad(), btf.Stack(), btf.Stack())
 train_batch_sampler = FixedBucketSampler(lengths=data_train_lengths,
                                          batch_size=train_batch_size,
@@ -127,7 +131,8 @@ val_data_loader = DataLoader(data_val,
                              batchify_fn=batchify_fn,
                              num_workers=4)
 
-for src_seq, tgt_seq, gt_seq, src_valid_length, tgt_valid_length in train_data_loader:
+for batch_id, (src_seq, tgt_seq, gt_seq, src_valid_length, tgt_valid_length)\
+        in enumerate(train_data_loader):
     src_seq = mx.nd.array(src_seq, ctx=ctx)
     tgt_seq = mx.nd.array(tgt_seq, ctx=ctx)
     gt_seq = mx.nd.array(gt_seq, ctx=ctx)
@@ -136,4 +141,6 @@ for src_seq, tgt_seq, gt_seq, src_valid_length, tgt_valid_length in train_data_l
     print(tgt_seq.shape)
     print(tgt_valid_length)
     out, _ = net(src_seq, tgt_seq, src_valid_length, tgt_valid_length)
-    print(out)
+    print(out.shape)
+    loss = loss_function(out, gt_seq).mean()
+    print(loss)
