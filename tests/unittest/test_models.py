@@ -21,6 +21,7 @@ from __future__ import print_function
 
 import sys
 
+import numpy as np
 import mxnet as mx
 import gluonnlp as nlp
 from gluonnlp.model import get_model as get_text_model
@@ -29,6 +30,7 @@ from common import setup_module, with_seed
 
 def eprint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
+
 
 def get_frequencies(dataset):
     return nlp.data.utils.Counter(x for tup in dataset for x in tup[0]+tup[1][-1:])

@@ -18,16 +18,10 @@
 # under the License.
 
 # pylint: disable=wildcard-import
-"""NLP toolkit."""
+"""Word embeddings."""
 
-from . import data
-from . import embedding
-from . import model
-from .vocab import *
+from .token_embedding import *
 
-__version__ = '0.1.0'
+from . import evaluation
 
-__all__ = ['data',
-           'model',
-           'embedding',
-           'Vocab']
+__all__ = (token_embedding.__all__ + ['evaluation'])

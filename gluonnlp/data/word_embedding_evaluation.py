@@ -704,7 +704,8 @@ class YangPowersVerb130(WordSimilarityEvaluationDataset):
     min = 0
     max = 4
 
-    def __init__(self, root=None):
+    def __init__(self, root=os.path.join('~', '.mxnet', 'datasets',
+                                         'verb130')):
         super(YangPowersVerb130, self).__init__(root=root)
 
     def _get_data(self):
