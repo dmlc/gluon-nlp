@@ -137,8 +137,8 @@ def get_data_lengths(dataset):
 data_train, data_val, data_val_raw, data_test_raw, src_vocab, tgt_vocab = load_IWSLT2015()
 data_train_lengths = get_data_lengths(data_train)
 data_val_lengths = get_data_lengths(data_val)
-data_train = data_train.transform(lambda src, tgt: (src, tgt[:-1], tgt[1:], len(src), len(tgt)))
-data_val = data_val.transform(lambda src, tgt: (src, tgt[:-1], tgt[1:], len(src), len(tgt)))
+data_train = data_train.transform(lambda src, tgt: (src, tgt, len(src), len(tgt)))
+data_val = data_val.transform(lambda src, tgt: (src, tgt, len(src), len(tgt)))
 
 ctx = mx.gpu()
 
@@ -185,18 +185,17 @@ for epoch_id in range(args.epochs):
     log_wc = 0
     log_start_time = time.time()
     epoch_start_time = time.time()
-    for batch_id, (src_seq, tgt_seq_no_last, gt_seq, src_valid_length, tgt_valid_length)\
+    for batch_id, (src_seq, tgt_seq, src_valid_length, tgt_valid_length)\
             in enumerate(train_data_loader):
         # logging.info(src_seq.context)
         src_seq = src_seq.as_in_context(ctx)
-        tgt_seq_no_last = tgt_seq_no_last.as_in_context(ctx)
-        gt_seq = gt_seq.as_in_context(ctx)
+        tgt_seq = tgt_seq.as_in_context(ctx)
         src_valid_length = src_valid_length.as_in_context(ctx)
         tgt_valid_length = tgt_valid_length.as_in_context(ctx)
         with mx.autograd.record():
-            out, _ = model(src_seq, tgt_seq_no_last, src_valid_length, tgt_valid_length - 1)
-            loss = loss_function(out, gt_seq, tgt_valid_length - 1).mean()
-            loss = loss * (gt_seq.shape[1] / (tgt_valid_length - 1).mean())
+            out, _ = model(src_seq, tgt_seq[:, :-1], src_valid_length, tgt_valid_length - 1)
+            loss = loss_function(out, tgt_seq[:, 1:], tgt_valid_length - 1).mean()
+            loss = loss * (tgt_seq.shape[1] - 1) / (tgt_valid_length - 1).mean()
             loss.backward()
         grads = [p.grad(ctx) for p in model.collect_params().values()]
         gnorm = gluon.utils.clip_global_norm(grads, args.clip)
