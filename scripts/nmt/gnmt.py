@@ -1,18 +1,42 @@
-
+import argparse
 import numpy as np
 import time
+import random
 import os
 import mxnet as mx
+import logging
+from mxnet import gluon
 from mxnet.gluon.data import ArrayDataset, SimpleDataset
 from mxnet.gluon.data import DataLoader
-from mxnet.gluon.loss import SoftmaxCELoss
 import gluonnlp.data.batchify as btf
 from gluonnlp.data import FixedBucketSampler
 from gluonnlp.model.encoder_decoder import get_gnmt_encoder_decoder
 from gluonnlp.model.translation import NMTModel
 from gluonnlp.data import IWSLT2015
 from loss import SoftmaxCEMaskedLoss
+from utils import logging_config
 import _constants as _C
+
+np.random.seed(100)
+random.seed(100)
+mx.random.seed(10000)
+
+parser = argparse.ArgumentParser(description='Neural Machine Translation Example on IWSLT2015.'
+                                             'We train the Google NMT model')
+parser.add_argument('--num-layers', type=int, default=2, help='number of layers in the encoder'
+                                                              ' and decoder')
+parser.add_argument('--save-dir', type=str, default='gnmt_log',
+                    help='directory path to save the final model and training log')
+parser.add_argument('--num-bi-layers', type=int, default=1,
+                    help='number of bidireciontal layers in the encoder')
+parser.add_argument('--optimizer', type=str, default='adam', help='optimization algorithm')
+parser.add_argument('--lr', type=float, default=1E-3, help='initial learning rate')
+parser.add_argument('--clip', type=float, default=5.0, help='gradient clipping')
+parser.add_argument('--dropout', type=float, default=0.,
+                    help='dropout applied to layers (0 = no dropout)')
+args = parser.parse_args()
+print(args)
+logging_config(args.save_dir)
 
 
 def cache_dataset(dataset, prefix):
@@ -97,7 +121,6 @@ data_val = data_val.transform(lambda src, tgt: (src, tgt[:-1], tgt[1:], len(src)
 
 
 hidden_size = 128
-embed_size = 128
 dropout = 0.2
 num_buckets = 5
 train_batch_size = 128
@@ -105,13 +128,15 @@ test_batch_size = 32
 ctx = mx.gpu()
 
 encoder, decoder = get_gnmt_encoder_decoder(hidden_size=hidden_size)
-net = NMTModel(src_vocab=src_vocab, tgt_vocab=tgt_vocab, encoder=encoder, decoder=decoder,
-               embed_size=embed_size)
-net.initialize(init=mx.init.Xavier(), ctx=ctx)
-net.hybridize()
+model = NMTModel(src_vocab=src_vocab, tgt_vocab=tgt_vocab, encoder=encoder, decoder=decoder,
+                 embed_size=hidden_size, prefix='gnmt_')
+model.initialize(init=mx.init.Xavier(), ctx=ctx)
+model.hybridize()
 
 loss_function = SoftmaxCEMaskedLoss()
 loss_function.hybridize()
+
+trainer = gluon.Trainer(model.collect_params(), 'sgd', )
 
 batchify_fn = btf.Tuple(btf.Pad(), btf.Pad(), btf.Pad(), btf.Stack(), btf.Stack())
 train_batch_sampler = FixedBucketSampler(lengths=data_train_lengths,
@@ -139,7 +164,13 @@ for batch_id, (src_seq, tgt_seq, gt_seq, src_valid_length, tgt_valid_length)\
     gt_seq = mx.nd.array(gt_seq, ctx=ctx)
     src_valid_length = mx.nd.array(src_valid_length, ctx=ctx)
     tgt_valid_length = mx.nd.array(tgt_valid_length, ctx=ctx)
-    out, _ = net(src_seq, tgt_seq, src_valid_length, tgt_valid_length)
-    print(out.shape)
-    loss = loss_function(out, gt_seq, tgt_valid_length).mean()
-    print(loss)
+    with mx.autograd.record():
+        out, _ = model(src_seq, tgt_seq, src_valid_length, tgt_valid_length)
+        print(out.shape)
+        loss = loss_function(out, gt_seq, tgt_valid_length).mean()
+        print(loss)
+        loss.backward()
+    grads = [p.grad(ctx) for p in model.collect_params().values()]
+    gnorm = gluon.utils.clip_global_norm(grads, args.clip)
+    trainer.step(1)
+    logging.info('Loss={}, Gradient Norm={}'.format(loss, gnorm))
