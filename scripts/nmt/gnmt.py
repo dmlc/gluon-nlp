@@ -130,7 +130,7 @@ ctx = mx.gpu()
 encoder, decoder = get_gnmt_encoder_decoder(hidden_size=hidden_size)
 model = NMTModel(src_vocab=src_vocab, tgt_vocab=tgt_vocab, encoder=encoder, decoder=decoder,
                  embed_size=hidden_size, prefix='gnmt_')
-model.initialize(init=mx.init.Xavier(), ctx=ctx)
+model.initialize(init=mx.init.Uniform(0.1), ctx=ctx)
 model.hybridize()
 
 loss_function = SoftmaxCEMaskedLoss()
@@ -167,6 +167,7 @@ for batch_id, (src_seq, tgt_seq_no_last, gt_seq, src_valid_length, tgt_valid_len
     with mx.autograd.record():
         out, _ = model(src_seq, tgt_seq_no_last, src_valid_length, tgt_valid_length - 1)
         loss = loss_function(out, gt_seq, tgt_valid_length - 1).mean()
+        print(gt_seq.shape[1], (tgt_valid_length - 1).mean())
         loss = loss * (gt_seq.shape[1] / (tgt_valid_length - 1).mean())
         loss.backward()
     grads = [p.grad(ctx) for p in model.collect_params().values()]
