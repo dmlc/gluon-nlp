@@ -76,8 +76,8 @@ class TrainValDataTransform(object):
         self._tgt_max_len = tgt_max_len
 
     def __call__(self, src, tgt):
-        src_sentence = self._src_vocab[:self._src_max_len][src.split()]
-        tgt_sentence = self._tgt_vocab[:self._tgt_max_len][tgt.split()]
+        src_sentence = self._src_vocab[src.split()[:self._src_max_len]]
+        tgt_sentence = self._tgt_vocab[tgt.split()[:self._tgt_max_len]]
         src_sentence.append(self._src_vocab[self._src_vocab.eos_token])
         tgt_sentence.insert(0, self._tgt_vocab[self._tgt_vocab.bos_token])
         tgt_sentence.append(self._tgt_vocab[self._tgt_vocab.eos_token])
