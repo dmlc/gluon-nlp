@@ -159,7 +159,7 @@ logging.info('Train Batch Sampler:\n{}'.format(train_batch_sampler.stats()))
 train_data_loader = DataLoader(data_train,
                                batch_sampler=train_batch_sampler,
                                batchify_fn=batchify_fn,
-                               num_workers=4)
+                               num_workers=8)
 
 val_batch_sampler = FixedBucketSampler(lengths=data_val_lengths,
                                        batch_size=train_batch_size,
@@ -168,7 +168,7 @@ logging.info('Valid Batch Sampler:\n{}'.format(train_batch_sampler.stats()))
 val_data_loader = DataLoader(data_val,
                              batch_sampler=val_batch_sampler,
                              batchify_fn=batchify_fn,
-                             num_workers=4)
+                             num_workers=8)
 for epoch_id in range(args.epochs):
     epoch_wc = 0
     log_avg_loss = 0
