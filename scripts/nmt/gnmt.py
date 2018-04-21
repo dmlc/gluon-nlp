@@ -116,8 +116,8 @@ def get_data_lengths(dataset):
 data_train, data_val, data_val_raw, data_test_raw, src_vocab, tgt_vocab = load_IWSLT2015()
 data_train_lengths = get_data_lengths(data_train)
 data_val_lengths = get_data_lengths(data_val)
-data_train = data_train.transform(lambda src, tgt: (src, tgt[:-1], tgt[1:], len(src), len(tgt) - 1))
-data_val = data_val.transform(lambda src, tgt: (src, tgt[:-1], tgt[1:], len(src), len(tgt) - 1))
+data_train = data_train.transform(lambda src, tgt: (src, tgt[:-1], tgt[1:], len(src), len(tgt)))
+data_val = data_val.transform(lambda src, tgt: (src, tgt[:-1], tgt[1:], len(src), len(tgt)))
 
 
 hidden_size = 128
@@ -157,16 +157,17 @@ val_data_loader = DataLoader(data_val,
                              batchify_fn=batchify_fn,
                              num_workers=4)
 
-for batch_id, (src_seq, tgt_seq, gt_seq, src_valid_length, tgt_valid_length)\
+for batch_id, (src_seq, tgt_seq_no_last, gt_seq, src_valid_length, tgt_valid_length)\
         in enumerate(train_data_loader):
     src_seq = mx.nd.array(src_seq, ctx=ctx)
-    tgt_seq = mx.nd.array(tgt_seq, ctx=ctx)
+    tgt_seq_no_last = mx.nd.array(tgt_seq_no_last, ctx=ctx)
     gt_seq = mx.nd.array(gt_seq, ctx=ctx)
     src_valid_length = mx.nd.array(src_valid_length, ctx=ctx)
     tgt_valid_length = mx.nd.array(tgt_valid_length, ctx=ctx)
     with mx.autograd.record():
-        out, _ = model(src_seq, tgt_seq, src_valid_length, tgt_valid_length)
-        loss = loss_function(out, gt_seq, tgt_valid_length).mean()
+        out, _ = model(src_seq, tgt_seq_no_last, src_valid_length, tgt_valid_length - 1)
+        loss = loss_function(out, gt_seq, tgt_valid_length - 1).sum()
+        loss = loss / (gt_seq.shape[0] * (tgt_valid_length - 1).sum())
         loss.backward()
     grads = [p.grad(ctx) for p in model.collect_params().values()]
     gnorm = gluon.utils.clip_global_norm(grads, args.clip)

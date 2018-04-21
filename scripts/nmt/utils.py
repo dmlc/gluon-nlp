@@ -33,7 +33,7 @@ def logging_config(folder=None, name=None,
     logpath = os.path.join(folder, name + ".log")
     print("All Logs will be saved to %s" % logpath)
     logging.root.setLevel(level)
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(message)s')
     logfile = logging.FileHandler(logpath)
     logfile.setLevel(level)
     logfile.setFormatter(formatter)
