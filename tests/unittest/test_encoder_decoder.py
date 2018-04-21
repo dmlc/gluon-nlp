@@ -1,6 +1,6 @@
 import numpy as np
 import mxnet as mx
-from mxnet.test_utils import set_default_context, assert_almost_equal
+from mxnet.test_utils import assert_almost_equal
 from gluonnlp.model.encoder_decoder import *
 
 
@@ -82,5 +82,4 @@ def test_gnmt_encoder_decoder():
 
 if __name__ == "__main__":
     import nose
-    set_default_context(mx.gpu())
     nose.runmodule()

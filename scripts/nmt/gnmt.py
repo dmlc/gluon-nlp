@@ -25,8 +25,15 @@ parser = argparse.ArgumentParser(description='Neural Machine Translation Example
                                              'We train the Google NMT model')
 parser.add_argument('--epochs', type=int, default=5,
                     help='upper epoch limit')
-parser.add_argument('--num-layers', type=int, default=2, help='number of layers in the encoder'
-                                                              ' and decoder')
+parser.add_argument('--nhid', type=int, default=128, help='Dimension of the embedding '
+                                                          'vectors and states.')
+parser.add_argument('--dropout', type=float, default=0.2, help='Dropout rate.')
+parser.add_argument('--nlayers', type=int, default=2, help='number of layers in the encoder'
+                                                           ' and decoder')
+parser.add_argument('--nblayers', type=int, default=1, help='number of bidirectional layers in '
+                                                            'the encoder and decoder')
+parser.add_argument('--nlayers', type=int, default=2, help='number of layers in the encoder'
+                                                           ' and decoder')
 parser.add_argument('--src-max-len', type=int, default=50, help='Maximum length of the source '
                                                                 'sentence')
 parser.add_argument('--tgt-max-len', type=int, default=50, help='Maximum length of the target '
@@ -133,16 +140,14 @@ data_train = data_train.transform(lambda src, tgt: (src, tgt[:-1], tgt[1:], len(
 data_val = data_val.transform(lambda src, tgt: (src, tgt[:-1], tgt[1:], len(src), len(tgt)))
 
 
-hidden_size = 128
-dropout = 0.2
 num_buckets = 5
 train_batch_size = 128
 test_batch_size = 32
 ctx = mx.gpu()
 
-encoder, decoder = get_gnmt_encoder_decoder(hidden_size=hidden_size)
+encoder, decoder = get_gnmt_encoder_decoder(hidden_size=args.nhid, dropout=args.dropout)
 model = NMTModel(src_vocab=src_vocab, tgt_vocab=tgt_vocab, encoder=encoder, decoder=decoder,
-                 embed_size=hidden_size, prefix='gnmt_')
+                 embed_size=args.nhid, prefix='gnmt_')
 model.initialize(init=mx.init.Uniform(0.1), ctx=ctx)
 model.hybridize()
 
