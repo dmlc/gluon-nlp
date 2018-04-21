@@ -176,7 +176,6 @@ for batch_id, (src_seq, tgt_seq_no_last, gt_seq, src_valid_length, tgt_valid_len
     with mx.autograd.record():
         out, _ = model(src_seq, tgt_seq_no_last, src_valid_length, tgt_valid_length - 1)
         loss = loss_function(out, gt_seq, tgt_valid_length - 1).mean()
-        print(gt_seq.shape[1], (tgt_valid_length - 1).mean())
         loss = loss * (gt_seq.shape[1] / (tgt_valid_length - 1).mean())
         loss.backward()
     grads = [p.grad(ctx) for p in model.collect_params().values()]
