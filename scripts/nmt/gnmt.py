@@ -166,8 +166,8 @@ for batch_id, (src_seq, tgt_seq_no_last, gt_seq, src_valid_length, tgt_valid_len
     tgt_valid_length = mx.nd.array(tgt_valid_length, ctx=ctx)
     with mx.autograd.record():
         out, _ = model(src_seq, tgt_seq_no_last, src_valid_length, tgt_valid_length - 1)
-        loss = loss_function(out, gt_seq, tgt_valid_length - 1).sum()
-        loss = loss / (gt_seq.shape[0] * (tgt_valid_length - 1).mean())
+        loss = loss_function(out, gt_seq, tgt_valid_length - 1).mean()
+        loss = loss * (gt_seq.shape[1] / (tgt_valid_length - 1).mean())
         loss.backward()
     grads = [p.grad(ctx) for p in model.collect_params().values()]
     gnorm = gluon.utils.clip_global_norm(grads, args.clip)
