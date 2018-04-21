@@ -166,7 +166,7 @@ logging.info('Train Batch Sampler:\n{}'.format(train_batch_sampler.stats()))
 train_data_loader = DataLoader(data_train,
                                batch_sampler=train_batch_sampler,
                                batchify_fn=batchify_fn,
-                               num_workers=4)
+                               num_workers=0)
 
 val_batch_sampler = FixedBucketSampler(lengths=data_val_lengths,
                                        batch_size=args.batch_size,
@@ -177,7 +177,7 @@ logging.info('Valid Batch Sampler:\n{}'.format(train_batch_sampler.stats()))
 val_data_loader = DataLoader(data_val,
                              batch_sampler=val_batch_sampler,
                              batchify_fn=batchify_fn,
-                             num_workers=4)
+                             num_workers=0)
 for epoch_id in range(args.epochs):
     epoch_wc = 0
     log_avg_loss = 0
@@ -187,7 +187,7 @@ for epoch_id in range(args.epochs):
     epoch_start_time = time.time()
     for batch_id, (src_seq, tgt_seq_no_last, gt_seq, src_valid_length, tgt_valid_length)\
             in enumerate(train_data_loader):
-        logging.info(src_seq.context)
+        # logging.info(src_seq.context)
         src_seq = mx.nd.array(src_seq, ctx=ctx)
         tgt_seq_no_last = mx.nd.array(tgt_seq_no_last, ctx=ctx)
         gt_seq = mx.nd.array(gt_seq, ctx=ctx)
