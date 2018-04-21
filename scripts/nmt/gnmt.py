@@ -25,6 +25,10 @@ parser = argparse.ArgumentParser(description='Neural Machine Translation Example
                                              'We train the Google NMT model')
 parser.add_argument('--num-layers', type=int, default=2, help='number of layers in the encoder'
                                                               ' and decoder')
+parser.add_argument('--src-max-len', type=int, default=50, help='Maximum length of the source '
+                                                                'sentence')
+parser.add_argument('--tgt-max-len', type=int, default=50, help='Maximum length of the target '
+                                                                'sentence')
 parser.add_argument('--save-dir', type=str, default='out_dir',
                     help='directory path to save the final model and training log')
 parser.add_argument('--num-bi-layers', type=int, default=1,
@@ -65,13 +69,15 @@ def load_cached_dataset(prefix):
 
 
 class TrainValDataTransform(object):
-    def __init__(self, src_vocab, tgt_vocab):
+    def __init__(self, src_vocab, tgt_vocab, src_max_len, tgt_max_len):
         self._src_vocab = src_vocab
         self._tgt_vocab = tgt_vocab
+        self._src_max_len = src_max_len
+        self._tgt_max_len = tgt_max_len
 
     def __call__(self, src, tgt):
-        src_sentence = self._src_vocab[src.split()]
-        tgt_sentence = self._tgt_vocab[tgt.split()]
+        src_sentence = self._src_vocab[:self._src_max_len][src.split()]
+        tgt_sentence = self._tgt_vocab[:self._tgt_max_len][tgt.split()]
         src_sentence.append(self._src_vocab[self._src_vocab.eos_token])
         tgt_sentence.insert(0, self._tgt_vocab[self._tgt_vocab.bos_token])
         tgt_sentence.append(self._tgt_vocab[self._tgt_vocab.eos_token])
@@ -82,7 +88,9 @@ class TrainValDataTransform(object):
 
 def process_dataset(dataset, src_vocab, tgt_vocab):
     start = time.time()
-    dataset_processed = dataset.transform(TrainValDataTransform(src_vocab, tgt_vocab), lazy=False)
+    dataset_processed = dataset.transform(TrainValDataTransform(src_vocab, tgt_vocab,
+                                                                args.src_max_len,
+                                                                args.tgt_max_len), lazy=False)
     end = time.time()
     print('Processing Time spent: {}'.format(end - start))
     return dataset_processed
