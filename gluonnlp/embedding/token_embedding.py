@@ -579,9 +579,15 @@ class TokenEmbedding(object):
         """
         npz_dict = np.load(file_path, allow_pickle=False)
 
-        unknown_token = str(npz_dict['unknown_token'])
+        unknown_token = npz_dict['unknown_token']
         if not unknown_token:
             unknown_token = None
+        else:
+            if isinstance(unknown_token, np.ndarray):
+                unknown_token = unknown_token.tobytes()
+            if isinstance(unknown_token, bytes):
+                unknown_token = unknown_token.decode()
+            unknown_token = str(unknown_token)
         idx_to_token = npz_dict['idx_to_token'].tolist()
         idx_to_vec = nd.array(npz_dict['idx_to_vec'])
 
