@@ -72,11 +72,11 @@ def load_IWSLT2015(src_lang='en', tgt_lang='vi'):
     if not data_train_processed:
         data_train_processed = process_dataset(data_train, src_vocab, tgt_vocab)
         cache_dataset(data_train_processed, common_prefix + '_train')
-
     data_val_processed = load_cached_dataset(common_prefix + '_val')
     if not data_val_processed:
         data_val_processed = process_dataset(data_val, src_vocab, tgt_vocab)
         cache_dataset(data_val_processed, common_prefix + '_val')
+    data_val_processed.transform(lambda src, tgt: (src, tgt[:-1], tgt[1:]))
     raw_transform = lambda src, tgt: (src.split(), tgt.split())
     data_val_raw = data_val.transform(raw_transform, lazy=False)
     data_test_raw = data_test.transform(raw_transform, lazy=False)
@@ -88,6 +88,11 @@ def get_data_lengths(dataset):
 
 
 data_train, data_val, data_val_raw, data_test_raw, src_vocab, tgt_vocab = load_IWSLT2015()
+data_train_lengths = get_data_lengths(data_train)
+data_val_lengths = get_data_lengths(data_val)
+data_train = data_train.transform(lambda src, tgt: (src, tgt[:-1], tgt[1:], len(src), len(tgt) - 1))
+data_val = data_val.transform(lambda src, tgt: (src, tgt[:-1], tgt[1:], len(src), len(tgt) - 1))
+
 
 hidden_size = 128
 embed_size = 128
@@ -103,30 +108,32 @@ net = NMTModel(src_vocab=src_vocab, tgt_vocab=tgt_vocab, encoder=encoder, decode
 net.initialize(init=mx.init.Xavier(), ctx=ctx)
 net.hybridize()
 
-batchify_fn = btf.Tuple(btf.Pad(ret_length=True), btf.Pad(ret_length=True))
-train_batch_sampler = FixedBucketSampler(lengths=get_data_lengths(data_train),
+batchify_fn = btf.Tuple(btf.Pad(), btf.Pad(), btf.Pad(), btf.Stack(), btf.Stack())
+train_batch_sampler = FixedBucketSampler(lengths=data_train_lengths,
                                          batch_size=train_batch_size,
                                          num_buckets=num_buckets, shuffle=True)
+print('Train:', train_batch_sampler.stats())
 train_data_loader = DataLoader(data_train,
                                batch_sampler=train_batch_sampler,
                                batchify_fn=batchify_fn,
                                num_workers=4)
 
-val_batch_sampler = FixedBucketSampler(lengths=get_data_lengths(data_val),
+val_batch_sampler = FixedBucketSampler(lengths=data_val_lengths,
                                        batch_size=train_batch_size,
                                        num_buckets=num_buckets, shuffle=False)
+print('Valid:', train_batch_sampler.stats())
 val_data_loader = DataLoader(data_val,
                              batch_sampler=val_batch_sampler,
                              batchify_fn=batchify_fn,
                              num_workers=4)
 
-for (src_seq, src_valid_length), (tgt_seq, tgt_valid_length) in train_data_loader:
+for src_seq, tgt_seq, gt_seq, src_valid_length, tgt_valid_length in train_data_loader:
     src_seq = mx.nd.array(src_seq, ctx=ctx)
-    src_valid_length = mx.nd.array(src_valid_length, ctx=ctx)
     tgt_seq = mx.nd.array(tgt_seq, ctx=ctx)
+    gt_seq = mx.nd.array(gt_seq, ctx=ctx)
+    src_valid_length = mx.nd.array(src_valid_length, ctx=ctx)
     tgt_valid_length = mx.nd.array(tgt_valid_length, ctx=ctx)
     print(tgt_seq.shape)
     print(tgt_valid_length)
-    out, _ = net(src_seq, tgt_seq[:, :-1], src_valid_length, tgt_valid_length - 1)
-    gt_seq = tgt_seq[:, 1:]
+    out, _ = net(src_seq, tgt_seq, src_valid_length, tgt_valid_length)
     print(out)
