@@ -147,7 +147,7 @@ encoder, decoder = get_gnmt_encoder_decoder(hidden_size=args.num_hidden,
                                             num_layers=args.num_layers,
                                             num_bi_layers=args.num_bi_layers)
 model = NMTModel(src_vocab=src_vocab, tgt_vocab=tgt_vocab, encoder=encoder, decoder=decoder,
-                 embed_size=args.nhid, prefix='gnmt_')
+                 embed_size=args.num_hidden, prefix='gnmt_')
 model.initialize(init=mx.init.Uniform(0.1), ctx=ctx)
 model.hybridize()
 
