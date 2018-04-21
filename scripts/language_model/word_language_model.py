@@ -125,7 +125,7 @@ assert args.weight_dropout > 0 or (args.weight_dropout == 0 and args.alpha == 0)
 
 train_dataset, val_dataset, test_dataset = \
     [nlp.data.language_model.WikiText2(segment=segment,
-                              skip_empty=False, bos=None, eos='<eos>')
+                                       skip_empty=False, bos=None, eos='<eos>')
      for segment in ['train', 'val', 'test']]
 
 vocab = nlp.Vocab(counter=nlp.data.Counter(train_dataset[0]), padding_token=None, bos_token=None)
@@ -156,12 +156,13 @@ ntokens = len(vocab)
 
 if args.weight_dropout > 0:
     print('Use AWDRNN')
-    model = nlp.model.language_model.AWDRNN(args.model, len(vocab), args.emsize, args.nhid, args.nlayers,
-                   args.tied, args.dropout, args.weight_dropout, args.dropout_h,
-                   args.dropout_i, args.dropout_e)
+    model = nlp.model.language_model.AWDRNN(args.model, len(vocab), args.emsize,
+                                            args.nhid, args.nlayers, args.tied,
+                                            args.dropout, args.weight_dropout, args.dropout_h,
+                                            args.dropout_i, args.dropout_e)
 else:
-    model = nlp.model.language_model.StandardRNN(args.model, len(vocab), args.emsize, args.nhid, args.nlayers, args.dropout,
-                        args.tied)
+    model = nlp.model.language_model.StandardRNN(args.model, len(vocab), args.emsize,
+                                                 args.nhid, args.nlayers, args.dropout, args.tied)
 
 model.initialize(mx.init.Xavier(), ctx=context)
 

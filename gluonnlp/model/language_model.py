@@ -224,8 +224,6 @@ class StandardRNN(Block):
     def forward(self, inputs, begin_state=None): # pylint: disable=arguments-differ
         """Defines the forward computation. Arguments can be either
         :py:class:`NDArray` or :py:class:`Symbol`."""
-        """Defines the forward computation. Arguments can be either
-                :py:class:`NDArray` or :py:class:`Symbol`."""
         encoded = self.embedding(inputs)
         if not begin_state:
             begin_state = self.begin_state(batch_size=inputs.shape[1])
