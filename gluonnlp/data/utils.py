@@ -40,8 +40,11 @@ class Counter(collections.Counter): # pylint: disable=abstract-method
 class DefaultLookupDict(dict):
     """Dictionary class with fall-back look-up with default value set in the constructor."""
 
-    def __init__(self, default):
-        super(DefaultLookupDict, self).__init__()
+    def __init__(self, default, d=None):
+        if d:
+            super(DefaultLookupDict, self).__init__(d)
+        else:
+            super(DefaultLookupDict, self).__init__()
         self._default = default
 
     def __getitem__(self, k):
