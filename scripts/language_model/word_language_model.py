@@ -45,9 +45,8 @@ import os
 import sys
 import mxnet as mx
 from mxnet import gluon, autograd
-from gluonnlp import Vocab
-from gluonnlp.model.language_model import StandardRNN, AWDRNN
-from gluonnlp.data import language_model, Counter
+import gluonnlp as nlp
+
 curr_path = os.path.dirname(os.path.abspath(os.path.expanduser(__file__)))
 sys.path.append(os.path.join(curr_path, '..', '..'))
 
@@ -80,7 +79,7 @@ parser.add_argument('--dropout_i', type=float, default=0.65,
                     help='dropout applied to input layer (0 = no dropout)')
 parser.add_argument('--dropout_e', type=float, default=0.1,
                     help='dropout applied to embedding layer (0 = no dropout)')
-parser.add_argument('--weight_dropout', type=float, default=0,
+parser.add_argument('--weight_dropout', type=float, default=0.5,
                     help='weight dropout applied to h2h weight matrix (0 = no weight dropout)')
 parser.add_argument('--tied', action='store_true',
                     help='tie the word embedding and softmax weights')
@@ -101,7 +100,7 @@ parser.add_argument('--optimizer', type=str, default='sgd',
                     help='optimizer to use (sgd, adam)')
 parser.add_argument('--wd', type=float, default=1.2e-6,
                     help='weight decay applied to all weights')
-parser.add_argument('--alpha', type=float, default=0,
+parser.add_argument('--alpha', type=float, default=2,
                     help='alpha L2 regularization on RNN activation '
                          '(alpha = 0 means no regularization)')
 parser.add_argument('--beta', type=float, default=1,
@@ -125,11 +124,11 @@ assert args.weight_dropout > 0 or (args.weight_dropout == 0 and args.alpha == 0)
     'The alpha L2 regularization cannot be used with standard RNN, please set alpha to 0'
 
 train_dataset, val_dataset, test_dataset = \
-    [language_model.WikiText2(segment=segment,
+    [nlp.data.language_model.WikiText2(segment=segment,
                               skip_empty=False, bos=None, eos='<eos>')
      for segment in ['train', 'val', 'test']]
 
-vocab = Vocab(counter=Counter(train_dataset[0]), padding_token=None, bos_token=None)
+vocab = nlp.Vocab(counter=nlp.data.Counter(train_dataset[0]), padding_token=None, bos_token=None)
 
 train_data = train_dataset.batchify(vocab, args.batch_size)
 val_batch_size = 10
@@ -157,11 +156,11 @@ ntokens = len(vocab)
 
 if args.weight_dropout > 0:
     print('Use AWDRNN')
-    model = AWDRNN(args.model, len(vocab), args.emsize, args.nhid, args.nlayers,
+    model = nlp.model.language_model.AWDRNN(args.model, len(vocab), args.emsize, args.nhid, args.nlayers,
                    args.tied, args.dropout, args.weight_dropout, args.dropout_h,
                    args.dropout_i, args.dropout_e)
 else:
-    model = StandardRNN(args.model, len(vocab), args.emsize, args.nhid, args.nlayers, args.dropout,
+    model = nlp.model.language_model.StandardRNN(args.model, len(vocab), args.emsize, args.nhid, args.nlayers, args.dropout,
                         args.tied)
 
 model.initialize(mx.init.Xavier(), ctx=context)
