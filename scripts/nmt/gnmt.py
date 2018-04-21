@@ -156,7 +156,7 @@ loss_function.hybridize()
 
 trainer = gluon.Trainer(model.collect_params(), args.optimizer, {'learning_rate': args.lr})
 
-batchify_fn = btf.Tuple(btf.Pad(), btf.Pad(), btf.Pad(), btf.Stack(), btf.Stack())
+batchify_fn = btf.Tuple(btf.Pad(), btf.Pad(), btf.Stack(), btf.Stack())
 train_batch_sampler = FixedBucketSampler(lengths=data_train_lengths,
                                          batch_size=args.batch_size,
                                          num_buckets=args.num_buckets,

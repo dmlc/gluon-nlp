@@ -322,7 +322,8 @@ class Tuple(object):
             A tuple of length N. Contains the batchified result of each attribute in the input.
         """
         assert len(data[0]) == len(self._fn),\
-            'The number of attributes in each data sample should contains %d elements'
+            'The number of attributes in each data sample should contains' \
+            ' {} elements'.format(len(self._fn))
         ret = []
         for i, ele_fn in enumerate(self._fn):
             ret.append(ele_fn([ele[i] for ele in data]))
