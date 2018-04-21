@@ -96,21 +96,21 @@ class NMTModel(Block):
         else:
             self.tgt_proj = tgt_proj
 
-    def encode(self, inputs, valid_length=None, states=None):
+    def encode(self, inputs, states=None, valid_length=None):
         """Encode the input sequence.
 
         Parameters
         ----------
         inputs : NDArray
-        valid_length : NDArray or None, default None
         states : list of NDArrays or None, default None
+        valid_length : NDArray or None, default None
 
         Returns
         -------
         outputs : list
             Outputs of the encoder.
         """
-        return self.encoder(self.src_embed(inputs), valid_length, states)
+        return self.encoder(self.src_embed(inputs), states, valid_length)
 
     def decode_seq(self, inputs, states, valid_length=None):
         """Decode given the input sequence.
@@ -181,7 +181,7 @@ class NMTModel(Block):
         additional_outputs : list
             Additional outputs, e.g, the attention weights
         """
-        encoder_outputs = self.encode(src_seq, src_valid_length)
+        encoder_outputs = self.encode(src_seq, valid_length=src_valid_length)
         decoder_states = self.decoder.init_state_from_encoder(encoder_outputs,
                                                               encoder_valid_length=src_valid_length)
         outputs, _, additional_outputs =\
