@@ -124,7 +124,7 @@ assert args.weight_dropout > 0 or (args.weight_dropout == 0 and args.alpha == 0)
     'The alpha L2 regularization cannot be used with standard RNN, please set alpha to 0'
 
 train_dataset, val_dataset, test_dataset = \
-    [nlp.data.language_model.WikiText2(segment=segment,
+    [nlp.data.WikiText2(segment=segment,
                                        skip_empty=False, bos=None, eos='<eos>')
      for segment in ['train', 'val', 'test']]
 
