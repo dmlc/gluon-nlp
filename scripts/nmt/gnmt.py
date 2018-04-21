@@ -97,7 +97,8 @@ def process_dataset(dataset, src_vocab, tgt_vocab):
 
 
 def load_IWSLT2015(src_lang='en', tgt_lang='vi'):
-    common_prefix = 'IWSLT2015_' + src_lang + '_' + tgt_lang
+    common_prefix = 'IWSLT2015_{}_{}_{}_{}'.format(src_lang, tgt_lang,
+                                                   args.src_max_len, args.tgt_max_len)
     data_train = IWSLT2015('train', src_lang=src_lang, tgt_lang=tgt_lang)
     data_val = IWSLT2015('val', src_lang=src_lang, tgt_lang=tgt_lang)
     data_test = IWSLT2015('test', src_lang=src_lang, tgt_lang=tgt_lang)
