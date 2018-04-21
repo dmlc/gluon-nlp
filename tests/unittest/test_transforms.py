@@ -90,8 +90,3 @@ def test_spacy_tokenizer():
         return
     assert isinstance(ret, list)
     assert len(ret) > 0
-
-
-if __name__ == '__main__':
-    import nose
-    nose.runmodule()

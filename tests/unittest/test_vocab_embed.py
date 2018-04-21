@@ -22,15 +22,10 @@ from __future__ import print_function
 
 import re
 import os
-import tempfile
 import time
 
-from nose.tools import assert_raises
+import pytest
 
-import gluonnlp as nlp
-from gluonnlp.data.utils import Counter
-
-from common import assertRaises
 import gluonnlp as nlp
 from mxnet import ndarray as nd
 from mxnet.test_utils import *
@@ -108,9 +103,9 @@ def test_vocabulary_getitem():
     assert no_unk_vocab[['c']] == [1]
     assert no_unk_vocab.to_indices(['c']) == [1]
 
-    assertRaises(KeyError, no_unk_vocab.to_indices, ['<unk>', 'non-exist'])
-
-    assertRaises(KeyError, no_unk_vocab.to_indices, ['a', 'non-exist', 'a', 'b'])
+    for words in [['<unk>', 'non-exist'], ['a', 'non-exist', 'a', 'b']]:
+        with pytest.raises(KeyError):
+            no_unk_vocab.to_indices(words)
 
 
 def test_vocabulary_to_tokens():
@@ -130,8 +125,9 @@ def test_vocabulary_to_tokens():
     i4 = vocab.to_tokens([4, 0, 4, 3])
     assert i4 == ['a', '<unknown>', 'a', 'b']
 
-    assertRaises(ValueError, vocab.to_tokens, 6)
-    assertRaises(ValueError, vocab.to_tokens, [6, 7])
+    for indices in [6, [6,7]]:
+        with pytest.raises(ValueError):
+            vocab.to_tokens(indices)
 
 
 def test_vocabulary():
@@ -210,14 +206,15 @@ def test_vocabulary():
     assert v7.embedding is None
     assert 'a' not in v7
 
-    assertRaises(AssertionError, nlp.Vocab, counter, max_size=None,
-                 min_freq=0, unknown_token='<unknown>', reserved_tokens=['b'])
-
-    assertRaises(AssertionError, nlp.Vocab, counter, max_size=None,
-                 min_freq=1, unknown_token='<unknown>', reserved_tokens=['b', 'b'])
-
-    assertRaises(AssertionError, nlp.Vocab, counter, max_size=None,
-                 min_freq=1, unknown_token='<unknown>', reserved_tokens=['b', '<unknown>'])
+    with pytest.raises(AssertionError):
+        nlp.Vocab(counter, max_size=None, min_freq=0, unknown_token='<unknown>',
+              reserved_tokens=['b'])
+    with pytest.raises(AssertionError):
+        nlp.Vocab(counter, max_size=None, min_freq=1, unknown_token='<unknown>',
+              reserved_tokens=['b', 'b'])
+    with pytest.raises(AssertionError):
+        nlp.Vocab(counter, max_size=None, min_freq=1, unknown_token='<unknown>',
+              reserved_tokens=['b', '<unknown>'])
 
     v8 = nlp.Vocab(counter, max_size=None, min_freq=1, unknown_token='<unknown>',
                    padding_token=None, bos_token=None, eos_token=None, reserved_tokens=['b'])
@@ -396,12 +393,12 @@ def test_token_embedding_from_file():
     # Test __setitem__.
     my_embed['a'] = nd.array([1, 2, 3, 4, 5])
     assert_almost_equal(my_embed['a'].asnumpy(), np.array([1, 2, 3, 4, 5]))
-    assertRaises(KeyError, my_embed.__setitem__, 'unknown$$$', nd.array([0, 0, 0, 0, 0]))
-
-    assertRaises(AssertionError, my_embed.__setitem__, '<unk>',
-                 nd.array([[0, 0, 0, 0, 0], [0, 0, 0, 0, 0]]))
-
-    assertRaises(AssertionError, my_embed.__setitem__, '<unk>', nd.array([0]))
+    with pytest.raises(KeyError):
+        my_embed['unknown$$$'] = nd.array([0, 0, 0, 0, 0])
+    with pytest.raises(AssertionError):
+        my_embed['<unk>'] = nd.array([[0, 0, 0, 0, 0], [0, 0, 0, 0, 0]])
+    with pytest.raises(AssertionError):
+        my_embed['<unk>'] = nd.array([0])
 
     unk_vecs = my_embed['<unk$unk@unk>', '<unk$unk@unk>']
     assert_almost_equal(unk_vecs.asnumpy(), np.array([[0, 0, 0, 0, 0], [0, 0, 0, 0, 0]]))
@@ -431,15 +428,15 @@ def test_token_embedding_from_file():
     _mk_my_invalid_pretrain_file(os.path.join(embed_root, embed_name), elem_delim,
                                  invalid_pretrain_file)
     pretrain_file_path = os.path.join(embed_root, embed_name, invalid_pretrain_file)
-    assertRaises(AssertionError, nlp.embedding.TokenEmbedding.from_file, pretrain_file_path,
-                 elem_delim)
+    with pytest.raises(AssertionError):
+        nlp.embedding.TokenEmbedding.from_file(pretrain_file_path, elem_delim)
 
     invalid_pretrain_file2 = 'invalid_pretrain_file2.txt'
     _mk_my_invalid_pretrain_file2(os.path.join(embed_root, embed_name), elem_delim,
                                   invalid_pretrain_file2)
     pretrain_file_path = os.path.join(embed_root, embed_name, invalid_pretrain_file2)
-    assertRaises(AssertionError, nlp.embedding.TokenEmbedding.from_file, pretrain_file_path,
-                 elem_delim)
+    with pytest.raises(AssertionError):
+        nlp.embedding.TokenEmbedding.from_file(pretrain_file_path, elem_delim)
 
 
 def test_embedding_get_and_pretrain_file_names():
@@ -451,7 +448,8 @@ def test_embedding_get_and_pretrain_file_names():
     assert len(reg['glove']) == 10
     assert len(reg['fasttext']) == 327
 
-    assertRaises(KeyError, nlp.embedding.list_sources, 'unknown$$')
+    with pytest.raises(KeyError):
+        nlp.embedding.list_sources('unknown$$')
 
 
 def test_vocab_set_embedding_with_one_custom_embedding():
@@ -516,7 +514,8 @@ def test_vocab_set_embedding_with_one_custom_embedding():
                         np.array([[0.1, 0.2, 0.3, 0.4, 0.5],
                                   [1, 1, 1, 1, 1]])
                         )
-    assertRaises(KeyError, v1_no_unk.embedding.__getitem__, ['a', 'not_exist'])
+    with pytest.raises(KeyError):
+        v1_no_unk.embedding['a', 'not_exist']
 
     assert_almost_equal(v1.embedding[['a', 'b']].asnumpy(),
                         np.array([[0.1, 0.2, 0.3, 0.4, 0.5],
@@ -531,7 +530,8 @@ def test_vocab_set_embedding_with_one_custom_embedding():
                         np.array([[1, 1, 1, 1, 1],
                                   [0.6, 0.7, 0.8, 0.9, 1]])
                         )
-    assertRaises(KeyError, v1_no_unk.embedding.__getitem__, ['A', 'b'])
+    with pytest.raises(KeyError):
+        v1_no_unk.embedding['A', 'b']
 
     v1.embedding['a'] = nd.array([2, 2, 2, 2, 2])
     v1.embedding['b'] = nd.array([3, 3, 3, 3, 3])
@@ -564,7 +564,8 @@ def test_vocab_set_embedding_with_one_custom_embedding():
                                   [2, 2, 2, 2, 2],
                                   [1, 1, 1, 1, 1]])
                         )
-    assertRaises(KeyError, v1_no_unk.embedding.__setitem__, '<unk>', nd.array([0, 0, 0, 0, 0]))
+    with pytest.raises(KeyError):
+        v1_no_unk.embedding['<unk>'] = nd.array([0, 0, 0, 0, 0])
     v1.embedding['<unk>'] = nd.array([10, 10, 10, 10, 10])
     assert_almost_equal(v1.embedding.idx_to_vec.asnumpy(),
                         np.array([[10, 10, 10, 10, 10],
@@ -605,7 +606,8 @@ def test_vocab_set_embedding_with_two_custom_embeddings():
     v1.set_embedding(my_embed1, my_embed2)
     assert v1.embedding is not None
 
-    assertRaises(AssertionError, v1.set_embedding, my_embed1, None, my_embed2)
+    with pytest.raises(AssertionError):
+        v1.set_embedding(my_embed1, None, my_embed2)
     assert_almost_equal(v1.embedding.idx_to_vec.asnumpy(),
                         np.array([[1, 1, 1, 1, 1, 0, 0, 0, 0, 0],
                                   [1, 1, 1, 1, 1, 0.06, 0.07, 0.08, 0.09, 0.1],
@@ -745,9 +747,11 @@ def test_download_embed():
 def test_vocab_serialization():
     # Preserving unknown_token behaviour
     vocab = nlp.Vocab(unknown_token=None)
-    assert_raises(KeyError, vocab.__getitem__, 'hello')
+    with pytest.raises(KeyError):
+        vocab['hello']
     loaded_vocab = nlp.Vocab.from_json(vocab.to_json())
-    assert_raises(KeyError, loaded_vocab.__getitem__, 'hello')
+    with pytest.raises(KeyError):
+        loaded_vocab['hello']
 
     vocab = nlp.Vocab(unknown_token='abc')
     vocab['hello']
@@ -786,18 +790,17 @@ def test_token_embedding_from_serialized_file():
         assert my_embed_serialize == my_embed_text
 
 
+def test_token_embedding_serialization(tmpdir):
+    tmpdir = str(tmpdir)  # py.path.local not supported by gluonnlp
 
-def test_token_embedding_serialization():
     start_time = time.time()
     emb = nlp.embedding.create("fasttext", source="wiki.simple.vec")
     print("Took {} seconds to load fasttext embeddings.".format(
         time.time() - start_time))
-    tmp_directory = tempfile.mkdtemp()
-    print("Saving serialized embeddings in temporary directory ",
-          tmp_directory)
+    print("Saving serialized embeddings in temporary directory ", tmpdir)
 
     # Test uncompressed serialization
-    file_path = os.path.join(tmp_directory, "embeddings.npz")
+    file_path = os.path.join(tmpdir, "embeddings.npz")
     emb.serialize(file_path, compress=False)
     start_time = time.time()
     loaded_emb = nlp.embedding.TokenEmbedding.deserialize(file_path)
@@ -806,8 +809,7 @@ def test_token_embedding_serialization():
     assert loaded_emb == emb
 
     # Test compressed serialization
-    file_path_compressed = os.path.join(tmp_directory,
-                                        "embeddings_compressed.npz")
+    file_path_compressed = os.path.join(tmpdir, "embeddings_compressed.npz")
     emb.serialize(file_path_compressed, compress=True)
     start_time = time.time()
     loaded_emb = nlp.embedding.TokenEmbedding.deserialize(file_path)
@@ -886,8 +888,3 @@ def test_word_embedding_analogy_evaluation_models():
 
             # Assert output shape
             assert pred_idxs.shape[1] == k
-
-
-if __name__ == '__main__':
-    import nose
-    nose.runmodule()

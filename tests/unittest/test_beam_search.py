@@ -186,8 +186,3 @@ def test_beam_search():
                                 assert(samples[i, j, valid_length[i, j] - 1] == 3.0)
                                 if valid_length[i, j] < samples.shape[2]:
                                     assert((samples[i, j, valid_length[i, j]:] == -1.0).all())
-
-
-if __name__ == "__main__":
-    import nose
-    nose.runmodule()

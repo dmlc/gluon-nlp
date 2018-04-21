@@ -29,8 +29,6 @@ import numpy as np
 
 import gluonnlp as nlp
 
-from common import with_seed
-
 if sys.version_info[0] == 3:
     _str_types = (str, )
 else:
@@ -291,7 +289,6 @@ def test_conll2004():
             assert max(len(f) for f in x) == min(len(f) for f in x), x
 
 
-@with_seed()
 def test_ud21():
     test_langs = list(nlp._constants.UD21_DATA_FILE_SHA1.items())
     random.shuffle(test_langs)
@@ -347,8 +344,3 @@ def test_wmt2016bpe():
     en_vocab, de_vocab = train.src_vocab, train.tgt_vocab
     assert len(en_vocab) == 36548
     assert len(de_vocab) == 36548
-
-
-if __name__ == '__main__':
-    import nose
-    nose.runmodule()

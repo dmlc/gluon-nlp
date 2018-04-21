@@ -115,8 +115,3 @@ def test_bleu():
     os.remove(trans_path)
     for i in range(n_refs):
         os.remove(ref_path + str(i))
-
-
-if __name__ == '__main__':
-    import nose
-    nose.runmodule()
