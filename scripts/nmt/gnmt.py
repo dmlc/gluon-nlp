@@ -187,7 +187,7 @@ for epoch_id in range(args.epochs):
     epoch_start_time = time.time()
     for batch_id, (src_seq, tgt_seq_no_last, gt_seq, src_valid_length, tgt_valid_length)\
             in enumerate(train_data_loader):
-        print(src_seq.context)
+        logging.info(src_seq.context)
         src_seq = mx.nd.array(src_seq, ctx=ctx)
         tgt_seq_no_last = mx.nd.array(tgt_seq_no_last, ctx=ctx)
         gt_seq = mx.nd.array(gt_seq, ctx=ctx)
