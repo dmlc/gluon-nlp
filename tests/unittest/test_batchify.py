@@ -3,12 +3,12 @@ from numpy.testing import assert_allclose
 import mxnet as mx
 from gluonnlp.data import batchify
 
+import pytest
 
 def test_stack_batchify():
     batchify_fn = batchify.Stack()
     dat = [np.random.randint(5) for _ in range(10)]
     assert_allclose(batchify_fn(dat).asnumpy(), np.array(dat))
-
 
 def test_pad_wrap_batchify():
     def _verify_padded_arr(padded_arr, original_arr, pad_axis, pad_val, pad_length):
@@ -80,8 +80,3 @@ def test_pad_wrap_batchify():
                                     batch_data = ret_use_npy[j].asnumpy()
                                 pad_length = max(ele[j].shape[axis] for ele in random_data_npy)
                                 _verify_padded_arr(batch_data[i], random_data_npy[i][j], axis, pad_val, pad_length)
-
-
-if __name__ == "__main__":
-    import nose
-    nose.runmodule()

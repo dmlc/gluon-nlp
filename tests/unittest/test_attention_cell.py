@@ -99,8 +99,3 @@ def test_multihead_attention():
                                                use_mask=use_mask,
                                                multi_head=True,
                                                num_heads=num_heads)
-
-
-if __name__ == "__main__":
-    import nose
-    nose.runmodule()
