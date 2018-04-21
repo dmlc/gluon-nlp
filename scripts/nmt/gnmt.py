@@ -136,7 +136,7 @@ model.hybridize()
 loss_function = SoftmaxCEMaskedLoss()
 loss_function.hybridize()
 
-trainer = gluon.Trainer(model.collect_params(), 'sgd', )
+trainer = gluon.Trainer(model.collect_params(), args.optimizer, {'learning_rate': args.lr})
 
 batchify_fn = btf.Tuple(btf.Pad(), btf.Pad(), btf.Pad(), btf.Stack(), btf.Stack())
 train_batch_sampler = FixedBucketSampler(lengths=data_train_lengths,
@@ -166,9 +166,7 @@ for batch_id, (src_seq, tgt_seq, gt_seq, src_valid_length, tgt_valid_length)\
     tgt_valid_length = mx.nd.array(tgt_valid_length, ctx=ctx)
     with mx.autograd.record():
         out, _ = model(src_seq, tgt_seq, src_valid_length, tgt_valid_length)
-        print(out.shape)
         loss = loss_function(out, gt_seq, tgt_valid_length).mean()
-        print(loss)
         loss.backward()
     grads = [p.grad(ctx) for p in model.collect_params().values()]
     gnorm = gluon.utils.clip_global_norm(grads, args.clip)
