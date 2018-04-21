@@ -171,4 +171,4 @@ for batch_id, (src_seq, tgt_seq, gt_seq, src_valid_length, tgt_valid_length)\
     grads = [p.grad(ctx) for p in model.collect_params().values()]
     gnorm = gluon.utils.clip_global_norm(grads, args.clip)
     trainer.step(1)
-    logging.info('Loss={}, Gradient Norm={}'.format(loss, gnorm))
+    logging.info('Loss={}, Gradient Norm={}'.format(loss.asscalar(), gnorm))
