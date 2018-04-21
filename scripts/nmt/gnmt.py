@@ -25,7 +25,7 @@ parser = argparse.ArgumentParser(description='Neural Machine Translation Example
                                              'We train the Google NMT model')
 parser.add_argument('--num-layers', type=int, default=2, help='number of layers in the encoder'
                                                               ' and decoder')
-parser.add_argument('--save-dir', type=str, default='gnmt_log',
+parser.add_argument('--save-dir', type=str, default='out_dir',
                     help='directory path to save the final model and training log')
 parser.add_argument('--num-bi-layers', type=int, default=1,
                     help='number of bidireciontal layers in the encoder')
