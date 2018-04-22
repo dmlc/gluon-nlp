@@ -3,6 +3,7 @@ import numpy as np
 import time
 import random
 import os
+import io
 import mxnet as mx
 import logging
 from mxnet import gluon
@@ -299,9 +300,11 @@ def train():
         test_bleu_score, _, _, _, _ = compute_bleu([test_tgt_sentences], test_translation_out)
         logging.info('[Epoch {}] test Loss={:.4f}, test ppl={:.4f}, test bleu={:.2f}'
                      .format(epoch_id, test_loss, np.exp(test_loss), test_bleu_score))
-        with open(os.path.join(args.save_dir, 'epoch{:d}_valid_out.txt')) as of:
+        with io.open(os.path.join(args.save_dir, 'epoch{:d}_valid_out.txt'), 'w',
+                     encoding='utf-8') as of:
             of.writelines(valid_translation_out)
-        with open(os.path.join(args.save_dir, 'epoch{:d}_test_out.txt')) as of:
+        with io.open(os.path.join(args.save_dir, 'epoch{:d}_test_out.txt'), 'w',
+                     encoding='utf-8') as of:
             of.writelines(test_translation_out)
         if valid_loss < best_valid_loss:
             best_valid_loss = valid_loss
