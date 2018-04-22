@@ -281,7 +281,7 @@ def train():
         log_start_time = time.time()
         for batch_id, (src_seq, tgt_seq, src_valid_length, tgt_valid_length)\
                 in enumerate(train_data_loader):
-            # logging.info(src_seq.context)
+            # logging.info(src_seq.context) Context suddenly becomes GPU.
             src_seq = src_seq.as_in_context(ctx)
             tgt_seq = tgt_seq.as_in_context(ctx)
             src_valid_length = src_valid_length.as_in_context(ctx)
