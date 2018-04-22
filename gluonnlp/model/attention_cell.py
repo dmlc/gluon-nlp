@@ -132,7 +132,7 @@ class AttentionCell(HybridBlock):
         att_weights : Symbol or NDArray
             Attention weights. Shape (batch_size, query_length, memory_length)
         """
-        return super(AttentionCell, self).__call__(query, key, value, mask)
+        return self.forward(query, key, value, mask)
 
     def forward(self, query, key, value=None, mask=None):  # pylint: disable=arguments-differ
         if value is None:
@@ -242,7 +242,7 @@ class MultiHeadAttentionCell(AttentionCell):
             Attention weights of multiple heads.
             Shape (batch_size, num_heads, query_length, memory_length)
         """
-        return super(MultiHeadAttentionCell, self).__call__(query, key, value, mask)
+        return self.forward(query, key, value, mask)
 
     def _compute_weight(self, F, query, key, mask=None):
         query = self.proj_query(query)  # Shape (batch_size, query_length, query_units)

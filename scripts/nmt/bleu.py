@@ -44,15 +44,16 @@ def _ngrams(segment, n):
     return ngram_counts
 
 
-def compute_bleu(reference_corpus, translation_corpus, max_n=4, smooth=False, lower_case=False):
+def compute_bleu(reference_corpus_list, translation_corpus,
+                 max_n=4, smooth=False, lower_case=False):
     """Compute bleu score of translation against references.
 
     Parameters
     ----------
-    reference_corpus: list(list(list(str)))
-        List of lists of references for each translation.
+    reference_corpus_list: list of list(list(str))
+        List of references for each translation.
     translation_corpus: list(list(str))
-        List of translations to score.
+        Translations to score.
     max_n: int, default 4
         Maximum n-gram order to use when computing BLEU score.
     smooth: bool, default False
@@ -65,13 +66,14 @@ def compute_bleu(reference_corpus, translation_corpus, max_n=4, smooth=False, lo
     5-Tuple with the BLEU score, n-gram precisions, brevity penalty,
         reference length, and translation length
     """
-    precision_numerators = Counter()
-    precision_denominators = Counter()
+    precision_numerators = [0 for _ in range(max_n)]
+    precision_denominators = [0 for _ in range(max_n)]
     ref_length, trans_length = 0, 0
-    assert len(reference_corpus) == len(translation_corpus), \
-        'The number of translations and their references do not match'
+    for references in reference_corpus_list:
+        assert len(references) == len(translation_corpus), \
+            'The number of translations and their references do not match'
 
-    for references, translation in zip(reference_corpus, translation_corpus):
+    for references, translation in zip(zip(*reference_corpus_list), translation_corpus):
         if lower_case:
             references = [list(map(str.lower, reference)) for reference in references]
             translation = list(map(str.lower, translation))
