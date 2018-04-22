@@ -30,47 +30,47 @@ from .beam_search import BeamSearchScorer, BeamSearchSampler
 
 
 class NMTModel(Block):
+    """Model for Neural Machine Translation.
+
+    Parameters
+    ----------
+    src_vocab : Vocab
+        Source vocabulary.
+    tgt_vocab : Vocab
+        Target vocabulary.
+    encoder : Seq2SeqEncoder
+        Encoder that encodes the input sentence.
+    decoder : Seq2SeqDecoder
+        Decoder that generates the predictions based on the output of the encoder.
+    embed_size : int or None, default None
+        Size of the embedding vectors. It is used to generate the source and target embeddings
+        if src_embed and tgt_embed are None.
+    embed_dropout : float, default 0.0
+        Dropout rate of the embedding weights. It is used to generate the source and target
+        embeddings if src_embed and tgt_embed are None.
+    embed_initializer : Initializer, default mx.init.Uniform(0.1)
+        Initializer of the embedding weights. It is used to generate ghe source and target
+        embeddings if src_embed and tgt_embed are None.
+    src_embed : Block or None, default None
+        The source embedding. If set to None, src_embed will be constructed using embed_size and
+        embed_dropout.
+    tgt_embed : Block or None, default None
+        The target embedding. If set to None and the tgt_embed will be constructed using
+        embed_size and embed_dropout. Also if `share_embed` is turned on, we will set tgt_embed
+        to be the same as src_embed.
+    share_embed : bool, default False
+        Whether to share the src/tgt embeddings or not.
+    tgt_proj : Block or None, default None
+        Layer that projects the decoder outputs to the target vocabulary.
+    prefix : str or None
+        See document of `Block`.
+    params : ParameterDict or None
+        See document of `Block`.
+    """
     def __init__(self, src_vocab, tgt_vocab, encoder, decoder,
                  embed_size=None, embed_dropout=0.0, embed_initializer=mx.init.Uniform(0.1),
                  src_embed=None, tgt_embed=None, share_embed=False, tgt_proj=None,
                  prefix=None, params=None):
-        """Model for Neural Machine Translation.
-
-        Parameters
-        ----------
-        src_vocab : Vocab
-            Source vocabulary.
-        tgt_vocab : Vocab
-            Target vocabulary.
-        encoder : Seq2SeqEncoder
-            Encoder that encodes the input sentence.
-        decoder : Seq2SeqDecoder
-            Decoder that generates the predictions based on the output of the encoder.
-        embed_size : int or None, default None
-            Size of the embedding vectors. It is used to generate the source and target embeddings
-            if src_embed and tgt_embed are None.
-        embed_dropout : float, default 0.0
-            Dropout rate of the embedding weights. It is used to generate the source and target
-            embeddings if src_embed and tgt_embed are None.
-        embed_initializer : Initializer, default mx.init.Uniform(0.1)
-            Initializer of the embedding weights. It is used to generate ghe source and target
-            embeddings if src_embed and tgt_embed are None.
-        src_embed : Block or None, default None
-            The source embedding. If set to None, src_embed will be constructed using embed_size and
-            embed_dropout.
-        tgt_embed : Block or None, default None
-            The target embedding. If set to None and the tgt_embed will be constructed using
-            embed_size and embed_dropout. Also if `share_embed` is turned on, we will set tgt_embed
-            to be the same as src_embed.
-        share_embed : bool, default False
-            Whether to share the src/tgt embeddings or not.
-        tgt_proj : Block or None, default None
-            Layer that projects the decoder outputs to the target vocabulary.
-        prefix : str or None
-            See document of `Block`.
-        params : ParameterDict or None
-            See document of `Block`.
-        """
         super(NMTModel, self).__init__(prefix=prefix, params=params)
         self.tgt_vocab = tgt_vocab
         self.src_vocab = src_vocab
@@ -183,10 +183,6 @@ class NMTModel(Block):
         return step_output, states, step_additional_outputs
 
     def __call__(self, src_seq, tgt_seq, src_valid_length=None, tgt_valid_length=None):
-        return super(NMTModel, self).__call__(src_seq, tgt_seq,
-                                              src_valid_length, tgt_valid_length)
-
-    def forward(self, src_seq, tgt_seq, src_valid_length=None, tgt_valid_length=None):
         """Generate the prediction given the src_seq and tgt_seq.
 
         This is used in training an NMT model.
@@ -205,6 +201,9 @@ class NMTModel(Block):
         additional_outputs : list
             Additional outputs, e.g, the attention weights
         """
+        return self.forward(src_seq, tgt_seq, src_valid_length, tgt_valid_length)
+
+    def forward(self, src_seq, tgt_seq, src_valid_length=None, tgt_valid_length=None):
         encoder_outputs = self.encode(src_seq, valid_length=src_valid_length)
         decoder_states = self.decoder.init_state_from_encoder(encoder_outputs,
                                                               encoder_valid_length=src_valid_length)
