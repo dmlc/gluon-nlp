@@ -790,6 +790,11 @@ def test_token_embedding_from_serialized_file():
         assert my_embed_serialize == my_embed_text
 
 
+def test_token_embedding_from_file_S3_with_custom_unknown_token():
+    embed = nlp.embedding.create('glove', source='glove.6B.50d',
+                                 unknown_token='<strangeunknonwntoken>')
+
+
 def test_token_embedding_serialization(tmpdir):
     @nlp.embedding.register
     class Test(nlp.embedding.TokenEmbedding):

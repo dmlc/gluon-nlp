@@ -323,15 +323,33 @@ class TokenEmbedding(object):
 
         deserialized_embedding = TokenEmbedding.deserialize(pretrained_file_path)
         if deserialized_embedding.unknown_token:
-            if deserialized_embedding.unknown_token != self.unknown_token:
-                raise ValueError(
-                    'Creating a new embedding from npz format requires '
-                    'that npz serialization was done from original embedding, '
-                    'i.e. unknown_token in the serialized form must be the same.'
-                )
-
-        idx_to_token = deserialized_embedding.idx_to_token
-        idx_to_vec = deserialized_embedding.idx_to_vec
+            # Some .npz files on S3 may contain an unknown token and its
+            # respective embedding. As a workaround, we assume that C.UNK_IDX
+            # is the same now as it was when the .npz was generated. Under this
+            # assumption we can safely overwrite the respective token and
+            # vector from the npz.
+            if deserialized_embedding.unknown_token == self.unknown_token:
+                # If the unknown_token is the same, we will find it below and a
+                # new unknown token wont be inserted.
+                pass
+            elif self.unknown_token:
+                # If they are different, we need to manually replace it so that
+                # it is found below and no new unknown token would be inserted.
+                idx_to_token = deserialized_embedding.idx_to_token
+                idx_to_vec = deserialized_embedding.idx_to_vec
+                idx_to_token[C.UNK_IDX] = self.unknown_token
+                vec_len = idx_to_vec.shape[1]
+                idx_to_vec[C.UNK_IDX] = init_unknown_vec(shape=vec_len)
+            else:
+                # If the TokenEmbedding shall not have an unknown token, we
+                # just delete the one in the npz.
+                idx_to_token = np.delete(
+                    deserialized_embedding.idx_to_token, obj=C.UNK_IDX, axis=0)
+                idx_to_vec = np.delete(
+                    deserialized_embedding.idx_to_vec, obj=C.UNK_IDX, axis=0)
+        else:
+            idx_to_token = deserialized_embedding.idx_to_token
+            idx_to_vec = deserialized_embedding.idx_to_vec
 
         if not np.all(np.unique(idx_to_token, return_counts=True)[1] == 1):
             raise ValueError('Serialized embedding invalid. '
@@ -551,7 +569,7 @@ class TokenEmbedding(object):
         if not unknown_token:  # Store empty string instead of None
             unknown_token = ''
         else:
-            assert unknown_token == idx_to_token[0]
+            assert unknown_token == idx_to_token[C.UNK_IDX]
 
         if not compress:
             np.savez(file=file_path, unknown_token=unknown_token,
