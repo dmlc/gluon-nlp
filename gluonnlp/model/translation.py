@@ -243,7 +243,7 @@ class BeamSearchTranslator(object):
         encoder_outputs = self._model.encode(src_seq, valid_length=src_valid_length)
         decoder_states = self._model.decoder.init_state_from_encoder(encoder_outputs,
                                                                      src_valid_length)
-        inputs = mx.nd.full(shape=(batch_size,), ctx=src_seq.context, dtype=np.int32,
+        inputs = mx.nd.full(shape=(batch_size,), ctx=src_seq.context, dtype=src_seq.dtype,
                             val=self._model.tgt_vocab.token_to_idx[self._model.tgt_vocab.bos_token])
         samples, scores, sample_valid_length = self._sampler(inputs, decoder_states)
         return samples, scores, sample_valid_length
