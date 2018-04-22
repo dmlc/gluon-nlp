@@ -231,6 +231,12 @@ def evaluate(data_loader):
     return avg_loss, real_translation_out
 
 
+def write_sentences(sentences, file_path):
+    with io.open(file_path, 'w', encoding='utf-8') as of:
+        for sent in sentences:
+            of.write(' '.join(sent) + '\n')
+
+
 def train():
     trainer = gluon.Trainer(model.collect_params(), args.optimizer, {'learning_rate': args.lr})
 
@@ -315,14 +321,10 @@ def train():
         test_bleu_score, _, _, _, _ = compute_bleu([test_tgt_sentences], test_translation_out)
         logging.info('[Epoch {}] test Loss={:.4f}, test ppl={:.4f}, test bleu={:.2f}'
                      .format(epoch_id, test_loss, np.exp(test_loss), test_bleu_score))
-        with io.open(os.path.join(args.save_dir, 'epoch{:d}_valid_out.txt').format(epoch_id), 'w',
-                     encoding='utf-8') as of:
-            for ele in valid_translation_out:
-                of.write(' '.join(ele) + "\n")
-        with io.open(os.path.join(args.save_dir, 'epoch{:d}_test_out.txt').format(epoch_id), 'w',
-                     encoding='utf-8') as of:
-            for ele in test_translation_out:
-                of.write(' '.join(ele) + "\n")
+        write_sentences(valid_translation_out,
+                        os.path.join(args.save_dir, 'epoch{:d}_valid_out.txt').format(epoch_id))
+        write_sentences(test_translation_out,
+                        os.path.join(args.save_dir, 'epoch{:d}_test_out.txt').format(epoch_id))
         if valid_loss < best_valid_loss:
             best_valid_loss = valid_loss
             save_path = os.path.join(args.save_dir, 'valid_best.params')
@@ -332,6 +334,19 @@ def train():
             new_lr = trainer.learning_rate * args.lr_update_factor
             logging.info('Learning rate change to {}'.format(new_lr))
             trainer.set_learning_rate(new_lr)
+    model.load_params(os.path.join(args.save_dir, 'valid_best.params'))
+    valid_loss, valid_translation_out = evaluate(val_data_loader)
+    valid_bleu_score, _, _, _, _ = compute_bleu([val_tgt_sentences], valid_translation_out)
+    logging.info('Best model valid Loss={:.4f}, valid ppl={:.4f}, valid bleu={:.2f}'
+                 .format(valid_loss, np.exp(valid_loss), valid_bleu_score))
+    test_loss, test_translation_out = evaluate(test_data_loader)
+    test_bleu_score, _, _, _, _ = compute_bleu([test_tgt_sentences], test_translation_out)
+    logging.info('Best model test Loss={:.4f}, test ppl={:.4f}, test bleu={:.2f}'
+                 .format(test_loss, np.exp(test_loss), test_bleu_score))
+    write_sentences(valid_translation_out,
+                    os.path.join(args.save_dir, 'best_valid_out.txt'))
+    write_sentences(test_translation_out,
+                    os.path.join(args.save_dir, 'best_test_out.txt'))
 
 
 if __name__ == '__main__':
