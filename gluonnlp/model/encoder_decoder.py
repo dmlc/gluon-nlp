@@ -40,14 +40,14 @@ def _get_cell_type(cell_type):
         The constructor of the RNNCell
     """
     if isinstance(cell_type, str):
-        if cell_type == "lstm":
+        if cell_type == 'lstm':
             return rnn.LSTMCell
-        elif cell_type == "gru":
+        elif cell_type == 'gru':
             return rnn.GRUCell
         elif cell_type == 'relu_rnn':
-            return partial(rnn.RNNCell, activation="relu")
+            return partial(rnn.RNNCell, activation='relu')
         elif cell_type == 'tanh_rnn':
-            return partial(rnn.RNNCell, activation="tanh")
+            return partial(rnn.RNNCell, activation='tanh')
         else:
             raise NotImplementedError
     else:
@@ -67,25 +67,25 @@ def _get_attention_cell(attention_cell, units=None):
     attention_cell : AttentionCell
     """
     if isinstance(attention_cell, str):
-        if attention_cell == "scaled_luong":
+        if attention_cell == 'scaled_luong':
             return DotProductAttentionCell(units=units, scaled=True, normalized=False,
                                            luong_style=True)
-        elif attention_cell == "scaled_dot":
+        elif attention_cell == 'scaled_dot':
             return DotProductAttentionCell(units=None, scaled=True, normalized=False,
                                            luong_style=False)
-        elif attention_cell == "dot":
+        elif attention_cell == 'dot':
             return DotProductAttentionCell(units=None, scaled=False, normalized=False,
                                            luong_style=False)
-        elif attention_cell == "cosine":
+        elif attention_cell == 'cosine':
             return DotProductAttentionCell(units=units, scaled=False, normalized=True)
-        elif attention_cell == "mlp":
+        elif attention_cell == 'mlp':
             return MLPAttentionCell(units=units, normalized=False)
-        elif attention_cell == "normed_mlp":
+        elif attention_cell == 'normed_mlp':
             return MLPAttentionCell(units=units, normalized=True)
     else:
         assert isinstance(attention_cell, AttentionCell),\
-            "attention_cell must be either string or AttentionCell. Received attention_cell=%s"\
-            % str(attention_cell)
+            'attention_cell must be either string or AttentionCell. Received attention_cell={}'\
+                .format(attention_cell)
         return attention_cell
 
 
@@ -141,13 +141,13 @@ class Seq2SeqEncoder(Block):
 
 
 class Seq2SeqDecoder(Block):
-    """Base class of the decoders in sequence to sequence learning models.
+    r"""Base class of the decoders in sequence to sequence learning models.
 
     In the forward function, it generates the one-step-ahead decoding output.
 
     """
     def init_state_from_encoder(self, encoder_outputs, encoder_valid_length=None):
-        """Generates the initial decoder states based on the encoder outputs.
+        r"""Generates the initial decoder states based on the encoder outputs.
 
         Parameters
         ----------
@@ -161,7 +161,7 @@ class Seq2SeqDecoder(Block):
         raise NotImplementedError
 
     def decode_seq(self, inputs, states, valid_length=None):
-        """Given the inputs and the context computed by the encoder,
+        r"""Given the inputs and the context computed by the encoder,
         generate the new states. This is usually used in the training phase where we set the inputs
         to be the target sequence.
 
@@ -185,7 +185,7 @@ class Seq2SeqDecoder(Block):
         raise NotImplementedError
 
     def forward(self, step_input, states):
-        """One-step decoding of the input
+        r"""One-step decoding of the input
 
         Parameters
         ----------
@@ -205,56 +205,56 @@ class Seq2SeqDecoder(Block):
 
 
 class GNMTEncoder(Seq2SeqEncoder):
-    def __init__(self, cell_type="lstm", num_layers=2, num_bi_layers=1, hidden_size=128,
+    r"""Structure of the RNN Encoder similar to that used in
+     "[Arxiv2016] Google's Neural Machine Translation System:
+                 Bridgeing the Gap between Human and Machine Translation"
+
+    The encoder first stacks several bidirectional RNN layers and then stacks multiple
+    uni-directional RNN layers with residual connections.
+
+    Parameters
+    ----------
+    cell_type : str or function
+        Can be "lstm", "gru" or constructor functions that can be directly called,
+         like rnn.LSTMCell
+    num_layers : int
+        Total number of layers
+    num_bi_layers : int
+        Total number of bidirectional layers
+    hidden_size : int
+        Number of hidden units
+    dropout : float
+        The dropout rate
+    use_residual : bool
+        Whether to use residual connection. Residual connection will be added in the
+        uni-directional RNN layers
+    i2h_weight_initializer : str or Initializer
+        Initializer for the input weights matrix, used for the linear
+        transformation of the inputs.
+    h2h_weight_initializer : str or Initializer
+        Initializer for the recurrent weights matrix, used for the linear
+        transformation of the recurrent state.
+    i2h_bias_initializer : str or Initializer
+        Initializer for the bias vector.
+    h2h_bias_initializer : str or Initializer
+        Initializer for the bias vector.
+    prefix : str, default 'rnn_'
+        Prefix for name of `Block`s
+        (and name of weight if params is `None`).
+    params : Parameter or None
+        Container for weight sharing between cells.
+        Created if `None`.
+    """
+    def __init__(self, cell_type='lstm', num_layers=2, num_bi_layers=1, hidden_size=128,
                  dropout=0.0, use_residual=True,
                  i2h_weight_initializer=None, h2h_weight_initializer=None,
                  i2h_bias_initializer='zeros', h2h_bias_initializer='zeros',
                  prefix=None, params=None):
-        r"""Structure of the RNN Encoder similar to that used in
-         "[Arxiv2016] Google's Neural Machine Translation System:
-                     Bridgeing the Gap between Human and Machine Translation"
-
-        The encoder first stacks several bidirectional RNN layers and then stacks multiple
-        uni-directional RNN layers with residual connections.
-
-        Parameters
-        ----------
-        cell_type : str or function
-            Can be "lstm", "gru" or constructor functions that can be directly called,
-             like rnn.LSTMCell
-        num_layers : int
-            Total number of layers
-        num_bi_layers : int
-            Total number of bidirectional layers
-        hidden_size : int
-            Number of hidden units
-        dropout : float
-            The dropout rate
-        use_residual : bool
-            Whether to use residual connection. Residual connection will be added in the
-            uni-directional RNN layers
-        i2h_weight_initializer : str or Initializer
-            Initializer for the input weights matrix, used for the linear
-            transformation of the inputs.
-        h2h_weight_initializer : str or Initializer
-            Initializer for the recurrent weights matrix, used for the linear
-            transformation of the recurrent state.
-        i2h_bias_initializer : str or Initializer
-            Initializer for the bias vector.
-        h2h_bias_initializer : str or Initializer
-            Initializer for the bias vector.
-        prefix : str, default 'rnn_'
-            Prefix for name of `Block`s
-            (and name of weight if params is `None`).
-        params : Parameter or None
-            Container for weight sharing between cells.
-            Created if `None`.
-        """
         super(GNMTEncoder, self).__init__(prefix=prefix, params=params)
         self._cell_type = _get_cell_type(cell_type)
         assert num_bi_layers <= num_layers,\
-            "Number of bidirectional layers must be smaller than the total number of layers, " \
-            "num_bi_layers=%d, num_layers=%d" % (num_bi_layers, num_layers)
+            'Number of bidirectional layers must be smaller than the total number of layers, ' \
+            'num_bi_layers={}, num_layers={}'.format(num_bi_layers, num_layers)
         self._num_bi_layers = num_bi_layers
         self._num_layers = num_layers
         self._hidden_size = hidden_size
@@ -271,13 +271,13 @@ class GNMTEncoder(Seq2SeqEncoder):
                                                h2h_weight_initializer=h2h_weight_initializer,
                                                i2h_bias_initializer=i2h_bias_initializer,
                                                h2h_bias_initializer=h2h_bias_initializer,
-                                               prefix="rnn%d_l_" % i),
+                                               prefix='rnn%d_l_' % i),
                         r_cell=self._cell_type(hidden_size=self._hidden_size,
                                                i2h_weight_initializer=i2h_weight_initializer,
                                                h2h_weight_initializer=h2h_weight_initializer,
                                                i2h_bias_initializer=i2h_bias_initializer,
                                                h2h_bias_initializer=h2h_bias_initializer,
-                                               prefix="rnn%d_r_" % i)))
+                                               prefix='rnn%d_r_' % i)))
                 else:
                     self.rnn_cells.add(
                         self._cell_type(hidden_size=self._hidden_size,
@@ -288,27 +288,29 @@ class GNMTEncoder(Seq2SeqEncoder):
                                         prefix='rnn%d_' % i))
 
     def __call__(self, inputs, states=None, valid_length=None):
-        return super(GNMTEncoder, self).__call__(inputs, states, valid_length)
-
-    def forward(self, inputs, states=None, valid_length=None):
-        """
+        """Encoder the inputs given the states and valid sequence length.
 
         Parameters
         ----------
         inputs : NDArray
-            Shape (batch_size, length, C_in)
+            Input sequence. Shape (batch_size, length, C_in)
         states : list of NDArrays or None
-            The list of initial states
+            Initial states. The list of initial states
         valid_length : NDArray or None
-            Shape (batch_size,)
+            Valid lengths of each sequence. This is usually used when part of sequence has
+            been padded. Shape (batch_size,)
 
         Returns
         -------
         encoder_outputs: list
             Outputs of the encoder. Contains:
+
             - outputs of the last RNN layer
             - new_states of all the RNN layers
         """
+        return super(GNMTEncoder, self).__call__(inputs, states, valid_length)
+
+    def forward(self, inputs, states=None, valid_length=None):
         # TODO(sxjscience) Accelerate the forward using HybridBlock
         batch_size, length, _ = inputs.shape
         new_states = []
@@ -339,45 +341,43 @@ class GNMTDecoder(HybridBlock, Seq2SeqDecoder):
     """Structure of the RNN Encoder similar to that used in the
     Google Neural Machine Translation paper.
 
+    We use gnmt_v2 strategy in tensorflow/nmt
+
+    Parameters
+    ----------
+    cell_type : str or type
+    attention_cell : AttentionCell or str
+        Arguments of the attention cell.
+        Can be 'scaled_luong', 'normed_mlp', 'dot'
+    num_layers : int
+    hidden_size : int
+    dropout : float
+    use_residual : bool
+    output_attention: bool
+        Whether to output the attention weights
+    i2h_weight_initializer : str or Initializer
+        Initializer for the input weights matrix, used for the linear
+        transformation of the inputs.
+    h2h_weight_initializer : str or Initializer
+        Initializer for the recurrent weights matrix, used for the linear
+        transformation of the recurrent state.
+    i2h_bias_initializer : str or Initializer
+        Initializer for the bias vector.
+    h2h_bias_initializer : str or Initializer
+        Initializer for the bias vector.
+    prefix : str, default 'rnn_'
+        Prefix for name of `Block`s
+        (and name of weight if params is `None`).
+    params : Parameter or None
+        Container for weight sharing between cells.
+        Created if `None`.
     """
-    def __init__(self, cell_type="lstm", attention_cell="scaled_luong",
+    def __init__(self, cell_type='lstm', attention_cell='scaled_luong',
                  num_layers=2, hidden_size=128,
                  dropout=0.0, use_residual=True, output_attention=False,
                  i2h_weight_initializer=None, h2h_weight_initializer=None,
                  i2h_bias_initializer='zeros', h2h_bias_initializer='zeros',
                  prefix=None, params=None):
-        """Implement the attention mechanism described in GNMT paper.
-        We use gnmt_v2 strategy in tensorflow/nmt
-
-        Parameters
-        ----------
-        cell_type : str or type
-        attention_cell : AttentionCell or str
-            Arguments of the attention cell.
-            Can be 'scaled_luong', 'normed_mlp', 'dot'
-        num_layers : int
-        hidden_size : int
-        dropout : float
-        use_residual : bool
-        output_attention: bool
-            Whether to output the attention weights
-        i2h_weight_initializer : str or Initializer
-            Initializer for the input weights matrix, used for the linear
-            transformation of the inputs.
-        h2h_weight_initializer : str or Initializer
-            Initializer for the recurrent weights matrix, used for the linear
-            transformation of the recurrent state.
-        i2h_bias_initializer : str or Initializer
-            Initializer for the bias vector.
-        h2h_bias_initializer : str or Initializer
-            Initializer for the bias vector.
-        prefix : str, default 'rnn_'
-            Prefix for name of `Block`s
-            (and name of weight if params is `None`).
-        params : Parameter or None
-            Container for weight sharing between cells.
-            Created if `None`.
-        """
         super(GNMTDecoder, self).__init__(prefix=prefix, params=params)
         self._cell_type = _get_cell_type(cell_type)
         self._num_layers = num_layers
@@ -399,12 +399,12 @@ class GNMTDecoder(HybridBlock, Seq2SeqDecoder):
                                     prefix='rnn%d_' % i))
 
     def init_state_from_encoder(self, encoder_outputs, encoder_valid_length=None):
-        """
+        """Initialize the state from the encoder outputs.
 
         Parameters
         ----------
-        encoder_outputs
-        encoder_valid_length
+        encoder_outputs : list
+        encoder_valid_length : NDArray or None
 
         Returns
         -------
@@ -429,25 +429,6 @@ class GNMTDecoder(HybridBlock, Seq2SeqDecoder):
         return decoder_states
 
     def decode_seq(self, inputs, states, valid_length=None):
-        """
-
-        Parameters
-        ----------
-        inputs
-        states
-        valid_length
-
-        Returns
-        -------
-        output : NDArray
-            The output of the decoder. Shape is (batch_size, length, C_out)
-        states: list
-            The new states of the decoder
-        additional_outputs : list
-            Either be an empty list or contains the attention weights of each timestamp.
-            The attention weights will have shape (batch_size, length, mem_length) or
-            (batch_size, num_heads, length, mem_length)
-        """
         length = inputs.shape[1]
         output = []
         additional_outputs = []
@@ -474,6 +455,28 @@ class GNMTDecoder(HybridBlock, Seq2SeqDecoder):
         return output, states, additional_outputs
 
     def __call__(self, step_input, states):
+        """One-step-ahead decoding of the GNMT decoder.
+
+        Parameters
+        ----------
+        step_input : NDArray or Symbol
+        states : NDArray or Symbol
+
+        Returns
+        -------
+        step_output : NDArray or Symbol
+            The output of the decoder. Shape is (batch_size, C_out)
+        new_states: list
+            Includes
+
+            - rnn_states : list of NDArray or Symbol
+            - attention_vec : NDArray or Symbol, Shape (batch_size, C_memory)
+
+        step_additional_outputs : list
+            Either be an empty list or contains the attention weights in this step.
+            The attention weights will have shape (batch_size, 1, mem_length) or
+            (batch_size, num_heads, 1, mem_length)
+        """
         return super(GNMTDecoder, self).__call__(step_input, states)
 
     def forward(self, step_input, states):
@@ -489,27 +492,6 @@ class GNMTDecoder(HybridBlock, Seq2SeqDecoder):
         return step_output, new_states, step_additional_outputs
 
     def hybrid_forward(self, F, step_input, states):
-        """
-
-        Parameters
-        ----------
-        F : symbol or ndarray
-        step_input : NDArray or Symbol
-        states : NDArray or Symbol
-
-        Returns
-        -------
-        step_output : NDArray or Symbol
-            The output of the decoder. Shape is (batch_size, C_out)
-        new_states: list
-            Includes
-            - rnn_states : list of NDArray or Symbol
-            - attention_vec : NDArray or Symbol, Shape (batch_size, C_memory)
-        step_additional_outputs : list
-            Either be an empty list or contains the attention weights in this step.
-            The attention weights will have shape (batch_size, 1, mem_length) or
-            (batch_size, num_heads, 1, mem_length)
-        """
         has_mem_mask = (len(states) == 4)
         if has_mem_mask:
             rnn_states, attention_output, mem_value, mem_masks = states
@@ -548,11 +530,11 @@ class GNMTDecoder(HybridBlock, Seq2SeqDecoder):
         return rnn_out, new_states, step_additional_outputs
 
 
-def get_gnmt_encoder_decoder(cell_type="lstm", attention_cell="scaled_luong", num_layers=2,
+def get_gnmt_encoder_decoder(cell_type='lstm', attention_cell='scaled_luong', num_layers=2,
                              num_bi_layers=1, hidden_size=128, dropout=0.0, use_residual=True,
                              i2h_weight_initializer=None, h2h_weight_initializer=None,
                              i2h_bias_initializer='zeros', h2h_bias_initializer='zeros',
-                             prefix="gnmt_", params=None):
+                             prefix='gnmt_', params=None):
     """Build a pair of GNMT encoder/decoder
 
     Parameters
@@ -583,7 +565,7 @@ def get_gnmt_encoder_decoder(cell_type="lstm", attention_cell="scaled_luong", nu
                           h2h_weight_initializer=h2h_weight_initializer,
                           i2h_bias_initializer=i2h_bias_initializer,
                           h2h_bias_initializer=h2h_bias_initializer,
-                          prefix=prefix + "enc_", params=params)
+                          prefix=prefix + 'enc_', params=params)
     decoder = GNMTDecoder(cell_type=cell_type, attention_cell=attention_cell, num_layers=num_layers,
                           hidden_size=hidden_size, dropout=dropout,
                           use_residual=use_residual,
@@ -591,5 +573,5 @@ def get_gnmt_encoder_decoder(cell_type="lstm", attention_cell="scaled_luong", nu
                           h2h_weight_initializer=h2h_weight_initializer,
                           i2h_bias_initializer=i2h_bias_initializer,
                           h2h_bias_initializer=h2h_bias_initializer,
-                          prefix=prefix + "dec_", params=params)
+                          prefix=prefix + 'dec_', params=params)
     return encoder, decoder
