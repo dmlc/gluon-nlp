@@ -58,6 +58,8 @@ parser.add_argument('--log-interval', type=int, default=100, metavar='N',
                     help='report interval')
 parser.add_argument('--save-dir', type=str, default='out_dir',
                     help='directory path to save the final model and training log')
+parser.add_argument('--gpu', type=int, default=None,
+                    help='id of the gpu to use. Set it to empty means to use cpu.')
 args = parser.parse_args()
 print(args)
 logging_config(args.save_dir)
@@ -169,7 +171,11 @@ data_val = SimpleDataset([(ele[0], ele[1], len(ele[0]), len(ele[1]), i)
                           for i, ele in enumerate(data_val)])
 data_test = SimpleDataset([(ele[0], ele[1], len(ele[0]), len(ele[1]), i)
                           for i, ele in enumerate(data_test)])
-ctx = mx.gpu()
+if args.gpu is None:
+    ctx = mx.cpu()
+    print('Use CPU')
+else:
+    ctx = mx.gpu(args.gpu)
 
 encoder, decoder = get_gnmt_encoder_decoder(hidden_size=args.num_hidden,
                                             dropout=args.dropout,
