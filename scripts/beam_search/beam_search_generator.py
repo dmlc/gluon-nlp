@@ -24,7 +24,7 @@ zoo, and use the language model encoder to generate sentences.
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-
+# pylint:disable=missing-docstring
 import argparse
 import mxnet as mx
 import gluonnlp as nlp
@@ -91,10 +91,10 @@ def generate():
     samples = samples[0].asnumpy()
     scores = scores[0].asnumpy()
     valid_lengths = valid_lengths[0].asnumpy()
-    print("Beam Seach Parameters: beam_size={}, alpha={}, K={}".format(args.beam_size,
+    print('Beam Seach Parameters: beam_size={}, alpha={}, K={}'.format(args.beam_size,
                                                                        args.alpha,
                                                                        args.k))
-    print("Generation Result:")
+    print('Generation Result:')
     for i in range(args.beam_size):
         sentence = [vocab.idx_to_token[ele] for ele in samples[i][:valid_lengths[i]]]
         print([' '.join(sentence), scores[i]])
@@ -102,4 +102,3 @@ def generate():
 
 if __name__ == '__main__':
     generate()
-
