@@ -195,7 +195,7 @@ def evaluate(data_loader):
         # Calculating Loss
         out, _ = model(src_seq, tgt_seq[:, :-1], src_valid_length, tgt_valid_length - 1)
         loss = loss_function(out, tgt_seq[:, 1:], tgt_valid_length - 1).mean().asscalar()
-        all_inst_ids.extend(inst_ids.asnumpy().tolist())
+        all_inst_ids.extend(inst_ids.asnumpy().astype(np.int32).tolist())
         avg_loss += loss * (tgt_seq.shape[1] - 1)
         avg_loss_denom += (tgt_seq.shape[1] - 1)
         # Translate
