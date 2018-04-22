@@ -54,9 +54,9 @@ def _sample_reference(vocabulary, k):
     return np.random.choice(vocabulary, size=k).tolist()
 
 
-def _sample_translation_corpus(reference_corpus, max_len):
+def _sample_translation_corpus(reference_corpus_list, max_len):
     translation_corpus = []
-    for references in reference_corpus:
+    for references in zip(*reference_corpus_list):
         n_refs = len(references)
         ref_ind = np.random.randint(n_refs)
         translation = _sample_translation(references[ref_ind], max_len)
@@ -65,15 +65,13 @@ def _sample_translation_corpus(reference_corpus, max_len):
 
 
 def _sample_reference_corpus(vocabulary, n, max_len, n_refs=5):
-    reference_corpus = []
+    reference_corpus_list = [[] for _ in range(n_refs)]
     for _ in range(n):
-        references = []
-        for _ in range(n_refs):
+        for i in range(n_refs):
             ref_len = np.random.randint(1, max_len + 1)
             reference = _sample_reference(vocabulary, ref_len)
-            references.append(reference)
-        reference_corpus.append(references)
-    return reference_corpus
+            reference_corpus_list[i].append(reference)
+    return reference_corpus_list
 
 
 def _write_translaton(translations, path='hypothesis'):
@@ -85,7 +83,7 @@ def _write_translaton(translations, path='hypothesis'):
 
 
 def _write_reference(references, path='reference'):
-    for i, reference in enumerate(zip(*references)):
+    for i, reference in enumerate(references):
         out_file = codecs.open(path + str(i), 'w', 'utf-8')
         refs = [' '.join(ref) for ref in reference]
         out_file.write('\n'.join(refs) + '\n')
@@ -101,11 +99,11 @@ def test_bleu():
     ref_path = os.path.join(path, 'reference')
     trans_path = os.path.join(path, 'hypothesis')
     vocabulary = list(string.ascii_lowercase)
-    reference_corpus = _sample_reference_corpus(vocabulary, n, max_len, n_refs)
-    translation_corpus = _sample_translation_corpus(reference_corpus, max_len)
-    _write_reference(reference_corpus, path=ref_path)
+    reference_corpus_list = _sample_reference_corpus(vocabulary, n, max_len, n_refs)
+    translation_corpus = _sample_translation_corpus(reference_corpus_list, max_len)
+    _write_reference(reference_corpus_list, path=ref_path)
     _write_translaton(translation_corpus, path=trans_path)
-    ret_bleu, _, _, _, _ = compute_bleu(reference_corpus, translation_corpus)
+    ret_bleu, _, _, _, _ = compute_bleu(reference_corpus_list, translation_corpus)
     mose_ret = subprocess.check_output('perl %s/multi-bleu.perl %s < %s'
                                        % (path, ref_path, trans_path),
                                        shell=True).decode('utf-8')
