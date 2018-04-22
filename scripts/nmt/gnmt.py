@@ -204,7 +204,8 @@ def evaluate(data_loader):
         max_score_sample = samples[:, 0, :].asnumpy()
         sample_valid_length = sample_valid_length.asnumpy()
         for i in range(max_score_sample.shape[0]):
-            translation_out.append(tgt_vocab[max_score_sample[i][1:(sample_valid_length[i] - 1)]])
+            translation_out.append(
+                tgt_vocab.idx_to_token(max_score_sample[i][1:(sample_valid_length[i] - 1)]))
     avg_loss = avg_loss / avg_loss_denom
     translation_out = [translation_out[i] for i in all_inst_ids]
     return avg_loss, translation_out
