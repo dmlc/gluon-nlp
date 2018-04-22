@@ -26,8 +26,6 @@ zoo, and use the language model encoder to generate sentences.
 # under the License.
 
 import argparse
-import random
-import numpy as np
 import mxnet as mx
 import gluonnlp as nlp
 
@@ -55,16 +53,30 @@ if args.gpu is None:
 else:
     ctx = mx.gpu(args.gpu)
 
+lm_model, vocab = nlp.model.get_model(name=args.lm_model,
+                                      dataset_name='wikitext-2',
+                                      pretrained=True,
+                                      ctx=ctx)
+
+
+def _transform_layout(data):
+    if isinstance(data, list):
+        return [_transform_layout(ele) for ele in data]
+    elif isinstance(data, mx.nd.NDArray):
+        return mx.nd.transpose(data, axes=(1, 0, 2))
+    else:
+        raise NotImplementedError
+
+# Define the decoder function, we use log_softmax to map the output scores to log-likelihoods
+# Also, we transform the layout to NTC
+def decoder(inputs, states):
+    states = _transform_layout(states)
+    inputs, states = lm_model(mx.nd.expand_dims(inputs, axis=0), states)
+    states = _transform_layout(states)
+    return inputs, states
+
 
 def generate():
-    lm_model, vocab = nlp.model.get_model(name=args.lm_model,
-                                          dataset_name='wikitext-2',
-                                          pretrained=True,
-                                          ctx=ctx)
-    # Define the decoder function, we use log_softmax to map the output scores to log-likelihoods
-    decoder = lambda inputs, states: mx.nd.log_softmax(lm_model(mx.nd.expand_dims(inputs, axis=0),
-                                                                states))
-    # Get the bos_id and eos_id based on the vocabulary
     bos_id = vocab[args.bos]
     eos_id = vocab[args.eos]
     begin_states = lm_model.begin_state(batch_size=1, ctx=ctx)
