@@ -41,7 +41,7 @@ parser.add_argument('--num-bi-layers', type=int, default=1,
 parser.add_argument('--batch-size', type=int, default=128, help='Batch size')
 parser.add_argument('--beam-size', type=int, default=1, help='Beam size')
 parser.add_argument('--lp-alpha', type=float, default=0.0, help='Alpha used in calculating the length penalty')
-parser.add_argument('--lp-K', type=int, default=5, help='K used in calculating the length penalty')
+parser.add_argument('--lp-k', type=int, default=5, help='K used in calculating the length penalty')
 parser.add_argument('--test-batch-size', type=int, default=32, help='Test batch size')
 parser.add_argument('--num-buckets', type=int, default=5, help='Bucket number')
 parser.add_argument('--bucket-ratio', type=float, default=0.0, help='Ratio for increasing the '
