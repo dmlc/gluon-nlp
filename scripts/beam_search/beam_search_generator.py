@@ -62,7 +62,8 @@ def generate():
                                           pretrained=True,
                                           ctx=ctx)
     # Define the decoder function, we use log_softmax to map the output scores to log-likelihoods
-    decoder = lambda inputs, states: mx.nd.log_softmax(lm_model(inputs, states))
+    decoder = lambda inputs, states: mx.nd.log_softmax(lm_model(mx.nd.expand_dims(inputs, axis=0),
+                                                                states))
     # Get the bos_id and eos_id based on the vocabulary
     bos_id = vocab[args.bos]
     eos_id = vocab[args.eos]
