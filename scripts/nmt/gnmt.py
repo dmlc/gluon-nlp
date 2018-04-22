@@ -300,11 +300,11 @@ def train():
         test_bleu_score, _, _, _, _ = compute_bleu([test_tgt_sentences], test_translation_out)
         logging.info('[Epoch {}] test Loss={:.4f}, test ppl={:.4f}, test bleu={:.2f}'
                      .format(epoch_id, test_loss, np.exp(test_loss), test_bleu_score))
-        with io.open(os.path.join(args.save_dir, 'epoch{:d}_valid_out.txt'), 'w',
+        with io.open(os.path.join(args.save_dir, 'epoch{:d}_valid_out.txt').format(epoch_id), 'w',
                      encoding='utf-8') as of:
             for ele in valid_translation_out:
                 of.write(' '.join(ele) + "\n")
-        with io.open(os.path.join(args.save_dir, 'epoch{:d}_test_out.txt'), 'w',
+        with io.open(os.path.join(args.save_dir, 'epoch{:d}_test_out.txt').format(epoch_id), 'w',
                      encoding='utf-8') as of:
             for ele in test_translation_out:
                 of.write(' '.join(ele) + "\n")
