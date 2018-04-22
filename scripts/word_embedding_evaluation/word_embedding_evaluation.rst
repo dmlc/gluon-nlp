@@ -1,6 +1,8 @@
 Word Embedding Evaluation
 -------------------------
 
+:download:`[Download] </scripts/word_embedding_evaluation.zip>`
+
 This script can be used to evaluate pretrained word embeddings included in the
 gluon NLP toolkit.
 

@@ -31,7 +31,7 @@ command installs a nightly built CPU version of MXNet.
 
 .. code-block:: bash
 
-   pip install --pre mxnet
+   pip install --pre --upgrade mxnet
 
 .. note::
 
@@ -93,10 +93,11 @@ Contents
 --------
 
 .. toctree::
-   :maxdepth: 2
+   :glob:
+   :maxdepth: 1
 
-   get_started/index
-   examples/index
+   self
    api/index
+   examples/index
    scripts/index
    how_to/contribute

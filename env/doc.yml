@@ -7,7 +7,7 @@ dependencies:
   - sphinx=1.7.2
   - sphinx-gallery
   - sphinx_rtd_theme
-  - nbsphinx
+  - nbsphinx>=0.3.0
   - recommonmark
   - spacy
   - nltk

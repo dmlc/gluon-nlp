@@ -1,6 +1,8 @@
 Sentiment Analysis through Fine-tuning, w/ Bucketing
 ----------------------------------------------------
 
+:download:`[Download] </scripts/sentiment_analysis.zip>`
+
 This script can be used to train a sentiment analysis model from scratch, or fine-tune a pre-trained language model.
 The pre-trained language models are loaded from Gluon NLP Toolkit model zoo. It also showcases how to use different
 bucketing strategies to speed up training.

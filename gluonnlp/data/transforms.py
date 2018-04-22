@@ -132,7 +132,7 @@ class PadSequence(object):
 class NLTKMosesTokenizer(object):
     r"""Apply the Moses Tokenizer implemented in NLTK.
 
-    Users are required to [install NLTK](https://www.nltk.org/install.html) to use this tokenizer.
+    Users are required to `install NLTK <https://www.nltk.org/install.html>`_ to use this tokenizer.
 
     Examples
     --------
@@ -191,7 +191,7 @@ class NLTKMosesTokenizer(object):
 class SpacyTokenizer(object):
     r"""Apply the Spacy Tokenizer.
 
-    Users are required to [install spaCy](https://spacy.io/usage/) to use this tokenizer and
+    Users are required to `install spaCy <https://spacy.io/usage/>`_ to use this tokenizer and
     download the corresponding NLP models. We only support spacy>=2.0.0.
 
     Parameters

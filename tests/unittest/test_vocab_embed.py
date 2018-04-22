@@ -798,7 +798,7 @@ def test_token_embedding_from_file_S3_with_custom_unknown_token(unknown_token):
                                  unknown_token=unknown_token)
 
 
-def test_token_embedding_serialization(tmpdir):
+def test_token_embedding_serialization():
     @nlp.embedding.register
     class Test(nlp.embedding.TokenEmbedding):
         # 33 bytes.
@@ -807,7 +807,8 @@ def test_token_embedding_serialization(tmpdir):
                                     '29b9a6511cf4b5aae293c44a9ec1365b74f2a2f8')}
         namespace = 'test'
 
-        def __init__(self, embedding_root='embedding', init_unknown_vec=nd.zeros, **kwargs):
+        def __init__(self, embedding_root='tests/data/embedding',
+                     init_unknown_vec=nd.zeros, **kwargs):
             source = 'embedding_test'
             Test._check_source(source)
 

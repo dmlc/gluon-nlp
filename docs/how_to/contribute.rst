@@ -1,5 +1,5 @@
-Contribute to Gluon NLP Toolkit
-===============================
+Contribute
+==========
 
 Gluon NLP toolkit has been developed by community members. Everyone is
 more than welcome to contribute. It is a way to make the project better

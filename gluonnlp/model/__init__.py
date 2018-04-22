@@ -27,37 +27,41 @@ You can construct a model with random weights by calling its constructor. Becaus
 are tied to vocabularies, you can either specify a dataset name to load and use the vocabulary
 of that dataset:
 
-.. code::
+.. code-block:: python
 
-    from gluonnlp import models
-    awd, vocab = models.awd_lstm_lm_1150(dataset_name='wikitext-2')
+    import gluonnlp as nlp
+    awd, vocab = nlp.model.awd_lstm_lm_1150(dataset_name='wikitext-2')
 
 or directly specify a vocabulary object:
 
-.. code::
+.. code-block:: python
 
-    from gluonnlp import models
-    awd, vocab = models.awd_lstm_lm_1150(None, vocab=custom_vocab)
+    awd, vocab = nlp.model.awd_lstm_lm_1150(None, vocab=custom_vocab)
 
 We provide pre-trained models for all the listed models.
 These models can constructed by passing ``pretrained=True``:
 
-.. code::
+.. code-block:: python
 
-    from gluonnlp import models
-    awd, vocab = models.awd_lstm_lm_1150(dataset_name='wikitext-2'
-                                         pretrained=True)
+    awd, vocab = nlp.model.awd_lstm_lm_1150(dataset_name='wikitext-2'
+                                            pretrained=True)
 
 .. _AWD: https://arxiv.org/abs/1404.5997
 """
-__all__ = ['lm', 'standard_lstm_lm_200', 'standard_lstm_lm_650', 'standard_lstm_lm_1500',
+__all__ = ['standard_lstm_lm_200', 'standard_lstm_lm_650', 'standard_lstm_lm_1500',
            'awd_lstm_lm_1150', 'awd_lstm_lm_600']
-
-from . import language_model as lm
 
 from .language_model import *
 
 from .beam_search import *
+
+from .attention_cell import *
+
+from .utils import *
+
+from .parameter import *
+
+from .block import *
 
 def get_model(name, dataset_name='wikitext-2', **kwargs):
     """Returns a pre-defined model by name.

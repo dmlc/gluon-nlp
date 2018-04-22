@@ -26,7 +26,7 @@ import numpy as np
 from mxnet.gluon import Block
 from mxnet.gluon import nn
 import mxnet as mx
-from .beam_search import BeamSearchScorer, BeamSearchSampler
+from gluonnlp.model import BeamSearchScorer, BeamSearchSampler
 
 
 class NMTModel(Block):

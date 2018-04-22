@@ -107,6 +107,12 @@ ENV/
 tests/data/
 tests/data/embedding/
 tests/data/my_embed/
+tests/externaldata/
+.pytest_cache
 
 # docs
 docs/html
+
+# release
+scripts/*.zip
+docs/examples/*.zip

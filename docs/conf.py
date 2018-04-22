@@ -63,6 +63,15 @@ templates_path = ['_templates']
 nbsphinx_kernel_name = 'python3'
 nbsphinx_allow_errors = True
 nbsphinx_timeout = 1200
+html_sourcelink_suffix = ''
+
+nbsphinx_prolog = """
+{% set paths = env.docname.split('/') %}
+
+.. only:: html
+
+    :download:`[Download] <{{ "../%s.zip"|format(paths[1]) }}>`
+"""
 
 # The suffix(es) of source filenames.
 # You can specify multiple suffix as a list of string:
