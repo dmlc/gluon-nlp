@@ -91,6 +91,9 @@ def generate():
     samples = samples[0].asnumpy()
     scores = scores[0].asnumpy()
     valid_lengths = valid_lengths[0].asnumpy()
+    print("Beam Seach Parameters: beam_size={}, alpha={}, K={}".format(args.beam_size,
+                                                                       args.alpha,
+                                                                       args.k))
     print("Generation Result:")
     for i in range(args.beam_size):
         sentence = [vocab.idx_to_token[ele] for ele in samples[i][:valid_lengths[i]]]
