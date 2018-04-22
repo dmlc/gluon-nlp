@@ -136,7 +136,7 @@ def load_translation_data(dataset, src_lang='en', tgt_lang='vi'):
     data_test_processed = load_cached_dataset(common_prefix + '_test')
     if not data_test_processed:
         data_test_processed = process_dataset(data_test, src_vocab, tgt_vocab)
-        cache_dataset(data_test_processed, common_prefix + '_val')
+        cache_dataset(data_test_processed, common_prefix + '_test')
     fetch_tgt_sentence = lambda src, tgt: tgt.split()[:args.tgt_max_len]
     val_tgt_sentences = list(data_val.transform(fetch_tgt_sentence))
     test_tgt_sentences = list(data_test.transform(fetch_tgt_sentence))
@@ -202,11 +202,10 @@ def evaluate(data_loader):
         samples, _, sample_valid_length =\
             translator.translate(src_seq=src_seq, src_valid_length=src_valid_length)
         max_score_sample = samples[:, 0, :].asnumpy()
-        sample_valid_length = sample_valid_length.asnumpy()
+        sample_valid_length = sample_valid_length[:, 0].asnumpy()
         for i in range(max_score_sample.shape[0]):
             translation_out.append(
-                [tgt_vocab.idx_to_token(ele)
-                 for ele in max_score_sample[i][1:(sample_valid_length[i] - 1)]])
+                tgt_vocab.idx_to_token(max_score_sample[i][1:(sample_valid_length[i] - 1)]))
     avg_loss = avg_loss / avg_loss_denom
     translation_out = [translation_out[i] for i in all_inst_ids]
     return avg_loss, translation_out
