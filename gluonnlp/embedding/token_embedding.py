@@ -181,15 +181,11 @@ class TokenEmbedding(object):
         self._idx_to_vec = None
 
     @classmethod
-    def _get_file_name(cls, source):
-        return source
-
-    @classmethod
     def _get_file_url(cls, source):
         cls_name = cls.__name__.lower()
 
         namespace = 'gluon/embeddings/{}'.format(cls_name)
-        return _get_repo_file_url(namespace, cls._get_file_name(source))
+        return _get_repo_file_url(namespace, cls.source_file_hash[source][0])
 
     @classmethod
     def _get_file_path(cls, embedding_root, source):
@@ -198,10 +194,9 @@ class TokenEmbedding(object):
         url = cls._get_file_url(source)
 
         embedding_dir = os.path.join(embedding_root, cls_name)
-        pretrained_file_name = cls._get_file_name(source)
-        pretrained_file_path = os.path.join(embedding_dir, pretrained_file_name)
 
-        expected_file_hash = cls.source_file_hash[pretrained_file_name]
+        pretrained_file_name, expected_file_hash = cls.source_file_hash[source]
+        pretrained_file_path = os.path.join(embedding_dir, pretrained_file_name)
 
         if not os.path.exists(pretrained_file_path) \
            or not check_sha1(pretrained_file_path, expected_file_hash):
@@ -497,12 +492,11 @@ class TokenEmbedding(object):
         source : str
             The pre-trained token embedding source.
         """
-        file_name = cls._get_file_name(source)
         embedding_name = cls.__name__.lower()
-        if file_name not in cls.source_file_hash:
-            raise KeyError('Cannot find pre-trained source {} (file {}) for token embedding {}. '
+        if source not in cls.source_file_hash:
+            raise KeyError('Cannot find pre-trained source {} for token embedding {}. '
                            'Valid pre-trained file names for embedding {}: {}'.format(
-                               source, file_name, embedding_name, embedding_name,
+                               source, embedding_name, embedding_name,
                                ', '.join(cls.source_file_hash.keys())))
 
     @staticmethod
@@ -675,7 +669,7 @@ class GloVe(TokenEmbedding):
     """
 
     # Map a pre-trained token embedding file and its SHA-1 hash.
-    source_file_hash = C.GLOVE_PRETRAINED_NPZ_SHA1
+    source_file_hash = C.GLOVE_NPZ_SHA1
 
     def __init__(self, source='glove.6B.50d',
                  embedding_root=os.path.join('~', '.mxnet', 'embedding'),
@@ -687,10 +681,6 @@ class GloVe(TokenEmbedding):
 
         self._load_embedding(pretrained_file_path, elem_delim=' ',
                              init_unknown_vec=init_unknown_vec)
-
-    @classmethod
-    def _get_file_name(cls, source):
-        return source + '.npz'
 
 
 @register
@@ -767,7 +757,3 @@ class FastText(TokenEmbedding):
 
         self._load_embedding(pretrained_file_path, elem_delim=' ',
                              init_unknown_vec=init_unknown_vec)
-
-    @classmethod
-    def _get_file_name(cls, source):
-        return source + '.npz'
