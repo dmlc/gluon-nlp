@@ -27,7 +27,7 @@ def logging_config(folder=None, name=None,
                    level=logging.DEBUG,
                    console_level=logging.INFO,
                    no_console=False):
-    """ Config the logging
+    """ Config the logging.
 
     Parameters
     ----------
@@ -39,6 +39,8 @@ def logging_config(folder=None, name=None,
         Whether to disable the console log
     Returns
     -------
+    folder : str
+        Folder that the logging file will be saved into.
     """
     if name is None:
         name = inspect.stack()[1][1].split('.')[0]
