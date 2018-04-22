@@ -191,7 +191,7 @@ translator = BeamSearchTranslator(model=model, beam_size=args.beam_size,
                                   scorer=BeamSearchScorer(alpha=args.lp_alpha,
                                                           K=args.lp_k),
                                   max_length=args.tgt_max_len)
-logging.info("Use beam_size={}, alpha={}, K={}".format(args.beam_size, args.lp_alpha, args.lp_K))
+logging.info("Use beam_size={}, alpha={}, K={}".format(args.beam_size, args.lp_alpha, args.lp_k))
 
 
 loss_function = SoftmaxCEMaskedLoss()
