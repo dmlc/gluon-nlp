@@ -25,7 +25,7 @@ from functools import partial
 from mxnet.base import _as_list
 from mxnet.gluon import nn, rnn
 from mxnet.gluon.block import Block, HybridBlock
-from .attention_cell import *
+from .attention_cell import AttentionCell, MLPAttentionCell, DotProductAttentionCell
 
 
 def _list_bcast_where(F, mask, new_val_l, old_val_l):
@@ -101,6 +101,8 @@ def _get_attention_cell(attention_cell, units=None):
             return MLPAttentionCell(units=units, normalized=False)
         elif attention_cell == 'normed_mlp':
             return MLPAttentionCell(units=units, normalized=True)
+        else:
+            raise NotImplementedError
     else:
         assert isinstance(attention_cell, AttentionCell),\
             'attention_cell must be either string or AttentionCell. Received attention_cell={}'\
@@ -139,23 +141,28 @@ def _nested_sequence_last(data, valid_length):
 
 class Seq2SeqEncoder(Block):
     r"""Base class of the encoders in sequence to sequence learning models.
-
-    Parameters
-    ----------
-    inputs : NDArray
-        The input sequence, Shape (batch_size, length, C_in).
-    valid_length : NDArray or None, default None
-        The valid length of the input sequence, Shape (batch_size,). This is used when the
-        input sequences are padded. If set to None, all elements in the sequence are used.
-    states : list of NDArrays or None, default None
-        List that contains the initial states of the encoder.
-
-    Returns
-    -------
-    outputs : list
-        Outputs of the encoder.
     """
-    def forward(self, inputs, valid_length=None, states=None):
+    def __call__(self, inputs, valid_length=None, states=None):  #pylint: disable=arguments-differ
+        """Encode the input sequence.
+
+        Parameters
+        ----------
+        inputs : NDArray
+            The input sequence, Shape (batch_size, length, C_in).
+        valid_length : NDArray or None, default None
+            The valid length of the input sequence, Shape (batch_size,). This is used when the
+            input sequences are padded. If set to None, all elements in the sequence are used.
+        states : list of NDArrays or None, default None
+            List that contains the initial states of the encoder.
+
+        Returns
+        -------
+        outputs : list
+            Outputs of the encoder.
+        """
+        return super(Seq2SeqEncoder, self).__call__(inputs, valid_length, states)
+
+    def forward(self, inputs, valid_length=None, states=None):  #pylint: disable=arguments-differ
         raise NotImplementedError
 
 
