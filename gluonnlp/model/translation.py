@@ -21,11 +21,11 @@
 
 __all__ = ['NMTModel', 'BeamSearchTranslator']
 
+import warnings
+import numpy as np
 from mxnet.gluon import Block
 from mxnet.gluon import nn
 import mxnet as mx
-import numpy as np
-import warnings
 from .beam_search import BeamSearchScorer, BeamSearchSampler
 
 
@@ -182,7 +182,7 @@ class NMTModel(Block):
         step_output = self.tgt_proj(step_output)
         return step_output, states, step_additional_outputs
 
-    def __call__(self, src_seq, tgt_seq, src_valid_length=None, tgt_valid_length=None):
+    def __call__(self, src_seq, tgt_seq, src_valid_length=None, tgt_valid_length=None):  #pylint: disable=arguments-differ
         """Generate the prediction given the src_seq and tgt_seq.
 
         This is used in training an NMT model.
@@ -203,7 +203,7 @@ class NMTModel(Block):
         """
         return self.forward(src_seq, tgt_seq, src_valid_length, tgt_valid_length)
 
-    def forward(self, src_seq, tgt_seq, src_valid_length=None, tgt_valid_length=None):
+    def forward(self, src_seq, tgt_seq, src_valid_length=None, tgt_valid_length=None):  #pylint: disable=arguments-differ
         encoder_outputs = self.encode(src_seq, valid_length=src_valid_length)
         decoder_states = self.decoder.init_state_from_encoder(encoder_outputs,
                                                               encoder_valid_length=src_valid_length)
