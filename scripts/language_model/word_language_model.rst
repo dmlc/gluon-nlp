@@ -3,11 +3,17 @@ Word Language Model
 
 This script can be used to train language models with the given specification.
 
-Use the following command to run the AWDRNN language model setting
+Use the following command to run the AWDRNN language model setting (emsize=400, nhid=1,150)
 
 .. code-block:: bash
 
-   $ python word_language_model.py --tied --gpus 0 --save awd_lstm_lm_1150_wikitext-2 # Val PPL 73.32 Test PPL 69.74
+   $ python word_language_model.py --gpus 0 --tied --save awd_lstm_lm_1150_wikitext-2 # Val PPL 73.32 Test PPL 69.74
+
+Use the following command to run the AWDRNN language model setting (emsize=200, nhid=600)
+
+.. code-block:: bash
+
+   $ python word_language_model.py -gpus 0 --dropout 0.2 --dropout_h 0.1 --dropout_i 0.3 --dropout_e 0.05 --weight_drop 0.2 --tied --save awd_lstm_lm_600_wikitext-2 # Val PPL 84.61 Test PPL 80.96
 
 Use the following command to run the StandardRNN language model setting (emsize=1,500, nhid=1,500)
 

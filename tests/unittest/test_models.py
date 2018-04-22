@@ -21,7 +21,6 @@ from __future__ import print_function
 
 import sys
 
-import numpy as np
 import mxnet as mx
 import gluonnlp as nlp
 from gluonnlp.model import get_model as get_text_model
@@ -38,14 +37,15 @@ def test_text_models():
     val = nlp.data.WikiText2(segment='val', root='tests/data/wikitext-2')
     val_freq = get_frequencies(val)
     vocab = nlp.Vocab(val_freq)
-    text_models = ['standard_lstm_lm_200', 'standard_lstm_lm_650', 'standard_lstm_lm_1500', 'awd_lstm_lm_1150']
-    pretrained_to_test = {'standard_lstm_lm_1500': 'wikitext-2', 'standard_lstm_lm_650': 'wikitext-2', 'standard_lstm_lm_200': 'wikitext-2', 'awd_lstm_lm_1150_wikitext-2': 'wikitext-2'}
+    text_models = ['standard_lstm_lm_200', 'standard_lstm_lm_650', 'standard_lstm_lm_1500', 'awd_lstm_lm_1150', 'awd_lstm_lm_600']
+    pretrained_to_test = {'standard_lstm_lm_1500': 'wikitext-2', 'standard_lstm_lm_650': 'wikitext-2', 'standard_lstm_lm_200': 'wikitext-2', 'awd_lstm_lm_1150': 'wikitext-2', 'awd_lstm_lm_600': 'wikitext-2'}
 
     for model_name in text_models:
         eprint('testing forward for %s' % model_name)
         pretrained_dataset = pretrained_to_test.get(model_name)
         model, _ = get_text_model(model_name, vocab=vocab, dataset_name=pretrained_dataset,
                                   pretrained=pretrained_dataset is not None, root='tests/data/model/')
+
         print(model)
         if not pretrained_dataset:
             model.collect_params().initialize()

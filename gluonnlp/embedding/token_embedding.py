@@ -29,9 +29,7 @@ __all__ = ['register', 'create', 'list_sources',
 import io
 import logging
 import os
-import tarfile
 import warnings
-import zipfile
 
 import numpy as np
 from mxnet import nd, registry
@@ -125,9 +123,9 @@ def list_sources(embedding_name=None):
             raise KeyError('Cannot find `embedding_name` {}. Use '
                            '`list_sources(embedding_name=None).keys()` to get all the valid'
                            'embedding names.'.format(embedding_name))
-        return list(text_embedding_reg[embedding_name].pretrained_file_name_sha1.keys())
+        return list(text_embedding_reg[embedding_name].source_file_hash.keys())
     else:
-        return {embedding_name: list(embedding_cls.pretrained_file_name_sha1.keys())
+        return {embedding_name: list(embedding_cls.source_file_hash.keys())
                 for embedding_name, embedding_cls in registry.get_registry(TokenEmbedding).items()}
 
 
@@ -183,46 +181,29 @@ class TokenEmbedding(object):
         self._idx_to_vec = None
 
     @classmethod
-    def _get_download_file_name(cls, file_name):
-        return file_name
-
-    @classmethod
-    def _get_pretrained_file_url(cls, pretrained_file_name):
+    def _get_file_url(cls, source):
         cls_name = cls.__name__.lower()
 
         namespace = 'gluon/embeddings/{}'.format(cls_name)
-        return _get_repo_file_url(namespace, cls._get_download_file_name(pretrained_file_name))
+        return _get_repo_file_url(namespace, cls.source_file_hash[source][0])
 
     @classmethod
-    def _get_pretrained_file(cls, embedding_root, pretrained_file_name):
+    def _get_file_path(cls, embedding_root, source):
         cls_name = cls.__name__.lower()
         embedding_root = os.path.expanduser(embedding_root)
-        url = cls._get_pretrained_file_url(pretrained_file_name)
+        url = cls._get_file_url(source)
 
         embedding_dir = os.path.join(embedding_root, cls_name)
+
+        pretrained_file_name, expected_file_hash = cls.source_file_hash[source]
         pretrained_file_path = os.path.join(embedding_dir, pretrained_file_name)
-        downloaded_file = os.path.basename(url)
-        downloaded_file_path = os.path.join(embedding_dir, downloaded_file)
-
-        expected_file_hash = cls.pretrained_file_name_sha1[pretrained_file_name]
-
-        if hasattr(cls, 'pretrained_archive_name_sha1'):
-            expected_downloaded_hash = \
-                cls.pretrained_archive_name_sha1[downloaded_file]
-        else:
-            expected_downloaded_hash = expected_file_hash
 
         if not os.path.exists(pretrained_file_path) \
            or not check_sha1(pretrained_file_path, expected_file_hash):
-            download(url, downloaded_file_path, sha1_hash=expected_downloaded_hash)
+            print('Embedding file {} is not found. Downloading from Gluon Repository. '
+                  'This may time some time.'.format(pretrained_file_name))
+            download(url, pretrained_file_path, sha1_hash=expected_file_hash)
 
-            ext = os.path.splitext(downloaded_file)[1]
-            if ext == '.zip':
-                with zipfile.ZipFile(downloaded_file_path, 'r') as zf:
-                    zf.extractall(embedding_dir)
-            elif ext == '.gz':
-                with tarfile.open(downloaded_file_path, 'r:gz') as tar:
-                    tar.extractall(path=embedding_dir)
         return pretrained_file_path
 
     def _load_embedding(self, pretrained_file_path, elem_delim,
@@ -252,11 +233,11 @@ class TokenEmbedding(object):
                      pretrained_file_path)
 
         if pretrained_file_path.endswith('.npz'):
-            return self._load_embedding_serialized(
+            self._load_embedding_serialized(
                 pretrained_file_path=pretrained_file_path,
                 init_unknown_vec=init_unknown_vec)
         else:
-            return self._load_embedding_txt(
+            self._load_embedding_txt(
                 pretrained_file_path=pretrained_file_path,
                 elem_delim=elem_delim, init_unknown_vec=init_unknown_vec,
                 encoding=encoding)
@@ -335,16 +316,38 @@ class TokenEmbedding(object):
         ValueError is raised if a token occurs multiple times.
         """
 
-        deserialized_embedding = self.deserialize(pretrained_file_path)
+        deserialized_embedding = TokenEmbedding.deserialize(pretrained_file_path)
         if deserialized_embedding.unknown_token:
-            raise ValueError(
-                'Creating a new embedding from npz format requires '
-                'that npz serialization was done from original embedding, '
-                'ie. that no unknown_token and associated vectors were inserted.'
-            )
-
-        idx_to_token = deserialized_embedding.idx_to_token
-        idx_to_vec = deserialized_embedding.idx_to_vec
+            # Some .npz files on S3 may contain an unknown token and its
+            # respective embedding. As a workaround, we assume that C.UNK_IDX
+            # is the same now as it was when the .npz was generated. Under this
+            # assumption we can safely overwrite the respective token and
+            # vector from the npz.
+            if deserialized_embedding.unknown_token == self.unknown_token:
+                # If the unknown_token is the same, we will find it below and a
+                # new unknown token wont be inserted.
+                idx_to_token = deserialized_embedding.idx_to_token
+                idx_to_vec = deserialized_embedding.idx_to_vec
+            elif self.unknown_token:
+                # If they are different, we need to manually replace it so that
+                # it is found below and no new unknown token would be inserted.
+                idx_to_token = deserialized_embedding.idx_to_token
+                idx_to_vec = deserialized_embedding.idx_to_vec
+                idx_to_token[C.UNK_IDX] = self.unknown_token
+                vec_len = idx_to_vec.shape[1]
+                idx_to_vec[C.UNK_IDX] = init_unknown_vec(shape=vec_len)
+            else:
+                # If the TokenEmbedding shall not have an unknown token, we
+                # just delete the one in the npz.
+                idx_to_token = (
+                    deserialized_embedding.idx_to_token[:C.UNK_IDX] +
+                    deserialized_embedding.idx_to_token[C.UNK_IDX + 1:])
+                idx_to_vec = nd.concat(
+                    deserialized_embedding.idx_to_vec[:C.UNK_IDX],
+                    deserialized_embedding.idx_to_vec[C.UNK_IDX + 1:])
+        else:
+            idx_to_token = deserialized_embedding.idx_to_token
+            idx_to_vec = deserialized_embedding.idx_to_vec
 
         if not np.all(np.unique(idx_to_token, return_counts=True)[1] == 1):
             raise ValueError('Serialized embedding invalid. '
@@ -368,6 +371,7 @@ class TokenEmbedding(object):
 
         self._idx_to_token = idx_to_token
         self._idx_to_vec = idx_to_vec
+        self._token_to_idx.update((token, idx) for idx, token in enumerate(self._idx_to_token))
 
     @property
     def idx_to_token(self):
@@ -388,7 +392,8 @@ class TokenEmbedding(object):
         if isinstance(other, TokenEmbedding):
             return self.unknown_token == other.unknown_token and np.all(
                 self.idx_to_token == other.idx_to_token) and ((
-                    self.idx_to_vec == other.idx_to_vec).min().asscalar() == 1)
+                    self.idx_to_vec == other.idx_to_vec).min().asscalar() == 1) and (
+                        self._token_to_idx == other._token_to_idx)
         else:
             return NotImplemented
 
@@ -478,22 +483,21 @@ class TokenEmbedding(object):
         self._idx_to_vec[nd.array(indices)] = new_embedding
 
     @classmethod
-    def _check_pretrained_file_names(cls, file_name):
-        """Checks if a pre-trained token embedding file name is valid.
+    def _check_source(cls, source):
+        """Checks if a pre-trained token embedding source name is valid.
 
 
         Parameters
         ----------
-        file_name : str
-            The pre-trained token embedding file.
+        source : str
+            The pre-trained token embedding source.
         """
-
         embedding_name = cls.__name__.lower()
-        if file_name not in cls.pretrained_file_name_sha1:
-            raise KeyError('Cannot find pre-trained file {} for token embedding {}. Valid '
-                           'pre-trained file names for embedding {}: {}'.format(
-                               file_name, embedding_name, embedding_name,
-                               ', '.join(cls.pretrained_file_name_sha1.keys())))
+        if source not in cls.source_file_hash:
+            raise KeyError('Cannot find pre-trained source {} for token embedding {}. '
+                           'Valid pre-trained file names for embedding {}: {}'.format(
+                               source, embedding_name, embedding_name,
+                               ', '.join(cls.source_file_hash.keys())))
 
     @staticmethod
     def from_file(file_path, elem_delim=' ', encoding='utf8',
@@ -562,7 +566,7 @@ class TokenEmbedding(object):
         if not unknown_token:  # Store empty string instead of None
             unknown_token = ''
         else:
-            assert unknown_token == idx_to_token[0]
+            assert unknown_token == idx_to_token[C.UNK_IDX]
 
         if not compress:
             np.savez(file=file_path, unknown_token=unknown_token,
@@ -590,16 +594,28 @@ class TokenEmbedding(object):
         """
         npz_dict = np.load(file_path, allow_pickle=False)
 
-        unknown_token = str(npz_dict['unknown_token'])
+        unknown_token = npz_dict['unknown_token']
+        if not unknown_token:
+            unknown_token = None
+        else:
+            if isinstance(unknown_token, np.ndarray):
+                if unknown_token.dtype.kind == 'S':
+                    unknown_token = unknown_token.tobytes().decode()
+                else:
+                    unknown_token = str(unknown_token)
         idx_to_token = npz_dict['idx_to_token'].tolist()
         idx_to_vec = nd.array(npz_dict['idx_to_vec'])
 
-        if unknown_token:
-            assert unknown_token == idx_to_token[0]
-
         embedding = cls(unknown_token=unknown_token)
+        if unknown_token:
+            assert unknown_token == idx_to_token[C.UNK_IDX]
+            embedding._token_to_idx = DefaultLookupDict(C.UNK_IDX)
+        else:
+            embedding._token_to_idx = {}
+
         embedding._idx_to_token = idx_to_token
         embedding._idx_to_vec = idx_to_vec
+        embedding._token_to_idx.update((token, idx) for idx, token in enumerate(idx_to_token))
 
         return embedding
 
@@ -634,7 +650,7 @@ class GloVe(TokenEmbedding):
 
     Parameters
     ----------
-    source : str, default 'glove.6B.50d.txt'
+    source : str, default 'glove.6B.50d'
         The name of the pre-trained token embedding file.
     embedding_root : str, default os.path.join('~', '.mxnet', 'embedding')
         The root directory for storing embedding-related files.
@@ -652,27 +668,16 @@ class GloVe(TokenEmbedding):
         as the same representation.
     """
 
-    # Map a pre-trained token embedding archive file and its SHA-1 hash.
-    pretrained_archive_name_sha1 = C.GLOVE_PRETRAINED_FILE_SHA1
-
     # Map a pre-trained token embedding file and its SHA-1 hash.
-    pretrained_file_name_sha1 = C.GLOVE_PRETRAINED_ARCHIVE_SHA1
+    source_file_hash = C.GLOVE_NPZ_SHA1
 
-    @classmethod
-    def _get_download_file_name(cls, file_name):
-        # Map a pre-trained embedding file to its archive to download.
-        src_archive = {archive.split('.')[1]: archive for archive in
-                       GloVe.pretrained_archive_name_sha1.keys()}
-        archive = src_archive[file_name.split('.')[1]]
-        return archive
-
-    def __init__(self, source='glove.6B.50d.txt',
+    def __init__(self, source='glove.6B.50d',
                  embedding_root=os.path.join('~', '.mxnet', 'embedding'),
                  init_unknown_vec=nd.zeros, **kwargs):
-        GloVe._check_pretrained_file_names(source)
+        GloVe._check_source(source)
 
         super(GloVe, self).__init__(**kwargs)
-        pretrained_file_path = GloVe._get_pretrained_file(embedding_root, source)
+        pretrained_file_path = GloVe._get_file_path(embedding_root, source)
 
         self._load_embedding(pretrained_file_path, elem_delim=' ',
                              init_unknown_vec=init_unknown_vec)
@@ -721,7 +726,7 @@ class FastText(TokenEmbedding):
 
     Parameters
     ----------
-    source : str, default 'glove.6B.50d.txt'
+    source : str, default 'glove.6B.50d'
         The name of the pre-trained token embedding file.
     embedding_root : str, default os.path.join('~', '.mxnet', 'embedding')
         The root directory for storing embedding-related files.
@@ -739,24 +744,16 @@ class FastText(TokenEmbedding):
         as the same representation.
     """
 
-    # Map a pre-trained token embedding archive file and its SHA-1 hash.
-    pretrained_archive_name_sha1 = C.FAST_TEXT_ARCHIVE_SHA1
-
     # Map a pre-trained token embedding file and its SHA-1 hash.
-    pretrained_file_name_sha1 = C.FAST_TEXT_FILE_SHA1
+    source_file_hash = C.FAST_TEXT_NPZ_SHA1
 
-    @classmethod
-    def _get_download_file_name(cls, file_name):
-        # Map a pre-trained embedding file to its archive to download.
-        return '.'.join(file_name.split('.')[:-1]) + '.zip'
-
-    def __init__(self, source='wiki.simple.vec',
+    def __init__(self, source='wiki.simple',
                  embedding_root=os.path.join('~', '.mxnet', 'embedding'),
                  init_unknown_vec=nd.zeros, **kwargs):
-        FastText._check_pretrained_file_names(source)
+        FastText._check_source(source)
 
         super(FastText, self).__init__(**kwargs)
-        pretrained_file_path = FastText._get_pretrained_file(embedding_root, source)
+        pretrained_file_path = FastText._get_file_path(embedding_root, source)
 
         self._load_embedding(pretrained_file_path, elem_delim=' ',
                              init_unknown_vec=init_unknown_vec)
