@@ -725,11 +725,12 @@ def test_download_embed():
     class Test(nlp.embedding.TokenEmbedding):
         # 33 bytes.
         source_file_hash = \
-            {'embedding_test.vec': '29b9a6511cf4b5aae293c44a9ec1365b74f2a2f8'}
+                {'embedding_test': ('embedding_test.vec',
+                                    '29b9a6511cf4b5aae293c44a9ec1365b74f2a2f8')}
         namespace = 'test'
 
         def __init__(self, embedding_root='embedding', init_unknown_vec=nd.zeros, **kwargs):
-            source = 'embedding_test.vec'
+            source = 'embedding_test'
             Test._check_source(source)
 
             super(Test, self).__init__(**kwargs)
@@ -802,11 +803,12 @@ def test_token_embedding_serialization(tmpdir):
     class Test(nlp.embedding.TokenEmbedding):
         # 33 bytes.
         source_file_hash = \
-            {'embedding_test.vec': '29b9a6511cf4b5aae293c44a9ec1365b74f2a2f8'}
+                {'embedding_test': ('embedding_test.vec',
+                                    '29b9a6511cf4b5aae293c44a9ec1365b74f2a2f8')}
         namespace = 'test'
 
         def __init__(self, embedding_root='embedding', init_unknown_vec=nd.zeros, **kwargs):
-            source = 'embedding_test.vec'
+            source = 'embedding_test'
             Test._check_source(source)
 
             super(Test, self).__init__(**kwargs)
