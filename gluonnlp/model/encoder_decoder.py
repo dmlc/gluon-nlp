@@ -20,8 +20,8 @@
 __all__ = ['Seq2SeqEncoder', 'Seq2SeqDecoder',
            'GNMTEncoder', 'GNMTDecoder', 'get_gnmt_encoder_decoder']
 
-import mxnet as mx
 from functools import partial
+import mxnet as mx
 from mxnet.base import _as_list
 from mxnet.gluon import nn, rnn
 from mxnet.gluon.block import Block, HybridBlock
