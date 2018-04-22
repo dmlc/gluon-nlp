@@ -45,6 +45,7 @@ def test_text_models():
         pretrained_dataset = pretrained_to_test.get(model_name)
         model, _ = get_text_model(model_name, vocab=vocab, dataset_name=pretrained_dataset,
                                   pretrained=pretrained_dataset is not None, root='tests/data/model/')
+
         print(model)
         if not pretrained_dataset:
             model.collect_params().initialize()
