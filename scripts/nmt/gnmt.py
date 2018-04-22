@@ -148,11 +148,21 @@ def load_translation_data(dataset, src_lang='en', tgt_lang='vi'):
 def get_data_lengths(dataset):
     return list(dataset.transform(lambda srg, tgt: (len(srg), len(tgt))))
 
+
 data_train, data_val, data_test, val_tgt_sentences, test_tgt_sentences, src_vocab, tgt_vocab\
     = load_translation_data(dataset=args.dataset, src_lang=args.src_lang, tgt_lang=args.tgt_lang)
 data_train_lengths = get_data_lengths(data_train)
 data_val_lengths = get_data_lengths(data_val)
 data_test_lengths = get_data_lengths(data_test)
+
+with io.open(os.path.join(args.save_dir, 'val_gt.txt'), 'w') as of:
+    for ele in val_tgt_sentences:
+        of.write(' '.join(ele) + '\n')
+
+with io.open(os.path.join(args.save_dir, 'test_gt.txt'), 'w') as of:
+    for ele in test_tgt_sentences:
+        of.write(' '.join(ele) + '\n')
+
 
 data_train = data_train.transform(lambda src, tgt: (src, tgt, len(src), len(tgt)), lazy=False)
 data_val = SimpleDataset([(ele[0], ele[1], len(ele[0]), len(ele[1]), i)
@@ -210,7 +220,6 @@ def evaluate(data_loader):
                  max_score_sample[i][1:(sample_valid_length[i] - 1)]])
     avg_loss = avg_loss / avg_loss_denom
     translation_out = [translation_out[i] for i in all_inst_ids]
-    print(len(all_inst_ids))
     return avg_loss, translation_out
 
 
@@ -290,9 +299,7 @@ def train():
                 log_avg_loss = 0
                 log_avg_gnorm = 0
                 log_wc = 0
-            break
         valid_loss, valid_translation_out = evaluate(val_data_loader)
-        print(len(val_tgt_sentences))
         valid_bleu_score, _, _, _, _ = compute_bleu([val_tgt_sentences], valid_translation_out)
         logging.info('[Epoch {}] valid Loss={:.4f}, valid ppl={:.4f}, valid bleu={:.2f}'
                      .format(epoch_id, valid_loss, np.exp(valid_loss), valid_bleu_score))
