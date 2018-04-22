@@ -569,7 +569,7 @@ class TokenEmbedding(object):
         if not unknown_token:  # Store empty string instead of None
             unknown_token = ''
         else:
-            assert unknown_token == idx_to_token[0]
+            assert unknown_token == idx_to_token[C.UNK_IDX]
 
         if not compress:
             np.savez(file=file_path, unknown_token=unknown_token,
