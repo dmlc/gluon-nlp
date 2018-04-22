@@ -29,7 +29,7 @@ parser = argparse.ArgumentParser(description='Neural Machine Translation Example
 parser.add_argument('--dataset', type=str, default="IWSLT2015", help='Dataset to use.')
 parser.add_argument('--src_lang', type=str, default="en", help='Source language')
 parser.add_argument('--tgt_lang', type=str, default="vi", help='Target language')
-parser.add_argument('--epochs', type=int, default=20, help='upper epoch limit')
+parser.add_argument('--epochs', type=int, default=40, help='upper epoch limit')
 parser.add_argument('--num_hidden', type=int, default=128, help='Dimension of the embedding '
                                                                 'vectors and states.')
 parser.add_argument('--dropout', type=float, default=0.2,
@@ -325,7 +325,9 @@ def train():
                 of.write(' '.join(ele) + "\n")
         if valid_loss < best_valid_loss:
             best_valid_loss = valid_loss
-            model.save_params(os.path.join(args.save_dir, 'epoch{:d}.params'.format(epoch_id)))
+            save_path = os.path.join(args.save_dir, 'valid_best.params')
+            logging.info("Save best parameters to {}".format(save_path))
+            model.save_params(save_path)
         else:
             new_lr = trainer.learning_rate * args.lr_update_factor
             logging.info('Learning rate change to {}'.format(new_lr))
