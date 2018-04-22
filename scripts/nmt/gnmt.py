@@ -39,8 +39,8 @@ parser.add_argument('--num_layers', type=int, default=2, help='number of layers 
 parser.add_argument('--num_bi_layers', type=int, default=1,
                     help='number of bidirectional layers in the encoder and decoder')
 parser.add_argument('--batch_size', type=int, default=128, help='Batch size')
-parser.add_argument('--beam_size', type=int, default=1, help='Beam size')
-parser.add_argument('--lp_alpha', type=float, default=0.0, help='Alpha used in calculating the length penalty')
+parser.add_argument('--beam_size', type=int, default=4, help='Beam size')
+parser.add_argument('--lp_alpha', type=float, default=1.0, help='Alpha used in calculating the length penalty')
 parser.add_argument('--lp_k', type=int, default=5, help='K used in calculating the length penalty')
 parser.add_argument('--test_batch_size', type=int, default=32, help='Test batch size')
 parser.add_argument('--num_buckets', type=int, default=5, help='Bucket number')
