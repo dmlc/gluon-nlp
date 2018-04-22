@@ -5,8 +5,11 @@ Google Neural Machine Translation
 This example shows how to implement the GNMT model with Gluon NLP Toolkit.
 
 @article{wu2016google,
-  title={Google's neural machine translation system: Bridging the gap between human and machine translation},
-  author={Wu, Yonghui and Schuster, Mike and Chen, Zhifeng and Le, Quoc V and Norouzi, Mohammad and Macherey, Wolfgang and Krikun, Maxim and Cao, Yuan and Gao, Qin and Macherey, Klaus and others},
+  title={Google's neural machine translation system:
+   Bridging the gap between human and machine translation},
+  author={Wu, Yonghui and Schuster, Mike and Chen, Zhifeng and Le, Quoc V and
+   Norouzi, Mohammad and Macherey, Wolfgang and Krikun, Maxim and Cao, Yuan and Gao, Qin and
+   Macherey, Klaus and others},
   journal={arXiv preprint arXiv:1609.08144},
   year={2016}
 }
@@ -59,9 +62,9 @@ mx.random.seed(10000)
 
 parser = argparse.ArgumentParser(description='Neural Machine Translation Example.'
                                              'We train the Google NMT model')
-parser.add_argument('--dataset', type=str, default="IWSLT2015", help='Dataset to use.')
-parser.add_argument('--src_lang', type=str, default="en", help='Source language')
-parser.add_argument('--tgt_lang', type=str, default="vi", help='Target language')
+parser.add_argument('--dataset', type=str, default='IWSLT2015', help='Dataset to use.')
+parser.add_argument('--src_lang', type=str, default='en', help='Source language')
+parser.add_argument('--tgt_lang', type=str, default='vi', help='Target language')
 parser.add_argument('--epochs', type=int, default=40, help='upper epoch limit')
 parser.add_argument('--num_hidden', type=int, default=128, help='Dimension of the embedding '
                                                                 'vectors and states.')
@@ -203,7 +206,7 @@ data_train = data_train.transform(lambda src, tgt: (src, tgt, len(src), len(tgt)
 data_val = SimpleDataset([(ele[0], ele[1], len(ele[0]), len(ele[1]), i)
                           for i, ele in enumerate(data_val)])
 data_test = SimpleDataset([(ele[0], ele[1], len(ele[0]), len(ele[1]), i)
-                          for i, ele in enumerate(data_test)])
+                           for i, ele in enumerate(data_test)])
 if args.gpu is None:
     ctx = mx.cpu()
     print('Use CPU')
@@ -224,7 +227,7 @@ translator = BeamSearchTranslator(model=model, beam_size=args.beam_size,
                                   scorer=BeamSearchScorer(alpha=args.lp_alpha,
                                                           K=args.lp_k),
                                   max_length=args.tgt_max_len)
-logging.info("Use beam_size={}, alpha={}, K={}".format(args.beam_size, args.lp_alpha, args.lp_k))
+logging.info('Use beam_size={}, alpha={}, K={}'.format(args.beam_size, args.lp_alpha, args.lp_k))
 
 
 loss_function = SoftmaxCEMaskedLoss()
@@ -361,7 +364,7 @@ def train():
         if valid_loss < best_valid_loss:
             best_valid_loss = valid_loss
             save_path = os.path.join(args.save_dir, 'valid_best.params')
-            logging.info("Save best parameters to {}".format(save_path))
+            logging.info('Save best parameters to {}'.format(save_path))
             model.save_params(save_path)
         else:
             new_lr = trainer.learning_rate * args.lr_update_factor
