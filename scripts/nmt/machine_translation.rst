@@ -1,7 +1,7 @@
 Machine Translation
 -------------------
 
-The script trains the GNMT model on the IWSLT2015 dataset.
+Use the following command to train the GNMT model on the IWSLT2015 dataset.
 
 .. code-block:: bash
 
