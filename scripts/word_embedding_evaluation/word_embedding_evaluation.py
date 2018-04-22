@@ -57,7 +57,7 @@ group.add_argument('--embedding-name', type=str, default='fasttext',
                    help=('Name of embedding type to load. '
                          'Valid entries: {}'.format(', '.join(
                              nlp.embedding.list_sources().keys()))))
-group.add_argument('--embedding-source', type=str, default='wiki.simple.vec',
+group.add_argument('--embedding-source', type=str, default='wiki.simple',
                    help=('Source from which to initialize the embedding.'
                          'Pass --list-embedding-sources to get a list of '
                          'valid sources for a given --embedding-name.'))
@@ -65,32 +65,31 @@ group.add_argument('--list-embedding-sources', action='store_true')
 
 # Evaluation arguments
 group = parser.add_argument_group('Evaluation arguments')
-group.add_argument('--ignore_oov', action='store_true',
+group.add_argument('--ignore-oov', action='store_true',
                    help='Drop OOV words from evaluation datasets.')
 ## Datasets
 group.add_argument(
-    '--similarity_datasets', type=str,
+    '--similarity-datasets', type=str,
     default=nlp.data.word_embedding_evaluation.word_similarity_datasets,
     nargs='*',
     help='Word similarity datasets to use for intrinsic evaluation.')
 group.add_argument(
-    '--similarity_functions', type=str,
-    default=nlp.embedding.evaluation.list_evaluation_functions(
-        'similarity'), nargs='+',
+    '--similarity-functions', type=str,
+    default=nlp.embedding.evaluation.list_evaluation_functions('similarity'),
+    nargs='+',
     help='Word similarity functions to use for intrinsic evaluation.')
 group.add_argument(
-    '--analogy_datasets', type=str,
+    '--analogy-datasets', type=str,
     default=nlp.data.word_embedding_evaluation.word_analogy_datasets,
     nargs='*',
     help='Word similarity datasets to use for intrinsic evaluation.')
 group.add_argument(
-    '--analogy_functions', type=str,
-    default=nlp.embedding.evaluation.list_evaluation_functions(
-        'analogy'), nargs='+',
-    help='Word analogy functions to use for intrinsic evaluation. ')
+    '--analogy-functions', type=str,
+    default=nlp.embedding.evaluation.list_evaluation_functions('analogy'),
+    nargs='+', help='Word analogy functions to use for intrinsic evaluation. ')
 ## Analogy evaluation specific arguments
 group.add_argument(
-    '--analogy_dont_exclude_question_words', action='store_true',
+    '--analogy-dont-exclude-question-words', action='store_true',
     help=('Exclude input words from valid output analogies.'
           'The performance of word embeddings on the analogy task '
           'is around 0% accuracy if input words are not excluded.'))
@@ -198,7 +197,7 @@ def evaluate_similarity(token_embedding, dataset,
 
     sr = stats.spearmanr(pred_similarity.asnumpy(), np.array(scores))
     logging.info('Spearman rank correlation on %s: %s',
-                 dataset.__class__.__name__, sr)
+                 dataset.__class__.__name__, sr.correlation)
 
 
 def evaluate_analogy(token_embedding, dataset, analogy_function='ThreeCosMul'):
