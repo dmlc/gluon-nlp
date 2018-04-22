@@ -23,6 +23,7 @@ import json
 import os
 import sys
 
+import pytest
 import random
 import mxnet as mx
 import numpy as np
@@ -134,8 +135,8 @@ def _assert_similarity_dataset(data):
 def test_wordsim353():
     for segment, length in (("all", 252 + 203), ("relatedness", 252),
                             ("similarity", 203)):
-        data = nlp.data.WordSim353(
-            segment=segment, root=os.path.join('tests', 'data', 'wordsim353'))
+        data = nlp.data.WordSim353(segment=segment, root=os.path.join(
+            'tests', 'externaldata', 'wordsim353'))
         assert len(data) == length, len(data)
         _assert_similarity_dataset(data)
 
@@ -150,39 +151,42 @@ def test_men():
 
 def test_radinsky_mturk():
     data = nlp.data.RadinskyMTurk(
-        root=os.path.join('tests', 'data', 'radinsky'))
+        root=os.path.join('tests', 'externaldata', 'radinsky'))
     assert len(data) == 287
     _assert_similarity_dataset(data)
 
 
 def test_verb143():
-    data = nlp.data.BakerVerb143(root=os.path.join('tests', 'data', 'verb143'))
+    data = nlp.data.BakerVerb143(
+        root=os.path.join('tests', 'externaldata', 'verb143'))
     assert len(data) == 144
     _assert_similarity_dataset(data)
 
 
 def test_verb130():
     data = nlp.data.YangPowersVerb130(
-        root=os.path.join('tests', 'data', 'verb130'))
+        root=os.path.join('tests', 'externaldata', 'verb130'))
     assert len(data) == 130
     _assert_similarity_dataset(data)
 
 
 def test_rare_words():
-    data = nlp.data.RareWords(root=os.path.join('tests', 'data', 'rarewords'))
+    data = nlp.data.RareWords(
+        root=os.path.join('tests', 'externaldata', 'rarewords'))
     assert len(data) == 2034
     _assert_similarity_dataset(data)
 
 
 def test_simlex999():
-    data = nlp.data.SimLex999(root=os.path.join('tests', 'data', 'simlex999'))
+    data = nlp.data.SimLex999(
+        root=os.path.join('tests', 'externaldata', 'simlex999'))
     assert len(data) == 999
     _assert_similarity_dataset(data)
 
 
 def test_simverb3500():
     data = nlp.data.SimVerb3500(
-        root=os.path.join('tests', 'data', 'simverb3500'))
+        root=os.path.join('tests', 'externaldata', 'simverb3500'))
     assert len(data) == 3500
     _assert_similarity_dataset(data)
 
@@ -190,7 +194,7 @@ def test_simverb3500():
 def test_semeval17task2():
     for segment, length in [("trial", 18), ("test", 500)]:
         data = nlp.data.SemEval17Task2(
-            root=os.path.join('tests', 'data', 'semeval17task2'),
+            root=os.path.join('tests', 'externaldata', 'semeval17task2'),
             segment=segment)
         assert len(data) == length
         _assert_similarity_dataset(data)
@@ -201,21 +205,23 @@ def test_semeval17task2():
 ###############################################################################
 def test_googleanalogy():
     data = nlp.data.GoogleAnalogyTestSet(
-        root=os.path.join('tests', 'data', 'google_analogy'))
+        root=os.path.join('tests', 'externaldata', 'google_analogy'))
     assert len(data[0]) == 4
     assert len(data) == 10675 + 8869
 
 
 def test_bigger_analogy():
     data = nlp.data.BiggerAnalogyTestSet(
-        root=os.path.join('tests', 'data', 'bigger_analogy'))
+        root=os.path.join('tests', 'externaldata', 'bigger_analogy'))
     assert len(data[0]) == 4
     assert len(data) == 98000
 
 
 def test_conll2000():
-    train = nlp.data.CoNLL2000(segment='train', root='tests/data/conll2000')
-    test = nlp.data.CoNLL2000(segment='test', root='tests/data/conll2000')
+    train = nlp.data.CoNLL2000(segment='train', root=os.path.join(
+        'tests', 'externaldata', 'conll2000'))
+    test = nlp.data.CoNLL2000(segment='test', root=os.path.join(
+        'tests', 'externaldata', 'conll2000'))
     assert len(train) == 8936, len(train)
     assert len(test) == 2012, len(test)
 
@@ -232,9 +238,12 @@ def test_conll2000():
 
 def test_conll2001():
     for part in range(1, 4):
-        train = nlp.data.CoNLL2001(part, segment='train', root='tests/data/conll2001')
-        testa = nlp.data.CoNLL2001(part, segment='testa', root='tests/data/conll2001')
-        testb = nlp.data.CoNLL2001(part, segment='testb', root='tests/data/conll2001')
+        train = nlp.data.CoNLL2001(part, segment='train', root=os.path.join(
+            'tests', 'externaldata', 'conll2001'))
+        testa = nlp.data.CoNLL2001(part, segment='testa', root=os.path.join(
+            'tests', 'externaldata', 'conll2001'))
+        testb = nlp.data.CoNLL2001(part, segment='testb', root=os.path.join(
+            'tests', 'externaldata', 'conll2001'))
         assert len(train) == 8936, len(train)
         assert len(testa) == 2012, len(testa)
         assert len(testb) == 1671, len(testb)
@@ -247,46 +256,49 @@ def test_conll2001():
                 assert all(isinstance(i, _str_types) for i in clause), clause
 
 
-def test_conll2002():
-    train = nlp.data.CoNLL2002('ned', segment='train', root='tests/data/conll2002')
-    testa = nlp.data.CoNLL2002('ned', segment='testa', root='tests/data/conll2002')
-    testb = nlp.data.CoNLL2002('ned', segment='testb', root='tests/data/conll2002')
-    assert len(train) == 15806, len(train)
-    assert len(testa) == 2895, len(testa)
-    assert len(testb) == 5195, len(testb)
-
-    for dataset in [train, testa, testb]:
-        for i, (data, pos, ner) in enumerate(dataset):
-            assert all(isinstance(d, _str_types) for d in data), data
-            assert all(isinstance(p, _str_types) for p in pos), pos
-            assert all(isinstance(n, _str_types) for n in ner), ner
-
-    train = nlp.data.CoNLL2002('esp', segment='train', root='tests/data/conll2002')
-    testa = nlp.data.CoNLL2002('esp', segment='testa', root='tests/data/conll2002')
-    testb = nlp.data.CoNLL2002('esp', segment='testb', root='tests/data/conll2002')
-    assert len(train) == 8323, len(train)
-    assert len(testa) == 1915, len(testa)
-    assert len(testb) == 1517, len(testb)
-
-    for dataset in [train, testa, testb]:
-        for i, (data, ner) in enumerate(dataset):
-            assert all(isinstance(d, _str_types) for d in data), data
-            assert all(isinstance(n, _str_types) for n in ner), ner
+@pytest.mark.parametrize('segment,length', [
+    ('train', 15806),
+    ('testa', 2895),
+    ('testb', 5195),
+])
+def test_conll2002_ned(segment, length):
+    dataset = nlp.data.CoNLL2002('ned', segment=segment, root=os.path.join(
+        'tests', 'externaldata', 'conll2002'))
+    assert len(dataset) == length, len(dataset)
+    for i, (data, pos, ner) in enumerate(dataset):
+        assert all(isinstance(d, _str_types) for d in data), data
+        assert all(isinstance(p, _str_types) for p in pos), pos
+        assert all(isinstance(n, _str_types) for n in ner), ner
 
 
-def test_conll2004():
-    train = nlp.data.CoNLL2004(segment='train', root='tests/data/conll2004')
-    dev = nlp.data.CoNLL2004(segment='dev', root='tests/data/conll2004')
-    test = nlp.data.CoNLL2004(segment='test', root='tests/data/conll2004')
-    assert len(train) == 8936, len(train)
-    assert len(dev) == 2012, len(dev)
-    assert len(test) == 1671, len(test)
+@pytest.mark.parametrize('segment,length', [
+    ('train', 8323),
+    ('testa', 1915),
+    ('testb', 1517),
+])
+def test_conll2002_esp(segment, length):
+    dataset = nlp.data.CoNLL2002('esp', segment=segment, root=os.path.join(
+        'tests', 'externaldata', 'conll2002'))
+    assert len(dataset) == length, len(dataset)
+    for i, (data, ner) in enumerate(dataset):
+        assert all(isinstance(d, _str_types) for d in data), data
+        assert all(isinstance(n, _str_types) for n in ner), ner
 
-    for dataset in [train, dev, test]:
-        for i, x in enumerate(dataset):
-            assert len(x) >= 6, x
-            assert all(isinstance(d, _str_types) for f in x for d in f), x
-            assert max(len(f) for f in x) == min(len(f) for f in x), x
+
+@pytest.mark.parametrize('segment,length', [
+    ('train', 8936),
+    ('dev', 2012),
+    ('test', 1671),
+])
+def test_conll2004(segment, length):
+    dataset = nlp.data.CoNLL2004(segment=segment, root=os.path.join(
+        'tests', 'externaldata', 'conll2004'))
+    assert len(dataset) == length, len(dataset)
+
+    for i, x in enumerate(dataset):
+        assert len(x) >= 6, x
+        assert all(isinstance(d, _str_types) for f in x for d in f), x
+        assert max(len(f) for f in x) == min(len(f) for f in x), x
 
 
 def test_ud21():
@@ -297,8 +309,9 @@ def test_ud21():
         segment = list(segments.keys())
         random.shuffle(segment)
         segment = segment[0]
-        dataset = nlp.data.UniversalDependencies21(lang=lang, segment=segment, root='tests/data/ud2.1')
-
+        dataset = nlp.data.UniversalDependencies21(
+            lang=lang, segment=segment, root=os.path.join(
+                'tests', 'externaldata', 'ud2.1'))
         print('processing {}: {}'.format(lang, segment))
         for i, x in enumerate(dataset):
             assert len(x) >= 9, x
