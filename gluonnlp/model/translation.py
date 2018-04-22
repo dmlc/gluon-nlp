@@ -1,6 +1,7 @@
 from mxnet.gluon import Block
 from mxnet.gluon import nn
 import mxnet as mx
+import numpy as np
 import warnings
 from .beam_search import BeamSearchScorer, BeamSearchSampler
 
@@ -240,8 +241,9 @@ class BeamSearchTranslator(object):
         """
         batch_size = src_seq.shape[0]
         encoder_outputs = self._model.encode(src_seq, valid_length=src_valid_length)
-        decoder_states = self.decoder.init_state_from_encoder(encoder_outputs,
-                                                              encoder_valid_length=src_valid_length)
-        inputs = mx.nd.full(shape=(batch_size,), ctx=src_seq.context)
+        decoder_states = self._model.decoder.init_state_from_encoder(encoder_outputs,
+                                                                     src_valid_length)
+        inputs = mx.nd.full(shape=(batch_size,), ctx=src_seq.context, dtype=np.int32,
+                            val=self._model.tgt_vocab.token_to_idx[self._model.tgt_vocab.bos_token])
         samples, scores, sample_valid_length = self._sampler(inputs, decoder_states)
         return samples, scores, sample_valid_length

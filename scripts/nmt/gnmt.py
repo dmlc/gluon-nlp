@@ -287,6 +287,7 @@ def train():
                 log_avg_loss = 0
                 log_avg_gnorm = 0
                 log_wc = 0
+            break
         valid_loss, valid_translation_out = evaluate(val_data_loader)
         valid_bleu_score, _, _, _, _ = compute_bleu([val_tgt_sentences], valid_translation_out)
         logging.info('[Epoch {}] valid Loss={:.4f}, valid ppl={:.4f}, valid bleu={:.2f}'
