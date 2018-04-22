@@ -19,14 +19,16 @@
 
 from __future__ import print_function
 
+import datetime
 import json
 import os
+import random
 import sys
 
-import pytest
-import random
+from flaky import flaky
 import mxnet as mx
 import numpy as np
+import pytest
 
 import gluonnlp as nlp
 
@@ -132,6 +134,7 @@ def _assert_similarity_dataset(data):
     assert all(data.min <= row[2] <= data.max for row in data)
 
 
+@flaky(max_runs=2, min_passes=1)
 def test_wordsim353():
     for segment, length in (("all", 252 + 203), ("relatedness", 252),
                             ("similarity", 203)):
@@ -149,6 +152,7 @@ def test_men():
         _assert_similarity_dataset(data)
 
 
+@flaky(max_runs=2, min_passes=1)
 def test_radinsky_mturk():
     data = nlp.data.RadinskyMTurk(
         root=os.path.join('tests', 'externaldata', 'radinsky'))
@@ -156,6 +160,7 @@ def test_radinsky_mturk():
     _assert_similarity_dataset(data)
 
 
+@flaky(max_runs=2, min_passes=1)
 def test_verb143():
     data = nlp.data.BakerVerb143(
         root=os.path.join('tests', 'externaldata', 'verb143'))
@@ -163,6 +168,7 @@ def test_verb143():
     _assert_similarity_dataset(data)
 
 
+@flaky(max_runs=2, min_passes=1)
 def test_verb130():
     data = nlp.data.YangPowersVerb130(
         root=os.path.join('tests', 'externaldata', 'verb130'))
@@ -170,6 +176,9 @@ def test_verb130():
     _assert_similarity_dataset(data)
 
 
+@flaky(max_runs=2, min_passes=1)
+@pytest.mark.skipif(datetime.date.today() < datetime.date(2018, 5, 7),
+                    reason='Disabled for 2 weeks due to server downtime.')
 def test_rare_words():
     data = nlp.data.RareWords(
         root=os.path.join('tests', 'externaldata', 'rarewords'))
@@ -177,6 +186,7 @@ def test_rare_words():
     _assert_similarity_dataset(data)
 
 
+@flaky(max_runs=2, min_passes=1)
 def test_simlex999():
     data = nlp.data.SimLex999(
         root=os.path.join('tests', 'externaldata', 'simlex999'))
@@ -184,6 +194,7 @@ def test_simlex999():
     _assert_similarity_dataset(data)
 
 
+@flaky(max_runs=2, min_passes=1)
 def test_simverb3500():
     data = nlp.data.SimVerb3500(
         root=os.path.join('tests', 'externaldata', 'simverb3500'))
@@ -191,6 +202,7 @@ def test_simverb3500():
     _assert_similarity_dataset(data)
 
 
+@flaky(max_runs=2, min_passes=1)
 def test_semeval17task2():
     for segment, length in [("trial", 18), ("test", 500)]:
         data = nlp.data.SemEval17Task2(
@@ -203,6 +215,7 @@ def test_semeval17task2():
 ###############################################################################
 # Word analogy datasets
 ###############################################################################
+@flaky(max_runs=2, min_passes=1)
 def test_googleanalogy():
     data = nlp.data.GoogleAnalogyTestSet(
         root=os.path.join('tests', 'externaldata', 'google_analogy'))
@@ -210,6 +223,7 @@ def test_googleanalogy():
     assert len(data) == 10675 + 8869
 
 
+@flaky(max_runs=2, min_passes=1)
 def test_bigger_analogy():
     data = nlp.data.BiggerAnalogyTestSet(
         root=os.path.join('tests', 'externaldata', 'bigger_analogy'))
@@ -217,6 +231,7 @@ def test_bigger_analogy():
     assert len(data) == 98000
 
 
+@flaky(max_runs=2, min_passes=1)
 def test_conll2000():
     train = nlp.data.CoNLL2000(segment='train', root=os.path.join(
         'tests', 'externaldata', 'conll2000'))
@@ -236,6 +251,7 @@ def test_conll2000():
         assert all(isinstance(c, _str_types) for c in chk), chk
 
 
+@flaky(max_runs=2, min_passes=1)
 def test_conll2001():
     for part in range(1, 4):
         train = nlp.data.CoNLL2001(part, segment='train', root=os.path.join(
@@ -256,6 +272,7 @@ def test_conll2001():
                 assert all(isinstance(i, _str_types) for i in clause), clause
 
 
+@flaky(max_runs=2, min_passes=1)
 @pytest.mark.parametrize('segment,length', [
     ('train', 15806),
     ('testa', 2895),
@@ -271,6 +288,7 @@ def test_conll2002_ned(segment, length):
         assert all(isinstance(n, _str_types) for n in ner), ner
 
 
+@flaky(max_runs=2, min_passes=1)
 @pytest.mark.parametrize('segment,length', [
     ('train', 8323),
     ('testa', 1915),
@@ -285,6 +303,7 @@ def test_conll2002_esp(segment, length):
         assert all(isinstance(n, _str_types) for n in ner), ner
 
 
+@flaky(max_runs=2, min_passes=1)
 @pytest.mark.parametrize('segment,length', [
     ('train', 8936),
     ('dev', 2012),
@@ -301,6 +320,7 @@ def test_conll2004(segment, length):
         assert max(len(f) for f in x) == min(len(f) for f in x), x
 
 
+@flaky(max_runs=2, min_passes=1)
 def test_ud21():
     test_langs = list(nlp._constants.UD21_DATA_FILE_SHA1.items())
     random.shuffle(test_langs)
