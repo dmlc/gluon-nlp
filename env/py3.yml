@@ -9,5 +9,6 @@ dependencies:
   - spacy
   - nltk
   - pytest
+  - flaky
   - pip:
     - mxnet>=1.2.0b20180415
