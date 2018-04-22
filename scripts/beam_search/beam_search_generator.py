@@ -39,7 +39,7 @@ parser.add_argument('--lm_model', type=str, default='awd_lstm_lm_1150',
                          '"awd_lstm_lm_1150", etc.')
 parser.add_argument('--beam_size', type=int, default=4,
                     help='Beam size in the beam search sampler.')
-parser.add_argument('--alpha', type=int, default=0.0, help='Alpha in the length penalty term.')
+parser.add_argument('--alpha', type=float, default=0.0, help='Alpha in the length penalty term.')
 parser.add_argument('--k', type=int, default=5, help='K in the length penalty term.')
 parser.add_argument('--bos', type=str, default='It')
 parser.add_argument('--eos', type=str, default='.')
