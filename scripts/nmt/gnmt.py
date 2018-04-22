@@ -209,6 +209,7 @@ def evaluate(data_loader):
                  max_score_sample[i][1:(sample_valid_length[i] - 1)]])
     avg_loss = avg_loss / avg_loss_denom
     translation_out = [translation_out[i] for i in all_inst_ids]
+    print(len(all_inst_ids))
     return avg_loss, translation_out
 
 
