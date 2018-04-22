@@ -331,7 +331,8 @@ class TokenEmbedding(object):
             if deserialized_embedding.unknown_token == self.unknown_token:
                 # If the unknown_token is the same, we will find it below and a
                 # new unknown token wont be inserted.
-                pass
+                idx_to_token = deserialized_embedding.idx_to_token
+                idx_to_vec = deserialized_embedding.idx_to_vec
             elif self.unknown_token:
                 # If they are different, we need to manually replace it so that
                 # it is found below and no new unknown token would be inserted.
@@ -343,10 +344,12 @@ class TokenEmbedding(object):
             else:
                 # If the TokenEmbedding shall not have an unknown token, we
                 # just delete the one in the npz.
-                idx_to_token = np.delete(
-                    deserialized_embedding.idx_to_token, obj=C.UNK_IDX, axis=0)
-                idx_to_vec = np.delete(
-                    deserialized_embedding.idx_to_vec, obj=C.UNK_IDX, axis=0)
+                idx_to_token = (
+                    deserialized_embedding.idx_to_token[:C.UNK_IDX] +
+                    deserialized_embedding.idx_to_token[C.UNK_IDX + 1:])
+                idx_to_vec = nd.concat(
+                    deserialized_embedding.idx_to_vec[:C.UNK_IDX],
+                    deserialized_embedding.idx_to_vec[C.UNK_IDX + 1:])
         else:
             idx_to_token = deserialized_embedding.idx_to_token
             idx_to_vec = deserialized_embedding.idx_to_vec
