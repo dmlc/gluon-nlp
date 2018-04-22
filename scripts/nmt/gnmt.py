@@ -28,8 +28,7 @@ parser = argparse.ArgumentParser(description='Neural Machine Translation Example
 parser.add_argument('--dataset', type=str, default="IWSLT2015", help='Dataset to use.')
 parser.add_argument('--src-lang', type=str, default="en", help='Source language')
 parser.add_argument('--tgt-lang', type=str, default="vi", help='Target language')
-parser.add_argument('--epochs', type=int, default=5,
-                    help='upper epoch limit')
+parser.add_argument('--epochs', type=int, default=20, help='upper epoch limit')
 parser.add_argument('--num-hidden', type=int, default=128, help='Dimension of the embedding '
                                                                 'vectors and states.')
 parser.add_argument('--dropout', type=float, default=0.2,
