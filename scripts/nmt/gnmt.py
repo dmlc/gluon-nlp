@@ -274,7 +274,6 @@ def train():
             log_avg_loss += step_loss
             log_avg_gnorm += gnorm
             log_wc += src_wc + tgt_wc
-            epoch_wc += src_wc + tgt_wc
             if (batch_id + 1) % args.log_interval == 0:
                 wps = log_wc / (time.time() - log_start_time)
                 logging.info('[Epoch {} Batch {}/{}] loss={:.4f}, ppl={:.4f}, gnorm={:.4f}, '
