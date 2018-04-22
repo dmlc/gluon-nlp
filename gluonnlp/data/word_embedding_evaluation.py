@@ -25,7 +25,7 @@ import tarfile
 import zipfile
 
 from mxnet.gluon.data.dataset import SimpleDataset
-from mxnet.gluon.utils import check_sha1
+from mxnet.gluon.utils import check_sha1, _get_repo_file_url
 
 from .._constants import BATS_CHECKSUMS, SEMEVAL17_CHECKSUMS
 from .dataset import CorpusDataset
@@ -112,6 +112,7 @@ class _Dataset(SimpleDataset):
     _archive_file = (None, None)  # Archive name and checksum
     _checksums = None  # Checksum of archive contents
     _verify_ssl = True  # Verify SSL certificates when downloading from self._url
+    _namespace = None  # Contains S3 namespace for self-hosted datasets
 
     def __init__(self, root):
         self.root = os.path.expanduser(root)
@@ -126,7 +127,11 @@ class _Dataset(SimpleDataset):
             name = name.split('/')
             path = os.path.join(self.root, *name)
             if not os.path.exists(path) or not check_sha1(path, checksum):
-                downloaded_file_path = download(self._url, path=self.root,
+                if self._namespace is not None:
+                    url = _get_repo_file_url(self._namespace, self._archive_file[0])
+                else:
+                    url = self._url
+                downloaded_file_path = download(url, path=self.root,
                                                 sha1_hash=archive_hash,
                                                 verify=self._verify_ssl)
 
@@ -270,6 +275,7 @@ class MEN(WordSimilarityEvaluationDataset):
 
     """
     _url = 'http://clic.cimec.unitn.it/~elia.bruni/resources/MEN.tar.gz'
+    _namespace = 'gluon/dataset/men'
     _archive_file = ('MEN.tar.gz', '3c4af1b7009c1ad75e03562f7f7bc5f51ff3a31a')
     _checksums = {
         'MEN/MEN_dataset_lemma_form.dev':
