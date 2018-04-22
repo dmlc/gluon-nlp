@@ -2,7 +2,7 @@ Word Language Model
 -------------------
 
 Merity, S., et al. "`Regularizing and optimizing LSTM language models <https://openreview.net/pdf?id=SyyGPP0TZ>`_". ICLR 2018
-----------------------------------------------------------------------------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 All the language models are trained with this script: :download:`this example script <language_model/word_language_model.py>`.
 The key features used to reproduce the results for pre-trained models are listed in the following tables.
