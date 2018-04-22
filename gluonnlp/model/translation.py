@@ -19,7 +19,7 @@
 """Machine translation models and translators."""
 
 
-__all__ = ["NMTModel", "BeamSearchTranslator"]
+__all__ = ['NMTModel', 'BeamSearchTranslator']
 
 from mxnet.gluon import Block
 from mxnet.gluon import nn
@@ -88,7 +88,7 @@ class NMTModel(Block):
             assert embed_size is not None, '"embed_size" cannot be None if "src_embed" is not ' \
                                            'given.'
             with self.name_scope():
-                self.src_embed = nn.HybridSequential(prefix="src_embed_")
+                self.src_embed = nn.HybridSequential(prefix='src_embed_')
                 with self.src_embed.name_scope():
                     self.src_embed.add(nn.Embedding(input_dim=len(src_vocab), output_dim=embed_size,
                                                     weight_initializer=embed_initializer))
@@ -103,10 +103,10 @@ class NMTModel(Block):
                 self.tgt_embed = tgt_embed
             else:
                 assert embed_size is not None,\
-                    "\"embed_size\" cannot be None if \"tgt_embed\" is " \
-                    "not given and \"shared_embed\" is not turned on."
+                    '"embed_size" cannot be None if "tgt_embed" is ' \
+                    'not given and "shared_embed" is not turned on.'
                 with self.name_scope():
-                    self.tgt_embed = nn.HybridSequential(prefix="tgt_embed_")
+                    self.tgt_embed = nn.HybridSequential(prefix='tgt_embed_')
                     with self.tgt_embed.name_scope():
                         self.tgt_embed.add(
                             nn.Embedding(input_dim=len(tgt_vocab), output_dim=embed_size,
@@ -115,7 +115,7 @@ class NMTModel(Block):
         # Construct tgt proj
         if tgt_proj is None:
             with self.name_scope():
-                self.tgt_proj = nn.Dense(units=len(tgt_vocab), flatten=False, prefix="tgt_proj_")
+                self.tgt_proj = nn.Dense(units=len(tgt_vocab), flatten=False, prefix='tgt_proj_')
         else:
             self.tgt_proj = tgt_proj
 
