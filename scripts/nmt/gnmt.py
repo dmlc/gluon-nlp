@@ -302,10 +302,12 @@ def train():
                      .format(epoch_id, test_loss, np.exp(test_loss), test_bleu_score))
         with io.open(os.path.join(args.save_dir, 'epoch{:d}_valid_out.txt'), 'w',
                      encoding='utf-8') as of:
-            of.writelines([' '.join(ele) for ele in valid_translation_out])
+            for ele in valid_translation_out:
+                of.write(' '.join(ele) + "\n")
         with io.open(os.path.join(args.save_dir, 'epoch{:d}_test_out.txt'), 'w',
                      encoding='utf-8') as of:
-            of.writelines([' '.join(ele) for ele in test_translation_out])
+            for ele in test_translation_out:
+                of.write(' '.join(ele) + "\n")
         if valid_loss < best_valid_loss:
             best_valid_loss = valid_loss
             model.save_params(os.path.join(args.save_dir, 'epoch{:d}.params'.format(epoch_id)))
