@@ -71,9 +71,9 @@ def _transform_layout(data):
 # Also, we transform the layout to NTC
 def decoder(inputs, states):
     states = _transform_layout(states)
-    inputs, states = lm_model(mx.nd.expand_dims(inputs, axis=0), states)
+    outputs, states = lm_model(mx.nd.expand_dims(inputs, axis=0), states)
     states = _transform_layout(states)
-    return inputs, states
+    return outputs[0], states
 
 
 def generate():
