@@ -7,4 +7,4 @@ Here are some quick examples to help get started.
    :maxdepth: 2
 
    vocab_emb
-   sa.rst
+   sa

@@ -194,6 +194,6 @@ More detail about the training using pretrained language model and bucketing can
 .. toctree::
    :maxdepth: 1
 
-   sentiment_analysis/sentiment_analysis.ipynb
+   ../sentiment_analysis/sentiment_analysis.ipynb
 
 
