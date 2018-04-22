@@ -51,7 +51,7 @@ These models can constructed by passing ``pretrained=True``:
 .. _AWD: https://arxiv.org/abs/1404.5997
 """
 __all__ = ['lm', 'standard_lstm_lm_200', 'standard_lstm_lm_650', 'standard_lstm_lm_1500',
-           'awd_lstm_lm_1150']
+           'awd_lstm_lm_1150', 'awd_lstm_lm_600']
 
 from . import language_model as lm
 
@@ -90,7 +90,8 @@ def get_model(name, dataset_name='wikitext-2', **kwargs):
     models = {'standard_lstm_lm_200': standard_lstm_lm_200,
               'standard_lstm_lm_650': standard_lstm_lm_650,
               'standard_lstm_lm_1500': standard_lstm_lm_1500,
-              'awd_lstm_lm_1150': awd_lstm_lm_1150}
+              'awd_lstm_lm_1150': awd_lstm_lm_1150,
+              'awd_lstm_lm_600': awd_lstm_lm_600}
     name = name.lower()
     if name not in models:
         raise ValueError(
