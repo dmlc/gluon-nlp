@@ -225,8 +225,10 @@ def evaluate(data_loader):
                 [tgt_vocab.idx_to_token[ele] for ele in
                  max_score_sample[i][1:(sample_valid_length[i] - 1)]])
     avg_loss = avg_loss / avg_loss_denom
-    translation_out = [translation_out[i] for i in all_inst_ids]
-    return avg_loss, translation_out
+    real_translation_out = [None for _ in range(len(all_inst_ids))]
+    for real_ind, sentence in zip(all_inst_ids, translation_out):
+        real_translation_out[ind] = sentence
+    return avg_loss, real_translation_out
 
 
 def train():
@@ -261,7 +263,7 @@ def train():
                                             ratio=args.bucket_ratio,
                                             shuffle=False)
     logging.info('Test Batch Sampler:\n{}'.format(test_batch_sampler.stats()))
-    test_data_loader = DataLoader(data_val,
+    test_data_loader = DataLoader(data_test,
                                   batch_sampler=test_batch_sampler,
                                   batchify_fn=test_batchify_fn,
                                   num_workers=8)
