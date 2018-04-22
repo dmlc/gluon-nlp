@@ -94,7 +94,7 @@ def generate():
     print("Generation Result:")
     for i in range(args.beam_size):
         sentence = [vocab.idx_to_token[ele] for ele in samples[i][:valid_lengths[i]]]
-        print(tuple(' '.join(sentence), scores[i]))
+        print([' '.join(sentence), scores[i]])
 
 
 if __name__ == '__main__':
