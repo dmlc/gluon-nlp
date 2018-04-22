@@ -78,8 +78,3 @@ def test_gnmt_encoder_decoder():
                                                     np.ones(attention_out.shape[:2]))
                     else:
                         assert(len(additional_outputs) == 0)
-
-
-if __name__ == "__main__":
-    import nose
-    nose.runmodule()
