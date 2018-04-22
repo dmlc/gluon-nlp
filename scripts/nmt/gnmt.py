@@ -291,6 +291,7 @@ def train():
                 log_wc = 0
             break
         valid_loss, valid_translation_out = evaluate(val_data_loader)
+        print(len(val_tgt_sentences))
         valid_bleu_score, _, _, _, _ = compute_bleu([val_tgt_sentences], valid_translation_out)
         logging.info('[Epoch {}] valid Loss={:.4f}, valid ppl={:.4f}, valid bleu={:.2f}'
                      .format(epoch_id, valid_loss, np.exp(valid_loss), valid_bleu_score))
