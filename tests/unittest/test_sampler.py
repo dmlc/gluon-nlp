@@ -60,8 +60,3 @@ def test_sorted_bucket_sampler():
                     for batch_sample_ids in sampler:
                         total_sampled_ids.extend(batch_sample_ids)
                     assert len(set(total_sampled_ids)) == len(total_sampled_ids) == N
-
-
-if __name__ == "__main__":
-    import nose
-    nose.runmodule()

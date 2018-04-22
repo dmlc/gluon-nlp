@@ -1,3 +1,5 @@
+# coding: utf-8
+
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -15,21 +17,11 @@
 # specific language governing permissions and limitations
 # under the License.
 
-ROOTDIR = $(CURDIR)
+# pylint: disable=wildcard-import
+"""Word embeddings."""
 
-pylint:
-	pylint --rcfile=$(ROOTDIR)/.pylintrc gluonnlp scripts/*/*.py
+from .token_embedding import *
 
-docs:
-	make -C docs html
+from . import evaluation
 
-clean:
-	rm -rf gluonnlp.egg-info build dist | true
-	rm -rf tests/data
-	make -C docs clean
-
-test:
-	py.test -v --capture=no --durations=0  tests/unittest scripts
-
-release:
-	python setup.py sdist
+__all__ = (token_embedding.__all__ + ['evaluation'])

@@ -40,7 +40,6 @@ Beam Search
     .. autoclass:: gluonnlp.model.beam_search.BeamSearchSampler
         :members: __call__
 
-
 Other Modeling Utilities
 ------------------------
 .. automodule:: gluonnlp.model.parameter

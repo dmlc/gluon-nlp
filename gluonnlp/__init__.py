@@ -21,8 +21,8 @@
 """NLP toolkit."""
 
 from . import data
-from . import model
 from . import embedding
+from . import model
 from .vocab import *
 
 __version__ = '0.1.0'
