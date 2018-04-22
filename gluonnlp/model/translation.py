@@ -2,6 +2,7 @@ from mxnet.gluon import Block
 from mxnet.gluon import nn
 import mxnet as mx
 import warnings
+from .beam_search import BeamSearchScorer, BeamSearchSampler
 
 __all__ = ["NMTModel"]
 
@@ -138,11 +139,12 @@ class NMTModel(Block):
         return outputs, states, additional_outputs
 
     def decode_step(self, step_input, states):
-        """
+        """One step decoding of the translation model.
 
         Parameters
         ----------
         step_input : NDArray
+            Shape (batch_size,)
         states : list of NDArrays
 
         Returns
@@ -187,3 +189,59 @@ class NMTModel(Block):
         outputs, _, additional_outputs =\
             self.decode_seq(tgt_seq, decoder_states, tgt_valid_length)
         return outputs, additional_outputs
+
+
+class BeamSearchTranslator(object):
+    """Beam Search Translator
+
+    Parameters
+    ----------
+    model : NMTModel
+        The neural machine translation model
+    beam_size : int
+        Size of the beam
+    scorer : BeamSearchScorer
+        Score function used in beamsearch
+    max_length : int
+        The maximum decoding length
+    """
+    def __init__(self, model, beam_size=1, scorer=BeamSearchScorer(), max_length=100):
+        self._model = model
+        self._sampler = BeamSearchSampler(
+            decoder=self._decode_logprob,
+            beam_size=beam_size,
+            eos_id=model.tgt_vocab.token_to_idx[model.tgt_vocab.eos_token],
+            scorer=scorer,
+            max_length=max_length)
+
+    def _decode_logprob(self, step_input, states):
+        out, states, _ = self._model.decode_step(step_input, states)
+        return mx.nd.log_softmax(out), states
+
+    def translate(self, src_seq, src_valid_length):
+        """Get the translation result given the input sentence.
+
+        Parameters
+        ----------
+        src_seq : mx.nd.NDArray
+            Shape (batch_size, length)
+        src_valid_length : mx.nd.NDArray
+            Shape (batch_size,)
+
+        Returns
+        -------
+        samples : NDArray
+            Samples draw by beam search. Shape (batch_size, beam_size, length). dtype is int32.
+        scores : NDArray
+            Scores of the samples. Shape (batch_size, beam_size). We make sure that scores[i, :] are
+            in descending order.
+        valid_length : NDArray
+            The valid length of the samples. Shape (batch_size, beam_size). dtype will be int32.
+        """
+        batch_size = src_seq.shape[0]
+        encoder_outputs = self._model.encode(src_seq, valid_length=src_valid_length)
+        decoder_states = self.decoder.init_state_from_encoder(encoder_outputs,
+                                                              encoder_valid_length=src_valid_length)
+        inputs = mx.nd.full(shape=(batch_size,), ctx=src_seq.context)
+        samples, scores, sample_valid_length = self._sampler(inputs, decoder_states)
+        return samples, scores, sample_valid_length
