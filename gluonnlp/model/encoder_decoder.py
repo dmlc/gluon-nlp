@@ -210,7 +210,7 @@ class Seq2SeqDecoder(Block):
         """
         raise NotImplementedError
 
-    def forward(self, step_input, states):
+    def __call__(self, step_input, states):
         r"""One-step decoding of the input
 
         Parameters
@@ -227,6 +227,9 @@ class Seq2SeqDecoder(Block):
         step_additional_outputs : list
             Additional outputs of the step, e.g, the attention weights
         """
+        return super(Seq2SeqDecoder, self).__call__(step_input, states)
+
+    def forward(self, step_input, states):
         raise NotImplementedError
 
 
