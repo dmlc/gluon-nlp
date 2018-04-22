@@ -47,11 +47,10 @@ from mxnet import gluon
 from mxnet.gluon.data import ArrayDataset, SimpleDataset
 from mxnet.gluon.data import DataLoader
 import gluonnlp.data.batchify as btf
-from gluonnlp.data import FixedBucketSampler
-from gluonnlp.model.encoder_decoder import get_gnmt_encoder_decoder
+from gluonnlp.data import FixedBucketSampler, IWSLT2015
 from gluonnlp.model import BeamSearchScorer
-from gluonnlp.model.translation import NMTModel, BeamSearchTranslator
-from gluonnlp.data import IWSLT2015
+from encoder_decoder import get_gnmt_encoder_decoder
+from translation import NMTModel, BeamSearchTranslator
 from loss import SoftmaxCEMaskedLoss
 from utils import logging_config
 from bleu import compute_bleu
