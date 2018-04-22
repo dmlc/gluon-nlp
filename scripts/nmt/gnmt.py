@@ -226,7 +226,7 @@ def evaluate(data_loader):
                  max_score_sample[i][1:(sample_valid_length[i] - 1)]])
     avg_loss = avg_loss / avg_loss_denom
     real_translation_out = [None for _ in range(len(all_inst_ids))]
-    for real_ind, sentence in zip(all_inst_ids, translation_out):
+    for ind, sentence in zip(all_inst_ids, translation_out):
         real_translation_out[ind] = sentence
     return avg_loss, real_translation_out
 
