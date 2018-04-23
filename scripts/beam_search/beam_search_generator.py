@@ -100,7 +100,8 @@ def generate():
                                                                        args.k))
     print('Generation Result:')
     for i in range(args.beam_size):
-        sentence = [vocab.idx_to_token[ele] for ele in samples[i][:valid_lengths[i]]]
+        sentence = args.bos[:-1] +\
+                   [vocab.idx_to_token[ele] for ele in samples[i][:valid_lengths[i]]]
         print([' '.join(sentence), scores[i]])
 
 
