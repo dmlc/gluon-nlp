@@ -81,7 +81,7 @@ Now, we are ready to preprocess the whole dataset. The following code shows how 
 
 .. code:: python
 
-    >>># Dataset preprocessing
+    >>> # Dataset preprocessing
     >>> def preprocess(x):
     >>>     data, label = x
     >>>     # In the labeled train/test sets, a negative review has a score <= 4
@@ -132,7 +132,7 @@ to convert the tokens to numerical indices, which facilitates the creation of wo
 
 .. code:: python
 
-    >>># Convert string token to its index in the dictionary
+    >>> # Convert string token to its index in the dictionary
     >>> def token_to_idx(x):
     >>>     return vocab[x[0]], x[1]
     >>>
@@ -178,10 +178,10 @@ construct a sampler, which defines how the samples in a dataset will be iterated
      batch_size=[16, 16, 16, 16, 16, 16, 16, 16, 16, 16]
 
 In this example, we use a ``FixedBucketSampler``, which assigns each data sample to a fixed bucket based on its length.
-The bucket keys are either given or generated from the input sequence lengths. In this example, we construct 10 buckets,
-where `cnt` shows the number of samples belonging to each bucket.
+The bucket keys are either given or generated from the input sequence lengths. We construct 10 buckets, where `cnt` shows 
+the number of samples belonging to each bucket.
 
-To further improve the throughput, we can consider scale up the batch size of smaller buckets. This can be achieved
+To further improve the throughput, we can consider scaling up the batch size of smaller buckets. This can be achieved
 by use a flag ``ratio``. Assume the :math:`i` th key is :math:`K_i` , the default batch size is :math:`B` , the ratio to
 scale the batch size is :math:`\alpha` and the batch size corresponds to the :math:`i` th bucket is :math:`B_i` . We have:
 
@@ -225,7 +225,7 @@ As ``Dataloader`` is iterable, we can iterate over the dataset easily using the 
 
    >>> for data, label in train_dataloader:
 
-More detail about the training using pretrained language model and bucketing can be found in the following:
+More details about the training using pretrained language model and bucketing can be found in the following:
 
 .. toctree::
    :maxdepth: 1
