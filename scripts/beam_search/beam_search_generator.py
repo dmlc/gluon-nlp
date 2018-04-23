@@ -44,6 +44,7 @@ parser.add_argument('--k', type=int, default=5, help='K in the length penalty te
 parser.add_argument('--bos', type=str, default='I', nargs='+')
 parser.add_argument('--eos', type=str, default='.')
 parser.add_argument('--max_length', type=int, default=20, help='Maximum sentence length.')
+parser.add_argument('--print_num', type=int, default=3, help='Number of sentences to display.')
 parser.add_argument('--gpu', type=int, default=None,
                     help='id of the gpu to use. Set it to empty means to use cpu.')
 args = parser.parse_args()
@@ -57,6 +58,9 @@ lm_model, vocab = nlp.model.get_model(name=args.lm_model,
                                       dataset_name='wikitext-2',
                                       pretrained=True,
                                       ctx=ctx)
+
+assert 0 < args.print_num <= args.beam_size,\
+    'print_num must be between {} and {}, received={}'.format(1, args.beam_size, args.print_num)
 
 
 def _transform_layout(data):
@@ -99,7 +103,7 @@ def generate():
                                                                        args.alpha,
                                                                        args.k))
     print('Generation Result:')
-    for i in range(args.beam_size):
+    for i in range(args.print_num):
         sentence = args.bos[:-1] +\
                    [vocab.idx_to_token[ele] for ele in samples[i][:valid_lengths[i]]]
         print([' '.join(sentence), scores[i]])
