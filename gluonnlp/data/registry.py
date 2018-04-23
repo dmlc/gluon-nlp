@@ -16,7 +16,6 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-# pylint: disable=eval-used, redefined-outer-name
 """A registry for datasets
 
 The registry makes it simple to construct a dataset given its name.
@@ -67,7 +66,13 @@ def register(class_=None, **kwargs):
     def _real_register(class_):
         # Assert that the passed kwargs are meaningful
         for kwarg_name, values in kwargs.items():
-            if not kwarg_name in inspect.getargspec(class_).args:
+            try:
+                real_args = inspect.getfullargspec(class_).args
+            except AttributeError:
+                # pylint: disable=deprecated-method
+                real_args = inspect.getargspec(class_.__init__).args
+
+            if not kwarg_name in real_args:
                 raise RuntimeError(
                     ('{} is not a valid argument for {}. '
                      'Only valid arguments can be registered.').format(
