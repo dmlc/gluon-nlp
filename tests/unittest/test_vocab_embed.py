@@ -832,7 +832,10 @@ def test_token_embedding_serialization(tmpdir):
     assert loaded_emb == emb
 
 
-def test_word_embedding_similarity_evaluation_models():
+@pytest.mark.parametrize(
+    'similarity_function',
+    nlp.embedding.evaluation.list_evaluation_functions('similarity'))
+def test_word_embedding_similarity_evaluation_models(similarity_function):
     try:
         from scipy import stats
     except ImportError:
@@ -843,13 +846,14 @@ def test_word_embedding_similarity_evaluation_models():
     counter = nlp.data.utils.Counter(w for wpair in dataset for w in wpair[:2])
     vocab = nlp.vocab.Vocab(counter)
     vocab.set_embedding(
-        nlp.embedding.create("fasttext", source="wiki.simple"))
+        nlp.embedding.create('fasttext', source='wiki.simple'))
 
     data = [[vocab[d[0]], vocab[d[1]], d[2]] for d in dataset]
     words1, words2, scores = zip(*data)
 
     evaluator = nlp.embedding.evaluation.WordEmbeddingSimilarity(
-        vocab.embedding.idx_to_vec)
+        vocab.embedding.idx_to_vec,
+        similarity_function=similarity_function)
     evaluator.initialize()
 
     words1, words2 = mx.nd.array(words1), mx.nd.array(words2)
@@ -859,9 +863,12 @@ def test_word_embedding_similarity_evaluation_models():
     assert np.isclose(0.6194264760578906, sr.correlation)
 
 
-def test_word_embedding_analogy_evaluation_models():
+@pytest.mark.parametrize(
+    'analogy_function',
+    nlp.embedding.evaluation.list_evaluation_functions('analogy'))
+def test_word_embedding_analogy_evaluation_models(analogy_function):
     dataset = nlp.data.GoogleAnalogyTestSet()
-    dataset = [d for i, d in enumerate(dataset) if i < 100]
+    dataset = [d for i, d in enumerate(dataset) if i < 10]
 
     embedding = nlp.embedding.create('fasttext', source='wiki.simple')
     counter = nlp.data.utils.Counter(embedding.idx_to_token)
@@ -875,7 +882,8 @@ def test_word_embedding_analogy_evaluation_models():
     for k in [1, 3]:
         for exclude_question_words in [True, False]:
             evaluator = nlp.embedding.evaluation.WordEmbeddingAnalogy(
-                idx_to_vec=vocab.embedding.idx_to_vec, k=k,
+                idx_to_vec=vocab.embedding.idx_to_vec,
+                analogy_function=analogy_function, k=k,
                 exclude_question_words=exclude_question_words)
             evaluator.initialize()
 
@@ -894,11 +902,11 @@ def test_word_embedding_analogy_evaluation_models():
                 # Instead the model would predict W3 most of the time
                 accuracy_w3 = mx.nd.mean(
                     pred_idxs[:, 0] == mx.nd.array(words3))
-                assert accuracy_w3.asscalar() >= 0.9
+                assert accuracy_w3.asscalar() >= 0.89
 
             elif exclude_question_words == True:
                 # The wiki.simple vectors don't perform too good
-                assert accuracy >= 0.5
+                assert accuracy >= 0.29
 
             # Assert output shape
             assert pred_idxs.shape[1] == k

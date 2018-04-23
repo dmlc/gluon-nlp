@@ -34,6 +34,7 @@ from mxnet.gluon.data import SimpleDataset
 from mxnet.gluon.utils import download, check_sha1
 
 from .. import _constants as C
+from .registry import register
 
 
 class _CoNLLSequenceTagging(SimpleDataset):
@@ -97,6 +98,7 @@ class _CoNLLSequenceTagging(SimpleDataset):
         return samples
 
 
+@register(segment=['train', 'test'])
 class CoNLL2000(_CoNLLSequenceTagging):
     """CoNLL2000 Part-of-speech (POS) tagging and chunking joint task dataset.
 
@@ -122,6 +124,8 @@ class CoNLL2000(_CoNLLSequenceTagging):
     base_url = 'http://www.clips.uantwerpen.be/conll2000/chunking/'
     codec = 'utf-8'
 
+
+@register(segment=['train', 'testa', 'testb'], part=[1, 2, 3])
 class CoNLL2001(_CoNLLSequenceTagging):
     """CoNLL2001 Clause Identification dataset.
 
@@ -176,6 +180,8 @@ class CoNLL2001(_CoNLLSequenceTagging):
                                                                          available_segments)
         return [self._data_file[self._part-1][self._segment]]
 
+
+@register(segment=['train', 'testa', 'testb'], lang=['esp', 'ned'])
 class CoNLL2002(_CoNLLSequenceTagging):
     """CoNLL2002 Named Entity Recognition (NER) task dataset.
 
@@ -226,6 +232,8 @@ class CoNLL2002(_CoNLLSequenceTagging):
                                                                          available_segments)
         return [self._data_file[self._lang][self._segment]]
 
+
+@register(segment=['train', 'dev', 'test'])
 class CoNLL2004(_CoNLLSequenceTagging):
     """CoNLL2004 Semantic Role Labeling (SRL) task dataset.
 
@@ -297,6 +305,9 @@ class CoNLL2004(_CoNLLSequenceTagging):
             shutil.copy(fn, root)
         shutil.rmtree(os.path.join(root, 'conll04st-release'), ignore_errors=True)
 
+
+@register(segment=['train', 'dev', 'test'],
+          lang=list(C.UD21_DATA_FILE_SHA1.keys()))
 class UniversalDependencies21(_CoNLLSequenceTagging):
     """Universal dependencies tree banks.
 
