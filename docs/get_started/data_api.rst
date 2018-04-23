@@ -1,13 +1,13 @@
 Data API — A Sentiment Analysis Example
-------------------------
+---------------------------------------
 
-In this tutorial, we will learn how to load and process the sentiment dataset as well as the construction of the model.
+In this tutorial, we show how to load and process the sentiment dataset to form batches that can be processed efficiently.
 We use `IMDB <http://ai.stanford.edu/~amaas/data/sentiment/>`_
 dataset as an example, where the dataset has 50,000 movie reviews, labeled as positive or negative. The dataset
 is splitted into training/testing dataset, each consisting of 25,000 reviews.
 
 Data Loading
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~
 
 Let us see a quick example.
 
@@ -51,7 +51,7 @@ where the score falls into [1, 2, ..., 10]. Thus in the given example, 9 indicat
 
 
 Data Processing
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~
 
 The next step is to preprocess the data so that it can be used to train the model. The following code
 shows how to tokenize the string and then clip the resultant list of tokens.
@@ -148,7 +148,7 @@ to convert the tokens to numerical indices, which facilitates the creation of wo
 
 
 Bucketing and Dataloader
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~
 
 The next step is to construct a dataloader for training. As the sequences have variable lengths, we need to pad the
 sequences so that they have the same lengths in the minibatch, which allows the fast tensor manipulation in GPU.
