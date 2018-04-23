@@ -7,24 +7,35 @@ Use the following command to generate the sentences
 
 .. code-block:: bash
 
-   $ python beam_search_generator.py
+   $ python beam_search_generator.py --bos I love it --beam_size 5
 
 Output is
 
 .. code-block:: log
 
-   ['he was able to take part in an attempt to take part in the Siege of Iwo Jima , which was .', 260.96414]
-   ['he was able to take part in an attempt to take part in the Siege of Iwo Jima , where he .', 260.7027]
-   ['he was able to take part in an attempt to take part in the Siege of Iwo Jima in May .', 259.5865]
-   ['he was able to take part in an attempt to take part in the Siege of Iwo Jima , which would .', 259.58163]
-   ['he was able to take part in an attempt to take part in the Siege of Iwo Jima , but was .', 259.5562]
-   ['he was able to take part in an attempt to take part in the Siege of Iwo Jima , and then .', 259.5449]
-   ['he was able to take part in an attempt to take part in the Siege of Iwo Jima , and to .', 259.51816]
-   ['he was able to take part in an attempt to take part in the Siege of Iwo Jima during the Second .', 259.4851]
-   ['he was able to take part in an attempt to take part in the Siege of Iwo Jima , when he .', 259.41025]
-   ['he was able to take part in an attempt to take part in the Siege of Iwo Jima on the night .', 259.36902]
-   ['he was able to take part in an attempt to take part in the Siege of Iwo Jima , which had .', 259.35846]
-   ['he was able to take part in an attempt to take part in the Siege of Iwo Jima , and the .', 259.2447]
-   ['he was able to take part in an attempt to take part in the Siege of Iwo Jima , which he .', 259.23218]
-   ['he was able to take part in an attempt to take part in the Siege of Iwo Jima , as well .', 259.19528]
-   ['he was able to take part in an attempt to take part in the Siege of Iwo Jima , in which .', 259.1105]
+    ['I love it , but it is not clear that it will be difficult to do it , but it is not .', 243.01672]
+    ['I love it , but it is not clear that it will be difficult to do so , but it is not .', 242.37096]
+    ['I love it , but it is not clear that it will be difficult to do it , so it is not .', 242.17531]
+    ['I love it , but it is not clear that it will be difficult to do it , but it is a .', 241.43657]
+    ["I love it , but it is not clear that it will be difficult to do it , but it 's not .", 241.37198]
+
+You can also try a larger beam size.
+
+.. code-block:: bash
+
+   $ python beam_search_generator.py --bos I love it --beam_size 10
+
+Output is
+
+.. code-block:: log
+
+    ['I love it , but it is not possible to do it , but it is not impossible to do it , but .', 246.26108]
+    ['I love it , but it is not possible to do it , but it is not impossible to do it , and .', 245.80142]
+    ["I love it , but it is not possible to do it , but I 'm not going to do it , but .", 245.55646]
+    ['I love it , but it is not possible to do it , but it is not impossible to do so , and .', 245.44412]
+    ['I love it , but it is not possible to do it , but it is not impossible to do so , but .', 245.37302]
+    ["I love it , but it is not possible to do it , but I 'm not going to do it , and .", 245.2199]
+    ['I love it , but it is not possible to do it , but it is not impossible to do it , so .', 244.95819]
+    ['I love it , but it is not possible to do it , but it is not impossible to do it , because .', 244.92368]
+    ['I love it , but it is not possible to do it , but it is not impossible to do it , or .', 244.8313]
+    ["I love it , but it is not possible to do it , but I 'm not going to do anything for the .", 244.75426]

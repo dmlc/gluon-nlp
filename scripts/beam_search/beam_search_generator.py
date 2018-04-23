@@ -37,11 +37,11 @@ parser.add_argument('--lm_model', type=str, default='awd_lstm_lm_1150',
                     help='type of the pretrained model to load, can be "standard_lstm_lm_200", '
                          '"standard_lstm_lm_650", "standard_lstm_lm_1500", '
                          '"awd_lstm_lm_1150", etc.')
-parser.add_argument('--beam_size', type=int, default=15,
+parser.add_argument('--beam_size', type=int, default=5,
                     help='Beam size in the beam search sampler.')
 parser.add_argument('--alpha', type=float, default=0.0, help='Alpha in the length penalty term.')
 parser.add_argument('--k', type=int, default=5, help='K in the length penalty term.')
-parser.add_argument('--bos', type=str, default='he', nargs='+')
+parser.add_argument('--bos', type=str, default='I', nargs='+')
 parser.add_argument('--eos', type=str, default='.')
 parser.add_argument('--max_length', type=int, default=20, help='Maximum sentence length.')
 parser.add_argument('--gpu', type=int, default=None,
