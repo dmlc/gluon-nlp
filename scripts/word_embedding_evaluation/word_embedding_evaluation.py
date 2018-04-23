@@ -29,6 +29,7 @@ import argparse
 import itertools
 import logging
 import sys
+import json
 
 import mxnet as mx
 import numpy as np
@@ -296,8 +297,8 @@ def evaluate(args):
                 result, num_samples = evaluate_similarity(
                     args, token_embedding, dataset, similarity_function)
                 log_result(args, 'similarity', dataset.__class__.__name__,
-                           str(kwargs), similarity_function, str(result),
-                           str(num_samples))
+                           json.dumps(kwargs), similarity_function,
+                           str(result), str(num_samples))
 
     # Analogy based evaluation
     for dataset_name in args.analogy_datasets:
@@ -312,8 +313,8 @@ def evaluate(args):
                 logging.info('Evaluating with  %s', analogy_function)
                 result, num_samples = evaluate_analogy(
                     args, token_embedding, dataset, analogy_function)
-                log_result(args, 'similarity', dataset.__class__.__name__,
-                           str(kwargs), analogy_function, str(result),
+                log_result(args, 'analogy', dataset.__class__.__name__,
+                           json.dumps(kwargs), analogy_function, str(result),
                            str(num_samples))
 
 
