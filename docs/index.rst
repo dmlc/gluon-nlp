@@ -83,7 +83,7 @@ computes the cosine similarity between two words.
    baby, infant = glove['baby'], glove['infant']
 
    def cos_similarity(vec1, vec2):
-       # Normalize the element-wise production between two vectors.
+       # Normalize the dot product of two vectors with the L2-norm product.
        return mx.nd.dot(vec1, vec2) / (vec1.norm() * vec2.norm())
 
    print(cos_similarity(baby, infant))
