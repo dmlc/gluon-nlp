@@ -81,7 +81,7 @@ Now, we are ready to preprocess the whole dataset. The following code shows how 
 
 .. code:: python
 
-    >>># Dataset preprocessing
+    >>> # Dataset preprocessing
     >>> def preprocess(x):
     >>>     data, label = x
     >>>     # In the labeled train/test sets, a negative review has a score <= 4
@@ -132,7 +132,7 @@ to convert the tokens to numerical indices, which facilitates the creation of wo
 
 .. code:: python
 
-    >>># Convert string token to its index in the dictionary
+    >>> # Convert string token to its index in the dictionary
     >>> def token_to_idx(x):
     >>>     return vocab[x[0]], x[1]
     >>>
