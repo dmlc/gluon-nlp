@@ -95,6 +95,7 @@ def generate():
                                           eos_id=eos_id,
                                           scorer=scorer,
                                           max_length=args.max_length)
+    # samples have shape (1, beam_size, length), scores have shape (1, beam_size)
     samples, scores, valid_lengths = sampler(inputs, begin_states)
     samples = samples[0].asnumpy()
     scores = scores[0].asnumpy()
