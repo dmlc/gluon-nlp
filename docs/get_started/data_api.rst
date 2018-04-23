@@ -159,8 +159,36 @@ sequences so that they have the same lengths in the minibatch, which allows the 
    >>>                                       nlp.data.batchify.Stack())
 
 ``Tuple`` wraps multiple batchify functions and applies each input function on each input field, respectively. In this
-case, we are applying ``Pad`` on the sequence and ``Stack`` on the labels. Given the batchify function, we can
-construct a sampler, which defines how the samples in a dataset will be iterated.
+case, we are applying ``Pad`` on the sequence and ``Stack`` on the labels. Given the batchify function, we can construct
+the dataloaders for both training samples and testing samples.
+
+.. code:: python
+
+   >>> train_dataloader = gluon.data.DataLoader(dataset=train_dataset,
+   >>>                                          shuffle=True,
+   >>>                                          batchify_fn=batchify_fn)
+   >>> test_dataloader = gluon.data.DataLoader(dataset=test_dataset,
+   >>>                                         batch_size=batch_size,
+   >>>                                         shuffle=False,
+   >>>                                         batchify_fn=batchify_fn)
+
+As ``Dataloader`` is iterable, we can iterate over the dataset easily using the following code:
+
+.. code:: python
+
+   >>> for data, label in train_dataloader:
+
+In the above example, minibatcheas are formed using uniform sampling, which can cause a large amount of padding as shown
+in the figure below.
+
+.. image:: ./images/no_bucket_strategy.png
+   :height: 300px
+   :width: 1000 px
+   :alt: alternate text
+   :align: center
+
+In light of this, we consider
+constructing a sampler using bucketing, which defines how the samples in a dataset will be iterated in a more economic way.
 
 .. code:: python
 
@@ -178,16 +206,29 @@ construct a sampler, which defines how the samples in a dataset will be iterated
      batch_size=[16, 16, 16, 16, 16, 16, 16, 16, 16, 16]
 
 In this example, we use a ``FixedBucketSampler``, which assigns each data sample to a fixed bucket based on its length.
-The bucket keys are either given or generated from the input sequence lengths. We construct 10 buckets, where `cnt` shows 
-the number of samples belonging to each bucket.
+The bucket keys are either given or generated from the input sequence lengths. We construct 10 buckets, where `cnt`
+shows the number of samples belonging to each bucket. A graphic illustration of using ``FixedBucketSampler`` can be
+seen as follows:
+
+.. image:: ./images/fixed_bucket_strategy_ratio0.0.png
+   :height: 300px
+   :width: 1000 px
+   :alt: alternate text
+   :align: center
 
 To further improve the throughput, we can consider scaling up the batch size of smaller buckets. This can be achieved
-by use a flag ``ratio``. Assume the :math:`i` th key is :math:`K_i` , the default batch size is :math:`B` , the ratio to
+by use a parameter ``ratio``. Assume the :math:`i` th key is :math:`K_i` , the default batch size is :math:`B` , the ratio to
 scale the batch size is :math:`\alpha` and the batch size corresponds to the :math:`i` th bucket is :math:`B_i` . We have:
 
 .. math::
 
    B_i = \max(\alpha B \times \frac{\max_j sum(K_j)}{sum(K_i)}, B)
+
+.. image:: ./images/fixed_bucket_strategy_ratio0.7.png
+   :height: 300px
+   :width: 1000 px
+   :alt: alternate text
+   :align: center
 
 Thus, setting this to a value larger than 0, like 0.5, will scale up the batch size of the
 smaller buckets.
@@ -197,7 +238,7 @@ smaller buckets.
     >>> batch_sampler = nlp.data.sampler.FixedBucketSampler(train_data_lengths,
     >>>                                                     batch_size=16,
     >>>                                                     num_buckets=10,
-    >>>                                                     ratio=0,
+    >>>                                                     ratio=0.5,
     >>>                                                     shuffle=True)
     >>> print(batch_sampler.stats())
 
@@ -207,23 +248,33 @@ smaller buckets.
      cnt=[981, 1958, 5686, 4614, 2813, 2000, 1411, 1129, 844, 3564]
      batch_size=[58, 34, 24, 18, 16, 16, 16, 16, 16, 16]
 
-Now, we can create dataloader for both training set and testing set.
+Now, we can create dataloader using bucketing sampler for both training set.
 
 .. code:: python
 
    >>> train_dataloader = gluon.data.DataLoader(dataset=train_dataset,
    >>>                                          batch_sampler=batch_sampler,
    >>>                                          batchify_fn=batchify_fn)
-   >>> test_dataloader = gluon.data.DataLoader(dataset=test_dataset,
-   >>>                                         batch_size=batch_size,
-   >>>                                         shuffle=False,
-   >>>                                         batchify_fn=batchify_fn)
 
-As ``Dataloader`` is iterable, we can iterate over the dataset easily using the following code:
+In our sampler API, we also provide another sampler called ``SortedBucketSampler``, which results in the following
+padding pattern:
+
+.. image:: ./images/sorted_bucket_strategy.png
+   :height: 300px
+   :width: 1000 px
+   :alt: alternate text
+   :align: center
+
+With this strategy, we partition data to a number of buckets with size `batch_size * mult`, where `mult` is a multiplier 
+to determine the bucket size. Each bucket contains `batch_size * mult` elements. The samples inside each bucket are sorted 
+based on sort_key and then batched.
 
 .. code:: python
 
-   >>> for data, label in train_dataloader:
+    >>> batch_sampler = nlp.data.sampler.SortedBucketSampler(train_data_lengths,
+    >>>                                                     batch_size=16,
+    >>>                                                     mult=100,
+    >>>                                                     shuffle=True)
 
 More details about the training using pretrained language model and bucketing can be found in the following:
 
