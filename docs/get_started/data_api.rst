@@ -265,9 +265,9 @@ padding pattern:
    :alt: alternate text
    :align: center
 
-With this strategy, we partition data in buckets of size `batch_size * mult`, where `mult` is a multiplier to determine
-the bucket size. Each bucket contains `batch_size * mult` elements. The samples inside each bucket are sorted based on
-sort_key and then batched.
+With this strategy, we partition data to a number of buckets with size `batch_size * mult`, where `mult` is a multiplier 
+to determine the bucket size. Each bucket contains `batch_size * mult` elements. The samples inside each bucket are sorted 
+based on sort_key and then batched.
 
 .. code:: python
 
