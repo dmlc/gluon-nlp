@@ -39,3 +39,30 @@ Output is
     ['I love it , but it is not possible to do it , but it is not impossible to do it , because .', 244.92368]
     ['I love it , but it is not possible to do it , but it is not impossible to do it , or .', 244.8313]
     ["I love it , but it is not possible to do it , but I 'm not going to do anything for the .", 244.75426]
+
+Try beam size equals to 15
+
+
+.. code-block:: bash
+
+   $ python beam_search_generator.py --bos I love it --beam_size 15
+
+Output is
+
+.. code-block:: log
+
+    ["I love it , and I don 't know how to do it , but I don ’ t think it would be .", 274.9892]
+    ["I love it , and I don 't know how to do it , but I don ’ t think it will be .", 274.63895]
+    ["I love it , and I don 't know how to do it , but I don ’ t want to do it .", 274.61063]
+    ["I love it , and I don 't know how to do it , but I don ’ t want to do anything .", 274.32306]
+    ["I love it , and I don 't know how to do it , but I don 't know how to do it .", 273.984]
+    ["I love it , and I don 't know how to do it , but I don ’ t think it 's a .", 273.90735]
+    ["I love it , and I don 't know how to do it , but I don ’ t think it is a .", 273.80078]
+    ["I love it , and I don 't know how to do it , but I don 't think it would be a .", 273.35507]
+    ["I love it , and I don 't know how to do it , but I don ’ t want to do a .", 273.24527]
+    ["I love it , and I don 't know how to do it , but I don ’ t want to do any .", 273.2016]
+    ["I love it , and I don 't know how to do it , but I don ’ t know that it is .", 273.0937]
+    ["I love it , and I don 't know how to do it , but I don ’ t think it was a .", 272.85138]
+    ["I love it , and I don 't know how to do it , but I don ’ t want to do so .", 272.84656]
+    ["I love it , and I don 't know how to do it , but I don ’ t think it would have .", 272.81784]
+    ["I love it , and I don 't know how to do it , but I don ’ t want to do this .", 272.7752]
