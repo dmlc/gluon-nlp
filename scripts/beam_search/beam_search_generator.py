@@ -41,7 +41,7 @@ parser.add_argument('--beam_size', type=int, default=15,
                     help='Beam size in the beam search sampler.')
 parser.add_argument('--alpha', type=float, default=0.0, help='Alpha in the length penalty term.')
 parser.add_argument('--k', type=int, default=5, help='K in the length penalty term.')
-parser.add_argument('--bos', type=str, default='he')
+parser.add_argument('--bos', type=str, default='he', nargs='+')
 parser.add_argument('--eos', type=str, default='.')
 parser.add_argument('--max_length', type=int, default=20, help='Maximum sentence length.')
 parser.add_argument('--gpu', type=int, default=None,
@@ -67,6 +67,7 @@ def _transform_layout(data):
     else:
         raise NotImplementedError
 
+
 # Define the decoder function, we use log_softmax to map the output scores to log-likelihoods
 # Also, we transform the layout to NTC
 def decoder(inputs, states):
@@ -77,10 +78,13 @@ def decoder(inputs, states):
 
 
 def generate():
-    bos_id = vocab[args.bos]
+    bos_ids = [vocab[ele] for ele in args.bos]
     eos_id = vocab[args.eos]
     begin_states = lm_model.begin_state(batch_size=1, ctx=ctx)
-    inputs = mx.nd.full(shape=(1,), ctx=ctx, val=bos_id)
+    if len(bos_ids) > 1:
+        _, begin_states = lm_model(mx.nd.expand_dims(mx.nd.array(bos_ids[:-1]), axis=0),
+                                   begin_states)
+    inputs = mx.nd.full(shape=(1,), ctx=ctx, val=bos_ids[-1])
     scorer = nlp.model.BeamSearchScorer(alpha=args.alpha, K=args.k)
     sampler = nlp.model.BeamSearchSampler(beam_size=args.beam_size,
                                           decoder=decoder,
