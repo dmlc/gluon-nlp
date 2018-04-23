@@ -82,7 +82,7 @@ def generate():
     eos_id = vocab[args.eos]
     begin_states = lm_model.begin_state(batch_size=1, ctx=ctx)
     if len(bos_ids) > 1:
-        _, begin_states = lm_model(mx.nd.expand_dims(mx.nd.array(bos_ids[:-1]), axis=0),
+        _, begin_states = lm_model(mx.nd.expand_dims(mx.nd.array(bos_ids[:-1]), axis=1),
                                    begin_states)
     inputs = mx.nd.full(shape=(1,), ctx=ctx, val=bos_ids[-1])
     scorer = nlp.model.BeamSearchScorer(alpha=args.alpha, K=args.k)
