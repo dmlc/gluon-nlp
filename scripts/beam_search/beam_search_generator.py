@@ -3,7 +3,7 @@ Generate Sentences by Beam Search
 ==================================
 
 This example shows how to load a pretrained language model on wikitext-2 in Gluon NLP Toolkit model
-zoo, and use the language model encoder to generate sentences.
+zoo, and use beam search to generate sentences.
 """
 
 # coding: utf-8
