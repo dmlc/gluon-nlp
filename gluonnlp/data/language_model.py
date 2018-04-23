@@ -30,6 +30,7 @@ from mxnet.gluon.utils import download, check_sha1, _get_repo_file_url
 
 from .. import _constants as C
 from .dataset import LanguageModelDataset
+from .registry import register
 
 
 class _WikiText(LanguageModelDataset):
@@ -64,6 +65,7 @@ class _WikiText(LanguageModelDataset):
         return path
 
 
+@register(segment=['train', 'val', 'test'])
 class WikiText2(_WikiText):
     """WikiText-2 word-level dataset for language modeling, from Salesforce research.
 
@@ -98,6 +100,7 @@ class WikiText2(_WikiText):
         super(WikiText2, self).__init__('wikitext-2', segment, bos, eos, skip_empty, root)
 
 
+@register(segment=['train', 'val', 'test'])
 class WikiText103(_WikiText):
     """WikiText-103 word-level dataset for language modeling, from Salesforce research.
 

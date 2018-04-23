@@ -33,6 +33,7 @@ from mxnet.gluon.data import ArrayDataset
 
 from .dataset import TextLineDataset
 from ..vocab import Vocab
+from .registry import register
 
 
 def _get_pair_key(src_lang, tgt_lang):
@@ -148,6 +149,7 @@ class _TranslationDataset(ArrayDataset):
         return self._tgt_vocab
 
 
+@register(segment=['train', 'val', 'test'])
 class IWSLT2015(_TranslationDataset):
     """Preprocessed IWSLT English-Vietnamese Translation Dataset.
 
@@ -190,6 +192,8 @@ class IWSLT2015(_TranslationDataset):
                                         tgt_lang=tgt_lang, root=root)
 
 
+@register(segment=['train', 'newtest2012', 'newtest2013', 'newtest2014', \
+                   'newtest2015', 'newtest2016'])
 class WMT2016BPE(_TranslationDataset):
     """Preprocessed Translation Corpus of the WMT2016 Evaluation Campaign.
 

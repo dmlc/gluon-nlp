@@ -39,4 +39,3 @@ from .word_embedding_evaluation import *
 from .conll import *
 
 from .translation import *
-
