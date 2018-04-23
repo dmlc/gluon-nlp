@@ -99,6 +99,12 @@ def get_args():
         help=('Exclude input words from valid output analogies.'
               'The performance of word embeddings on the analogy task '
               'is around 0% accuracy if input words are not excluded.'))
+    group.add_argument(
+        '--analogy-max-vocab', type=int, default=None,
+        help=('Only retain the X first tokens from the pretrained embedding. '
+              'The tokens are ordererd by decreasing frequency.'
+              'As the analogy task takes the whole vocabulary into account, '
+              'removing very infrequent words improves performance.'))
 
     # Computation options
     group = parser.add_argument_group('Computation arguments')
@@ -226,7 +232,10 @@ def evaluate_analogy(args, token_embedding, dataset,
                      analogy_function='ThreeCosMul'):
     """Evaluation on analogy task."""
     # Open vocabulary: Use all known words
-    counter = nlp.data.utils.Counter(token_embedding.idx_to_token)
+    if args.analogy_max_vocab:
+        counter = nlp.data.utils.Counter(token_embedding.idx_to_token[:args.analogy_max_vocab])
+    else:
+        counter = nlp.data.utils.Counter(token_embedding.idx_to_token)
     vocab = nlp.vocab.Vocab(counter)
     vocab.set_embedding(token_embedding)
 
