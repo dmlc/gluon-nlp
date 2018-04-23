@@ -157,7 +157,7 @@ class FixedBucketSampler(Sampler):
             assert num_buckets > 0, 'num_buckets must be set when bucket_keys is None. Received ' \
                                     'num_buckets=%d' % num_buckets
             if not self._single_element:
-                bucket_width_l = [max((max_len - min_len) // max(num_buckets - 1, 1), 1)
+                bucket_width_l = [max((max_len - min_len) // num_buckets, 1)
                                   for max_len, min_len in
                                   zip(max_lengths, min_lengths)]
                 bucket_keys =\
@@ -165,7 +165,7 @@ class FixedBucketSampler(Sampler):
                            zip(max_lengths, min_lengths, bucket_width_l))
                      for i in range(num_buckets)]
             else:
-                bucket_width = max((max_lengths - min_lengths) // max(num_buckets - 1, 1), 1)
+                bucket_width = max((max_lengths - min_lengths) // num_buckets, 1)
                 bucket_keys = [max(max_lengths - i * bucket_width, min_lengths)
                                for i in range(num_buckets)]
         else:
@@ -208,6 +208,8 @@ class FixedBucketSampler(Sampler):
     def __iter__(self):
         if self._shuffle:
             np.random.shuffle(self._batch_infos)
+            for bucket_id in range(len(self._bucket_keys)):
+                np.random.shuffle(self._bucket_sample_ids[bucket_id])
         for bucket_id, batch_begin in self._batch_infos:
             batch_size = self._bucket_batch_sizes[bucket_id]
             batch_end = min(batch_begin + batch_size, len(self._bucket_sample_ids[bucket_id]))
