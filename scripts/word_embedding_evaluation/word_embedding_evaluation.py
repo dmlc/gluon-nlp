@@ -110,6 +110,12 @@ def get_args():
     group.add_argument('--dont-hybridize', action='store_true',
                        help='Disable hybridization of gluon HybridBlocks.')
 
+    # Logging options
+    group = parser.add_argument_group('Logging arguments')
+    group.add_argument(
+        '--log', type=str, default='results.csv', help='Path to logfile.'
+        'Results of evaluation runs are written to there in a CSV format.')
+
     args = parser.parse_args()
 
     return args
@@ -164,6 +170,21 @@ def get_context(args):
 ###############################################################################
 # Evaluation
 ###############################################################################
+def log_result(args, evaluation_type, dataset, kwargs, evaluation, value,
+               num_samples):
+    if not args.log:
+        return
+
+    with open(args.log, 'a') as f:
+        f.write('\t'.join(
+            (evaluation_type, dataset, kwargs, args.embedding_name,
+             args.embedding_source, evaluation, value, num_samples)))
+        f.write('\n')
+
+
+###############################################################################
+# Evaluation
+###############################################################################
 def evaluate_similarity(args, token_embedding, dataset,
                         similarity_function='CosineSimilarity'):
     """Evaluation on similarity task."""
@@ -197,6 +218,7 @@ def evaluate_similarity(args, token_embedding, dataset,
     sr = stats.spearmanr(pred_similarity.asnumpy(), np.array(scores))
     logging.info('Spearman rank correlation on %s: %s',
                  dataset.__class__.__name__, sr.correlation)
+    return sr.correlation, len(dataset)
 
 
 def evaluate_analogy(args, token_embedding, dataset,
@@ -244,6 +266,7 @@ def evaluate_analogy(args, token_embedding, dataset,
 
     logging.info('Accuracy on %s: %s', dataset.__class__.__name__,
                  acc.get()[1])
+    return acc.get()[1], len(dataset)
 
 
 def evaluate(args):
@@ -270,8 +293,11 @@ def evaluate(args):
             dataset = nlp.data.create(dataset_name, **kwargs)
             for similarity_function in args.similarity_functions:
                 logging.info('Evaluating with  %s', similarity_function)
-                evaluate_similarity(args, token_embedding, dataset,
-                                    similarity_function)
+                result, num_samples = evaluate_similarity(
+                    args, token_embedding, dataset, similarity_function)
+                log_result(args, 'similarity', dataset.__class__.__name__,
+                           str(kwargs), similarity_function, str(result),
+                           str(num_samples))
 
     # Analogy based evaluation
     for dataset_name in args.analogy_datasets:
@@ -284,8 +310,11 @@ def evaluate(args):
             dataset = nlp.data.create(dataset_name, **kwargs)
             for analogy_function in args.analogy_functions:
                 logging.info('Evaluating with  %s', analogy_function)
-                evaluate_analogy(args, token_embedding, dataset,
-                                 analogy_function)
+                result, num_samples = evaluate_analogy(
+                    args, token_embedding, dataset, analogy_function)
+                log_result(args, 'similarity', dataset.__class__.__name__,
+                           str(kwargs), analogy_function, str(result),
+                           str(num_samples))
 
 
 if __name__ == '__main__':
