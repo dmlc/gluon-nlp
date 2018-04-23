@@ -26,6 +26,7 @@ embeddings using a variety of datasets all part of the Gluon NLP Toolkit.
 """
 
 import argparse
+import itertools
 import logging
 import sys
 import time
@@ -125,33 +126,21 @@ if args.list_embedding_sources:
 
 print(args)
 
-# Load word similarity datasets
-similarity_datasets = []
-similarity_datasets_classnames = \
-    nlp.data.word_embedding_evaluation.word_similarity_datasets
-if args.similarity_datasets == '*':
-    args.similarity_datasets = similarity_datasets_classnames
+# Check correctness of similarity dataset names
 for dataset_name in args.similarity_datasets:
-    if dataset_name not in similarity_datasets_classnames:
+    if dataset_name.lower() not in map(
+            str.lower,
+            nlp.data.word_embedding_evaluation.word_similarity_datasets):
         print('{} is not a supported dataset.'.format(dataset_name))
         sys.exit(1)
-    # TODO use registry instead
-    ds_class = eval('nlp.data.{}'.format(dataset_name))
-    similarity_datasets.append(ds_class)
 
-# Load word analogy datasets
-analogy_datasets = []
-analogy_datasets_classnames = \
-    nlp.data.word_embedding_evaluation.word_analogy_datasets
-if args.analogy_datasets == '*':
-    args.analogy_datasets = analogy_datasets_classnames
+# Check correctness of analogy dataset names
 for dataset_name in args.analogy_datasets:
-    if dataset_name not in analogy_datasets_classnames:
+    if dataset_name.lower() not in map(
+            str.lower,
+            nlp.data.word_embedding_evaluation.word_analogy_datasets):
         print('{} is not a supported dataset.'.format(dataset_name))
         sys.exit(1)
-    # TODO use registry instead
-    ds_class = eval('nlp.data.{}'.format(dataset_name))
-    analogy_datasets.append(ds_class)
 
 # Context
 if args.gpu is None or args.gpu == '':
@@ -255,25 +244,36 @@ def evaluate():
                                            source=args.embedding_source)
 
     # Similarity based evaluation
-    for dataset_class in similarity_datasets:
+    for dataset_name in args.similarity_datasets:
         if stats is None:
             raise RuntimeError(
                 'Similarity evaluation requires scipy.'
                 'You may install scipy via `pip install scipy`.')
 
-        logging.info('Starting evaluation of %s', dataset_class.__name__)
-        dataset = dataset_class()
-        for similarity_function in args.similarity_functions:
-            logging.info('Evaluating with  %s', similarity_function)
-            evaluate_similarity(token_embedding, dataset, similarity_function)
+        logging.info('Starting evaluation of %s', dataset_name)
+        parameters = nlp.data.list_datasets(dataset_name)
+        for key_values in itertools.product(*parameters.values()):
+            kwargs = dict(zip(parameters.keys(), key_values))
+            logging.info('Evaluating with %s', kwargs)
+
+            dataset = nlp.data.create(dataset_name, **kwargs)
+            for similarity_function in args.similarity_functions:
+                logging.info('Evaluating with  %s', similarity_function)
+                evaluate_similarity(token_embedding, dataset,
+                                    similarity_function)
 
     # Analogy based evaluation
-    for dataset_class in analogy_datasets:
-        logging.info('Starting evaluation of %s', dataset_class.__name__)
-        dataset = dataset_class()
-        for analogy_function in args.analogy_functions:
-            logging.info('Evaluating with  %s', analogy_function)
-            evaluate_analogy(token_embedding, dataset, analogy_function)
+    for dataset_name in args.analogy_datasets:
+        logging.info('Starting evaluation of %s', dataset_name)
+        parameters = nlp.data.list_datasets(dataset_name)
+        for key_values in itertools.product(*parameters.values()):
+            kwargs = dict(zip(parameters.keys(), key_values))
+            logging.info('Evaluating with %s', kwargs)
+
+            dataset = nlp.data.create(dataset_name, **kwargs)
+            for analogy_function in args.analogy_functions:
+                logging.info('Evaluating with  %s', analogy_function)
+                evaluate_analogy(token_embedding, dataset, analogy_function)
 
 
 if __name__ == '__main__':
