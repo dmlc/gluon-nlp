@@ -44,7 +44,7 @@ parser.add_argument('--k', type=int, default=5, help='K in the length penalty te
 parser.add_argument('--bos', type=str, default='I', nargs='+')
 parser.add_argument('--eos', type=str, default='.')
 parser.add_argument('--max_length', type=int, default=20, help='Maximum sentence length.')
-parser.add_argument('--print_num', type=int, default=1, help='Number of sentences to display.')
+parser.add_argument('--print_num', type=int, default=3, help='Number of sentences to display.')
 parser.add_argument('--gpu', type=int, default=None,
                     help='id of the gpu to use. Set it to empty means to use cpu.')
 args = parser.parse_args()
