@@ -5,8 +5,11 @@ Google Neural Machine Translation
 This example shows how to implement the GNMT model with Gluon NLP Toolkit.
 
 @article{wu2016google,
-  title={Google's neural machine translation system: Bridging the gap between human and machine translation},
-  author={Wu, Yonghui and Schuster, Mike and Chen, Zhifeng and Le, Quoc V and Norouzi, Mohammad and Macherey, Wolfgang and Krikun, Maxim and Cao, Yuan and Gao, Qin and Macherey, Klaus and others},
+  title={Google's neural machine translation system:
+   Bridging the gap between human and machine translation},
+  author={Wu, Yonghui and Schuster, Mike and Chen, Zhifeng and Le, Quoc V and
+   Norouzi, Mohammad and Macherey, Wolfgang and Krikun, Maxim and Cao, Yuan and Gao, Qin and
+   Macherey, Klaus and others},
   journal={arXiv preprint arXiv:1609.08144},
   year={2016}
 }
@@ -30,24 +33,24 @@ This example shows how to implement the GNMT model with Gluon NLP Toolkit.
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+# pylint:disable=redefined-outer-name,logging-format-interpolation
 
 import argparse
-import numpy as np
 import time
 import random
 import os
 import io
-import mxnet as mx
 import logging
+import numpy as np
+import mxnet as mx
 from mxnet import gluon
 from mxnet.gluon.data import ArrayDataset, SimpleDataset
 from mxnet.gluon.data import DataLoader
 import gluonnlp.data.batchify as btf
-from gluonnlp.data import FixedBucketSampler
-from gluonnlp.model.encoder_decoder import get_gnmt_encoder_decoder
+from gluonnlp.data import FixedBucketSampler, IWSLT2015
 from gluonnlp.model import BeamSearchScorer
-from gluonnlp.model.translation import NMTModel, BeamSearchTranslator
-from gluonnlp.data import IWSLT2015
+from encoder_decoder import get_gnmt_encoder_decoder
+from translation import NMTModel, BeamSearchTranslator
 from loss import SoftmaxCEMaskedLoss
 from utils import logging_config
 from bleu import compute_bleu
@@ -59,9 +62,9 @@ mx.random.seed(10000)
 
 parser = argparse.ArgumentParser(description='Neural Machine Translation Example.'
                                              'We train the Google NMT model')
-parser.add_argument('--dataset', type=str, default="IWSLT2015", help='Dataset to use.')
-parser.add_argument('--src_lang', type=str, default="en", help='Source language')
-parser.add_argument('--tgt_lang', type=str, default="vi", help='Target language')
+parser.add_argument('--dataset', type=str, default='IWSLT2015', help='Dataset to use.')
+parser.add_argument('--src_lang', type=str, default='en', help='Source language')
+parser.add_argument('--tgt_lang', type=str, default='vi', help='Target language')
 parser.add_argument('--epochs', type=int, default=40, help='upper epoch limit')
 parser.add_argument('--num_hidden', type=int, default=128, help='Dimension of the embedding '
                                                                 'vectors and states.')
@@ -73,7 +76,8 @@ parser.add_argument('--num_bi_layers', type=int, default=1,
                     help='number of bidirectional layers in the encoder and decoder')
 parser.add_argument('--batch_size', type=int, default=128, help='Batch size')
 parser.add_argument('--beam_size', type=int, default=4, help='Beam size')
-parser.add_argument('--lp_alpha', type=float, default=1.0, help='Alpha used in calculating the length penalty')
+parser.add_argument('--lp_alpha', type=float, default=1.0,
+                    help='Alpha used in calculating the length penalty')
 parser.add_argument('--lp_k', type=int, default=5, help='K used in calculating the length penalty')
 parser.add_argument('--test_batch_size', type=int, default=32, help='Test batch size')
 parser.add_argument('--num_buckets', type=int, default=5, help='Bucket number')
@@ -85,7 +89,8 @@ parser.add_argument('--tgt_max_len', type=int, default=50, help='Maximum length 
                                                                 'sentence')
 parser.add_argument('--optimizer', type=str, default='adam', help='optimization algorithm')
 parser.add_argument('--lr', type=float, default=1E-3, help='Initial learning rate')
-parser.add_argument('--lr_update_factor', type=float, default=0.5, help='Learning rate decay factor')
+parser.add_argument('--lr_update_factor', type=float, default=0.5,
+                    help='Learning rate decay factor')
 parser.add_argument('--clip', type=float, default=5.0, help='gradient clipping')
 parser.add_argument('--log_interval', type=int, default=100, metavar='N',
                     help='report interval')
@@ -124,6 +129,18 @@ def load_cached_dataset(prefix):
 
 
 class TrainValDataTransform(object):
+    """Transform the machine translation dataset.
+
+    Clip source and the target sentences to the maximum length. For the source sentence, append the
+    EOS. For the target sentence, append BOS and EOS.
+
+    Parameters
+    ----------
+    src_vocab : Vocab
+    tgt_vocab : Vocab
+    src_max_len : int
+    tgt_max_len : int
+    """
     def __init__(self, src_vocab, tgt_vocab, src_max_len, tgt_max_len):
         self._src_vocab = src_vocab
         self._tgt_vocab = tgt_vocab
@@ -152,6 +169,18 @@ def process_dataset(dataset, src_vocab, tgt_vocab):
 
 
 def load_translation_data(dataset, src_lang='en', tgt_lang='vi'):
+    """Load translation dataset
+
+    Parameters
+    ----------
+    dataset : str
+    src_lang : str, default 'en'
+    tgt_lang : str, default 'vi'
+
+    Returns
+    -------
+
+    """
     common_prefix = 'IWSLT2015_{}_{}_{}_{}'.format(src_lang, tgt_lang,
                                                    args.src_max_len, args.tgt_max_len)
     if dataset == 'IWSLT2015':
@@ -203,7 +232,7 @@ data_train = data_train.transform(lambda src, tgt: (src, tgt, len(src), len(tgt)
 data_val = SimpleDataset([(ele[0], ele[1], len(ele[0]), len(ele[1]), i)
                           for i, ele in enumerate(data_val)])
 data_test = SimpleDataset([(ele[0], ele[1], len(ele[0]), len(ele[1]), i)
-                          for i, ele in enumerate(data_test)])
+                           for i, ele in enumerate(data_test)])
 if args.gpu is None:
     ctx = mx.cpu()
     print('Use CPU')
@@ -224,7 +253,7 @@ translator = BeamSearchTranslator(model=model, beam_size=args.beam_size,
                                   scorer=BeamSearchScorer(alpha=args.lp_alpha,
                                                           K=args.lp_k),
                                   max_length=args.tgt_max_len)
-logging.info("Use beam_size={}, alpha={}, K={}".format(args.beam_size, args.lp_alpha, args.lp_k))
+logging.info('Use beam_size={}, alpha={}, K={}'.format(args.beam_size, args.lp_alpha, args.lp_k))
 
 
 loss_function = SoftmaxCEMaskedLoss()
@@ -232,11 +261,24 @@ loss_function.hybridize()
 
 
 def evaluate(data_loader):
+    """Evaluate given the data loader
+
+    Parameters
+    ----------
+    data_loader : DataLoader
+
+    Returns
+    -------
+    avg_loss : float
+        Average loss
+    real_translation_out : list of list of str
+        The translation output
+    """
     translation_out = []
     all_inst_ids = []
     avg_loss_denom = 0
     avg_loss = 0.0
-    for batch_id, (src_seq, tgt_seq, src_valid_length, tgt_valid_length, inst_ids) \
+    for _, (src_seq, tgt_seq, src_valid_length, tgt_valid_length, inst_ids) \
             in enumerate(data_loader):
         src_seq = src_seq.as_in_context(ctx)
         tgt_seq = tgt_seq.as_in_context(ctx)
@@ -271,6 +313,7 @@ def write_sentences(sentences, file_path):
 
 
 def train():
+    """Training function."""
     trainer = gluon.Trainer(model.collect_params(), args.optimizer, {'learning_rate': args.lr})
 
     train_batchify_fn = btf.Tuple(btf.Pad(), btf.Pad(), btf.Stack(), btf.Stack())
@@ -361,7 +404,7 @@ def train():
         if valid_loss < best_valid_loss:
             best_valid_loss = valid_loss
             save_path = os.path.join(args.save_dir, 'valid_best.params')
-            logging.info("Save best parameters to {}".format(save_path))
+            logging.info('Save best parameters to {}'.format(save_path))
             model.save_params(save_path)
         else:
             new_lr = trainer.learning_rate * args.lr_update_factor

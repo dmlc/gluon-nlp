@@ -25,7 +25,7 @@ import mxnet as mx
 from mxnet.base import _as_list
 from mxnet.gluon import nn, rnn
 from mxnet.gluon.block import Block, HybridBlock
-from .attention_cell import AttentionCell, MLPAttentionCell, DotProductAttentionCell
+from gluonnlp.model.attention_cell import AttentionCell, MLPAttentionCell, DotProductAttentionCell
 
 
 def _list_bcast_where(F, mask, new_val_l, old_val_l):
@@ -500,6 +500,8 @@ class GNMTDecoder(HybridBlock, Seq2SeqDecoder):
 
             - rnn_states : list of NDArray or Symbol
             - attention_vec : NDArray or Symbol, Shape (batch_size, C_memory)
+            - mem_value : NDArray
+            - mem_masks : NDArray, optional
 
         step_additional_outputs : list
             Either be an empty list or contains the attention weights in this step.
@@ -521,6 +523,29 @@ class GNMTDecoder(HybridBlock, Seq2SeqDecoder):
         return step_output, new_states, step_additional_outputs
 
     def hybrid_forward(self, F, step_input, states):  #pylint: disable=arguments-differ
+        """
+
+        Parameters
+        ----------
+        step_input : NDArray or Symbol
+        states : NDArray or Symbol
+
+        Returns
+        -------
+        step_output : NDArray or Symbol
+            The output of the decoder. Shape is (batch_size, C_out)
+        new_states: list
+            Includes
+
+            - rnn_states : list of NDArray or Symbol
+            - attention_vec : NDArray or Symbol, Shape (batch_size, C_memory)
+
+        step_additional_outputs : list
+            Either be an empty list or contains the attention weights in this step.
+            The attention weights will have shape (batch_size, 1, mem_length) or
+            (batch_size, num_heads, 1, mem_length)
+
+        """
         has_mem_mask = (len(states) == 4)
         if has_mem_mask:
             rnn_states, attention_output, mem_value, mem_masks = states

@@ -181,8 +181,6 @@ def list_evaluation_functions(kind=None):
 ###############################################################################
 # Word embedding similarity functions
 ###############################################################################
-
-
 @register
 class CosineSimilarity(WordEmbeddingSimilarityFunction):
     """Computes the cosine similarity.
@@ -234,6 +232,12 @@ class ThreeCosMul(WordEmbeddingAnalogyFunction):
 
     .. math::
         \\arg\\max_{b^* ∈ V}\\frac{\\cos(b^∗, b) \\cos(b^*, a)}{cos(b^*, a^*) + ε}
+
+    See the following paper for more details:
+    - Levy, O., & Goldberg, Y. (2014). Linguistic regularities in sparse and
+      explicit word representations. In R. Morante, & W. Yih, Proceedings of the
+      Eighteenth Conference on Computational Natural Language Learning, CoNLL 2014,
+      Baltimore, Maryland, USA, June 26-27, 2014 (pp. 171–180). : ACL.
 
     Parameters
     ----------
@@ -287,6 +291,12 @@ class ThreeCosAdd(WordEmbeddingAnalogyFunction):
     .. math::
         \\arg\\max_{b^* ∈ V}[\\cos(b^∗, b - a + a^*)]
 
+    See the following paper for more details:
+    - Levy, O., & Goldberg, Y. (2014). Linguistic regularities in sparse and
+      explicit word representations. In R. Morante, & W. Yih, Proceedings of the
+      Eighteenth Conference on Computational Natural Language Learning, CoNLL 2014,
+      Baltimore, Maryland, USA, June 26-27, 2014 (pp. 171–180). : ACL.
+
     Parameters
     ----------
     idx_to_vec : mxnet.ndarray.NDArray
@@ -318,11 +328,11 @@ class ThreeCosAdd(WordEmbeddingAnalogyFunction):
 
     def hybrid_forward(self, F, words1, words2, words3, weight):  # pylint: disable=arguments-differ
         """Implement forward computation."""
+        words123 = F.concat(words1, words2, words3, dim=0)
+        embeddings_words123 = F.Embedding(words123, weight,
+                                          input_dim=self._vocab_size,
+                                          output_dim=self._embed_size)
         if self.normalize:
-            words123 = F.concat(words1, words2, words3, dim=0)
-            embeddings_words123 = F.Embedding(words123, weight,
-                                              input_dim=self._vocab_size,
-                                              output_dim=self._embed_size)
             similarities = F.FullyConnected(
                 embeddings_words123, weight, no_bias=True,
                 num_hidden=self._vocab_size, flatten=False)
@@ -330,18 +340,13 @@ class ThreeCosAdd(WordEmbeddingAnalogyFunction):
                                                    axis=0)
             pred_idxs = F.topk(sim_w3w4 - sim_w1w4 + sim_w2w4, k=self.k)
         else:
-            words123 = F.concat(words1, words2, words3, dim=0)
-            embeddings_words123 = F.Embedding(words123, weight,
-                                              input_dim=self._vocab_size,
-                                              output_dim=self._embed_size)
-
             embeddings_word1, embeddings_word2, embeddings_word3 = F.split(
-                similarities, num_outputs=3, axis=0)
+                embeddings_words123, num_outputs=3, axis=0)
             vector = (embeddings_word3 - embeddings_word1 + embeddings_word2)
-            similarities = F.FullyConnected(vector, weight, no_bias=True,
-                                            num_hidden=self._vocab_size,
-                                            flatten=False)
-            pred_idxs = F.topk(similarities, k=self.k)
+            unnormalized_similarities = F.FullyConnected(
+                vector, weight, no_bias=True, num_hidden=self._vocab_size,
+                flatten=False)
+            pred_idxs = F.topk(unnormalized_similarities, k=self.k)
         return pred_idxs
 
 
@@ -460,8 +465,7 @@ class WordEmbeddingAnalogy(Block):
             orig_context = pred_idxs.context
             pred_idxs = pred_idxs.asnumpy().tolist()
             pred_idxs = [[
-                idx for idx in row
-                if idx != w1 and idx != w2 and idx != w3
+                idx for idx in row if idx != w1 and idx != w2 and idx != w3
             ] for row, w1, w2, w3 in zip(pred_idxs, words1, words2, words3)]
             pred_idxs = [p[:self.k] for p in pred_idxs]
             pred_idxs = nd.array(pred_idxs, ctx=orig_context)

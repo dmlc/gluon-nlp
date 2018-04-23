@@ -26,9 +26,9 @@ embeddings using a variety of datasets all part of the Gluon NLP Toolkit.
 """
 
 import argparse
+import itertools
 import logging
 import sys
-import time
 
 import mxnet as mx
 import numpy as np
@@ -47,127 +47,145 @@ try:
 except ImportError:
     stats = None
 
-parser = argparse.ArgumentParser(
-    description='Word embedding training with Gluon.',
-    formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-# Embeddings arguments
-group = parser.add_argument_group('Embedding arguments')
-group.add_argument('--embedding-name', type=str, default='fasttext',
-                   help=('Name of embedding type to load. '
-                         'Valid entries: {}'.format(', '.join(
-                             nlp.embedding.list_sources().keys()))))
-group.add_argument('--embedding-source', type=str, default='wiki.simple.vec',
-                   help=('Source from which to initialize the embedding.'
-                         'Pass --list-embedding-sources to get a list of '
-                         'valid sources for a given --embedding-name.'))
-group.add_argument('--list-embedding-sources', action='store_true')
+def get_args():
+    """Construct the argument parser."""
+    parser = argparse.ArgumentParser(
+        description='Word embedding training with Gluon.',
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-# Evaluation arguments
-group = parser.add_argument_group('Evaluation arguments')
-group.add_argument('--ignore_oov', action='store_true',
-                   help='Drop OOV words from evaluation datasets.')
-## Datasets
-group.add_argument(
-    '--similarity_datasets', type=str,
-    default=nlp.data.word_embedding_evaluation.word_similarity_datasets,
-    nargs='*',
-    help='Word similarity datasets to use for intrinsic evaluation.')
-group.add_argument(
-    '--similarity_functions', type=str,
-    default=nlp.embedding.evaluation.list_evaluation_functions(
-        'similarity'), nargs='+',
-    help='Word similarity functions to use for intrinsic evaluation.')
-group.add_argument(
-    '--analogy_datasets', type=str,
-    default=nlp.data.word_embedding_evaluation.word_analogy_datasets,
-    nargs='*',
-    help='Word similarity datasets to use for intrinsic evaluation.')
-group.add_argument(
-    '--analogy_functions', type=str,
-    default=nlp.embedding.evaluation.list_evaluation_functions(
-        'analogy'), nargs='+',
-    help='Word analogy functions to use for intrinsic evaluation. ')
-## Analogy evaluation specific arguments
-group.add_argument(
-    '--analogy_dont_exclude_question_words', action='store_true',
-    help=('Exclude input words from valid output analogies.'
-          'The performance of word embeddings on the analogy task '
-          'is around 0% accuracy if input words are not excluded.'))
+    # Embeddings arguments
+    group = parser.add_argument_group('Embedding arguments')
+    group.add_argument('--embedding-name', type=str, default='fasttext',
+                       help=('Name of embedding type to load. '
+                             'Valid entries: {}'.format(
+                                 ', '.join(
+                                     nlp.embedding.list_sources().keys()))))
+    group.add_argument('--embedding-source', type=str, default='wiki.simple',
+                       help=('Source from which to initialize the embedding.'
+                             'Pass --list-embedding-sources to get a list of '
+                             'valid sources for a given --embedding-name.'))
+    group.add_argument('--list-embedding-sources', action='store_true')
 
-# Computation options
-group = parser.add_argument_group('Computation arguments')
-group.add_argument('--batch-size', type=int, default=128,
-                   help='Batch size to use on analogy task.')
-group.add_argument('--gpu', type=int,
-                   help=('Number (index) of GPU to run on, e.g. 0. '
-                         'If not specified, uses CPU.'))
-group.add_argument('--dont-hybridize', action='store_true',
-                   help='Disable hybridization of gluon HybridBlocks.')
+    # Evaluation arguments
+    group = parser.add_argument_group('Evaluation arguments')
+    group.add_argument('--ignore-oov', action='store_true',
+                       help='Drop OOV words from evaluation datasets.')
+    ## Datasets
+    group.add_argument(
+        '--similarity-datasets', type=str,
+        default=nlp.data.word_embedding_evaluation.word_similarity_datasets,
+        nargs='*',
+        help='Word similarity datasets to use for intrinsic evaluation.')
+    group.add_argument(
+        '--similarity-functions', type=str,
+        default=nlp.embedding.evaluation.list_evaluation_functions(
+            'similarity'), nargs='+',
+        help='Word similarity functions to use for intrinsic evaluation.')
+    group.add_argument(
+        '--analogy-datasets', type=str,
+        default=nlp.data.word_embedding_evaluation.word_analogy_datasets,
+        nargs='*',
+        help='Word similarity datasets to use for intrinsic evaluation.')
+    group.add_argument(
+        '--analogy-functions', type=str,
+        default=nlp.embedding.evaluation.list_evaluation_functions('analogy'),
+        nargs='+',
+        help='Word analogy functions to use for intrinsic evaluation. ')
+    ## Analogy evaluation specific arguments
+    group.add_argument(
+        '--analogy-dont-exclude-question-words', action='store_true',
+        help=('Exclude input words from valid output analogies.'
+              'The performance of word embeddings on the analogy task '
+              'is around 0% accuracy if input words are not excluded.'))
 
-args = parser.parse_args()
+    # Computation options
+    group = parser.add_argument_group('Computation arguments')
+    group.add_argument('--batch-size', type=int, default=32,
+                       help='Batch size to use on analogy task.'
+                       'Decrease batch size if evaluation crashes.')
+    group.add_argument('--gpu', type=int,
+                       help=('Number (index) of GPU to run on, e.g. 0. '
+                             'If not specified, uses CPU.'))
+    group.add_argument('--dont-hybridize', action='store_true',
+                       help='Disable hybridization of gluon HybridBlocks.')
+
+    # Logging options
+    group = parser.add_argument_group('Logging arguments')
+    group.add_argument(
+        '--log', type=str, default='results.csv', help='Path to logfile.'
+        'Results of evaluation runs are written to there in a CSV format.')
+
+    args = parser.parse_args()
+
+    return args
+
 
 ###############################################################################
 # Parse arguments
 ###############################################################################
-if args.list_embedding_sources:
-    print('Listing all sources for {} embeddings.'.format(args.embedding_name))
-    print('Specify --embedding-name if you wish to '
-          'list sources of other embeddings')
-    print('')
-    if args.embedding_name not in nlp.embedding.list_sources().keys():
-        print('Invalid embedding name.')
-        print('Only {} are supported.'.format(', '.join(
-            nlp.embedding.list_sources().keys())))
-        sys.exit(1)
-    print(' '.join(nlp.embedding.list_sources()[args.embedding_name]))
-    sys.exit(0)
+def validate_args(args):
+    """Validate provided arguments and act on --help."""
+    if args.list_embedding_sources:
+        print('Listing all sources for {} embeddings.'.format(
+            args.embedding_name))
+        print('Specify --embedding-name if you wish to '
+              'list sources of other embeddings')
+        print('')
+        if args.embedding_name not in nlp.embedding.list_sources().keys():
+            print('Invalid embedding name.')
+            print('Only {} are supported.'.format(', '.join(
+                nlp.embedding.list_sources().keys())))
+            sys.exit(1)
+        print(' '.join(nlp.embedding.list_sources()[args.embedding_name]))
+        sys.exit(0)
 
-print(args)
+    print(args)
 
-# Load word similarity datasets
-similarity_datasets = []
-similarity_datasets_classnames = \
-    nlp.data.word_embedding_evaluation.word_similarity_datasets
-if args.similarity_datasets == '*':
-    args.similarity_datasets = similarity_datasets_classnames
-for dataset_name in args.similarity_datasets:
-    if dataset_name not in similarity_datasets_classnames:
-        print('{} is not a supported dataset.'.format(dataset_name))
-        sys.exit(1)
-    # TODO use registry instead
-    ds_class = eval('nlp.data.{}'.format(dataset_name))
-    similarity_datasets.append(ds_class)
+    # Check correctness of similarity dataset names
+    for dataset_name in args.similarity_datasets:
+        if dataset_name.lower() not in map(
+                str.lower,
+                nlp.data.word_embedding_evaluation.word_similarity_datasets):
+            print('{} is not a supported dataset.'.format(dataset_name))
+            sys.exit(1)
 
-# Load word analogy datasets
-analogy_datasets = []
-analogy_datasets_classnames = \
-    nlp.data.word_embedding_evaluation.word_analogy_datasets
-if args.analogy_datasets == '*':
-    args.analogy_datasets = analogy_datasets_classnames
-for dataset_name in args.analogy_datasets:
-    if dataset_name not in analogy_datasets_classnames:
-        print('{} is not a supported dataset.'.format(dataset_name))
-        sys.exit(1)
-    # TODO use registry instead
-    ds_class = eval('nlp.data.{}'.format(dataset_name))
-    analogy_datasets.append(ds_class)
+    # Check correctness of analogy dataset names
+    for dataset_name in args.analogy_datasets:
+        if dataset_name.lower() not in map(
+                str.lower,
+                nlp.data.word_embedding_evaluation.word_analogy_datasets):
+            print('{} is not a supported dataset.'.format(dataset_name))
+            sys.exit(1)
 
-# Context
-if args.gpu is None or args.gpu == '':
-    context = mx.cpu()
-else:
-    context = mx.gpu(int(args.gpu))
 
-# Set up logging
-logging.basicConfig()
-logging.getLogger().setLevel(logging.INFO)
+def get_context(args):
+    if args.gpu is None or args.gpu == '':
+        context = mx.cpu()
+    else:
+        context = mx.gpu(int(args.gpu))
+    return context
 
 
 ###############################################################################
 # Evaluation
 ###############################################################################
-def evaluate_similarity(token_embedding, dataset,
+def log_result(args, evaluation_type, dataset, kwargs, evaluation, value,
+               num_samples):
+    if not args.log:
+        return
+
+    with open(args.log, 'a') as f:
+        f.write('\t'.join(
+            (evaluation_type, dataset, kwargs, args.embedding_name,
+             args.embedding_source, evaluation, value, num_samples)))
+        f.write('\n')
+
+
+###############################################################################
+# Evaluation
+###############################################################################
+def evaluate_similarity(args, token_embedding, dataset,
                         similarity_function='CosineSimilarity'):
     """Evaluation on similarity task."""
     # Closed vocabulary: Only need the words occuring in the dataset
@@ -189,6 +207,7 @@ def evaluate_similarity(token_embedding, dataset,
     evaluator = nlp.embedding.evaluation.WordEmbeddingSimilarity(
         idx_to_vec=vocab.embedding.idx_to_vec,
         similarity_function=similarity_function)
+    context = get_context(args)
     evaluator.initialize(ctx=context)
     if not args.dont_hybridize:
         evaluator.hybridize()
@@ -198,10 +217,12 @@ def evaluate_similarity(token_embedding, dataset,
 
     sr = stats.spearmanr(pred_similarity.asnumpy(), np.array(scores))
     logging.info('Spearman rank correlation on %s: %s',
-                 dataset.__class__.__name__, sr)
+                 dataset.__class__.__name__, sr.correlation)
+    return sr.correlation, len(dataset)
 
 
-def evaluate_analogy(token_embedding, dataset, analogy_function='ThreeCosMul'):
+def evaluate_analogy(args, token_embedding, dataset,
+                     analogy_function='ThreeCosMul'):
     """Evaluation on analogy task."""
     # Open vocabulary: Use all known words
     counter = nlp.data.utils.Counter(token_embedding.idx_to_token)
@@ -228,6 +249,7 @@ def evaluate_analogy(token_embedding, dataset, analogy_function='ThreeCosMul'):
         idx_to_vec=vocab.embedding.idx_to_vec,
         exclude_question_words=exclude_question_words,
         analogy_function=analogy_function)
+    context = get_context(args)
     evaluator.initialize(ctx=context)
     if not args.dont_hybridize:
         evaluator.hybridize()
@@ -244,9 +266,10 @@ def evaluate_analogy(token_embedding, dataset, analogy_function='ThreeCosMul'):
 
     logging.info('Accuracy on %s: %s', dataset.__class__.__name__,
                  acc.get()[1])
+    return acc.get()[1], len(dataset)
 
 
-def evaluate():
+def evaluate(args):
     """Main evaluation function."""
     # Load pretrained embeddings
     print('Loading embedding ', args.embedding_name, ' from ',
@@ -255,27 +278,50 @@ def evaluate():
                                            source=args.embedding_source)
 
     # Similarity based evaluation
-    for dataset_class in similarity_datasets:
+    for dataset_name in args.similarity_datasets:
         if stats is None:
             raise RuntimeError(
                 'Similarity evaluation requires scipy.'
                 'You may install scipy via `pip install scipy`.')
 
-        logging.info('Starting evaluation of %s', dataset_class.__name__)
-        dataset = dataset_class()
-        for similarity_function in args.similarity_functions:
-            logging.info('Evaluating with  %s', similarity_function)
-            evaluate_similarity(token_embedding, dataset, similarity_function)
+        logging.info('Starting evaluation of %s', dataset_name)
+        parameters = nlp.data.list_datasets(dataset_name)
+        for key_values in itertools.product(*parameters.values()):
+            kwargs = dict(zip(parameters.keys(), key_values))
+            logging.info('Evaluating with %s', kwargs)
+
+            dataset = nlp.data.create(dataset_name, **kwargs)
+            for similarity_function in args.similarity_functions:
+                logging.info('Evaluating with  %s', similarity_function)
+                result, num_samples = evaluate_similarity(
+                    args, token_embedding, dataset, similarity_function)
+                log_result(args, 'similarity', dataset.__class__.__name__,
+                           str(kwargs), similarity_function, str(result),
+                           str(num_samples))
 
     # Analogy based evaluation
-    for dataset_class in analogy_datasets:
-        logging.info('Starting evaluation of %s', dataset_class.__name__)
-        dataset = dataset_class()
-        for analogy_function in args.analogy_functions:
-            logging.info('Evaluating with  %s', analogy_function)
-            evaluate_analogy(token_embedding, dataset, analogy_function)
+    for dataset_name in args.analogy_datasets:
+        logging.info('Starting evaluation of %s', dataset_name)
+        parameters = nlp.data.list_datasets(dataset_name)
+        for key_values in itertools.product(*parameters.values()):
+            kwargs = dict(zip(parameters.keys(), key_values))
+            logging.info('Evaluating with %s', kwargs)
+
+            dataset = nlp.data.create(dataset_name, **kwargs)
+            for analogy_function in args.analogy_functions:
+                logging.info('Evaluating with  %s', analogy_function)
+                result, num_samples = evaluate_analogy(
+                    args, token_embedding, dataset, analogy_function)
+                log_result(args, 'similarity', dataset.__class__.__name__,
+                           str(kwargs), analogy_function, str(result),
+                           str(num_samples))
 
 
 if __name__ == '__main__':
-    start_pipeline_time = time.time()
-    evaluate()
+    logging.basicConfig()
+    logging.getLogger().setLevel(logging.INFO)
+
+    args_ = get_args()
+    validate_args(args_)
+
+    evaluate(args_)

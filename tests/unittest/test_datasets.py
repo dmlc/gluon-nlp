@@ -38,6 +38,50 @@ else:
     _str_types = (str, unicode)
 
 
+###############################################################################
+# Registry
+###############################################################################
+def test_dataset_registry():
+    @nlp.data.register(segment=['train'])
+    class MyDataset(mx.gluon.data.Dataset):
+        def __init__(self, segment='train'):
+            pass
+
+    my_dataset = nlp.data.create('MyDataset')
+
+    with pytest.raises(RuntimeError):
+
+        @nlp.data.register(segment='thisshouldbealistofarguments')
+        class MyDataset2(mx.gluon.data.Dataset):
+            def __init__(self, segment='train'):
+                pass
+
+    with pytest.raises(RuntimeError):
+
+        @nlp.data.register(invalidargument=['train'])
+        class MyDataset3(mx.gluon.data.Dataset):
+            def __init__(self, segment='train'):
+                pass
+
+    @nlp.data.register()
+    class MyDataset4(mx.gluon.data.Dataset):
+        def __init__(self, segment='train'):
+            pass
+
+    my_dataset = nlp.data.create('MyDataset4')
+
+
+    @nlp.data.register
+    class MyDataset5(mx.gluon.data.Dataset):
+        def __init__(self, segment='train'):
+            pass
+
+    my_dataset = nlp.data.create('MyDataset5')
+
+
+###############################################################################
+# Language model
+###############################################################################
 def test_wikitext2():
     train = nlp.data.WikiText2(
         segment='train', root=os.path.join('tests', 'data', 'wikitext-2'))
@@ -231,6 +275,9 @@ def test_bigger_analogy():
     assert len(data) == 98000
 
 
+###############################################################################
+# CONLL
+###############################################################################
 @flaky(max_runs=2, min_passes=1)
 def test_conll2000():
     train = nlp.data.CoNLL2000(segment='train', root=os.path.join(
@@ -339,6 +386,9 @@ def test_ud21():
             assert max(len(f) for f in x) == min(len(f) for f in x)
 
 
+###############################################################################
+# Translation
+###############################################################################
 def test_iwlst2015():
     # Test en to vi
     train_en_vi = nlp.data.IWSLT2015(segment='train', root='tests/data/iwlst2015')
