@@ -17,7 +17,7 @@
 # specific language governing permissions and limitations
 # under the License.
 """Language models."""
-__all__ = ['AWDRNN', 'StandardRNN', 'awd_lstm_lm_1150',
+__all__ = ['AWDRNN', 'StandardRNN', 'awd_lstm_lm_1150', 'awd_lstm_lm_600',
            'standard_lstm_lm_200', 'standard_lstm_lm_650', 'standard_lstm_lm_1500']
 
 import os
@@ -211,7 +211,6 @@ class StandardRNN(Block):
     def _get_decoder(self):
         output = nn.HybridSequential()
         with output.name_scope():
-            output.add(nn.Dropout(self._dropout))
             if self._tie_weights:
                 output.add(nn.Dense(self._vocab_size, flatten=False,
                                     params=self.embedding[0].params))
@@ -225,13 +224,14 @@ class StandardRNN(Block):
     def forward(self, inputs, begin_state=None): # pylint: disable=arguments-differ
         """Defines the forward computation. Arguments can be either
         :py:class:`NDArray` or :py:class:`Symbol`."""
-        embedded_inputs = self.embedding(inputs)
+        encoded = self.embedding(inputs)
         if not begin_state:
             begin_state = self.begin_state(batch_size=inputs.shape[1])
-        encoded, state = self.encoder(embedded_inputs, begin_state)
+        encoded, state = self.encoder(encoded, begin_state)
+        if self._dropout:
+            encoded = nd.Dropout(encoded, p=self._dropout, axes=(0,))
         out = self.decoder(encoded)
         return out, state
-
 
 def _load_vocab(dataset_name, vocab, root):
     if dataset_name:
@@ -295,14 +295,61 @@ def awd_lstm_lm_1150(dataset_name=None, vocab=None, pretrained=False, ctx=cpu(),
                        'dropout': 0.4,
                        'weight_drop': 0.5,
                        'drop_h': 0.2,
-                       'drop_i': 0.65}
-    mutable_args = frozenset(['dropout', 'weight_drop', 'drop_h', 'drop_i'])
+                       'drop_i': 0.65,
+                       'drop_e': 0.1}
+    mutable_args = frozenset(['dropout', 'weight_drop', 'drop_h', 'drop_i', 'drop_e'])
     assert all((k not in kwargs or k in mutable_args) for k in predefined_args), \
            'Cannot override predefined model settings.'
     predefined_args.update(kwargs)
     return _get_rnn_model(AWDRNN, 'awd_lstm_lm_1150', dataset_name, vocab, pretrained,
                           ctx, root, **predefined_args)
 
+
+def awd_lstm_lm_600(dataset_name=None, vocab=None, pretrained=False, ctx=cpu(),
+                    root=os.path.join('~', '.mxnet', 'models'), **kwargs):
+    r"""3-layer LSTM language model with weight-drop, variational dropout, and tied weights.
+
+    Embedding size is 200, and hidden layer size is 600.
+
+    Parameters
+    ----------
+    dataset_name : str or None, default None
+        The dataset name on which the pretrained model is trained.
+        Options are 'wikitext-2'. If specified, then the returned vocabulary is extracted from
+        the training set of the dataset.
+        If None, then vocab is required, for specifying embedding weight size, and is directly
+        returned.
+        The pre-trained model is not provided yet.
+    vocab : gluonnlp.Vocab or None, default None
+        Vocab object to be used with the language model.
+        Required when dataset_name is not specified.
+    pretrained : bool, default False
+        Whether to load the pretrained weights for model.
+    ctx : Context, default CPU
+        The context in which to load the pretrained weights.
+    root : str, default '~/.mxnet/models'
+        Location for keeping the model parameters.
+
+    Returns
+    -------
+    gluon.Block, gluonnlp.Vocab
+    """
+    predefined_args = {'embed_size': 200,
+                       'hidden_size': 600,
+                       'mode': 'lstm',
+                       'num_layers': 3,
+                       'tie_weights': True,
+                       'dropout': 0.2,
+                       'weight_drop': 0.2,
+                       'drop_h': 0.1,
+                       'drop_i': 0.3,
+                       'drop_e': 0.05}
+    mutable_args = frozenset(['dropout', 'weight_drop', 'drop_h', 'drop_i', 'drop_e'])
+    assert all((k not in kwargs or k in mutable_args) for k in predefined_args), \
+           'Cannot override predefined model settings.'
+    predefined_args.update(kwargs)
+    return _get_rnn_model(AWDRNN, 'awd_lstm_lm_600', dataset_name, vocab, pretrained,
+                          ctx, root, **predefined_args)
 
 def standard_lstm_lm_200(dataset_name=None, vocab=None, pretrained=False, ctx=cpu(),
                          root=os.path.join('~', '.mxnet', 'models'), **kwargs):
@@ -437,5 +484,6 @@ model_store._model_sha1.update(
         ('d572ce7190e128b94aed403ad89a610aebe8a74a', 'standard_lstm_lm_1500_wikitext-2'),
         ('140416672f27691173523a7535b13cb3adf050a1', 'standard_lstm_lm_650_wikitext-2'),
         ('700b532dc96a29e39f45cb7dd632ce44e377a752', 'standard_lstm_lm_200_wikitext-2'),
-        ('45d6df33f35715fb760ec8d18ed567016a897df7', 'awd_lstm_lm_1150_wikitext-2')
+        ('45d6df33f35715fb760ec8d18ed567016a897df7', 'awd_lstm_lm_1150_wikitext-2'),
+        ('7894a046f8286db0d5d2ed672b60f4f52b4bc3aa', 'awd_lstm_lm_600_wikitext-2')
     ]})

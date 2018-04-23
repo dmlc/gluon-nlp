@@ -16,33 +16,7 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+"""Constants used in the NMT examples."""
+import os
 
-# pylint: disable=wildcard-import
-"""This module includes common utilities such as data readers and counter."""
-
-from .utils import *
-
-from .registry import *
-
-from .transforms import *
-
-from .sampler import *
-
-from .dataset import *
-
-from .language_model import *
-
-from .sentiment import *
-
-from .word_embedding_evaluation import *
-
-from .conll import *
-
-from .translation import *
-
-from . import dataset, utils, transforms, sampler, batchify
-
-__all__ = (utils.__all__ + transforms.__all__ + sampler.__all__ +
-           dataset.__all__ + language_model.__all__ + sentiment.__all__ +
-           word_embedding_evaluation.__all__ + conll.__all__ +
-           translation.__all__ + registry.__all__)
+CACHE_PATH = os.path.realpath(os.path.join(os.path.realpath(__file__), '..', 'cached'))

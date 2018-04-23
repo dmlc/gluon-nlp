@@ -10,5 +10,6 @@ dependencies:
   - nltk
   - pytest
   - flaky
+  - pytest-cov
   - pip:
     - mxnet>=1.2.0b20180415

@@ -27,8 +27,10 @@ import os
 
 from mxnet.gluon.data import SimpleDataset
 from mxnet.gluon.utils import download, check_sha1, _get_repo_file_url
+from .registry import register
 
 
+@register(segment=['train', 'test', 'unsup'])
 class IMDB(SimpleDataset):
     """IMDB reviews for sentiment analysis.
 
