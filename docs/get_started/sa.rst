@@ -219,7 +219,7 @@ Now, we can create dataloader for both training set and testing set.
    >>>                                         shuffle=False,
    >>>                                         batchify_fn=batchify_fn)
 
-As ``Dataloader`` is iterable, we can iterate over the dataset easily using the following code
+As ``Dataloader`` is iterable, we can iterate over the dataset easily using the following code:
 
 .. code:: python
 
