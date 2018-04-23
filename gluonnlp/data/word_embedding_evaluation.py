@@ -27,8 +27,9 @@ import zipfile
 from mxnet.gluon.data.dataset import SimpleDataset
 from mxnet.gluon.utils import check_sha1, _get_repo_file_url
 
-from .._constants import BATS_CHECKSUMS, SEMEVAL17_CHECKSUMS
+from .. import _constants as C
 from .dataset import CorpusDataset
+from .registry import register
 
 try:
     import requests
@@ -128,7 +129,8 @@ class _Dataset(SimpleDataset):
             path = os.path.join(self.root, *name)
             if not os.path.exists(path) or not check_sha1(path, checksum):
                 if self._namespace is not None:
-                    url = _get_repo_file_url(self._namespace, self._archive_file[0])
+                    url = _get_repo_file_url(self._namespace,
+                                             self._archive_file[0])
                 else:
                     url = self._url
                 downloaded_file_path = download(url, path=self.root,
@@ -175,6 +177,7 @@ class WordSimilarityEvaluationDataset(_Dataset):
         self._data = [[row[0], row[1], float(row[2])] for row in self._data]
 
 
+@register(segment=['all', 'similarity', 'relatedness'])
 class WordSim353(WordSimilarityEvaluationDataset):
     """WordSim353 dataset.
 
@@ -233,6 +236,9 @@ class WordSim353(WordSimilarityEvaluationDataset):
 
     def __init__(self, segment='all', root=os.path.join(
             '~', '.mxnet', 'datasets', 'wordsim353')):
+        if segment is not None:
+            assert segment in ['all', 'relatedness', 'similarity']
+
         self.segment = segment
         super(WordSim353, self).__init__(root=root)
 
@@ -252,6 +258,7 @@ class WordSim353(WordSimilarityEvaluationDataset):
         return [row for row in CorpusDataset(paths)]
 
 
+@register(segment=['full', 'dev', 'test'])
 class MEN(WordSimilarityEvaluationDataset):
     """MEN dataset for word-similarity and relatedness.
 
@@ -271,7 +278,7 @@ class MEN(WordSimilarityEvaluationDataset):
     root : str, default '~/.mxnet/datasets/men'
         Path to temp folder for storing data.
     segment : str, default 'train'
-        Dataset segment. Options are 'train', 'val', 'test'.
+        Dataset segment. Options are 'train', 'dev', 'test'.
 
     """
     _url = 'http://clic.cimec.unitn.it/~elia.bruni/resources/MEN.tar.gz'
@@ -321,6 +328,7 @@ class MEN(WordSimilarityEvaluationDataset):
         return [[row[0][:-2], row[1][:-2], row[2]] for row in dataset]
 
 
+@register
 class RadinskyMTurk(WordSimilarityEvaluationDataset):
     """MTurk dataset for word-similarity and relatedness by Radinsky et al..
 
@@ -356,6 +364,7 @@ class RadinskyMTurk(WordSimilarityEvaluationDataset):
         return [row for row in dataset]
 
 
+@register
 class RareWords(WordSimilarityEvaluationDataset):
     """Rare words dataset word-similarity and relatedness.
 
@@ -390,6 +399,7 @@ class RareWords(WordSimilarityEvaluationDataset):
         return [[row[0], row[1], row[2]] for row in dataset]
 
 
+@register
 class SimLex999(WordSimilarityEvaluationDataset):
     """SimLex999 dataset word-similarity.
 
@@ -458,6 +468,7 @@ class SimLex999(WordSimilarityEvaluationDataset):
                 if i != 0]  # Throw away header
 
 
+@register
 class SimVerb3500(WordSimilarityEvaluationDataset):
     """SimVerb3500 dataset word-similarity.
 
@@ -527,6 +538,7 @@ class SimVerb3500(WordSimilarityEvaluationDataset):
         return [[row[0], row[1], row[3]] for row in dataset]
 
 
+@register(segment=['trial', 'test'])
 class SemEval17Task2(WordSimilarityEvaluationDataset):
     """SemEval17Task2 dataset for word-similarity.
 
@@ -562,13 +574,7 @@ class SemEval17Task2(WordSimilarityEvaluationDataset):
     _url = 'http://alt.qcri.org/semeval2017/task2/data/uploads/semeval2017-task2.zip'
     _archive_file = ('semeval2017-task2.zip',
                      'b29860553f98b057303815817dfb60b9fe79cfba')
-    _checksums = SEMEVAL17_CHECKSUMS
-
-    _segment_file = {
-        'trial': 'sts-train.csv',
-        'dev': 'sts-dev.csv',
-        'test': 'sts-test.csv'
-    }
+    _checksums = C.SEMEVAL17_CHECKSUMS
 
     _datatemplate = ('SemEval17-Task2/{segment}/subtask1-monolingual/data/'
                      '{language}.{segment}.data.txt')
@@ -601,6 +607,7 @@ class SemEval17Task2(WordSimilarityEvaluationDataset):
         return [[d[0], d[1], k[0]] for d, k in zip(data_dataset, keys_dataset)]
 
 
+@register
 class BakerVerb143(WordSimilarityEvaluationDataset):
     """Verb143 dataset.
 
@@ -644,6 +651,7 @@ class BakerVerb143(WordSimilarityEvaluationDataset):
         return [[row[0], row[1], row[12]] for row in dataset]
 
 
+@register
 class YangPowersVerb130(WordSimilarityEvaluationDataset):
     """Verb-130 dataset.
 
@@ -739,6 +747,7 @@ class WordAnalogyEvaluationDataset(_Dataset):
         raise NotImplementedError
 
 
+@register(category=C.GOOGLEANALOGY_CATEGORIES)
 class GoogleAnalogyTestSet(WordAnalogyEvaluationDataset):
     """Google analogy test set
 
@@ -758,13 +767,7 @@ class GoogleAnalogyTestSet(WordAnalogyEvaluationDataset):
     _url = 'http://download.tensorflow.org/data/questions-words.txt'
 
     groups = ['syntactic', 'semantic']
-    categories = [
-        'capital-common-countries', 'capital-world', 'currency',
-        'city-in-state', 'family', 'gram1-adjective-to-adverb',
-        'gram2-opposite', 'gram3-comparative', 'gram4-superlative',
-        'gram5-present-participle', 'gram6-nationality-adjective',
-        'gram7-past-tense', 'gram8-plural', 'gram9-plural-verbs'
-    ]
+    categories = C.GOOGLEANALOGY_CATEGORIES
 
     def __init__(self, group=None,
                  category=None, lowercase=True, root=os.path.join(
@@ -801,6 +804,7 @@ class GoogleAnalogyTestSet(WordAnalogyEvaluationDataset):
         return words
 
 
+@register(category=list(C.BATS_CATEGORIES.keys()))
 class BiggerAnalogyTestSet(WordAnalogyEvaluationDataset):
     """SimVerb3500 dataset word-similarity.
 
@@ -831,7 +835,7 @@ class BiggerAnalogyTestSet(WordAnalogyEvaluationDataset):
     """
     _archive_file = ('BATS_3.0.zip',
                      'bf94d47884be9ea83af369beeea7499ed25dcf0d')
-    _checksums = BATS_CHECKSUMS
+    _checksums = C.BATS_CHECKSUMS
     _url = 'https://s3.amazonaws.com/blackbirdprojects/tut_vsm/BATS_3.0.zip'
     _category_group_map = {
         'I': '1_Inflectional_morphology',
@@ -839,59 +843,28 @@ class BiggerAnalogyTestSet(WordAnalogyEvaluationDataset):
         'E': '3_Encyclopedic_semantics',
         'L': '4_Lexicographic_semantics'
     }
-    _categories = {
-        'I01': '[noun - plural_reg]',
-        'I02': '[noun - plural_irreg]',
-        'I03': '[adj - comparative]',
-        'I04': '[adj - superlative]',
-        'I05': '[verb_inf - 3pSg]',
-        'I06': '[verb_inf - Ving]',
-        'I07': '[verb_inf - Ved]',
-        'I08': '[verb_Ving - 3pSg]',
-        'I09': '[verb_Ving - Ved]',
-        'I10': '[verb_3pSg - Ved]',
-        'D01': '[noun+less_reg]',
-        'D02': '[un+adj_reg]',
-        'D03': '[adj+ly_reg]',
-        'D04': '[over+adj_reg]',
-        'D05': '[adj+ness_reg]',
-        'D06': '[re+verb_reg]',
-        'D07': '[verb+able_reg]',
-        'D08': '[verb+er_irreg]',
-        'D09': '[verb+tion_irreg]',
-        'D10': '[verb+ment_irreg]',
-        'E01': '[country - capital]',
-        'E02': '[country - language]',
-        'E03': '[UK_city - county]',
-        'E04': '[name - nationality]',
-        'E05': '[name - occupation]',
-        'E06': '[animal - young]',
-        'E07': '[animal - sound]',
-        'E08': '[animal - shelter]',
-        'E09': '[things - color]',
-        'E10': '[male - female]',
-        'L01': '[hypernyms - animals]',
-        'L02': '[hypernyms - misc]',
-        'L03': '[hyponyms - misc]',
-        'L04': '[meronyms - substance]',
-        'L05': '[meronyms - member]',
-        'L06': '[meronyms - part]',
-        'L07': '[synonyms - intensity]',
-        'L08': '[synonyms - exact]',
-        'L09': '[antonyms - gradable]',
-        'L10': '[antonyms - binary]'
-    }
+    _categories = C.BATS_CATEGORIES
 
-    def __init__(self, form_analogy_pairs=True,
+    def __init__(self, category=None, form_analogy_pairs=True,
                  drop_alternative_solutions=True, root=os.path.join(
                      '~', '.mxnet', 'datasets', 'simverb3500')):
         self.form_analogy_pairs = form_analogy_pairs
         self.drop_alternative_solutions = drop_alternative_solutions
+        self.category = category
+
+        if self.category is not None:
+            assert self.category in self._categories.keys()
+
         super(BiggerAnalogyTestSet, self).__init__(root=root)
 
     def _get_data(self):
+        if self.category is not None:
+            categories = [self.category]
+        else:
+            categories = self._categories.keys()
+
         datasets = []
-        for category in self._categories:
+        for category in categories:
             group = self._category_group_map[category[0]]
             category_name = self._categories[category]
             path = os.path.join(

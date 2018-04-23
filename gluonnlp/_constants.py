@@ -714,6 +714,14 @@ FAST_TEXT_NPZ_SHA1 = \
      'wiki.zu': ('wiki.zu.npz',
                  'fc9ce07d5d0c49a3c86cf1b26056ada58f9404ca')}
 
+GOOGLEANALOGY_CATEGORIES = [
+    'capital-common-countries', 'capital-world', 'currency', 'city-in-state',
+    'family', 'gram1-adjective-to-adverb', 'gram2-opposite',
+    'gram3-comparative', 'gram4-superlative', 'gram5-present-participle',
+    'gram6-nationality-adjective', 'gram7-past-tense', 'gram8-plural',
+    'gram9-plural-verbs'
+]
+
 BATS_CHECKSUMS = \
     {'BATS_3.0/1_Inflectional_morphology/I01 [noun - plural_reg].txt':
      'cfcba2835edf81abf11b84defd2f4daa3ca0b0bf',
@@ -795,6 +803,49 @@ BATS_CHECKSUMS = \
      '117fbb86504c192b33a5469f2f282e741d9c016d',
      'BATS_3.0/4_Lexicographic_semantics/L10 [antonyms - binary].txt':
      '3cde2f2c2a0606777b8d7d11d099f316416a7224'}
+
+BATS_CATEGORIES = {
+    'I01': '[noun - plural_reg]',
+    'I02': '[noun - plural_irreg]',
+    'I03': '[adj - comparative]',
+    'I04': '[adj - superlative]',
+    'I05': '[verb_inf - 3pSg]',
+    'I06': '[verb_inf - Ving]',
+    'I07': '[verb_inf - Ved]',
+    'I08': '[verb_Ving - 3pSg]',
+    'I09': '[verb_Ving - Ved]',
+    'I10': '[verb_3pSg - Ved]',
+    'D01': '[noun+less_reg]',
+    'D02': '[un+adj_reg]',
+    'D03': '[adj+ly_reg]',
+    'D04': '[over+adj_reg]',
+    'D05': '[adj+ness_reg]',
+    'D06': '[re+verb_reg]',
+    'D07': '[verb+able_reg]',
+    'D08': '[verb+er_irreg]',
+    'D09': '[verb+tion_irreg]',
+    'D10': '[verb+ment_irreg]',
+    'E01': '[country - capital]',
+    'E02': '[country - language]',
+    'E03': '[UK_city - county]',
+    'E04': '[name - nationality]',
+    'E05': '[name - occupation]',
+    'E06': '[animal - young]',
+    'E07': '[animal - sound]',
+    'E08': '[animal - shelter]',
+    'E09': '[things - color]',
+    'E10': '[male - female]',
+    'L01': '[hypernyms - animals]',
+    'L02': '[hypernyms - misc]',
+    'L03': '[hyponyms - misc]',
+    'L04': '[meronyms - substance]',
+    'L05': '[meronyms - member]',
+    'L06': '[meronyms - part]',
+    'L07': '[synonyms - intensity]',
+    'L08': '[synonyms - exact]',
+    'L09': '[antonyms - gradable]',
+    'L10': '[antonyms - binary]'
+}
 
 SEMEVAL17_CHECKSUMS = \
     {'SemEval17-Task2/README.txt':
