@@ -1,4 +1,4 @@
-Data API — a sentiment analysis example
+Data API — A Sentiment Analysis Example
 ------------------------
 
 In this tutorial, we will learn how to load and process the sentiment dataset as well as the construction of the model.
@@ -159,7 +159,7 @@ sequences so that they have the same lengths in the minibatch, which allows the 
    >>>                                       nlp.data.batchify.Stack())
 
 ``Tuple`` wraps multiple batchify functions and applies each input function on each input field, respectively. In this
-case, we are going to apply ``Pad`` on the sequence and ``Stack`` on the labels. Given the batchify function, we can
+case, we are applying ``Pad`` on the sequence and ``Stack`` on the labels. Given the batchify function, we can
 construct a sampler, which defines how the samples in a dataset will be iterated.
 
 .. code:: python
@@ -172,9 +172,9 @@ construct a sampler, which defines how the samples in a dataset will be iterated
     >>> print(batch_sampler.stats())
 
    FixedBucketSampler:
-     sample_num=25000, batch_num=1568
-     key=[14, 68, 122, 176, 230, 284, 338, 392, 446, 500]
-     cnt=[5, 976, 2353, 6662, 4470, 2661, 1836, 1385, 1012, 3640]
+     sample_num=25000, batch_num=1567
+     key=[68, 116, 164, 212, 260, 308, 356, 404, 452, 500]
+     cnt=[981, 1958, 5686, 4614, 2813, 2000, 1411, 1129, 844, 3564]
      batch_size=[16, 16, 16, 16, 16, 16, 16, 16, 16, 16]
 
 In this example, we use a ``FixedBucketSampler``, which assigns each data sample to a fixed bucket based on its length.
@@ -202,10 +202,10 @@ smaller buckets.
     >>> print(batch_sampler.stats())
 
    FixedBucketSampler:
-     sample_num=25000, batch_num=1319
-     key=[14, 68, 122, 176, 230, 284, 338, 392, 446, 500]
-     cnt=[5, 976, 2353, 6662, 4470, 2661, 1836, 1385, 1012, 3640]
-     batch_size=[285, 58, 32, 22, 17, 16, 16, 16, 16, 16]
+     sample_num=25000, batch_num=1306
+     key=[68, 116, 164, 212, 260, 308, 356, 404, 452, 500]
+     cnt=[981, 1958, 5686, 4614, 2813, 2000, 1411, 1129, 844, 3564]
+     batch_size=[58, 34, 24, 18, 16, 16, 16, 16, 16, 16]
 
 Now, we can create dataloader for both training set and testing set.
 
