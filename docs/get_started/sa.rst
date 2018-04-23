@@ -1,4 +1,4 @@
-Sentiment Analysis
+Data API — a sentiment analysis example
 ------------------------
 
 In this tutorial, we will learn how to load and process the sentiment dataset as well as the construction of the model.
@@ -59,6 +59,8 @@ shows how to tokenize the string and then clip the resultant list of tokens.
 .. code:: python
 
     >>> tokenizer = nlp.data.SpacyTokenizer('en')
+    >>> # We use 50 as maximum length for illustration
+    >>> # For actual learning, we may use a large value such as 500
     >>> length_clip = nlp.data.ClipSequence(50)
     >>> seq, score = train_dataset[0]
     >>> print(length_clip(tokenizer(seq)))
@@ -75,6 +77,7 @@ Now, we are ready to preprocess the whole dataset. The following code shows how 
 
     >>> import time
     >>> import multiprocessing as mp
+    >>> length_clip = nlp.data.ClipSequence(500)
 
 .. code:: python
 
@@ -109,9 +112,9 @@ Now, we are ready to preprocess the whole dataset. The following code shows how 
 
     Tokenize using spaCy...
 
-    Done! Tokenizing Time=11.68s, #Sentences=25000
+    Done! Tokenizing Time=12.85s, #Sentences=25000
 
-    Done! Tokenizing Time=11.65s, #Sentences=25000
+    Done! Tokenizing Time=12.99s, #Sentences=25000
 
 Then, we are going to construct a vocabulary for the training dataset. The vocabulary will be used
 to convert the tokens to numerical indices, which facilitates the creation of word embedding matrices.
@@ -137,63 +140,98 @@ to convert the tokens to numerical indices, which facilitates the creation of wo
     >>> train_dataset = pool.map(token_to_idx, train_dataset)
     >>> test_dataset = pool.map(token_to_idx, test_dataset)
     >>> pool.close()
-    >>> print(train_dataset[0][0])
+    >>> print(train_dataset[0][0][:50])
 
-    [0, 1456, 9, 4, 854, 174, 3, 37, 2081, 40, 1, 206, 61, 23, 59, 115, 6287, 39, 382, 139, 2, 169,
-    23, 15, 0, 15, 3, 241, 3665, 119, 12, 1, 6785, 7237, 562, 68, 8, 249, 16, 0, 1456, 17, 1673, 9,
-    99, 4149, 8, 828, 100, 9]
+    [0, 2012, 8, 4, 1116, 231, 3, 51, 2311, 40, 1, 188, 67, 20, 59, 97, 6190, 49, 422, 133,
+    2, 160, 20, 13, 0, 13, 3, 374, 5063, 174, 9, 1, 5390, 6674, 498, 83, 7, 282, 12, 0, 2012,
+    15, 2042, 8, 88, 2661, 7, 714, 87, 8]
 
-Create the Model
+
+Bucketing and Dataloader
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Then, we are going to create the model for the sentiment analysis. Our model is composed of a
-two-layer LSTM followed by an average pooling and a sigmoid output layer as illustrated in the
-Figure above. From the embedding layer, the new representations will be passed to LSTM cells.
-These will include information about the sequence of words in the data. Thus, given an input
-sequence, the memory cells in the LSTM layer will produce a representation sequence. This
-representation sequence is then averaged over all timesteps resulting in representation h.
-Finally, this representation is fed to a sigmoid output layer. We’re using the sigmoid because
-we’re trying to predict if this text has positive or negative sentiment, and a sigmoid activation
-function allows the model to compute the posterior probability.
+The next step is to construct a dataloader for training. As the sequences have variable lengths, we need to pad the
+sequences so that they have the same lengths in the minibatch, which allows the fast tensor manipulation in GPU.
 
 .. code:: python
 
-    >>> from nlp.model.utils import _get_rnn_layer
-    >>> class SentimentNet(gluon.Block):
-    >>>    def __init__(self, vocab_size, embed_size, hidden_size, dropout=0,
-    >>>                 prefix=None, params=None):
-    >>>        super(SentimentNet, self).__init__(prefix=prefix, params=params)
-    >>>        with self.name_scope():
-    >>>            self.embedding =  nn.Embedding(vocab_size, embed_size)
-    >>>            self.encoder = _get_rnn_layer('rnn_relu', 2, embed_size, hidden_size, dropout, 0)
-    >>>            self.out_layer = gluon.nn.HybridSequential()
-    >>>            with self.out_layer.name_scope():
-    >>>                self.out_layer.add(gluon.nn.Dense(1, flatten=False))
-    >>>
-    >>>    def forward(self, data, valid_length):
-    >>>        # Shape(T, N, C)
-    >>>        encoded = self.encoder(nd.Dropout(self.embedding(data), 0.2, axes=(0,)))
-    >>>        # Zero out the values with position exceeding the valid length
-    >>>        masked_encoded = nd.SequenceMask(encoded,
-    >>>                                         sequence_length=valid_length,
-    >>>                                         use_sequence_length=True)
-    >>>        agg_state = nd.broadcast_div(nd.sum(masked_encoded, axis=0),
-    >>>                                     nd.expand_dims(valid_length, axis=1))
-    >>>        out = self.out_layer(agg_state)
-    >>>        return out
-    >>>
-    >>> net = SentimentNet(200, 200)
-    >>> net.hybridize()
-    >>> net.initialize(mx.init.Xavier(), ctx=mx.gpu(0))
-    >>> print(net)
+   >>> batchify_fn = nlp.data.batchify.Tuple(nlp.data.batchify.Pad(axis=0),
+   >>>                                       nlp.data.batchify.Stack())
 
+``Tuple`` wraps multiple batchify functions and applies each input function on each input field, respectively. In this
+case, we are going to apply ``Pad`` on the sequence and ``Stack`` on the labels. Given the batchify function, we can
+construct a sampler, which defines how the samples in a dataset will be iterated.
 
-The function ``_get_rnn_layer`` returns a 2-layer LSTM with ReLU activation.
+.. code:: python
+
+    >>> batch_sampler = nlp.data.sampler.FixedBucketSampler(train_data_lengths,
+    >>>                                                     batch_size=16,
+    >>>                                                     num_buckets=10,
+    >>>                                                     ratio=0,
+    >>>                                                     shuffle=True)
+    >>> print(batch_sampler.stats())
+
+   FixedBucketSampler:
+     sample_num=25000, batch_num=1568
+     key=[14, 68, 122, 176, 230, 284, 338, 392, 446, 500]
+     cnt=[5, 976, 2353, 6662, 4470, 2661, 1836, 1385, 1012, 3640]
+     batch_size=[16, 16, 16, 16, 16, 16, 16, 16, 16, 16]
+
+In this example, we use a ``FixedBucketSampler``, which assigns each data sample to a fixed bucket based on its length.
+The bucket keys are either given or generated from the input sequence lengths. In this example, we construct 10 buckets,
+where `cnt` shows the number of samples belonging to each bucket.
+
+To further improve the throughput, we can consider scale up the batch size of smaller buckets. This can be achieved
+by use a flag ``ratio``. Assume the :math:`i` th key is :math:`K_i` , the default batch size is :math:`B` , the ratio to
+scale the batch size is :math:`\alpha` and the batch size corresponds to the :math:`i` th bucket is :math:`B_i` . We have:
+
+.. math::
+
+   B_i = \max(\alpha B \times \frac{\max_j sum(K_j)}{sum(K_i)}, B)
+
+Thus, setting this to a value larger than 0, like 0.5, will scale up the batch size of the
+smaller buckets.
+
+.. code:: python
+
+    >>> batch_sampler = nlp.data.sampler.FixedBucketSampler(train_data_lengths,
+    >>>                                                     batch_size=16,
+    >>>                                                     num_buckets=10,
+    >>>                                                     ratio=0,
+    >>>                                                     shuffle=True)
+    >>> print(batch_sampler.stats())
+
+   FixedBucketSampler:
+     sample_num=25000, batch_num=1319
+     key=[14, 68, 122, 176, 230, 284, 338, 392, 446, 500]
+     cnt=[5, 976, 2353, 6662, 4470, 2661, 1836, 1385, 1012, 3640]
+     batch_size=[285, 58, 32, 22, 17, 16, 16, 16, 16, 16]
+
+Now, we can create dataloader for both training set and testing set.
+
+.. code:: python
+
+   >>> train_dataloader = gluon.data.DataLoader(dataset=train_dataset,
+   >>>                                          batch_sampler=batch_sampler,
+   >>>                                          batchify_fn=batchify_fn)
+   >>> test_dataloader = gluon.data.DataLoader(dataset=test_dataset,
+   >>>                                         batch_size=batch_size,
+   >>>                                         shuffle=False,
+   >>>                                         batchify_fn=batchify_fn)
+
+As ``Dataloader`` is iterable, we can iterate over the dataset easily using the following code
+
+.. code:: python
+
+   >>> for data, label in train_dataloader:
+
 More detail about the training using pretrained language model and bucketing can be found in the following:
+
+# TODO: link to sa example
 
 .. toctree::
    :maxdepth: 1
 
-   ../examples／sentiment_analysis/sentiment_analysis.ipynb
+   ../examples/sentiment_analysis.ipynb
 
 
