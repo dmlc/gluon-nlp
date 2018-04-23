@@ -227,8 +227,6 @@ As ``Dataloader`` is iterable, we can iterate over the dataset easily using the 
 
 More detail about the training using pretrained language model and bucketing can be found in the following:
 
-# TODO: link to sa example
-
 .. toctree::
    :maxdepth: 1
 
