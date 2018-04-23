@@ -21,6 +21,7 @@
 The registry makes it simple to construct a dataset given its name.
 
 """
+__all__ = ['register', 'create', 'list_datasets']
 
 import inspect
 

@@ -43,7 +43,7 @@ else:
 ###############################################################################
 def test_dataset_registry():
     @nlp.data.register(segment=['train'])
-    class MyDataset(nlp.data.Dataset):
+    class MyDataset(mx.gluon.data.Dataset):
         def __init__(self, segment='train'):
             pass
 
@@ -52,19 +52,19 @@ def test_dataset_registry():
     with pytest.raises(RuntimeError):
 
         @nlp.data.register(segment='thisshouldbealistofarguments')
-        class MyDataset2(nlp.data.Dataset):
+        class MyDataset2(mx.gluon.data.Dataset):
             def __init__(self, segment='train'):
                 pass
 
     with pytest.raises(RuntimeError):
 
         @nlp.data.register(invalidargument=['train'])
-        class MyDataset3(nlp.data.Dataset):
+        class MyDataset3(mx.gluon.data.Dataset):
             def __init__(self, segment='train'):
                 pass
 
     @nlp.data.register()
-    class MyDataset4(nlp.data.Dataset):
+    class MyDataset4(mx.gluon.data.Dataset):
         def __init__(self, segment='train'):
             pass
 
@@ -72,7 +72,7 @@ def test_dataset_registry():
 
 
     @nlp.data.register
-    class MyDataset5(nlp.data.Dataset):
+    class MyDataset5(mx.gluon.data.Dataset):
         def __init__(self, segment='train'):
             pass
 
