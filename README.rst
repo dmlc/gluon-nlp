@@ -134,9 +134,8 @@ examples at
 For example, we have the SOTA language model and sentiment analysis model
 available by using the following scripts to train the corresponding models.
 
-:download:`Language model script <scripts/language_model/word_language_model.py>`.
-
-:download:`Sentiment analysis script <scripts/sentiment_analysis.py>`.
+-  `Language model script <http://gluon-nlp.mxnet.io/master/scripts/index.html#word-language-model>`__
+-  `Sentiment analysis script script <http://gluon-nlp.mxnet.io/master/scripts/index.html#sentiment-analysis-through-fine-tuning-w-bucketing>`__
 
 More Help
 ---------
