@@ -7,7 +7,7 @@
 
    <h3 align="center">
 
-Gluon NLP: Your Choice of Deep Learning for NLP
+GluonNLP: Your Choice of Deep Learning for NLP
 
 .. raw:: html
 
@@ -19,13 +19,12 @@ Gluon NLP: Your Choice of Deep Learning for NLP
    <a href='http://ci.mxnet.io/job/gluon-nlp/job/master/'><img src='https://codecov.io/gh/leezu/gluon-nlp/branch/master/graph/badge.svg?token=xQ2HKDk9ux'></a>
    <a href='http://ci.mxnet.io/job/gluon-nlp/job/master/'><img src='http://ci.mxnet.io/job/gluon-nlp/job/master/badge/icon'></a>
 
-Gluonnlp is a toolkit that enables easy text preprocessing, datasets
+GluonNLP is a toolkit that enables easy text preprocessing, datasets
 loading and neural models building to help you speed up your Natural
 Language Processing (NLP) research.
 
 Work with us to add your own datasets and neural network models! Please follow `contributing
-guide <http://gluon-nlp.mxnet.io/master/how_to/contribute.html>`__ to contribute if
-you are willing to collaborate with us.
+guide <http://gluon-nlp.mxnet.io/master/how_to/contribute.html>`__ collaborate with us.
 
 Installation
 ============
@@ -41,13 +40,13 @@ You can install ``MXNet`` and ``gluonnlp`` using pip:
 Docs 📖
 ======
 
-Gluonnlp documentation is available at `our
+GluonNLP documentation is available at `our
 website <http://gluon-nlp.mxnet.io/master/api/index.html>`__.
 
 Basics
 ======
 
-Check out how to use Gluonnlp for your own research or projects.
+Check out how to use GluonNLP for your own research or projects.
 
 Start from Examples
 -------------------
@@ -65,12 +64,11 @@ available by using the following scripts to train the corresponding models.
 -  `Language model script <http://gluon-nlp.mxnet.io/master/scripts/index.html#word-language-model>`__
 -  `Sentiment analysis script script <http://gluon-nlp.mxnet.io/master/scripts/index.html#sentiment-analysis-through-fine-tuning-w-bucketing>`__
 
-Getting Help
-------------
+Community
+---------
 
-If more help is needed, please ask your questions at our `Gluonnlp
-discussion forum <https://discuss.mxnet.io/>`__. If you understand
-Chinese, you can also ask at `Chinese version <https://discuss.gluon.ai/>`__.
+For questions and comments, please visit our `forum <https://discuss.mxnet.io/>`__
+`Chinese version <https://discuss.gluon.ai/>`__.
 
 Quick Hands-on
 --------------
@@ -150,19 +148,16 @@ English word embeddings:
 How to Contribute
 =================
 
-Gluon NLP toolkit has been developed by community members. Everyone is
+GluonNLP has been developed by community members. Everyone is
 more than welcome to contribute. It is a way to make the project better
 and more accessible to more users.
-
-Contribute Now
-------------------
 
 Read our `contributing
 guide <http://gluon-nlp.mxnet.io/master/how_to/contribute.html>`__ to
 learn about our development process, how to propose bugfixes and
 improvements, and how to build and test your changes to Gluonnlp.
 
-Gluonnlp Maintainers (Ordered by last name alphabetical order)
+GluonNLP Maintainers (Ordered by last name alphabetical order)
 -------------------------------------------------------------
 
 -  `Lausen, Leonard <https://github.com/leezu>`__
