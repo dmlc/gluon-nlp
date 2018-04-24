@@ -48,6 +48,8 @@ parser.add_argument('--print_num', type=int, default=3, help='Number of sentence
 parser.add_argument('--gpu', type=int, default=None,
                     help='id of the gpu to use. Set it to empty means to use cpu.')
 args = parser.parse_args()
+if isinstance(args.bos, str):
+    args.bos = [args.bos]
 print(args)
 if args.gpu is None:
     ctx = mx.cpu()
