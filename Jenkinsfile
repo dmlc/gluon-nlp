@@ -27,6 +27,9 @@ stage("Unit Test") {
         make clean
         python setup.py install
         py.test -v --capture=no --durations=0 --cov=gluonnlp --cov=scripts tests/unittest scripts
+        cd docs/examples
+        py.test -v --capture=no --durations=0 --nbsmoke-lint *.ipynb
+        py.test -v --capture=no --durations=0 --nbsmoke-run *.ipynb
         """
       }
     }
@@ -44,6 +47,9 @@ stage("Unit Test") {
         make clean
         python setup.py install
         py.test -v --capture=no --durations=0 --cov=gluonnlp --cov=scripts tests/unittest scripts
+        cd docs/examples
+        py.test -v --capture=no --durations=0 --nbsmoke-lint *.ipynb
+        py.test -v --capture=no --durations=0 --nbsmoke-run *.ipynb
         """
       }
     }
