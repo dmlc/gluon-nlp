@@ -49,6 +49,32 @@ Basics
 
 Check out how to use Gluonnlp for your own research or projects.
 
+Start from Examples
+-------------------
+
+For getting started quickly, refer to notebook runnable examples at
+`Examples. <http://gluon-nlp.mxnet.io/master/examples/index.html>`__
+
+If you have more questions about the usage, please refer to more advanced
+examples at
+`Scripts. <http://gluon-nlp.mxnet.io/master/scripts/index.html>`__
+
+For example, we have the SOTA language model and sentiment analysis model
+available by using the following scripts to train the corresponding models.
+
+-  `Language model script <http://gluon-nlp.mxnet.io/master/scripts/index.html#word-language-model>`__
+-  `Sentiment analysis script script <http://gluon-nlp.mxnet.io/master/scripts/index.html#sentiment-analysis-through-fine-tuning-w-bucketing>`__
+
+Getting Help
+------------
+
+If more help is needed, please ask your questions at our `Gluonnlp
+discussion forum <https://discuss.mxnet.io/>`__. If you understand
+Chinese, you can also ask at `Chinese version <https://discuss.gluon.ai/>`__.
+
+Quick Hands-on
+--------------
+
 `Data <http://gluon-nlp.mxnet.io/master/api/index.html#data-processing>`__ Loading
 ----------------------------------------------------------------------------------
 
@@ -120,29 +146,6 @@ English word embeddings:
      -0.069112 -0.24386   1.4049    0.091876  0.23131  -1.3028    0.3246
       0.10741 ]
     <NDArray 50 @cpu(0)>
-
-More Examples
--------------
-
-For getting started quickly, refer to notebook runnable examples at
-`Examples. <http://gluon-nlp.mxnet.io/master/examples/index.html>`__
-
-If you have more questions about the usage, please refer to more advanced
-examples at
-`Scripts. <http://gluon-nlp.mxnet.io/master/scripts/index.html>`__
-
-For example, we have the SOTA language model and sentiment analysis model
-available by using the following scripts to train the corresponding models.
-
--  `Language model script <http://gluon-nlp.mxnet.io/master/scripts/index.html#word-language-model>`__
--  `Sentiment analysis script script <http://gluon-nlp.mxnet.io/master/scripts/index.html#sentiment-analysis-through-fine-tuning-w-bucketing>`__
-
-More Help
----------
-
-If more help is needed, please ask your questions at our `Gluonnlp
-discussion forum <https://discuss.mxnet.io/>`__. If you understand
-Chinese, you can also ask at `Chinese version <https://discuss.gluon.ai/>`__.
 
 How to Contribute
 =================
