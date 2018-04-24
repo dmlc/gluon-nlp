@@ -3,7 +3,7 @@ Generate Sentences by Beam Search
 ==================================
 
 This example shows how to load a pretrained language model on wikitext-2 in Gluon NLP Toolkit model
-zoo, and use the language model encoder to generate sentences.
+zoo, and use beam search sampler on the language model to generate sentences.
 """
 
 # coding: utf-8
@@ -53,6 +53,9 @@ if args.gpu is None:
     ctx = mx.cpu()
 else:
     ctx = mx.gpu(args.gpu)
+
+if isinstance(args.bos, str):
+    args.bos = [args.bos]
 
 lm_model, vocab = nlp.model.get_model(name=args.lm_model,
                                       dataset_name='wikitext-2',
