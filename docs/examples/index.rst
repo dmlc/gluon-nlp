@@ -2,15 +2,18 @@ Examples
 ========
 Here are the examples of using Gluon NLP Toolkit for modeling.
 
-Basics
-------
-This example shows how to use the vocabulary, embedding API, and use publicly available pre-trained
-embeddings.
+Word Embeddings
+---------------
+This example shows how to use the vocabulary, embedding API, and use publicly
+available pre-trained embeddings. The second example shows how to evaluate the
+different pretrained embeddings includede in the toolkit on a series of standard
+datasets.
 
 .. toctree::
    :maxdepth: 1
 
    word_embedding.ipynb
+   word_embedding_evaluation.ipynb
 
 
 Language Model

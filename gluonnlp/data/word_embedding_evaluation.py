@@ -806,26 +806,15 @@ class GoogleAnalogyTestSet(WordAnalogyEvaluationDataset):
 
 @register(category=list(C.BATS_CATEGORIES.keys()))
 class BiggerAnalogyTestSet(WordAnalogyEvaluationDataset):
-    """SimVerb3500 dataset word-similarity.
+    """Bigger analogy test set
 
-    - Hill, F., Reichart, R., & Korhonen, A. (2015). Simlex-999: evaluating
-      semantic models with (genuine) similarity estimation. Computational
-      Linguistics, 41(4), 665–695. http://dx.doi.org/10.1162/COLI_a_00237
+    - Gladkova, A., Drozd, A., & Matsuoka, S. (2016). Analogy-based detection
+      of morphological and semantic relations with word embeddings: what works
+      and what doesn’t. In Proceedings of the NAACL-HLT SRW (pp. 47–54). San
+      Diego, California, June 12-17, 2016: ACL. Retrieved from
+      https://www.aclweb.org/anthology/N/N16/N16-2002.pdf
 
     License: Unspecified
-
-    The dataset contains
-
-    - word1: The first verb of the pair.
-    - word2: The second verb of the pair.
-    - POS: The part-of-speech tag. Note that it is 'V' for all pairs, since the
-      dataset exclusively contains verbs. We decided to include it nevertheless
-      to make it compatible with SimLex-999.
-    - score: The SimVerb-3500 similarity rating. Note that average annotator
-      scores have been linearly mapped from the range [0,6] to the range [0,10]
-      to match other datasets.
-    - relation: the lexical relation of the pair. Possible values: 'SYNONYMS',
-      'ANTONYMS', 'HYPER/HYPONYMS', 'COHYPONYMS', 'NONE'.
 
     Parameters
     ----------
