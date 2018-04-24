@@ -233,9 +233,9 @@ def evaluate_analogy(args, token_embedding, dataset,
     """Evaluation on analogy task."""
     # Open vocabulary: Use all known words
     if args.analogy_max_vocab:
-        counter = nlp.data.utils.Counter(token_embedding.idx_to_token[:args.analogy_max_vocab])
+        counter = nlp.data.Counter(token_embedding.idx_to_token[:args.analogy_max_vocab])
     else:
-        counter = nlp.data.utils.Counter(token_embedding.idx_to_token)
+        counter = nlp.data.Counter(token_embedding.idx_to_token)
     vocab = nlp.vocab.Vocab(counter)
     vocab.set_embedding(token_embedding)
 
