@@ -7,7 +7,7 @@
 
    <h3 align="center">
 
-Gluon NLP: Your Choice of Deep Learning for NLP
+GluonNLP: Your Choice of Deep Learning for NLP
 
 .. raw:: html
 
@@ -52,14 +52,20 @@ For questions and comments, please visit our `forum <https://discuss.mxnet.io/>`
 How to Contribute
 =================
 
-Gluon NLP toolkit has been developed by community members. Everyone is
-more than welcome to contribute. It is a way to make the project better
-and more accessible to more users.
+GluonNLP has been developed by community members. Everyone is
+more than welcome to contribute. We together can make the GluonNLP better
+and more user-friendly to more users.
 
 Read our `contributing
-guide <http://gluon-nlp.mxnet.io/master/how_to/contribute.html>`__ to
-learn about our development process, how to propose bug fixes and
-improvements, and how to build and test your changes to GluonNLP.
+guide <http://gluon-nlp.mxnet.io/master/how_to/contribute.html>`__ to get
+to know about our development procedure, how to propose bug fixes and
+improvements, as well as how to build and test your changes to GluonNLP.
+
+Check out the contributors for GluonNLP 0.1.0:
+
+.. toctree::
+   :maxdepth: 3
+   docs/how_to/contributor
 
 Resources
 =========
@@ -70,18 +76,18 @@ If you are new to Gluon, please check out our `60-minute crash course
 <http://gluon-crash-course.mxnet.io/>`__.
 
 For getting started quickly, refer to notebook runnable examples at
-`Examples. <http://gluon-nlp.mxnet.io/master/examples/index.html>`__
-
-For experienced users, check out our brief
-`API Notes <http://gluon-nlp.mxnet.io/master/api/index.html>`__.
+`Examples. <http://gluon-nlp.mxnet.io/master/examples/index.html>`__.
 
 For advanced examples, check out our
-`Scripts. <http://gluon-nlp.mxnet.io/master/scripts/index.html>`__
+`Scripts. <http://gluon-nlp.mxnet.io/master/scripts/index.html>`__.
+
+For experienced users, check out our
+`API Notes <http://gluon-nlp.mxnet.io/master/api/index.html>`__.
 
 Quick Start Guide
 =================
 
-`Dataset <http://gluon-nlp.mxnet.io/master/api/index.html#data-processing>`__ Loading
+`Dataset Loading <http://gluon-nlp.mxnet.io/master/api/index.html#data-processing>`__
 -------------------------------------------------------------------------------------
 
 Load the Wikitext-2 dataset, for example:
@@ -93,7 +99,7 @@ Load the Wikitext-2 dataset, for example:
     >>> train[0][0:5]
     ['=', 'Valkyria', 'Chronicles', 'III', '=']
 
-`Vocabulary <http://gluon-nlp.mxnet.io/master/api/vocab_emb.html>`__ Construction
+`Vocabulary Construction <http://gluon-nlp.mxnet.io/master/api/vocab_emb.html>`__
 ---------------------------------------------------------------------------------
 
 Build vocabulary based on the above dataset, for example:
@@ -104,8 +110,8 @@ Build vocabulary based on the above dataset, for example:
     >>> vocab
     Vocab(size=33280, unk="<unk>", reserved="['<pad>', '<bos>', '<eos>']")
 
-`Neural Models <http://gluon-nlp.mxnet.io/master/api/index.html#model>`__ Building
-----------------------------------------------------------------------------------
+`Neural Models Building <http://gluon-nlp.mxnet.io/master/api/index.html#model>`__
+-----------------------------------------------------------------------------------
 
 From the models package, apply an Standard RNN langauge model to the
 above dataset:
@@ -126,7 +132,7 @@ above dataset:
       )
     )
 
-`Word Embeddings <http://gluon-nlp.mxnet.io/master/api/vocab_emb.html>`__ Loading
+`Word Embeddings Loading <http://gluon-nlp.mxnet.io/master/api/vocab_emb.html>`__
 ---------------------------------------------------------------------------------
 
 For example, load a GloVe word embedding, one of the state-of-the-art
