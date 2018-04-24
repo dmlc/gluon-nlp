@@ -134,9 +134,9 @@ examples at
 For example, we have the SOTA language model and sentiment analysis model
 available by using the following scripts to train the corresponding models.
 
-- :download:`Language model script <language_model/word_language_model.py>`.
+:download:`Language model script <scripts/language_model/word_language_model.py>`.
 
-- :download:`Sentiment analysis script <sentiment_analysis.py>`.
+:download:`Sentiment analysis script <scripts/sentiment_analysis.py>`.
 
 More Help
 ---------
@@ -163,7 +163,7 @@ improvements, and how to build and test your changes to Gluonnlp.
 Gluonnlp Maintainers (Ordered by last name alphabetical order)
 -------------------------------------------------------------
 
--  `Lausen, Leonard<https://github.com/leezu>`__
+-  `Lausen, Leonard <https://github.com/leezu>`__
 -  `Li, Mu <https://github.com/mli>`__
 -  `Shi, Xingjian <https://github.com/sxjscience>`__
 -  `Wang, Chenguang <https://github.com/cgraywang>`__
