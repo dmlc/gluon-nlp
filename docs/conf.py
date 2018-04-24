@@ -206,6 +206,7 @@ def setup(app):
         'auto_doc_ref': True
             }, True)
     app.add_transform(AutoStructify)
+    app.add_javascript('google_analytics.js')
 
 
 sphinx_gallery_conf = {
