@@ -12,5 +12,5 @@ dependencies:
   - flaky
   - pytest-cov
   - pip:
-    - mxnet>=1.2.0b20180415
+    - mxnet-cu80>=1.2.0b20180415
     - nbsmoke
