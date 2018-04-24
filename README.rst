@@ -25,7 +25,6 @@ Language Processing (NLP) research.
 
 - `Quick Start Guide <#quick-start-guide>`__
 - `Resources <#resources>`__
-- `Contributors <http://gluon-nlp.mxnet.io/master/contributor.html>`__
 
 Installation
 ============
@@ -62,7 +61,7 @@ guide <http://gluon-nlp.mxnet.io/master/how_to/contribute.html>`__ to get
 to know about our development procedure, how to propose bug fixes and
 improvements, as well as how to build and test your changes to GluonNLP.
 
-Check out the `contributors <http://gluon-nlp.mxnet.io/master/contributor.html>`__ for GluonNLP 0.2.0.
+Join our `contributors <contributor.rst>`__.
 
 Resources
 =========
