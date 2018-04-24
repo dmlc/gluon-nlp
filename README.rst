@@ -1,6 +1,6 @@
 .. raw:: html
 
-   <a href="http://gluon-nlp.mxnet.io/master/index.html"><p align="center"><img width="30%" src="docs/_static/gluon_s2.png" /></a>
+   <a href="http://gluon-nlp.mxnet.io/master/index.html"><p align="center"><img width="25%" src="docs/_static/gluon_s2.png" /></a>
    </p>
 
 .. raw:: html
