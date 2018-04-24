@@ -1,6 +1,8 @@
 Contribute
 ==========
 
+Latest documentation can be found `here <http://gluon-nlp.mxnet.io/master/index.html>`.
+
 Gluon NLP toolkit has been developed by community members. Everyone is
 more than welcome to contribute. It is a way to make the project better
 and more accessible to more users.

@@ -96,6 +96,9 @@ We provide several standard datasets for machine translation.
 Datasets
 --------
 
+Dataset API for processing common text formats. The following classes can be used or subclassed to
+load custom datasets.
+
 .. autosummary::
     :nosignatures:
 
@@ -105,6 +108,9 @@ Datasets
 
 Transforms
 ----------
+
+Text data transformation functions. They can be used for processing text sequences in conjunction
+with `Dataset.transform` method.
 
 .. autosummary::
     :nosignatures:
@@ -117,6 +123,9 @@ Transforms
 Samplers
 --------
 
+Samplers determine how to iterate through datasets. The below samplers and batch samplers can help
+iterate through sequence data.
+
 .. autosummary::
     :nosignatures:
 
@@ -126,6 +135,8 @@ Samplers
 
 Utilities
 ---------
+
+Miscellaneous utility classes and functions for processing text and sequence data.
 
 .. autosummary::
     :nosignatures:
