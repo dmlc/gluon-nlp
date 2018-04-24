@@ -127,4 +127,4 @@ The previous generation results do not look so good. Now, let's increase the bea
     [12, "I love it , but it is impossible to do anything to do it , but I don ’ t think it 's .", 260.26495]
     [16, "I love it , and I don 't know how to do it , but I don ’ t think it would be .", 274.9892]
 
-The score and generation result are improving.
+The scores and generation results are improving.
