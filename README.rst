@@ -25,6 +25,7 @@ Language Processing (NLP) research.
 
 - `Quick Start Guide <#quick-start-guide>`__
 - `Resources <#resources>`__
+- `Contributors <http://gluon-nlp.mxnet.io/master/how_to/contributor.html>`__
 
 Installation
 ============
@@ -72,10 +73,10 @@ If you are new to Gluon, please check out our `60-minute crash course
 <http://gluon-crash-course.mxnet.io/>`__.
 
 For getting started quickly, refer to notebook runnable examples at
-`Examples. <http://gluon-nlp.mxnet.io/master/examples/index.html>`__.
+`Examples. <http://gluon-nlp.mxnet.io/master/examples/index.html>`__
 
 For advanced examples, check out our
-`Scripts. <http://gluon-nlp.mxnet.io/master/scripts/index.html>`__.
+`Scripts. <http://gluon-nlp.mxnet.io/master/scripts/index.html>`__
 
 For experienced users, check out our
 `API Notes <http://gluon-nlp.mxnet.io/master/api/index.html>`__.
