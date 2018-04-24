@@ -182,7 +182,7 @@ In the above example, minibatcheas are formed using uniform sampling, which can 
 in the figure below.
 
 .. image:: ./images/no_bucket_strategy.png
-   :height: 300px
+   :height: 200px
    :width: 1000 px
    :alt: alternate text
    :align: center
@@ -211,7 +211,7 @@ shows the number of samples belonging to each bucket. A graphic illustration of 
 seen as follows:
 
 .. image:: ./images/fixed_bucket_strategy_ratio0.0.png
-   :height: 300px
+   :height: 200px
    :width: 1000 px
    :alt: alternate text
    :align: center
@@ -225,7 +225,7 @@ scale the batch size is :math:`\alpha` and the batch size corresponds to the :ma
    B_i = \max(\alpha B \times \frac{\max_j sum(K_j)}{sum(K_i)}, B)
 
 .. image:: ./images/fixed_bucket_strategy_ratio0.7.png
-   :height: 300px
+   :height: 200px
    :width: 1000 px
    :alt: alternate text
    :align: center
@@ -260,7 +260,7 @@ In our sampler API, we also provide another sampler called ``SortedBucketSampler
 padding pattern:
 
 .. image:: ./images/sorted_bucket_strategy.png
-   :height: 300px
+   :height: 200px
    :width: 1000 px
    :alt: alternate text
    :align: center
