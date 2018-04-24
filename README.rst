@@ -131,8 +131,12 @@ If you have more questions about the usage, please refer to more advanced
 examples at
 `Scripts. <http://gluon-nlp.mxnet.io/master/scripts/index.html>`__
 
--  :download:`Language model script <language_model/word_language_model.py>`__
--  :download:`Sentiment analysis script <sentiment_analysis.py>`__
+For example, we have the SOTA language model and sentiment analysis model
+available by using the following scripts to train the corresponding models.
+
+- :download:`Language model script <language_model/word_language_model.py>`.
+
+- :download:`Sentiment analysis script <sentiment_analysis.py>`.
 
 More Help
 ---------
@@ -158,6 +162,7 @@ improvements, and how to build and test your changes to Gluonnlp.
 
 Gluonnlp Maintainers (Ordered by last name alphabetical order)
 -------------------------------------------------------------
+
 -  `Lausen, Leonard<https://github.com/leezu>`__
 -  `Li, Mu <https://github.com/mli>`__
 -  `Shi, Xingjian <https://github.com/sxjscience>`__
