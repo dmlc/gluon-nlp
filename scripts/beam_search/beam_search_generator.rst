@@ -1,6 +1,8 @@
 Beam Search Generator
 ---------------------
 
+:download:`[Download] </scripts/beam_search.zip>`
+
 This script can be used to generate sentences using beam search from a pretrained language model.
 
 Use the following command to generate the sentences

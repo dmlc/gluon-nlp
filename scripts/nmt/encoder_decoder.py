@@ -25,7 +25,7 @@ import mxnet as mx
 from mxnet.base import _as_list
 from mxnet.gluon import nn, rnn
 from mxnet.gluon.block import Block, HybridBlock
-from gluonnlp.model.attention_cell import AttentionCell, MLPAttentionCell, DotProductAttentionCell
+from gluonnlp.model import AttentionCell, MLPAttentionCell, DotProductAttentionCell
 
 
 def _list_bcast_where(F, mask, new_val_l, old_val_l):

@@ -287,7 +287,7 @@ class MLPAttentionCell(AttentionCell):
     This type of attention is first proposed in
 
     .. Bahdanau et al., Neural Machine Translation by Jointly Learning to Align and Translate.
-    ICLR 2015
+       ICLR 2015
 
     Parameters
     ----------

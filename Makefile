@@ -25,11 +25,19 @@ docs:
 
 clean:
 	rm -rf gluonnlp.egg-info build dist | true
-	rm -rf tests/data
+	rm -rf tests/data | true
+	rm scripts/*.zip | true
+	rm docs/examples/*.zip | true
 	make -C docs clean
+
+dist_scripts:
+	find scripts/* -type d -prune | grep -v 'tests\|__pycache__' | xargs -n 1 -I{} zip -r {}.zip {}
+
+dist_notebooks:
+	find docs/examples/* -type d -prune | grep -v 'tests\|__pycache__' | xargs -n 1 -I{} zip -r {}.zip {}
 
 test:
 	py.test -v --capture=no --durations=0  tests/unittest scripts
 
-release:
+release: dist_scripts dist_notebooks
 	python setup.py sdist

@@ -40,7 +40,7 @@ from .conll import *
 
 from .translation import *
 
-from . import dataset, utils, transforms, sampler, batchify
+from . import batchify
 
 __all__ = (utils.__all__ + transforms.__all__ + sampler.__all__ +
            dataset.__all__ + language_model.__all__ + sentiment.__all__ +

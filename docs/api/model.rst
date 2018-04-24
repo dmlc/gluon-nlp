@@ -1,50 +1,87 @@
-Gluon NLP Models
-================
+gluonnlp.model
+==============
 
 Gluon NLP Toolkit supplies models for common NLP tasks with pre-trained weights. By default,
 all requested pre-trained weights are downloaded from public repo and stored in ~/.mxnet/models/.
 
+.. currentmodule:: gluonnlp.model
+
+
 Language Modeling
 -----------------
-.. automodule:: gluonnlp.model.language_model
-    :members:
 
-Building Blocks
-===============
+.. autosummary::
+    :nosignatures:
 
-Gluon NLP Toolkit provides building blocks for NLP models.
+    awd_lstm_lm_1150
+    awd_lstm_lm_600
+    AWDRNN
+    standard_lstm_lm_200
+    standard_lstm_lm_650
+    standard_lstm_lm_1500
+    StandardRNN
 
 Attention Cell
 --------------
-.. automodule:: gluonnlp.model.attention_cell
 
-    .. autoclass:: gluonnlp.model.attention_cell.AttentionCell
-        :members: __call__
+.. autosummary::
+    :nosignatures:
 
-    .. autoclass:: gluonnlp.model.attention_cell.MultiHeadAttentionCell
-        :members: __call__
-
-    .. autoclass:: gluonnlp.model.attention_cell.MLPAttentionCell
-        :members: __call__
-
-    .. autoclass:: gluonnlp.model.attention_cell.DotProductAttentionCell
-        :members: __call__
+    AttentionCell
+    MultiHeadAttentionCell
+    MLPAttentionCell
+    DotProductAttentionCell
 
 Beam Search
 -----------
-.. automodule:: gluonnlp.model.beam_search
 
-    .. autoclass:: gluonnlp.model.beam_search.BeamSearchScorer
-        :members: __call__
+.. autosummary::
+    :nosignatures:
 
-    .. autoclass:: gluonnlp.model.beam_search.BeamSearchSampler
-        :members: __call__
+    BeamSearchScorer
+    BeamSearchSampler
 
 Other Modeling Utilities
 ------------------------
-.. automodule:: gluonnlp.model.parameter
-    :members:
-.. automodule:: gluonnlp.model.utils
-    :members:
-.. automodule:: gluonnlp.model.block
-    :members:
+
+.. autosummary::
+    :nosignatures:
+
+    WeightDropParameter
+    apply_weight_drop
+    L2Normalization
+
+API Reference
+-------------
+
+.. autofunction:: awd_lstm_lm_1150
+.. autofunction:: awd_lstm_lm_600
+.. autoclass:: AWDRNN
+.. autofunction:: standard_lstm_lm_200
+.. autofunction:: standard_lstm_lm_650
+.. autofunction:: standard_lstm_lm_1500
+.. autoclass:: StandardRNN
+
+.. autoclass:: gluonnlp.model.AttentionCell
+    :members: __call__
+
+.. autoclass:: gluonnlp.model.MultiHeadAttentionCell
+    :members: __call__
+
+.. autoclass:: gluonnlp.model.MLPAttentionCell
+    :members: __call__
+
+.. autoclass:: gluonnlp.model.DotProductAttentionCell
+    :members: __call__
+
+.. autoclass:: gluonnlp.model.BeamSearchScorer
+    :members: __call__
+
+.. autoclass:: gluonnlp.model.BeamSearchSampler
+    :members: __call__
+
+.. autoclass:: gluonnlp.model.WeightDropParameter
+
+.. autoclass:: gluonnlp.model.L2Normalization
+
+.. autofunction:: gluonnlp.model.apply_weight_drop

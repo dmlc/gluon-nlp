@@ -1,10 +1,12 @@
 Scripts
 =======
-Here are some useful training scripts.
+
+.. include:: word_embedding_evaluation/word_embedding_evaluation.rst
+
+.. include:: beam_search/beam_search_generator.rst
 
 .. include:: language_model/word_language_model.rst
 
 .. include:: sentiment_analysis/sentiment_analysis.rst
 
-See :download:`this example script <sentiment_analysis.py>`
-
+.. include:: nmt/machine_translation.rst

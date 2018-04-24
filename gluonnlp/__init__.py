@@ -25,7 +25,7 @@ from . import embedding
 from . import model
 from .vocab import *
 
-__version__ = '0.1.0'
+__version__ = '0.2.0'
 
 __all__ = ['data',
            'model',

@@ -132,7 +132,12 @@ class PadSequence(object):
 class NLTKMosesTokenizer(object):
     r"""Apply the Moses Tokenizer implemented in NLTK.
 
-    Users are required to [install NLTK](https://www.nltk.org/install.html) to use this tokenizer.
+    Users of this class are required to `install NLTK <https://www.nltk.org/install.html>`_
+    and install relevant NLTK packages, such as:
+
+    .. code:: python
+
+        python -m nltk.downloader perluniprops nonbreaking_prefixes
 
     Examples
     --------
@@ -167,9 +172,9 @@ class NLTKMosesTokenizer(object):
         try:
             from nltk.tokenize.moses import MosesTokenizer
         except ImportError:
-            raise ImportError('NLTK is not installed. You must install NLTK in order to use the '
-                              'NLTKMosesTokenizer. You can refer to the official installation '
-                              'guide in https://www.nltk.org/install.html .')
+            raise ImportError('NLTK or relevant packages are not installed. You must install NLTK '
+                              'in order to use the NLTKMosesTokenizer. You can refer to the '
+                              'official installation guide in https://www.nltk.org/install.html .')
         self._tokenizer = MosesTokenizer()
 
     def __call__(self, sample):
@@ -191,8 +196,14 @@ class NLTKMosesTokenizer(object):
 class SpacyTokenizer(object):
     r"""Apply the Spacy Tokenizer.
 
-    Users are required to [install spaCy](https://spacy.io/usage/) to use this tokenizer and
-    download the corresponding NLP models. We only support spacy>=2.0.0.
+    Users of this class are required to `install spaCy <https://spacy.io/usage/>`_ and download
+    corresponding NLP models, such as:
+
+    .. code:: python
+
+        python -m spacy download en
+
+    Only spacy>=2.0.0 is supported.
 
     Parameters
     ----------
