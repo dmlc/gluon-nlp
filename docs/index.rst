@@ -2,14 +2,14 @@ GluonNLP: a Deep Learning Toolkit for NLP
 =========================================
 
 GluonNLP provides implementations of the state-of-the-art (SOTA) deep learning
-models in NLP. It is designed for engineers, researchers, and
-students to fast prototype products and research ideas based on these
-models. This toolkit offers four main features:
+models in NLP, and build blocks for text data pipelines and models.
+It is designed for engineers, researchers, and students to fast prototype
+research ideas and products based on these models. This toolkit offers four main features:
 
-1. Training scripts to reproduce SOTA results reported in research papers
-2. A large number of pre-trained models
-3. Carefully designed APIs that greatly reduce the implementation complexity
-4. Community supports
+1. Training scripts to reproduce SOTA results reported in research papers.
+2. Pre-trained models for common NLP tasks.
+3. Carefully designed APIs that greatly reduce the implementation complexity.
+4. Community support.
 
 
 This toolkit assumes that users have basic knowledge about deep learning and
