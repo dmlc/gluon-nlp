@@ -84,7 +84,7 @@ For experienced users, check out our
 Quick Start Guide
 =================
 
-`Dataset Loading <http://gluon-nlp.mxnet.io/master/api/index.html#data-processing>`__
+`Dataset Loading <http://gluon-nlp.mxnet.io/master/api/data.html>`__
 -------------------------------------------------------------------------------------
 
 Load the Wikitext-2 dataset, for example:
@@ -96,7 +96,7 @@ Load the Wikitext-2 dataset, for example:
     >>> train[0][0:5]
     ['=', 'Valkyria', 'Chronicles', 'III', '=']
 
-`Vocabulary Construction <http://gluon-nlp.mxnet.io/master/api/vocab_emb.html>`__
+`Vocabulary Construction <http://gluon-nlp.mxnet.io/master/api/vocab.html>`__
 ---------------------------------------------------------------------------------
 
 Build vocabulary based on the above dataset, for example:
@@ -107,7 +107,7 @@ Build vocabulary based on the above dataset, for example:
     >>> vocab
     Vocab(size=33280, unk="<unk>", reserved="['<pad>', '<bos>', '<eos>']")
 
-`Neural Models Building <http://gluon-nlp.mxnet.io/master/api/index.html#model>`__
+`Neural Models Building <http://gluon-nlp.mxnet.io/master/api/model.html>`__
 -----------------------------------------------------------------------------------
 
 From the models package, apply an Standard RNN langauge model to the
@@ -129,7 +129,7 @@ above dataset:
       )
     )
 
-`Word Embeddings Loading <http://gluon-nlp.mxnet.io/master/api/vocab_emb.html>`__
+`Word Embeddings Loading <http://gluon-nlp.mxnet.io/master/api/embedding.html>`__
 ---------------------------------------------------------------------------------
 
 For example, load a GloVe word embedding, one of the state-of-the-art

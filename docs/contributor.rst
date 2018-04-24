@@ -1,7 +1,7 @@
 Contributors
 ===============================
 
-We would like to express our thanks to the following contributors to the Gluonnlp 0.1.0.
+We would like to express our thanks to the following contributors to the GluonNLP 0.2.0.
 
 -  `Lausen, Leonard <https://github.com/leezu>`__
 -  `Li, Mu <https://github.com/mli>`__
