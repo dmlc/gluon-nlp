@@ -7,7 +7,7 @@
 
    <h3 align="center">
 
-Gluon NLP: Your Choice for Deep Learning for NLP
+Gluon NLP: Your Choice of Deep Learning for NLP
 
 .. raw:: html
 
