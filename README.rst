@@ -23,8 +23,8 @@ GluonNLP is a toolkit that enables easy text preprocessing, datasets
 loading and neural models building to help you speed up your Natural
 Language Processing (NLP) research.
 
-- `Quick Start Guide <#Quick_Start_Guide>`__
-- `Resources <#Resources>`__
+- `Quick Start Guide <#quick-start-guide>`__
+- `Resources <#resources>`__
 
 Installation
 ============
@@ -72,8 +72,8 @@ If you are new to Gluon, please check out our `60-minute crash course
 For getting started quickly, refer to notebook runnable examples at
 `Examples. <http://gluon-nlp.mxnet.io/master/examples/index.html>`__
 
-For experienced users, check out our quick
-`API Notes <http://gluon-nlp.mxnet.io/master/examples/index.html>`__.
+For experienced users, check out our brief
+`API Notes <http://gluon-nlp.mxnet.io/master/api/index.html>`__.
 
 For advanced examples, check out our
 `Scripts. <http://gluon-nlp.mxnet.io/master/scripts/index.html>`__
