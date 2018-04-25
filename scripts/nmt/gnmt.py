@@ -349,7 +349,7 @@ def train():
                                   batch_sampler=test_batch_sampler,
                                   batchify_fn=test_batchify_fn,
                                   num_workers=8)
-    best_valid_loss = np.inf
+    best_valid_bleu = 0.0
     for epoch_id in range(args.epochs):
         log_avg_loss = 0
         log_avg_gnorm = 0
@@ -401,8 +401,8 @@ def train():
                         os.path.join(args.save_dir, 'epoch{:d}_valid_out.txt').format(epoch_id))
         write_sentences(test_translation_out,
                         os.path.join(args.save_dir, 'epoch{:d}_test_out.txt').format(epoch_id))
-        if valid_loss < best_valid_loss:
-            best_valid_loss = valid_loss
+        if valid_bleu_score > best_valid_bleu:
+            best_valid_bleu = valid_bleu_score
             save_path = os.path.join(args.save_dir, 'valid_best.params')
             logging.info('Save best parameters to {}'.format(save_path))
             model.save_params(save_path)

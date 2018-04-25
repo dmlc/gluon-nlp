@@ -217,7 +217,7 @@ seen as follows:
    :align: center
 
 To further improve the throughput, we can consider scaling up the batch size of smaller buckets. This can be achieved
-by use a parameter ``ratio``. Assume the :math:`i` th key is :math:`K_i` , the default batch size is :math:`B` , the ratio to
+by using a parameter ``ratio``. Assume the :math:`i` th key is :math:`K_i` , the default batch size is :math:`B` , the ratio to
 scale the batch size is :math:`\alpha` and the batch size corresponds to the :math:`i` th bucket is :math:`B_i` . We have:
 
 .. math::
