@@ -349,7 +349,7 @@ def train():
                                   batch_sampler=test_batch_sampler,
                                   batchify_fn=test_batchify_fn,
                                   num_workers=8)
-    best_valid_bleu = -1
+    best_valid_bleu = 0.0
     for epoch_id in range(args.epochs):
         log_avg_loss = 0
         log_avg_gnorm = 0
