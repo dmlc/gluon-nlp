@@ -35,8 +35,8 @@ by using ``BeamSearchScorer``.
 
 ``alpha`` and ``K`` correspond to the :math:\alpha parameter and K parameter of the length penalty term in GNMT paper, respectively.
 The next step is to define a beam search sampler. Before setting up a sampler, we need to construct a decoder function.
-In this example, we use ``log_softmax`` to map the output scores to log-likelihoods. Note that the supported layout of states and inputs for
-BeamSearchSampler is NTC while that of the language model is TNC. We thus need to transform the layout of the data and states.
+In this example, we use ``log_softmax`` to map the output scores to log-likelihoods. Note that BeamSearchSampler takes as inputs and states with format NTC while
+language model takes inputs and states with format TNC. We thus need to transform the layout of the data and states.
 
 .. code:: python
 
