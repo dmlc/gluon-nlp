@@ -5,7 +5,7 @@ Machine Translation
 
 Use the following command to train the GNMT model on the IWSLT2015 dataset.
 
-.. code-block:: bash
+.. code-block:: console
 
    $ python gnmt.py --src_lang en --tgt_lang vi --batch_size 64 \
                     --optimizer adam --lr 0.001 --lr_update_factor 0.5 --beam_size 10 \

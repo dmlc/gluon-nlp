@@ -7,13 +7,13 @@ This script can be used to generate sentences using beam search from a pretraine
 
 Use the following command to generate the sentences
 
-.. code-block:: bash
+.. code-block:: console
 
    $ python beam_search_generator.py --bos I love it --beam_size 5
 
 Output is
 
-.. code-block:: log
+.. code-block:: console
 
    Beam Seach Parameters: beam_size=5, alpha=0.0, K=5
    Generation Result:
@@ -23,13 +23,13 @@ Output is
 
 You can also try a larger beam size.
 
-.. code-block:: bash
+.. code-block:: console
 
    $ python beam_search_generator.py --bos I love it --beam_size 10
 
 Output is
 
-.. code-block:: log
+.. code-block:: console
 
    Beam Seach Parameters: beam_size=10, alpha=0.0, K=5
    Generation Result:
@@ -40,13 +40,13 @@ Output is
 Try beam size equals to 15
 
 
-.. code-block:: bash
+.. code-block:: console
 
    $ python beam_search_generator.py --bos I love it --beam_size 15
 
 Output is
 
-.. code-block:: log
+.. code-block:: console
 
    Beam Seach Parameters: beam_size=15, alpha=0.0, K=5
    Generation Result:
