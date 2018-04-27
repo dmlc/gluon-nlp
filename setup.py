@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import io
 import os
 import re
 import shutil
