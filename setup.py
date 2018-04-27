@@ -1,6 +1,6 @@
 #!/usr/bin/env python
-import os
 import io
+import os
 import re
 import shutil
 import sys
@@ -24,7 +24,7 @@ def find_version(*file_paths):
     raise RuntimeError("Unable to find version string.")
 
 
-readme = open('README.rst').read()
+readme = io.open('README.rst', encoding='utf-8').read()
 
 VERSION = find_version('gluonnlp', '__init__.py')
 
