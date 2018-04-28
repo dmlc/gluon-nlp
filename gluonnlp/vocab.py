@@ -38,7 +38,6 @@ from . import embedding as emb
 class Vocab(object):
     """Indexing and embedding attachment for text tokens.
 
-
     Parameters
     ----------
     counter : Counter or None, default None
@@ -71,7 +70,6 @@ class Vocab(object):
         contain `unknown_token` or duplicate reserved tokens. Keys of `counter`, `unknown_token`,
         and values of `reserved_tokens` must be of the same hashable type. Examples: str, int, and
         tuple.
-
 
     Properties
     ----------

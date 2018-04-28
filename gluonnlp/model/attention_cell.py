@@ -401,7 +401,9 @@ class _DivSqrtDimProp(mx.operator.CustomOpProp):
 # pylint: enable=unused-argument
 
 class DotProductAttentionCell(AttentionCell):
-    r"""Dot product attention between the query and the key::
+    r"""Dot product attention between the query and the key.
+
+    Depending on parameters, defined as::
 
         units is None:
             score = <h_q, h_k>

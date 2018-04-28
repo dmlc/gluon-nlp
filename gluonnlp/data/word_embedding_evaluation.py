@@ -410,6 +410,7 @@ class SimLex999(WordSimilarityEvaluationDataset):
     License: Unspecified
 
     The dataset contains
+
     - word1: The first concept in the pair.
     - word2: The second concept in the pair. Note that the order is only
       relevant to the column Assoc(USF). These values (free association scores)

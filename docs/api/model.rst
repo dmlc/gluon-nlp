@@ -6,7 +6,6 @@ all requested pre-trained weights are downloaded from public repo and stored in 
 
 .. currentmodule:: gluonnlp.model
 
-
 Language Modeling
 -----------------
 
