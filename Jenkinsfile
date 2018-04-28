@@ -62,7 +62,7 @@ stage("Deploy") {
       export LD_LIBRARY_PATH=/usr/local/cuda/lib64
       make clean
       make release
-      make -C docs html"""
+      make -C docs html SPHINXOPTS=-W"""
 
       if (env.BRANCH_NAME.startsWith("PR-")) {
         sh """#!/bin/bash
