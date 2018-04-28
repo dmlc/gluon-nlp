@@ -4,6 +4,7 @@ channels:
   - defaults
 dependencies:
   - python
+  - ipython
   - sphinx=1.7.2
   - sphinx-gallery
   - sphinx_rtd_theme
