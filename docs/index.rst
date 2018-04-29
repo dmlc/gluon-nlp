@@ -29,7 +29,7 @@ GluonNLP relies on the recent version of MXNet. The easiest way to install MXNet
 is through `pip <https://pip.pypa.io/en/stable/installing/>`_. The following
 command installs a nightly built CPU version of MXNet.
 
-.. code-block:: bash
+.. code-block:: console
 
    pip install --pre --upgrade mxnet
 
@@ -45,7 +45,7 @@ command installs a nightly built CPU version of MXNet.
 
 Then install the GluonNLP toolkit by
 
-.. code-block:: bash
+.. code-block:: console
 
    pip install gluonnlp
 

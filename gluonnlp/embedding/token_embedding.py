@@ -132,7 +132,6 @@ def list_sources(embedding_name=None):
 class TokenEmbedding(object):
     """Token embedding base class.
 
-
     To load token embedding from an externally hosted pre-trained token embedding file, such as
     those of GloVe and FastText, use :func:`gluonnlp.embedding.create`.
     To get all the available `embedding_name` and `source`, use
@@ -150,13 +149,11 @@ class TokenEmbedding(object):
     If a token is encountered multiple times in the pre-trained token embedding file, only the
     first-encountered token embedding vector will be loaded and the rest will be skipped.
 
-
     Parameters
     ----------
     unknown_token : hashable object or None, default '<unk>'
         The representation for any unknown token. In other words, any unknown token will be indexed
         as the same representation.
-
 
     Properties
     ----------
@@ -624,7 +621,6 @@ class TokenEmbedding(object):
 class GloVe(TokenEmbedding):
     """The GloVe word embedding.
 
-
     GloVe is an unsupervised learning algorithm for obtaining vector representations for words.
     Training is performed on aggregated global word-word co-occurrence statistics from a corpus, and
     the resulting representations showcase interesting linear substructures of the word vector
@@ -647,7 +643,6 @@ class GloVe(TokenEmbedding):
 
     https://opendatacommons.org/licenses/pddl/
 
-
     Parameters
     ----------
     source : str, default 'glove.6B.50d'
@@ -656,7 +651,6 @@ class GloVe(TokenEmbedding):
         The root directory for storing embedding-related files.
     init_unknown_vec : callback
         The callback used to initialize the embedding vector for the unknown token.
-
 
     Properties
     ----------
@@ -723,7 +717,6 @@ class FastText(TokenEmbedding):
 
     https://creativecommons.org/licenses/by-sa/3.0/
 
-
     Parameters
     ----------
     source : str, default 'glove.6B.50d'
@@ -732,7 +725,6 @@ class FastText(TokenEmbedding):
         The root directory for storing embedding-related files.
     init_unknown_vec : callback
         The callback used to initialize the embedding vector for the unknown token.
-
 
     Properties
     ----------

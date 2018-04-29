@@ -234,6 +234,7 @@ class ThreeCosMul(WordEmbeddingAnalogyFunction):
         \\arg\\max_{b^* ∈ V}\\frac{\\cos(b^∗, b) \\cos(b^*, a)}{cos(b^*, a^*) + ε}
 
     See the following paper for more details:
+
     - Levy, O., & Goldberg, Y. (2014). Linguistic regularities in sparse and
       explicit word representations. In R. Morante, & W. Yih, Proceedings of the
       Eighteenth Conference on Computational Natural Language Learning, CoNLL 2014,

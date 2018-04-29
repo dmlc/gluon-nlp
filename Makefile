@@ -20,7 +20,7 @@ ROOTDIR = $(CURDIR)
 pylint:
 	pylint --rcfile=$(ROOTDIR)/.pylintrc gluonnlp scripts/*/*.py
 
-docs:
+docs: release
 	make -C docs html
 
 clean:

@@ -57,5 +57,12 @@ setup(
             'nltk',
             'scipy',
         ],
+        'dev': [
+            'pytest',
+            'recommonmark',
+            'sphinx-gallery',
+            'sphinx_rtd_theme',
+            'nbsphinx',
+        ],
     },
 )

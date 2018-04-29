@@ -14,7 +14,7 @@ the respective datasets.
 We include a `run_all.sh` script to reproduce the results.
 
 
-.. code-block:: bash
+.. code-block:: console
 
    $ run_all.sh
 
@@ -23,7 +23,7 @@ To evaluate a specific embedding on one or multiple datasets you can use the
 included `word_embedding_evaluation.py` as follows.
 
 
-.. code-block:: bash
+.. code-block:: console
 
    $ python word_embedding_evaluation.py
 
