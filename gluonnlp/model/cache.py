@@ -253,7 +253,7 @@ def cachemodel(datasource):
         start_idx = len(next_word_history) if next_word_history is not None else 0
         next_word_history = mx.nd.concat([mx.nd.one_hot([t], on_value=1, off_value=0) for t in target],
                                          dim=0) if next_word_history is None else mx.nd.concat(
-            [next_word_history, mx.nd.one_hot([t], on_value=1, off_value=0) for t in target])eifjcchcgbighnttibjucglcgjndcgfntuftjufnbvlt
+            [next_word_history, mx.nd.one_hot([t], on_value=1, off_value=0) for t in target])
 
         ##cache_history
         cache_history = rnn_out if cache_history is None else mx.nd.concat(cache_history, rnn_out, dim=0)
