@@ -151,7 +151,6 @@ print(args)
 # Build the model
 ###############################################################################
 
-
 ntokens = len(vocab)
 
 if args.weight_dropout > 0:
