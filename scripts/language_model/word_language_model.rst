@@ -55,7 +55,7 @@ The dataset used for training the models is wikitext-2.
 
 .. code-block:: console
 
-   $ python word_language_model.py -gpus 0 --emsize 200 --nhid 600 --epochs 750 --dropout 0.2 --dropout_h 0.1 --dropout_i 0.3 --dropout_e 0.05 --weight_drop 0.2 --tied --save awd_lstm_lm_600_wikitext-2
+   $ python word_language_model.py --gpus 0 --emsize 200 --nhid 600 --epochs 750 --dropout 0.2 --dropout_h 0.1 --dropout_i 0.3 --dropout_e 0.05 --weight_drop 0.2 --tied --save awd_lstm_lm_600_wikitext-2
 
 [3] standard_lstm_lm_1500_wikitext-2 (Val PPL 98.29 Test PPL 92.83)
 
