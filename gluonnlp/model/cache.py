@@ -151,7 +151,7 @@ def detach(hidden):
 
 
 
-def forward(inputs, begin_state=None):
+def cache_forward(inputs, begin_state=None):
     """Implement forward computation using awd language model.
 
     Parameters
@@ -237,15 +237,17 @@ def criterion(output, target, encoder_hs, dropped_encoder_hs):
 
 
 # cache model on the fly
-def cachemodel(datasource):
+# TODO: can add to attention model?
+def cache(data_source, batch_size, ctx=None):
     total_L = 0
     hidden = model.begin_state(func=mx.nd.zeros, batch_size=args.batch_size, ctx=context[0])
     next_word_history = None
     cache_history = None
-    for i, (data, target) in enumerate(datasource):
-        data = data.as_in_context(context[0]).T
-        target = target.as_in_context(context[0]).T
-        output, hidden, rnn_out = model(data, hidden)
+    for i in range(0, len(data_source) - 1, args.bptt):
+        data, target = get_batch(data_source, i)
+        data = data.as_in_context(ctx)
+        target = target.as_in_context(ctx)
+        output, hidden, rnn_out, rnn_out_dropped = cache_forward(data, hidden)
         ##rnn_out
         rnn_out = mx.nd.reshape(rnn_out, (-1,))
         output_flat = mx.nd.reshape(output, (-1,))
@@ -284,8 +286,8 @@ def cachemodel(datasource):
 if __name__ == '__main__':
     start_pipeline_time = time.time()
     model.load_params(args.save, context)
-    final_val_L = model(val_data, val_batch_size, context[0])
-    final_test_L = model(test_data, test_batch_size, context[0])
+    final_val_L = cache(val_data, val_batch_size, context[0])
+    final_test_L = cache(test_data, test_batch_size, context[0])
     print('Best validation loss %.2f, val ppl %.2f'%(final_val_L, math.exp(final_val_L)))
     print('Best test loss %.2f, test ppl %.2f'%(final_test_L, math.exp(final_test_L)))
     print('Total time cost %.2fs'%(time.time()-start_pipeline_time))
