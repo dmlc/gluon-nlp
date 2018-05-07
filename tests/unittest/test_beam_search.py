@@ -1,10 +1,13 @@
-import numpy as np
-import mxnet as mx
-from mxnet.gluon.rnn import RNNCell
-from mxnet.gluon import nn, HybridBlock
-from gluonnlp.model import BeamSearchSampler, BeamSearchScorer
-from numpy.testing import assert_allclose
 import functools
+
+import mxnet as mx
+import numpy as np
+import pytest
+from mxnet.gluon import HybridBlock, nn
+from mxnet.gluon.rnn import RNNCell
+from numpy.testing import assert_allclose
+
+from gluonnlp.model import BeamSearchSampler, BeamSearchScorer
 
 
 def test_beam_search_score():
@@ -23,6 +26,7 @@ def test_beam_search_score():
             assert_allclose(scores.asnumpy(), sum_log_probs.asnumpy() / lp, 1E-5, 1E-5)
 
 
+@pytest.mark.seed(1)
 def test_beam_search():
     def _get_new_states(states, new_states, sel_beam_ids, use_new_states):
         if isinstance(states, list):
