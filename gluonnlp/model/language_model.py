@@ -65,8 +65,8 @@ class AWDRNN(Block):
     drop_e : float
         Dropout rate to use on the embedding layer.
     """
-    def __init__(self, mode, vocab_size, embed_size, hidden_size, num_layers,
-                 tie_weights=False, dropout=0.5, weight_drop=0, drop_h=0.5, drop_i=0.5, drop_e=0,
+    def __init__(self, mode, vocab_size, embed_size=400, hidden_size=1150, num_layers=3,
+                 tie_weights=True, dropout=0.4, weight_drop=0.5, drop_h=0.2, drop_i=0.65, drop_e=0.1,
                  **kwargs):
         super(AWDRNN, self).__init__(**kwargs)
         self._mode = mode
