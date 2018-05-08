@@ -11,5 +11,6 @@ dependencies:
   - pytest
   - flaky
   - pytest-cov
+  - pytest-xdist
   - pip:
     - mxnet>=1.2.0b20180415
