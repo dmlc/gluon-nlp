@@ -19,9 +19,11 @@
 
 # pylint: disable=
 """SQuAD dataset."""
+from mxnet import nd
 import numpy as np
 
 from gluonnlp import Vocab
+from gluonnlp.data.batchify import Pad
 
 __all__ = ['SQuAD', 'SQuADTransform']
 
@@ -65,10 +67,12 @@ class SQuAD(ArrayDataset):
         self._root = root
         self._segment = segment
         self._get_data()
+
         self._word_vocab = None
         self._char_vocab = None
+        self._meta_info_mapping, data = self._read_data()
 
-        super(SQuAD, self).__init__(self._read_data())
+        super(SQuAD, self).__init__(data)
 
     def _get_data(self):
         """Load data from the file. Does nothing if data was loaded before
@@ -82,7 +86,9 @@ class SQuAD(ArrayDataset):
 
     def _read_data(self):
         """Read data.json from disk and flats it to the following format:
-        Entry = (question_id, question, context, list_of_answers)
+        Entry = (question_id, question, context, list_of_answers).
+        Question id and list_of_answers also substituted with indices, so it could be later
+        converted into nd.array
 
         Returns
         -------
@@ -112,11 +118,17 @@ class SQuAD(ArrayDataset):
 
     @property
     def char_vocab(self):
-        """Char-level vocabulary of the ttraining dataset"""
+        """Char-level vocabulary of the training dataset"""
         if self._char_vocab is None:
             self._char_vocab = self._load_vocab('char_vocab')
 
         return self._char_vocab
+
+    def get_question_id_by_index(self, record_index):
+        return self._meta_info_mapping[record_index][0]
+
+    def get_answer_list_by_index(self, record_index):
+        return self._meta_info_mapping[record_index][1]
 
     def _load_vocab(self, vocab_key):
         data_file_name, data_hash = self._data_file[vocab_key]
@@ -137,18 +149,24 @@ class _SQuADJsonParser:
         pass
 
     def get_records(self, json_dict):
+        meta_info_mapping = {}
         records = []
+
+        record_index = 0
 
         for title in json_dict["data"]:
             for paragraph in title["paragraphs"]:
                 for qas in paragraph["qas"]:
+                    meta_info_mapping[record_index] = (qas["id"], self._get_answers(qas))
+
                     record = (
-                        qas["id"], qas["question"], paragraph["context"], self._get_answers(qas)
+                        record_index, qas["question"], paragraph["context"]
                     )
 
+                    record_index += 1
                     records.append(record)
 
-        return records
+        return meta_info_mapping, records
 
     def _get_answers(self, qas_dict):
         answers = []
@@ -167,7 +185,9 @@ class SQuADTransform(object):
         self._question_max_length = question_max_length
         self._context_max_length = context_max_length
 
-    def __call__(self, q_id, question, context, answers):
+        self._padder = Pad()
+
+    def __call__(self, record_index, question, context):
         """
         Method converts text into numeric arrays based on Vocabulary.
         Answers are not processed, as they are not needed in input
@@ -181,11 +201,11 @@ class SQuADTransform(object):
         context_chars = [self._char_vocab[list(iter(word))]
                           for word in context.split()[:self._context_max_length]]
 
-        question_words_npy = np.array(question_words, dtype=np.int32)
-        question_chars_npy = np.array(question_chars, dtype=np.int32)
+        question_words_nd = nd.array(question_words)
+        question_chars_nd = self._padder(question_chars)
 
-        context_words_npy = np.array(context_words, dtype=np.int32)
-        context_chars_npy = np.array(context_chars, dtype=np.int32)
+        context_words_nd = np.array(context_words)
+        context_chars_nd = self._padder(context_chars)
 
-        return q_id, question_words_npy, question_chars_npy, \
-               context_words_npy, context_chars_npy, answers
+        return record_index, question_words_nd, question_chars_nd, \
+               context_words_nd, context_chars_nd

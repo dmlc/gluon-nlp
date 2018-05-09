@@ -1,8 +1,14 @@
 import os
 import re
 
+from mxnet.gluon.data import DataLoader
+
 from gluonnlp import data, Vocab
 from gluonnlp.data.squad_dataset import SQuAD, SQuADTransform
+
+# These numbers are not based on anything
+question_max_length = 96
+context_max_length = 512
 
 
 def test_load_dev_squad():
@@ -19,16 +25,31 @@ def test_load_vocabs():
     assert dataset.char_vocab is not None
 
 
-def test_transform_to_numpy():
-    # got these numbers by random
-    question_max_length = 96
-    context_max_length = 512
-
+def test_transform_to_nd_array():
     dataset = SQuAD(segment="dev", root=os.path.join('tests', 'data', 'squad'))
     transformer = SQuADTransform(dataset.word_vocab, dataset.char_vocab,
                                  question_max_length, context_max_length)
 
     transformed_record = transformer(*dataset[0])
+    assert transformed_record is not None
+
+
+def test_data_loader_able_to_read():
+    dataset = SQuAD(segment="dev", root=os.path.join('tests', 'data', 'squad'))
+    transformer = SQuADTransform(dataset.word_vocab, dataset.char_vocab,
+                                 question_max_length, context_max_length)
+    transformed_dataset = dataset.transform(transformer)
+
+    dataloader = DataLoader(transformed_dataset, batch_size=1)
+    for data in dataloader:
+        record_index, question_words, question_chars, context_words, context_chars = data
+
+        assert record_index is not None
+        assert question_words is not None
+        assert question_chars is not None
+        assert context_words is not None
+        assert context_chars is not None
+        break
 
 
 def test_create_char_vocab():
