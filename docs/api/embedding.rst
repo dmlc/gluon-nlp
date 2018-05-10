@@ -24,10 +24,6 @@ and utility for intrinsic evaluation of text embeddings.
 API Reference
 -------------
 
-.. raw:: html
-
-   <script type="text/javascript" src='../../_static/js/auto_module_index.js'></script>
-
 .. automodule:: gluonnlp.embedding
     :members: register, create, list_sources
 .. autoclass:: gluonnlp.embedding.TokenEmbedding
@@ -37,7 +33,3 @@ API Reference
 
 .. automodule:: gluonnlp.embedding.evaluation
     :members:
-
-.. raw:: html
-
-   <script>auto_index("api-reference");</script>
