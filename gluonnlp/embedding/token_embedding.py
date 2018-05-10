@@ -155,7 +155,7 @@ class TokenEmbedding(object):
         The representation for any unknown token. In other words, any unknown token will be indexed
         as the same representation.
 
-    Properties
+    Attributes
     ----------
     idx_to_token : list of strs
         A list of indexed tokens where the list indices and the token indices are aligned.
@@ -652,7 +652,7 @@ class GloVe(TokenEmbedding):
     init_unknown_vec : callback
         The callback used to initialize the embedding vector for the unknown token.
 
-    Properties
+    Attributes
     ----------
     idx_to_vec : mxnet.ndarray.NDArray
         For all the indexed tokens in this embedding, this NDArray maps each token's index to an
@@ -726,7 +726,7 @@ class FastText(TokenEmbedding):
     init_unknown_vec : callback
         The callback used to initialize the embedding vector for the unknown token.
 
-    Properties
+    Attributes
     ----------
     idx_to_vec : mxnet.ndarray.NDArray
         For all the indexed tokens in this embedding, this NDArray maps each token's index to an
