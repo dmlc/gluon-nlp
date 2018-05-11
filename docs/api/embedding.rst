@@ -25,11 +25,4 @@ API Reference
 -------------
 
 .. automodule:: gluonnlp.embedding
-    :members: register, create, list_sources
-.. autoclass:: gluonnlp.embedding.TokenEmbedding
-    :members: from_file, serialize, deserialize
-.. autoclass:: gluonnlp.embedding.GloVe
-.. autoclass:: gluonnlp.embedding.FastText
-
-.. automodule:: gluonnlp.embedding.evaluation
     :members:
