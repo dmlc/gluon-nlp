@@ -364,8 +364,8 @@ def _mk_my_invalid_pretrain_file2(path, token_delim, pretrain_file):
         fout.write(seqs)
 
 
-def test_token_embedding_from_file():
-    embed_root = 'tests/data/embedding'
+def test_token_embedding_from_file(tmpdir):
+    embed_root = str(tmpdir)
     embed_name = 'my_embed'
     elem_delim = '\t'
     pretrain_file = 'my_pretrain_file.txt'
@@ -452,8 +452,8 @@ def test_embedding_get_and_pretrain_file_names():
         nlp.embedding.list_sources('unknown$$')
 
 
-def test_vocab_set_embedding_with_one_custom_embedding():
-    embed_root = 'tests/data/embedding'
+def test_vocab_set_embedding_with_one_custom_embedding(tmpdir):
+    embed_root = str(tmpdir)
     embed_name = 'my_embed'
     elem_delim = '\t'
     pretrain_file = 'my_pretrain_file1.txt'
@@ -582,8 +582,8 @@ def test_vocab_set_embedding_with_one_custom_embedding():
     assert v1_no_unk.embedding is None
 
 
-def test_vocab_set_embedding_with_two_custom_embeddings():
-    embed_root = 'tests/data/embedding'
+def test_vocab_set_embedding_with_two_custom_embeddings(tmpdir):
+    embed_root = str(tmpdir)
     embed_name = 'my_embed'
     elem_delim = '\t'
     pretrain_file1 = 'my_pretrain_file1.txt'
@@ -760,8 +760,8 @@ def test_vocab_serialization():
     loaded_vocab['hello']
 
 
-def test_token_embedding_from_serialized_file():
-    embed_root = 'tests/data/embedding'
+def test_token_embedding_from_serialized_file(tmpdir):
+    embed_root = str(tmpdir)
     embed_name = 'my_embed'
     elem_delim = '\t'
     pretrain_file = 'my_pretrain_file.txt'
