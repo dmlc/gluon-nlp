@@ -265,3 +265,9 @@ def _load_vocab_file(file_path):
     with open(file_path, 'r') as f:
         from ..vocab import Vocab
         return Vocab.from_json(f.read())
+
+
+def _get_home_dir():
+    """Get home directory for storing datasets/models/pre-trained word embeddings"""
+    _home_dir = os.environ.get('MXNET_HOME', os.path.join('~', '.mxnet'))
+    return _home_dir
