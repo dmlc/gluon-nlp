@@ -664,7 +664,7 @@ class YangPowersVerb130(WordSimilarityEvaluationDataset):
 
     Parameters
     ----------
-    root : str, default '~/.mxnet/datasets/yangpowersverb130' or '$MXNET_HOME/datasets/yangpowersverb130'
+    root : str, default '~/.mxnet/datasets/verb130' or '$MXNET_HOME/datasets/verb130'
         Path to temp folder for storing data.
 
     """

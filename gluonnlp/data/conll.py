@@ -115,7 +115,8 @@ class CoNLL2000(_CoNLLSequenceTagging):
     root : str, default '~/.mxnet/datasets/conll2000' or '$MXNET_HOME/datasets/conll2000'
         Path to temp folder for storing data.
     """
-    def __init__(self, segment='train', root=os.path.join(_get_home_dir(), 'datasets', 'conll2000')):
+    def __init__(self, segment='train', root=os.path.join(
+        _get_home_dir(), 'datasets', 'conll2000')):
         self._data_file = {'train': ('train.txt.gz',
                                      '9f31cf936554cebf558d07cce923dca0b7f31864'),
                            'test': ('test.txt.gz',
