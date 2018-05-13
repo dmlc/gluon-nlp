@@ -34,6 +34,7 @@ from mxnet.gluon.data import ArrayDataset
 from .dataset import TextLineDataset
 from ..vocab import Vocab
 from .registry import register
+from .utils import _get_home_dir
 
 
 def _get_pair_key(src_lang, tgt_lang):
@@ -163,11 +164,12 @@ class IWSLT2015(_TranslationDataset):
         The source language. Option for source and target languages are 'en' <-> 'vi'
     tgt_lang : str, default 'vi'
         The target language. Option for source and target languages are 'en' <-> 'vi'
-    root : str, default '~/.mxnet/datasets/iwslt2015'
+    root : str, default '$MXNET_HOME/datasets/iwslt2015'
         Path to temp folder for storing data.
+        MXNET_HOME defaults to '~/.mxnet'.
     """
     def __init__(self, segment='train', src_lang='en', tgt_lang='vi',
-                 root=os.path.join('~', '.mxnet', 'datasets', 'iwslt2015')):
+                 root=os.path.join(_get_home_dir(), 'datasets', 'iwslt2015')):
         self._supported_segments = ['train', 'val', 'test']
         self._archive_file = {_get_pair_key('en', 'vi'):
                                   ('iwslt15.zip', '15a05df23caccb1db458fb3f9d156308b97a217b')}
@@ -209,11 +211,12 @@ class WMT2016BPE(_TranslationDataset):
         The source language. Option for source and target languages are 'en' <-> 'de'
     tgt_lang : str, default 'de'
         The target language. Option for source and target languages are 'en' <-> 'de'
-    root : str, default '~/.mxnet/datasets/wmt2016'
+    root : str, default '$MXNET_HOME/datasets/wmt2016'
         Path to temp folder for storing data.
+        MXNET_HOME defaults to '~/.mxnet'.
     """
     def __init__(self, segment='train', src_lang='en', tgt_lang='de',
-                 root=os.path.join('~', '.mxnet', 'datasets', 'wmt2016')):
+                 root=os.path.join(_get_home_dir(), 'datasets', 'wmt2016')):
         self._supported_segments = ['train'] + ['newstest%d' % i for i in range(2012, 2017)]
         self._archive_file = {_get_pair_key('de', 'en'):
                                   ('wmt2016_de_en.zip',

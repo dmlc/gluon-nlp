@@ -28,6 +28,7 @@ import os
 from mxnet.gluon.data import SimpleDataset
 from mxnet.gluon.utils import download, check_sha1, _get_repo_file_url
 from .registry import register
+from .utils import _get_home_dir
 
 
 @register(segment=['train', 'test', 'unsup'])
@@ -41,10 +42,11 @@ class IMDB(SimpleDataset):
     ----------
     segment : str, default 'train'
         Dataset segment. Options are 'train', 'test', and 'unsup' for unsupervised.
-    root : str, default '~/.mxnet/datasets/imdb'
+    root : str, default '$MXNET_HOME/datasets/imdb'
         Path to temp folder for storing data.
+        MXNET_HOME defaults to '~/.mxnet'.
     """
-    def __init__(self, segment='train', root=os.path.join('~', '.mxnet', 'datasets', 'imdb')):
+    def __init__(self, segment='train', root=os.path.join(_get_home_dir(), 'datasets', 'imdb')):
         self._data_file = {'train': ('train.json',
                                      '516a0ba06bca4e32ee11da2e129f4f871dff85dc'),
                            'test': ('test.json',

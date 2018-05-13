@@ -36,7 +36,7 @@ from mxnet import nd, registry
 from mxnet.gluon.utils import download, check_sha1, _get_repo_file_url
 
 from .. import _constants as C
-from ..data.utils import DefaultLookupDict
+from ..data.utils import DefaultLookupDict, _get_home_dir
 
 
 def register(embedding_cls):
@@ -647,8 +647,9 @@ class GloVe(TokenEmbedding):
     ----------
     source : str, default 'glove.6B.50d'
         The name of the pre-trained token embedding file.
-    embedding_root : str, default os.path.join('~', '.mxnet', 'embedding')
+    embedding_root : str, default '$MXNET_HOME/embedding'
         The root directory for storing embedding-related files.
+        MXNET_HOME defaults to '~/.mxnet'.
     init_unknown_vec : callback
         The callback used to initialize the embedding vector for the unknown token.
 
@@ -666,7 +667,7 @@ class GloVe(TokenEmbedding):
     source_file_hash = C.GLOVE_NPZ_SHA1
 
     def __init__(self, source='glove.6B.50d',
-                 embedding_root=os.path.join('~', '.mxnet', 'embedding'),
+                 embedding_root=os.path.join(_get_home_dir(), 'embedding'),
                  init_unknown_vec=nd.zeros, **kwargs):
         GloVe._check_source(source)
 
@@ -721,8 +722,9 @@ class FastText(TokenEmbedding):
     ----------
     source : str, default 'glove.6B.50d'
         The name of the pre-trained token embedding file.
-    embedding_root : str, default os.path.join('~', '.mxnet', 'embedding')
+    embedding_root : str, default '$MXNET_HOME/embedding'
         The root directory for storing embedding-related files.
+        MXNET_HOME defaults to '~/.mxnet'.
     init_unknown_vec : callback
         The callback used to initialize the embedding vector for the unknown token.
 
@@ -740,7 +742,7 @@ class FastText(TokenEmbedding):
     source_file_hash = C.FAST_TEXT_NPZ_SHA1
 
     def __init__(self, source='wiki.simple',
-                 embedding_root=os.path.join('~', '.mxnet', 'embedding'),
+                 embedding_root=os.path.join(_get_home_dir(), 'embedding'),
                  init_unknown_vec=nd.zeros, **kwargs):
         FastText._check_source(source)
 

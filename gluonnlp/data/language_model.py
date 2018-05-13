@@ -31,6 +31,7 @@ from mxnet.gluon.utils import download, check_sha1, _get_repo_file_url
 from .. import _constants as C
 from .dataset import LanguageModelDataset
 from .registry import register
+from .utils import _get_home_dir
 
 
 class _WikiText(LanguageModelDataset):
@@ -85,11 +86,12 @@ class WikiText2(_WikiText):
         The token to add at the begining of each sentence. If None, nothing is added.
     eos : str or None, default '<eos>'
         The token to add at the end of each sentence. If None, nothing is added.
-    root : str, default '~/.mxnet/datasets/wikitext-2'
+    root : str, default '$MXNET_HOME/datasets/wikitext-2'
         Path to temp folder for storing data.
+        MXNET_HOME defaults to '~/.mxnet'.
     """
     def __init__(self, segment='train', skip_empty=True, bos=None, eos=C.EOS_TOKEN,
-                 root=os.path.join('~', '.mxnet', 'datasets', 'wikitext-2')):
+                 root=os.path.join(_get_home_dir(), 'datasets', 'wikitext-2')):
         self._archive_file = ('wikitext-2-v1.zip', '3c914d17d80b1459be871a5039ac23e752a53cbe')
         self._data_file = {'train': ('wiki.train.tokens',
                                      '863f29c46ef9d167fff4940ec821195882fe29d1'),
@@ -120,11 +122,12 @@ class WikiText103(_WikiText):
         The token to add at the begining of each sentence. If None, nothing is added.
     eos : str or None, default '<eos>'
         The token to add at the end of each sentence. If None, nothing is added.
-    root : str, default '~/.mxnet/datasets/wikitext-103'
+    root : str, default '$MXNET_HOME/datasets/wikitext-103'
         Path to temp folder for storing data.
+        MXNET_HOME defaults to '~/.mxnet'.
     """
     def __init__(self, segment='train', skip_empty=True, bos=None, eos=C.EOS_TOKEN,
-                 root=os.path.join('~', '.mxnet', 'datasets', 'wikitext-103')):
+                 root=os.path.join(_get_home_dir(), 'datasets', 'wikitext-103')):
         self._archive_file = ('wikitext-103-v1.zip', '0aec09a7537b58d4bb65362fee27650eeaba625a')
         self._data_file = {'train': ('wiki.train.tokens',
                                      'b7497e2dfe77e72cfef5e3dbc61b7b53712ac211'),

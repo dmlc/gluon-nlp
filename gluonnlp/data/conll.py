@@ -35,6 +35,7 @@ from mxnet.gluon.utils import download, check_sha1
 
 from .. import _constants as C
 from .registry import register
+from .utils import _get_home_dir
 
 
 class _CoNLLSequenceTagging(SimpleDataset):
@@ -111,10 +112,12 @@ class CoNLL2000(_CoNLLSequenceTagging):
     ----------
     segment : {'train', 'test'}, default 'train'
         Dataset segment.
-    root : str, default '~/.mxnet/datasets/conll2000'
+    root : str, default '$MXNET_HOME/datasets/conll2000'
         Path to temp folder for storing data.
+        MXNET_HOME defaults to '~/.mxnet'.
     """
-    def __init__(self, segment='train', root=os.path.join('~', '.mxnet', 'datasets', 'conll2000')):
+    def __init__(self, segment='train',
+                 root=os.path.join(_get_home_dir(), 'datasets', 'conll2000')):
         self._data_file = {'train': ('train.txt.gz',
                                      '9f31cf936554cebf558d07cce923dca0b7f31864'),
                            'test': ('test.txt.gz',
@@ -140,11 +143,12 @@ class CoNLL2001(_CoNLLSequenceTagging):
         Part number of the dataset.
     segment : {'train', 'testa', 'testb'}, default 'train'
         Dataset segment.
-    root : str, default '~/.mxnet/datasets/conll2001'
+    root : str, default '$MXNET_HOME/datasets/conll2001'
         Path to temp folder for storing data.
+        MXNET_HOME defaults to '~/.mxnet'.
     """
     def __init__(self, part, segment='train',
-                 root=os.path.join('~', '.mxnet', 'datasets', 'conll2001')):
+                 root=os.path.join(_get_home_dir(), 'datasets', 'conll2001')):
         self._part = part
         self._data_file = [
             {'train': ('train1',
@@ -198,11 +202,12 @@ class CoNLL2002(_CoNLLSequenceTagging):
         Dataset language.
     segment : {'train', 'testa', 'testb'}, default 'train'
         Dataset segment.
-    root : str, default '~/.mxnet/datasets/conll2002'
+    root : str, default '$MXNET_HOME/datasets/conll2002'
         Path to temp folder for storing data.
+        MXNET_HOME defaults to '~/.mxnet'.
     """
     def __init__(self, lang, segment='train',
-                 root=os.path.join('~', '.mxnet', 'datasets', 'conll2002')):
+                 root=os.path.join(_get_home_dir(), 'datasets', 'conll2002')):
         self._lang = lang
         self._data_file = {
             'esp': {'train': ('esp.train.gz',
@@ -247,11 +252,12 @@ class CoNLL2004(_CoNLLSequenceTagging):
     ----------
     segment : {'train', 'dev', 'test'}, default 'train'
         Dataset segment.
-    root : str, default '~/.mxnet/datasets/conll2004'
+    root : str, default '$MXNET_HOME/datasets/conll2004'
         Path to temp folder for storing data.
+        MXNET_HOME defaults to '~/.mxnet'.
     """
     def __init__(self, segment='train',
-                 root=os.path.join('~', '.mxnet', 'datasets', 'conll2004')):
+                 root=os.path.join(_get_home_dir(), 'datasets', 'conll2004')):
         self._archive_file = ('conll04st-release.tar.gz',
                               '09ef957d908d34fa0abd745cbe43e279414f076c')
         self._data_file = {
@@ -323,11 +329,12 @@ class UniversalDependencies21(_CoNLLSequenceTagging):
         Dataset language.
     segment : str, default 'train'
         Dataset segment.
-    root : str, default '~/.mxnet/datasets/ud2.1'
+    root : str, default '$MXNET_HOME/datasets/ud2.1'
         Path to temp folder for storing data.
+        MXNET_HOME defaults to '~/.mxnet'.
     """
     def __init__(self, lang='en', segment='train',
-                 root=os.path.join('~', '.mxnet', 'datasets', 'ud2.1')):
+                 root=os.path.join(_get_home_dir(), 'datasets', 'ud2.1')):
         self._archive_file = ('ud-treebanks-v2.1.tgz',
                               '77657b897951e21d2eca6b29958e663964eb57ae')
         self._lang = lang
