@@ -205,7 +205,8 @@ class WordSim353(WordSimilarityEvaluationDataset):
     ----------
     segment : str
         'relatedness', 'similiarity' or 'all'
-    root : str, default '~/.mxnet/datasets/wordsim353' or '$MXNET_HOME/datasets/wordsim353'
+    root : str, default '$MXNET_HOME/datasets/wordsim353',
+        MXNET_HOME defaults to '~/.mxnet'.
         Path to temp folder for storing data.
 
     """
@@ -276,7 +277,8 @@ class MEN(WordSimilarityEvaluationDataset):
 
     Parameters
     ----------
-    root : str, default '~/.mxnet/datasets/men' or '$MXNET_HOME/datasets/men'
+    root : str, default '$MXNET_HOME/datasets/men',
+        MXNET_HOME defaults to '~/.mxnet'.
         Path to temp folder for storing data.
     segment : str, default 'train'
         Dataset segment. Options are 'train', 'dev', 'test'.
@@ -343,7 +345,8 @@ class RadinskyMTurk(WordSimilarityEvaluationDataset):
 
     Parameters
     ----------
-    root : str, default '~/.mxnet/datasets/radinskymturk' or '$MXNET_HOME/datasets/radinskymturk'
+    root : str, default '$MXNET_HOME/datasets/radinskymturk',
+        MXNET_HOME defaults to '~/.mxnet'.
         Path to temp folder for storing data.
 
     """
@@ -379,7 +382,8 @@ class RareWords(WordSimilarityEvaluationDataset):
 
     Parameters
     ----------
-    root : str, default '~/.mxnet/datasets/rarewords' or '$MXNET_HOME/datasets/rarewords'
+    root : str, default '$MXNET_HOME/datasets/rarewords',
+        MXNET_HOME defaults to '~/.mxnet'.
         Path to temp folder for storing data.
 
     """
@@ -442,7 +446,8 @@ class SimLex999(WordSimilarityEvaluationDataset):
 
     Parameters
     ----------
-    root : str, default '~/.mxnet/datasets/simlex999' or '$MXNET_HOME/datasets/simlex999'
+    root : str, default '$MXNET_HOME/datasets/simlex999',
+        MXNET_HOME defaults to '~/.mxnet'.
         Path to temp folder for storing data.
 
     """
@@ -495,7 +500,8 @@ class SimVerb3500(WordSimilarityEvaluationDataset):
 
     Parameters
     ----------
-    root : str, default '~/.mxnet/datasets/simverb3500' or '$MXNET_HOME/datasets/simverb3500'
+    root : str, default '$MXNET_HOME/datasets/verb3500',
+        MXNET_HOME defaults to '~/.mxnet'.
         Path to temp folder for storing data.
 
     """
@@ -565,7 +571,8 @@ class SemEval17Task2(WordSimilarityEvaluationDataset):
 
     Parameters
     ----------
-    root : str, default '~/.mxnet/datasets/semeval17task2' or '$MXNET_HOME/datasets/semeval17task2'
+    root : str, default '$MXNET_HOME/datasets/semeval17task2',
+        MXNET_HOME defaults to '~/.mxnet'.
         Path to temp folder for storing data.
     segment : str, default 'train'
         Dataset segment. Options are 'trial', 'test'.
@@ -627,7 +634,8 @@ class BakerVerb143(WordSimilarityEvaluationDataset):
 
     Parameters
     ----------
-    root : str, default '~/.mxnet/datasets/bakerverb143' or '$MXNET_HOME/datasets/bakerverb143'
+    root : str, default '$MXNET_HOME/datasets/verb143',
+        MXNET_HOME defaults to '~/.mxnet'.
         Path to temp folder for storing data.
 
     """
@@ -664,7 +672,8 @@ class YangPowersVerb130(WordSimilarityEvaluationDataset):
 
     Parameters
     ----------
-    root : str, default '~/.mxnet/datasets/verb130' or '$MXNET_HOME/datasets/verb130'
+    root : str, default '$MXNET_HOME/datasets/verb130',
+        MXNET_HOME defaults to '~/.mxnet'.
         Path to temp folder for storing data.
 
     """
@@ -820,7 +829,8 @@ class BiggerAnalogyTestSet(WordAnalogyEvaluationDataset):
 
     Parameters
     ----------
-    root : str, default '~/.mxnet/datasets/bats' or '$MXNET_HOME/datasets/bats'
+    root : str, default '$MXNET_HOME/datasets/bats',
+        MXNET_HOME defaults to '~/.mxnet'.
         Path to temp folder for storing data.
 
     """

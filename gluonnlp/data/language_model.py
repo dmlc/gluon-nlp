@@ -86,7 +86,8 @@ class WikiText2(_WikiText):
         The token to add at the begining of each sentence. If None, nothing is added.
     eos : str or None, default '<eos>'
         The token to add at the end of each sentence. If None, nothing is added.
-    root : str, default '~/.mxnet/datasets/wikitext-2' or '$MXNET_HOME/datasets/wikitext-2'
+    root : str, default '$MXNET_HOME/datasets/wikitext-2',
+        MXNET_HOME defaults to '~/.mxnet'.
         Path to temp folder for storing data.
     """
     def __init__(self, segment='train', skip_empty=True, bos=None, eos=C.EOS_TOKEN,
@@ -121,7 +122,8 @@ class WikiText103(_WikiText):
         The token to add at the begining of each sentence. If None, nothing is added.
     eos : str or None, default '<eos>'
         The token to add at the end of each sentence. If None, nothing is added.
-    root : str, default '~/.mxnet/datasets/wikitext-103' or '$MXNET_HOME/datasets/wikitext-103'
+    root : str, default '$MXNET_HOME/datasets/wikitext-103',
+        MXNET_HOME defaults to '~/.mxnet'.
         Path to temp folder for storing data.
     """
     def __init__(self, segment='train', skip_empty=True, bos=None, eos=C.EOS_TOKEN,

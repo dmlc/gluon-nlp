@@ -112,7 +112,8 @@ class CoNLL2000(_CoNLLSequenceTagging):
     ----------
     segment : {'train', 'test'}, default 'train'
         Dataset segment.
-    root : str, default '~/.mxnet/datasets/conll2000' or '$MXNET_HOME/datasets/conll2000'
+    root : str, default '$MXNET_HOME/datasets/conll2000',
+        MXNET_HOME defaults to '~/.mxnet'.
         Path to temp folder for storing data.
     """
     def __init__(self, segment='train',
@@ -142,7 +143,8 @@ class CoNLL2001(_CoNLLSequenceTagging):
         Part number of the dataset.
     segment : {'train', 'testa', 'testb'}, default 'train'
         Dataset segment.
-    root : str, default '~/.mxnet/datasets/conll2001' or '$MXNET_HOME/datasets/conll2001'
+    root : str, default '$MXNET_HOME/datasets/conll2001',
+        MXNET_HOME defaults to '~/.mxnet'.
         Path to temp folder for storing data.
     """
     def __init__(self, part, segment='train',
@@ -200,7 +202,8 @@ class CoNLL2002(_CoNLLSequenceTagging):
         Dataset language.
     segment : {'train', 'testa', 'testb'}, default 'train'
         Dataset segment.
-    root : str, default '~/.mxnet/datasets/conll2002' or or '$MXNET_HOME/datasets/conll2002'
+    root : str, default '$MXNET_HOME/datasets/conll2002',
+        MXNET_HOME defaults to '~/.mxnet'.
         Path to temp folder for storing data.
     """
     def __init__(self, lang, segment='train',
@@ -249,7 +252,8 @@ class CoNLL2004(_CoNLLSequenceTagging):
     ----------
     segment : {'train', 'dev', 'test'}, default 'train'
         Dataset segment.
-    root : str, default '~/.mxnet/datasets/conll2004' or '$MXNET_HOME/datasets/conll2004'
+    root : str, default '$MXNET_HOME/datasets/conll2004',
+        MXNET_HOME defaults to '~/.mxnet'.
         Path to temp folder for storing data.
     """
     def __init__(self, segment='train',
@@ -325,7 +329,8 @@ class UniversalDependencies21(_CoNLLSequenceTagging):
         Dataset language.
     segment : str, default 'train'
         Dataset segment.
-    root : str, default '~/.mxnet/datasets/ud2.1' or '$MXNET_HOME/datasets/ud2.1''
+    root : str, default '$MXNET_HOME/datasets/ud2.1',
+        MXNET_HOME defaults to '~/.mxnet'.
         Path to temp folder for storing data.
     """
     def __init__(self, lang='en', segment='train',

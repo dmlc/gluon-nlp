@@ -42,7 +42,8 @@ class IMDB(SimpleDataset):
     ----------
     segment : str, default 'train'
         Dataset segment. Options are 'train', 'test', and 'unsup' for unsupervised.
-    root : str, default '~/.mxnet/datasets/imdb' or '$MXNET_HOME/datasets/imdb'
+    root : str, default '$MXNET_HOME/datasets/imdb',
+        MXNET_HOME defaults to '~/.mxnet'.
         Path to temp folder for storing data.
     """
     def __init__(self, segment='train', root=os.path.join(_get_home_dir(), 'datasets', 'imdb')):
