@@ -271,5 +271,5 @@ def _get_home_dir():
     """Get home directory for storing datasets/models/pre-trained word embeddings"""
     _home_dir = os.environ.get('MXNET_HOME', os.path.join('~', '.mxnet'))
     # expand ~ to actual path
-    #_home_dir = os.path.expanduser(_home_dir)
+    _home_dir = os.path.expanduser(_home_dir)
     return _home_dir
