@@ -1,22 +1,6 @@
 """
-Word Language Model
+Neural Cache Language Model
 ===================
-
-This example shows how to build a word-level language model on WikiText-2 with Gluon NLP Toolkit.
-By using the existing data pipeline tools and building blocks, the process is greatly simplified.
-
-We implement the AWD LSTM language model proposed in the following work.
-
-@article{merityRegOpt,
-  title={{Regularizing and Optimizing LSTM Language Models}},
-  author={Merity, Stephen and Keskar, Nitish Shirish and Socher, Richard},
-  journal={ICLR},
-  year={2018}
-}
-
-Note that we are using standard SGD as the optimizer for code simpilification.
-Once NT-ASGD in the work is implemented and used as the optimizer.
-Our implementation should yield identical results.
 """
 
 # coding: utf-8
@@ -103,24 +87,6 @@ ntokens = len(vocab)
 model = nlp.model.language_model.AWDRNN(args.model, len(vocab))
 model.initialize(mx.init.Xavier(), ctx=context)
 
-# if args.optimizer == 'sgd':
-#     trainer_params = {'learning_rate': args.lr,
-#                       'momentum': 0,
-#                       'wd': args.wd}
-# elif args.optimizer == 'adam':
-#     trainer_params = {'learning_rate': args.lr,
-#                       'wd': args.wd,
-#                       'beta1': 0,
-#                       'beta2': 0.999,
-#                       'epsilon': 1e-9}
-#
-# trainer = gluon.Trainer(model.collect_params(), args.optimizer, trainer_params)
-# loss = gluon.loss.SoftmaxCrossEntropyLoss()
-
-###############################################################################
-# Training code
-###############################################################################
-
 def get_batch(data_source, i, seq_len=None):
     seq_len = min(seq_len if seq_len else args.bptt, len(data_source) - 1 - i)
     data = data_source[i:i+seq_len]
@@ -185,42 +151,6 @@ def cache_forward(inputs, begin_state=None):
     else:
         return out, state, encoded_raw, encoded_dropped
 
-# def criterion(output, target, encoder_hs, dropped_encoder_hs):
-#     """Compute regularized (optional) loss of the language model in training mode.
-#
-#         Parameters
-#         ----------
-#         output: NDArray
-#             The output of the model.
-#         target: list
-#             The list of output states of the model's encoder.
-#         encoder_hs: list
-#             The list of outputs of the model's encoder.
-#         dropped_encoder_hs: list
-#             The list of outputs with dropout of the model's encoder.
-#
-#         Returns
-#         -------
-#         l: NDArray
-#             The loss per word/token.
-#             If both args.alpha and args.beta are zeros, the loss is the standard cross entropy.
-#             If args.alpha is not zero, the standard loss is regularized with activation.
-#             If args.beta is not zero, the standard loss is regularized with temporal activation.
-#     """
-#     l = loss(output.reshape(-3, -1), target.reshape(-1,))
-#     if args.alpha:
-#         dropped_means = [args.alpha*dropped_encoder_h.__pow__(2).mean()
-#                          for dropped_encoder_h in dropped_encoder_hs[-1:]]
-#         l = l + mx.nd.add_n(*dropped_means)
-#     if args.beta:
-#         means = [args.beta*(encoder_h[1:] - encoder_h[:-1]).__pow__(2).mean()
-#                  for encoder_h in encoder_hs[-1:]]
-#         l = l + mx.nd.add_n(*means)
-#     return l
-
-
-# cache model on the fly
-# TODO: can add to attention model?
 def cache(data_source, batch_size, ctx=None):
     total_L = 0
     hidden = model.begin_state(func=mx.nd.zeros, batch_size=batch_size, ctx=context[0])
@@ -231,31 +161,29 @@ def cache(data_source, batch_size, ctx=None):
         data = data.as_in_context(ctx)
         target = target.as_in_context(ctx)
         output, hidden, encoder_hs, dropped_encoder_hs = cache_forward(data, hidden)
-        # squeeze()
-        encoder_hs = encoder_hs[-1].reshape(-3,)
-        output = output.reshape(-1,)
+        encoder_h = encoder_hs[-1].reshape(-3,-2)
+        output = output.reshape(-1, ntokens)
 
         start_idx = len(next_word_history) if next_word_history is not None else 0
-        #t.data
-        next_word_history = mx.nd.concat([mx.nd.one_hot(t[0], on_value=1, off_value=0) for t in target]) \
-            if next_word_history is None else mx.nd.concat([next_word_history, mx.nd.concat([mx.nd.one_hot(t[0], on_value=1, off_value=0) for t in target])])
-
-        ##cache_history
-        cache_history = encoder_hs if cache_history is None else mx.nd.concat(cache_history, encoder_hs)
+        next_word_history = mx.nd.concat(*[mx.nd.one_hot(t[0], ntokens, on_value=1, off_value=0) for t in target], dim=0) \
+            if next_word_history is None else mx.nd.concat(next_word_history, mx.nd.concat(*[mx.nd.one_hot(t[0], ntokens, on_value=1, off_value=0) for t in target], dim=0), dim=0)
+        print(next_word_history)
+        cache_history = encoder_h if cache_history is None else mx.nd.concat(cache_history, encoder_h, dim=0)
+        print(cache_history)
 
         L = 0
-        softmax_output = mx.nd.softmax(output, axis=0)
+        softmax_output = mx.nd.softmax(output)
         for idx, vocab_L in enumerate(softmax_output):
             joint_p = vocab_L
             if start_idx + idx > args.window:
                 valid_next_word = next_word_history[start_idx + idx - args.window:start_idx + idx]
                 valid_cache_history = cache_history[start_idx + idx - args.window:start_idx + idx]
-                logits = mx.nd.multiply(valid_cache_history, encoder_hs[idx])
-                cache_attn = mx.nd.softmax(args.theta * logits).reshape(-1,)
-                cache_dist = (cache_attn.broadcast_to(valid_next_word.shape) * valid_next_word).sum(axis=0).reshape(-3,)
-                joint_p = args.lambdah * cache_dist + (1 - args.lambdah) * vocab_L
+                logits = mx.nd.dot(valid_cache_history, encoder_h[idx])
+                cache_attn = mx.nd.softmax(args.theta * logits).reshape(-1,1)
+                cache_dist = (cache_attn.broadcast_to(valid_next_word.shape) * valid_next_word).sum(axis=0)
+                joint_p = args.lambdasm * cache_dist + (1 - args.lambdasm) * vocab_L
             target_L = joint_p[target[idx]]
-            L += (-mx.nd.log(target_L))[0]
+            L += (-mx.nd.log(target_L)).asscalar()
         total_L += L / batch_size
 
         hidden = detach(hidden)
