@@ -164,9 +164,9 @@ class IWSLT2015(_TranslationDataset):
         The source language. Option for source and target languages are 'en' <-> 'vi'
     tgt_lang : str, default 'vi'
         The target language. Option for source and target languages are 'en' <-> 'vi'
-    root : str, default '$MXNET_HOME/datasets/iwslt2015',
-        MXNET_HOME defaults to '~/.mxnet'.
+    root : str, default '$MXNET_HOME/datasets/iwslt2015'
         Path to temp folder for storing data.
+        MXNET_HOME defaults to '~/.mxnet'.
     """
     def __init__(self, segment='train', src_lang='en', tgt_lang='vi',
                  root=os.path.join(_get_home_dir(), 'datasets', 'iwslt2015')):
@@ -211,9 +211,9 @@ class WMT2016BPE(_TranslationDataset):
         The source language. Option for source and target languages are 'en' <-> 'de'
     tgt_lang : str, default 'de'
         The target language. Option for source and target languages are 'en' <-> 'de'
-    root : str, default '$MXNET_HOME/datasets/wmt2016',
-        MXNET_HOME defaults to '~/.mxnet'.
+    root : str, default '$MXNET_HOME/datasets/wmt2016'
         Path to temp folder for storing data.
+        MXNET_HOME defaults to '~/.mxnet'.
     """
     def __init__(self, segment='train', src_lang='en', tgt_lang='de',
                  root=os.path.join(_get_home_dir(), 'datasets', 'wmt2016')):
