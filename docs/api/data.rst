@@ -152,5 +152,7 @@ Miscellaneous utility classes and functions for processing text and sequence dat
 
 API Reference
 -------------
+
 .. automodule:: gluonnlp.data
    :members:
+   :imported-members:

@@ -55,3 +55,4 @@ API Reference
 
 .. automodule:: gluonnlp.model
     :members:
+    :imported-members:

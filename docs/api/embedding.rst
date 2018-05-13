@@ -26,3 +26,4 @@ API Reference
 
 .. automodule:: gluonnlp.embedding
     :members:
+    :imported-members:
