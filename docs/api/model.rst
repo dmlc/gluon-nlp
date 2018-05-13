@@ -53,34 +53,6 @@ Other Modeling Utilities
 API Reference
 -------------
 
-.. autofunction:: awd_lstm_lm_1150
-.. autofunction:: awd_lstm_lm_600
-.. autoclass:: AWDRNN
-.. autofunction:: standard_lstm_lm_200
-.. autofunction:: standard_lstm_lm_650
-.. autofunction:: standard_lstm_lm_1500
-.. autoclass:: StandardRNN
-
-.. autoclass:: gluonnlp.model.AttentionCell
-    :members: __call__
-
-.. autoclass:: gluonnlp.model.MultiHeadAttentionCell
-    :members: __call__
-
-.. autoclass:: gluonnlp.model.MLPAttentionCell
-    :members: __call__
-
-.. autoclass:: gluonnlp.model.DotProductAttentionCell
-    :members: __call__
-
-.. autoclass:: gluonnlp.model.BeamSearchScorer
-    :members: __call__
-
-.. autoclass:: gluonnlp.model.BeamSearchSampler
-    :members: __call__
-
-.. autoclass:: gluonnlp.model.WeightDropParameter
-
-.. autoclass:: gluonnlp.model.L2Normalization
-
-.. autofunction:: gluonnlp.model.apply_weight_drop
+.. automodule:: gluonnlp.model
+    :members:
+    :imported-members:

@@ -48,8 +48,6 @@ These models can constructed by passing ``pretrained=True``:
 
 .. _AWD: https://arxiv.org/abs/1404.5997
 """
-__all__ = ['standard_lstm_lm_200', 'standard_lstm_lm_650', 'standard_lstm_lm_1500',
-           'awd_lstm_lm_1150', 'awd_lstm_lm_600']
 
 from .language_model import *
 
@@ -62,6 +60,10 @@ from .utils import *
 from .parameter import *
 
 from .block import *
+
+__all__ = language_model.__all__ + beam_search.__all__ + attention_cell.__all__ + \
+    utils.__all__ + parameter.__all__ + block.__all__
+
 
 def get_model(name, dataset_name='wikitext-2', **kwargs):
     """Returns a pre-defined model by name.

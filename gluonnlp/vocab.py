@@ -71,7 +71,7 @@ class Vocab(object):
         and values of `reserved_tokens` must be of the same hashable type. Examples: str, int, and
         tuple.
 
-    Properties
+    Attributes
     ----------
     embedding : instance of :class:`gluonnlp.embedding.TokenEmbedding`
         The embedding of the indexed tokens.
