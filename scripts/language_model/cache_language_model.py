@@ -157,6 +157,7 @@ def cache(data_source, batch_size, ctx=None):
     next_word_history = None
     cache_history = None
     for i in range(0, len(data_source) - 1, args.bptt):
+        if i > 0: print(i, len(data_source), math.exp(total_L/i))
         data, target = get_batch(data_source, i)
         data = data.as_in_context(ctx)
         target = target.as_in_context(ctx)
@@ -173,7 +174,7 @@ def cache(data_source, batch_size, ctx=None):
 
         L = 0
         softmax_output = mx.nd.softmax(output)
-        for idx, vocab_L in enumerate(softmax_output):
+        for idx, vocab_L in enumerate(softmax_output[:4]):
             joint_p = vocab_L
             if start_idx + idx > args.window:
                 valid_next_word = next_word_history[start_idx + idx - args.window:start_idx + idx]
