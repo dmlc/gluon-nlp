@@ -1,5 +1,5 @@
-GluonNLP: a Deep Learning Toolkit for NLP
-=========================================
+GluonNLP: a Deep Learning Toolkit for Natural Language Processing (NLP)
+=======================================================================
 
 GluonNLP provides implementations of the state-of-the-art (SOTA) deep learning
 models in NLP, and build blocks for text data pipelines and models.
