@@ -1,6 +1,16 @@
 """
 Neural Cache Language Model
 ===================
+This example shows how to build a neural cache language model based on pretrained word-level language model
+on WikiText-2 with Gluon NLP Toolkit.
+
+We implement the neural cache language model proposed in the following work.
+@article{grave2016improving,
+  title={Improving neural language models with a continuous cache},
+  author={Grave, Edouard and Joulin, Armand and Usunier, Nicolas},
+  journal={ICLR},
+  year={2017}
+}
 """
 
 # coding: utf-8
