@@ -56,8 +56,7 @@ class ActivationRegularizationLoss(object):
         - **loss**: loss tensor with shape (batch_size,). Dimenions other than
           batch_axis are averaged out.
     """
-    def __init__(self, alpha=0, **kwargs):
-        super(ActivationRegularizationLoss, self).__init__(**kwargs)
+    def __init__(self, alpha=0):
         self._alpha = alpha
 
     def hybrid_forward(self, states=None):
@@ -101,8 +100,7 @@ class TemporalActivationRegularizationLoss(object):
         - **loss**: loss tensor with shape (batch_size,). Dimenions other than
           batch_axis are averaged out.
     """
-    def __init__(self, beta=0, **kwargs):
-        super(ActivationRegularizationLoss, self).__init__(**kwargs)
+    def __init__(self, beta=0):
         self.beta = beta
 
     def hybrid_forward(self, states=None):
