@@ -179,8 +179,8 @@ elif args.optimizer == 'adam':
 trainer = gluon.Trainer(model.collect_params(), args.optimizer, trainer_params)
 
 loss = gluon.loss.SoftmaxCrossEntropyLoss()
-ar_loss = nlp.criterion.ActivationRegularizationLoss(args.alpha)
-tar_loss = nlp.criterion.TemporalActivationRegularizationLoss(args.beta)
+ar_loss = nlp.criterion.ActivationRegularizationLoss(alpha=args.alpha)
+tar_loss = nlp.criterion.TemporalActivationRegularizationLoss(beta=args.beta)
 
 ###############################################################################
 # Training code
