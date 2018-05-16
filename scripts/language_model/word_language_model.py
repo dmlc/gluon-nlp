@@ -297,7 +297,7 @@ def train():
             L = 0
             with autograd.record():
                 for j, (X, y, h) in enumerate(zip(data_list, target_list, hiddens)):
-                    output, h, encoder_hs, dropped_encoder_hs = nlp.model.forward(X, h)
+                    output, h, encoder_hs, dropped_encoder_hs = nlp.model.forward(model, X, h)
                     l = criterion(output, y, encoder_hs, dropped_encoder_hs)
                     L = L + l.as_in_context(context[0]) / X.size
                     Ls.append(l/X.size)
