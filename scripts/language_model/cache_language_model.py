@@ -46,8 +46,6 @@ sys.path.append(os.path.join(curr_path, '..', '..'))
 
 parser = argparse.ArgumentParser(description=
                                  'MXNet Neural Cache Language Model on Wikitext-2.')
-# parser.add_argument('--model', type=str, default='lstm',
-#                     help='type of recurrent net (rnn_tanh, rnn_relu, lstm, gru)')
 parser.add_argument('--bptt', type=int, default=2000,
                     help='sequence length')
 parser.add_argument('--save', type=str, default='awd_lstm_lm_1150',
@@ -58,17 +56,15 @@ parser.add_argument('--gpus', type=str,
 parser.add_argument('--window', type=int, default=2000,
                     help='pointer window length')
 parser.add_argument('--theta', type=float, default=0.662,
-                    help='mix between uniform distribution and pointer softmax distribution over previous words')
+                    help='mix between uniform distribution and cache softmax distribution over previous words')
 parser.add_argument('--lambdas', type=float, default=0.1279,
-                    help='linear mix between only pointer (1) and only vocab (0) distribution')
-# parser.add_argument('--weight_dropout', type=float, default=0.5,
-#                     help='weight dropout applied to h2h weight matrix (0 = no weight dropout)')
-# parser.add_argument('--use_customerized_pretrained_model', action='store_true',
-#                     help='whether to apply cache model to user pretrained model')
+                    help='linear mix between only cache (1) and only vocab (0) distribution')
+parser.add_argument('--user_model', action='store_true',
+                    help='whether to apply cache model to user pretrained model')
 args = parser.parse_args()
 
 ###############################################################################
-# Load data
+# Load pre-trained language model and vocabulary
 ###############################################################################
 
 context = [mx.cpu()] if args.gpus is None or args.gpus == '' else \
@@ -76,18 +72,36 @@ context = [mx.cpu()] if args.gpus is None or args.gpus == '' else \
 
 print(args)
 
+if not args.user_model:
+    model, vocab = nlp.model.get_model(name=args.save,
+                                      dataset_name='wikitext-2',
+                                      pretrained=True,
+                                      ctx=context)
+else:
+    predefined_args = {'embed_size': 400,
+                       'hidden_size': 1150,
+                       'mode': 'lstm',
+                       'num_layers': 3,
+                       'tie_weights': True,
+                       'dropout': 0.4,
+                       'weight_drop': 0.5,
+                       'drop_h': 0.2,
+                       'drop_i': 0.65,
+                       'drop_e': 0.1}
+    model, vocab = nlp.model.user_pretrained_lm(predefined_args=predefined_args,
+                                           model_name=args.save,
+                                           dataset_name='wikitext-2',
+                                           pretrained=True,
+                                           ctx=context)
+
+###############################################################################
+# Load data
+###############################################################################
+
 val_dataset, test_dataset = \
     [nlp.data.WikiText2(segment=segment,
                         skip_empty=False, bos=None, eos='<eos>')
      for segment in ['val', 'test']]
-
-###############################################################################
-# Build the model
-###############################################################################
-model, vocab = nlp.model.get_model(name=args.save,
-                                      dataset_name='wikitext-2',
-                                      pretrained=True,
-                                      ctx=context)
 
 val_batch_size = 1
 val_data = val_dataset.batchify(vocab, val_batch_size)
@@ -95,6 +109,16 @@ test_batch_size = 1
 test_data = test_dataset.batchify(vocab, test_batch_size)
 
 ntokens = len(vocab)
+
+###############################################################################
+# Build the cache model
+###############################################################################
+
+cache_cell = nlp.model.CacheCell(model, ntokens, args.window, args.theta, args.lambdas)
+
+###############################################################################
+# Training
+###############################################################################
 
 def get_batch(data_source, i, seq_len=None):
     seq_len = min(seq_len if seq_len else args.bptt, len(data_source) - 1 - i)
@@ -107,7 +131,6 @@ def evaluate(data_source, batch_size, ctx=None):
     hidden = model.begin_state(func=mx.nd.zeros, batch_size=batch_size, ctx=context[0])
     next_word_history = None
     cache_history = None
-    cache_cell = nlp.model.CacheCell(model, ntokens, args.window, args.theta, args.lambdas)
     for i in range(0, len(data_source) - 1, args.bptt):
         if i > 0: print('Batch %d/%d, loss %f'%(i, len(data_source), math.exp(total_L/i)))
         data, target = get_batch(data_source, i)
@@ -124,7 +147,6 @@ def evaluate(data_source, batch_size, ctx=None):
 
 if __name__ == '__main__':
     start_pipeline_time = time.time()
-    # model.load_params(args.save, context)
     final_val_L = evaluate(val_data, val_batch_size, context[0])
     final_test_L = evaluate(test_data, test_batch_size, context[0])
     print('Best validation loss %.2f, val ppl %.2f'%(final_val_L, math.exp(final_val_L)))
