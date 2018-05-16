@@ -267,7 +267,7 @@ def forward(model, inputs, begin_state=None):
     out_states = []
     encoded_raw = []
     encoded_dropped = []
-    if model._weight_drop > 0:
+    if 'awd' in model.prefix:
         for i, (e, s) in enumerate(zip(model.encoder, begin_state)):
             encoded, state = e(encoded, s)
             encoded_raw.append(encoded)
@@ -280,13 +280,13 @@ def forward(model, inputs, begin_state=None):
         encoded_raw.append(encoded)
     if model._dropout:
         encoded = nd.Dropout(encoded, p=model._dropout, axes=(0,))
-    if model._weight_drop > 0:
+    if 'awd' in model.prefix:
         encoded_dropped.append(encoded)
         with autograd.predict_mode():
             out = model.decoder(encoded)
     else:
         out = model.decoder(encoded)
-    if model._weight_drop > 0:
+    if 'awd' in model.prefix:
         return out, out_states, encoded_raw, encoded_dropped
     else:
         return out, state, encoded_raw, encoded_dropped
