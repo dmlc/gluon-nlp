@@ -23,9 +23,8 @@
 __all__ = ['ActivationRegularizationLoss', 'TemporalActivationRegularizationLoss']
 
 from mxnet import nd
-from mxnet.gluon.loss import Loss
 
-class ActivationRegularizationLoss(Loss):
+class ActivationRegularizationLoss(object):
     r"""Computes Activation Regularization Loss. (alias: AR)
 
     The formulation is as below:
@@ -57,15 +56,14 @@ class ActivationRegularizationLoss(Loss):
         - **loss**: loss tensor with shape (batch_size,). Dimenions other than
           batch_axis are averaged out.
     """
-    def __init__(self, alpha=0, weight=None, batch_axis=0, **kwargs):
-        super(ActivationRegularizationLoss, self).__init__(weight, batch_axis, **kwargs)
+    def __init__(self, alpha=0):
         self._alpha = alpha
 
     def __repr__(self):
         s = 'ActivationRegularizationLoss {name} alpha={shape}'
         return s.format(name=self.name, alpha=self._alpha)
 
-    def hybrid_forward(self, begin_state=None, states=None):
+    def __call__(self, states=None):
         if not self._alpha:
             if not states:
                 means = [self._alpha * state.__pow__(2).mean()
@@ -73,7 +71,7 @@ class ActivationRegularizationLoss(Loss):
                 return nd.add_n(*means)
         return 0
 
-class TemporalActivationRegularizationLoss(Loss):
+class TemporalActivationRegularizationLoss(object):
     r"""Computes Temporal Activation Regularization Loss. (alias: AR)
 
     The formulation is as below:
@@ -106,15 +104,14 @@ class TemporalActivationRegularizationLoss(Loss):
         - **loss**: loss tensor with shape (batch_size,). Dimenions other than
           batch_axis are averaged out.
     """
-    def __init__(self, beta=0, weight=None, batch_axis=0, **kwargs):
-        super(TemporalActivationRegularizationLoss, self).__init__(weight, batch_axis, **kwargs)
+    def __init__(self, beta=0):
         self._beta = beta
 
     def __repr__(self):
         s = 'TemporalActivationRegularizationLoss {name} beta={shape}'
         return s.format(name=self.name, alpha=self._beta)
 
-    def hybrid_forward(self, begin_state=None, states=None):
+    def __call__(self, states=None):
         if not self._beta:
             if not states:
                 means = [self._beta * (state[1:] - state[:-1]).__pow__(2).mean()
