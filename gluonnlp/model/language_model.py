@@ -330,7 +330,7 @@ def awd_lstm_lm_1150(dataset_name=None, vocab=None, pretrained=False, ctx=cpu(),
         the training set of the dataset.
         If None, then vocab is required, for specifying embedding weight size, and is directly
         returned.
-        The pre-trained model is not provided yet.
+        The pre-trained model achieves 73.32/69.74 ppl on Val and Test of wikitext-2 respectively.
     vocab : gluonnlp.Vocab or None, default None
         Vocab object to be used with the language model.
         Required when dataset_name is not specified.
@@ -377,7 +377,7 @@ def awd_lstm_lm_600(dataset_name=None, vocab=None, pretrained=False, ctx=cpu(),
         the training set of the dataset.
         If None, then vocab is required, for specifying embedding weight size, and is directly
         returned.
-        The pre-trained model is not provided yet.
+        The pre-trained model achieves 84.61/80.96 ppl on Val and Test of wikitext-2 respectively.
     vocab : gluonnlp.Vocab or None, default None
         Vocab object to be used with the language model.
         Required when dataset_name is not specified.
@@ -423,7 +423,7 @@ def standard_lstm_lm_200(dataset_name=None, vocab=None, pretrained=False, ctx=cp
         the training set of the dataset.
         If None, then vocab is required, for specifying embedding weight size, and is directly
         returned.
-        The pre-trained model achieves 102.91 ppl on wikitext-2.
+        The pre-trained model achieves 108.25/102.26 ppl on Val and Test of wikitext-2 respectively.
     vocab : gluonnlp.Vocab or None, default None
         Vocabulary object to be used with the language model.
         Required when dataset_name is not specified.
@@ -466,7 +466,7 @@ def standard_lstm_lm_650(dataset_name=None, vocab=None, pretrained=False, ctx=cp
         the training set of the dataset.
         If None, then vocab is required, for specifying embedding weight size, and is directly
         returned.
-        The pre-trained model achieves 89.01 ppl on wikitext-2
+        The pre-trained model achieves 98.96/93.90 ppl on Val and Test of wikitext-2 respectively.
     vocab : gluonnlp.Vocab or None, default None
         Vocabulary object to be used with the language model.
         Required when dataset_name is not specified.
@@ -509,7 +509,7 @@ def standard_lstm_lm_1500(dataset_name=None, vocab=None, pretrained=False, ctx=c
         the training set of the dataset.
         If None, then vocab is required, for specifying embedding weight size, and is directly
         returned.
-        The pre-trained model is not provided yet.
+        The pre-trained model achieves 98.29/92.83 ppl on Val and Test of wikitext-2 respectively.
     vocab : gluonnlp.Vocab or None, default None
         Vocabulary object to be used with the language model.
         Required when dataset_name is not specified.
@@ -539,12 +539,37 @@ def standard_lstm_lm_1500(dataset_name=None, vocab=None, pretrained=False, ctx=c
 
 def user_pretrained_lm(predefined_args=None, model_name=None, dataset_name=None, vocab=None, pretrained=False, ctx=cpu(),
                      root=os.path.join('~', '.mxnet', 'models'), **kwargs):
-    r"""3-layer LSTM language model with weight-drop, variational dropout, and tied weights.
+    r"""user pretrained language model setting either in StandardRNN or AWDRNN.
 
-    Embedding size is 400, and hidden layer size is 1150.
+    Embedding size and hidden layer size are specified by the user.
 
     Parameters
     ----------
+    predefined_args: dict, default None
+        The predefined arguments that user specified.
+        Example of StandardRNN
+        ------------------------
+        predefined_args = {'embed_size': 200,
+                   'hidden_size': 200,
+                   'mode': 'lstm',
+                   'num_layers': 2,
+                   'tie_weights': True,
+                   'dropout': 0.2}
+
+        Example of AWDRNN
+        ------------------------
+        predefined_args = {'embed_size': 200,
+                       'hidden_size': 600,
+                       'mode': 'lstm',
+                       'num_layers': 3,
+                       'tie_weights': True,
+                       'dropout': 0.2,
+                       'weight_drop': 0.2,
+                       'drop_h': 0.1,
+                       'drop_i': 0.3,
+                       'drop_e': 0.05}
+    model_name: str, default None
+        The pretrained model parameters' file name. e.g., 'awd_lstm_lm_1150'.
     dataset_name : str or None, default None
         The dataset name on which the pretrained model is trained.
         Options are 'wikitext-2'. If specified, then the returned vocabulary is extracted from

@@ -60,7 +60,7 @@ parser.add_argument('--theta', type=float, default=0.662,
 parser.add_argument('--lambdas', type=float, default=0.1279,
                     help='linear mix between only cache (1) and only vocab (0) distribution')
 parser.add_argument('--user_model', action='store_true',
-                    help='whether to apply cache model to user pretrained model')
+                    help='whether to apply cache model to user pre-trained model')
 args = parser.parse_args()
 
 ###############################################################################
@@ -121,18 +121,52 @@ cache_cell = nlp.model.CacheCell(model, ntokens, args.window, args.theta, args.l
 ###############################################################################
 
 def get_batch(data_source, i, seq_len=None):
+    """Get mini-batches of the dataset.
+
+    Parameters
+    ----------
+    data_source : NDArray
+        The dataset is evaluated on.
+    i : int
+        The index of the batch, starting from 0.
+    seq_len : int
+        The length of each sample in the batch.
+
+    Returns
+    -------
+    data: NDArray
+        The context
+    target: NDArray
+        The words to predict
+    """
     seq_len = min(seq_len if seq_len else args.bptt, len(data_source) - 1 - i)
     data = data_source[i:i+seq_len]
     target = data_source[i+1:i+1+seq_len]
     return data, target
 
 def evaluate(data_source, batch_size, ctx=None):
+    """Evaluate the model on the dataset with cache model.
+
+    Parameters
+    ----------
+    data_source : NDArray
+        The dataset is evaluated on.
+    batch_size : int
+        The size of the mini-batch.
+    ctx : mx.cpu() or mx.gpu()
+        The context of the computation.
+
+    Returns
+    -------
+    loss: float
+        The loss on the dataset
+    """
     total_L = 0
     hidden = model.begin_state(func=mx.nd.zeros, batch_size=batch_size, ctx=context[0])
     next_word_history = None
     cache_history = None
     for i in range(0, len(data_source) - 1, args.bptt):
-        if i > 0: print('Batch %d/%d, loss %f'%(i, len(data_source), math.exp(total_L/i)))
+        if i > 0: print('Batch %d/%d, ppl %f'%(i, len(data_source), math.exp(total_L/i)))
         data, target = get_batch(data_source, i)
         data = data.as_in_context(ctx)
         target = target.as_in_context(ctx)

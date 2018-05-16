@@ -151,7 +151,6 @@ print(args)
 # Build the model
 ###############################################################################
 
-
 ntokens = len(vocab)
 
 if args.weight_dropout > 0:
@@ -178,24 +177,38 @@ elif args.optimizer == 'adam':
                       'epsilon': 1e-9}
 
 trainer = gluon.Trainer(model.collect_params(), args.optimizer, trainer_params)
+
 loss = gluon.loss.SoftmaxCrossEntropyLoss()
+ar_loss = nlp.criterion.ActivationRegularizationLoss(args.alpha)
+tar_loss = nlp.criterion.TemporalActivationRegularizationLoss(args.beta)
 
 ###############################################################################
 # Training code
 ###############################################################################
 
 def get_batch(data_source, i, seq_len=None):
+    """Get mini-batches of the dataset.
+
+    Parameters
+    ----------
+    data_source : NDArray
+        The dataset is evaluated on.
+    i : int
+        The index of the batch, starting from 0.
+    seq_len : int
+        The length of each sample in the batch.
+
+    Returns
+    -------
+    data: NDArray
+        The context
+    target: NDArray
+        The words to predict
+    """
     seq_len = min(seq_len if seq_len else args.bptt, len(data_source) - 1 - i)
     data = data_source[i:i+seq_len]
     target = data_source[i+1:i+1+seq_len]
     return data, target
-
-def detach(hidden):
-    if isinstance(hidden, (tuple, list)):
-        hidden = [detach(h) for h in hidden]
-    else:
-        hidden = hidden.detach()
-    return hidden
 
 def evaluate(data_source, batch_size, ctx=None):
     """Evaluate the model on the dataset.
@@ -222,96 +235,38 @@ def evaluate(data_source, batch_size, ctx=None):
         data = data.as_in_context(ctx)
         target = target.as_in_context(ctx)
         output, hidden = model(data, hidden)
-        hidden = detach(hidden)
+        hidden = nlp.model.detach(hidden)
         L = loss(output.reshape(-3, -1),
                  target.reshape(-1,))
         total_L += mx.nd.sum(L).asscalar()
         ntotal += L.size
     return total_L / ntotal
 
-
-def forward(inputs, begin_state=None):
-    """Implement forward computation using awd language model.
-
-    Parameters
-    ----------
-    inputs : NDArray
-        The training dataset.
-    begin_state : list
-        The initial hidden states.
-
-    Returns
-    -------
-    out: NDArray
-        The output of the model.
-    out_states: list
-        The list of output states of the model's encoder.
-    encoded_raw: list
-        The list of outputs of the model's encoder.
-    encoded_dropped: list
-        The list of outputs with dropout of the model's encoder.
-    """
-    encoded = model.embedding(inputs)
-    if not begin_state:
-        begin_state = model.begin_state(batch_size=inputs.shape[1])
-    out_states = []
-    encoded_raw = []
-    encoded_dropped = []
-    if args.weight_dropout > 0:
-        for i, (e, s) in enumerate(zip(model.encoder, begin_state)):
-            encoded, state = e(encoded, s)
-            encoded_raw.append(encoded)
-            out_states.append(state)
-            if model._drop_h and i != len(model.encoder)-1:
-                encoded = mx.nd.Dropout(encoded, p=model._drop_h, axes=(0,))
-                encoded_dropped.append(encoded)
-    else:
-        encoded, state = model.encoder(encoded, begin_state)
-        encoded_raw.append(encoded)
-    if model._dropout:
-        encoded = mx.nd.Dropout(encoded, p=model._dropout, axes=(0,))
-    if args.weight_dropout > 0:
-        encoded_dropped.append(encoded)
-        with autograd.predict_mode():
-            out = model.decoder(encoded)
-    else:
-        out = model.decoder(encoded)
-    if args.weight_dropout > 0:
-        return out, out_states, encoded_raw, encoded_dropped
-    else:
-        return out, state, encoded_raw, encoded_dropped
-
 def criterion(output, target, encoder_hs, dropped_encoder_hs):
     """Compute regularized (optional) loss of the language model in training mode.
 
-        Parameters
-        ----------
-        output: NDArray
-            The output of the model.
-        target: list
-            The list of output states of the model's encoder.
-        encoder_hs: list
-            The list of outputs of the model's encoder.
-        dropped_encoder_hs: list
-            The list of outputs with dropout of the model's encoder.
+    Parameters
+    ----------
+    output: NDArray
+        The output of the model.
+    target: list
+        The list of output states of the model's encoder.
+    encoder_hs: list
+        The list of outputs of the model's encoder.
+    dropped_encoder_hs: list
+        The list of outputs with dropout of the model's encoder.
 
-        Returns
-        -------
-        l: NDArray
-            The loss per word/token.
-            If both args.alpha and args.beta are zeros, the loss is the standard cross entropy.
-            If args.alpha is not zero, the standard loss is regularized with activation.
-            If args.beta is not zero, the standard loss is regularized with temporal activation.
+    Returns
+    -------
+    l: NDArray
+        The loss per word/token.
+        If both args.alpha and args.beta are zeros, the loss is the standard cross entropy.
+        If args.alpha is not zero, the standard loss is regularized with activation.
+        If args.beta is not zero, the standard loss is regularized with temporal activation.
     """
     l = loss(output.reshape(-3, -1), target.reshape(-1,))
-    if args.alpha:
-        dropped_means = [args.alpha*dropped_encoder_h.__pow__(2).mean()
-                         for dropped_encoder_h in dropped_encoder_hs[-1:]]
-        l = l + mx.nd.add_n(*dropped_means)
-    if args.beta:
-        means = [args.beta*(encoder_h[1:] - encoder_h[:-1]).__pow__(2).mean()
-                 for encoder_h in encoder_hs[-1:]]
-        l = l + mx.nd.add_n(*means)
+    l = l + ar_loss(dropped_encoder_hs)
+    l = l + tar_loss(dropped_encoder_hs)
     return l
 
 def train():
@@ -337,12 +292,12 @@ def train():
             data, target = get_batch(train_data, i, seq_len=seq_len)
             data_list = gluon.utils.split_and_load(data, context, batch_axis=1, even_split=True)
             target_list = gluon.utils.split_and_load(target, context, batch_axis=1, even_split=True)
-            hiddens = detach(hiddens)
+            hiddens = nlp.model.detach(hiddens)
             Ls = []
             L = 0
             with autograd.record():
                 for j, (X, y, h) in enumerate(zip(data_list, target_list, hiddens)):
-                    output, h, encoder_hs, dropped_encoder_hs = forward(X, h)
+                    output, h, encoder_hs, dropped_encoder_hs = nlp.model.forward(X, h)
                     l = criterion(output, y, encoder_hs, dropped_encoder_hs)
                     L = L + l.as_in_context(context[0]) / X.size
                     Ls.append(l/X.size)

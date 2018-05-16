@@ -18,17 +18,8 @@
 # under the License.
 
 # pylint: disable=wildcard-import
-"""NLP toolkit."""
+"""Language model criterion."""
 
-from . import criterion
-from . import data
-from . import embedding
-from . import model
-from .vocab import *
+from .language_model import *
 
-__version__ = '0.2.1'
-
-__all__ = ['data',
-           'model',
-           'embedding',
-           'Vocab']
+__all__ = language_model.__all__
