@@ -61,6 +61,8 @@ from .parameter import *
 
 from .block import *
 
+from .cache import *
+
 __all__ = language_model.__all__ + beam_search.__all__ + attention_cell.__all__ + \
     utils.__all__ + parameter.__all__ + block.__all__
 
