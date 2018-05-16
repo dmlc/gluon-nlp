@@ -23,10 +23,8 @@
 __all__ = ['ActivationRegularizationLoss', 'TemporalActivationRegularizationLoss']
 
 from mxnet import nd
-from mxnet.gluon.loss import Loss
 
-
-class ActivationRegularizationLoss(Loss):
+class ActivationRegularizationLoss(object):
     r"""Computes Activation Regularization Loss. (alias: AR)
 
     The formulation is as below:
@@ -70,7 +68,7 @@ class ActivationRegularizationLoss(Loss):
                 return nd.add_n(*means)
         return 0
 
-class TemporalActivationRegularizationLoss(Loss):
+class TemporalActivationRegularizationLoss(object):
     r"""Computes Temporal Activation Regularization Loss. (alias: AR)
 
     The formulation is as below:
