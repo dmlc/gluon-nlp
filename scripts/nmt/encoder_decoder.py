@@ -160,7 +160,7 @@ class Seq2SeqEncoder(Block):
         outputs : list
             Outputs of the encoder.
         """
-        return self.forward(inputs, valid_length, states)
+        return super(Seq2SeqEncoder, self).__call__(inputs, valid_length, states)
 
     def forward(self, inputs, valid_length=None, states=None):  #pylint: disable=arguments-differ
         raise NotImplementedError
@@ -227,7 +227,7 @@ class Seq2SeqDecoder(Block):
         step_additional_outputs : list
             Additional outputs of the step, e.g, the attention weights
         """
-        return self.forward(step_input, states)
+        return super(Seq2SeqDecoder, self).__call__(step_input, states)
 
     def forward(self, step_input, states):  #pylint: disable=arguments-differ
         raise NotImplementedError
@@ -337,7 +337,7 @@ class GNMTEncoder(Seq2SeqEncoder):
             - outputs of the last RNN layer
             - new_states of all the RNN layers
         """
-        return self.forward(inputs, states, valid_length)
+        return super(GNMTEncoder, self).__call__(inputs, states, valid_length)
 
     def forward(self, inputs, states=None, valid_length=None):  #pylint: disable=arguments-differ
         # TODO(sxjscience) Accelerate the forward using HybridBlock
@@ -508,7 +508,7 @@ class GNMTDecoder(HybridBlock, Seq2SeqDecoder):
             The attention weights will have shape (batch_size, 1, mem_length) or
             (batch_size, num_heads, 1, mem_length)
         """
-        return self.forward(step_input, states)
+        return super(GNMTDecoder, self).__call__(step_input, states)
 
     def forward(self, step_input, states):  #pylint: disable=arguments-differ
         step_output, new_states, step_additional_outputs =\

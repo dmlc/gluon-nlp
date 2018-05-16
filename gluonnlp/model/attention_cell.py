@@ -132,7 +132,7 @@ class AttentionCell(HybridBlock):
         att_weights : Symbol or NDArray
             Attention weights. Shape (batch_size, query_length, memory_length)
         """
-        return self.forward(query, key, value, mask)
+        return super(AttentionCell, self).__call__(query, key, value, mask)
 
     def forward(self, query, key, value=None, mask=None):  # pylint: disable=arguments-differ
         if value is None:
@@ -242,7 +242,7 @@ class MultiHeadAttentionCell(AttentionCell):
             Attention weights of multiple heads.
             Shape (batch_size, num_heads, query_length, memory_length)
         """
-        return self.forward(query, key, value, mask)
+        return super(MultiHeadAttentionCell, self).__call__(query, key, value, mask)
 
     def _compute_weight(self, F, query, key, mask=None):
         query = self.proj_query(query)  # Shape (batch_size, query_length, query_units)
@@ -366,40 +366,6 @@ class MLPAttentionCell(AttentionCell):
         return att_weights
 
 
-# TODO(sxjscience) Move _DivSqrtDim to contrib
-# pylint: disable=unused-argument
-class _DivSqrtDim(mx.operator.CustomOp):
-    def forward(self, is_train, req, in_data, out_data, aux):
-        self.assign(out_data[0], req[0], in_data[0] / math.sqrt(float(in_data[0].shape[-1])))
-
-    def backward(self, req, out_grad, in_data, out_data, in_grad, aux):
-        self.assign(in_grad[0], req[0], out_grad[0] / math.sqrt(float(out_grad[0].shape[-1])))
-
-
-@mx.operator.register('_div_sqrt_dim')
-class _DivSqrtDimProp(mx.operator.CustomOpProp):
-    def __init__(self):
-        super(_DivSqrtDimProp, self).__init__(True)
-
-    def list_arguments(self):
-        return ['data']
-
-    def list_outputs(self):
-        return ['output']
-
-    def infer_shape(self, in_shape):
-        data_shape = in_shape[0]
-        output_shape = data_shape
-        return (data_shape,), (output_shape,), ()
-
-    def declare_backward_dependency(self, out_grad, in_data, out_data):
-        return out_grad
-
-    def create_operator(self, ctx, in_shapes, in_dtypes):
-        #  create and return the CustomOp class.
-        return _DivSqrtDim()
-# pylint: enable=unused-argument
-
 class DotProductAttentionCell(AttentionCell):
     r"""Dot product attention between the query and the key.
 
@@ -494,7 +460,7 @@ class DotProductAttentionCell(AttentionCell):
             query = self._l2_norm(query)
             key = self._l2_norm(key)
         if self._scaled:
-            query = F.Custom(query, op_type='_div_sqrt_dim')
+            query = F.contrib.div_sqrt_dim(query)
         att_score = F.batch_dot(query, key, transpose_b=True)
         att_weights = self._dropout_layer(_masked_softmax(F, att_score, mask))
         return att_weights
