@@ -60,7 +60,7 @@ class ActivationRegularizationLoss(object):
         self._alpha = alpha
 
     def __repr__(self):
-        s = 'ActivationRegularizationLoss {name} alpha={shape}'
+        s = 'ActivationRegularizationLoss {name} alpha={_alpha}'
         return s.format(name=self.name, alpha=self._alpha)
 
     def __call__(self, states=None):
@@ -108,7 +108,7 @@ class TemporalActivationRegularizationLoss(object):
         self._beta = beta
 
     def __repr__(self):
-        s = 'TemporalActivationRegularizationLoss {name} beta={shape}'
+        s = 'TemporalActivationRegularizationLoss {name} beta={_beta}'
         return s.format(name=self.name, alpha=self._beta)
 
     def __call__(self, states=None):

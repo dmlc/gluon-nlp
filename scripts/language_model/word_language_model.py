@@ -265,8 +265,8 @@ def criterion(output, target, encoder_hs, dropped_encoder_hs):
         If args.beta is not zero, the standard loss is regularized with temporal activation.
     """
     l = loss(output.reshape(-3, -1), target.reshape(-1,))
-    l = l + ar_loss(begin_state=output.reshape(-3, -1), states=dropped_encoder_hs)
-    l = l + tar_loss(begin_state=output.reshape(-3, -1), states=encoder_hs)
+    l = l + ar_loss(dropped_encoder_hs)
+    l = l + tar_loss(encoder_hs)
     return l
 
 def train():
