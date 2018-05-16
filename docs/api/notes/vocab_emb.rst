@@ -36,11 +36,11 @@ We need a Vocab instance with ``counter`` as its argument.
 
 To attach word embeddings to indexed words in ``my_vocab``, let us go on
 to create a fastText word embedding instance by specifying the embedding
-name ``fasttext`` and the pre-trained file name ``wiki.simple.vec``.
+name ``fasttext`` and the pre-trained file name ``wiki.simple``.
 
 .. code:: python
 
-    >>> fasttext = nlp.embedding.create('fasttext', source='wiki.simple.vec')
+    >>> fasttext = nlp.embedding.create('fasttext', source='wiki.simple')
 
 This automatically downloads the corresponding embedding file from public repo,
 and the file is by default stored in ~/.mxnet/embedding/.
