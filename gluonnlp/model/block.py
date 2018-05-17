@@ -21,7 +21,7 @@
 __all__ = ['RNNCellLayer', 'L2Normalization']
 
 from mxnet import ndarray
-from mxnet.gluon import Block, HybridBlock
+from mxnet.gluon import Block, HybridBlock, nn
 
 
 class RNNCellLayer(Block):
@@ -89,3 +89,61 @@ class L2Normalization(HybridBlock):
     def hybrid_forward(self, F, x):  # pylint: disable=arguments-differ
         ret = F.broadcast_div(x, F.norm(x, axis=self._axis, keepdims=True) + self._eps)
         return ret
+
+
+class CharacterLevelCNNEmbedding(HybridBlock):
+    """
+    A block that takes text and embed it using convolution neural network
+    """
+    def __init__(self, channels, kernel_sizes, padding, vocab_size, keep_prob=0.2, prefix=None, \
+                                                                                  params=None):
+        super(CharacterLevelCNNEmbedding, self).__init__()
+
+        self.vocab_size = vocab_size
+        self.net = nn.HybridSequential(prefix=prefix, params=params)
+
+        with self.net.name_scope():
+            for channel, kernel in zip(channels, kernel_sizes):
+                self.net.add(nn.Dropout(rate=keep_prob))
+
+                self.net.add(nn.Conv1D(
+                    channels=channel,
+                    kernel_size=kernel,
+                    padding=padding))
+
+    def hybrid_forward(self, F, x):  # pylint: disable=arguments-differ
+        x_encoded = F.transpose(F.one_hot(x, self.vocab_size), axes=(0, 2, 1))
+        network_output = self.net.hybrid_forward(F, x_encoded)
+        relu_output = F.relu(network_output)
+        return F.max(relu_output, axis=2)
+
+
+class PredefinedEmbedding(HybridBlock):
+    """
+    A block that takes text and embeds it using Glove embedding.
+    """
+    def __init__(self, embedding, prefix=None, params=None):
+        super(PredefinedEmbedding, self).__init__(prefix=prefix, params=params)
+        input_dim, output_dim = embedding.idx_to_vec.shape
+        self.embedding_data = embedding.idx_to_vec
+        self.embedding = nn.Embedding(input_dim, output_dim)
+
+    def hybrid_forward(self, F, x):  # pylint: disable=arguments-differ
+        return F.transpose(self.embedding.hybrid_forward(F, x, weight=self.embedding_data))
+
+
+class BiDAFEmbedding(HybridBlock):
+    """
+    An embedding for BiFAD model
+    """
+    def __init__(self, channels, kernel_sizes, padding, char_embedding_source, prefix=None,
+                 params=None):
+        super(BiDAFEmbedding, self).__init__(prefix=prefix, params=params)
+        self.cnn_embedding = CharacterLevelCNNEmbedding(channels, kernel_sizes, padding)
+        self.word_embedding = PredefinedEmbedding(char_embedding_source)
+
+    def hybrid_forward(self, F, x):
+        char_level_embedding = self.cnn_embedding.hybrid_forward(F, x)
+        word_level_embedding = self.word_embedding.hybrid_forward(F, x)
+
+        return F.concat(word_level_embedding, char_level_embedding)
