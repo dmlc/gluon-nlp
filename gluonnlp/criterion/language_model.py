@@ -33,7 +33,8 @@ class ActivationRegularizationLoss(object):
 
         L = \alpha L_2(h_t)
 
-    where $L_2(\dot) = {||\dot||}_2$, $h_t$ is the output of the RNN at timestep t. $\alpha$ is scaling coefficient.
+    where $L_2(\dot) = {||\dot||}_2$, $h_t$ is the output of the RNN at timestep t.
+    $\alpha$ is scaling coefficient.
 
     The implementation follows the work:
 
@@ -50,7 +51,8 @@ class ActivationRegularizationLoss(object):
         The scaling coefficient of the regularization.
 
     Inputs:
-        - **states**: the stack outputs from RNN, which consists of output from each time step (TNC).
+        - **states**: the stack outputs from RNN,
+        which consists of output from each time step (TNC).
 
     Outputs:
         - **loss**: loss tensor with shape (batch_size,). Dimenions other than
@@ -67,12 +69,12 @@ class ActivationRegularizationLoss(object):
         if not self._alpha:
             if not states:
                 means = [self._alpha * state.__pow__(2).mean()
-                                 for state in states[-1:]]
+                         for state in states[-1:]]
                 return nd.add_n(*means)
         return 0
 
 class TemporalActivationRegularizationLoss(object):
-    r"""Computes Temporal Activation Regularization Loss. (alias: AR)
+    r"""Computes Temporal Activation Regularization Loss. (alias: TAR)
 
     The formulation is as below:
 
@@ -98,7 +100,8 @@ class TemporalActivationRegularizationLoss(object):
         The scaling coefficient of the regularization.
 
     Inputs:
-        - **states**: the stack outputs from RNN, which consists of output from each time step (TNC).
+        - **states**: the stack outputs from RNN,
+        which consists of output from each time step (TNC).
 
     Outputs:
         - **loss**: loss tensor with shape (batch_size,). Dimenions other than

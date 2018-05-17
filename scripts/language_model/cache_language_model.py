@@ -1,8 +1,8 @@
 """
 Neural Cache Language Model
 ===================
-This example shows how to build a neural cache language model based on pretrained word-level language model
-on WikiText-2 with Gluon NLP Toolkit.
+This example shows how to build a neural cache language model based on
+pre-trained word-level language model on WikiText-2 with Gluon NLP Toolkit.
 
 We implement the neural cache language model proposed in the following work.
 @article{grave2016improving,
@@ -56,7 +56,8 @@ parser.add_argument('--gpus', type=str,
 parser.add_argument('--window', type=int, default=2000,
                     help='cache window length')
 parser.add_argument('--theta', type=float, default=0.662,
-                    help='mix between uniform distribution and cache softmax distribution over previous words')
+                    help='mix between uniform distribution and '
+                         'cache softmax distribution over previous words')
 parser.add_argument('--lambdas', type=float, default=0.1279,
                     help='linear mix between only cache (1) and only vocab (0) distribution')
 parser.add_argument('--user_model', action='store_true',
@@ -74,9 +75,9 @@ print(args)
 
 if not args.user_model:
     model, vocab = nlp.model.get_model(name=args.save,
-                                      dataset_name='wikitext-2',
-                                      pretrained=True,
-                                      ctx=context)
+                                       dataset_name='wikitext-2',
+                                       pretrained=True,
+                                       ctx=context)
 else:
     predefined_args = {'embed_size': 400,
                        'hidden_size': 1150,
@@ -89,10 +90,10 @@ else:
                        'drop_i': 0.65,
                        'drop_e': 0.1}
     model, vocab = nlp.model.user_pretrained_lm(predefined_args=predefined_args,
-                                           model_name=args.save,
-                                           dataset_name='wikitext-2',
-                                           pretrained=True,
-                                           ctx=context)
+                                                model_name=args.save,
+                                                dataset_name='wikitext-2',
+                                                pretrained=True,
+                                                ctx=context)
 
 ###############################################################################
 # Load data
@@ -166,12 +167,15 @@ def evaluate(data_source, batch_size, ctx=None):
     next_word_history = None
     cache_history = None
     for i in range(0, len(data_source) - 1, args.bptt):
-        if i > 0: print('Batch %d/%d, ppl %f'%(i, len(data_source), math.exp(total_L/i)))
+        if i > 0:
+            print('Batch %d/%d, ppl %f'%
+                  (i, len(data_source), math.exp(total_L/i)))
         data, target = get_batch(data_source, i)
         data = data.as_in_context(ctx)
         target = target.as_in_context(ctx)
         L = 0
-        outs, next_word_history, cache_history = cache_cell(data, target, next_word_history, cache_history, hidden)
+        outs, next_word_history, cache_history, hidden = \
+            cache_cell(data, target, next_word_history, cache_history, hidden)
         for out in outs:
             L += (-mx.nd.log(out)).asscalar()
         total_L += L / data.shape[1]

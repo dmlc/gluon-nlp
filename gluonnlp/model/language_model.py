@@ -17,7 +17,8 @@
 # specific language governing permissions and limitations
 # under the License.
 """Language models."""
-__all__ = ['AWDRNN', 'StandardRNN', 'forward', 'detach', 'user_pretrained_lm', 'awd_lstm_lm_1150', 'awd_lstm_lm_600',
+__all__ = ['AWDRNN', 'StandardRNN', 'forward', 'detach',
+           'user_pretrained_lm', 'awd_lstm_lm_1150', 'awd_lstm_lm_600',
            'standard_lstm_lm_200', 'standard_lstm_lm_650', 'standard_lstm_lm_1500']
 
 import os
@@ -66,8 +67,8 @@ class AWDRNN(Block):
         Dropout rate to use on the embedding layer.
     """
     def __init__(self, mode, vocab_size, embed_size=400, hidden_size=1150, num_layers=3,
-                 tie_weights=True, dropout=0.4, weight_drop=0.5, drop_h=0.2, drop_i=0.65, drop_e=0.1,
-                 **kwargs):
+                 tie_weights=True, dropout=0.4, weight_drop=0.5, drop_h=0.2,
+                 drop_i=0.65, drop_e=0.1, **kwargs):
         super(AWDRNN, self).__init__(**kwargs)
         self._mode = mode
         self._vocab_size = vocab_size
@@ -534,11 +535,12 @@ def standard_lstm_lm_1500(dataset_name=None, vocab=None, pretrained=False, ctx=c
     assert all((k not in kwargs or k in mutable_args) for k in predefined_args), \
            'Cannot override predefined model settings.'
     predefined_args.update(kwargs)
-    return _get_rnn_model(StandardRNN, 'standard_lstm_lm_1500', dataset_name, vocab, pretrained,
-                          ctx, root, **predefined_args)
+    return _get_rnn_model(StandardRNN, 'standard_lstm_lm_1500',
+                          dataset_name, vocab, pretrained, ctx, root, **predefined_args)
 
-def user_pretrained_lm(predefined_args=None, model_name=None, dataset_name=None, vocab=None, pretrained=False, ctx=cpu(),
-                     root=os.path.join('~', '.mxnet', 'models'), **kwargs):
+def user_pretrained_lm(predefined_args=None, model_name=None,
+                       dataset_name=None, vocab=None, pretrained=False, ctx=cpu(),
+                       root=os.path.join('~', '.mxnet', 'models')):
     r"""user pretrained language model setting either in StandardRNN or AWDRNN.
 
     Embedding size and hidden layer size are specified by the user.
@@ -593,9 +595,9 @@ def user_pretrained_lm(predefined_args=None, model_name=None, dataset_name=None,
     """
     if predefined_args.keys().__contains__('weight_drop') and predefined_args['weight_drop'] > 0:
         return _get_rnn_model(AWDRNN, model_name, dataset_name, vocab, pretrained,
-                          ctx, root, **predefined_args)
+                              ctx, root, **predefined_args)
     return _get_rnn_model(StandardRNN, model_name, dataset_name, vocab, pretrained,
-                                    ctx, root, **predefined_args)
+                          ctx, root, **predefined_args)
 
 model_store._model_sha1.update(
     {name: checksum for checksum, name in [
