@@ -7,6 +7,8 @@ Scripts
 
 .. include:: language_model/word_language_model.rst
 
+.. include:: language_model/cache_language_model.rst
+
 .. include:: sentiment_analysis/sentiment_analysis.rst
 
 .. include:: nmt/machine_translation.rst

@@ -29,20 +29,36 @@ class CacheCell(Block):
 
     Parameters
     ----------
-    mode : str
-        The type of RNN to use. Options are 'lstm', 'gru', 'rnn_tanh', 'rnn_relu'.
+    pretrained_lm_model : StandardRNN or AWDRNN
+        The type of RNN to use. Options are 'StandardRNN', 'StandardRNN'.
     vocab_size : int
         Size of the input vocabulary.
-    embed_size : int
-        Dimension of embedding vectors.
-    hidden_size : int
-        Number of hidden units for RNN.
-    num_layers : int
-        Number of RNN layers.
-    dropout : float
-        Dropout rate to use for encoder output.
-    tie_weights : bool, default False
-        Whether to tie the weight matrices of output dense layer and input embedding layer.
+    window : int
+        Size of cache window
+    theta : float
+        Mix between uniform distribution and cache softmax distribution over previous words
+    lambdas : float
+        Linear mix between only cache (1) and only vocab (0) distribution
+
+    Inputs
+    ----------
+        - **inputs**: NDArray
+            The input data
+        - **target**: NDArray
+            The label
+        - **next_word_history**: NDArray
+            The next word in memory
+        - **cache_history**: NDArray
+            The hidden state in cache history
+
+    Outputs
+    ----------
+        - **out**: NDArray
+            The linear interpolation of the cache language mdoel with the regular word-level language model
+        - **next_word_history**: NDArray
+            The next words to be kept in the memory for look up (size is equal to the window size)
+        - **cache_history**: NDArray
+            The hidden states to be kept in the memory for look up (size is equal to the window size)
     """
     def __init__(self, pretrained_lm_model, vocab_size, window, theta, lambdas, **kwargs):
         super(CacheCell, self).__init__(**kwargs)

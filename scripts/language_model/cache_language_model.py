@@ -54,7 +54,7 @@ parser.add_argument('--gpus', type=str,
                     help='list of gpus to run, e.g. 0 or 0,2,5. empty means using cpu.'
                          '(using single gpu is suggested)')
 parser.add_argument('--window', type=int, default=2000,
-                    help='pointer window length')
+                    help='cache window length')
 parser.add_argument('--theta', type=float, default=0.662,
                     help='mix between uniform distribution and cache softmax distribution over previous words')
 parser.add_argument('--lambdas', type=float, default=0.1279,
