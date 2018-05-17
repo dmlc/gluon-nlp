@@ -13,4 +13,4 @@ dependencies:
   - spacy
   - nltk
   - pip:
-    - mxnet-cu80==1.2.0b20180411
+    - mxnet-cu80>=1.2.0b20180518
