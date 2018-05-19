@@ -201,7 +201,7 @@ class NMTModel(Block):
         additional_outputs : list
             Additional outputs, e.g, the attention weights
         """
-        return self.forward(src_seq, tgt_seq, src_valid_length, tgt_valid_length)
+        return super(NMTModel, self).__call__(src_seq, tgt_seq, src_valid_length, tgt_valid_length)
 
     def forward(self, src_seq, tgt_seq, src_valid_length=None, tgt_valid_length=None):  #pylint: disable=arguments-differ
         encoder_outputs = self.encode(src_seq, valid_length=src_valid_length)
