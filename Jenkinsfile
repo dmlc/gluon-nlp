@@ -26,7 +26,7 @@ stage("Unit Test") {
         python -m nltk.downloader all
         make clean
         python setup.py install
-        py.test -n auto -v --capture=no --durations=0 --cov=gluonnlp --cov=scripts tests/unittest scripts
+        py.test -v --capture=no --durations=0 --cov=gluonnlp --cov=scripts tests/unittest scripts
         """
       }
     }
@@ -43,7 +43,7 @@ stage("Unit Test") {
         python -m nltk.downloader all
         make clean
         python setup.py install
-        py.test -n auto -v --capture=no --durations=0 --cov=gluonnlp --cov=scripts tests/unittest scripts
+        py.test -v --capture=no --durations=0 --cov=gluonnlp --cov=scripts tests/unittest scripts
         """
       }
     }
