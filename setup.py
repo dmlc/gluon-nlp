@@ -54,7 +54,7 @@ setup(
     extras_require={
         'extras': [
             'spacy',
-            'nltk',
+            'nltk==3.2.5',
             'scipy',
         ],
         'dev': [
