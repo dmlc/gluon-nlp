@@ -18,7 +18,7 @@
 # under the License.
 
 # pylint: disable=wildcard-import
-"""Language model criterion."""
+"""nlp loss."""
 
 from .activation_loss import *
 

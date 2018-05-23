@@ -20,7 +20,7 @@
 # pylint: disable=wildcard-import
 """NLP toolkit."""
 
-from . import criterion
+from . import loss
 from . import data
 from . import embedding
 from . import model

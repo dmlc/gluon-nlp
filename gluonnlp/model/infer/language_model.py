@@ -17,8 +17,7 @@
 # specific language governing permissions and limitations
 # under the License.
 """Language models."""
-__all__ = ['AWDRNN', 'StandardRNN', 'forward', 'detach',
-           'user_pretrained_lm', 'awd_lstm_lm_1150', 'awd_lstm_lm_600',
+__all__ = ['AWDRNN', 'StandardRNN', 'user_pretrained_lm', 'awd_lstm_lm_1150', 'awd_lstm_lm_600',
            'standard_lstm_lm_200', 'standard_lstm_lm_650', 'standard_lstm_lm_1500']
 
 import os
@@ -233,64 +232,6 @@ class StandardRNN(Block):
             encoded = nd.Dropout(encoded, p=self._dropout, axes=(0,))
         out = self.decoder(encoded)
         return out, state
-
-def detach(hidden):
-    if isinstance(hidden, (tuple, list)):
-        hidden = [detach(h) for h in hidden]
-    else:
-        hidden = hidden.detach()
-    return hidden
-
-def forward(model, inputs, begin_state=None):
-    """Implement the forward computation that the awd language model and cache model use.
-
-    Parameters
-    ----------
-    inputs : NDArray
-        The training dataset.
-    begin_state : list
-        The initial hidden states.
-
-    Returns
-    -------
-    out: NDArray
-        The output of the model.
-    out_states: list
-        The list of output states of the model's encoder.
-    encoded_raw: list
-        The list of outputs of the model's encoder.
-    encoded_dropped: list
-        The list of outputs with dropout of the model's encoder.
-    """
-    encoded = model.embedding(inputs)
-    if not begin_state:
-        begin_state = model.begin_state(batch_size=inputs.shape[1])
-    out_states = []
-    encoded_raw = []
-    encoded_dropped = []
-    if 'awd' in model.prefix:
-        for i, (e, s) in enumerate(zip(model.encoder, begin_state)):
-            encoded, state = e(encoded, s)
-            encoded_raw.append(encoded)
-            out_states.append(state)
-            if model._drop_h and i != len(model.encoder) - 1:
-                encoded = nd.Dropout(encoded, p=model._drop_h, axes=(0,))
-                encoded_dropped.append(encoded)
-    else:
-        encoded, state = model.encoder(encoded, begin_state)
-        encoded_raw.append(encoded)
-    if model._dropout:
-        encoded = nd.Dropout(encoded, p=model._dropout, axes=(0,))
-    if 'awd' in model.prefix:
-        encoded_dropped.append(encoded)
-        with autograd.predict_mode():
-            out = model.decoder(encoded)
-    else:
-        out = model.decoder(encoded)
-    if 'awd' in model.prefix:
-        return out, out_states, encoded_raw, encoded_dropped
-    else:
-        return out, state, encoded_raw, encoded_dropped
 
 def _load_vocab(dataset_name, vocab, root):
     if dataset_name:

@@ -18,7 +18,7 @@
 # under the License.
 
 # pylint: disable=wildcard-import
-"""NLP inference model."""
+"""NLP training model."""
 
 from .language_model import *
 

@@ -49,7 +49,9 @@ These models can constructed by passing ``pretrained=True``:
 .. _AWD: https://arxiv.org/abs/1404.5997
 """
 
-from gluonnlp.model.infer.language_model import *
+from .train import *
+
+from .infer import *
 
 from .beam_search import *
 
@@ -63,7 +65,7 @@ from .block import *
 
 from .cache import *
 
-__all__ = language_model.__all__ + beam_search.__all__ + attention_cell.__all__ + \
+__all__ = train.__all__ + infer.__all__ + beam_search.__all__ + attention_cell.__all__ + \
           utils.__all__ + parameter.__all__ + block.__all__
 
 
