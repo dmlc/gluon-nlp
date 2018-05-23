@@ -29,9 +29,9 @@ from mxnet import init, nd, cpu, autograd
 from mxnet.gluon import nn, Block
 from mxnet.gluon.model_zoo import model_store
 
-from .utils import _get_rnn_layer
-from .utils import apply_weight_drop
-from ..data.utils import _load_pretrained_vocab
+from gluonnlp.model.utils import _get_rnn_layer
+from gluonnlp.model.utils import apply_weight_drop
+from gluonnlp.data.utils import _load_pretrained_vocab
 
 
 class AWDRNN(Block):

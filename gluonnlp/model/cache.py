@@ -22,7 +22,7 @@ __all__ = ['CacheCell']
 from mxnet import nd
 from mxnet.gluon import Block
 
-from .language_model import forward
+from gluonnlp.model.infer.language_model import forward
 
 class CacheCell(Block):
     """Cache language model.

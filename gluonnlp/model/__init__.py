@@ -49,7 +49,7 @@ These models can constructed by passing ``pretrained=True``:
 .. _AWD: https://arxiv.org/abs/1404.5997
 """
 
-from .language_model import *
+from gluonnlp.model.infer.language_model import *
 
 from .beam_search import *
 
@@ -64,7 +64,7 @@ from .block import *
 from .cache import *
 
 __all__ = language_model.__all__ + beam_search.__all__ + attention_cell.__all__ + \
-    utils.__all__ + parameter.__all__ + block.__all__
+          utils.__all__ + parameter.__all__ + block.__all__
 
 
 def get_model(name, dataset_name='wikitext-2', **kwargs):

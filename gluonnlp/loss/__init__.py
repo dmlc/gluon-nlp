@@ -20,6 +20,6 @@
 # pylint: disable=wildcard-import
 """Language model criterion."""
 
-from .language_model import *
+from .activation_loss import *
 
-__all__ = language_model.__all__
+__all__ = activation_loss.__all__

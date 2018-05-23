@@ -155,13 +155,13 @@ ntokens = len(vocab)
 
 if args.weight_dropout > 0:
     print('Use AWDRNN')
-    model = nlp.model.language_model.AWDRNN(args.model, len(vocab), args.emsize,
-                                            args.nhid, args.nlayers, args.tied,
-                                            args.dropout, args.weight_dropout, args.dropout_h,
-                                            args.dropout_i, args.dropout_e)
+    model = nlp.model.infer.language_model.AWDRNN(args.model, len(vocab), args.emsize,
+                                                       args.nhid, args.nlayers, args.tied,
+                                                       args.dropout, args.weight_dropout, args.dropout_h,
+                                                       args.dropout_i, args.dropout_e)
 else:
-    model = nlp.model.language_model.StandardRNN(args.model, len(vocab), args.emsize,
-                                                 args.nhid, args.nlayers, args.dropout, args.tied)
+    model = nlp.model.infer.language_model.StandardRNN(args.model, len(vocab), args.emsize,
+                                                            args.nhid, args.nlayers, args.dropout, args.tied)
 
 model.initialize(mx.init.Xavier(), ctx=context)
 
@@ -179,8 +179,8 @@ elif args.optimizer == 'adam':
 trainer = gluon.Trainer(model.collect_params(), args.optimizer, trainer_params)
 
 loss = gluon.loss.SoftmaxCrossEntropyLoss()
-ar_loss = nlp.criterion.ActivationRegularizationLoss(args.alpha)
-tar_loss = nlp.criterion.TemporalActivationRegularizationLoss(args.beta)
+ar_loss = nlp.loss.ActivationRegularizationLoss(args.alpha)
+tar_loss = nlp.loss.TemporalActivationRegularizationLoss(args.beta)
 
 ###############################################################################
 # Training code
@@ -242,7 +242,7 @@ def evaluate(data_source, batch_size, ctx=None):
         ntotal += L.size
     return total_L / ntotal
 
-def criterion(output, target, encoder_hs, dropped_encoder_hs):
+def regularized_loss(output, target, encoder_hs, dropped_encoder_hs):
     """Compute regularized (optional) loss of the language model in training mode.
 
     Parameters
@@ -265,8 +265,8 @@ def criterion(output, target, encoder_hs, dropped_encoder_hs):
         If args.beta is not zero, the standard loss is regularized with temporal activation.
     """
     l = loss(output.reshape(-3, -1), target.reshape(-1,))
-    l = l + ar_loss(dropped_encoder_hs)
-    l = l + tar_loss(encoder_hs)
+    l = l + ar_loss(*dropped_encoder_hs)
+    l = l + tar_loss(*encoder_hs)
     return l
 
 def train():
