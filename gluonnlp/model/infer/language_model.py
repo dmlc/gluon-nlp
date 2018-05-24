@@ -28,12 +28,13 @@ from mxnet import init, nd, cpu, autograd
 from mxnet.gluon import nn, Block
 from mxnet.gluon.model_zoo import model_store
 
+from gluonnlp.model.train import AWDRNN, StandardRNN
 from gluonnlp.model.utils import _get_rnn_layer
 from gluonnlp.model.utils import apply_weight_drop
 from gluonnlp.data.utils import _load_pretrained_vocab
 
 
-class AWDRNN(Block):
+class AWDRNN(AWDRNN):
     """AWD language model by salesforce.
 
     Reference: https://github.com/salesforce/awd-lstm-lm
@@ -64,79 +65,34 @@ class AWDRNN(Block):
         Dropout rate to on the output of embedding.
     drop_e : float
         Dropout rate to use on the embedding layer.
+
+    Inputs
+    ----------
+    inputs : NDArray
+        input tensor with shape `(sequence_length, batch_size)`
+          when `layout` is "TNC".
+    begin_state : list
+        initial recurrent state tensor with length equals to num_layers.
+        the initial state with shape `(1, batch_size, num_hidden)`
+
+    Outputs
+    -------
+    out: NDArray
+        output tensor with shape `(sequence_length, batch_size, input_size)`
+          when `layout` is "TNC".
+    out_states: list
+        output recurrent state tensor with length equals to num_layers.
+        the state with shape `(1, batch_size, num_hidden)`
     """
-    def __init__(self, mode, vocab_size, embed_size=400, hidden_size=1150, num_layers=3,
-                 tie_weights=True, dropout=0.4, weight_drop=0.5, drop_h=0.2,
-                 drop_i=0.65, drop_e=0.1, **kwargs):
-        super(AWDRNN, self).__init__(**kwargs)
-        self._mode = mode
-        self._vocab_size = vocab_size
-        self._embed_size = embed_size
-        self._hidden_size = hidden_size
-        self._num_layers = num_layers
-        self._dropout = dropout
-        self._drop_h = drop_h
-        self._drop_i = drop_i
-        self._drop_e = drop_e
-        self._weight_drop = weight_drop
-        self._tie_weights = tie_weights
-
-        with self.name_scope():
-            self.embedding = self._get_embedding()
-            self.encoder = self._get_encoder()
-            self.decoder = self._get_decoder()
-
-    def _get_embedding(self):
-        embedding = nn.HybridSequential()
-        with embedding.name_scope():
-            embedding_block = nn.Embedding(self._vocab_size, self._embed_size,
-                                           weight_initializer=init.Uniform(0.1))
-            if self._drop_e:
-                apply_weight_drop(embedding_block, 'weight', self._drop_e, axes=(1,))
-            embedding.add(embedding_block)
-            if self._drop_i:
-                embedding.add(nn.Dropout(self._drop_i, axes=(0,)))
-        return embedding
-
-    def _get_encoder(self):
-        encoder = nn.Sequential()
-        with encoder.name_scope():
-            for l in range(self._num_layers):
-                encoder.add(_get_rnn_layer(self._mode, 1, self._embed_size if l == 0 else
-                                           self._hidden_size, self._hidden_size if
-                                           l != self._num_layers - 1 or not self._tie_weights
-                                           else self._embed_size, 0, self._weight_drop))
-        return encoder
-
-    def _get_decoder(self):
-        output = nn.HybridSequential()
-        with output.name_scope():
-            if self._tie_weights:
-                output.add(nn.Dense(self._vocab_size, flatten=False,
-                                    params=self.embedding[0].params))
-            else:
-                output.add(nn.Dense(self._vocab_size, flatten=False))
-        return output
-
-    def begin_state(self, *args, **kwargs):
-        return [c.begin_state(*args, **kwargs) for c in self.encoder]
+    def __init__(self, mode, vocab_size, embed_size, hidden_size, num_layers,
+                 tie_weights, dropout, weight_drop, drop_h,
+                 drop_i, drop_e, **kwargs):
+        super(AWDRNN, self).__init__(mode, vocab_size, embed_size, hidden_size, num_layers,
+                 tie_weights, dropout, weight_drop, drop_h,
+                 drop_i, drop_e, **kwargs)
 
     def forward(self, inputs, begin_state=None): # pylint: disable=arguments-differ
         """Implement forward computation.
-
-        Parameters
-        ----------
-        inputs : NDArray
-            The training dataset.
-        begin_state : list
-            The initial hidden states.
-
-        Returns
-        -------
-        out: NDArray
-            The output of the model.
-        out_states: list
-            The list of output states of the model's encoder.
         """
         encoded = self.embedding(inputs)
         if not begin_state:
@@ -153,8 +109,7 @@ class AWDRNN(Block):
             out = self.decoder(encoded)
         return out, out_states
 
-
-class StandardRNN(Block):
+class StandardRNN(StandardRNN):
     """Standard RNN language model.
 
     Parameters
@@ -173,53 +128,34 @@ class StandardRNN(Block):
         Dropout rate to use for encoder output.
     tie_weights : bool, default False
         Whether to tie the weight matrices of output dense layer and input embedding layer.
+
+    Inputs
+    ----------
+    inputs : NDArray
+        input tensor with shape `(sequence_length, batch_size)`
+          when `layout` is "TNC".
+    begin_state : list
+        initial recurrent state tensor with length equals to num_layers-1.
+        the initial state with shape `(num_layers, batch_size, num_hidden)`
+
+    Outputs
+    -------
+    out: NDArray
+        output tensor with shape `(sequence_length, batch_size, input_size)`
+          when `layout` is "TNC".
+    out_states: list
+        output recurrent state tensor with length equals to num_layers-1.
+        the state with shape `(num_layers, batch_size, num_hidden)`
     """
     def __init__(self, mode, vocab_size, embed_size, hidden_size,
-                 num_layers, dropout=0.5, tie_weights=False, **kwargs):
+                 num_layers, dropout, tie_weights, **kwargs):
         if tie_weights:
             assert embed_size == hidden_size, 'Embedding dimension must be equal to ' \
                                               'hidden dimension in order to tie weights. ' \
                                               'Got: emb: {}, hid: {}.'.format(embed_size,
                                                                               hidden_size)
-        super(StandardRNN, self).__init__(**kwargs)
-        self._mode = mode
-        self._embed_size = embed_size
-        self._hidden_size = hidden_size
-        self._num_layers = num_layers
-        self._dropout = dropout
-        self._tie_weights = tie_weights
-        self._vocab_size = vocab_size
-
-        with self.name_scope():
-            self.embedding = self._get_embedding()
-            self.encoder = self._get_encoder()
-            self.decoder = self._get_decoder()
-
-    def _get_embedding(self):
-        embedding = nn.HybridSequential()
-        with embedding.name_scope():
-            embedding.add(nn.Embedding(self._vocab_size, self._embed_size,
-                                       weight_initializer=init.Uniform(0.1)))
-            if self._dropout:
-                embedding.add(nn.Dropout(self._dropout))
-        return embedding
-
-    def _get_encoder(self):
-        return _get_rnn_layer(self._mode, self._num_layers, self._embed_size,
-                              self._hidden_size, self._dropout, 0)
-
-    def _get_decoder(self):
-        output = nn.HybridSequential()
-        with output.name_scope():
-            if self._tie_weights:
-                output.add(nn.Dense(self._vocab_size, flatten=False,
-                                    params=self.embedding[0].params))
-            else:
-                output.add(nn.Dense(self._vocab_size, flatten=False))
-        return output
-
-    def begin_state(self, *args, **kwargs):
-        return self.encoder.begin_state(*args, **kwargs)
+        super(StandardRNN, self).__init__(mode, vocab_size, embed_size, hidden_size,
+                 num_layers, dropout, tie_weights, **kwargs)
 
     def forward(self, inputs, begin_state=None): # pylint: disable=arguments-differ
         """Defines the forward computation. Arguments can be either
