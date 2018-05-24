@@ -170,7 +170,7 @@ else:
                                                             args.nhid, args.nlayers, args.dropout, args.tied)
 
 model.initialize(mx.init.Xavier(), ctx=context)
-model.save_params(args.save)
+model.hybridize()
 
 if args.optimizer == 'sgd':
     trainer_params = {'learning_rate': args.lr,
@@ -352,6 +352,8 @@ def train():
 
         print('[Epoch %d] throughput %.2f samples/s'%(
             epoch, (args.batch_size * len(train_data)) / (time.time() - start_epoch_time)))
+        if epoch == 0:
+            model.save_params(args.save)
         val_L = evaluate(val_data, val_batch_size, context[0])
         print('[Epoch %d] time cost %.2fs, valid loss %.2f, valid ppl %.2f'%(
             epoch, time.time()-start_epoch_time, val_L, math.exp(val_L)))
