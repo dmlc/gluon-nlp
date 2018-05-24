@@ -74,7 +74,7 @@ class CacheCell(Block):
         """Defines the forward computation for cache cell. Arguments can be either
         :py:class:`NDArray` or :py:class:`Symbol`."""
         output, hidden, encoder_hs, _ = \
-            super(self._pretrained_lm_model)(inputs, begin_state)
+            super(type(self._pretrained_lm_model), self._pretrained_lm_model).forward(inputs, begin_state)
         encoder_h = encoder_hs[-1].reshape(-3, -2)
         output = output.reshape(-1, self._vocab_size)
 
