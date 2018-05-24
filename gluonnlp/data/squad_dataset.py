@@ -19,17 +19,13 @@
 
 # pylint: disable=
 """SQuAD dataset."""
-from mxnet import nd
-import numpy as np
 
-from gluonnlp import Vocab
-from gluonnlp.data.batchify import Pad
+__all__ = ['SQuAD']
 
-__all__ = ['SQuAD', 'SQuADTransform']
-
-import io
 import json
 import os
+import shutil
+import zipfile
 
 from mxnet.gluon.data import ArrayDataset
 from mxnet.gluon.utils import download, check_sha1, _get_repo_file_url
@@ -43,6 +39,8 @@ class SQuAD(ArrayDataset):
     From
     https://rajpurkar.github.io/SQuAD-explorer/
 
+    License: CreativeCommons BY-SA 4.0
+
     Parameters
     ----------
     segment : str, default 'train'
@@ -51,14 +49,10 @@ class SQuAD(ArrayDataset):
         Path to temp folder for storing data.
     """
     def __init__(self, segment='train', root=os.path.join('~', '.mxnet', 'datasets', 'squad')):
-        self._data_file = {'train': ('train-v1.1.json',
-                                     '1faea1252438a64f9718412a55036b786cfcc636'),
-                           'dev': ('dev-v1.1.json',
-                                    'e1621aae0683b346ee9743bd5609266ba0cc34fc'),
-                           'word_vocab': ('word_vocab.json',
-                                   '13fd4dc500916612387c46fce46769638dccba5b'),
-                           'char_vocab': ('char_vocab.json',
-                                   'ca8fd555a45136e1643713041de53207c9aea2ad')}
+        self._data_file = {'train': ('train-v1.1.zip', 'train-v1.1.json',
+                                     '052a75bf8fdb3e843b8649971658eae8133f9b0e'),
+                           'dev': ('dev-v1.1.zip', 'dev-v1.1.json',
+                                   'e31ad736582b72a8eabd5c0b0a38cb779ed913d7')}
         root = os.path.expanduser(root)
 
         if not os.path.isdir(root):
@@ -68,21 +62,27 @@ class SQuAD(ArrayDataset):
         self._segment = segment
         self._get_data()
 
-        self._word_vocab = None
-        self._char_vocab = None
-        self._meta_info_mapping, data = self._read_data()
-
-        super(SQuAD, self).__init__(data)
+        super(SQuAD, self).__init__(self._read_data())
 
     def _get_data(self):
         """Load data from the file. Does nothing if data was loaded before
         """
-        data_file_name, data_hash = self._data_file[self._segment]
-        path = os.path.join(self._root, data_file_name)
+        data_archive_name, _, data_hash = self._data_file[self._segment]
+        path = os.path.join(self._root, data_archive_name)
 
         if not os.path.exists(path) or not check_sha1(path, data_hash):
-            download(_get_repo_file_url('gluon/dataset/squad', data_file_name),
-                     path=self._root, sha1_hash=data_hash)
+            file_path = download(_get_repo_file_url('gluon/dataset/squad', data_archive_name),
+                                 path=self._root, sha1_hash=data_hash)
+
+            with zipfile.ZipFile(file_path, 'r') as zf:
+                for member in zf.namelist():
+                    filename = os.path.basename(member)
+
+                    if filename:
+                        dest = os.path.join(self._root, filename)
+
+                        with zf.open(member) as source, open(dest, 'wb') as target:
+                            shutil.copyfileobj(source, target)
 
     def _read_data(self):
         """Read data.json from disk and flats it to the following format:
@@ -95,117 +95,43 @@ class SQuAD(ArrayDataset):
         List[Tuple]
             Flatten list of questions
         """
-        data_file_name, data_hash = self._data_file[self._segment]
+        _, data_file_name, _ = self._data_file[self._segment]
 
         with open(os.path.join(self._root, data_file_name)) as f:
             samples = json.load(f)
 
         return _SQuADJsonParser().get_records(samples)
 
-    @property
-    def word_vocab(self):
-        """Word-level vocabulary of the training dataset.
-
-        Returns
-        -------
-        train_vocab : Vocab
-            Word-level training set vocabulary.
-        """
-        if self._word_vocab is None:
-            self._word_vocab = self._load_vocab('word_vocab')
-
-        return self._word_vocab
-
-    @property
-    def char_vocab(self):
-        """Char-level vocabulary of the training dataset"""
-        if self._char_vocab is None:
-            self._char_vocab = self._load_vocab('char_vocab')
-
-        return self._char_vocab
-
-    def get_question_id_by_index(self, record_index):
-        return self._meta_info_mapping[record_index][0]
-
-    def get_answer_list_by_index(self, record_index):
-        return self._meta_info_mapping[record_index][1]
-
-    def _load_vocab(self, vocab_key):
-        data_file_name, data_hash = self._data_file[vocab_key]
-        path = os.path.join(self._root, data_file_name)
-
-        if not os.path.exists(path) or not check_sha1(path, data_hash):
-            download(_get_repo_file_url('gluon/dataset/squad', data_file_name),
-                     path=self._root, sha1_hash=data_hash)
-
-        with io.open(path, 'r', encoding='utf-8') as in_file:
-            vocab = Vocab.from_json(in_file.read())
-
-        return vocab
-
 
 class _SQuADJsonParser:
+    """Parses .json data file
+    """
     def __init__(self):
         pass
 
     def get_records(self, json_dict):
-        meta_info_mapping = {}
+        """Provides a list of tuples with records where answers are flatten"""
         records = []
 
         record_index = 0
 
-        for title in json_dict["data"]:
-            for paragraph in title["paragraphs"]:
-                for qas in paragraph["qas"]:
-                    meta_info_mapping[record_index] = (qas["id"], self._get_answers(qas))
+        for title in json_dict['data']:
+            for paragraph in title['paragraphs']:
+                for qas in paragraph['qas']:
 
                     record = (
-                        record_index, qas["question"], paragraph["context"]
+                        qas['id'], qas['question'], paragraph['context'], self._get_answers(qas)
                     )
 
                     record_index += 1
                     records.append(record)
 
-        return meta_info_mapping, records
+        return records
 
     def _get_answers(self, qas_dict):
         answers = []
 
-        for answer in qas_dict["answers"]:
-            answers.append((answer["answer_start"], answer["text"]))
+        for answer in qas_dict['answers']:
+            answers.append((answer['answer_start'], answer['text']))
 
         return answers
-
-
-class SQuADTransform(object):
-    def __init__(self, word_vocab, char_vocab, question_max_length, context_max_length):
-        self._word_vocab = word_vocab
-        self._char_vocab = char_vocab
-
-        self._question_max_length = question_max_length
-        self._context_max_length = context_max_length
-
-        self._padder = Pad()
-
-    def __call__(self, record_index, question, context):
-        """
-        Method converts text into numeric arrays based on Vocabulary.
-        Answers are not processed, as they are not needed in input
-        """
-        question_words = self._word_vocab[question.split()[:self._question_max_length]]
-        context_words = self._word_vocab[context.split()[:self._context_max_length]]
-
-        question_chars = [self._char_vocab[list(iter(word))]
-                          for word in question.split()[:self._question_max_length]]
-
-        context_chars = [self._char_vocab[list(iter(word))]
-                          for word in context.split()[:self._context_max_length]]
-
-        question_words_nd = nd.array(question_words)
-        question_chars_nd = self._padder(question_chars)
-
-        context_words_nd = np.array(context_words)
-        context_chars_nd = self._padder(context_chars)
-
-        return record_index, question_words_nd, question_chars_nd, \
-               context_words_nd, context_chars_nd

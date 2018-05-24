@@ -16,12 +16,6 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-import os
-from gluonnlp.data.squad_dataset import SQuAD
 
-
-def test_load_dev_squad():
-    dataset = SQuAD(segment='dev', root=os.path.join('tests', 'data', 'squad'))
-
-    for i in range(5):
-        assert dataset[i] is not None
+# pylint: disable=wildcard-import
+"""Question answering example."""
