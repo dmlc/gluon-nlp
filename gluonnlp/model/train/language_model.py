@@ -65,8 +65,12 @@ class AWDRNN(AWDRNN):
     drop_e : float
         Dropout rate to use on the embedding layer.
     """
-    def __init__(self, **kwargs):
-        super(AWDRNN, self).__init__(**kwargs)
+    def __init__(self, mode, vocab_size, embed_size, hidden_size, num_layers,
+                 tie_weights, dropout, weight_drop, drop_h,
+                 drop_i, drop_e, **kwargs):
+        super(AWDRNN, self).__init__(mode, vocab_size, embed_size, hidden_size, num_layers,
+                 tie_weights, dropout, weight_drop, drop_h,
+                 drop_i, drop_e, **kwargs)
 
     def forward(self, inputs, begin_state=None):
         """Implement the forward computation that the awd language model and cache model use.

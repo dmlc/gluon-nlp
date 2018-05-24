@@ -67,7 +67,7 @@ class ActivationRegularizationLoss(Loss):
         s = 'ActivationRegularizationLoss (alpha={alpha})'
         return s.format(alpha=self._alpha)
 
-    def hybrid_forward(self, *states):
+    def hybrid_forward(self, F, *states):
         if not self._alpha:
             if not states:
                 means = [self._alpha * state.__pow__(2).mean()
@@ -118,7 +118,7 @@ class TemporalActivationRegularizationLoss(Loss):
         s = 'TemporalActivationRegularizationLoss (beta={beta})'
         return s.format(beta=self._beta)
 
-    def hybrid_forward(self, *states):
+    def hybrid_forward(self, F, *states):
         if not self._beta:
             if not states:
                 means = [self._beta * (state[1:] - state[:-1]).__pow__(2).mean()
@@ -164,7 +164,7 @@ class JointActivationRegularizationLoss(Loss):
         s = 'JointActivationTemporalActivationRegularizationLoss'
         return s
 
-    def hybrid_forward(self, out, target, states, dropped_states):
+    def hybrid_forward(self, F, out, target, states, dropped_states):
         l = self._loss(out.reshape(-3, -1), target.reshape(-1, ))
         l = l + self._ar_loss(*dropped_states)
         l = l + self._tar_loss(*states)
