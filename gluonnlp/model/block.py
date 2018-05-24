@@ -123,13 +123,14 @@ class BiDAFEmbedding(HybridBlock):
     """
     An embedding for BiFAD model
     """
-    def __init__(self, channels, kernel_sizes, padding, char_embedding_source, prefix=None,
-                 params=None):
+    def __init__(self, channels, kernel_sizes, padding, char_vocab_size, word_embedding_source,
+                 prefix=None, params=None):
         super(BiDAFEmbedding, self).__init__(prefix=prefix, params=params)
-        self.cnn_embedding = CharacterLevelCNNEmbedding(channels, kernel_sizes, padding)
-        self.word_embedding = PredefinedEmbedding(char_embedding_source)
+        self.cnn_embedding = CharacterLevelCNNEmbedding(channels, kernel_sizes,
+                                                        padding, char_vocab_size)
+        self.word_embedding = PredefinedEmbedding(word_embedding_source)
 
-    def hybrid_forward(self, F, x):
+    def hybrid_forward(self, F, x):  # pylint: disable=arguments-differ
         char_level_embedding = self.cnn_embedding.hybrid_forward(F, x)
         word_level_embedding = self.word_embedding.hybrid_forward(F, x)
 
