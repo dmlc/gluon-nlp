@@ -170,6 +170,7 @@ else:
                                                             args.nhid, args.nlayers, args.dropout, args.tied)
 
 model.initialize(mx.init.Xavier(), ctx=context)
+model.save_params(args.save)
 
 if args.optimizer == 'sgd':
     trainer_params = {'learning_rate': args.lr,
