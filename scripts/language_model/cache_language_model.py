@@ -121,6 +121,23 @@ cache_cell = nlp.model.CacheCell(model, ntokens, args.window, args.theta, args.l
 # Training
 ###############################################################################
 
+def detach(hidden):
+    """Transfer hidden states into new states, to detach them from the history.
+    Parameters
+    ----------
+    hidden : NDArray
+        The hidden states
+    Returns
+    ----------
+    hidden: NDArray
+        The detached hidden states
+    """
+    if isinstance(hidden, (tuple, list)):
+        hidden = [detach(h) for h in hidden]
+    else:
+        hidden = hidden.detach()
+    return hidden
+
 def get_batch(data_source, i, seq_len=None):
     """Get mini-batches of the dataset.
 
@@ -179,7 +196,7 @@ def evaluate(data_source, batch_size, ctx=None):
         for out in outs:
             L += (-mx.nd.log(out)).asscalar()
         total_L += L / data.shape[1]
-        hidden = nlp.model.detach(hidden)
+        hidden = detach(hidden)
     return total_L / len(data_source)
 
 
