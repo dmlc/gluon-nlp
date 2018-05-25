@@ -310,6 +310,11 @@ class Vocab(object):
                 'The argument `embeddings` must be an instance or a list of instances of ' \
                 '`gluonnlp.embedding.TokenEmbedding`.'
 
+        assert all([embs.unknown_token for embs in embeddings]) or \
+            all([not embs.unknown_token for embs in embeddings]), \
+            'Either all or none of the TokenEmbeddings must have an ' \
+            'unknown_token set.'
+
         new_embedding = emb.TokenEmbedding(self.unknown_token)
         new_embedding._token_to_idx = self.token_to_idx
         new_embedding._idx_to_token = self.idx_to_token
@@ -324,7 +329,7 @@ class Vocab(object):
             if embs and embs.idx_to_vec is not None:
                 col_end = col_start + embs.idx_to_vec.shape[1]
                 # Cancatenate vectors of the unknown token.
-                new_idx_to_vec[0, col_start:col_end] = embs[0]
+                new_idx_to_vec[0, col_start:col_end] = embs.idx_to_vec[0]
                 new_idx_to_vec[1:, col_start:col_end] = embs[self._idx_to_token[1:]]
                 col_start = col_end
 
