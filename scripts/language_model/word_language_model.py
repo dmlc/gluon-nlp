@@ -155,18 +155,18 @@ ntokens = len(vocab)
 
 if args.weight_dropout > 0:
     print('Use AWDRNN')
-    model = nlp.model.train.language_model.AWDRNN(args.model, len(vocab), args.emsize,
+    model = nlp.model.train.AWDRNN(args.model, len(vocab), args.emsize,
                                                        args.nhid, args.nlayers, args.tied,
                                                        args.dropout, args.weight_dropout, args.dropout_h,
                                                        args.dropout_i, args.dropout_e)
-    model_eval = nlp.model.infer.language_model.AWDRNN(args.model, len(vocab), args.emsize,
+    model_eval = nlp.model.AWDRNN(args.model, len(vocab), args.emsize,
                                                        args.nhid, args.nlayers, args.tied,
                                                        args.dropout, args.weight_dropout, args.dropout_h,
                                                        args.dropout_i, args.dropout_e)
 else:
-    model = nlp.model.train.language_model.StandardRNN(args.model, len(vocab), args.emsize,
+    model = nlp.model.train.StandardRNN(args.model, len(vocab), args.emsize,
                                                             args.nhid, args.nlayers, args.dropout, args.tied)
-    model_eval = nlp.model.infer.language_model.StandardRNN(args.model, len(vocab), args.emsize,
+    model_eval = nlp.model.StandardRNN(args.model, len(vocab), args.emsize,
                                                             args.nhid, args.nlayers, args.dropout, args.tied)
 
 model.initialize(mx.init.Xavier(), ctx=context)
@@ -235,7 +235,7 @@ def get_batch(data_source, i, seq_len=None):
     target = data_source[i+1:i+1+seq_len]
     return data, target
 
-def evaluate(data_source, batch_size, ctx=None):
+def evaluate(data_source, batch_size, segment, ctx=None):
     """Evaluate the model on the dataset.
 
     Parameters
@@ -254,7 +254,10 @@ def evaluate(data_source, batch_size, ctx=None):
     """
     total_L = 0.0
     ntotal = 0
-    model_eval.load_params(args.save, context)
+    if segment == 'val':
+        model_eval.load_params(args.save + '.val', context)
+    elif segment == 'test':
+        model_eval.load_params(args.save, context)
     hidden = model_eval.begin_state(batch_size, func=mx.nd.zeros, ctx=context[0])
     for i in range(0, len(data_source) - 1, args.bptt):
         data, target = get_batch(data_source, i)
@@ -352,17 +355,16 @@ def train():
 
         print('[Epoch %d] throughput %.2f samples/s'%(
             epoch, (args.batch_size * len(train_data)) / (time.time() - start_epoch_time)))
-        if epoch == 0:
-            model.save_params(args.save)
-        val_L = evaluate(val_data, val_batch_size, context[0])
+        model.save_params(args.save + '.val')
+        val_L = evaluate(val_data, val_batch_size, 'val', context[0])
         print('[Epoch %d] time cost %.2fs, valid loss %.2f, valid ppl %.2f'%(
             epoch, time.time()-start_epoch_time, val_L, math.exp(val_L)))
 
         if val_L < best_val:
             update_lr_epoch = 0
             best_val = val_L
-            test_L = evaluate(test_data, test_batch_size, context[0])
             model.save_params(args.save)
+            test_L = evaluate(test_data, test_batch_size, 'test', context[0])
             print('test loss %.2f, test ppl %.2f'%(test_L, math.exp(test_L)))
         else:
             update_lr_epoch += 1
@@ -380,8 +382,8 @@ if __name__ == '__main__':
     start_pipeline_time = time.time()
     if not args.eval_only:
         train()
-    final_val_L = evaluate(val_data, val_batch_size, context[0])
-    final_test_L = evaluate(test_data, test_batch_size, context[0])
+    final_val_L = evaluate(val_data, val_batch_size, 'test', context[0])
+    final_test_L = evaluate(test_data, test_batch_size, 'test', context[0])
     print('Best validation loss %.2f, val ppl %.2f'%(final_val_L, math.exp(final_val_L)))
     print('Best test loss %.2f, test ppl %.2f'%(final_test_L, math.exp(final_test_L)))
     print('Total time cost %.2fs'%(time.time()-start_pipeline_time))

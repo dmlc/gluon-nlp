@@ -28,13 +28,13 @@ from mxnet import init, nd, cpu, autograd
 from mxnet.gluon import nn, Block
 from mxnet.gluon.model_zoo import model_store
 
-from gluonnlp.model.train import AWDRNN, StandardRNN
+from gluonnlp.model import train
 from gluonnlp.model.utils import _get_rnn_layer
 from gluonnlp.model.utils import apply_weight_drop
 from gluonnlp.data.utils import _load_pretrained_vocab
 
 
-class AWDRNN(AWDRNN):
+class AWDRNN(train.AWDRNN):
     """AWD language model by salesforce.
 
     Reference: https://github.com/salesforce/awd-lstm-lm
@@ -109,7 +109,7 @@ class AWDRNN(AWDRNN):
             out = self.decoder(encoded)
         return out, out_states
 
-class StandardRNN(StandardRNN):
+class StandardRNN(train.StandardRNN):
     """Standard RNN language model.
 
     Parameters
