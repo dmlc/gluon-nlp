@@ -298,7 +298,6 @@ class StreamingLanguageModel(object):
                                        skip_empty=skip_empty,
                                        sample_splitter=sample_splitter, tokenizer=tokenizer,
                                        bos=bos, eos=eos)
-        pass
 
     def bptt_batchify(self, vocab, seq_len, batch_size, last_batch='keep'):
         """Transform the dataset into batches of numericalized samples, in the way that the
@@ -321,38 +320,61 @@ class StreamingLanguageModel(object):
             - keep: A batch with less samples than previous batches is returned.
             - discard: The last batch is discarded if it's smaller than `(seq_len, batch_size)`.
         """
-        padding_val = 0
+        def _reset(padding, data, target):
+            """Reset the data and target with padding values."""
+            data[:] = padding
+            target[:] = padding
+
+        def _read(buffers, i, vocab, corpus):
+            """Read a sentence from the corpus into i-th buffer."""
+            if buffers[i] is None:
+                buffers[i] = vocab[next(corpus)]
+            if len(buffers[i]) <= 1:
+                buffers[i].extend(vocab[next(corpus)])
+
+        def _write(data, target, buffers, seq_len, i, length):
+             """Write a sentence from i-th buffer to data and target."""
+             num_tokens = len(buffers[i]) - 1
+             num_tokens = min(num_tokens, seq_len - length)
+             # fill in data and target
+             data[i, length:length+num_tokens] = buffers[i][:num_tokens]
+             target[i, length:length+num_tokens] = buffers[i][1:num_tokens+1]
+             # trim sentence in the buffer if too long. Used for the next batch
+             buffers[i] = buffers[i][num_tokens:]
+             return num_tokens
+
+        padding_token = 0
         if last_batch == 'keep':
             assert vocab.padding_token, 'Padding token must be specified in vocab when '\
                                         'last_batch="keep".'
-            padding_val = vocab[vocab.padding_token]
-        # buffers for the data and labels before converted to NDArrays
-        data = np.full([batch_size, seq_len], padding_val, dtype=np.float32)
-        label = np.full([batch_size, seq_len], padding_val, dtype=np.float32)
+            padding_token = vocab[vocab.padding_token]
+
+        data = np.full([batch_size, seq_len], padding_token, dtype=np.float32)
+        target = np.full([batch_size, seq_len], padding_token, dtype=np.float32)
         corpus = iter(self._corpus)
+
         # buffers for the next sentence
-        sentences = [None] * batch_size
-        has_next = True
-        while has_next:
-            data[:] = padding_val
-            label[:] = padding_val
+        buffers = [None] * batch_size
+        has_next_sentence = True
+        has_token_buffered = False
+
+        # main loop
+        while has_next_sentence or has_token_buffered:
+            _reset(padding_token, data, target)
+            has_token_buffered = False
             for i in range(batch_size):
-                start = 0
+                length = 0
                 try:
-                    while start < seq_len:
-                        if sentences[i] is None or len(sentences[i]) <= 1:
-                            sentences[i] = vocab[next(corpus)]
-                        num_tokens = len(sentences[i]) - 1
-                        num_tokens = min(num_tokens, seq_len - start)
-                        end = start + num_tokens
-                        # fill in data and label
-                        data[i, start:end] = sentences[i][:num_tokens]
-                        label[i, start:end] = sentences[i][1:num_tokens+1]
-                        # trim sentence for the next batch
-                        sentences[i] = sentences[i][num_tokens:]
-                        start += num_tokens
+                    while length < seq_len:
+                        # fill the buffer
+                        _read(buffers, i, vocab, corpus)
+                        # fill the sentence in data and target
+                        num_tokens = _write(data, target, buffers, seq_len, i, length)
+                        if len(buffers[i]) > 0:
+                            has_token_buffered = True
+                        length += num_tokens
                 except StopIteration:
-                    has_next = False
-            if has_next or last_batch == 'keep':
-                yield mx.nd.array(data).T, mx.nd.array(label).T
+                    has_next_sentence = False
+            if has_token_buffered or last_batch == 'keep':
+                yield mx.nd.array(data).T, mx.nd.array(target).T
         return
