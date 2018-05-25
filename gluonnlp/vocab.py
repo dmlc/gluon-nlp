@@ -84,6 +84,12 @@ class Vocab(object):
     unknown_token : hashable object or None
         The representation for any unknown token. In other words, any unknown token will be indexed
         as the same representation.
+    padding_token : hashable object or None
+        The representation for padding token.
+    bos_token : hashable object or None
+        The representation for beginning-of-sentence token.
+    eos_token : hashable object or None
+        The representation for end-of-sentence token.
 
 
     Examples

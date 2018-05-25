@@ -190,8 +190,10 @@ class LanguageModelDataset(CorpusDataset):
         last_batch : {'keep', 'discard'}
             How to handle the last batch if the remaining length is less than `seq_len`.
 
-            keep - A batch with less samples than previous batches is returned.
-            discard - The last batch is discarded if its incomplete.
+            - keep: A batch with less samples than previous batches is returned. vocab.padding_token
+              is used to pad the last batch based on batch size.
+
+            - discard: The last batch is discarded if it's smaller than `(seq_len, batch_size)`.
         """
         data = self.batchify(vocab, batch_size)
         batches = slice_sequence(data, seq_len+1, overlap=1)
@@ -199,5 +201,13 @@ class LanguageModelDataset(CorpusDataset):
             sample_len = len(self._data[0]) // batch_size
             has_short_batch = _slice_pad_length(sample_len*batch_size, seq_len+1, 1) > 0
             if has_short_batch:
-                batches.append(data[seq_len*len(batches):, :])
+                ctx = data[0].context if len(data) else None
+                last_batch = self._data[0][seq_len*batch_size*len(batches):]
+                excess_size = len(last_batch) % batch_size
+                if excess_size:
+                    assert vocab.padding_token, 'Padding token must be specified in vocab when ' \
+                                                'last_batch="keep".'
+                    padding_size = batch_size - excess_size
+                    last_batch.extend([vocab.padding_token]*padding_size)
+                batches.append(mx.nd.array(vocab[last_batch], ctx=ctx).reshape(batch_size, -1).T)
         return SimpleDataset(batches).transform(lambda x: (x[:min(len(x)-1, seq_len), :], x[1:, :]))
