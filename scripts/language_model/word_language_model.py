@@ -235,41 +235,41 @@ def get_batch(data_source, i, seq_len=None):
     target = data_source[i+1:i+1+seq_len]
     return data, target
 
-# def evaluate(data_source, batch_size, segment, ctx=None):
-#     """Evaluate the model on the dataset.
-#
-#     Parameters
-#     ----------
-#     data_source : NDArray
-#         The dataset is evaluated on.
-#     batch_size : int
-#         The size of the mini-batch.
-#     ctx : mx.cpu() or mx.gpu()
-#         The context of the computation.
-#
-#     Returns
-#     -------
-#     loss: float
-#         The loss on the dataset
-#     """
-#     total_L = 0.0
-#     ntotal = 0
-#     if segment == 'val':
-#         model_eval.load_params(args.save + '.val', context)
-#     elif segment == 'test':
-#         model_eval.load_params(args.save, context)
-#     hidden = model_eval.begin_state(batch_size, func=mx.nd.zeros, ctx=context[0])
-#     for i in range(0, len(data_source) - 1, args.bptt):
-#         data, target = get_batch(data_source, i)
-#         data = data.as_in_context(ctx)
-#         target = target.as_in_context(ctx)
-#         output, hidden = model_eval(data, hidden)
-#         hidden = detach(hidden)
-#         L = loss(output.reshape(-3, -1),
-#                  target.reshape(-1,))
-#         total_L += mx.nd.sum(L).asscalar()
-#         ntotal += L.size
-#     return total_L / ntotal
+def evaluate(data_source, batch_size, segment, ctx=None):
+    """Evaluate the model on the dataset.
+
+    Parameters
+    ----------
+    data_source : NDArray
+        The dataset is evaluated on.
+    batch_size : int
+        The size of the mini-batch.
+    ctx : mx.cpu() or mx.gpu()
+        The context of the computation.
+
+    Returns
+    -------
+    loss: float
+        The loss on the dataset
+    """
+    total_L = 0.0
+    ntotal = 0
+    if segment == 'val':
+        model_eval.load_params(args.save + '.val', context)
+    elif segment == 'test':
+        model_eval.load_params(args.save, context)
+    hidden = model_eval.begin_state(batch_size, func=mx.nd.zeros, ctx=context[0])
+    for i in range(0, len(data_source) - 1, args.bptt):
+        data, target = get_batch(data_source, i)
+        data = data.as_in_context(ctx)
+        target = target.as_in_context(ctx)
+        output, hidden = model_eval(data, hidden)
+        hidden = detach(hidden)
+        L = loss(output.reshape(-3, -1),
+                 target.reshape(-1,))
+        total_L += mx.nd.sum(L).asscalar()
+        ntotal += L.size
+    return total_L / ntotal
 
 # def regularized_loss(output, target, encoder_hs, dropped_encoder_hs):
 #     """Compute regularized (optional) loss of the language model in training mode.
