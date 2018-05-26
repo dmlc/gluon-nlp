@@ -21,13 +21,13 @@
 """NLP Toolkit Dataset API. It allows easy and customizable loading of corpora and dataset files.
 Files can be loaded into formats that are immediately ready for training and evaluation."""
 __all__ = ['TextLineDataset', 'CorpusDataset', 'LanguageModelDataset',\
-           'StreamingCorpus', 'StreamingLanguageModel']
+           'CorpusIter', 'StreamingLanguageModel']
 
 import io, os, glob
 
 import mxnet as mx
 import numpy as np
-from mxnet.gluon.data import SimpleDataset
+from mxnet.gluon.data import SimpleDataset, RandomSampler, SequentialSampler
 from .utils import concat_sequence, slice_sequence, _slice_pad_length
 
 
@@ -203,8 +203,8 @@ class LanguageModelDataset(CorpusDataset):
                 batches.append(data[seq_len*len(batches):, :])
         return SimpleDataset(batches).transform(lambda x: (x[:min(len(x)-1, seq_len), :], x[1:, :]))
 
-class StreamingCorpus(object):
-    """Common text dataset that streams a corpus consisting of multiple text files
+class CorpusIter(object):
+    """Common text data iterator that streams a corpus consisting of multiple text files
     that match provided file_pattern. One file is read at a time.
 
     The returned dataset includes samples, each of which can either be a list of tokens if tokenizer
@@ -232,16 +232,26 @@ class StreamingCorpus(object):
     eos : str or None, default None
         The token to add at the end of each sequence. If None, or if tokenizer is not
         specified, then nothing is added.
+    sampler : str, {'sequential', 'random'}, defaults to 'random'
+        The sampler used to sample texts within a file.
+
+        - 'sequential': SequentialSampler
+        - 'random': RandomSampler
+    file_sampler : str, {'sequential', 'random'}, defaults to 'random'
+        The sampler used to sample a file.
+
+        - 'sequential': SequentialSampler
+        - 'random': RandomSampler
     """
 
     def __init__(self, file_pattern, encoding='utf8', flatten=False, skip_empty=True,
                  sample_splitter=lambda s: s.splitlines(), tokenizer=lambda s: s.split(),
-                 bos=None, eos=None):
+                 bos=None, eos=None, sampler='random', file_sampler='random'):
         assert sample_splitter, 'sample_splitter must be specified.'
         if not isinstance(file_pattern, str):
             raise TypeError('file_pattern must be str, but got %s'%type(file_pattern))
 
-        self._file_pattern = os.path.expanduser(file_pattern)
+        self._file_pattern = glob.glob(os.path.expanduser(file_pattern))
         self._encoding = encoding
         self._flatten = flatten
         self._skip_empty = skip_empty
@@ -249,81 +259,138 @@ class StreamingCorpus(object):
         self._tokenizer = tokenizer
         self._bos = bos
         self._eos = eos
+        self._sampler = self._get_sampler(sampler)
+        self._file_sampler = self._get_sampler(file_sampler)
+
+        # iterator states
+        self._idx = None
+        self._file_idx = None
+        self._idx_samples = None
+        self._file_idx_samples = None
+        self._sample = None
+        self._corpus = None
+
+    def _get_sampler(self, sampler):
+        assert isinstance(sampler, str), "Expected sampler to be a str, but got %s"%type(sampler)
+        if sampler == 'random':
+            return RandomSampler
+        if sampler == 'sequential':
+            return SequentialSampler
+        raise ValueError("sampler must be either 'random' or 'sequential', but got %s"%(sampler))
+
+    def _reset_idx(self):
+        self._idx_samples = None
+        self._idx = None
+        self._corpus = None
+
+    def _reset_file_idx(self):
+        self._file_idx_samples = None
+        self._file_idx = None
+        self._corpus = None
+
+    def _read_corpus(self):
+        assert self._corpus is None
+        num_files = len(self._file_pattern)
+        # generate samples
+        if self._file_idx_samples is None:
+            self._file_idx_samples = [i for i in iter(self._file_sampler(num_files))]
+            self._file_idx = 0
+        # no more files to read
+        if self._file_idx >= num_files:
+            raise StopIteration
+        # next file
+        file_idx = self._file_idx_samples[self._file_idx]
+        filename = self._file_pattern[file_idx]
+        self._corpus = CorpusDataset(filename, encoding=self._encoding,
+                                     flatten=self._flatten, skip_empty=self._skip_empty,
+                                     sample_splitter=self._sample_splitter,
+                                     tokenizer=self._tokenizer,
+                                     bos=self._bos, eos=self._eos)
+        self._file_idx += 1
+
+    def _read_sample(self):
+        assert self._corpus
+        num_samples = len(self._corpus)
+        # generate samples
+        if self._idx_samples is None:
+            self._idx_samples = [i for i in iter(self._sampler(num_samples))]
+            self._idx = 0
+        # no more samples for the current file
+        if self._idx >= num_samples:
+            self._reset_idx()
+            raise StopIteration
+        # next sample
+        idx = self._idx_samples[self._idx]
+        self._sample = self._corpus[idx]
+        self._idx += 1
 
     def __iter__(self):
-        for filename in self._next_filename():
-            corpus = CorpusDataset(filename, encoding=self._encoding,
-                                   flatten=self._flatten, skip_empty=self._skip_empty,
-                                   sample_splitter=self._sample_splitter,
-                                   tokenizer=self._tokenizer,
-                                   bos=self._bos, eos=self._eos)
-            for token in corpus:
-                yield token
+        return self
 
-    def _next_filename(self):
-        file_patterns = glob.glob(self._file_pattern)
-        for filename in file_patterns:
-            yield filename
+    def __next__(self):
+        return self.next()
 
+    def reset(self):
+        self._reset_file_idx()
+        self._reset_idx()
+        self._sample = None
+
+    def next(self):
+        while True:
+            if self._corpus is None:
+                self._read_corpus()
+            try:
+                self._read_sample()
+                return self._sample
+            except StopIteration:
+                # try to open a new file
+                pass
 
 class StreamingLanguageModel(object):
-    """Streams a corpus consisting of multiple text files that match provided
-    file_pattern, and produces a language modeling dataset given the provided
-    sample splitter and word tokenizer.
+    """Streams a corpus and produces a language modeling data iterable.
+
+    The corpus is transformedinto batches of numericalized samples, in the way that the
+    recurrent states from last batch connects with the current batch for each sample.
+
+    Each sample is of shape `(seq_len, batch_size)`.
 
     Parameters
     ----------
-    file_pattern: str
-        Path to the input text files.
-    encoding : str, default 'utf8'
-        File encoding format.
-    skip_empty : bool, default True
-        Whether to skip the empty samples produced from sample_splitters. If False, `bos` and `eos`
-        will be added in empty samples.
-    sample_splitter : function, default str.splitlines
-        A function that splits the dataset string into samples.
-    tokenizer : function, default str.split
-        A function that splits each sample string into list of tokens.
-    bos : str or None, default None
-        The token to add at the begining of each sentence. If None, nothing is added.
-    eos : str or None, default None
-        The token to add at the end of each sentence. If None, nothing is added.
+    corpus: CorpusIter
+        The corpus to stream.
+    vocab : gluonnlp.Vocab
+        The vocabulary to use for numericalizing the dataset. Each token will be mapped to the
+        index according to the vocabulary.
+    seq_len : int
+        The length of each of the samples for truncated back-propagation-through-time (TBPTT).
+    batch_size : int
+        The number of samples in each batch.
+    last_batch : {'keep', 'discard'}
+        How to handle the last batch if the remaining length is less than `seq_len`.
+
+        - keep: A batch with less samples than previous batches is returned.
+        - discard: The last batch is discarded if it's smaller than `(seq_len, batch_size)`.
     """
-    def __init__(self, file_pattern, encoding='utf8', skip_empty=True,
-               sample_splitter=lambda s: s.splitlines(), tokenizer=lambda s: s.split(),
-               bos=None, eos=None):
-        # read one sentence at a time for streaming
-        flatten = False
-        self._corpus = StreamingCorpus(file_pattern, encoding=encoding, flatten=False,
-                                       skip_empty=skip_empty,
-                                       sample_splitter=sample_splitter, tokenizer=tokenizer,
-                                       bos=bos, eos=eos)
+    def __init__(self, corpus, vocab, seq_len, batch_size, last_batch='keep'):
+        if corpus._flatten:
+            raise ValueError("StreamingLanguageModel doesn't support flatten corpus. "\
+                             "Please create a CorpusIter with flatten=False.")
+        self._corpus = corpus
+        self._vocab = vocab
+        self._seq_len = seq_len
+        self._batch_size = batch_size
+        self._last_batch = last_batch
+        self._padding_idx = 0
+        if last_batch == 'keep':
+            assert vocab.padding_token, 'Padding token must be specified in vocab when '\
+                                        'last_batch="keep".'
+            self._padding_idx = vocab[vocab.padding_token]
 
-    def bptt_batchify(self, vocab, seq_len, batch_size, last_batch='keep'):
-        """Transform the dataset into batches of numericalized samples, in the way that the
-        recurrent states from last batch connects with the current batch for each sample.
-
-        Each sample is of shape `(seq_len, batch_size)`.
-
-        Parameters
-        ----------
-        vocab : gluonnlp.Vocab
-            The vocabulary to use for numericalizing the dataset. Each token will be mapped to the
-            index according to the vocabulary.
-        seq_len : int
-            The length of each of the samples for truncated back-propagation-through-time (TBPTT).
-        batch_size : int
-            The number of samples in each batch.
-        last_batch : {'keep', 'discard'}
-            How to handle the last batch if the remaining length is less than `seq_len`.
-
-            - keep: A batch with less samples than previous batches is returned.
-            - discard: The last batch is discarded if it's smaller than `(seq_len, batch_size)`.
-        """
-        def _reset(padding, data, target):
-            """Reset the data and target with padding values."""
-            data[:] = padding
-            target[:] = padding
+    def __iter__(self):
+        def _reset(value, data, target):
+            """Reset the data and target with values."""
+            data[:] = value
+            target[:] = value
 
         def _read(buffers, i, vocab, corpus):
             """Read a sentence from the corpus into i-th buffer."""
@@ -343,38 +410,30 @@ class StreamingLanguageModel(object):
              buffers[i] = buffers[i][num_tokens:]
              return num_tokens
 
-        padding_token = 0
-        if last_batch == 'keep':
-            assert vocab.padding_token, 'Padding token must be specified in vocab when '\
-                                        'last_batch="keep".'
-            padding_token = vocab[vocab.padding_token]
-
-        data = np.full([batch_size, seq_len], padding_token, dtype=np.float32)
-        target = np.full([batch_size, seq_len], padding_token, dtype=np.float32)
-        corpus = iter(self._corpus)
-
-        # buffers for the next sentence
-        buffers = [None] * batch_size
-        has_next_sentence = True
+        # iterable states
+        buffers = [None] * self._batch_size
+        has_next = True
         has_token_buffered = False
+        data = np.empty([self._batch_size, self._seq_len], dtype=np.float32)
+        target = np.empty([self._batch_size, self._seq_len], dtype=np.float32)
 
-        # main loop
-        while has_next_sentence or has_token_buffered:
-            _reset(padding_token, data, target)
+        # reset corpus states
+        self._corpus.reset()
+
+        while has_next or has_token_buffered:
+            _reset(self._padding_idx, data, target)
             has_token_buffered = False
-            for i in range(batch_size):
+            for i in range(self._batch_size):
                 length = 0
                 try:
-                    while length < seq_len:
-                        # fill the buffer
-                        _read(buffers, i, vocab, corpus)
-                        # fill the sentence in data and target
-                        num_tokens = _write(data, target, buffers, seq_len, i, length)
+                    while length < self._seq_len:
+                        _read(buffers, i, self._vocab, self._corpus)
+                        num_tokens = _write(data, target, buffers, self._seq_len, i, length)
                         if len(buffers[i]) > 0:
                             has_token_buffered = True
                         length += num_tokens
                 except StopIteration:
-                    has_next_sentence = False
-            if has_token_buffered or last_batch == 'keep':
+                    has_next = False
+            if has_token_buffered or self._last_batch == 'keep':
                 yield mx.nd.array(data).T, mx.nd.array(target).T
         return

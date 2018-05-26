@@ -431,11 +431,12 @@ def test_wmt2016bpe():
 def test_stream_corpus():
     EOS = nlp._constants.EOS_TOKEN
     path = os.path.join('tests', 'data', 'wikitext-2')
+    token_path = os.path.join('tests', 'data', 'wikitext-2/*.tokens')
     train = nlp.data.WikiText2(segment='train', root=path)
     val = nlp.data.WikiText2(segment='val', root=path)
     test = nlp.data.WikiText2(segment='test', root=path)
-    stream = nlp.data.StreamingCorpus(os.path.join('tests', 'data', 'wikitext-2/*.tokens'),
-                                      flatten=True, skip_empty=True, eos=EOS)
+    stream = nlp.data.CorpusIter(token_path, flatten=True,
+                                      skip_empty=True, eos=EOS)
     counter = nlp.data.Counter(stream)
     assert len(counter) == 33278, len(counter)
     # examine aggregated vocab
@@ -443,6 +444,10 @@ def test_stream_corpus():
     assert len(vocab) == 33278, len(vocab)
     # examine aggregated stats
     assert sum(counter.values()) == 2075677 + 216347 + 244102
+    # examine reset
+    stream.reset()
+    counter = nlp.data.Counter(stream)
+    assert len(counter) == 33278, len(counter)
 
 def test_stream_lm():
     EOS = nlp._constants.EOS_TOKEN
@@ -451,20 +456,21 @@ def test_stream_lm():
     train = nlp.data.WikiText2(segment='train', root=path)
     val = nlp.data.WikiText2(segment='val', root=path)
     test = nlp.data.WikiText2(segment='test', root=path)
-    vocab_stream = nlp.data.StreamingCorpus(token_path, flatten=True,
-                                            skip_empty=True, eos=EOS)
-    lm_stream = nlp.data.StreamingLanguageModel(token_path, skip_empty=True,
-                                                eos=EOS)
-    counter = nlp.data.Counter(vocab_stream)
+    vocab_corpus = nlp.data.CorpusIter(token_path, flatten=True,
+                                       skip_empty=True, eos=EOS)
+    lm_corpus = nlp.data.CorpusIter(token_path, flatten=False, skip_empty=True,
+                                    eos=EOS)
+    counter = nlp.data.Counter(vocab_corpus)
     vocab = nlp.vocab.Vocab(counter, bos_token=None)
-    padding_idx = vocab[vocab.padding_token]
     seq_len = 35
     batch_size = 80
+    lm_data = nlp.data.StreamingLanguageModel(lm_corpus, vocab, seq_len,
+                                              batch_size, last_batch='keep')
+    padding_idx = vocab[vocab.padding_token]
     total_num_tokens = sum(counter.values())
     num_tokens_per_batch = seq_len * batch_size
-    full_data = iter(lm_stream.bptt_batchify(vocab, seq_len, batch_size, last_batch='keep'))
     num_tokens = 0
-    for i, (data, target) in enumerate(full_data):
+    for i, (data, target) in enumerate(lm_data):
         # count the valid tokens in the batch
         mask = data != padding_idx
         num_valid_tokens = mask.sum().asscalar()
@@ -472,12 +478,10 @@ def test_stream_lm():
             mx.test_utils.assert_almost_equal(data[1:].asnumpy(), target[:-1].asnumpy())
             assert data.shape == target.shape == (seq_len, batch_size)
         num_tokens += num_valid_tokens
-    full_data = lm_stream.bptt_batchify(vocab, seq_len, batch_size, last_batch='keep')
-    num_batches = sum(1 for _ in full_data)
+    num_batches = sum(1 for _ in lm_data)
     # the last token doesn't appear in data
-    assert num_tokens >= total_num_tokens - batch_size, (total_num_tokens, num_tokens)
-    assert num_tokens < total_num_tokens, (total_num_tokens, num_tokens)
+    assert num_tokens >= total_num_tokens - batch_size, num_tokens
+    assert num_tokens < total_num_tokens, num_tokens
 
 test_stream_corpus()
 test_stream_lm()
-# TODO change generator to iter with reset
