@@ -482,6 +482,3 @@ def test_stream_lm():
     # the last token doesn't appear in data
     assert num_tokens >= total_num_tokens - batch_size, num_tokens
     assert num_tokens < total_num_tokens, num_tokens
-
-test_stream_corpus()
-test_stream_lm()
