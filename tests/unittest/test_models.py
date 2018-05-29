@@ -53,11 +53,11 @@ def test_text_models():
         output.wait_to_read()
 
 def test_cache_models():
-    pretrained_language_models = ['awd_lstm_lm_1150', 'awd_lstm_lm_600', 'standard_lstm_lm_200',
-                   'standard_lstm_lm_650', 'standard_lstm_lm_1500']
+    cache_language_models = ['cache_awd_lstm_lm_1150', 'cache_awd_lstm_lm_600', 'cache_standard_lstm_lm_200',
+                   'cache_standard_lstm_lm_650', 'cache_standard_lstm_lm_1500']
     datasets = ['wikitext-2']
 
-    for name in pretrained_language_models:
+    for name in cache_language_models:
         for dataset_name in datasets:
             cache_cell = get_cache_model(name, dataset_name, window=1, theta=0.6, lambdas=0.2, pretrained=True, root='tests/data/model/')
             outs, word_history, cache_history, hidden = \

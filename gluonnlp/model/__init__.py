@@ -116,7 +116,7 @@ def get_cache_model(name, dataset_name='wikitext-2', window=2000, theta=0.6, lam
     Parameters
     ----------
     name : str
-        Name of the pre-trained language model.
+        Name of the cache language model.
     dataset_name : str or None, default 'wikitext-2'.
         The dataset name on which the pretrained model is trained.
         Options are 'wikitext-2'. If specified, then the returned vocabulary is extracted from
@@ -144,6 +144,8 @@ def get_cache_model(name, dataset_name='wikitext-2', window=2000, theta=0.6, lam
     HybridBlock
         The model.
     """
-    lm_model, vocab = get_model(name, dataset_name=dataset_name, **kwargs)
+    assert 'cache_' in name, \
+        'The name of the cache should be the pre-trained model with cache_ prefix'
+    lm_model, vocab = get_model(name.split('cache_')[1], dataset_name=dataset_name, **kwargs)
     cache_cell = CacheCell(lm_model, len(vocab), window, theta, lambdas)
     return cache_cell

@@ -41,7 +41,5 @@ def testJointActivationRegularizationLoss():
     print(jar)
     jar(mx.nd.arange(1000).reshape(10, 10, 10),
         mx.nd.arange(1000).reshape(10, 10, 10),
-        *[mx.nd.arange(1000).reshape(10, 10, 10),
-          mx.nd.arange(1000).reshape(10, 10, 10)],
-        *[mx.nd.arange(1000).reshape(10, 10, 10),
-          mx.nd.arange(1000).reshape(10, 10, 10)])
+        mx.nd.arange(1000).reshape(10, 10, 10),
+        mx.nd.arange(1000).reshape(10, 10, 10))
