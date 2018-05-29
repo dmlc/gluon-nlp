@@ -19,17 +19,11 @@
 """Language models."""
 __all__ = ['AWDRNN', 'StandardRNN']
 
-import os
-import warnings
-
-from mxnet.gluon.model_zoo.model_store import get_model_file
-from mxnet import init, nd, cpu, autograd
+from mxnet import init, nd, autograd
 from mxnet.gluon import nn, Block
-from mxnet.gluon.model_zoo import model_store
 
 from gluonnlp.model.utils import _get_rnn_layer
 from gluonnlp.model.utils import apply_weight_drop
-from gluonnlp.data.utils import _load_pretrained_vocab
 
 
 class AWDRNN(Block):
@@ -145,7 +139,7 @@ class AWDRNN(Block):
     def begin_state(self, *args, **kwargs):
         return [c.begin_state(*args, **kwargs) for c in self.encoder]
 
-    def forward(self, inputs, begin_state=None):
+    def forward(self, inputs, begin_state=None): # pylint: disable=arguments-differ
         """Implement the forward computation that the awd language model and cache model use.
         """
         encoded = self.embedding(inputs)
@@ -274,5 +268,3 @@ class StandardRNN(Block):
             encoded = nd.Dropout(encoded, p=self._dropout, axes=(0,))
         out = self.decoder(encoded)
         return out, state, encoded_raw, encoded_dropped
-
-

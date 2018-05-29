@@ -20,7 +20,8 @@
 # pylint: disable=
 """Language model RNN loss."""
 
-__all__ = ['ActivationRegularizationLoss', 'TemporalActivationRegularizationLoss', 'JointActivationRegularizationLoss']
+__all__ = ['ActivationRegularizationLoss', 'TemporalActivationRegularizationLoss',
+           'JointActivationRegularizationLoss']
 
 from mxnet import nd
 from mxnet.gluon.loss import Loss
@@ -67,7 +68,7 @@ class ActivationRegularizationLoss(Loss):
         s = 'ActivationRegularizationLoss (alpha={alpha})'
         return s.format(alpha=self._alpha)
 
-    def hybrid_forward(self, F, *states):
+    def hybrid_forward(self, F, *states): # pylint: disable=arguments-differ
         if not self._alpha:
             if not states:
                 means = [self._alpha * state.__pow__(2).mean()
@@ -118,7 +119,7 @@ class TemporalActivationRegularizationLoss(Loss):
         s = 'TemporalActivationRegularizationLoss (beta={beta})'
         return s.format(beta=self._beta)
 
-    def hybrid_forward(self, F, *states):
+    def hybrid_forward(self, F, *states): # pylint: disable=arguments-differ
         if not self._beta:
             if not states:
                 means = [self._beta * (state[1:] - state[:-1]).__pow__(2).mean()
@@ -130,9 +131,11 @@ class TemporalActivationRegularizationLoss(Loss):
 class JointActivationRegularizationLoss(Loss):
     r"""Computes Joint Regularization Loss with standard loss.
 
-    The activation regularization refer to gluonnlp.loss.ActivationRegularizationLoss.
+    The activation regularization refer to
+    gluonnlp.loss.ActivationRegularizationLoss.
 
-    The temporal activation regularization refer to gluonnlp.loss.TemporalActivationRegularizationLoss.
+    The temporal activation regularization refer to
+    gluonnlp.loss.TemporalActivationRegularizationLoss.
 
     Parameters
     ----------
@@ -170,7 +173,7 @@ class JointActivationRegularizationLoss(Loss):
         s = 'JointActivationTemporalActivationRegularizationLoss'
         return s
 
-    def hybrid_forward(self, F, out, target, states, dropped_states):
+    def hybrid_forward(self, F, out, target, states, dropped_states): # pylint: disable=arguments-differ
         l = self._loss(out.reshape(-3, -1), target.reshape(-1, ))
         l = l + self._ar_loss(*dropped_states)
         l = l + self._tar_loss(*states)

@@ -24,13 +24,10 @@ import os
 import warnings
 
 from mxnet.gluon.model_zoo.model_store import get_model_file
-from mxnet import init, nd, cpu, autograd
-from mxnet.gluon import nn, Block
+from mxnet import nd, cpu, autograd
 from mxnet.gluon.model_zoo import model_store
 
 from gluonnlp.model import train
-from gluonnlp.model.utils import _get_rnn_layer
-from gluonnlp.model.utils import apply_weight_drop
 from gluonnlp.data.utils import _load_pretrained_vocab
 
 
@@ -88,8 +85,8 @@ class AWDRNN(train.AWDRNN):
                  tie_weights, dropout, weight_drop, drop_h,
                  drop_i, drop_e, **kwargs):
         super(AWDRNN, self).__init__(mode, vocab_size, embed_size, hidden_size, num_layers,
-                 tie_weights, dropout, weight_drop, drop_h,
-                 drop_i, drop_e, **kwargs)
+                                     tie_weights, dropout, weight_drop,
+                                     drop_h, drop_i, drop_e, **kwargs)
 
     def forward(self, inputs, begin_state=None): # pylint: disable=arguments-differ
         """Implement forward computation.
@@ -155,7 +152,7 @@ class StandardRNN(train.StandardRNN):
                                               'Got: emb: {}, hid: {}.'.format(embed_size,
                                                                               hidden_size)
         super(StandardRNN, self).__init__(mode, vocab_size, embed_size, hidden_size,
-                 num_layers, dropout, tie_weights, **kwargs)
+                                          num_layers, dropout, tie_weights, **kwargs)
 
     def forward(self, inputs, begin_state=None): # pylint: disable=arguments-differ
         """Defines the forward computation. Arguments can be either
