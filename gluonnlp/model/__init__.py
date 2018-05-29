@@ -51,7 +51,7 @@ These models can constructed by passing ``pretrained=True``:
 
 from .train import *
 
-from .infer import *
+from .language_model import *
 
 from .beam_search import *
 
@@ -65,7 +65,7 @@ from .block import *
 
 from .cache import *
 
-__all__ = train.__all__ + infer.__all__ + beam_search.__all__ + attention_cell.__all__ + \
+__all__ = train.__all__ + language_model.__all__ + beam_search.__all__ + attention_cell.__all__ + \
           utils.__all__ + parameter.__all__ + block.__all__
 
 
@@ -109,3 +109,41 @@ def get_model(name, dataset_name='wikitext-2', **kwargs):
                 name, '\n\t'.join(sorted(models.keys()))))
     kwargs['dataset_name'] = dataset_name
     return models[name](**kwargs)
+
+def get_cache_model(name, dataset_name='wikitext-2', window=2000, theta=0.6, lambdas=0.2, **kwargs):
+    """Returns a cache model using a pre-trained language model.
+
+    Parameters
+    ----------
+    name : str
+        Name of the pre-trained language model.
+    dataset_name : str or None, default 'wikitext-2'.
+        The dataset name on which the pretrained model is trained.
+        Options are 'wikitext-2'. If specified, then the returned vocabulary is extracted from
+        the training set of the dataset.
+        If None, then vocab is required, for specifying embedding weight size, and is directly
+        returned.
+    window : int
+        Size of cache window
+    theta : float
+        Mix between uniform distribution and cache softmax distribution over previous words
+    lambdas : float
+        Linear mix between only cache (1) and only vocab (0) distribution
+    vocab : gluonnlp.Vocab or None, default None
+        Vocabulary object to be used with the language model.
+        Required when dataset_name is not specified.
+    pretrained : bool, default False
+        Whether to load the pretrained weights for model.
+    ctx : Context, default CPU
+        The context in which to load the pretrained weights.
+    root : str, default '~/.mxnet/models'
+        Location for keeping the pre-trained model parameters.
+
+    Returns
+    -------
+    HybridBlock
+        The model.
+    """
+    lm_model, vocab = get_model(name, dataset_name=dataset_name, **kwargs)
+    cache_cell = CacheCell(lm_model, len(vocab), window, theta, lambdas)
+    return cache_cell

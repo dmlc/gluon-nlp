@@ -24,7 +24,7 @@ import sys
 import mxnet as mx
 import gluonnlp as nlp
 from gluonnlp.model import get_model as get_text_model
-
+from gluonnlp.model import get_cache_model
 
 def eprint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
@@ -51,3 +51,21 @@ def test_text_models():
             model.collect_params().initialize()
         output, state = model(mx.nd.arange(330).reshape(33, 10))
         output.wait_to_read()
+
+def test_cache_models():
+    pretrained_language_models = ['awd_lstm_lm_1150', 'awd_lstm_lm_600', 'standard_lstm_lm_200',
+                   'standard_lstm_lm_650', 'standard_lstm_lm_1500']
+    datasets = ['wikitext-2']
+
+    for name in pretrained_language_models:
+        for dataset_name in datasets:
+            cache_cell = get_cache_model(name, dataset_name, pretrained=True, root='tests/data/model/')
+            outs, word_history, cache_history, hidden = \
+                cache_cell(mx.nd.arange(10).reshape(10, 1), mx.nd.arange(10).reshape(10, 1), None, None)
+            print(cache_cell)
+            print("outs:")
+            print(outs)
+            print("word_history:")
+            print(word_history)
+            print("cache_history:")
+            print(cache_history)

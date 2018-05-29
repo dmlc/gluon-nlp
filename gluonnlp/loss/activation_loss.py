@@ -144,6 +144,12 @@ class JointActivationRegularizationLoss(Loss):
         The temporal activation regularization
 
     Inputs:
+        - **out**: NDArray
+        output tensor with shape `(sequence_length, batch_size, input_size)`
+          when `layout` is "TNC".
+        - **target**: NDArray
+        target tensor with shape `(sequence_length, batch_size, input_size)`
+          when `layout` is "TNC".
         - **states**: the stack outputs from RNN,
         which consists of output from each time step (TNC).
         - **dropped_states**: the stack outputs from RNN with dropout,
