@@ -170,7 +170,6 @@ else:
                                                             args.nhid, args.nlayers, args.dropout, args.tied)
 
 model.initialize(mx.init.Xavier(), ctx=context)
-# model.hybridize()
 
 if args.optimizer == 'sgd':
     trainer_params = {'learning_rate': args.lr,
@@ -271,64 +270,6 @@ def evaluate(data_source, batch_size, segment, ctx=None):
         ntotal += L.size
     return total_L / ntotal
 
-# def regularized_loss(output, target, encoder_hs, dropped_encoder_hs):
-#     """Compute regularized (optional) loss of the language model in training mode.
-#
-#     Parameters
-#     ----------
-#     output: NDArray
-#         The output of the model.
-#     target: list
-#         The list of output states of the model's encoder.
-#     encoder_hs: list
-#         The list of outputs of the model's encoder.
-#     dropped_encoder_hs: list
-#         The list of outputs with dropout of the model's encoder.
-#
-#     Returns
-#     -------
-#     l: NDArray
-#         The loss per word/token.
-#         If both args.alpha and args.beta are zeros, the loss is the standard cross entropy.
-#         If args.alpha is not zero, the standard loss is regularized with activation.
-#         If args.beta is not zero, the standard loss is regularized with temporal activation.
-#     """
-#     l = loss(output.reshape(-3, -1), target.reshape(-1,))
-#     l = l + ar_loss(*dropped_encoder_hs)
-#     l = l + tar_loss(*encoder_hs)
-#     return l
-
-# def criterion(output, target, encoder_hs, dropped_encoder_hs):
-#     """Compute regularized (optional) loss of the language model in training mode.
-#         Parameters
-#         ----------
-#         output: NDArray
-#             The output of the model.
-#         target: list
-#             The list of output states of the model's encoder.
-#         encoder_hs: list
-#             The list of outputs of the model's encoder.
-#         dropped_encoder_hs: list
-#             The list of outputs with dropout of the model's encoder.
-#         Returns
-#         -------
-#         l: NDArray
-#             The loss per word/token.
-#             If both args.alpha and args.beta are zeros, the loss is the standard cross entropy.
-#             If args.alpha is not zero, the standard loss is regularized with activation.
-#             If args.beta is not zero, the standard loss is regularized with temporal activation.
-#     """
-#     l = loss(output.reshape(-3, -1), target.reshape(-1,))
-#     if args.alpha:
-#         dropped_means = [args.alpha*dropped_encoder_h.__pow__(2).mean()
-#                          for dropped_encoder_h in dropped_encoder_hs[-1:]]
-#         l = l + mx.nd.add_n(*dropped_means)
-#     if args.beta:
-#         means = [args.beta*(encoder_h[1:] - encoder_h[:-1]).__pow__(2).mean()
-#                  for encoder_h in encoder_hs[-1:]]
-#         l = l + mx.nd.add_n(*means)
-    return l
-
 def train():
     """Training loop for awd language model.
 
@@ -358,7 +299,6 @@ def train():
             with autograd.record():
                 for j, (X, y, h) in enumerate(zip(data_list, target_list, hiddens)):
                     output, h, encoder_hs, dropped_encoder_hs = model(X, h)
-                    # l = criterion(output, y, encoder_hs, dropped_encoder_hs)
                     l = joint_loss(output, y, encoder_hs, dropped_encoder_hs)
                     L = L + l.as_in_context(context[0]) / X.size
                     Ls.append(l/X.size)
