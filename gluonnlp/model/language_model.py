@@ -423,27 +423,27 @@ def user_pretrained_lm(predefined_args=None, model_name=None,
     ----------
     predefined_args: dict, default None
         The predefined arguments that user specified.
-        Example of StandardRNN
-        ------------------------
-        predefined_args = {'embed_size': 200,
-                   'hidden_size': 200,
-                   'mode': 'lstm',
-                   'num_layers': 2,
-                   'tie_weights': True,
-                   'dropout': 0.2}
+    Example of StandardRNN
+    ------------------------
+    predefined_args = {'embed_size': 200,
+               'hidden_size': 200,
+               'mode': 'lstm',
+               'num_layers': 2,
+               'tie_weights': True,
+               'dropout': 0.2}
 
-        Example of AWDRNN
-        ------------------------
-        predefined_args = {'embed_size': 200,
-                       'hidden_size': 600,
-                       'mode': 'lstm',
-                       'num_layers': 3,
-                       'tie_weights': True,
-                       'dropout': 0.2,
-                       'weight_drop': 0.2,
-                       'drop_h': 0.1,
-                       'drop_i': 0.3,
-                       'drop_e': 0.05}
+    Example of AWDRNN
+    ------------------------
+    predefined_args = {'embed_size': 200,
+                   'hidden_size': 600,
+                   'mode': 'lstm',
+                   'num_layers': 3,
+                   'tie_weights': True,
+                   'dropout': 0.2,
+                   'weight_drop': 0.2,
+                   'drop_h': 0.1,
+                   'drop_i': 0.3,
+                   'drop_e': 0.05}
     model_name: str, default None
         The pretrained model parameters' file name. e.g., 'awd_lstm_lm_1150'.
     dataset_name : str or None, default None
