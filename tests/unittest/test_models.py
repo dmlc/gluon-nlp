@@ -59,7 +59,7 @@ def test_cache_models():
 
     for name in pretrained_language_models:
         for dataset_name in datasets:
-            cache_cell = get_cache_model(name, dataset_name, pretrained=True, root='tests/data/model/')
+            cache_cell = get_cache_model(name, dataset_name, window=1, theta=0.6, lambdas=0.2, pretrained=True, root='tests/data/model/')
             outs, word_history, cache_history, hidden = \
                 cache_cell(mx.nd.arange(10).reshape(10, 1), mx.nd.arange(10).reshape(10, 1), None, None)
             print(cache_cell)
