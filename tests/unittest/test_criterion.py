@@ -39,7 +39,7 @@ def testJointActivationRegularizationLoss():
     tar = nlp.loss.TemporalActivationRegularizationLoss(1)
     jar = nlp.loss.JointActivationRegularizationLoss(loss, ar, tar)
     print(jar)
-    jar(mx.nd.arange(1000).reshape(10, 10, 10),
+    jar(mx.nd.arange(1000).reshape(100, 10, 1),
         mx.nd.arange(1000).reshape(10, 10, 10),
         mx.nd.arange(1000).reshape(10, 10, 10),
         mx.nd.arange(1000).reshape(10, 10, 10))
