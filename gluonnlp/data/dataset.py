@@ -23,10 +23,12 @@ Files can be loaded into formats that are immediately ready for training and eva
 __all__ = ['TextLineDataset', 'CorpusDataset', 'LanguageModelDataset',\
            'CorpusIter', 'StreamingLanguageModel']
 
-import io, os, glob
+import io
+import os
+import glob
+import numpy as np
 
 import mxnet as mx
-import numpy as np
 from mxnet.gluon.data import SimpleDataset, RandomSampler, SequentialSampler
 from .utils import concat_sequence, slice_sequence, _slice_pad_length
 
@@ -271,12 +273,12 @@ class CorpusIter(object):
         self._corpus = None
 
     def _get_sampler(self, sampler):
-        assert isinstance(sampler, str), "Expected sampler to be a str, but got %s"%type(sampler)
+        assert isinstance(sampler, str), 'Expected sampler to be a str, but got %s'%type(sampler)
         if sampler == 'random':
             return RandomSampler
         if sampler == 'sequential':
             return SequentialSampler
-        raise ValueError("sampler must be either 'random' or 'sequential', but got %s"%(sampler))
+        raise ValueError('sampler must be either "random" or "sequential", but got %s'%(sampler))
 
     def _reset_idx(self):
         self._idx_samples = None
@@ -373,8 +375,8 @@ class StreamingLanguageModel(object):
     """
     def __init__(self, corpus, vocab, seq_len, batch_size, last_batch='keep'):
         if corpus._flatten:
-            raise ValueError("StreamingLanguageModel doesn't support flatten corpus. "\
-                             "Please create a CorpusIter with flatten=False.")
+            raise ValueError('StreamingLanguageModel does not support flatten corpus. '\
+                             'Please create a CorpusIter with flatten=False.')
         self._corpus = corpus
         self._vocab = vocab
         self._seq_len = seq_len
@@ -400,15 +402,15 @@ class StreamingLanguageModel(object):
                 buffers[i].extend(vocab[next(corpus)])
 
         def _write(data, target, buffers, seq_len, i, length):
-             """Write a sentence from i-th buffer to data and target."""
-             num_tokens = len(buffers[i]) - 1
-             num_tokens = min(num_tokens, seq_len - length)
-             # fill in data and target
-             data[i, length:length+num_tokens] = buffers[i][:num_tokens]
-             target[i, length:length+num_tokens] = buffers[i][1:num_tokens+1]
-             # trim sentence in the buffer if too long. Used for the next batch
-             buffers[i] = buffers[i][num_tokens:]
-             return num_tokens
+            """Write a sentence from i-th buffer to data and target."""
+            num_tokens = len(buffers[i]) - 1
+            num_tokens = min(num_tokens, seq_len - length)
+            # fill in data and target
+            data[i, length:length+num_tokens] = buffers[i][:num_tokens]
+            target[i, length:length+num_tokens] = buffers[i][1:num_tokens+1]
+            # trim sentence in the buffer if too long. Used for the next batch
+            buffers[i] = buffers[i][num_tokens:]
+            return num_tokens
 
         # iterable states
         buffers = [None] * self._batch_size
