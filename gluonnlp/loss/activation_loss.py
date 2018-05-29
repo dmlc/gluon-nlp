@@ -69,6 +69,7 @@ class ActivationRegularizationLoss(Loss):
         return s.format(alpha=self._alpha)
 
     def hybrid_forward(self, F, *states): # pylint: disable=arguments-differ
+        # pylint: disable=unused-argument
         if not self._alpha:
             if not states:
                 means = [self._alpha * state.__pow__(2).mean()
@@ -120,6 +121,7 @@ class TemporalActivationRegularizationLoss(Loss):
         return s.format(beta=self._beta)
 
     def hybrid_forward(self, F, *states): # pylint: disable=arguments-differ
+        # pylint: disable=unused-argument
         if not self._beta:
             if not states:
                 means = [self._beta * (state[1:] - state[:-1]).__pow__(2).mean()
@@ -174,6 +176,7 @@ class JointActivationRegularizationLoss(Loss):
         return s
 
     def hybrid_forward(self, F, out, target, states, dropped_states): # pylint: disable=arguments-differ
+        # pylint: disable=unused-argument
         l = self._loss(out.reshape(-3, -1), target.reshape(-1, ))
         l = l + self._ar_loss(*dropped_states)
         l = l + self._tar_loss(*states)
