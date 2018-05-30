@@ -428,7 +428,7 @@ def test_wmt2016bpe():
     assert len(en_vocab) == 36548
     assert len(de_vocab) == 36548
 
-def test_stream_corpus():
+def test_corpus_iter():
     EOS = nlp._constants.EOS_TOKEN
     path = os.path.join('tests', 'data', 'wikitext-2')
     token_path = os.path.join('tests', 'data', 'wikitext-2/*.tokens')
@@ -449,7 +449,7 @@ def test_stream_corpus():
     counter = nlp.data.Counter(stream)
     assert len(counter) == 33278, len(counter)
 
-def test_stream_lm():
+def test_lm_iter():
     EOS = nlp._constants.EOS_TOKEN
     path = os.path.join('tests', 'data', 'wikitext-2')
     token_path = os.path.join('tests', 'data', 'wikitext-2/*.tokens')
@@ -464,8 +464,8 @@ def test_stream_lm():
     vocab = nlp.vocab.Vocab(counter, bos_token=None)
     seq_len = 35
     batch_size = 80
-    lm_data = nlp.data.StreamingLanguageModel(lm_corpus, vocab, seq_len,
-                                              batch_size, last_batch='keep')
+    lm_data = nlp.data.LanguageModelIter(lm_corpus, vocab, seq_len,
+                                         batch_size, last_batch='keep')
     padding_idx = vocab[vocab.padding_token]
     total_num_tokens = sum(counter.values())
     num_tokens_per_batch = seq_len * batch_size

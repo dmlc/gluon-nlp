@@ -21,7 +21,7 @@
 """NLP Toolkit Dataset API. It allows easy and customizable loading of corpora and dataset files.
 Files can be loaded into formats that are immediately ready for training and evaluation."""
 __all__ = ['TextLineDataset', 'CorpusDataset', 'LanguageModelDataset',\
-           'CorpusIter', 'StreamingLanguageModel']
+           'CorpusIter', 'LanguageModelIter']
 
 import io
 import os
@@ -205,7 +205,21 @@ class LanguageModelDataset(CorpusDataset):
                 batches.append(data[seq_len*len(batches):, :])
         return SimpleDataset(batches).transform(lambda x: (x[:min(len(x)-1, seq_len), :], x[1:, :]))
 
-class CorpusIter(object):
+class DataIter(object):
+    """Abstract Data Iterator Interface."""
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        return self.next()
+
+    def reset(self):
+        raise NotImplementedError
+
+    def next(self):
+        raise NotImplementedError
+
+class CorpusIter(DataIter):
     """Common text data iterator that streams a corpus consisting of multiple text files
     that match provided file_pattern. One file is read at a time.
 
@@ -326,12 +340,6 @@ class CorpusIter(object):
         self._sample = self._corpus[idx]
         self._idx += 1
 
-    def __iter__(self):
-        return self
-
-    def __next__(self):
-        return self.next()
-
     def reset(self):
         self._reset_file_idx()
         self._reset_idx()
@@ -348,7 +356,7 @@ class CorpusIter(object):
                 # try to open a new file
                 pass
 
-class StreamingLanguageModel(object):
+class LanguageModelIter(DataIter):
     """Streams a corpus and produces a language modeling data iterable.
 
     The corpus is transformedinto batches of numericalized samples, in the way that the
@@ -375,7 +383,7 @@ class StreamingLanguageModel(object):
     """
     def __init__(self, corpus, vocab, seq_len, batch_size, last_batch='keep'):
         if corpus._flatten:
-            raise ValueError('StreamingLanguageModel does not support flatten corpus. '\
+            raise ValueError('LanguageModelIter does not support flatten corpus. '\
                              'Please create a CorpusIter with flatten=False.')
         self._corpus = corpus
         self._vocab = vocab
@@ -388,54 +396,64 @@ class StreamingLanguageModel(object):
                                         'last_batch="keep".'
             self._padding_idx = vocab[vocab.padding_token]
 
-    def __iter__(self):
-        def _reset(value, data, target):
-            """Reset the data and target with values."""
-            data[:] = value
-            target[:] = value
+        # iterator states
+        self._buffers = [None] * self._batch_size
+        self._has_next = None
+        self._has_token_buffered = None
+        self._data = np.empty([self._batch_size, self._seq_len], dtype=np.float32)
+        self._target = np.empty([self._batch_size, self._seq_len], dtype=np.float32)
+        self.reset()
 
-        def _read(buffers, i, vocab, corpus):
-            """Read a sentence from the corpus into i-th buffer."""
-            if buffers[i] is None:
-                buffers[i] = vocab[next(corpus)]
-            if len(buffers[i]) <= 1:
-                buffers[i].extend(vocab[next(corpus)])
+    def _read(self, i):
+        """Read a sentence from the corpus into i-th buffer."""
+        if self._buffers[i] is None:
+            self._buffers[i] = self._vocab[next(self._corpus)]
+        if len(self._buffers[i]) <= 1:
+            self._buffers[i].extend(self._vocab[next(self._corpus)])
 
-        def _write(data, target, buffers, seq_len, i, length):
-            """Write a sentence from i-th buffer to data and target."""
-            num_tokens = len(buffers[i]) - 1
-            num_tokens = min(num_tokens, seq_len - length)
-            # fill in data and target
-            data[i, length:length+num_tokens] = buffers[i][:num_tokens]
-            target[i, length:length+num_tokens] = buffers[i][1:num_tokens+1]
-            # trim sentence in the buffer if too long. Used for the next batch
-            buffers[i] = buffers[i][num_tokens:]
-            return num_tokens
+    def _write(self, i, length):
+        """Write a sentence from i-th buffer to data and target."""
+        num_tokens = len(self._buffers[i]) - 1
+        num_tokens = min(num_tokens, self._seq_len - length)
+        # fill in data and target
+        self._data[i, length:length+num_tokens] = self._buffers[i][:num_tokens]
+        self._target[i, length:length+num_tokens] = self._buffers[i][1:num_tokens+1]
+        # trim sentence in the buffer if too long. Used for the next batch
+        self._buffers[i] = self._buffers[i][num_tokens:]
+        return num_tokens
 
-        # iterable states
-        buffers = [None] * self._batch_size
-        has_next = True
-        has_token_buffered = False
-        data = np.empty([self._batch_size, self._seq_len], dtype=np.float32)
-        target = np.empty([self._batch_size, self._seq_len], dtype=np.float32)
+    def _init(self):
+        """Initialize the data and target with padding indices."""
+        self._data[:] = self._padding_idx
+        self._target[:] = self._padding_idx
 
-        # reset corpus states
+    def reset(self):
+        """Reset iterator states."""
         self._corpus.reset()
+        self._buffers = [None] * self._batch_size
+        self._has_next = True
+        self._has_token_buffered = False
+        self._init()
 
-        while has_next or has_token_buffered:
-            _reset(self._padding_idx, data, target)
-            has_token_buffered = False
-            for i in range(self._batch_size):
-                length = 0
-                try:
-                    while length < self._seq_len:
-                        _read(buffers, i, self._vocab, self._corpus)
-                        num_tokens = _write(data, target, buffers, self._seq_len, i, length)
-                        if len(buffers[i]) > 0:
-                            has_token_buffered = True
-                        length += num_tokens
-                except StopIteration:
-                    has_next = False
-            if has_token_buffered or self._last_batch == 'keep':
-                yield mx.nd.array(data).T, mx.nd.array(target).T
-        return
+    def next(self):
+        # No more sentences
+        if not self._has_next and not self._has_token_buffered:
+            raise StopIteration
+
+        self._init()
+        self._has_token_buffered = False
+        for i in range(self._batch_size):
+            length = 0
+            try:
+                while length < self._seq_len:
+                    self._read(i)
+                    num_tokens = self._write(i, length)
+                    if len(self._buffers[i]) > 0:
+                        self._has_token_buffered = True
+                    length += num_tokens
+            except StopIteration:
+                self._has_next = False
+        if self._has_token_buffered or self._last_batch == 'keep':
+            return mx.nd.array(self._data).T, mx.nd.array(self._target).T
+        else:
+            raise StopIteration
