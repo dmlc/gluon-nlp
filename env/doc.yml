@@ -14,3 +14,4 @@ dependencies:
   - nltk
   - pip:
     - mxnet-cu80>=1.2.0b20180518
+    - pandoc==2.2
