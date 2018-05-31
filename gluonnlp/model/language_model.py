@@ -17,7 +17,7 @@
 # specific language governing permissions and limitations
 # under the License.
 """Language models."""
-__all__ = ['AWDRNN', 'StandardRNN', 'user_pretrained_lm', 'awd_lstm_lm_1150', 'awd_lstm_lm_600',
+__all__ = ['AWDRNN', 'StandardRNN', 'awd_lstm_lm_1150', 'awd_lstm_lm_600',
            'standard_lstm_lm_200', 'standard_lstm_lm_650', 'standard_lstm_lm_1500']
 
 import os
