@@ -100,16 +100,10 @@ class SQuAD(ArrayDataset):
         with open(os.path.join(self._root, data_file_name)) as f:
             samples = json.load(f)
 
-        return _SQuADJsonParser().get_records(samples)
+        return SQuAD._get_records(samples)
 
-
-class _SQuADJsonParser:
-    """Parses .json data file
-    """
-    def __init__(self):
-        pass
-
-    def get_records(self, json_dict):
+    @staticmethod
+    def _get_records(json_dict):
         """Provides a list of tuples with records where answers are flatten"""
         records = []
 
@@ -120,7 +114,7 @@ class _SQuADJsonParser:
                 for qas in paragraph['qas']:
 
                     record = (
-                        qas['id'], qas['question'], paragraph['context'], self._get_answers(qas)
+                        qas['id'], qas['question'], paragraph['context'], SQuAD._get_answers(qas)
                     )
 
                     record_index += 1
@@ -128,7 +122,8 @@ class _SQuADJsonParser:
 
         return records
 
-    def _get_answers(self, qas_dict):
+    @staticmethod
+    def _get_answers(qas_dict):
         answers = []
 
         for answer in qas_dict['answers']:

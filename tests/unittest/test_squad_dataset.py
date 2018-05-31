@@ -23,5 +23,9 @@ from gluonnlp.data.squad_dataset import SQuAD
 def test_load_dev_squad():
     dataset = SQuAD(segment='dev', root=os.path.join('tests', 'data', 'squad'))
 
-    for i in range(5):
-        assert dataset[i] is not None
+    # number of records in dataset is equal to number of different questions
+    assert len(dataset) == 10570
+
+    # Each record is a tuple of 4 elements: question Id, question, context, list of answers
+    for record in dataset:
+        assert len(record) == 4

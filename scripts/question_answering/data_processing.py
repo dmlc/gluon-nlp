@@ -47,7 +47,6 @@ def preprocess_dataset(dataset, question_max_length, context_max_length):
     for i, entry in enumerate(dataset):
         _, question, context, _ = entry
         records.append(transformer(i, question, context))
-        print(i)
 
     print('Dataset preprocessing finished.')
     return SimpleDataset(records)
