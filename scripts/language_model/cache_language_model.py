@@ -79,21 +79,11 @@ if not args.user_model:
                                        pretrained=True,
                                        ctx=context)
 else:
-    predefined_args = {'embed_size': 400,
-                       'hidden_size': 1150,
-                       'mode': 'lstm',
-                       'num_layers': 3,
-                       'tie_weights': True,
-                       'dropout': 0.4,
-                       'weight_drop': 0.5,
-                       'drop_h': 0.2,
-                       'drop_i': 0.65,
-                       'drop_e': 0.1}
-    model, vocab = nlp.model.user_pretrained_lm(predefined_args=predefined_args,
-                                                model_name=args.save,
-                                                dataset_name='wikitext-2',
-                                                pretrained=True,
-                                                ctx=context)
+    model, vocab = nlp.model.get_model(name=args.save,
+                                       dataset_name='wikitext-2',
+                                       pretrained=False,
+                                       ctx=context)
+    model.load_params(args.save)
 
 ###############################################################################
 # Load data

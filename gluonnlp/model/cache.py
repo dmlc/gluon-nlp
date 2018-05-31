@@ -70,6 +70,31 @@ class CacheCell(Block):
         with self.name_scope():
             self._pretrained_lm_model = pretrained_lm_model
 
+    def save_params(self, filename):
+        """Save parameters to file.
+
+        filename : str
+            Path to file.
+        """
+        self._children[list(self._children.keys())[0]].save_params(filename)
+
+    def load_params(self, filename, ctx=None, allow_missing=False,
+                    ignore_extra=False):
+        """Load parameters from file.
+
+        filename : str
+            Path to parameter file.
+        ctx : Context or list of Context, default cpu()
+            Context(s) initialize loaded parameters on.
+        allow_missing : bool, default False
+            Whether to silently skip loading parameters not represents in the file.
+        ignore_extra : bool, default False
+            Whether to silently ignore parameters from the file that are not
+            present in this Block.
+        """
+        self._children[list(self._children.keys())[0]].load_params(filename)
+
+
     def forward(self, inputs, target, next_word_history, cache_history, begin_state=None): # pylint: disable=arguments-differ
         """Defines the forward computation for cache cell. Arguments can be either
         :py:class:`NDArray` or :py:class:`Symbol`."""

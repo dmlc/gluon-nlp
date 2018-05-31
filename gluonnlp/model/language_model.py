@@ -412,67 +412,6 @@ def standard_lstm_lm_1500(dataset_name=None, vocab=None, pretrained=False, ctx=c
     return _get_rnn_model(StandardRNN, 'standard_lstm_lm_1500',
                           dataset_name, vocab, pretrained, ctx, root, **predefined_args)
 
-def user_pretrained_lm(predefined_args=None, model_name=None,
-                       dataset_name=None, vocab=None, pretrained=False, ctx=cpu(),
-                       root=os.path.join('~', '.mxnet', 'models')):
-    r"""user pretrained language model setting either in StandardRNN or AWDRNN.
-
-    Embedding size and hidden layer size are specified by the user.
-
-    Parameters
-    ----------
-    predefined_args: dict, default None
-        The predefined arguments that user specified.
-    Example of StandardRNN
-    ------------------------
-    predefined_args = {'embed_size': 200,
-               'hidden_size': 200,
-               'mode': 'lstm',
-               'num_layers': 2,
-               'tie_weights': True,
-               'dropout': 0.2}
-
-    Example of AWDRNN
-    ------------------------
-    predefined_args = {'embed_size': 200,
-                   'hidden_size': 600,
-                   'mode': 'lstm',
-                   'num_layers': 3,
-                   'tie_weights': True,
-                   'dropout': 0.2,
-                   'weight_drop': 0.2,
-                   'drop_h': 0.1,
-                   'drop_i': 0.3,
-                   'drop_e': 0.05}
-    model_name: str, default None
-        The pretrained model parameters' file name. e.g., 'awd_lstm_lm_1150'.
-    dataset_name : str or None, default None
-        The dataset name on which the pretrained model is trained.
-        Options are 'wikitext-2'. If specified, then the returned vocabulary is extracted from
-        the training set of the dataset.
-        If None, then vocab is required, for specifying embedding weight size, and is directly
-        returned.
-        The pre-trained model must be specified by the user.
-    vocab : gluonnlp.Vocab or None, default None
-        Vocab object to be used with the language model.
-        Required when dataset_name is not specified.
-    pretrained : bool, default False
-        Whether to load the pretrained weights for model.
-    ctx : Context, default CPU
-        The context in which to load the pretrained weights.
-    root : str, default '~/.mxnet/models'
-        Location for keeping the model parameters.
-
-    Returns
-    -------
-    gluon.Block, gluonnlp.Vocab
-    """
-    if predefined_args.keys().__contains__('weight_drop') and predefined_args['weight_drop'] > 0:
-        return _get_rnn_model(AWDRNN, model_name, dataset_name, vocab, pretrained,
-                              ctx, root, **predefined_args)
-    return _get_rnn_model(StandardRNN, model_name, dataset_name, vocab, pretrained,
-                          ctx, root, **predefined_args)
-
 model_store._model_sha1.update(
     {name: checksum for checksum, name in [
         ('d572ce7190e128b94aed403ad89a610aebe8a74a', 'standard_lstm_lm_1500_wikitext-2'),
