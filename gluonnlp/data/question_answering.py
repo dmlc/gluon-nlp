@@ -32,7 +32,7 @@ from mxnet.gluon.utils import download, check_sha1, _get_repo_file_url
 from .registry import register
 
 
-@register(segment=['train', 'test'])
+@register(segment=['train', 'dev'])
 class SQuAD(ArrayDataset):
     """Stanford Question Answering Dataset (SQuAD) - reading comprehension dataset.
 

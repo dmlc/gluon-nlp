@@ -22,7 +22,7 @@ import argparse
 import random
 import mxnet as mx
 
-from gluonnlp.data.squad_dataset import SQuAD
+from gluonnlp.data import SQuAD
 from scripts.question_answering.data_processing import preprocess_dataset
 
 random.seed(100)

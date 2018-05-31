@@ -42,7 +42,9 @@ from .translation import *
 
 from . import batchify
 
+from .question_answering import *
+
 __all__ = (utils.__all__ + transforms.__all__ + sampler.__all__ +
            dataset.__all__ + language_model.__all__ + sentiment.__all__ +
            word_embedding_evaluation.__all__ + conll.__all__ +
-           translation.__all__ + registry.__all__)
+           translation.__all__ + registry.__all__ + question_answering.__all__)
