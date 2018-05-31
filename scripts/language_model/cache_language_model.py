@@ -83,7 +83,7 @@ else:
                                        dataset_name='wikitext-2',
                                        pretrained=False,
                                        ctx=context)
-    model.load_params(args.save)
+    model.load_params(args.save, ctx=context)
 
 ###############################################################################
 # Load data
