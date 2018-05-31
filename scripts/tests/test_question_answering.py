@@ -20,7 +20,7 @@ import os
 
 from mxnet.gluon.data import DataLoader, SimpleDataset
 
-from gluonnlp.data.squad_dataset import SQuAD
+from gluonnlp.data import SQuAD
 from scripts.question_answering.data_processing import SQuADTransform, VocabProvider
 
 question_max_length = 30
