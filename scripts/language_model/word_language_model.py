@@ -45,7 +45,6 @@ import os
 import sys
 import mxnet as mx
 from mxnet import gluon, autograd
-from mxnet.gluon.loss import Loss
 import gluonnlp as nlp
 
 curr_path = os.path.dirname(os.path.abspath(os.path.expanduser(__file__)))
@@ -187,7 +186,8 @@ loss = gluon.loss.SoftmaxCrossEntropyLoss()
 ar_loss = nlp.loss.ActivationRegularizationLoss(args.alpha)
 tar_loss = nlp.loss.TemporalActivationRegularizationLoss(args.beta)
 
-class JointActivationRegularizationLoss(Loss):
+
+class JointActivationRegularizationLoss(gluon.loss.Loss):
     r"""Computes Joint Regularization Loss with standard loss.
 
     The activation regularization refer to
@@ -222,11 +222,11 @@ class JointActivationRegularizationLoss(Loss):
           batch_axis are averaged out.
     """
 
-    def __init__(self, loss, ar_loss, tar_loss, weight=None, batch_axis=None, **kwargs):
+    def __init__(self, l, ar_l, tar_l, weight=None, batch_axis=None, **kwargs):
         super(JointActivationRegularizationLoss, self).__init__(weight, batch_axis, **kwargs)
-        self._loss = loss
-        self._ar_loss = ar_loss
-        self._tar_loss = tar_loss
+        self._loss = l
+        self._ar_loss = ar_l
+        self._tar_loss = tar_l
 
     def __repr__(self):
         s = 'JointActivationTemporalActivationRegularizationLoss'
@@ -238,6 +238,7 @@ class JointActivationRegularizationLoss(Loss):
         l = l + self._ar_loss(*dropped_states)
         l = l + self._tar_loss(*states)
         return l
+
 
 joint_loss = JointActivationRegularizationLoss(loss, ar_loss, tar_loss)
 
@@ -261,6 +262,7 @@ def detach(hidden):
     else:
         hidden = hidden.detach()
     return hidden
+
 
 def get_batch(data_source, i, seq_len=None):
     """Get mini-batches of the dataset.
@@ -286,6 +288,7 @@ def get_batch(data_source, i, seq_len=None):
     target = data_source[i+1:i+1+seq_len]
     return data, target
 
+
 def evaluate(data_source, batch_size, segment, ctx=None):
     """Evaluate the model on the dataset.
 
@@ -295,6 +298,8 @@ def evaluate(data_source, batch_size, segment, ctx=None):
         The dataset is evaluated on.
     batch_size : int
         The size of the mini-batch.
+    segment : str
+        The evaluate on Val or Test dataset.
     ctx : mx.cpu() or mx.gpu()
         The context of the computation.
 
@@ -321,6 +326,7 @@ def evaluate(data_source, batch_size, segment, ctx=None):
         total_L += mx.nd.sum(L).asscalar()
         ntotal += L.size
     return total_L / ntotal
+
 
 def train():
     """Training loop for awd language model.
