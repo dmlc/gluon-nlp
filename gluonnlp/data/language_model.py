@@ -20,7 +20,7 @@
 # pylint: disable=
 """Language model datasets."""
 
-__all__ = ['WikiText2', 'WikiText103']
+__all__ = ['WikiText2', 'WikiText103', 'GBWIter']
 
 import os
 import zipfile
@@ -29,7 +29,7 @@ import shutil
 from mxnet.gluon.utils import download, check_sha1, _get_repo_file_url
 
 from .. import _constants as C
-from .dataset import LanguageModelDataset
+from .dataset import LanguageModelDataset, CorpusIter, LanguageModelIter
 from .registry import register
 from .utils import _get_home_dir
 
@@ -136,3 +136,67 @@ class WikiText103(_WikiText):
                            'test': ('wiki.test.tokens',
                                     '8a5befc548865cec54ed4273cf87dbbad60d1e47')}
         super(WikiText103, self).__init__('wikitext-103', segment, bos, eos, skip_empty, root)
+
+class _GBWIter(LanguageModelIter):
+    def __init__(self, namespace, segment, bos, eos, skip_empty, root):
+        root = os.path.expanduser(root)
+        if not os.path.isdir(root):
+            os.makedirs(root)
+        self._root = root
+        self._namespace = 'gluon/dataset/{}'.format(namespace)
+        folder_name, file_pattern = self._data_file[self._segment]
+        self._folder = os.path.join(self._root, folder_name)
+        self._file_pattern = os.path.join(self._folder, file_pattern)
+        self._get_data()
+        corpus = CorpusIter(self._file_pattern, bos=bos, eos=eos)
+        #super(_GBWIter, self).__init__(corpus, vocab?, seq_len, batch_size, last_batch=last_batch)
+
+    def _get_data(self):
+        archive_file_name, archive_hash = self._archive_file
+        root = self._root
+        if not os.path.exists(self._folder) or not check_sha1(path, data_hash):
+            downloaded_file_path = download(_get_repo_file_url(self._namespace, archive_file_name),
+                                            path=root,
+                                            sha1_hash=archive_hash)
+
+            with zipfile.ZipFile(downloaded_file_path, 'r') as zf:
+                for member in zf.namelist():
+                    filename = os.path.basename(member)
+                    if filename:
+                        dest = os.path.join(root, filename)
+                        with zf.open(member) as source, \
+                             open(dest, 'wb') as target:
+                            shutil.copyfileobj(source, target)
+        return path
+
+class GBWIter(_GBWIter):
+    """1-Billion-Word word-level dataset for language modeling, from Google.
+
+    From
+    http://www.statmt.org/lm-benchmark
+
+    License: Apache
+
+    Parameters
+    ----------
+    segment : {'train', 'test'}, default 'train'
+        Dataset segment.
+    skip_empty : bool, default True
+        Whether to skip the empty samples produced from sample_splitters. If False, `bos` and `eos`
+        will be added in empty samples.
+    bos : str or None, default None
+        The token to add at the begining of each sentence. If None, nothing is added.
+    eos : str or None, default '<eos>'
+        The token to add at the end of each sentence. If None, nothing is added.
+    root : str, default '$MXNET_HOME/datasets/gbw'
+        Path to temp folder for storing data.
+        MXNET_HOME defaults to '~/.mxnet'.
+    """
+    def __init__(self, segment='train', skip_empty=True, bos=None, eos=C.EOS_TOKEN,
+                 root=os.path.join(_get_home_dir(), 'datasets', 'gbw')):
+        self._archive_file = ('1-billion-word-language-modeling-benchmark-r13output.tar.gz',
+                              '4df859766482e12264a5a9d9fb7f0e276020447d')
+        self._data_file = {'train': ('training-monolingual.tokenized.shuffled', '*'),
+                           'test': ('heldout-monolingual.tokenized.shuffled',
+                                    'news.en.heldout-00000-of-00050')}
+        super(GBWIter, self).__init__('gbw', segment, bos, eos, skip_empty, root)

@@ -30,6 +30,8 @@ from .sampler import *
 
 from .dataset import *
 
+from .data_iter import *
+
 from .language_model import *
 
 from .sentiment import *

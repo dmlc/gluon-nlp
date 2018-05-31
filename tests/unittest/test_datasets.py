@@ -435,18 +435,16 @@ def test_corpus_iter():
     train = nlp.data.WikiText2(segment='train', root=path)
     val = nlp.data.WikiText2(segment='val', root=path)
     test = nlp.data.WikiText2(segment='test', root=path)
-    stream = nlp.data.CorpusIter(token_path, flatten=True,
+    corpus = nlp.data.CorpusIter(token_path, flatten=True,
                                       skip_empty=True, eos=EOS)
-    counter = nlp.data.Counter(stream)
+    counter = nlp.data.Counter(corpus)
     assert len(counter) == 33278, len(counter)
     # examine aggregated vocab
     vocab = nlp.vocab.Vocab(counter, bos_token=None, padding_token=None)
     assert len(vocab) == 33278, len(vocab)
     # examine aggregated stats
     assert sum(counter.values()) == 2075677 + 216347 + 244102
-    # examine reset
-    stream.reset()
-    counter = nlp.data.Counter(stream)
+    counter = nlp.data.Counter(corpus)
     assert len(counter) == 33278, len(counter)
 
 def test_lm_iter():
@@ -456,21 +454,17 @@ def test_lm_iter():
     train = nlp.data.WikiText2(segment='train', root=path)
     val = nlp.data.WikiText2(segment='val', root=path)
     test = nlp.data.WikiText2(segment='test', root=path)
-    vocab_corpus = nlp.data.CorpusIter(token_path, flatten=True,
-                                       skip_empty=True, eos=EOS)
-    lm_corpus = nlp.data.CorpusIter(token_path, flatten=False, skip_empty=True,
-                                    eos=EOS)
-    counter = nlp.data.Counter(vocab_corpus)
+    lm_iter = nlp.data.LanguageModelIter(token_path, skip_empty=True, eos=EOS)
+    counter = nlp.data.Counter(lm_iter)
     vocab = nlp.vocab.Vocab(counter, bos_token=None)
     seq_len = 35
     batch_size = 80
-    lm_data = nlp.data.LanguageModelIter(lm_corpus, vocab, seq_len,
-                                         batch_size, last_batch='keep')
+    bptt_iter = lm_iter.bptt_batchify(vocab, seq_len, batch_size, last_batch='keep')
     padding_idx = vocab[vocab.padding_token]
     total_num_tokens = sum(counter.values())
     num_tokens_per_batch = seq_len * batch_size
     num_tokens = 0
-    for i, (data, target) in enumerate(lm_data):
+    for i, (data, target) in enumerate(bptt_iter):
         # count the valid tokens in the batch
         mask = data != padding_idx
         num_valid_tokens = mask.sum().asscalar()
