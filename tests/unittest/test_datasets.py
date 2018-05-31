@@ -472,7 +472,7 @@ def test_lm_iter():
             mx.test_utils.assert_almost_equal(data[1:].asnumpy(), target[:-1].asnumpy())
             assert data.shape == target.shape == (seq_len, batch_size)
         num_tokens += num_valid_tokens
-    num_batches = sum(1 for _ in lm_data)
+    num_batches = sum(1 for _ in bptt_iter)
     # the last token doesn't appear in data
     assert num_tokens >= total_num_tokens - batch_size, num_tokens
     assert num_tokens < total_num_tokens, num_tokens
