@@ -63,7 +63,7 @@ from .parameter import *
 
 from .block import *
 
-from .cache import *
+from gluonnlp.model.train.cache import *
 
 __all__ = train.__all__ + language_model.__all__ + beam_search.__all__ + attention_cell.__all__ + \
           utils.__all__ + parameter.__all__ + block.__all__
@@ -144,8 +144,6 @@ def get_cache_model(name, dataset_name='wikitext-2', window=2000, theta=0.6, lam
     HybridBlock
         The model.
     """
-    assert 'cache_' in name, \
-        'The name of the cache should be the pre-trained model with cache_ prefix'
-    lm_model, vocab = get_model(name.split('cache_')[1], dataset_name=dataset_name, **kwargs)
+    lm_model, vocab = get_model(name, dataset_name=dataset_name, **kwargs)
     cache_cell = CacheCell(lm_model, len(vocab), window, theta, lambdas)
     return cache_cell

@@ -25,6 +25,7 @@ __all__ = ['ActivationRegularizationLoss', 'TemporalActivationRegularizationLoss
 from mxnet import nd
 from mxnet.gluon.loss import Loss
 
+
 class ActivationRegularizationLoss(Loss):
     r"""Computes Activation Regularization Loss. (alias: AR)
 
@@ -69,12 +70,15 @@ class ActivationRegularizationLoss(Loss):
 
     def hybrid_forward(self, F, *states): # pylint: disable=arguments-differ
         # pylint: disable=unused-argument
-        if not self._alpha:
-            if not states:
+        if self._alpha != 0:
+            if states:
                 means = [self._alpha * state.__pow__(2).mean()
                          for state in states[-1:]]
-                return nd.add_n(*means)
-        return 0
+                return F.add_n(*means)
+            else:
+                return F.array([0])
+        return F.array([0])
+
 
 class TemporalActivationRegularizationLoss(Loss):
     r"""Computes Temporal Activation Regularization Loss. (alias: TAR)
@@ -121,9 +125,11 @@ class TemporalActivationRegularizationLoss(Loss):
 
     def hybrid_forward(self, F, *states): # pylint: disable=arguments-differ
         # pylint: disable=unused-argument
-        if not self._beta:
-            if not states:
+        if self._beta != 0:
+            if states:
                 means = [self._beta * (state[1:] - state[:-1]).__pow__(2).mean()
                          for state in states[-1:]]
-                return nd.add_n(*means)
-        return 0
+                return F.add_n(*means)
+            else:
+                return F.array([0])
+        return F.array([0])

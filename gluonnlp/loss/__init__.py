@@ -20,6 +20,6 @@
 # pylint: disable=wildcard-import
 """nlp loss."""
 
-from .activation_loss import *
+from .activation_regularizer import *
 
-__all__ = activation_loss.__all__
+__all__ = activation_regularizer.__all__

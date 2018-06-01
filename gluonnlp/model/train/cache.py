@@ -28,7 +28,7 @@ class CacheCell(Block):
     Parameters
     ----------
     pretrained_lm_model : StandardRNN or AWDRNN
-        The type of RNN to use. Options are 'StandardRNN', 'StandardRNN'.
+        The type of RNN to use. Options are 'StandardRNN', 'AWDRNN'.
     vocab_size : int
         Size of the input vocabulary.
     window : int
@@ -76,23 +76,15 @@ class CacheCell(Block):
         filename : str
             Path to file.
         """
-        self._children[list(self._children.keys())[0]].save_params(filename)
+        self._pretrained_lm_model.save_params(filename)
 
-    def load_params(self, filename, ctx=None, allow_missing=False,
-                    ignore_extra=False):
+    def load_params(self, filename):
         """Load parameters from file.
 
         filename : str
             Path to parameter file.
-        ctx : Context or list of Context, default cpu()
-            Context(s) initialize loaded parameters on.
-        allow_missing : bool, default False
-            Whether to silently skip loading parameters not represents in the file.
-        ignore_extra : bool, default False
-            Whether to silently ignore parameters from the file that are not
-            present in this Block.
         """
-        self._children[list(self._children.keys())[0]].load_params(filename)
+        self._pretrained_lm_model.load_params(filename)
 
 
     def forward(self, inputs, target, next_word_history, cache_history, begin_state=None): # pylint: disable=arguments-differ

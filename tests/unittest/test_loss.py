@@ -32,14 +32,3 @@ def testTemporalActivationRegularizationLoss():
     print(tar)
     tar(*[mx.nd.arange(1000).reshape(10, 10, 10),
           mx.nd.arange(1000).reshape(10, 10, 10)])
-
-def testJointActivationRegularizationLoss():
-    loss = gluon.loss.SoftmaxCrossEntropyLoss()
-    ar = nlp.loss.ActivationRegularizationLoss(2)
-    tar = nlp.loss.TemporalActivationRegularizationLoss(1)
-    jar = nlp.loss.JointActivationRegularizationLoss(loss, ar, tar)
-    print(jar)
-    jar(mx.nd.arange(1000).reshape(100, 10, 1),
-        mx.nd.arange(1000).reshape(10, 10, 10),
-        mx.nd.arange(1000).reshape(10, 10, 10),
-        mx.nd.arange(1000).reshape(10, 10, 10))
