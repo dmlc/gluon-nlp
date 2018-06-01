@@ -78,7 +78,7 @@ class CacheCell(Block):
         """
         self._pretrained_lm_model.save_params(filename)
 
-    def load_params(self, filename):
+    def load_params(self, filename): # pylint: disable=arguments-differ
         """Load parameters from file.
 
         filename : str

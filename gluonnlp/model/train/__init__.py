@@ -21,5 +21,6 @@
 """NLP training model."""
 
 from .language_model import *
+from .cache import *
 
-__all__ = language_model.__all__
+__all__ = language_model.__all__ + cache.__all__

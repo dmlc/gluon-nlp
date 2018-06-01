@@ -22,7 +22,6 @@
 
 __all__ = ['ActivationRegularizationLoss', 'TemporalActivationRegularizationLoss']
 
-from mxnet import nd
 from mxnet.gluon.loss import Loss
 
 
