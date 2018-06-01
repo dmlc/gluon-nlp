@@ -29,12 +29,12 @@ import shutil
 from mxnet.gluon.utils import download, check_sha1, _get_repo_file_url
 
 from .. import _constants as C
-from .dataset import LanguageModelDataset
+from .dataset import CorpusDataset
 from .registry import register
 from .utils import _get_home_dir
 
 
-class _WikiText(LanguageModelDataset):
+class _WikiText(CorpusDataset):
     def __init__(self, namespace, segment, bos, eos, skip_empty, root,
                  **kwargs):
         root = os.path.expanduser(root)
@@ -80,6 +80,9 @@ class WikiText2(_WikiText):
     ----------
     segment : {'train', 'val', 'test'}, default 'train'
         Dataset segment.
+    flatten : bool, default True
+        Whether to return all samples as flattened tokens. If True, each sample
+        is a token. Useful for language models.
     skip_empty : bool, default True
         Whether to skip the empty samples produced from sample_splitters. If False, `bos` and `eos`
         will be added in empty samples.
@@ -94,7 +97,7 @@ class WikiText2(_WikiText):
         MXNET_HOME defaults to '~/.mxnet'.
     """
 
-    def __init__(self, segment='train', skip_empty=True,
+    def __init__(self, segment='train', flatten=True, skip_empty=True,
                  tokenizer=lambda s: s.split(),
                  bos=None, eos=C.EOS_TOKEN, root=os.path.join(
                      _get_home_dir(), 'datasets', 'wikitext-2'), **kwargs):
@@ -105,9 +108,17 @@ class WikiText2(_WikiText):
                                    '0418625c8b4da6e4b5c7a0b9e78d4ae8f7ee5422'),
                            'test': ('wiki.test.tokens',
                                     'c7b8ce0aa086fb34dab808c5c49224211eb2b172')}
-        super(WikiText2,
-              self).__init__('wikitext-2', segment, bos, eos, skip_empty, root,
-                             tokenizer=tokenizer, **kwargs)
+        super(WikiText2, self).__init__(
+            'wikitext-2',
+            segment=segment,
+            bos=bos,
+            eos=eos,
+            skip_empty=skip_embty,
+            root=root,
+            tokenizer=tokenizer,
+            flatten=flatten,
+            **kwargs,
+        )
 
 
 @register(segment=['train', 'val', 'test'])
@@ -123,6 +134,9 @@ class WikiText103(_WikiText):
     ----------
     segment : {'train', 'val', 'test'}, default 'train'
         Dataset segment.
+    flatten : bool, default True
+        Whether to return all samples as flattened tokens. If True, each sample
+        is a token. Useful for language models.
     skip_empty : bool, default True
         Whether to skip the empty samples produced from sample_splitters. If False, `bos` and `eos`
         will be added in empty samples.
@@ -137,7 +151,7 @@ class WikiText103(_WikiText):
         MXNET_HOME defaults to '~/.mxnet'.
     """
 
-    def __init__(self, segment='train', skip_empty=True,
+    def __init__(self, segment='train', flatten=True, skip_empty=True,
                  tokenizer=lambda s: s.split(),
                  bos=None, eos=C.EOS_TOKEN, root=os.path.join(
                      _get_home_dir(), 'datasets', 'wikitext-103'), **kwargs):
@@ -153,7 +167,7 @@ class WikiText103(_WikiText):
         }
         super(WikiText103,
               self).__init__('wikitext-103', segment, bos, eos, skip_empty,
-                             root, tokenizer=tokenizer, **kwargs)
+                             tokenizer=tokenizer, flatten=flatten, **kwargs)
 
 
 @register(segment=['train', 'val', 'test'])
@@ -169,13 +183,16 @@ class WikiText2Raw(_WikiText):
     ----------
     segment : {'train', 'val', 'test'}, default 'train'
         Dataset segment.
+    flatten : bool, default True
+        Whether to return all samples as flattened tokens. If True, each sample
+        is a token. Useful for language models.
     skip_empty : bool, default True
         Whether to skip the empty samples produced from sample_splitters. If False, `bos` and `eos`
         will be added in empty samples.
-    tokenizer : function, default s.encode('utf-8')
+    tokenizer : function, default list
         A function that splits each sample string into list of tokens.
         The tokenizer can also be used to convert everything to lowercase.
-        E.g. with tokenizer=lambda s: s.lower().encode('utf-8')
+        E.g. with tokenizer=lambda s: list(s.lower().encode('utf-8'))
     bos : str or None, default None
         The token to add at the begining of each sentence. If None, nothing is added.
     eos : str or None, default '<eos>'
@@ -185,8 +202,9 @@ class WikiText2Raw(_WikiText):
         MXNET_HOME defaults to '~/.mxnet'.
     """
 
-    def __init__(self, segment='train', skip_empty=True, bos=None, eos=None,
-                 tokenizer=lambda s: s.encode('utf-8'),
+    def __init__(self, segment='train', flatten=True, skip_empty=True,
+                 bos=None, eos=None,
+                 tokenizer=lambda s: list(s.encode('utf-8')),
                  root=os.path.join(_get_home_dir(), 'datasets',
                                    'wikitext-2'), **kwargs):
         self._archive_file = ('wikitext-2-raw-v1.zip',
@@ -202,7 +220,7 @@ class WikiText2Raw(_WikiText):
 
         super(WikiText2Raw,
               self).__init__('wikitext-2', segment, bos, eos, skip_empty, root,
-                             tokenizer=tokenizer, **kwargs)
+                             tokenizer=tokenizer, flatten=flatten, **kwargs)
 
 
 @register(segment=['train', 'val', 'test'])
@@ -218,13 +236,16 @@ class WikiText103Raw(_WikiText):
     ----------
     segment : {'train', 'val', 'test'}, default 'train'
         Dataset segment.
+    flatten : bool, default True
+        Whether to return all samples as flattened tokens. If True, each sample
+        is a token. Useful for language models.
     skip_empty : bool, default True
         Whether to skip the empty samples produced from sample_splitters. If False, `bos` and `eos`
         will be added in empty samples.
-    tokenizer : function, default s.encode('utf-8')
+    tokenizer : function, default list
         A function that splits each sample string into list of tokens.
         The tokenizer can also be used to convert everything to lowercase.
-        E.g. with tokenizer=lambda s: s.lower().encode('utf-8')
+        E.g. with tokenizer=lambda s: list(s.lower().encode('utf-8'))
     bos : str or None, default None
         The token to add at the begining of each sentence. If None, nothing is added.
     eos : str or None, default '<eos>'
@@ -234,8 +255,8 @@ class WikiText103Raw(_WikiText):
         MXNET_HOME defaults to '~/.mxnet'.
     """
 
-    def __init__(self, segment='train', skip_empty=True,
-                 tokenizer=lambda s: s.encode('utf-8'), bos=None,
+    def __init__(self, segment='train', flatten=True, skip_empty=True,
+                 tokenizer=lambda s: list(s.encode('utf-8')), bos=None,
                  eos=None, root=os.path.join(_get_home_dir(), 'datasets',
                                              'wikitext-103'), **kwargs):
         self._archive_file = ('wikitext-103-raw-v1.zip',
@@ -248,6 +269,6 @@ class WikiText103Raw(_WikiText):
             'test': ('wiki.test.raw',
                      '6f1fe2054a940eebfc76b284b09680763b37f5ea')
         }
-        super(WikiText103Raw,
-              self).__init__('wikitext-103', segment, bos, eos, skip_empty,
-                             root, tokenizer=tokenizer, **kwargs)
+        super(WikiText103Raw, self).__init__(
+            'wikitext-103', segment, bos, eos, skip_empty, root,
+            tokenizer=tokenizer, flatten=flatten, **kwargs)

@@ -30,12 +30,9 @@ def eprint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
 
 
-def get_frequencies(dataset):
-    return nlp.data.utils.Counter(x for tup in dataset for x in tup[0]+tup[1][-1:])
-
 def test_text_models():
     val = nlp.data.WikiText2(segment='val', root='tests/data/wikitext-2')
-    val_freq = get_frequencies(val)
+    val_freq = nlp.data.utils.Counter(val)
     vocab = nlp.Vocab(val_freq)
     text_models = ['standard_lstm_lm_200', 'standard_lstm_lm_650', 'standard_lstm_lm_1500', 'awd_lstm_lm_1150', 'awd_lstm_lm_600']
     pretrained_to_test = {'standard_lstm_lm_1500': 'wikitext-2', 'standard_lstm_lm_650': 'wikitext-2', 'standard_lstm_lm_200': 'wikitext-2', 'awd_lstm_lm_1150': 'wikitext-2', 'awd_lstm_lm_600': 'wikitext-2'}

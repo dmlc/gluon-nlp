@@ -89,12 +89,12 @@ def test_wikitext2():
         segment='val', root=os.path.join('tests', 'data', 'wikitext-2'))
     test = nlp.data.WikiText2(
         segment='test', root=os.path.join('tests', 'data', 'wikitext-2'))
-    train_freq, val_freq, test_freq = [nlp.data.utils.Counter(x) for x in [train[0], val[0], test[0]]]
-    assert len(train[0]) == 2075677, len(train[0])
+    train_freq, val_freq, test_freq = [nlp.data.utils.Counter(x) for x in [train, val, test]]
+    assert len(train) == 2075677, len(train)
     assert len(train_freq) == 33278, len(train_freq)
-    assert len(val[0]) == 216347, len(val[0])
+    assert len(val) == 216347, len(val)
     assert len(val_freq) == 13777, len(val_freq)
-    assert len(test[0]) == 244102, len(test[0])
+    assert len(test) == 244102, len(test)
     assert len(test_freq) == 14143, len(test_freq)
     assert test_freq['English'] == 32, test_freq['English']
 
@@ -103,21 +103,25 @@ def test_wikitext2():
     assert len(serialized_vocab) == 962190, len(serialized_vocab)
     assert json.loads(serialized_vocab)['idx_to_token'] == vocab._idx_to_token
 
-    train_data = train.bptt_batchify(vocab, 35, 80, last_batch='discard')
+    bptt_batchify = nlp.data.batchify.LanguageModelBPTT(
+        vocab, seq_len=35, batch_size=80, last_batch='discard')
+    train_data = bptt_batchify(train)
     assert len(train_data) == 741, len(train_data)
 
     for i, (data, target) in enumerate(train_data):
         mx.test_utils.assert_almost_equal(data[1:].asnumpy(), target[:-1].asnumpy())
         assert data.shape == target.shape == (35, 80)
 
-    train_data = train.bptt_batchify(vocab, 35, 80, last_batch='keep')
+    bptt_batchify = nlp.data.batchify.LanguageModelBPTT(
+        vocab, seq_len=35, batch_size=80, last_batch='keep')
+    train_data = bptt_batchify(train)
     assert len(train_data) == 742, len(train_data)
     assert train_data[-1][0].shape[0] < 35
     for i, (data, target) in enumerate(train_data):
         mx.test_utils.assert_almost_equal(data[1:].asnumpy(), target[:-1].asnumpy())
         assert data.shape == target.shape
 
-    train_freq, val_freq, test_freq = [nlp.data.utils.Counter(x) for x in [train[0], val[0], test[0]]]
+    train_freq, val_freq, test_freq = [nlp.data.utils.Counter(x) for x in [train, val, test]]
     train = nlp.data.WikiText2(
         segment='train',
         skip_empty=False,
@@ -130,14 +134,15 @@ def test_wikitext2():
         segment='test',
         skip_empty=False,
         root=os.path.join('tests', 'data', 'wikitext-2'))
-    assert len(train[0]) == 2088628, len(train[0])
+    assert len(train) == 2088628, len(train)
     assert len(train_freq) == 33278, len(train_freq)
-    assert len(val[0]) == 217646, len(val[0])
+    assert len(val) == 217646, len(val)
     assert len(val_freq) == 13777, len(val_freq)
-    assert len(test[0]) == 245569, len(test[0])
+    assert len(test) == 245569, len(test)
     assert len(test_freq) == 14143, len(test_freq)
     assert test_freq['English'] == 32, test_freq['English']
-    batched_data = train.batchify(vocab, 80)
+    batchify = nlp.data.batchify.LanguageModel(vocab, 80)
+    batched_data = batchify(train)
     assert batched_data.shape == (26107, 80)
 
 
@@ -149,13 +154,13 @@ def test_wikitext2_raw():
     test = nlp.data.WikiText2Raw(segment='test', root=os.path.join(
         'tests', 'data', 'wikitext-2'))
     train_freq, val_freq, test_freq = [
-        nlp.data.utils.Counter(x) for x in [train[0], val[0], test[0]]
+        nlp.data.utils.Counter(x) for x in [train, val, test]
     ]
-    assert len(train[0]) == 10843541, len(train[0])
+    assert len(train) == 10843541, len(train)
     assert len(train_freq) == 192, len(train_freq)
-    assert len(val[0]) == 1136862, len(val[0])
+    assert len(val) == 1136862, len(val)
     assert len(val_freq) == 168, len(val_freq)
-    assert len(test[0]) == 1278983, len(test[0])
+    assert len(test) == 1278983, len(test)
     assert len(test_freq) == 177, len(test_freq)
     assert test_freq['a'.encode('utf-8')[0]] == 81512, \
         test_freq['a'.encode('utf-8')[0]]
@@ -169,13 +174,13 @@ def test_wikitext103_raw():
     test = nlp.data.WikiText103Raw(segment='test', root=os.path.join(
         'tests', 'data', 'wikitext-103'))
     train_freq, val_freq, test_freq = [
-        nlp.data.utils.Counter(x) for x in [train[0], val[0], test[0]]
+        nlp.data.utils.Counter(x) for x in [train, val, test]
     ]
-    assert len(train[0]) == 535800393, len(train[0])
+    assert len(train) == 535800393, len(train)
     assert len(train_freq) == 203, len(train_freq)
-    assert len(val[0]) == 1136862, len(val[0])
+    assert len(val) == 1136862, len(val)
     assert len(val_freq) == 168, len(val_freq)
-    assert len(test[0]) == 1278983, len(test[0])
+    assert len(test) == 1278983, len(test)
     assert len(test_freq) == 177, len(test_freq)
     assert test_freq['a'.encode('utf-8')[0]] == 81512, \
         test_freq['a'.encode('utf-8')[0]]
