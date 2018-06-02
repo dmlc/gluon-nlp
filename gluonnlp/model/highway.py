@@ -51,6 +51,8 @@ class Highway(gluon.Block):
             self._hnet = nn.HybridSequential()
             with self._hnet.name_scope():
                 for i in range(self._nlayers):
+                    # pylint: disable=unused-argument
+                    print(i)
                     hlayer = nn.Dense(self._ninputs * 2, in_units=self._ninputs)
                     self._hnet.add(hlayer)
             self._activation = nn.Activation(activation)
@@ -61,7 +63,7 @@ class Highway(gluon.Block):
 
     def forward(self, inputs):  # pylint: disable=arguments-differ
         current_input = inputs
-        for layer in self._hnet:
+        for layer in enumerate(self._hnet):
             projected_input = layer(current_input)
             linear_part = current_input
             nonlinear_part = projected_input[:, (0 * self._ninputs):(1 * self._ninputs)]

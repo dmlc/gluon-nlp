@@ -37,7 +37,8 @@ class CharacterEncoder(gluon.Block):
     year={2016}
     }
     """
-    def __init__(self, ninput, noutput, filters, nembed, nhighway, activation, max_chars_per_token, **kwargs):
+    def __init__(self, ninput, noutput, filters, nembed, nhighway,
+                 activation, max_chars_per_token, **kwargs):
         super(CharacterEncoder, self).__init__(**kwargs)
 
         self._ninput = ninput
@@ -54,7 +55,10 @@ class CharacterEncoder(gluon.Block):
             self._convs = nn.HybridSequential()
             with self._convs.name_scope():
                 for i, (width, out_channels) in enumerate(filters):
-                    conv = nn.Conv1D(in_channels=nembed, channels=out_channels, kernel_size=width, use_bias=True)
+                    # pylint: disable=unused-argument
+                    print(i)
+                    conv = nn.Conv1D(in_channels=nembed, channels=out_channels,
+                                     kernel_size=width, use_bias=True)
                     self._convs.add(conv)
 
             self._highways = Highway(self._nfilters, self._nhighway, activation=self._activation)
@@ -63,7 +67,7 @@ class CharacterEncoder(gluon.Block):
     def set_highway_bias(self):
         self._highways.set_bias()
 
-    def forward(self, inputs):
+    def forward(self, inputs): # pylint: disable=arguments-differ
         max_chars_per_token = self._max_chars_per_token
 
         character_embedding = self._embedding(inputs.reshape(-1, max_chars_per_token))
