@@ -62,6 +62,9 @@ class Highway(gluon.Block):
             layer.bias.data()[self._ninputs:] = 1
 
     def forward(self, inputs):  # pylint: disable=arguments-differ
+        """
+        Forward computation for highway layer
+        """
         current_input = inputs
         for layer in enumerate(self._hnet):
             projected_input = layer(current_input)

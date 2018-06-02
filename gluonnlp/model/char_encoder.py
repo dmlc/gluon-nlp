@@ -68,6 +68,9 @@ class CharacterEncoder(gluon.Block):
         self._highways.set_bias()
 
     def forward(self, inputs): # pylint: disable=arguments-differ
+        """
+        Forward computation for char_encoder
+        """
         max_chars_per_token = self._max_chars_per_token
 
         character_embedding = self._embedding(inputs.reshape(-1, max_chars_per_token))
