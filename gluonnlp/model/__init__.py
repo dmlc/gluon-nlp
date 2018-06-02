@@ -63,8 +63,13 @@ from .block import *
 
 from . import train
 
+from .highway import *
+
+from .char_encoder import *
+
 __all__ = language_model.__all__ + beam_search.__all__ + attention_cell.__all__ + \
-          utils.__all__ + parameter.__all__ + block.__all__ + ['get_model'] + ['train']
+          utils.__all__ + parameter.__all__ + block.__all__ + highway.__all__ + \
+          char_encoder.__all__ + ['get_model'] + ['train']
 
 
 def get_model(name, dataset_name='wikitext-2', **kwargs):

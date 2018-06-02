@@ -21,6 +21,22 @@ Language Modeling
     StandardRNN
     get_model
 
+Character Encoder
+-----------------
+
+.. autosummary::
+    :nosignatures:
+
+    CharacterEncoder
+
+Highway Network
+-----------------
+
+.. autosummary::
+    :nosignatures:
+
+    Highway
+
 Attention Cell
 --------------
 
