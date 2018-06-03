@@ -25,11 +25,15 @@ __all__ = ['WikiText2', 'WikiText103', 'GBWIter']
 import os
 import zipfile
 import shutil
+import tarfile
+import glob
+import hashlib
 
 from mxnet.gluon.utils import download, check_sha1, _get_repo_file_url
 
 from .. import _constants as C
-from .dataset import LanguageModelDataset, CorpusIter, LanguageModelIter
+from .dataset import LanguageModelDataset
+from .data_iter import CorpusIter, LanguageModelIter, _LanguageModelBpttIter
 from .registry import register
 from .utils import _get_home_dir
 
@@ -139,35 +143,52 @@ class WikiText103(_WikiText):
 
 class _GBWIter(LanguageModelIter):
     def __init__(self, namespace, segment, bos, eos, skip_empty, root):
+        """Directory layout:
+           - root ($MXNET_HOME/datasets/gbw)
+             - archive_file (1-billion-word-language-modeling-benchmark-r13output.tar.gz)
+             - dir (1-billion-word-language-modeling-benchmark-r13output)
+               - subdir (training-monolingual.tokenized.shuffled)
+               - subdir (heldout-monolingual.tokenized.shuffled)
+        """
         root = os.path.expanduser(root)
         if not os.path.isdir(root):
             os.makedirs(root)
         self._root = root
+        self._dir = os.path.join(root, '1-billion-word-language-modeling-benchmark-r13output')
         self._namespace = 'gluon/dataset/{}'.format(namespace)
-        folder_name, file_pattern = self._data_file[self._segment]
-        self._folder = os.path.join(self._root, folder_name)
-        self._file_pattern = os.path.join(self._folder, file_pattern)
+        subdir_name, pattern, data_hash = self._data_file[self._segment]
+        self._subdir = os.path.join(self._dir, subdir_name)
+        self._file_pattern = os.path.join(self._subdir, pattern)
+        self._data_hash = data_hash
         self._get_data()
-        corpus = CorpusIter(self._file_pattern, bos=bos, eos=eos)
-        #super(_GBWIter, self).__init__(corpus, vocab?, seq_len, batch_size, last_batch=last_batch)
+        super(_GBWIter, self).__init__(self._file_pattern, skip_empty=skip_empty, bos=bos, eos=eos)
 
     def _get_data(self):
         archive_file_name, archive_hash = self._archive_file
-        root = self._root
-        if not os.path.exists(self._folder) or not check_sha1(path, data_hash):
-            downloaded_file_path = download(_get_repo_file_url(self._namespace, archive_file_name),
-                                            path=root,
-                                            sha1_hash=archive_hash)
-
-            with zipfile.ZipFile(downloaded_file_path, 'r') as zf:
-                for member in zf.namelist():
-                    filename = os.path.basename(member)
-                    if filename:
-                        dest = os.path.join(root, filename)
-                        with zf.open(member) as source, \
-                             open(dest, 'wb') as target:
-                            shutil.copyfileobj(source, target)
-        return path
+        archive_file_path = os.path.join(self._root, archive_file_name)
+        exists = False
+        if os.path.exists(self._dir) and os.path.exists(self._subdir):
+            # verify sha1 for all files in the subdir
+            sha1 = hashlib.sha1()
+            filenames = sorted(glob.glob(self._file_pattern))
+            for filename in filenames:
+                with open(filename, 'rb') as f:
+                    while True:
+                        data = f.read(1048576)
+                        if not data:
+                            break
+                        sha1.update(data)
+            print(sha1.hexdigest())
+            if sha1.hexdigest() == self._data_hash:
+                exists = True
+        if not exists:
+            # download archive
+            if not os.path.exists(archive_file_path) or not check_sha1(archive_file_path, archive_hash):
+                download(_get_repo_file_url(self._namespace, archive_file_name),
+                                            path=self._root, sha1_hash=archive_hash)
+            # extract archive
+            with tarfile.open(archive_file_path, 'r:gz') as tf:
+                tf.extractall(path=self._root)
 
 class GBWIter(_GBWIter):
     """1-Billion-Word word-level dataset for language modeling, from Google.
@@ -194,9 +215,13 @@ class GBWIter(_GBWIter):
     """
     def __init__(self, segment='train', skip_empty=True, bos=None, eos=C.EOS_TOKEN,
                  root=os.path.join(_get_home_dir(), 'datasets', 'gbw')):
+        self._segment = segment
         self._archive_file = ('1-billion-word-language-modeling-benchmark-r13output.tar.gz',
                               '4df859766482e12264a5a9d9fb7f0e276020447d')
-        self._data_file = {'train': ('training-monolingual.tokenized.shuffled', '*'),
+        self._data_file = {'train': ('training-monolingual.tokenized.shuffled',
+                                     'news.en-00*-of-00100',
+                                     '5e0d7050b37a99fd50ce7e07dc52468b2a9cd9e8'),
                            'test': ('heldout-monolingual.tokenized.shuffled',
-                                    'news.en.heldout-00000-of-00050')}
+                                    'news.en.heldout-00000-of-00050',
+                                    '0a8e2b7496ba0b5c05158f282b9b351356875445')}
         super(GBWIter, self).__init__('gbw', segment, bos, eos, skip_empty, root)
