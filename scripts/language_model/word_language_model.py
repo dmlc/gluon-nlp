@@ -155,15 +155,10 @@ ntokens = len(vocab)
 
 if args.weight_dropout > 0:
     print('Use AWDRNN')
-    # model = nlp.model.train.AWDRNN(args.model, len(vocab), args.emsize, args.nhid, args.nlayers,
-    #                                args.tied, args.dropout, args.weight_dropout,
-    #                                args.dropout_h, args.dropout_i, args.dropout_e)
     model_eval = nlp.model.AWDRNN(args.model, len(vocab), args.emsize, args.nhid, args.nlayers,
                                   args.tied, args.dropout, args.weight_dropout,
                                   args.dropout_h, args.dropout_i, args.dropout_e)
 else:
-    # model = nlp.model.train.StandardRNN(args.model, len(vocab), args.emsize,
-    #                                     args.nhid, args.nlayers, args.dropout, args.tied)
     model_eval = nlp.model.StandardRNN(args.model, len(vocab), args.emsize,
                                        args.nhid, args.nlayers, args.dropout, args.tied)
 
@@ -235,7 +230,7 @@ class JointActivationRegularizationLoss(gluon.loss.Loss):
 
     def hybrid_forward(self, F, out, target, states, dropped_states): # pylint: disable=arguments-differ
         # pylint: disable=unused-argument
-        l = self._loss(out.reshape(-3, -1), target.reshape(-1, ))
+        l = self._loss(out.reshape(-3, -1), target.reshape(-1,))
         l = l + self._ar_loss(*dropped_states)
         l = l + self._tar_loss(*states)
         return l

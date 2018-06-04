@@ -48,7 +48,7 @@ parser = argparse.ArgumentParser(description=
                                  'MXNet Neural Cache Language Model on Wikitext-2.')
 parser.add_argument('--bptt', type=int, default=2000,
                     help='sequence length')
-parser.add_argument('--save', type=str, default='awd_lstm_lm_1150',
+parser.add_argument('--model_name', type=str, default='awd_lstm_lm_1150',
                     help='name of the pretrained language model')
 parser.add_argument('--gpus', type=str,
                     help='list of gpus to run, e.g. 0 or 0,2,5. empty means using cpu.'
@@ -60,8 +60,9 @@ parser.add_argument('--theta', type=float, default=0.662,
                          'cache softmax distribution over previous words')
 parser.add_argument('--lambdas', type=float, default=0.1279,
                     help='linear mix between only cache (1) and only vocab (0) distribution')
-parser.add_argument('--user_model', action='store_true',
-                    help='whether to apply cache model to user pre-trained model')
+parser.add_argument('--path_to_params_file', type=str, default=None,
+                    help='path to the saved params file of user pre-trained model, '
+                         'including the params file, e.g., ~/.mxnet/models/awd_lstm_lm_1150.params')
 args = parser.parse_args()
 
 ###############################################################################
@@ -73,17 +74,17 @@ context = [mx.cpu()] if args.gpus is None or args.gpus == '' else \
 
 print(args)
 
-if not args.user_model:
-    model, vocab = nlp.model.get_model(name=args.save,
+if not args.path_to_params_file:
+    model, vocab = nlp.model.get_model(name=args.model_name,
                                        dataset_name='wikitext-2',
                                        pretrained=True,
                                        ctx=context)
 else:
-    model, vocab = nlp.model.get_model(name=args.save,
+    model, vocab = nlp.model.get_model(name=args.model_name,
                                        dataset_name='wikitext-2',
                                        pretrained=False,
                                        ctx=context)
-    model.load_params(args.save, ctx=context)
+    model.load_params(args.path_to_params_file, ctx=context)
 
 ###############################################################################
 # Load data
