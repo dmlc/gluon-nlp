@@ -49,6 +49,8 @@ These models can constructed by passing ``pretrained=True``:
 .. _AWD: https://arxiv.org/abs/1404.5997
 """
 
+import mxnet as mx
+
 from .train import *
 
 from .language_model import *
@@ -108,7 +110,7 @@ def get_model(name, dataset_name='wikitext-2', **kwargs):
     kwargs['dataset_name'] = dataset_name
     return models[name](**kwargs)
 
-def get_cache_model(name, dataset_name='wikitext-2', window=2000, theta=0.6, lambdas=0.2, **kwargs):
+def get_cache_model(name, dataset_name='wikitext-2', window=2000, theta=0.6, lambdas=0.2, ctx=mx.cpu(), **kwargs):
     """Returns a cache model using a pre-trained language model.
 
     Parameters
@@ -142,6 +144,6 @@ def get_cache_model(name, dataset_name='wikitext-2', window=2000, theta=0.6, lam
     HybridBlock
         The model.
     """
-    lm_model, vocab = get_model(name, dataset_name=dataset_name, **kwargs)
+    lm_model, vocab = get_model(name, dataset_name=dataset_name, pretrained=True, ctx=ctx, **kwargs)
     cache_cell = CacheCell(lm_model, len(vocab), window, theta, lambdas)
     return cache_cell

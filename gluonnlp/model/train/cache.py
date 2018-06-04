@@ -19,6 +19,8 @@
 """Cache model."""
 __all__ = ['CacheCell']
 
+import mxnet as mx
+
 from mxnet import nd
 from mxnet.gluon import Block
 
@@ -78,13 +80,15 @@ class CacheCell(Block):
         """
         self._pretrained_lm_model.save_params(filename)
 
-    def load_params(self, filename): # pylint: disable=arguments-differ
+    def load_params(self, filename, ctx=mx.cpu()): # pylint: disable=arguments-differ
         """Load parameters from file.
 
         filename : str
             Path to parameter file.
+        ctx : Context or list of Context, default cpu()
+            Context(s) initialize loaded parameters on.
         """
-        self._pretrained_lm_model.load_params(filename)
+        self._pretrained_lm_model.load_params(filename, ctx=ctx)
 
 
     def forward(self, inputs, target, next_word_history, cache_history, begin_state=None): # pylint: disable=arguments-differ

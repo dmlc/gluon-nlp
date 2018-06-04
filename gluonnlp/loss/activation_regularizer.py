@@ -75,8 +75,8 @@ class ActivationRegularizationLoss(Loss):
                          for state in states[-1:]]
                 return F.add_n(*means)
             else:
-                return F.array([0])
-        return F.array([0])
+                return F.zeros(1)
+        return F.zeros(1)
 
 
 class TemporalActivationRegularizationLoss(Loss):
@@ -130,5 +130,5 @@ class TemporalActivationRegularizationLoss(Loss):
                          for state in states[-1:]]
                 return F.add_n(*means)
             else:
-                return F.array([0])
-        return F.array([0])
+                return F.zeros(1)
+        return F.zeros(1)

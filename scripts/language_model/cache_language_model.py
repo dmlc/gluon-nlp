@@ -66,7 +66,7 @@ parser.add_argument('--path_to_params_file', type=str, default=None,
 args = parser.parse_args()
 
 ###############################################################################
-# Load pre-trained language model and vocabulary
+# Load vocabulary
 ###############################################################################
 
 context = [mx.cpu()] if args.gpus is None or args.gpus == '' else \
@@ -74,17 +74,27 @@ context = [mx.cpu()] if args.gpus is None or args.gpus == '' else \
 
 print(args)
 
+_, vocab = nlp.model.get_model(name=args.model_name,
+                                   dataset_name='wikitext-2',
+                                   pretrained=False,
+                                   ctx=context)
+ntokens = len(vocab)
+
+###############################################################################
+# Build the cache model and load pre-trained language model
+###############################################################################
+
+
 if not args.path_to_params_file:
-    model, vocab = nlp.model.get_model(name=args.model_name,
-                                       dataset_name='wikitext-2',
-                                       pretrained=True,
-                                       ctx=context)
+    cache_cell = nlp.model.get_cache_model(name=args.model_name, dataset_name='wikitext-2',
+                                           window=args.window, theta=args.theta, lambdas=args.lambdas, ctx=context)
 else:
-    model, vocab = nlp.model.get_model(name=args.model_name,
+    model, _ = nlp.model.get_model(name=args.model_name,
                                        dataset_name='wikitext-2',
                                        pretrained=False,
                                        ctx=context)
-    model.load_params(args.path_to_params_file, ctx=context)
+    cache_cell = nlp.model.CacheCell(model, ntokens, args.window, args.theta, args.lambdas)
+    cache_cell.load_params(args.path_to_params_file, ctx=context)
 
 ###############################################################################
 # Load data
@@ -99,14 +109,6 @@ val_batch_size = 1
 val_data = val_dataset.batchify(vocab, val_batch_size)
 test_batch_size = 1
 test_data = test_dataset.batchify(vocab, test_batch_size)
-
-ntokens = len(vocab)
-
-###############################################################################
-# Build the cache model
-###############################################################################
-
-cache_cell = nlp.model.CacheCell(model, ntokens, args.window, args.theta, args.lambdas)
 
 ###############################################################################
 # Training
@@ -174,7 +176,7 @@ def evaluate(data_source, batch_size, ctx=None):
         The loss on the dataset
     """
     total_L = 0
-    hidden = model.begin_state(func=mx.nd.zeros, batch_size=batch_size, ctx=context[0])
+    hidden = cache_cell._pretrained_lm_model.begin_state(func=mx.nd.zeros, batch_size=batch_size, ctx=context[0])
     next_word_history = None
     cache_history = None
     for i in range(0, len(data_source) - 1, args.bptt):
