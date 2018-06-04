@@ -104,7 +104,6 @@ load custom datasets.
 
     TextLineDataset
     CorpusDataset
-    LanguageModelDataset
 
 Transforms
 ----------

@@ -128,13 +128,16 @@ train_dataset, val_dataset, test_dataset = \
                         skip_empty=False, bos=None, eos='<eos>')
      for segment in ['train', 'val', 'test']]
 
-vocab = nlp.Vocab(counter=nlp.data.Counter(train_dataset[0]), padding_token=None, bos_token=None)
+vocab = nlp.Vocab(counter=nlp.data.Counter(train_dataset), padding_token=None, bos_token=None)
 
-train_data = train_dataset.batchify(vocab, args.batch_size)
+batchify = nlp.data.batchify.LanguageModel(vocab, args.batch_size)
+train_data = batchify(train_dataset)
 val_batch_size = 10
-val_data = val_dataset.batchify(vocab, val_batch_size)
+val_batchify = nlp.data.batchify.LanguageModel(vocab, val_batch_size)
+val_data = val_batchify(val_dataset)
 test_batch_size = 1
-test_data = test_dataset.batchify(vocab, test_batch_size)
+test_batchify = nlp.data.batchify.LanguageModel(vocab, test_batch_size)
+test_data = test_batchify(test_dataset)
 
 if args.test_mode:
     args.emsize = 200

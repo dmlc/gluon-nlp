@@ -29,12 +29,12 @@ import shutil
 from mxnet.gluon.utils import download, check_sha1, _get_repo_file_url
 
 from .. import _constants as C
-from .dataset import LanguageModelDataset
+from .dataset import CorpusDataset
 from .registry import register
 from .utils import _get_home_dir
 
 
-class _WikiText(LanguageModelDataset):
+class _WikiText(CorpusDataset):
     def __init__(self, namespace, segment, bos, eos, skip_empty, root,
                  **kwargs):
         root = os.path.expanduser(root)
@@ -52,9 +52,9 @@ class _WikiText(LanguageModelDataset):
         root = self._root
         path = os.path.join(root, data_file_name)
         if not os.path.exists(path) or not check_sha1(path, data_hash):
-            downloaded_file_path = download(_get_repo_file_url(self._namespace, archive_file_name),
-                                            path=root,
-                                            sha1_hash=archive_hash)
+            downloaded_file_path = download(
+                _get_repo_file_url(self._namespace, archive_file_name),
+                path=root, sha1_hash=archive_hash)
 
             with zipfile.ZipFile(downloaded_file_path, 'r') as zf:
                 for member in zf.namelist():
@@ -80,9 +80,14 @@ class WikiText2(_WikiText):
     ----------
     segment : {'train', 'val', 'test'}, default 'train'
         Dataset segment.
+    flatten : bool, default True
+        Whether to return all samples as flattened tokens. If True, each sample
+        is a token. Useful for language models.
     skip_empty : bool, default True
         Whether to skip the empty samples produced from sample_splitters. If False, `bos` and `eos`
         will be added in empty samples.
+    sample_splitter : function, default str.splitlines
+        A function that splits the dataset string into samples.
     tokenizer : function, default str.split
         A function that splits each sample string into list of tokens.
     bos : str or None, default None
@@ -94,20 +99,25 @@ class WikiText2(_WikiText):
         MXNET_HOME defaults to '~/.mxnet'.
     """
 
-    def __init__(self, segment='train', skip_empty=True,
+    def __init__(self, segment='train', flatten=True, skip_empty=True,
+                 sample_splitter=lambda s: s.splitlines(),
                  tokenizer=lambda s: s.split(),
                  bos=None, eos=C.EOS_TOKEN, root=os.path.join(
                      _get_home_dir(), 'datasets', 'wikitext-2'), **kwargs):
-        self._archive_file = ('wikitext-2-v1.zip', '3c914d17d80b1459be871a5039ac23e752a53cbe')
-        self._data_file = {'train': ('wiki.train.tokens',
-                                     '863f29c46ef9d167fff4940ec821195882fe29d1'),
-                           'val': ('wiki.valid.tokens',
-                                   '0418625c8b4da6e4b5c7a0b9e78d4ae8f7ee5422'),
-                           'test': ('wiki.test.tokens',
-                                    'c7b8ce0aa086fb34dab808c5c49224211eb2b172')}
-        super(WikiText2,
-              self).__init__('wikitext-2', segment, bos, eos, skip_empty, root,
-                             tokenizer=tokenizer, **kwargs)
+        self._archive_file = ('wikitext-2-v1.zip',
+                              '3c914d17d80b1459be871a5039ac23e752a53cbe')
+        self._data_file = {
+            'train': ('wiki.train.tokens',
+                      '863f29c46ef9d167fff4940ec821195882fe29d1'),
+            'val': ('wiki.valid.tokens',
+                    '0418625c8b4da6e4b5c7a0b9e78d4ae8f7ee5422'),
+            'test': ('wiki.test.tokens',
+                     'c7b8ce0aa086fb34dab808c5c49224211eb2b172')
+        }
+        super(WikiText2, self).__init__(
+            'wikitext-2', segment=segment, flatten=flatten,
+            skip_empty=skip_empty, sample_splitter=sample_splitter, root=root,
+            tokenizer=tokenizer, bos=bos, eos=eos, **kwargs)
 
 
 @register(segment=['train', 'val', 'test'])
@@ -123,9 +133,14 @@ class WikiText103(_WikiText):
     ----------
     segment : {'train', 'val', 'test'}, default 'train'
         Dataset segment.
+    flatten : bool, default True
+        Whether to return all samples as flattened tokens. If True, each sample
+        is a token. Useful for language models.
     skip_empty : bool, default True
         Whether to skip the empty samples produced from sample_splitters. If False, `bos` and `eos`
         will be added in empty samples.
+    sample_splitter : function, default str.splitlines
+        A function that splits the dataset string into samples.
     tokenizer : function, default str.split
         A function that splits each sample string into list of tokens.
     bos : str or None, default None
@@ -137,7 +152,8 @@ class WikiText103(_WikiText):
         MXNET_HOME defaults to '~/.mxnet'.
     """
 
-    def __init__(self, segment='train', skip_empty=True,
+    def __init__(self, segment='train', flatten=True, skip_empty=True,
+                 sample_splitter=lambda s: s.splitlines(),
                  tokenizer=lambda s: s.split(),
                  bos=None, eos=C.EOS_TOKEN, root=os.path.join(
                      _get_home_dir(), 'datasets', 'wikitext-103'), **kwargs):
@@ -151,9 +167,10 @@ class WikiText103(_WikiText):
             'test': ('wiki.test.tokens',
                      '8a5befc548865cec54ed4273cf87dbbad60d1e47')
         }
-        super(WikiText103,
-              self).__init__('wikitext-103', segment, bos, eos, skip_empty,
-                             root, tokenizer=tokenizer, **kwargs)
+        super(WikiText103, self).__init__(
+            'wikitext-103', segment=segment, flatten=flatten,
+            skip_empty=skip_empty, sample_splitter=sample_splitter, root=root,
+            tokenizer=tokenizer, bos=bos, eos=eos, **kwargs)
 
 
 @register(segment=['train', 'val', 'test'])
@@ -169,26 +186,32 @@ class WikiText2Raw(_WikiText):
     ----------
     segment : {'train', 'val', 'test'}, default 'train'
         Dataset segment.
+    flatten : bool, default True
+        Whether to return all samples as flattened tokens. If True, each sample
+        is a token. Useful for language models.
     skip_empty : bool, default True
         Whether to skip the empty samples produced from sample_splitters. If False, `bos` and `eos`
         will be added in empty samples.
-    tokenizer : function, default s.encode('utf-8')
+    sample_splitter : function, default str.splitlines
+        A function that splits the dataset string into samples.
+    tokenizer : function, default list
         A function that splits each sample string into list of tokens.
         The tokenizer can also be used to convert everything to lowercase.
-        E.g. with tokenizer=lambda s: s.lower().encode('utf-8')
+        E.g. with tokenizer=lambda s: list(s.lower().encode('utf-8'))
     bos : str or None, default None
         The token to add at the begining of each sentence. If None, nothing is added.
-    eos : str or None, default '<eos>'
+    eos : str or None, default None
         The token to add at the end of each sentence. If None, nothing is added.
     root : str, default '$MXNET_HOME/datasets/wikitext-2'
         Path to temp folder for storing data.
         MXNET_HOME defaults to '~/.mxnet'.
     """
 
-    def __init__(self, segment='train', skip_empty=True, bos=None, eos=None,
-                 tokenizer=lambda s: s.encode('utf-8'),
-                 root=os.path.join(_get_home_dir(), 'datasets',
-                                   'wikitext-2'), **kwargs):
+    def __init__(self, segment='train', flatten=True, skip_empty=True,
+                 sample_splitter=lambda s: s.splitlines(),
+                 tokenizer=lambda s: list(s.encode('utf-8')), bos=None,
+                 eos=None, root=os.path.join(_get_home_dir(), 'datasets',
+                                             'wikitext-2'), **kwargs):
         self._archive_file = ('wikitext-2-raw-v1.zip',
                               '3b6993c138fc61c95f7fffd900fef68f8411371d')
         self._data_file = {
@@ -200,9 +223,10 @@ class WikiText2Raw(_WikiText):
                      '6f1fe2054a940eebfc76b284b09680763b37f5ea')
         }
 
-        super(WikiText2Raw,
-              self).__init__('wikitext-2', segment, bos, eos, skip_empty, root,
-                             tokenizer=tokenizer, **kwargs)
+        super(WikiText2Raw, self).__init__(
+            'wikitext-2', segment=segment, flatten=flatten,
+            skip_empty=skip_empty, sample_splitter=sample_splitter, root=root,
+            tokenizer=tokenizer, bos=bos, eos=eos, **kwargs)
 
 
 @register(segment=['train', 'val', 'test'])
@@ -218,24 +242,30 @@ class WikiText103Raw(_WikiText):
     ----------
     segment : {'train', 'val', 'test'}, default 'train'
         Dataset segment.
+    flatten : bool, default True
+        Whether to return all samples as flattened tokens. If True, each sample
+        is a token. Useful for language models.
     skip_empty : bool, default True
         Whether to skip the empty samples produced from sample_splitters. If False, `bos` and `eos`
         will be added in empty samples.
-    tokenizer : function, default s.encode('utf-8')
+    sample_splitter : function, default str.splitlines
+        A function that splits the dataset string into samples.
+    tokenizer : function, default list
         A function that splits each sample string into list of tokens.
         The tokenizer can also be used to convert everything to lowercase.
-        E.g. with tokenizer=lambda s: s.lower().encode('utf-8')
+        E.g. with tokenizer=lambda s: list(s.lower().encode('utf-8'))
     bos : str or None, default None
         The token to add at the begining of each sentence. If None, nothing is added.
-    eos : str or None, default '<eos>'
+    eos : str or None, default None
         The token to add at the end of each sentence. If None, nothing is added.
     root : str, default '$MXNET_HOME/datasets/wikitext-103'
         Path to temp folder for storing data.
         MXNET_HOME defaults to '~/.mxnet'.
     """
 
-    def __init__(self, segment='train', skip_empty=True,
-                 tokenizer=lambda s: s.encode('utf-8'), bos=None,
+    def __init__(self, segment='train', flatten=True, skip_empty=True,
+                 sample_splitter=lambda s: s.splitlines(),
+                 tokenizer=lambda s: list(s.encode('utf-8')), bos=None,
                  eos=None, root=os.path.join(_get_home_dir(), 'datasets',
                                              'wikitext-103'), **kwargs):
         self._archive_file = ('wikitext-103-raw-v1.zip',
@@ -248,6 +278,7 @@ class WikiText103Raw(_WikiText):
             'test': ('wiki.test.raw',
                      '6f1fe2054a940eebfc76b284b09680763b37f5ea')
         }
-        super(WikiText103Raw,
-              self).__init__('wikitext-103', segment, bos, eos, skip_empty,
-                             root, tokenizer=tokenizer, **kwargs)
+        super(WikiText103Raw, self).__init__(
+            'wikitext-103', segment=segment, flatten=flatten,
+            skip_empty=skip_empty, sample_splitter=sample_splitter, root=root,
+            tokenizer=tokenizer, bos=bos, eos=eos, **kwargs)
