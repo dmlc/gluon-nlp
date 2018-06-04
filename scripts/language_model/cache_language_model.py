@@ -75,9 +75,9 @@ context = [mx.cpu()] if args.gpus is None or args.gpus == '' else \
 print(args)
 
 _, vocab = nlp.model.get_model(name=args.model_name,
-                                   dataset_name='wikitext-2',
-                                   pretrained=False,
-                                   ctx=context)
+                               dataset_name='wikitext-2',
+                               pretrained=False,
+                               ctx=context)
 ntokens = len(vocab)
 
 ###############################################################################
@@ -87,12 +87,13 @@ ntokens = len(vocab)
 
 if not args.path_to_params_file:
     cache_cell = nlp.model.get_cache_model(name=args.model_name, dataset_name='wikitext-2',
-                                           window=args.window, theta=args.theta, lambdas=args.lambdas, ctx=context)
+                                           window=args.window, theta=args.theta,
+                                           lambdas=args.lambdas, ctx=context)
 else:
     model, _ = nlp.model.get_model(name=args.model_name,
-                                       dataset_name='wikitext-2',
-                                       pretrained=False,
-                                       ctx=context)
+                                   dataset_name='wikitext-2',
+                                   pretrained=False,
+                                   ctx=context)
     cache_cell = nlp.model.CacheCell(model, ntokens, args.window, args.theta, args.lambdas)
     cache_cell.load_params(args.path_to_params_file, ctx=context)
 
@@ -176,7 +177,8 @@ def evaluate(data_source, batch_size, ctx=None):
         The loss on the dataset
     """
     total_L = 0
-    hidden = cache_cell._pretrained_lm_model.begin_state(func=mx.nd.zeros, batch_size=batch_size, ctx=context[0])
+    hidden = cache_cell._pretrained_lm_model.\
+        begin_state(func=mx.nd.zeros, batch_size=batch_size, ctx=context[0])
     next_word_history = None
     cache_history = None
     for i in range(0, len(data_source) - 1, args.bptt):
