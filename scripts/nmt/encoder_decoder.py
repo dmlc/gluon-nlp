@@ -20,12 +20,9 @@
 __all__ = ['Seq2SeqEncoder', 'Seq2SeqDecoder']
 
 from functools import partial
-import math
-import numpy as np
 import mxnet as mx
-from mxnet.base import _as_list
-from mxnet.gluon import nn, rnn
-from mxnet.gluon.block import Block, HybridBlock
+from mxnet.gluon import rnn
+from mxnet.gluon.block import Block
 from gluonnlp.model import AttentionCell, MLPAttentionCell, DotProductAttentionCell, \
     MultiHeadAttentionCell
 

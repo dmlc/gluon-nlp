@@ -112,10 +112,10 @@ def compute_bleu(reference_corpus_list, translation_corpus, max_n=4,
 
     for references, translation in zip(zip(*reference_corpus_list), translation_corpus):
         if bpe:
-            references = list(map(_bpe_to_words, references))
+            references = [_bpe_to_words(reference) for reference in references]
             translation = _bpe_to_words(translation)
         if split_compound_word:
-            references = list(map(_split_compound_word, references))
+            references = [_split_compound_word(reference) for reference in references]
             translation = _split_compound_word(translation)
         if lower_case:
             references = [list(map(str.lower, reference)) for reference in references]
