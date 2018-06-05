@@ -195,12 +195,12 @@ class LanguageModelStream(CorpusStream):
         self._sampler = sampler
         self._file_sampler = file_sampler
         super(LanguageModelStream, self).__init__(self._file_pattern, flatten=True,
-                                                encoding=self._encoding,
-                                                skip_empty=self._skip_empty,
-                                                sample_splitter=self._sample_splitter,
-                                                tokenizer=self._tokenizer, bos=self._bos,
-                                                eos=self._eos, sampler=self._sampler,
-                                                file_sampler=self._file_sampler)
+                                                  encoding=self._encoding,
+                                                  skip_empty=self._skip_empty,
+                                                  sample_splitter=self._sample_splitter,
+                                                  tokenizer=self._tokenizer, bos=self._bos,
+                                                  eos=self._eos, sampler=self._sampler,
+                                                  file_sampler=self._file_sampler)
 
     def bptt_batchify(self, vocab, seq_len, batch_size, last_batch='keep'):
         """The corpus is transformed into batches of numericalized samples, in the way that the
@@ -224,9 +224,9 @@ class LanguageModelStream(CorpusStream):
             - discard: The last batch is discarded if it's smaller than `(seq_len, batch_size)`.
         """
         corpus = CorpusStream(self._file_pattern, flatten=False, encoding=self._encoding,
-                            skip_empty=self._skip_empty, sample_splitter=self._sample_splitter,
-                            tokenizer=self._tokenizer, bos=self._bos, eos=self._eos,
-                            sampler=self._sampler, file_sampler=self._file_sampler)
+                              skip_empty=self._skip_empty, sample_splitter=self._sample_splitter,
+                              tokenizer=self._tokenizer, bos=self._bos, eos=self._eos,
+                              sampler=self._sampler, file_sampler=self._file_sampler)
         return _LanguageModelBPTTStream(corpus, vocab, seq_len, batch_size, last_batch=last_batch)
 
 class _LanguageModelBPTTStream(DataStream):
