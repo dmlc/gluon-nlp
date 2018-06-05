@@ -20,7 +20,7 @@
 # pylint: disable=undefined-all-variable
 """NLP Toolkit Data Iterator API. It allows easy and customizable loading of corpora and dataset files.
 Files can be loaded into formats that are immediately ready for training and evaluation."""
-__all__ = ['DataIter', 'CorpusIter', 'LanguageModelIter']
+__all__ = ['DataIter', 'CorpusIter', 'LanguageModelIter', 'SimpleDataIter']
 
 import io
 import os
@@ -228,9 +228,9 @@ class LanguageModelIter(CorpusIter):
                             skip_empty=self._skip_empty, sample_splitter=self._sample_splitter,
                             tokenizer=self._tokenizer, bos=self._bos, eos=self._eos,
                             sampler=self._sampler, file_sampler=self._file_sampler)
-        return _LanguageModelBpttIter(corpus, vocab, seq_len, batch_size, last_batch=last_batch)
+        return _LanguageModelBPTTIter(corpus, vocab, seq_len, batch_size, last_batch=last_batch)
 
-class _LanguageModelBpttIter(DataIter):
+class _LanguageModelBPTTIter(DataIter):
     """Streams a corpus and produces a language modeling data iterable.
 
     Parameters
@@ -250,7 +250,7 @@ class _LanguageModelBpttIter(DataIter):
     """
     def __init__(self, corpus, vocab, seq_len, batch_size, last_batch='keep'):
         if corpus._flatten:
-            raise ValueError('_LanguageModelBpttIter does not support flatten corpus. '\
+            raise ValueError('_LanguageModelBPTTIter does not support flatten corpus. '\
                              'Please create a CorpusIter with flatten=False.')
         self._corpus = corpus
         self._vocab = vocab

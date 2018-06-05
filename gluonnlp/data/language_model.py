@@ -30,6 +30,7 @@ from mxnet.gluon.utils import download, check_sha1, _get_repo_file_url
 
 from .. import _constants as C
 from .dataset import LanguageModelDataset
+from .data_iter import LanguageModelIter
 from .registry import register
 from .utils import _get_home_dir
 

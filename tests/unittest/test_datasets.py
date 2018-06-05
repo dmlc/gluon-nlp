@@ -516,3 +516,14 @@ def test_lm_iter():
     # the last token doesn't appear in data
     assert num_tokens >= total_num_tokens - batch_size, num_tokens
     assert num_tokens < total_num_tokens, num_tokens
+
+def test_lazy_iter():
+    EOS = nlp._constants.EOS_TOKEN
+    path = os.path.join('tests', 'data', 'wikitext-2')
+    token_path = os.path.join('tests', 'data', 'wikitext-2/*test*.tokens')
+    test = nlp.data.WikiText2(segment='test', root=path)
+    corpus = nlp.data.CorpusIter(token_path, flatten=True,
+                                 skip_empty=True, eos=EOS, sampler='sequential')
+    transformed_corpus = nlp.data.SimpleDataIter(corpus).transform(lambda s: s.lower())
+    for x, y in zip(corpus, transformed_corpus):
+        assert y == x.lower()
