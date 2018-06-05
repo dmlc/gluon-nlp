@@ -56,6 +56,7 @@ setup(
             'spacy',
             'nltk==3.2.5',
             'scipy',
+            'numba',
         ],
         'dev': [
             'pytest',
