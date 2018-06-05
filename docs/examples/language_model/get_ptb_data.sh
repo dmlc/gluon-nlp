@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
 
-curl -O https://raw.githubusercontent.com/dmlc/web-data/master/mxnet/ptb/ptb.train.txt;
-curl -O https://raw.githubusercontent.com/dmlc/web-data/master/mxnet/ptb/ptb.valid.txt;
-curl -O https://raw.githubusercontent.com/dmlc/web-data/master/mxnet/ptb/ptb.test.txt;
+curl -O http://www.fit.vutbr.cz/~imikolov/rnnlm/simple-examples.tgz
+tar --strip-components=3 -xzvf simple-examples.tgz simple-examples/data/ptb.train.txt simple-examples/data/ptb.valid.txt simple-examples/data/ptb.test.txt

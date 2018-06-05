@@ -141,6 +141,46 @@ def test_wikitext2():
     assert batched_data.shape == (26107, 80)
 
 
+def test_wikitext2_raw():
+    train = nlp.data.WikiText2Raw(segment='train', root=os.path.join(
+        'tests', 'data', 'wikitext-2'))
+    val = nlp.data.WikiText2Raw(segment='val', root=os.path.join(
+        'tests', 'data', 'wikitext-2'))
+    test = nlp.data.WikiText2Raw(segment='test', root=os.path.join(
+        'tests', 'data', 'wikitext-2'))
+    train_freq, val_freq, test_freq = [
+        nlp.data.utils.Counter(x) for x in [train[0], val[0], test[0]]
+    ]
+    assert len(train[0]) == 10843541, len(train[0])
+    assert len(train_freq) == 192, len(train_freq)
+    assert len(val[0]) == 1136862, len(val[0])
+    assert len(val_freq) == 168, len(val_freq)
+    assert len(test[0]) == 1278983, len(test[0])
+    assert len(test_freq) == 177, len(test_freq)
+    assert test_freq['a'.encode('utf-8')[0]] == 81512, \
+        test_freq['a'.encode('utf-8')[0]]
+
+
+def test_wikitext103_raw():
+    train = nlp.data.WikiText103Raw(segment='train', root=os.path.join(
+        'tests', 'data', 'wikitext-103'))
+    val = nlp.data.WikiText103Raw(segment='val', root=os.path.join(
+        'tests', 'data', 'wikitext-103'))
+    test = nlp.data.WikiText103Raw(segment='test', root=os.path.join(
+        'tests', 'data', 'wikitext-103'))
+    train_freq, val_freq, test_freq = [
+        nlp.data.utils.Counter(x) for x in [train[0], val[0], test[0]]
+    ]
+    assert len(train[0]) == 535800393, len(train[0])
+    assert len(train_freq) == 203, len(train_freq)
+    assert len(val[0]) == 1136862, len(val[0])
+    assert len(val_freq) == 168, len(val_freq)
+    assert len(test[0]) == 1278983, len(test[0])
+    assert len(test_freq) == 177, len(test_freq)
+    assert test_freq['a'.encode('utf-8')[0]] == 81512, \
+        test_freq['a'.encode('utf-8')[0]]
+
+
 def test_imdb():
     train = nlp.data.IMDB(
         root=os.path.join('tests', 'data', 'imdb'), segment='train')
