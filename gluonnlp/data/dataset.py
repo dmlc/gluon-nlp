@@ -24,7 +24,6 @@ __all__ = ['TextLineDataset', 'CorpusDataset', 'LanguageModelDataset']
 
 import io
 import os
-import glob
 import numpy as np
 
 import mxnet as mx

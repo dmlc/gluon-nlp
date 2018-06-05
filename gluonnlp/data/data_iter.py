@@ -250,7 +250,7 @@ class _LanguageModelBpttIter(DataIter):
     """
     def __init__(self, corpus, vocab, seq_len, batch_size, last_batch='keep'):
         if corpus._flatten:
-            raise ValueError('LanguageModelIter does not support flatten corpus. '\
+            raise ValueError('_LanguageModelBpttIter does not support flatten corpus. '\
                              'Please create a CorpusIter with flatten=False.')
         self._corpus = corpus
         self._vocab = vocab

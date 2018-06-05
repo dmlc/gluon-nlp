@@ -161,7 +161,9 @@ class _GBWIter(LanguageModelIter):
         self._file_pattern = os.path.join(self._subdir, pattern)
         self._data_hash = data_hash
         self._get_data()
-        super(_GBWIter, self).__init__(self._file_pattern, skip_empty=skip_empty, bos=bos, eos=eos)
+        sampler = 'random' if self._segment == 'train' else 'sequential'
+        super(_GBWIter, self).__init__(self._file_pattern, skip_empty=skip_empty, bos=bos,
+                                       eos=eos, sampler=sampler, file_sampler=sampler)
 
     def _get_data(self):
         archive_file_name, archive_hash = self._archive_file
@@ -178,7 +180,6 @@ class _GBWIter(LanguageModelIter):
                         if not data:
                             break
                         sha1.update(data)
-            print(sha1.hexdigest())
             if sha1.hexdigest() == self._data_hash:
                 exists = True
         if not exists:
