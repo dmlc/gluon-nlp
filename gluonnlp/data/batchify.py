@@ -16,26 +16,12 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-"""Batchify functions.
-
-Useful for the Gluon data loader to combine individual samples into batches for
-fast processing.
-
-"""
-__all__ = ['Stack', 'Pad', 'Tuple', 'LanguageModel', 'LanguageModelBPTT']
-
-import sys
+"""Batchify functions. They can be used in Gluon data loader to help combine individual samples
+into batches for fast processing."""
+__all__ = ['Stack', 'Pad', 'Tuple']
 
 import numpy as np
 import mxnet as mx
-from mxnet.gluon.data import SimpleDataset
-
-from .utils import _slice_pad_length, slice_sequence
-
-if sys.version_info[0] == 3:
-    _str_types = (str, )
-else:
-    _str_types = (str, unicode)
 
 
 def _pad_arrs_to_max_length(arrs, pad_axis, pad_val, use_shared_mem=False):
@@ -149,7 +135,7 @@ class Stack(object):
 
 
 class Pad(object):
-    """Pad the input ndarrays along the specific padding axis and stack them.
+    """Pad the input ndarrays along the specific padding axis and stack them to get the output.
 
     Input of the function will be N samples. Each sample should contain a single element that
     can be 1) numpy.ndarray, 2) mxnet.nd.NDArray, 3) list of numbers
@@ -342,91 +328,3 @@ class Tuple(object):
         for i, ele_fn in enumerate(self._fn):
             ret.append(ele_fn([ele[i] for ele in data]))
         return tuple(ret)
-
-
-class LanguageModel(object):
-    """Transform the dataset into N independent sequences, where N is the batch size.
-
-    Parameters
-    ----------
-    vocab : gluonnlp.Vocab
-        The vocabulary to use for numericalizing the dataset. Each token will be mapped to the
-        index according to the vocabulary.
-    batch_size : int
-        The number of samples in each batch.
-
-    Returns
-    -------
-    NDArray of shape (num_tokens // N, N). Excessive tokens that don't align along
-    the batches are discarded.
-    """
-
-    def __init__(self, vocab, batch_size):
-        self.vocab = vocab
-        self.batch_size = batch_size
-
-    def __call__(self, data):
-        assert isinstance(data[0], _str_types), \
-            'Dataset must be flattened.'
-        sample_len = len(data) // self.batch_size
-        return mx.nd.array(
-            self.vocab[data[:sample_len * self.batch_size]]).reshape(
-                self.batch_size, -1).T
-
-
-class LanguageModelBPTT(LanguageModel):
-    """Transform the dataset into batches of numericalized samples, in the way that the
-    recurrent states from last batch connects with the current batch for each sample.
-
-    Each sample is of shape `(seq_len, batch_size)`. When `last_batch='keep'`, the first
-    dimension of last sample may be shorter than `seq_len`.
-
-    Parameters
-    ----------
-    vocab : gluonnlp.Vocab
-        The vocabulary to use for numericalizing the dataset. Each token will be mapped to the
-        index according to the vocabulary.
-    seq_len : int
-        The length of each of the samples for truncated back-propagation-through-time (TBPTT).
-    batch_size : int
-        The number of samples in each batch.
-    last_batch : {'keep', 'discard'}
-        How to handle the last batch if the remaining length is less than `seq_len`.
-
-        - keep: A batch with less samples than previous batches is returned.
-          vocab.padding_token is used to pad the last batch based on batch
-          size.
-        - discard: The last batch is discarded if it's smaller than `(seq_len,
-          batch_size)`. How to handle the last batch if the remaining length is
-          less than `seq_len`.
-    """
-
-    def __init__(self, vocab, batch_size, seq_len, last_batch='keep'):
-        super(LanguageModelBPTT, self).__init__(vocab, batch_size)
-        self.seq_len = seq_len
-        self.last_batch = last_batch
-
-    def __call__(self, data):
-        batched_data = super(LanguageModelBPTT, self).__call__(data)
-        batches = slice_sequence(batched_data, self.seq_len + 1, overlap=1)
-        if self.last_batch == 'keep':
-            sample_len = len(data) // self.batch_size
-            has_short_batch = _slice_pad_length(sample_len * self.batch_size,
-                                                self.seq_len + 1, 1) > 0
-            if has_short_batch:
-                ctx = batched_data.context if len(batched_data) else None
-                last_batch = data[
-                    self.seq_len * self.batch_size * len(batches):]
-                excess_size = len(last_batch) % self.batch_size
-                if excess_size:
-                    assert self.vocab.padding_token, \
-                        'Padding token must be specified in vocab when ' \
-                        'last_batch="keep".'
-                    padding_size = self.batch_size - excess_size
-                    last_batch.extend(
-                        [self.vocab.padding_token] * padding_size)
-                batches.append(
-                    mx.nd.array(self.vocab[last_batch], ctx=ctx).reshape(
-                        self.batch_size, -1).T)
-        return SimpleDataset(batches).transform(
-            lambda x: (x[:min(len(x) - 1, self.seq_len), :], x[1:, :]))
