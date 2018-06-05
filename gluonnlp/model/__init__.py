@@ -125,47 +125,46 @@ def get_cache_model(name, dataset_name='wikitext-2', window=2000,
 
     Parameters
     ----------
-        - **name** : str
-            Name of the cache language model.
-        - **dataset_name** : str or None, default 'wikitext-2'.
-            The dataset name on which the pretrained model is trained.
-            Options are 'wikitext-2'. If specified, then the returned vocabulary is extracted from
-            the training set of the dataset.
-            If None, then vocab is required, for specifying embedding weight size, and is directly
-            returned.
-        - **window** : int
-            Size of cache window
-        - **theta** : float
-            The scala controls the flatness of the cache distribution
-            that predict the next word as shown below:
+    name : str
+        Name of the cache language model.
+    dataset_name : str or None, default 'wikitext-2'.
+        The dataset name on which the pretrained model is trained.
+        Options are 'wikitext-2'. If specified, then the returned vocabulary is extracted from
+        the training set of the dataset.
+        If None, then vocab is required, for specifying embedding weight size, and is directly
+        returned.
+    window : int
+        Size of cache window
+    theta : float
+        The scala controls the flatness of the cache distribution
+        that predict the next word as shown below:
 
-            .. math::
+        .. math::
 
-                p_{cache} \propto \sum_{i=1}^{t-1} \mathbb{1}_{w=x_{i+1}} exp(\theta {h_t}^T h_i)
+            p_{cache} \propto \sum_{i=1}^{t-1} \mathbb{1}_{w=x_{i+1}} exp(\theta {h_t}^T h_i)
 
-            where $p_{cache}$ is the cache distribution, \mathbb{1} is the identity function,
-            and $h_i$ is the output of timestep i.
-        - **lambdas** : float
-            Linear scalar between only cache and vocab distribution, the formulation is as below:
+        where $p_{cache}$ is the cache distribution, \mathbb{1} is the identity function,
+        and $h_i$ is the output of timestep i.
+    lambdas : float
+        Linear scalar between only cache and vocab distribution, the formulation is as below:
 
-            .. math::
+        .. math::
 
-                p = (1 - \lambda) p_{vocab} + \lambda p_{cache}
+            p = (1 - \lambda) p_{vocab} + \lambda p_{cache}
 
-            where p_{vocab} is the vocabulary distribution and $p_{cache}$
-            is the cache distribution.
-        - **vocab** : gluonnlp.Vocab or None, default None
-            Vocabulary object to be used with the language model.
-            Required when dataset_name is not specified.
-        - **pretrained** : bool, default False
-            Whether to load the pretrained weights for model.
-        - **ctx** : Context, default CPU
-            The context in which to load the pretrained weights.
-        - **root** : str, default '~/.mxnet/models'
-            Location for keeping the pre-trained model parameters.
+        where p_{vocab} is the vocabulary distribution and $p_{cache}$
+        is the cache distribution.
+    vocab : gluonnlp.Vocab or None, default None
+        Vocabulary object to be used with the language model.
+        Required when dataset_name is not specified.
+    pretrained : bool, default False
+        Whether to load the pretrained weights for model.
+    ctx : Context, default CPU
+        The context in which to load the pretrained weights.
+    root : str, default '~/.mxnet/models'
+        Location for keeping the pre-trained model parameters.
 
-    Returns
-    -------
+    Returns:
         - **HybridBlock** :
             The model.
     """
