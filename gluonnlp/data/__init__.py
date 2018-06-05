@@ -30,7 +30,7 @@ from .sampler import *
 
 from .dataset import *
 
-from .data_stream import *
+from .stream import *
 
 from .language_model import *
 
