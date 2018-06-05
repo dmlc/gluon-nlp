@@ -651,8 +651,7 @@ class PositionwiseFFN(HybridBlock):
         self.dropout_layer = nn.Dropout(dropout)
         self.layer_norm = nn.LayerNorm()
 
-    def hybrid_forward(self, F, inputs):
-        #pylint disable=unused-argument
+    def hybrid_forward(self, F, inputs):  # pylint: disable=unused-argument
         """Position-wise encoding of the inputs.
 
         Parameters
@@ -734,8 +733,7 @@ class TransformerEncoderCell(HybridBlock):
                                        bias_initializer=bias_initializer)
             self.layer_norm = nn.LayerNorm()
 
-    def hybrid_forward(self, F, inputs, mask=None):
-        #pylint disable=unused-argument
+    def hybrid_forward(self, F, inputs, mask=None):  # pylint: disable=unused-argument
         """Transformer Encoder Attention Cell.
 
         Parameters
@@ -843,8 +841,7 @@ class TransformerDecoderCell(HybridBlock):
             self.layer_norm_in = nn.LayerNorm()
             self.layer_norm_inter = nn.LayerNorm()
 
-    def hybrid_forward(self, F, inputs, mem_value, mask=None, mem_mask=None):
-        #pylint disable=unused-argument
+    def hybrid_forward(self, F, inputs, mem_value, mask=None, mem_mask=None):  #pylint: disable=unused-argument
         """Transformer Decoder Attention Cell.
 
         Parameters
@@ -989,7 +986,7 @@ class TransformerEncoder(HybridBlock):
         """
         return super(TransformerEncoder, self).__call__(inputs, states, valid_length)
 
-    def forward(self, inputs, states=None, valid_length=None, steps=None): #pylint: disable=arguments-differ
+    def forward(self, inputs, states=None, valid_length=None, steps=None): # pylint: disable=arguments-differ
         """
 
         Parameters
@@ -1035,7 +1032,7 @@ class TransformerEncoder(HybridBlock):
                 super(TransformerEncoder, self).forward(inputs, states)
         return step_output, additional_outputs
 
-    def hybrid_forward(self, F, inputs, states=None, valid_length=None, position_weight=None): #pylint: disable=arguments-differ
+    def hybrid_forward(self, F, inputs, states=None, valid_length=None, position_weight=None): # pylint: disable=arguments-differ
         """
 
         Parameters
