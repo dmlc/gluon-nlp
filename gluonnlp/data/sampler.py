@@ -206,9 +206,9 @@ class FixedBucketSampler(Sampler):
 
         self._bucket_sample_ids = [sample_ids for sample_ids in bucket_sample_ids
                                    if len(sample_ids) > 0]
-        scale_up_keys = [key if self._single_element else sum(key) for key in self._bucket_keys]
-        max_scale_up_key = max(scale_up_keys)
         if not use_average_length:
+            scale_up_keys = [key if self._single_element else sum(key) for key in self._bucket_keys]
+            max_scale_up_key = max(scale_up_keys)
             self._bucket_batch_sizes = [max(int(max_scale_up_key / float(scale_up_key)
                                                 * self._ratio * batch_size), batch_size)
                                         for scale_up_key in scale_up_keys]
