@@ -25,7 +25,7 @@ from mxnet import nd
 from mxnet.gluon import Block
 
 class CacheCell(Block):
-    """Cache language model.
+    r"""Cache language model.
 
     We implement the neural cache language model proposed in the following work.
 
@@ -45,7 +45,8 @@ class CacheCell(Block):
     window : int
         Size of cache window
     theta : float
-        The scala controls the flatness of the cache distribution that predict the next word as shown below:
+        The scala controls the flatness of the cache distribution
+        that predict the next word as shown below:
 
         .. math::
 

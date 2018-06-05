@@ -112,7 +112,7 @@ def get_model(name, dataset_name='wikitext-2', **kwargs):
 
 def get_cache_model(name, dataset_name='wikitext-2', window=2000,
                     theta=0.6, lambdas=0.2, ctx=mx.cpu(), **kwargs):
-    """Returns a cache model using a pre-trained language model.
+    r"""Returns a cache model using a pre-trained language model.
 
     We implement the neural cache language model proposed in the following work.
 
@@ -136,7 +136,8 @@ def get_cache_model(name, dataset_name='wikitext-2', window=2000,
     window : int
         Size of cache window
     theta : float
-        The scala controls the flatness of the cache distribution that predict the next word as shown below:
+        The scala controls the flatness of the cache distribution
+        that predict the next word as shown below:
 
         .. math::
 
