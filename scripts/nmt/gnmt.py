@@ -49,7 +49,7 @@ from mxnet.gluon.data import DataLoader
 import gluonnlp.data.batchify as btf
 from gluonnlp.data import FixedBucketSampler, IWSLT2015
 from gluonnlp.model import BeamSearchScorer
-from encoder_decoder import get_gnmt_encoder_decoder
+from gnmt_encoder_decoder import get_gnmt_encoder_decoder
 from translation import NMTModel, BeamSearchTranslator
 from loss import SoftmaxCEMaskedLoss
 from utils import logging_config

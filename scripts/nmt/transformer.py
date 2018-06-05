@@ -50,7 +50,7 @@ import gluonnlp.data.batchify as btf
 from gluonnlp.data import FixedBucketSampler, IWSLT2015, WMT2016BPE
 from gluonnlp.model import BeamSearchScorer
 from translation import NMTModel, BeamSearchTranslator
-from encoder_decoder import get_transformer_encoder_decoder
+from transformer_encoder_decoder import get_transformer_encoder_decoder
 from loss import SoftmaxCEMaskedLoss, LabelSmoothing
 from utils import logging_config
 from bleu import compute_bleu
@@ -384,7 +384,7 @@ def train():
                                              num_buckets=args.num_buckets,
                                              ratio=args.bucket_ratio,
                                              shuffle=True,
-                                             batch_type='word')
+                                             buse_average_length=True)
     logging.info('Train Batch Sampler:\n{}'.format(train_batch_sampler.stats()))
     train_data_loader = DataLoader(data_train,
                                    batch_sampler=train_batch_sampler,
@@ -396,7 +396,7 @@ def train():
                                            num_buckets=args.num_buckets,
                                            ratio=args.bucket_ratio,
                                            shuffle=False,
-                                           batch_type='word')
+                                           use_average_length=True)
     logging.info('Valid Batch Sampler:\n{}'.format(val_batch_sampler.stats()))
     val_data_loader = DataLoader(data_val,
                                  batch_sampler=val_batch_sampler,
@@ -407,7 +407,7 @@ def train():
                                             num_buckets=args.num_buckets,
                                             ratio=args.bucket_ratio,
                                             shuffle=False,
-                                            batch_type='word')
+                                            use_average_length=True)
     logging.info('Test Batch Sampler:\n{}'.format(test_batch_sampler.stats()))
     test_data_loader = DataLoader(data_test,
                                   batch_sampler=test_batch_sampler,
