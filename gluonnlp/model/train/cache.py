@@ -38,35 +38,34 @@ class CacheCell(Block):
 
     Parameters
     ----------
-        - **lm_model** : StandardRNN or AWDRNN
-            The type of RNN to use. Options are 'StandardRNN', 'AWDRNN'.
-        - **vocab_size** : int
-            Size of the input vocabulary.
-        - **window** : int
-            Size of cache window
-        - **theta** : float
-            The scala controls the flatness of the cache distribution
-            that predict the next word as shown below:
+    lm_model : StandardRNN or AWDRNN
+        The type of RNN to use. Options are 'StandardRNN', 'AWDRNN'.
+    vocab_size : int
+        Size of the input vocabulary.
+    window : int
+        Size of cache window
+    theta : float
+        The scala controls the flatness of the cache distribution
+        that predict the next word as shown below:
 
-            .. math::
+        .. math::
 
-                p_{cache} \propto \sum_{i=1}^{t-1} \mathbb{1}_{w=x_{i+1}} exp(\theta {h_t}^T h_i)
+            p_{cache} \propto \sum_{i=1}^{t-1} \mathbb{1}_{w=x_{i+1}} exp(\theta {h_t}^T h_i)
 
-            where $p_{cache}$ is the cache distribution, \mathbb{1} is the identity function,
-            and $h_i$ is the output of timestep i.
-        - **lambdas** : float
-            Linear scalar between only cache and vocab distribution, the formulation is as below:
+        where $p_{cache}$ is the cache distribution, \mathbb{1} is the identity function,
+        and $h_i$ is the output of timestep i.
+    lambdas : float
+        Linear scalar between only cache and vocab distribution, the formulation is as below:
 
-            .. math::
+        .. math::
 
-                p = (1 - \lambda) p_{vocab} + \lambda p_{cache}
+            p = (1 - \lambda) p_{vocab} + \lambda p_{cache}
 
-            where p_{vocab} is the vocabulary distribution and $p_{cache}$
-            is the cache distribution.
+        where p_{vocab} is the vocabulary distribution and $p_{cache}$
+        is the cache distribution.
 
 
-    Inputs
-    ----------
+    Inputs:
         - **inputs**: NDArray
             The input data
         - **target**: NDArray
@@ -77,8 +76,7 @@ class CacheCell(Block):
             The hidden state in cache history
 
 
-    Outputs
-    ----------
+    Outputs:
         - **out**: NDArray
             The linear interpolation of the cache language model
             with the regular word-level language model
