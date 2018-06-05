@@ -56,10 +56,10 @@ parser.add_argument('--gpus', type=str,
 parser.add_argument('--window', type=int, default=2000,
                     help='cache window length')
 parser.add_argument('--theta', type=float, default=0.662,
-                    help='mix between uniform distribution and '
-                         'cache softmax distribution over previous words')
+                    help='the scala controls the flatness of the cache distribution '
+                         'that predict the next word')
 parser.add_argument('--lambdas', type=float, default=0.1279,
-                    help='linear mix between only cache (1) and only vocab (0) distribution')
+                    help='linear scalar between only cache and vocab distribution')
 parser.add_argument('--path_to_params_file', type=str, default=None,
                     help='path to the saved params file of user pre-trained model, '
                          'including the params file, e.g., ~/.mxnet/models/awd_lstm_lm_1150.params')
@@ -177,7 +177,7 @@ def evaluate(data_source, batch_size, ctx=None):
         The loss on the dataset
     """
     total_L = 0
-    hidden = cache_cell._pretrained_lm_model.\
+    hidden = cache_cell.\
         begin_state(func=mx.nd.zeros, batch_size=batch_size, ctx=context[0])
     next_word_history = None
     cache_history = None

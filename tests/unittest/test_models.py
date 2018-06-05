@@ -25,6 +25,7 @@ import mxnet as mx
 import gluonnlp as nlp
 from gluonnlp.model import get_model as get_text_model
 from gluonnlp.model import get_cache_model
+from gluonnlp.model import CacheCell
 
 def eprint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
@@ -58,7 +59,8 @@ def test_cache_models():
     datasets = ['wikitext-2']
     for name in cache_language_models:
         for dataset_name in datasets:
-            cache_cell = get_cache_model(name, dataset_name, window=1, theta=0.6, lambdas=0.2, pretrained=True, root='tests/data/model/')
+            cache_cell = get_cache_model(name, dataset_name, window=1, theta=0.6,
+                                         lambdas=0.2, root='tests/data/model/')
             outs, word_history, cache_history, hidden = \
                 cache_cell(mx.nd.arange(10).reshape(10, 1), mx.nd.arange(10).reshape(10, 1), None, None)
             print(cache_cell)
@@ -68,3 +70,33 @@ def test_cache_models():
             print(word_history)
             print("cache_history:")
             print(cache_history)
+
+
+def test_get_cache_model_noncache_model():
+    language_models_params = {'awd_lstm_lm_1150': 'awd_lstm_lm_1150_wikitext-2-45d6df33.params',
+                              'awd_lstm_lm_600': 'awd_lstm_lm_600_wikitext-2-7894a046.params',
+                              'standard_lstm_lm_200': 'standard_lstm_lm_200_wikitext-2-700b532d.params',
+                              'standard_lstm_lm_650': 'standard_lstm_lm_650_wikitext-2-14041667.params',
+                              'standard_lstm_lm_1500': 'standard_lstm_lm_1500_wikitext-2-d572ce71.params'}
+    datasets = ['wikitext-2']
+    for name in language_models_params.keys():
+        for dataset_name in datasets:
+            _, vocab = get_text_model(name=name, dataset_name=dataset_name, pretrained=True)
+            ntokens = len(vocab)
+
+            cache_cell_0 = get_cache_model(name, dataset_name, window=1, theta=0.6,
+                                           lambdas=0.2, root='tests/data/model/')
+
+            model, _ = get_text_model(name=name, dataset_name=dataset_name, pretrained=True)
+            cache_cell_1 = CacheCell(model, ntokens, window=1, theta=0.6, lambdas=0.2)
+            cache_cell_1.load_params('tests/data/model/' + language_models_params.get(name))
+
+            outs0, word_history0, cache_history0, hidden0 = \
+                cache_cell_0(mx.nd.arange(10).reshape(10, 1), mx.nd.arange(10).reshape(10, 1), None, None)
+            outs1, word_history1, cache_history1, hidden1 = \
+                cache_cell_1(mx.nd.arange(10).reshape(10, 1), mx.nd.arange(10).reshape(10, 1), None, None)
+
+            assert outs0.shape == outs1.shape, outs0.shape
+            assert len(word_history0) == len(word_history1), len(word_history0)
+            assert len(cache_history0) == len(cache_history1), len(cache_history0)
+            assert len(hidden0) == len(hidden1), len(hidden0)

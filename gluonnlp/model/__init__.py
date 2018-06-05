@@ -114,6 +114,15 @@ def get_cache_model(name, dataset_name='wikitext-2', window=2000,
                     theta=0.6, lambdas=0.2, ctx=mx.cpu(), **kwargs):
     """Returns a cache model using a pre-trained language model.
 
+    We implement the neural cache language model proposed in the following work.
+
+    @article{grave2016improving,
+    title={Improving neural language models with a continuous cache},
+    author={Grave, Edouard and Joulin, Armand and Usunier, Nicolas},
+    journal={ICLR},
+    year={2017}
+    }
+
     Parameters
     ----------
     name : str
@@ -127,9 +136,22 @@ def get_cache_model(name, dataset_name='wikitext-2', window=2000,
     window : int
         Size of cache window
     theta : float
-        Mix between uniform distribution and cache softmax distribution over previous words
+        The scala controls the flatness of the cache distribution that predict the next word as shown below:
+
+        .. math::
+
+            p_{cache} \propto \sum_{i=1}^{t-1} \mathbb{1}_{w=x_{i+1}} exp(\theta {h_t}^T h_i)
+
+        where $p_{cache}$ is the cache distribution, \mathbb{1} is the identity function,
+        and $h_i$ is the output of timestep i.
     lambdas : float
-        Linear mix between only cache (1) and only vocab (0) distribution
+        Linear scalar between only cache and vocab distribution, the formulation is as below:
+
+        .. math::
+
+            p = (1 - \lambda) p_{vocab} + \lambda p_{cache}
+
+        where p_{vocab} is the vocabulary distribution and $p_{cache}$ is the cache distribution.
     vocab : gluonnlp.Vocab or None, default None
         Vocabulary object to be used with the language model.
         Required when dataset_name is not specified.

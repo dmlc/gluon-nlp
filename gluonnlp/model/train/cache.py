@@ -27,18 +27,41 @@ from mxnet.gluon import Block
 class CacheCell(Block):
     """Cache language model.
 
+    We implement the neural cache language model proposed in the following work.
+
+    @article{grave2016improving,
+    title={Improving neural language models with a continuous cache},
+    author={Grave, Edouard and Joulin, Armand and Usunier, Nicolas},
+    journal={ICLR},
+    year={2017}
+    }
+
     Parameters
     ----------
-    pretrained_lm_model : StandardRNN or AWDRNN
+    lm_model : StandardRNN or AWDRNN
         The type of RNN to use. Options are 'StandardRNN', 'AWDRNN'.
     vocab_size : int
         Size of the input vocabulary.
     window : int
         Size of cache window
     theta : float
-        Mix between uniform distribution and cache softmax distribution over previous words
+        The scala controls the flatness of the cache distribution that predict the next word as shown below:
+
+        .. math::
+
+            p_{cache} \propto \sum_{i=1}^{t-1} \mathbb{1}_{w=x_{i+1}} exp(\theta {h_t}^T h_i)
+
+        where $p_{cache}$ is the cache distribution, \mathbb{1} is the identity function,
+        and $h_i$ is the output of timestep i.
     lambdas : float
-        Linear mix between only cache (1) and only vocab (0) distribution
+        Linear scalar between only cache and vocab distribution, the formulation is as below:
+
+        .. math::
+
+            p = (1 - \lambda) p_{vocab} + \lambda p_{cache}
+
+        where p_{vocab} is the vocabulary distribution and $p_{cache}$ is the cache distribution.
+
 
     Inputs
     ----------
@@ -63,14 +86,14 @@ class CacheCell(Block):
             The hidden states to be kept in the memory for look up
             (size is equal to the window size)
     """
-    def __init__(self, pretrained_lm_model, vocab_size, window, theta, lambdas, **kwargs):
+    def __init__(self, lm_model, vocab_size, window, theta, lambdas, **kwargs):
         super(CacheCell, self).__init__(**kwargs)
         self._vocab_size = vocab_size
         self._window = window
         self._theta = theta
         self._lambdas = lambdas
         with self.name_scope():
-            self._pretrained_lm_model = pretrained_lm_model
+            self._lm_model = lm_model
 
     def save_params(self, filename):
         """Save parameters to file.
@@ -78,7 +101,7 @@ class CacheCell(Block):
         filename : str
             Path to file.
         """
-        self._pretrained_lm_model.save_params(filename)
+        self._lm_model.save_params(filename)
 
     def load_params(self, filename, ctx=mx.cpu()): # pylint: disable=arguments-differ
         """Load parameters from file.
@@ -88,14 +111,19 @@ class CacheCell(Block):
         ctx : Context or list of Context, default cpu()
             Context(s) initialize loaded parameters on.
         """
-        self._pretrained_lm_model.load_params(filename, ctx=ctx)
+        self._lm_model.load_params(filename, ctx=ctx)
+
+    def begin_state(self, *args, **kwargs):
+        """Initialize the hidden states.
+        """
+        return self._lm_model.begin_state(*args, **kwargs)
 
 
     def forward(self, inputs, target, next_word_history, cache_history, begin_state=None): # pylint: disable=arguments-differ
         """Defines the forward computation for cache cell. Arguments can be either
         :py:class:`NDArray` or :py:class:`Symbol`."""
         output, hidden, encoder_hs, _ = \
-            super(self._pretrained_lm_model.__class__, self._pretrained_lm_model).\
+            super(self._lm_model.__class__, self._lm_model).\
                 forward(inputs, begin_state)
         encoder_h = encoder_hs[-1].reshape(-3, -2)
         output = output.reshape(-1, self._vocab_size)

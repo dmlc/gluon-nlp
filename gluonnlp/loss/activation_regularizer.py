@@ -50,6 +50,10 @@ class ActivationRegularizationLoss(Loss):
     ----------
     alpha : float, default 0
         The scaling coefficient of the regularization.
+    weight : float or None
+        Global scalar weight for loss.
+    batch_axis : int, default 0
+        The axis that represents mini-batch.
 
     Inputs:
         - **states**: the stack outputs from RNN,
@@ -104,6 +108,10 @@ class TemporalActivationRegularizationLoss(Loss):
     ----------
     beta : float, default 0
         The scaling coefficient of the regularization.
+    weight : float or None
+        Global scalar weight for loss.
+    batch_axis : int, default 0
+        The axis that represents mini-batch.
 
     Inputs:
         - **states**: the stack outputs from RNN,
