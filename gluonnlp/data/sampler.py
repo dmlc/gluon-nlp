@@ -118,7 +118,8 @@ class FixedBucketSampler(Sampler):
         Whether to shuffle the batches.
     use_average_length : bool, default False
         False: each batch contains batch_size sequences, number of sequence elements varies.
-        True: each batch contains batch_size elements, number of sequences varies. In this case, ratio is disabled.
+        True: each batch contains batch_size elements, number of sequences varies. In this case,
+        ratio option is ignored.
 
     Examples
     --------
@@ -207,7 +208,7 @@ class FixedBucketSampler(Sampler):
                                    if len(sample_ids) > 0]
         scale_up_keys = [key if self._single_element else sum(key) for key in self._bucket_keys]
         max_scale_up_key = max(scale_up_keys)
-        if ~use_average_length:
+        if not use_average_length:
             self._bucket_batch_sizes = [max(int(max_scale_up_key / float(scale_up_key)
                                                 * self._ratio * batch_size), batch_size)
                                         for scale_up_key in scale_up_keys]
