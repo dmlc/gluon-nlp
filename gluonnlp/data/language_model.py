@@ -30,7 +30,7 @@ from mxnet.gluon.utils import download, check_sha1, _get_repo_file_url
 
 from .. import _constants as C
 from .dataset import LanguageModelDataset
-from .data_iter import LanguageModelIter
+from .data_iter import LanguageModelStream
 from .registry import register
 from .utils import _get_home_dir
 
@@ -253,7 +253,7 @@ class WikiText103Raw(_WikiText):
               self).__init__('wikitext-103', segment, bos, eos, skip_empty,
                              root, tokenizer=tokenizer, **kwargs)
 
-class _GBWIter(LanguageModelIter):
+class _GBWStream(LanguageModelStream):
     def __init__(self, namespace, segment, bos, eos, skip_empty, root):
         """Directory layout:
            - root ($MXNET_HOME/datasets/gbw)
@@ -274,7 +274,7 @@ class _GBWIter(LanguageModelIter):
         self._data_hash = data_hash
         self._get_data()
         sampler = 'random' if segment == 'train' else 'sequential'
-        super(_GBWIter, self).__init__(self._file_pattern, skip_empty=skip_empty, bos=bos,
+        super(_GBWStream, self).__init__(self._file_pattern, skip_empty=skip_empty, bos=bos,
                                        eos=eos, sampler=sampler, file_sampler=sampler)
 
     def _get_data(self):
@@ -304,7 +304,7 @@ class _GBWIter(LanguageModelIter):
             with tarfile.open(archive_file_path, 'r:gz') as tf:
                 tf.extractall(path=self._root)
 
-class GBWIter(_GBWIter):
+class GBWStream(_GBWStream):
     """1-Billion-Word word-level dataset for language modeling, from Google.
 
     From
@@ -337,4 +337,4 @@ class GBWIter(_GBWIter):
                            'test': ('heldout-monolingual.tokenized.shuffled',
                                     'news.en.heldout-00000-of-00050',
                                     '0a8e2b7496ba0b5c05158f282b9b351356875445')}
-        super(GBWIter, self).__init__('gbw', segment, bos, eos, skip_empty, root)
+        super(GBWStream, self).__init__('gbw', segment, bos, eos, skip_empty, root)

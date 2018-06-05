@@ -18,10 +18,10 @@
 # under the License.
 
 # pylint: disable=undefined-all-variable
-"""NLP Toolkit Data Iterator API. It allows easy and customizable loading of
-corpora and dataset files. Files can be loaded into formats that are immediately
+"""NLP Toolkit Data Stream API. It allows easy and customizable streaming of
+corpora and dataset files. Files can be streamed into formats that are immediately
 ready for training and evaluation."""
-__all__ = ['DataIter', 'CorpusIter', 'LanguageModelIter', 'SimpleDataIter']
+__all__ = ['DataStream', 'CorpusStream', 'LanguageModelStream', 'SimpleDataStream']
 
 import os
 import glob
@@ -31,8 +31,8 @@ import mxnet as mx
 from mxnet.gluon.data import RandomSampler, SequentialSampler
 from .dataset import CorpusDataset
 
-class DataIter(object):
-    """Abstract Data Iter Interface."""
+class DataStream(object):
+    """Abstract Data Stream Interface."""
     def __iter__(self):
         raise NotImplementedError
 
@@ -40,31 +40,31 @@ class DataIter(object):
         """
         Returns
         -------
-        DataIter
-            The data iterator that lazily transforms the data while iterating.
+        DataStream
+            The data stream that lazily transforms the data while streaming.
         """
-        return _LazyTransformDataIter(self, fn)
+        return _LazyTransformDataStream(self, fn)
 
-class SimpleDataIter(DataIter):
-    """Simple DataIter wrapper for a iterator."""
-    def __init__(self, iterator):
-        self._iterator = iterator
+class SimpleDataStream(DataStream):
+    """Simple DataStream wrapper for a stream."""
+    def __init__(self, stream):
+        self._stream = stream
 
     def __iter__(self):
-        return iter(self._iterator)
+        return iter(self._stream)
 
-class _LazyTransformDataIter(DataIter):
-    """Data iterator that lazily transforms the data."""
-    def __init__(self, iterator, fn):
-        self._iterator = iterator
+class _LazyTransformDataStream(DataStream):
+    """Data stream that lazily transforms the data."""
+    def __init__(self, stream, fn):
+        self._stream = stream
         self._fn = fn
 
     def __iter__(self):
-        for item in iter(self._iterator):
+        for item in iter(self._stream):
             yield self._fn(item)
 
-class CorpusIter(DataIter):
-    """Common text data iterator that streams a corpus consisting of multiple text files
+class CorpusStream(DataStream):
+    """Common text data stream that streams a corpus consisting of multiple text files
     that match provided `file_pattern`. One file is read at a time.
 
     The returned dataset includes samples, each of which can either be a list of tokens if tokenizer
@@ -146,9 +146,9 @@ class CorpusIter(DataIter):
             for idx in iter(sampler(num_samples)):
                 yield corpus[idx]
 
-class LanguageModelIter(CorpusIter):
+class LanguageModelStream(CorpusStream):
     """Streams a corpus consisting of multiple text files that match provided
-    `file_pattern`, and produces a language modeling iterator given the provided
+    `file_pattern`, and produces a language modeling stream given the provided
     sample splitter and word tokenizer.
 
     Parameters
@@ -194,7 +194,7 @@ class LanguageModelIter(CorpusIter):
         self._eos = eos
         self._sampler = sampler
         self._file_sampler = file_sampler
-        super(LanguageModelIter, self).__init__(self._file_pattern, flatten=True,
+        super(LanguageModelStream, self).__init__(self._file_pattern, flatten=True,
                                                 encoding=self._encoding,
                                                 skip_empty=self._skip_empty,
                                                 sample_splitter=self._sample_splitter,
@@ -223,14 +223,14 @@ class LanguageModelIter(CorpusIter):
             - keep: A batch with less samples than previous batches is returned.
             - discard: The last batch is discarded if it's smaller than `(seq_len, batch_size)`.
         """
-        corpus = CorpusIter(self._file_pattern, flatten=False, encoding=self._encoding,
+        corpus = CorpusStream(self._file_pattern, flatten=False, encoding=self._encoding,
                             skip_empty=self._skip_empty, sample_splitter=self._sample_splitter,
                             tokenizer=self._tokenizer, bos=self._bos, eos=self._eos,
                             sampler=self._sampler, file_sampler=self._file_sampler)
-        return _LanguageModelBPTTIter(corpus, vocab, seq_len, batch_size, last_batch=last_batch)
+        return _LanguageModelBPTTStream(corpus, vocab, seq_len, batch_size, last_batch=last_batch)
 
-class _LanguageModelBPTTIter(DataIter):
-    """Streams a corpus and produces a language modeling data iterable.
+class _LanguageModelBPTTStream(DataStream):
+    """Streams a corpus and produces a language modeling data stream.
 
     Parameters
     ----------
@@ -249,8 +249,8 @@ class _LanguageModelBPTTIter(DataIter):
     """
     def __init__(self, corpus, vocab, seq_len, batch_size, last_batch='keep'):
         if corpus._flatten:
-            raise ValueError('_LanguageModelBPTTIter does not support flatten corpus. '\
-                             'Please create a CorpusIter with flatten=False.')
+            raise ValueError('_LanguageModelBPTTStream does not support flatten corpus. '\
+                             'Please create a CorpusStream with flatten=False.')
         self._corpus = corpus
         self._vocab = vocab
         self._seq_len = seq_len
@@ -286,7 +286,7 @@ class _LanguageModelBPTTIter(DataIter):
             buffers[i] = buffers[i][num_tokens:]
             return num_tokens
 
-        # iterable states
+        # stream states
         buffers = [None] * self._batch_size
         has_next = True
         has_token_buffered = False

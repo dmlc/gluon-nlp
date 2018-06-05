@@ -475,8 +475,8 @@ def test_corpus_iter():
     train = nlp.data.WikiText2(segment='train', root=path)
     val = nlp.data.WikiText2(segment='val', root=path)
     test = nlp.data.WikiText2(segment='test', root=path)
-    corpus = nlp.data.CorpusIter(token_path, flatten=True,
-                                      skip_empty=True, eos=EOS)
+    corpus = nlp.data.CorpusStream(token_path, flatten=True,
+                                   skip_empty=True, eos=EOS)
     counter = nlp.data.Counter(corpus)
     assert len(counter) == 33278, len(counter)
     # examine aggregated vocab
@@ -494,7 +494,7 @@ def test_lm_iter():
     train = nlp.data.WikiText2(segment='train', root=path)
     val = nlp.data.WikiText2(segment='val', root=path)
     test = nlp.data.WikiText2(segment='test', root=path)
-    lm_iter = nlp.data.LanguageModelIter(token_path, skip_empty=True, eos=EOS)
+    lm_iter = nlp.data.LanguageModelStream(token_path, skip_empty=True, eos=EOS)
     counter = nlp.data.Counter(lm_iter)
     vocab = nlp.vocab.Vocab(counter, bos_token=None)
     seq_len = 35
@@ -522,8 +522,8 @@ def test_lazy_iter():
     path = os.path.join('tests', 'data', 'wikitext-2')
     token_path = os.path.join('tests', 'data', 'wikitext-2/*test*.tokens')
     test = nlp.data.WikiText2(segment='test', root=path)
-    corpus = nlp.data.CorpusIter(token_path, flatten=True,
-                                 skip_empty=True, eos=EOS, sampler='sequential')
-    transformed_corpus = nlp.data.SimpleDataIter(corpus).transform(lambda s: s.lower())
+    corpus = nlp.data.CorpusStream(token_path, flatten=True,
+                                   skip_empty=True, eos=EOS, sampler='sequential')
+    transformed_corpus = nlp.data.SimpleDataStream(corpus).transform(lambda s: s.lower())
     for x, y in zip(corpus, transformed_corpus):
         assert y == x.lower()
