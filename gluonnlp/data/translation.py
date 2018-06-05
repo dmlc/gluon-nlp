@@ -20,7 +20,7 @@
 # pylint: disable=
 """Machine translation datasets."""
 
-__all__ = ['IWSLT2015', 'WMT2016BPE']
+__all__ = ['IWSLT2015', 'WMT2014BPE', 'WMT2016BPE']
 
 
 import os
@@ -253,6 +253,7 @@ class WMT2016BPE(_TranslationDataset):
         super(WMT2016BPE, self).__init__('wmt2016', segment=segment, src_lang=src_lang,
                                          tgt_lang=tgt_lang,
                                          root=os.path.join(root, _get_pair_key(src_lang, tgt_lang)))
+
 
 @register(segment=['train', 'newstest2009', 'newstest2010', 'newstest2011', \
                    'newstest2012', 'newstest2013', 'newstest2014'])
