@@ -1,7 +1,8 @@
 import numpy as np
 import mxnet as mx
 from mxnet.test_utils import assert_almost_equal
-from ..nmt.encoder_decoder import *
+from ..nmt.gnmt_encoder_decoder import *
+from ..nmt.transformer_encoder_decoder import *
 
 
 def test_gnmt_encoder():
