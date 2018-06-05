@@ -268,12 +268,12 @@ class _GBWIter(LanguageModelIter):
         self._root = root
         self._dir = os.path.join(root, '1-billion-word-language-modeling-benchmark-r13output')
         self._namespace = 'gluon/dataset/{}'.format(namespace)
-        subdir_name, pattern, data_hash = self._data_file[self._segment]
+        subdir_name, pattern, data_hash = self._data_file[segment]
         self._subdir = os.path.join(self._dir, subdir_name)
         self._file_pattern = os.path.join(self._subdir, pattern)
         self._data_hash = data_hash
         self._get_data()
-        sampler = 'random' if self._segment == 'train' else 'sequential'
+        sampler = 'random' if segment == 'train' else 'sequential'
         super(_GBWIter, self).__init__(self._file_pattern, skip_empty=skip_empty, bos=bos,
                                        eos=eos, sampler=sampler, file_sampler=sampler)
 
@@ -296,9 +296,10 @@ class _GBWIter(LanguageModelIter):
                 exists = True
         if not exists:
             # download archive
-            if not os.path.exists(archive_file_path) or not check_sha1(archive_file_path, archive_hash):
+            if not os.path.exists(archive_file_path) or \
+               not check_sha1(archive_file_path, archive_hash):
                 download(_get_repo_file_url(self._namespace, archive_file_name),
-                                            path=self._root, sha1_hash=archive_hash)
+                         path=self._root, sha1_hash=archive_hash)
             # extract archive
             with tarfile.open(archive_file_path, 'r:gz') as tf:
                 tf.extractall(path=self._root)
@@ -328,7 +329,6 @@ class GBWIter(_GBWIter):
     """
     def __init__(self, segment='train', skip_empty=True, bos=None, eos=C.EOS_TOKEN,
                  root=os.path.join(_get_home_dir(), 'datasets', 'gbw')):
-        self._segment = segment
         self._archive_file = ('1-billion-word-language-modeling-benchmark-r13output.tar.gz',
                               '4df859766482e12264a5a9d9fb7f0e276020447d')
         self._data_file = {'train': ('training-monolingual.tokenized.shuffled',

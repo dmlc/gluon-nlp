@@ -18,8 +18,9 @@
 # under the License.
 
 # pylint: disable=undefined-all-variable
-"""NLP Toolkit Data Iterator API. It allows easy and customizable loading of corpora and dataset files.
-Files can be loaded into formats that are immediately ready for training and evaluation."""
+"""NLP Toolkit Data Iterator API. It allows easy and customizable loading of
+corpora and dataset files. Files can be loaded into formats that are immediately
+ready for training and evaluation."""
 __all__ = ['DataIter', 'CorpusIter', 'LanguageModelIter', 'SimpleDataIter']
 
 import io
@@ -190,7 +191,7 @@ class LanguageModelIter(CorpusIter):
         self._encoding = encoding
         self._skip_empty = skip_empty
         self._sample_splitter = sample_splitter
-        self._tokenizer= tokenizer
+        self._tokenizer = tokenizer
         self._bos = bos
         self._eos = eos
         self._sampler = sampler
@@ -277,15 +278,15 @@ class _LanguageModelBPTTIter(DataIter):
                 buffers[i].extend(vocab[next(corpus)])
 
         def _write(data, target, buffers, seq_len, i, length):
-             """Write a sentence from i-th buffer to data and target."""
-             num_tokens = len(buffers[i]) - 1
-             num_tokens = min(num_tokens, seq_len - length)
-             # fill in data and target
-             data[i, length:length+num_tokens] = buffers[i][:num_tokens]
-             target[i, length:length+num_tokens] = buffers[i][1:num_tokens+1]
-             # trim sentence in the buffer if too long. Used for the next batch
-             buffers[i] = buffers[i][num_tokens:]
-             return num_tokens
+            """Write a sentence from i-th buffer to data and target."""
+            num_tokens = len(buffers[i]) - 1
+            num_tokens = min(num_tokens, seq_len - length)
+            # fill in data and target
+            data[i, length:length+num_tokens] = buffers[i][:num_tokens]
+            target[i, length:length+num_tokens] = buffers[i][1:num_tokens+1]
+            # trim sentence in the buffer if too long. Used for the next batch
+            buffers[i] = buffers[i][num_tokens:]
+            return num_tokens
 
         # iterable states
         buffers = [None] * self._batch_size
