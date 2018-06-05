@@ -24,10 +24,9 @@ __all__ = ['TextLineDataset', 'CorpusDataset', 'LanguageModelDataset']
 
 import io
 import os
-import numpy as np
 
 import mxnet as mx
-from mxnet.gluon.data import SimpleDataset, RandomSampler, SequentialSampler
+from mxnet.gluon.data import SimpleDataset
 from .utils import concat_sequence, slice_sequence, _slice_pad_length
 
 

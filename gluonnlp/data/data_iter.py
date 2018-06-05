@@ -23,15 +23,13 @@ corpora and dataset files. Files can be loaded into formats that are immediately
 ready for training and evaluation."""
 __all__ = ['DataIter', 'CorpusIter', 'LanguageModelIter', 'SimpleDataIter']
 
-import io
 import os
 import glob
 import numpy as np
 
 import mxnet as mx
-from mxnet.gluon.data import SimpleDataset, RandomSampler, SequentialSampler
+from mxnet.gluon.data import RandomSampler, SequentialSampler
 from .dataset import CorpusDataset
-from .utils import concat_sequence, slice_sequence, _slice_pad_length
 
 class DataIter(object):
     """Abstract Data Iter Interface."""
