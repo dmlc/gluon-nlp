@@ -94,7 +94,7 @@ def get_model(name, dataset_name='wikitext-2', **kwargs):
 
     Returns
     -------
-    HybridBlock
+    Block
         The model.
     """
     models = {'standard_lstm_lm_200': standard_lstm_lm_200,
@@ -165,7 +165,7 @@ def get_cache_model(name, dataset_name='wikitext-2', window=2000,
         Location for keeping the pre-trained model parameters.
 
     Returns:
-        - **HybridBlock** :
+        - **Block** :
             The model.
     """
     lm_model, vocab = get_model(name, dataset_name=dataset_name, pretrained=True, ctx=ctx, **kwargs)
