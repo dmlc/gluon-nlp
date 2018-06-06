@@ -68,8 +68,21 @@ class RNNCellLayer(Block):
 
 
 class L2Normalization(HybridBlock):
-    def __init__(self, axis=-1, eps=1E-6, prefix=None, params=None):
-        super(L2Normalization, self).__init__(prefix=prefix, params=params)
+    """Normalize the input array by dividing the L2 norm along the given axis.
+
+    ..code
+
+        out = data / (sqrt(sum(data**2, axis)) + eps)
+
+    Parameters
+    ----------
+    axis : int, default -1
+        The axis to compute the norm value.
+    eps : float, default 1E-6
+        The epsilon value to avoid dividing zero
+    """
+    def __init__(self, axis=-1, eps=1E-6, **kwargs):
+        super(L2Normalization, self).__init__(**kwargs)
         self._axis = axis
         self._eps = eps
 
