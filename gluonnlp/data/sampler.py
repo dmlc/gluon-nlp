@@ -53,6 +53,16 @@ def _match_bucket_keys(bucket_keys, seq_lengths):
     return bucket_sample_ids
 
 
+def _bucket_average_lengths(bucket_sample_ids, seq_lengths):
+    bucket_average_lengths = []
+    for sample_ids in bucket_sample_ids:
+        if len(sample_ids) > 0:
+            bucket_average_lengths.append(np.mean(seq_lengths[sample_ids]))
+        else:
+            bucket_average_lengths.append(0)
+    return bucket_average_lengths
+
+
 class SortedSampler(Sampler):
     r"""Sort the samples based on the sort key and then sample sequentially.
 
@@ -106,6 +116,10 @@ class FixedBucketSampler(Sampler):
         smaller buckets.
     shuffle : bool, default False
         Whether to shuffle the batches.
+    use_average_length : bool, default False
+        False: each batch contains batch_size sequences, number of sequence elements varies.
+        True: each batch contains batch_size elements, number of sequences varies. In this case,
+        ratio option is ignored.
 
     Examples
     --------
@@ -128,7 +142,7 @@ class FixedBucketSampler(Sampler):
       batch_size=[44, 20, 13, 10, 8, 8, 8, 8, 8, 8]
     """
     def __init__(self, lengths, batch_size, num_buckets=10, bucket_keys=None,
-                 ratio=0, shuffle=False):
+                 ratio=0, shuffle=False, use_average_length=False):
         assert len(lengths) > 0, 'FixedBucketSampler does not support empty lengths.'
         assert batch_size > 0, 'Batch size must be larger than 0.'
         assert ratio >= 0, 'batch size scaling ratio cannot be negative.'
@@ -192,11 +206,18 @@ class FixedBucketSampler(Sampler):
 
         self._bucket_sample_ids = [sample_ids for sample_ids in bucket_sample_ids
                                    if len(sample_ids) > 0]
-        scale_up_keys = [key if self._single_element else sum(key) for key in self._bucket_keys]
-        max_scale_up_key = max(scale_up_keys)
-        self._bucket_batch_sizes = [max(int(max_scale_up_key / float(scale_up_key)
-                                            * self._ratio * batch_size), batch_size)
-                                    for scale_up_key in scale_up_keys]
+        if not use_average_length:
+            scale_up_keys = [key if self._single_element else sum(key) for key in self._bucket_keys]
+            max_scale_up_key = max(scale_up_keys)
+            self._bucket_batch_sizes = [max(int(max_scale_up_key / float(scale_up_key)
+                                                * self._ratio * batch_size), batch_size)
+                                        for scale_up_key in scale_up_keys]
+        else:
+            if ratio > 0.:
+                warnings.warn('ratio=%f is ignored when use_average_length is True' % self._ratio)
+            bucket_average_lengths = _bucket_average_lengths(self._bucket_sample_ids, self._lengths)
+            self._bucket_batch_sizes = [max(int(batch_size / float(average_length)), 1)
+                                        for average_length in bucket_average_lengths]
         self._batch_infos = []
         for bucket_id, sample_ids, bucket_batch_size in\
                 zip(range(len(self._bucket_keys) - 1, -1, -1),
