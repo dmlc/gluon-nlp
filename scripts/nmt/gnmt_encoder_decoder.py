@@ -133,7 +133,7 @@ class GNMTEncoder(Seq2SeqEncoder):
         """
         return super(GNMTEncoder, self).__call__(inputs, states, valid_length)
 
-    def forward(self, inputs, states=None, valid_length=None):  #pylint: disable=arguments-differ
+    def forward(self, inputs, states=None, valid_length=None):  #pylint: disable=arguments-differ, missing-docstring
         # TODO(sxjscience) Accelerate the forward using HybridBlock
         _, length, _ = inputs.shape
         new_states = []
@@ -252,6 +252,32 @@ class GNMTDecoder(HybridBlock, Seq2SeqDecoder):
         return decoder_states
 
     def decode_seq(self, inputs, states, valid_length=None):
+        """Decode the decoder inputs. This function is only used for training.
+
+        Parameters
+        ----------
+        inputs : NDArray, Shape (batch_size, length, C_in)
+        states : list of NDArrays or None
+            Initial states. The list of initial decoder states
+        valid_length : NDArray or None
+            Valid lengths of each sequence. This is usually used when part of sequence has
+            been padded. Shape (batch_size,)
+
+        Returns
+        -------
+        output : NDArray, Shape (batch_size, length, C_out)
+        states : list
+            The decoder states, includes:
+
+            - rnn_states : NDArray
+            - attention_vec : NDArray
+            - mem_value : NDArray
+            - mem_masks : NDArray, optional
+        additional_outputs : list
+            Either be an empty list or contains the attention weights in this step.
+            The attention weights will have shape (batch_size, length, mem_length) or
+            (batch_size, num_heads, length, mem_length)
+        """
         length = inputs.shape[1]
         output = []
         additional_outputs = []
@@ -304,7 +330,7 @@ class GNMTDecoder(HybridBlock, Seq2SeqDecoder):
         """
         return super(GNMTDecoder, self).__call__(step_input, states)
 
-    def forward(self, step_input, states):  #pylint: disable=arguments-differ
+    def forward(self, step_input, states):  #pylint: disable=arguments-differ, missing-docstring
         step_output, new_states, step_additional_outputs =\
             super(GNMTDecoder, self).forward(step_input, states)
         # In hybrid_forward, only the rnn_states and attention_vec are calculated.
