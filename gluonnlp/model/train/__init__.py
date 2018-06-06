@@ -21,11 +21,10 @@
 """NLP training model."""
 
 import mxnet as mx
+import gluonnlp as nlp
 
 from .language_model import *
 from .cache import *
-
-from gluonnlp.model import get_model
 
 __all__ = language_model.__all__ + cache.__all__ + ['get_cache_model']
 
@@ -89,6 +88,6 @@ def get_cache_model(name, dataset_name='wikitext-2', window=2000,
     Block
         The model.
     """
-    lm_model, vocab = get_model(name, dataset_name=dataset_name, pretrained=True, ctx=ctx, **kwargs)
+    lm_model, vocab = nlp.model.get_model(name, dataset_name=dataset_name, pretrained=True, ctx=ctx, **kwargs)
     cache_cell = CacheCell(lm_model, len(vocab), window, theta, lambdas)
     return cache_cell
