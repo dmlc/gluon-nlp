@@ -26,7 +26,7 @@ class SoftmaxCEMaskedLoss(SoftmaxCELoss):
     """Wrapper of the SoftmaxCELoss that supports valid_length as the input
 
     """
-    def hybrid_forward(self, F, pred, label, valid_length):
+    def hybrid_forward(self, F, pred, label, valid_length): # pylint: disable=arguments-differ
         """
 
         Parameters
