@@ -66,7 +66,7 @@ from .parameter import *
 from .block import *
 
 __all__ = train.__all__ + language_model.__all__ + beam_search.__all__ + attention_cell.__all__ + \
-          utils.__all__ + parameter.__all__ + block.__all__
+          utils.__all__ + parameter.__all__ + block.__all__ + ['get_model', 'get_cache_model']
 
 
 def get_model(name, dataset_name='wikitext-2', **kwargs):
@@ -109,6 +109,7 @@ def get_model(name, dataset_name='wikitext-2', **kwargs):
                 name, '\n\t'.join(sorted(models.keys()))))
     kwargs['dataset_name'] = dataset_name
     return models[name](**kwargs)
+
 
 def get_cache_model(name, dataset_name='wikitext-2', window=2000,
                     theta=0.6, lambdas=0.2, ctx=mx.cpu(), **kwargs):

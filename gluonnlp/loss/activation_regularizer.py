@@ -34,17 +34,17 @@ class ActivationRegularizationLoss(Loss):
 
         L = \alpha L_2(h_t)
 
-    where $L_2(\dot) = {||\dot||}_2$, $h_t$ is the output of the RNN at timestep t.
-    $\alpha$ is scaling coefficient.
+    where :math:`L_2(\dot) = {||\dot||}_2, h_t` is the output of the RNN at timestep t.
+    :math:`\alpha` is scaling coefficient.
 
-    The implementation follows the work:
+    The implementation follows the work::
 
-    @article{merity2017revisiting,
-      title={Revisiting Activation Regularization for Language RNNs},
-      author={Merity, Stephen and McCann, Bryan and Socher, Richard},
-      journal={arXiv preprint arXiv:1708.01009},
-      year={2017}
-    }
+        @article{merity2017revisiting,
+          title={Revisiting Activation Regularization for Language RNNs},
+          author={Merity, Stephen and McCann, Bryan and Socher, Richard},
+          journal={arXiv preprint arXiv:1708.01009},
+          year={2017}
+        }
 
     Parameters
     ----------
@@ -92,17 +92,17 @@ class TemporalActivationRegularizationLoss(Loss):
 
         L = \beta L_2(h_t-h_{t+1})
 
-    where $L_2(\dot) = {||\dot||}_2$, $h_t$ is the output of the RNN at timestep t,
-     $h_{t+1} is the output of the RNN at timestep t+1, $\beta$ is scaling coefficient.
+    where :math:`L_2(\dot) = {||\dot||}_2, h_t` is the output of the RNN at timestep t,
+     :math:`h_{t+1}` is the output of the RNN at timestep t+1, :math:`\beta` is scaling coefficient.
 
-    The implementation follows the work:
+    The implementation follows the work::
 
-    @article{merity2017revisiting,
-      title={Revisiting Activation Regularization for Language RNNs},
-      author={Merity, Stephen and McCann, Bryan and Socher, Richard},
-      journal={arXiv preprint arXiv:1708.01009},
-      year={2017}
-    }
+        @article{merity2017revisiting,
+          title={Revisiting Activation Regularization for Language RNNs},
+          author={Merity, Stephen and McCann, Bryan and Socher, Richard},
+          journal={arXiv preprint arXiv:1708.01009},
+          year={2017}
+        }
 
     Parameters
     ----------
