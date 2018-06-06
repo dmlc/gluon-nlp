@@ -12,9 +12,9 @@ Language Modeling
 .. autosummary::
     :nosignatures:
 
-    train.AWDRNN
-    train.StandardRNN
-    train.CacheCell
+    AWDRNN
+    StandardRNN
+    CacheCell
 
 API Reference
 -------------

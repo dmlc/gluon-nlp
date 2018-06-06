@@ -38,8 +38,8 @@ class CacheCell(Block):
 
     Parameters
     ----------
-    lm_model : StandardRNN or AWDRNN
-        The type of RNN to use. Options are 'StandardRNN', 'AWDRNN'.
+    lm_model : gluonnlp.model.StandardRNN or gluonnlp.model.AWDRNN
+        The type of RNN to use. Options are 'gluonnlp.model.StandardRNN', 'gluonnlp.model.AWDRNN'.
     vocab_size : int
         Size of the input vocabulary.
     window : int

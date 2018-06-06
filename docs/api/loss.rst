@@ -10,7 +10,7 @@ Activation Regularizers
 
 We now provide activation regularization and temporal activation regularization defined in the following work.
 
-.. code-block::
+.. code-block:: none
 
     @article{merity2017revisiting,
       title={Revisiting Activation Regularization for Language RNNs},
