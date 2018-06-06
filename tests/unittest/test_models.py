@@ -24,8 +24,8 @@ import sys
 import mxnet as mx
 import gluonnlp as nlp
 from gluonnlp.model import get_model as get_text_model
-from gluonnlp.model import get_cache_model
-from gluonnlp.model import CacheCell
+from gluonnlp.model.train import get_cache_model
+from gluonnlp.model.train import CacheCell
 
 def eprint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
