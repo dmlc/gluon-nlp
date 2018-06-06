@@ -34,7 +34,7 @@ class ActivationRegularizationLoss(Loss):
 
         L = \alpha L_2(h_t)
 
-    where :math:`L_2(\dot) = {||\dot||}_2, h_t` is the output of the RNN at timestep t.
+    where :math:`L_2(\cdot) = {||\cdot||}_2, h_t` is the output of the RNN at timestep t.
     :math:`\alpha` is scaling coefficient.
 
     The implementation follows the work::
@@ -54,14 +54,6 @@ class ActivationRegularizationLoss(Loss):
         Global scalar weight for loss.
     batch_axis : int, default 0
         The axis that represents mini-batch.
-
-    Inputs:
-        states: the stack outputs from RNN,
-        which consists of output from each time step (TNC).
-
-    Outputs:
-        loss: loss tensor with shape (batch_size,). Dimensions other than
-          batch_axis are averaged out.
     """
     def __init__(self, alpha=0, weight=None, batch_axis=None, **kwargs):
         super(ActivationRegularizationLoss, self).__init__(weight, batch_axis, **kwargs)
@@ -72,6 +64,17 @@ class ActivationRegularizationLoss(Loss):
         return s.format(alpha=self._alpha)
 
     def hybrid_forward(self, F, *states): # pylint: disable=arguments-differ
+        """
+        Parameters
+        ----------
+        states : list
+            the stack outputs from RNN, which consists of output from each time step (TNC).
+
+        Returns
+        --------
+        loss : NDArray
+            loss tensor with shape (batch_size,). Dimensions other than batch_axis are averaged out.
+        """
         # pylint: disable=unused-argument
         if self._alpha != 0:
             if states:
@@ -92,8 +95,8 @@ class TemporalActivationRegularizationLoss(Loss):
 
         L = \beta L_2(h_t-h_{t+1})
 
-    where :math:`L_2(\dot) = {||\dot||}_2, h_t` is the output of the RNN at timestep t,
-     :math:`h_{t+1}` is the output of the RNN at timestep t+1, :math:`\beta` is scaling coefficient.
+    where :math:`L_2(\cdot) = {||\cdot||}_2, h_t` is the output of the RNN at timestep t,
+    :math:`h_{t+1}` is the output of the RNN at timestep t+1, :math:`\beta` is scaling coefficient.
 
     The implementation follows the work::
 
@@ -112,14 +115,6 @@ class TemporalActivationRegularizationLoss(Loss):
         Global scalar weight for loss.
     batch_axis : int, default 0
         The axis that represents mini-batch.
-
-    Inputs:
-        states: the stack outputs from RNN,
-        which consists of output from each time step (TNC).
-
-    Outputs:
-        loss: loss tensor with shape (batch_size,). Dimensions other than
-          batch_axis are averaged out.
     """
 
     def __init__(self, beta=0, weight=None, batch_axis=None, **kwargs):
@@ -131,6 +126,17 @@ class TemporalActivationRegularizationLoss(Loss):
         return s.format(beta=self._beta)
 
     def hybrid_forward(self, F, *states): # pylint: disable=arguments-differ
+        """
+        Parameters
+        ----------
+        states : list
+            the stack outputs from RNN, which consists of output from each time step (TNC).
+
+        Returns
+        --------
+        loss : NDArray
+            loss tensor with shape (batch_size,). Dimensions other than batch_axis are averaged out.
+        """
         # pylint: disable=unused-argument
         if self._beta != 0:
             if states:
