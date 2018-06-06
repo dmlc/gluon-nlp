@@ -55,6 +55,7 @@ class ActivationRegularizationLoss(Loss):
     batch_axis : int, default 0
         The axis that represents mini-batch.
 
+
     Inputs:
         - **states** :
         the stack outputs from RNN, which consists of output from each time step (TNC).
