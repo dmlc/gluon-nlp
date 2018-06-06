@@ -468,6 +468,21 @@ def test_wmt2016bpe():
     assert len(en_vocab) == 36548
     assert len(de_vocab) == 36548
 
+def test_wmt2014bpe():
+    train = nlp.data.WMT2014BPE(segment='train', src_lang='en', tgt_lang='de',
+                                root='tests/data/wmt2014')
+    newstests = [nlp.data.WMT2014BPE(segment='newstest%d' %i, src_lang='en', tgt_lang='de',
+                                     root='tests/data/wmt2014') for i in range(2009, 2015)]
+    assert len(train) == 4493328
+    assert tuple(len(ele) for ele in newstests) == (2525, 2489, 3003, 3003, 3000, 3003)
+
+    newstest_2009_2013 = nlp.data.WMT2014BPE(segment=['newstest%d' %i for i in range(2009, 2014)],
+                                             src_lang='en', tgt_lang='de', root='tests/data/wmt2014')
+    assert len(newstest_2009_2013) == 2525 + 2489 + 3003 + 3003 + 3000
+    en_vocab, de_vocab = train.src_vocab, train.tgt_vocab
+    assert len(en_vocab) == 36794
+    assert len(de_vocab) == 36794
+
 def test_corpus_stream():
     EOS = nlp._constants.EOS_TOKEN
     path = os.path.join('tests', 'data', 'wikitext-2')
@@ -527,3 +542,31 @@ def test_lazy_stream():
     transformed_corpus = nlp.data.SimpleDataStream(corpus).transform(lambda s: s.lower())
     for x, y in zip(corpus, transformed_corpus):
         assert y == x.lower()
+
+def test_counter():
+    x = nlp.data.Counter({'a': 10, 'b': 1, 'c': 1})
+    y = x.discard(3, '<unk>')
+    assert y['a'] == 10
+    assert y['<unk>'] == 2
+
+def test_sorted_vocab():
+    x = nlp.data.Counter({'a': 10, 'b': 1, 'c': 2, '<unk>': 3, '<bos>': 1})
+    vocab0 = nlp.SortedVocab(counter=x)
+    assert len(vocab0) == 7
+    assert vocab0['a'] == 0
+    assert vocab0['<unk>'] == 1
+    assert vocab0['c'] == 2
+    assert vocab0['unknown_token'] == vocab0['<unk>']
+
+    vocab1 = nlp.SortedVocab(counter=x, min_freq=2)
+    assert len(vocab1) == 6
+    assert vocab1['a'] == 0
+    assert vocab1['<unk>'] == 1
+    assert vocab1['c'] == 2
+    assert vocab0['unknown_token'] == vocab0['<unk>']
+
+    vocab2 = nlp.SortedVocab(counter=x, max_size=1, reserved_tokens=['reserved'])
+    assert len(vocab2) == 6
+    assert vocab2['a'] == 0
+    assert vocab2['<unk>'] == 1
+    assert vocab0['unknown_token'] == vocab0['<unk>']

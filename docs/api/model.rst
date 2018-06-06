@@ -19,6 +19,8 @@ Language Modeling
     standard_lstm_lm_650
     standard_lstm_lm_1500
     StandardRNN
+    get_model
+    get_cache_model
 
 Attention Cell
 --------------
