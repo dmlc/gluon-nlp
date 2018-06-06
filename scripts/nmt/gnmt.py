@@ -23,7 +23,7 @@ import mxnet as mx
 from mxnet.base import _as_list
 from mxnet.gluon import nn, rnn
 from mxnet.gluon.block import HybridBlock
-from encoder_decoder import Seq2SeqEncoder, Seq2SeqDecoder, _get_attention_cell, \
+from .encoder_decoder import Seq2SeqEncoder, Seq2SeqDecoder, _get_attention_cell, \
     _get_cell_type, _nested_sequence_last
 
 
