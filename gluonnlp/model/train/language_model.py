@@ -78,8 +78,9 @@ class AWDRNN(Block):
             The list of outputs of the model's encoder with length equals to num_layers.
             the shape of every encoder's output `(sequence_length, batch_size, num_hidden)`
         encoded_dropped: list
-            The list of outputs with dropout of the model's encoder with length equals to num_layers.
-            the shape of every encoder's dropped output `(sequence_length, batch_size, num_hidden)`
+            The list of outputs with dropout of the model's encoder with length equals
+            to num_layers. The shape of every encoder's dropped output
+            `(sequence_length, batch_size, num_hidden)`
     """
     def __init__(self, mode, vocab_size, embed_size=400, hidden_size=1150, num_layers=3,
                  tie_weights=True, dropout=0.4, weight_drop=0.5, drop_h=0.2,
