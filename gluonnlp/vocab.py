@@ -546,7 +546,7 @@ class SortedVocab(Vocab):
         if counter:
             self._index_counter_keys(counter, unknown_token, special_tokens,
                                      max_size, min_freq)
-        self._index_special_tokens(counter, unknown_token, special_tokens)
+        self._index_special_tokens_with_counter(counter, unknown_token, special_tokens)
         if unknown_token:
             unk_idx = self._token_to_idx[unknown_token]
             self._token_to_idx = DefaultLookupDict(unk_idx, d=self._token_to_idx)
@@ -567,7 +567,7 @@ class SortedVocab(Vocab):
             self._idx_to_token.append(token)
             self._token_to_idx[token] = len(self._idx_to_token) - 1
 
-    def _index_special_tokens(self, counter, unknown_token, special_tokens):
+    def _index_special_tokens_with_counter(self, counter, unknown_token, special_tokens):
         """Indexes unknown and reserved tokens."""
         # sort unknown and special tokens based on frequency
         counter = {} if counter is None else counter
@@ -578,7 +578,7 @@ class SortedVocab(Vocab):
             token_freqs[unknown_token] = counter.get(unknown_token, 0)
         sorted_token_freqs = self._sort_freq(token_freqs)
         # index tokens
-        for token, freq in sorted_token_freqs:
+        for token, _ in sorted_token_freqs:
             if token not in self._token_to_idx:
                 self._idx_to_token.append(token)
                 self._token_to_idx[token] = len(self._idx_to_token) - 1
