@@ -24,7 +24,10 @@ import numpy as np
 import mxnet as mx
 from mxnet.gluon import nn
 from mxnet.gluon.block import HybridBlock
-from scripts.nmt.encoder_decoder import Seq2SeqEncoder, Seq2SeqDecoder, _get_attention_cell
+try:
+    from encoder_decoder import Seq2SeqEncoder, Seq2SeqDecoder, _get_attention_cell
+except ImportError:
+    from .encoder_decoder import Seq2SeqEncoder, Seq2SeqDecoder, _get_attention_cell
 
 
 def _position_encoding_init(max_length, dim):
