@@ -115,14 +115,14 @@ def get_cache_model(name, dataset_name='wikitext-2', window=2000,
                     theta=0.6, lambdas=0.2, ctx=mx.cpu(), **kwargs):
     r"""Returns a cache model using a pre-trained language model.
 
-    We implement the neural cache language model proposed in the following work.
+    We implement the neural cache language model proposed in the following work::
 
-    @article{grave2016improving,
-    title={Improving neural language models with a continuous cache},
-    author={Grave, Edouard and Joulin, Armand and Usunier, Nicolas},
-    journal={ICLR},
-    year={2017}
-    }
+        @article{grave2016improving,
+        title={Improving neural language models with a continuous cache},
+        author={Grave, Edouard and Joulin, Armand and Usunier, Nicolas},
+        journal={ICLR},
+        year={2017}
+        }
 
     Parameters
     ----------
@@ -144,8 +144,8 @@ def get_cache_model(name, dataset_name='wikitext-2', window=2000,
 
             p_{cache} \propto \sum_{i=1}^{t-1} \mathbb{1}_{w=x_{i+1}} exp(\theta {h_t}^T h_i)
 
-        where $p_{cache}$ is the cache distribution, \mathbb{1} is the identity function,
-        and $h_i$ is the output of timestep i.
+        where :math:`p_{cache}` is the cache distribution, :math:`1` is the identity function,
+        and :math:`h_i` is the output of timestep i.
     lambdas : float
         Linear scalar between only cache and vocab distribution, the formulation is as below:
 
@@ -153,7 +153,7 @@ def get_cache_model(name, dataset_name='wikitext-2', window=2000,
 
             p = (1 - \lambda) p_{vocab} + \lambda p_{cache}
 
-        where p_{vocab} is the vocabulary distribution and $p_{cache}$
+        where :math:`p_{vocab}` is the vocabulary distribution and :math:`p_{cache}`
         is the cache distribution.
     vocab : gluonnlp.Vocab or None, default None
         Vocabulary object to be used with the language model.
