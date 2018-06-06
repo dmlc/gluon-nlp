@@ -18,8 +18,10 @@
 # under the License.
 
 """BLEU."""
+import re
 import math
 from collections import Counter
+r = re.compile('.*-.*')
 
 
 def _ngrams(segment, n):
@@ -44,8 +46,38 @@ def _ngrams(segment, n):
     return ngram_counts
 
 
-def compute_bleu(reference_corpus_list, translation_corpus,
-                 max_n=4, smooth=False, lower_case=False):
+def _split_compound_word(segment):
+    """Put compounds in ATAT format.
+       rich-text format" --> rich ##AT##-##AT## text format.
+    """
+    new_segment = []
+    for word in segment:
+        if r.match(word) is not None:
+            words = word.split('-')
+            words.insert(1, '##AT##-##AT##')
+            new_segment.extend(words)
+        else:
+            new_segment.append(word)
+    return new_segment
+
+
+def _bpe_to_words(sentence, delimiter='@@'):
+    """Convert a sequence of bpe words into sentence."""
+    words = []
+    word = ''
+    delimiter_len = len(delimiter)
+    for subwords in sentence:
+        if len(subwords) >= delimiter_len and subwords[-delimiter_len:] == delimiter:
+            word += subwords[:-delimiter_len]
+        else:
+            word += subwords
+            words.append(word)
+            word = ''
+    return words
+
+
+def compute_bleu(reference_corpus_list, translation_corpus, max_n=4,
+                 smooth=False, lower_case=False, bpe=False, split_compound_word=False):
     """Compute bleu score of translation against references.
 
     Parameters
@@ -60,6 +92,11 @@ def compute_bleu(reference_corpus_list, translation_corpus,
         Whether or not to compute smoothed bleu score.
     lower_case: bool, default False
         Whether or not to use lower case of tokens
+    split_compound_word: bool, default False
+        Whether or not to split compound words
+        "rich-text format" --> rich ##AT##-##AT## text format.
+    bpe: bool, default False
+        Whether or not the inputs are in BPE format
 
     Returns
     -------
@@ -74,6 +111,12 @@ def compute_bleu(reference_corpus_list, translation_corpus,
             'The number of translations and their references do not match'
 
     for references, translation in zip(zip(*reference_corpus_list), translation_corpus):
+        if bpe:
+            references = [_bpe_to_words(reference) for reference in references]
+            translation = _bpe_to_words(translation)
+        if split_compound_word:
+            references = [_split_compound_word(reference) for reference in references]
+            translation = _split_compound_word(translation)
         if lower_case:
             references = [list(map(str.lower, reference)) for reference in references]
             translation = list(map(str.lower, translation))
