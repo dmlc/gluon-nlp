@@ -55,14 +55,12 @@ class ActivationRegularizationLoss(Loss):
     batch_axis : int, default 0
         The axis that represents mini-batch.
 
-    Inputs
-    -------
-    states:
+    Inputs:
+        - **states** :
         the stack outputs from RNN, which consists of output from each time step (TNC).
 
-    Outputs
-    -------
-    loss:
+    Outputs:
+        - **loss** :
         loss tensor with shape (batch_size,). Dimensions other than batch_axis are averaged out.
     """
     def __init__(self, alpha=0, weight=None, batch_axis=None, **kwargs):
