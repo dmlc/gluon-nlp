@@ -23,7 +23,7 @@
 from __future__ import absolute_import
 from __future__ import print_function
 
-__all__ = ['Vocab']
+__all__ = ['Vocab', 'SortedVocab']
 
 import json
 import warnings
@@ -159,27 +159,29 @@ class Vocab(object):
             assert len(special_token_set) == len(special_tokens), \
                 '`reserved_tokens` cannot contain duplicate reserved tokens or ' \
                 'other special tokens.'
-        self._index_special_tokens(unknown_token, special_tokens)
 
-        if counter:
-            self._index_counter_keys(counter, unknown_token, special_tokens, max_size, min_freq)
-
+        self._index_tokens(counter, unknown_token, special_tokens, max_size, min_freq)
         self._embedding = None
+
+    def _index_tokens(self, counter, unknown_token, special_tokens, max_size, min_freq):
+        """Indexes unknown and reserved tokens, and keys of `counter`."""
+        self._idx_to_token = []
+        self._token_to_idx = DefaultLookupDict(C.UNK_IDX) if unknown_token else {}
+
+        self._index_special_tokens(unknown_token, special_tokens)
+        if counter:
+            self._index_counter_keys(counter, unknown_token, special_tokens,
+                                     max_size, min_freq)
 
     def _index_special_tokens(self, unknown_token, special_tokens):
         """Indexes unknown and reserved tokens."""
-        self._idx_to_token = [unknown_token] if unknown_token else []
-
+        if unknown_token:
+            self._idx_to_token.append(unknown_token)
         if not special_tokens:
             self._reserved_tokens = None
         else:
             self._reserved_tokens = special_tokens[:]
             self._idx_to_token.extend(special_tokens)
-
-        if unknown_token:
-            self._token_to_idx = DefaultLookupDict(C.UNK_IDX)
-        else:
-            self._token_to_idx = {}
         self._token_to_idx.update((token, idx) for idx, token in enumerate(self._idx_to_token))
 
     def _index_counter_keys(self, counter, unknown_token, special_tokens, max_size,
@@ -196,8 +198,7 @@ class Vocab(object):
         if unknown_token:
             unknown_and_special_tokens.add(unknown_token)
 
-        token_freqs = sorted(counter.items(), key=lambda x: x[0])
-        token_freqs.sort(key=lambda x: x[1], reverse=True)
+        token_freqs = self._sort_freq(counter)
 
         token_cap = len(unknown_and_special_tokens) + (
             len(counter) if not max_size else max_size)
@@ -208,6 +209,12 @@ class Vocab(object):
             if token not in unknown_and_special_tokens:
                 self._idx_to_token.append(token)
                 self._token_to_idx[token] = len(self._idx_to_token) - 1
+
+    def _sort_freq(self, counter):
+        """Sort tokens based on their frequencies. Ties are broken with __cmp__()."""
+        token_freqs = sorted(counter.items(), key=lambda x: x[0])
+        token_freqs.sort(key=lambda x: x[1], reverse=True)
+        return token_freqs
 
     @property
     def embedding(self):
@@ -445,3 +452,126 @@ class Vocab(object):
         vocab._bos_token = vocab_dict.get('bos_token')
         vocab._eos_token = vocab_dict.get('eos_token')
         return vocab
+
+class SortedVocab(Vocab):
+    """Indexing and embedding attachment for text tokens.
+
+    The indices in the vocabulary are assigned based on frequencies of the tokens,
+    including unknown token and special tokens (padding, eos, bos and reserved tokens).
+
+    If max_size is specified, unknown and special tokens are guaranteed to be in the vocabulary.
+    The provided counter instance is the source of all tokens' frequencies.
+
+    Parameters
+    ----------
+    counter : Counter or None, default None
+        Counts text token frequencies in the text data. Its keys will be indexed according to
+        frequency thresholds such as `max_size` and `min_freq`. Keys of `counter`,
+        `unknown_token`, and values of `reserved_tokens` must be of the same hashable type.
+        Examples: str, int, and tuple.
+    max_size : None or int, default None
+        The maximum possible number of the most frequent tokens in the keys of `counter` that can be
+        indexed. Note that this argument does not count any token from `reserved_tokens`. Suppose
+        that there are different keys of `counter` whose frequency are the same, if indexing all of
+        them will exceed this argument value, such keys will be indexed one by one according to
+        their __cmp__() order until the frequency threshold is met. If this argument is None or
+        larger than its largest possible value restricted by `counter` and `reserved_tokens`, this
+        argument has no effect.
+    min_freq : int, default 1
+        The minimum frequency required for a token in the keys of `counter` to be indexed.
+    unknown_token : hashable object or None, default '<unk>'
+        The representation for any unknown token. In other words, any unknown token will be indexed
+        as the same representation. If None, looking up an unknown token will result in KeyError.
+    padding_token : hashable object or None, default '<pad>'
+        The representation for the special token of padding token.
+    bos_token : hashable object or None, default '<bos>'
+        The representation for the special token of beginning-of-sequence token.
+    eos_token : hashable object or None, default '<eos>'
+        The representation for the special token of end-of-sequence token.
+    reserved_tokens : list of hashable objects or None, default None
+        A list of reserved tokens (excluding `unknown_token`) that will always be indexed, such as
+        special symbols representing padding, beginning of sentence, and end of sentence. It cannot
+        contain `unknown_token` or duplicate reserved tokens. Keys of `counter`, `unknown_token`,
+        and values of `reserved_tokens` must be of the same hashable type. Examples: str, int, and
+        tuple.
+
+    Attributes
+    ----------
+    embedding : instance of :class:`gluonnlp.embedding.TokenEmbedding`
+        The embedding of the indexed tokens.
+    idx_to_token : list of strs
+        A list of indexed tokens where the list indices and the token indices are aligned.
+    reserved_tokens : list of strs or None
+        A list of reserved tokens that will always be indexed.
+    token_to_idx : dict mapping str to int
+        A dict mapping each token to its index integer.
+    unknown_token : hashable object or None
+        The representation for any unknown token. In other words, any unknown token will be indexed
+        as the same representation.
+
+    Examples
+    --------
+    >>> x = nlp.data.Counter({'a': 10, 'b': 1, 'c': 2, '<unk>': 3, '<bos>': 1})
+    >>> vocab = nlp.SortedVocab(counter=x)
+    >>> assert len(vocab0) == 7
+    >>> assert vocab0['a'] == 0
+    >>> assert vocab0['<unk>'] == 1
+    >>> assert vocab0['c'] == 2
+    """
+    def __init__(self, counter=None, max_size=None, min_freq=1, unknown_token=C.UNK_TOKEN,
+                 padding_token=C.PAD_TOKEN, bos_token=C.BOS_TOKEN, eos_token=C.EOS_TOKEN,
+                 reserved_tokens=None):
+        super(SortedVocab, self).__init__(counter=counter, max_size=max_size, min_freq=min_freq,
+                                          unknown_token=unknown_token,
+                                          padding_token=padding_token, bos_token=bos_token,
+                                          eos_token=eos_token, reserved_tokens=reserved_tokens)
+
+    def _index_tokens(self, counter, unknown_token, special_tokens, max_size, min_freq):
+        """Indexes unknown and reserved tokens, and keys of `counter`."""
+        # the index of unknown_token is not known ahead of time
+        # convert to a DefaultLookupDict later if needed
+        self._token_to_idx = {}
+        self._idx_to_token = []
+        if counter:
+            self._index_counter_keys(counter, unknown_token, special_tokens,
+                                     max_size, min_freq)
+        self._index_special_tokens(counter, unknown_token, special_tokens)
+        if unknown_token:
+            unk_idx = self._token_to_idx[unknown_token]
+            self._token_to_idx = DefaultLookupDict(unk_idx, d=self._token_to_idx)
+
+    def _index_counter_keys(self, counter, unknown_token, special_tokens, max_size,
+                            min_freq):
+        """Indexes keys of `counter`.
+
+
+        Indexes keys of `counter` according to frequency thresholds such as `max_size` and
+        `min_freq`.
+        """
+        token_freqs = self._sort_freq(counter)
+        token_cap = len(counter) if not max_size else max_size
+        for token, freq in token_freqs:
+            if freq < min_freq or len(self._idx_to_token) == token_cap:
+                break
+            self._idx_to_token.append(token)
+            self._token_to_idx[token] = len(self._idx_to_token) - 1
+
+    def _index_special_tokens(self, counter, unknown_token, special_tokens):
+        """Indexes unknown and reserved tokens."""
+        # sort unknown and special tokens based on frequency
+        counter = {} if counter is None else counter
+        token_freqs = {}
+        for token in special_tokens:
+            token_freqs[token] = counter.get(token, 0)
+        if unknown_token:
+            token_freqs[unknown_token] = counter.get(unknown_token, 0)
+        sorted_token_freqs = self._sort_freq(token_freqs)
+        # index tokens
+        for token, freq in sorted_token_freqs:
+            if token not in self._token_to_idx:
+                self._idx_to_token.append(token)
+                self._token_to_idx[token] = len(self._idx_to_token) - 1
+        if not special_tokens:
+            self._reserved_tokens = None
+        else:
+            self._reserved_tokens = special_tokens[:]
