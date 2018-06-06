@@ -553,6 +553,7 @@ class SubwordVocab(object):
         subwords = self.idx_to_subwordidxs[indices]
         mask = np.zeros_like(subwords)
         mask += subwords != -1
+        subwords += subwords == -1
         lengths = np.argmax(subwords == -1, axis=1)
 
         new_length = max(np.max(lengths), 1)  # Return at least 1
