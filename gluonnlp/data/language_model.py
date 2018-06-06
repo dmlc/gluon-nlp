@@ -20,10 +20,12 @@
 # pylint: disable=
 """Language model datasets."""
 
-__all__ = ['WikiText2', 'WikiText103', 'WikiText2Raw', 'WikiText103Raw']
+__all__ = ['WikiText2', 'WikiText103', 'WikiText2Raw', 'WikiText103Raw', 'GBWStream']
 
 import os
 import zipfile
+import hashlib
+import glob
 import shutil
 
 from mxnet.gluon.utils import download, check_sha1, _get_repo_file_url
