@@ -165,9 +165,10 @@ def get_cache_model(name, dataset_name='wikitext-2', window=2000,
     root : str, default '~/.mxnet/models'
         Location for keeping the pre-trained model parameters.
 
-    Returns:
-        - **Block** :
-            The model.
+    Returns
+    -------
+    Block
+        The model.
     """
     lm_model, vocab = get_model(name, dataset_name=dataset_name, pretrained=True, ctx=ctx, **kwargs)
     cache_cell = CacheCell(lm_model, len(vocab), window, theta, lambdas)
