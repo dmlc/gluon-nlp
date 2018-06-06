@@ -307,7 +307,7 @@ class GNMTDecoder(HybridBlock, Seq2SeqDecoder):
             additional_outputs = [mx.nd.concat(*additional_outputs, dim=-2)]
         return output, states, additional_outputs
 
-    def __call__(self, step_input, states):
+    def __call__(self, step_input, states): #pylint: disable=arguments-differ
         """One-step-ahead decoding of the GNMT decoder.
 
         Parameters
