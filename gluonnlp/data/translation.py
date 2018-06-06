@@ -260,7 +260,8 @@ class WMT2016BPE(_TranslationDataset):
 class WMT2014BPE(_TranslationDataset):
     """Preprocessed Translation Corpus of the WMT2014 Evaluation Campaign.
 
-    We use the preprocessing script in /scripts/nmt/wmt14_en_de.sh
+    We preprocess the dataset by adapting
+    https://github.com/tensorflow/nmt/blob/master/nmt/scripts/wmt16_en_de.sh
 
     Parameters
     ----------
