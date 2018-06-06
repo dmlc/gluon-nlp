@@ -24,9 +24,10 @@ import mxnet as mx
 
 from .language_model import *
 from .cache import *
-from .. import get_model
+from ...model import get_model
 
 __all__ = language_model.__all__ + cache.__all__ + ['get_cache_model']
+
 
 def get_cache_model(name, dataset_name='wikitext-2', window=2000,
                     theta=0.6, lambdas=0.2, ctx=mx.cpu(), **kwargs):

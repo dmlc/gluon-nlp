@@ -86,9 +86,12 @@ ntokens = len(vocab)
 
 
 if not args.path_to_params_file:
-    cache_cell = nlp.model.train.get_cache_model(name=args.model_name, dataset_name='wikitext-2',
-                                           window=args.window, theta=args.theta,
-                                           lambdas=args.lambdas, ctx=context)
+    cache_cell = nlp.model.train.get_cache_model(name=args.model_name,
+                                                 dataset_name='wikitext-2',
+                                                 window=args.window,
+                                                 theta=args.theta,
+                                                 lambdas=args.lambdas,
+                                                 ctx=context)
 else:
     model, _ = nlp.model.get_model(name=args.model_name,
                                    dataset_name='wikitext-2',

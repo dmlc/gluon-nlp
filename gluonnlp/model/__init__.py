@@ -107,4 +107,3 @@ def get_model(name, dataset_name='wikitext-2', **kwargs):
                 name, '\n\t'.join(sorted(models.keys()))))
     kwargs['dataset_name'] = dataset_name
     return models[name](**kwargs)
-
