@@ -5,7 +5,7 @@ Scripts
 
 .. include:: beam_search/beam_search_generator.rst
 
-.. include:: language_model/word_language_model.rst
+.. include:: language_model/language_model.rst
 
 .. include:: sentiment_analysis/sentiment_analysis.rst
 
