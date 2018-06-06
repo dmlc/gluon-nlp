@@ -1,8 +1,8 @@
 Language Model
 -------------------
 
-Word Language Model: [Merity2018]_
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Word Language Model
+~~~~~~~~~~~~~~~~~~~~
 
 Reference: Merity, S., et al. "`Regularizing and optimizing LSTM language models <https://openreview.net/pdf?id=SyyGPP0TZ>`_". ICLR 2018
 
@@ -79,8 +79,8 @@ The dataset used for training the models is wikitext-2.
    $ python -u word_language_model.py --gpus 0 --emsize 200 --nhid 200 --nlayers 2 --lr 20 --epochs 750 --batch_size 20 --bptt 35 --dropout 0.2 --dropout_h 0 --dropout_i 0 --dropout_e 0 --weight_drop 0 --tied --wd 0 --alpha 0 --beta 0 --save standard_lstm_lm_200_wikitext-2
 
 
-Cache Language Model: [Grave2017]_
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Cache Language Model
+~~~~~~~~~~~~~~~~~~~~~
 
 Reference: Grave, E., et al. "`Improving neural language models with a continuous cache <https://openreview.net/pdf?id=B184E5qee>`_". ICLR 2017
 

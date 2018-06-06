@@ -1,5 +1,5 @@
 gluonnlp.model.train
-==============
+=====================
 
 Gluon NLP Toolkit supplies models with train-mode since the corresponding models have different behaviors in training
  and inference, e.g., the number and type of the outputs from the forward pass are different.
@@ -12,9 +12,9 @@ Language Modeling
 .. autosummary::
     :nosignatures:
 
-    AWDRNN
-    StandardRNN
-    CacheCell
+    train.AWDRNN
+    train.StandardRNN
+    train.CacheCell
 
 API Reference
 -------------
