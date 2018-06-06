@@ -41,12 +41,13 @@ from contextlib import contextmanager
 
 import mxnet as mx
 from mxnet import gluon
-import numpy as np
 import tqdm
 from mxboard import SummaryWriter
-from scipy import stats
 
 import gluonnlp as nlp
+
+import evaluation
+from utils import clip_embeddings_gradients, get_context
 
 
 ###############################################################################
@@ -114,8 +115,13 @@ def parse_args():
     group.add_argument('--logdir', type=str, default='logs',
                        help='Directory to store logs.')
     group.add_argument('--eval-interval', type=int, default=10000)
+    group.add_argument('--eval-analogy', action='store_true')
+
+    # Evaluation options
+    evaluation.add_parameters(parser)
 
     args = parser.parse_args()
+    evaluation.validate_args(args)
     return args
 
 
@@ -137,14 +143,6 @@ def get_train_data():
         ] for sentence in dataset]
 
     return coded_dataset, vocab
-
-
-def get_context(args):
-    if args.gpu is None or args.gpu == '':
-        context = [mx.cpu()]
-    else:
-        context = [mx.gpu(int(i)) for i in args.gpu]
-    return context
 
 
 def save_params(args, embedding, embedding_out):
@@ -332,55 +330,45 @@ def log(args, sw, embedding, embedding_out, loss, num_update, vocab):
         sw.add_scalar(tag='loss', value=loss.mean().asscalar(),
                       global_step=num_update)
 
-    eval_dict = evaluate(args, embedding, vocab)
-    for k, v in eval_dict.items():
-        sw.add_scalar(tag=k, value=float(v), global_step=num_update)
+    results = evaluate(args, embedding, vocab)
+    for result in results:
+        tag = result['dataset_name'] + '_' + str(result['dataset_kwargs'])
+        if result['task'] == 'analogy':
+            sw.add_scalar(tag=tag, value=float(result['accuracy']),
+                          global_step=num_update)
+        if result['task'] == 'similarity':
+            sw.add_scalar(tag=tag, value=float(result['spearmanr']),
+                          global_step=num_update)
 
     sw.flush()
 
 
 def evaluate(args, embedding, vocab):
     """Evaluation helper"""
-    # Collect all words in the evaluation datasets
-    counter = nlp.data.utils.Counter()
-    for dataset_name in \
-            nlp.data.word_embedding_evaluation.word_similarity_datasets:
-        dataset = nlp.data.create(dataset_name)
-        counter.update(
-            itertools.chain.from_iterable((d[0], d[1]) for d in dataset))
+    if 'eval_tokens' not in globals():
+        global eval_tokens
+        eval_tokens = list(evaluation.get_tokens_in_evaluation_datasets(args))
+
+        if args.eval_analogy:
+            # TODO add words for the analogy task
+            pass
 
     # Compute their word vectors
     context = get_context(args)
-    idx_to_token = list(counter)
-    token_to_idx = {token: idx for idx, token in enumerate(counter)}
+    idx_to_token = eval_tokens
     mx.nd.waitall()
     token_embedding = embedding.to_token_embedding(idx_to_token, vocab,
                                                    ctx=context[0])
 
-    # Initialize evaluator
-    evaluator = nlp.embedding.evaluation.WordEmbeddingSimilarity(
-        idx_to_vec=token_embedding.idx_to_vec,
-        similarity_function='CosineSimilarity')
-    evaluator.initialize(ctx=context[0])
-    if not args.no_hybridize:
-        evaluator.hybridize()
+    results = evaluation.evaluate_similarity(
+        args, token_embedding, context[0], logfile=os.path.join(
+            args.logdir, 'similarity.tsv'))
+    if args.eval_analogy:
+        results += evaluation.evaluate_analogy(
+            args, token_embedding, context[0], logfile=os.path.join(
+                args.logdir, 'analogy.tsv'))
 
-    # Evaluate all datasets
-    eval_dict = {}
-    for dataset_name in \
-            nlp.data.word_embedding_evaluation.word_similarity_datasets:
-        dataset = nlp.data.create(dataset_name)
-        dataset_coded = [[token_to_idx[d[0]], token_to_idx[d[1]], d[2]]
-                         for d in dataset]
-        words1, words2, scores = zip(*dataset_coded)
-        pred_similarity = evaluator(
-            mx.nd.array(words1, ctx=context[0]),
-            mx.nd.array(words2, ctx=context[0]))
-        sr = stats.spearmanr(pred_similarity.asnumpy(), np.array(scores))
-        logging.info('Spearman rank correlation on %s: %s',
-                     dataset.__class__.__name__, sr.correlation)
-        eval_dict[dataset_name + '-sr'] = sr.correlation
-    return eval_dict
+    return results
 
 
 if __name__ == '__main__':

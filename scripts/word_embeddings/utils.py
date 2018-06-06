@@ -45,3 +45,11 @@ def clip_embeddings_gradients(parameters, max_l2):
             scale = mx.nd.divide(max_l2, norm)
             scale = mx.nd.minimum(scale, 1)
             grad[:] = mx.nd.multiply(grad, scale)
+
+
+def get_context(args):
+    if args.gpu is None or args.gpu == '':
+        context = [mx.cpu()]
+    else:
+        context = [mx.gpu(int(i)) for i in args.gpu]
+    return context
