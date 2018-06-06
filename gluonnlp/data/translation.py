@@ -204,9 +204,9 @@ class WMT2016BPE(_TranslationDataset):
 
     Parameters
     ----------
-    segment : str, default 'train'
+    segment : str or list of str, default 'train'
         Dataset segment. Options are 'train', 'newstest2012', 'newstest2013',
-         'newstest2014', 'newstest2015', 'newstest2016' or their combinations
+        'newstest2014', 'newstest2015', 'newstest2016' or their combinations
     src_lang : str, default 'en'
         The source language. Option for source and target languages are 'en' <-> 'de'
     tgt_lang : str, default 'de'
@@ -260,14 +260,13 @@ class WMT2016BPE(_TranslationDataset):
 class WMT2014BPE(_TranslationDataset):
     """Preprocessed Translation Corpus of the WMT2014 Evaluation Campaign.
 
-    We use the preprocessing script in
-    /scripts/nmt/wmt14_en_de.sh
+    We use the preprocessing script in /scripts/nmt/wmt14_en_de.sh
 
     Parameters
     ----------
-    segment : str, default 'train'
+    segment : str or list of str, default 'train'
         Dataset segment. Options are 'train', 'newstest2009', 'newstest2010',
-         'newstest2011', 'newstest2012', 'newstest2013', 'newstest2014' or their combinations
+        'newstest2011', 'newstest2012', 'newstest2013', 'newstest2014' or their combinations
     src_lang : str, default 'en'
         The source language. Option for source and target languages are 'en' <-> 'de'
     tgt_lang : str, default 'de'
