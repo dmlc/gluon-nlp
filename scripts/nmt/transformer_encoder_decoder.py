@@ -86,12 +86,12 @@ class PositionwiseFFN(HybridBlock):
         Parameters
         ----------
         inputs : Symbol or NDArray
-            Input sequence. Shape (batch_size, key_length, C_in)
+            Input sequence. Shape (batch_size, length, C_in)
 
         Returns
         -------
         outputs : Symbol or NDArray
-            Shape (batch_size, key_length, C_out)
+            Shape (batch_size, length, C_out)
         """
         outputs = self.ffn_1(inputs)
         outputs = self.ffn_2(outputs)
@@ -168,16 +168,16 @@ class TransformerEncoderCell(HybridBlock):
         Parameters
         ----------
         inputs : Symbol or NDArray
-            Input sequence. Shape (batch_size, key_length, C_in)
+            Input sequence. Shape (batch_size, length, C_in)
         mask : Symbol or NDArray or None
-            Mask for inputs. Shape (batch_size, key_length, key_length)
+            Mask for inputs. Shape (batch_size, length, length)
 
         Returns
         -------
         encoder_cell_outputs: list
             Outputs of the encoder cell. Contains:
 
-            - outputs of the transformer encoder cell. Shape (batch_size, key_length, C_out)
+            - outputs of the transformer encoder cell. Shape (batch_size, length, C_out)
             - additional_outputs of all the transformer encoder cell
         """
         outputs, attention_weights =\
@@ -276,20 +276,20 @@ class TransformerDecoderCell(HybridBlock):
         Parameters
         ----------
         inputs : Symbol or NDArray
-            Input sequence. Shape (batch_size, query_length, C_in)
+            Input sequence. Shape (batch_size, length, C_in)
         mem_value : Symbol or NDArrays
-            Memory value, i.e. output of the encoder. Shape (batch_size, key_length, C_in)
+            Memory value, i.e. output of the encoder. Shape (batch_size, mem_length, C_in)
         mask : Symbol or NDArray or None
-            Mask for inputs. Shape (batch_size, query_length, query_length)
+            Mask for inputs. Shape (batch_size, length, length)
         mem_mask : Symbol or NDArray or None
-            Mask for mem_value. Shape (batch_size, query_length, key_length)
+            Mask for mem_value. Shape (batch_size, length, mem_length)
 
         Returns
         -------
         decoder_cell_outputs: list
             Outputs of the decoder cell. Contains:
 
-            - outputs of the transformer decoder cell. Shape (batch_size, query_length, C_out)
+            - outputs of the transformer decoder cell. Shape (batch_size, length, C_out)
             - additional_outputs of all the transformer decoder cell
         """
         outputs, attention_in_outputs =\
@@ -398,7 +398,7 @@ class TransformerEncoder(HybridBlock, Seq2SeqEncoder):
         Parameters
         ----------
         inputs : NDArray
-            Input sequence. Shape (batch_size, key_length, C_in)
+            Input sequence. Shape (batch_size, length, C_in)
         states : list of NDArrays or None
             Initial states. The list of initial states and masks
         valid_length : NDArray or None
@@ -410,7 +410,7 @@ class TransformerEncoder(HybridBlock, Seq2SeqEncoder):
         encoder_outputs: list
             Outputs of the encoder. Contains:
 
-            - outputs of the transformer encoder. Shape (batch_size, key_length, C_out)
+            - outputs of the transformer encoder. Shape (batch_size, length, C_out)
             - additional_outputs of all the transformer encoder
         """
         return super(TransformerEncoder, self).__call__(inputs, states, valid_length)
@@ -420,21 +420,21 @@ class TransformerEncoder(HybridBlock, Seq2SeqEncoder):
 
         Parameters
         ----------
-        inputs : NDArray, Shape(batch_size, key_length, C_in)
+        inputs : NDArray, Shape(batch_size, length, C_in)
         states : list of NDArray
         valid_length : NDArray
         steps : NDArray
-            Stores value [0, 1, ..., key_length].
+            Stores value [0, 1, ..., length].
             It is used for lookup in positional encoding matrix
 
         Returns
         -------
         outputs : NDArray
-            The output of the encoder. Shape is (batch_size, key_length, C_out)
+            The output of the encoder. Shape is (batch_size, length, C_out)
         additional_outputs : list
             Either be an empty list or contains the attention weights in this step.
-            The attention weights will have shape (batch_size, mem_length, mem_length) or
-            (batch_size, num_heads, mem_length, mem_length)
+            The attention weights will have shape (batch_size, length, length) or
+            (batch_size, num_heads, length, length)
 
         """
         length = inputs.shape[1]
@@ -466,7 +466,7 @@ class TransformerEncoder(HybridBlock, Seq2SeqEncoder):
 
         Parameters
         ----------
-        inputs : NDArray or Symbol, Shape(batch_size, key_length, C_in)
+        inputs : NDArray or Symbol, Shape(batch_size, length, C_in)
         states : list of NDArray or Symbol
         valid_length : NDArray or Symbol
         position_weight : NDArray or Symbol
@@ -474,11 +474,11 @@ class TransformerEncoder(HybridBlock, Seq2SeqEncoder):
         Returns
         -------
         outputs : NDArray or Symbol
-            The output of the encoder. Shape is (batch_size, key_length, C_out)
+            The output of the encoder. Shape is (batch_size, length, C_out)
         additional_outputs : list
             Either be an empty list or contains the attention weights in this step.
-            The attention weights will have shape (batch_size, mem_length, mem_length) or
-            (batch_size, num_heads, mem_length, mem_length)
+            The attention weights will have shape (batch_size, length, length) or
+            (batch_size, num_heads, length, length)
 
         """
         if states is not None:
@@ -610,6 +610,30 @@ class TransformerDecoder(HybridBlock, Seq2SeqDecoder):
         return decoder_states
 
     def decode_seq(self, inputs, states, valid_length=None):
+        """Decode the decoder inputs. This function is only used for training.
+
+        Parameters
+        ----------
+        inputs : NDArray, Shape (batch_size, length, C_in)
+        states : list of NDArrays or None
+            Initial states. The list of decoder states
+        valid_length : NDArray or None
+            Valid lengths of each sequence. This is usually used when part of sequence has
+            been padded. Shape (batch_size,)
+
+        Returns
+        -------
+        output : NDArray, Shape (batch_size, length, C_out)
+        states : list
+            The decoder states, includes:
+
+            - mem_value : NDArray
+            - mem_masks : NDArray, optional
+        additional_outputs : list of list
+            Either be an empty list or contains the attention weights in this step.
+            The attention weights will have shape (batch_size, length, mem_length) or
+            (batch_size, num_heads, length, mem_length)
+        """
         batch_size = inputs.shape[0]
         length = inputs.shape[1]
         length_array = mx.nd.arange(length, ctx=inputs.context)
@@ -646,7 +670,7 @@ class TransformerDecoder(HybridBlock, Seq2SeqDecoder):
         -------
         step_output : NDArray
             The output of the decoder.
-            In the train mode, Shape is (batch_size, query_length, C_out)
+            In the train mode, Shape is (batch_size, length, C_out)
             In the test mode, Shape is (batch_size, C_out)
         new_states: list
             Includes
@@ -655,14 +679,14 @@ class TransformerDecoder(HybridBlock, Seq2SeqDecoder):
             - mem_value : NDArray
             - mem_masks : NDArray, optional
 
-        step_additional_outputs : list
+        step_additional_outputs : list of list
             Either be an empty list or contains the attention weights in this step.
-            The attention weights will have shape (batch_size, query_length, mem_length) or
-            (batch_size, num_heads, query_length, mem_length)
+            The attention weights will have shape (batch_size, length, mem_length) or
+            (batch_size, num_heads, length, mem_length)
         """
         return super(TransformerDecoder, self).__call__(step_input, states)
 
-    def forward(self, step_input, states, mask=None):  #pylint: disable=arguments-differ
+    def forward(self, step_input, states, mask=None):  #pylint: disable=arguments-differ, missing_docstring
         input_shape = step_input.shape
         mem_mask = None
         # If it is in testing, transform input tensor to a tensor with shape NTC
@@ -714,7 +738,7 @@ class TransformerDecoder(HybridBlock, Seq2SeqDecoder):
 
         Parameters
         ----------
-        step_input : NDArray or Symbol, Shape(batch_size, query_length, C_in)
+        step_input : NDArray or Symbol, Shape (batch_size, length, C_in)
         states : list of NDArray or Symbol
         mask : NDArray or Symbol
         position_weight : NDArray or Symbol
@@ -722,11 +746,11 @@ class TransformerDecoder(HybridBlock, Seq2SeqDecoder):
         Returns
         -------
         step_output : NDArray or Symbol
-            The output of the decoder. Shape is (batch_size, query_length, C_out)
+            The output of the decoder. Shape is (batch_size, length, C_out)
         step_additional_outputs : list
             Either be an empty list or contains the attention weights in this step.
-            The attention weights will have shape (batch_size, query_length, mem_length) or
-            (batch_size, num_heads, query_length, mem_length)
+            The attention weights will have shape (batch_size, length, mem_length) or
+            (batch_size, num_heads, length, mem_length)
 
         """
         has_mem_mask = (len(states) == 3)
