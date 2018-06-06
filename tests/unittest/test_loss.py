@@ -17,18 +17,18 @@
 # specific language governing permissions and limitations
 # under the License.
 
-# pylint: disable=wildcard-import
-"""NLP toolkit."""
+import mxnet as mx
+from mxnet import gluon
+import gluonnlp as nlp
 
-from . import loss
-from . import data
-from . import embedding
-from . import model
-from .vocab import *
+def testActivationRegularizationLoss():
+    ar = nlp.loss.ActivationRegularizationLoss(2)
+    print(ar)
+    ar(*[mx.nd.arange(1000).reshape(10, 10, 10),
+         mx.nd.arange(1000).reshape(10, 10, 10)])
 
-__version__ = '0.2.1'
-
-__all__ = ['data',
-           'model',
-           'embedding',
-           'Vocab']
+def testTemporalActivationRegularizationLoss():
+    tar = nlp.loss.TemporalActivationRegularizationLoss(1)
+    print(tar)
+    tar(*[mx.nd.arange(1000).reshape(10, 10, 10),
+          mx.nd.arange(1000).reshape(10, 10, 10)])

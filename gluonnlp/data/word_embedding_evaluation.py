@@ -30,6 +30,7 @@ from mxnet.gluon.utils import check_sha1, _get_repo_file_url
 from .. import _constants as C
 from .dataset import CorpusDataset
 from .registry import register
+from .utils import _get_home_dir
 
 try:
     import requests
@@ -204,9 +205,9 @@ class WordSim353(WordSimilarityEvaluationDataset):
     ----------
     segment : str
         'relatedness', 'similiarity' or 'all'
-    root : str, default '~/.mxnet/datasets/wordsim353'
+    root : str, default '$MXNET_HOME/datasets/wordsim353'
         Path to temp folder for storing data.
-
+        MXNET_HOME defaults to '~/.mxnet'.
     """
     _url = 'http://alfonseca.org/pubs/ws353simrel.tar.gz'
     _archive_file = ('ws353simrel.tar.gz',
@@ -235,7 +236,7 @@ class WordSim353(WordSimilarityEvaluationDataset):
     max = 10
 
     def __init__(self, segment='all', root=os.path.join(
-            '~', '.mxnet', 'datasets', 'wordsim353')):
+            _get_home_dir(), 'datasets', 'wordsim353')):
         if segment is not None:
             assert segment in ['all', 'relatedness', 'similarity']
 
@@ -275,8 +276,9 @@ class MEN(WordSimilarityEvaluationDataset):
 
     Parameters
     ----------
-    root : str, default '~/.mxnet/datasets/men'
+    root : str, default '$MXNET_HOME/datasets/men'
         Path to temp folder for storing data.
+        MXNET_HOME defaults to '~/.mxnet'.
     segment : str, default 'train'
         Dataset segment. Options are 'train', 'dev', 'test'.
 
@@ -315,7 +317,7 @@ class MEN(WordSimilarityEvaluationDataset):
     max = 50
 
     def __init__(self, segment='dev', root=os.path.join(
-            '~', '.mxnet', 'datasets', 'men')):
+            _get_home_dir(), 'datasets', 'men')):
         self.segment = segment
         super(MEN, self).__init__(root=root)
 
@@ -342,8 +344,9 @@ class RadinskyMTurk(WordSimilarityEvaluationDataset):
 
     Parameters
     ----------
-    root : str, default '~/.mxnet/datasets/radinskymturk'
+    root : str, default '$MXNET_HOME/datasets/radinskymturk'
         Path to temp folder for storing data.
+        MXNET_HOME defaults to '~/.mxnet'.
 
     """
     _url = 'http://www.kiraradinsky.com/files/Mtruk.csv'
@@ -353,7 +356,7 @@ class RadinskyMTurk(WordSimilarityEvaluationDataset):
     min = 1
     max = 5
 
-    def __init__(self, root=os.path.join('~', '.mxnet', 'datasets',
+    def __init__(self, root=os.path.join(_get_home_dir(), 'datasets',
                                          'radinskymturk')):
         super(RadinskyMTurk, self).__init__(root=root)
 
@@ -378,7 +381,8 @@ class RareWords(WordSimilarityEvaluationDataset):
 
     Parameters
     ----------
-    root : str, default '~/.mxnet/datasets/rarewords'
+    root : str, default '$MXNET_HOME/datasets/rarewords',
+        MXNET_HOME defaults to '~/.mxnet'.
         Path to temp folder for storing data.
 
     """
@@ -389,7 +393,7 @@ class RareWords(WordSimilarityEvaluationDataset):
     min = 0
     max = 10
 
-    def __init__(self, root=os.path.join('~', '.mxnet', 'datasets',
+    def __init__(self, root=os.path.join(_get_home_dir(), 'datasets',
                                          'rarewords')):
         super(RareWords, self).__init__(root=root)
 
@@ -441,8 +445,9 @@ class SimLex999(WordSimilarityEvaluationDataset):
 
     Parameters
     ----------
-    root : str, default '~/.mxnet/datasets/simlex999'
+    root : str, default '$MXNET_HOME/datasets/simlex999'
         Path to temp folder for storing data.
+        MXNET_HOME defaults to '~/.mxnet'.
 
     """
     _url = 'https://www.cl.cam.ac.uk/~fh295/SimLex-999.zip'
@@ -458,7 +463,7 @@ class SimLex999(WordSimilarityEvaluationDataset):
 
     score = 'SimLex999'
 
-    def __init__(self, root=os.path.join('~', '.mxnet', 'datasets',
+    def __init__(self, root=os.path.join(_get_home_dir(), 'datasets',
                                          'simlex999')):
         super(SimLex999, self).__init__(root=root)
 
@@ -494,8 +499,9 @@ class SimVerb3500(WordSimilarityEvaluationDataset):
 
     Parameters
     ----------
-    root : str, default '~/.mxnet/datasets/simverb3500'
+    root : str, default '$MXNET_HOME/datasets/verb3500'
         Path to temp folder for storing data.
+        MXNET_HOME defaults to '~/.mxnet'.
 
     """
     _url = 'http://people.ds.cam.ac.uk/dsg40/paper/simverb/simverb-3500-data.zip'
@@ -528,7 +534,7 @@ class SimVerb3500(WordSimilarityEvaluationDataset):
     max = 10
 
     def __init__(self, segment='full', root=os.path.join(
-            '~', '.mxnet', 'datasets', 'simverb3500')):
+            _get_home_dir(), 'datasets', 'simverb3500')):
         self.segment = segment
         super(SimVerb3500, self).__init__(root=root)
 
@@ -564,8 +570,9 @@ class SemEval17Task2(WordSimilarityEvaluationDataset):
 
     Parameters
     ----------
-    root : str, default '~/.mxnet/datasets/wordsim353'
+    root : str, default '$MXNET_HOME/datasets/semeval17task2'
         Path to temp folder for storing data.
+        MXNET_HOME defaults to '~/.mxnet'.
     segment : str, default 'train'
         Dataset segment. Options are 'trial', 'test'.
     language : str, default 'en'
@@ -588,7 +595,7 @@ class SemEval17Task2(WordSimilarityEvaluationDataset):
     languages = ('en', 'es', 'de', 'it', 'fa')
 
     def __init__(self, segment='trial', language='en', root=os.path.join(
-            '~', '.mxnet', 'datasets', 'semeval17task2')):
+            _get_home_dir(), 'datasets', 'semeval17task2')):
         assert segment in self.segments
         assert language in self.languages
         self.language = language
@@ -626,8 +633,9 @@ class BakerVerb143(WordSimilarityEvaluationDataset):
 
     Parameters
     ----------
-    root : str, default '~/.mxnet/datasets/wordsim353'
+    root : str, default '$MXNET_HOME/datasets/verb143'
         Path to temp folder for storing data.
+        MXNET_HOME defaults to '~/.mxnet'.
 
     """
     _url = 'https://ie.technion.ac.il/~roiri/papers/EMNLP14.zip'
@@ -641,7 +649,7 @@ class BakerVerb143(WordSimilarityEvaluationDataset):
     min = 0
     max = 10
 
-    def __init__(self, root=os.path.join('~', '.mxnet', 'datasets',
+    def __init__(self, root=os.path.join(_get_home_dir(), 'datasets',
                                          'verb143')):
         super(BakerVerb143, self).__init__(root=root)
 
@@ -663,8 +671,9 @@ class YangPowersVerb130(WordSimilarityEvaluationDataset):
 
     Parameters
     ----------
-    root : str, default '~/.mxnet/datasets/wordsim353'
+    root : str, default '$MXNET_HOME/datasets/verb130'
         Path to temp folder for storing data.
+        MXNET_HOME defaults to '~/.mxnet'.
 
     """
 
@@ -772,7 +781,7 @@ class GoogleAnalogyTestSet(WordAnalogyEvaluationDataset):
 
     def __init__(self, group=None,
                  category=None, lowercase=True, root=os.path.join(
-                     '~', '.mxnet', 'datasets', 'google_analogy')):
+                     _get_home_dir(), 'datasets', 'google_analogy')):
 
         assert group is None or group in self.groups
         assert category is None or category in self.categories
@@ -819,8 +828,9 @@ class BiggerAnalogyTestSet(WordAnalogyEvaluationDataset):
 
     Parameters
     ----------
-    root : str, default '~/.mxnet/datasets/simverb3500'
+    root : str, default '$MXNET_HOME/datasets/bats'
         Path to temp folder for storing data.
+        MXNET_HOME defaults to '~/.mxnet'.
 
     """
     _archive_file = ('BATS_3.0.zip',
@@ -837,7 +847,7 @@ class BiggerAnalogyTestSet(WordAnalogyEvaluationDataset):
 
     def __init__(self, category=None, form_analogy_pairs=True,
                  drop_alternative_solutions=True, root=os.path.join(
-                     '~', '.mxnet', 'datasets', 'simverb3500')):
+                     _get_home_dir(), 'datasets', 'simverb3500')):
         self.form_analogy_pairs = form_analogy_pairs
         self.drop_alternative_solutions = drop_alternative_solutions
         self.category = category

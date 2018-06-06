@@ -151,19 +151,18 @@ print(args)
 # Build the model
 ###############################################################################
 
-
 ntokens = len(vocab)
 
 if args.weight_dropout > 0:
     print('Use AWDRNN')
-    model = nlp.model.language_model.AWDRNN(args.model, len(vocab), args.emsize,
-                                            args.nhid, args.nlayers, args.tied,
-                                            args.dropout, args.weight_dropout, args.dropout_h,
-                                            args.dropout_i, args.dropout_e)
+    model_eval = nlp.model.AWDRNN(args.model, len(vocab), args.emsize, args.nhid, args.nlayers,
+                                  args.tied, args.dropout, args.weight_dropout,
+                                  args.dropout_h, args.dropout_i, args.dropout_e)
 else:
-    model = nlp.model.language_model.StandardRNN(args.model, len(vocab), args.emsize,
-                                                 args.nhid, args.nlayers, args.dropout, args.tied)
+    model_eval = nlp.model.StandardRNN(args.model, len(vocab), args.emsize,
+                                       args.nhid, args.nlayers, args.dropout, args.tied)
 
+model = super(model_eval.__class__, model_eval)
 model.initialize(mx.init.Xavier(), ctx=context)
 
 if args.optimizer == 'sgd':
@@ -178,24 +177,113 @@ elif args.optimizer == 'adam':
                       'epsilon': 1e-9}
 
 trainer = gluon.Trainer(model.collect_params(), args.optimizer, trainer_params)
+
 loss = gluon.loss.SoftmaxCrossEntropyLoss()
+ar_loss = nlp.loss.ActivationRegularizationLoss(args.alpha)
+tar_loss = nlp.loss.TemporalActivationRegularizationLoss(args.beta)
+
+
+class JointActivationRegularizationLoss(gluon.loss.Loss):
+    r"""Computes Joint Regularization Loss with standard loss.
+
+    The activation regularization refer to
+    gluonnlp.loss.ActivationRegularizationLoss.
+
+    The temporal activation regularization refer to
+    gluonnlp.loss.TemporalActivationRegularizationLoss.
+
+    Parameters
+    ----------
+    loss : gluon.loss.Loss
+        The standard loss
+    ar_loss: gluonnlp.loss.ActivationRegularizationLoss
+        The activation regularization
+    tar_loss: gluonnlp.loss.TemporalActivationRegularizationLoss
+        The temporal activation regularization
+
+    Inputs:
+        - **out**: NDArray
+        output tensor with shape `(sequence_length, batch_size, input_size)`
+          when `layout` is "TNC".
+        - **target**: NDArray
+        target tensor with shape `(sequence_length, batch_size, input_size)`
+          when `layout` is "TNC".
+        - **states**: the stack outputs from RNN,
+        which consists of output from each time step (TNC).
+        - **dropped_states**: the stack outputs from RNN with dropout,
+        which consists of output from each time step (TNC).
+
+    Outputs:
+        - **loss**: loss tensor with shape (batch_size,). Dimensions other than
+          batch_axis are averaged out.
+    """
+
+    def __init__(self, l, ar_l, tar_l, weight=None, batch_axis=None, **kwargs):
+        super(JointActivationRegularizationLoss, self).__init__(weight, batch_axis, **kwargs)
+        self._loss = l
+        self._ar_loss = ar_l
+        self._tar_loss = tar_l
+
+    def __repr__(self):
+        s = 'JointActivationTemporalActivationRegularizationLoss'
+        return s
+
+    def hybrid_forward(self, F, out, target, states, dropped_states): # pylint: disable=arguments-differ
+        # pylint: disable=unused-argument
+        l = self._loss(out.reshape(-3, -1), target.reshape(-1,))
+        l = l + self._ar_loss(*dropped_states)
+        l = l + self._tar_loss(*states)
+        return l
+
+
+joint_loss = JointActivationRegularizationLoss(loss, ar_loss, tar_loss)
 
 ###############################################################################
 # Training code
 ###############################################################################
 
-def get_batch(data_source, i, seq_len=None):
-    seq_len = min(seq_len if seq_len else args.bptt, len(data_source) - 1 - i)
-    data = data_source[i:i+seq_len]
-    target = data_source[i+1:i+1+seq_len]
-    return data, target
-
 def detach(hidden):
+    """Transfer hidden states into new states, to detach them from the history.
+    Parameters
+    ----------
+    hidden : NDArray
+        The hidden states
+    Returns
+    ----------
+    hidden: NDArray
+        The detached hidden states
+    """
     if isinstance(hidden, (tuple, list)):
         hidden = [detach(h) for h in hidden]
     else:
         hidden = hidden.detach()
     return hidden
+
+
+def get_batch(data_source, i, seq_len=None):
+    """Get mini-batches of the dataset.
+
+    Parameters
+    ----------
+    data_source : NDArray
+        The dataset is evaluated on.
+    i : int
+        The index of the batch, starting from 0.
+    seq_len : int
+        The length of each sample in the batch.
+
+    Returns
+    -------
+    data: NDArray
+        The context
+    target: NDArray
+        The words to predict
+    """
+    seq_len = min(seq_len if seq_len else args.bptt, len(data_source) - 1 - i)
+    data = data_source[i:i+seq_len]
+    target = data_source[i+1:i+1+seq_len]
+    return data, target
+
 
 def evaluate(data_source, batch_size, ctx=None):
     """Evaluate the model on the dataset.
@@ -216,12 +304,12 @@ def evaluate(data_source, batch_size, ctx=None):
     """
     total_L = 0.0
     ntotal = 0
-    hidden = model.begin_state(batch_size, func=mx.nd.zeros, ctx=context[0])
+    hidden = model_eval.begin_state(batch_size, func=mx.nd.zeros, ctx=context[0])
     for i in range(0, len(data_source) - 1, args.bptt):
         data, target = get_batch(data_source, i)
         data = data.as_in_context(ctx)
         target = target.as_in_context(ctx)
-        output, hidden = model(data, hidden)
+        output, hidden = model_eval(data, hidden)
         hidden = detach(hidden)
         L = loss(output.reshape(-3, -1),
                  target.reshape(-1,))
@@ -229,90 +317,6 @@ def evaluate(data_source, batch_size, ctx=None):
         ntotal += L.size
     return total_L / ntotal
 
-
-def forward(inputs, begin_state=None):
-    """Implement forward computation using awd language model.
-
-    Parameters
-    ----------
-    inputs : NDArray
-        The training dataset.
-    begin_state : list
-        The initial hidden states.
-
-    Returns
-    -------
-    out: NDArray
-        The output of the model.
-    out_states: list
-        The list of output states of the model's encoder.
-    encoded_raw: list
-        The list of outputs of the model's encoder.
-    encoded_dropped: list
-        The list of outputs with dropout of the model's encoder.
-    """
-    encoded = model.embedding(inputs)
-    if not begin_state:
-        begin_state = model.begin_state(batch_size=inputs.shape[1])
-    out_states = []
-    encoded_raw = []
-    encoded_dropped = []
-    if args.weight_dropout > 0:
-        for i, (e, s) in enumerate(zip(model.encoder, begin_state)):
-            encoded, state = e(encoded, s)
-            encoded_raw.append(encoded)
-            out_states.append(state)
-            if model._drop_h and i != len(model.encoder)-1:
-                encoded = mx.nd.Dropout(encoded, p=model._drop_h, axes=(0,))
-                encoded_dropped.append(encoded)
-    else:
-        encoded, state = model.encoder(encoded, begin_state)
-        encoded_raw.append(encoded)
-    if model._dropout:
-        encoded = mx.nd.Dropout(encoded, p=model._dropout, axes=(0,))
-    if args.weight_dropout > 0:
-        encoded_dropped.append(encoded)
-        with autograd.predict_mode():
-            out = model.decoder(encoded)
-    else:
-        out = model.decoder(encoded)
-    if args.weight_dropout > 0:
-        return out, out_states, encoded_raw, encoded_dropped
-    else:
-        return out, state, encoded_raw, encoded_dropped
-
-def criterion(output, target, encoder_hs, dropped_encoder_hs):
-    """Compute regularized (optional) loss of the language model in training mode.
-
-        Parameters
-        ----------
-        output: NDArray
-            The output of the model.
-        target: list
-            The list of output states of the model's encoder.
-        encoder_hs: list
-            The list of outputs of the model's encoder.
-        dropped_encoder_hs: list
-            The list of outputs with dropout of the model's encoder.
-
-        Returns
-        -------
-        l: NDArray
-            The loss per word/token.
-            If both args.alpha and args.beta are zeros, the loss is the standard cross entropy.
-            If args.alpha is not zero, the standard loss is regularized with activation.
-            If args.beta is not zero, the standard loss is regularized with temporal activation.
-    """
-    l = loss(output.reshape(-3, -1), target.reshape(-1,))
-    if args.alpha:
-        dropped_means = [args.alpha*dropped_encoder_h.__pow__(2).mean()
-                         for dropped_encoder_h in dropped_encoder_hs[-1:]]
-        l = l + mx.nd.add_n(*dropped_means)
-    if args.beta:
-        means = [args.beta*(encoder_h[1:] - encoder_h[:-1]).__pow__(2).mean()
-                 for encoder_h in encoder_hs[-1:]]
-        l = l + mx.nd.add_n(*means)
-    return l
 
 def train():
     """Training loop for awd language model.
@@ -342,8 +346,8 @@ def train():
             L = 0
             with autograd.record():
                 for j, (X, y, h) in enumerate(zip(data_list, target_list, hiddens)):
-                    output, h, encoder_hs, dropped_encoder_hs = forward(X, h)
-                    l = criterion(output, y, encoder_hs, dropped_encoder_hs)
+                    output, h, encoder_hs, dropped_encoder_hs = model.forward(X, h)
+                    l = joint_loss(output, y, encoder_hs, dropped_encoder_hs)
                     L = L + l.as_in_context(context[0]) / X.size
                     Ls.append(l/X.size)
                     hiddens[j] = h
@@ -378,8 +382,8 @@ def train():
         if val_L < best_val:
             update_lr_epoch = 0
             best_val = val_L
-            test_L = evaluate(test_data, test_batch_size, context[0])
             model.save_params(args.save)
+            test_L = evaluate(test_data, test_batch_size, context[0])
             print('test loss %.2f, test ppl %.2f'%(test_L, math.exp(test_L)))
         else:
             update_lr_epoch += 1
@@ -397,7 +401,6 @@ if __name__ == '__main__':
     start_pipeline_time = time.time()
     if not args.eval_only:
         train()
-    model.load_params(args.save, context)
     final_val_L = evaluate(val_data, val_batch_size, context[0])
     final_test_L = evaluate(test_data, test_batch_size, context[0])
     print('Best validation loss %.2f, val ppl %.2f'%(final_val_L, math.exp(final_val_L)))

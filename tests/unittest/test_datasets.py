@@ -141,6 +141,46 @@ def test_wikitext2():
     assert batched_data.shape == (26107, 80)
 
 
+def test_wikitext2_raw():
+    train = nlp.data.WikiText2Raw(segment='train', root=os.path.join(
+        'tests', 'data', 'wikitext-2'))
+    val = nlp.data.WikiText2Raw(segment='val', root=os.path.join(
+        'tests', 'data', 'wikitext-2'))
+    test = nlp.data.WikiText2Raw(segment='test', root=os.path.join(
+        'tests', 'data', 'wikitext-2'))
+    train_freq, val_freq, test_freq = [
+        nlp.data.utils.Counter(x) for x in [train[0], val[0], test[0]]
+    ]
+    assert len(train[0]) == 10843541, len(train[0])
+    assert len(train_freq) == 192, len(train_freq)
+    assert len(val[0]) == 1136862, len(val[0])
+    assert len(val_freq) == 168, len(val_freq)
+    assert len(test[0]) == 1278983, len(test[0])
+    assert len(test_freq) == 177, len(test_freq)
+    assert test_freq['a'.encode('utf-8')[0]] == 81512, \
+        test_freq['a'.encode('utf-8')[0]]
+
+
+def test_wikitext103_raw():
+    train = nlp.data.WikiText103Raw(segment='train', root=os.path.join(
+        'tests', 'data', 'wikitext-103'))
+    val = nlp.data.WikiText103Raw(segment='val', root=os.path.join(
+        'tests', 'data', 'wikitext-103'))
+    test = nlp.data.WikiText103Raw(segment='test', root=os.path.join(
+        'tests', 'data', 'wikitext-103'))
+    train_freq, val_freq, test_freq = [
+        nlp.data.utils.Counter(x) for x in [train[0], val[0], test[0]]
+    ]
+    assert len(train[0]) == 535800393, len(train[0])
+    assert len(train_freq) == 203, len(train_freq)
+    assert len(val[0]) == 1136862, len(val[0])
+    assert len(val_freq) == 168, len(val_freq)
+    assert len(test[0]) == 1278983, len(test[0])
+    assert len(test_freq) == 177, len(test_freq)
+    assert test_freq['a'.encode('utf-8')[0]] == 81512, \
+        test_freq['a'.encode('utf-8')[0]]
+
+
 def test_imdb():
     train = nlp.data.IMDB(
         root=os.path.join('tests', 'data', 'imdb'), segment='train')
@@ -428,6 +468,22 @@ def test_wmt2016bpe():
     assert len(en_vocab) == 36548
     assert len(de_vocab) == 36548
 
+
+def test_wmt2014bpe():
+    train = nlp.data.WMT2014BPE(segment='train', src_lang='en', tgt_lang='de',
+                                root='tests/data/wmt2014')
+    newstests = [nlp.data.WMT2014BPE(segment='newstest%d' %i, src_lang='en', tgt_lang='de',
+                                     root='tests/data/wmt2014') for i in range(2009, 2015)]
+    assert len(train) == 4493328
+    assert tuple(len(ele) for ele in newstests) == (2525, 2489, 3003, 3003, 3000, 3003)
+
+    newstest_2009_2013 = nlp.data.WMT2014BPE(segment=['newstest%d' %i for i in range(2009, 2014)],
+                                             src_lang='en', tgt_lang='de', root='tests/data/wmt2014')
+    assert len(newstest_2009_2013) == 2525 + 2489 + 3003 + 3003 + 3000
+    en_vocab, de_vocab = train.src_vocab, train.tgt_vocab
+    assert len(en_vocab) == 36794
+    assert len(de_vocab) == 36794
+    
 
 ###############################################################################
 # Question answering

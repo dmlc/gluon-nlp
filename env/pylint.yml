@@ -1,7 +1,7 @@
 name: gluon_nlp_pylint
 dependencies:
   - python
-  - pylint
+  - pylint=1.8.4
   - sphinx=1.7.2
   - pip:
     - pylint-quotes

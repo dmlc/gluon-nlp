@@ -231,3 +231,7 @@ sphinx_gallery_conf = {
     'filename_pattern': '.py',
     'expected_failing_examples': []
 }
+
+# Napoleon settings
+napoleon_use_ivar = True
+

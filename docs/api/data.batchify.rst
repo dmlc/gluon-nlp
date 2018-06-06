@@ -8,6 +8,7 @@ efficiently.
 
 Batch Loaders
 -------------
+
 .. autosummary::
     :nosignatures:
 
@@ -17,5 +18,7 @@ Batch Loaders
 
 API Reference
 -------------
+
 .. automodule:: gluonnlp.data.batchify
-    :members:
+   :members:
+   :imported-members:

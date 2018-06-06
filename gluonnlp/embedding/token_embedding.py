@@ -36,7 +36,7 @@ from mxnet import nd, registry
 from mxnet.gluon.utils import download, check_sha1, _get_repo_file_url
 
 from .. import _constants as C
-from ..data.utils import DefaultLookupDict
+from ..data.utils import DefaultLookupDict, _get_home_dir
 
 
 def register(embedding_cls):
@@ -155,10 +155,12 @@ class TokenEmbedding(object):
         The representation for any unknown token. In other words, any unknown token will be indexed
         as the same representation.
 
-    Properties
+    Attributes
     ----------
     idx_to_token : list of strs
         A list of indexed tokens where the list indices and the token indices are aligned.
+    token_to_idx : dict of strs
+        A dictionary of tokens with their corresponding index numbers; inverse vocab
     idx_to_vec : mxnet.ndarray.NDArray
         For all the indexed tokens in this embedding, this NDArray maps each token's index to an
         embedding vector.
@@ -373,6 +375,10 @@ class TokenEmbedding(object):
     @property
     def idx_to_token(self):
         return self._idx_to_token
+
+    @property
+    def token_to_idx(self):
+        return self._token_to_idx
 
     @property
     def idx_to_vec(self):
@@ -647,12 +653,13 @@ class GloVe(TokenEmbedding):
     ----------
     source : str, default 'glove.6B.50d'
         The name of the pre-trained token embedding file.
-    embedding_root : str, default os.path.join('~', '.mxnet', 'embedding')
+    embedding_root : str, default '$MXNET_HOME/embedding'
         The root directory for storing embedding-related files.
+        MXNET_HOME defaults to '~/.mxnet'.
     init_unknown_vec : callback
         The callback used to initialize the embedding vector for the unknown token.
 
-    Properties
+    Attributes
     ----------
     idx_to_vec : mxnet.ndarray.NDArray
         For all the indexed tokens in this embedding, this NDArray maps each token's index to an
@@ -666,7 +673,7 @@ class GloVe(TokenEmbedding):
     source_file_hash = C.GLOVE_NPZ_SHA1
 
     def __init__(self, source='glove.6B.50d',
-                 embedding_root=os.path.join('~', '.mxnet', 'embedding'),
+                 embedding_root=os.path.join(_get_home_dir(), 'embedding'),
                  init_unknown_vec=nd.zeros, **kwargs):
         GloVe._check_source(source)
 
@@ -721,12 +728,13 @@ class FastText(TokenEmbedding):
     ----------
     source : str, default 'glove.6B.50d'
         The name of the pre-trained token embedding file.
-    embedding_root : str, default os.path.join('~', '.mxnet', 'embedding')
+    embedding_root : str, default '$MXNET_HOME/embedding'
         The root directory for storing embedding-related files.
+        MXNET_HOME defaults to '~/.mxnet'.
     init_unknown_vec : callback
         The callback used to initialize the embedding vector for the unknown token.
 
-    Properties
+    Attributes
     ----------
     idx_to_vec : mxnet.ndarray.NDArray
         For all the indexed tokens in this embedding, this NDArray maps each token's index to an
@@ -740,7 +748,7 @@ class FastText(TokenEmbedding):
     source_file_hash = C.FAST_TEXT_NPZ_SHA1
 
     def __init__(self, source='wiki.simple',
-                 embedding_root=os.path.join('~', '.mxnet', 'embedding'),
+                 embedding_root=os.path.join(_get_home_dir(), 'embedding'),
                  init_unknown_vec=nd.zeros, **kwargs):
         FastText._check_source(source)
 
