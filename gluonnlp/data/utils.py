@@ -227,7 +227,7 @@ def _load_pretrained_vocab(name, root=os.path.join('~', '.mxnet', 'models')):
     Returns
     -------
     Vocab
-        Loaded Vocabulary for the pretrained model.
+        Loaded vocabulary object for the pretrained model.
     """
     file_name = '{name}-{short_hash}'.format(name=name,
                                              short_hash=short_hash(name))
