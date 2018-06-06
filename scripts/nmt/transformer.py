@@ -68,17 +68,18 @@ class PositionwiseFFN(HybridBlock):
         self._hidden_size = hidden_size
         self._units = units
         self._use_residual = use_residual
-        self.ffn_1 = nn.Dense(units=hidden_size, flatten=False,
-                              activation=activation,
-                              weight_initializer=weight_initializer,
-                              bias_initializer=bias_initializer,
-                              prefix='ffn_1_')
-        self.ffn_2 = nn.Dense(units=units, flatten=False,
-                              weight_initializer=weight_initializer,
-                              bias_initializer=bias_initializer,
-                              prefix='ffn_2_')
-        self.dropout_layer = nn.Dropout(dropout)
-        self.layer_norm = nn.LayerNorm()
+        with self.name_scope():
+            self.ffn_1 = nn.Dense(units=hidden_size, flatten=False,
+                                  activation=activation,
+                                  weight_initializer=weight_initializer,
+                                  bias_initializer=bias_initializer,
+                                  prefix='ffn_1_')
+            self.ffn_2 = nn.Dense(units=units, flatten=False,
+                                  weight_initializer=weight_initializer,
+                                  bias_initializer=bias_initializer,
+                                  prefix='ffn_2_')
+            self.dropout_layer = nn.Dropout(dropout)
+            self.layer_norm = nn.LayerNorm()
 
     def hybrid_forward(self, F, inputs):  # pylint: disable=unused-argument
         """Position-wise encoding of the inputs.
