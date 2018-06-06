@@ -384,7 +384,7 @@ def train():
                                              num_buckets=args.num_buckets,
                                              ratio=args.bucket_ratio,
                                              shuffle=True,
-                                             buse_average_length=True)
+                                             use_average_length=True)
     logging.info('Train Batch Sampler:\n{}'.format(train_batch_sampler.stats()))
     train_data_loader = DataLoader(data_train,
                                    batch_sampler=train_batch_sampler,

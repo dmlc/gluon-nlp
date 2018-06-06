@@ -13,7 +13,7 @@ Use the following command to train the GNMT model on the IWSLT2015 dataset.
 
 It gets test BLEU score equals to 26.22.
 
-Use the following command to train the Transformer model on the WMT16 dataset. 
+Use the following command to train the Transformer model on the WMT16 dataset for English to German translation. 
 
 .. code-block:: console
 
