@@ -54,19 +54,6 @@ class ActivationRegularizationLoss(Loss):
         Global scalar weight for loss.
     batch_axis : int, default 0
         The axis that represents mini-batch.
-
-
-
-    Inputs
-    -------
-    states :
-        the stack outputs from RNN, which consists of output from each time step (TNC).
-
-
-    Outputs
-    --------
-    loss :
-        loss tensor with shape (batch_size,). Dimensions other than batch_axis are averaged out.
     """
     def __init__(self, alpha=0, weight=None, batch_axis=None, **kwargs):
         super(ActivationRegularizationLoss, self).__init__(weight, batch_axis, **kwargs)
@@ -77,6 +64,17 @@ class ActivationRegularizationLoss(Loss):
         return s.format(alpha=self._alpha)
 
     def hybrid_forward(self, F, *states): # pylint: disable=arguments-differ
+        """
+        Parameters
+        ----------
+        states : list
+            the stack outputs from RNN, which consists of output from each time step (TNC).
+
+        Returns
+        --------
+        loss : NDArray
+            loss tensor with shape (batch_size,). Dimensions other than batch_axis are averaged out.
+        """
         # pylint: disable=unused-argument
         if self._alpha != 0:
             if states:
