@@ -383,6 +383,16 @@ def test_token_embedding_from_file(tmpdir):
     first_vec = my_embed.idx_to_vec[0]
     assert_almost_equal(first_vec.asnumpy(), np.array([0, 0, 0, 0, 0]))
 
+    # Test properties
+    assert my_embed.token_to_idx == {'<unk>': 0, 'a': 1, 'b': 2}
+    assert my_embed.idx_to_token == ['<unk>', 'a', 'b']
+    
+    assert_almost_equal(my_embed.idx_to_vec.asnumpy(),
+                       np.array([[0,  0,  0,  0,  0],
+                                 [0.1, 0.2, 0.3, 0.4, 0.5],
+                                 [0.6, 0.7, 0.8, 0.9, 1]])
+                       )
+
     # Test __getitem__.
     unk_vec = my_embed['A']
     assert_almost_equal(unk_vec.asnumpy(), np.array([0, 0, 0, 0, 0]))
@@ -479,6 +489,13 @@ def test_vocab_set_embedding_with_one_custom_embedding(tmpdir):
     v1_no_unk.set_embedding(e1)
     assert v1.embedding is not None
     assert v1_no_unk.embedding is not None
+
+    # Test properties
+    assert v1.embedding.token_to_idx == {'<unk>': 0, '<pad>': 1, 'c': 2, 'b': 3, 'a': 4, 'some_word$': 5}
+    assert v1.embedding.idx_to_token == ['<unk>', '<pad>', 'c', 'b', 'a', 'some_word$']
+
+    assert v1_no_unk.embedding.token_to_idx == {'<pad>': 0, 'c': 1, 'b': 2, 'a': 3, 'some_word$': 4}
+    assert v1_no_unk.embedding.idx_to_token == ['<pad>', 'c', 'b', 'a', 'some_word$']
 
     assert_almost_equal(v1.embedding.idx_to_vec.asnumpy(),
                         np.array([[1, 1, 1, 1, 1],
@@ -605,7 +622,9 @@ def test_vocab_set_embedding_with_two_custom_embeddings(tmpdir):
                    padding_token=None, bos_token=None, eos_token=None, reserved_tokens=None)
     v1.set_embedding(my_embed1, my_embed2)
     assert v1.embedding is not None
-
+    assert v1.embedding.token_to_idx == {'<unk>': 0, 'c': 1, 'b': 2, 'a': 3, 'some_word$': 4}
+    assert v1.embedding.idx_to_token == ['<unk>', 'c', 'b', 'a', 'some_word$']
+    
     with pytest.raises(AssertionError):
         v1.set_embedding(my_embed1, None, my_embed2)
     assert_almost_equal(v1.embedding.idx_to_vec.asnumpy(),
@@ -656,6 +675,8 @@ def test_vocab_set_embedding_with_two_custom_embeddings(tmpdir):
     v2 = nlp.Vocab(counter, max_size=None, min_freq=1, unknown_token='<unk>', padding_token=None,
                    bos_token=None, eos_token=None, reserved_tokens=None)
     v2.set_embedding(my_embed3, my_embed4)
+    assert v2.embedding.token_to_idx == {'<unk>': 0, 'c': 1, 'b': 2, 'a': 3, 'some_word$': 4}
+    assert v2.embedding.idx_to_token == ['<unk>', 'c', 'b', 'a', 'some_word$']
     assert_almost_equal(v2.embedding.idx_to_vec.asnumpy(),
                         np.array([[1.1, 1.2, 1.3, 1.4, 1.5,
                                    0.11, 0.12, 0.13, 0.14, 0.15],
@@ -672,6 +693,8 @@ def test_vocab_set_embedding_with_two_custom_embeddings(tmpdir):
     v3 = nlp.Vocab(counter, max_size=None, min_freq=1, unknown_token='<unk1>', padding_token=None,
                    bos_token=None, eos_token=None, reserved_tokens=None)
     v3.set_embedding(my_embed3, my_embed4)
+    assert v3.embedding.token_to_idx == {'<unk1>': 0, 'c': 1, 'b': 2, 'a': 3, 'some_word$': 4}
+    assert v3.embedding.idx_to_token == ['<unk1>', 'c', 'b', 'a', 'some_word$']
     assert_almost_equal(v3.embedding.idx_to_vec.asnumpy(),
                         np.array([[1.1, 1.2, 1.3, 1.4, 1.5,
                                    0.11, 0.12, 0.13, 0.14, 0.15],
@@ -688,6 +711,8 @@ def test_vocab_set_embedding_with_two_custom_embeddings(tmpdir):
     v4 = nlp.Vocab(counter, max_size=None, min_freq=1, unknown_token='<unk2>', padding_token=None,
                    bos_token=None, eos_token=None, reserved_tokens=None)
     v4.set_embedding(my_embed3, my_embed4)
+    assert v4.embedding.token_to_idx == {'<unk2>': 0, 'c': 1, 'b': 2, 'a': 3, 'some_word$': 4}
+    assert v4.embedding.idx_to_token == ['<unk2>', 'c', 'b', 'a', 'some_word$']
     assert_almost_equal(v4.embedding.idx_to_vec.asnumpy(),
                         np.array([[1.1, 1.2, 1.3, 1.4, 1.5,
                                    0.11, 0.12, 0.13, 0.14, 0.15],
@@ -706,8 +731,8 @@ def test_vocab_set_embedding_with_two_custom_embeddings(tmpdir):
     v5 = nlp.Vocab(counter2, max_size=None, min_freq=1, unknown_token='a', padding_token=None,
                    bos_token=None, eos_token=None, reserved_tokens=None)
     v5.set_embedding(my_embed3, my_embed4)
-    assert v5.embedding._token_to_idx == {'a': 0, 'c': 1, 'b': 2, 'some_word$': 3}
-    assert v5.embedding._idx_to_token == ['a', 'c', 'b', 'some_word$']
+    assert v5.embedding.token_to_idx == {'a': 0, 'c': 1, 'b': 2, 'some_word$': 3}
+    assert v5.embedding.idx_to_token == ['a', 'c', 'b', 'some_word$']
     assert_almost_equal(v5.embedding.idx_to_vec.asnumpy(),
                         np.array([[1.1, 1.2, 1.3, 1.4, 1.5,
                                    0.11, 0.12, 0.13, 0.14, 0.15],
