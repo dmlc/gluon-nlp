@@ -99,6 +99,15 @@ def parse_args():
     group = parser.add_argument_group('Optimization arguments')
     group.add_argument('--optimizer', type=str, default='sgd')
     group.add_argument('--lr', type=float, default=0.1)
+    group.add_argument('--elementwise-clip-gradient', type=float, default=-1,
+                       help='Clip embedding matrix gradients elementwise. '
+                       'Disable by setting to a value <= 0.')
+    group.add_argument(
+        '--groupwise-clip-gradient', type=float, default=1,
+        help='Clip embedding matrix gradients '
+        'such that the norm of the gradient for one embedding vector '
+        'does not surpass --groupwise-clip-gradient.'
+        'Disable by setting to a value <= 0.')
 
     # Logging
     group = parser.add_argument_group('Logging arguments')
@@ -179,7 +188,9 @@ def train(args):
     params = list(embedding.collect_params().values()) + \
         list(embedding_out.collect_params().values())
     optimizer = mx.optimizer.Optimizer.create_optimizer(
-        args.optimizer, learning_rate=args.lr)
+        args.optimizer, learning_rate=args.lr,
+        clip_gradient=args.elementwise_clip_gradient
+        if args.elementwise_clip_gradient > 0 else None)
     trainer = gluon.Trainer(params, optimizer)
 
     # Logging writer
@@ -258,6 +269,11 @@ def train(args):
                 loss = loss_function(pred, label)
 
             loss.backward()
+
+            # Normalize gradients
+            if args.groupwise_clip_gradient > 0:
+                clip_embeddings_gradients(trainer._params,
+                                          args.groupwise_clip_gradient)
 
             trainer.set_learning_rate(args.lr * (1 - progress))
             trainer.step(batch_size=1)
