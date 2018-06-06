@@ -59,29 +59,27 @@ class AWDRNN(Block):
         Dropout rate to use on the embedding layer.
 
 
-    Inputs
-    ----------
-    inputs : NDArray
-        input tensor with shape `(sequence_length, batch_size)`
-          when `layout` is "TNC".
-    begin_state : list
-        initial recurrent state tensor with length equals to num_layers.
-        the initial state with shape `(1, batch_size, num_hidden)`
+    Inputs:
+        inputs : NDArray
+            input tensor with shape `(sequence_length, batch_size)`
+              when `layout` is "TNC".
+        begin_state : list
+            initial recurrent state tensor with length equals to num_layers.
+            the initial state with shape `(1, batch_size, num_hidden)`
 
-    Outputs
-    -------
-    out: NDArray
-        output tensor with shape `(sequence_length, batch_size, input_size)`
-          when `layout` is "TNC".
-    out_states: list
-        output recurrent state tensor with length equals to num_layers.
-        the state with shape `(1, batch_size, num_hidden)`
-    encoded_raw: list
-        The list of outputs of the model's encoder with length equals to num_layers.
-        the shape of every encoder's output `(sequence_length, batch_size, num_hidden)`
-    encoded_dropped: list
-        The list of outputs with dropout of the model's encoder with length equals to num_layers.
-        the shape of every encoder's dropped output `(sequence_length, batch_size, num_hidden)`
+    Outputs:
+        out: NDArray
+            output tensor with shape `(sequence_length, batch_size, input_size)`
+              when `layout` is "TNC".
+        out_states: list
+            output recurrent state tensor with length equals to num_layers.
+            the state with shape `(1, batch_size, num_hidden)`
+        encoded_raw: list
+            The list of outputs of the model's encoder with length equals to num_layers.
+            the shape of every encoder's output `(sequence_length, batch_size, num_hidden)`
+        encoded_dropped: list
+            The list of outputs with dropout of the model's encoder with length equals to num_layers.
+            the shape of every encoder's dropped output `(sequence_length, batch_size, num_hidden)`
     """
     def __init__(self, mode, vocab_size, embed_size=400, hidden_size=1150, num_layers=3,
                  tie_weights=True, dropout=0.4, weight_drop=0.5, drop_h=0.2,
