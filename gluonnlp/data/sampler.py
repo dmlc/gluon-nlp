@@ -213,6 +213,8 @@ class FixedBucketSampler(Sampler):
                                                 * self._ratio * batch_size), batch_size)
                                         for scale_up_key in scale_up_keys]
         else:
+            if ratio > 0.:
+                warnings.warn('ratio=%f is ignored when use_average_length is True' % self._ratio)
             bucket_average_lengths = _bucket_average_lengths(self._bucket_sample_ids, self._lengths)
             self._bucket_batch_sizes = [max(int(batch_size / float(average_length)), 1)
                                         for average_length in bucket_average_lengths]
