@@ -32,7 +32,6 @@ import sys
 import argparse
 import itertools
 import logging
-import math
 import os
 import random
 import tempfile
@@ -183,8 +182,7 @@ def train(args):
     embedding_out = nlp.model.SimpleEmbeddingModel(
         num_tokens=len(vocab),
         embedding_size=args.emsize,
-        weight_initializer=mx.init.Uniform(
-            scale=1 / args.emsize),
+        weight_initializer=mx.init.Uniform(scale=1 / args.emsize),
         sparse_grad=args.sparse_grad,
     )
     loss_function = gluon.loss.SigmoidBinaryCrossEntropyLoss()
@@ -205,24 +203,23 @@ def train(args):
     # Logging writer
     sw = SummaryWriter(logdir=args.logdir)
 
-    context_sampler = nlp.data.ContextSampler(batch_size=args.batch_size,
-                                              window=args.window)
-    negative_sampler = nlp.data.NegativeSampler(vocab=vocab,
-                                                negative=args.negative)
-
     num_update = 0
-    num_batches = math.ceil(
-        sum(len(c) for c in coded_dataset) / float(args.batch_size))
     for epoch in range(args.epochs):
         random.shuffle(coded_dataset)
-        batches = context_sampler(coded_dataset)
+        context_sampler = nlp.data.ContextSampler(coded=coded_dataset,
+                                                  batch_size=args.batch_size,
+                                                  window=args.window)
+        negatives_sampler = nlp.data.NegativeSampler(
+            num_samples=context_sampler.num_samples,
+            batch_size=args.batch_size, vocab=vocab, negative=args.negative)
+        num_batches = len(context_sampler)
 
-        for i, batch in tqdm.tqdm(
-                enumerate(batches), total=num_batches, ascii=True, smoothing=1,
-                dynamic_ncols=True):
+        for i, (batch, negatives) in tqdm.tqdm(
+                enumerate(zip(context_sampler,
+                              negatives_sampler)), total=num_batches,
+                ascii=True, smoothing=1, dynamic_ncols=True):
             progress = (epoch * num_batches + i) / (args.epochs * num_batches)
             (center, word_context, word_context_mask) = batch
-            negatives = negative_sampler(center.shape[0])
             if args.model.lower() == 'skipgram':
                 if args.no_deduplicate_subwords:
                     subwords, subwords_mask = \
