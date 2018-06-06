@@ -24,7 +24,8 @@ import mxnet as mx
 
 from .language_model import *
 from .cache import *
-from ...model import get_model
+
+from gluonnlp.model import get_model
 
 __all__ = language_model.__all__ + cache.__all__ + ['get_cache_model']
 
