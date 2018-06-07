@@ -469,7 +469,7 @@ def train():
                 param_dict = model.collect_params()
                 param_dict.zero_grad()
                 if step_num > average_start:
-                    alpha = max(1, 1. / (step_num - average_start))
+                    alpha = 1. / max(1, step_num - average_start)
                     for name, average_param in average_param_dict.items():
                         average_param[:] += alpha * (param_dict[name].data(ctx[0]) - average_param)
             step_loss += sum([L.asscalar() for L in Ls])
