@@ -84,7 +84,8 @@ class PositionwiseFFN(HybridBlock):
             self.dropout_layer = nn.Dropout(dropout)
             self.layer_norm = nn.LayerNorm()
 
-    def hybrid_forward(self, F, inputs):  # pylint: disable=unused-argument # pylint: disable=arguments-differ
+    def hybrid_forward(self, F, inputs):  # pylint: disable=arguments-differ
+        # pylint: disable=unused-argument
         """Position-wise encoding of the inputs.
 
         Parameters
@@ -166,7 +167,8 @@ class TransformerEncoderCell(HybridBlock):
                                        bias_initializer=bias_initializer)
             self.layer_norm = nn.LayerNorm()
 
-    def hybrid_forward(self, F, inputs, mask=None):  # pylint: disable=unused-argument # pylint: disable=arguments-differ
+    def hybrid_forward(self, F, inputs, mask=None):  # pylint: disable=arguments-differ
+        # pylint: disable=unused-argument
         """Transformer Encoder Attention Cell.
 
         Parameters

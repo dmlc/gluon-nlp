@@ -31,8 +31,8 @@ import logging
 import sys
 import json
 
-import mxnet as mx
 import numpy as np
+import mxnet as mx
 
 import gluonnlp as nlp
 
