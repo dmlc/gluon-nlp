@@ -110,29 +110,29 @@ if __name__ == '__main__':
     logging.basicConfig()
     logging.getLogger().setLevel(logging.INFO)
 
-    args = get_args()
-    ctx = utils.get_context(args)[0]
-    os.makedirs(args.logdir, exist_ok=True)
+    args_ = get_args()
+    ctx = utils.get_context(args_)[0]
+    os.makedirs(args_.logdir, exist_ok=True)
 
     # Load pretrained embeddings
-    print('Loading embedding ', args.embedding_name, ' from ',
-          args.embedding_source)
-    token_embedding = nlp.embedding.create(args.embedding_name,
-                                           source=args.embedding_source)
+    print('Loading embedding ', args_.embedding_name, ' from ',
+          args_.embedding_source)
+    token_embedding = nlp.embedding.create(args_.embedding_name,
+                                           source=args_.embedding_source)
 
-    if args.max_vocab_size:
+    if args_.max_vocab_size:
         token_embedding._idx_to_token = \
-            token_embedding._idx_to_token[:args.max_vocab_size]
+            token_embedding._idx_to_token[:args_.max_vocab_size]
         token_embedding._idx_to_vec = \
-            token_embedding._idx_to_vec[:args.max_vocab_size]
+            token_embedding._idx_to_vec[:args_.max_vocab_size]
         token_embedding._token_to_idx = {
             token: idx
             for idx, token in enumerate(token_embedding._idx_to_token)
         }
 
     similarity_results = evaluation.evaluate_similarity(
-        args, token_embedding, ctx, logfile=os.path.join(
-            args.logdir, 'similarity-{}.tsv'.format(args.embedding_name)))
+        args_, token_embedding, ctx, logfile=os.path.join(
+            args_.logdir, 'similarity-{}.tsv'.format(args_.embedding_name)))
     analogy_results = evaluation.evaluate_analogy(
-        args, token_embedding, ctx, logfile=os.path.join(
-            args.logdir, 'analogy-{}.tsv'.format(args.embedding_name)))
+        args_, token_embedding, ctx, logfile=os.path.join(
+            args_.logdir, 'analogy-{}.tsv'.format(args_.embedding_name)))

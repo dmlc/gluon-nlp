@@ -36,6 +36,7 @@ import gluonnlp as nlp
 
 
 def add_parameters(parser):
+    """Add evaluation specific parameters to parser."""
     group = parser.add_argument_group('Evaluation arguments')
 
     # Datasets
@@ -239,6 +240,7 @@ def evaluate_analogy(args, token_embedding, ctx, logfile=None):
 
 
 def log_similarity_result(logfile, result):
+    """Log a similarity evaluation result dictionary as TSV to logfile."""
     assert result['task'] == 'similarity'
 
     if not logfile:
@@ -258,6 +260,7 @@ def log_similarity_result(logfile, result):
 
 
 def log_analogy_result(logfile, result):
+    """Log a analogy evaluation result dictionary as TSV to logfile."""
     assert result['task'] == 'analogy'
 
     if not logfile:
