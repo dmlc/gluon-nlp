@@ -15,6 +15,7 @@ Language Modeling
     AWDRNN
     StandardRNN
     CacheCell
+    get_cache_model
 
 API Reference
 -------------

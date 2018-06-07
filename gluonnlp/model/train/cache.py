@@ -71,7 +71,7 @@ class CacheCell(Block):
         self._theta = theta
         self._lambdas = lambdas
         with self.name_scope():
-            self._lm_model = lm_model
+            self.lm_model = lm_model
 
     def save_params(self, filename):
         """Save parameters to file.
@@ -79,7 +79,7 @@ class CacheCell(Block):
         filename : str
             Path to file.
         """
-        self._lm_model.save_params(filename)
+        self.lm_model.save_params(filename)
 
     def load_params(self, filename, ctx=mx.cpu()): # pylint: disable=arguments-differ
         """Load parameters from file.
@@ -89,12 +89,12 @@ class CacheCell(Block):
         ctx : Context or list of Context, default cpu()
             Context(s) initialize loaded parameters on.
         """
-        self._lm_model.load_params(filename, ctx=ctx)
+        self.lm_model.load_params(filename, ctx=ctx)
 
     def begin_state(self, *args, **kwargs):
         """Initialize the hidden states.
         """
-        return self._lm_model.begin_state(*args, **kwargs)
+        return self.lm_model.begin_state(*args, **kwargs)
 
 
     def forward(self, inputs, target, next_word_history, cache_history, begin_state=None): # pylint: disable=arguments-differ
@@ -126,7 +126,7 @@ class CacheCell(Block):
             (size is equal to the window size)
         """
         output, hidden, encoder_hs, _ = \
-            super(self._lm_model.__class__, self._lm_model).\
+            super(self.lm_model.__class__, self.lm_model).\
                 forward(inputs, begin_state)
         encoder_h = encoder_hs[-1].reshape(-3, -2)
         output = output.reshape(-1, self._vocab_size)

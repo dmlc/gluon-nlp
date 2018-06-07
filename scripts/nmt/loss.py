@@ -58,6 +58,7 @@ class SoftmaxCEMaskedLoss(SoftmaxCELoss):
 # pylint: disable=unused-argument
 class _SmoothingWithDim(mx.operator.CustomOp):
     def __init__(self, epsilon=0.1, axis=-1):
+        super(_SmoothingWithDim, self).__init__(True)
         self._epsilon = epsilon
         self._axis = axis
 
@@ -125,7 +126,7 @@ class LabelSmoothing(HybridBlock):
         self._sparse_label = sparse_label
         self._units = units
 
-    def hybrid_forward(self, F, inputs, units=None):
+    def hybrid_forward(self, F, inputs, units=None): # pylint: disable=arguments-differ
         """
 
         Parameters

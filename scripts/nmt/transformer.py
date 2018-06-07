@@ -84,7 +84,8 @@ class PositionwiseFFN(HybridBlock):
             self.dropout_layer = nn.Dropout(dropout)
             self.layer_norm = nn.LayerNorm()
 
-    def hybrid_forward(self, F, inputs):  # pylint: disable=unused-argument
+    def hybrid_forward(self, F, inputs):  # pylint: disable=arguments-differ
+        # pylint: disable=unused-argument
         """Position-wise encoding of the inputs.
 
         Parameters
@@ -166,7 +167,8 @@ class TransformerEncoderCell(HybridBlock):
                                        bias_initializer=bias_initializer)
             self.layer_norm = nn.LayerNorm()
 
-    def hybrid_forward(self, F, inputs, mask=None):  # pylint: disable=unused-argument
+    def hybrid_forward(self, F, inputs, mask=None):  # pylint: disable=arguments-differ
+        # pylint: disable=unused-argument
         """Transformer Encoder Attention Cell.
 
         Parameters
@@ -275,6 +277,7 @@ class TransformerDecoderCell(HybridBlock):
             self.layer_norm_inter = nn.LayerNorm()
 
     def hybrid_forward(self, F, inputs, mem_value, mask=None, mem_mask=None):  #pylint: disable=unused-argument
+        #  pylint: disable=arguments-differ
         """Transformer Decoder Attention Cell.
 
         Parameters
@@ -396,7 +399,7 @@ class TransformerEncoder(HybridBlock, Seq2SeqEncoder):
                         output_attention=output_attention,
                         prefix='transformer%d_' % i))
 
-    def __call__(self, inputs, states=None, valid_length=None):
+    def __call__(self, inputs, states=None, valid_length=None): #pylint: disable=arguments-differ
         """Encoder the inputs given the states and valid sequence length.
 
         Parameters
@@ -662,7 +665,7 @@ class TransformerDecoder(HybridBlock, Seq2SeqDecoder):
                                         axis=1)
         return output, states, additional_outputs
 
-    def __call__(self, step_input, states):
+    def __call__(self, step_input, states): #pylint: disable=arguments-differ
         """One-step-ahead decoding of the Transformer decoder.
 
         Parameters
