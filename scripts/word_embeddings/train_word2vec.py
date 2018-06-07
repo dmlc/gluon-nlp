@@ -18,7 +18,6 @@
 # under the License.
 
 # pylint: disable=global-variable-undefined
-
 """Word2Vec embedding model
 ===========================
 
@@ -85,8 +84,8 @@ def parse_args():
     group.add_argument(
         '--no-static-alloc', action='store_true',
         help='Disable static memory allocation for HybridBlocks.')
-    group.add_argument('--sparse-grad', action='store_true',
-                       help='Enable sparse gradient support.')
+    group.add_argument('--no-sparse-grad', action='store_true',
+                       help='Disable sparse gradient support.')
 
     # Model
     group = parser.add_argument_group('Model arguments')
@@ -101,13 +100,13 @@ def parse_args():
 
     # Optimization options
     group = parser.add_argument_group('Optimization arguments')
-    group.add_argument('--optimizer', type=str, default='sgd')
+    group.add_argument('--optimizer', type=str, default='adagrad')
     group.add_argument('--lr', type=float, default=0.1)
     group.add_argument('--elementwise-clip-gradient', type=float, default=-1,
                        help='Clip embedding matrix gradients elementwise. '
                        'Disable by setting to a value <= 0.')
     group.add_argument(
-        '--groupwise-clip-gradient', type=float, default=1,
+        '--groupwise-clip-gradient', type=float, default=-1,
         help='Clip embedding matrix gradients '
         'such that the norm of the gradient for one embedding vector '
         'does not surpass --groupwise-clip-gradient.'
@@ -169,13 +168,13 @@ def train(args):
         num_tokens=len(vocab),
         embedding_size=args.emsize,
         weight_initializer=mx.init.Uniform(scale=1 / args.emsize),
-        sparse_grad=args.sparse_grad,
+        sparse_grad=not args.no_sparse_grad,
     )
     embedding_out = nlp.model.train.SimpleEmbeddingModel(
         num_tokens=len(vocab),
         embedding_size=args.emsize,
         weight_initializer=mx.init.Uniform(scale=1 / args.emsize),
-        sparse_grad=args.sparse_grad,
+        sparse_grad=not args.no_sparse_grad,
     )
     loss_function = gluon.loss.SigmoidBinaryCrossEntropyLoss()
 
@@ -226,41 +225,39 @@ def train(args):
             with mx.autograd.record():
                 if args.model.lower() == 'skipgram':
                     emb_in = embedding(center, center_mask)
-                    emb_out_pos = embedding_out(word_context,
-                                                word_context_mask)
-                    emb_out_neg = embedding_out(negatives,
-                                                mx.nd.ones_like(negatives))
+
+                    word_context_negatives = mx.nd.concat(
+                        word_context, negatives, dim=1)
+                    word_context_negatives_mask = mx.nd.concat(
+                        word_context_mask, mx.nd.ones_like(negatives), dim=1)
+
+                    emb_out = embedding_out(word_context_negatives,
+                                            word_context_negatives_mask)
 
                     # Compute loss
-                    pred_pos = mx.nd.batch_dot(
-                        emb_in.expand_dims(1), emb_out_pos.swapaxes(1, 2))
-                    pred_pos = pred_pos.squeeze() * word_context_mask
-                    pred_neg = mx.nd.batch_dot(
-                        emb_in.expand_dims(1), emb_out_neg.swapaxes(1, 2))
-                    pred_neg = pred_neg.squeeze()
-
-                    pred = mx.nd.concat(pred_pos, pred_neg, dim=1)
+                    pred = mx.nd.batch_dot(
+                        emb_in.expand_dims(1), emb_out.swapaxes(1, 2))
+                    pred = pred.squeeze() * word_context_negatives_mask
                     label = mx.nd.concat(word_context_mask,
-                                         mx.nd.zeros_like(pred_neg), dim=1)
+                                         mx.nd.zeros_like(negatives), dim=1)
 
                 elif args.model.lower() == 'cbow':
                     emb_in = embedding(word_context,
                                        word_context_mask).sum(axis=-2)
-                    emb_out_pos = embedding_out(center, center_mask)
-                    emb_out_neg = embedding_out(negatives,
-                                                mx.nd.ones_like(negatives))
+
+                    center_negatives = mx.nd.concat(center, negatives, dim=1)
+                    center_negatives_mask = mx.nd.concat(
+                        center_mask, mx.nd.ones_like(negatives), dim=1)
+
+                    emb_out = embedding_out(center_negatives,
+                                            center_negatives_mask)
 
                     # Compute loss
-                    pred_pos = mx.nd.batch_dot(
-                        emb_in.expand_dims(1), emb_out_pos.expand_dims(2))
-                    pred_pos = pred_pos.reshape((-1, 1))
-                    pred_neg = mx.nd.batch_dot(
-                        emb_in.expand_dims(1), emb_out_neg.swapaxes(1, 2))
-                    pred_neg = pred_neg.reshape((-1, args.negative))
-
-                    pred = mx.nd.concat(pred_pos, pred_neg, dim=1)
+                    pred = mx.nd.batch_dot(
+                        emb_in.expand_dims(1), emb_out.expand_dims(2))
+                    pred = pred.reshape((-1, 1 + args.negative))
                     label = mx.nd.concat(
-                        mx.nd.ones_like(pred_pos), mx.nd.zeros_like(pred_neg),
+                        mx.nd.ones_like(center), mx.nd.zeros_like(negatives),
                         dim=1)
 
                 else:
