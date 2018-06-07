@@ -20,10 +20,7 @@
 # pylint: disable=abstract-method
 """Trainable embedding models."""
 
-__all__ = [
-    'EmbeddingModel', 'SimpleEmbeddingModel', 'FasttextEmbeddingModel',
-    'DeduplicatedFasttextEmbeddingModel'
-]
+__all__ = ['EmbeddingModel', 'SimpleEmbeddingModel', 'FasttextEmbeddingModel']
 
 import numpy as np
 from mxnet import cpu, nd
@@ -286,92 +283,4 @@ class FasttextEmbeddingModel(EmbeddingModel, HybridBlock):
         wordsmask = F.expand_dims(wordsmask, axis=-1)
         embeddings = F.broadcast_mul(self.embedding(words), wordsmask)
         subword_embeddings = self.subword_embedding(subwords, subwordsmask)
-        return embeddings + subword_embeddings
-
-
-class DeduplicatedFasttextEmbeddingModel(EmbeddingModel):
-    """FastText embedding model.
-
-    A FasttextEmbeddingModel combines a word level embedding matrix and a
-    subword level embedding matrix.
-
-    DeduplicatedFasttextEmbeddingModel allows computing the sum of subword
-    embeddings only once for every unique word.
-
-    Parameters
-    ----------
-    num_tokens : int
-        Number of tokens in the vocabulary.
-    num_subwords : int
-        Number subwords.
-    embedding_size : int
-        Dimension of embeddings.
-    weight_initializer : mxnet.initializer.Initializer
-        Initializer for the embeddings and subword embeddings matrix.
-    sparse_grad : bool, default True
-        Specifies mxnet.gluon.nn.Embedding sparse_grad argument.
-
-    """
-
-    def __init__(self, num_tokens, num_subwords, embedding_size,
-                 weight_initializer, sparse_grad=True, **kwargs):
-        super(DeduplicatedFasttextEmbeddingModel, self).__init__(
-            embedding_size=embedding_size, **kwargs)
-        self.num_tokens = num_tokens
-        self.weight_initializer = weight_initializer
-        self.sparse_grad = sparse_grad
-
-        with self.name_scope():
-            self.embedding = nn.Embedding(
-                num_tokens,
-                embedding_size,
-                weight_initializer=weight_initializer,
-                sparse_grad=sparse_grad,
-            )
-            self.subword_embedding = _MaskedSumEmbedding(
-                num_subwords,
-                embedding_size,
-                weight_initializer=weight_initializer,
-                sparse_grad=sparse_grad,
-            )
-
-    def forward(self, words, wordsmask, unique_subwords, unique_subwordsmask,
-                words_to_unique_subwords_indices=None, F=nd):
-        """Compute embedding of words in batch.
-
-        Parameters
-        ----------
-        words : mx.nd.NDArray
-            Array of token indices.
-        wordsmask : mx.nd.NDArray
-            Mask for embeddings returend by the word level embedding operator.
-        unique_subwords : mx.nd.NDArray
-            The subwords associated with the unique tokens in `words`.
-        unique_subwordsmask : mx.nd.NDArray
-            A mask for the subword embeddings looked up from `unique_subwords`.
-            Applied before sum reducing the subword embeddings.
-        words_to_unique_subwords_indices : mx.nd.NDArray
-            The index in `unique_subwords` associated with each token in
-            `words`.
-
-        """
-
-        #pylint: disable=arguments-differ
-        wordsmask = F.expand_dims(wordsmask, axis=-1)
-        embeddings = F.broadcast_mul(self.embedding(words), wordsmask)
-
-        subword_embedding_weights = self.subword_embedding(
-            unique_subwords, unique_subwordsmask)
-
-        if words_to_unique_subwords_indices is None:
-            assert words.shape[0] == unique_subwords.shape[0]
-            words_to_unique_subwords_indices = nd.arange(
-                words.shape[0], ctx=words.context)
-
-        subword_embeddings = F.Embedding(
-            data=words_to_unique_subwords_indices,
-            weight=subword_embedding_weights,
-            input_dim=subword_embedding_weights.shape[0],
-            output_dim=self.embedding_size)
-
         return embeddings + subword_embeddings

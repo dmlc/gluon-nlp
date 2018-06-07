@@ -77,9 +77,6 @@ def parse_args():
     group.add_argument('--gpu', type=int, nargs='+',
                        help=('Number (index) of GPU to run on, e.g. 0. '
                              'If not specified, uses CPU.'))
-    group.add_argument('--no-deduplicate-subwords', action='store_true',
-                       help='Disable deduplication '
-                       'of words for subword computation in batch.')
     group.add_argument('--no-hybridize', action='store_true',
                        help='Disable hybridization of gluon HybridBlocks.')
     group.add_argument(
@@ -175,12 +172,7 @@ def save_params(args, embedding, embedding_out):
 def train(args):
     """Training helper."""
     coded_dataset, vocab, subword_vocab = get_train_data(args)
-    if args.no_deduplicate_subwords:
-        FasttextEmbeddingModel = nlp.model.FasttextEmbeddingModel
-    else:
-        FasttextEmbeddingModel = nlp.model.DeduplicatedFasttextEmbeddingModel
-
-    embedding = FasttextEmbeddingModel(
+    embedding = nlp.model.FasttextEmbeddingModel(
         num_tokens=len(vocab),
         num_subwords=len(subword_vocab),
         embedding_size=args.emsize,
@@ -231,25 +223,11 @@ def train(args):
             progress = (epoch * num_batches + i) / (args.epochs * num_batches)
             (center, word_context, word_context_mask) = batch
             if args.model.lower() == 'skipgram':
-                if args.no_deduplicate_subwords:
-                    subwords, subwords_mask = \
-                        subword_vocab.indices_to_subwordindices_mask(center)
-                else:
-                    unique, inverse_unique_indices = np.unique(
-                        center, return_inverse=True)
-                    subwords, subwords_mask = \
-                        subword_vocab.indices_to_subwordindices_mask(unique)
+                subwords, subwords_mask = \
+                    subword_vocab.indices_to_subwordindices_mask(center)
             elif args.model.lower() == 'cbow':
-                if args.no_deduplicate_subwords:
-                    subwords, subwords_mask = \
-                        subword_vocab.indices_to_subwordindices_mask(word_context)
-                else:
-                    unique, inverse_unique_indices = np.unique(
-                        word_context, return_inverse=True)
-                    inverse_unique_indices = inverse_unique_indices.reshape(
-                        word_context.shape)
-                    subwords, subwords_mask = \
-                        subword_vocab.indices_to_subwordindices_mask(unique)
+                subwords, subwords_mask = \
+                    subword_vocab.indices_to_subwordindices_mask(word_context)
             else:
                 logging.error('Unsupported model %s.', args.model)
                 sys.exit(1)
@@ -266,20 +244,11 @@ def train(args):
             word_context_mask = mx.nd.array(word_context_mask, ctx=context[0])
             negatives = mx.nd.array(negatives, ctx=context[0])
 
-            if not args.no_deduplicate_subwords:
-                inverse_unique_indices = mx.nd.array(inverse_unique_indices,
-                                                     ctx=context[0])
-
             with mx.autograd.record():
                 # Combine subword level embeddings with word embeddings
                 if args.model.lower() == 'skipgram':
-                    if args.no_deduplicate_subwords:
-                        emb_in = embedding(center, center_mask, subwords,
-                                           subwords_mask)
-                    else:
-                        emb_in = embedding(center, center_mask, subwords,
-                                           subwords_mask,
-                                           inverse_unique_indices)
+                    emb_in = embedding(center, center_mask, subwords,
+                                       subwords_mask)
                     emb_out_pos = embedding_out(word_context,
                                                 word_context_mask)
                     emb_out_neg = embedding_out(negatives,
@@ -297,15 +266,8 @@ def train(args):
                     label = mx.nd.concat(word_context_mask,
                                          mx.nd.zeros_like(pred_neg), dim=1)
                 elif args.model.lower() == 'cbow':
-                    if args.no_deduplicate_subwords:
-                        emb_in = embedding(word_context, word_context_mask,
-                                           subwords,
-                                           subwords_mask).sum(axis=-2)
-                    else:
-                        emb_in = embedding(
-                            word_context, word_context_mask, subwords,
-                            subwords_mask,
-                            inverse_unique_indices).sum(axis=-2)
+                    emb_in = embedding(word_context, word_context_mask,
+                                       subwords, subwords_mask).sum(axis=-2)
                     emb_out_pos = embedding_out(center, center_mask)
                     emb_out_neg = embedding_out(negatives,
                                                 mx.nd.ones_like(negatives))
