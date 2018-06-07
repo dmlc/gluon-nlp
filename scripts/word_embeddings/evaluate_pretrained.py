@@ -62,7 +62,7 @@ def get_args():
 
     # Computation options
     group = parser.add_argument_group('Computation arguments')
-    group.add_argument('--batch-size', type=int, default=32,
+    group.add_argument('--batch-size', type=int, default=1024,
                        help='Batch size to use on analogy task.'
                        'Decrease batch size if evaluation crashes.')
     group.add_argument('--gpu', type=int,

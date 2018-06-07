@@ -37,8 +37,6 @@ import logging
 import os
 import random
 import tempfile
-import time
-from contextlib import contextmanager
 
 import mxnet as mx
 from mxnet import gluon
@@ -49,22 +47,12 @@ from mxboard import SummaryWriter
 import gluonnlp as nlp
 
 import evaluation
-from utils import clip_embeddings_gradients, get_context
+from utils import clip_embeddings_gradients, get_context, print_time
 
 
 ###############################################################################
 # Utils
 ###############################################################################
-@contextmanager
-def print_time(task):
-    start_time = time.time()
-    logging.info('Starting to %s', task)
-    yield
-    logging.info('Finished to {} in {:.2f} seconds'.format(
-        task,
-        time.time() - start_time))
-
-
 def parse_args():
     """Parse command line arguments."""
     parser = argparse.ArgumentParser(
@@ -343,7 +331,8 @@ def train(args):
                 clip_embeddings_gradients(trainer._params,
                                           args.groupwise_clip_gradient)
 
-            trainer.set_learning_rate(args.lr * (1 - progress))
+            if args.optimizer != 'adagrad':
+                trainer.set_learning_rate(args.lr * (1 - progress))
             trainer.step(batch_size=1)
 
             # Logging
@@ -435,18 +424,18 @@ def evaluate(args, embedding, vocab, subword_function):
     """Evaluation helper"""
     if 'eval_tokens' not in globals():
         global eval_tokens
-        eval_tokens = list(evaluation.get_tokens_in_evaluation_datasets(args))
 
+        eval_tokens_set = evaluation.get_tokens_in_evaluation_datasets(args)
         if args.eval_analogy:
-            # TODO add words for the analogy task
-            pass
+            eval_tokens_set.update(vocab.idx_to_token)
+        eval_tokens = list(eval_tokens_set)
 
     # Compute their word vectors
     context = get_context(args)
     idx_to_token = eval_tokens
     mx.nd.waitall()
     token_embedding = embedding.to_token_embedding(
-        idx_to_token, vocab, subword_function, ctx=context[0])
+        idx_to_token, vocab.token_to_idx, subword_function, ctx=context[0])
 
     results = evaluation.evaluate_similarity(
         args, token_embedding, context[0], logfile=os.path.join(

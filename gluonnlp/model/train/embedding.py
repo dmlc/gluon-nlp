@@ -47,7 +47,7 @@ class EmbeddingModel(Block):
         super(EmbeddingModel, self).__init__(**kwargs)
         self.embedding_size = embedding_size
 
-    def _to_token_embedding_batch(self, batch, model_vocab,
+    def _to_token_embedding_batch(self, batch, token_to_idx,
                                   model_subwordfunction, unknown_behavior,
                                   ctx):
         # Handle subwords
@@ -75,17 +75,18 @@ class EmbeddingModel(Block):
 
         # Handle words
         if unknown_behavior == 'raise':
-            if any(token not in model_vocab for token in batch):
+            if any(token not in token_to_idx for token in batch):
                 raise ValueError
-            words = model_vocab[batch]
+            words = [token_to_idx[token] for token in batch]
             mask = nd.ones(shape=(len(words), ), ctx=ctx)
         if unknown_behavior == 'impute_raise':
             words = [
-                model_vocab[token] if token in model_vocab else 0
+                token_to_idx[token] if token in token_to_idx else 0
                 for token in batch
             ]
             mask = nd.array(
-                [1 if token in model_vocab else 0 for token in batch], ctx=ctx)
+                [1 if token in token_to_idx else 0 for token in batch],
+                ctx=ctx)
 
         words = nd.array(words, ctx=ctx)
 
@@ -95,9 +96,9 @@ class EmbeddingModel(Block):
         else:
             return self(words, mask)
 
-    def to_token_embedding(self, tokens, vocab, subword_function=None,
-                           unknown_behavior='impute_raise', batch_size=1024,
-                           ctx=cpu()):
+    def to_token_embedding(
+            self, tokens, model_token_to_idx, subword_function=None,
+            unknown_behavior='impute_raise', batch_size=1024, ctx=cpu()):
         """Computes a TokenEmbedding from the trained embedding model.
 
         Parameters
@@ -105,19 +106,20 @@ class EmbeddingModel(Block):
         tokens : list of str
             The tokens for which to add vectors to the resulting
             TokenEmbedding.
-        vocab : :class:`gluonnlp.Vocab` instance
-            The vocabulary of the `embedding_model`.
+        model_token_to_idx : :class:`dict` instance
+            The token_to_idx mapping used when training the `embedding_model`.
+            It contains all token-index pairs observed during training.
         subword_function : :class:`gluonnlp.vocab.SubwordFunction`, optional
             The subword vocabulary of the `EmbeddingModel`. Only needed if the
             `EmbeddingModel` makes use of subword information.
         unknown_behavior : ['impute_raise', 'raise'], default 'impute_raise'
-            How to handle tokens that are not in the `model_vocab`.
+            How to handle tokens that are not in the `model_token_to_idx`.
               - 'impute_raise' tries to impute an embedding based on the
                 subwords of the token as computed from `model_subwordfunction`.
                 If no subwords are associated with the respective token or
                 `model_subwordfunction` is None, a ValueError is raised. -
                 'raise' raises a ValueError if any token is not in
-                `model_vocab`.
+                `model_token_to_idx`.
         batch_size : int, default 1024
             Use batches of `batch_size` to compute the embeddings from the
             `embedding_model`.
@@ -137,7 +139,8 @@ class EmbeddingModel(Block):
         while True:
             batch = tokens[start_pointer:end_pointer]
             batch_embedding = self._to_token_embedding_batch(
-                batch, vocab, subword_function, unknown_behavior, ctx)
+                batch, model_token_to_idx, subword_function, unknown_behavior,
+                ctx)
             new_idx_to_vec.append(batch_embedding.as_in_context(cpu()))
 
             if end_pointer >= len(tokens):
@@ -161,14 +164,14 @@ class SimpleEmbeddingModel(EmbeddingModel, HybridBlock):
         Number of tokens in the vocabulary.
     embedding_size : int
         Dimension of embeddings.
-    weight_initializer : mxnet.initializer.Initializer
+    weight_initializer : mxnet.initializer.Initializer, optional
         Initializer for the embeddings matrix.
     sparse_grad : bool, default True
         Specifies mxnet.gluon.nn.Embedding sparse_grad argument.
 
     """
 
-    def __init__(self, num_tokens, embedding_size, weight_initializer,
+    def __init__(self, num_tokens, embedding_size, weight_initializer=None,
                  sparse_grad=True, **kwargs):
         super(SimpleEmbeddingModel,
               self).__init__(embedding_size=embedding_size, **kwargs)
@@ -198,7 +201,7 @@ class SimpleEmbeddingModel(EmbeddingModel, HybridBlock):
 
 
 class _MaskedSumEmbedding(HybridBlock):
-    def __init__(self, num_tokens, embedding_size, weight_initializer,
+    def __init__(self, num_tokens, embedding_size, weight_initializer=None,
                  sparse_grad=True, **kwargs):
         super(_MaskedSumEmbedding, self).__init__(**kwargs)
         self.num_tokens = num_tokens
@@ -235,7 +238,7 @@ class FasttextEmbeddingModel(EmbeddingModel):
         Number subwords.
     embedding_size : int
         Dimension of embeddings.
-    weight_initializer : mxnet.initializer.Initializer
+    weight_initializer : mxnet.initializer.Initializer, optional
         Initializer for the embeddings and subword embeddings matrix.
     sparse_grad : bool, default True
         Specifies mxnet.gluon.nn.Embedding sparse_grad argument.
@@ -243,7 +246,7 @@ class FasttextEmbeddingModel(EmbeddingModel):
     """
 
     def __init__(self, num_tokens, num_subwords, embedding_size,
-                 weight_initializer, sparse_grad=True, **kwargs):
+                 weight_initializer=None, sparse_grad=True, **kwargs):
         super(FasttextEmbeddingModel,
               self).__init__(embedding_size=embedding_size, **kwargs)
         self.num_tokens = num_tokens

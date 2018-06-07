@@ -21,6 +21,10 @@
 
 """
 
+import logging
+import time
+from contextlib import contextmanager
+
 import mxnet as mx
 
 
@@ -53,3 +57,12 @@ def get_context(args):
     else:
         context = [mx.gpu(int(i)) for i in args.gpu]
     return context
+
+@contextmanager
+def print_time(task):
+    start_time = time.time()
+    logging.info('Starting to %s', task)
+    yield
+    logging.info('Finished to {} in {:.2f} seconds'.format(
+        task,
+        time.time() - start_time))

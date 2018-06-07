@@ -110,7 +110,6 @@ def iterate_analogy_datasets(args):
 
     """
     for dataset_name in args.analogy_datasets:
-        logging.info('Starting evaluation of %s', dataset_name)
         parameters = nlp.data.list_datasets(dataset_name)
         for key_values in itertools.product(*parameters.values()):
             kwargs = dict(zip(parameters.keys(), key_values))
@@ -119,7 +118,6 @@ def iterate_analogy_datasets(args):
 
 def get_tokens_in_evaluation_datasets(args):
     """Returns a set of all tokens occuring the evaluation datasets."""
-
     tokens = set()
     for _, _, dataset in iterate_similarity_datasets(args):
         tokens.update(
