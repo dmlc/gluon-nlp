@@ -162,13 +162,13 @@ def save_params(args, embedding, embedding_out):
 def train(args):
     """Training"""
     coded_dataset, vocab = get_train_data()
-    embedding = nlp.model.SimpleEmbeddingModel(
+    embedding = nlp.model.train.SimpleEmbeddingModel(
         num_tokens=len(vocab),
         embedding_size=args.emsize,
         weight_initializer=mx.init.Uniform(scale=1 / args.emsize),
         sparse_grad=args.sparse_grad,
     )
-    embedding_out = nlp.model.SimpleEmbeddingModel(
+    embedding_out = nlp.model.train.SimpleEmbeddingModel(
         num_tokens=len(vocab),
         embedding_size=args.emsize,
         weight_initializer=mx.init.Uniform(scale=1 / args.emsize),

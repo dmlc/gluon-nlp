@@ -18,11 +18,7 @@
 # under the License.
 
 # pylint: disable=
-"""Word embedding training.
-
-Datasets and samplers for training of embedding models.
-
-"""
+"""Word embedding training datasets."""
 
 __all__ = ['Text8']
 

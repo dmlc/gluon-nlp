@@ -26,8 +26,8 @@ import numpy as np
 from mxnet import cpu, nd
 from mxnet.gluon import Block, HybridBlock, nn
 
-from .. import embedding as emb
-from ..data.batchify import Pad
+from ... import embedding as emb
+from ...data.batchify import Pad
 
 
 class EmbeddingModel(Block):
@@ -47,12 +47,13 @@ class EmbeddingModel(Block):
         super(EmbeddingModel, self).__init__(**kwargs)
         self.embedding_size = embedding_size
 
-    def _to_token_embedding_batch(self, batch, model_vocab, model_subwordvocab,
-                                  unknown_behavior, ctx):
+    def _to_token_embedding_batch(self, batch, model_vocab,
+                                  model_subwordfunction, unknown_behavior,
+                                  ctx):
         # Handle subwords
         subword_padding = Pad(pad_val=-1)
-        if model_subwordvocab is not None:
-            subwords = model_subwordvocab.words_to_subwordindices(batch)
+        if model_subwordfunction is not None:
+            subwords = model_subwordfunction(batch)
             subwords = subword_padding(subwords)
             subwords_mask = subwords != -1
             subwords += subwords == -1  # -1 is invalid. Change to 0
@@ -89,12 +90,12 @@ class EmbeddingModel(Block):
         words = nd.array(words, ctx=ctx)
 
         # Compute embeddings
-        if model_subwordvocab is not None:
+        if model_subwordfunction is not None:
             return self(words, mask, subwords, subwords_mask)
         else:
             return self(words, mask)
 
-    def to_token_embedding(self, tokens, vocab, subword_vocab=None,
+    def to_token_embedding(self, tokens, vocab, subword_function=None,
                            unknown_behavior='impute_raise', batch_size=1024,
                            ctx=cpu()):
         """Computes a TokenEmbedding from the trained embedding model.
@@ -106,16 +107,16 @@ class EmbeddingModel(Block):
             TokenEmbedding.
         vocab : :class:`gluonnlp.Vocab` instance
             The vocabulary of the `embedding_model`.
-        subword_vocab : :class:`gluonnlp.vocab.SubwordVocab`, optional
+        subword_function : :class:`gluonnlp.vocab.SubwordFunction`, optional
             The subword vocabulary of the `EmbeddingModel`. Only needed if the
             `EmbeddingModel` makes use of subword information.
         unknown_behavior : ['impute_raise', 'raise'], default 'impute_raise'
             How to handle tokens that are not in the `model_vocab`.
               - 'impute_raise' tries to impute an embedding based on the
-                subwords of the token as computed from `model_subwordvocab`. If
-                no subwords are associated with the respective token or
-                `model_subwordvocab` is None, a ValueError is raised.
-              - 'raise' raises a ValueError if any token is not in
+                subwords of the token as computed from `model_subwordfunction`.
+                If no subwords are associated with the respective token or
+                `model_subwordfunction` is None, a ValueError is raised. -
+                'raise' raises a ValueError if any token is not in
                 `model_vocab`.
         batch_size : int, default 1024
             Use batches of `batch_size` to compute the embeddings from the
@@ -136,7 +137,7 @@ class EmbeddingModel(Block):
         while True:
             batch = tokens[start_pointer:end_pointer]
             batch_embedding = self._to_token_embedding_batch(
-                batch, vocab, subword_vocab, unknown_behavior, ctx)
+                batch, vocab, subword_function, unknown_behavior, ctx)
             new_idx_to_vec.append(batch_embedding.as_in_context(cpu()))
 
             if end_pointer >= len(tokens):

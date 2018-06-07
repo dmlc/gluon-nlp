@@ -23,10 +23,9 @@
 from __future__ import absolute_import
 from __future__ import print_function
 
-__all__ = ['Vocab', 'SubwordVocab']
+__all__ = ['Vocab', 'SubwordFunction']
 
 import json
-import logging
 import warnings
 
 from mxnet import nd, registry
@@ -474,187 +473,39 @@ class Vocab(object):
 
 
 ###############################################################################
-# Subword level vocabulary
-###############################################################################
-class SubwordVocab(object):
-    """Precomputed token index to subword unit mapping.
-
-    Parameters
-    ----------
-    idx_to_token : list of str
-        Known tokens for which the subword units should be precomputed.
-    subword_function
-        Callable to map tokens to lists of subword indices. Can be created with
-        nlp.vocab.create. List available subword functions with
-        nlp.vocab.list_sources.
-
-    """
-
-    def __init__(self, idx_to_token, subword_function):
-        self.idx_to_token = idx_to_token
-        self.subword_function = subword_function
-
-        self._precompute_idx_to_subwordidxs()
-
-    def _precompute_idx_to_subwordidxs(self):
-        # Precompute a idx to subwordidxs mapping to support fast lookup
-        idx_to_subwordidxs = list(self.subword_function(self.idx_to_token))
-        max_subwordidxs_len = max(len(s) for s in idx_to_subwordidxs)
-        self.idx_to_subwordidxs_list = idx_to_subwordidxs
-
-        # Padded max_subwordidxs_len + 1 so each row contains at least one -1
-        # element which can be found by np.argmax below.
-        self.idx_to_subwordidxs = np.stack(
-            np.pad(b, (0, max_subwordidxs_len - len(b) + 1), \
-                   constant_values=-1, mode='constant')
-            for b in idx_to_subwordidxs).astype(np.float32)
-
-        logging.info('Constructing subword vocabulary with %s. '
-                     'The word with largest number of subwords '
-                     'has %s subwords.', self.subword_function,
-                     max_subwordidxs_len)
-
-    def indices_to_subwordindices(self, indices):
-        """Return list of lists of subwordindices for indices.
-
-        Parameters
-        ----------
-        indices : iterable of int
-            Token indices that should be mapped to subword indices.
-
-        Returns
-        -------
-        List of variable length lists of subword indices.
-
-        """
-
-        return [self.idx_to_subwordidxs_list[i] for i in indices]
-
-    def indices_to_subwordindices_mask(self, indices):
-        """Return array of subwordindices for indices.
-
-        A padded numpy array and a mask is returned. The mask is used as
-        indices map to varying length subwords.
-
-        Parameters
-        ----------
-        indices : list of int, numpy array or mxnet NDArray
-            Token indices that should be mapped to subword indices.
-
-        Returns
-        -------
-        Array of subword indices.
-
-        """
-        if isinstance(indices, nd.NDArray):
-            indices = indices.asnumpy().astype(np.int)
-        else:
-            indices = np.array(indices, dtype=np.int)
-        subwords = self.idx_to_subwordidxs[indices]
-        mask = np.zeros_like(subwords)
-        mask += subwords != -1
-        subwords += subwords == -1
-        lengths = np.argmax(subwords == -1, axis=1)
-
-        new_length = max(np.max(lengths), 1)  # Return at least 1
-        subwords = subwords[:, :new_length]
-        mask = mask[:, :new_length]
-
-        return subwords, mask
-
-    def words_to_subwordindices(self, words):
-        """Return list of lists of subwordindices for words.
-
-        Parameters
-        ----------
-        indices : iterable of str
-            Words that should be mapped to subword indices.
-
-        Returns
-        -------
-        List of variable length lists of subword indices.
-
-        """
-
-        subwordindices = list(self.subword_function(words))
-        return subwordindices
-
-    def subwordindices_to_subwords(self, subwordindices):
-        """Return list of subwords associated with subword indices.
-
-        This may raise RuntimeError if the subword function is not invertible.
-
-        Parameters
-        ----------
-        subwordindices : iterable of int
-            Subword indices to look up.
-
-        Returns
-        -------
-        Iterable of str.
-
-        """
-
-        subwordindices = subwordindices
-        return self.subword_function.indices_to_subwords(subwordindices)
-
-    def subwords_to_subwordindices(self, subwords):
-        """Return list of subwordindices associated with subwords.
-
-        Parameters
-        ----------
-        subwords : iterable of str
-            Subwords to replace by indices.
-
-        Returns
-        -------
-        Iterable of int.
-
-        """
-        return self.subword_function.subwords_to_subwordindices(subwords)
-
-    def __len__(self):
-        return len(self.subword_function)
-
-    def to_json(self):
-        """Serialize subword vocab object to json string."""
-        dict_ = {}
-        try:
-            dict_['subwordidx_to_subword'] = \
-                self.subword_function.indices_to_subwords(
-                    list(range(len(self.subword_function))))
-        except RuntimeError:
-            # Not all subword functions are invertible
-            pass
-        return json.dumps(dict_)
-
-
-###############################################################################
 # Subword functions and registry
 ###############################################################################
-def register(subword_cls):
+def register_subword_function(subword_cls):
     """Registers a new subword function."""
     register_text_embedding = registry.get_register_func(
-        _SubwordFunction, 'subword function')
+        SubwordFunction, 'subword function')
     return register_text_embedding(subword_cls)
 
 
-def create(subword_function_name, **kwargs):
+def create_subword_function(subword_function_name, **kwargs):
     """Creates an instance of a subword function."""
 
-    create_ = registry.get_create_func(_SubwordFunction, 'token embedding')
+    create_ = registry.get_create_func(SubwordFunction, 'token embedding')
     return create_(subword_function_name, **kwargs)
 
 
-def list_sources():
+def list_subword_functions():
     """Get valid subword function names."""
-    reg = registry.get_registry(_SubwordFunction)
+    reg = registry.get_registry(SubwordFunction)
     return list(reg.keys())
 
 
-class _SubwordFunction(object):
+class SubwordFunction(object):
+    """A SubwordFunction maps words to lists of subword indices.
+
+    This class is abstract and to be subclassed. Use
+    gluonnlp.vocab.list_subword_functions to list all available subword
+    functions.
+
+    """
+
     def __call__(self, words):
-        """Return a generator over subwords in the given word."""
+        """Return a list of lists of subwordindices for the given words."""
         raise NotImplementedError
 
     def __len__(self):
@@ -694,8 +545,8 @@ class _SubwordFunction(object):
         raise NotImplementedError
 
 
-@register
-class ByteSubwords(_SubwordFunction):
+@register_subword_function
+class ByteSubwords(SubwordFunction):
     """Map words to a list of bytes.
 
     Parameters
@@ -704,14 +555,15 @@ class ByteSubwords(_SubwordFunction):
         Encoding to use for obtaining bytes.
 
     """
+
     def __init__(self, encoding='utf-8'):
         self.encoding = encoding
 
     def __call__(self, words):
-        generator = (np.frombuffer(word.encode(self.encoding),
-                                   dtype=np.uint8).astype(np.int_)
-                     for word in words)
-        return generator
+        return [
+            np.frombuffer(word.encode(self.encoding), dtype=np.uint8).astype(
+                np.int_) for word in words
+        ]
 
     def __len__(self):
         return 256
@@ -752,8 +604,8 @@ class ByteSubwords(_SubwordFunction):
         return subwords
 
 
-@register
-class NGramHashes(_SubwordFunction):
+@register_subword_function
+class NGramHashes(SubwordFunction):
     """Map words to a list of hashes in a restricted domain.
 
     The hash function is the same as in
@@ -767,6 +619,7 @@ class NGramHashes(_SubwordFunction):
         n-s for which to hash the ngrams
 
     """
+
     def __init__(self, num_subwords, ngrams=(3, 4, 5, 6)):
         self.num_subwords = num_subwords
         self.ngrams = ngrams
@@ -791,12 +644,13 @@ class NGramHashes(_SubwordFunction):
                  for i in range((len(word) + 2) - N + 1)) for word in words)
 
     def __call__(self, words):
-        generator = (np.array([
-            self.fasttext_hash_asbytes(
-                ('<' + word + '>')[i:i + N]) % self.num_subwords
-            for N in self.ngrams for i in range((len(word) + 2) - N + 1)
-        ]) for word in words)
-        return generator
+        return [
+            np.array([
+                self.fasttext_hash_asbytes(
+                    ('<' + word + '>')[i:i + N]) % self.num_subwords
+                for N in self.ngrams for i in range((len(word) + 2) - N + 1)
+            ]) for word in words
+        ]
 
     def __len__(self):
         return self.num_subwords

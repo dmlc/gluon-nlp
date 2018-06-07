@@ -147,12 +147,25 @@ def get_train_data(args):
         ] for sentence in dataset]
 
     with print_time('prepare subwords'):
-        subword_function = nlp.vocab.create('NGramHashes', ngrams=args.ngrams,
-                                            num_subwords=args.ngram_buckets)
-        subword_vocab = nlp.SubwordVocab(idx_to_token=vocab.idx_to_token,
-                                         subword_function=subword_function)
+        subword_function = nlp.vocab.create_subword_function(
+            'NGramHashes', ngrams=args.ngrams, num_subwords=args.ngram_buckets)
 
-    return coded_dataset, vocab, subword_vocab
+        # Precompute a idx to subwordidxs mapping to support fast lookup
+        idx_to_subwordidxs = list(subword_function(vocab.idx_to_token))
+        max_subwordidxs_len = max(len(s) for s in idx_to_subwordidxs)
+
+        # Padded max_subwordidxs_len + 1 so each row contains at least one -1
+        # element which can be found by np.argmax below.
+        idx_to_subwordidxs = np.stack(
+            np.pad(b, (0, max_subwordidxs_len - len(b) + 1), \
+                   constant_values=-1, mode='constant')
+            for b in idx_to_subwordidxs).astype(np.float32)
+
+        logging.info('Using %s to obtain subwords. '
+                     'The word with largest number of subwords '
+                     'has %s subwords.', subword_function, max_subwordidxs_len)
+
+    return coded_dataset, vocab, subword_function, idx_to_subwordidxs
 
 
 def save_params(args, embedding, embedding_out):
@@ -166,20 +179,54 @@ def save_params(args, embedding, embedding_out):
     os.replace(path, os.path.join(args.logdir, 'embedding_out.params'))
 
 
+def indices_to_subwordindices_mask(indices, idx_to_subwordidxs):
+    """Return array of subwordindices for indices.
+
+    A padded numpy array and a mask is returned. The mask is used as
+    indices map to varying length subwords.
+
+    Parameters
+    ----------
+    indices : list of int, numpy array or mxnet NDArray
+        Token indices that should be mapped to subword indices.
+
+    Returns
+    -------
+    Array of subword indices.
+
+    """
+    if isinstance(indices, mx.nd.NDArray):
+        indices = indices.asnumpy().astype(np.int)
+    else:
+        indices = np.array(indices, dtype=np.int)
+    subwords = idx_to_subwordidxs[indices]
+    mask = np.zeros_like(subwords)
+    mask += subwords != -1
+    subwords += subwords == -1
+    lengths = np.argmax(subwords == -1, axis=1)
+
+    new_length = max(np.max(lengths), 1)  # Return at least 1
+    subwords = subwords[:, :new_length]
+    mask = mask[:, :new_length]
+
+    return subwords, mask
+
+
 ###############################################################################
 # Training code
 ###############################################################################
 def train(args):
     """Training helper."""
-    coded_dataset, vocab, subword_vocab = get_train_data(args)
-    embedding = nlp.model.FasttextEmbeddingModel(
+    coded_dataset, vocab, subword_function, idx_to_subwordidxs = \
+        get_train_data(args)
+    embedding = nlp.model.train.FasttextEmbeddingModel(
         num_tokens=len(vocab),
-        num_subwords=len(subword_vocab),
+        num_subwords=len(subword_function),
         embedding_size=args.emsize,
         weight_initializer=mx.init.Uniform(scale=1 / args.emsize),
         sparse_grad=args.sparse_grad,
     )
-    embedding_out = nlp.model.SimpleEmbeddingModel(
+    embedding_out = nlp.model.train.SimpleEmbeddingModel(
         num_tokens=len(vocab),
         embedding_size=args.emsize,
         weight_initializer=mx.init.Uniform(scale=1 / args.emsize),
@@ -224,10 +271,11 @@ def train(args):
             (center, word_context, word_context_mask) = batch
             if args.model.lower() == 'skipgram':
                 subwords, subwords_mask = \
-                    subword_vocab.indices_to_subwordindices_mask(center)
+                    indices_to_subwordindices_mask(center, idx_to_subwordidxs)
             elif args.model.lower() == 'cbow':
                 subwords, subwords_mask = \
-                    subword_vocab.indices_to_subwordindices_mask(word_context)
+                    indices_to_subwordindices_mask(word_context,
+                                                   idx_to_subwordidxs)
             else:
                 logging.error('Unsupported model %s.', args.model)
                 sys.exit(1)
@@ -302,13 +350,13 @@ def train(args):
                     mx.nd.waitall()
 
                 log(args, sw, embedding, embedding_out, loss, num_update,
-                    vocab, subword_vocab)
+                    vocab, subword_function)
 
         # Log at the end of every epoch
         with print_time('mx.nd.waitall()'):
             mx.nd.waitall()
         log(args, sw, embedding, embedding_out, loss, num_update, vocab,
-            subword_vocab)
+            subword_function)
 
         # Save params at end of epoch
         save_params(args, embedding, embedding_out)
@@ -317,7 +365,7 @@ def train(args):
 
 
 def log(args, sw, embedding, embedding_out, loss, num_update, vocab,
-        subword_vocab):
+        subword_function):
     """Logging helper"""
     context = get_context(args)
 
@@ -368,7 +416,7 @@ def log(args, sw, embedding, embedding_out, loss, num_update, vocab,
         sw.add_scalar(tag='loss', value=loss.mean().asscalar(),
                       global_step=num_update)
 
-    results = evaluate(args, embedding, vocab, subword_vocab)
+    results = evaluate(args, embedding, vocab, subword_function)
     for result in results:
         tag = result['dataset_name'] + '_' + str(result['dataset_kwargs'])
         if result['task'] == 'analogy':
@@ -381,7 +429,7 @@ def log(args, sw, embedding, embedding_out, loss, num_update, vocab,
     sw.flush()
 
 
-def evaluate(args, embedding, vocab, subword_vocab):
+def evaluate(args, embedding, vocab, subword_function):
     """Evaluation helper"""
     if 'eval_tokens' not in globals():
         global eval_tokens
@@ -396,7 +444,7 @@ def evaluate(args, embedding, vocab, subword_vocab):
     idx_to_token = eval_tokens
     mx.nd.waitall()
     token_embedding = embedding.to_token_embedding(
-        idx_to_token, vocab, subword_vocab, ctx=context[0])
+        idx_to_token, vocab, subword_function, ctx=context[0])
 
     results = evaluation.evaluate_similarity(
         args, token_embedding, context[0], logfile=os.path.join(
