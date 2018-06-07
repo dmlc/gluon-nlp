@@ -272,6 +272,7 @@ def train(args):
             num_update += len(center)
 
             # To GPU
+            mx.nd.waitall()  # waitall() until mxnet #11041 is merged
             center = mx.nd.array(center, ctx=context[0])
             center_mask = mx.nd.ones((center.shape[0], ), ctx=center.context)
             subwords = mx.nd.array(subwords, ctx=context[0])
