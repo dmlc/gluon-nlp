@@ -18,8 +18,8 @@ Use the following command to train the Transformer model on the WMT16 dataset fo
 .. code-block:: console
 
    $ python train_transformer.py --src_lang en --tgt_lang de --batch_size 4096 \
-                          --optimizer adam --num_accumulated 8 --lr 1.0 \
-                          --save_dir transformer_en_de_u512 --epochs 50 --gpus 0,1,2,3
-                          --average_checkpoint True --num_averages 10
+                          --optimizer adam --num_accumulated 8 --lr 1.0 --warmup_steps 8000 \
+                          --save_dir transformer_en_de_u512 --epochs 40 --gpus 0,1,2,3
+                          --average_checkpoint True --num_averages 5 --num_buckets 20
 
-It gets test BLEU score equals to 27.73 on newstest2014.
+It gets test BLEU score equals to 27.79 on newstest2014.

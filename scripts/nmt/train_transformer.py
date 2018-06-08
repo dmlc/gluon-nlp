@@ -523,9 +523,8 @@ def train():
                 for c in ctx:
                     v.data(c)[:] += alpha * (params[k].as_in_context(c) - v.data(c))
     elif args.average_start > 0:
-        for k, v in model.collect_params.items():
-            for c in ctx:
-                v.data(c)[:] = average_param_dict[k].as_in_context(c)
+        for k, v in model.collect_params().items():
+            v.set_data(average_param_dict[k])
     else:
         model.load_params(os.path.join(args.save_dir, 'valid_best.params'), ctx)
     valid_loss, valid_translation_out = evaluate(val_data_loader, ctx[0])
