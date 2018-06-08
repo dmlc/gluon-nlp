@@ -126,13 +126,18 @@ def get_train_data():
     vocab = nlp.Vocab(counter, unknown_token=None, padding_token=None,
                       bos_token=None, eos_token=None, min_freq=5)
 
+    negatives_weights = mx.nd.array(
+        [counter[w] for w in vocab.idx_to_token])**0.75
+    negatives_sampler = nlp.data.UnigramCandidateSampler(
+        weights=negatives_weights)
+
     # Skip "unknown" tokens
     with print_time('code dataset'):
         coded_dataset = [[
             vocab[token] for token in sentence if token in vocab
         ] for sentence in dataset]
 
-    return coded_dataset, vocab
+    return coded_dataset, negatives_sampler, vocab
 
 
 def save_params(args, embedding, embedding_out):
@@ -151,7 +156,7 @@ def save_params(args, embedding, embedding_out):
 ###############################################################################
 def train(args):
     """Training"""
-    coded_dataset, vocab = get_train_data()
+    coded_dataset, negatives_sampler, vocab = get_train_data()
     embedding = nlp.model.train.SimpleEmbeddingModel(
         num_tokens=len(vocab),
         embedding_size=args.emsize,
@@ -190,15 +195,11 @@ def train(args):
         context_sampler = nlp.data.ContextSampler(coded=coded_dataset,
                                                   batch_size=args.batch_size,
                                                   window=args.window)
-        negatives_sampler = nlp.data.NegativeSampler(
-            num_samples=context_sampler.num_samples,
-            batch_size=args.batch_size, vocab=vocab, negative=args.negative)
         num_batches = len(context_sampler)
 
-        for i, (batch, negatives) in tqdm.tqdm(
-                enumerate(zip(context_sampler,
-                              negatives_sampler)), total=num_batches,
-                ascii=True, smoothing=1, dynamic_ncols=True):
+        for i, batch in tqdm.tqdm(
+                enumerate(context_sampler), total=num_batches, ascii=True,
+                smoothing=1, dynamic_ncols=True):
             progress = (epoch * num_batches + i) / (args.epochs * num_batches)
             (center, word_context, word_context_mask) = batch
             num_update += len(center)
@@ -208,7 +209,9 @@ def train(args):
             center_mask = mx.nd.ones((center.shape[0], ), ctx=center.context)
             word_context = mx.nd.array(word_context, ctx=context[0])
             word_context_mask = mx.nd.array(word_context_mask, ctx=context[0])
-            negatives = mx.nd.array(negatives, ctx=context[0])
+            negatives = negatives_sampler(center.shape[0] * args.negative) \
+                .reshape((center.shape[0], args.negative)) \
+                .as_in_context(context[0])
 
             with mx.autograd.record():
                 if args.model.lower() == 'skipgram':

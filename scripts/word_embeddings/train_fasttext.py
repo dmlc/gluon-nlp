@@ -130,6 +130,11 @@ def get_train_data(args):
     vocab = nlp.Vocab(counter, unknown_token=None, padding_token=None,
                       bos_token=None, eos_token=None, min_freq=5)
 
+    negatives_weights = mx.nd.array(
+        [counter[w] for w in vocab.idx_to_token])**0.75
+    negatives_sampler = nlp.data.UnigramCandidateSampler(
+        weights=negatives_weights)
+
     # Skip "unknown" tokens
     with print_time('code dataset'):
         coded_dataset = [[
@@ -155,7 +160,8 @@ def get_train_data(args):
                      'The word with largest number of subwords '
                      'has %s subwords.', subword_function, max_subwordidxs_len)
 
-    return coded_dataset, vocab, subword_function, idx_to_subwordidxs
+    return (coded_dataset, negatives_sampler, vocab, subword_function,
+            idx_to_subwordidxs)
 
 
 def save_params(args, embedding, embedding_out):
@@ -207,8 +213,8 @@ def indices_to_subwordindices_mask(indices, idx_to_subwordidxs):
 ###############################################################################
 def train(args):
     """Training helper."""
-    coded_dataset, vocab, subword_function, idx_to_subwordidxs = \
-        get_train_data(args)
+    coded_dataset, negatives_sampler, vocab, subword_function, \
+        idx_to_subwordidxs = get_train_data(args)
     embedding = nlp.model.train.FasttextEmbeddingModel(
         num_tokens=len(vocab),
         num_subwords=len(subword_function),
@@ -248,17 +254,14 @@ def train(args):
         context_sampler = nlp.data.ContextSampler(coded=coded_dataset,
                                                   batch_size=args.batch_size,
                                                   window=args.window)
-        negatives_sampler = nlp.data.NegativeSampler(
-            num_samples=context_sampler.num_samples,
-            batch_size=args.batch_size, vocab=vocab, negative=args.negative)
         num_batches = len(context_sampler)
 
-        for i, (batch, negatives) in tqdm.tqdm(
-                enumerate(zip(context_sampler,
-                              negatives_sampler)), total=num_batches,
-                ascii=True, smoothing=1, dynamic_ncols=True):
+        for i, batch in tqdm.tqdm(
+                enumerate(context_sampler), total=num_batches, ascii=True,
+                smoothing=1, dynamic_ncols=True):
             progress = (epoch * num_batches + i) / (args.epochs * num_batches)
             (center, word_context, word_context_mask) = batch
+
             if args.model.lower() == 'skipgram':
                 subwords, subwords_mask = \
                     indices_to_subwordindices_mask(center, idx_to_subwordidxs)
@@ -281,7 +284,9 @@ def train(args):
                                             context[0])
             word_context = mx.nd.array(word_context, ctx=context[0])
             word_context_mask = mx.nd.array(word_context_mask, ctx=context[0])
-            negatives = mx.nd.array(negatives, ctx=context[0])
+            negatives = negatives_sampler(center.shape[0] * args.negative) \
+                .reshape((center.shape[0], args.negative)) \
+                .as_in_context(context[0])
 
             with mx.autograd.record():
                 # Combine subword level embeddings with word embeddings

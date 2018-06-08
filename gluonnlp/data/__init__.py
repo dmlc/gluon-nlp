@@ -28,6 +28,8 @@ from .transforms import *
 
 from .sampler import *
 
+from .candidate_sampler import *
+
 from .dataset import *
 
 from .language_model import *

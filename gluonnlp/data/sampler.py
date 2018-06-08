@@ -19,9 +19,10 @@
 """Samplers. They define how the samples in a dataset will be iterated
 (e.g. in the order sorted by length). They can also be used to perform bucketing
 for speeding up the processing of variable-length sequences."""
+
 __all__ = [
     'SortedSampler', 'FixedBucketSampler', 'SortedBucketSampler',
-    'ContextSampler', 'NegativeSampler'
+    'ContextSampler'
 ]
 
 import math
@@ -339,60 +340,6 @@ class SortedBucketSampler(Sampler):
 
     def __len__(self):
         return (len(self._sort_keys) + self._batch_size - 1) // self._batch_size
-
-
-class NegativeSampler(Sampler):
-    """Sampler for drawing negatives from a smoothed unigram distribution.
-
-    Parameters
-    ----------
-    vocab : Vocab
-        The vocabulary specifies the set of tokens and their frequencies from
-        which the smoothed unigram distribution is computed.
-    batch_size : int
-        Maximum size of batches. Actual batch returned can be smaller when
-        running out of samples.
-    num_samples : int
-        Total number of samples that will be iterated over in batches.
-    negative : int, default 5
-        The number of negative samples to draw.
-    power : float, default 0.75
-        Smoothing factor.
-
-    """
-
-    def __init__(self, vocab, batch_size, num_samples, negative=5, power=0.75):
-        self.vocab = vocab
-        self.batch_size = batch_size
-        self.num_samples = num_samples
-        self.negative = negative
-        self.power = power
-
-        # Smoothed unigram counts for negative sampling. Negatives can be drawn
-        # by sampling a number in [0, self._smoothed_cumsum[-1]) and finding
-        # the respective index with np.searchsorted.
-        self._smoothed_token_freq_cumsum = np.cumsum((np.array(
-            vocab.idx_to_counts)**self.power).astype(np.int))
-
-    def __len__(self):
-        return math.ceil(self.num_samples / float(self.batch_size))
-
-    def __iter__(self):
-        def _generator():
-            pointer = 0
-            while True:
-                size = min(self.batch_size, self.num_samples - pointer)
-                yield np.searchsorted(self._smoothed_token_freq_cumsum,
-                                      np.random.randint(
-                                          self._smoothed_token_freq_cumsum[-1],
-                                          size=(size,
-                                                self.negative)))
-                pointer += size
-
-                if pointer == self.num_samples:
-                    break
-
-        return _generator()
 
 
 class ContextSampler(Sampler):
