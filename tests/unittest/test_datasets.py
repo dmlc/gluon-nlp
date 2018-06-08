@@ -489,11 +489,14 @@ def test_wmt2014bpe():
 # Question answering
 ###############################################################################
 def test_load_dev_squad():
-    dataset = nlp.data.SQuAD(segment='dev', root=os.path.join('tests', 'data', 'squad'))
-
     # number of records in dataset is equal to number of different questions
-    assert len(dataset) == 10570
+    train_dataset = nlp.data.SQuAD(segment='train', root='tests/data/squad')
+    assert len(train_dataset) == 87599
 
-    # Each record is a tuple of 4 elements: question Id, question, context, list of answers
-    for record in dataset:
-        assert len(record) == 4
+    val_dataset = nlp.data.SQuAD(segment='dev', root='tests/data/squad')
+    assert len(val_dataset) == 10570
+
+    # Each record is a tuple of 6 elements: record_id, question Id, question, context,
+    # list of answer texts, list of answer start indices
+    for record in val_dataset:
+        assert len(record) == 6

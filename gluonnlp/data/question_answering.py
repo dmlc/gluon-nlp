@@ -104,7 +104,16 @@ class SQuAD(ArrayDataset):
 
     @staticmethod
     def _get_records(json_dict):
-        """Provides a list of tuples with records where answers are flatten"""
+        """Provides a list of tuples with records where answers are flatten
+
+        :param dict, json_dict: File content loaded into json dictionary
+
+        Returns
+        -------
+        List[Tuple]
+            Flatten list of records in format: record_index, question_id, question, context,
+            answer, answer_start_index
+        """
         records = []
 
         record_index = 0
@@ -112,9 +121,10 @@ class SQuAD(ArrayDataset):
         for title in json_dict['data']:
             for paragraph in title['paragraphs']:
                 for qas in paragraph['qas']:
-
+                    answers = SQuAD._get_answers(qas)
                     record = (
-                        qas['id'], qas['question'], paragraph['context'], SQuAD._get_answers(qas)
+                        record_index, qas['id'], qas['question'],
+                        paragraph['context'], answers[0], answers[1]
                     )
 
                     record_index += 1
@@ -124,9 +134,12 @@ class SQuAD(ArrayDataset):
 
     @staticmethod
     def _get_answers(qas_dict):
-        answers = []
+
+        answer_list = []
+        answer_start_list = []
 
         for answer in qas_dict['answers']:
-            answers.append((answer['answer_start'], answer['text']))
+            answer_list.append(answer['text'])
+            answer_start_list.append(answer['answer_start'])
 
-        return answers
+        return answer_list, answer_start_list

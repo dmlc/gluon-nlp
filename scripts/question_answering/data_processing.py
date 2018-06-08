@@ -22,6 +22,7 @@
 __all__ = ['SQuADTransform', 'VocabProvider', 'preprocess_dataset']
 
 import re
+import numpy as np
 
 from mxnet import nd
 from mxnet.gluon.data import SimpleDataset
@@ -33,23 +34,19 @@ from gluonnlp.data.batchify import Pad
 def preprocess_dataset(dataset, question_max_length, context_max_length):
     """Process SQuAD dataset by creating NDArray version of data
 
-    :param dataset: SQuAD dataset
-    :param question_max_length: Maximum length of question (will be padded or trimmed to that size)
-    :param context_max_length: Maximum length of context (will be padded or trimmed to that size)
-    :return: SimpleDataset
+    :param Dataset dataset: SQuAD dataset
+    :param int question_max_length: Maximum length of question (padded or trimmed to that size)
+    :param int context_max_length: Maximum length of context (padded or trimmed to that size)
+
+    Returns
+    -------
+    SimpleDataset
+        Dataset of preprocessed records
     """
     vocab_provider = VocabProvider(dataset)
-    print('Collecting vocabs from the training dataset...')
     transformer = SQuADTransform(vocab_provider, question_max_length, context_max_length)
-    print('Vocabs collected. Dataset [{} records] preprocessing started...'.format(len(dataset)))
-    records = []
-
-    for i, entry in enumerate(dataset):
-        _, question, context, _ = entry
-        records.append(transformer(i, question, context))
-
-    print('Dataset preprocessing finished.')
-    return SimpleDataset(records)
+    processed_dataset = SimpleDataset(dataset.trasform(transformer, lazy=False))
+    return processed_dataset
 
 
 class SQuADTransform(object):
@@ -65,7 +62,8 @@ class SQuADTransform(object):
 
         self._padder = Pad()
 
-    def __call__(self, record_index, question, context):
+    def __call__(self, record_index, question_id, question, context, answer_list,
+                 answer_start_list):
         """
         Method converts text into numeric arrays based on Vocabulary.
         Answers are not processed, as they are not needed in input
@@ -79,14 +77,31 @@ class SQuADTransform(object):
         context_chars = [self._char_vocab[list(iter(word))]
                          for word in context.split()[:self._context_max_length]]
 
-        question_words_nd = nd.array(question_words)
+        question_words_nd = nd.array(question_words, dtype=np.int32)
         question_chars_nd = self._padder(question_chars)
 
-        context_words_nd = nd.array(context_words)
+        context_words_nd = nd.array(context_words, dtype=np.int32)
         context_chars_nd = self._padder(context_chars)
 
-        return record_index, question_words_nd, question_chars_nd, \
-               context_words_nd, context_chars_nd
+        answer_spans = SQuADTransform._get_answer_spans(answer_list, answer_start_list)
+
+        return record_index, question_id, question_words_nd, context_words_nd, \
+               question_chars_nd, context_chars_nd, answer_spans
+
+    @staticmethod
+    def _get_answer_spans(answer_list, answer_start_list):
+        """Find all answer spans from the context, returning start_index and end_index
+
+        :param list[str] answer_list: List of all answers
+        :param list[int] answer_start_list: List of all answers' start indices
+
+        Returns
+        -------
+        List[Tuple]
+            list of Tuple(answer_start_index answer_end_index) per question
+        """
+        return [(answer_start_list[i], answer_start_list[i] + len(answer))
+                for i, answer in enumerate(answer_list)]
 
 
 class VocabProvider(object):
@@ -96,9 +111,24 @@ class VocabProvider(object):
         self._dataset = dataset
 
     def get_char_level_vocab(self):
+        """Provides character level vocabulary
+
+        Returns
+        -------
+        Vocab
+            Character level vocabulary
+        """
         return VocabProvider._create_squad_vocab(iter, self._dataset)
 
     def get_word_level_vocab(self):
+        """Provides word level vocabulary
+
+        Returns
+        -------
+        Vocab
+            Word level vocabulary
+        """
+
         def simple_tokenize(source_str, token_delim=' ', seq_delim='\n'):
             return list(filter(None, re.split(token_delim + '|' + seq_delim, source_str)))
 
