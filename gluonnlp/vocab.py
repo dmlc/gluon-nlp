@@ -81,8 +81,6 @@ class Vocab(object):
         The embedding of the indexed tokens.
     idx_to_token : list of strs
         A list of indexed tokens where the list indices and the token indices are aligned.
-    idx_to_counts : numpy.ndarray
-        A list of the counts of tokens that were passed during Vocab construction.
     reserved_tokens : list of strs or None
         A list of reserved tokens that will always be indexed.
     token_to_idx : dict mapping str to int
@@ -181,7 +179,6 @@ class Vocab(object):
     def _index_special_tokens(self, unknown_token, special_tokens):
         """Indexes unknown and reserved tokens."""
         self._idx_to_token = [unknown_token] if unknown_token else []
-        self._idx_to_counts = [0] if unknown_token else []
 
         if not special_tokens:
             self._reserved_tokens = None
@@ -220,7 +217,6 @@ class Vocab(object):
                 break
             if token not in unknown_and_special_tokens:
                 self._idx_to_token.append(token)
-                self._idx_to_counts.append(freq)
                 self._token_to_idx[token] = len(self._idx_to_token) - 1
 
     @property
@@ -230,10 +226,6 @@ class Vocab(object):
     @property
     def idx_to_token(self):
         return self._idx_to_token
-
-    @property
-    def idx_to_counts(self):
-        return self._idx_to_counts
 
     @property
     def reserved_tokens(self):
@@ -432,7 +424,6 @@ class Vocab(object):
                           'separately using vocab.embedding.serialize')
         vocab_dict = {}
         vocab_dict['idx_to_token'] = self._idx_to_token
-        vocab_dict['idx_to_counts'] = self._idx_to_counts
         vocab_dict['token_to_idx'] = dict(self._token_to_idx)
         vocab_dict['reserved_tokens'] = self._reserved_tokens
         vocab_dict['unknown_token'] = self._unknown_token
@@ -460,7 +451,6 @@ class Vocab(object):
         unknown_token = vocab_dict.get('unknown_token')
         vocab = Vocab(unknown_token=unknown_token)
         vocab._idx_to_token = vocab_dict.get('idx_to_token')
-        vocab._idx_to_counts = vocab_dict.get('idx_to_counts')
         vocab._token_to_idx = vocab_dict.get('token_to_idx')
         if unknown_token:
             vocab._token_to_idx = DefaultLookupDict(vocab._token_to_idx[unknown_token],

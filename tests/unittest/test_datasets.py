@@ -100,7 +100,7 @@ def test_wikitext2():
 
     vocab = nlp.Vocab(train_freq)
     serialized_vocab = vocab.to_json()
-    assert len(serialized_vocab) == 1078853, len(serialized_vocab)
+    assert len(serialized_vocab) == 962190, len(serialized_vocab)
     assert json.loads(serialized_vocab)['idx_to_token'] == vocab._idx_to_token
 
     train_data = train.bptt_batchify(vocab, 35, 80, last_batch='discard')
