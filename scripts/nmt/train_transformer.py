@@ -523,7 +523,7 @@ def train():
                 for c in ctx:
                     v.data(c)[:] += alpha * (params[k].as_in_context(c) - v.data(c))
     elif args.average_start > 0:
-        for k, v in model.collect_params.items():
+        for k, v in model.collect_params().items():
             for c in ctx:
                 v.data(c)[:] = average_param_dict[k].as_in_context(c)
     else:
