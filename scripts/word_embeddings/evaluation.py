@@ -131,7 +131,8 @@ def get_tokens_in_evaluation_datasets(args):
     return tokens
 
 
-def evaluate_similarity(args, token_embedding, ctx, logfile=None):
+def evaluate_similarity(args, token_embedding, ctx, logfile=None,
+                        global_step=0):
     """Evaluate on specified similarity datasets."""
 
     results = []
@@ -169,6 +170,7 @@ def evaluate_similarity(args, token_embedding, ctx, logfile=None):
                 similarity_function=similarity_function,
                 spearmanr=sr.correlation,
                 num_dropped=num_dropped,
+                global_step=global_step,
             )
             log_similarity_result(logfile, result)
             results.append(result)
@@ -176,7 +178,7 @@ def evaluate_similarity(args, token_embedding, ctx, logfile=None):
     return results
 
 
-def evaluate_analogy(args, token_embedding, ctx, logfile=None):
+def evaluate_analogy(args, token_embedding, ctx, logfile=None, global_step=0):
     """Evaluate on specified analogy datasets.
 
     The analogy task is an open vocabulary task, make sure to pass a
@@ -231,6 +233,7 @@ def evaluate_analogy(args, token_embedding, ctx, logfile=None):
                 analogy_function=analogy_function,
                 accuracy=acc.get()[1],
                 num_dropped=num_dropped,
+                global_step=global_step,
             )
             log_analogy_result(logfile, result)
             results.append(result)
@@ -246,6 +249,7 @@ def log_similarity_result(logfile, result):
 
     with open(logfile, 'a') as f:
         f.write('\t'.join([
+            str(result['global_step']),
             result['task'],
             result['dataset_name'],
             json.dumps(result['dataset_kwargs']),
@@ -266,6 +270,7 @@ def log_analogy_result(logfile, result):
 
     with open(logfile, 'a') as f:
         f.write('\t'.join([
+            str(result['global_step']),
             result['task'],
             result['dataset_name'],
             json.dumps(result['dataset_kwargs']),

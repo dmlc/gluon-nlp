@@ -28,35 +28,13 @@ from contextlib import contextmanager
 import mxnet as mx
 
 
-def clip_embeddings_gradients(parameters, max_l2):
-    """Clip the gradient norms of embeddings group wise.
-
-    Such that for each group (ie. word or subword) the gradient norm is smaller
-    than max_l2.
-
-    Make sure to call after trainer.allreduce_grads() when using multiple
-    devices.
-
-    """
-    for p in parameters:
-        for ctx in p.list_ctx():
-            grad = p.grad(ctx)
-
-            # Normalization for row_sparse needs support in mxnet backend
-            assert grad.stype == 'default'
-
-            norm = mx.nd.norm(grad, axis=1, keepdims=True)
-            scale = mx.nd.divide(max_l2, norm)
-            scale = mx.nd.minimum(scale, 1)
-            grad[:] = mx.nd.multiply(grad, scale)
-
-
 def get_context(args):
     if args.gpu is None or args.gpu == '':
         context = [mx.cpu()]
     else:
         context = [mx.gpu(int(i)) for i in args.gpu]
     return context
+
 
 @contextmanager
 def print_time(task):

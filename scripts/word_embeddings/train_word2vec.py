@@ -42,12 +42,11 @@ import tempfile
 import mxnet as mx
 from mxnet import gluon
 import tqdm
-from mxboard import SummaryWriter
 
 import gluonnlp as nlp
 
 import evaluation
-from utils import clip_embeddings_gradients, get_context, print_time
+from utils import get_context, print_time
 
 
 ###############################################################################
@@ -90,15 +89,6 @@ def parse_args():
     group = parser.add_argument_group('Optimization arguments')
     group.add_argument('--optimizer', type=str, default='adagrad')
     group.add_argument('--lr', type=float, default=0.1)
-    group.add_argument('--elementwise-clip-gradient', type=float, default=-1,
-                       help='Clip embedding matrix gradients elementwise. '
-                       'Disable by setting to a value <= 0.')
-    group.add_argument(
-        '--groupwise-clip-gradient', type=float, default=-1,
-        help='Clip embedding matrix gradients '
-        'such that the norm of the gradient for one embedding vector '
-        'does not surpass --groupwise-clip-gradient.'
-        'Disable by setting to a value <= 0.')
 
     # Logging
     group = parser.add_argument_group('Logging arguments')
@@ -181,13 +171,8 @@ def train(args):
     params = list(embedding.collect_params().values()) + \
         list(embedding_out.collect_params().values())
     optimizer = mx.optimizer.Optimizer.create_optimizer(
-        args.optimizer, learning_rate=args.lr,
-        clip_gradient=args.elementwise_clip_gradient
-        if args.elementwise_clip_gradient > 0 else None)
+        args.optimizer, learning_rate=args.lr)
     trainer = gluon.Trainer(params, optimizer)
-
-    # Logging writer
-    sw = SummaryWriter(logdir=args.logdir)
 
     num_update = 0
     for epoch in range(args.epochs):
@@ -259,11 +244,6 @@ def train(args):
 
             loss.backward()
 
-            # Normalize gradients
-            if args.groupwise_clip_gradient > 0:
-                clip_embeddings_gradients(trainer._params,
-                                          args.groupwise_clip_gradient)
-
             if args.optimizer != 'adagrad':
                 trainer.set_learning_rate(args.lr * (1 - progress))
             trainer.step(batch_size=1)
@@ -272,70 +252,18 @@ def train(args):
             if i % args.eval_interval == 0:
                 with print_time('mx.nd.waitall()'):
                     mx.nd.waitall()
-
-                log(args, sw, embedding, embedding_out, loss, num_update,
-                    vocab)
+                evaluate(args, embedding, vocab, num_update)
 
         # Log at the end of every epoch
         with print_time('mx.nd.waitall()'):
             mx.nd.waitall()
-        log(args, sw, embedding, embedding_out, loss, num_update, vocab)
+        evaluate(args, embedding, vocab, num_update)
 
         # Save params at end of epoch
         save_params(args, embedding, embedding_out)
 
-    sw.close()
 
-
-def log(args, sw, embedding, embedding_out, loss, num_update, vocab):
-    """Logging helper"""
-    context = get_context(args)
-
-    # Word embeddings
-    embedding_norm = embedding.embedding.weight.data(
-        ctx=context[0]).as_in_context(
-            mx.cpu()).tostype('default').norm(axis=1)
-    sw.add_histogram(tag='embedding_norm', values=embedding_norm,
-                     global_step=num_update, bins=200)
-    if embedding.embedding.weight.grad(ctx=context[0]).stype == 'row_sparse':
-        embedding_grad_norm = embedding.embedding.weight.grad(
-            ctx=context[0]).data.as_in_context(
-                mx.cpu()).tostype('default').norm(axis=1)
-        sw.add_histogram(tag='embedding_grad_norm', values=embedding_grad_norm,
-                         global_step=num_update, bins=200)
-
-    embedding_out_norm = embedding_out.embedding.weight.data(
-        ctx=context[0]).as_in_context(
-            mx.cpu()).tostype('default').norm(axis=1)
-    sw.add_histogram(tag='embedding_out_norm', values=embedding_out_norm,
-                     global_step=num_update, bins=200)
-    if embedding_out.embedding.weight.grad(
-            ctx=context[0]).stype == 'row_sparse':
-        embedding_out_grad_norm = embedding_out.embedding.weight.grad(
-            ctx=context[0]).data.as_in_context(
-                mx.cpu()).tostype('default').norm(axis=1)
-        sw.add_histogram(tag='embedding_out_grad_norm',
-                         values=embedding_out_grad_norm,
-                         global_step=num_update, bins=200)
-
-    if not isinstance(loss, int):
-        sw.add_scalar(tag='loss', value=loss.mean().asscalar(),
-                      global_step=num_update)
-
-    results = evaluate(args, embedding, vocab)
-    for result in results:
-        tag = result['dataset_name'] + '_' + str(result['dataset_kwargs'])
-        if result['task'] == 'analogy':
-            sw.add_scalar(tag=tag, value=float(result['accuracy']),
-                          global_step=num_update)
-        if result['task'] == 'similarity':
-            sw.add_scalar(tag=tag, value=float(result['spearmanr']),
-                          global_step=num_update)
-
-    sw.flush()
-
-
-def evaluate(args, embedding, vocab):
+def evaluate(args, embedding, vocab, global_step):
     """Evaluation helper"""
     if 'eval_tokens' not in globals():
         global eval_tokens
@@ -354,11 +282,11 @@ def evaluate(args, embedding, vocab):
 
     results = evaluation.evaluate_similarity(
         args, token_embedding, context[0], logfile=os.path.join(
-            args.logdir, 'similarity.tsv'))
+            args.logdir, 'similarity.tsv'), global_step=global_step)
     if args.eval_analogy:
         results += evaluation.evaluate_analogy(
             args, token_embedding, context[0], logfile=os.path.join(
-                args.logdir, 'analogy.tsv'))
+                args.logdir, 'analogy.tsv'), global_step=global_step)
 
     return results
 
