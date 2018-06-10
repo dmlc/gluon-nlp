@@ -298,20 +298,22 @@ def train(args):
                     emb_in = embedding(word_context, word_context_mask,
                                        subwords, subwords_mask).sum(axis=-2)
 
-                    center_negatives = mx.nd.concat(center, negatives, dim=1)
+                    center_negatives = mx.nd.concat(
+                        center.expand_dims(1), negatives, dim=1)
                     center_negatives_mask = mx.nd.concat(
-                        center_mask, mx.nd.ones_like(negatives), dim=1)
+                        center_mask.expand_dims(1), mx.nd.ones_like(negatives),
+                        dim=1)
 
                     emb_out = embedding_out(center_negatives,
                                             center_negatives_mask)
 
                     # Compute loss
                     pred = mx.nd.batch_dot(
-                        emb_in.expand_dims(1), emb_out.expand_dims(2))
+                        emb_in.expand_dims(1), emb_out.swapaxes(1, 2))
                     pred = pred.reshape((-1, 1 + args.negative))
                     label = mx.nd.concat(
-                        mx.nd.ones_like(center), mx.nd.zeros_like(negatives),
-                        dim=1)
+                        mx.nd.ones_like(center).expand_dims(1),
+                        mx.nd.zeros_like(negatives), dim=1)
 
                 loss = loss_function(pred, label)
 
