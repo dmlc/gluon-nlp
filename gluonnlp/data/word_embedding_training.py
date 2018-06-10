@@ -61,13 +61,21 @@ class Text8(CorpusDataset):
     url = 'http://mattmahoney.net/dc/'
 
     def __init__(self, root=os.path.join(_get_home_dir(), 'datasets', 'text8'),
-                 segment='train'):
+                 segment='train', max_sentence_length=10000):
         root = os.path.expanduser(root)
         if not os.path.isdir(root):
             os.makedirs(root)
         self._root = root
         self._segment = segment
+        self._max_sentence_length = max_sentence_length
         super(Text8, self).__init__(self._get_data())
+
+        if max_sentence_length:
+            data = []
+            for sentence in self._data:
+                for i in range(0, len(sentence), max_sentence_length):
+                    data.append(sentence[i:i + max_sentence_length])
+            self._data = data
 
     def _get_data(self):
         archive_file_name, archive_hash = self.archive_file
