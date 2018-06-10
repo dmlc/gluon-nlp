@@ -80,7 +80,7 @@ def parse_args():
                        help='Size of embedding vectors.')
     group.add_argument('--ngrams', type=int, nargs='+', default=[3, 4, 5, 6])
     group.add_argument(
-        '--ngram-buckets', type=int, default=2000000,
+        '--ngram-buckets', type=int, default=500000,
         help='Size of word_context set of the ngram hash function.')
     group.add_argument('--model', type=str, default='skipgram',
                        help='SkipGram or CBOW.')
@@ -98,8 +98,11 @@ def parse_args():
     group = parser.add_argument_group('Logging arguments')
     group.add_argument('--logdir', type=str, default='logs',
                        help='Directory to store logs.')
-    group.add_argument('--eval-interval', type=int, default=10000)
-    group.add_argument('--eval-analogy', action='store_true')
+    group.add_argument('--eval-interval', type=int, default=50000,
+                       help='Evaluate every --eval-interval iterations '
+                       'in addition to at the end of every epoch.')
+    group.add_argument('--no-eval-analogy', action='store_true',
+                       help='Don\'t evaluate on the analogy task.')
 
     # Evaluation options
     evaluation.add_parameters(parser)
@@ -332,21 +335,26 @@ def train(args):
         # Log at the end of every epoch
         with print_time('mx.nd.waitall()'):
             mx.nd.waitall()
-        evaluate(args, embedding, vocab, subword_function, num_update)
+        evaluate(args, embedding, vocab, subword_function, num_update,
+                 eval_analogy=(epoch == args.epochs - 1
+                               and not args.no_eval_analogy))
 
         # Save params at end of epoch
         save_params(args, embedding, embedding_out)
 
 
-def evaluate(args, embedding, vocab, subword_function, global_step):
+def evaluate(args, embedding, vocab, subword_function, global_step,
+             eval_analogy=False):
     """Evaluation helper"""
     if 'eval_tokens' not in globals():
         global eval_tokens
 
         eval_tokens_set = evaluation.get_tokens_in_evaluation_datasets(args)
-        if args.eval_analogy:
+        if not args.no_eval_analogy:
             eval_tokens_set.update(vocab.idx_to_token)
         eval_tokens = list(eval_tokens_set)
+
+    os.makedirs(args.logdir, exist_ok=True)
 
     # Compute their word vectors
     context = get_context(args)
@@ -358,7 +366,8 @@ def evaluate(args, embedding, vocab, subword_function, global_step):
     results = evaluation.evaluate_similarity(
         args, token_embedding, context[0], logfile=os.path.join(
             args.logdir, 'similarity.tsv'), global_step=global_step)
-    if args.eval_analogy:
+    if eval_analogy:
+        assert not args.no_eval_analogy
         results += evaluation.evaluate_analogy(
             args, token_embedding, context[0], logfile=os.path.join(
                 args.logdir, 'analogy.tsv'), global_step=global_step)

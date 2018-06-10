@@ -51,8 +51,7 @@ def add_parameters(parser):
             'similarity'), nargs='+',
         help='Word similarity functions to use for intrinsic evaluation.')
     group.add_argument(
-        '--analogy-datasets', type=str,
-        default=nlp.data.word_embedding_evaluation.word_analogy_datasets,
+        '--analogy-datasets', type=str, default=['GoogleAnalogyTestSet'],
         nargs='*',
         help='Word similarity datasets to use for intrinsic evaluation.')
     group.add_argument(
