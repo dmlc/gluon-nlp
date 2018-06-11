@@ -47,7 +47,8 @@ from mxnet import gluon
 from mxnet.gluon.data import ArrayDataset, SimpleDataset
 from mxnet.gluon.data import DataLoader
 import gluonnlp.data.batchify as btf
-from gluonnlp.data import FixedBucketSampler, IWSLT2015, WMT2016BPE
+from gluonnlp.data import ConstWidthBucket, LinearWidthBucket, ExpWidthBucket,\
+    FixedBucketSampler, IWSLT2015, WMT2016BPE
 from gluonnlp.model import BeamSearchScorer
 from translation import NMTModel, BeamSearchTranslator
 from transformer import get_transformer_encoder_decoder
@@ -87,6 +88,11 @@ parser.add_argument('--lp_alpha', type=float, default=0.6,
 parser.add_argument('--lp_k', type=int, default=5, help='K used in calculating the length penalty')
 parser.add_argument('--test_batch_size', type=int, default=256, help='Test batch size')
 parser.add_argument('--num_buckets', type=int, default=10, help='Bucket number')
+parser.add_argument('--bucket_scheme', type=str, default='constant',
+                    help='Strategy for generating bucket keys. It supports: '
+                         '"constant": all the buckets have the same width; '
+                         '"linear": the width of bucket increases linearly; '
+                         '"exponential": the width of bucket increases exponentially')
 parser.add_argument('--bucket_ratio', type=float, default=0.0, help='Ratio for increasing the '
                                                                     'throughput of the bucketing')
 parser.add_argument('--src_max_len', type=int, default=-1, help='Maximum length of the source '
@@ -376,14 +382,21 @@ def train():
     test_batchify_fn = btf.Tuple(btf.Pad(), btf.Pad(), btf.Stack(), btf.Stack(), btf.Stack())
     target_val_lengths = list(map(lambda x: x[-1], data_val_lengths))
     target_test_lengths = list(map(lambda x: x[-1], data_test_lengths))
-    bucket_width_scheme = 'exponential'
+    if args.bucket_scheme == 'constant':
+        bucket = ConstWidthBucket()
+    elif args.bucket_scheme == 'linear':
+        bucket = LinearWidthBucket()
+    elif args.sbucket_scheme == 'exponential':
+        bucket = ExpWidthBucket(bucket_len_step=1.2)
+    else:
+        raise NotImplementedError
     train_batch_sampler = FixedBucketSampler(lengths=data_train_lengths,
                                              batch_size=args.batch_size,
                                              num_buckets=args.num_buckets,
                                              ratio=args.bucket_ratio,
                                              shuffle=True,
                                              use_average_length=True,
-                                             bucket_width_scheme=bucket_width_scheme)
+                                             bucket=bucket)
     logging.info('Train Batch Sampler:\n{}'.format(train_batch_sampler.stats()))
     train_data_loader = DataLoader(data_train,
                                    batch_sampler=train_batch_sampler,
@@ -396,7 +409,7 @@ def train():
                                            ratio=args.bucket_ratio,
                                            shuffle=False,
                                            use_average_length=True,
-                                           bucket_width_scheme=bucket_width_scheme)
+                                           bucket=bucket)
     logging.info('Valid Batch Sampler:\n{}'.format(val_batch_sampler.stats()))
     val_data_loader = DataLoader(data_val,
                                  batch_sampler=val_batch_sampler,
@@ -408,7 +421,7 @@ def train():
                                             ratio=args.bucket_ratio,
                                             shuffle=False,
                                             use_average_length=True,
-                                            bucket_width_scheme=bucket_width_scheme)
+                                            bucket=bucket)
     logging.info('Test Batch Sampler:\n{}'.format(test_batch_sampler.stats()))
     test_data_loader = DataLoader(data_test,
                                   batch_sampler=test_batch_sampler,
