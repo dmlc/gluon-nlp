@@ -359,8 +359,8 @@ class FixedBucketSampler(Sampler):
         self._batch_infos = []
         for bucket_id, sample_ids, bucket_batch_size in\
                 zip(range(len(self._bucket_keys) - 1, -1, -1),
-                        self._bucket_sample_ids[::-1],
-                        self._bucket_batch_sizes[::-1]):
+                    self._bucket_sample_ids[::-1],
+                    self._bucket_batch_sizes[::-1]):
             for i in range(0, len(sample_ids), bucket_batch_size):
                 self._batch_infos.append((bucket_id, i))
 
