@@ -41,6 +41,24 @@ class SQuAD(ArrayDataset):
 
     License: CreativeCommons BY-SA 4.0
 
+    The original data format is json, which has multiple contexts (a context is a paragraph of text
+    from which questions are drawn). For each context there are multiple questions, and for each of
+    these questions there are multiple (usually 3) answers.
+
+    This class loads the json and flattens it to a table view. Each record is a single question.
+    Since there are more than one question per context in the original dataset, some records shares
+    the same context. Number of records in the dataset is equal to number of questions in json file.
+
+    The format of each record of the dataset is following:
+        - record_index:  An index of the record, generated on the fly (0 ... to # of last question)
+        - question_id:   Question Id. It is a string and taken from the original json file as-is
+        - question:      Question text, taken from the original json file as-is
+        - context:       Context text, taken from the original json file as-is. Will be the same for
+                         questions from the same context
+        - answer_list:   All answers for this question. Stored as python list
+        - start_indices: All answers' starting indices. Stored as python list. The position
+                         in this list is the same as the position of an answer in answer_list
+
     Parameters
     ----------
     segment : str, default 'train'
@@ -86,7 +104,7 @@ class SQuAD(ArrayDataset):
 
     def _read_data(self):
         """Read data.json from disk and flats it to the following format:
-        Entry = (question_id, question, context, list_of_answers).
+        Entry = (record_index, question_id, question, context, answer_list, answer_start_indices).
         Question id and list_of_answers also substituted with indices, so it could be later
         converted into nd.array
 
