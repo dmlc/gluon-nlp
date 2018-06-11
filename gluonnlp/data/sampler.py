@@ -81,7 +81,7 @@ def _const_bucket_len(single_element, max_lengths, min_lengths, num_buckets):
 
 
 def _lin_bucket_len(single_element, max_lengths, min_lengths, num_buckets):
-    r"""This function implements a scheme for linear increasig bucket length:
+    r"""This function implements a scheme for linear increasig bucket width:
         w_i = alpha * i + 1 for all i >= 1. 
     """
     if not single_element:
@@ -102,12 +102,12 @@ def _lin_bucket_len(single_element, max_lengths, min_lengths, num_buckets):
     return bucket_keys
 
 
-def _exp_bucket_len(single_element, max_lengths, min_lengths, num_buckets, bucket_len_step=1.1):
-    r"""This function implements a scheme for exponentially increasig bucket length:
-        w_i = alpha * w_{i-1} for all i >= 2. 
+def _exp_bucket_len(single_element, max_lengths, min_lengths, num_buckets, bucket_len_step=1.2):
+    r"""This function implements a scheme for exponentially increasig bucket width:
+        w_i = bucket_len_step * w_{i-1} for all i >= 2. 
     """
     if not single_element:
-        initial_width_l = [int(round((max_len - min_len) * (bucket_len_step - 1) / (math.pow(bucket_len_step, num_buckets) - 1)))
+        initial_width_l = [(max_len - min_len) * (bucket_len_step - 1) / (math.pow(bucket_len_step, num_buckets) - 1)
                            for max_len, min_len in
                            zip(max_lengths, min_lengths)]
         bucket_keys =\
@@ -117,7 +117,7 @@ def _exp_bucket_len(single_element, max_lengths, min_lengths, num_buckets, bucke
         bucket_keys[-1] = tuple(max(max_bucket_key, max_len) 
                           for max_bucket_key, max_len in zip(bucket_keys[-1], max_lengths))
     else:
-        initial_width = int(round((max_lengths - min_lengths) * (bucket_len_step - 1) / (math.pow(bucket_len_step, num_buckets) - 1)))
+        initial_width = (max_lengths - min_lengths) * (bucket_len_step - 1) / (math.pow(bucket_len_step, num_buckets) - 1)
         bucket_keys = [int(round(min_lengths + initial_width * (math.pow(bucket_len_step, i + 1) - 1) / (bucket_len_step - 1)))
                        for i in range(num_buckets)]
         bucket_keys[-1] = max(bucket_keys[-1], max_lengths)
@@ -181,7 +181,12 @@ class FixedBucketSampler(Sampler):
         False: each batch contains batch_size sequences, number of sequence elements varies.
         True: each batch contains batch_size elements, number of sequences varies. In this case,
         ratio option is ignored.
-
+    bucket_width_scheme : str, default 'constant'
+        'constant': all the buckets have the same width
+        'linear': the width of ith  bucket follows w_i = alpha * i + 1
+        'exponential': the width of ith bucket follows w_i = bucket_len_step * w_{i-1}
+    bucket_len_step : float, default 1.2
+        This option is only used when bucket_width_scheme is 'exponential'.
     Examples
     --------
     >>> from gluonnlp.data import FixedBucketSampler
@@ -204,7 +209,7 @@ class FixedBucketSampler(Sampler):
     """
     def __init__(self, lengths, batch_size, num_buckets=10, bucket_keys=None,
                  ratio=0, shuffle=False, use_average_length=False, bucket_width_scheme='constant',
-                  bucket_len_step=1.1):
+                 bucket_len_step=1.2):
         assert len(lengths) > 0, 'FixedBucketSampler does not support empty lengths.'
         assert batch_size > 0, 'Batch size must be larger than 0.'
         assert ratio >= 0, 'batch size scaling ratio cannot be negative.'
