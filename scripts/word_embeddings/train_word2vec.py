@@ -197,10 +197,10 @@ def train(args):
             num_update += len(center)
 
             # To GPU
-            center = mx.nd.array(center, ctx=context[0])
+            center = center.as_in_context(context[0])
             center_mask = mx.nd.ones((center.shape[0], ), ctx=center.context)
-            word_context = mx.nd.array(word_context, ctx=context[0])
-            word_context_mask = mx.nd.array(word_context_mask, ctx=context[0])
+            word_context = word_context.as_in_context(context[0])
+            word_context_mask = word_context_mask.as_in_context(context[0])
             negatives = negatives_sampler(center.shape[0] * args.negative) \
                 .reshape((center.shape[0], args.negative)) \
                 .as_in_context(context[0])

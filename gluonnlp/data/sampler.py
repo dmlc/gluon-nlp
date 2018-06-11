@@ -25,11 +25,13 @@ __all__ = [
     'ContextSampler'
 ]
 
+import logging
 import math
 import random
 import warnings
 
 import numpy as np
+from mxnet import nd
 from mxnet.gluon.data import Sampler
 
 try:
@@ -384,8 +386,16 @@ class ContextSampler(Sampler):
         return math.ceil(self.num_samples / float(self.batch_size))
 
     def __iter__(self):
-        return _context_generator(self._coded, self._sentence_boundaries,
-                                  self.window, self.batch_size)
+        if prange is range:
+            logging.warning(
+                'ContextSampler supports just in time compilation '
+                'with numba, but numba is not installed. '
+                'Consider "pip install numba" for significant speed-ups.')
+
+        for center, context, mask in _context_generator(
+                self._coded, self._sentence_boundaries, self.window,
+                self.batch_size):
+            yield nd.array(center), nd.array(context), nd.array(mask)
 
 
 @numba_njit

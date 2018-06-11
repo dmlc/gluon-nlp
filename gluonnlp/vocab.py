@@ -492,10 +492,13 @@ class SubwordFunction(object):
     gluonnlp.vocab.list_subword_functions to list all available subword
     functions.
 
+    A SubwordFunction object is callable and returns a list of ndarrays of
+    subwordindices for the given words in a call.
+
     """
 
     def __call__(self, words):
-        """Return a list of lists of subwordindices for the given words."""
+        """Return a list of ndarrays of subwordindices for the given words."""
         raise NotImplementedError
 
     def __len__(self):
@@ -551,8 +554,10 @@ class ByteSubwords(SubwordFunction):
 
     def __call__(self, words):
         return [
-            np.frombuffer(word.encode(self.encoding), dtype=np.uint8).astype(
-                np.int_) for word in words
+            nd.array(
+                np.frombuffer(word.encode(self.encoding),
+                              dtype=np.uint8).astype(np.int_))
+            for word in words
         ]
 
     def __len__(self):
@@ -635,11 +640,11 @@ class NGramHashes(SubwordFunction):
 
     def __call__(self, words):
         return [
-            np.array([
+            nd.array(np.array([
                 self.fasttext_hash_asbytes(
                     ('<' + word + '>')[i:i + N]) % self.num_subwords
                 for N in self.ngrams for i in range((len(word) + 2) - N + 1)
-            ]) for word in words
+            ])) for word in words
         ]
 
     def __len__(self):

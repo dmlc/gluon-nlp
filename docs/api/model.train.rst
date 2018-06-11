@@ -17,6 +17,18 @@ Language Modeling
     CacheCell
     get_cache_model
 
+
+Word Embeddings
+---------------
+
+.. autosummary::
+    :nosignatures:
+
+    EmbeddingModel
+    SimpleEmbeddingModel
+    FasttextEmbeddingModel
+
+
 API Reference
 -------------
 

@@ -147,9 +147,10 @@ def get_train_data(args):
         # Padded max_subwordidxs_len + 1 so each row contains at least one -1
         # element which can be found by np.argmax below.
         idx_to_subwordidxs = np.stack(
-            np.pad(b, (0, max_subwordidxs_len - len(b) + 1), \
+            np.pad(b.asnumpy(), (0, max_subwordidxs_len - len(b) + 1), \
                    constant_values=-1, mode='constant')
             for b in idx_to_subwordidxs).astype(np.float32)
+        idx_to_subwordidxs = mx.nd.array(idx_to_subwordidxs)
 
         logging.info('Using %s to obtain subwords. '
                      'The word with largest number of subwords '
@@ -186,17 +187,15 @@ def indices_to_subwordindices_mask(indices, idx_to_subwordidxs):
     Array of subword indices.
 
     """
-    if isinstance(indices, mx.nd.NDArray):
-        indices = indices.asnumpy().astype(np.int)
-    else:
-        indices = np.array(indices, dtype=np.int)
+    if not isinstance(indices, mx.nd.NDArray):
+        indices = mx.nd.array(indices)
     subwords = idx_to_subwordidxs[indices]
-    mask = np.zeros_like(subwords)
+    mask = mx.nd.zeros_like(subwords)
     mask += subwords != -1
+    lengths = mx.nd.argmax(subwords == -1, axis=1)
     subwords += subwords == -1
-    lengths = np.argmax(subwords == -1, axis=1)
 
-    new_length = max(np.max(lengths), 1)  # Return at least 1
+    new_length = int(max(mx.nd.max(lengths).asscalar(), 1))
     subwords = subwords[:, :new_length]
     mask = mask[:, :new_length]
 
@@ -268,14 +267,13 @@ def train(args):
 
             # To GPU
             mx.nd.waitall()  # waitall() until mxnet #11041 is merged
-            center = mx.nd.array(center, ctx=context[0])
+            center = center.as_in_context(context[0])
             center_mask = mx.nd.ones((center.shape[0], ), ctx=center.context)
-            subwords = mx.nd.array(subwords, ctx=context[0])
-            subwords_mask = mx.nd.array(subwords_mask,
-                                        dtype=np.float32).as_in_context(
-                                            context[0])
-            word_context = mx.nd.array(word_context, ctx=context[0])
-            word_context_mask = mx.nd.array(word_context_mask, ctx=context[0])
+            subwords = subwords.as_in_context(context[0])
+            subwords_mask = subwords_mask.astype(np.float32).as_in_context(
+                context[0])
+            word_context = word_context.as_in_context(context[0])
+            word_context_mask = word_context_mask.as_in_context(context[0])
             negatives = negatives_sampler(center.shape[0] * args.negative) \
                 .reshape((center.shape[0], args.negative)) \
                 .as_in_context(context[0])
