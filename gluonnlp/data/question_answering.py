@@ -56,7 +56,7 @@ class SQuAD(ArrayDataset):
     - question:      Question text, taken from the original json file as-is
     - context:       Context text.  Will be the same for questions from the same context
     - answer_list:   All answers for this question. Stored as python list
-    - start_indices: All answers' starting indices. Stored as python list. 
+    - start_indices: All answers' starting indices. Stored as python list.
       The position in this list is the same as the position of an answer in answer_list
 
     Parameters
