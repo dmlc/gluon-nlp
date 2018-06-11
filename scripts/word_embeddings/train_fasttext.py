@@ -92,7 +92,9 @@ def parse_args():
     # Optimization options
     group = parser.add_argument_group('Optimization arguments')
     group.add_argument('--optimizer', type=str, default='adagrad')
-    group.add_argument('--lr', type=float, default=0.1)
+    group.add_argument('--optimizer-adagrad-initial-state', type=float,
+                       default=1)
+    group.add_argument('--lr', type=float, default=0.05)
 
     # Logging
     group = parser.add_argument_group('Logging arguments')
@@ -232,9 +234,11 @@ def train(args):
 
     params = list(embedding.collect_params().values()) + \
         list(embedding_out.collect_params().values())
-    optimizer = mx.optimizer.Optimizer.create_optimizer(
-        args.optimizer, learning_rate=args.lr)
-    trainer = gluon.Trainer(params, optimizer)
+    optimizer_kwargs = dict(learning_rate=args.lr)
+    if args.optimizer == 'adagrad':
+        optimizer_kwargs = dict(
+            initial_accumulator_value=args.optimizer_adagrad_initial_state)
+    trainer = gluon.Trainer(params, args.optimizer, optimizer_kwargs)
 
     num_update = 0
     for epoch in range(args.epochs):
