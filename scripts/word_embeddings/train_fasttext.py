@@ -211,16 +211,16 @@ def train(args):
     coded_dataset, negatives_sampler, vocab, subword_function, \
         idx_to_subwordidxs = get_train_data(args)
     embedding = nlp.model.train.FasttextEmbeddingModel(
-        num_tokens=len(vocab),
-        num_subwords=len(subword_function),
+        token_to_idx=vocab.token_to_idx,
+        subword_function=subword_function,
         embedding_size=args.emsize,
         weight_initializer=mx.init.Uniform(scale=1 / args.emsize),
         sparse_grad=not args.no_sparse_grad,
     )
     embedding_out = nlp.model.train.SimpleEmbeddingModel(
-        num_tokens=len(vocab),
+        token_to_idx=vocab.token_to_idx,
         embedding_size=args.emsize,
-        weight_initializer=mx.init.Uniform(scale=1 / args.emsize),
+        weight_initializer=mx.init.Zero(),
         sparse_grad=not args.no_sparse_grad,
     )
     loss_function = gluon.loss.SigmoidBinaryCrossEntropyLoss()
@@ -364,8 +364,8 @@ def evaluate(args, embedding, vocab, subword_function, global_step,
     context = get_context(args)
     idx_to_token = eval_tokens
     mx.nd.waitall()
-    token_embedding = embedding.to_token_embedding(
-        idx_to_token, vocab.token_to_idx, subword_function, ctx=context[0])
+    token_embedding = embedding.to_token_embedding(idx_to_token,
+                                                   ctx=context[0])
 
     results = evaluation.evaluate_similarity(
         args, token_embedding, context[0], logfile=os.path.join(

@@ -153,13 +153,13 @@ def train(args):
     """Training"""
     coded_dataset, negatives_sampler, vocab = get_train_data()
     embedding = nlp.model.train.SimpleEmbeddingModel(
-        num_tokens=len(vocab),
+        token_to_idx=vocab.token_to_idx,
         embedding_size=args.emsize,
         weight_initializer=mx.init.Uniform(scale=1 / args.emsize),
         sparse_grad=not args.no_sparse_grad,
     )
     embedding_out = nlp.model.train.SimpleEmbeddingModel(
-        num_tokens=len(vocab),
+        token_to_idx=vocab.token_to_idx,
         embedding_size=args.emsize,
         weight_initializer=mx.init.Uniform(scale=1 / args.emsize),
         sparse_grad=not args.no_sparse_grad,
@@ -282,6 +282,10 @@ def evaluate(args, embedding, vocab, global_step, eval_analogy=False):
         eval_tokens_set = evaluation.get_tokens_in_evaluation_datasets(args)
         if not args.no_eval_analogy:
             eval_tokens_set.update(vocab.idx_to_token)
+
+        # Word2Vec does not support computing vectors for OOV words
+        eval_tokens = filter(lambda t: t in vocab, eval_tokens)
+
         eval_tokens = list(eval_tokens_set)
 
     os.makedirs(args.logdir, exist_ok=True)
@@ -290,8 +294,8 @@ def evaluate(args, embedding, vocab, global_step, eval_analogy=False):
     context = get_context(args)
     idx_to_token = eval_tokens
     mx.nd.waitall()
-    token_embedding = embedding.to_token_embedding(
-        idx_to_token, vocab.token_to_idx, ctx=context[0])
+    token_embedding = embedding.to_token_embedding(idx_to_token,
+                                                   ctx=context[0])
 
     results = evaluation.evaluate_similarity(
         args, token_embedding, context[0], logfile=os.path.join(

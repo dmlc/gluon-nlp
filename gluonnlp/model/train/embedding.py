@@ -33,8 +33,9 @@ from ...data.batchify import Pad
 class EmbeddingModel(Block):
     """A trainable embedding model.
 
-    This class is defines some common methods but is not usable standalone.
-    Subclasses implement the main functionality.
+    This is an abstract base class. Subclasses implement concrete
+    functionality. All EmbeddingModels support conversion to TokenEmbedding by
+    calling the to_token_embedding() method.
 
     Parameters
     ----------
@@ -47,58 +48,8 @@ class EmbeddingModel(Block):
         super(EmbeddingModel, self).__init__(**kwargs)
         self.embedding_size = embedding_size
 
-    def _to_token_embedding_batch(self, batch, token_to_idx,
-                                  model_subwordfunction, unknown_behavior,
-                                  ctx):
-        # Handle subwords
-        subword_padding = Pad(pad_val=-1)
-        if model_subwordfunction is not None:
-            subwords = model_subwordfunction(batch)
-            subwords = subword_padding(subwords)
-            subwords_mask = subwords != -1
-            subwords += subwords == -1  # -1 is invalid. Change to 0
-
-            if unknown_behavior == 'impute_raise':
-                # Check that subwords are present  for all tokens
-                without_subwords_idxs = np.where(
-                    (subwords_mask.max(axis=1) == 0).asnumpy())[0].tolist()
-                if len(without_subwords_idxs):
-                    without_subwords = [
-                        batch[idx] for idx in without_subwords_idxs
-                    ]
-                    raise ValueError('No subwords were found for: ' +
-                                     ', '.join(without_subwords))
-
-            subwords = nd.array(subwords, ctx=ctx)
-            subwords_mask = nd.array(subwords_mask,
-                                     dtype=np.float32).as_in_context(ctx)
-
-        # Handle words
-        if unknown_behavior == 'raise':
-            if any(token not in token_to_idx for token in batch):
-                raise ValueError
-            words = [token_to_idx[token] for token in batch]
-            mask = nd.ones(shape=(len(words), ), ctx=ctx)
-        if unknown_behavior == 'impute_raise':
-            words = [
-                token_to_idx[token] if token in token_to_idx else 0
-                for token in batch
-            ]
-            mask = nd.array(
-                [1 if token in token_to_idx else 0 for token in batch],
-                ctx=ctx)
-
-        words = nd.array(words, ctx=ctx)
-
-        # Compute embeddings
-        if model_subwordfunction is not None:
-            return self(words, mask, subwords, subwords_mask)
-        else:
-            return self(words, mask)
-
-    def to_token_embedding(
-            self, tokens, model_token_to_idx, subword_function=None,
-            unknown_behavior='impute_raise', batch_size=1024, ctx=cpu()):
+    def to_token_embedding(self, tokens, unknown_behavior='impute_raise',
+                           batch_size=1024, ctx=cpu()):
         """Computes a TokenEmbedding from the trained embedding model.
 
         Parameters
@@ -106,12 +57,6 @@ class EmbeddingModel(Block):
         tokens : list of str
             The tokens for which to add vectors to the resulting
             TokenEmbedding.
-        model_token_to_idx : :class:`dict` instance
-            The token_to_idx mapping used when training the `embedding_model`.
-            It contains all token-index pairs observed during training.
-        subword_function : :class:`gluonnlp.vocab.SubwordFunction`, optional
-            The subword vocabulary of the `EmbeddingModel`. Only needed if the
-            `EmbeddingModel` makes use of subword information.
         unknown_behavior : ['impute_raise', 'raise'], default 'impute_raise'
             How to handle tokens that are not in the `model_token_to_idx`.
               - 'impute_raise' tries to impute an embedding based on the
@@ -139,8 +84,7 @@ class EmbeddingModel(Block):
         while True:
             batch = tokens[start_pointer:end_pointer]
             batch_embedding = self._to_token_embedding_batch(
-                batch, model_token_to_idx, subword_function, unknown_behavior,
-                ctx)
+                batch, unknown_behavior, ctx)
             new_idx_to_vec.append(batch_embedding.as_in_context(cpu()))
 
             if end_pointer >= len(tokens):
@@ -156,12 +100,16 @@ class EmbeddingModel(Block):
 class SimpleEmbeddingModel(EmbeddingModel, HybridBlock):
     """A trainable embedding model.
 
-    This class is a simple wrapper around the mxnet.gluon.nn.Embedding.
+    This class is a simple wrapper around the mxnet.gluon.nn.Embedding. It
+    trains independent embedding vectors for every token.
 
     Parameters
     ----------
-    num_tokens : int
-        Number of tokens in the vocabulary.
+    token_to_idx : dict
+        token_to_idx mapping of the vocabulary that this model is to be trained
+        with. token_to_idx is used when to_token_embedding is called. For
+        initialization len(token_to_idx) is used to specify the size of the
+        subword embedding matrix..
     embedding_size : int
         Dimension of embeddings.
     weight_initializer : mxnet.initializer.Initializer, optional
@@ -171,17 +119,17 @@ class SimpleEmbeddingModel(EmbeddingModel, HybridBlock):
 
     """
 
-    def __init__(self, num_tokens, embedding_size, weight_initializer=None,
+    def __init__(self, token_to_idx, embedding_size, weight_initializer=None,
                  sparse_grad=True, **kwargs):
         super(SimpleEmbeddingModel,
               self).__init__(embedding_size=embedding_size, **kwargs)
-        self.num_tokens = num_tokens
+        self.token_to_idx = token_to_idx
         self.weight_initializer = weight_initializer
         self.sparse_grad = sparse_grad
 
         with self.name_scope():
             self.embedding = nn.Embedding(
-                num_tokens, embedding_size,
+                len(token_to_idx), embedding_size,
                 weight_initializer=weight_initializer, sparse_grad=sparse_grad)
 
     def hybrid_forward(self, F, words, wordsmask):
@@ -198,6 +146,21 @@ class SimpleEmbeddingModel(EmbeddingModel, HybridBlock):
         #pylint: disable=arguments-differ
         wordsmask = F.expand_dims(wordsmask, axis=-1)
         return F.broadcast_mul(self.embedding(words), wordsmask)
+
+    def _to_token_embedding_batch(self, batch, unknown_behavior, ctx):
+        # SimpleEmbeddingModel does not support imputation
+        if unknown_behavior == 'raise' or unknown_behavior == 'impute_raise':
+            if any(token not in self.token_to_idx for token in batch):
+                raise ValueError
+            words = [self.token_to_idx[token] for token in batch]
+            mask = nd.ones(shape=(len(words), ), ctx=ctx)
+        else:
+            raise RuntimeError(
+                'Unsupported unknown_behavior {}'.format(unknown_behavior))
+
+        words = nd.array(words, ctx=ctx)
+
+        return self(words, mask)
 
 
 class _MaskedSumEmbedding(HybridBlock):
@@ -227,15 +190,21 @@ class _MaskedSumEmbedding(HybridBlock):
 class FasttextEmbeddingModel(EmbeddingModel):
     """FastText embedding model.
 
-    A FasttextEmbeddingModel combines a word level embedding matrix and a
+    The FasttextEmbeddingModel combines a word level embedding matrix and a
     subword level embedding matrix.
 
     Parameters
     ----------
-    num_tokens : int
-        Number of tokens in the vocabulary.
-    num_subwords : int
-        Number subwords.
+    token_to_idx : dict
+        token_to_idx mapping of the vocabulary that this model is to be trained
+        with. token_to_idx is used when to_token_embedding is called. For
+        initialization len(token_to_idx) is used to specify the size of the
+        subword embedding matrix..
+    subword_function : gluonnlp.SubwordFunction
+        The subword function used to obtain the subword indices during training
+        this model. The subword_function is used when to_token_embedding is
+        called. For initialization len(subword_function) is used to specify the
+        size of the subword embedding matrix..
     embedding_size : int
         Dimension of embeddings.
     weight_initializer : mxnet.initializer.Initializer, optional
@@ -245,23 +214,24 @@ class FasttextEmbeddingModel(EmbeddingModel):
 
     """
 
-    def __init__(self, num_tokens, num_subwords, embedding_size,
+    def __init__(self, token_to_idx, subword_function, embedding_size,
                  weight_initializer=None, sparse_grad=True, **kwargs):
         super(FasttextEmbeddingModel,
               self).__init__(embedding_size=embedding_size, **kwargs)
-        self.num_tokens = num_tokens
+        self.token_to_idx = token_to_idx
+        self.subword_function = subword_function
         self.weight_initializer = weight_initializer
         self.sparse_grad = sparse_grad
 
         with self.name_scope():
             self.embedding = nn.Embedding(
-                num_tokens,
+                len(token_to_idx),
                 embedding_size,
                 weight_initializer=weight_initializer,
                 sparse_grad=sparse_grad,
             )
             self.subword_embedding = _MaskedSumEmbedding(
-                num_subwords,
+                len(subword_function),
                 embedding_size,
                 weight_initializer=weight_initializer,
                 sparse_grad=sparse_grad,
@@ -288,3 +258,49 @@ class FasttextEmbeddingModel(EmbeddingModel):
         embeddings = F.broadcast_mul(self.embedding(words), wordsmask)
         subword_embeddings = self.subword_embedding(subwords, subwordsmask)
         return embeddings + subword_embeddings
+
+    def _to_token_embedding_batch(self, batch, unknown_behavior, ctx):
+        # Handle subwords
+        subword_padding = Pad(pad_val=-1)
+        subwords = self.subword_function(batch)
+        subwords = subword_padding(subwords)
+        subwords_mask = subwords != -1
+        subwords += subwords == -1  # -1 is invalid. Change to 0
+
+        if unknown_behavior == 'impute_raise':
+            # Check that subwords are present  for all tokens
+            without_subwords_idxs = np.where(
+                (subwords_mask.max(axis=1) == 0).asnumpy())[0].tolist()
+            if len(without_subwords_idxs):
+                without_subwords = [
+                    batch[idx] for idx in without_subwords_idxs
+                ]
+                raise ValueError('No subwords were found for: ' +
+                                 ', '.join(without_subwords))
+
+        subwords = nd.array(subwords, ctx=ctx)
+        subwords_mask = nd.array(subwords_mask,
+                                 dtype=np.float32).as_in_context(ctx)
+
+        # Handle words
+        if unknown_behavior == 'raise':
+            if any(token not in self.token_to_idx for token in batch):
+                raise ValueError
+            words = [self.token_to_idx[token] for token in batch]
+            mask = nd.ones(shape=(len(words), ), ctx=ctx)
+        elif unknown_behavior == 'impute_raise':
+            words = [
+                self.token_to_idx[token] if token in self.token_to_idx else 0
+                for token in batch
+            ]
+            mask = nd.array(
+                [1 if token in self.token_to_idx else 0 for token in batch],
+                ctx=ctx)
+        else:
+            raise RuntimeError(
+                'Unsupported unknown_behavior {}'.format(unknown_behavior))
+
+        words = nd.array(words, ctx=ctx)
+
+        # Compute embeddings
+        return self(words, mask, subwords, subwords_mask)
