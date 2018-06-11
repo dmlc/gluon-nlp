@@ -270,9 +270,6 @@ data_test = SimpleDataset([(ele[0], ele[1], len(ele[0]), len(ele[1]), i)
 ctx = [mx.cpu()] if args.gpus is None or args.gpus == '' else \
     [mx.gpu(int(x)) for x in args.gpus.split(',')]
 
-assert args.batch_size % len(ctx) == 0, \
-    'Total batch size must be multiple of the number of devices'
-
 if args.src_max_len <= 0 or args.tgt_max_len <= 0:
     max_len = np.max(
         [np.max(data_train_lengths, axis=0), np.max(data_val_lengths, axis=0),
@@ -379,12 +376,14 @@ def train():
     test_batchify_fn = btf.Tuple(btf.Pad(), btf.Pad(), btf.Stack(), btf.Stack(), btf.Stack())
     target_val_lengths = list(map(lambda x: x[-1], data_val_lengths))
     target_test_lengths = list(map(lambda x: x[-1], data_test_lengths))
+    bucket_width_scheme = 'exponential'
     train_batch_sampler = FixedBucketSampler(lengths=data_train_lengths,
                                              batch_size=args.batch_size,
                                              num_buckets=args.num_buckets,
                                              ratio=args.bucket_ratio,
                                              shuffle=True,
-                                             use_average_length=True)
+                                             use_average_length=True,
+                                             bucket_width_scheme=bucket_width_scheme)
     logging.info('Train Batch Sampler:\n{}'.format(train_batch_sampler.stats()))
     train_data_loader = DataLoader(data_train,
                                    batch_sampler=train_batch_sampler,
@@ -396,7 +395,8 @@ def train():
                                            num_buckets=args.num_buckets,
                                            ratio=args.bucket_ratio,
                                            shuffle=False,
-                                           use_average_length=True)
+                                           use_average_length=True,
+                                           bucket_width_scheme=bucket_width_scheme)
     logging.info('Valid Batch Sampler:\n{}'.format(val_batch_sampler.stats()))
     val_data_loader = DataLoader(data_val,
                                  batch_sampler=val_batch_sampler,
@@ -407,7 +407,8 @@ def train():
                                             num_buckets=args.num_buckets,
                                             ratio=args.bucket_ratio,
                                             shuffle=False,
-                                            use_average_length=True)
+                                            use_average_length=True,
+                                            bucket_width_scheme=bucket_width_scheme)
     logging.info('Test Batch Sampler:\n{}'.format(test_batch_sampler.stats()))
     test_data_loader = DataLoader(data_test,
                                   batch_sampler=test_batch_sampler,
