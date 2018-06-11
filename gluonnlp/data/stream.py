@@ -207,6 +207,7 @@ class LanguageModelStream(CorpusStream):
         recurrent states from last batch connects with the current batch for each sample.
 
         Each sample is of shape `(seq_len, batch_size)`.
+        # TODO: example how samples are genereated.
 
         Parameters
         ----------
@@ -267,6 +268,7 @@ class _LanguageModelBPTTStream(DataStream):
             """Init the data and target with values."""
             data[:] = value
             target[:] = value
+            mask[:] = 0
 
         def _read(buffers, i, vocab, corpus):
             """Read a sentence from the corpus into i-th buffer."""
@@ -282,6 +284,7 @@ class _LanguageModelBPTTStream(DataStream):
             # fill in data and target
             data[i, length:length+num_tokens] = buffers[i][:num_tokens]
             target[i, length:length+num_tokens] = buffers[i][1:num_tokens+1]
+            mask[i, length:length+num_tokens] = 1
             # trim sentence in the buffer if too long. Used for the next batch
             buffers[i] = buffers[i][num_tokens:]
             return num_tokens
@@ -292,6 +295,7 @@ class _LanguageModelBPTTStream(DataStream):
         has_token_buffered = False
         data = np.empty([self._batch_size, self._seq_len], dtype=np.float32)
         target = np.empty([self._batch_size, self._seq_len], dtype=np.float32)
+        mask = np.empty([self._batch_size, self._seq_len], dtype=np.float32)
         corpus = iter(self._corpus)
 
         while has_next or has_token_buffered:
@@ -309,5 +313,5 @@ class _LanguageModelBPTTStream(DataStream):
                 except StopIteration:
                     has_next = False
             if has_token_buffered or self._last_batch == 'keep':
-                yield mx.nd.array(data).T, mx.nd.array(target).T
+                yield mx.nd.array(data).T, mx.nd.array(target).T, mx.nd.array(mask).T
         return

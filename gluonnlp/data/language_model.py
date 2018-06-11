@@ -20,7 +20,7 @@
 # pylint: disable=
 """Language model datasets."""
 
-__all__ = ['WikiText2', 'WikiText103', 'WikiText2Raw', 'WikiText103Raw', 'GBWStream']
+__all__ = ['WikiText2', 'WikiText103', 'WikiText2Raw', 'WikiText103Raw', 'GBWStream', 'GBWVocab']
 
 import os
 import zipfile
@@ -34,7 +34,8 @@ from .. import _constants as C
 from .dataset import LanguageModelDataset
 from .stream import LanguageModelStream
 from .registry import register
-from .utils import _get_home_dir
+from .utils import _get_home_dir, _load_pretrained_vocab
+from ..vocab import SortedVocab
 
 
 class _WikiText(LanguageModelDataset):
@@ -276,6 +277,7 @@ class _GBWStream(LanguageModelStream):
         self._data_hash = data_hash
         self._get_data()
         sampler = 'random' if segment == 'train' else 'sequential'
+        sampler = 'sequential'
         super(_GBWStream, self).__init__(self._file_pattern, skip_empty=skip_empty, bos=bos,
                                          eos=eos, sampler=sampler, file_sampler=sampler)
 
@@ -340,3 +342,22 @@ class GBWStream(_GBWStream):
                                     'news.en.heldout-00000-of-00050',
                                     '0a8e2b7496ba0b5c05158f282b9b351356875445')}
         super(GBWStream, self).__init__('gbw', segment, bos, eos, skip_empty, root)
+
+class GBWVocab(SortedVocab):
+    """
+    """
+    def __init__(self, root=os.path.join(_get_home_dir(), 'models')):
+        #path = _load_pretrained_vocab(...)
+        # ??
+        import pickle
+        min_freq = 3
+        counter = pickle.load(open("/home/ubuntu/counter.p", "rb")).discard(min_freq, '<unk>')
+        print(counter['the'])
+        print(counter[','])
+        super(SortedVocab, self).__init__(counter, bos_token=None, min_freq=min_freq)
+        #for i in range(45):
+        #    print(self.idx_to_token[i])
+        #assert False
+        serialized_vocab = self.to_json()
+        with open('gbw_sorted_vocab.json', 'w') as f:
+            f.write(serialized_vocab)
