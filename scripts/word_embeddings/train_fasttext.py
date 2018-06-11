@@ -30,23 +30,22 @@ The FastText embedding model was introduced by
   vectors with subword information. TACL, 5(), 135–146.
 
 """
-import sys
 import argparse
+import functools
 import itertools
 import logging
 import os
 import random
+import sys
 import tempfile
 
 import mxnet as mx
-from mxnet import gluon
 import numpy as np
 import tqdm
 
-import gluonnlp as nlp
-
 import evaluation
-from utils import get_context, print_time
+import gluonnlp as nlp
+from utils import get_context, print_time, prune_sentences
 
 
 ###############################################################################
@@ -92,8 +91,7 @@ def parse_args():
     # Optimization options
     group = parser.add_argument_group('Optimization arguments')
     group.add_argument('--optimizer', type=str, default='adagrad')
-    group.add_argument('--optimizer-adagrad-initial-state', type=float,
-                       default=1)
+    group.add_argument('--optimizer-reset-at-epoch', action='store_true')
     group.add_argument('--lr', type=float, default=0.05)
 
     # Logging
@@ -125,8 +123,8 @@ def get_train_data(args):
     vocab = nlp.Vocab(counter, unknown_token=None, padding_token=None,
                       bos_token=None, eos_token=None, min_freq=5)
 
-    negatives_weights = mx.nd.array(
-        [counter[w] for w in vocab.idx_to_token])**0.75
+    idx_to_counts = mx.nd.array([counter[w] for w in vocab.idx_to_token])
+    negatives_weights = idx_to_counts**0.75
     negatives_sampler = nlp.data.UnigramCandidateSampler(
         weights=negatives_weights)
 
@@ -135,6 +133,17 @@ def get_train_data(args):
         coded_dataset = [[
             vocab[token] for token in sentence if token in vocab
         ] for sentence in dataset]
+
+    with print_time('prune frequent words from sentences'):
+        frequent_tokens_subsampling_constant = 1e-3
+        f = idx_to_counts / mx.nd.sum(idx_to_counts)
+        idx_to_pdiscard = (
+            mx.nd.sqrt(frequent_tokens_subsampling_constant / f) +
+            frequent_tokens_subsampling_constant / f).asnumpy()
+
+        prune_sentences_ = functools.partial(prune_sentences,
+                                             idx_to_pdiscard=idx_to_pdiscard)
+        coded_dataset = list(map(prune_sentences_, coded_dataset))
 
     with print_time('prepare subwords'):
         subword_function = nlp.vocab.create_subword_function(
@@ -222,7 +231,7 @@ def train(args):
         weight_initializer=mx.init.Zero(),
         sparse_grad=not args.no_sparse_grad,
     )
-    loss_function = gluon.loss.SigmoidBinaryCrossEntropyLoss()
+    loss_function = mx.gluon.loss.SigmoidBinaryCrossEntropyLoss()
 
     context = get_context(args)
     embedding.initialize(ctx=context)
@@ -231,13 +240,10 @@ def train(args):
         embedding.hybridize(static_alloc=not args.no_static_alloc)
         embedding_out.hybridize(static_alloc=not args.no_static_alloc)
 
+    optimizer_kwargs = dict(learning_rate=args.lr)
     params = list(embedding.collect_params().values()) + \
         list(embedding_out.collect_params().values())
-    optimizer_kwargs = dict(learning_rate=args.lr)
-    if args.optimizer == 'adagrad':
-        optimizer_kwargs = dict(
-            initial_accumulator_value=args.optimizer_adagrad_initial_state)
-    trainer = gluon.Trainer(params, args.optimizer, optimizer_kwargs)
+    trainer = mx.gluon.Trainer(params, args.optimizer, optimizer_kwargs)
 
     num_update = 0
     for epoch in range(args.epochs):
@@ -246,6 +252,10 @@ def train(args):
                                                   batch_size=args.batch_size,
                                                   window=args.window)
         num_batches = len(context_sampler)
+
+        if args.optimizer_reset_at_epoch:
+            trainer = mx.gluon.Trainer(params, args.optimizer,
+                                       optimizer_kwargs)
 
         for i, batch in tqdm.tqdm(
                 enumerate(context_sampler), total=num_batches, ascii=True,
@@ -274,8 +284,9 @@ def train(args):
                 context[0])
             word_context = word_context.as_in_context(context[0])
             word_context_mask = word_context_mask.as_in_context(context[0])
-            negatives = negatives_sampler(center.shape[0] * args.negative) \
-                .reshape((center.shape[0], args.negative)) \
+            negatives = negatives_sampler(word_context.shape + (args.negative, )) \
+                .reshape((word_context.shape[0],
+                          word_context.shape[1] * args.negative)) \
                 .as_in_context(context[0])
 
             with mx.autograd.record():
@@ -324,7 +335,7 @@ def train(args):
 
             loss.backward()
 
-            if args.optimizer != 'adagrad':
+            if args.optimizer.lower() not in ['adagrad', 'adam']:
                 trainer.set_learning_rate(args.lr * (1 - progress))
             trainer.step(batch_size=1)
 
@@ -332,12 +343,13 @@ def train(args):
             if i % args.eval_interval == 0:
                 with print_time('mx.nd.waitall()'):
                     mx.nd.waitall()
-                evaluate(args, embedding, vocab, subword_function, num_update)
+
+                evaluate(args, embedding, vocab, num_update)
 
         # Log at the end of every epoch
         with print_time('mx.nd.waitall()'):
             mx.nd.waitall()
-        evaluate(args, embedding, vocab, subword_function, num_update,
+        evaluate(args, embedding, vocab, num_update,
                  eval_analogy=(epoch == args.epochs - 1
                                and not args.no_eval_analogy))
 
@@ -345,8 +357,7 @@ def train(args):
         save_params(args, embedding, embedding_out)
 
 
-def evaluate(args, embedding, vocab, subword_function, global_step,
-             eval_analogy=False):
+def evaluate(args, embedding, vocab, global_step, eval_analogy=False):
     """Evaluation helper"""
     if 'eval_tokens' not in globals():
         global eval_tokens
@@ -372,7 +383,7 @@ def evaluate(args, embedding, vocab, subword_function, global_step,
         assert not args.no_eval_analogy
         results += evaluation.evaluate_analogy(
             args, token_embedding, context[0], logfile=os.path.join(
-                args.logdir, 'analogy.tsv'), global_step=global_step)
+                args.logdir, 'analogy.tsv'))
 
     return results
 

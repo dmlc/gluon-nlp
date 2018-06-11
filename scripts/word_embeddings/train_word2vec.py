@@ -31,22 +31,21 @@ The Word2Vec embedding model was introduced by
 
 """
 
-import sys
 import argparse
+import functools
 import itertools
 import logging
 import os
 import random
+import sys
 import tempfile
 
 import mxnet as mx
-from mxnet import gluon
 import tqdm
 
-import gluonnlp as nlp
-
 import evaluation
-from utils import get_context, print_time
+import gluonnlp as nlp
+from utils import get_context, print_time, prune_sentences
 
 
 ###############################################################################
@@ -88,6 +87,7 @@ def parse_args():
     # Optimization options
     group = parser.add_argument_group('Optimization arguments')
     group.add_argument('--optimizer', type=str, default='adagrad')
+    group.add_argument('--optimizer-reset-at-epoch', action='store_true')
     group.add_argument('--optimizer-adagrad-initial-state', type=float,
                        default=1)
     group.add_argument('--lr', type=float, default=0.05)
@@ -132,6 +132,18 @@ def get_train_data():
             vocab[token] for token in sentence if token in vocab
         ] for sentence in dataset]
 
+    with print_time('prune frequent words from sentences'):
+        idx_to_counts = mx.nd.array([counter[w] for w in vocab.idx_to_token])
+        frequent_tokens_subsampling_constant = 1e-3
+        f = idx_to_counts / mx.nd.sum(idx_to_counts)
+        idx_to_pdiscard = (
+            mx.nd.sqrt(frequent_tokens_subsampling_constant / f) +
+            frequent_tokens_subsampling_constant / f).asnumpy()
+
+        prune_sentences_ = functools.partial(prune_sentences,
+                                             idx_to_pdiscard=idx_to_pdiscard)
+        coded_dataset = list(map(prune_sentences_, coded_dataset))
+
     return coded_dataset, negatives_sampler, vocab
 
 
@@ -164,7 +176,7 @@ def train(args):
         weight_initializer=mx.init.Uniform(scale=1 / args.emsize),
         sparse_grad=not args.no_sparse_grad,
     )
-    loss_function = gluon.loss.SigmoidBinaryCrossEntropyLoss()
+    loss_function = mx.gluon.loss.SigmoidBinaryCrossEntropyLoss()
 
     context = get_context(args)
     embedding.initialize(ctx=context)
@@ -179,7 +191,7 @@ def train(args):
     if args.optimizer == 'adagrad':
         optimizer_kwargs = dict(
             initial_accumulator_value=args.optimizer_adagrad_initial_state)
-    trainer = gluon.Trainer(params, args.optimizer, optimizer_kwargs)
+    trainer = mx.gluon.Trainer(params, args.optimizer, optimizer_kwargs)
 
     num_update = 0
     for epoch in range(args.epochs):
@@ -188,6 +200,10 @@ def train(args):
                                                   batch_size=args.batch_size,
                                                   window=args.window)
         num_batches = len(context_sampler)
+
+        if args.optimizer_reset_at_epoch:
+            trainer = mx.gluon.Trainer(params, args.optimizer,
+                                       optimizer_kwargs)
 
         for i, batch in tqdm.tqdm(
                 enumerate(context_sampler), total=num_batches, ascii=True,
@@ -201,8 +217,9 @@ def train(args):
             center_mask = mx.nd.ones((center.shape[0], ), ctx=center.context)
             word_context = word_context.as_in_context(context[0])
             word_context_mask = word_context_mask.as_in_context(context[0])
-            negatives = negatives_sampler(center.shape[0] * args.negative) \
-                .reshape((center.shape[0], args.negative)) \
+            negatives = negatives_sampler(word_context.shape + (args.negative, )) \
+                .reshape((word_context.shape[0],
+                          word_context.shape[1] * args.negative)) \
                 .as_in_context(context[0])
 
             with mx.autograd.record():
@@ -284,9 +301,7 @@ def evaluate(args, embedding, vocab, global_step, eval_analogy=False):
             eval_tokens_set.update(vocab.idx_to_token)
 
         # Word2Vec does not support computing vectors for OOV words
-        eval_tokens = filter(lambda t: t in vocab, eval_tokens)
-
-        eval_tokens = list(eval_tokens_set)
+        eval_tokens = list(filter(lambda t: t in vocab, eval_tokens_set))
 
     os.makedirs(args.logdir, exist_ok=True)
 

@@ -23,7 +23,6 @@
 __all__ = ['Text8']
 
 import os
-import shutil
 import zipfile
 
 from mxnet.gluon.utils import check_sha1, download
@@ -70,6 +69,7 @@ class Text8(CorpusDataset):
         self._max_sentence_length = max_sentence_length
         super(Text8, self).__init__(self._get_data())
 
+        # pylint: disable=access-member-before-definition
         if max_sentence_length:
             data = []
             for sentence in self._data:

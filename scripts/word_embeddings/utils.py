@@ -26,6 +26,15 @@ import time
 from contextlib import contextmanager
 
 import mxnet as mx
+import numpy as np
+
+try:
+    from numba import njit
+    numba_njit = njit(nogil=True)
+except ImportError:
+    # Define numba shims
+    def numba_njit(func):
+        return func
 
 
 def get_context(args):
@@ -44,3 +53,13 @@ def print_time(task):
     logging.info('Finished to {} in {:.2f} seconds'.format(
         task,
         time.time() - start_time))
+
+
+@numba_njit
+def prune_sentences(coded, idx_to_pdiscard):
+    """Downsample frequent words."""
+    pruned = []
+    for idx in coded:
+        if np.random.uniform(0.0, 1.0) < idx_to_pdiscard[idx]:
+            pruned.append(idx)
+    return pruned

@@ -22,7 +22,8 @@
 This example shows how to load the binary format containing word and subword
 information and perform intrinsic evaluation of word embeddings trained with
 the facebookresearch/fasttext implementation using a variety of datasets all
-part of the Gluon NLP Toolkit.
+part of the Gluon NLP Toolkit. The example makes use of gensim for reading the
+binary file format.
 
 """
 
@@ -67,7 +68,8 @@ def get_args():
                        help=('Number (index) of GPU to run on, e.g. 0. '
                              'If not specified, uses CPU.'))
     group.add_argument('--no-hybridize', action='store_true',
-                       help='Disable hybridization of gluon HybridBlocks.')
+                       help='Disable hybridization of gluon HybridBlocks '
+                       'used for evaluation.')
 
     # Logging
     group = parser.add_argument_group('Logging arguments')
@@ -124,8 +126,8 @@ def get_model(args):
             'NGramHashes', num_subwords=num_subwords)
 
         embedding = nlp.model.train.FasttextEmbeddingModel(
-            num_tokens=len(token_to_idx),
-            num_subwords=len(subword_function),
+            token_to_idx=token_to_idx,
+            subword_function=subword_function,
             embedding_size=dim,
         )
 
@@ -137,29 +139,28 @@ def get_model(args):
         print('Loaded model does not contain subwords.')
 
         embedding = nlp.model.train.SimpleEmbeddingModel(
-            num_tokens=len(token_to_idx),
+            token_to_idx=token_to_idx,
             embedding_size=dim,
         )
 
         embedding.initialize(ctx=context[0])
         embedding.embedding.weight.set_data(idx_to_vec)
 
-    return embedding, idx_to_token, token_to_idx, subword_function
+    return embedding, idx_to_token
 
 
 def load_and_evaluate(args):
     """Load the pretrained model and run evaluate."""
     context = utils.get_context(args)
-    embedding, model_idx_to_token, model_token_to_idx, subword_function = \
-        get_model(args)
+    embedding, model_idx_to_token = get_model(args)
 
     idx_to_token_set = evaluation.get_tokens_in_evaluation_datasets(args)
     idx_to_token_set.update(model_idx_to_token)
     idx_to_token = list(idx_to_token_set)
 
     # Compute their word vectors
-    token_embedding = embedding.to_token_embedding(
-        idx_to_token, model_token_to_idx, subword_function, ctx=context[0])
+    token_embedding = embedding.to_token_embedding(idx_to_token,
+                                                   ctx=context[0])
 
     os.makedirs(args.logdir, exist_ok=True)
     results = evaluation.evaluate_similarity(

@@ -187,7 +187,7 @@ class _MaskedSumEmbedding(HybridBlock):
         return F.sum(masked_embeddings, axis=-2)
 
 
-class FasttextEmbeddingModel(EmbeddingModel):
+class FasttextEmbeddingModel(EmbeddingModel, HybridBlock):
     """FastText embedding model.
 
     The FasttextEmbeddingModel combines a word level embedding matrix and a
@@ -237,7 +237,7 @@ class FasttextEmbeddingModel(EmbeddingModel):
                 sparse_grad=sparse_grad,
             )
 
-    def forward(self, words, wordsmask, subwords, subwordsmask, F=nd):
+    def hybrid_forward(self, F, words, wordsmask, subwords, subwordsmask):
         """Compute embedding of words in batch.
 
         Parameters
