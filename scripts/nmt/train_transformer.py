@@ -92,7 +92,7 @@ parser.add_argument('--bucket_scheme', type=str, default='constant',
                     help='Strategy for generating bucket keys. It supports: '
                          '"constant": all the buckets have the same width; '
                          '"linear": the width of bucket increases linearly; '
-                         '"exponential": the width of bucket increases exponentially')
+                         '"exp": the width of bucket increases exponentially')
 parser.add_argument('--bucket_ratio', type=float, default=0.0, help='Ratio for increasing the '
                                                                     'throughput of the bucketing')
 parser.add_argument('--src_max_len', type=int, default=-1, help='Maximum length of the source '
@@ -382,11 +382,11 @@ def train():
     test_batchify_fn = btf.Tuple(btf.Pad(), btf.Pad(), btf.Stack(), btf.Stack(), btf.Stack())
     target_val_lengths = list(map(lambda x: x[-1], data_val_lengths))
     target_test_lengths = list(map(lambda x: x[-1], data_test_lengths))
-    if args.bucket_scheme == 'constant':
+    if args.bucket_scheme == 'consant':
         bucket = ConstWidthBucket()
     elif args.bucket_scheme == 'linear':
         bucket = LinearWidthBucket()
-    elif args.sbucket_scheme == 'exponential':
+    elif args.bucket_scheme == 'exp':
         bucket = ExpWidthBucket(bucket_len_step=1.2)
     else:
         raise NotImplementedError

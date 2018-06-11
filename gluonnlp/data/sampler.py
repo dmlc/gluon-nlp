@@ -164,7 +164,7 @@ class ExpWidthBucket(Bucket):
     bucket_len_step : float, default 1.1
         This is the increasing factor for the bucket width.
     """
-    def __init__(self, bucket_len_step):
+    def __init__(self, bucket_len_step=1.1):
         self.bucket_len_step = bucket_len_step
 
     def __call__(self, single_element, max_lengths, min_lengths, num_buckets):
