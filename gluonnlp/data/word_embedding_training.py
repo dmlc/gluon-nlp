@@ -87,11 +87,5 @@ class Text8(CorpusDataset):
                                             path=root, sha1_hash=archive_hash)
 
             with zipfile.ZipFile(downloaded_file_path, 'r') as zf:
-                for member in zf.namelist():
-                    filename = os.path.basename(member)
-                    if filename:
-                        dest = os.path.join(root, filename)
-                        with zf.open(member) as source:
-                            with open(dest, 'wb') as target:
-                                shutil.copyfileobj(source, target)
+                zf.extractall(root)
         return path

@@ -36,7 +36,7 @@ class CandidateSampler(object):
         raise NotImplementedError
 
 
-class UnigramCandidateSampler(object):
+class UnigramCandidateSampler(CandidateSampler):
     """Unigram Candidate Sampler
 
     Parameters
