@@ -382,7 +382,7 @@ def train():
     test_batchify_fn = btf.Tuple(btf.Pad(), btf.Pad(), btf.Stack(), btf.Stack(), btf.Stack())
     target_val_lengths = list(map(lambda x: x[-1], data_val_lengths))
     target_test_lengths = list(map(lambda x: x[-1], data_test_lengths))
-    if args.bucket_scheme == 'consant':
+    if args.bucket_scheme == 'constant':
         bucket = ConstWidthBucket()
     elif args.bucket_scheme == 'linear':
         bucket = LinearWidthBucket()
@@ -451,6 +451,12 @@ def train():
             # logging.info(src_seq.context) Context suddenly becomes GPU.
             src_wc = src_valid_length.sum().asscalar()
             tgt_wc = tgt_valid_length.sum().asscalar()
+            print('========')
+            print(src_wc)
+            print(tgt_wc)
+            print('--------')
+            print(np.prod(src_seq.shape))
+            print(np.prod(tgt_seq.shape))
             loss_denom += tgt_wc - tgt_valid_length.shape[0]
             if src_seq.shape[0] > len(ctx):
                 src_seq_list, tgt_seq_list, src_valid_length_list, tgt_valid_length_list \
