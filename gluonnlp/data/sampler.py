@@ -26,6 +26,7 @@ import warnings
 import math
 import numpy as np
 from mxnet.gluon.data import Sampler
+from .._constants import INT_TYPES
 
 
 def _match_bucket_keys(bucket_keys, seq_lengths):
@@ -68,13 +69,11 @@ def _bucket_average_lengths(bucket_sample_ids, seq_lengths):
 class BucketScheme(object):
     r"""Base class of for generating bucket keys.
     """
-    def __call__(self, single_element, max_lengths, min_lengths, num_buckets):
+    def __call__(self, max_lengths, min_lengths, num_buckets):
         """Generate bucket keys based on the lengths of sequences and number of buckets.
 
         Parameters
         ----------
-        single_element : bool
-            Whether lengths of sequences is a list of int.
         max_lengths : int of list of int
             Maximum of lengths of sequences.
         min_lengths : int of list of int
@@ -88,13 +87,11 @@ class BucketScheme(object):
 class ConstWidthBucket(BucketScheme):
     r""" Buckets with constant width.
     """
-    def __call__(self, single_element, max_lengths, min_lengths, num_buckets):
+    def __call__(self, max_lengths, min_lengths, num_buckets):
         r"""This generate bucket keys given that all the buckets have the same width.
 
         Parameters
         ----------
-        single_element : bool
-            Whether lengths of sequences is a list of int.
         max_lengths : int of list of int
             Maximum of lengths of sequences.
         min_lengths : int of list of int
@@ -102,7 +99,7 @@ class ConstWidthBucket(BucketScheme):
         num_buckets : int
             Number of buckets
         """
-        if not single_element:
+        if not isinstance(max_lengths, INT_TYPES):
             bucket_width_l = [max((max_len - min_len) // num_buckets, 1)
                               for max_len, min_len in
                               zip(max_lengths, min_lengths)]
@@ -120,14 +117,12 @@ class ConstWidthBucket(BucketScheme):
 class LinearWidthBucket(BucketScheme):
     r""" Buckets with linearly increasing width.
     """
-    def __call__(self, single_element, max_lengths, min_lengths, num_buckets):
+    def __call__(self, max_lengths, min_lengths, num_buckets):
         r"""This implements a scheme for linearly increasing bucket width:
                 :math:`w_i = \alpha * i + 1` for all :math:`i \geq 1`.
 
         Parameters
         ----------
-        single_element : bool
-            Whether lengths of sequences is a list of int.
         max_lengths : int of list of int
             Maximum of lengths of sequences.
         min_lengths : int of list of int
@@ -135,7 +130,7 @@ class LinearWidthBucket(BucketScheme):
         num_buckets : int
             Number of buckets
         """
-        if not single_element:
+        if not isinstance(max_lengths, INT_TYPES):
             alpha_l = [2 * float(max_len - min_len - num_buckets)
                        / (num_buckets * (num_buckets + 1))
                        for max_len, min_len in
@@ -167,15 +162,12 @@ class ExpWidthBucket(BucketScheme):
     def __init__(self, bucket_len_step=1.1):
         self.bucket_len_step = bucket_len_step
 
-    def __call__(self, single_element, max_lengths, min_lengths, num_buckets):
+    def __call__(self, max_lengths, min_lengths, num_buckets):
         r"""This function implements a scheme for exponentially increasing bucket width:
                 :math:`w_i = bucket_len_step * w_{i-1}` for all :math:`i \geq 2`.
 
-
         Parameters
         ----------
-        single_element : bool
-            Whether lengths of sequences is a list of int.
         max_lengths : int of list of int
             Maximum of lengths of sequences.
         min_lengths : int of list of int
@@ -183,7 +175,7 @@ class ExpWidthBucket(BucketScheme):
         num_buckets : int
             Number of buckets
         """
-        if not single_element:
+        if not isinstance(max_lengths, INT_TYPES):
             initial_width_l = [
                 (max_len - min_len) * (self.bucket_len_step - 1)
                 / (math.pow(self.bucket_len_step, num_buckets) - 1)
@@ -322,8 +314,7 @@ class FixedBucketSampler(Sampler):
         if bucket_keys is None:
             assert num_buckets > 0, 'num_buckets must be set when bucket_keys is None. Received ' \
                                     'num_buckets=%d' % num_buckets
-            bucket_keys = bucket_scheme(self._single_element, max_lengths,
-                                        min_lengths, num_buckets)
+            bucket_keys = bucket_scheme(max_lengths, min_lengths, num_buckets)
         else:
             if num_buckets is not None:
                 warnings.warn('num_buckets will not be used if bucket_keys is not None. '

@@ -20,6 +20,8 @@
 # pylint: disable=too-many-lines
 """Constants."""
 
+import numpy as np
+
 UNK_TOKEN = '<unk>'
 
 BOS_TOKEN = '<bos>'
@@ -35,6 +37,9 @@ UNK_IDX = 0   # This should not be changed as long as serialized token
 LARGE_POSITIVE_FLOAT = 1e18
 
 LARGE_NEGATIVE_FLOAT = -LARGE_POSITIVE_FLOAT
+
+INT_TYPES = (int, np.int8, np.int, np.int16, np.int32, np.int64,
+             np.uint8, np.uint16, np.uint32, np.uint64)
 
 GLOVE_NPZ_SHA1 = \
     {'glove.42B.300d': ('glove.42B.300d.npz',
