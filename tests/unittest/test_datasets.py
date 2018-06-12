@@ -468,6 +468,7 @@ def test_wmt2016bpe():
     assert len(en_vocab) == 36548
     assert len(de_vocab) == 36548
 
+
 def test_wmt2014bpe():
     train = nlp.data.WMT2014BPE(segment='train', src_lang='en', tgt_lang='de',
                                 root='tests/data/wmt2014')
@@ -482,3 +483,20 @@ def test_wmt2014bpe():
     en_vocab, de_vocab = train.src_vocab, train.tgt_vocab
     assert len(en_vocab) == 36794
     assert len(de_vocab) == 36794
+    
+
+###############################################################################
+# Question answering
+###############################################################################
+def test_load_dev_squad():
+    # number of records in dataset is equal to number of different questions
+    train_dataset = nlp.data.SQuAD(segment='train', root='tests/data/squad')
+    assert len(train_dataset) == 87599
+
+    val_dataset = nlp.data.SQuAD(segment='dev', root='tests/data/squad')
+    assert len(val_dataset) == 10570
+
+    # Each record is a tuple of 6 elements: record_id, question Id, question, context,
+    # list of answer texts, list of answer start indices
+    for record in val_dataset:
+        assert len(record) == 6
