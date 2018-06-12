@@ -69,3 +69,46 @@ FastText models were introudced by
 
 - Bojanowski, P., Grave, E., Joulin, A., & Mikolov, T. (2017). Enriching word
   vectors with subword information. TACL, 5(), 135–146.
+
+We report the results obtained by running the `train_fasttext.py` script with
+default parameters. You can reproduce these results with runningand `python
+train_fasttext.py --gpu 0` respectively. For comparison we also report the
+results obtained by training FastText with the `facebookresearch/fastText
+implementation <https://github.com/facebookresearch/fastText>`_. All results are
+obtained by training 10 epochs on the `Text8
+<http://mattmahoney.net/dc/textdata.html>`_ dataset.
+
+
+======================================  ===========================  ===================
+Similarity Dataset                      facebookresearch/fasttext    train_fasttext.py
+======================================  ===========================  ===================
+WordSim353-similarity                                  0.663724             0.718848
+WordSim353-relatedness                                 0.58125              0.606002
+MEN (test set)                                         0.705311             0.663146
+RadinskyMTurk                                          0.665705             0.652314
+RareWords                                              0.384798             0.378155
+SimLex999                                              0.302956             0.283543
+SimVerb3500                                            0.195971             0.189177
+SemEval17Task2 (test set)                              0.550221             0.559741
+BakerVerb143                                           0.419705             0.382791
+YangPowersVerb130                                      0.459764             0.374102
+======================================  ===========================  ===================
+
+===========================================  ===========================  ===================
+Googal Analogy Test Set Category             facebookresearch/fasttext    train_fasttext.py
+===========================================  ===========================  ===================
+capital-common-countries                             0.416996                  0.577075
+capital-world                                        0.114721                  0.22458
+currency                                             0.0103926                 0.0935335
+city-in-state                                        0.0689096                 0.143494
+family                                               0.247036                  0.460474
+gram1-adjective-to-adverb                            0.620968                  0.609879
+gram2-opposite                                       0.619458                  0.607143
+gram3-comparative                                    0.73048                   0.84009
+gram4-superlative                                    0.712121                  0.57041
+gram5-present-participle                             0.418561                  0.565341
+gram6-nationality-adjective                          0.809256                  0.847405
+gram7-past-tense                                     0.153205                  0.314103
+gram8-plural                                         0.850601                  0.772523
+gram9-plural-verbs                                   0.772414                  0.635632
+===========================================  ===========================  ===================

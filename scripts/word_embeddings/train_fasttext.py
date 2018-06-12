@@ -91,8 +91,9 @@ def parse_args():
     # Optimization options
     group = parser.add_argument_group('Optimization arguments')
     group.add_argument('--optimizer', type=str, default='adagrad')
-    group.add_argument('--optimizer-reset-at-epoch', action='store_true')
     group.add_argument('--lr', type=float, default=0.05)
+    group.add_argument('--optimizer-subwords', type=str, default='adagrad')
+    group.add_argument('--lr-subwords', type=float, default=0.01)
 
     # Logging
     group = parser.add_argument_group('Logging arguments')
@@ -241,9 +242,15 @@ def train(args):
         embedding_out.hybridize(static_alloc=not args.no_static_alloc)
 
     optimizer_kwargs = dict(learning_rate=args.lr)
-    params = list(embedding.collect_params().values()) + \
+    params = list(embedding.embedding.collect_params().values()) + \
         list(embedding_out.collect_params().values())
     trainer = mx.gluon.Trainer(params, args.optimizer, optimizer_kwargs)
+
+    optimizer_subwords_kwargs = dict(learning_rate=args.lr_subwords)
+    params_subwords = list(
+        embedding.subword_embedding.collect_params().values())
+    trainer_subwords = mx.gluon.Trainer(
+        params_subwords, args.optimizer_subwords, optimizer_subwords_kwargs)
 
     num_update = 0
     for epoch in range(args.epochs):
@@ -252,10 +259,6 @@ def train(args):
                                                   batch_size=args.batch_size,
                                                   window=args.window)
         num_batches = len(context_sampler)
-
-        if args.optimizer_reset_at_epoch:
-            trainer = mx.gluon.Trainer(params, args.optimizer,
-                                       optimizer_kwargs)
 
         for i, batch in tqdm.tqdm(
                 enumerate(context_sampler), total=num_batches, ascii=True,
@@ -337,7 +340,10 @@ def train(args):
 
             if args.optimizer.lower() not in ['adagrad', 'adam']:
                 trainer.set_learning_rate(args.lr * (1 - progress))
+            if args.optimizer_subwords.lower() not in ['adagrad', 'adam']:
+                trainer_subwords.set_learning_rate(args.lr * (1 - progress))
             trainer.step(batch_size=1)
+            trainer_subwords.step(batch_size=1)
 
             # Logging
             if i % args.eval_interval == 0:

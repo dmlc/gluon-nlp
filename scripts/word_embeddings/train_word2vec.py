@@ -87,9 +87,6 @@ def parse_args():
     # Optimization options
     group = parser.add_argument_group('Optimization arguments')
     group.add_argument('--optimizer', type=str, default='adagrad')
-    group.add_argument('--optimizer-reset-at-epoch', action='store_true')
-    group.add_argument('--optimizer-adagrad-initial-state', type=float,
-                       default=1)
     group.add_argument('--lr', type=float, default=0.05)
 
     # Logging
@@ -188,9 +185,6 @@ def train(args):
     params = list(embedding.collect_params().values()) + \
         list(embedding_out.collect_params().values())
     optimizer_kwargs = dict(learning_rate=args.lr)
-    if args.optimizer == 'adagrad':
-        optimizer_kwargs = dict(
-            initial_accumulator_value=args.optimizer_adagrad_initial_state)
     trainer = mx.gluon.Trainer(params, args.optimizer, optimizer_kwargs)
 
     num_update = 0
@@ -200,10 +194,6 @@ def train(args):
                                                   batch_size=args.batch_size,
                                                   window=args.window)
         num_batches = len(context_sampler)
-
-        if args.optimizer_reset_at_epoch:
-            trainer = mx.gluon.Trainer(params, args.optimizer,
-                                       optimizer_kwargs)
 
         for i, batch in tqdm.tqdm(
                 enumerate(context_sampler), total=num_batches, ascii=True,
