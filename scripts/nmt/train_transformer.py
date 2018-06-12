@@ -383,11 +383,11 @@ def train():
     target_val_lengths = list(map(lambda x: x[-1], data_val_lengths))
     target_test_lengths = list(map(lambda x: x[-1], data_test_lengths))
     if args.bucket_scheme == 'constant':
-        bucket = ConstWidthBucket()
+        bucket_scheme = ConstWidthBucket()
     elif args.bucket_scheme == 'linear':
-        bucket = LinearWidthBucket()
+        bucket_scheme = LinearWidthBucket()
     elif args.bucket_scheme == 'exp':
-        bucket = ExpWidthBucket(bucket_len_step=1.2)
+        bucket_scheme = ExpWidthBucket(bucket_len_step=1.2)
     else:
         raise NotImplementedError
     train_batch_sampler = FixedBucketSampler(lengths=data_train_lengths,
@@ -396,7 +396,7 @@ def train():
                                              ratio=args.bucket_ratio,
                                              shuffle=True,
                                              use_average_length=True,
-                                             bucket=bucket)
+                                             bucket_scheme=bucket_scheme)
     logging.info('Train Batch Sampler:\n{}'.format(train_batch_sampler.stats()))
     train_data_loader = DataLoader(data_train,
                                    batch_sampler=train_batch_sampler,
@@ -409,7 +409,7 @@ def train():
                                            ratio=args.bucket_ratio,
                                            shuffle=False,
                                            use_average_length=True,
-                                           bucket=bucket)
+                                           bucket_scheme=bucket_scheme)
     logging.info('Valid Batch Sampler:\n{}'.format(val_batch_sampler.stats()))
     val_data_loader = DataLoader(data_val,
                                  batch_sampler=val_batch_sampler,
@@ -421,7 +421,7 @@ def train():
                                             ratio=args.bucket_ratio,
                                             shuffle=False,
                                             use_average_length=True,
-                                            bucket=bucket)
+                                            bucket_scheme=bucket_scheme)
     logging.info('Test Batch Sampler:\n{}'.format(test_batch_sampler.stats()))
     test_data_loader = DataLoader(data_test,
                                   batch_sampler=test_batch_sampler,
@@ -448,15 +448,8 @@ def train():
                 new_lr = args.lr / math.sqrt(args.num_units) \
                          * min(1. / math.sqrt(step_num), step_num * warmup_steps ** (-1.5))
                 trainer.set_learning_rate(new_lr)
-            # logging.info(src_seq.context) Context suddenly becomes GPU.
             src_wc = src_valid_length.sum().asscalar()
             tgt_wc = tgt_valid_length.sum().asscalar()
-            print('========')
-            print(src_wc)
-            print(tgt_wc)
-            print('--------')
-            print(np.prod(src_seq.shape))
-            print(np.prod(tgt_seq.shape))
             loss_denom += tgt_wc - tgt_valid_length.shape[0]
             if src_seq.shape[0] > len(ctx):
                 src_seq_list, tgt_seq_list, src_valid_length_list, tgt_valid_length_list \

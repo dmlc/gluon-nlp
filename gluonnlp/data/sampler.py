@@ -65,7 +65,7 @@ def _bucket_average_lengths(bucket_sample_ids, seq_lengths):
     return bucket_average_lengths
 
 
-class Bucket(object):
+class BucketScheme(object):
     r"""Base class of for generating bucket keys.
     """
     def __call__(self, single_element, max_lengths, min_lengths, num_buckets):
@@ -85,7 +85,7 @@ class Bucket(object):
         raise NotImplementedError
 
 
-class ConstWidthBucket(Bucket):
+class ConstWidthBucket(BucketScheme):
     r""" Buckets with constant width.
     """
     def __call__(self, single_element, max_lengths, min_lengths, num_buckets):
@@ -117,12 +117,12 @@ class ConstWidthBucket(Bucket):
         return bucket_keys
 
 
-class LinearWidthBucket(Bucket):
-    r""" Buckets with linear increasing width.
+class LinearWidthBucket(BucketScheme):
+    r""" Buckets with linearly increasing width.
     """
     def __call__(self, single_element, max_lengths, min_lengths, num_buckets):
-        r"""This implements a scheme for linear increasing bucket width:
-                :math:`w_i = alpha * i + 1` for all :math:`i \geq 1`.
+        r"""This implements a scheme for linearly increasing bucket width:
+                :math:`w_i = \alpha * i + 1` for all :math:`i \geq 1`.
 
         Parameters
         ----------
@@ -156,8 +156,8 @@ class LinearWidthBucket(Bucket):
         return bucket_keys
 
 
-class ExpWidthBucket(Bucket):
-    r""" Buckets with exponential increasing width.
+class ExpWidthBucket(BucketScheme):
+    r""" Buckets with exponentially increasing width.
 
     Parameters
     ----------
@@ -168,7 +168,7 @@ class ExpWidthBucket(Bucket):
         self.bucket_len_step = bucket_len_step
 
     def __call__(self, single_element, max_lengths, min_lengths, num_buckets):
-        r"""This function implements a scheme for exponentially increasig bucket width:
+        r"""This function implements a scheme for exponentially increasing bucket width:
                 :math:`w_i = bucket_len_step * w_{i-1}` for all :math:`i \geq 2`.
 
 
@@ -266,10 +266,10 @@ class FixedBucketSampler(Sampler):
         False: each batch contains batch_size sequences, number of sequence elements varies.
         True: each batch contains batch_size elements, number of sequences varies. In this case,
         ratio option is ignored.
-    bucket : Bucket, default ConstWidthBucket
+    bucket_scheme : BucketScheme, default ConstWidthBucket
         It is used to generate bucket keys. It supports:
         ConstWidthBucket: all the buckets have the same width
-        LinearWidthBucket: the width of ith  bucket follows :math:`w_i = alpha * i + 1`
+        LinearWidthBucket: the width of ith  bucket follows :math:`w_i = \alpha * i + 1`
         ExpWidthBucket: the width of ith bucket follows :math:`w_i = bucket_len_step * w_{i-1}`
     Examples
     --------
@@ -292,7 +292,7 @@ class FixedBucketSampler(Sampler):
       batch_size=[44, 20, 13, 10, 8, 8, 8, 8, 8, 8]
     """
     def __init__(self, lengths, batch_size, num_buckets=10, bucket_keys=None,
-                 ratio=0, shuffle=False, use_average_length=False, bucket=ConstWidthBucket()):
+                 ratio=0, shuffle=False, use_average_length=False, bucket_scheme=ConstWidthBucket()):
         assert len(lengths) > 0, 'FixedBucketSampler does not support empty lengths.'
         assert batch_size > 0, 'Batch size must be larger than 0.'
         assert ratio >= 0, 'batch size scaling ratio cannot be negative.'
@@ -309,6 +309,7 @@ class FixedBucketSampler(Sampler):
             self._single_element = False
             attr_num = self._lengths.shape[1]
         self._shuffle = shuffle
+        self._bucket_scheme = bucket_scheme
         max_lengths = self._lengths.max(axis=0)
         min_lengths = self._lengths.min(axis=0)
         if self._single_element:
@@ -320,7 +321,8 @@ class FixedBucketSampler(Sampler):
         if bucket_keys is None:
             assert num_buckets > 0, 'num_buckets must be set when bucket_keys is None. Received ' \
                                     'num_buckets=%d' % num_buckets
-            bucket_keys = bucket(self._single_element, max_lengths, min_lengths, num_buckets)
+            bucket_keys = bucket_scheme(self._single_element, max_lengths,
+                                        min_lengths, num_buckets)
         else:
             if num_buckets is not None:
                 warnings.warn('num_buckets will not be used if bucket_keys is not None. '

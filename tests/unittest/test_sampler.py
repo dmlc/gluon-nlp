@@ -21,14 +21,14 @@ def test_fixed_bucket_sampler():
         for ratio in [0.0, 0.5]:
             for shuffle in [False, True]:
                 for num_buckets in [1, 10, 100, 5000]:
-                    for bucket in [ConstWidthBucket(), LinearWidthBucket(), ExpWidthBucket()]:
+                    for bucket_scheme in [ConstWidthBucket(), LinearWidthBucket(), ExpWidthBucket()]:
                         for use_average_length in [False, True]:
                             sampler = FixedBucketSampler(seq_lengths,
                                                          batch_size=8,
                                                          num_buckets=num_buckets,
                                                          ratio=ratio, shuffle=shuffle,
                                                          use_average_length=use_average_length,
-                                                         bucket=bucket)
+                                                         bucket_scheme=bucket_scheme)
                             print(sampler.stats())
                             total_sampled_ids = []
                             for batch_sample_ids in sampler:
