@@ -23,7 +23,7 @@
 from __future__ import absolute_import
 from __future__ import print_function
 
-__all__ = ['Vocab', 'SubwordFunction']
+__all__ = ['Vocab', 'SubwordFunction', 'ByteSubwords', 'NGramHashes']
 
 import json
 import warnings
