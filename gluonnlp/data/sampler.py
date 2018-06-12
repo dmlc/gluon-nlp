@@ -196,10 +196,11 @@ class ExpWidthBucket(Bucket):
                     for min_len, initial_width in zip(min_lengths, initial_width_l))
                  for i in range(num_buckets)]
             bucket_keys[-1] = tuple(max(max_bucket_key, max_len)
-                                    for max_bucket_key, max_len in zip(bucket_keys[-1], max_lengths))
+                                    for max_bucket_key, max_len
+                                    in zip(bucket_keys[-1], max_lengths))
         else:
-            initial_width = (max_lengths - min_lengths) * (self.bucket_len_step - 1) / (
-                        math.pow(self.bucket_len_step, num_buckets) - 1)
+            initial_width = (max_lengths - min_lengths) * (self.bucket_len_step - 1) \
+                            / (math.pow(self.bucket_len_step, num_buckets) - 1)
             bucket_keys = [
                 int(round(min_lengths + initial_width * (math.pow(self.bucket_len_step, i + 1) - 1)
                           / (self.bucket_len_step - 1)))
@@ -359,8 +360,8 @@ class FixedBucketSampler(Sampler):
         self._batch_infos = []
         for bucket_id, sample_ids, bucket_batch_size in\
                 zip(range(len(self._bucket_keys) - 1, -1, -1),
-                    self._bucket_sample_ids[::-1],
-                    self._bucket_batch_sizes[::-1]):
+                        self._bucket_sample_ids[::-1],
+                        self._bucket_batch_sizes[::-1]):
             for i in range(0, len(sample_ids), bucket_batch_size):
                 self._batch_infos.append((bucket_id, i))
 
