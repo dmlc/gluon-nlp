@@ -31,11 +31,11 @@ from ...data.batchify import Pad
 
 
 class EmbeddingModel(Block):
-    """A trainable embedding model.
+    """Abstract base class for trainable embedding models
 
-    This is an abstract base class. Subclasses implement concrete
-    functionality. All EmbeddingModels support conversion to TokenEmbedding by
-    calling the to_token_embedding() method.
+    Subclasses implement concrete network architectures. All EmbeddingModels
+    support conversion to TokenEmbedding by calling the to_token_embedding()
+    method.
 
     Parameters
     ----------
@@ -101,7 +101,9 @@ class SimpleEmbeddingModel(EmbeddingModel, HybridBlock):
     """A trainable embedding model.
 
     This class is a simple wrapper around the mxnet.gluon.nn.Embedding. It
-    trains independent embedding vectors for every token.
+    trains independent embedding vectors for every token. It implements the
+    `gluonnlp.model.train.EmbeddingModel` interface which provides convenient
+    functions.
 
     Parameters
     ----------
@@ -191,7 +193,9 @@ class FasttextEmbeddingModel(EmbeddingModel, HybridBlock):
     """FastText embedding model.
 
     The FasttextEmbeddingModel combines a word level embedding matrix and a
-    subword level embedding matrix.
+    subword level embedding matrix. It implements the
+    `gluonnlp.model.train.EmbeddingModel` interface which provides convenient
+    functions.
 
     Parameters
     ----------
@@ -200,7 +204,7 @@ class FasttextEmbeddingModel(EmbeddingModel, HybridBlock):
         with. token_to_idx is used when to_token_embedding is called. For
         initialization len(token_to_idx) is used to specify the size of the
         subword embedding matrix..
-    subword_function : gluonnlp.SubwordFunction
+    subword_function : gluonnlp.vocab.SubwordFunction
         The subword function used to obtain the subword indices during training
         this model. The subword_function is used when to_token_embedding is
         called. For initialization len(subword_function) is used to specify the
