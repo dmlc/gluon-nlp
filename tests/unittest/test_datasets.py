@@ -543,6 +543,17 @@ def test_lazy_stream():
     for x, y in zip(corpus, transformed_corpus):
         assert y == x.lower()
 
+def test_prefetch_stream():
+    EOS = nlp._constants.EOS_TOKEN
+    path = os.path.join('tests', 'data', 'wikitext-2')
+    token_path = os.path.join('tests', 'data', 'wikitext-2/*test*.tokens')
+    test = nlp.data.WikiText2(segment='test', root=path)
+    corpus = nlp.data.CorpusStream(token_path, flatten=True,
+                                   skip_empty=True, eos=EOS, sampler='sequential')
+    prefetch_corpus = nlp.data.PrefetchingStream(corpus)
+    for x, y in zip(corpus, prefetch_corpus):
+        assert y == x
+
 def test_counter():
     x = nlp.data.Counter({'a': 10, 'b': 1, 'c': 1})
     y = x.discard(3, '<unk>')
