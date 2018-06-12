@@ -43,23 +43,27 @@ class Highway(gluon.Block):
     activation : ``nn.activations.Activation``, optional (default=``nn.Activation('relu')``)
         The non-linearity to use in the highway layers.
     """
-    def __init__(self, ninput, nlayers=1, activation='relu', **kwargs):
+    def __init__(self,
+                 input_size,
+                 num_layers,
+                 activation=nn.Activation('relu'),
+                 **kwargs):
         super(Highway, self).__init__(**kwargs)
-        self._ninputs = ninput
-        self._nlayers = nlayers
+        self._ninput_size = input_size
+        self._num_layers = num_layers
         with self.name_scope():
             self._hnet = nn.HybridSequential()
             with self._hnet.name_scope():
-                for i in range(self._nlayers):
+                for i in range(self._num_layers):
                     # pylint: disable=unused-argument
                     print(i)
-                    hlayer = nn.Dense(self._ninputs * 2, in_units=self._ninputs)
+                    hlayer = nn.Dense(self._ninput_size * 2, in_units=self._ninput_size)
                     self._hnet.add(hlayer)
-            self._activation = nn.Activation(activation)
+            self._activation = activation
 
     def set_bias(self):
         for layer in self._hnet:
-            layer.bias.data()[self._ninputs:] = 1
+            layer.bias.data()[self._ninput_size:] = 1
 
     def forward(self, inputs):  # pylint: disable=arguments-differ
         """
@@ -69,8 +73,8 @@ class Highway(gluon.Block):
         for layer in enumerate(self._hnet):
             projected_input = layer(current_input)
             linear_part = current_input
-            nonlinear_part = projected_input[:, (0 * self._ninputs):(1 * self._ninputs)]
-            gate = projected_input[:, (1 * self._ninputs):(2 * self._ninputs)]
+            nonlinear_part = projected_input[:, (0 * self._ninput_size):(1 * self._ninput_size)]
+            gate = projected_input[:, (1 * self._ninput_size):(2 * self._ninput_size)]
             nonlinear_part = self._activation(nonlinear_part)
             gate = gate.sigmoid()
             current_input = gate * linear_part + (1 - gate) * nonlinear_part
