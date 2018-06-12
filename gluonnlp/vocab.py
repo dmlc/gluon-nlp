@@ -627,7 +627,7 @@ class NGramHashes(SubwordFunction):
         h = np.uint32(2166136261)
         s = s.encode(encoding)
         old_settings = np.seterr(all='ignore')
-        for c in s:
+        for c in bytearray(s):
             h = h ^ np.uint32(c)
             h = h * np.uint32(16777619)
         np.seterr(**old_settings)
@@ -642,7 +642,7 @@ class NGramHashes(SubwordFunction):
         return [
             nd.array(np.array([
                 self.fasttext_hash_asbytes(
-                    ('<' + word + '>')[i:i + N]) % self.num_subwords
+                    (u'<' + word + u'>')[i:i + N]) % self.num_subwords
                 for N in self.ngrams for i in range((len(word) + 2) - N + 1)
             ])) for word in words
         ]
