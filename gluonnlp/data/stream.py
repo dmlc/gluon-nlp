@@ -337,7 +337,7 @@ class _LanguageModelBPTTStream(DataStream):
         corpus = iter(self._corpus)
 
         while has_next or has_token_buffered:
-            _init(data, target, self._padding_idx)
+            _init(data, target, mask, self._padding_idx)
             has_token_buffered = False
             for i in range(self._batch_size):
                 length = 0

@@ -320,7 +320,7 @@ class GBWStream(_GBWStream):
     skip_empty : bool, default True
         Whether to skip the empty samples produced from sample_splitters. If False, `bos` and `eos`
         will be added in empty samples.
-    bos : str or None, default None
+    bos : str or None, default '<bos>'
         The token to add at the begining of each sentence. If None, nothing is added.
     eos : str or None, default '<eos>'
         The token to add at the end of each sentence. If None, nothing is added.
@@ -328,7 +328,7 @@ class GBWStream(_GBWStream):
         Path to temp folder for storing data.
         MXNET_HOME defaults to '~/.mxnet'.
     """
-    def __init__(self, segment='train', skip_empty=True, bos=None, eos=C.EOS_TOKEN,
+    def __init__(self, segment='train', skip_empty=True, bos=C.BOS_TOKEN, eos=C.EOS_TOKEN,
                  root=os.path.join(_get_home_dir(), 'datasets', 'gbw')):
         assert segment == 'train', 'Only train segment is supported for GBW'
         self._archive_file = ('1-billion-word-language-modeling-benchmark-r13output.tar.gz',
