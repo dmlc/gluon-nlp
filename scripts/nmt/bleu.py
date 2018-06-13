@@ -21,7 +21,7 @@
 import re
 import math
 from collections import Counter
-r = re.compile('.*-.*')
+r = re.compile('.+-.+')
 
 
 def _ngrams(segment, n):
@@ -53,8 +53,7 @@ def _split_compound_word(segment):
     new_segment = []
     for word in segment:
         if r.match(word) is not None:
-            words = word.split('-')
-            words.insert(1, '##AT##-##AT##')
+            words = ['##AT##-##AT##' if w == '-' else w for w in re.split('(-)', word)]
             new_segment.extend(words)
         else:
             new_segment.append(word)
