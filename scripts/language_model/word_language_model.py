@@ -159,8 +159,8 @@ if args.weight_dropout > 0:
                                   args.tied, args.dropout, args.weight_dropout,
                                   args.dropout_h, args.dropout_i, args.dropout_e)
     model = nlp.model.train.AWDRNN(args.model, len(vocab), args.emsize, args.nhid, args.nlayers,
-                                  args.tied, args.dropout, args.weight_dropout,
-                                  args.dropout_h, args.dropout_i, args.dropout_e)
+                                   args.tied, args.dropout, args.weight_dropout,
+                                   args.dropout_h, args.dropout_i, args.dropout_e)
 else:
     model_eval = nlp.model.StandardRNN(args.model, len(vocab), args.emsize,
                                        args.nhid, args.nlayers, args.dropout, args.tied)
