@@ -543,6 +543,12 @@ def test_lazy_stream():
     for x, y in zip(corpus, transformed_corpus):
         assert y == x.lower()
 
+def test_counter():
+    x = nlp.data.Counter({'a': 10, 'b': 1, 'c': 1})
+    y = x.discard(3, '<unk>')
+    assert y['a'] == 10
+    assert y['<unk>'] == 2
+
 ###############################################################################
 # Question answering
 ###############################################################################

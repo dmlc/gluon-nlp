@@ -36,6 +36,37 @@ from .. import _constants as C
 
 class Counter(collections.Counter): # pylint: disable=abstract-method
     """Counter class for keeping token frequencies."""
+    def discard(self, min_freq, unknown_token):
+        """Discards tokens with frequency below min_frequency and represents them
+        as `unknown_token`.
+
+        Parameters
+        ----------
+        min_freq: int
+            Tokens whose frequency is under min_freq is counted as `unknown_token` in
+            the Counter returned.
+        unknown_token: str
+            The representation for any unknown token.
+
+        Returns
+        -------
+        The Counter instance.
+
+        Examples
+        --------
+        >>> a = Counter({'a': 10, 'b': 1, 'c': 1})
+        >>> a.discard(3, '<unk>')
+        Counter({'a': 10, '<unk>': 2})
+        """
+        freq = 0
+        ret = Counter({})
+        for token, count in self.items():
+            if count < min_freq:
+                freq += count
+            else:
+                ret[token] = count
+        ret[unknown_token] = ret.get(unknown_token, 0) + freq
+        return ret
 
 class DefaultLookupDict(dict):
     """Dictionary class with fall-back look-up with default value set in the constructor."""
