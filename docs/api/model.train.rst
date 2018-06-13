@@ -24,6 +24,7 @@ Word Embeddings
 .. autosummary::
     :nosignatures:
 
+    EmbeddingModel
     SimpleEmbeddingModel
     FasttextEmbeddingModel
 
