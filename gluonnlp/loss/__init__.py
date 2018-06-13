@@ -18,7 +18,7 @@
 # under the License.
 
 # pylint: disable=wildcard-import
-"""nlp loss."""
+"""NLP loss."""
 
 from .activation_regularizer import *
 

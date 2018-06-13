@@ -23,18 +23,22 @@
 from __future__ import absolute_import
 from __future__ import print_function
 
-__all__ = ['Vocab', 'SortedVocab']
+__all__ = ['Vocab', 'SubwordFunction', 'ByteSubwords', 'NGramHashes']
 
 import json
 import warnings
 
-from mxnet import nd
+from mxnet import nd, registry
+import numpy as np
 
 from .data.utils import DefaultLookupDict
 from . import _constants as C
 from . import embedding as emb
 
 
+###############################################################################
+# Token level vocabulary
+###############################################################################
 class Vocab(object):
     """Indexing and embedding attachment for text tokens.
 
@@ -165,29 +169,27 @@ class Vocab(object):
             assert len(special_token_set) == len(special_tokens), \
                 '`reserved_tokens` cannot contain duplicate reserved tokens or ' \
                 'other special tokens.'
-
-        self._index_tokens(counter, unknown_token, special_tokens, max_size, min_freq)
-        self._embedding = None
-
-    def _index_tokens(self, counter, unknown_token, special_tokens, max_size, min_freq):
-        """Indexes unknown and reserved tokens, and keys of `counter`."""
-        self._idx_to_token = []
-        self._token_to_idx = DefaultLookupDict(C.UNK_IDX) if unknown_token else {}
-
         self._index_special_tokens(unknown_token, special_tokens)
+
         if counter:
-            self._index_counter_keys(counter, unknown_token, special_tokens,
-                                     max_size, min_freq)
+            self._index_counter_keys(counter, unknown_token, special_tokens, max_size, min_freq)
+
+        self._embedding = None
 
     def _index_special_tokens(self, unknown_token, special_tokens):
         """Indexes unknown and reserved tokens."""
-        if unknown_token:
-            self._idx_to_token.append(unknown_token)
+        self._idx_to_token = [unknown_token] if unknown_token else []
+
         if not special_tokens:
             self._reserved_tokens = None
         else:
             self._reserved_tokens = special_tokens[:]
             self._idx_to_token.extend(special_tokens)
+
+        if unknown_token:
+            self._token_to_idx = DefaultLookupDict(C.UNK_IDX)
+        else:
+            self._token_to_idx = {}
         self._token_to_idx.update((token, idx) for idx, token in enumerate(self._idx_to_token))
 
     def _index_counter_keys(self, counter, unknown_token, special_tokens, max_size,
@@ -204,7 +206,8 @@ class Vocab(object):
         if unknown_token:
             unknown_and_special_tokens.add(unknown_token)
 
-        token_freqs = self._sort_freq(counter)
+        token_freqs = sorted(counter.items(), key=lambda x: x[0])
+        token_freqs.sort(key=lambda x: x[1], reverse=True)
 
         token_cap = len(unknown_and_special_tokens) + (
             len(counter) if not max_size else max_size)
@@ -215,12 +218,6 @@ class Vocab(object):
             if token not in unknown_and_special_tokens:
                 self._idx_to_token.append(token)
                 self._token_to_idx[token] = len(self._idx_to_token) - 1
-
-    def _sort_freq(self, counter):
-        """Sort tokens based on their frequencies. Ties are broken with __cmp__()."""
-        token_freqs = sorted(counter.items(), key=lambda x: x[0])
-        token_freqs.sort(key=lambda x: x[1], reverse=True)
-        return token_freqs
 
     @property
     def embedding(self):
@@ -464,125 +461,230 @@ class Vocab(object):
         vocab._eos_token = vocab_dict.get('eos_token')
         return vocab
 
-class SortedVocab(Vocab):
-    """Indexing and embedding attachment for text tokens.
 
-    The indices in the vocabulary are assigned based on frequencies of the tokens,
-    including unknown token and special tokens (padding, eos, bos and reserved tokens).
+###############################################################################
+# Subword functions and registry
+###############################################################################
+def register_subword_function(subword_cls):
+    """Registers a new subword function."""
+    register_text_embedding = registry.get_register_func(
+        SubwordFunction, 'subword function')
+    return register_text_embedding(subword_cls)
 
-    If max_size is specified, unknown and special tokens are guaranteed to be in the vocabulary.
-    The provided counter instance is the source of all tokens' frequencies.
+
+def create_subword_function(subword_function_name, **kwargs):
+    """Creates an instance of a subword function."""
+
+    create_ = registry.get_create_func(SubwordFunction, 'token embedding')
+    return create_(subword_function_name, **kwargs)
+
+
+def list_subword_functions():
+    """Get valid subword function names."""
+    reg = registry.get_registry(SubwordFunction)
+    return list(reg.keys())
+
+
+class SubwordFunction(object):
+    """A SubwordFunction maps words to lists of subword indices.
+
+    This class is abstract and to be subclassed. Use
+    gluonnlp.vocab.list_subword_functions to list all available subword
+    functions.
+
+    A SubwordFunction object is callable and returns a list of ndarrays of
+    subwordindices for the given words in a call.
+
+    """
+
+    def __call__(self, words):
+        """Return a list of ndarrays of subwordindices for the given words."""
+        raise NotImplementedError
+
+    def __len__(self):
+        """Return the number of subwords modeled."""
+        raise NotImplementedError
+
+    def indices_to_subwords(self, indices):
+        """Return list of subwords associated with subword indices.
+
+        This may raise RuntimeError if the subword function is not invertible.
+
+        Parameters
+        ----------
+        subwordindices : iterable of int
+            Subword indices to look up.
+
+        Returns
+        -------
+        Iterable of str.
+
+        """
+        raise NotImplementedError
+
+    def subwords_to_indices(self, subwords):
+        """Return list of subwordindices associated with subwords.
+
+        Parameters
+        ----------
+        subwords : iterable of str
+            Subwords to replace by indices.
+
+        Returns
+        -------
+        Iterable of int.
+
+        """
+        raise NotImplementedError
+
+
+@register_subword_function
+class ByteSubwords(SubwordFunction):
+    """Map words to a list of bytes.
 
     Parameters
     ----------
-    counter : Counter or None, default None
-        Counts text token frequencies in the text data. Its keys will be indexed according to
-        frequency thresholds such as `max_size` and `min_freq`. Keys of `counter`,
-        `unknown_token`, and values of `reserved_tokens` must be of the same hashable type.
-        Examples: str, int, and tuple.
-    max_size : None or int, default None
-        The maximum possible number of the most frequent tokens in the keys of `counter` that can be
-        indexed. Note that this argument does not count any token from `reserved_tokens`. Suppose
-        that there are different keys of `counter` whose frequency are the same, if indexing all of
-        them will exceed this argument value, such keys will be indexed one by one according to
-        their __cmp__() order until the frequency threshold is met. If this argument is None or
-        larger than its largest possible value restricted by `counter` and `reserved_tokens`, this
-        argument has no effect.
-    min_freq : int, default 1
-        The minimum frequency required for a token in the keys of `counter` to be indexed.
-    unknown_token : hashable object or None, default '<unk>'
-        The representation for any unknown token. In other words, any unknown token will be indexed
-        as the same representation. If None, looking up an unknown token will result in KeyError.
-    padding_token : hashable object or None, default '<pad>'
-        The representation for the special token of padding token.
-    bos_token : hashable object or None, default '<bos>'
-        The representation for the special token of beginning-of-sequence token.
-    eos_token : hashable object or None, default '<eos>'
-        The representation for the special token of end-of-sequence token.
-    reserved_tokens : list of hashable objects or None, default None
-        A list of reserved tokens (excluding `unknown_token`) that will always be indexed, such as
-        special symbols representing padding, beginning of sentence, and end of sentence. It cannot
-        contain `unknown_token` or duplicate reserved tokens. Keys of `counter`, `unknown_token`,
-        and values of `reserved_tokens` must be of the same hashable type. Examples: str, int, and
-        tuple.
+    encoding : str, default 'utf-8
+        Encoding to use for obtaining bytes.
 
-    Attributes
-    ----------
-    embedding : instance of :class:`gluonnlp.embedding.TokenEmbedding`
-        The embedding of the indexed tokens.
-    idx_to_token : list of strs
-        A list of indexed tokens where the list indices and the token indices are aligned.
-    reserved_tokens : list of strs or None
-        A list of reserved tokens that will always be indexed.
-    token_to_idx : dict mapping str to int
-        A dict mapping each token to its index integer.
-    unknown_token : hashable object or None
-        The representation for any unknown token. In other words, any unknown token will be indexed
-        as the same representation.
-
-    Examples
-    --------
-    >>> x = nlp.data.Counter({'a': 10, 'b': 1, 'c': 2, '<unk>': 3, '<bos>': 1})
-    >>> vocab = nlp.SortedVocab(counter=x)
-    >>> assert len(vocab0) == 7
-    >>> assert vocab0['a'] == 0
-    >>> assert vocab0['<unk>'] == 1
-    >>> assert vocab0['c'] == 2
     """
-    def __init__(self, counter=None, max_size=None, min_freq=1, unknown_token=C.UNK_TOKEN,
-                 padding_token=C.PAD_TOKEN, bos_token=C.BOS_TOKEN, eos_token=C.EOS_TOKEN,
-                 reserved_tokens=None):
-        super(SortedVocab, self).__init__(counter=counter, max_size=max_size, min_freq=min_freq,
-                                          unknown_token=unknown_token,
-                                          padding_token=padding_token, bos_token=bos_token,
-                                          eos_token=eos_token, reserved_tokens=reserved_tokens)
 
-    def _index_tokens(self, counter, unknown_token, special_tokens, max_size, min_freq):
-        """Indexes unknown and reserved tokens, and keys of `counter`."""
-        # the index of unknown_token is not known ahead of time
-        # convert to a DefaultLookupDict later if needed
-        self._token_to_idx = {}
-        self._idx_to_token = []
-        if counter:
-            self._index_counter_keys(counter, unknown_token, special_tokens,
-                                     max_size, min_freq)
-        self._index_special_tokens_with_counter(counter, unknown_token, special_tokens)
-        if unknown_token:
-            unk_idx = self._token_to_idx[unknown_token]
-            self._token_to_idx = DefaultLookupDict(unk_idx, d=self._token_to_idx)
+    def __init__(self, encoding='utf-8'):
+        self.encoding = encoding
 
-    def _index_counter_keys(self, counter, unknown_token, special_tokens, max_size,
-                            min_freq):
-        """Indexes keys of `counter`.
+    def __call__(self, words):
+        return [
+            nd.array(
+                np.frombuffer(word.encode(self.encoding),
+                              dtype=np.uint8).astype(np.int_))
+            for word in words
+        ]
 
+    def __len__(self):
+        return 256
 
-        Indexes keys of `counter` according to frequency thresholds such as `max_size` and
-        `min_freq`.
+    def __repr__(self):
+        return 'ByteSubwords(encoding={})'.format(self.encoding)
+
+    def indices_to_subwords(self, indices):
+        """Return list of subwords associated with subword indices.
+
+        This may raise RuntimeError if the subword function is not invertible.
+
+        Parameters
+        ----------
+        subwordindices : iterable of int
+            Subword indices to look up.
+
+        Returns
+        -------
+        Iterable of str.
+
         """
-        token_freqs = self._sort_freq(counter)
-        token_cap = len(counter) if not max_size else max_size
-        for token, freq in token_freqs:
-            if freq < min_freq or len(self._idx_to_token) == token_cap:
-                break
-            self._idx_to_token.append(token)
-            self._token_to_idx[token] = len(self._idx_to_token) - 1
+        return indices
 
-    def _index_special_tokens_with_counter(self, counter, unknown_token, special_tokens):
-        """Indexes unknown and reserved tokens."""
-        # sort unknown and special tokens based on frequency
-        counter = {} if counter is None else counter
-        token_freqs = {}
-        for token in special_tokens:
-            token_freqs[token] = counter.get(token, 0)
-        if unknown_token:
-            token_freqs[unknown_token] = counter.get(unknown_token, 0)
-        sorted_token_freqs = self._sort_freq(token_freqs)
-        # index tokens
-        for token, _ in sorted_token_freqs:
-            if token not in self._token_to_idx:
-                self._idx_to_token.append(token)
-                self._token_to_idx[token] = len(self._idx_to_token) - 1
-        if not special_tokens:
-            self._reserved_tokens = None
-        else:
-            self._reserved_tokens = special_tokens[:]
+    def subwords_to_indices(self, subwords):
+        """Return list of subwordindices associated with subwords.
+
+        Parameters
+        ----------
+        subwords : iterable of str
+            Subwords to replace by indices.
+
+        Returns
+        -------
+        Iterable of int.
+
+        """
+        return subwords
+
+
+@register_subword_function
+class NGramHashes(SubwordFunction):
+    """Map words to a list of hashes in a restricted domain.
+
+    The hash function is the same as in
+    https://github.com/facebookresearch/fastText
+
+    Parameters
+    ----------
+    num_subwords : int
+        Size of target set for the hash function.
+    ngrams : list of int, default [3, 4, 5, 6]
+        n-s for which to hash the ngrams
+
+    """
+
+    def __init__(self, num_subwords, ngrams=(3, 4, 5, 6)):
+        self.num_subwords = num_subwords
+        self.ngrams = ngrams
+
+        # Information for __repr__
+        self.ngrams = ngrams
+
+    @staticmethod
+    def fasttext_hash_asbytes(s, encoding='utf-8'):
+        h = np.uint32(2166136261)
+        s = s.encode(encoding)
+        old_settings = np.seterr(all='ignore')
+        for c in bytearray(s):
+            h = h ^ np.uint32(c)
+            h = h * np.uint32(16777619)
+        np.seterr(**old_settings)
+        return h
+
+    @staticmethod
+    def _get_all_ngram_generator(words, ngrams):
+        return ((('<' + word + '>')[i:i + N] for N in ngrams
+                 for i in range((len(word) + 2) - N + 1)) for word in words)
+
+    def __call__(self, words):
+        return [
+            nd.array(np.array([
+                self.fasttext_hash_asbytes(
+                    (u'<' + word + u'>')[i:i + N]) % self.num_subwords
+                for N in self.ngrams for i in range((len(word) + 2) - N + 1)
+            ])) for word in words
+        ]
+
+    def __len__(self):
+        return self.num_subwords
+
+    def __repr__(self):
+        return ('NGramHashes(num_subwords={}, ngrams={})'.format(
+            self.num_subwords, self.ngrams))
+
+    def indices_to_subwords(self, indices):
+        """Return list of subwords associated with subword indices.
+
+        This may raise RuntimeError if the subword function is not invertible.
+
+        Parameters
+        ----------
+        subwordindices : iterable of int
+            Subword indices to look up.
+
+        Returns
+        -------
+        Iterable of str.
+
+        """
+        raise RuntimeError('ngram hash function is not invertible.')
+
+    def subwords_to_indices(self, subwords):
+        """Return list of subwordindices associated with subwords.
+
+        Parameters
+        ----------
+        subwords : iterable of str
+            Subwords to replace by indices.
+
+        Returns
+        -------
+        Iterable of int.
+
+        """
+        return [
+            self.fasttext_hash_asbytes(sw) % self.num_subwords
+            for sw in subwords
+        ]

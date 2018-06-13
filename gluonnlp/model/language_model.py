@@ -62,24 +62,6 @@ class AWDRNN(train.AWDRNN):
         Dropout rate to on the output of embedding.
     drop_e : float
         Dropout rate to use on the embedding layer.
-
-    Inputs
-    ----------
-    inputs : NDArray
-        input tensor with shape `(sequence_length, batch_size)`
-          when `layout` is "TNC".
-    begin_state : list
-        initial recurrent state tensor with length equals to num_layers.
-        the initial state with shape `(1, batch_size, num_hidden)`
-
-    Outputs
-    -------
-    out: NDArray
-        output tensor with shape `(sequence_length, batch_size, input_size)`
-          when `layout` is "TNC".
-    out_states: list
-        output recurrent state tensor with length equals to num_layers.
-        the state with shape `(1, batch_size, num_hidden)`
     """
     def __init__(self, mode, vocab_size, embed_size, hidden_size, num_layers,
                  tie_weights, dropout, weight_drop, drop_h,
@@ -90,6 +72,24 @@ class AWDRNN(train.AWDRNN):
 
     def forward(self, inputs, begin_state=None): # pylint: disable=arguments-differ
         """Implement forward computation.
+
+        Parameters
+        -----------
+        inputs : NDArray
+            input tensor with shape `(sequence_length, batch_size)`
+            when `layout` is "TNC".
+        begin_state : list
+            initial recurrent state tensor with length equals to num_layers.
+            the initial state with shape `(1, batch_size, num_hidden)`
+
+        Returns
+        --------
+        out: NDArray
+            output tensor with shape `(sequence_length, batch_size, input_size)`
+            when `layout` is "TNC".
+        out_states: list
+            output recurrent state tensor with length equals to num_layers.
+            the state with shape `(1, batch_size, num_hidden)`
         """
         encoded = self.embedding(inputs)
         if not begin_state:
@@ -125,24 +125,6 @@ class StandardRNN(train.StandardRNN):
         Dropout rate to use for encoder output.
     tie_weights : bool, default False
         Whether to tie the weight matrices of output dense layer and input embedding layer.
-
-    Inputs
-    ----------
-    inputs : NDArray
-        input tensor with shape `(sequence_length, batch_size)`
-          when `layout` is "TNC".
-    begin_state : list
-        initial recurrent state tensor with length equals to num_layers-1.
-        the initial state with shape `(num_layers, batch_size, num_hidden)`
-
-    Outputs
-    -------
-    out: NDArray
-        output tensor with shape `(sequence_length, batch_size, input_size)`
-          when `layout` is "TNC".
-    out_states: list
-        output recurrent state tensor with length equals to num_layers-1.
-        the state with shape `(num_layers, batch_size, num_hidden)`
     """
     def __init__(self, mode, vocab_size, embed_size, hidden_size,
                  num_layers, dropout, tie_weights, **kwargs):
@@ -156,7 +138,26 @@ class StandardRNN(train.StandardRNN):
 
     def forward(self, inputs, begin_state=None): # pylint: disable=arguments-differ
         """Defines the forward computation. Arguments can be either
-        :py:class:`NDArray` or :py:class:`Symbol`."""
+        :py:class:`NDArray` or :py:class:`Symbol`.
+
+        Parameters
+        -----------
+        inputs : NDArray
+            input tensor with shape `(sequence_length, batch_size)`
+              when `layout` is "TNC".
+        begin_state : list
+            initial recurrent state tensor with length equals to num_layers-1.
+            the initial state with shape `(num_layers, batch_size, num_hidden)`
+
+        Returns
+        --------
+        out: NDArray
+            output tensor with shape `(sequence_length, batch_size, input_size)`
+              when `layout` is "TNC".
+        out_states: list
+            output recurrent state tensor with length equals to num_layers-1.
+            the state with shape `(num_layers, batch_size, num_hidden)`
+        """
         encoded = self.embedding(inputs)
         if not begin_state:
             begin_state = self.begin_state(batch_size=inputs.shape[1])

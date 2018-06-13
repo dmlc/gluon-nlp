@@ -93,6 +93,7 @@ We provide several standard datasets for machine translation.
     IWSLT2015
     WMT2014BPE
     WMT2016BPE
+    SQuAD
 
 Datasets
 --------

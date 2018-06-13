@@ -49,10 +49,6 @@ These models can constructed by passing ``pretrained=True``:
 .. _AWD: https://arxiv.org/abs/1404.5997
 """
 
-import mxnet as mx
-
-from .train import *
-
 from .language_model import *
 
 from .beam_search import *
@@ -65,8 +61,10 @@ from .parameter import *
 
 from .block import *
 
-__all__ = train.__all__ + language_model.__all__ + beam_search.__all__ + attention_cell.__all__ + \
-          utils.__all__ + parameter.__all__ + block.__all__ + ['get_model', 'get_cache_model']
+from . import train
+
+__all__ = language_model.__all__ + beam_search.__all__ + attention_cell.__all__ + \
+          utils.__all__ + parameter.__all__ + block.__all__ + ['get_model'] + ['train']
 
 
 def get_model(name, dataset_name='wikitext-2', **kwargs):
@@ -109,66 +107,3 @@ def get_model(name, dataset_name='wikitext-2', **kwargs):
                 name, '\n\t'.join(sorted(models.keys()))))
     kwargs['dataset_name'] = dataset_name
     return models[name](**kwargs)
-
-
-def get_cache_model(name, dataset_name='wikitext-2', window=2000,
-                    theta=0.6, lambdas=0.2, ctx=mx.cpu(), **kwargs):
-    r"""Returns a cache model using a pre-trained language model.
-
-    We implement the neural cache language model proposed in the following work::
-
-        @article{grave2016improving,
-        title={Improving neural language models with a continuous cache},
-        author={Grave, Edouard and Joulin, Armand and Usunier, Nicolas},
-        journal={ICLR},
-        year={2017}
-        }
-
-    Parameters
-    ----------
-    name : str
-        Name of the cache language model.
-    dataset_name : str or None, default 'wikitext-2'.
-        The dataset name on which the pretrained model is trained.
-        Options are 'wikitext-2'. If specified, then the returned vocabulary is extracted from
-        the training set of the dataset.
-        If None, then vocab is required, for specifying embedding weight size, and is directly
-        returned.
-    window : int
-        Size of cache window
-    theta : float
-        The scala controls the flatness of the cache distribution
-        that predict the next word as shown below:
-
-        .. math::
-
-            p_{cache} \propto \sum_{i=1}^{t-1} \mathbb{1}_{w=x_{i+1}} exp(\theta {h_t}^T h_i)
-
-        where :math:`p_{cache}` is the cache distribution, :math:`1` is the identity function,
-        and :math:`h_i` is the output of timestep i.
-    lambdas : float
-        Linear scalar between only cache and vocab distribution, the formulation is as below:
-
-        .. math::
-
-            p = (1 - \lambda) p_{vocab} + \lambda p_{cache}
-
-        where :math:`p_{vocab}` is the vocabulary distribution and :math:`p_{cache}`
-        is the cache distribution.
-    vocab : gluonnlp.Vocab or None, default None
-        Vocabulary object to be used with the language model.
-        Required when dataset_name is not specified.
-    pretrained : bool, default False
-        Whether to load the pretrained weights for model.
-    ctx : Context, default CPU
-        The context in which to load the pretrained weights.
-    root : str, default '~/.mxnet/models'
-        Location for keeping the pre-trained model parameters.
-
-    Returns:
-        - **Block** :
-            The model.
-    """
-    lm_model, vocab = get_model(name, dataset_name=dataset_name, pretrained=True, ctx=ctx, **kwargs)
-    cache_cell = CacheCell(lm_model, len(vocab), window, theta, lambdas)
-    return cache_cell

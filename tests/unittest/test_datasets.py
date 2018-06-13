@@ -468,6 +468,7 @@ def test_wmt2016bpe():
     assert len(en_vocab) == 36548
     assert len(de_vocab) == 36548
 
+
 def test_wmt2014bpe():
     train = nlp.data.WMT2014BPE(segment='train', src_lang='en', tgt_lang='de',
                                 root='tests/data/wmt2014')
@@ -549,24 +550,18 @@ def test_counter():
     assert y['a'] == 10
     assert y['<unk>'] == 2
 
-def test_sorted_vocab():
-    x = nlp.data.Counter({'a': 10, 'b': 1, 'c': 2, '<unk>': 3, '<bos>': 1})
-    vocab0 = nlp.SortedVocab(counter=x)
-    assert len(vocab0) == 7
-    assert vocab0['a'] == 0
-    assert vocab0['<unk>'] == 1
-    assert vocab0['c'] == 2
-    assert vocab0['unknown_token'] == vocab0['<unk>']
+###############################################################################
+# Question answering
+###############################################################################
+def test_load_dev_squad():
+    # number of records in dataset is equal to number of different questions
+    train_dataset = nlp.data.SQuAD(segment='train', root='tests/data/squad')
+    assert len(train_dataset) == 87599
 
-    vocab1 = nlp.SortedVocab(counter=x, min_freq=2)
-    assert len(vocab1) == 6
-    assert vocab1['a'] == 0
-    assert vocab1['<unk>'] == 1
-    assert vocab1['c'] == 2
-    assert vocab0['unknown_token'] == vocab0['<unk>']
+    val_dataset = nlp.data.SQuAD(segment='dev', root='tests/data/squad')
+    assert len(val_dataset) == 10570
 
-    vocab2 = nlp.SortedVocab(counter=x, max_size=1, reserved_tokens=['reserved'])
-    assert len(vocab2) == 6
-    assert vocab2['a'] == 0
-    assert vocab2['<unk>'] == 1
-    assert vocab0['unknown_token'] == vocab0['<unk>']
+    # Each record is a tuple of 6 elements: record_id, question Id, question, context,
+    # list of answer texts, list of answer start indices
+    for record in val_dataset:
+        assert len(record) == 6

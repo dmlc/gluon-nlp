@@ -15,6 +15,19 @@ Language Modeling
     AWDRNN
     StandardRNN
     CacheCell
+    get_cache_model
+
+
+Word Embeddings
+---------------
+
+.. autosummary::
+    :nosignatures:
+
+    EmbeddingModel
+    SimpleEmbeddingModel
+    FasttextEmbeddingModel
+
 
 API Reference
 -------------
