@@ -158,12 +158,23 @@ if args.weight_dropout > 0:
     model_eval = nlp.model.AWDRNN(args.model, len(vocab), args.emsize, args.nhid, args.nlayers,
                                   args.tied, args.dropout, args.weight_dropout,
                                   args.dropout_h, args.dropout_i, args.dropout_e)
+    shared_params = model_eval.collect_params()
+    model = nlp.model.train.AWDRNN(args.model, len(vocab), args.emsize, args.nhid, args.nlayers,
+                                  args.tied, args.dropout, args.weight_dropout,
+                                  args.dropout_h, args.dropout_i, args.dropout_e, shared_params)
 else:
     model_eval = nlp.model.StandardRNN(args.model, len(vocab), args.emsize,
                                        args.nhid, args.nlayers, args.dropout, args.tied)
-
-model = super(model_eval.__class__, model_eval)
+    shared_params = model_eval.collect_params()
+    model = nlp.model.train.StandardRNN(args.model, len(vocab), args.emsize,
+                                        args.nhid, args.nlayers, args.dropout, args.tied, shared_params)
+#
+#
+# model = super(model_eval.__class__, model_eval)
 model.initialize(mx.init.Xavier(), ctx=context)
+
+
+
 
 if args.optimizer == 'sgd':
     trainer_params = {'learning_rate': args.lr,
