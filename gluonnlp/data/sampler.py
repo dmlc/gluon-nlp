@@ -80,7 +80,7 @@ def _bucket_average_lengths(bucket_sample_ids, seq_lengths):
 
 
 class BucketScheme(object):
-    r"""Base class of for generating bucket keys.
+    r"""Base class for generating bucket keys.
     """
     def __call__(self, max_lengths, min_lengths, num_buckets):
         """Generate bucket keys based on the lengths of sequences and number of buckets.
