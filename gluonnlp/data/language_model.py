@@ -275,9 +275,8 @@ class _GBWStream(LanguageModelStream):
         self._file_pattern = os.path.join(self._subdir, pattern)
         self._data_hash = data_hash
         self._get_data()
-        sampler = 'random' if segment == 'train' else 'sequential'
         super(_GBWStream, self).__init__(self._file_pattern, skip_empty=skip_empty, bos=bos,
-                                         eos=eos, sampler=sampler, file_sampler=sampler)
+                                         eos=eos, file_sampler=sampler)
 
     def _get_data(self):
         archive_file_name, archive_hash = self._archive_file
@@ -331,12 +330,10 @@ class GBWStream(_GBWStream):
     """
     def __init__(self, segment='train', skip_empty=True, bos=None, eos=C.EOS_TOKEN,
                  root=os.path.join(_get_home_dir(), 'datasets', 'gbw')):
+        assert segment == 'train', 'Only train segment is supported for GBW'
         self._archive_file = ('1-billion-word-language-modeling-benchmark-r13output.tar.gz',
                               '4df859766482e12264a5a9d9fb7f0e276020447d')
         self._data_file = {'train': ('training-monolingual.tokenized.shuffled',
                                      'news.en-00*-of-00100',
-                                     '5e0d7050b37a99fd50ce7e07dc52468b2a9cd9e8'),
-                           'test': ('heldout-monolingual.tokenized.shuffled',
-                                    'news.en.heldout-00000-of-00050',
-                                    '0a8e2b7496ba0b5c05158f282b9b351356875445')}
+                                     '5e0d7050b37a99fd50ce7e07dc52468b2a9cd9e8')}
         super(GBWStream, self).__init__('gbw', segment, bos, eos, skip_empty, root)
