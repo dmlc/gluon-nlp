@@ -18,7 +18,8 @@
 # under the License.
 
 """Building blocks and utility for models."""
-__all__ = ['RNNCellLayer', 'L2Normalization']
+__all__ = ['RNNCellLayer', 'L2Normalization', 'CharacterLevelCNNEmbedding', 'PredefinedEmbedding',
+           'BiDAFEmbedding']
 
 from mxnet import ndarray
 from mxnet.gluon import Block, HybridBlock, nn
@@ -93,34 +94,55 @@ class L2Normalization(HybridBlock):
 
 class CharacterLevelCNNEmbedding(HybridBlock):
     """
-    A block that takes text and embed it using convolution neural network
+    CharacterLevelCNNEmbedding takes data and embed it using 2D convolution layers. Quantity of
+    Conv2D block is equal to len of channels and kernel_size lists, which should be same.
+
+    Each item in the data is an index of a character, drawn from a vocab of `vocab_size`.
+    Input layout: NTC, where
+        N - batch_size = # of examples,
+        T - seq_len    = # of words in each example,
+        C - channel    = # char in each word
+
+    Output layout: batch_size x seq_len x channels, where
+        batch_size = # of examples,
+        seq_len    = # words in each example,
+        channels   = # channels equal to `channels` parameter passed to `__init__()`
     """
-    def __init__(self, channels, kernel_sizes, padding, vocab_size, keep_prob=0.2, prefix=None, \
-                                                                                  params=None):
+    def __init__(self, channels, kernel_sizes, padding, vocab_size, char_embedding_size=8,
+                 keep_prob=0.2, prefix=None, params=None):
         super(CharacterLevelCNNEmbedding, self).__init__()
 
-        self.vocab_size = vocab_size
+        assert len(channels) == len(kernel_sizes)
         self.net = nn.HybridSequential(prefix=prefix, params=params)
 
         with self.net.name_scope():
+            self.net.add(nn.Embedding(input_dim=vocab_size, output_dim=char_embedding_size))
+
             for channel, kernel in zip(channels, kernel_sizes):
                 self.net.add(nn.Dropout(rate=keep_prob))
-
-                self.net.add(nn.Conv1D(
-                    channels=channel,
-                    kernel_size=kernel,
-                    padding=padding))
+                self.net.add(nn.Conv2D(layout='NHWC', in_channels=char_embedding_size,
+                                       strides=[1, 1], channels=channel, kernel_size=[1, kernel],
+                                       padding=padding))
 
     def hybrid_forward(self, F, x):  # pylint: disable=arguments-differ
-        x_encoded = F.transpose(F.one_hot(x, self.vocab_size), axes=(0, 2, 1))
-        network_output = self.net.hybrid_forward(F, x_encoded)
+        network_output = self.net.hybrid_forward(F, x)
         relu_output = F.relu(network_output)
         return F.max(relu_output, axis=2)
 
 
 class PredefinedEmbedding(HybridBlock):
     """
-    A block that takes text and embeds it using Glove embedding.
+    PredefinedEmbedding embeds data using pre-trained embedding like glove or others. Each item in
+    the data should be an index from a vocab, that uses the same embedding passed to `__init__()`.
+
+    Input layout:  batch_size x seq_length, where
+        batch_size = # of examples,
+        seq_len    = # words in each example,
+
+    Output layout: batch_size x seq_len x embed_size, where
+        batch_size = # of examples,
+        seq_len    = # words in each example,
+        embed_size = dimensionality of the embedding, passed to `__init__()`
     """
     def __init__(self, embedding, prefix=None, params=None):
         super(PredefinedEmbedding, self).__init__(prefix=prefix, params=params)
@@ -129,22 +151,35 @@ class PredefinedEmbedding(HybridBlock):
         self.embedding = nn.Embedding(input_dim, output_dim)
 
     def hybrid_forward(self, F, x):  # pylint: disable=arguments-differ
-        return F.transpose(self.embedding.hybrid_forward(F, x, weight=self.embedding_data))
+        return self.embedding.hybrid_forward(F, x, weight=self.embedding_data)
 
 
 class BiDAFEmbedding(HybridBlock):
     """
-    An embedding for BiFAD model
+    BiDAFEmbedding uses CharacterLevelCNNEmbedding and PredefinedEmbedding to create a word + char
+    level embeddings. It concats the resulting embedding into a single dataset by embedding
+    dimension. The embedding sizes should be same for both datasets.
+
+    Input: 2 datasets: first for CharacterLevelCNNEmbedding and second for PredefinedEmbedding
+    Shapes of both datasets should match to these embeddings
+
+    Output layout: batch_size x seq_len x embed_size, where
+        batch_size = # of examples,
+        seq_len    = # words in each example,
+        embed_size = dimensionality of the embedding, equal to 2 * embedding_size of source data
     """
-    def __init__(self, channels, kernel_sizes, padding, char_vocab_size, word_embedding_source,
-                 prefix=None, params=None):
+    def __init__(self, word_embedding_source, channels, kernel_sizes, padding, char_vocab_size,
+                 char_embedding_size=8, keep_prob=0.2, prefix=None, params=None):
         super(BiDAFEmbedding, self).__init__(prefix=prefix, params=params)
+
         self.cnn_embedding = CharacterLevelCNNEmbedding(channels, kernel_sizes,
-                                                        padding, char_vocab_size)
-        self.word_embedding = PredefinedEmbedding(word_embedding_source)
+                                                        padding, char_vocab_size,
+                                                        char_embedding_size, keep_prob,
+                                                        prefix, params)
+        self.word_embedding = PredefinedEmbedding(word_embedding_source, prefix, params)
 
-    def hybrid_forward(self, F, x):  # pylint: disable=arguments-differ
-        char_level_embedding = self.cnn_embedding.hybrid_forward(F, x)
-        word_level_embedding = self.word_embedding.hybrid_forward(F, x)
+    def hybrid_forward(self, F, char_level, word_level):  # pylint: disable=arguments-differ
+        char_level_embedding = self.cnn_embedding.hybrid_forward(F, char_level)
+        word_level_embedding = self.word_embedding.hybrid_forward(F, word_level)
 
-        return F.concat(word_level_embedding, char_level_embedding)
+        return F.concat(char_level_embedding, word_level_embedding, dim=2)
