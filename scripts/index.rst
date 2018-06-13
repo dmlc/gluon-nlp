@@ -1,7 +1,7 @@
 Scripts
 =======
 
-.. include:: word_embedding_evaluation/word_embedding_evaluation.rst
+.. include:: word_embeddings/word_embeddings.rst
 
 .. include:: beam_search/beam_search_generator.rst
 

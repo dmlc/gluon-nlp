@@ -25,8 +25,10 @@ import gluonnlp as nlp
 
 from .language_model import *
 from .cache import *
+from .embedding import *
 
-__all__ = language_model.__all__ + cache.__all__ + ['get_cache_model']
+__all__ = language_model.__all__ + cache.__all__ + embedding.__all__ + \
+    ['get_cache_model']
 
 
 def get_cache_model(name, dataset_name='wikitext-2', window=2000,
