@@ -369,7 +369,7 @@ def train():
 
             trainer.step(1)
 
-            total_L += sum([mx.nd.sum(L).asscalar() for L in Ls])
+            total_L += sum([mx.nd.sum(L).asscalar() for L in Ls]) / len(context)
             trainer.set_learning_rate(lr_batch_start)
             if batch_i % args.log_interval == 0 and batch_i > 0:
                 cur_L = total_L / args.log_interval
