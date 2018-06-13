@@ -61,7 +61,7 @@ computes the cosine similarity between two words.
 .. raw:: html
 
   <iframe height="400px" width="100%"
-  src="https://repl.it/@mli/gluon-nlp?lite=true" scrolling="no"
+  src="https://repl.it/@szha/gluon-nlp?lite=true" scrolling="no"
   frameborder="no" allowtransparency="true" allowfullscreen="true"
   sandbox="allow-forms allow-pointer-lock allow-popups allow-same-origin
   allow-scripts allow-modals"></iframe>
