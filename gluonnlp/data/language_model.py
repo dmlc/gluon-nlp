@@ -276,7 +276,7 @@ class _GBWStream(LanguageModelStream):
         self._data_hash = data_hash
         self._get_data()
         super(_GBWStream, self).__init__(self._file_pattern, skip_empty=skip_empty, bos=bos,
-                                         eos=eos, file_sampler=sampler)
+                                         eos=eos)
 
     def _get_data(self):
         archive_file_name, archive_hash = self._archive_file
@@ -315,7 +315,7 @@ class GBWStream(_GBWStream):
 
     Parameters
     ----------
-    segment : {'train', 'test'}, default 'train'
+    segment : {'train',}, default 'train'
         Dataset segment.
     skip_empty : bool, default True
         Whether to skip the empty samples produced from sample_splitters. If False, `bos` and `eos`

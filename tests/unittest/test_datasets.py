@@ -484,6 +484,9 @@ def test_wmt2014bpe():
     assert len(en_vocab) == 36794
     assert len(de_vocab) == 36794
 
+###############################################################################
+# Stream
+###############################################################################
 def test_corpus_stream():
     EOS = nlp._constants.EOS_TOKEN
     path = os.path.join('tests', 'data', 'wikitext-2')
@@ -543,12 +546,6 @@ def test_lazy_stream():
     for x, y in zip(corpus, transformed_corpus):
         assert y == x.lower()
 
-def test_counter():
-    x = nlp.data.Counter({'a': 10, 'b': 1, 'c': 1})
-    y = x.discard(3, '<unk>')
-    assert y['a'] == 10
-    assert y['<unk>'] == 2
-
 ###############################################################################
 # Question answering
 ###############################################################################
@@ -565,6 +562,36 @@ def test_load_dev_squad():
     for record in val_dataset:
         assert len(record) == 6
 
-# private test - not tested on CI
+def test_counter():
+    x = nlp.data.Counter({'a': 10, 'b': 1, 'c': 1})
+    y = x.discard(3, '<unk>')
+    assert y['a'] == 10
+    assert y['<unk>'] == 2
+
+def test_sorted_vocab():
+    x = nlp.data.Counter({'a': 10, 'b': 1, 'c': 2, '<unk>': 3, '<bos>': 1})
+    vocab0 = nlp.SortedVocab(counter=x)
+    assert len(vocab0) == 7
+    assert vocab0['a'] == 0
+    assert vocab0['<unk>'] == 1
+    assert vocab0['c'] == 2
+    assert vocab0['unknown_token'] == vocab0['<unk>']
+
+    vocab1 = nlp.SortedVocab(counter=x, min_freq=2)
+    assert len(vocab1) == 6
+    assert vocab1['a'] == 0
+    assert vocab1['<unk>'] == 1
+    assert vocab1['c'] == 2
+    assert vocab0['unknown_token'] == vocab0['<unk>']
+
+    vocab2 = nlp.SortedVocab(counter=x, max_size=1, reserved_tokens=['reserved'])
+
+# this test is not tested on CI due to long running time
 def _test_gbw_stream():
-    pass
+    gbw = nlp.data.GBWStream()
+    counter = nlp.data.Counter(gbw)
+    counter.discard(3, '<unk>')
+    # reference count obtained from:
+    # https://github.com/rafaljozefowicz/lm/blob/master/1b_word_vocab.txt
+    assert counter['the'] == 35936573
+    assert counter['.'] == 29969612

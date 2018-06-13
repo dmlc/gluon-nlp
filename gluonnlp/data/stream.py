@@ -19,7 +19,7 @@
 
 # pylint: disable=undefined-all-variable
 """NLP Toolkit Data Stream API. It allows easy and customizable streaming of
-corpora and dataset files. Files can be streamed into formats that are immediately
+corpora and dataset files. Files can be streamed into formats that are
 ready for training and evaluation."""
 __all__ = ['DataStream', 'CorpusStream', 'LanguageModelStream', 'SimpleDataStream']
 
