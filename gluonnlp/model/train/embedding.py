@@ -57,14 +57,12 @@ class EmbeddingModel(Block):
         tokens : list of str
             The tokens for which to add vectors to the resulting
             TokenEmbedding.
-        unknown_behavior : ['impute_raise', 'raise'], default 'impute_raise'
-            How to handle tokens that are not in the `model_token_to_idx`.
-              - 'impute_raise' tries to impute an embedding based on the
-                subwords of the token as computed from `model_subwordfunction`.
-                If no subwords are associated with the respective token or
-                `model_subwordfunction` is None, a ValueError is raised. -
-                'raise' raises a ValueError if any token is not in
-                `model_token_to_idx`.
+        unknown_behavior : str, default 'impute_raise'
+          - 'impute_raise' Try to impute an embedding for out of vocabulary
+            words. If imputation is impossible (e.g. no known subwords are
+            associated with the out of vocabulary word) , a ValueError is
+            raised.
+          - 'raise' raises a ValueError if any token is out of vocaublary.
         batch_size : int, default 1024
             Use batches of `batch_size` to compute the embeddings from the
             `embedding_model`.
