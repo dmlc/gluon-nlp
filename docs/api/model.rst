@@ -21,6 +21,13 @@ Language Modeling
     StandardRNN
     get_model
 
+Character Encoder
+-----------------
+
+.. autosummary::
+    :nosignatures:
+
+    CharacterEncoder
 
 Attention Cell
 --------------
