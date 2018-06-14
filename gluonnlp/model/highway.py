@@ -25,7 +25,9 @@ from mxnet.gluon import nn
 
 
 class Highway(gluon.Block):
-    r"""We implemented the highway network proposed in the following work::
+    r"""
+
+    We implemented the highway network proposed in the following work::
 
         @article{srivastava2015highway,
           title={Highway networks},

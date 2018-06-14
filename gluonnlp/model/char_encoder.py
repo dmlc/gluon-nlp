@@ -27,7 +27,9 @@ from .highway import Highway
 
 
 class CharacterEncoder(gluon.Block):
-    r"""We implement the convolutional character encoder proposed in the following work::
+    r"""
+
+    We implement the convolutional character encoder proposed in the following work::
 
         @inproceedings{kim2016character,
          title={Character-Aware Neural Language Models.},
