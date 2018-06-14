@@ -29,7 +29,7 @@ from mxnet.gluon import nn
 
 
 class Highway(gluon.Block):
-    r"""
+    r"""Highway network.
 
     We implemented the highway network proposed in the following work::
 

@@ -31,7 +31,7 @@ from .highway import Highway
 
 
 class CharacterEncoder(gluon.Block):
-    r"""
+    r"""Convolutional character encoder.
 
     We implement the convolutional character encoder proposed in the following work::
 
