@@ -26,12 +26,12 @@ from gluonnlp.model import CharacterEncoder
 def test_char_encoder_nonhighway_forward():
     encoder = CharacterEncoder(embed_size=2, num_filters=1, ngram_filter_sizes=(1, 2))
     print(encoder)
-    encoder.initialize(init='Xavier')
+    encoder.initialize(init='One')
     inputs = mx.nd.array([[[.7, .8], [.1, 1.5], [.2, .3]], [[.5, .6], [.2, 2.5], [.4, 4]]])
     output = encoder(inputs, None)
     assert output.shape == (3, 2), output.shape
     assert_almost_equal(output.asnumpy(),
-                        mx.nd.array([[0.31, 1.24], [0.68, 2.28], [1.11, 3.29]]).asnumpy(),
+                        mx.nd.array([[1.5, 2.6], [2.7, 4.3], [4.4, 4.9]]).asnumpy(),
                         decimal=2)
 
 
@@ -56,9 +56,3 @@ def test_char_encoder_highway_forward():
     output = encoder(inputs, None)
     print(output)
     assert output.shape == (3, 1), output.shape
-
-test_char_encoder_nonhighway_forward()
-
-test_char_encoder_nohighway_forward_largeinputs()
-
-test_char_encoder_highway_forward()

@@ -26,7 +26,7 @@ from gluonnlp.model import Highway
 def test_highway_forward_simple_input():
     highway = Highway(input_size=2, num_layers=2)
     print(highway)
-    highway.initialize(init='Xavier')
+    highway.initialize(init='One')
     highway.set_bias()
     highway.hnet[0].weight.data()[:] = 1
     highway.hnet[0].bias.data()[:] = 0
