@@ -99,14 +99,14 @@ class CharacterLevelCNNEmbedding(HybridBlock):
 
     Each item in the data is an index of a character, drawn from a vocab of `vocab_size`.
     Input layout: NTC, where
-        N - batch_size = # of examples,
-        T - seq_len    = # of words in each example,
-        C - channel    = # char in each word
+    N - batch_size = # of examples,
+    T - seq_len    = # of words in each example,
+    C - channel    = # char in each word
 
     Output layout: batch_size x seq_len x channels, where
-        batch_size = # of examples,
-        seq_len    = # words in each example,
-        channels   = # channels equal to `channels` parameter passed to `__init__()`
+    batch_size = # of examples,
+    seq_len    = # words in each example,
+    channels   = # channels equal to `channels` parameter passed to `__init__()`
     """
     def __init__(self, channels, kernel_sizes, padding, vocab_size, char_embedding_size=8,
                  keep_prob=0.2, prefix=None, params=None):
@@ -140,13 +140,13 @@ class PredefinedEmbedding(HybridBlock):
     the data should be an index from a vocab, that uses the same embedding passed to `__init__()`.
 
     Input layout:  batch_size x seq_length, where
-        batch_size = # of examples,
-        seq_len    = # words in each example,
+    batch_size = # of examples,
+    seq_len    = # words in each example,
 
     Output layout: batch_size x seq_len x embed_size, where
-        batch_size = # of examples,
-        seq_len    = # words in each example,
-        embed_size = dimensionality of the embedding, passed to `__init__()`
+    batch_size = # of examples,
+    seq_len    = # words in each example,
+    embed_size = dimensionality of the embedding, passed to `__init__()`
     """
     def __init__(self, embedding, prefix=None, params=None):
         super(PredefinedEmbedding, self).__init__(prefix=prefix, params=params)
