@@ -25,16 +25,16 @@ from mxnet.gluon import nn
 
 from .highway import Highway
 
+
 class CharacterEncoder(gluon.Block):
-    r"""
-    We implement the convolutional character encoder proposed in the following work::
+    r"""We implement the convolutional character encoder proposed in the following work::
 
         @inproceedings{kim2016character,
-        title={Character-Aware Neural Language Models.},
-        author={Kim, Yoon and Jernite, Yacine and Sontag, David and Rush, Alexander M},
-        booktitle={AAAI},
-        pages={2741--2749},
-        year={2016}
+         title={Character-Aware Neural Language Models.},
+         author={Kim, Yoon and Jernite, Yacine and Sontag, David and Rush, Alexander M},
+         booktitle={AAAI},
+         pages={2741--2749},
+         year={2016}
         }
 
     Parameters
