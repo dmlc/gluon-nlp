@@ -114,20 +114,24 @@ class CharacterLevelCNNEmbedding(HybridBlock):
 
         assert len(channels) == len(kernel_sizes)
         self.net = nn.HybridSequential(prefix=prefix, params=params)
+        self.embedding = nn.Embedding(input_dim=vocab_size, output_dim=char_embedding_size)
 
         with self.net.name_scope():
-            self.net.add(nn.Embedding(input_dim=vocab_size, output_dim=char_embedding_size))
-
             for channel, kernel in zip(channels, kernel_sizes):
                 self.net.add(nn.Dropout(rate=keep_prob))
-                self.net.add(nn.Conv2D(layout='NHWC', in_channels=char_embedding_size,
+                self.net.add(nn.Conv2D(in_channels=char_embedding_size,
                                        strides=[1, 1], channels=channel, kernel_size=[1, kernel],
                                        padding=padding))
 
     def hybrid_forward(self, F, x):  # pylint: disable=arguments-differ
-        network_output = self.net.hybrid_forward(F, x)
+        x_embedded = self.embedding(x)
+        # transposing to NCHW which is a default for Conv2D
+        x_embedded_transposed = x_embedded.transpose(axes=(0, 3, 1, 2))
+        network_output = self.net.hybrid_forward(F, x_embedded_transposed)
         relu_output = F.relu(network_output)
-        return F.max(relu_output, axis=2)
+        max_output = F.max(relu_output, axis=3)
+        # transposing back to expected batch_size x seq_len x channels
+        return max_output.transpose(axes=(0, 2, 1))
 
 
 class PredefinedEmbedding(HybridBlock):
