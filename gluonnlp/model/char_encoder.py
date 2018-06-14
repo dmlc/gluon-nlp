@@ -18,6 +18,10 @@
 # under the License.
 
 """Convolutional character encoder."""
+
+from __future__ import absolute_import
+from __future__ import print_function
+
 __all__ = ['CharacterEncoder']
 
 from mxnet import gluon, nd

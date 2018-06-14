@@ -29,6 +29,14 @@ Character Encoder
 
     CharacterEncoder
 
+Highway Network
+-----------------
+
+.. autosummary::
+    :nosignatures:
+
+    Highway
+
 Attention Cell
 --------------
 
