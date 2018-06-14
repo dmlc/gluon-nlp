@@ -125,7 +125,7 @@ class CharacterLevelCNNEmbedding(HybridBlock):
 
     def hybrid_forward(self, F, x):  # pylint: disable=arguments-differ
         x_embedded = self.embedding(x)
-        # transposing to NCHW which is a default for Conv2D
+        # transposing to NCHW which is a default for Conv2D class
         x_embedded_transposed = x_embedded.transpose(axes=(0, 3, 1, 2))
         network_output = self.net.hybrid_forward(F, x_embedded_transposed)
         relu_output = F.relu(network_output)
