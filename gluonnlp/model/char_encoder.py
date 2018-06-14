@@ -42,9 +42,11 @@ class CharacterEncoder(gluon.Block):
     embed_size : int
         The input dimension to the encoder.
     num_filters: int
-        The output dimension for each convolutional layer, which is the number of the filters learned by the layer.
+        The output dimension for each convolutional layer,
+        which is the number of the filters learned by the layer.
     ngram_filter_sizes: Tuple[int]
-        The size of each convolutional layer, and len(ngram_filter_sizes) equals to the number of convolutional layers.
+        The size of each convolutional layer,
+        and len(ngram_filter_sizes) equals to the number of convolutional layers.
     conv_layer_activation: nn.Activation
         Activation function to be used after convolutional layer.
     num_highway: int
@@ -81,11 +83,15 @@ class CharacterEncoder(gluon.Block):
             maxpool_output_size = self._num_filters * len(self._ngram_filter_sizes)
             self._activation = conv_layer_activation
             if self._num_highway:
-                self._highways = Highway(maxpool_output_size, self._num_highway, activation=self._activation)
+                self._highways = Highway(maxpool_output_size,
+                                         self._num_highway,
+                                         activation=self._activation)
             else:
                 self._highways = None
             if self._output_size:
-                self._projection = nn.Dense(in_units=maxpool_output_size, units=self._output_size, use_bias=True)
+                self._projection = nn.Dense(in_units=maxpool_output_size,
+                                            units=self._output_size,
+                                            use_bias=True)
             else:
                 self._projection = None
                 self._output_size = maxpool_output_size

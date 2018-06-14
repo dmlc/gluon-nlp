@@ -41,8 +41,9 @@ class Highway(gluon.Block):
         y = (1 - t) * x + t * f(A(x))
 
     which is a gated combination of a linear transform and a non-linear transform of its input,
-    where :math:`x` is the input tensor, :math:`A` is a linear transformer, :math:`f` is an element-wise
-    non-linear transformer, and :math:`t` is an element-wise transform gate, and :math:`t` refers to carry gate.
+    where :math:`x` is the input tensor, :math:`A` is a linear transformer,
+    :math:`f` is an element-wise non-linear transformer,
+    and :math:`t` is an element-wise transform gate, and :math:`t` refers to carry gate.
 
     Parameters
     ----------
@@ -97,5 +98,6 @@ class Highway(gluon.Block):
             nonlinear_transform, transform_gate = projected_input.split(num_outputs=2, axis=-1)
             nonlinear_transform = self._activation(nonlinear_transform)
             transform_gate = transform_gate.sigmoid()
-            current_input = (1 - transform_gate) * linear_transform + transform_gate * nonlinear_transform
+            current_input = (1 - transform_gate) * linear_transform + \
+                            transform_gate * nonlinear_transform
         return current_input
