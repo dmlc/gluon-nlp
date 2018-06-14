@@ -23,59 +23,79 @@ __all__ = ['Highway']
 from mxnet import gluon
 from mxnet.gluon import nn
 
-class Highway(gluon.Block):
-    """
-    A `Highway layer <https://arxiv.org/abs/1505.00387>`_ does a gated combination of a linear
-    transformation and a non-linear transformation of its input.  :math:`y = g * x + (1 - g) *
-    f(A(x))`, where :math:`A` is a linear transformation, :math:`f` is an element-wise
-    non-linearity, and :math:`g` is an element-wise gate, computed as :math:`sigmoid(B(x))`.
 
-    This module will apply a fixed number of highway layers to its input, returning the final
-    result.
+class Highway(gluon.Block):
+    r"""
+    We implemented the highway network proposed in the following work::
+
+        @article{srivastava2015highway,
+          title={Highway networks},
+          author={Srivastava, Rupesh Kumar and Greff, Klaus and Schmidhuber, J{\"u}rgen},
+          journal={arXiv preprint arXiv:1505.00387},
+          year={2015}
+        }
+
+    A Highway layer is defined as below:
+
+    .. math::
+        y = (1 - t) * x + t * f(A(x))
+
+    which is a gated combination of a linear transform and a non-linear transform of its input,
+    where :math:`x` is the input tensor, :math:`A` is a linear transformer, :math:`f` is an element-wise
+    non-linear transformer, and :math:`t` is an element-wise transform gate, and :math:`t` refers to carry gate.
 
     Parameters
     ----------
-    input_dim : ``int``
-        The dimensionality of :math:`x`.  We assume the input has shape ``(batch_size,
-        input_dim)``.
-    num_layers : ``int``, optional (default=``1``)
+    input_size : int
+        The dimension of the input tensor.  We assume the input has shape ``(batch_size,
+        input_size)``.
+    num_layers : int
         The number of highway layers to apply to the input.
-    activation : ``nn.activations.Activation``, optional (default=``nn.Activation('relu')``)
-        The non-linearity to use in the highway layers.
+    activation : nn.Activation
+        The non-linear activation function.
     """
+
     def __init__(self,
                  input_size,
                  num_layers,
                  activation=nn.Activation('relu'),
                  **kwargs):
         super(Highway, self).__init__(**kwargs)
-        self._ninput_size = input_size
+        self._input_size = input_size
         self._num_layers = num_layers
+
         with self.name_scope():
-            self._hnet = nn.HybridSequential()
-            with self._hnet.name_scope():
-                for i in range(self._num_layers):
-                    # pylint: disable=unused-argument
-                    print(i)
-                    hlayer = nn.Dense(self._ninput_size * 2, in_units=self._ninput_size)
-                    self._hnet.add(hlayer)
+            self.hnet = nn.HybridSequential()
+            with self.hnet.name_scope():
+                for _ in range(self._num_layers):
+                    self.hnet.add(nn.Dense(units=self._input_size * 2, in_units=self._input_size,
+                                           use_bias=True, flatten=False))
             self._activation = activation
 
     def set_bias(self):
-        for layer in self._hnet:
-            layer.bias.data()[self._ninput_size:] = 1
+        for _, layer in enumerate(self.hnet):
+            layer.bias.data()[self._input_size:] = 1
 
     def forward(self, inputs):  # pylint: disable=arguments-differ
-        """
+        r"""
         Forward computation for highway layer
+
+        Parameters
+        ----------
+        inputs: NDArray
+            The input tensor is of shape `(batch_size, input_size)`.
+
+        Returns
+        ----------
+        outputs: NDArray
+            The output tensor is of the same shape with input tensor `(batch_size, input_size)`.
         """
         current_input = inputs
-        for layer in enumerate(self._hnet):
+        for _, layer in enumerate(self.hnet):
             projected_input = layer(current_input)
-            linear_part = current_input
-            nonlinear_part = projected_input[:, (0 * self._ninput_size):(1 * self._ninput_size)]
-            gate = projected_input[:, (1 * self._ninput_size):(2 * self._ninput_size)]
-            nonlinear_part = self._activation(nonlinear_part)
-            gate = gate.sigmoid()
-            current_input = gate * linear_part + (1 - gate) * nonlinear_part
+            linear_transform = current_input
+            nonlinear_transform, transform_gate = projected_input.split(num_outputs=2, axis=-1)
+            nonlinear_transform = self._activation(nonlinear_transform)
+            transform_gate = transform_gate.sigmoid()
+            current_input = (1 - transform_gate) * linear_transform + transform_gate * nonlinear_transform
         return current_input
