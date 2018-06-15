@@ -59,7 +59,7 @@ class CharacterEncoder(gluon.Block):
         The number of layers of the Highway layer.
     output_size: int
         The output dimension after conducting the convolutions and max pooling,
-        and apply highways, as well as linear projection.
+        and applying highways, as well as linear projection.
 
     """
     def __init__(self,
@@ -114,7 +114,8 @@ class CharacterEncoder(gluon.Block):
         inputs: NDArray
             The input tensor is of shape `(seq_len, batch_size, embedding_size)` TNC.
         mask: NDArray
-            The mask applied to the input of shape `(seq_len, embedding_size)`
+            The mask applied to the input of shape `(seq_len, batch_size)`, the mask will
+            be broadcasted along the embedding dimension.
 
         Returns
         ----------
