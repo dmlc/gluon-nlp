@@ -23,6 +23,33 @@ __all__ = ['CandidateSampler', 'UnigramCandidateSampler']
 import mxnet as mx
 import numpy as np
 
+try:
+    from numba import njit, prange
+    numba_njit = njit(nogil=True)
+except ImportError:
+    # Define numba shims
+    prange = range
+
+    def numba_njit(func):
+        return func
+
+
+@numba_njit
+def _candidates_mask(negatives, true_samples, true_samples_mask):
+    assert len(negatives.shape) == 2
+    assert len(true_samples.shape) == 2
+    assert negatives.shape[0] == true_samples.shape[0]
+
+    negatives_mask = np.ones(negatives.shape)
+
+    for i in range(negatives.shape[0]):
+        for j in range(negatives.shape[1]):
+            for z in range(true_samples.shape[1]):
+                if (true_samples_mask[i, z]
+                        and negatives[i, j] == true_samples[i, z]):
+                    negatives_mask[i, j] = 0
+    return negatives_mask
+
 
 class CandidateSampler(object):
     """Abstract Candidate Sampler
@@ -83,12 +110,36 @@ class UnigramCandidateSampler(CandidateSampler):
         self.prob = mx.nd.array(self.prob)
         self.alias = mx.nd.array(self.alias)
 
-    def __call__(self, k):
-        """Draw k samples from the distribution."""
-        idx = mx.nd.array(np.random.randint(0, self.N, size=k))
+    def __call__(self, shape, true_samples=None, true_samples_mask=None):
+        """Draw shape samples from the distribution.
+
+        If true_samples is specified, also returns a mask that masks any random
+        elements that are also part of the same row as true_samples.
+
+        """
+
+        # Draw samples
+        idx = mx.nd.array(np.random.randint(0, self.N, size=shape))
         prob = self.prob[idx]
         alias = self.alias[idx]
-        where = mx.nd.random.uniform(shape=k) < prob
+        where = mx.nd.random.uniform(shape=shape) < prob
         hit = idx * where
         alt = alias * (1 - where)
-        return hit + alt
+        candidates = hit + alt
+
+        # Remove accidental hits
+        if true_samples is not None:
+            candidates_np = candidates.asnumpy()
+            true_samples_np = true_samples.asnumpy()
+            if true_samples_mask is not None:
+                true_samples_mask_np = true_samples_mask.asnumpy()
+            else:
+                true_samples_mask_np = np.ones_like(true_samples_np)
+
+            candidates_mask = mx.nd.array(
+                _candidates_mask(candidates_np, true_samples_np,
+                                 true_samples_mask_np))
+
+            return candidates, candidates_mask
+        else:
+            return candidates

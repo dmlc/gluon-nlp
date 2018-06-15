@@ -265,6 +265,10 @@ def train(args):
                 smoothing=1, dynamic_ncols=True):
             progress = (epoch * num_batches + i) / (args.epochs * num_batches)
             (center, word_context, word_context_mask) = batch
+            negatives_shape = (word_context.shape[0],
+                               word_context.shape[1] * args.negative)
+            negatives, negatives_mask = negatives_sampler(
+                negatives_shape, word_context, word_context_mask)
 
             if args.model.lower() == 'skipgram':
                 subwords, subwords_mask = \
@@ -287,10 +291,8 @@ def train(args):
                 context[0])
             word_context = word_context.as_in_context(context[0])
             word_context_mask = word_context_mask.as_in_context(context[0])
-            negatives = negatives_sampler(word_context.shape + (args.negative, )) \
-                .reshape((word_context.shape[0],
-                          word_context.shape[1] * args.negative)) \
-                .as_in_context(context[0])
+            negatives = negatives.as_in_context(context[0])
+            negatives_mask = negatives_mask.as_in_context(context[0])
 
             with mx.autograd.record():
                 # Combine subword level embeddings with word embeddings
@@ -301,7 +303,7 @@ def train(args):
                     word_context_negatives = mx.nd.concat(
                         word_context, negatives, dim=1)
                     word_context_negatives_mask = mx.nd.concat(
-                        word_context_mask, mx.nd.ones_like(negatives), dim=1)
+                        word_context_mask, negatives_mask, dim=1)
 
                     emb_out = embedding_out(word_context_negatives,
                                             word_context_negatives_mask)
