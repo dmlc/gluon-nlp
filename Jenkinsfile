@@ -59,7 +59,9 @@ stage("Deploy") {
       checkout scm
       sh """#!/bin/bash
       conda env update --prune -f env/doc.yml
+      conda remove -n gluon_nlp_docs pandoc
       source activate gluon_nlp_docs
+      pip uninstall pandoc
       conda list
       python setup.py install
       export LD_LIBRARY_PATH=/usr/local/cuda/lib64
