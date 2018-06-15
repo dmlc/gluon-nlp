@@ -20,6 +20,7 @@
 """BLEU."""
 import sys
 import re
+import six
 import math
 import unicodedata
 from collections import Counter
@@ -124,8 +125,8 @@ class UnicodeRegex: #pylint: disable=old-style-class
         self.symbol_re = re.compile('([' + self._property_chars('S') + '])')
 
     def _property_chars(self, prefix):
-        return ''.join(chr(x) for x in range(sys.maxunicode)
-                       if unicodedata.category(chr(x)).startswith(prefix))
+        return ''.join(six.unichr(x) for x in range(sys.maxunicode)
+                       if unicodedata.category(six.unichr(x)).startswith(prefix))
 
 
 unicodeRegex = UnicodeRegex()
