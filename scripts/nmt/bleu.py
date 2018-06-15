@@ -20,10 +20,10 @@
 """BLEU."""
 import sys
 import re
-import six
 import math
 import unicodedata
 from collections import Counter
+import six
 r = re.compile('.+-.+')
 LIST_TYPES = (list, tuple)
 
