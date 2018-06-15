@@ -38,10 +38,10 @@ import os
 import random
 import sys
 import tempfile
+import time
 
 import mxnet as mx
 import numpy as np
-import tqdm
 
 import evaluation
 import gluonnlp as nlp
@@ -102,6 +102,7 @@ def parse_args():
     group = parser.add_argument_group('Logging arguments')
     group.add_argument('--logdir', type=str, default='logs',
                        help='Directory to store logs.')
+    group.add_argument('--log-interval', type=int, default=100)
     group.add_argument('--eval-interval', type=int, default=50000,
                        help='Evaluate every --eval-interval iterations '
                        'in addition to at the end of every epoch.')
@@ -260,9 +261,12 @@ def train(args):
                                                   window=args.window)
         num_batches = len(context_sampler)
 
-        for i, batch in tqdm.tqdm(
-                enumerate(context_sampler), total=num_batches, ascii=True,
-                smoothing=1, dynamic_ncols=True):
+        # Logging variables
+        log_wc = 0
+        log_start_time = time.time()
+        log_avg_loss = 0
+
+        for i, batch in enumerate(context_sampler):
             progress = (epoch * num_batches + i) / (args.epochs * num_batches)
             (center, word_context, word_context_mask) = batch
             negatives_shape = (word_context.shape[0],
@@ -348,10 +352,22 @@ def train(args):
             trainer_subwords.step(batch_size=1)
 
             # Logging
+            log_wc += loss.shape[0]
+            log_avg_loss += loss.mean()
+            if (i + 1) % args.log_interval == 0:
+                wps = log_wc / (time.time() - log_start_time)
+                logging.info('[Epoch {} Batch {}/{}] loss={:.4f}, '
+                             'throughput={:.2f}K wps, wc={:.2f}K'.format(
+                                 epoch, i + 1, num_batches,
+                                 log_avg_loss.asscalar() / args.log_interval,
+                                 wps / 1000, log_wc / 1000))
+                log_start_time = time.time()
+                log_avg_loss = 0
+                log_wc = 0
+
             if i % args.eval_interval == 0:
                 with print_time('mx.nd.waitall()'):
                     mx.nd.waitall()
-
                 evaluate(args, embedding, vocab, num_update)
 
         # Log at the end of every epoch
