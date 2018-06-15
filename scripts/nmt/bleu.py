@@ -24,7 +24,7 @@ import math
 import unicodedata
 from collections import Counter
 r = re.compile('.+-.+')
-
+LIST_TYPES = (list, tuple)
 
 def _ngrams(segment, n):
     """Extracts n-grams from an input segment.
