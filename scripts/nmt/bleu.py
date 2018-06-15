@@ -18,8 +18,10 @@
 # under the License.
 
 """BLEU."""
+import sys
 import re
 import math
+import unicodedata
 from collections import Counter
 r = re.compile('.+-.+')
 
@@ -74,6 +76,7 @@ def _bpe_to_words(sentence, delimiter='@@'):
             word = ''
     return words
 
+
 def _tokenize_mteval_13a(segment):
     r"""
     Tokenizes a string following the tokenizer in mteval-v13a.pl.
@@ -82,8 +85,8 @@ def _tokenize_mteval_13a(segment):
     Parameters
     ----------
     segment: str
-    	A string to be tokenzied
-    
+        A string to be tokenzied
+
     Returns
     -------
     The tokenized string
@@ -91,7 +94,6 @@ def _tokenize_mteval_13a(segment):
 
     norm = segment.rstrip()
 
-    # language-independent part:
     norm = norm.replace('<skipped>', '')
     norm = norm.replace('-\n', '')
     norm = norm.replace('\n', ' ')
@@ -100,20 +102,19 @@ def _tokenize_mteval_13a(segment):
     norm = norm.replace('&lt;', '<')
     norm = norm.replace('&gt;', '>')
 
-    # language-dependent part (assuming Western languages):
-    norm = " {} ".format(norm)
+    norm = ' {} '.format(norm)
     norm = re.sub(r'([\{-\~\[-\` -\&\(-\+\:-\@\/])', ' \\1 ', norm)
-    norm = re.sub(r'([^0-9])([\.,])', '\\1 \\2 ', norm)  # tokenize period and comma unless preceded by a digit
-    norm = re.sub(r'([\.,])([^0-9])', ' \\1 \\2', norm)  # tokenize period and comma unless followed by a digit
-    norm = re.sub(r'([0-9])(-)', '\\1 \\2 ', norm)  # tokenize dash when preceded by a digit
-    norm = re.sub(r'\s+', ' ', norm)  # one space only between words
-    norm = re.sub(r'^\s+', '', norm)  # no leading space
-    norm = re.sub(r'\s+$', '', norm)  # no trailing space
+    norm = re.sub(r'([^0-9])([\.,])', '\\1 \\2 ', norm)
+    norm = re.sub(r'([\.,])([^0-9])', ' \\1 \\2', norm)
+    norm = re.sub(r'([0-9])(-)', '\\1 \\2 ', norm)
+    norm = re.sub(r'\s+', ' ', norm)
+    norm = re.sub(r'^\s+', '', norm)
+    norm = re.sub(r'\s+$', '', norm)
 
     return norm
 
 
-class UnicodeRegex:
+class UnicodeRegex: #pylint: disable=old-style-class
     """Ad-hoc hack to recognize all punctuation and symbols.
     """
     def __init__(self):
@@ -122,10 +123,12 @@ class UnicodeRegex:
         self.punct_nondigit_re = re.compile(r'([' + punctuation + r'])([^\d])')
         self.symbol_re = re.compile('([' + _property_chars('S') + '])')
 
-
-    def _property_chars(prefix):
+    def _property_chars(prefix): #pylint: disable=no-self-argument
         return ''.join(chr(x) for x in range(sys.maxunicode)
                        if unicodedata.category(chr(x)).startswith(prefix))
+
+
+unicodeRegex = UnicodeRegex()
 
 
 def _tokenize_mteval_v14_intl(segment):
@@ -136,16 +139,16 @@ def _tokenize_mteval_v14_intl(segment):
     Parameters
     ----------
     segment: str
-        A string to be tokenzied
-    
+        A string to be tokenized
+
     Returns
     -------
     The tokenized string
     """
     segment = segment.rstrip()
-    segment = UnicodeRegex.nondigit_punct_re.sub(r'\1 \2 ', segment)
-    segment = UnicodeRegex.punct_nondigit_re.sub(r' \1 \2', segment)
-    segment = UnicodeRegex.symbol_re.sub(r' \1 ', segment)
+    segment = unicodeRegex.nondigit_punct_re.sub(r'\1 \2 ', segment)
+    segment = unicodeRegex.punct_nondigit_re.sub(r' \1 \2', segment)
+    segment = unicodeRegex.symbol_re.sub(r' \1 ', segment)
     return segment.strip()
 
 
@@ -172,12 +175,12 @@ def compute_bleu(reference_corpus_list, translation_corpus, tokenized=True,
         list(str): plain text
         Translations to score.
     tokenized: bool, default True
-	Whether the inputs has been tokenized.
+        Whether the inputs has been tokenized.
     tokenizer: str or None, default '13a'
-	'13a': follow the tokenizer in mteval-v13a.pl
-	'intl': follow the international tokenzier in mteval-v14.pl
+        '13a': follow the tokenizer in mteval-v13a.pl
+        'intl': follow the international tokenzier in mteval-v14.pl
         None: identity mapping on the stringi.
-        This option is ignored if tokenized is True 
+        This option is ignored if tokenized is True
     max_n: int, default 4
         Maximum n-gram order to use when computing BLEU score.
     smooth: bool, default False
@@ -202,17 +205,19 @@ def compute_bleu(reference_corpus_list, translation_corpus, tokenized=True,
         assert len(references) == len(translation_corpus), \
             'The number of translations and their references do not match'
     if tokenized:
-       assert isinstance(references[0][0], LIST_TYPES) and isinstance(translation[0], LIST_TYPES), \
-           'references and translation should have format of list of list(list(str)) ' 
-           'and list(list(str)), respectively, when toknized is True.' 
+        assert isinstance(reference_corpus_list[0][0], LIST_TYPES) and \
+               isinstance(translation_corpus[0], LIST_TYPES), \
+            'references and translation should have format of list of list(list(str)) ' \
+            'and list(list(str)), respectively, when toknized is True.'
     else:
-       assert isinstance(references[0][0], str) and isinstance(translation[0], str), \
-           'references and translation should have format of list(list(str)) '
-           'and list(str), respectively, when toknized is False.' 
+        assert isinstance(reference_corpus_list[0][0], str) and \
+               isinstance(translation_corpus[0], str), \
+            'references and translation should have format of list(list(str)) ' \
+            'and list(str), respectively, when toknized is False.'
     for references, translation in zip(zip(*reference_corpus_list), translation_corpus):
         if not tokenized:
-	    references = [TOKENIZER[tokenizer](reference) for reference in references]
-            translation = TOKENIZER[tokenizer](translation)
+            references = [TOKENIZERS[tokenizer](reference).split() for reference in references]
+            translation = TOKENIZERS[tokenizer](translation).split()
         if bpe:
             references = [_bpe_to_words(reference) for reference in references]
             translation = _bpe_to_words(translation)
@@ -351,3 +356,4 @@ def _smoothing(precision_fractions, c=1):
             ratios[i] = 0.0
 
     return ratios
+
