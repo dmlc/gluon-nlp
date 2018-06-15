@@ -87,6 +87,9 @@ def parse_args():
                        help='Context window size.')
     group.add_argument('--negative', type=int, default=5,
                        help='Number of negative samples.')
+    group.add_argument('--frequent-token-subsampling', type=float,
+                       default=1E-4,
+                       help='Frequent token subsampling constant.')
 
     # Optimization options
     group = parser.add_argument_group('Optimization arguments')
@@ -124,10 +127,10 @@ def get_train_data(args):
     vocab = nlp.Vocab(counter, unknown_token=None, padding_token=None,
                       bos_token=None, eos_token=None, min_freq=5)
 
-    idx_to_counts = mx.nd.array([counter[w] for w in vocab.idx_to_token])
+    idx_to_counts = np.array([counter[w] for w in vocab.idx_to_token])
     negatives_weights = idx_to_counts**0.75
     negatives_sampler = nlp.data.UnigramCandidateSampler(
-        weights=negatives_weights)
+        weights=mx.nd.array(negatives_weights))
 
     # Skip "unknown" tokens
     with print_time('code dataset'):
@@ -136,11 +139,8 @@ def get_train_data(args):
         ] for sentence in dataset]
 
     with print_time('prune frequent words from sentences'):
-        frequent_tokens_subsampling_constant = 1e-3
-        f = idx_to_counts / mx.nd.sum(idx_to_counts)
-        idx_to_pdiscard = (
-            mx.nd.sqrt(frequent_tokens_subsampling_constant / f) +
-            frequent_tokens_subsampling_constant / f).asnumpy()
+        f = idx_to_counts / np.sum(idx_to_counts)
+        idx_to_pdiscard = 1 - np.sqrt(args.frequent_token_subsampling / f)
 
         prune_sentences_ = functools.partial(prune_sentences,
                                              idx_to_pdiscard=idx_to_pdiscard)
