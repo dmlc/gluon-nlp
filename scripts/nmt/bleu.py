@@ -356,4 +356,3 @@ def _smoothing(precision_fractions, c=1):
             ratios[i] = 0.0
 
     return ratios
-
