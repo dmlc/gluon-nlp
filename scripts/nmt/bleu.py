@@ -74,17 +74,110 @@ def _bpe_to_words(sentence, delimiter='@@'):
             word = ''
     return words
 
+def _tokenize_mteval_13a(segment):
+    r"""
+    Tokenizes a string following the tokenizer in mteval-v13a.pl.
+    See https://github.com/moses-smt/mosesdecoder/"
+           "blob/master/scripts/generic/mteval-v14.pl#L917-L942
+    Parameters
+    ----------
+    segment: str
+    	A string to be tokenzied
+    
+    Returns
+    -------
+    The tokenized string
+    """
 
-def compute_bleu(reference_corpus_list, translation_corpus, max_n=4,
-                 smooth=False, lower_case=False, bpe=False, split_compound_word=False):
-    """Compute bleu score of translation against references.
+    norm = segment.rstrip()
+
+    # language-independent part:
+    norm = norm.replace('<skipped>', '')
+    norm = norm.replace('-\n', '')
+    norm = norm.replace('\n', ' ')
+    norm = norm.replace('&quot;', '"')
+    norm = norm.replace('&amp;', '&')
+    norm = norm.replace('&lt;', '<')
+    norm = norm.replace('&gt;', '>')
+
+    # language-dependent part (assuming Western languages):
+    norm = " {} ".format(norm)
+    norm = re.sub(r'([\{-\~\[-\` -\&\(-\+\:-\@\/])', ' \\1 ', norm)
+    norm = re.sub(r'([^0-9])([\.,])', '\\1 \\2 ', norm)  # tokenize period and comma unless preceded by a digit
+    norm = re.sub(r'([\.,])([^0-9])', ' \\1 \\2', norm)  # tokenize period and comma unless followed by a digit
+    norm = re.sub(r'([0-9])(-)', '\\1 \\2 ', norm)  # tokenize dash when preceded by a digit
+    norm = re.sub(r'\s+', ' ', norm)  # one space only between words
+    norm = re.sub(r'^\s+', '', norm)  # no leading space
+    norm = re.sub(r'\s+$', '', norm)  # no trailing space
+
+    return norm
+
+
+class UnicodeRegex:
+    """Ad-hoc hack to recognize all punctuation and symbols.
+    """
+    def __init__(self):
+        punctuation = _property_chars('P')
+        self.nondigit_punct_re = re.compile(r'([^\d])([' + punctuation + r'])')
+        self.punct_nondigit_re = re.compile(r'([' + punctuation + r'])([^\d])')
+        self.symbol_re = re.compile('([' + _property_chars('S') + '])')
+
+
+    def _property_chars(prefix):
+        return ''.join(chr(x) for x in range(sys.maxunicode)
+                       if unicodedata.category(chr(x)).startswith(prefix))
+
+
+def _tokenize_mteval_v14_intl(segment):
+    r"""Tokenize a string following following the international tokenizer in mteval-v14a.pl.
+    See https://github.com/moses-smt/mosesdecoder/"
+           "blob/master/scripts/generic/mteval-v14.pl#L954-L983
 
     Parameters
     ----------
-    reference_corpus_list: list of list(list(str))
+    segment: str
+        A string to be tokenzied
+    
+    Returns
+    -------
+    The tokenized string
+    """
+    segment = segment.rstrip()
+    segment = UnicodeRegex.nondigit_punct_re.sub(r'\1 \2 ', segment)
+    segment = UnicodeRegex.punct_nondigit_re.sub(r' \1 \2', segment)
+    segment = UnicodeRegex.symbol_re.sub(r' \1 ', segment)
+    return segment.strip()
+
+
+TOKENIZERS = {
+    '13a': _tokenize_mteval_13a,
+    'intl': _tokenize_mteval_v14_intl,
+    None: lambda x: x,
+}
+
+
+def compute_bleu(reference_corpus_list, translation_corpus, tokenized=True,
+                 tokenizer='13a', max_n=4, smooth=False, lower_case=False,
+                 bpe=False, split_compound_word=False):
+    r"""Compute bleu score of translation against references.
+
+    Parameters
+    ----------
+    reference_corpus_list: list of list(list(str)) or list of list(str)
+        list of list(list(str)): tokenzied references
+        list of list(str): plain text
         List of references for each translation.
-    translation_corpus: list(list(str))
+    translation_corpus: list(list(str)) or list(str)
+        list(list(str)): tokenzied translation
+        list(str): plain text
         Translations to score.
+    tokenized: bool, default True
+	Whether the inputs has been tokenized.
+    tokenizer: str or None, default '13a'
+	'13a': follow the tokenizer in mteval-v13a.pl
+	'intl': follow the international tokenzier in mteval-v14.pl
+        None: identity mapping on the stringi.
+        This option is ignored if tokenized is True 
     max_n: int, default 4
         Maximum n-gram order to use when computing BLEU score.
     smooth: bool, default False
@@ -108,8 +201,18 @@ def compute_bleu(reference_corpus_list, translation_corpus, max_n=4,
     for references in reference_corpus_list:
         assert len(references) == len(translation_corpus), \
             'The number of translations and their references do not match'
-
+    if tokenized:
+       assert isinstance(references[0][0], LIST_TYPES) and isinstance(translation[0], LIST_TYPES), \
+           'references and translation should have format of list of list(list(str)) ' 
+           'and list(list(str)), respectively, when toknized is True.' 
+    else:
+       assert isinstance(references[0][0], str) and isinstance(translation[0], str), \
+           'references and translation should have format of list(list(str)) '
+           'and list(str), respectively, when toknized is False.' 
     for references, translation in zip(zip(*reference_corpus_list), translation_corpus):
+        if not tokenized:
+	    references = [TOKENIZER[tokenizer](reference) for reference in references]
+            translation = TOKENIZER[tokenizer](translation)
         if bpe:
             references = [_bpe_to_words(reference) for reference in references]
             translation = _bpe_to_words(translation)
