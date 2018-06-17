@@ -360,6 +360,7 @@ class BigRNN(Block):
         encoded = self.embedding(inputs)
         sampled_value = self._sampler(label, self._num_sampled, self._vocab_size, ctx=label.context)
         sampled_classes, exp_cnt_true, exp_cnt_sampled = sampled_value
+        # derive lenght from inputs
         length = 20
         encoded, state = self.encoder.unroll(length, encoded, begin_state,
                                              layout='TNC', merge_outputs=True)

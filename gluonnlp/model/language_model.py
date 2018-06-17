@@ -24,6 +24,7 @@ import os
 import warnings
 
 from mxnet.gluon.model_zoo.model_store import get_model_file
+from mxnet.gluon import Block, nn, rnn, contrib
 from mxnet import nd, cpu, autograd
 from mxnet.gluon.model_zoo import model_store
 
@@ -420,3 +421,86 @@ model_store._model_sha1.update(
         ('45d6df33f35715fb760ec8d18ed567016a897df7', 'awd_lstm_lm_1150_wikitext-2'),
         ('7894a046f8286db0d5d2ed672b60f4f52b4bc3aa', 'awd_lstm_lm_600_wikitext-2')
     ]})
+
+class BigRNN(Block):
+    """Standard RNN language model for inference.
+
+    Parameters
+    ----------
+    vocab_size : int
+        Size of the input vocabulary.
+    embed_size : int
+        Dimension of embedding vectors.
+    hidden_size : int
+        Number of hidden units for RNN.
+    num_layers : int
+        Number of RNN layers.
+    dropout : float
+        Dropout rate to use for encoder output.
+
+    Inputs
+    ----------
+    inputs : NDArray
+        input tensor with shape `(sequence_length, batch_size)`
+          when `layout` is "TNC".
+    begin_state : list
+        initial recurrent state tensor with length equals to num_layers-1.
+        the initial state with shape `(num_layers, batch_size, num_hidden)`
+
+    Outputs
+    -------
+    out: NDArray
+        output tensor with shape `(sequence_length, batch_size, input_size)`
+          when `layout` is "TNC".
+    out_states: list
+        output recurrent state tensor with length equals to num_layers-1.
+        the state with shape `(num_layers, batch_size, num_hidden)`
+    """
+    def __init__(self, vocab_size, embed_size, hidden_size, num_layers,
+                 projection_size, dropout=0.0,**kwargs):
+        super(BigRNN, self).__init__(**kwargs)
+        self._embed_size = embed_size
+        self._hidden_size = hidden_size
+        self._projection_size = projection_size
+        self._num_layers = num_layers
+        self._dropout = dropout
+        self._vocab_size = vocab_size
+        assert num_layers == 1
+
+        with self.name_scope():
+            self.embedding = self._get_embedding()
+            self.encoder = self._get_encoder()
+            self.decoder = self._get_decoder()
+
+    def _get_embedding(self):
+        embedding = nn.Sequential()
+        with embedding.name_scope():
+            embedding.add(nn.Embedding(self._vocab_size, self._embed_size))
+            if self._dropout:
+                embedding.add(nn.Dropout(self._dropout))
+        return embedding
+
+    def _get_encoder(self):
+        # TODO self._num_layers
+        encoder = rnn.SequentialRNNCell()
+        with encoder.name_scope():
+            encoder.add(contrib.rnn.LSTMPCell(self._hidden_size, self._projection_size))
+            if self._dropout:
+                encoder.add(rnn.DropoutCell(self._dropout))
+        return encoder
+
+    def _get_decoder(self):
+        output = nn.Dense(self._vocab_size, bias_shape=(self._vocab_size, 1))
+        return output
+
+    def begin_state(self, **kwargs):
+        return self.encoder.begin_state(**kwargs)
+
+    def forward(self, inputs, begin_state): # pylint: disable=arguments-differ
+        """Defines the forward computation. """
+        encoded = self.embedding(inputs)
+        length = 20
+        encoded, state = self.encoder.unroll(length, encoded, begin_state,
+                                             layout='TNC', merge_outputs=True)
+        out = self.decoder(encoded)
+        return out, state

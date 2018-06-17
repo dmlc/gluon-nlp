@@ -54,11 +54,12 @@ sys.path.append(os.path.join(curr_path, '..', '..'))
 
 #parser.add_argument('--model', type=str, default='lstm',
 #                    help='type of recurrent net (rnn_tanh, rnn_relu, lstm, gru)')
-#parser.add_argument('--save', type=str, default='model.params',
-#                    help='path to save the final model')
 parser = argparse.ArgumentParser(description=
-                                 'MXNet Autograd RNN/LSTM Language Model on Wikitext-2.')
-parser = argparse.ArgumentParser(description='Language Model on GBW')
+                                 'MXNet Big RNN/LSTM Language Model on Google Billion Words')
+parser.add_argument('--save', type=str, default='model.params',
+                    help='path to save the final model')
+parser.add_argument('--load', type=str, default=None,
+                    help='path to load the final model')
 parser.add_argument('--vocab', type=str, default='./data/1b_word_vocab.txt',
                     help='location of the corpus vocabulary file')
 parser.add_argument('--emsize', type=int, default=512,
@@ -71,11 +72,11 @@ parser.add_argument('--nlayers', type=int, default=1,
                     help='number of layers')
 parser.add_argument('--epochs', type=int, default=8,
                     help='number of epoch for training')
-parser.add_argument('--batch-size', type=int, default=128,
-                    help='batch size per gpu')
+parser.add_argument('--batch-size', type=int, default=256,
+                    help='batch size per gpu??')
 parser.add_argument('--dropout', type=float, default=0.1,
                     help='dropout applied to layers (0 = no dropout)')
-parser.add_argument('--eps', type=float, default=0.0001,
+parser.add_argument('--eps', type=float, default=1,
                     help='epsilon for adagrad')
 parser.add_argument('--bptt', type=int, default=20,
                     help='sequence length')
@@ -85,20 +86,19 @@ parser.add_argument('--gpus', type=str,
                     help='list of gpus to run, e.g. 0 or 0,2,5. empty means using cpu.')
 parser.add_argument('--log-interval', type=int, default=200,
                     help='report interval')
+parser.add_argument('--checkpoint-interval', type=int, default=None,
+                    help='report interval')
 parser.add_argument('--seed', type=int, default=1,
                     help='random seed')
-# --save
-parser.add_argument('--checkpoint-dir', type=str, default='./checkpoint/cp',
-                    help='dir for checkpoint')
-parser.add_argument('--lr', type=float, default=0.1,
+parser.add_argument('--lr', type=float, default=0.2,
                     help='initial learning rate')
-parser.add_argument('--clip', type=float, default=1,
+parser.add_argument('--clip', type=float, default=10.0,
                     help='gradient clipping by global norm.')
-parser.add_argument('--rescale-embed', type=float, default=None,
-                    help='scale factor for the gradients of the embedding layer')
+parser.add_argument('--unique', action='store_true',
+                    help='Whether to use unique samples')
 parser.add_argument('--test_mode', action='store_true',
                     help='Whether to run through the script with few examples')
-parser.add_argument('--eval_only', action='store_true',
+parser.add_argument('--eval', action='store_true',
                     help='Whether to only evaluate the trained model')
 args = parser.parse_args()
 
@@ -121,16 +121,24 @@ train_data_stream, test_data_stream = \
 
 vocab = nlp.data.GBWVocab()
 
-train_data = train_data_stream.bptt_batchify(vocab, args.bptt, args.batch_size)
-test_batch_size = args.batch_size
-test_data = test_data_stream.bptt_batchify(vocab, args.bptt, test_batch_size)
+train_batch_size = args.batch_size
+train_data = nlp.data.PrefetchingStream(train_data_stream.bptt_batchify(vocab, args.bptt, train_batch_size))
+test_batch_size = 1
+test_data = nlp.data.PrefetchingStream(test_data_stream.bptt_batchify(vocab, args.bptt, test_batch_size))
+checkpoint_interval = args.checkpoint_interval
+
+max_nbatch = None
+max_nbatch_eval = None if args.eval else 64
 
 if args.test_mode:
-    args.emsize = 200
-    args.nhid = 200
-    args.nlayers = 1
-    args.epochs = 3
-    train_data = test_data_stream.bptt_batchify(vocab, args.bptt, args.batch_size)
+    #args.emsize = 200
+    #args.nhid = 200
+    #args.nlayers = 1
+    #args.epochs = 1
+    max_nbatch = 10
+    max_nbatch_eval = 10
+    checkpoint_interval = 5
+    #train_data = test_data_stream.bptt_batchify(vocab, args.bptt, args.batch_size)
 print(args)
 
 ###############################################################################
@@ -139,12 +147,16 @@ print(args)
 
 
 ntokens = len(vocab)
-
+sampler = mx.nd.contrib.rand_zipfian_unique if args.unique else mx.nd.contrib.rand_zipfian
+eval_model = nlp.model.language_model.BigRNN(ntokens, args.emsize, args.nhid,
+                                             args.nlayers, args.nproj,
+                                             dropout=args.dropout)
 model = nlp.model.language_model.train.BigRNN(ntokens, args.emsize, args.nhid,
                                               args.nlayers, args.nproj, args.k,
-                                              dropout=args.dropout)
+                                              dropout=args.dropout, sampler=sampler)
 print(model)
 model.initialize(mx.init.Xavier(), ctx=context)
+model.hybridize()
 
 trainer_params = {'learning_rate': args.lr, 'wd': 0, 'eps': args.eps}
 
@@ -163,6 +175,7 @@ def train():
     start_train_time = time.time()
     parameters = model.collect_params().values()
     encoder_params = model.encoder.collect_params().values()
+    embedding_params = model.embedding.collect_params().values()
     for epoch in range(args.epochs):
         total_L = 0.0
         start_epoch_time = time.time()
@@ -187,6 +200,9 @@ def train():
                     hiddens[j] = h
             L.backward()
             # TODO rescale embedding grad
+            for d in data_list:
+                x = embedding_params[0].grad(d.context)
+                x *= args.batch_size
             encoder_grads = [p.grad(d.context) for p in encoder_params for d in data_list]
             gluon.utils.clip_global_norm(encoder_grads, args.clip)
 
@@ -202,32 +218,33 @@ def train():
                         args.batch_size*args.log_interval/(time.time()-start_log_interval_time)))
                 total_L = 0.0
                 start_log_interval_time = time.time()
+            # early stop for testing
+            if checkpoint_interval and nbatch % checkpoint_interval == 0:
+                sys.stdout.flush()
+                model.save_params('/dev/shm/epoch_%d_%s'%(epoch, args.save))
+                eval_model.load_params('/dev/shm/epoch_%d_%s'%(epoch, args.save))
+                final_test_L = evaluate(test_data, test_batch_size, ctx=mx.cpu())
+                print('[Epoch %d Batch %d] test loss %.2f, test ppl %.2f'%(epoch, nbatch, final_test_L, math.exp(final_test_L)))
+                sys.stdout.flush()
+
+            if max_nbatch and nbatch > max_nbatch:
+                break
 
         mx.nd.waitall()
 
-        print('[Epoch %d] throughput %.2f samples/s'%(
-            epoch, (args.batch_size * len(train_data)) / (time.time() - start_epoch_time)))
+        #print('[Epoch %d] throughput %.2f samples/s'%(
+        #    epoch, (args.batch_size * len(train_data)) / (time.time() - start_epoch_time)))
 
         #val_L = evaluate(val_data, val_batch_size, context[0])
         #print('[Epoch %d] time cost %.2fs, valid loss %.2f, valid ppl %.2f'%(
         #    epoch, time.time()-start_epoch_time, val_L, math.exp(val_L)))
+        model.save_params('epoch_%d_%s'%(epoch, args.save))
+        eval_model.load_params('epoch_%d_%s'%(epoch, args.save))
+        final_test_L = evaluate(test_data, test_batch_size, ctx=mx.cpu())
+        print('Epoch %d: test loss %.2f, test ppl %.2f'%(epoch, final_test_L, math.exp(final_test_L)))
 
-        #if val_L < best_val:
-        #    update_lr_epoch = 0
-        #    best_val = val_L
-        #    test_L = evaluate(test_data, test_batch_size, context[0])
-        #    model.save_params(args.save)
-        #    print('test loss %.2f, test ppl %.2f'%(test_L, math.exp(test_L)))
-        #else:
-        #    update_lr_epoch += 1
-        #    if update_lr_epoch % args.lr_update_interval == 0 and update_lr_epoch != 0:
-        #        lr_scale = trainer.learning_rate * args.lr_update_factor
-        #        print('Learning rate after interval update %f'%(lr_scale))
-        #        trainer.set_learning_rate(lr_scale)
-        #        update_lr_epoch = 0
-
-    print('Total training throughput %.2f samples/s'
-          %((args.batch_size * len(train_data) * args.epochs) / (time.time() - start_train_time)))
+    #print('Total training throughput %.2f samples/s'
+    #      %((args.batch_size * len(train_data) * args.epochs) / (time.time() - start_train_time)))
 
 def detach(hidden):
     if isinstance(hidden, (tuple, list)):
@@ -236,17 +253,12 @@ def detach(hidden):
         hidden = hidden.detach()
     return hidden
 
-
-'''
-test_batch_size = 1
-test_data = test_dataset.batchify(vocab, test_batch_size)
-
-def evaluate(data_source, batch_size, ctx=None):
+def evaluate(data_stream, batch_size, ctx=None):
     """Evaluate the model on the dataset.
 
     Parameters
     ----------
-    data_source : NDArray
+    data_stream : DataStream
         The dataset is evaluated on.
     batch_size : int
         The size of the mini-batch.
@@ -260,63 +272,37 @@ def evaluate(data_source, batch_size, ctx=None):
     """
     total_L = 0.0
     ntotal = 0
-    hidden = model.begin_state(batch_size, func=mx.nd.zeros, ctx=context[0])
-    for i in range(0, len(data_source) - 1, args.bptt):
-        data, target = get_batch(data_source, i)
+    nbatch = 0
+    hidden = eval_model.begin_state(batch_size=batch_size, func=mx.nd.zeros, ctx=ctx)
+    for data, target, mask in data_stream:
         data = data.as_in_context(ctx)
         target = target.as_in_context(ctx)
-        output, hidden = model(data, hidden)
+        mask = mask.as_in_context(ctx)
+        output, hidden = eval_model(data, hidden)
         hidden = detach(hidden)
-        L = loss(output.reshape(-3, -1),
-                 target.reshape(-1,))
+        L = loss(output, target.reshape(-1,)) * mask.reshape((-1,))
         total_L += mx.nd.sum(L).asscalar()
         ntotal += L.size
+        nbatch += 1
+        avg = total_L / ntotal
+        if nbatch % args.log_interval == 0:
+            print('Eval till batch %d: test loss %.2f, test ppl %.2f'%(nbatch, avg, math.exp(avg)))
+        if max_nbatch_eval and nbatch > max_nbatch_eval:
+            break
     return total_L / ntotal
 
-
-def criterion(output, target, encoder_hs, dropped_encoder_hs):
-    """Compute regularized (optional) loss of the language model in training mode.
-
-        Parameters
-        ----------
-        output: NDArray
-            The output of the model.
-        target: list
-            The list of output states of the model's encoder.
-        encoder_hs: list
-            The list of outputs of the model's encoder.
-        dropped_encoder_hs: list
-            The list of outputs with dropout of the model's encoder.
-
-        Returns
-        -------
-        l: NDArray
-            The loss per word/token.
-            If both args.alpha and args.beta are zeros, the loss is the standard cross entropy.
-            If args.alpha is not zero, the standard loss is regularized with activation.
-            If args.beta is not zero, the standard loss is regularized with temporal activation.
-    """
-    l = loss(output.reshape(-3, -1), target.reshape(-1,))
-    if args.alpha:
-        dropped_means = [args.alpha*dropped_encoder_h.__pow__(2).mean()
-                         for dropped_encoder_h in dropped_encoder_hs[-1:]]
-        l = l + mx.nd.add_n(*dropped_means)
-    if args.beta:
-        means = [args.beta*(encoder_h[1:] - encoder_h[:-1]).__pow__(2).mean()
-                 for encoder_h in encoder_hs[-1:]]
-        l = l + mx.nd.add_n(*means)
-    return l
-
-'''
-
+def load():
+    model.load_params(args.load)
 
 if __name__ == '__main__':
     start_pipeline_time = time.time()
-    if not args.eval_only:
+    if args.load:
+        load()
+    if not args.eval:
         train()
-    #model.load_params(args.save, context)
-    #final_val_L = evaluate(val_data, val_batch_size, context[0])
-    #final_test_L = evaluate(test_data, test_batch_size, context[0])
-    #print('Best validation loss %.2f, val ppl %.2f'%(final_val_L, math.exp(final_val_L)))
-    #print('Best test loss %.2f, test ppl %.2f'%(final_test_L, math.exp(final_test_L)))
-    #print('Total time cost %.2fs'%(time.time()-start_pipeline_time))
+    epoch = args.epochs - 1
+    nbatch = -1
+    eval_model.load_params('/dev/shm/epoch_%d_%s'%(epoch, args.save))
+    final_test_L = evaluate(test_data, test_batch_size, ctx=mx.cpu())
+    print('[Epoch %d Batch %d] test loss %.2f, test ppl %.2f'%(epoch, nbatch, final_test_L, math.exp(final_test_L)))
+    print('Total time cost %.2fs'%(time.time()-start_pipeline_time))
