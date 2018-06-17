@@ -568,24 +568,6 @@ def test_counter():
     assert y['a'] == 10
     assert y['<unk>'] == 2
 
-def test_sorted_vocab():
-    x = nlp.data.Counter({'a': 10, 'b': 1, 'c': 2, '<unk>': 3, '<bos>': 1})
-    vocab0 = nlp.SortedVocab(counter=x)
-    assert len(vocab0) == 7
-    assert vocab0['a'] == 0
-    assert vocab0['<unk>'] == 1
-    assert vocab0['c'] == 2
-    assert vocab0['unknown_token'] == vocab0['<unk>']
-
-    vocab1 = nlp.SortedVocab(counter=x, min_freq=2)
-    assert len(vocab1) == 6
-    assert vocab1['a'] == 0
-    assert vocab1['<unk>'] == 1
-    assert vocab1['c'] == 2
-    assert vocab0['unknown_token'] == vocab0['<unk>']
-
-    vocab2 = nlp.SortedVocab(counter=x, max_size=1, reserved_tokens=['reserved'])
-
 # this test is not tested on CI due to long running time
 def _test_gbw_stream():
     gbw = nlp.data.GBWStream()
