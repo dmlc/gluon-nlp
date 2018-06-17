@@ -26,7 +26,7 @@ The dataset is available under the Creative Commons Attribution-ShareAlike Licen
     WikiText103
 
 Language modeling: Google 1 Billion Words
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 `Google 1 Billion Words <https://github.com/ciprian-chelba/1-billion-word-language-modeling-benchmark/>`_
 is a popular language modeling dataset.
@@ -122,7 +122,7 @@ load custom datasets.
     LanguageModelDataset
 
 DataStreams
---------
+-----------
 
 DataStream API for streaming and processing common text formats. The following classes can be used or subclassed to
 stream large custom data.
