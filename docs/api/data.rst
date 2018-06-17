@@ -108,6 +108,20 @@ load custom datasets.
     CorpusDataset
     LanguageModelDataset
 
+DataStreams
+--------
+
+DataStream API for streaming and processing common text formats. The following classes can be used or subclassed to
+stream large custom data.
+
+.. autosummary::
+    :nosignatures:
+
+    DataStream
+    SimpleDataStream
+    CorpusStream
+    LanguageModelStream
+
 Transforms
 ----------
 
