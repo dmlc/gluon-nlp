@@ -138,6 +138,9 @@ def get_train_data(args):
         coded_dataset = [[
             vocab[token] for token in sentence if token in vocab
         ] for sentence in dataset]
+        coded_dataset = [
+            sentence for sentence in coded_dataset if len(sentence)
+        ]
 
     with print_time('prune frequent words from sentences'):
         f = idx_to_counts / np.sum(idx_to_counts)
@@ -289,7 +292,7 @@ def train(args):
             # To GPU
             mx.nd.waitall()  # waitall() until mxnet #11041 is merged
             center = center.as_in_context(context[0])
-            center_mask = mx.nd.ones((center.shape[0], ), ctx=center.context)
+            center_mask = mx.nd.ones_like(center, ctx=center.context)
             subwords = subwords.as_in_context(context[0])
             subwords_mask = subwords_mask.astype(np.float32).as_in_context(
                 context[0])
@@ -304,37 +307,38 @@ def train(args):
                     emb_in = embedding(center, center_mask, subwords,
                                        subwords_mask)
 
-                    word_context_negatives = mx.nd.concat(
-                        word_context, negatives, dim=1)
-                    word_context_negatives_mask = mx.nd.concat(
-                        word_context_mask, negatives_mask, dim=1)
+                    with mx.autograd.pause():
+                        word_context_negatives = mx.nd.concat(
+                            word_context, negatives, dim=1)
+                        word_context_negatives_mask = mx.nd.concat(
+                            word_context_mask, negatives_mask, dim=1)
 
                     emb_out = embedding_out(word_context_negatives,
                                             word_context_negatives_mask)
 
                     # Compute loss
-                    pred = mx.nd.batch_dot(
-                        emb_in.expand_dims(1), emb_out.swapaxes(1, 2))
+                    pred = mx.nd.batch_dot(emb_in, emb_out.swapaxes(1, 2))
                     pred = pred.squeeze() * word_context_negatives_mask
                     label = mx.nd.concat(word_context_mask,
                                          mx.nd.zeros_like(negatives), dim=1)
 
                 elif args.model.lower() == 'cbow':
                     emb_in = embedding(word_context, word_context_mask,
-                                       subwords, subwords_mask).sum(axis=-2)
+                                       subwords, subwords_mask).sum(
+                                           axis=-2, keepdims=True)
 
-                    center_negatives = mx.nd.concat(
-                        center.expand_dims(1), negatives, dim=1)
-                    center_negatives_mask = mx.nd.concat(
-                        center_mask.expand_dims(1), mx.nd.ones_like(negatives),
-                        dim=1)
+                    with mx.autograd.pause():
+                        center_negatives = mx.nd.concat(
+                            center.expand_dims(1), negatives, dim=1)
+                        center_negatives_mask = mx.nd.concat(
+                            center_mask.expand_dims(1),
+                            mx.nd.ones_like(negatives), dim=1)
 
                     emb_out = embedding_out(center_negatives,
                                             center_negatives_mask)
 
                     # Compute loss
-                    pred = mx.nd.batch_dot(
-                        emb_in.expand_dims(1), emb_out.swapaxes(1, 2))
+                    pred = mx.nd.batch_dot(emb_in, emb_out.swapaxes(1, 2))
                     pred = pred.reshape((-1, 1 + args.negative))
                     label = mx.nd.concat(
                         mx.nd.ones_like(center).expand_dims(1),
@@ -365,7 +369,7 @@ def train(args):
                 log_avg_loss = 0
                 log_wc = 0
 
-            if i % args.eval_interval == 0:
+            if args.eval_interval and i % args.eval_interval == 0:
                 with print_time('mx.nd.waitall()'):
                     mx.nd.waitall()
                 evaluate(args, embedding, vocab, num_update)
