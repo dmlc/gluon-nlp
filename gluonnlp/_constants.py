@@ -20,7 +20,6 @@
 # pylint: disable=too-many-lines
 """Constants."""
 
-import numpy as np
 import mxnet as mx
 
 UNK_TOKEN = '<unk>'
