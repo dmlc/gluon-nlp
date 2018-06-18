@@ -20,16 +20,19 @@
 # pylint: disable=
 """Language model datasets."""
 
-__all__ = ['WikiText2', 'WikiText103', 'WikiText2Raw', 'WikiText103Raw']
+__all__ = ['WikiText2', 'WikiText103', 'WikiText2Raw', 'WikiText103Raw', 'GBWStream']
 
 import os
 import zipfile
+import hashlib
+import glob
 import shutil
 
 from mxnet.gluon.utils import download, check_sha1, _get_repo_file_url
 
 from .. import _constants as C
 from .dataset import LanguageModelDataset
+from .stream import LanguageModelStream
 from .registry import register
 from .utils import _get_home_dir
 
@@ -251,3 +254,86 @@ class WikiText103Raw(_WikiText):
         super(WikiText103Raw,
               self).__init__('wikitext-103', segment, bos, eos, skip_empty,
                              root, tokenizer=tokenizer, **kwargs)
+
+class _GBWStream(LanguageModelStream):
+    def __init__(self, namespace, segment, bos, eos, skip_empty, root):
+        """Directory layout:
+           - root ($MXNET_HOME/datasets/gbw)
+             - archive_file (1-billion-word-language-modeling-benchmark-r13output.tar.gz)
+             - dir (1-billion-word-language-modeling-benchmark-r13output)
+               - subdir (training-monolingual.tokenized.shuffled)
+               - subdir (heldout-monolingual.tokenized.shuffled)
+        """
+        root = os.path.expanduser(root)
+        if not os.path.isdir(root):
+            os.makedirs(root)
+        self._root = root
+        self._dir = os.path.join(root, '1-billion-word-language-modeling-benchmark-r13output')
+        self._namespace = 'gluon/dataset/{}'.format(namespace)
+        subdir_name, pattern, data_hash = self._data_file[segment]
+        self._subdir = os.path.join(self._dir, subdir_name)
+        self._file_pattern = os.path.join(self._subdir, pattern)
+        self._data_hash = data_hash
+        self._get_data()
+        super(_GBWStream, self).__init__(self._file_pattern, skip_empty=skip_empty, bos=bos,
+                                         eos=eos)
+
+    def _get_data(self):
+        archive_file_name, archive_hash = self._archive_file
+        archive_file_path = os.path.join(self._root, archive_file_name)
+        exists = False
+        if os.path.exists(self._dir) and os.path.exists(self._subdir):
+            # verify sha1 for all files in the subdir
+            sha1 = hashlib.sha1()
+            filenames = sorted(glob.glob(self._file_pattern))
+            for filename in filenames:
+                with open(filename, 'rb') as f:
+                    while True:
+                        data = f.read(1048576)
+                        if not data:
+                            break
+                        sha1.update(data)
+            if sha1.hexdigest() == self._data_hash:
+                exists = True
+        if not exists:
+            # download archive
+            if not os.path.exists(archive_file_path) or \
+               not check_sha1(archive_file_path, archive_hash):
+                download(_get_repo_file_url(self._namespace, archive_file_name),
+                         path=self._root, sha1_hash=archive_hash)
+            # extract archive
+            with tarfile.open(archive_file_path, 'r:gz') as tf:
+                tf.extractall(path=self._root)
+
+class GBWStream(_GBWStream):
+    """1-Billion-Word word-level dataset for language modeling, from Google.
+
+    From
+    http://www.statmt.org/lm-benchmark
+
+    License: Apache
+
+    Parameters
+    ----------
+    segment : {'train',}, default 'train'
+        Dataset segment.
+    skip_empty : bool, default True
+        Whether to skip the empty samples produced from sample_splitters. If False, `bos` and `eos`
+        will be added in empty samples.
+    bos : str or None, default '<bos>'
+        The token to add at the begining of each sentence. If None, nothing is added.
+    eos : str or None, default '<eos>'
+        The token to add at the end of each sentence. If None, nothing is added.
+    root : str, default '$MXNET_HOME/datasets/gbw'
+        Path to temp folder for storing data.
+        MXNET_HOME defaults to '~/.mxnet'.
+    """
+    def __init__(self, segment='train', skip_empty=True, bos=C.BOS_TOKEN, eos=C.EOS_TOKEN,
+                 root=os.path.join(_get_home_dir(), 'datasets', 'gbw')):
+        assert segment == 'train', 'Only train segment is supported for GBW'
+        self._archive_file = ('1-billion-word-language-modeling-benchmark-r13output.tar.gz',
+                              '4df859766482e12264a5a9d9fb7f0e276020447d')
+        self._data_file = {'train': ('training-monolingual.tokenized.shuffled',
+                                     'news.en-00*-of-00100',
+                                     '5e0d7050b37a99fd50ce7e07dc52468b2a9cd9e8')}
+        super(GBWStream, self).__init__('gbw', segment, bos, eos, skip_empty, root)

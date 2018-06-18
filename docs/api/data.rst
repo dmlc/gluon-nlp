@@ -25,6 +25,19 @@ The dataset is available under the Creative Commons Attribution-ShareAlike Licen
     WikiText2
     WikiText103
 
+Language modeling: Google 1 Billion Words
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+`Google 1 Billion Words <https://github.com/ciprian-chelba/1-billion-word-language-modeling-benchmark/>`_
+is a popular language modeling dataset.
+It is a collection of over 0.8 billion tokens extracted from the WMT11 website.
+The dataset is available under Apache License.
+
+.. autosummary::
+    :nosignatures:
+
+    GBWStream
+
 Sentiment Analysis: IMDB
 ~~~~~~~~~~~~~~~~~~~~~~~~
 `IMDB <http://ai.stanford.edu/~amaas/data/sentiment/>`_ is a popular dataset for binary sentiment classification.
@@ -107,6 +120,20 @@ load custom datasets.
     TextLineDataset
     CorpusDataset
     LanguageModelDataset
+
+DataStreams
+-----------
+
+DataStream API for streaming and processing common text formats. The following classes can be used or subclassed to
+stream large custom data.
+
+.. autosummary::
+    :nosignatures:
+
+    DataStream
+    SimpleDataStream
+    CorpusStream
+    LanguageModelStream
 
 Transforms
 ----------

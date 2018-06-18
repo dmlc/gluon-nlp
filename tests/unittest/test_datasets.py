@@ -483,7 +483,68 @@ def test_wmt2014bpe():
     en_vocab, de_vocab = train.src_vocab, train.tgt_vocab
     assert len(en_vocab) == 36794
     assert len(de_vocab) == 36794
-    
+
+###############################################################################
+# Stream
+###############################################################################
+def test_corpus_stream():
+    EOS = nlp._constants.EOS_TOKEN
+    path = os.path.join('tests', 'data', 'wikitext-2')
+    token_path = os.path.join('tests', 'data', 'wikitext-2/*.tokens')
+    train = nlp.data.WikiText2(segment='train', root=path)
+    val = nlp.data.WikiText2(segment='val', root=path)
+    test = nlp.data.WikiText2(segment='test', root=path)
+    corpus = nlp.data.CorpusStream(token_path, flatten=True,
+                                   skip_empty=True, eos=EOS)
+    counter = nlp.data.Counter(corpus)
+    assert len(counter) == 33278, len(counter)
+    # examine aggregated vocab
+    vocab = nlp.vocab.Vocab(counter, bos_token=None, padding_token=None)
+    assert len(vocab) == 33278, len(vocab)
+    # examine aggregated stats
+    assert sum(counter.values()) == 2075677 + 216347 + 244102
+    counter = nlp.data.Counter(corpus)
+    assert len(counter) == 33278, len(counter)
+
+def test_lm_stream():
+    EOS = nlp._constants.EOS_TOKEN
+    path = os.path.join('tests', 'data', 'wikitext-2')
+    token_path = os.path.join('tests', 'data', 'wikitext-2/*.tokens')
+    train = nlp.data.WikiText2(segment='train', root=path)
+    val = nlp.data.WikiText2(segment='val', root=path)
+    test = nlp.data.WikiText2(segment='test', root=path)
+    lm_stream = nlp.data.LanguageModelStream(token_path, skip_empty=True, eos=EOS)
+    counter = nlp.data.Counter(lm_stream)
+    vocab = nlp.vocab.Vocab(counter, bos_token=None)
+    seq_len = 35
+    batch_size = 80
+    bptt_stream = lm_stream.bptt_batchify(vocab, seq_len, batch_size, last_batch='keep')
+    padding_idx = vocab[vocab.padding_token]
+    total_num_tokens = sum(counter.values())
+    num_tokens_per_batch = seq_len * batch_size
+    num_tokens = 0
+    for i, (data, target, mask) in enumerate(bptt_stream):
+        # count the valid tokens in the batch
+        num_valid_tokens = mask.sum().asscalar()
+        if num_valid_tokens == num_tokens_per_batch:
+            mx.test_utils.assert_almost_equal(data[1:].asnumpy(), target[:-1].asnumpy())
+            assert data.shape == target.shape == (seq_len, batch_size)
+        num_tokens += num_valid_tokens
+    num_batches = sum(1 for _ in bptt_stream)
+    # the last token doesn't appear in data
+    assert num_tokens >= total_num_tokens - batch_size, num_tokens
+    assert num_tokens < total_num_tokens, num_tokens
+
+def test_lazy_stream():
+    EOS = nlp._constants.EOS_TOKEN
+    path = os.path.join('tests', 'data', 'wikitext-2')
+    token_path = os.path.join('tests', 'data', 'wikitext-2/*test*.tokens')
+    test = nlp.data.WikiText2(segment='test', root=path)
+    corpus = nlp.data.CorpusStream(token_path, flatten=True,
+                                   skip_empty=True, eos=EOS, sampler='sequential')
+    transformed_corpus = nlp.data.SimpleDataStream(corpus).transform(lambda s: s.lower())
+    for x, y in zip(corpus, transformed_corpus):
+        assert y == x.lower()
 
 ###############################################################################
 # Question answering
@@ -500,3 +561,19 @@ def test_load_dev_squad():
     # list of answer texts, list of answer start indices
     for record in val_dataset:
         assert len(record) == 6
+
+def test_counter():
+    x = nlp.data.Counter({'a': 10, 'b': 1, 'c': 1})
+    y = x.discard(3, '<unk>')
+    assert y['a'] == 10
+    assert y['<unk>'] == 2
+
+# this test is not tested on CI due to long running time
+def _test_gbw_stream():
+    gbw = nlp.data.GBWStream()
+    counter = nlp.data.Counter(gbw)
+    counter.discard(3, '<unk>')
+    # reference count obtained from:
+    # https://github.com/rafaljozefowicz/lm/blob/master/1b_word_vocab.txt
+    assert counter['the'] == 35936573
+    assert counter['.'] == 29969612
