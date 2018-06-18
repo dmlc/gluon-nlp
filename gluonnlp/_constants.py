@@ -21,6 +21,7 @@
 """Constants."""
 
 import numpy as np
+import mxnet as mx
 
 UNK_TOKEN = '<unk>'
 
@@ -38,8 +39,7 @@ LARGE_POSITIVE_FLOAT = 1e18
 
 LARGE_NEGATIVE_FLOAT = -LARGE_POSITIVE_FLOAT
 
-INT_TYPES = (int, np.int8, np.int, np.int16, np.int32, np.int64,
-             np.uint8, np.uint16, np.uint32, np.uint64)
+INT_TYPES = mx.base.integer_types
 
 GLOVE_NPZ_SHA1 = \
     {'glove.42B.300d': ('glove.42B.300d.npz',

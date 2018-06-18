@@ -128,11 +128,11 @@ class ConstWidthBucket(BucketScheme):
 
 
 class LinearWidthBucket(BucketScheme):
-    r""" Buckets with linearly increasing width.
+    r""" Buckets with linearly increasing width:
+    :math:`w_i = \alpha * i + 1` for all :math:`i \geq 1`.
     """
     def __call__(self, max_lengths, min_lengths, num_buckets):
-        r"""This implements a scheme for linearly increasing bucket width:
-                :math:`w_i = \alpha * i + 1` for all :math:`i \geq 1`.
+        r"""This function generates bucket keys with linearly increasing bucket width:
 
         Parameters
         ----------
@@ -165,7 +165,8 @@ class LinearWidthBucket(BucketScheme):
 
 
 class ExpWidthBucket(BucketScheme):
-    r""" Buckets with exponentially increasing width.
+    r""" Buckets with exponentially increasing width:
+    :math:`w_i = bucket_len_step * w_{i-1}` for all :math:`i \geq 2`.
 
     Parameters
     ----------
@@ -176,8 +177,7 @@ class ExpWidthBucket(BucketScheme):
         self.bucket_len_step = bucket_len_step
 
     def __call__(self, max_lengths, min_lengths, num_buckets):
-        r"""This function implements a scheme for exponentially increasing bucket width:
-                :math:`w_i = bucket_len_step * w_{i-1}` for all :math:`i \geq 2`.
+        r"""This function generates bucket keys exponentially increasing bucket width.
 
         Parameters
         ----------
