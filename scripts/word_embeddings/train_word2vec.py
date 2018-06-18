@@ -204,7 +204,7 @@ def train(args):
 
             # To GPU
             center = center.as_in_context(context[0])
-            center_mask = mx.nd.ones((center.shape[0], ), ctx=center.context)
+            center_mask = mx.nd.ones_like(center, ctx=center.context)
             word_context = word_context.as_in_context(context[0])
             word_context_mask = word_context_mask.as_in_context(context[0])
             negatives = negatives_sampler(word_context.shape + (args.negative, )) \

@@ -280,9 +280,8 @@ class FasttextEmbeddingModel(EmbeddingModel, HybridBlock):
                 raise ValueError('No subwords were found for: ' +
                                  ', '.join(without_subwords))
 
-        subwords = nd.array(subwords, ctx=ctx)
-        subwords_mask = nd.array(subwords_mask,
-                                 dtype=np.float32).as_in_context(ctx)
+        subwords = subwords.as_in_context(ctx)
+        subwords_mask = subwords_mask.as_in_context(ctx)
 
         # Handle words
         if unknown_behavior == 'raise':

@@ -561,8 +561,9 @@ def _context_generator(coded_sentences, sentence_boundaries, window,
     word_pointer = 0
     while True:
         batch_size = min(batch_size, len(coded_sentences) - word_pointer)
-        center = coded_sentences[word_pointer:
-                                 word_pointer + batch_size].astype(np.float32)
+        center = np.expand_dims(
+            coded_sentences[word_pointer:word_pointer + batch_size],
+            -1).astype(np.float32)
         context = np.zeros((batch_size, window * 2), dtype=np.float32)
         mask = np.zeros((batch_size, window * 2), dtype=np.float32)
 
