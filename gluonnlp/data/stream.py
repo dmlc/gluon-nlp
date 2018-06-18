@@ -208,44 +208,44 @@ class LanguageModelStream(CorpusStream):
 
         Each sample is of shape `(seq_len, batch_size)`.
 
-        For example, the following 4 sequences
+        For example, the following 4 sequences::
 
-        <bos> a b c d <eos>
-        <bos> e f g h i j <eos>
-        <bos> k l m n <eos>
-        <bos> o <eos>
+            <bos> a b c d <eos>
+            <bos> e f g h i j <eos>
+            <bos> k l m n <eos>
+            <bos> o <eos>
 
         will generate 2 batches with seq_len = 5, batch_size = 2 as follow (transposed):
 
-        batch_0.data.T:
+        batch_0.data.T::
 
-        <bos> a b c d
-        <bos> e f g h
+            <bos> a b c d
+            <bos> e f g h
 
-        batch_0.target.T:
+        batch_0.target.T::
 
-        a b c d <eos>
-        e f g h i
+            a b c d <eos>
+            e f g h i
 
-        batch_0.mask.T:
+        batch_0.mask.T::
 
-        1 1 1 1 1
-        1 1 1 1 1
+            1 1 1 1 1
+            1 1 1 1 1
 
-        batch_1.data.T:
+        batch_1.data.T::
 
-        <bos> k l m n
-        i j <bos> o <padding>
+            <bos> k l m n
+            i j <bos> o <padding>
 
-        batch_1.target.T:
+        batch_1.target.T::
 
-        k l m n <eos>
-        j <bos> o <eos> <padding>
+            k l m n <eos>
+            j <bos> o <eos> <padding>
 
-        batch_1.mask.T:
+        batch_1.mask.T::
 
-        1 1 1 1 1
-        1 1 1 1 0
+            1 1 1 1 1
+            1 1 1 1 0
 
         Parameters
         ----------
