@@ -86,7 +86,24 @@ def get_args():
     return args
 
 
-def get_model(args):
+def get_vec_model(args):
+    """Load the pretrained model."""
+    context = utils.get_context(args)
+
+    assert '.vec' in args.path  # Assume text format
+    token_embedding = nlp.embedding.TokenEmbedding.from_file(args.path)
+    embedding = nlp.model.train.SimpleEmbeddingModel(
+        token_to_idx=token_embedding.token_to_idx,
+        embedding_size=token_embedding.idx_to_vec.shape[1],
+    )
+
+    embedding.initialize(ctx=context[0])
+    embedding.embedding.weight.set_data(token_embedding.idx_to_vec)
+
+    return embedding, token_embedding.idx_to_token
+
+
+def get_fasttext_bin_model(args):
     """Load the pretrained model."""
     context = utils.get_context(args)
 
@@ -152,7 +169,10 @@ def get_model(args):
 def load_and_evaluate(args):
     """Load the pretrained model and run evaluate."""
     context = utils.get_context(args)
-    embedding, model_idx_to_token = get_model(args)
+    if 'bin' in args.path:
+        embedding, model_idx_to_token = get_fasttext_bin_model(args)
+    else:
+        embedding, model_idx_to_token = get_vec_model(args)
 
     idx_to_token_set = evaluation.get_tokens_in_evaluation_datasets(args)
     idx_to_token_set.update(model_idx_to_token)
