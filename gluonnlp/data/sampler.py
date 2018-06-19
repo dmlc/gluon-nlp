@@ -93,6 +93,11 @@ class BucketScheme(object):
             Minimum of lengths of sequences.
         num_buckets : int
             Number of buckets
+
+        Returns
+        -------
+        bucket_keys : list of int
+            A list including the keys of the buckets.
         """
         raise NotImplementedError
 
@@ -111,6 +116,11 @@ class ConstWidthBucket(BucketScheme):
             Minimum of lengths of sequences.
         num_buckets : int
             Number of buckets
+
+        Returns
+        -------
+        bucket_keys : list of int
+            A list including the keys of the buckets.
         """
         if not isinstance(max_lengths, INT_TYPES):
             bucket_width_l = [max((max_len - min_len) // num_buckets, 1)
@@ -142,6 +152,11 @@ class LinearWidthBucket(BucketScheme):
             Minimum of lengths of sequences.
         num_buckets : int
             Number of buckets
+
+        Returns
+        -------
+        bucket_keys : list of int
+            A list including the keys of the buckets.
         """
         if not isinstance(max_lengths, INT_TYPES):
             alpha_l = [2 * float(max_len - min_len - num_buckets)
@@ -187,6 +202,11 @@ class ExpWidthBucket(BucketScheme):
             Minimum of lengths of sequences.
         num_buckets : int
             Number of buckets
+
+        Returns
+        -------
+        bucket_keys : list of int
+            A list including the keys of the buckets.
         """
         if not isinstance(max_lengths, INT_TYPES):
             initial_width_l = [
