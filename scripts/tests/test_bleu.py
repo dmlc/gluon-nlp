@@ -130,6 +130,7 @@ def test_detok_bleu():
                                        shell=True).decode('utf-8')
     m = re.search('BLEU = (.+?),', mose_ret)
     gt_bleu = float(m.group(1))
+    assert_allclose(round(ret_bleu * 100, 2), gt_bleu)
 
 
 def test_bpe():
