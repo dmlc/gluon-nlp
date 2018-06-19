@@ -115,7 +115,7 @@ def _tokenize_mteval_13a(segment):
     return norm
 
 
-class UnicodeRegex: #pylint: disable=old-style-class
+class UnicodeRegex(object):
     """Ad-hoc hack to recognize all punctuation and symbols.
     """
     def __init__(self):
