@@ -19,20 +19,17 @@
 """Samplers. They define how the samples in a dataset will be iterated
 (e.g. in the order sorted by length). They can also be used to perform bucketing
 for speeding up the processing of variable-length sequences."""
-
-__all__ = [
-    'SortedSampler', 'FixedBucketSampler', 'SortedBucketSampler',
-    'ContextSampler'
-]
+__all__ = ['ConstWidthBucket', 'LinearWidthBucket', 'ExpWidthBucket',
+           'SortedSampler', 'FixedBucketSampler', 'SortedBucketSampler', 'ContextSampler']
 
 import logging
 import math
 import random
 import warnings
-
 import numpy as np
 from mxnet import nd
 from mxnet.gluon.data import Sampler
+from .._constants import INT_TYPES
 
 try:
     from numba import njit, prange
@@ -80,6 +77,161 @@ def _bucket_average_lengths(bucket_sample_ids, seq_lengths):
         else:
             bucket_average_lengths.append(0)
     return bucket_average_lengths
+
+
+class BucketScheme(object):
+    r"""Base class for generating bucket keys.
+    """
+    def __call__(self, max_lengths, min_lengths, num_buckets):
+        """Generate bucket keys based on the lengths of sequences and number of buckets.
+
+        Parameters
+        ----------
+        max_lengths : int of list of int
+            Maximum of lengths of sequences.
+        min_lengths : int of list of int
+            Minimum of lengths of sequences.
+        num_buckets : int
+            Number of buckets
+
+        Returns
+        -------
+        bucket_keys : list of int
+            A list including the keys of the buckets.
+        """
+        raise NotImplementedError
+
+
+class ConstWidthBucket(BucketScheme):
+    r""" Buckets with constant width.
+    """
+    def __call__(self, max_lengths, min_lengths, num_buckets):
+        r"""This generate bucket keys given that all the buckets have the same width.
+
+        Parameters
+        ----------
+        max_lengths : int of list of int
+            Maximum of lengths of sequences.
+        min_lengths : int of list of int
+            Minimum of lengths of sequences.
+        num_buckets : int
+            Number of buckets
+
+        Returns
+        -------
+        bucket_keys : list of int
+            A list including the keys of the buckets.
+        """
+        if not isinstance(max_lengths, INT_TYPES):
+            bucket_width_l = [max((max_len - min_len) // num_buckets, 1)
+                              for max_len, min_len in
+                              zip(max_lengths, min_lengths)]
+            bucket_keys = \
+                [tuple(max(max_len - i * width, min_len) for max_len, min_len, width in
+                       zip(max_lengths, min_lengths, bucket_width_l))
+                 for i in range(num_buckets)]
+        else:
+            bucket_width = max((max_lengths - min_lengths) // num_buckets, 1)
+            bucket_keys = [max(max_lengths - i * bucket_width, min_lengths)
+                           for i in range(num_buckets)]
+        return bucket_keys
+
+
+class LinearWidthBucket(BucketScheme):
+    r""" Buckets with linearly increasing width:
+    :math:`w_i = \alpha * i + 1` for all :math:`i \geq 1`.
+    """
+    def __call__(self, max_lengths, min_lengths, num_buckets):
+        r"""This function generates bucket keys with linearly increasing bucket width:
+
+        Parameters
+        ----------
+        max_lengths : int of list of int
+            Maximum of lengths of sequences.
+        min_lengths : int of list of int
+            Minimum of lengths of sequences.
+        num_buckets : int
+            Number of buckets
+
+        Returns
+        -------
+        bucket_keys : list of int
+            A list including the keys of the buckets.
+        """
+        if not isinstance(max_lengths, INT_TYPES):
+            alpha_l = [2 * float(max_len - min_len - num_buckets)
+                       / (num_buckets * (num_buckets + 1))
+                       for max_len, min_len in
+                       zip(max_lengths, min_lengths)]
+            bucket_keys = \
+                [tuple(int(round(min_len + alpha * (((i + 1) * (i + 2)) / 2) + i + 1))
+                       for min_len, alpha in zip(min_lengths, alpha_l))
+                 for i in range(num_buckets)]
+            bucket_keys[-1] = tuple(max(max_bucket_key, max_len)
+                                    for max_bucket_key, max_len
+                                    in zip(bucket_keys[-1], max_lengths))
+        else:
+            alpha = 2 * float(max_lengths - min_lengths - num_buckets) \
+                    / (num_buckets * (num_buckets + 1))
+            bucket_keys = [int(round(min_lengths + alpha * (((i + 1) * (i + 2)) / 2) + i + 1))
+                           for i in range(num_buckets)]
+            bucket_keys[-1] = max(bucket_keys[-1], max_lengths)
+        return bucket_keys
+
+
+class ExpWidthBucket(BucketScheme):
+    r""" Buckets with exponentially increasing width:
+    :math:`w_i = bucket_len_step * w_{i-1}` for all :math:`i \geq 2`.
+
+    Parameters
+    ----------
+    bucket_len_step : float, default 1.1
+        This is the increasing factor for the bucket width.
+    """
+    def __init__(self, bucket_len_step=1.1):
+        self.bucket_len_step = bucket_len_step
+
+    def __call__(self, max_lengths, min_lengths, num_buckets):
+        r"""This function generates bucket keys exponentially increasing bucket width.
+
+        Parameters
+        ----------
+        max_lengths : int of list of int
+            Maximum of lengths of sequences.
+        min_lengths : int of list of int
+            Minimum of lengths of sequences.
+        num_buckets : int
+            Number of buckets
+
+        Returns
+        -------
+        bucket_keys : list of int
+            A list including the keys of the buckets.
+        """
+        if not isinstance(max_lengths, INT_TYPES):
+            initial_width_l = [
+                (max_len - min_len) * (self.bucket_len_step - 1)
+                / (math.pow(self.bucket_len_step, num_buckets) - 1)
+                for max_len, min_len in
+                zip(max_lengths, min_lengths)]
+            bucket_keys = \
+                [tuple(
+                    int(round(min_len + initial_width * (math.pow(self.bucket_len_step, i + 1) - 1)
+                              / (self.bucket_len_step - 1)))
+                    for min_len, initial_width in zip(min_lengths, initial_width_l))
+                 for i in range(num_buckets)]
+            bucket_keys[-1] = tuple(max(max_bucket_key, max_len)
+                                    for max_bucket_key, max_len
+                                    in zip(bucket_keys[-1], max_lengths))
+        else:
+            initial_width = (max_lengths - min_lengths) * (self.bucket_len_step - 1) \
+                            / (math.pow(self.bucket_len_step, num_buckets) - 1)
+            bucket_keys = [
+                int(round(min_lengths + initial_width * (math.pow(self.bucket_len_step, i + 1) - 1)
+                          / (self.bucket_len_step - 1)))
+                for i in range(num_buckets)]
+            bucket_keys[-1] = max(bucket_keys[-1], max_lengths)
+        return bucket_keys
 
 
 class SortedSampler(Sampler):
@@ -139,7 +291,11 @@ class FixedBucketSampler(Sampler):
         False: each batch contains batch_size sequences, number of sequence elements varies.
         True: each batch contains batch_size elements, number of sequences varies. In this case,
         ratio option is ignored.
-
+    bucket_scheme : BucketScheme, default ConstWidthBucket
+        It is used to generate bucket keys. It supports:
+        ConstWidthBucket: all the buckets have the same width
+        LinearWidthBucket: the width of ith  bucket follows :math:`w_i = \alpha * i + 1`
+        ExpWidthBucket: the width of ith bucket follows :math:`w_i = bucket_len_step * w_{i-1}`
     Examples
     --------
     >>> from gluonnlp.data import FixedBucketSampler
@@ -161,7 +317,8 @@ class FixedBucketSampler(Sampler):
       batch_size=[44, 20, 13, 10, 8, 8, 8, 8, 8, 8]
     """
     def __init__(self, lengths, batch_size, num_buckets=10, bucket_keys=None,
-                 ratio=0, shuffle=False, use_average_length=False):
+                 ratio=0, shuffle=False, use_average_length=False,
+                 bucket_scheme=ConstWidthBucket()):
         assert len(lengths) > 0, 'FixedBucketSampler does not support empty lengths.'
         assert batch_size > 0, 'Batch size must be larger than 0.'
         assert ratio >= 0, 'batch size scaling ratio cannot be negative.'
@@ -178,6 +335,7 @@ class FixedBucketSampler(Sampler):
             self._single_element = False
             attr_num = self._lengths.shape[1]
         self._shuffle = shuffle
+        self._bucket_scheme = bucket_scheme
         max_lengths = self._lengths.max(axis=0)
         min_lengths = self._lengths.min(axis=0)
         if self._single_element:
@@ -189,18 +347,7 @@ class FixedBucketSampler(Sampler):
         if bucket_keys is None:
             assert num_buckets > 0, 'num_buckets must be set when bucket_keys is None. Received ' \
                                     'num_buckets=%d' % num_buckets
-            if not self._single_element:
-                bucket_width_l = [max((max_len - min_len) // num_buckets, 1)
-                                  for max_len, min_len in
-                                  zip(max_lengths, min_lengths)]
-                bucket_keys =\
-                    [tuple(max(max_len - i * width, min_len) for max_len, min_len, width in
-                           zip(max_lengths, min_lengths, bucket_width_l))
-                     for i in range(num_buckets)]
-            else:
-                bucket_width = max((max_lengths - min_lengths) // num_buckets, 1)
-                bucket_keys = [max(max_lengths - i * bucket_width, min_lengths)
-                               for i in range(num_buckets)]
+            bucket_keys = bucket_scheme(max_lengths, min_lengths, num_buckets)
         else:
             if num_buckets is not None:
                 warnings.warn('num_buckets will not be used if bucket_keys is not None. '

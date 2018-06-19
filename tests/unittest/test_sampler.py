@@ -1,9 +1,8 @@
-import numpy as np
+from gluonnlp.data.sampler import ConstWidthBucket, LinearWidthBucket, ExpWidthBucket,\
+    SortedSampler, FixedBucketSampler, SortedBucketSampler, ContextSampler
 from mxnet.gluon.data import SimpleDataset
-
+import numpy as np
 import gluonnlp as nlp
-from gluonnlp.data.sampler import (ContextSampler, FixedBucketSampler,
-                                   SortedBucketSampler, SortedSampler)
 
 
 def test_sorted_sampler():
@@ -23,12 +22,19 @@ def test_fixed_bucket_sampler():
         for ratio in [0.0, 0.5]:
             for shuffle in [False, True]:
                 for num_buckets in [1, 10, 100, 5000]:
-                    sampler = FixedBucketSampler(seq_lengths, batch_size=8, num_buckets=num_buckets, ratio=ratio, shuffle=shuffle)
-                    print(sampler.stats())
-                    total_sampled_ids = []
-                    for batch_sample_ids in sampler:
-                        total_sampled_ids.extend(batch_sample_ids)
-                    assert len(set(total_sampled_ids)) == len(total_sampled_ids) == N
+                    for bucket_scheme in [ConstWidthBucket(), LinearWidthBucket(), ExpWidthBucket()]:
+                        for use_average_length in [False, True]:
+                            sampler = FixedBucketSampler(seq_lengths,
+                                                         batch_size=8,
+                                                         num_buckets=num_buckets,
+                                                         ratio=ratio, shuffle=shuffle,
+                                                         use_average_length=use_average_length,
+                                                         bucket_scheme=bucket_scheme)
+                            print(sampler.stats())
+                            total_sampled_ids = []
+                            for batch_sample_ids in sampler:
+                                total_sampled_ids.extend(batch_sample_ids)
+                            assert len(set(total_sampled_ids)) == len(total_sampled_ids) == N
     for seq_lengths in [[np.random.randint(10, 100) for _ in range(N)]]:
         for bucket_keys in [[1, 5, 10, 100], [10, 100], [200]]:
             sampler = FixedBucketSampler(seq_lengths, batch_size=8, num_buckets=None,

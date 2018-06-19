@@ -162,6 +162,15 @@ iterate through sequence data.
     FixedBucketSampler
     SortedBucketSampler
 
+The `FixedBucketSampler` uses following bucket scheme classes to generate bucket keys.
+
+.. autosummary::
+    :nosignatures:
+
+    ConstWidthBucket
+    LinearWidthBucket
+    ExpWidthBucket
+
 Utilities
 ---------
 
