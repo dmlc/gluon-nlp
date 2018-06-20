@@ -20,7 +20,10 @@
 # pylint: disable=abstract-method
 """Trainable embedding models."""
 
-__all__ = ['EmbeddingModel', 'SimpleEmbeddingModel', 'FasttextEmbeddingModel']
+__all__ = [
+    'EmbeddingModel', 'SimpleEmbeddingModel', 'FasttextEmbeddingModel',
+    'DeduplicatedFasttextEmbeddingModel'
+]
 
 import numpy as np
 from mxnet import cpu, nd
@@ -187,38 +190,12 @@ class _MaskedSumEmbedding(HybridBlock):
         return F.sum(masked_embeddings, axis=-2)
 
 
-class FasttextEmbeddingModel(EmbeddingModel, HybridBlock):
-    """FastText embedding model.
-
-    The FasttextEmbeddingModel combines a word level embedding matrix and a
-    subword level embedding matrix. It implements the
-    `gluonnlp.model.train.EmbeddingModel` interface which provides convenient
-    functions.
-
-    Parameters
-    ----------
-    token_to_idx : dict
-        token_to_idx mapping of the vocabulary that this model is to be trained
-        with. token_to_idx is used when to_token_embedding is called. For
-        initialization len(token_to_idx) is used to specify the size of the
-        subword embedding matrix..
-    subword_function : gluonnlp.vocab.SubwordFunction
-        The subword function used to obtain the subword indices during training
-        this model. The subword_function is used when to_token_embedding is
-        called. For initialization len(subword_function) is used to specify the
-        size of the subword embedding matrix..
-    embedding_size : int
-        Dimension of embeddings.
-    weight_initializer : mxnet.initializer.Initializer, optional
-        Initializer for the embeddings and subword embeddings matrix.
-    sparse_grad : bool, default True
-        Specifies mxnet.gluon.nn.Embedding sparse_grad argument.
-
-    """
+class _FasttextEmbeddingModel(EmbeddingModel):
+    """Base class for FastText embedding models."""
 
     def __init__(self, token_to_idx, subword_function, embedding_size,
                  weight_initializer=None, sparse_grad=True, **kwargs):
-        super(FasttextEmbeddingModel,
+        super(_FasttextEmbeddingModel,
               self).__init__(embedding_size=embedding_size, **kwargs)
         self.token_to_idx = token_to_idx
         self.subword_function = subword_function
@@ -238,28 +215,6 @@ class FasttextEmbeddingModel(EmbeddingModel, HybridBlock):
                 weight_initializer=weight_initializer,
                 sparse_grad=sparse_grad,
             )
-
-    def hybrid_forward(self, F, words, wordsmask, subwords, subwordsmask):
-        """Compute embedding of words in batch.
-
-        Parameters
-        ----------
-        words : mx.nd.NDArray
-            Array of token indices.
-        wordsmask : mx.nd.NDArray
-            Mask for embeddings returend by the word level embedding operator.
-        subwords : mx.nd.NDArray
-            The subwords associated with the tokens in `words`.
-        subwordsmask : mx.nd.NDArray
-            A mask for the subword embeddings looked up from `subwords`.
-            Applied before sum reducing the subword embeddings.
-
-        """
-        #pylint: disable=arguments-differ
-        wordsmask = F.expand_dims(wordsmask, axis=-1)
-        embeddings = F.broadcast_mul(self.embedding(words), wordsmask)
-        subword_embeddings = self.subword_embedding(subwords, subwordsmask)
-        return embeddings + subword_embeddings
 
     def _to_token_embedding_batch(self, batch, unknown_behavior, ctx):
         # Handle subwords
@@ -305,3 +260,123 @@ class FasttextEmbeddingModel(EmbeddingModel, HybridBlock):
 
         # Compute embeddings
         return self(words, mask, subwords, subwords_mask)
+
+
+class FasttextEmbeddingModel(_FasttextEmbeddingModel, HybridBlock):
+    """FastText embedding model.
+
+    The FasttextEmbeddingModel combines a word level embedding matrix and a
+    subword level embedding matrix. It implements the
+    `gluonnlp.model.train.EmbeddingModel` interface which provides convenient
+    functions.
+
+    Parameters
+    ----------
+    token_to_idx : dict
+        token_to_idx mapping of the vocabulary that this model is to be trained
+        with. token_to_idx is used when to_token_embedding is called. For
+        initialization len(token_to_idx) is used to specify the size of the
+        subword embedding matrix..
+    subword_function : gluonnlp.vocab.SubwordFunction
+        The subword function used to obtain the subword indices during training
+        this model. The subword_function is used when to_token_embedding is
+        called. For initialization len(subword_function) is used to specify the
+        size of the subword embedding matrix..
+    embedding_size : int
+        Dimension of embeddings.
+    weight_initializer : mxnet.initializer.Initializer, optional
+        Initializer for the embeddings and subword embeddings matrix.
+    sparse_grad : bool, default True
+        Specifies mxnet.gluon.nn.Embedding sparse_grad argument.
+
+    """
+
+    def hybrid_forward(self, F, words, wordsmask, subwords, subwordsmask):
+        """Compute embedding of words in batch.
+
+        Parameters
+        ----------
+        words : mx.nd.NDArray
+            Array of token indices.
+        wordsmask : mx.nd.NDArray
+            Mask for embeddings returend by the word level embedding operator.
+        subwords : mx.nd.NDArray
+            The subwords associated with the tokens in `words`.
+        subwordsmask : mx.nd.NDArray
+            A mask for the subword embeddings looked up from `subwords`.
+            Applied before sum reducing the subword embeddings.
+
+        """
+        #pylint: disable=arguments-differ
+        wordsmask = F.expand_dims(wordsmask, axis=-1)
+        embeddings = F.broadcast_mul(self.embedding(words), wordsmask)
+        subword_embeddings = self.subword_embedding(subwords, subwordsmask)
+        return embeddings + subword_embeddings
+
+
+class DeduplicatedFasttextEmbeddingModel(_FasttextEmbeddingModel):
+    """FastText embedding model with word deduplication.
+
+    The FasttextEmbeddingModel combines a word level embedding matrix and a
+    subword level embedding matrix. It implements the
+    `gluonnlp.model.train.EmbeddingModel` interface which provides convenient
+    functions.
+
+    Parameters
+    ----------
+    token_to_idx : dict
+        token_to_idx mapping of the vocabulary that this model is to be trained
+        with. token_to_idx is used when to_token_embedding is called. For
+        initialization len(token_to_idx) is used to specify the size of the
+        subword embedding matrix..
+    subword_function : gluonnlp.vocab.SubwordFunction
+        The subword function used to obtain the subword indices during training
+        this model. The subword_function is used when to_token_embedding is
+        called. For initialization len(subword_function) is used to specify the
+        size of the subword embedding matrix..
+    embedding_size : int
+        Dimension of embeddings.
+    weight_initializer : mxnet.initializer.Initializer, optional
+        Initializer for the embeddings and subword embeddings matrix.
+    sparse_grad : bool, default True
+        Specifies mxnet.gluon.nn.Embedding sparse_grad argument.
+
+    """
+
+    def forward(self, words, wordsmask, unique_subwords, unique_subwordsmask,
+                words_to_unique_subwords_indices=None):
+        """Compute embedding of words in batch.
+
+        Parameters
+        ----------
+        words : mx.nd.NDArray
+            Array of token indices.
+        wordsmask : mx.nd.NDArray
+            Mask for embeddings returend by the word level embedding operator.
+        subwords : mx.nd.NDArray
+            The subwords associated with the tokens in `words`.
+        subwordsmask : mx.nd.NDArray
+            A mask for the subword embeddings looked up from `subwords`.
+            Applied before sum reducing the subword embeddings.
+
+        """
+        #pylint: disable=arguments-differ
+        wordsmask = nd.expand_dims(wordsmask, axis=-1)
+        embeddings = nd.broadcast_mul(self.embedding(words), wordsmask)
+        subword_embedding_weights = self.subword_embedding(
+            unique_subwords, unique_subwordsmask)
+
+        if words_to_unique_subwords_indices is None:
+            assert words.shape[0] == unique_subwords.shape[0]
+            words_to_unique_subwords_indices = nd.arange(
+                words.shape[0], ctx=words.context)
+        words_to_unique_subwords_indices = \
+            words_to_unique_subwords_indices.reshape(words.shape)
+
+        subword_embeddings = nd.Embedding(
+            data=words_to_unique_subwords_indices,
+            weight=subword_embedding_weights,
+            input_dim=subword_embedding_weights.shape[0],
+            output_dim=self.embedding_size)
+
+        return embeddings + subword_embeddings
