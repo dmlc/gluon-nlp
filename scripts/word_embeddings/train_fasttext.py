@@ -67,6 +67,8 @@ def parse_args():
                              'If not specified, uses CPU.'))
     group.add_argument('--no-hybridize', action='store_true',
                        help='Disable hybridization of gluon HybridBlocks.')
+    group.add_argument('--no-deduplicate-words', action='store_true',
+                       help='Disable word deduplication within batches.')
     group.add_argument(
         '--no-static-alloc', action='store_true',
         help='Disable static memory allocation for HybridBlocks.')
@@ -223,13 +225,22 @@ def train(args):
     """Training helper."""
     coded_dataset, negatives_sampler, vocab, subword_function, \
         idx_to_subwordidxs = get_train_data(args)
-    embedding = nlp.model.train.FasttextEmbeddingModel(
-        token_to_idx=vocab.token_to_idx,
-        subword_function=subword_function,
-        embedding_size=args.emsize,
-        weight_initializer=mx.init.Uniform(scale=1 / args.emsize),
-        sparse_grad=not args.no_sparse_grad,
-    )
+    if args.no_deduplicate_words:
+        embedding = nlp.model.train.FasttextEmbeddingModel(
+            token_to_idx=vocab.token_to_idx,
+            subword_function=subword_function,
+            embedding_size=args.emsize,
+            weight_initializer=mx.init.Uniform(scale=1 / args.emsize),
+            sparse_grad=not args.no_sparse_grad,
+        )
+    else:
+        embedding = nlp.model.train.DeduplicatedFasttextEmbeddingModel(
+            token_to_idx=vocab.token_to_idx,
+            subword_function=subword_function,
+            embedding_size=args.emsize,
+            weight_initializer=mx.init.Uniform(scale=1 / args.emsize),
+            sparse_grad=not args.no_sparse_grad,
+        )
     embedding_out = nlp.model.train.SimpleEmbeddingModel(
         token_to_idx=vocab.token_to_idx,
         embedding_size=args.emsize,
@@ -278,8 +289,17 @@ def train(args):
                 negatives_shape, word_context, word_context_mask)
 
             if args.model.lower() == 'skipgram':
-                subwords, subwords_mask = \
-                    indices_to_subwordindices_mask(center, idx_to_subwordidxs)
+                if args.no_deduplicate_words:
+                    subwords, subwords_mask = \
+                        indices_to_subwordindices_mask(center, idx_to_subwordidxs)
+                else:
+                    unique, inverse_unique_indices = np.unique(
+                        center.asnumpy(), return_inverse=True)
+                    unique = mx.nd.array(unique)
+                    inverse_unique_indices = mx.nd.array(
+                        inverse_unique_indices, ctx=context[0])
+                    subwords, subwords_mask = \
+                        indices_to_subwordindices_mask(unique, idx_to_subwordidxs)
             elif args.model.lower() == 'cbow':
                 subwords, subwords_mask = \
                     indices_to_subwordindices_mask(word_context,
@@ -304,8 +324,13 @@ def train(args):
             with mx.autograd.record():
                 # Combine subword level embeddings with word embeddings
                 if args.model.lower() == 'skipgram':
-                    emb_in = embedding(center, center_mask, subwords,
-                                       subwords_mask)
+                    if args.no_deduplicate_words:
+                        emb_in = embedding(center, center_mask, subwords,
+                                           subwords_mask)
+                    else:
+                        emb_in = embedding(center, center_mask, subwords,
+                                           subwords_mask,
+                                           inverse_unique_indices)
 
                     with mx.autograd.pause():
                         word_context_negatives = mx.nd.concat(
