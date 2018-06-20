@@ -115,6 +115,24 @@ def test_bleu():
         os.remove(ref_path + str(i))
 
 
+def test_detok_bleu():
+    path = os.path.dirname(os.path.realpath(__file__))
+    ref_path = os.path.join(path, 'test_references.txt')
+    trans_path = os.path.join(path, 'test_translations.txt')
+    with open(trans_path) as f:
+        translations = f.readlines()
+
+    with open(ref_path) as f:
+        references = f.readlines()
+    ret_bleu, _, _, _, _ = compute_bleu([references], translations, tokenized=False)
+    mose_ret = subprocess.check_output('perl %s/multi-bleu-detok.perl %s < %s'
+                                       % (path, ref_path, trans_path),
+                                       shell=True).decode('utf-8')
+    m = re.search('BLEU = (.+?),', mose_ret)
+    gt_bleu = float(m.group(1))
+    assert_allclose(round(ret_bleu * 100, 2), gt_bleu)
+
+
 def test_bpe():
     sequence = ['Th@@', 'is', 'man', 'is', 'ma@@', 'rr@@', 'ied', 'wi@@', 'th', 'her']
     gt_sequence = ['This', 'man', 'is', 'married', 'with', 'her']
