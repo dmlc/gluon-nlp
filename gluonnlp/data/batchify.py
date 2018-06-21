@@ -238,8 +238,8 @@ class Pad(object):
 
 
 class Tuple(object):
-    """Wrap multiple batchify functions together. The input functions will be applied to the corresponding
-    input fields.
+    """Wrap multiple batchify functions together. The input functions will be applied
+    to the corresponding input fields.
 
     Each data sample should be a list or tuple containing multiple attributes. The `i`th batchify
     function stored in `Tuple` will be applied on the `i`th attribute. For example, each
