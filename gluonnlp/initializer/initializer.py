@@ -59,6 +59,7 @@ class HighwayBias(Initializer):
         self.transform_gate_bias = transform_gate_bias
 
     def _init_weight(self, name, arr):
+        # pylint: disable=unused-argument
         """Abstract method to Initialize weight."""
         arr[:int(arr.shape[0] / 2)] = self.nonlinear_transform_bias
         arr[int(arr.shape[0] / 2):] = self.transform_gate_bias
