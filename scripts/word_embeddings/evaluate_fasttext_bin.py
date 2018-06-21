@@ -58,6 +58,7 @@ def get_args():
               'As the analogy task takes the whole vocabulary into account, '
               'removing very infrequent words improves performance.'))
     group.add_argument('--list-embedding-sources', action='store_true')
+    group.add_argument('--no-try-impute-unknown-words', action='store_true')
 
     # Computation options
     group = parser.add_argument_group('Computation arguments')
@@ -132,11 +133,11 @@ def get_fasttext_bin_model(args):
         idx_to_token = list(
             gensim_fasttext.wv.vocab.keys())[:args.max_vocab_size]
         idx_to_vec = mx.nd.array(matrix[:len(idx_to_token)])
-        token_to_idx = {(token, idx) for idx, token in enumerate(idx_to_token)}
+        token_to_idx = {token: idx for idx, token in enumerate(idx_to_token)}
     else:
         idx_to_token = list(gensim_fasttext.wv.vocab.keys())
         idx_to_vec = mx.nd.array(matrix[:num_words])
-        token_to_idx = {(token, idx) for idx, token in enumerate(idx_to_token)}
+        token_to_idx = {token: idx for idx, token in enumerate(idx_to_token)}
 
     if num_subwords:
         subword_function = nlp.vocab.create_subword_function(
@@ -174,8 +175,13 @@ def load_and_evaluate(args):
     else:
         embedding, model_idx_to_token = get_vec_model(args)
 
-    idx_to_token_set = evaluation.get_tokens_in_evaluation_datasets(args)
+    idx_to_token_set = set()
     idx_to_token_set.update(model_idx_to_token)
+    if (isinstance(embedding, nlp.model.train.FasttextEmbeddingModel)
+            and not args.no_try_impute_unknown_words):
+        # Fasttext model can infer OOV
+        idx_to_token_set.update(
+            evaluation.get_tokens_in_evaluation_datasets(args))
     idx_to_token = list(idx_to_token_set)
 
     # Compute their word vectors

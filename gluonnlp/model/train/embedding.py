@@ -124,6 +124,8 @@ class SimpleEmbeddingModel(EmbeddingModel, HybridBlock):
 
     def __init__(self, token_to_idx, embedding_size, weight_initializer=None,
                  sparse_grad=True, **kwargs):
+        assert isinstance(token_to_idx, dict)
+
         super(SimpleEmbeddingModel,
               self).__init__(embedding_size=embedding_size, **kwargs)
         self.token_to_idx = token_to_idx
