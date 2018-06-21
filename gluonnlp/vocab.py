@@ -628,7 +628,7 @@ class NGramHashes(SubwordFunction):
         s = s.encode(encoding)
         old_settings = np.seterr(all='ignore')
         for c in bytearray(s):
-            h = h ^ np.uint32(c)
+            h = h ^ np.uint32(np.int8(c))
             h = h * np.uint32(16777619)
         np.seterr(**old_settings)
         return h
