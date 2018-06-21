@@ -22,7 +22,7 @@ Language Modeling
     get_model
 
 Convolutional Encoder
------------------
+----------------------
 
 .. autosummary::
     :nosignatures:
