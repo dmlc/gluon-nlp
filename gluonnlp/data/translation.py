@@ -322,7 +322,7 @@ class WMT2014BPE(_TranslationDataset):
                 ('newstest2014.tok.bpe.32000.ref.en', 'cd416085db722bf07cbba4ff29942fe94e966023')
             self._data_file[_get_pair_key('de', 'en')]['newstest2014_de'] = \
                 ('newstest2014.tok.bpe.32000.src.de', '9274d31f92141933f29a405753d5fae051fa5725')
-        super(WMT2014BPE, self).__init__('wmt2014bpe', segment=segment, src_lang=src_lang,
+        super(WMT2014BPE, self).__init__('wmt2014', segment=segment, src_lang=src_lang,
                                          tgt_lang=tgt_lang,
                                          root=os.path.join(root, _get_pair_key(src_lang, tgt_lang)))
 
@@ -437,6 +437,6 @@ class WMT2016BPE(_TranslationDataset):
                                              '1c5aea0a77cad592c4e9c1136ec3b70ceeff4e8c'),
                                 'vocab_de': ('vocab.bpe.32000.json',
                                              '1c5aea0a77cad592c4e9c1136ec3b70ceeff4e8c')}}
-        super(WMT2016BPE, self).__init__('wmt2016bpe', segment=segment, src_lang=src_lang,
+        super(WMT2016BPE, self).__init__('wmt2016', segment=segment, src_lang=src_lang,
                                          tgt_lang=tgt_lang,
                                          root=os.path.join(root, _get_pair_key(src_lang, tgt_lang)))
