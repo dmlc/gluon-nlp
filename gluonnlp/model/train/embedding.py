@@ -309,9 +309,13 @@ class FasttextEmbeddingModel(_FasttextEmbeddingModel, HybridBlock):
         """
         #pylint: disable=arguments-differ
         wordsmask = F.expand_dims(wordsmask, axis=-1)
+        num_embeddings = \
+            F.sum(subwordsmask, axis=-1, keepdims=True) + wordsmask
+
         embeddings = F.broadcast_mul(self.embedding(words), wordsmask)
         subword_embeddings = self.subword_embedding(subwords, subwordsmask)
-        return embeddings + subword_embeddings
+
+        return F.broadcast_div(embeddings + subword_embeddings, num_embeddings)
 
 
 class DeduplicatedFasttextEmbeddingModel(_FasttextEmbeddingModel):
@@ -379,4 +383,11 @@ class DeduplicatedFasttextEmbeddingModel(_FasttextEmbeddingModel):
             input_dim=subword_embedding_weights.shape[0],
             output_dim=self.embedding_size)
 
-        return embeddings + subword_embeddings
+        num_embeddings = nd.Embedding(
+            data=words_to_unique_subwords_indices, weight=nd.sum(
+                unique_subwordsmask, axis=-1,
+                keepdims=True), input_dim=subword_embedding_weights.shape[0],
+            output_dim=1).reshape(wordsmask.shape) + wordsmask
+
+        return nd.broadcast_div(embeddings + subword_embeddings,
+                                num_embeddings)
