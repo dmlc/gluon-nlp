@@ -259,11 +259,11 @@ data_train_lengths = get_data_lengths(data_train)
 data_val_lengths = get_data_lengths(data_val)
 data_test_lengths = get_data_lengths(data_test)
 
-with io.open(os.path.join(args.save_dir, 'val_gt.txt'), 'w') as of:
+with io.open(os.path.join(args.save_dir, 'val_gt.txt'), 'w', encoding='utf-8') as of:
     for ele in val_tgt_sentences:
         of.write(' '.join(ele) + '\n')
 
-with io.open(os.path.join(args.save_dir, 'test_gt.txt'), 'w') as of:
+with io.open(os.path.join(args.save_dir, 'test_gt.txt'), 'w', encoding='utf-8') as of:
     for ele in test_tgt_sentences:
         of.write(' '.join(ele) + '\n')
 

@@ -140,21 +140,17 @@ class Pad(object):
     Input of the function will be N samples. Each sample should contain a single element that
     can be 1) numpy.ndarray, 2) mxnet.nd.NDArray, 3) list of numbers
 
-    You need to set the `index` parameter to determine which part of the sample requires
-    padding. Also, you can set the `pad_axis` and `pad_val` to determine the padding axis and
-    value.
-
-    The arrays will be padded to the largest dimension at `pad_axis` and then
+    The arrays will be padded to the largest dimension at `axis` and then
     stacked to form the final output. In addition, the function will output the original dimensions
-    at the `pad_axis` if ret_length is turned on.
+    at the `axis` if ret_length is turned on.
 
     Parameters
     ----------
     axis : int, default 0
         The axis to pad the arrays. The arrays will be padded to the largest dimension at
-        pad_axis. For example, assume the input arrays have shape
-        (10, 8, 5), (6, 8, 5), (3, 8, 5) and the pad_axis is 0. Each input will be padded into
-        (10, 8, 5) and then stacked to form the final output.
+        `axis`. For example, assume the input arrays have shape
+        (10, 8, 5), (6, 8, 5), (3, 8, 5) and the `axis` is 0. Each input will be padded into
+        (10, 8, 5) and then stacked to form the final output, which has shape（3, 10, 8, 5).
     pad_val : float or int, default 0
         The padding value.
     ret_length : bool, default False
@@ -242,13 +238,13 @@ class Pad(object):
 
 
 class Tuple(object):
-    """Wrap multiple batchify functions to form a function apply each input function on each
-    input fields respectively.
+    """Wrap multiple batchify functions together. The input functions will be applied to the corresponding
+    input fields.
 
     Each data sample should be a list or tuple containing multiple attributes. The `i`th batchify
     function stored in `Tuple` will be applied on the `i`th attribute. For example, each
     data sample is (nd_data, label). You can wrap two batchify functions using
-    `Warp(DataBatchify, LabelBatchify)` to batchify nd_data and label correspondingly.
+    `Tuple(DataBatchify, LabelBatchify)` to batchify nd_data and label correspondingly.
 
     Parameters
     ----------
