@@ -23,7 +23,8 @@ clipping, padding, and tokenization."""
 from __future__ import absolute_import
 from __future__ import print_function
 
-__all__ = ['ClipSequence', 'PadSequence', 'NLTKMosesTokenizer', 'SpacyTokenizer', 'NLTKMosesDetokenizer']
+__all__ = ['ClipSequence', 'PadSequence', 'NLTKMosesTokenizer', 'SpacyTokenizer',
+           'NLTKMosesDetokenizer']
 
 import numpy as np
 import mxnet as mx
@@ -325,4 +326,3 @@ class NLTKMosesDetokenizer(object):
             List of words or detokenized text
         """
         return self._detokenizer.detokenize(sample, return_str=return_str)
-
