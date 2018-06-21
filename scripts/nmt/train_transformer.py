@@ -327,7 +327,7 @@ encoder, decoder = get_transformer_encoder_decoder(units=args.num_units,
                                                    scaled=args.scaled)
 model = NMTModel(src_vocab=src_vocab, tgt_vocab=tgt_vocab, encoder=encoder, decoder=decoder,
                  share_embed=True, embed_size=args.num_units, tie_weights=True,
-                 embed_initializer=None, prefix='parallel_transformer_')
+                 embed_initializer=None, prefix='transformer_')
 model.initialize(init=mx.init.Xavier(magnitude=args.magnitude), ctx=ctx)
 static_alloc = True
 model.hybridize(static_alloc=static_alloc)
