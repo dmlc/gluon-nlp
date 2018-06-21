@@ -1,7 +1,7 @@
 gluonnlp.initializer
 ======================
 
-This page describe initializers that are useful for multiple NLP model architectures.
+This page describes initializers that are useful for multiple NLP model architectures.
 
 .. currentmodule:: gluonnlp.initializer
 
