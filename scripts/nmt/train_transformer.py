@@ -54,8 +54,8 @@ from translation import NMTModel, BeamSearchTranslator
 from transformer import get_transformer_encoder_decoder
 from loss import SoftmaxCEMaskedLoss, LabelSmoothing
 from utils import logging_config
-from bleu import compute_bleu
-from nltk import MosesDetokenizer
+from bleu import _bpe_to_words, compute_bleu
+from nltk.tokenize.moses import MosesDetokenizer
 import _constants as _C
 
 np.random.seed(100)
@@ -260,8 +260,11 @@ def load_translation_data(dataset, src_lang='en', tgt_lang='vi'):
         val_tgt_sentences = list(data_val.transform(fetch_tgt_sentence))
         test_tgt_sentences = list(data_test.transform(fetch_tgt_sentence))
     elif args.bleu == '13a':
-        val_tgt_sentences = WMT2014BPE('newstest2013', src_lang=src_lang, tgt_lang=tgt_lang)
-        test_tgt_sentences = WMT2014BPE('newstest2014', src_lang=src_lang, tgt_lang=tgt_lang)
+        fetch_tgt_sentence = lambda src, tgt: tgt
+        val_text = WMT2014BPE('newstest2013', src_lang=src_lang, tgt_lang=tgt_lang)
+        test_text = WMT2014BPE('newstest2014', src_lang=src_lang, tgt_lang=tgt_lang)
+        val_tgt_sentences = list(val_text.transform(fetch_tgt_sentence))
+        test_tgt_sentences = list(test_text.transform(fetch_tgt_sentence))
     else:
         raise NotImplementedError
     return data_train_processed, data_val_processed, data_test_processed, \
@@ -387,7 +390,8 @@ def evaluate(data_loader, context=ctx[0]):
         if args.bleu == 't2t':
             real_translation_out[ind] = sentence
         elif args.bleu == '13a':
-            real_translation_out[ind] = detokenizer.detokenize(sentence, return_str=True)
+            real_translation_out[ind] = detokenizer.detokenize(_bpe_to_words(sentence),
+                                                               return_str=True)
         else:
             raise NotImplementedError
     return avg_loss, real_translation_out
