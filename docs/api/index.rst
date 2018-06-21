@@ -23,3 +23,4 @@ Gluon NLP Toolkit API includes many useful building blocks for NLP data processi
    model
    model.train
    loss
+   initializer
