@@ -47,15 +47,15 @@ from mxnet import gluon
 from mxnet.gluon.data import ArrayDataset, SimpleDataset
 from mxnet.gluon.data import DataLoader
 import gluonnlp.data.batchify as btf
+from gluonnlp.data import NLTKMosesDetokenizer
 from gluonnlp.data import ConstWidthBucket, LinearWidthBucket, ExpWidthBucket,\
-    FixedBucketSampler, IWSLT2015, WMT2016BPE, WMT2014BPE
+    FixedBucketSampler, IWSLT2015, WMT2016, WMT2016BPE, WMT2014, WMT2014BPE
 from gluonnlp.model import BeamSearchScorer
 from translation import NMTModel, BeamSearchTranslator
 from transformer import get_transformer_encoder_decoder
 from loss import SoftmaxCEMaskedLoss, LabelSmoothing
 from utils import logging_config
 from bleu import _bpe_to_words, compute_bleu
-from nltk.tokenize.moses import MosesDetokenizer
 import _constants as _C
 
 np.random.seed(100)
@@ -261,8 +261,14 @@ def load_translation_data(dataset, src_lang='en', tgt_lang='vi'):
         test_tgt_sentences = list(data_test.transform(fetch_tgt_sentence))
     elif args.bleu == '13a':
         fetch_tgt_sentence = lambda src, tgt: tgt
-        val_text = WMT2014BPE('newstest2013', src_lang=src_lang, tgt_lang=tgt_lang)
-        test_text = WMT2014BPE('newstest2014', src_lang=src_lang, tgt_lang=tgt_lang)
+        if dataset == 'WMT2016BPE':
+            val_text = WMT2016('newstest2013', src_lang=src_lang, tgt_lang=tgt_lang)
+            test_text = WMT2016('newstest2014', src_lang=src_lang, tgt_lang=tgt_lang)
+        elif dataset == 'WMT2014BPE':
+            val_text = WMT2014('newstest2013', src_lang=src_lang, tgt_lang=tgt_lang)
+            test_text = WMT2014('newstest2014', src_lang=src_lang, tgt_lang=tgt_lang)
+        else:
+            raise NotImplementedError
         val_tgt_sentences = list(val_text.transform(fetch_tgt_sentence))
         test_tgt_sentences = list(test_text.transform(fetch_tgt_sentence))
     else:
@@ -342,7 +348,7 @@ loss_function.hybridize(static_alloc=static_alloc)
 test_loss_function = SoftmaxCEMaskedLoss()
 test_loss_function.hybridize(static_alloc=static_alloc)
 
-detokenizer = MosesDetokenizer()
+detokenizer = NLTKMosesDetokenizer()
 
 
 def evaluate(data_loader, context=ctx[0]):
