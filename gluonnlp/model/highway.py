@@ -26,9 +26,10 @@ __all__ = ['Highway']
 
 from mxnet import gluon
 from mxnet.gluon import nn
+from gluonnlp.initializer import HighwayBias
 
 
-class Highway(gluon.Block):
+class Highway(gluon.HybridBlock):
     r"""Highway network.
 
     We implemented the highway network proposed in the following work::
@@ -40,6 +41,16 @@ class Highway(gluon.Block):
           year={2015}
         }
 
+    The full version of the work::
+
+        @inproceedings{srivastava2015training,
+         title={Training very deep networks},
+         author={Srivastava, Rupesh K and Greff, Klaus and Schmidhuber, J{\"u}rgen},
+         booktitle={Advances in neural information processing systems},
+         pages={2377--2385},
+         year={2015}
+        }
+
     A Highway layer is defined as below:
 
     .. math::
@@ -48,7 +59,7 @@ class Highway(gluon.Block):
     which is a gated combination of a linear transform and a non-linear transform of its input,
     where :math:`x` is the input tensor, :math:`A` is a linear transformer,
     :math:`f` is an element-wise non-linear transformer,
-    and :math:`t` is an element-wise transform gate, and :math:`t` refers to carry gate.
+    and :math:`t` is an element-wise transform gate, and :math:`1-t` refers to carry gate.
 
     Parameters
     ----------
@@ -57,14 +68,21 @@ class Highway(gluon.Block):
         input_size)``.
     num_layers : int
         The number of highway layers to apply to the input.
-    activation : nn.Activation
-        The non-linear activation function.
+    activation : str, default 'relu'
+        The non-linear activation function to use.
+        If you don't specify anything, no activation is applied
+        (ie. "linear" activation: `a(x) = x`).
+    highway_bias : HighwayBias,
+        default HighwayBias(nonlinear_transform_bias=0.0, transform_gate_bias=-2.0)
+        The biases applied to the highway layer.
+        We set the default according to the above original work.
     """
 
     def __init__(self,
                  input_size,
                  num_layers,
-                 activation=nn.Activation('relu'),
+                 activation='relu',
+                 highway_bias=HighwayBias(nonlinear_transform_bias=0.0, transform_gate_bias=-2.0),
                  **kwargs):
         super(Highway, self).__init__(**kwargs)
         self._input_size = input_size
@@ -74,15 +92,14 @@ class Highway(gluon.Block):
             self.hnet = nn.HybridSequential()
             with self.hnet.name_scope():
                 for _ in range(self._num_layers):
-                    self.hnet.add(nn.Dense(units=self._input_size * 2, in_units=self._input_size,
-                                           use_bias=True, flatten=False))
-            self._activation = activation
+                    self.hnet.add(nn.Dense(units=self._input_size * 2,
+                                           in_units=self._input_size,
+                                           bias_initializer=highway_bias,
+                                           use_bias=True,
+                                           flatten=False))
+            self._activation = nn.Activation(activation)
 
-    def set_bias(self):
-        for _, layer in enumerate(self.hnet):
-            layer.bias.data()[self._input_size:] = 1
-
-    def forward(self, inputs):  # pylint: disable=arguments-differ
+    def hybrid_forward(self, F, inputs, **kwargs):  # pylint: disable=arguments-differ
         r"""
         Forward computation for highway layer
 
@@ -97,7 +114,7 @@ class Highway(gluon.Block):
             The output tensor is of the same shape with input tensor `(batch_size, input_size)`.
         """
         current_input = inputs
-        for _, layer in enumerate(self.hnet):
+        for layer in self.hnet:
             projected_input = layer(current_input)
             linear_transform = current_input
             nonlinear_transform, transform_gate = projected_input.split(num_outputs=2, axis=-1)

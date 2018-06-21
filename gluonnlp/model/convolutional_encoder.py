@@ -17,23 +17,24 @@
 # specific language governing permissions and limitations
 # under the License.
 
-"""Convolutional character encoder."""
+"""Convolutional encoder."""
 
 from __future__ import absolute_import
 from __future__ import print_function
 
-__all__ = ['CharacterEncoder']
+__all__ = ['ConvolutionalEncoder']
 
 from mxnet import gluon, nd
 from mxnet.gluon import nn
+from gluonnlp.initializer import HighwayBias
 
 from .highway import Highway
 
 
-class CharacterEncoder(gluon.Block):
-    r"""Convolutional character encoder.
+class ConvolutionalEncoder(gluon.Block):
+    r"""Convolutional encoder.
 
-    We implement the convolutional character encoder proposed in the following work::
+    We implement the convolutional encoder proposed in the following work::
 
         @inproceedings{kim2016character,
          title={Character-Aware Neural Language Models.},
@@ -45,32 +46,56 @@ class CharacterEncoder(gluon.Block):
 
     Parameters
     ----------
-    embed_size : int
+    embed_size : int, default 15
         The input dimension to the encoder.
-    num_filters: int
-        The output dimension for each convolutional layer,
-        which is the number of the filters learned by the layer.
-    ngram_filter_sizes: Tuple[int]
+        We set the default according to the original work's experiments
+        on PTB dataset with Char-small model setting.
+    num_filters: Tuple[int], default (25, 50, 75, 100, 125, 150)
+        The output dimension for each convolutional layer according to the filter sizes,
+        which are the number of the filters learned by the layers.
+        We set the default according to the original work's experiments
+        on PTB dataset with Char-small model setting.
+    ngram_filter_sizes: Tuple[int], default (1, 2, 3, 4, 5, 6)
         The size of each convolutional layer,
         and len(ngram_filter_sizes) equals to the number of convolutional layers.
-    conv_layer_activation: nn.Activation
+        We set the default according to the original work's experiments
+        on PTB dataset with Char-small model setting.
+    conv_layer_activation: str, default 'tanh'
         Activation function to be used after convolutional layer.
-    num_highway: int
+        If you don't specify anything, no activation is applied
+        (ie. "linear" activation: `a(x) = x`).
+        We set the default according to the original work's experiments
+        on PTB dataset with Char-small model setting.
+    num_highway: int, default '1'
         The number of layers of the Highway layer.
-    output_size: int
+        We set the default according to the original work's experiments
+        on PTB dataset with Char-small model setting.
+    highway_layer_activation: str, default 'relu'
+        Activation function to be used after highway layer.
+        If you don't specify anything, no activation is applied
+        (ie. "linear" activation: `a(x) = x`).
+        We set the default according to the original work's experiments
+        on PTB dataset with Char-small model setting.
+    highway_bias : HighwayBias,
+        default HighwayBias(nonlinear_transform_bias=0.0, transform_gate_bias=-2.0)
+        The biases applied to the highway layer.
+        We set the default according to the above original work.
+    output_size: int, default None
         The output dimension after conducting the convolutions and max pooling,
         and applying highways, as well as linear projection.
 
     """
     def __init__(self,
-                 embed_size,
-                 num_filters,
-                 ngram_filter_sizes,
-                 conv_layer_activation=nn.Activation('relu'),
-                 num_highway=None,
+                 embed_size=15,
+                 num_filters=(25, 50, 75, 100, 125, 150),
+                 ngram_filter_sizes=(1, 2, 3, 4, 5, 6),
+                 conv_layer_activation='tanh',
+                 num_highway=1,
+                 highway_layer_activation='relu',
+                 highway_bias=HighwayBias(nonlinear_transform_bias=0.0, transform_gate_bias=-2.0),
                  output_size=None,
                  **kwargs):
-        super(CharacterEncoder, self).__init__(**kwargs)
+        super(ConvolutionalEncoder, self).__init__(**kwargs)
 
         self._embed_size = embed_size
         self._num_filters = num_filters
@@ -80,18 +105,22 @@ class CharacterEncoder(gluon.Block):
 
         with self.name_scope():
             self._convs = nn.HybridSequential()
+            maxpool_output_size = 0
             with self._convs.name_scope():
-                for _, ngram_size in enumerate(self._ngram_filter_sizes):
+                for num_filter, ngram_size in zip(self._num_filters, self._ngram_filter_sizes):
                     self._convs.add(nn.Conv1D(in_channels=self._embed_size,
-                                              channels=self._num_filters,
+                                              channels=num_filter,
                                               kernel_size=ngram_size,
                                               use_bias=True))
-            maxpool_output_size = self._num_filters * len(self._ngram_filter_sizes)
-            self._activation = conv_layer_activation
+                    maxpool_output_size += num_filter
+
+            self._activation = nn.Activation(conv_layer_activation)
+
             if self._num_highway:
                 self._highways = Highway(maxpool_output_size,
                                          self._num_highway,
-                                         activation=self._activation)
+                                         activation=highway_layer_activation,
+                                         highway_bias=highway_bias)
             else:
                 self._highways = None
             if self._output_size:
@@ -101,9 +130,6 @@ class CharacterEncoder(gluon.Block):
             else:
                 self._projection = None
                 self._output_size = maxpool_output_size
-
-    def set_highway_bias(self):
-        self._highways.set_bias()
 
     def forward(self, inputs, mask=None): # pylint: disable=arguments-differ
         r"""
@@ -120,7 +146,7 @@ class CharacterEncoder(gluon.Block):
         Returns
         ----------
         output: NDArray
-            The output of the character encoder with shape `(batch_size, output_Size)`
+            The output of the encoder with shape `(batch_size, output_Size)`
 
         """
         if mask is not None:
@@ -129,7 +155,7 @@ class CharacterEncoder(gluon.Block):
         inputs = nd.transpose(inputs, axes=(1, 2, 0))
 
         filter_outputs = []
-        for _, conv in enumerate(self._convs):
+        for conv in self._convs:
             filter_outputs.append(
                 self._activation(conv(inputs).max(axis=2))
             )

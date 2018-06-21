@@ -21,13 +21,13 @@ Language Modeling
     StandardRNN
     get_model
 
-Character Encoder
+Convolutional Encoder
 -----------------
 
 .. autosummary::
     :nosignatures:
 
-    CharacterEncoder
+    ConvolutionalEncoder
 
 Highway Network
 -----------------

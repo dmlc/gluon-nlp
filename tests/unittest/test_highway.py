@@ -27,15 +27,14 @@ def test_highway_forward_simple_input():
     highway = Highway(input_size=2, num_layers=2)
     print(highway)
     highway.initialize(init='One')
-    highway.set_bias()
     highway.hnet[0].weight.data()[:] = 1
     highway.hnet[0].bias.data()[:] = 0
     highway.hnet[1].weight.data()[:] = 2
     highway.hnet[1].bias.data()[:] = -2
-    input = mx.nd.array([[-2, 1], [3, -2]])
-    output = highway(input)
+    inputs = mx.nd.array([[-2, 1], [3, -2]])
+    output = highway(inputs)
     print(output)
-    assert output.shape == (2, 2)
+    assert output.shape == (2, 2), output.shape
     assert_almost_equal(output.asnumpy(),
                         mx.nd.array([[-1.4177, 0.7088], [1.4764, 1.2234]]).asnumpy(),
                         decimal=4)
@@ -45,8 +44,16 @@ def test_highway_forward():
     highway = Highway(input_size=2, num_layers=2)
     print(highway)
     highway.initialize()
-    highway.set_bias()
-    input = mx.nd.ones((2, 3, 2))
-    output = highway(input)
+    inputs = mx.nd.ones((2, 3, 2))
+    output = highway(inputs)
     print(output)
     assert output.shape == (2, 3, 2), output.shape
+
+
+def test_highway_default_bias():
+    highway = Highway(input_size=4, num_layers=1)
+    print(highway)
+    highway.initialize()
+    assert_almost_equal(highway.hnet[0].bias.data().asnumpy(),
+                        mx.nd.array([0.0, 0.0, 0.0, 0.0, -2.0, -2.0, -2.0, -2.0]).asnumpy(),
+                        decimal=2)
