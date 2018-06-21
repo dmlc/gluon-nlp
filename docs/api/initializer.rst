@@ -1,7 +1,7 @@
 gluonnlp.initializer
 ======================
 
-Gluon NLP Toolkit provides tools for easily customizing task specific initializer.
+This page describe initializers that are useful for multiple NLP model architectures.
 
 .. currentmodule:: gluonnlp.initializer
 
