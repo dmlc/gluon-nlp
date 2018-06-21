@@ -24,8 +24,8 @@ import math
 import unicodedata
 from collections import Counter
 import six
-r = re.compile('.+-.+')
 LIST_TYPES = (list, tuple)
+
 
 def _ngrams(segment, n):
     """Extracts n-grams from an input segment.
@@ -53,14 +53,7 @@ def _split_compound_word(segment):
     """Put compounds in ATAT format.
        rich-text format" --> rich ##AT##-##AT## text format.
     """
-    new_segment = []
-    for word in segment:
-        if r.match(word) is not None:
-            words = ['##AT##-##AT##' if w == '-' else w for w in re.split('(-)', word)]
-            new_segment.extend(words)
-        else:
-            new_segment.append(word)
-    return new_segment
+    return re.sub(r'(\S)-(\S)', '\\1 ##AT##-##AT## \\2', ' '.join(segment)).split()
 
 
 def _bpe_to_words(sentence, delimiter='@@'):
