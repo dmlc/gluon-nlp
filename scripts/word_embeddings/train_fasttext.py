@@ -327,9 +327,18 @@ def train(args):
                         subwords, subwords_mask = \
                             indices_to_subwordindices_mask(unique, idx_to_subwordidxs)
                 elif args.model.lower() == 'cbow':
-                    subwords, subwords_mask = \
-                        indices_to_subwordindices_mask(word_context,
+                    if args.no_deduplicate_words:
+                        subwords, subwords_mask = \
+                            indices_to_subwordindices_mask(word_context,
                                                        idx_to_subwordidxs)
+                    else:
+                        unique, inverse_unique_indices = np.unique(
+                            word_context.asnumpy(), return_inverse=True)
+                        unique = mx.nd.array(unique)
+                        inverse_unique_indices = mx.nd.array(
+                            inverse_unique_indices, ctx=context[0])
+                        subwords, subwords_mask = \
+                            indices_to_subwordindices_mask(unique, idx_to_subwordidxs)
                 else:
                     logging.error('Unsupported model %s.', args.model)
                     sys.exit(1)
@@ -377,25 +386,36 @@ def train(args):
                                          mx.nd.zeros_like(negatives), dim=1)
 
                 elif args.model.lower() == 'cbow':
-                    emb_in = embedding(word_context, word_context_mask,
-                                       subwords, subwords_mask).sum(
-                                           axis=-2, keepdims=True)
+                    word_context = word_context.reshape((-3, 1))
+                    word_context_mask = word_context_mask.reshape((-3, 1))
+                    if args.ngram_buckets and args.no_deduplicate_words:
+                        emb_in = embedding(word_context, word_context_mask,
+                                           subwords, subwords_mask).sum(
+                                               axis=-2, keepdims=True)
+                    elif args.ngram_buckets:
+                        emb_in = embedding(word_context, word_context_mask,
+                                           subwords, subwords_mask,
+                                           inverse_unique_indices)
+                    else:
+                        emb_in = embedding(word_context, word_context_mask)
 
                     with mx.autograd.pause():
+                        center = center.tile(args.window * 2).reshape((-1, 1))
+                        negatives = negatives.reshape((-1, args.negative))
+
                         center_negatives = mx.nd.concat(
-                            center.expand_dims(1), negatives, dim=1)
-                        center_negatives_mask = mx.nd.concat(
-                            center_mask.expand_dims(1),
-                            mx.nd.ones_like(negatives), dim=1)
+                            center, negatives, dim=1)
+                        center_negatives_mask = mx.nd.ones_like(
+                            center_negatives)
 
                     emb_out = embedding_out(center_negatives,
                                             center_negatives_mask)
 
                     # Compute loss
                     pred = mx.nd.batch_dot(emb_in, emb_out.swapaxes(1, 2))
-                    pred = pred.reshape((-1, 1 + args.negative))
+                    pred = pred.squeeze() * word_context_mask
                     label = mx.nd.concat(
-                        mx.nd.ones_like(center).expand_dims(1),
+                        mx.nd.ones_like(word_context),
                         mx.nd.zeros_like(negatives), dim=1)
 
                 loss = loss_function(pred, label)
