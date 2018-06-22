@@ -90,7 +90,7 @@ def parse_args():
                        help='Size of embedding vectors.')
     group.add_argument('--ngrams', type=int, nargs='+', default=[3, 4, 5, 6])
     group.add_argument(
-        '--ngram-buckets', type=int, default=500000,
+        '--ngram-buckets', type=int, default=2000000,
         help='Size of word_context set of the ngram hash function. '
         'Set this to 0 for Word2Vec style training.')
     group.add_argument('--model', type=str, default='skipgram',
