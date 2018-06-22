@@ -24,11 +24,9 @@ import mxnet as mx
 import numpy as np
 
 try:
-    from numba import njit, prange
+    from numba import njit
     numba_njit = njit(nogil=True)
 except ImportError:
-    # Define numba shims
-    prange = range
 
     def numba_njit(func):
         return func
