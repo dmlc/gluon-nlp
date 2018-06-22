@@ -17,7 +17,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-# pylint: disable=global-variable-undefined
+# pylint: disable=global-variable-undefined,wrong-import-position
 """Fasttext embedding model
 ===========================
 
@@ -330,7 +330,7 @@ def train(args):
                     if args.no_deduplicate_words:
                         subwords, subwords_mask = \
                             indices_to_subwordindices_mask(word_context,
-                                                       idx_to_subwordidxs)
+                                                           idx_to_subwordidxs)
                     else:
                         unique, inverse_unique_indices = np.unique(
                             word_context.asnumpy(), return_inverse=True)
@@ -460,8 +460,7 @@ def train(args):
         mx.nd.waitall()
     with print_time('evaluate'):
         evaluate(args, embedding, vocab, num_update,
-                 eval_analogy=(epoch == args.epochs - 1
-                               and not args.no_eval_analogy))
+                 eval_analogy=not args.no_eval_analogy)
 
     # Save params
     with print_time('save parameters'):

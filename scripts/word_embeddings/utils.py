@@ -27,7 +27,6 @@ from contextlib import contextmanager
 import random
 
 import mxnet as mx
-import numpy as np
 
 try:
     from numba import njit
