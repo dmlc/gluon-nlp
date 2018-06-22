@@ -458,7 +458,7 @@ def test_wmt2016():
                              root='tests/data/wmt2016')
     newstests = [nlp.data.WMT2016(segment='newstest%d' %i, src_lang='en', tgt_lang='de',
                                   root='tests/data/wmt2016') for i in range(2012, 2017)]
-    assert len(train) == 4500966
+    assert len(train) == 4549428
     assert tuple(len(ele) for ele in newstests) == (3003, 3000, 3003, 2169, 2999)
 
     newstest_2012_2015 = nlp.data.WMT2016(segment=['newstest%d' %i for i in range(2012, 2016)],
@@ -487,7 +487,7 @@ def test_wmt2014():
                              root='tests/data/wmt2014')
     newstests = [nlp.data.WMT2014(segment='newstest%d' %i, src_lang='en', tgt_lang='de',
                                   root='tests/data/wmt2014') for i in range(2009, 2015)]
-    assert len(train) == 4493328
+    assert len(train) == 4509333
     assert tuple(len(ele) for ele in newstests) == (2525, 2489, 3003, 3003, 3000, 2737)
 
     newstest_2009_2013 = nlp.data.WMT2014(segment=['newstest%d' %i for i in range(2009, 2014)],
