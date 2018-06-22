@@ -453,36 +453,70 @@ def test_iwlst2015():
         assert lhs[0] == rhs[1] and rhs[0] == lhs[1]
 
 
+def test_wmt2016():
+    train = nlp.data.WMT2016(segment='train', src_lang='en', tgt_lang='de',
+                             root='tests/data/wmt2016')
+    newstests = [nlp.data.WMT2016(segment='newstest%d' %i, src_lang='en', tgt_lang='de',
+                                  root='tests/data/wmt2016') for i in range(2012, 2017)]
+    assert len(train) == 4549428
+    assert tuple(len(ele) for ele in newstests) == (3003, 3000, 3003, 2169, 2999)
+
+    newstest_2012_2015 = nlp.data.WMT2016(segment=['newstest%d' %i for i in range(2012, 2016)],
+                                          src_lang='en', tgt_lang='de', root='tests/data/wmt2016')
+    assert len(newstest_2012_2015) == 3003 + 3000 + 3003 + 2169
+
+
 def test_wmt2016bpe():
     train = nlp.data.WMT2016BPE(segment='train', src_lang='en', tgt_lang='de',
-                                root='tests/data/wmt2016')
+                                root='tests/data/wmt2016bpe')
     newstests = [nlp.data.WMT2016BPE(segment='newstest%d' %i, src_lang='en', tgt_lang='de',
-                                     root='tests/data/wmt2016') for i in range(2012, 2017)]
+                                     root='tests/data/wmt2016bpe') for i in range(2012, 2017)]
     assert len(train) == 4500966
     assert tuple(len(ele) for ele in newstests) == (3003, 3000, 3003, 2169, 2999)
 
     newstest_2012_2015 = nlp.data.WMT2016BPE(segment=['newstest%d' %i for i in range(2012, 2016)],
-                                             src_lang='en', tgt_lang='de', root='tests/data/wmt2016')
+                                             src_lang='en', tgt_lang='de', root='tests/data/wmt2016bpe')
     assert len(newstest_2012_2015) == 3003 + 3000 + 3003 + 2169
     en_vocab, de_vocab = train.src_vocab, train.tgt_vocab
     assert len(en_vocab) == 36548
     assert len(de_vocab) == 36548
 
 
+def test_wmt2014():
+    train = nlp.data.WMT2014(segment='train', src_lang='en', tgt_lang='de',
+                             root='tests/data/wmt2014')
+    newstests = [nlp.data.WMT2014(segment='newstest%d' %i, src_lang='en', tgt_lang='de',
+                                  root='tests/data/wmt2014') for i in range(2009, 2015)]
+    assert len(train) == 4509333
+    assert tuple(len(ele) for ele in newstests) == (2525, 2489, 3003, 3003, 3000, 2737)
+
+    newstest_2009_2013 = nlp.data.WMT2014(segment=['newstest%d' %i for i in range(2009, 2014)],
+                                          src_lang='en', tgt_lang='de', root='tests/data/wmt2014')
+    assert len(newstest_2009_2013) == 2525 + 2489 + 3003 + 3003 + 3000
+
+    newstest_2014 = nlp.data.WMT2014(segment='newstest2014', src_lang='de', tgt_lang='en',
+                                     root='tests/data/wmt2014')
+    assert len(newstest_2014) == 3003
+
+
 def test_wmt2014bpe():
     train = nlp.data.WMT2014BPE(segment='train', src_lang='en', tgt_lang='de',
-                                root='tests/data/wmt2014')
+                                root='tests/data/wmt2014bpe')
     newstests = [nlp.data.WMT2014BPE(segment='newstest%d' %i, src_lang='en', tgt_lang='de',
-                                     root='tests/data/wmt2014') for i in range(2009, 2015)]
+                                     root='tests/data/wmt2014bpe') for i in range(2009, 2015)]
     assert len(train) == 4493328
-    assert tuple(len(ele) for ele in newstests) == (2525, 2489, 3003, 3003, 3000, 3003)
+    assert tuple(len(ele) for ele in newstests) == (2525, 2489, 3003, 3003, 3000, 2737)
 
     newstest_2009_2013 = nlp.data.WMT2014BPE(segment=['newstest%d' %i for i in range(2009, 2014)],
-                                             src_lang='en', tgt_lang='de', root='tests/data/wmt2014')
+                                             src_lang='en', tgt_lang='de', root='tests/data/wmt2014bpe')
     assert len(newstest_2009_2013) == 2525 + 2489 + 3003 + 3003 + 3000
     en_vocab, de_vocab = train.src_vocab, train.tgt_vocab
     assert len(en_vocab) == 36794
     assert len(de_vocab) == 36794
+
+    newstest_2014 = nlp.data.WMT2014BPE(segment='newstest2014', src_lang='de', tgt_lang='en',
+                                        root='tests/data/wmt2014bpe')
+    assert len(newstest_2014) == 3003
 
 ###############################################################################
 # Stream

@@ -47,14 +47,15 @@ from mxnet import gluon
 from mxnet.gluon.data import ArrayDataset, SimpleDataset
 from mxnet.gluon.data import DataLoader
 import gluonnlp.data.batchify as btf
+from gluonnlp.data import NLTKMosesDetokenizer
 from gluonnlp.data import ConstWidthBucket, LinearWidthBucket, ExpWidthBucket,\
-    FixedBucketSampler, IWSLT2015, WMT2016BPE
+    FixedBucketSampler, IWSLT2015, WMT2016, WMT2016BPE, WMT2014, WMT2014BPE
 from gluonnlp.model import BeamSearchScorer
 from translation import NMTModel, BeamSearchTranslator
 from transformer import get_transformer_encoder_decoder
 from loss import SoftmaxCEMaskedLoss, LabelSmoothing
 from utils import logging_config
-from bleu import compute_bleu
+from bleu import _bpe_to_words, compute_bleu
 import _constants as _C
 
 np.random.seed(100)
@@ -117,6 +118,13 @@ parser.add_argument('--num_averages', type=int, default=5,
                          'This is only used if average_checkpoint is True')
 parser.add_argument('--average_start', type=int, default=5,
                     help='Perform average SGD on last average_start epochs')
+parser.add_argument('--bleu', type=str, default='t2t',
+                    help='Schemes for computing bleu score. It can be: '
+                    '"t2t": it uses similar steps in get_ende_bleu.sh in tensor2tensor repository,'
+                    ' where compound words are put in ATAT format; '
+                    '"13a": This uses official WMT tokenization and produces the same results'
+                    ' as official script (mteval-v13a.pl) used by WMT; '
+                    '"intl": This use international tokenization in mteval-v14a.pl')
 parser.add_argument('--log_interval', type=int, default=100, metavar='N',
                     help='report interval')
 parser.add_argument('--save_dir', type=str, default='transformer_out',
@@ -226,6 +234,12 @@ def load_translation_data(dataset, src_lang='en', tgt_lang='vi'):
         data_train = WMT2016BPE('train', src_lang=src_lang, tgt_lang=tgt_lang)
         data_val = WMT2016BPE('newstest2013', src_lang=src_lang, tgt_lang=tgt_lang)
         data_test = WMT2016BPE('newstest2014', src_lang=src_lang, tgt_lang=tgt_lang)
+    elif dataset == 'WMT2014BPE':
+        common_prefix = 'WMT2014BPE_{}_{}_{}_{}'.format(src_lang, tgt_lang,
+                                                        args.src_max_len, args.tgt_max_len)
+        data_train = WMT2014BPE('train', src_lang=src_lang, tgt_lang=tgt_lang)
+        data_val = WMT2014BPE('newstest2013', src_lang=src_lang, tgt_lang=tgt_lang)
+        data_test = WMT2014BPE('newstest2014', src_lang=src_lang, tgt_lang=tgt_lang)
     else:
         raise NotImplementedError
     src_vocab, tgt_vocab = data_train.src_vocab, data_train.tgt_vocab
@@ -242,9 +256,24 @@ def load_translation_data(dataset, src_lang='en', tgt_lang='vi'):
     if not data_test_processed:
         data_test_processed = process_dataset(data_test, src_vocab, tgt_vocab)
         cache_dataset(data_test_processed, common_prefix + '_test')
-    fetch_tgt_sentence = lambda src, tgt: tgt.split()
-    val_tgt_sentences = list(data_val.transform(fetch_tgt_sentence))
-    test_tgt_sentences = list(data_test.transform(fetch_tgt_sentence))
+    if args.bleu == 't2t':
+        fetch_tgt_sentence = lambda src, tgt: tgt.split()
+        val_tgt_sentences = list(data_val.transform(fetch_tgt_sentence))
+        test_tgt_sentences = list(data_test.transform(fetch_tgt_sentence))
+    elif args.bleu == '13a' or args.bleu == 'intl':
+        fetch_tgt_sentence = lambda src, tgt: tgt
+        if dataset == 'WMT2016BPE':
+            val_text = WMT2016('newstest2013', src_lang=src_lang, tgt_lang=tgt_lang)
+            test_text = WMT2016('newstest2014', src_lang=src_lang, tgt_lang=tgt_lang)
+        elif dataset == 'WMT2014BPE':
+            val_text = WMT2014('newstest2013', src_lang=src_lang, tgt_lang=tgt_lang)
+            test_text = WMT2014('newstest2014', src_lang=src_lang, tgt_lang=tgt_lang)
+        else:
+            raise NotImplementedError
+        val_tgt_sentences = list(val_text.transform(fetch_tgt_sentence))
+        test_tgt_sentences = list(test_text.transform(fetch_tgt_sentence))
+    else:
+        raise NotImplementedError
     return data_train_processed, data_val_processed, data_test_processed, \
            val_tgt_sentences, test_tgt_sentences, src_vocab, tgt_vocab
 
@@ -299,7 +328,7 @@ encoder, decoder = get_transformer_encoder_decoder(units=args.num_units,
                                                    scaled=args.scaled)
 model = NMTModel(src_vocab=src_vocab, tgt_vocab=tgt_vocab, encoder=encoder, decoder=decoder,
                  share_embed=True, embed_size=args.num_units, tie_weights=True,
-                 embed_initializer=None, prefix='parallel_transformer_')
+                 embed_initializer=None, prefix='transformer_')
 model.initialize(init=mx.init.Xavier(magnitude=args.magnitude), ctx=ctx)
 static_alloc = True
 model.hybridize(static_alloc=static_alloc)
@@ -319,6 +348,8 @@ loss_function.hybridize(static_alloc=static_alloc)
 
 test_loss_function = SoftmaxCEMaskedLoss()
 test_loss_function.hybridize(static_alloc=static_alloc)
+
+detokenizer = NLTKMosesDetokenizer()
 
 
 def evaluate(data_loader, context=ctx[0]):
@@ -363,14 +394,23 @@ def evaluate(data_loader, context=ctx[0]):
     avg_loss = avg_loss / avg_loss_denom
     real_translation_out = [None for _ in range(len(all_inst_ids))]
     for ind, sentence in zip(all_inst_ids, translation_out):
-        real_translation_out[ind] = sentence
+        if args.bleu == 't2t':
+            real_translation_out[ind] = sentence
+        elif args.bleu == '13a' or args.bleu == 'intl':
+            real_translation_out[ind] = detokenizer.detokenize(_bpe_to_words(sentence),
+                                                               return_str=True)
+        else:
+            raise NotImplementedError
     return avg_loss, real_translation_out
 
 
 def write_sentences(sentences, file_path):
     with io.open(file_path, 'w', encoding='utf-8') as of:
         for sent in sentences:
-            of.write(' '.join(sent) + '\n')
+            if isinstance(sent, (list, tuple)):
+                of.write(' '.join(sent) + '\n')
+            else:
+                of.write(sent + '\n')
 
 
 def train():
@@ -427,6 +467,18 @@ def train():
                                   batch_sampler=test_batch_sampler,
                                   batchify_fn=test_batchify_fn,
                                   num_workers=8)
+
+    if args.bleu == 't2t':
+        bpe = True
+        split_compound_word = True
+        tokenized = True
+    elif args.bleu == '13a' or args.bleu == 'intl':
+        bpe = False
+        split_compound_word = False
+        tokenized = False
+    else:
+        raise NotImplementedError
+
     best_valid_bleu = 0.0
     step_num = 0
     warmup_steps = args.warmup_steps
@@ -506,12 +558,16 @@ def train():
         mx.nd.waitall()
         valid_loss, valid_translation_out = evaluate(val_data_loader, ctx[0])
         valid_bleu_score, _, _, _, _ = compute_bleu([val_tgt_sentences], valid_translation_out,
-                                                    bpe=True, split_compound_word=True)
+                                                    tokenized=tokenized, tokenizer=args.bleu,
+                                                    split_compound_word=split_compound_word,
+                                                    bpe=bpe)
         logging.info('[Epoch {}] valid Loss={:.4f}, valid ppl={:.4f}, valid bleu={:.2f}'
                      .format(epoch_id, valid_loss, np.exp(valid_loss), valid_bleu_score * 100))
         test_loss, test_translation_out = evaluate(test_data_loader, ctx[0])
         test_bleu_score, _, _, _, _ = compute_bleu([test_tgt_sentences], test_translation_out,
-                                                   bpe=True, split_compound_word=True)
+                                                   tokenized=tokenized, tokenizer=args.bleu,
+                                                   split_compound_word=split_compound_word,
+                                                   bpe=bpe)
         logging.info('[Epoch {}] test Loss={:.4f}, test ppl={:.4f}, test bleu={:.2f}'
                      .format(epoch_id, test_loss, np.exp(test_loss), test_bleu_score * 100))
         write_sentences(valid_translation_out,
@@ -542,12 +598,14 @@ def train():
         model.load_params(os.path.join(args.save_dir, 'valid_best.params'), ctx)
     valid_loss, valid_translation_out = evaluate(val_data_loader, ctx[0])
     valid_bleu_score, _, _, _, _ = compute_bleu([val_tgt_sentences], valid_translation_out,
-                                                bpe=True, split_compound_word=True)
+                                                tokenized=tokenized, tokenizer=args.bleu, bpe=bpe,
+                                                split_compound_word=split_compound_word)
     logging.info('Best model valid Loss={:.4f}, valid ppl={:.4f}, valid bleu={:.2f}'
                  .format(valid_loss, np.exp(valid_loss), valid_bleu_score * 100))
     test_loss, test_translation_out = evaluate(test_data_loader, ctx[0])
     test_bleu_score, _, _, _, _ = compute_bleu([test_tgt_sentences], test_translation_out,
-                                               bpe=True, split_compound_word=True)
+                                               tokenized=tokenized, tokenizer=args.bleu, bpe=bpe,
+                                               split_compound_word=split_compound_word)
     logging.info('Best model test Loss={:.4f}, test ppl={:.4f}, test bleu={:.2f}'
                  .format(test_loss, np.exp(test_loss), test_bleu_score * 100))
     write_sentences(valid_translation_out,
