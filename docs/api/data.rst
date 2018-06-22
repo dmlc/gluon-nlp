@@ -104,7 +104,9 @@ We provide several standard datasets for machine translation.
     :nosignatures:
 
     IWSLT2015
+    WMT2014
     WMT2014BPE
+    WMT2016
     WMT2016BPE
     SQuAD
 
@@ -148,6 +150,7 @@ with `Dataset.transform` method.
     PadSequence
     NLTKMosesTokenizer
     SpacyTokenizer
+    NLTKMosesDetokenizer
 
 Samplers
 --------
