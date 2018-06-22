@@ -21,6 +21,22 @@ Language Modeling
     StandardRNN
     get_model
 
+Convolutional Encoder
+----------------------
+
+.. autosummary::
+    :nosignatures:
+
+    ConvolutionalEncoder
+
+Highway Network
+-----------------
+
+.. autosummary::
+    :nosignatures:
+
+    Highway
+
 Attention Cell
 --------------
 
