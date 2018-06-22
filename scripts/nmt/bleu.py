@@ -173,7 +173,7 @@ def compute_bleu(reference_corpus_list, translation_corpus, tokenized=True,
     tokenizer: str or None, default '13a'
         '13a': follow the tokenizer in mteval-v13a.pl
         'intl': follow the international tokenzier in mteval-v14.pl
-        None: identity mapping on the stringi.
+        None: identity mapping on the string.
         This option is ignored if tokenized is True
     max_n: int, default 4
         Maximum n-gram order to use when computing BLEU score.

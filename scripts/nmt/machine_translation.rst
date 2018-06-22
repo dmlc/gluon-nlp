@@ -13,7 +13,7 @@ Use the following command to train the GNMT model on the IWSLT2015 dataset.
 
 It gets test BLEU score equals to 26.22.
 
-Use the following command to train the Transformer model on the WMT14 dataset for English to German translation.
+Use the following commands to train the Transformer model on the WMT14 dataset for English to German translation.
 
 .. code-block:: console
 
@@ -23,3 +23,12 @@ Use the following command to train the Transformer model on the WMT14 dataset fo
                           --average_start 5 --num_buckets 20 --bleu 13a
 
 It gets official mteval-v13a BLEU score equals to 26.81 on newstest2014. This result is obtained by using averaged SGD in last 5 epochs.
+If we use international tokenization (i.e., ``--bleu intl``), we can obtain bleu score equals to 27.65. If we use ``--bleu t2t``,
+we obtain test BLEU score equals to 28.74 on newstest2014. This result is obtained on tweaked reference, where the tokenized reference text
+is put in ATAT format for historical reason and following preprocessing pipeline is done:
+
+.. code-block:: console
+
+    mosesdecoder/scripts/tokenizer/normalize-punctuation.perl -l de
+    mosesdecoder/scripts/tokenizer/remove-non-printing-char.perl
+    mosesdecoder/scripts/tokenizer/tokenizer.perl -q -no-escape -protected mosesdecoder/scripts/tokenizer/basic-protected-patterns -l de.

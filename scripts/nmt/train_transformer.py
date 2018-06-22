@@ -123,7 +123,8 @@ parser.add_argument('--bleu', type=str, default='t2t',
                     '"t2t": it uses similar steps in get_ende_bleu.sh in tensor2tensor repository,'
                     ' where compound words are put in ATAT format; '
                     '"13a": This uses official WMT tokenization and produces the same results'
-                    ' as official script (mteval-v13a.pl) used by WMT')
+                    ' as official script (mteval-v13a.pl) used by WMT; '
+                    '"intl": This use international tokenization in mteval-v14a.pl')
 parser.add_argument('--log_interval', type=int, default=100, metavar='N',
                     help='report interval')
 parser.add_argument('--save_dir', type=str, default='transformer_out',
@@ -259,7 +260,7 @@ def load_translation_data(dataset, src_lang='en', tgt_lang='vi'):
         fetch_tgt_sentence = lambda src, tgt: tgt.split()
         val_tgt_sentences = list(data_val.transform(fetch_tgt_sentence))
         test_tgt_sentences = list(data_test.transform(fetch_tgt_sentence))
-    elif args.bleu == '13a':
+    elif args.bleu == '13a' or args.bleu == 'intl':
         fetch_tgt_sentence = lambda src, tgt: tgt
         if dataset == 'WMT2016BPE':
             val_text = WMT2016('newstest2013', src_lang=src_lang, tgt_lang=tgt_lang)
@@ -395,7 +396,7 @@ def evaluate(data_loader, context=ctx[0]):
     for ind, sentence in zip(all_inst_ids, translation_out):
         if args.bleu == 't2t':
             real_translation_out[ind] = sentence
-        elif args.bleu == '13a':
+        elif args.bleu == '13a' or args.bleu == 'intl':
             real_translation_out[ind] = detokenizer.detokenize(_bpe_to_words(sentence),
                                                                return_str=True)
         else:
@@ -471,7 +472,7 @@ def train():
         bpe = True
         split_compound_word = True
         tokenized = True
-    elif args.bleu == '13a':
+    elif args.bleu == '13a' or args.bleu == 'intl':
         bpe = False
         split_compound_word = False
         tokenized = False
@@ -557,13 +558,13 @@ def train():
         mx.nd.waitall()
         valid_loss, valid_translation_out = evaluate(val_data_loader, ctx[0])
         valid_bleu_score, _, _, _, _ = compute_bleu([val_tgt_sentences], valid_translation_out,
-                                                    tokenized=tokenized, bpe=bpe,
+                                                    tokenized=tokenized, tokenizer=args.bleu, bpe=bpe,
                                                     split_compound_word=split_compound_word)
         logging.info('[Epoch {}] valid Loss={:.4f}, valid ppl={:.4f}, valid bleu={:.2f}'
                      .format(epoch_id, valid_loss, np.exp(valid_loss), valid_bleu_score * 100))
         test_loss, test_translation_out = evaluate(test_data_loader, ctx[0])
         test_bleu_score, _, _, _, _ = compute_bleu([test_tgt_sentences], test_translation_out,
-                                                   tokenized=tokenized, bpe=bpe,
+                                                   tokenized=tokenized, tokenizer=args.bleu, bpe=bpe,
                                                    split_compound_word=split_compound_word)
         logging.info('[Epoch {}] test Loss={:.4f}, test ppl={:.4f}, test bleu={:.2f}'
                      .format(epoch_id, test_loss, np.exp(test_loss), test_bleu_score * 100))
@@ -595,13 +596,13 @@ def train():
         model.load_params(os.path.join(args.save_dir, 'valid_best.params'), ctx)
     valid_loss, valid_translation_out = evaluate(val_data_loader, ctx[0])
     valid_bleu_score, _, _, _, _ = compute_bleu([val_tgt_sentences], valid_translation_out,
-                                                tokenized=tokenized, bpe=bpe,
+                                                tokenized=tokenized, tokenizer=args.bleu, bpe=bpe,
                                                 split_compound_word=split_compound_word)
     logging.info('Best model valid Loss={:.4f}, valid ppl={:.4f}, valid bleu={:.2f}'
                  .format(valid_loss, np.exp(valid_loss), valid_bleu_score * 100))
     test_loss, test_translation_out = evaluate(test_data_loader, ctx[0])
     test_bleu_score, _, _, _, _ = compute_bleu([test_tgt_sentences], test_translation_out,
-                                               tokenized=tokenized, bpe=bpe,
+                                               tokenized=tokenized, tokenizer=args.bleu, bpe=bpe,
                                                split_compound_word=split_compound_word)
     logging.info('Best model test Loss={:.4f}, test ppl={:.4f}, test bleu={:.2f}'
                  .format(test_loss, np.exp(test_loss), test_bleu_score * 100))
