@@ -112,7 +112,7 @@ def parse_args():
     group.add_argument('--logdir', type=str, default='logs',
                        help='Directory to store logs.')
     group.add_argument('--log-interval', type=int, default=100)
-    group.add_argument('--eval-interval', type=int, default=50000,
+    group.add_argument('--eval-interval', type=int,
                        help='Evaluate every --eval-interval iterations '
                        'in addition to at the end of every epoch.')
     group.add_argument('--no-eval-analogy', action='store_true',
@@ -432,14 +432,16 @@ def train(args):
                     mx.nd.waitall()
                 evaluate(args, embedding, vocab, num_update)
 
-        # Log at the end of every epoch
-        with print_time('mx.nd.waitall()'):
-            mx.nd.waitall()
+    # Evaluate
+    with print_time('mx.nd.waitall()'):
+        mx.nd.waitall()
+    with print_time('evaluate'):
         evaluate(args, embedding, vocab, num_update,
                  eval_analogy=(epoch == args.epochs - 1
                                and not args.no_eval_analogy))
 
-        # Save params at end of epoch
+    # Save params
+    with print_time('save parameters'):
         save_params(args, embedding, embedding_out)
 
 
