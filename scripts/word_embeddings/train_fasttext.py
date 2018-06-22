@@ -68,7 +68,7 @@ def parse_args():
 
     # Computation options
     group = parser.add_argument_group('Computation arguments')
-    group.add_argument('--batch-size', type=int, default=1024,
+    group.add_argument('--batch-size', type=int, default=2048,
                        help='Batch size for training.')
     group.add_argument('--epochs', type=int, default=5, help='Epoch limit')
     group.add_argument('--gpu', type=int, nargs='+',
@@ -108,7 +108,7 @@ def parse_args():
     group.add_argument('--optimizer', type=str, default='adagrad')
     group.add_argument('--lr', type=float, default=0.05)
     group.add_argument('--optimizer-subwords', type=str, default='adagrad')
-    group.add_argument('--lr-subwords', type=float, default=0.01)
+    group.add_argument('--lr-subwords', type=float, default=0.5)
 
     # Logging
     group = parser.add_argument_group('Logging arguments')
