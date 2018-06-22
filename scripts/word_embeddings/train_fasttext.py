@@ -36,11 +36,14 @@ Word2Vec embedding model was introduced by
   of word representations in vector space. ICLR Workshop , 2013
 
 """
+# Set a few mxnet specific environment variables
+import os
+os.environ['MXNET_FORCE_ADDTAKEGRAD'] = '1'  # Workaround for #11314
+
 import argparse
 import functools
 import itertools
 import logging
-import os
 import random
 import sys
 import tempfile
