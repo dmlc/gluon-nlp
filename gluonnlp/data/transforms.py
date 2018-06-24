@@ -24,10 +24,11 @@ from __future__ import absolute_import
 from __future__ import print_function
 
 __all__ = ['ClipSequence', 'PadSequence', 'NLTKMosesTokenizer', 'SpacyTokenizer',
-           'NLTKMosesDetokenizer']
+           'NLTKMosesDetokenizer', 'JiebaTokenizer', 'NLTKStanfordSegmenter']
 
 import numpy as np
 import mxnet as mx
+import os
 
 
 class ClipSequence(object):
@@ -326,3 +327,149 @@ class NLTKMosesDetokenizer(object):
             List of words or detokenized text
         """
         return self._detokenizer.detokenize(sample, return_str=return_str)
+
+
+class JiebaTokenizer(object):
+    r"""Apply the jieba Tokenizer.
+
+    Users of this class are required to `install jieba <https://github.com/fxsjy/jieba>`_
+
+    Parameters
+    ----------
+    lang : str
+        The language to tokenize. Default is "zh", i.e, Chinese.
+
+    Examples
+    --------
+    >>> tokenizer = JiebaTokenizer()
+    >>> tokenizer(u"我来到北京清华大学")
+    ['我',
+     '来到',
+     '北京',
+     '清华大学']
+    >>> tokenizer(u"小明硕士毕业于中国科学院计算所，后在日本京都大学深造")
+    ['小明',
+     '硕士',
+     '毕业',
+     '于',
+     '中国科学院',
+     '计算所',
+     '，',
+     '后',
+     '在',
+     '日本京都大学',
+     '深造']
+
+    """
+    def __init__(self):
+        try:
+            import jieba
+        except ImportError:
+            raise ImportError('jieba is not installed. You must install jieba in order to use the '
+                              'JiebaTokenizer. You can refer to the official installation guide '
+                              'in https://github.com/fxsjy/jieba')
+        self._tokenizer = jieba
+
+    def __call__(self, sample):
+        """
+
+        Parameters
+        ----------
+        sample: str
+            The Chinese sentence to tokenize. Better not to input sentence in other languages
+            since this class is mainly used for Chinese Word Segmentation.
+
+        Returns
+        -------
+        ret : list of strs
+            List of tokens
+        """
+        # we use default cutting mode provided by jieba, i.e., accurate mode
+        return [tok for tok in self._tokenizer.cut(sample) if tok != ' ' and tok != '']
+
+
+class NLTKStanfordSegmenter(object):
+    r"""Apply the NLTK Wrapper of Stanford Chinese Word Segmenter.
+
+    Users of this class are required to `install NLTK <https://www.nltk.org/install.html>`_ and
+    download Stanford Word Segmenter `<https://nlp.stanford.edu/software/segmenter.html#Download>`_
+
+    Parameters
+    ----------
+    path_to_jar : str, Path to stanford-segmenter.jar.
+
+    path_to_slf4j : str, Path to slf4j-api.jar.
+
+    path_to_dict : str, Path to external dictionary dict-chris6.ser.gz.
+
+    path_to_model : str, Path to pre-trained segmentation model.
+        options are pku.gz and ctb.gz.
+
+    path_to_sihan_corpora_dict : str, Path to folder for storing dictionaries in sighan corpora.
+
+    java_class : str, default 'edu.stanford.nlp.ie.crf.CRFClassifier'
+        The model used for segmentation
+
+    Examples
+    --------
+    >>> tokenizer = NLTKStanfordSegmenter(
+        path_to_jar='PATH_TO_STANFORD_HOME/segmenter/stanford-segmenter-3.9.1.jar',
+        path_to_model="PATH_TO_STANFORD_HOME/segmenter/data/pku.gz",
+        path_to_dict="PATH_TO_STANFORD_HOME/segmenter/data/dict-chris6.ser.gz",
+        path_to_slf4j="PATH_TO_STANFORD_HOME/segmenter/slf4j-api.jar",
+        path_to_sihan_corpora_dict="PATH_TO_STANFORD_HOME/segmenter/data"
+        java_class="edu.stanford.nlp.ie.crf.CRFClassifier")
+    >>> tokenizer(u"我来到北京清华大学")
+    ['我',
+     '来到',
+     '北京',
+     '清华大学']
+    >>> tokenizer(u"小明硕士毕业于中国科学院计算所，后在日本京都大学深造")
+    ['小明',
+     '硕士',
+     '毕业',
+     '于',
+     '中国',
+     '科学院',
+     '计算所',
+     '，',
+     '后',
+     '在',
+     '日本'
+     '京都大学',
+     '深造']
+
+    """
+    def __init__(self, path_to_jar, path_to_slf4j, path_to_dict,
+                 path_to_model, path_to_sihan_corpora_dict,
+                 java_class='edu.stanford.nlp.ie.crf.CRFClassifier'):
+        try:
+            from nltk.tokenize import StanfordSegmenter
+        except ImportError:
+            raise ImportError('NLTK or relevant packages are not installed. You must install NLTK '
+                              'in order to use the NLTKStanfordSegmenter. You can refer to the '
+                              'official installation guide in https://www.nltk.org/install.html .')
+        assert os.path.exists(path_to_jar), "stanford-segmenter.jar NOT FOUND!"
+        assert os.path.exists(path_to_model), "segmentation model NOT FOUND!"
+        assert os.path.exists(path_to_slf4j), "slf4j-api.jar NOT FOUND!"
+        assert os.path.exists(path_to_dict), "dictionary file NOT FOUND!"
+        self._tokenizer = StanfordSegmenter(java_class=java_class, path_to_jar=path_to_jar,
+                                            path_to_slf4j=path_to_slf4j, path_to_dict=path_to_dict,
+                                            path_to_sihan_corpora_dict=path_to_sihan_corpora_dict,
+                                            path_to_model=path_to_model)
+
+    def __call__(self, sample):
+        """
+
+        Parameters
+        ----------
+        sample: str
+            The Chinese sentence to tokenize. Better not to input sentence in other languages
+            since this class is mainly used for Chinese Word Segmentation.
+
+        Returns
+        -------
+        ret : list of strs
+            List of tokens
+        """
+        return [tok for tok in self._tokenizer.segment(sample).strip().split()]
