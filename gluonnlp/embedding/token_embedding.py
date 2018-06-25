@@ -374,18 +374,55 @@ class TokenEmbedding(object):
 
     @property
     def idx_to_token(self):
+        """Index to token mapping.
+
+        Returns
+        -------
+        list of str:
+             A list of indexed tokens where the list indices and the token
+             indices are aligned.
+
+        """
         return self._idx_to_token
 
     @property
     def token_to_idx(self):
+        """Token to index mapping.
+
+        Returns
+        -------
+        dict of int to strs:
+             A dictionary of tokens with their corresponding index numbers;
+             inverse vocab.
+        """
         return self._token_to_idx
 
     @property
     def idx_to_vec(self):
+        """Index to vector mapping.
+
+        Returns
+        -------
+        mxnet.ndarray.NDArray:
+            For all the indexed tokens in this embedding, this NDArray maps
+            each token's index to an embedding vector.
+
+        """
         return self._idx_to_vec
 
     @property
     def unknown_token(self):
+        """Unknown token representation.
+
+        Any token that is unknown will be indexed using the representation of
+        unknown_token.
+
+        Returns
+        -------
+        hashable object or None:
+            Unknown token representation
+
+        """
         return self._unknown_token
 
     def __contains__(self, x):
@@ -410,12 +447,10 @@ class TokenEmbedding(object):
     def __getitem__(self, tokens):
         """Looks up embedding vectors of text tokens.
 
-
         Parameters
         ----------
         tokens : str or list of strs
             A token or a list of tokens.
-
 
         Returns
         -------
@@ -438,7 +473,6 @@ class TokenEmbedding(object):
 
     def __setitem__(self, tokens, new_embedding):
         """Updates embedding vectors for tokens.
-
 
         Parameters
         ----------
