@@ -28,13 +28,17 @@ clean:
 	rm -rf tests/data | true
 	rm scripts/*.zip | true
 	rm docs/examples/*.zip | true
+	rm docs/examples/*/*.ipynb | true
 	make -C docs clean
+
+compile_notebooks:
+	find docs/examples/* -type f -name '*.md' | xargs -n 1 -I{} python docs/md2ipynb.py {}
 
 dist_scripts:
 	find scripts/* -type d -prune | grep -v 'tests\|__pycache__' | xargs -n 1 -I{} zip -r {}.zip {}
 
-dist_notebooks:
-	find docs/examples/* -type d -prune | grep -v 'tests\|__pycache__' | xargs -n 1 -I{} zip -r {}.zip {}
+dist_notebooks: compile_notebooks
+	find docs/examples/* -type d -prune | grep -v 'tests\|__pycache__' | xargs -n 1 -I{} zip -r {}.zip {} -x "*.md"
 
 test:
 	py.test -v --capture=no --durations=0  tests/unittest scripts

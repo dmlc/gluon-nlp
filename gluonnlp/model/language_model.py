@@ -92,7 +92,7 @@ class AWDRNN(train.AWDRNN):
             the state with shape `(1, batch_size, num_hidden)`
         """
         encoded = self.embedding(inputs)
-        if not begin_state:
+        if begin_state is None:
             begin_state = self.begin_state(batch_size=inputs.shape[1])
         out_states = []
         for i, (e, s) in enumerate(zip(self.encoder, begin_state)):
@@ -159,7 +159,7 @@ class StandardRNN(train.StandardRNN):
             the state with shape `(num_layers, batch_size, num_hidden)`
         """
         encoded = self.embedding(inputs)
-        if not begin_state:
+        if begin_state is None:
             begin_state = self.begin_state(batch_size=inputs.shape[1])
         encoded, state = self.encoder(encoded, begin_state)
         if self._dropout:

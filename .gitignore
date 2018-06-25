@@ -116,3 +116,5 @@ docs/html
 # release
 scripts/*.zip
 docs/examples/*.zip
+
+conda
