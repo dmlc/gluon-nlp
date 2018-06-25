@@ -26,9 +26,10 @@ from __future__ import print_function
 __all__ = ['ClipSequence', 'PadSequence', 'NLTKMosesTokenizer', 'SpacyTokenizer',
            'NLTKMosesDetokenizer', 'JiebaTokenizer', 'NLTKStanfordSegmenter']
 
+import os
 import numpy as np
 import mxnet as mx
-import os
+
 
 
 class ClipSequence(object):
@@ -396,19 +397,24 @@ class NLTKStanfordSegmenter(object):
 
     Parameters
     ----------
-    path_to_jar : str, Path to stanford-segmenter.jar.
+    path_to_jar : str
+        Path to stanford-segmenter.jar.
 
-    path_to_slf4j : str, Path to slf4j-api.jar.
+    path_to_slf4j : str
+        Path to slf4j-api.jar.
 
-    path_to_dict : str, Path to external dictionary dict-chris6.ser.gz.
+    path_to_dict : str
+        Path to external dictionary dict-chris6.ser.gz.
 
-    path_to_model : str, Path to pre-trained segmentation model.
+    path_to_model : str
+        Path to pre-trained segmentation model.
         options are pku.gz and ctb.gz.
 
-    path_to_sihan_corpora_dict : str, Path to folder for storing dictionaries in sighan corpora.
+    path_to_sihan_corpora_dict : str
+        Path to folder for storing dictionaries in sighan corpora.
 
     java_class : str, default 'edu.stanford.nlp.ie.crf.CRFClassifier'
-        The model used for segmentation
+        The learning algorithm used for segmentation
 
     Examples
     --------
