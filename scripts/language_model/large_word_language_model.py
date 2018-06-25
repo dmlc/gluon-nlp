@@ -47,13 +47,12 @@ import numpy as np
 import mxnet as mx
 from mxnet import gluon, autograd
 import gluonnlp as nlp
+from sampler import LogUniformSampler
 
 import argparse
 curr_path = os.path.dirname(os.path.abspath(os.path.expanduser(__file__)))
 sys.path.append(os.path.join(curr_path, '..', '..'))
 
-#parser.add_argument('--model', type=str, default='lstm',
-#                    help='type of recurrent net (rnn_tanh, rnn_relu, lstm, gru)')
 parser = argparse.ArgumentParser(description=
                                  'MXNet Big RNN/LSTM Language Model on Google Billion Words')
 parser.add_argument('--save', type=str, default='model.params',
@@ -94,6 +93,8 @@ parser.add_argument('--lr', type=float, default=0.2,
                     help='initial learning rate')
 parser.add_argument('--clip', type=float, default=10.0,
                     help='gradient clipping by global norm.')
+parser.add_argument('--profile', action='store_true',
+                    help='Whether to use profiler')
 parser.add_argument('--unique', action='store_true',
                     help='Whether to use unique samples')
 parser.add_argument('--test_mode', action='store_true',
@@ -112,17 +113,44 @@ np.random.seed(args.seed)
 context = [mx.cpu()] if args.gpus is None or args.gpus == '' else \
           [mx.gpu(int(x)) for x in args.gpus.split(',')]
 
-assert args.batch_size % len(context) == 0, \
-    'Total batch size must be multiple of the number of devices'
-
 train_data_stream, test_data_stream = \
     [nlp.data.GBWStream(segment=segment, skip_empty=False, bos=None, eos='<eos>')
      for segment in ['train', 'test']]
 
 vocab = nlp.data.GBWVocab()
+ntokens = len(vocab)
 
-train_batch_size = args.batch_size
-train_data = nlp.data.PrefetchingStream(train_data_stream.bptt_batchify(vocab, args.bptt, train_batch_size))
+sampler = LogUniformSampler(ntokens, args.k)
+
+def _load(xs):
+    ret = []
+    for x, ctx in zip(xs, context):
+        if isinstance(x, tuple):
+            ret.append([y.as_in_context(ctx) for y in x])
+        else:
+            ret.append(x.as_in_context(ctx))
+    return ret
+
+def _split_and_sample(data):
+    x, y, m = data
+    num_ctx = len(context)
+    xs = gluon.utils.split_data(x, num_ctx, batch_axis=1, even_split=True)
+    ys = gluon.utils.split_data(y, num_ctx, batch_axis=1, even_split=True)
+    ms = gluon.utils.split_data(m, num_ctx, batch_axis=1, even_split=True)
+    ss = [sampler.draw(x) for x in xs]
+
+    xs = _load(xs)
+    ys = _load(ys)
+    ms = _load(ms)
+    ss = _load(ss)
+    return xs, ys, ms, ss
+
+train_batch_size = args.batch_size * len(context)
+train_data = train_data_stream.bptt_batchify(vocab, args.bptt, train_batch_size)
+train_data = train_data.transform(_split_and_sample)
+train_data = nlp.data.PrefetchingStream(train_data)
+
+
 test_batch_size = 1
 test_data = nlp.data.PrefetchingStream(test_data_stream.bptt_batchify(vocab, args.bptt, test_batch_size))
 checkpoint_interval = args.checkpoint_interval
@@ -146,17 +174,15 @@ print(args)
 ###############################################################################
 
 
-ntokens = len(vocab)
-sampler = mx.nd.contrib.rand_zipfian_unique if args.unique else mx.nd.contrib.rand_zipfian
 eval_model = nlp.model.language_model.BigRNN(ntokens, args.emsize, args.nhid,
                                              args.nlayers, args.nproj,
                                              dropout=args.dropout)
 model = nlp.model.language_model.train.BigRNN(ntokens, args.emsize, args.nhid,
                                               args.nlayers, args.nproj, args.k,
-                                              dropout=args.dropout, sampler=sampler)
+                                              dropout=args.dropout)
 print(model)
 model.initialize(mx.init.Xavier(), ctx=context)
-model.hybridize()
+model.hybridize(static_alloc=True)
 
 trainer_params = {'learning_rate': args.lr, 'wd': 0, 'eps': args.eps}
 
@@ -175,54 +201,62 @@ def train():
     start_train_time = time.time()
     parameters = model.collect_params().values()
     encoder_params = model.encoder.collect_params().values()
-    embedding_params = model.embedding.collect_params().values()
+    embedding_params = list(model.embedding.collect_params().values())
     for epoch in range(args.epochs):
         total_L = 0.0
         start_epoch_time = time.time()
         start_log_interval_time = time.time()
-        hiddens = [model.begin_state(batch_size=args.batch_size//len(context),
+        hiddens = [model.begin_state(batch_size=args.batch_size,
                                      func=mx.nd.zeros, ctx=ctx) for ctx in context]
         nbatch = 0
-        for data, target, mask in train_data:
+        if args.profile:
+            mx.profiler.set_config(profile_all=True, filename='gluon.json')
+            mx.profiler.set_state('run')
+
+        for data_list, target_list, mask_list, sample_list in train_data:
             nbatch += 1
-            data_list = gluon.utils.split_and_load(data, context, batch_axis=1, even_split=True)
-            target_list = gluon.utils.split_and_load(target, context, batch_axis=1, even_split=True)
-            mask_list = gluon.utils.split_and_load(mask, context, batch_axis=1, even_split=True)
             hiddens = detach(hiddens)
             Ls = []
             L = 0
             with autograd.record():
-                for j, (X, y, m, h) in enumerate(zip(data_list, target_list, mask_list, hiddens)):
-                    output, new_target, h = model(X, y, h)
+                for j, (X, y, m, s, h) in enumerate(zip(data_list, target_list, mask_list, sample_list, hiddens)):
+                    output, new_target, h = model(X, y, h, s)
                     l = loss(output, new_target) * m.reshape((-1,))
-                    L = L + l.as_in_context(context[0]) / X.size
                     Ls.append(l/X.size)
                     hiddens[j] = h
-            L.backward()
-            # TODO rescale embedding grad
+
+            autograd.backward(Ls)
+
+            # rescale embedding grad
             for d in data_list:
                 x = embedding_params[0].grad(d.context)
                 x *= args.batch_size
-            encoder_grads = [p.grad(d.context) for p in encoder_params for d in data_list]
-            gluon.utils.clip_global_norm(encoder_grads, args.clip)
+                encoder_grad = [p.grad(d.context) for p in encoder_params]
+                # perform gradient clipping per ctx
+                gluon.utils.clip_global_norm(encoder_grad, args.clip)
 
             trainer.step(len(context))
 
             total_L += sum([mx.nd.sum(L).asscalar() for L in Ls])
+            if args.profile and nbatch == 10:
+                mx.profiler.set_state('stop')
+                exit()
+                break
+
             if nbatch % args.log_interval == 0:
                 cur_L = total_L / args.log_interval / len(context)
                 ppl = math.exp(cur_L) if cur_L < 100 else 99999999
                 print('[Epoch %d Batch %d] loss %.2f, ppl %.2f, '
                       'throughput %.2f samples/s'
                       %(epoch, nbatch, cur_L, ppl,
-                        args.batch_size*args.log_interval/(time.time()-start_log_interval_time)))
+                        train_batch_size*args.log_interval/(time.time()-start_log_interval_time)))
                 total_L = 0.0
                 start_log_interval_time = time.time()
             # early stop for testing
             if checkpoint_interval and nbatch % checkpoint_interval == 0:
                 sys.stdout.flush()
-                model.save_params('/dev/shm/epoch_%d_%s'%(epoch, args.save))
-                eval_model.load_params('/dev/shm/epoch_%d_%s'%(epoch, args.save))
+                model.save_parameters('/dev/shm/epoch_%d_%s'%(epoch, args.save))
+                eval_model.load_parameters('/dev/shm/epoch_%d_%s'%(epoch, args.save))
                 final_test_L = evaluate(test_data, test_batch_size, ctx=mx.cpu())
                 print('[Epoch %d Batch %d] test loss %.2f, test ppl %.2f'%(epoch, nbatch, final_test_L, math.exp(final_test_L)))
                 sys.stdout.flush()
@@ -238,8 +272,8 @@ def train():
         #val_L = evaluate(val_data, val_batch_size, context[0])
         #print('[Epoch %d] time cost %.2fs, valid loss %.2f, valid ppl %.2f'%(
         #    epoch, time.time()-start_epoch_time, val_L, math.exp(val_L)))
-        model.save_params('epoch_%d_%s'%(epoch, args.save))
-        eval_model.load_params('epoch_%d_%s'%(epoch, args.save))
+        model.save_parameters('epoch_%d_%s'%(epoch, args.save))
+        eval_model.load_parameters('epoch_%d_%s'%(epoch, args.save))
         final_test_L = evaluate(test_data, test_batch_size, ctx=mx.cpu())
         print('Epoch %d: test loss %.2f, test ppl %.2f'%(epoch, final_test_L, math.exp(final_test_L)))
 
@@ -292,7 +326,7 @@ def evaluate(data_stream, batch_size, ctx=None):
     return total_L / ntotal
 
 def load():
-    model.load_params(args.load)
+    model.load_parameters(args.load)
 
 if __name__ == '__main__':
     start_pipeline_time = time.time()
@@ -302,7 +336,7 @@ if __name__ == '__main__':
         train()
     epoch = args.epochs - 1
     nbatch = -1
-    eval_model.load_params('/dev/shm/epoch_%d_%s'%(epoch, args.save))
+    eval_model.load_parameters('/dev/shm/epoch_%d_%s'%(epoch, args.save))
     final_test_L = evaluate(test_data, test_batch_size, ctx=mx.cpu())
     print('[Epoch %d Batch %d] test loss %.2f, test ppl %.2f'%(epoch, nbatch, final_test_L, math.exp(final_test_L)))
     print('Total time cost %.2fs'%(time.time()-start_pipeline_time))

@@ -24,7 +24,7 @@ from mxnet.gluon import nn, Block, contrib, rnn
 
 from gluonnlp.model.utils import _get_rnn_layer
 from gluonnlp.model.utils import apply_weight_drop
-from ..block import RNNCellLayer, SampledLogits
+from ..block import RNNCellLayer, SampledLogits, SampledLogitsDense
 
 class AWDRNN(Block):
     """AWD language model by salesforce.
@@ -304,7 +304,7 @@ class BigRNN(Block):
     """
     def __init__(self, vocab_size, embed_size, hidden_size, num_layers,
                  projection_size, num_sampled, dropout=0.0,
-                 sampler=nd.contrib.rand_zipfian, **kwargs):
+                 sampler=nd.contrib.rand_zipfian, dense_weight=False, **kwargs):
         super(BigRNN, self).__init__(**kwargs)
         self._embed_size = embed_size
         self._hidden_size = hidden_size
@@ -314,6 +314,7 @@ class BigRNN(Block):
         self._vocab_size = vocab_size
         self._num_sampled = num_sampled
         self._sampler = sampler
+        self._dense_weight = dense_weight
         assert num_layers == 1
 
         with self.name_scope():
@@ -322,9 +323,12 @@ class BigRNN(Block):
             self.decoder = self._get_decoder()
 
     def _get_embedding(self):
-        embedding = nn.Sequential()
+        embedding = nn.HybridSequential() if self._dense_weight else nn.Sequential()
         with embedding.name_scope():
-            embedding.add(contrib.nn.SparseEmbedding(self._vocab_size, self._embed_size))
+            if self._dense_weight:
+                embedding.add(nn.Embedding(self._vocab_size, self._embed_size, sparse_grad=True, prefix='embedding0_'))
+            else:
+                embedding.add(contrib.nn.SparseEmbedding(self._vocab_size, self._embed_size, prefix='embedding0_'))
             if self._dropout:
                 embedding.add(nn.Dropout(self._dropout))
         return embedding
@@ -339,26 +343,21 @@ class BigRNN(Block):
         return encoder
 
     def _get_decoder(self):
-        output = SampledLogits(self._vocab_size, self._num_sampled,
-                               self._projection_size, remove_accidental_hits=True)
-        '''
-        # TODO add sampling
-        output = nn.Sequential()
-        # TODO make remove_accidental_hits optional?
-        with output.name_scope():
-             decoder = SampledLogits(self._vocab_size, self._num_sampled,
-                                     self._projection_size, remove_accidental_hits=True)
-             output.add(decoder)
-        '''
+        prefix = 'decoder0_'
+        if self._dense_weight:
+            output = SampledLogitsDense(self._vocab_size, self._num_sampled,
+                               self._projection_size, remove_accidental_hits=True, prefix=prefix)
+        else:
+            output = SampledLogits(self._vocab_size, self._num_sampled,
+                               self._projection_size, remove_accidental_hits=True, prefix=prefix)
         return output
 
     def begin_state(self, **kwargs):
         return self.encoder.begin_state(**kwargs)
 
-    def forward(self, inputs, label, begin_state): # pylint: disable=arguments-differ
+    def forward(self, inputs, label, begin_state, sampled_value): # pylint: disable=arguments-differ
         """Defines the forward computation. """
         encoded = self.embedding(inputs)
-        sampled_value = self._sampler(label, self._num_sampled, self._vocab_size, ctx=label.context)
         sampled_classes, exp_cnt_true, exp_cnt_sampled = sampled_value
         # derive lenght from inputs
         length = 20

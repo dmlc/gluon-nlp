@@ -490,7 +490,7 @@ class BigRNN(Block):
         return encoder
 
     def _get_decoder(self):
-        output = nn.Dense(self._vocab_size, bias_shape=(self._vocab_size, 1))
+        output = nn.Dense(self._vocab_size, bias_shape=(self._vocab_size, 1), prefix='decoder0_')
         return output
 
     def begin_state(self, **kwargs):
