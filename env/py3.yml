@@ -11,5 +11,6 @@ dependencies:
   - pytest
   - flaky
   - pytest-cov
+  - pytest-datadir
   - pip:
     - mxnet-cu80>=1.3.0b20180629

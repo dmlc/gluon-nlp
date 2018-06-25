@@ -22,13 +22,19 @@ from __future__ import print_function
 
 import re
 import os
-import time
+import sys
 
 import pytest
 
 import gluonnlp as nlp
 from mxnet import ndarray as nd
 from mxnet.test_utils import *
+import numpy as np
+
+if sys.version_info[0] == 3:
+    _str_types = (str, )
+else:
+    _str_types = (str, unicode)
 
 
 def _get_test_str_of_tokens(token_delim, seq_delim):
@@ -462,11 +468,14 @@ def test_embedding_get_and_pretrain_file_names():
         nlp.embedding.list_sources('unknown$$')
 
 
-def test_vocab_set_embedding_with_one_custom_embedding(tmpdir):
+@pytest.mark.parametrize('allow_extend', [True, False])
+def test_vocab_set_embedding_with_one_custom_embedding(tmpdir, allow_extend):
     embed_root = str(tmpdir)
     embed_name = 'my_embed'
     elem_delim = '\t'
     pretrain_file = 'my_pretrain_file1.txt'
+
+    from_file = functools.partial(nlp.embedding.TokenEmbedding.from_file, allow_extend=allow_extend)
 
     _mk_my_pretrain_file(os.path.join(embed_root, embed_name), elem_delim, pretrain_file)
 
@@ -480,8 +489,7 @@ def test_vocab_set_embedding_with_one_custom_embedding(tmpdir):
                           padding_token=None, bos_token=None, eos_token=None,
                           reserved_tokens=['<pad>'])
 
-    e1 = nlp.embedding.TokenEmbedding.from_file(pretrain_file_path, elem_delim,
-                                                init_unknown_vec=nd.ones)
+    e1 = from_file(pretrain_file_path, elem_delim, init_unknown_vec=nd.ones)
 
     assert v1.embedding is None
     assert v1_no_unk.embedding is None
@@ -582,6 +590,7 @@ def test_vocab_set_embedding_with_one_custom_embedding(tmpdir):
                                   [1, 1, 1, 1, 1]])
                         )
     with pytest.raises(KeyError):
+        # The TokenEmbedding assigned to a vocab is never extendable
         v1_no_unk.embedding['<unk>'] = nd.array([0, 0, 0, 0, 0])
     v1.embedding['<unk>'] = nd.array([10, 10, 10, 10, 10])
     assert_almost_equal(v1.embedding.idx_to_vec.asnumpy(),
@@ -599,12 +608,15 @@ def test_vocab_set_embedding_with_one_custom_embedding(tmpdir):
     assert v1_no_unk.embedding is None
 
 
-def test_vocab_set_embedding_with_two_custom_embeddings(tmpdir):
+@pytest.mark.parametrize('allow_extend', [True, False])
+def test_vocab_set_embedding_with_two_custom_embeddings(tmpdir, allow_extend):
     embed_root = str(tmpdir)
     embed_name = 'my_embed'
     elem_delim = '\t'
     pretrain_file1 = 'my_pretrain_file1.txt'
     pretrain_file2 = 'my_pretrain_file2.txt'
+
+    from_file = functools.partial(nlp.embedding.TokenEmbedding.from_file, allow_extend=allow_extend)
 
     _mk_my_pretrain_file(os.path.join(embed_root, embed_name), elem_delim, pretrain_file1)
     _mk_my_pretrain_file2(os.path.join(embed_root, embed_name), elem_delim, pretrain_file2)
@@ -612,9 +624,8 @@ def test_vocab_set_embedding_with_two_custom_embeddings(tmpdir):
     pretrain_file_path1 = os.path.join(embed_root, embed_name, pretrain_file1)
     pretrain_file_path2 = os.path.join(embed_root, embed_name, pretrain_file2)
 
-    my_embed1 = nlp.embedding.TokenEmbedding.from_file(pretrain_file_path1, elem_delim,
-                                                       init_unknown_vec=nd.ones)
-    my_embed2 = nlp.embedding.TokenEmbedding.from_file(pretrain_file_path2, elem_delim)
+    my_embed1 = from_file(pretrain_file_path1, elem_delim, init_unknown_vec=nd.ones)
+    my_embed2 = from_file(pretrain_file_path2, elem_delim)
 
     counter = nlp.data.utils.Counter(['a', 'b', 'b', 'c', 'c', 'c', 'some_word$'])
 
@@ -666,11 +677,9 @@ def test_vocab_set_embedding_with_two_custom_embeddings(tmpdir):
     pretrain_file_path3 = os.path.join(embed_root, embed_name, pretrain_file3)
     pretrain_file_path4 = os.path.join(embed_root, embed_name, pretrain_file4)
 
-    my_embed3 = nlp.embedding.TokenEmbedding.from_file(pretrain_file_path3, elem_delim,
-                                                       init_unknown_vec=nd.ones,
-                                                       unknown_token='<unk1>')
-    my_embed4 = nlp.embedding.TokenEmbedding.from_file(pretrain_file_path4, elem_delim,
-                                                       unknown_token='<unk2>')
+    my_embed3 = from_file(pretrain_file_path3, elem_delim, init_unknown_vec=nd.ones,
+                          unknown_token='<unk1>')
+    my_embed4 = from_file(pretrain_file_path4, elem_delim, unknown_token='<unk2>')
 
     v2 = nlp.Vocab(counter, max_size=None, min_freq=1, unknown_token='<unk>', padding_token=None,
                    bos_token=None, eos_token=None, reserved_tokens=None)
@@ -821,6 +830,29 @@ def test_token_embedding_from_serialized_file(tmpdir):
 def test_token_embedding_from_file_S3_with_custom_unknown_token(unknown_token):
     embed = nlp.embedding.create('glove', source='glove.6B.50d',
                                  unknown_token=unknown_token)
+
+
+def test_token_embedding_unknown_lookup():
+    class NaiveLookup(object):
+        dim = 300
+
+        def __getitem__(self, tokens):
+            if isinstance(tokens, _str_types):
+                return nd.zeros(self.dim)
+            else:
+                return nd.zeros((len(tokens), self.dim))
+
+    token_embedding = nlp.embedding.token_embedding.TokenEmbedding(
+        unknown_lookup=NaiveLookup(), unknown_autoextend=False)
+    assert 'hello' not in token_embedding.token_to_idx
+    assert np.all(np.isclose(0, token_embedding['hello'].asnumpy()))
+    assert 'hello' not in token_embedding.token_to_idx
+
+    token_embedding = nlp.embedding.token_embedding.TokenEmbedding(
+        unknown_lookup=NaiveLookup(), unknown_autoextend=True)
+    assert 'hello' not in token_embedding.token_to_idx
+    assert np.all(np.isclose(0, token_embedding['hello'].asnumpy()))
+    assert 'hello' in token_embedding.token_to_idx
 
 
 def test_token_embedding_serialization():

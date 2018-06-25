@@ -61,6 +61,7 @@ setup(
         ],
         'dev': [
             'pytest',
+            'pytest-datadir',
             'recommonmark',
             'sphinx-gallery',
             'sphinx_rtd_theme',
