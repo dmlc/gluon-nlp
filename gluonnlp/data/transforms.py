@@ -455,10 +455,10 @@ class NLTKStanfordSegmenter(object):
             raise ImportError('NLTK or relevant packages are not installed. You must install NLTK '
                               'in order to use the NLTKStanfordSegmenter. You can refer to the '
                               'official installation guide in https://www.nltk.org/install.html .')
-        assert os.path.exists(path_to_jar), "stanford-segmenter.jar NOT FOUND!"
-        assert os.path.exists(path_to_model), "segmentation model NOT FOUND!"
-        assert os.path.exists(path_to_slf4j), "slf4j-api.jar NOT FOUND!"
-        assert os.path.exists(path_to_dict), "dictionary file NOT FOUND!"
+        assert os.path.exists(path_to_jar), 'stanford-segmenter.jar NOT FOUND!'
+        assert os.path.exists(path_to_model), 'segmentation model NOT FOUND!'
+        assert os.path.exists(path_to_slf4j), 'slf4j-api.jar NOT FOUND!'
+        assert os.path.exists(path_to_dict), 'dictionary file NOT FOUND!'
         self._tokenizer = StanfordSegmenter(java_class=java_class, path_to_jar=path_to_jar,
                                             path_to_slf4j=path_to_slf4j, path_to_dict=path_to_dict,
                                             path_to_sihan_corpora_dict=path_to_sihan_corpora_dict,
