@@ -25,12 +25,20 @@ __all__ = [
     'DeduplicatedFasttextEmbeddingModel'
 ]
 
+import struct
+import sys
 import numpy as np
 from mxnet import cpu, nd
 from mxnet.gluon import Block, HybridBlock, nn
 
 from ... import embedding as emb
 from ...data.batchify import Pad
+from ...vocab import create_subword_function
+
+if sys.version_info[0] == 3:
+    _str_types = (str, )
+else:
+    _str_types = (str, unicode)
 
 
 class EmbeddingModel(Block):
@@ -50,6 +58,24 @@ class EmbeddingModel(Block):
     def __init__(self, embedding_size, **kwargs):
         super(EmbeddingModel, self).__init__(**kwargs)
         self.embedding_size = embedding_size
+
+    def __getitem__(self, tokens):
+        """Looks up embedding vectors of text tokens.
+
+        Parameters
+        ----------
+        tokens : str or list of strs
+            A token or a list of tokens.
+
+        Returns
+        -------
+        mxnet.ndarray.NDArray:
+            The embedding vector(s) of the token(s). According to numpy
+            conventions, if `tokens` is a string, returns a 1-D NDArray
+            (vector); if `tokens` is a list of strings, returns a 2-D NDArray
+            (matrix) of shape=(len(tokens), vec_len).
+        """
+        raise NotImplementedError
 
     def to_token_embedding(self, tokens, unknown_behavior='impute_raise',
                            batch_size=1024, ctx=cpu()):
@@ -194,6 +220,7 @@ class _MaskedSumEmbedding(HybridBlock):
 
 class _FasttextEmbeddingModel(EmbeddingModel):
     """Base class for FastText embedding models."""
+    FASTTEXT_FILEFORMAT_MAGIC = 793712314
 
     def __init__(self, token_to_idx, subword_function, embedding_size,
                  weight_initializer=None, sparse_grad=True, **kwargs):
@@ -217,6 +244,121 @@ class _FasttextEmbeddingModel(EmbeddingModel):
                 weight_initializer=weight_initializer,
                 sparse_grad=sparse_grad,
             )
+
+    @classmethod
+    def load_fasttext_format(cls, path, ctx=cpu(), **kwargs):
+        """Create an instance of the class and load weights.
+
+        Load the weights from the fastText binary format created by
+        https://github.com/facebookresearch/fastText
+
+        Parameters
+        ----------
+        path : str
+            Path to the .bin model file.
+        ctx : mx.Context, default mx.cpu()
+            Context to initialize the weights on.
+        kwargs : dict
+            Keyword arguments are passed to the class initializer.
+
+        """
+        with open(path, 'rb') as f:
+            new_format, dim, bucket, minn, maxn, = cls._read_model_params(f)
+            idx_to_token = cls._read_vocab(f, new_format)
+            dim, matrix = cls._read_vectors(f, new_format, bucket,
+                                            len(idx_to_token))
+
+        token_to_idx = {token: idx for idx, token in enumerate(idx_to_token)}
+        word_idx_to_vec = nd.array(matrix[:len(idx_to_token)])
+        subword_idx_to_vec = nd.array(matrix[len(idx_to_token):])
+        subword_function = create_subword_function(
+            'NGramHashes', num_subwords=subword_idx_to_vec.shape[0],
+            ngrams=list(range(minn, maxn + 1)))
+
+        self = cls(token_to_idx, subword_function, embedding_size=dim,
+                   **kwargs)
+
+        self.initialize(ctx=ctx)
+        self.embedding.weight.set_data(word_idx_to_vec)
+        self.subword_embedding.embedding.weight.set_data(subword_idx_to_vec)
+
+        return self
+
+    @classmethod
+    def _read_model_params(cls, file_handle):
+        magic, _ = cls._struct_unpack(file_handle, '@2i')
+        if magic == cls.FASTTEXT_FILEFORMAT_MAGIC:  # newer format
+            new_format = True
+            dim, _, _, _, _, _, _, _, bucket, minn, maxn, _, _ = \
+                cls._struct_unpack(file_handle, '@12i1d')
+        else:  # older format
+            new_format = False
+            dim = magic
+            _, _, _, _, _, _, bucket, minn, maxn, _, _ = \
+                cls._struct_unpack(file_handle, '@10i1d')
+
+        return new_format, dim, bucket, minn, maxn,
+
+    @classmethod
+    def _read_vocab(cls, file_handle, new_format, encoding='utf8'):
+        vocab_size, nwords, nlabels = cls._struct_unpack(file_handle, '@3i')
+        if nlabels > 0:
+            raise NotImplementedError(
+                'Provided model is not a word embeddings model.')
+        logging.info('Loading %s words from fastText model.', vocab_size)
+
+        cls._struct_unpack(file_handle, '@1q')  # number of tokens
+        if new_format:
+            pruneidx_size, = cls._struct_unpack(file_handle, '@q')
+
+        idx_to_token = []
+        for _ in range(vocab_size):
+            word_bytes = b''
+            char_byte = file_handle.read(1)
+            # Read vocab word
+            while char_byte != b'\x00':
+                word_bytes += char_byte
+                char_byte = file_handle.read(1)
+            word = word_bytes.decode(encoding)
+            _, _ = cls._struct_unpack(file_handle, '@qb')
+
+            idx_to_token.append(word)
+
+        assert len(idx_to_token) == nwords, \
+            'Mismatch between words in pretrained model file ({} words), ' \
+            'and expected number of words ({} words)'.format(len(idx_to_token), nwords)
+
+        if new_format:
+            for _ in range(pruneidx_size):
+                cls._struct_unpack(file_handle, '@2i')
+
+        return idx_to_token
+
+    @classmethod
+    def _read_vectors(cls, file_handle, new_format, bucket, vocab_len):
+        if new_format:
+            # bool quant_input in fasttext.cc
+            cls._struct_unpack(file_handle, '@?')
+        num_vectors, dim = cls._struct_unpack(file_handle, '@2q')
+        assert num_vectors == bucket + vocab_len
+
+        # Vectors stored by Matrix::save
+        float_size = struct.calcsize('@f')
+        if float_size == 4:
+            dtype = np.dtype(np.float32)
+        elif float_size == 8:
+            dtype = np.dtype(np.float64)
+
+        vectors_ngrams = np.fromfile(file_handle, dtype=dtype,
+                                     count=num_vectors * dim) \
+                           .reshape((num_vectors, dim))
+
+        return dim, vectors_ngrams
+
+    @classmethod
+    def _struct_unpack(cls, file_handle, fmt):
+        num_bytes = struct.calcsize(fmt)
+        return struct.unpack(fmt, file_handle.read(num_bytes))
 
     def _to_token_embedding_batch(self, batch, unknown_behavior, ctx):
         # Handle subwords
@@ -262,6 +404,49 @@ class _FasttextEmbeddingModel(EmbeddingModel):
 
         # Compute embeddings
         return self(words, mask, subwords, subwords_mask)
+
+    def __getitem__(self, tokens):
+        """Looks up embedding vectors of text tokens.
+
+
+        Parameters
+        ----------
+        tokens : str or list of strs
+            A token or a list of tokens.
+
+
+        Returns
+        -------
+        mxnet.ndarray.NDArray:
+            The embedding vector(s) of the token(s). According to numpy
+            conventions, if `tokens` is a string, returns a 1-D NDArray
+            (vector); if `tokens` is a list of strings, returns a 2-D NDArray
+            (matrix) of shape=(len(tokens), vec_len).
+        """
+        squeeze = False
+        if isinstance(tokens, _str_types):
+            tokens = [tokens]
+            squeeze = True
+
+        vecs = []
+
+        for token in tokens:
+            if token in self.token_to_idx:
+                # Word is part of fastText model
+                word = nd.array([self.token_to_idx[token]])
+                wordmask = nd.ones_like(word)
+            else:
+                word = nd.array([0])
+                wordmask = nd.zeros_like(word)
+            subwords = self.subword_function([token])[0]
+            vec = self(word, wordmask, subwords, nd.ones_like(subwords))
+            vecs.append(vec)
+
+        if squeeze:
+            assert len(vecs) == 1
+            return vecs[0].squeeze()
+        else:
+            return nd.concat(*vecs, dim=0)
 
 
 class FasttextEmbeddingModel(_FasttextEmbeddingModel, HybridBlock):

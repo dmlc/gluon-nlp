@@ -762,7 +762,7 @@ def test_download_embed():
 
             file_path = Test._get_file_path(embedding_root, source)
 
-            self._load_embedding(file_path, ' ', init_unknown_vec)
+            self._load_embedding(file_path, ' ')
 
     test_embed = nlp.embedding.create('test', embedding_root='tests/data/embedding')
     assert_almost_equal(test_embed['hello'].asnumpy(), (nd.arange(5) + 1).asnumpy())
@@ -832,8 +832,7 @@ def test_token_embedding_serialization():
                                     '29b9a6511cf4b5aae293c44a9ec1365b74f2a2f8')}
         namespace = 'test'
 
-        def __init__(self, embedding_root='tests/data/embedding',
-                     init_unknown_vec=nd.zeros, **kwargs):
+        def __init__(self, embedding_root='tests/data/embedding', **kwargs):
             source = 'embedding_test'
             Test._check_source(source)
 
@@ -841,7 +840,7 @@ def test_token_embedding_serialization():
 
             file_path = Test._get_file_path(embedding_root, source)
 
-            self._load_embedding(file_path, ' ', init_unknown_vec)
+            self._load_embedding(file_path, ' ')
 
     emb = nlp.embedding.create('test', embedding_root='tests/data/embedding')
 
