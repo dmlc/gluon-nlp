@@ -60,8 +60,9 @@ def _pad_arrs_to_max_length(arrs, pad_axis, pad_val, use_shared_mem=False):
         else:
             slices = [slice(None) for _ in range(arr.ndim)]
             slices[pad_axis] = slice(0, arr.shape[pad_axis])
-            slices = [slice(i, i + 1)] + slices
-            ret[tuple(slices)] = arr
+            if slices[pad_axis].start != slices[pad_axis].stop:
+                slices = [slice(i, i + 1)] + slices
+                ret[tuple(slices)] = arr
     return ret, original_length
 
 

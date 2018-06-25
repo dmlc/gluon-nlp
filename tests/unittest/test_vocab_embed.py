@@ -22,13 +22,19 @@ from __future__ import print_function
 
 import re
 import os
-import time
+import sys
 
 import pytest
 
 import gluonnlp as nlp
 from mxnet import ndarray as nd
 from mxnet.test_utils import *
+import numpy as np
+
+if sys.version_info[0] == 3:
+    _str_types = (str, )
+else:
+    _str_types = (str, unicode)
 
 
 def _get_test_str_of_tokens(token_delim, seq_delim):
@@ -821,6 +827,29 @@ def test_token_embedding_from_serialized_file(tmpdir):
 def test_token_embedding_from_file_S3_with_custom_unknown_token(unknown_token):
     embed = nlp.embedding.create('glove', source='glove.6B.50d',
                                  unknown_token=unknown_token)
+
+
+def test_token_embedding_unknown_lookup():
+    class NaiveLookup(object):
+        dim = 300
+
+        def __getitem__(self, tokens):
+            if isinstance(tokens, _str_types):
+                return nd.zeros(self.dim)
+            else:
+                return nd.zeros((len(tokens), self.dim))
+
+    token_embedding = nlp.embedding.token_embedding.TokenEmbedding(
+        unknown_lookup=NaiveLookup(), unknown_autoextend=False)
+    assert 'hello' not in token_embedding.token_to_idx
+    assert np.all(np.isclose(0, token_embedding['hello'].asnumpy()))
+    assert 'hello' not in token_embedding.token_to_idx
+
+    token_embedding = nlp.embedding.token_embedding.TokenEmbedding(
+        unknown_lookup=NaiveLookup(), unknown_autoextend=True)
+    assert 'hello' not in token_embedding.token_to_idx
+    assert np.all(np.isclose(0, token_embedding['hello'].asnumpy()))
+    assert 'hello' in token_embedding.token_to_idx
 
 
 def test_token_embedding_serialization():

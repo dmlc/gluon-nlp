@@ -290,7 +290,7 @@ class _FasttextEmbeddingModel(EmbeddingModel):
         subword_idx_to_vec = nd.array(matrix[len(idx_to_token):])
         subword_function = create_subword_function(
             'NGramHashes', num_subwords=subword_idx_to_vec.shape[0],
-            ngrams=list(range(minn, maxn + 1)))
+            ngrams=list(range(minn, maxn + 1)), special_tokens='</s>')
 
         self = cls(token_to_idx, subword_function, embedding_size=dim,
                    **kwargs)
@@ -389,12 +389,13 @@ class _FasttextEmbeddingModel(EmbeddingModel):
             # Check that subwords are present  for all tokens
             without_subwords_idxs = np.where(
                 (subwords_mask.max(axis=1) == 0).asnumpy())[0].tolist()
-            if len(without_subwords_idxs):
-                without_subwords = [
-                    batch[idx] for idx in without_subwords_idxs
-                ]
+            without_subwords_and_words = [
+                batch[idx] for idx in without_subwords_idxs
+                if batch[idx] not in self.token_to_idx
+            ]
+            if len(without_subwords_and_words):
                 raise ValueError('No subwords were found for: ' +
-                                 ', '.join(without_subwords))
+                                 ', '.join(without_subwords_and_words))
 
         subwords = subwords.as_in_context(ctx)
         subwords_mask = subwords_mask.as_in_context(ctx)
@@ -428,12 +429,10 @@ class _FasttextEmbeddingModel(EmbeddingModel):
     def __getitem__(self, tokens):
         """Looks up embedding vectors of text tokens.
 
-
         Parameters
         ----------
         tokens : str or list of strs
             A token or a list of tokens.
-
 
         Returns
         -------
@@ -459,7 +458,13 @@ class _FasttextEmbeddingModel(EmbeddingModel):
                 word = nd.array([0])
                 wordmask = nd.zeros_like(word)
             subwords = self.subword_function([token])[0]
-            vec = self(word, wordmask, subwords, nd.ones_like(subwords))
+            if subwords.shape[0]:
+                vec = self(word, wordmask, subwords, nd.ones_like(subwords))
+            else:
+                # token is a special_token and subwords are not taken into account
+                vec = self(word, wordmask, nd.zeros((1, 1)), nd.zeros((1, 1)))
+                assert token in self.token_to_idx
+
             vecs.append(vec)
 
         if squeeze:
