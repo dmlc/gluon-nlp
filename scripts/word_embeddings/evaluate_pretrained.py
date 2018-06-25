@@ -121,18 +121,19 @@ if __name__ == '__main__':
                                            source=args_.embedding_source)
 
     if args_.max_vocab_size:
-        token_embedding._idx_to_token = \
-            token_embedding._idx_to_token[:args_.max_vocab_size]
-        token_embedding._idx_to_vec = \
-            token_embedding._idx_to_vec[:args_.max_vocab_size]
+        size = min(len(token_embedding._idx_to_token), args_.max_vocab_size)
+        token_embedding._idx_to_token = token_embedding._idx_to_token[:size]
+        token_embedding._idx_to_vec = token_embedding._idx_to_vec[:size]
         token_embedding._token_to_idx = {
             token: idx
             for idx, token in enumerate(token_embedding._idx_to_token)
         }
 
+    name = args_.embedding_name + '-' + args_.embedding_source
+
     similarity_results = evaluation.evaluate_similarity(
         args_, token_embedding, ctx, logfile=os.path.join(
-            args_.logdir, 'similarity-{}.tsv'.format(args_.embedding_name)))
+            args_.logdir, 'similarity-{}.tsv'.format(name)))
     analogy_results = evaluation.evaluate_analogy(
         args_, token_embedding, ctx, logfile=os.path.join(
-            args_.logdir, 'analogy-{}.tsv'.format(args_.embedding_name)))
+            args_.logdir, 'analogy-{}.tsv'.format(name)))

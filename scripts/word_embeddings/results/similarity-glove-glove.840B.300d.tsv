@@ -1,0 +1,14 @@
+0	similarity	WordSim353	{"segment": "all"}	cosinesimilarity	0.7477140434603474	0
+0	similarity	WordSim353	{"segment": "similarity"}	cosinesimilarity	0.8031279189530608	0
+0	similarity	WordSim353	{"segment": "relatedness"}	cosinesimilarity	0.6876127770042136	0
+0	similarity	MEN	{"segment": "full"}	cosinesimilarity	0.8017464143744032	1
+0	similarity	MEN	{"segment": "dev"}	cosinesimilarity	0.8030366190013768	0
+0	similarity	MEN	{"segment": "test"}	cosinesimilarity	0.7984702974101442	1
+0	similarity	RadinskyMTurk	{}	cosinesimilarity	0.698341293643584	6
+0	similarity	RareWords	{}	cosinesimilarity	0.5294188997951476	583
+0	similarity	SimLex999	{}	cosinesimilarity	0.4070286608341969	1
+0	similarity	SimVerb3500	{}	cosinesimilarity	0.2825072688341665	2
+0	similarity	SemEval17Task2	{"segment": "trial"}	cosinesimilarity	0.8627450980392157	1
+0	similarity	SemEval17Task2	{"segment": "test"}	cosinesimilarity	0.6414719525563283	15
+0	similarity	BakerVerb143	{}	cosinesimilarity	0.341463278485937	0
+0	similarity	YangPowersVerb130	{}	cosinesimilarity	0.5709364242164541	0
