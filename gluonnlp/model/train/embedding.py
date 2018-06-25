@@ -25,8 +25,10 @@ __all__ = [
     'DeduplicatedFasttextEmbeddingModel'
 ]
 
+import logging
 import struct
 import sys
+
 import numpy as np
 from mxnet import cpu, nd
 from mxnet.gluon import Block, HybridBlock, nn
@@ -58,6 +60,21 @@ class EmbeddingModel(Block):
     def __init__(self, embedding_size, **kwargs):
         super(EmbeddingModel, self).__init__(**kwargs)
         self.embedding_size = embedding_size
+
+    def __contains__(self, token):
+        """Checks if a vector for token could be computed.
+
+        Parameters
+        ----------
+        token : str
+            A token.
+
+        Returns
+        -------
+        bool:
+            True if a vector for token can be computed.
+        """
+        raise NotImplementedError
 
     def __getitem__(self, tokens):
         """Looks up embedding vectors of text tokens.
@@ -404,6 +421,9 @@ class _FasttextEmbeddingModel(EmbeddingModel):
 
         # Compute embeddings
         return self(words, mask, subwords, subwords_mask)
+
+    def __contains__(self, token):
+        return True  # supports computing vector for any str
 
     def __getitem__(self, tokens):
         """Looks up embedding vectors of text tokens.
