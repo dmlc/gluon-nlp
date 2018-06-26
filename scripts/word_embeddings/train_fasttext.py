@@ -463,7 +463,7 @@ def evaluate(args, embedding, vocab, global_step, eval_analogy=False):
     mx.nd.waitall()
 
     token_embedding = nlp.embedding.TokenEmbedding(unknown_token=None)
-    token_embedding.extend(eval_tokens, embedding[eval_tokens])
+    token_embedding[eval_tokens] = embedding[eval_tokens]
 
     results = evaluation.evaluate_similarity(
         args, token_embedding, context[0], logfile=os.path.join(

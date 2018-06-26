@@ -23,6 +23,7 @@ from __future__ import print_function
 import re
 import os
 import sys
+import functools
 
 import pytest
 
@@ -370,17 +371,20 @@ def _mk_my_invalid_pretrain_file2(path, token_delim, pretrain_file):
         fout.write(seqs)
 
 
-def test_token_embedding_from_file(tmpdir):
+@pytest.mark.parametrize('allow_extend', [True, False])
+def test_token_embedding_from_file(tmpdir, allow_extend):
     embed_root = str(tmpdir)
     embed_name = 'my_embed'
     elem_delim = '\t'
     pretrain_file = 'my_pretrain_file.txt'
 
+    from_file = functools.partial(nlp.embedding.TokenEmbedding.from_file, allow_extend=allow_extend)
+
     _mk_my_pretrain_file(os.path.join(embed_root, embed_name), elem_delim, pretrain_file)
 
     pretrain_file_path = os.path.join(embed_root, embed_name, pretrain_file)
 
-    my_embed = nlp.embedding.TokenEmbedding.from_file(pretrain_file_path, elem_delim)
+    my_embed = from_file(pretrain_file_path, elem_delim)
 
     assert 'a' in my_embed
     assert my_embed.unknown_token == '<unk>'
@@ -406,11 +410,16 @@ def test_token_embedding_from_file(tmpdir):
     a_vec = my_embed['a']
     assert_almost_equal(a_vec.asnumpy(), np.array([0.1, 0.2, 0.3, 0.4, 0.5]))
 
+    my_embed = from_file(pretrain_file_path, elem_delim)
     # Test __setitem__.
     my_embed['a'] = nd.array([1, 2, 3, 4, 5])
     assert_almost_equal(my_embed['a'].asnumpy(), np.array([1, 2, 3, 4, 5]))
-    with pytest.raises(KeyError):
+    if allow_extend:
         my_embed['unknown$$$'] = nd.array([0, 0, 0, 0, 0])
+        assert_almost_equal(my_embed['unknown$$$'].asnumpy(), np.array([0, 0, 0, 0, 0]))
+    else:
+        with pytest.raises(KeyError):
+            my_embed['unknown$$$'] = nd.array([0, 0, 0, 0, 0])
     with pytest.raises(AssertionError):
         my_embed['<unk>'] = nd.array([[0, 0, 0, 0, 0], [0, 0, 0, 0, 0]])
     with pytest.raises(AssertionError):
@@ -423,17 +432,13 @@ def test_token_embedding_from_file(tmpdir):
     pretrain_file2 = 'my_pretrain_file2.txt'
     _mk_my_pretrain_file3(os.path.join(embed_root, embed_name), elem_delim, pretrain_file2)
     pretrain_file_path = os.path.join(embed_root, embed_name, pretrain_file2)
-    my_embed2 = nlp.embedding.TokenEmbedding.from_file(pretrain_file_path, elem_delim,
-                                                       init_unknown_vec=nd.ones,
-                                                       unknown_token='<unk>')
+    my_embed2 = from_file(pretrain_file_path, elem_delim, init_unknown_vec=nd.ones, unknown_token='<unk>')
     unk_vec2 = my_embed2['<unk>']
     assert_almost_equal(unk_vec2.asnumpy(), np.array([1, 1, 1, 1, 1]))
     unk_vec2 = my_embed2['<unk$unk@unk>']
     assert_almost_equal(unk_vec2.asnumpy(), np.array([1, 1, 1, 1, 1]))
 
-    my_embed3 = nlp.embedding.TokenEmbedding.from_file(pretrain_file_path, elem_delim,
-                                                       init_unknown_vec=nd.ones,
-                                                       unknown_token='<unk1>')
+    my_embed3 = from_file(pretrain_file_path, elem_delim, init_unknown_vec=nd.ones, unknown_token='<unk1>')
     unk_vec3 = my_embed3['<unk1>']
     assert_almost_equal(unk_vec3.asnumpy(), np.array([1.1, 1.2, 1.3, 1.4, 1.5]))
     unk_vec3 = my_embed3['<unk$unk@unk>']
@@ -445,14 +450,14 @@ def test_token_embedding_from_file(tmpdir):
                                  invalid_pretrain_file)
     pretrain_file_path = os.path.join(embed_root, embed_name, invalid_pretrain_file)
     with pytest.raises(AssertionError):
-        nlp.embedding.TokenEmbedding.from_file(pretrain_file_path, elem_delim)
+        from_file(pretrain_file_path, elem_delim)
 
     invalid_pretrain_file2 = 'invalid_pretrain_file2.txt'
     _mk_my_invalid_pretrain_file2(os.path.join(embed_root, embed_name), elem_delim,
                                   invalid_pretrain_file2)
     pretrain_file_path = os.path.join(embed_root, embed_name, invalid_pretrain_file2)
     with pytest.raises(AssertionError):
-        nlp.embedding.TokenEmbedding.from_file(pretrain_file_path, elem_delim)
+        from_file(pretrain_file_path, elem_delim)
 
 
 def test_embedding_get_and_pretrain_file_names():

@@ -144,7 +144,7 @@ def load_embedding_from_path(args):
                               'for {} words.'.format(len(token_set))):
             embedding = nlp.embedding.TokenEmbedding(unknown_token=None)
             idx_to_tokens = list(token_set)
-            embedding.extend(idx_to_tokens, model[idx_to_tokens])
+            embedding[idx_to_tokens] = model[idx_to_tokens]
 
     else:
         embedding = nlp.embedding.TokenEmbedding.from_file(args.embedding_path)

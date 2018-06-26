@@ -158,20 +158,26 @@ class TokenEmbedding(object):
     init_unknown_vec : callback
         The callback used to initialize the embedding vector for the unknown
         token. Only used if `unknown_token` is not None.
+    allow_extend : bool,  default  True
+        If True, embedding vectors for previously unknown words can be added
+        via token_embedding[tokens] = vecs. If False, only vectors for known
+        tokens can be updated.
     unknown_lookup : object subscriptable with list of tokens returning nd.NDarray, default None
         If not None, unknown_lookup[tokens] is called for any unknown tokens.
         The result is cached if unknown_autoextend is True.
     unknown_autoextend : bool, default True
         If True, any unknown token for which a vector was looked up in
         unknown_lookup together with the resulting vector will be added to
-        token_to_idx, idx_to_token and idx_to_vec, adding a new index.
+        token_to_idx, idx_to_token and idx_to_vec, adding a new index. This
+        option is ignored if allow_extend is False.
 
     """
 
-    def __init__(self, unknown_token='<unk>', init_unknown_vec=nd.zeros,
+    def __init__(self, unknown_token='<unk>', init_unknown_vec=nd.zeros, allow_extend=True,
                  unknown_lookup=None, unknown_autoextend=True):
         self._unknown_token = unknown_token
         self._init_unknown_vec = init_unknown_vec
+        self._allow_extend = allow_extend
         self._unknown_lookup = unknown_lookup
         self._unknown_autoextend = unknown_autoextend
         self._idx_to_token = [unknown_token] if unknown_token else []
@@ -425,6 +431,23 @@ class TokenEmbedding(object):
         return self._unknown_token
 
     @property
+    def allow_extend(self):
+        """Allow extension of the TokenEmbedding with new tokens.
+
+        If True, `TokenEmbedding[tokens] = vec` can introduce new tokens that
+        were previously unknown. New indices will be assigned to the newly
+        introduced tokens. If False, only known tokens can be updated.
+
+        Returns
+        -------
+        bool:
+            Extension of the TokenEmbedding is allowed.
+
+        """
+        return self._allow_extend
+
+
+    @property
     def unknown_lookup(self):
         """Vector lookup for unknown tokens.
 
@@ -505,7 +528,7 @@ class TokenEmbedding(object):
         else:
             if self.unknown_lookup is not None and self.unknown_autoextend:
                 new_tokens = [t for t in tokens if t not in self.token_to_idx]
-                self.extend(new_tokens, self.unknown_lookup[new_tokens])
+                self[new_tokens] = self.unknown_lookup[new_tokens]
 
             indices = [self._token_to_idx[token] for token in tokens]
             vecs = nd.Embedding(
@@ -515,7 +538,7 @@ class TokenEmbedding(object):
         return vecs[0] if to_reduce else vecs
 
     def _check_vector_update(self, tokens, new_embedding):
-        """Check that tokens and embedding are  in the format for __setitem__ and extend."""
+        """Check that tokens and embedding are in the format for __setitem__."""
         assert self._idx_to_vec is not None, '`idx_to_vec` has not been initialized.'
 
         if not isinstance(tokens, (list, tuple)) or len(tokens) == 1:
@@ -539,6 +562,8 @@ class TokenEmbedding(object):
     def __setitem__(self, tokens, new_embedding):
         """Updates embedding vectors for tokens.
 
+        If self.allow_extend is True, vectors for previously unknown tokens can be introduced.
+
         Parameters
         ----------
         tokens : hashable object or a list or tuple of hashable objects
@@ -549,7 +574,25 @@ class TokenEmbedding(object):
             the glossary. If `tokens` is a singleton, it must be 1-D or 2-D. If `tokens` is a list
             of multiple strings, it must be 2-D.
         """
+        if self.allow_extend and self._idx_to_vec is None:
+            # Initialize self._idx_to_vec
+            assert C.UNK_IDX == 0
+            self._idx_to_vec = self._init_unknown_vec(shape=(1, new_embedding.shape[-1]))
+
         tokens = self._check_vector_update(tokens, new_embedding)
+
+        if self.allow_extend:
+            # Add new / previously unknown tokens
+            for token in filter(lambda t: t not in self._token_to_idx, tokens):
+                idx = len(self._token_to_idx)
+                self._token_to_idx[token] = idx
+                self._idx_to_token.append(token)
+
+            # Extend shape of idx_to_vec
+            idx_to_vec = nd.zeros(shape=(len(self._token_to_idx),
+                                         self.idx_to_vec.shape[1]))
+            idx_to_vec[:self.idx_to_vec.shape[0]] = self._idx_to_vec
+            self._idx_to_vec = idx_to_vec
 
         indices = []
         for token in tokens:
@@ -567,41 +610,6 @@ class TokenEmbedding(object):
                                     'specified.').format(token))
 
         self._idx_to_vec[nd.array(indices)] = new_embedding
-
-    def extend(self, tokens, embedding):
-        """Adds tokens using the vectors in embedding.
-
-        Parameters
-        ----------
-        tokens : hashable object or a list or tuple of hashable objects
-            A token or a list of tokens whose embedding vector are to be updated.
-        embedding : mxnet.ndarray.NDArray
-            An NDArray to be assigned to the embedding vectors of `tokens`. Its length must be equal
-            to the number of `tokens` and its width must be equal to the dimension of embedding of
-            the glossary. If `tokens` is a singleton, it must be 1-D or 2-D. If `tokens` is a list
-            of multiple strings, it must be 2-D.
-        """
-        if self._idx_to_vec is None:
-            assert C.UNK_IDX == 0
-            self._idx_to_vec = self._init_unknown_vec(shape=(1, embedding.shape[-1]))
-
-        tokens = self._check_vector_update(tokens, embedding)
-
-        for token in tokens:
-            if token in self._token_to_idx:
-                raise KeyError('Token "{token}" is known. '
-                               'Use `token_embedding["{token}"] = embedding` '
-                               ' to update its embedding '.format(token=token))
-
-        idx_to_vec = nd.empty(shape=(self.idx_to_vec.shape[0] + len(tokens),
-                                     self.idx_to_vec.shape[1]))
-        idx_to_vec[:self.idx_to_vec.shape[0]] = self._idx_to_vec
-        idx_to_vec[self.idx_to_vec.shape[0]:] = embedding
-
-        self._token_to_idx.update(
-            (token, i) for i, token in enumerate(tokens, self.idx_to_vec.shape[0]))
-        self._idx_to_vec = idx_to_vec
-        self._idx_to_token += tokens
 
     @classmethod
     def _check_source(cls, source):
