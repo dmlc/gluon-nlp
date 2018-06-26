@@ -27,9 +27,11 @@ __all__ = ['ClipSequence', 'PadSequence', 'NLTKMosesTokenizer', 'SpacyTokenizer'
            'NLTKMosesDetokenizer', 'JiebaTokenizer', 'NLTKStanfordSegmenter']
 
 import os
+
 import numpy as np
 import mxnet as mx
-
+from mxnet.gluon.utils import download
+from .utils import _get_home_dir, _extract_archive
 
 
 class ClipSequence(object):
@@ -392,25 +394,24 @@ class JiebaTokenizer(object):
 class NLTKStanfordSegmenter(object):
     r"""Apply the NLTK Wrapper of Stanford Chinese Word Segmenter.
 
-    Users of this class are required to `install NLTK <https://www.nltk.org/install.html>`_ and
-    download Stanford Word Segmenter `<https://nlp.stanford.edu/software/segmenter.html#Download>`_
+    Users of this class are required to install Java, NLTK and download Stanford Word Segmenter
 
     Parameters
     ----------
-    path_to_jar : str
+    path_to_jar : str, default ''
         Path to stanford-segmenter.jar.
 
-    path_to_slf4j : str
+    path_to_slf4j : str, default ''
         Path to slf4j-api.jar.
 
-    path_to_dict : str
+    path_to_dict : str, default ''
         Path to external dictionary dict-chris6.ser.gz.
 
-    path_to_model : str
+    path_to_model : str, default ''
         Path to pre-trained segmentation model.
         options are pku.gz and ctb.gz.
 
-    path_to_sihan_corpora_dict : str
+    path_to_sihan_corpora_dict : str, default ''
         Path to folder for storing dictionaries in sighan corpora.
 
     java_class : str, default 'edu.stanford.nlp.ie.crf.CRFClassifier'
@@ -418,13 +419,7 @@ class NLTKStanfordSegmenter(object):
 
     Examples
     --------
-    >>> tokenizer = NLTKStanfordSegmenter(
-        path_to_jar='PATH_TO_STANFORD_HOME/segmenter/stanford-segmenter-3.9.1.jar',
-        path_to_model="PATH_TO_STANFORD_HOME/segmenter/data/pku.gz",
-        path_to_dict="PATH_TO_STANFORD_HOME/segmenter/data/dict-chris6.ser.gz",
-        path_to_slf4j="PATH_TO_STANFORD_HOME/segmenter/slf4j-api.jar",
-        path_to_sihan_corpora_dict="PATH_TO_STANFORD_HOME/segmenter/data"
-        java_class="edu.stanford.nlp.ie.crf.CRFClassifier")
+    >>> tokenizer = NLTKStanfordSegmenter()
     >>> tokenizer(u"我来到北京清华大学")
     ['我',
      '来到',
@@ -446,19 +441,52 @@ class NLTKStanfordSegmenter(object):
      '深造']
 
     """
-    def __init__(self, path_to_jar, path_to_slf4j, path_to_dict,
-                 path_to_model, path_to_sihan_corpora_dict,
+    def __init__(self, path_to_jar='', path_to_slf4j='', path_to_dict='',
+                 path_to_model='', path_to_sihan_corpora_dict='',
                  java_class='edu.stanford.nlp.ie.crf.CRFClassifier'):
+        is_java_exist = os.system('java -version')
+        assert is_java_exist == 0, 'Java is not installed. You must install Java 8.0' \
+                                   'in order to use the NLTKStanfordSegmenter'
         try:
             from nltk.tokenize import StanfordSegmenter
         except ImportError:
             raise ImportError('NLTK or relevant packages are not installed. You must install NLTK '
                               'in order to use the NLTKStanfordSegmenter. You can refer to the '
-                              'official installation guide in https://www.nltk.org/install.html .')
-        assert os.path.exists(path_to_jar), 'stanford-segmenter.jar NOT FOUND!'
-        assert os.path.exists(path_to_model), 'segmentation model NOT FOUND!'
-        assert os.path.exists(path_to_slf4j), 'slf4j-api.jar NOT FOUND!'
-        assert os.path.exists(path_to_dict), 'dictionary file NOT FOUND!'
+                              'official installation guide in https://www.nltk.org/install.html.')
+        try:
+            assert os.path.exists(path_to_jar)
+            assert os.path.exists(path_to_model)
+            assert os.path.exists(path_to_dict)
+            assert os.path.exists(path_to_sihan_corpora_dict)
+        except AssertionError:
+            # automatically download the files from the website and place them to $MXNET_HOME
+            segmenter_url = 'https://nlp.stanford.edu/software/stanford-segmenter-2018-02-27.zip'
+            stanford_home = os.path.join(_get_home_dir(), 'stanford')
+            stanford_segmenter = os.path.join(stanford_home, 'stanford-segmenter-2018-02-27.zip')
+            if not os.path.exists(stanford_home):
+                os.mkdir(stanford_home)
+                download(url=segmenter_url, path=stanford_home)
+                _extract_archive(file=stanford_segmenter, target_dir=stanford_home)
+            path_to_jar = os.path.join(stanford_home, 'stanford-segmenter-2018-02-27',
+                                       'stanford-segmenter-3.9.1.jar')
+            path_to_model = os.path.join(stanford_home, 'stanford-segmenter-2018-02-27',
+                                         'data', 'pku.gz')
+            path_to_dict = os.path.join(stanford_home, 'stanford-segmenter-2018-02-27',
+                                        'data', 'dict-chris6.ser.gz')
+            path_to_sihan_corpora_dict = os.path.join(stanford_home,
+                                                      'stanford-segmenter-2018-02-27', 'data')
+        try:
+            assert os.path.exists(path_to_slf4j)
+        except AssertionError:
+            # automatically download the files from the website and place them to $MXNET_HOME
+            slf4j_url = 'https://www.slf4j.org/dist/slf4j-1.7.25.zip'
+            slf4j_home = os.path.join(_get_home_dir(), 'slf4j')
+            slf4j = os.path.join(slf4j_home, 'slf4j-1.7.25.zip')
+            if not os.path.exists(slf4j_home):
+                os.mkdir(slf4j_home)
+                download(url=slf4j_url, path=slf4j_home)
+                _extract_archive(file=slf4j, target_dir=slf4j_home)
+            path_to_slf4j = os.path.join(slf4j_home, 'slf4j-1.7.25', 'slf4j-api-1.7.25.jar')
         self._tokenizer = StanfordSegmenter(java_class=java_class, path_to_jar=path_to_jar,
                                             path_to_slf4j=path_to_slf4j, path_to_dict=path_to_dict,
                                             path_to_sihan_corpora_dict=path_to_sihan_corpora_dict,
