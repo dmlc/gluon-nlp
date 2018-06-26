@@ -22,13 +22,19 @@ from __future__ import print_function
 
 import re
 import os
-import time
+import sys
 
 import pytest
 
 import gluonnlp as nlp
 from mxnet import ndarray as nd
 from mxnet.test_utils import *
+import numpy as np
+
+if sys.version_info[0] == 3:
+    _str_types = (str, )
+else:
+    _str_types = (str, unicode)
 
 
 def _get_test_str_of_tokens(token_delim, seq_delim):
@@ -762,7 +768,7 @@ def test_download_embed():
 
             file_path = Test._get_file_path(embedding_root, source)
 
-            self._load_embedding(file_path, ' ', init_unknown_vec)
+            self._load_embedding(file_path, ' ')
 
     test_embed = nlp.embedding.create('test', embedding_root='tests/data/embedding')
     assert_almost_equal(test_embed['hello'].asnumpy(), (nd.arange(5) + 1).asnumpy())
@@ -823,6 +829,29 @@ def test_token_embedding_from_file_S3_with_custom_unknown_token(unknown_token):
                                  unknown_token=unknown_token)
 
 
+def test_token_embedding_unknown_lookup():
+    class NaiveLookup(object):
+        dim = 300
+
+        def __getitem__(self, tokens):
+            if isinstance(tokens, _str_types):
+                return nd.zeros(self.dim)
+            else:
+                return nd.zeros((len(tokens), self.dim))
+
+    token_embedding = nlp.embedding.token_embedding.TokenEmbedding(
+        unknown_lookup=NaiveLookup(), unknown_autoextend=False)
+    assert 'hello' not in token_embedding.token_to_idx
+    assert np.all(np.isclose(0, token_embedding['hello'].asnumpy()))
+    assert 'hello' not in token_embedding.token_to_idx
+
+    token_embedding = nlp.embedding.token_embedding.TokenEmbedding(
+        unknown_lookup=NaiveLookup(), unknown_autoextend=True)
+    assert 'hello' not in token_embedding.token_to_idx
+    assert np.all(np.isclose(0, token_embedding['hello'].asnumpy()))
+    assert 'hello' in token_embedding.token_to_idx
+
+
 def test_token_embedding_serialization():
     @nlp.embedding.register
     class Test(nlp.embedding.TokenEmbedding):
@@ -832,8 +861,7 @@ def test_token_embedding_serialization():
                                     '29b9a6511cf4b5aae293c44a9ec1365b74f2a2f8')}
         namespace = 'test'
 
-        def __init__(self, embedding_root='tests/data/embedding',
-                     init_unknown_vec=nd.zeros, **kwargs):
+        def __init__(self, embedding_root='tests/data/embedding', **kwargs):
             source = 'embedding_test'
             Test._check_source(source)
 
@@ -841,7 +869,7 @@ def test_token_embedding_serialization():
 
             file_path = Test._get_file_path(embedding_root, source)
 
-            self._load_embedding(file_path, ' ', init_unknown_vec)
+            self._load_embedding(file_path, ' ')
 
     emb = nlp.embedding.create('test', embedding_root='tests/data/embedding')
 
@@ -952,5 +980,5 @@ def test_subword_function_ngramhashes():
 
     assert [8.0, 195.0, 271.0, 500.0, 201.0, 445.0, 379.0, 831.0, 617.0, 851.0] == \
         sf([u'test'])[0].asnumpy().tolist()
-    assert [253.0, 801.0, 557.0, 966.0, 63.0, 874.0, 313.0, 188.0, 588.0, 86.0] == \
+    assert [429.0, 793.0, 101.0, 334.0, 295.0, 474.0, 145.0, 524.0, 388.0, 790.0] == \
         sf([u'τεστ'])[0].asnumpy().tolist()

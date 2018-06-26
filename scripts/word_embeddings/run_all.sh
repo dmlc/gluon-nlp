@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 
 # Glove
 for i in glove.42B.300d glove.6B.100d glove.6B.200d glove.6B.300d glove.6B.50d glove.840B.300d glove.twitter.27B.100d glove.twitter.27B.200d glove.twitter.27B.25d glove.twitter.27B.50d

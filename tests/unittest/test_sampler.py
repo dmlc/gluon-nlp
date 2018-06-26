@@ -79,6 +79,6 @@ def test_context_sampler():
 
     center, context, mask = next(iter(sampler))
 
-    assert center.asnumpy().tolist() == [0, 1]
+    assert center.asnumpy().tolist() == [[0], [1]]
     assert context.asnumpy().tolist() == [[1, 0], [0, 2]]
     assert mask.asnumpy().tolist() == [[1, 0], [1, 1]]

@@ -612,12 +612,19 @@ class NGramHashes(SubwordFunction):
         Size of target set for the hash function.
     ngrams : list of int, default [3, 4, 5, 6]
         n-s for which to hash the ngrams
+    special_tokens : set of str, default None
+        Set of words for which not to look up subwords.
 
     """
 
-    def __init__(self, num_subwords, ngrams=(3, 4, 5, 6)):
+    def __init__(self, num_subwords, ngrams=(3, 4, 5, 6), special_tokens=None):
         self.num_subwords = num_subwords
         self.ngrams = ngrams
+
+        if special_tokens is None:
+            special_tokens = set()
+
+        self.special_tokens = special_tokens
 
         # Information for __repr__
         self.ngrams = ngrams
@@ -628,7 +635,7 @@ class NGramHashes(SubwordFunction):
         s = s.encode(encoding)
         old_settings = np.seterr(all='ignore')
         for c in bytearray(s):
-            h = h ^ np.uint32(c)
+            h = h ^ np.uint32(np.int8(c))
             h = h * np.uint32(16777619)
         np.seterr(**old_settings)
         return h
@@ -640,11 +647,14 @@ class NGramHashes(SubwordFunction):
 
     def __call__(self, words):
         return [
-            nd.array(np.array([
-                self.fasttext_hash_asbytes(
-                    (u'<' + word + u'>')[i:i + N]) % self.num_subwords
-                for N in self.ngrams for i in range((len(word) + 2) - N + 1)
-            ])) for word in words
+            nd.array(
+                np.array([
+                    self.fasttext_hash_asbytes(
+                        (u'<' + word + u'>')[i:i + N]) % self.num_subwords
+                    for N in self.ngrams
+                    for i in range((len(word) + 2) - N + 1)
+                ])) if word not in self.special_tokens else nd.zeros(shape=0)
+            for word in words
         ]
 
     def __len__(self):
