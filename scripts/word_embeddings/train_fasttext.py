@@ -38,7 +38,8 @@ Word2Vec embedding model was introduced by
 """
 # Set a few mxnet specific environment variables
 import os
-os.environ['MXNET_FORCE_ADDTAKEGRAD'] = '1'  # Workaround for #11314
+# Workaround for https://github.com/apache/incubator-mxnet/issues/11314
+os.environ['MXNET_FORCE_ADDTAKEGRAD'] = '1'
 
 import argparse
 import functools
