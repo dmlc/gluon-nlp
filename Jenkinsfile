@@ -44,6 +44,7 @@ stage("Unit Test") {
         make clean
         python setup.py install
         py.test -v --capture=no --durations=0 --cov=gluonnlp --cov=scripts tests/unittest scripts
+        bash ./codecov.sh
         """
       }
     }
