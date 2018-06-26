@@ -27,16 +27,8 @@ def test_fasttext_embedding_load_binary_compare_vec(datadir):
     token_embedding_vec = nlp.embedding.TokenEmbedding.from_file(
         os.path.join(str(datadir), 'lorem_ipsum.vec'), unknown_token=None)
 
-    # to_token_embedding
     model = nlp.model.train.FasttextEmbeddingModel.load_fasttext_format(
         os.path.join(str(datadir), 'lorem_ipsum.bin'))
-    token_embedding_bin = model.to_token_embedding(
-        token_embedding_vec.idx_to_token)
-    assert np.all(
-        np.isclose(a=token_embedding_vec.idx_to_vec.asnumpy(),
-                   b=token_embedding_bin.idx_to_vec.asnumpy(), atol=0.001))
-
-    # __getitem__
     idx_to_vec = model[token_embedding_vec.idx_to_token]
     assert np.all(
         np.isclose(a=token_embedding_vec.idx_to_vec.asnumpy(),
