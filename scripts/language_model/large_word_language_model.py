@@ -114,7 +114,7 @@ context = [mx.cpu()] if args.gpus is None or args.gpus == '' else \
           [mx.gpu(int(x)) for x in args.gpus.split(',')]
 
 train_data_stream, test_data_stream = \
-    [nlp.data.GBWStream(segment=segment, skip_empty=False, bos=None, eos='<eos>')
+    [nlp.data.GBWStream(segment=segment, skip_empty=True, bos='<eos>', eos='<eos>')
      for segment in ['train', 'test']]
 
 vocab = nlp.data.GBWVocab()
@@ -230,7 +230,7 @@ def train():
             # rescale embedding grad
             for d in data_list:
                 x = embedding_params[0].grad(d.context)
-                x *= args.batch_size
+                x[:] *= args.batch_size
                 encoder_grad = [p.grad(d.context) for p in encoder_params]
                 # perform gradient clipping per ctx
                 gluon.utils.clip_global_norm(encoder_grad, args.clip)

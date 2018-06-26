@@ -320,6 +320,7 @@ class BigRNN(Block):
         with self.name_scope():
             self.embedding = self._get_embedding()
             self.encoder = self._get_encoder()
+            self.dropout = nn.Dropout(dropout)
             self.decoder = self._get_decoder()
 
     def _get_embedding(self):
@@ -338,8 +339,6 @@ class BigRNN(Block):
         encoder = rnn.SequentialRNNCell()
         with encoder.name_scope():
             encoder.add(contrib.rnn.LSTMPCell(self._hidden_size, self._projection_size))
-            if self._dropout:
-                encoder.add(rnn.DropoutCell(self._dropout))
         return encoder
 
     def _get_decoder(self):
@@ -363,6 +362,7 @@ class BigRNN(Block):
         length = 20
         encoded, state = self.encoder.unroll(length, encoded, begin_state,
                                              layout='TNC', merge_outputs=True)
+        encoded = self.dropout(encoded)
         out, new_target = self.decoder(encoded, sampled_classes, exp_cnt_sampled,
                                        exp_cnt_true, label)
         return out, new_target, state

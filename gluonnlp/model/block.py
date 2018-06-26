@@ -274,7 +274,6 @@ class SampledLogits(Block):
         self.weight = self.params.get('weight', shape=(num_classes, in_unit),
                                       #init=weight_initializer, #dtype=dtype,
                                       grad_stype='row_sparse', stype='row_sparse')
-
         self.bias = self.params.get('bias', shape=(num_classes, 1),
                                     grad_stype='row_sparse', stype='row_sparse')
         self.block = _SampledLogits(num_classes, num_sampled, in_unit, remove_accidental_hits)
