@@ -76,8 +76,6 @@ def parse_args():
                              'If not specified, uses CPU.'))
     group.add_argument('--no-hybridize', action='store_true',
                        help='Disable hybridization of gluon HybridBlocks.')
-    group.add_argument('--no-deduplicate-words', action='store_true',
-                       help='Disable word deduplication within batches.')
     group.add_argument(
         '--no-static-alloc', action='store_true',
         help='Disable static memory allocation for HybridBlocks.')
@@ -240,22 +238,13 @@ def train(args):
     if args.ngram_buckets:  # Fasttext model
         coded_dataset, negatives_sampler, vocab, subword_function, \
             idx_to_subwordidxs = get_train_data(args)
-        if args.no_deduplicate_words:
-            embedding = nlp.model.train.FasttextEmbeddingModel(
-                token_to_idx=vocab.token_to_idx,
-                subword_function=subword_function,
-                embedding_size=args.emsize,
-                weight_initializer=mx.init.Uniform(scale=1 / args.emsize),
-                sparse_grad=not args.no_sparse_grad,
-            )
-        else:
-            embedding = nlp.model.train.DeduplicatedFasttextEmbeddingModel(
-                token_to_idx=vocab.token_to_idx,
-                subword_function=subword_function,
-                embedding_size=args.emsize,
-                weight_initializer=mx.init.Uniform(scale=1 / args.emsize),
-                sparse_grad=not args.no_sparse_grad,
-            )
+        embedding = nlp.model.train.FasttextEmbeddingModel(
+            token_to_idx=vocab.token_to_idx,
+            subword_function=subword_function,
+            embedding_size=args.emsize,
+            weight_initializer=mx.init.Uniform(scale=1 / args.emsize),
+            sparse_grad=not args.no_sparse_grad,
+        )
     else:
         coded_dataset, negatives_sampler, vocab = get_train_data(args)
         embedding = nlp.model.train.SimpleEmbeddingModel(
@@ -315,30 +304,21 @@ def train(args):
 
             if args.ngram_buckets:  # Fasttext model
                 if args.model.lower() == 'skipgram':
-                    if args.no_deduplicate_words:
-                        subwords, subwords_mask = \
-                            indices_to_subwordindices_mask(center, idx_to_subwordidxs)
-                    else:
-                        unique, inverse_unique_indices = np.unique(
-                            center.asnumpy(), return_inverse=True)
-                        unique = mx.nd.array(unique)
-                        inverse_unique_indices = mx.nd.array(
-                            inverse_unique_indices, ctx=context[0])
-                        subwords, subwords_mask = \
-                            indices_to_subwordindices_mask(unique, idx_to_subwordidxs)
+                    unique, inverse_unique_indices = np.unique(
+                        center.asnumpy(), return_inverse=True)
+                    unique = mx.nd.array(unique)
+                    inverse_unique_indices = mx.nd.array(
+                        inverse_unique_indices, ctx=context[0])
+                    subwords, subwords_mask = \
+                        indices_to_subwordindices_mask(unique, idx_to_subwordidxs)
                 elif args.model.lower() == 'cbow':
-                    if args.no_deduplicate_words:
-                        subwords, subwords_mask = \
-                            indices_to_subwordindices_mask(word_context,
-                                                           idx_to_subwordidxs)
-                    else:
-                        unique, inverse_unique_indices = np.unique(
-                            word_context.asnumpy(), return_inverse=True)
-                        unique = mx.nd.array(unique)
-                        inverse_unique_indices = mx.nd.array(
-                            inverse_unique_indices, ctx=context[0])
-                        subwords, subwords_mask = \
-                            indices_to_subwordindices_mask(unique, idx_to_subwordidxs)
+                    unique, inverse_unique_indices = np.unique(
+                        word_context.asnumpy(), return_inverse=True)
+                    unique = mx.nd.array(unique)
+                    inverse_unique_indices = mx.nd.array(
+                        inverse_unique_indices, ctx=context[0])
+                    subwords, subwords_mask = \
+                        indices_to_subwordindices_mask(unique, idx_to_subwordidxs)
                 else:
                     logging.error('Unsupported model %s.', args.model)
                     sys.exit(1)
@@ -347,7 +327,6 @@ def train(args):
 
             # To GPU
             center = center.as_in_context(context[0])
-            center_mask = mx.nd.ones_like(center, ctx=center.context)
             if args.ngram_buckets:  # Fasttext model
                 subwords = subwords.as_in_context(context[0])
                 subwords_mask = subwords_mask.astype(np.float32).as_in_context(
@@ -360,15 +339,13 @@ def train(args):
             with mx.autograd.record():
                 # Combine subword level embeddings with word embeddings
                 if args.model.lower() == 'skipgram':
-                    if args.ngram_buckets and args.no_deduplicate_words:
-                        emb_in = embedding(center, center_mask, subwords,
-                                           subwords_mask)
-                    elif args.ngram_buckets:
-                        emb_in = embedding(center, center_mask, subwords,
-                                           subwords_mask,
+                    if args.ngram_buckets:
+                        emb_in = embedding(center, subwords,
+                                           subwordsmask=subwords_mask,
+                                           words_to_unique_subwords_indices=
                                            inverse_unique_indices)
                     else:
-                        emb_in = embedding(center, center_mask)
+                        emb_in = embedding(center)
 
                     with mx.autograd.pause():
                         word_context_negatives = mx.nd.concat(
@@ -388,13 +365,9 @@ def train(args):
                 elif args.model.lower() == 'cbow':
                     word_context = word_context.reshape((-3, 1))
                     word_context_mask = word_context_mask.reshape((-3, 1))
-                    if args.ngram_buckets and args.no_deduplicate_words:
-                        emb_in = embedding(word_context, word_context_mask,
-                                           subwords, subwords_mask).sum(
-                                               axis=-2, keepdims=True)
-                    elif args.ngram_buckets:
-                        emb_in = embedding(word_context, word_context_mask,
-                                           subwords, subwords_mask,
+                    if args.ngram_buckets:
+                        emb_in = embedding(word_context, subwords,
+                                           word_context_mask, subwords_mask,
                                            inverse_unique_indices)
                     else:
                         emb_in = embedding(word_context, word_context_mask)
@@ -405,8 +378,8 @@ def train(args):
 
                         center_negatives = mx.nd.concat(
                             center, negatives, dim=1)
-                        center_negatives_mask = mx.nd.ones_like(
-                            center_negatives)
+                        center_negatives_mask = mx.nd.concat(
+                            mx.nd.ones_like(center), negatives_mask, dim=1)
 
                     emb_out = embedding_out(center_negatives,
                                             center_negatives_mask)
@@ -422,11 +395,11 @@ def train(args):
 
             loss.backward()
 
-            if args.optimizer.lower() not in ['adagrad', 'adam']:
+            if args.optimizer.lower() != 'adagrad':
                 trainer.set_learning_rate(
                     max(0.0001, args.lr * (1 - progress)))
 
-            if (args.optimizer_subwords.lower() not in ['adagrad', 'adam']
+            if (args.optimizer_subwords.lower() != 'adagrad'
                     and args.ngram_buckets):
                 trainer_subwords.set_learning_rate(
                     max(0.0001, args.lr_subwords * (1 - progress)))
@@ -487,10 +460,10 @@ def evaluate(args, embedding, vocab, global_step, eval_analogy=False):
 
     # Compute their word vectors
     context = get_context(args)
-    idx_to_token = eval_tokens
     mx.nd.waitall()
-    token_embedding = embedding.to_token_embedding(idx_to_token,
-                                                   ctx=context[0])
+
+    token_embedding = nlp.embedding.TokenEmbedding(unknown_token=None)
+    token_embedding.extend(eval_tokens, embedding[eval_tokens])
 
     results = evaluation.evaluate_similarity(
         args, token_embedding, context[0], logfile=os.path.join(
