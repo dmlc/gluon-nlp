@@ -323,10 +323,8 @@ def _extract_archive(file, target_dir):
     elif file.endswith('.zip'):
         archive = zipfile.ZipFile(file, 'r')
     else:
-        raise Exception("Unrecognized file type!!!")
+        raise Exception('Unrecognized file type!!!')
     archive.extractall(path=target_dir)
     archive.close()
     # remove the archive file
     os.remove(file)
-
-
