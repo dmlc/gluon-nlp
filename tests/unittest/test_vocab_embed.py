@@ -894,6 +894,23 @@ def test_token_embedding_serialization():
     assert loaded_emb == emb
 
 
+def test_word_embedding_evaluation_registry():
+    with pytest.raises(RuntimeError):
+
+        @nlp.embedding.evaluation.register
+        class InvalidEvaluationFunction(object):
+            pass
+
+    with pytest.raises(KeyError):
+        nlp.embedding.evaluation.create('invalid', 'InvalidEvaluationFunction')
+
+    nlp.embedding.evaluation.list_evaluation_functions()
+    nlp.embedding.evaluation.list_evaluation_functions(kind='similarity')
+    nlp.embedding.evaluation.list_evaluation_functions(kind='analogy')
+    with pytest.raises(KeyError):
+        nlp.embedding.evaluation.list_evaluation_functions('invalid')
+
+
 @pytest.mark.parametrize(
     'similarity_function',
     nlp.embedding.evaluation.list_evaluation_functions('similarity'))
