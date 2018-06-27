@@ -75,7 +75,7 @@ class BeamSearchScorer(HybridBlock):
         return candidate_scores
 
 
-def _expand_to_beam_size(data, beam_size, batch_size):
+def _expand_to_beam_size(data, beam_size, batch_size, state_info=None):
     """Tile all the states to have shape (beam_size, batch_size, ...)
 
     Parameters
@@ -92,23 +92,47 @@ def _expand_to_beam_size(data, beam_size, batch_size):
         Each NDArray should have shape (batch_size * beam_size, ...)
     """
     if isinstance(data, list):
-        return [_expand_to_beam_size(ele, beam_size, batch_size) for ele in data]
+        assert not state_info or isinstance(state_info, list), \
+                'state and state_info doesn\'t match'
+        if not state_info:
+            state_info = [None] * len(data)
+        return [_expand_to_beam_size(d, beam_size, batch_size, s)
+                for d, s in zip(data, state_info)]
     elif isinstance(data, tuple):
-        return tuple(_expand_to_beam_size(ele, beam_size, batch_size) for ele in data)
+        assert not state_info or isinstance(state_info, tuple), \
+                'state and state_info doesn\'t match'
+        if not state_info:
+            state_info = [None] * len(data)
+            state_info = tuple(state_info)
+        return tuple(_expand_to_beam_size(d, beam_size, batch_size, s)
+                     for d, s in zip(data, state_info))
     elif isinstance(data, dict):
-        return {k: _expand_to_beam_size(v, beam_size, batch_size) for k, v in data.items()}
+        assert not state_info or isinstance(state_info, dict), \
+                'state and state_info doesn\'t match'
+        if not state_info:
+            state_info = {k: None for k in data.keys()}
+        return {k: _expand_to_beam_size(v, beam_size, batch_size, state_info[k])
+                for k, v in data.items()}
     elif isinstance(data, mx.nd.NDArray):
-        if data.shape[0] != batch_size:
-            raise ValueError('The leading dimension of all the inner elements in states must be '
-                             '{}, Find shape={}'.format(batch_size, data.shape))
-        return data.reshape((batch_size, 1) + data.shape[1:])\
-                   .broadcast_axes(axis=1, size=beam_size)\
-                   .reshape((batch_size * beam_size,) + data.shape[1:])
+        assert not state_info or isinstance(state_info, dict), \
+                'state and state_info doesn\'t match'
+        if not state_info:
+            state_info = {'__layout__': 'NC'}
+        batch_axis = state_info['__layout__'].find('N')
+        if data.shape[batch_axis] != batch_size:
+            raise ValueError('The batch dimension of all the inner elements in states must be '
+                             '{}, Found shape={}'.format(batch_size, data.shape))
+        new_shape = list(data.shape)
+        new_shape[batch_axis] = batch_size * beam_size
+        new_shape = tuple(new_shape)
+        return data.expand_dims(batch_axis+1)\
+                   .broadcast_axes(axis=batch_axis+1, size=beam_size)\
+                   .reshape(new_shape)
     else:
         raise NotImplementedError
 
 
-def _choose_states(F, states, indices):
+def _choose_states(F, states, state_info, indices):
     """
 
     Parameters
@@ -116,6 +140,8 @@ def _choose_states(F, states, indices):
     F : ndarray or symbol
     states : Object contains NDArrays/Symbols
         Each NDArray/Symbol should have shape (N, ...).
+    state_info : nested structure of dictionary
+        Descriptors for states, usually from state_info.
     indices : NDArray or Symbol
         Indices of the states to take. Shape (N,).
     Returns
@@ -124,14 +150,37 @@ def _choose_states(F, states, indices):
         Each NDArray/Symbol should have shape (N, ...).
     """
     if isinstance(states, list):
-        return [_choose_states(F, ele, indices) for ele in states]
+        assert not state_info or isinstance(state_info, list), \
+                'state and state_info doesn\'t match'
+        if not state_info:
+            state_info = [None] * len(states)
+        return [_choose_states(F, d, s, indices) for d, s in zip(states, state_info)]
     elif isinstance(states, tuple):
-        return tuple(_choose_states(F, ele, indices) for ele in states)
+        assert not state_info or isinstance(state_info, tuple), \
+                'state and state_info doesn\'t match'
+        if not state_info:
+            state_info = [None] * len(states)
+            state_info = tuple(state_info)
+        return tuple(_choose_states(F, d, s, indices) for d, s in zip(states, state_info))
     elif isinstance(states, dict):
-        return {k: _choose_states(F, v, indices)
+        assert not state_info or isinstance(state_info, dict), \
+                'state and state_info doesn\'t match'
+        if not state_info:
+            state_info = {k: None for k in states.keys()}
+        return {k: _choose_states(F, v, state_info[k], indices)
                 for k, v in states.items()}
     elif isinstance(states, (mx.nd.NDArray, mx.sym.Symbol)):
-        return F.take(states, indices)
+        assert not state_info or isinstance(state_info, dict), \
+                'state and state_info doesn\'t match'
+        if not state_info:
+            state_info = {'__layout__': 'NC'}
+        batch_axis = state_info['__layout__'].find('N')
+        if batch_axis != 0:
+            states = states.swapaxes(0, batch_axis)
+        states = F.take(states, indices)
+        if batch_axis != 0:
+            states = states.swapaxes(0, batch_axis)
+        return states
     else:
         raise NotImplementedError
 
@@ -145,7 +194,7 @@ class _BeamSearchStepUpdate(HybridBlock):
         assert eos_id >= 0, 'eos_id cannot be negative! Received eos_id={}'.format(eos_id)
 
     def hybrid_forward(self, F, samples, valid_length, log_probs, scores, step, beam_alive_mask,   # pylint: disable=arguments-differ
-                       states, vocab_num, batch_shift):
+                       states, state_info, vocab_num, batch_shift):
         """
 
         Parameters
@@ -165,6 +214,8 @@ class _BeamSearchStepUpdate(HybridBlock):
             Shape (batch_size, beam_size)
         states : nested structure of NDArrays/Symbols
             Inner NDArrays have shape (batch_size * beam_size, ...)
+        state_info : nested structure of dictionary
+            Descriptors for states, usually from state_info.
         vocab_num : NDArray or Symbol
             Shape (1,)
         batch_shift : NDArray or Symbol
@@ -220,7 +271,7 @@ class _BeamSearchStepUpdate(HybridBlock):
                                   batch_beam_indices.reshape(shape=(-1,))).reshape((-1, beam_size))\
                            + 1 - use_prev
         # Update the states
-        new_states = _choose_states(F, states, batch_beam_indices.reshape((-1,)))
+        new_states = _choose_states(F, states, state_info, batch_beam_indices.reshape((-1,)))
         # Update the alive mask.
         beam_alive_mask = F.take(beam_alive_mask.reshape(shape=(-1,)),
                                  batch_beam_indices.reshape(shape=(-1,)))\
@@ -266,7 +317,7 @@ class BeamSearchSampler(object):
         self._max_length = max_length
         self._scorer = scorer
         self._updater = _BeamSearchStepUpdate(beam_size=beam_size, eos_id=eos_id, scorer=scorer)
-        self._updater.hybridize()
+        # self._updater.hybridize()
 
     def __call__(self, inputs, states):
         """Sample by beam search.
@@ -291,7 +342,12 @@ class BeamSearchSampler(object):
         beam_size = self._beam_size
         ctx = inputs.context
         # Tile the states and inputs to have shape (batch_size * beam_size, ...)
-        states = _expand_to_beam_size(states, beam_size=beam_size, batch_size=batch_size)
+        if hasattr(self._decoder, 'state_info'):
+            state_info = self._decoder.state_info(batch_size)
+        else:
+            state_info = None
+        states = _expand_to_beam_size(states, beam_size=beam_size, batch_size=batch_size,
+                                      state_info=state_info)
         step_input = _expand_to_beam_size(inputs, beam_size=beam_size, batch_size=batch_size)
         # All beams are initialized to alive
         # Generated samples are initialized to be the inputs
@@ -310,7 +366,7 @@ class BeamSearchSampler(object):
             step_nd = mx.nd.array([i + 1], ctx=ctx)
             samples, valid_length, scores, chosen_word_ids, beam_alive_mask, states = \
                 self._updater(samples, valid_length, log_probs, scores, step_nd, beam_alive_mask,
-                              new_states, vocab_num_nd, batch_shift_nd)
+                              new_states, state_info, vocab_num_nd, batch_shift_nd)
             step_input = mx.nd.relu(chosen_word_ids).reshape((-1,))
             if mx.nd.sum(beam_alive_mask).asscalar() == 0:
                 return mx.nd.round(samples).astype(np.int32),\
