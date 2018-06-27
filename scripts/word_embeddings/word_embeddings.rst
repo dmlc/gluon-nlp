@@ -35,20 +35,6 @@ We include a `run_all.sh` script to reproduce the results.
    $ run_all.sh
 
 
-Loading of binary fasttext models
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Fasttext models trained with the library of facebookresearch are exported both
-in a text and a binary format. Unlike the text format, the binary format
-preserves information about subword units and consequently supports computation
-of word vectors for words unknown during training (and not included in the text
-format). `evaluate_fasttext_bin.py` shows how to load the binary format into a
-FasttextEmbeddingModel Block provided by the Gluon NLP toolkit.
-
-Using this Block together with the NGramHashes subword function of the Gluon NLP
-toolkit it is possible to compute word vectors for unknown words as part of your
-model.
-
 Word Embedding Training
 ~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -111,3 +97,14 @@ gram7-past-tense                                      0.173718              0.19
 gram8-plural                                          0.760511              0.848348
 gram9-plural-verbs                                    0.752874              0.736782
 ===========================================  ===========================  ===================
+
+Loading of fastText models with subword information
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Fasttext models trained with the library of facebookresearch are exported both
+in a text and a binary format. Unlike the text format, the binary format
+preserves information about subword units and consequently supports computation
+of word vectors for words unknown during training (and not included in the text
+format). Besides training new fastText embeddings with Gluon NLP it is also
+possible to load the binary format into a Block provided by the Gluon NLP
+toolkit using `FasttextEmbeddingModel.load_fasttext_format`.
