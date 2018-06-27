@@ -14,6 +14,9 @@ stage("Sanity Check") {
 }
 
 stage("Unit Test") {
+  environment {
+    CODECOV_TOKEN = credentials('GluonNLPCodeCov')
+  }
   parallel 'Python 2': {
     node {
       ws('workspace/gluon-nlp-py2') {
