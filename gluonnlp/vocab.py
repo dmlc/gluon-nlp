@@ -614,10 +614,13 @@ class NGramHashes(SubwordFunction):
         n-s for which to hash the ngrams
     special_tokens : set of str, default None
         Set of words for which not to look up subwords.
+    cache : bool, default True
+        Cache the word to hash computation.
 
     """
 
-    def __init__(self, num_subwords, ngrams=(3, 4, 5, 6), special_tokens=None):
+    def __init__(self, num_subwords, ngrams=(3, 4, 5, 6), special_tokens=None,
+                 cache=True):
         self.num_subwords = num_subwords
         self.ngrams = ngrams
 
@@ -625,6 +628,9 @@ class NGramHashes(SubwordFunction):
             special_tokens = set()
 
         self.special_tokens = special_tokens
+
+        self.cache = cache
+        self._cache = {}
 
         # Information for __repr__
         self.ngrams = ngrams
@@ -640,22 +646,24 @@ class NGramHashes(SubwordFunction):
         np.seterr(**old_settings)
         return h
 
-    @staticmethod
-    def _get_all_ngram_generator(words, ngrams):
-        return ((('<' + word + '>')[i:i + N] for N in ngrams
-                 for i in range((len(word) + 2) - N + 1)) for word in words)
-
-    def __call__(self, words):
-        return [
-            nd.array(
-                np.array([
+    def _word_to_hashes(self, word):
+        if word not in self._cache:
+            if word not in self.special_tokens:
+                hashes = nd.array([
                     self.fasttext_hash_asbytes(
                         (u'<' + word + u'>')[i:i + N]) % self.num_subwords
                     for N in self.ngrams
                     for i in range((len(word) + 2) - N + 1)
-                ])) if word not in self.special_tokens else nd.zeros(shape=0)
-            for word in words
-        ]
+                ])
+            else:
+                hashes = nd.zeros(shape=0)
+            if self.cache:
+                self._cache[word] = hashes
+            return hashes
+        return self._cache[word]
+
+    def __call__(self, words):
+        return [self._word_to_hashes(word) for word in words]
 
     def __len__(self):
         return self.num_subwords
