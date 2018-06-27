@@ -392,7 +392,7 @@ class JiebaTokenizer(object):
 
 
 class NLTKStanfordSegmenter(object):
-    r"""Apply the NLTK Wrapper of Stanford Chinese Word Segmenter.
+    r"""Apply the Stanford Chinese Word Segmenter implemented in NLTK.
 
     Users of this class are required to install Java, NLTK and download Stanford Word Segmenter
 
@@ -409,7 +409,6 @@ class NLTKStanfordSegmenter(object):
 
     path_to_model : str, default ''
         Path to pre-trained segmentation model.
-        options are pku.gz and ctb.gz.
 
     path_to_sihan_corpora_dict : str, default ''
         Path to folder for storing dictionaries in sighan corpora.
