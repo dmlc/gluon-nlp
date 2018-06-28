@@ -21,8 +21,7 @@
 __all__ = ['RNNCellLayer', 'L2Normalization']
 
 from mxnet import ndarray
-from mxnet.gluon import Block, HybridBlock, contrib
-from mxnet.gluon.contrib.nn import SparseEmbedding
+from mxnet.gluon import Block, HybridBlock
 
 
 class RNNCellLayer(Block):

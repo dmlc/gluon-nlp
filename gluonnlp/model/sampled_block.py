@@ -194,8 +194,6 @@ class SampledLogits(HybridBlock):
                 expected_count_true, label, weight, bias):
         # (n,)
         label = F.reshape(label, shape=(-1,))
-        import numpy as np
-        sampled_candidates = sampled_candidates.astype(np.float32)
         # (num_sampled+n, )
         ids = F.concat(sampled_candidates, label, dim=0)
         # lookup weights and biases

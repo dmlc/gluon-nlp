@@ -34,7 +34,7 @@ from .. import _constants as C
 from .dataset import LanguageModelDataset
 from .stream import LanguageModelStream
 from .registry import register
-from .utils import _get_home_dir, _load_pretrained_vocab
+from .utils import _get_home_dir
 
 
 class _WikiText(LanguageModelDataset):

@@ -272,7 +272,11 @@ class StandardRNN(Block):
         return out, state, encoded_raw, encoded_dropped
 
 class BigRNN(Block):
-    """Standard RNN language model.
+    """Big language model with LSTMP and importance sampling.
+
+    Reference: https://github.com/rafaljozefowicz/lm
+
+    License: MIT
 
     Parameters
     ----------
@@ -281,11 +285,20 @@ class BigRNN(Block):
     embed_size : int
         Dimension of embedding vectors.
     hidden_size : int
-        Number of hidden units for RNN.
+        Number of hidden units for LSTMP.
     num_layers : int
-        Number of RNN layers.
+        Number of LSTMP layers.
+    projection_size : int
+        Number of projection units for LSTMP.
+    num_sampled : int
+        Number of sampled classes for the decoder.
     dropout : float
         Dropout rate to use for encoder output.
+    sparse_weight : bool
+        Whether to use RowSparseNDArray for weights of input and output embeddings.
+    sparse_grad : bool
+        Whether to use RowSparseNDArray for the gradients w.r.t.
+        weights of input and output embeddings.
 
     Inputs
     ----------
@@ -293,17 +306,27 @@ class BigRNN(Block):
         input tensor with shape `(sequence_length, batch_size)`
           when `layout` is "TNC".
     begin_state : list
-        initial recurrent state tensor with length equals to num_layers-1.
-        the initial state with shape `(num_layers, batch_size, num_hidden)`
+        initial recurrent state tensor with length equals to num_layers*2.
+        For each layer the two initial states have shape `(batch_size, num_hidden)`
+        and `(batch_size, num_projection)`
+    sampled_values : list
+        a list of three tensors for `sampled_classes` with shape `(num_samples,)`,
+        `expected_count_true` with shape `(sequence_length, batch_size)`, and
+        `expected_count_sampled` with shape `(num_samples,)`.
 
     Outputs
     -------
-    out: NDArray
-        output tensor with shape `(sequence_length, batch_size, input_size)`
+    out : NDArray
+        output tensor with shape `(sequence_length*batch_size, 1+num_samples)`
           when `layout` is "TNC".
-    out_states: list
-        output recurrent state tensor with length equals to num_layers-1.
-        the state with shape `(num_layers, batch_size, num_hidden)`
+    new_target : NDArray
+        output tensor with shape `(sequence_length*batch_size)`
+          when `layout` is "TNC".
+    out_states : list
+        output recurrent state tensor with length equals to num_layers*2.
+        For each layer the two initial states have shape `(batch_size, num_hidden)`
+        and `(batch_size, num_projection)`
+
     """
     def __init__(self, vocab_size, embed_size, hidden_size, num_layers,
                  projection_size, num_sampled, dropout=0.0,
@@ -334,8 +357,7 @@ class BigRNN(Block):
                 embed = contrib.nn.SparseEmbedding(self._vocab_size, self._embed_size,
                                                    prefix=prefix)
             else:
-                embed = nn.Embedding(self._vocab_size,
-                                     self._embed_size, prefix=prefix)
+                embed = nn.Embedding(self._vocab_size, self._embed_size, prefix=prefix)
             block.add(embed)
             if self._dropout:
                 block.add(nn.Dropout(self._dropout))
@@ -365,14 +387,13 @@ class BigRNN(Block):
     def begin_state(self, **kwargs):
         return self.encoder.begin_state(**kwargs)
 
-    def forward(self, inputs, label, begin_state, sampled_value): # pylint: disable=arguments-differ
+    def forward(self, inputs, label, begin_state, sampled_values): # pylint: disable=arguments-differ
         """Defines the forward computation. """
         encoded = self.embedding(inputs)
-        sampled_classes, exp_cnt_true, exp_cnt_sampled = sampled_value
-        # derive lenght from inputs
-        length = 20
-        encoded, state = self.encoder.unroll(length, encoded, begin_state,
-                                             layout='TNC', merge_outputs=True)
+        sampled_classes, exp_cnt_true, exp_cnt_sampled = sampled_values
+        length = inputs.shape[0]
+        encoded, out_states = self.encoder.unroll(length, encoded, begin_state,
+                                                  layout='TNC', merge_outputs=True)
         out, new_target = self.decoder(encoded, sampled_classes, exp_cnt_sampled,
                                        exp_cnt_true, label)
-        return out, new_target, state
+        return out, new_target, out_states

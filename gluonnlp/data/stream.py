@@ -54,8 +54,8 @@ class PrefetchingStream(DataStream):
 
     Parameters
     ----------
-    iters : DataIter or list of DataIter
-        The data iterators to be pre-fetched.
+    streams : DataStream or list of DataStream
+        The data streams to be pre-fetched.
 
     """
     def __init__(self, streams):
