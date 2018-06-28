@@ -1,22 +1,20 @@
 """
-Word Language Model
+Large Word Language Model
 ===================
 
-This example shows how to build a word-level language model on WikiText-2 with Gluon NLP Toolkit.
+This example shows how to build a word-level language model on Google Billion Words dataset
+with Gluon NLP Toolkit.
 By using the existing data pipeline tools and building blocks, the process is greatly simplified.
 
-We implement the AWD LSTM language model proposed in the following work.
+We implement the LSTM 2048-512 language model proposed in the following work.
 
-@article{merityRegOpt,
-  title={{Regularizing and Optimizing LSTM Language Models}},
-  author={Merity, Stephen and Keskar, Nitish Shirish and Socher, Richard},
-  journal={ICLR},
-  year={2018}
+@article{jozefowicz2016exploring,
+ title={Exploring the Limits of Language Modeling},
+ author={Jozefowicz, Rafal and Vinyals, Oriol and Schuster, Mike and Shazeer, Noam and Wu, Yonghui},
+ journal={arXiv preprint arXiv:1602.02410},
+ year={2016}
 }
 
-Note that we are using standard SGD as the optimizer for code simpilification.
-Once NT-ASGD in the work is implemented and used as the optimizer.
-Our implementation should yield identical results.
 """
 
 # coding: utf-8
@@ -55,13 +53,11 @@ curr_path = os.path.dirname(os.path.abspath(os.path.expanduser(__file__)))
 sys.path.append(os.path.join(curr_path, '..', '..'))
 
 parser = argparse.ArgumentParser(description=
-                                 'MXNet Big RNN/LSTM Language Model on Google Billion Words')
+                                 'Gluon-NLP Big LSTM 2048-512 Language Model on GBW')
 parser.add_argument('--save', type=str, default='model.params',
                     help='path to save the final model')
 parser.add_argument('--load', type=str, default=None,
                     help='path to load the final model')
-parser.add_argument('--vocab', type=str, default='./data/1b_word_vocab.txt',
-                    help='location of the corpus vocabulary file')
 parser.add_argument('--emsize', type=int, default=512,
                     help='size of word embeddings')
 parser.add_argument('--nhid', type=int, default=2048,
@@ -70,14 +66,14 @@ parser.add_argument('--nproj', type=int, default=512,
                     help='number of projection units per layer')
 parser.add_argument('--nlayers', type=int, default=1,
                     help='number of layers')
-parser.add_argument('--epochs', type=int, default=8,
+parser.add_argument('--epochs', type=int, default=50,
                     help='number of epoch for training')
 parser.add_argument('--batch-size', type=int, default=256,
-                    help='batch size per gpu??')
+                    help='batch size per gpu')
 parser.add_argument('--dropout', type=float, default=0.1,
                     help='dropout applied to layers (0 = no dropout)')
 parser.add_argument('--eps', type=float, default=1,
-                    help='epsilon for adagrad')
+                    help='initial history accumulation or adagrad')
 parser.add_argument('--bptt', type=int, default=20,
                     help='sequence length')
 parser.add_argument('--k', type=int, default=8192,
@@ -86,23 +82,33 @@ parser.add_argument('--gpus', type=str,
                     help='list of gpus to run, e.g. 0 or 0,2,5. empty means using cpu.')
 parser.add_argument('--log-interval', type=int, default=200,
                     help='report interval')
-parser.add_argument('--checkpoint-interval', type=int, default=None,
-                    help='report interval')
 parser.add_argument('--seed', type=int, default=1,
                     help='random seed')
 parser.add_argument('--lr', type=float, default=0.2,
                     help='initial learning rate')
 parser.add_argument('--clip', type=float, default=10.0,
                     help='gradient clipping by global norm.')
-parser.add_argument('--profile', action='store_true',
-                    help='Whether to use profiler')
-parser.add_argument('--unique', action='store_true',
-                    help='Whether to use unique samples')
-parser.add_argument('--test_mode', action='store_true',
+parser.add_argument('--test-mode', action='store_true',
                     help='Whether to run through the script with few examples')
 parser.add_argument('--eval', action='store_true',
                     help='Whether to only evaluate the trained model')
 args = parser.parse_args()
+
+segments = ['train', 'test']
+max_nbatch_eval = None
+
+if args.test_mode:
+    args.emsize = 200
+    args.log_interval = 5
+    args.nhid = 200
+    args.nlayers = 1
+    args.epochs = 1
+    max_nbatch_eval = 10
+    segments = ['test', 'test']
+
+print(args)
+mx.random.seed(args.seed)
+np.random.seed(args.seed)
 
 ###############################################################################
 # Vocab
@@ -115,15 +121,12 @@ ntokens = len(vocab)
 # Load data
 ###############################################################################
 
-mx.random.seed(args.seed)
-np.random.seed(args.seed)
-
 context = [mx.cpu()] if args.gpus is None or args.gpus == '' else \
           [mx.gpu(int(x)) for x in args.gpus.split(',')]
 
 train_data_stream, test_data_stream = \
     [nlp.data.GBWStream(segment=segment, skip_empty=True, bos='<eos>', eos='<eos>')
-     for segment in ['train', 'test']]
+     for segment in segments]
 
 sampler = LogUniformSampler(ntokens, args.k)
 
@@ -160,21 +163,6 @@ train_data = nlp.data.PrefetchingStream(train_data)
 test_batch_size = 1
 test_data = test_data_stream.bptt_batchify(vocab, args.bptt, test_batch_size)
 test_data = nlp.data.PrefetchingStream(test_data)
-checkpoint_interval = args.checkpoint_interval
-
-max_nbatch = None
-max_nbatch_eval = None if args.eval else 64
-
-if args.test_mode:
-    #args.emsize = 200
-    #args.nhid = 200
-    #args.nlayers = 1
-    #args.epochs = 1
-    max_nbatch = 10
-    max_nbatch_eval = 10
-    checkpoint_interval = 5
-    #train_data = test_data_stream.bptt_batchify(vocab, args.bptt, args.batch_size)
-print(args)
 
 ###############################################################################
 # Build the model
@@ -202,7 +190,6 @@ loss = gluon.loss.SoftmaxCrossEntropyLoss()
 
 def train():
     """Training loop for language model.
-
     """
     best_val = float('Inf')
     start_train_time = time.time()
@@ -216,17 +203,14 @@ def train():
         hiddens = [model.begin_state(batch_size=args.batch_size,
                                      func=mx.nd.zeros, ctx=ctx) for ctx in context]
         nbatch = 0
-        if args.profile:
-            mx.profiler.set_config(profile_all=True, filename='gluon.json')
-            mx.profiler.set_state('run')
 
-        for data_list, target_list, mask_list, sample_list in train_data:
+        for data, target, mask, sample in train_data:
             nbatch += 1
             hiddens = detach(hiddens)
             Ls = []
             L = 0
             with autograd.record():
-                for j, (X, y, m, s, h) in enumerate(zip(data_list, target_list, mask_list, sample_list, hiddens)):
+                for j, (X, y, m, s, h) in enumerate(zip(data, target, mask, sample, hiddens)):
                     output, new_target, h = model(X, y, h, s)
                     l = loss(output, new_target) * m.reshape((-1,))
                     Ls.append(l/args.batch_size)
@@ -235,7 +219,7 @@ def train():
             autograd.backward(Ls)
 
             # rescale embedding grad
-            for d in data_list:
+            for d in data:
                 x = embedding_params[0].grad(d.context)
                 x[:] *= args.batch_size
                 encoder_grad = [p.grad(d.context) for p in encoder_params]
@@ -245,10 +229,6 @@ def train():
             trainer.step(len(context))
 
             total_L += sum([mx.nd.sum(L).asscalar() / args.bptt for L in Ls])
-            if args.profile and nbatch == 10:
-                mx.profiler.set_state('stop')
-                exit()
-                break
 
             if nbatch % args.log_interval == 0:
                 cur_L = total_L / args.log_interval / len(context)
@@ -259,33 +239,13 @@ def train():
                         train_batch_size*args.log_interval/(time.time()-start_log_interval_time)))
                 total_L = 0.0
                 start_log_interval_time = time.time()
-            # early stop for testing
-            if checkpoint_interval and nbatch % checkpoint_interval == 0:
-                sys.stdout.flush()
-                model.save_parameters('/dev/shm/epoch_%d_%s'%(epoch, args.save))
-                eval_model.load_parameters('/dev/shm/epoch_%d_%s'%(epoch, args.save))
-                final_test_L = evaluate(test_data, test_batch_size, ctx=mx.cpu())
-                print('[Epoch %d Batch %d] test loss %.2f, test ppl %.2f'%(epoch, nbatch, final_test_L, math.exp(final_test_L)))
-                sys.stdout.flush()
-
-            if max_nbatch and nbatch > max_nbatch:
-                break
 
         mx.nd.waitall()
 
-        #print('[Epoch %d] throughput %.2f samples/s'%(
-        #    epoch, (args.batch_size * len(train_data)) / (time.time() - start_epoch_time)))
-
-        #val_L = evaluate(val_data, val_batch_size, context[0])
-        #print('[Epoch %d] time cost %.2fs, valid loss %.2f, valid ppl %.2f'%(
-        #    epoch, time.time()-start_epoch_time, val_L, math.exp(val_L)))
-        model.save_parameters('epoch_%d_%s'%(epoch, args.save))
-        eval_model.load_parameters('epoch_%d_%s'%(epoch, args.save))
+        model.save_parameters(args.save)
+        eval_model.load_parameters(args.save)
         final_test_L = evaluate(test_data, test_batch_size, ctx=mx.cpu())
         print('Epoch %d: test loss %.2f, test ppl %.2f'%(epoch, final_test_L, math.exp(final_test_L)))
-
-    #print('Total training throughput %.2f samples/s'
-    #      %((args.batch_size * len(train_data) * args.epochs) / (time.time() - start_train_time)))
 
 def detach(hidden):
     if isinstance(hidden, (tuple, list)):
@@ -327,8 +287,10 @@ def evaluate(data_stream, batch_size, ctx=None):
         nbatch += 1
         avg = total_L / ntotal
         if nbatch % args.log_interval == 0:
-            print('Eval till batch %d: test loss %.2f, test ppl %.2f'%(nbatch, avg, math.exp(avg)))
+            print('Evaluation till batch %d: test loss %.2f, test ppl %.2f'
+                  %(nbatch, avg, math.exp(avg)))
         if max_nbatch_eval and nbatch > max_nbatch_eval:
+            print('Quit evaluation early at batch %d'%nbatch)
             break
     return total_L / ntotal
 
@@ -343,7 +305,7 @@ if __name__ == '__main__':
         train()
     epoch = args.epochs - 1
     nbatch = -1
-    eval_model.load_parameters('/dev/shm/epoch_%d_%s'%(epoch, args.save))
+    eval_model.load_parameters(args.save)
     final_test_L = evaluate(test_data, test_batch_size, ctx=mx.cpu())
     print('[Epoch %d Batch %d] test loss %.2f, test ppl %.2f'%(epoch, nbatch, final_test_L, math.exp(final_test_L)))
     print('Total time cost %.2fs'%(time.time()-start_pipeline_time))

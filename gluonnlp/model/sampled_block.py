@@ -26,20 +26,7 @@ from mxnet.gluon.contrib.nn import SparseEmbedding
 
 
 class _SampledLogits(HybridBlock):
-    """A helper Block that passes through the input directly.
-
-    This block can be used in conjunction with HybridConcurrent
-    block for residual connection.
-
-            This under-estimates the full softmax and is only used for training.
-
-    Example::
-
-        inputs = ...
-        # for testing
-        test = nn.Dense(inputs, ...)
-        # for training
-        train = contrib.nn.SampledLogits(inputs, params=test.params)
+    """A helper Block for calculating sampled logits.
 
     Parameters
     ----------
@@ -62,18 +49,18 @@ class _SampledLogits(HybridBlock):
         self._remove_accidental_hits = remove_accidental_hits
 
     def hybrid_forward(self, F, x, sampled_candidates, expected_count_sampled,
-                expected_count_true, label, w_all, b_all):
-        # (num_sampled, dim)
+                       expected_count_true, label, w_all, b_all):
+        # (num_sampled, in_unit)
         w_sampled = w_all.slice(begin=(0, 0), end=(self._num_sampled, None))
         w_true = w_all.slice(begin=(self._num_sampled, 0), end=(None, None))
         b_sampled = b_all.slice(begin=(0,), end=(self._num_sampled,))
         b_true = b_all.slice(begin=(self._num_sampled,), end=(None,))
         # true
-        # (n, 1)
+        # (batch_size, 1)
         x = x.reshape((-1, self._in_unit))
         logits_true = (w_true * x).sum(axis=1) + b_true
         # samples
-        # (n, num_sampled)
+        # (batch_size, num_sampled)
         b_sampled = F.reshape(b_sampled, (-1,))
         logits_sampled = F.FullyConnected(x, weight=w_sampled, bias=b_sampled,
                                           num_hidden=self._num_sampled)
@@ -92,8 +79,8 @@ class _SampledLogits(HybridBlock):
         logits_true = logits_true.reshape((-1,1))
         logits_sampled = F.broadcast_sub(logits_sampled, F.log(expected_count_sampled))
 
-        # return logits and new_labels
-        # (n, 1+num_sampled)
+        # logits and new_labels
+        # (batch_size, 1+num_sampled)
         logits = F.concat(logits_true, logits_sampled, dim=1)
         return logits, F.zeros_like(label)
 
