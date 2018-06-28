@@ -145,7 +145,7 @@ def _split_and_sample(data):
         ms = gluon.utils.split_data(m, num_ctx, batch_axis=1, even_split=True)
     else:
         xs, ys, ms = [x], [y], [m]
-    ss = [sampler.draw(x) for x in xs]
+    ss = [sampler(x) for x in xs]
     xs = _load(xs)
     ys = _load(ys)
     ms = _load(ms)
@@ -157,9 +157,9 @@ train_data = train_data_stream.bptt_batchify(vocab, args.bptt, train_batch_size)
 train_data = train_data.transform(_split_and_sample)
 train_data = nlp.data.PrefetchingStream(train_data)
 
-
 test_batch_size = 1
-test_data = nlp.data.PrefetchingStream(test_data_stream.bptt_batchify(vocab, args.bptt, test_batch_size))
+test_data = test_data_stream.bptt_batchify(vocab, args.bptt, test_batch_size)
+test_data = nlp.data.PrefetchingStream(test_data)
 checkpoint_interval = args.checkpoint_interval
 
 max_nbatch = None
