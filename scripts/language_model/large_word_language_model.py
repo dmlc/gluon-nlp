@@ -43,6 +43,7 @@ import time
 import math
 import os
 import sys
+import io
 import numpy as np
 import mxnet as mx
 from mxnet import gluon, autograd
@@ -104,6 +105,13 @@ parser.add_argument('--eval', action='store_true',
 args = parser.parse_args()
 
 ###############################################################################
+# Vocab
+###############################################################################
+with io.open('gbw_vocab.json', 'r', encoding='utf-8') as in_file:
+    vocab = nlp.Vocab.from_json(in_file.read())
+ntokens = len(vocab)
+
+###############################################################################
 # Load data
 ###############################################################################
 
@@ -116,9 +124,6 @@ context = [mx.cpu()] if args.gpus is None or args.gpus == '' else \
 train_data_stream, test_data_stream = \
     [nlp.data.GBWStream(segment=segment, skip_empty=True, bos='<eos>', eos='<eos>')
      for segment in ['train', 'test']]
-
-vocab = nlp.data.GBWVocab()
-ntokens = len(vocab)
 
 sampler = LogUniformSampler(ntokens, args.k)
 
@@ -184,7 +189,7 @@ model = nlp.model.language_model.train.BigRNN(ntokens, args.emsize, args.nhid,
                                               dropout=args.dropout)
 print(model)
 model.initialize(mx.init.Xavier(), ctx=context)
-model.hybridize(static_alloc=True)
+model.hybridize(static_alloc=True, static_shape=True)
 
 trainer_params = {'learning_rate': args.lr, 'wd': 0, 'eps': args.eps}
 

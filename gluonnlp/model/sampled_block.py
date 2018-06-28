@@ -17,7 +17,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-"""Building blocks and utility for models."""
+"""Blocks for sampled losses."""
 __all__ = ['SampledLogits', 'SparseSampledLogits']
 
 from mxnet import ndarray
