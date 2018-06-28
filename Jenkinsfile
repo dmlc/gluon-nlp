@@ -33,18 +33,21 @@ stage("Unit Test") {
   },
   'Python 3': {
     node {
-      ws('workspace/gluon-nlp-py3') {
-        checkout scm
-        sh """#!/bin/bash
-        conda env update --prune -f env/py3.yml
-        source activate gluon_nlp_py3
-        conda list
-        python -m spacy download en
-        python -m nltk.downloader all
-        make clean
-        python setup.py install
-        py.test -v --capture=no --durations=0 --cov=gluonnlp --cov=scripts tests/unittest scripts
-        """
+      withCredentials([string(credentialsId: 'GluonNLPCodeCov', variable: 'CODECOV_TOKEN')]) {
+        ws('workspace/gluon-nlp-py3') {
+          checkout scm
+          sh """#!/bin/bash
+          conda env update --prune -f env/py3.yml
+          source activate gluon_nlp_py3
+          conda list
+          python -m spacy download en
+          python -m nltk.downloader all
+          make clean
+          python setup.py install
+          py.test -v --capture=no --durations=0 --cov=gluonnlp --cov=scripts tests/unittest scripts
+          bash ./codecov.sh
+          """
+        }
       }
     }
   }

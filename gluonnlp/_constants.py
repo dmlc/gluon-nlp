@@ -20,6 +20,8 @@
 # pylint: disable=too-many-lines
 """Constants."""
 
+import mxnet as mx
+
 UNK_TOKEN = '<unk>'
 
 BOS_TOKEN = '<bos>'
@@ -35,6 +37,8 @@ UNK_IDX = 0   # This should not be changed as long as serialized token
 LARGE_POSITIVE_FLOAT = 1e18
 
 LARGE_NEGATIVE_FLOAT = -LARGE_POSITIVE_FLOAT
+
+INT_TYPES = mx.base.integer_types
 
 GLOVE_NPZ_SHA1 = \
     {'glove.42B.300d': ('glove.42B.300d.npz',

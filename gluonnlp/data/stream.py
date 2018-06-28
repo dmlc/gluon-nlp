@@ -233,7 +233,7 @@ class CorpusStream(DataStream):
         sampler = self._get_sampler(self._sampler)
         file_sampler = self._get_sampler(self._file_sampler)
         # generate file samples
-        files = glob.glob(self._file_pattern)
+        files = sorted(glob.glob(self._file_pattern))
         if len(files) == 0:
             raise ValueError('Cannot find any file with path "%s"'%self._file_pattern)
         for file_idx in iter(file_sampler(len(files))):
@@ -308,7 +308,45 @@ class LanguageModelStream(CorpusStream):
         recurrent states from last batch connects with the current batch for each sample.
 
         Each sample is of shape `(seq_len, batch_size)`.
-        # TODO: example how samples are genereated.
+
+        For example, the following 4 sequences::
+
+            <bos> a b c d <eos>
+            <bos> e f g h i j <eos>
+            <bos> k l m n <eos>
+            <bos> o <eos>
+
+        will generate 2 batches with seq_len = 5, batch_size = 2 as follow (transposed):
+
+        batch_0.data.T::
+
+            <bos> a b c d
+            <bos> e f g h
+
+        batch_0.target.T::
+
+            a b c d <eos>
+            e f g h i
+
+        batch_0.mask.T::
+
+            1 1 1 1 1
+            1 1 1 1 1
+
+        batch_1.data.T::
+
+            <bos> k l m n
+            i j <bos> o <padding>
+
+        batch_1.target.T::
+
+            k l m n <eos>
+            j <bos> o <eos> <padding>
+
+        batch_1.mask.T::
+
+            1 1 1 1 1
+            1 1 1 1 0
 
         Parameters
         ----------
@@ -365,7 +403,7 @@ class _LanguageModelBPTTStream(DataStream):
             self._padding_idx = vocab[vocab.padding_token]
 
     def __iter__(self):
-        def _init(data, target, value):
+        def _init(data, target, mask, value):
             """Init the data and target with values."""
             data[:] = value
             target[:] = value
@@ -400,7 +438,7 @@ class _LanguageModelBPTTStream(DataStream):
         corpus = iter(self._corpus)
 
         while has_next or has_token_buffered:
-            _init(data, target, self._padding_idx)
+            _init(data, target, mask, self._padding_idx)
             has_token_buffered = False
             for i in range(self._batch_size):
                 length = 0

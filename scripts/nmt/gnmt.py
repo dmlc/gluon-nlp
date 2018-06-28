@@ -1,20 +1,3 @@
-"""
-Google Neural Machine Translation
-=================================
-
-This example shows how to implement the GNMT model with Gluon NLP Toolkit.
-
-@article{wu2016google,
-  title={Google's neural machine translation system:
-   Bridging the gap between human and machine translation},
-  author={Wu, Yonghui and Schuster, Mike and Chen, Zhifeng and Le, Quoc V and
-   Norouzi, Mohammad and Macherey, Wolfgang and Krikun, Maxim and Cao, Yuan and Gao, Qin and
-   Macherey, Klaus and others},
-  journal={arXiv preprint arXiv:1609.08144},
-  year={2016}
-}
-"""
-
 # coding: utf-8
 
 # Licensed to the Apache Software Foundation (ASF) under one
@@ -33,397 +16,443 @@ This example shows how to implement the GNMT model with Gluon NLP Toolkit.
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-# pylint:disable=redefined-outer-name,logging-format-interpolation
+"""Encoder and decoder usded in sequence-to-sequence learning."""
+__all__ = ['GNMTEncoder', 'GNMTDecoder', 'get_gnmt_encoder_decoder']
 
-import argparse
-import time
-import random
-import os
-import io
-import logging
-import numpy as np
 import mxnet as mx
-from mxnet import gluon
-from mxnet.gluon.data import ArrayDataset, SimpleDataset
-from mxnet.gluon.data import DataLoader
-import gluonnlp.data.batchify as btf
-from gluonnlp.data import FixedBucketSampler, IWSLT2015
-from gluonnlp.model import BeamSearchScorer
-from encoder_decoder import get_gnmt_encoder_decoder
-from translation import NMTModel, BeamSearchTranslator
-from loss import SoftmaxCEMaskedLoss
-from utils import logging_config
-from bleu import compute_bleu
-import _constants as _C
-
-np.random.seed(100)
-random.seed(100)
-mx.random.seed(10000)
-
-parser = argparse.ArgumentParser(description='Neural Machine Translation Example.'
-                                             'We train the Google NMT model')
-parser.add_argument('--dataset', type=str, default='IWSLT2015', help='Dataset to use.')
-parser.add_argument('--src_lang', type=str, default='en', help='Source language')
-parser.add_argument('--tgt_lang', type=str, default='vi', help='Target language')
-parser.add_argument('--epochs', type=int, default=40, help='upper epoch limit')
-parser.add_argument('--num_hidden', type=int, default=128, help='Dimension of the embedding '
-                                                                'vectors and states.')
-parser.add_argument('--dropout', type=float, default=0.2,
-                    help='dropout applied to layers (0 = no dropout)')
-parser.add_argument('--num_layers', type=int, default=2, help='number of layers in the encoder'
-                                                              ' and decoder')
-parser.add_argument('--num_bi_layers', type=int, default=1,
-                    help='number of bidirectional layers in the encoder and decoder')
-parser.add_argument('--batch_size', type=int, default=128, help='Batch size')
-parser.add_argument('--beam_size', type=int, default=4, help='Beam size')
-parser.add_argument('--lp_alpha', type=float, default=1.0,
-                    help='Alpha used in calculating the length penalty')
-parser.add_argument('--lp_k', type=int, default=5, help='K used in calculating the length penalty')
-parser.add_argument('--test_batch_size', type=int, default=32, help='Test batch size')
-parser.add_argument('--num_buckets', type=int, default=5, help='Bucket number')
-parser.add_argument('--bucket_ratio', type=float, default=0.0, help='Ratio for increasing the '
-                                                                    'throughput of the bucketing')
-parser.add_argument('--src_max_len', type=int, default=50, help='Maximum length of the source '
-                                                                'sentence')
-parser.add_argument('--tgt_max_len', type=int, default=50, help='Maximum length of the target '
-                                                                'sentence')
-parser.add_argument('--optimizer', type=str, default='adam', help='optimization algorithm')
-parser.add_argument('--lr', type=float, default=1E-3, help='Initial learning rate')
-parser.add_argument('--lr_update_factor', type=float, default=0.5,
-                    help='Learning rate decay factor')
-parser.add_argument('--clip', type=float, default=5.0, help='gradient clipping')
-parser.add_argument('--log_interval', type=int, default=100, metavar='N',
-                    help='report interval')
-parser.add_argument('--save_dir', type=str, default='out_dir',
-                    help='directory path to save the final model and training log')
-parser.add_argument('--gpu', type=int, default=None,
-                    help='id of the gpu to use. Set it to empty means to use cpu.')
-args = parser.parse_args()
-print(args)
-logging_config(args.save_dir)
+from mxnet.base import _as_list
+from mxnet.gluon import nn, rnn
+from mxnet.gluon.block import HybridBlock
+try:
+    from encoder_decoder import Seq2SeqEncoder, Seq2SeqDecoder, _get_attention_cell, \
+        _get_cell_type, _nested_sequence_last
+except ImportError:
+    from .encoder_decoder import Seq2SeqEncoder, Seq2SeqDecoder, _get_attention_cell, \
+        _get_cell_type, _nested_sequence_last
 
 
-def cache_dataset(dataset, prefix):
-    """Cache the processed npy dataset  the dataset into a npz
+class GNMTEncoder(Seq2SeqEncoder):
+    r"""Structure of the RNN Encoder similar to that used in
+     "[Arxiv2016] Google's Neural Machine Translation System:
+                 Bridgeing the Gap between Human and Machine Translation"
+
+    The encoder first stacks several bidirectional RNN layers and then stacks multiple
+    uni-directional RNN layers with residual connections.
 
     Parameters
     ----------
-    dataset : SimpleDataset
-    file_path : str
+    cell_type : str or function
+        Can be "lstm", "gru" or constructor functions that can be directly called,
+         like rnn.LSTMCell
+    num_layers : int
+        Total number of layers
+    num_bi_layers : int
+        Total number of bidirectional layers
+    hidden_size : int
+        Number of hidden units
+    dropout : float
+        The dropout rate
+    use_residual : bool
+        Whether to use residual connection. Residual connection will be added in the
+        uni-directional RNN layers
+    i2h_weight_initializer : str or Initializer
+        Initializer for the input weights matrix, used for the linear
+        transformation of the inputs.
+    h2h_weight_initializer : str or Initializer
+        Initializer for the recurrent weights matrix, used for the linear
+        transformation of the recurrent state.
+    i2h_bias_initializer : str or Initializer
+        Initializer for the bias vector.
+    h2h_bias_initializer : str or Initializer
+        Initializer for the bias vector.
+    prefix : str, default 'rnn_'
+        Prefix for name of `Block`s
+        (and name of weight if params is `None`).
+    params : Parameter or None
+        Container for weight sharing between cells.
+        Created if `None`.
     """
-    if not os.path.exists(_C.CACHE_PATH):
-        os.makedirs(_C.CACHE_PATH)
-    src_data = np.array([ele[0] for ele in dataset])
-    tgt_data = np.array([ele[1] for ele in dataset])
-    np.savez(os.path.join(_C.CACHE_PATH, prefix + '.npz'), src_data=src_data, tgt_data=tgt_data)
+    def __init__(self, cell_type='lstm', num_layers=2, num_bi_layers=1, hidden_size=128,
+                 dropout=0.0, use_residual=True,
+                 i2h_weight_initializer=None, h2h_weight_initializer=None,
+                 i2h_bias_initializer='zeros', h2h_bias_initializer='zeros',
+                 prefix=None, params=None):
+        super(GNMTEncoder, self).__init__(prefix=prefix, params=params)
+        self._cell_type = _get_cell_type(cell_type)
+        assert num_bi_layers <= num_layers,\
+            'Number of bidirectional layers must be smaller than the total number of layers, ' \
+            'num_bi_layers={}, num_layers={}'.format(num_bi_layers, num_layers)
+        self._num_bi_layers = num_bi_layers
+        self._num_layers = num_layers
+        self._hidden_size = hidden_size
+        self._dropout = dropout
+        self._use_residual = use_residual
+        with self.name_scope():
+            self.dropout_layer = nn.Dropout(dropout)
+            self.rnn_cells = nn.HybridSequential()
+            for i in range(num_layers):
+                if i < num_bi_layers:
+                    self.rnn_cells.add(rnn.BidirectionalCell(
+                        l_cell=self._cell_type(hidden_size=self._hidden_size,
+                                               i2h_weight_initializer=i2h_weight_initializer,
+                                               h2h_weight_initializer=h2h_weight_initializer,
+                                               i2h_bias_initializer=i2h_bias_initializer,
+                                               h2h_bias_initializer=h2h_bias_initializer,
+                                               prefix='rnn%d_l_' % i),
+                        r_cell=self._cell_type(hidden_size=self._hidden_size,
+                                               i2h_weight_initializer=i2h_weight_initializer,
+                                               h2h_weight_initializer=h2h_weight_initializer,
+                                               i2h_bias_initializer=i2h_bias_initializer,
+                                               h2h_bias_initializer=h2h_bias_initializer,
+                                               prefix='rnn%d_r_' % i)))
+                else:
+                    self.rnn_cells.add(
+                        self._cell_type(hidden_size=self._hidden_size,
+                                        i2h_weight_initializer=i2h_weight_initializer,
+                                        h2h_weight_initializer=h2h_weight_initializer,
+                                        i2h_bias_initializer=i2h_bias_initializer,
+                                        h2h_bias_initializer=h2h_bias_initializer,
+                                        prefix='rnn%d_' % i))
+
+    def __call__(self, inputs, states=None, valid_length=None):
+        """Encoder the inputs given the states and valid sequence length.
+
+        Parameters
+        ----------
+        inputs : NDArray
+            Input sequence. Shape (batch_size, length, C_in)
+        states : list of NDArrays or None
+            Initial states. The list of initial states
+        valid_length : NDArray or None
+            Valid lengths of each sequence. This is usually used when part of sequence has
+            been padded. Shape (batch_size,)
+
+        Returns
+        -------
+        encoder_outputs: list
+            Outputs of the encoder. Contains:
+
+            - outputs of the last RNN layer
+            - new_states of all the RNN layers
+        """
+        return super(GNMTEncoder, self).__call__(inputs, states, valid_length)
+
+    def forward(self, inputs, states=None, valid_length=None):  #pylint: disable=arguments-differ, missing-docstring
+        # TODO(sxjscience) Accelerate the forward using HybridBlock
+        _, length, _ = inputs.shape
+        new_states = []
+        outputs = inputs
+        for i, cell in enumerate(self.rnn_cells):
+            begin_state = None if states is None else states[i]
+            outputs, layer_states = cell.unroll(
+                length=length, inputs=inputs, begin_state=begin_state, merge_outputs=True,
+                valid_length=valid_length, layout='NTC')
+            if i < self._num_bi_layers:
+                # For bidirectional RNN, we use the states of the backward RNN
+                new_states.append(layer_states[len(self.rnn_cells[i].state_info()) // 2:])
+            else:
+                new_states.append(layer_states)
+            # Apply Dropout
+            outputs = self.dropout_layer(outputs)
+            if self._use_residual:
+                if i > self._num_bi_layers:
+                    outputs = outputs + inputs
+            inputs = outputs
+        if valid_length is not None:
+            outputs = mx.nd.SequenceMask(outputs, sequence_length=valid_length,
+                                         use_sequence_length=True, axis=1)
+        return [outputs, new_states], []
 
 
-def load_cached_dataset(prefix):
-    cached_file_path = os.path.join(_C.CACHE_PATH, prefix + '.npz')
-    if os.path.exists(cached_file_path):
-        print('Load cached data from {}'.format(cached_file_path))
-        dat = np.load(cached_file_path)
-        return ArrayDataset(np.array(dat['src_data']), np.array(dat['tgt_data']))
-    else:
-        return None
+class GNMTDecoder(HybridBlock, Seq2SeqDecoder):
+    """Structure of the RNN Encoder similar to that used in the
+    Google Neural Machine Translation paper.
 
-
-class TrainValDataTransform(object):
-    """Transform the machine translation dataset.
-
-    Clip source and the target sentences to the maximum length. For the source sentence, append the
-    EOS. For the target sentence, append BOS and EOS.
+    We use gnmt_v2 strategy in tensorflow/nmt
 
     Parameters
     ----------
-    src_vocab : Vocab
-    tgt_vocab : Vocab
-    src_max_len : int
-    tgt_max_len : int
+    cell_type : str or type
+    attention_cell : AttentionCell or str
+        Arguments of the attention cell.
+        Can be 'scaled_luong', 'normed_mlp', 'dot'
+    num_layers : int
+    hidden_size : int
+    dropout : float
+    use_residual : bool
+    output_attention: bool
+        Whether to output the attention weights
+    i2h_weight_initializer : str or Initializer
+        Initializer for the input weights matrix, used for the linear
+        transformation of the inputs.
+    h2h_weight_initializer : str or Initializer
+        Initializer for the recurrent weights matrix, used for the linear
+        transformation of the recurrent state.
+    i2h_bias_initializer : str or Initializer
+        Initializer for the bias vector.
+    h2h_bias_initializer : str or Initializer
+        Initializer for the bias vector.
+    prefix : str, default 'rnn_'
+        Prefix for name of `Block`s
+        (and name of weight if params is `None`).
+    params : Parameter or None
+        Container for weight sharing between cells.
+        Created if `None`.
     """
-    def __init__(self, src_vocab, tgt_vocab, src_max_len, tgt_max_len):
-        self._src_vocab = src_vocab
-        self._tgt_vocab = tgt_vocab
-        self._src_max_len = src_max_len
-        self._tgt_max_len = tgt_max_len
+    def __init__(self, cell_type='lstm', attention_cell='scaled_luong',
+                 num_layers=2, hidden_size=128,
+                 dropout=0.0, use_residual=True, output_attention=False,
+                 i2h_weight_initializer=None, h2h_weight_initializer=None,
+                 i2h_bias_initializer='zeros', h2h_bias_initializer='zeros',
+                 prefix=None, params=None):
+        super(GNMTDecoder, self).__init__(prefix=prefix, params=params)
+        self._cell_type = _get_cell_type(cell_type)
+        self._num_layers = num_layers
+        self._hidden_size = hidden_size
+        self._dropout = dropout
+        self._use_residual = use_residual
+        self._output_attention = output_attention
+        with self.name_scope():
+            self.attention_cell = _get_attention_cell(attention_cell, units=hidden_size)
+            self.dropout_layer = nn.Dropout(dropout)
+            self.rnn_cells = nn.HybridSequential()
+            for i in range(num_layers):
+                self.rnn_cells.add(
+                    self._cell_type(hidden_size=self._hidden_size,
+                                    i2h_weight_initializer=i2h_weight_initializer,
+                                    h2h_weight_initializer=h2h_weight_initializer,
+                                    i2h_bias_initializer=i2h_bias_initializer,
+                                    h2h_bias_initializer=h2h_bias_initializer,
+                                    prefix='rnn%d_' % i))
 
-    def __call__(self, src, tgt):
-        src_sentence = self._src_vocab[src.split()[:self._src_max_len]]
-        tgt_sentence = self._tgt_vocab[tgt.split()[:self._tgt_max_len]]
-        src_sentence.append(self._src_vocab[self._src_vocab.eos_token])
-        tgt_sentence.insert(0, self._tgt_vocab[self._tgt_vocab.bos_token])
-        tgt_sentence.append(self._tgt_vocab[self._tgt_vocab.eos_token])
-        src_npy = np.array(src_sentence, dtype=np.int32)
-        tgt_npy = np.array(tgt_sentence, dtype=np.int32)
-        return src_npy, tgt_npy
+    def init_state_from_encoder(self, encoder_outputs, encoder_valid_length=None):
+        """Initialize the state from the encoder outputs.
 
+        Parameters
+        ----------
+        encoder_outputs : list
+        encoder_valid_length : NDArray or None
 
-def process_dataset(dataset, src_vocab, tgt_vocab):
-    start = time.time()
-    dataset_processed = dataset.transform(TrainValDataTransform(src_vocab, tgt_vocab,
-                                                                args.src_max_len,
-                                                                args.tgt_max_len), lazy=False)
-    end = time.time()
-    print('Processing Time spent: {}'.format(end - start))
-    return dataset_processed
+        Returns
+        -------
+        decoder_states : list
+            The decoder states, includes:
 
+            - rnn_states : NDArray
+            - attention_vec : NDArray
+            - mem_value : NDArray
+            - mem_masks : NDArray, optional
+        """
+        mem_value, rnn_states = encoder_outputs
+        batch_size, _, mem_size = mem_value.shape
+        attention_vec = mx.nd.zeros(shape=(batch_size, mem_size), ctx=mem_value.context)
+        decoder_states = [rnn_states, attention_vec, mem_value]
+        mem_length = mem_value.shape[1]
+        if encoder_valid_length is not None:
+            mem_masks = mx.nd.broadcast_lesser(
+                mx.nd.arange(mem_length, ctx=encoder_valid_length.context).reshape((1, -1)),
+                encoder_valid_length.reshape((-1, 1)))
+            decoder_states.append(mem_masks)
+        return decoder_states
 
-def load_translation_data(dataset, src_lang='en', tgt_lang='vi'):
-    """Load translation dataset
+    def decode_seq(self, inputs, states, valid_length=None):
+        """Decode the decoder inputs. This function is only used for training.
 
-    Parameters
-    ----------
-    dataset : str
-    src_lang : str, default 'en'
-    tgt_lang : str, default 'vi'
+        Parameters
+        ----------
+        inputs : NDArray, Shape (batch_size, length, C_in)
+        states : list of NDArrays or None
+            Initial states. The list of initial decoder states
+        valid_length : NDArray or None
+            Valid lengths of each sequence. This is usually used when part of sequence has
+            been padded. Shape (batch_size,)
 
-    Returns
-    -------
+        Returns
+        -------
+        output : NDArray, Shape (batch_size, length, C_out)
+        states : list
+            The decoder states, includes:
 
-    """
-    common_prefix = 'IWSLT2015_{}_{}_{}_{}'.format(src_lang, tgt_lang,
-                                                   args.src_max_len, args.tgt_max_len)
-    if dataset == 'IWSLT2015':
-        data_train = IWSLT2015('train', src_lang=src_lang, tgt_lang=tgt_lang)
-        data_val = IWSLT2015('val', src_lang=src_lang, tgt_lang=tgt_lang)
-        data_test = IWSLT2015('test', src_lang=src_lang, tgt_lang=tgt_lang)
-    else:
-        raise NotImplementedError
-    src_vocab, tgt_vocab = data_train.src_vocab, data_train.tgt_vocab
-    data_train_processed = load_cached_dataset(common_prefix + '_train')
-    if not data_train_processed:
-        data_train_processed = process_dataset(data_train, src_vocab, tgt_vocab)
-        cache_dataset(data_train_processed, common_prefix + '_train')
-    data_val_processed = load_cached_dataset(common_prefix + '_val')
-    if not data_val_processed:
-        data_val_processed = process_dataset(data_val, src_vocab, tgt_vocab)
-        cache_dataset(data_val_processed, common_prefix + '_val')
-    data_test_processed = load_cached_dataset(common_prefix + '_test')
-    if not data_test_processed:
-        data_test_processed = process_dataset(data_test, src_vocab, tgt_vocab)
-        cache_dataset(data_test_processed, common_prefix + '_test')
-    fetch_tgt_sentence = lambda src, tgt: tgt.split()[:args.tgt_max_len]
-    val_tgt_sentences = list(data_val.transform(fetch_tgt_sentence))
-    test_tgt_sentences = list(data_test.transform(fetch_tgt_sentence))
-    return data_train_processed, data_val_processed, data_test_processed, \
-           val_tgt_sentences, test_tgt_sentences, src_vocab, tgt_vocab
+            - rnn_states : NDArray
+            - attention_vec : NDArray
+            - mem_value : NDArray
+            - mem_masks : NDArray, optional
+        additional_outputs : list
+            Either be an empty list or contains the attention weights in this step.
+            The attention weights will have shape (batch_size, length, mem_length) or
+            (batch_size, num_heads, length, mem_length)
+        """
+        length = inputs.shape[1]
+        output = []
+        additional_outputs = []
+        inputs = _as_list(mx.nd.split(inputs, num_outputs=length, axis=1, squeeze_axis=True))
+        rnn_states_l = []
+        attention_output_l = []
+        fixed_states = states[2:]
+        for i in range(length):
+            ele_output, states, ele_additional_outputs = self.forward(inputs[i], states)
+            rnn_states_l.append(states[0])
+            attention_output_l.append(states[1])
+            output.append(ele_output)
+            additional_outputs.extend(ele_additional_outputs)
+        output = mx.nd.stack(*output, axis=1)
+        if valid_length is not None:
+            states = [_nested_sequence_last(rnn_states_l, valid_length),
+                      _nested_sequence_last(attention_output_l, valid_length)] + fixed_states
+            output = mx.nd.SequenceMask(output,
+                                        sequence_length=valid_length,
+                                        use_sequence_length=True,
+                                        axis=1)
+        if self._output_attention:
+            additional_outputs = [mx.nd.concat(*additional_outputs, dim=-2)]
+        return output, states, additional_outputs
 
+    def __call__(self, step_input, states): #pylint: disable=arguments-differ
+        """One-step-ahead decoding of the GNMT decoder.
 
-def get_data_lengths(dataset):
-    return list(dataset.transform(lambda srg, tgt: (len(srg), len(tgt))))
+        Parameters
+        ----------
+        step_input : NDArray or Symbol
+        states : list of NDArray or Symbol
 
+        Returns
+        -------
+        step_output : NDArray or Symbol
+            The output of the decoder. Shape is (batch_size, C_out)
+        new_states: list
+            Includes
 
-data_train, data_val, data_test, val_tgt_sentences, test_tgt_sentences, src_vocab, tgt_vocab\
-    = load_translation_data(dataset=args.dataset, src_lang=args.src_lang, tgt_lang=args.tgt_lang)
-data_train_lengths = get_data_lengths(data_train)
-data_val_lengths = get_data_lengths(data_val)
-data_test_lengths = get_data_lengths(data_test)
+            - rnn_states : list of NDArray or Symbol
+            - attention_vec : NDArray or Symbol, Shape (batch_size, C_memory)
+            - mem_value : NDArray
+            - mem_masks : NDArray, optional
 
-with io.open(os.path.join(args.save_dir, 'val_gt.txt'), 'w') as of:
-    for ele in val_tgt_sentences:
-        of.write(' '.join(ele) + '\n')
+        step_additional_outputs : list
+            Either be an empty list or contains the attention weights in this step.
+            The attention weights will have shape (batch_size, 1, mem_length) or
+            (batch_size, num_heads, 1, mem_length)
+        """
+        return super(GNMTDecoder, self).__call__(step_input, states)
 
-with io.open(os.path.join(args.save_dir, 'test_gt.txt'), 'w') as of:
-    for ele in test_tgt_sentences:
-        of.write(' '.join(ele) + '\n')
+    def forward(self, step_input, states):  #pylint: disable=arguments-differ, missing-docstring
+        step_output, new_states, step_additional_outputs =\
+            super(GNMTDecoder, self).forward(step_input, states)
+        # In hybrid_forward, only the rnn_states and attention_vec are calculated.
+        # We directly append the mem_value and mem_masks in the forward() function.
+        # We apply this trick because the memory value/mask can be directly appended to the next
+        # timestamp and there is no need to create additional NDArrays. If we use HybridBlock,
+        # new NDArrays will be created even for identity mapping.
+        # See https://github.com/apache/incubator-mxnet/issues/10167
+        new_states += states[2:]
+        return step_output, new_states, step_additional_outputs
 
+    def hybrid_forward(self, F, step_input, states):  #pylint: disable=arguments-differ
+        """
 
-data_train = data_train.transform(lambda src, tgt: (src, tgt, len(src), len(tgt)), lazy=False)
-data_val = SimpleDataset([(ele[0], ele[1], len(ele[0]), len(ele[1]), i)
-                          for i, ele in enumerate(data_val)])
-data_test = SimpleDataset([(ele[0], ele[1], len(ele[0]), len(ele[1]), i)
-                           for i, ele in enumerate(data_test)])
-if args.gpu is None:
-    ctx = mx.cpu()
-    print('Use CPU')
-else:
-    ctx = mx.gpu(args.gpu)
+        Parameters
+        ----------
+        step_input : NDArray or Symbol
+        states : list of NDArray or Symbol
 
-encoder, decoder = get_gnmt_encoder_decoder(hidden_size=args.num_hidden,
-                                            dropout=args.dropout,
-                                            num_layers=args.num_layers,
-                                            num_bi_layers=args.num_bi_layers)
-model = NMTModel(src_vocab=src_vocab, tgt_vocab=tgt_vocab, encoder=encoder, decoder=decoder,
-                 embed_size=args.num_hidden, prefix='gnmt_')
-model.initialize(init=mx.init.Uniform(0.1), ctx=ctx)
-model.hybridize()
-logging.info(model)
+        Returns
+        -------
+        step_output : NDArray or Symbol
+            The output of the decoder. Shape is (batch_size, C_out)
+        new_states: list
+            Includes
 
-translator = BeamSearchTranslator(model=model, beam_size=args.beam_size,
-                                  scorer=BeamSearchScorer(alpha=args.lp_alpha,
-                                                          K=args.lp_k),
-                                  max_length=args.tgt_max_len)
-logging.info('Use beam_size={}, alpha={}, K={}'.format(args.beam_size, args.lp_alpha, args.lp_k))
+            - rnn_states : list of NDArray or Symbol
+            - attention_vec : NDArray or Symbol, Shape (batch_size, C_memory)
 
+        step_additional_outputs : list
+            Either be an empty list or contains the attention weights in this step.
+            The attention weights will have shape (batch_size, 1, mem_length) or
+            (batch_size, num_heads, 1, mem_length)
 
-loss_function = SoftmaxCEMaskedLoss()
-loss_function.hybridize()
-
-
-def evaluate(data_loader):
-    """Evaluate given the data loader
-
-    Parameters
-    ----------
-    data_loader : DataLoader
-
-    Returns
-    -------
-    avg_loss : float
-        Average loss
-    real_translation_out : list of list of str
-        The translation output
-    """
-    translation_out = []
-    all_inst_ids = []
-    avg_loss_denom = 0
-    avg_loss = 0.0
-    for _, (src_seq, tgt_seq, src_valid_length, tgt_valid_length, inst_ids) \
-            in enumerate(data_loader):
-        src_seq = src_seq.as_in_context(ctx)
-        tgt_seq = tgt_seq.as_in_context(ctx)
-        src_valid_length = src_valid_length.as_in_context(ctx)
-        tgt_valid_length = tgt_valid_length.as_in_context(ctx)
-        # Calculating Loss
-        out, _ = model(src_seq, tgt_seq[:, :-1], src_valid_length, tgt_valid_length - 1)
-        loss = loss_function(out, tgt_seq[:, 1:], tgt_valid_length - 1).mean().asscalar()
-        all_inst_ids.extend(inst_ids.asnumpy().astype(np.int32).tolist())
-        avg_loss += loss * (tgt_seq.shape[1] - 1)
-        avg_loss_denom += (tgt_seq.shape[1] - 1)
-        # Translate
-        samples, _, sample_valid_length =\
-            translator.translate(src_seq=src_seq, src_valid_length=src_valid_length)
-        max_score_sample = samples[:, 0, :].asnumpy()
-        sample_valid_length = sample_valid_length[:, 0].asnumpy()
-        for i in range(max_score_sample.shape[0]):
-            translation_out.append(
-                [tgt_vocab.idx_to_token[ele] for ele in
-                 max_score_sample[i][1:(sample_valid_length[i] - 1)]])
-    avg_loss = avg_loss / avg_loss_denom
-    real_translation_out = [None for _ in range(len(all_inst_ids))]
-    for ind, sentence in zip(all_inst_ids, translation_out):
-        real_translation_out[ind] = sentence
-    return avg_loss, real_translation_out
-
-
-def write_sentences(sentences, file_path):
-    with io.open(file_path, 'w', encoding='utf-8') as of:
-        for sent in sentences:
-            of.write(' '.join(sent) + '\n')
-
-
-def train():
-    """Training function."""
-    trainer = gluon.Trainer(model.collect_params(), args.optimizer, {'learning_rate': args.lr})
-
-    train_batchify_fn = btf.Tuple(btf.Pad(), btf.Pad(), btf.Stack(), btf.Stack())
-    test_batchify_fn = btf.Tuple(btf.Pad(), btf.Pad(), btf.Stack(), btf.Stack(), btf.Stack())
-    train_batch_sampler = FixedBucketSampler(lengths=data_train_lengths,
-                                             batch_size=args.batch_size,
-                                             num_buckets=args.num_buckets,
-                                             ratio=args.bucket_ratio,
-                                             shuffle=True)
-    logging.info('Train Batch Sampler:\n{}'.format(train_batch_sampler.stats()))
-    train_data_loader = DataLoader(data_train,
-                                   batch_sampler=train_batch_sampler,
-                                   batchify_fn=train_batchify_fn,
-                                   num_workers=8)
-
-    val_batch_sampler = FixedBucketSampler(lengths=data_val_lengths,
-                                           batch_size=args.test_batch_size,
-                                           num_buckets=args.num_buckets,
-                                           ratio=args.bucket_ratio,
-                                           shuffle=False)
-    logging.info('Valid Batch Sampler:\n{}'.format(val_batch_sampler.stats()))
-    val_data_loader = DataLoader(data_val,
-                                 batch_sampler=val_batch_sampler,
-                                 batchify_fn=test_batchify_fn,
-                                 num_workers=8)
-    test_batch_sampler = FixedBucketSampler(lengths=data_test_lengths,
-                                            batch_size=args.test_batch_size,
-                                            num_buckets=args.num_buckets,
-                                            ratio=args.bucket_ratio,
-                                            shuffle=False)
-    logging.info('Test Batch Sampler:\n{}'.format(test_batch_sampler.stats()))
-    test_data_loader = DataLoader(data_test,
-                                  batch_sampler=test_batch_sampler,
-                                  batchify_fn=test_batchify_fn,
-                                  num_workers=8)
-    best_valid_bleu = 0.0
-    for epoch_id in range(args.epochs):
-        log_avg_loss = 0
-        log_avg_gnorm = 0
-        log_wc = 0
-        log_start_time = time.time()
-        for batch_id, (src_seq, tgt_seq, src_valid_length, tgt_valid_length)\
-                in enumerate(train_data_loader):
-            # logging.info(src_seq.context) Context suddenly becomes GPU.
-            src_seq = src_seq.as_in_context(ctx)
-            tgt_seq = tgt_seq.as_in_context(ctx)
-            src_valid_length = src_valid_length.as_in_context(ctx)
-            tgt_valid_length = tgt_valid_length.as_in_context(ctx)
-            with mx.autograd.record():
-                out, _ = model(src_seq, tgt_seq[:, :-1], src_valid_length, tgt_valid_length - 1)
-                loss = loss_function(out, tgt_seq[:, 1:], tgt_valid_length - 1).mean()
-                loss = loss * (tgt_seq.shape[1] - 1) / (tgt_valid_length - 1).mean()
-                loss.backward()
-            grads = [p.grad(ctx) for p in model.collect_params().values()]
-            gnorm = gluon.utils.clip_global_norm(grads, args.clip)
-            trainer.step(1)
-            src_wc = src_valid_length.sum().asscalar()
-            tgt_wc = (tgt_valid_length - 1).sum().asscalar()
-            step_loss = loss.asscalar()
-            log_avg_loss += step_loss
-            log_avg_gnorm += gnorm
-            log_wc += src_wc + tgt_wc
-            if (batch_id + 1) % args.log_interval == 0:
-                wps = log_wc / (time.time() - log_start_time)
-                logging.info('[Epoch {} Batch {}/{}] loss={:.4f}, ppl={:.4f}, gnorm={:.4f}, '
-                             'throughput={:.2f}K wps, wc={:.2f}K'
-                             .format(epoch_id, batch_id + 1, len(train_data_loader),
-                                     log_avg_loss / args.log_interval,
-                                     np.exp(log_avg_loss / args.log_interval),
-                                     log_avg_gnorm / args.log_interval,
-                                     wps / 1000, log_wc / 1000))
-                log_start_time = time.time()
-                log_avg_loss = 0
-                log_avg_gnorm = 0
-                log_wc = 0
-        valid_loss, valid_translation_out = evaluate(val_data_loader)
-        valid_bleu_score, _, _, _, _ = compute_bleu([val_tgt_sentences], valid_translation_out)
-        logging.info('[Epoch {}] valid Loss={:.4f}, valid ppl={:.4f}, valid bleu={:.2f}'
-                     .format(epoch_id, valid_loss, np.exp(valid_loss), valid_bleu_score * 100))
-        test_loss, test_translation_out = evaluate(test_data_loader)
-        test_bleu_score, _, _, _, _ = compute_bleu([test_tgt_sentences], test_translation_out)
-        logging.info('[Epoch {}] test Loss={:.4f}, test ppl={:.4f}, test bleu={:.2f}'
-                     .format(epoch_id, test_loss, np.exp(test_loss), test_bleu_score * 100))
-        write_sentences(valid_translation_out,
-                        os.path.join(args.save_dir, 'epoch{:d}_valid_out.txt').format(epoch_id))
-        write_sentences(test_translation_out,
-                        os.path.join(args.save_dir, 'epoch{:d}_test_out.txt').format(epoch_id))
-        if valid_bleu_score > best_valid_bleu:
-            best_valid_bleu = valid_bleu_score
-            save_path = os.path.join(args.save_dir, 'valid_best.params')
-            logging.info('Save best parameters to {}'.format(save_path))
-            model.save_params(save_path)
+        """
+        has_mem_mask = (len(states) == 4)
+        if has_mem_mask:
+            rnn_states, attention_output, mem_value, mem_masks = states
+            mem_masks = F.expand_dims(mem_masks, axis=1)
         else:
-            new_lr = trainer.learning_rate * args.lr_update_factor
-            logging.info('Learning rate change to {}'.format(new_lr))
-            trainer.set_learning_rate(new_lr)
-    model.load_params(os.path.join(args.save_dir, 'valid_best.params'))
-    valid_loss, valid_translation_out = evaluate(val_data_loader)
-    valid_bleu_score, _, _, _, _ = compute_bleu([val_tgt_sentences], valid_translation_out)
-    logging.info('Best model valid Loss={:.4f}, valid ppl={:.4f}, valid bleu={:.2f}'
-                 .format(valid_loss, np.exp(valid_loss), valid_bleu_score * 100))
-    test_loss, test_translation_out = evaluate(test_data_loader)
-    test_bleu_score, _, _, _, _ = compute_bleu([test_tgt_sentences], test_translation_out)
-    logging.info('Best model test Loss={:.4f}, test ppl={:.4f}, test bleu={:.2f}'
-                 .format(test_loss, np.exp(test_loss), test_bleu_score * 100))
-    write_sentences(valid_translation_out,
-                    os.path.join(args.save_dir, 'best_valid_out.txt'))
-    write_sentences(test_translation_out,
-                    os.path.join(args.save_dir, 'best_test_out.txt'))
+            rnn_states, attention_output, mem_value = states
+            mem_masks = None
+        new_rnn_states = []
+        # Process the first layer
+        rnn_out, layer_state =\
+            self.rnn_cells[0](F.concat(step_input, attention_output, dim=-1), rnn_states[0])
+        new_rnn_states.append(layer_state)
+        attention_vec, attention_weights =\
+            self.attention_cell(F.expand_dims(rnn_out, axis=1),  # Shape(B, 1, C)
+                                mem_value,
+                                mem_value,
+                                mem_masks)
+        attention_vec = F.reshape(attention_vec, shape=(0, -1))
+        # Process the 2nd layer - the last layer
+        for i in range(1, len(self.rnn_cells)):
+            curr_input = rnn_out
+            rnn_cell = self.rnn_cells[i]
+            # Concatenate the attention vector calculated by the bottom layer and the output of the
+            # previous layer
+            rnn_out, layer_state = rnn_cell(F.concat(curr_input, attention_vec, dim=-1),
+                                            rnn_states[i])
+            rnn_out = self.dropout_layer(rnn_out)
+            if self._use_residual:
+                rnn_out = rnn_out + curr_input
+            # Append new RNN state
+            new_rnn_states.append(layer_state)
+        new_states = [new_rnn_states, attention_vec]
+        step_additional_outputs = []
+        if self._output_attention:
+            step_additional_outputs.append(attention_weights)
+        return rnn_out, new_states, step_additional_outputs
 
 
-if __name__ == '__main__':
-    train()
+def get_gnmt_encoder_decoder(cell_type='lstm', attention_cell='scaled_luong', num_layers=2,
+                             num_bi_layers=1, hidden_size=128, dropout=0.0, use_residual=True,
+                             i2h_weight_initializer=None, h2h_weight_initializer=None,
+                             i2h_bias_initializer='zeros', h2h_bias_initializer='zeros',
+                             prefix='gnmt_', params=None):
+    """Build a pair of GNMT encoder/decoder
+
+    Parameters
+    ----------
+    cell_type : str or type
+    attention_cell : str or AttentionCell
+    num_layers : int
+    num_bi_layers : int
+    hidden_size : int
+    dropout : float
+    use_residual : bool
+    i2h_weight_initializer : mx.init.Initializer or None
+    h2h_weight_initializer : mx.init.Initializer or None
+    i2h_bias_initializer : mx.init.Initializer or None
+    h2h_bias_initializer : mx.init.Initializer or None
+    prefix : str, default 'gnmt_'
+        Prefix for name of `Block`s.
+    params : Parameter or None
+        Container for weight sharing between cells.
+        Created if `None`.
+
+    Returns
+    -------
+    encoder : GNMTEncoder
+    decoder : GNMTDecoder
+    """
+    encoder = GNMTEncoder(cell_type=cell_type, num_layers=num_layers, num_bi_layers=num_bi_layers,
+                          hidden_size=hidden_size, dropout=dropout,
+                          use_residual=use_residual,
+                          i2h_weight_initializer=i2h_weight_initializer,
+                          h2h_weight_initializer=h2h_weight_initializer,
+                          i2h_bias_initializer=i2h_bias_initializer,
+                          h2h_bias_initializer=h2h_bias_initializer,
+                          prefix=prefix + 'enc_', params=params)
+    decoder = GNMTDecoder(cell_type=cell_type, attention_cell=attention_cell, num_layers=num_layers,
+                          hidden_size=hidden_size, dropout=dropout,
+                          use_residual=use_residual,
+                          i2h_weight_initializer=i2h_weight_initializer,
+                          h2h_weight_initializer=h2h_weight_initializer,
+                          i2h_bias_initializer=i2h_bias_initializer,
+                          h2h_bias_initializer=h2h_bias_initializer,
+                          prefix=prefix + 'dec_', params=params)
+    return encoder, decoder

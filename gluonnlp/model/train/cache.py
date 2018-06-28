@@ -52,8 +52,8 @@ class CacheCell(Block):
 
             p_{cache} \propto \sum_{i=1}^{t-1} \mathbb{1}_{w=x_{i+1}} exp(\theta {h_t}^T h_i)
 
-        where :math:`p_{cache}` is the cache distribution, :math:`1` is the identity function,
-        and :math:`h_i` is the output of timestep i.
+        where :math:`p_{cache}` is the cache distribution, :math:`\mathbb{1}` is
+        the identity function, and :math:`h_i` is the output of timestep i.
     lambdas : float
         Linear scalar between only cache and vocab distribution, the formulation is as below:
 
@@ -63,29 +63,6 @@ class CacheCell(Block):
 
         where :math:`p_{vocab}` is the vocabulary distribution and :math:`p_{cache}`
         is the cache distribution.
-
-
-    Inputs:
-        - **inputs**: NDArray
-            The input data
-        - **target**: NDArray
-            The label
-        - **next_word_history**: NDArray
-            The next word in memory
-        - **cache_history**: NDArray
-            The hidden state in cache history
-
-
-    Outputs:
-        - **out**: NDArray
-            The linear interpolation of the cache language model
-            with the regular word-level language model
-        - **next_word_history**: NDArray
-            The next words to be kept in the memory for look up
-            (size is equal to the window size)
-        - **cache_history**: NDArray
-            The hidden states to be kept in the memory for look up
-            (size is equal to the window size)
     """
     def __init__(self, lm_model, vocab_size, window, theta, lambdas, **kwargs):
         super(CacheCell, self).__init__(**kwargs)
@@ -94,7 +71,7 @@ class CacheCell(Block):
         self._theta = theta
         self._lambdas = lambdas
         with self.name_scope():
-            self._lm_model = lm_model
+            self.lm_model = lm_model
 
     def save_params(self, filename):
         """Save parameters to file.
@@ -102,7 +79,7 @@ class CacheCell(Block):
         filename : str
             Path to file.
         """
-        self._lm_model.save_params(filename)
+        self.lm_model.save_params(filename)
 
     def load_params(self, filename, ctx=mx.cpu()): # pylint: disable=arguments-differ
         """Load parameters from file.
@@ -112,19 +89,44 @@ class CacheCell(Block):
         ctx : Context or list of Context, default cpu()
             Context(s) initialize loaded parameters on.
         """
-        self._lm_model.load_params(filename, ctx=ctx)
+        self.lm_model.load_params(filename, ctx=ctx)
 
     def begin_state(self, *args, **kwargs):
         """Initialize the hidden states.
         """
-        return self._lm_model.begin_state(*args, **kwargs)
+        return self.lm_model.begin_state(*args, **kwargs)
 
 
     def forward(self, inputs, target, next_word_history, cache_history, begin_state=None): # pylint: disable=arguments-differ
         """Defines the forward computation for cache cell. Arguments can be either
-        :py:class:`NDArray` or :py:class:`Symbol`."""
+        :py:class:`NDArray` or :py:class:`Symbol`.
+
+        Parameters
+        ----------
+        inputs: NDArray
+            The input data
+        target: NDArray
+            The label
+        next_word_history: NDArray
+            The next word in memory
+        cache_history: NDArray
+            The hidden state in cache history
+
+
+        Returns
+        --------
+        out: NDArray
+            The linear interpolation of the cache language model
+            with the regular word-level language model
+        next_word_history: NDArray
+            The next words to be kept in the memory for look up
+            (size is equal to the window size)
+        cache_history: NDArray
+            The hidden states to be kept in the memory for look up
+            (size is equal to the window size)
+        """
         output, hidden, encoder_hs, _ = \
-            super(self._lm_model.__class__, self._lm_model).\
+            super(self.lm_model.__class__, self.lm_model).\
                 forward(inputs, begin_state)
         encoder_h = encoder_hs[-1].reshape(-3, -2)
         output = output.reshape(-1, self._vocab_size)

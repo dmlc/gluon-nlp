@@ -453,36 +453,74 @@ def test_iwlst2015():
         assert lhs[0] == rhs[1] and rhs[0] == lhs[1]
 
 
+def test_wmt2016():
+    train = nlp.data.WMT2016(segment='train', src_lang='en', tgt_lang='de',
+                             root='tests/data/wmt2016')
+    newstests = [nlp.data.WMT2016(segment='newstest%d' %i, src_lang='en', tgt_lang='de',
+                                  root='tests/data/wmt2016') for i in range(2012, 2017)]
+    assert len(train) == 4549428
+    assert tuple(len(ele) for ele in newstests) == (3003, 3000, 3003, 2169, 2999)
+
+    newstest_2012_2015 = nlp.data.WMT2016(segment=['newstest%d' %i for i in range(2012, 2016)],
+                                          src_lang='en', tgt_lang='de', root='tests/data/wmt2016')
+    assert len(newstest_2012_2015) == 3003 + 3000 + 3003 + 2169
+
+
 def test_wmt2016bpe():
     train = nlp.data.WMT2016BPE(segment='train', src_lang='en', tgt_lang='de',
-                                root='tests/data/wmt2016')
+                                root='tests/data/wmt2016bpe')
     newstests = [nlp.data.WMT2016BPE(segment='newstest%d' %i, src_lang='en', tgt_lang='de',
-                                     root='tests/data/wmt2016') for i in range(2012, 2017)]
+                                     root='tests/data/wmt2016bpe') for i in range(2012, 2017)]
     assert len(train) == 4500966
     assert tuple(len(ele) for ele in newstests) == (3003, 3000, 3003, 2169, 2999)
 
     newstest_2012_2015 = nlp.data.WMT2016BPE(segment=['newstest%d' %i for i in range(2012, 2016)],
-                                             src_lang='en', tgt_lang='de', root='tests/data/wmt2016')
+                                             src_lang='en', tgt_lang='de', root='tests/data/wmt2016bpe')
     assert len(newstest_2012_2015) == 3003 + 3000 + 3003 + 2169
     en_vocab, de_vocab = train.src_vocab, train.tgt_vocab
     assert len(en_vocab) == 36548
     assert len(de_vocab) == 36548
 
+
+def test_wmt2014():
+    train = nlp.data.WMT2014(segment='train', src_lang='en', tgt_lang='de',
+                             root='tests/data/wmt2014')
+    newstests = [nlp.data.WMT2014(segment='newstest%d' %i, src_lang='en', tgt_lang='de',
+                                  root='tests/data/wmt2014') for i in range(2009, 2015)]
+    assert len(train) == 4509333
+    assert tuple(len(ele) for ele in newstests) == (2525, 2489, 3003, 3003, 3000, 2737)
+
+    newstest_2009_2013 = nlp.data.WMT2014(segment=['newstest%d' %i for i in range(2009, 2014)],
+                                          src_lang='en', tgt_lang='de', root='tests/data/wmt2014')
+    assert len(newstest_2009_2013) == 2525 + 2489 + 3003 + 3003 + 3000
+
+    newstest_2014 = nlp.data.WMT2014(segment='newstest2014', src_lang='de', tgt_lang='en',
+                                     root='tests/data/wmt2014')
+    assert len(newstest_2014) == 3003
+
+
 def test_wmt2014bpe():
     train = nlp.data.WMT2014BPE(segment='train', src_lang='en', tgt_lang='de',
-                                root='tests/data/wmt2014')
+                                root='tests/data/wmt2014bpe')
     newstests = [nlp.data.WMT2014BPE(segment='newstest%d' %i, src_lang='en', tgt_lang='de',
-                                     root='tests/data/wmt2014') for i in range(2009, 2015)]
+                                     root='tests/data/wmt2014bpe') for i in range(2009, 2015)]
     assert len(train) == 4493328
-    assert tuple(len(ele) for ele in newstests) == (2525, 2489, 3003, 3003, 3000, 3003)
+    assert tuple(len(ele) for ele in newstests) == (2525, 2489, 3003, 3003, 3000, 2737)
 
     newstest_2009_2013 = nlp.data.WMT2014BPE(segment=['newstest%d' %i for i in range(2009, 2014)],
-                                             src_lang='en', tgt_lang='de', root='tests/data/wmt2014')
+                                             src_lang='en', tgt_lang='de', root='tests/data/wmt2014bpe')
     assert len(newstest_2009_2013) == 2525 + 2489 + 3003 + 3003 + 3000
     en_vocab, de_vocab = train.src_vocab, train.tgt_vocab
     assert len(en_vocab) == 36794
     assert len(de_vocab) == 36794
 
+    newstest_2014 = nlp.data.WMT2014BPE(segment='newstest2014', src_lang='de', tgt_lang='en',
+                                        root='tests/data/wmt2014bpe')
+    assert len(newstest_2014) == 3003
+
+###############################################################################
+# Stream
+###############################################################################
 def test_corpus_stream():
     EOS = nlp._constants.EOS_TOKEN
     path = os.path.join('tests', 'data', 'wikitext-2')
@@ -519,9 +557,8 @@ def test_lm_stream():
     total_num_tokens = sum(counter.values())
     num_tokens_per_batch = seq_len * batch_size
     num_tokens = 0
-    for i, (data, target) in enumerate(bptt_stream):
+    for i, (data, target, mask) in enumerate(bptt_stream):
         # count the valid tokens in the batch
-        mask = data != padding_idx
         num_valid_tokens = mask.sum().asscalar()
         if num_valid_tokens == num_tokens_per_batch:
             mx.test_utils.assert_almost_equal(data[1:].asnumpy(), target[:-1].asnumpy())
@@ -554,12 +591,29 @@ def test_prefetch_stream():
     for x, y in zip(corpus, prefetch_corpus):
         assert y == x
 
+###############################################################################
+# Question answering
+###############################################################################
+def test_load_dev_squad():
+    # number of records in dataset is equal to number of different questions
+    train_dataset = nlp.data.SQuAD(segment='train', root='tests/data/squad')
+    assert len(train_dataset) == 87599
+
+    val_dataset = nlp.data.SQuAD(segment='dev', root='tests/data/squad')
+    assert len(val_dataset) == 10570
+
+    # Each record is a tuple of 6 elements: record_id, question Id, question, context,
+    # list of answer texts, list of answer start indices
+    for record in val_dataset:
+        assert len(record) == 6
+
 def test_counter():
     x = nlp.data.Counter({'a': 10, 'b': 1, 'c': 1})
     y = x.discard(3, '<unk>')
     assert y['a'] == 10
     assert y['<unk>'] == 2
 
+'''
 def test_sorted_vocab():
     x = nlp.data.Counter({'a': 10, 'b': 1, 'c': 2, '<unk>': 3, '<bos>': 1})
     vocab0 = nlp.SortedVocab(counter=x)
@@ -581,3 +635,14 @@ def test_sorted_vocab():
     assert vocab2['a'] == 0
     assert vocab2['<unk>'] == 1
     assert vocab0['unknown_token'] == vocab0['<unk>']
+'''
+
+# this test is not tested on CI due to long running time
+def _test_gbw_stream():
+    gbw = nlp.data.GBWStream()
+    counter = nlp.data.Counter(gbw)
+    counter.discard(3, '<unk>')
+    # reference count obtained from:
+    # https://github.com/rafaljozefowicz/lm/blob/master/1b_word_vocab.txt
+    assert counter['the'] == 35936573
+    assert counter['.'] == 29969612

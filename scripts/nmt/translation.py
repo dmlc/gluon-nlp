@@ -69,8 +69,8 @@ class NMTModel(Block):
     """
     def __init__(self, src_vocab, tgt_vocab, encoder, decoder,
                  embed_size=None, embed_dropout=0.0, embed_initializer=mx.init.Uniform(0.1),
-                 src_embed=None, tgt_embed=None, share_embed=False, tgt_proj=None,
-                 prefix=None, params=None):
+                 src_embed=None, tgt_embed=None, share_embed=False, tie_weights=False,
+                 tgt_proj=None, prefix=None, params=None):
         super(NMTModel, self).__init__(prefix=prefix, params=params)
         self.tgt_vocab = tgt_vocab
         self.src_vocab = src_vocab
@@ -112,12 +112,17 @@ class NMTModel(Block):
                             nn.Embedding(input_dim=len(tgt_vocab), output_dim=embed_size,
                                          weight_initializer=embed_initializer))
                         self.tgt_embed.add(nn.Dropout(rate=embed_dropout))
-        # Construct tgt proj
-        if tgt_proj is None:
-            with self.name_scope():
-                self.tgt_proj = nn.Dense(units=len(tgt_vocab), flatten=False, prefix='tgt_proj_')
+            # Construct tgt proj
+        if tie_weights:
+            self.tgt_proj = nn.Dense(units=len(tgt_vocab), flatten=False,
+                                     params=self.tgt_embed.params, prefix='tgt_proj_')
         else:
-            self.tgt_proj = tgt_proj
+            if tgt_proj is None:
+                with self.name_scope():
+                    self.tgt_proj = nn.Dense(units=len(tgt_vocab), flatten=False,
+                                             prefix='tgt_proj_')
+            else:
+                self.tgt_proj = tgt_proj
 
     def encode(self, inputs, states=None, valid_length=None):
         """Encode the input sequence.
@@ -198,17 +203,39 @@ class NMTModel(Block):
         -------
         outputs : NDArray
             Shape (batch_size, tgt_length, tgt_word_num)
-        additional_outputs : list
-            Additional outputs, e.g, the attention weights
+        additional_outputs : list of list
+            Additional outputs of encoder and decoder, e.g, the attention weights
         """
         return super(NMTModel, self).__call__(src_seq, tgt_seq, src_valid_length, tgt_valid_length)
 
     def forward(self, src_seq, tgt_seq, src_valid_length=None, tgt_valid_length=None):  #pylint: disable=arguments-differ
-        encoder_outputs = self.encode(src_seq, valid_length=src_valid_length)
+        """Generate the prediction given the src_seq and tgt_seq.
+
+        This is used in training an NMT model.
+
+        Parameters
+        ----------
+        src_seq : NDArray
+        tgt_seq : NDArray
+        src_valid_length : NDArray or None
+        tgt_valid_length : NDArray or None
+
+        Returns
+        -------
+        outputs : NDArray
+            Shape (batch_size, tgt_length, tgt_word_num)
+        additional_outputs : list of list
+            Additional outputs of encoder and decoder, e.g, the attention weights
+        """
+        additional_outputs = []
+        encoder_outputs, encoder_additional_outputs = self.encode(src_seq,
+                                                                  valid_length=src_valid_length)
         decoder_states = self.decoder.init_state_from_encoder(encoder_outputs,
                                                               encoder_valid_length=src_valid_length)
-        outputs, _, additional_outputs =\
+        outputs, _, decoder_additional_outputs =\
             self.decode_seq(tgt_seq, decoder_states, tgt_valid_length)
+        additional_outputs.append(encoder_additional_outputs)
+        additional_outputs.append(decoder_additional_outputs)
         return outputs, additional_outputs
 
 
@@ -260,7 +287,7 @@ class BeamSearchTranslator(object):
             The valid length of the samples. Shape (batch_size, beam_size). dtype will be int32.
         """
         batch_size = src_seq.shape[0]
-        encoder_outputs = self._model.encode(src_seq, valid_length=src_valid_length)
+        encoder_outputs, _ = self._model.encode(src_seq, valid_length=src_valid_length)
         decoder_states = self._model.decoder.init_state_from_encoder(encoder_outputs,
                                                                      src_valid_length)
         inputs = mx.nd.full(shape=(batch_size,), ctx=src_seq.context, dtype=np.float32,

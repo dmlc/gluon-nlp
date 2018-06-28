@@ -23,7 +23,8 @@ clipping, padding, and tokenization."""
 from __future__ import absolute_import
 from __future__ import print_function
 
-__all__ = ['ClipSequence', 'PadSequence', 'NLTKMosesTokenizer', 'SpacyTokenizer']
+__all__ = ['ClipSequence', 'PadSequence', 'NLTKMosesTokenizer', 'SpacyTokenizer',
+           'NLTKMosesDetokenizer']
 
 import numpy as np
 import mxnet as mx
@@ -177,20 +178,23 @@ class NLTKMosesTokenizer(object):
                               'official installation guide in https://www.nltk.org/install.html .')
         self._tokenizer = MosesTokenizer()
 
-    def __call__(self, sample):
+    def __call__(self, sample, return_str=False):
         """
 
         Parameters
         ----------
         sample: str
             The sentence to tokenize
+        return_str: bool, default False
+            True: return a single string
+            False: return a list of tokens
 
         Returns
         -------
-        ret : list of strs
-            List of tokens
+        ret : list of strs or str
+            List of tokens or tokenized text
         """
-        return self._tokenizer.tokenize(sample)
+        return self._tokenizer.tokenize(sample, return_str=return_str)
 
 
 class SpacyTokenizer(object):
@@ -273,3 +277,52 @@ class SpacyTokenizer(object):
             List of tokens
         """
         return [tok.text for tok in self._nlp(sample)]
+
+
+class NLTKMosesDetokenizer(object):
+    r"""Apply the Moses Detokenizer implemented in NLTK.
+
+    Users of this class are required to `install NLTK <https://www.nltk.org/install.html>`_
+    and install relevant NLTK packages, such as:
+
+    .. code:: python
+
+        python -m nltk.downloader perluniprops nonbreaking_prefixes
+
+    Examples
+    --------
+    >>> detokenizer = NLTKMosesDetokenizer()
+    >>> detokenizer(['Gluon', 'NLP', 'toolkit', 'provides', 'a', 'suite', \
+     'of', 'text', 'processing', 'tools', '.'], return_str=True)
+    "Gluon NLP toolkit provides a suite of text processing tools."
+
+    >>> detokenizer(['Das', 'Gluon','NLP-Toolkit','stellt','eine','Reihe','von', \
+     'Textverarbeitungstools','zur','Verfügung','.'], return_str=True)
+    'Das Gluon NLP-Toolkit stellt eine Reihe von Textverarbeitungstools zur Verfügung.'
+    """
+    def __init__(self):
+        try:
+            from nltk.tokenize.moses import MosesDetokenizer
+        except ImportError:
+            raise ImportError('NLTK or relevant packages are not installed. You must install NLTK '
+                              'in order to use the NLTKMosesTokenizer. You can refer to the '
+                              'official installation guide in https://www.nltk.org/install.html .')
+        self._detokenizer = MosesDetokenizer()
+
+    def __call__(self, sample, return_str=False):
+        """
+
+        Parameters
+        ----------
+        sample: list(str)
+            The sentence to detokenize
+        return_str: bool, default False
+            True: return a single string
+            False: return a list of words
+
+        Returns
+        -------
+        ret : list of strs or str
+            List of words or detokenized text
+        """
+        return self._detokenizer.detokenize(sample, return_str=return_str)

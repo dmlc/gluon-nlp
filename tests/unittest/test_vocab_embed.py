@@ -386,7 +386,7 @@ def test_token_embedding_from_file(tmpdir):
     # Test properties
     assert my_embed.token_to_idx == {'<unk>': 0, 'a': 1, 'b': 2}
     assert my_embed.idx_to_token == ['<unk>', 'a', 'b']
-    
+
     assert_almost_equal(my_embed.idx_to_vec.asnumpy(),
                        np.array([[0,  0,  0,  0,  0],
                                  [0.1, 0.2, 0.3, 0.4, 0.5],
@@ -624,7 +624,7 @@ def test_vocab_set_embedding_with_two_custom_embeddings(tmpdir):
     assert v1.embedding is not None
     assert v1.embedding.token_to_idx == {'<unk>': 0, 'c': 1, 'b': 2, 'a': 3, 'some_word$': 4}
     assert v1.embedding.idx_to_token == ['<unk>', 'c', 'b', 'a', 'some_word$']
-    
+
     with pytest.raises(AssertionError):
         v1.set_embedding(my_embed1, None, my_embed2)
     assert_almost_equal(v1.embedding.idx_to_vec.asnumpy(),
@@ -936,3 +936,21 @@ def test_word_embedding_analogy_evaluation_models(analogy_function):
 
             # Assert output shape
             assert pred_idxs.shape[1] == k
+
+
+def test_subword_function_bytes():
+    sf = nlp.vocab.create_subword_function('ByteSubwords')
+
+    assert [116, 101, 115, 116] == sf([u'test'])[0].asnumpy().tolist()
+    assert [207, 132, 206, 181, 207, 131, 207, 132] == \
+        sf([u'τεστ'])[0].asnumpy().tolist()
+
+
+def test_subword_function_ngramhashes():
+    sf = nlp.vocab.create_subword_function('NGramHashes', ngrams=[3, 4, 5, 6],
+                                           num_subwords=1000)
+
+    assert [8.0, 195.0, 271.0, 500.0, 201.0, 445.0, 379.0, 831.0, 617.0, 851.0] == \
+        sf([u'test'])[0].asnumpy().tolist()
+    assert [253.0, 801.0, 557.0, 966.0, 63.0, 874.0, 313.0, 188.0, 588.0, 86.0] == \
+        sf([u'τεστ'])[0].asnumpy().tolist()

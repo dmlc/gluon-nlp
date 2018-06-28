@@ -27,7 +27,7 @@ import subprocess
 import codecs
 import numpy as np
 from numpy.testing import assert_allclose
-from ..nmt.bleu import compute_bleu
+from ..nmt.bleu import compute_bleu, _bpe_to_words, _split_compound_word
 
 
 actions = ['deletion', 'replacement', 'add']
@@ -113,3 +113,39 @@ def test_bleu():
     os.remove(trans_path)
     for i in range(n_refs):
         os.remove(ref_path + str(i))
+
+
+def test_detok_bleu():
+    path = os.path.dirname(os.path.realpath(__file__))
+    ref_path = os.path.join(path, 'test_references.txt')
+    trans_path = os.path.join(path, 'test_translations.txt')
+    with open(trans_path) as f:
+        translations = f.readlines()
+
+    with open(ref_path) as f:
+        references = f.readlines()
+    ret_bleu, _, _, _, _ = compute_bleu([references], translations, tokenized=False)
+    mose_ret = subprocess.check_output('perl %s/multi-bleu-detok.perl %s < %s'
+                                       % (path, ref_path, trans_path),
+                                       shell=True).decode('utf-8')
+    m = re.search('BLEU = (.+?),', mose_ret)
+    gt_bleu = float(m.group(1))
+    assert_allclose(round(ret_bleu * 100, 2), gt_bleu)
+
+
+def test_bpe():
+    sequence = ['Th@@', 'is', 'man', 'is', 'ma@@', 'rr@@', 'ied', 'wi@@', 'th', 'her']
+    gt_sequence = ['This', 'man', 'is', 'married', 'with', 'her']
+    merged_sequence = _bpe_to_words(sequence)
+    for gt_word, word in zip(gt_sequence, merged_sequence):
+        assert gt_word == word
+
+
+def test_split_compound_word():
+    sequence = ['rich-text', 'man', 'feed-forward', 'yes', 'true', 'machine-learning', 'language-model']
+    gt_sequence = ['rich', '##AT##-##AT##', 'text', 'man', 'feed', '##AT##-##AT##', 'forward',
+                   'yes', 'true', 'machine', '##AT##-##AT##', 'learning', 'language', '##AT##-##AT##', 'model']
+    split_sequence = _split_compound_word(sequence)
+    for gt_word, word in zip(gt_sequence, split_sequence):
+        assert gt_word == word
+

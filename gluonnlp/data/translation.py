@@ -20,7 +20,7 @@
 # pylint: disable=
 """Machine translation datasets."""
 
-__all__ = ['IWSLT2015', 'WMT2014BPE', 'WMT2016BPE']
+__all__ = ['IWSLT2015', 'WMT2014', 'WMT2014BPE', 'WMT2016', 'WMT2016BPE']
 
 
 import os
@@ -194,6 +194,193 @@ class IWSLT2015(_TranslationDataset):
                                         tgt_lang=tgt_lang, root=root)
 
 
+@register(segment=['train', 'newstest2009', 'newstest2010', 'newstest2011', \
+                   'newstest2012', 'newstest2013', 'newstest2014'])
+class WMT2014(_TranslationDataset):
+    """Translation Corpus of the WMT2014 Evaluation Campaign.
+
+    Parameters
+    ----------
+    segment : str or list of str, default 'train'
+        Dataset segment. Options are 'train', 'newstest2009', 'newstest2010',
+        'newstest2011', 'newstest2012', 'newstest2013', 'newstest2014' or their combinations
+    src_lang : str, default 'en'
+        The source language. Option for source and target languages are 'en' <-> 'de'
+    tgt_lang : str, default 'de'
+        The target language. Option for source and target languages are 'en' <-> 'de'
+    root : str, default '$MXNET_HOME/datasets/wmt2014'
+        Path to temp folder for storing data.
+        MXNET_HOME defaults to '~/.mxnet'.
+    """
+    def __init__(self, segment='train', src_lang='en', tgt_lang='de',
+                 root=os.path.join(_get_home_dir(), 'datasets', 'wmt2014')):
+        self._supported_segments = ['train'] + ['newstest%d' % i for i in range(2009, 2015)]
+        self._archive_file = {_get_pair_key('de', 'en'):
+                                  ('wmt2014_de_en-aa7daefa.zip',
+                                   'aa7daefa3da3b040b13d8ea6084d01abf5fc30e1')}
+        self._data_file = {_get_pair_key('de', 'en'):
+                               {'train_en': ('train.en',
+                                             'cec2d4c5035df2a54094076348eaf37e8b588a9b'),
+                                'train_de': ('train.de',
+                                             '6348764640ffc40992e7de89a8c48d32a8bcf458'),
+                                'newstest2009_en': ('newstest2009.en',
+                                                    'f8623af2de682924f9841488427e81c430e3ce60'),
+                                'newstest2009_de': ('newstest2009.de',
+                                                    'dec03f14cb47e726ccb19bec80c645d4a996f8a9'),
+                                'newstest2010_en': ('newstest2010.en',
+                                                    '5966eb13bd7cc8855cc6b40f9797607e36e9cc80'),
+                                'newstest2010_de': ('newstest2010.de',
+                                                    'b9af0cb004fa6996eda246d0173c191693b26025'),
+                                'newstest2011_en': ('newstest2011.en',
+                                                    '2c1d9d077fdbfe9d0e052a6e08a85ee7959479ab'),
+                                'newstest2011_de': ('newstest2011.de',
+                                                    'efbded3d175a9d472aa5938fe22afcc55c6055ff'),
+                                'newstest2012_en': ('newstest2012.en',
+                                                    '52f05ae725be45ee4012c6e208cef13614abacf1'),
+                                'newstest2012_de': ('newstest2012.de',
+                                                    'd9fe32143b88e6fe770843e15ee442a69ff6752d'),
+                                'newstest2013_en': ('newstest2013.en',
+                                                    '5dca5d02cf40278d8586ee7d58d58215253156a9'),
+                                'newstest2013_de': ('newstest2013.de',
+                                                    'ddda1e7b3270cb68108858640bfb619c37ede2ab'),
+                                'newstest2014_en': ('newstest2014.src.en',
+                                                    '610c5bb4cc866ad04ab1f6f80d740e1f4435027c'),
+                                'newstest2014_de': ('newstest2014.ref.de',
+                                                    '03b02c7f60c8509ba9bb4c85295358f7c9f00d2d')}}
+        if src_lang == 'de':
+            self._data_file[_get_pair_key('de', 'en')]['newstest2014_en'] = \
+                ('newstest2014.ref.en', 'cf23229ec6db8b85f240618d2a245f69afebed1f')
+            self._data_file[_get_pair_key('de', 'en')]['newstest2014_de'] = \
+                ('newstest2014.src.de', '791d644b1a031268ca19600b2734a63c7bfcecc4')
+        super(WMT2014, self).__init__('wmt2014', segment=segment, src_lang=src_lang,
+                                      tgt_lang=tgt_lang,
+                                      root=os.path.join(root, _get_pair_key(src_lang, tgt_lang)))
+
+
+@register(segment=['train', 'newstest2009', 'newstest2010', 'newstest2011', \
+                   'newstest2012', 'newstest2013', 'newstest2014'])
+class WMT2014BPE(_TranslationDataset):
+    """Preprocessed Translation Corpus of the WMT2014 Evaluation Campaign.
+
+    We preprocess the dataset by adapting
+    https://github.com/tensorflow/nmt/blob/master/nmt/scripts/wmt16_en_de.sh
+
+    Parameters
+    ----------
+    segment : str or list of str, default 'train'
+        Dataset segment. Options are 'train', 'newstest2009', 'newstest2010',
+        'newstest2011', 'newstest2012', 'newstest2013', 'newstest2014' or their combinations
+    src_lang : str, default 'en'
+        The source language. Option for source and target languages are 'en' <-> 'de'
+    tgt_lang : str, default 'de'
+        The target language. Option for source and target languages are 'en' <-> 'de'
+    root : str, default '$MXNET_HOME/datasets/wmt2014'
+        Path to temp folder for storing data.
+        MXNET_HOME defaults to '~/.mxnet'.
+    """
+    def __init__(self, segment='train', src_lang='en', tgt_lang='de',
+                 root=os.path.join(_get_home_dir(), 'datasets', 'wmt2014')):
+        self._supported_segments = ['train'] + ['newstest%d' % i for i in range(2009, 2015)]
+        self._archive_file = {_get_pair_key('de', 'en'):
+                                  ('wmt2014bpe_de_en-93c96c14.zip',
+                                   '93c96c14b094b60c9bbe316221211cf1164ab6b9')}
+        self._data_file = {_get_pair_key('de', 'en'):
+                               {'train_en': ('train.tok.clean.bpe.32000.en',
+                                             'e3f093b64468db7084035c9650d9eecb86a3db5f'),
+                                'train_de': ('train.tok.clean.bpe.32000.de',
+                                             '60703ad088706a3d9d1f3328889c6f4725a36cfb'),
+                                'newstest2009_en': ('newstest2009.tok.bpe.32000.en',
+                                                    '5678547f579528a8716298e895f886e3976085e1'),
+                                'newstest2009_de': ('newstest2009.tok.bpe.32000.de',
+                                                    '32caa69023eac1750a0036780f9d511d979aed2c'),
+                                'newstest2010_en': ('newstest2010.tok.bpe.32000.en',
+                                                    '813103f7b4b472cf213fe3b2c3439e267dbc4afb'),
+                                'newstest2010_de': ('newstest2010.tok.bpe.32000.de',
+                                                    '972076a897ecbc7a3acb639961241b33fd58a374'),
+                                'newstest2011_en': ('newstest2011.tok.bpe.32000.en',
+                                                    'c3de2d72d5e7bdbe848839c55c284fece90464ce'),
+                                'newstest2011_de': ('newstest2011.tok.bpe.32000.de',
+                                                    '7a8722aeedacd99f1aa8dffb6d8d072430048011'),
+                                'newstest2012_en': ('newstest2012.tok.bpe.32000.en',
+                                                    '876ad3c72e33d8e1ed14f5362f97c771ce6a9c7f'),
+                                'newstest2012_de': ('newstest2012.tok.bpe.32000.de',
+                                                    '57467fcba8442164d058a05eaf642a1da1d92c13'),
+                                'newstest2013_en': ('newstest2013.tok.bpe.32000.en',
+                                                    'de06a155c3224674b2434f3ff3b2c4a4a293d238'),
+                                'newstest2013_de': ('newstest2013.tok.bpe.32000.de',
+                                                    '094084989128dd091a2fe2a5818a86bc99ecc0e7'),
+                                'newstest2014_en': ('newstest2014.tok.bpe.32000.src.en',
+                                                    '347cf4d3d5c3c46ca1220247d22c07aa90092bd9'),
+                                'newstest2014_de': ('newstest2014.tok.bpe.32000.ref.de',
+                                                    'f66b80a0c460c524ec42731e527c54aab5507a66'),
+                                'vocab_en': ('vocab.bpe.32000.json',
+                                             '71413f497ce3a0fa691c55277f367e5d672b27ee'),
+                                'vocab_de': ('vocab.bpe.32000.json',
+                                             '71413f497ce3a0fa691c55277f367e5d672b27ee')}}
+        if src_lang == 'de':
+            self._data_file[_get_pair_key('de', 'en')]['newstest2014_en'] = \
+                ('newstest2014.tok.bpe.32000.ref.en', 'cd416085db722bf07cbba4ff29942fe94e966023')
+            self._data_file[_get_pair_key('de', 'en')]['newstest2014_de'] = \
+                ('newstest2014.tok.bpe.32000.src.de', '9274d31f92141933f29a405753d5fae051fa5725')
+        super(WMT2014BPE, self).__init__('wmt2014', segment=segment, src_lang=src_lang,
+                                         tgt_lang=tgt_lang,
+                                         root=os.path.join(root, _get_pair_key(src_lang, tgt_lang)))
+
+
+@register(segment=['train', 'newstest2012', 'newstest2013', 'newstest2014', \
+                   'newstest2015', 'newstest2016'])
+class WMT2016(_TranslationDataset):
+    """Translation Corpus of the WMT2016 Evaluation Campaign.
+
+    Parameters
+    ----------
+    segment : str or list of str, default 'train'
+        Dataset segment. Options are 'train', 'newstest2012', 'newstest2013',
+        'newstest2014', 'newstest2015', 'newstest2016' or their combinations
+    src_lang : str, default 'en'
+        The source language. Option for source and target languages are 'en' <-> 'de'
+    tgt_lang : str, default 'de'
+        The target language. Option for source and target languages are 'en' <-> 'de'
+    root : str, default '$MXNET_HOME/datasets/wmt2016'
+        Path to temp folder for storing data.
+        MXNET_HOME defaults to '~/.mxnet'.
+    """
+    def __init__(self, segment='train', src_lang='en', tgt_lang='de',
+                 root=os.path.join(_get_home_dir(), 'datasets', 'wmt2016')):
+        self._supported_segments = ['train'] + ['newstest%d' % i for i in range(2012, 2017)]
+        self._archive_file = {_get_pair_key('de', 'en'):
+                                  ('wmt2016_de_en-88767407.zip',
+                                   '887674077b951ce949fe3e597086b826bd7574d8')}
+        self._data_file = {_get_pair_key('de', 'en'):
+                               {'train_en': ('train.en',
+                                             '1be6d00c255c57183305276c5de60771e201d3b0'),
+                                'train_de': ('train.de',
+                                             '4eec608b8486bfb65b61bda237b0c9b3c0f66f17'),
+                                'newstest2012_en': ('newstest2012.en',
+                                                    '52f05ae725be45ee4012c6e208cef13614abacf1'),
+                                'newstest2012_de': ('newstest2012.de',
+                                                    'd9fe32143b88e6fe770843e15ee442a69ff6752d'),
+                                'newstest2013_en': ('newstest2013.en',
+                                                    '5dca5d02cf40278d8586ee7d58d58215253156a9'),
+                                'newstest2013_de': ('newstest2013.de',
+                                                    'ddda1e7b3270cb68108858640bfb619c37ede2ab'),
+                                'newstest2014_en': ('newstest2014.en',
+                                                    '528742a3a9690995d031f49d1dbb704844684976'),
+                                'newstest2014_de': ('newstest2014.de',
+                                                    '2374b6a28cecbd965b73a9acc35a425e1ed81963'),
+                                'newstest2015_en': ('newstest2015.en',
+                                                    'bf90439b209a496128995c4b948ad757979d0756'),
+                                'newstest2015_de': ('newstest2015.de',
+                                                    'd69ac825fe3d5796b4990b969ad71903a38a0cd1'),
+                                'newstest2016_en': ('newstest2016.en',
+                                                    'a99c145d5214eb1645b56d21b02a541fbe7eb3c2'),
+                                'newstest2016_de': ('newstest2016.de',
+                                                    'fcdd3104f21eb4b9c49ba8ddef46d9b2d472b3fe')}}
+        super(WMT2016, self).__init__('wmt2016', segment=segment, src_lang=src_lang,
+                                      tgt_lang=tgt_lang,
+                                      root=os.path.join(root, _get_pair_key(src_lang, tgt_lang)))
+
+
 @register(segment=['train', 'newstest2012', 'newstest2013', 'newstest2014', \
                    'newstest2015', 'newstest2016'])
 class WMT2016BPE(_TranslationDataset):
@@ -219,7 +406,7 @@ class WMT2016BPE(_TranslationDataset):
                  root=os.path.join(_get_home_dir(), 'datasets', 'wmt2016')):
         self._supported_segments = ['train'] + ['newstest%d' % i for i in range(2012, 2017)]
         self._archive_file = {_get_pair_key('de', 'en'):
-                                  ('wmt2016_de_en.zip',
+                                  ('wmt2016bpe_de_en-8cf0dbf6.zip',
                                    '8cf0dbf6a102381443a472bcf9f181299231b496')}
         self._data_file = {_get_pair_key('de', 'en'):
                                {'train_en': ('train.tok.clean.bpe.32000.en',
@@ -251,70 +438,5 @@ class WMT2016BPE(_TranslationDataset):
                                 'vocab_de': ('vocab.bpe.32000.json',
                                              '1c5aea0a77cad592c4e9c1136ec3b70ceeff4e8c')}}
         super(WMT2016BPE, self).__init__('wmt2016', segment=segment, src_lang=src_lang,
-                                         tgt_lang=tgt_lang,
-                                         root=os.path.join(root, _get_pair_key(src_lang, tgt_lang)))
-
-
-@register(segment=['train', 'newstest2009', 'newstest2010', 'newstest2011', \
-                   'newstest2012', 'newstest2013', 'newstest2014'])
-class WMT2014BPE(_TranslationDataset):
-    """Preprocessed Translation Corpus of the WMT2014 Evaluation Campaign.
-
-    We preprocess the dataset by adapting
-    https://github.com/tensorflow/nmt/blob/master/nmt/scripts/wmt16_en_de.sh
-
-    Parameters
-    ----------
-    segment : str or list of str, default 'train'
-        Dataset segment. Options are 'train', 'newstest2009', 'newstest2010',
-        'newstest2011', 'newstest2012', 'newstest2013', 'newstest2014' or their combinations
-    src_lang : str, default 'en'
-        The source language. Option for source and target languages are 'en' <-> 'de'
-    tgt_lang : str, default 'de'
-        The target language. Option for source and target languages are 'en' <-> 'de'
-    root : str, default '$MXNET_HOME/datasets/wmt2014'
-        Path to temp folder for storing data.
-        MXNET_HOME defaults to '~/.mxnet'.
-    """
-    def __init__(self, segment='train', src_lang='en', tgt_lang='de',
-                 root=os.path.join(_get_home_dir(), 'datasets', 'wmt2014')):
-        self._supported_segments = ['train'] + ['newstest%d' % i for i in range(2009, 2015)]
-        self._archive_file = {_get_pair_key('de', 'en'):
-                                  ('wmt2014_de_en.zip',
-                                   '718450a93bc8926f80b43b45af3d6a77009659a0')}
-        self._data_file = {_get_pair_key('de', 'en'):
-                               {'train_en': ('train.tok.clean.bpe.32000.en',
-                                             'e3f093b64468db7084035c9650d9eecb86a3db5f'),
-                                'train_de': ('train.tok.clean.bpe.32000.de',
-                                             '60703ad088706a3d9d1f3328889c6f4725a36cfb'),
-                                'newstest2009_en': ('newstest2009.tok.bpe.32000.en',
-                                                    '5678547f579528a8716298e895f886e3976085e1'),
-                                'newstest2009_de': ('newstest2009.tok.bpe.32000.de',
-                                                    '32caa69023eac1750a0036780f9d511d979aed2c'),
-                                'newstest2010_en': ('newstest2010.tok.bpe.32000.en',
-                                                    '813103f7b4b472cf213fe3b2c3439e267dbc4afb'),
-                                'newstest2010_de': ('newstest2010.tok.bpe.32000.de',
-                                                    '972076a897ecbc7a3acb639961241b33fd58a374'),
-                                'newstest2011_en': ('newstest2011.tok.bpe.32000.en',
-                                                    'c3de2d72d5e7bdbe848839c55c284fece90464ce'),
-                                'newstest2011_de': ('newstest2011.tok.bpe.32000.de',
-                                                    '7a8722aeedacd99f1aa8dffb6d8d072430048011'),
-                                'newstest2012_en': ('newstest2012.tok.bpe.32000.en',
-                                                    '876ad3c72e33d8e1ed14f5362f97c771ce6a9c7f'),
-                                'newstest2012_de': ('newstest2012.tok.bpe.32000.de',
-                                                    '57467fcba8442164d058a05eaf642a1da1d92c13'),
-                                'newstest2013_en': ('newstest2013.tok.bpe.32000.en',
-                                                    'de06a155c3224674b2434f3ff3b2c4a4a293d238'),
-                                'newstest2013_de': ('newstest2013.tok.bpe.32000.de',
-                                                    '094084989128dd091a2fe2a5818a86bc99ecc0e7'),
-                                'newstest2014_en': ('newstest2014.tok.bpe.32000.en',
-                                                    'cd416085db722bf07cbba4ff29942fe94e966023'),
-                                'newstest2014_de': ('newstest2014.tok.bpe.32000.de',
-                                                    '9274d31f92141933f29a405753d5fae051fa5725'),
-                                'vocab_en': ('vocab.bpe.32000.json',
-                                             '71413f497ce3a0fa691c55277f367e5d672b27ee'),
-                                'vocab_de': ('vocab.bpe.32000.json',
-                                             '71413f497ce3a0fa691c55277f367e5d672b27ee')}}
-        super(WMT2014BPE, self).__init__('wmt2014', segment=segment, src_lang=src_lang,
                                          tgt_lang=tgt_lang,
                                          root=os.path.join(root, _get_pair_key(src_lang, tgt_lang)))

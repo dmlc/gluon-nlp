@@ -56,37 +56,40 @@ A Quick Example
 Here is a quick example that downloads and creates a word embedding model and then
 computes the cosine similarity between two words.
 
+(You can click the go button on the right bottom corner to run this example.)
+
+.. raw:: html
+
+  <iframe height="400px" width="100%"
+  src="https://repl.it/@szha/gluon-nlp?lite=true" scrolling="no"
+  frameborder="no" allowtransparency="true" allowfullscreen="true"
+  sandbox="allow-forms allow-pointer-lock allow-popups allow-same-origin
+  allow-scripts allow-modals"></iframe>
+
+  <p></p>
+
+
 ..
-   (You can click the go button on the
-   right bottom corner to run this example.)
+    .. code-block:: python
 
 ..
-   .. raw:: html
+       import mxnet as mx
+       import gluonnlp as nlp
 
-      <iframe height="400px" width="100%"
-      src="https://repl.it/@mli/gluon-nlp?lite=true" scrolling="no"
-      frameborder="no" allowtransparency="true" allowfullscreen="true"
-      sandbox="allow-forms allow-pointer-lock allow-popups allow-same-origin
-      allow-scripts allow-modals"></iframe>
+..
+       # Create a GloVe word embedding.
+       glove = nlp.embedding.create('glove', source='glove.6B.50d')
+       # Obtain vectors for 'baby' and 'infant' in the GloVe word embedding. 
+       baby, infant = glove['baby'], glove['infant']
 
-      <p></p>
+..
+       def cos_similarity(vec1, vec2):
+           # Normalize the dot product of two vectors with the L2-norm product.
+           return mx.nd.dot(vec1, vec2) / (vec1.norm() * vec2.norm())
 
+..
+       print(cos_similarity(baby, infant))
 
-.. code-block:: python
-
-   import mxnet as mx
-   import gluonnlp as nlp
-
-   # Create a GloVe word embedding.
-   glove = nlp.embedding.create('glove', source='glove.6B.50d')
-   # Obtain vectors for 'baby' and 'infant' in the GloVe word embedding. 
-   baby, infant = glove['baby'], glove['infant']
-
-   def cos_similarity(vec1, vec2):
-       # Normalize the dot product of two vectors with the L2-norm product.
-       return mx.nd.dot(vec1, vec2) / (vec1.norm() * vec2.norm())
-
-   print(cos_similarity(baby, infant))
 
 
 Contents

@@ -12,6 +12,6 @@ dependencies:
   - recommonmark
   - spacy
   - nltk
-  - pandoc=2.1.3
+  - pandoc=2.2.1
   - pip:
     - mxnet-cu80>=1.2.0b20180518

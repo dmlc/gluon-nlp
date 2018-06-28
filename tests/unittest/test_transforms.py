@@ -90,3 +90,16 @@ def test_spacy_tokenizer():
         return
     assert isinstance(ret, list)
     assert len(ret) > 0
+
+
+def test_moses_detokenizer():
+    detokenizer = NLTKMosesDetokenizer()
+    text = ['Introducing', 'Gluon', ':', 'An', 'Easy-to-Use', 'Programming',
+            'Interface', 'for', 'Flexible', 'Deep', 'Learning', '.']
+    try:
+        ret = detokenizer(text)
+    except ImportError:
+        warnings.warn("NLTK not installed, skip test_moses_detokenizer().")
+        return
+    assert isinstance(ret, list)
+    assert len(ret) > 0

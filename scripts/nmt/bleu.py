@@ -18,8 +18,13 @@
 # under the License.
 
 """BLEU."""
+import sys
+import re
 import math
+import unicodedata
 from collections import Counter
+import six
+LIST_TYPES = (list, tuple)
 
 
 def _ngrams(segment, n):
@@ -44,22 +49,143 @@ def _ngrams(segment, n):
     return ngram_counts
 
 
-def compute_bleu(reference_corpus_list, translation_corpus,
-                 max_n=4, smooth=False, lower_case=False):
-    """Compute bleu score of translation against references.
+def _split_compound_word(segment):
+    """Put compounds in ATAT format.
+       rich-text format" --> rich ##AT##-##AT## text format.
+    """
+    return re.sub(r'(\S)-(\S)', '\\1 ##AT##-##AT## \\2', ' '.join(segment)).split()
+
+
+def _bpe_to_words(sentence, delimiter='@@'):
+    """Convert a sequence of bpe words into sentence."""
+    words = []
+    word = ''
+    delimiter_len = len(delimiter)
+    for subwords in sentence:
+        if len(subwords) >= delimiter_len and subwords[-delimiter_len:] == delimiter:
+            word += subwords[:-delimiter_len]
+        else:
+            word += subwords
+            words.append(word)
+            word = ''
+    return words
+
+
+def _tokenize_mteval_13a(segment):
+    r"""
+    Tokenizes a string following the tokenizer in mteval-v13a.pl.
+    See https://github.com/moses-smt/mosesdecoder/"
+           "blob/master/scripts/generic/mteval-v14.pl#L917-L942
+    Parameters
+    ----------
+    segment: str
+        A string to be tokenzied
+
+    Returns
+    -------
+    The tokenized string
+    """
+
+    norm = segment.rstrip()
+
+    norm = norm.replace('<skipped>', '')
+    norm = norm.replace('-\n', '')
+    norm = norm.replace('\n', ' ')
+    norm = norm.replace('&quot;', '"')
+    norm = norm.replace('&amp;', '&')
+    norm = norm.replace('&lt;', '<')
+    norm = norm.replace('&gt;', '>')
+
+    norm = ' {} '.format(norm)
+    norm = re.sub(r'([\{-\~\[-\` -\&\(-\+\:-\@\/])', ' \\1 ', norm)
+    norm = re.sub(r'([^0-9])([\.,])', '\\1 \\2 ', norm)
+    norm = re.sub(r'([\.,])([^0-9])', ' \\1 \\2', norm)
+    norm = re.sub(r'([0-9])(-)', '\\1 \\2 ', norm)
+    norm = re.sub(r'\s+', ' ', norm)
+    norm = re.sub(r'^\s+', '', norm)
+    norm = re.sub(r'\s+$', '', norm)
+
+    return norm
+
+
+class UnicodeRegex(object):
+    """Ad-hoc hack to recognize all punctuation and symbols.
+    """
+    def __init__(self):
+        punctuation = self._property_chars('P')
+        self.nondigit_punct_re = re.compile(r'([^\d])([' + punctuation + r'])')
+        self.punct_nondigit_re = re.compile(r'([' + punctuation + r'])([^\d])')
+        self.symbol_re = re.compile('([' + self._property_chars('S') + '])')
+
+    def _property_chars(self, prefix):
+        return ''.join(six.unichr(x) for x in range(sys.maxunicode)
+                       if unicodedata.category(six.unichr(x)).startswith(prefix))
+
+
+unicodeRegex = UnicodeRegex()
+
+
+def _tokenize_mteval_v14_intl(segment):
+    r"""Tokenize a string following following the international tokenizer in mteval-v14a.pl.
+    See https://github.com/moses-smt/mosesdecoder/"
+           "blob/master/scripts/generic/mteval-v14.pl#L954-L983
 
     Parameters
     ----------
-    reference_corpus_list: list of list(list(str))
+    segment: str
+        A string to be tokenized
+
+    Returns
+    -------
+    The tokenized string
+    """
+    segment = segment.rstrip()
+    segment = unicodeRegex.nondigit_punct_re.sub(r'\1 \2 ', segment)
+    segment = unicodeRegex.punct_nondigit_re.sub(r' \1 \2', segment)
+    segment = unicodeRegex.symbol_re.sub(r' \1 ', segment)
+    return segment.strip()
+
+
+TOKENIZERS = {
+    '13a': _tokenize_mteval_13a,
+    'intl': _tokenize_mteval_v14_intl,
+    None: lambda x: x,
+}
+
+
+def compute_bleu(reference_corpus_list, translation_corpus, tokenized=True,
+                 tokenizer='13a', max_n=4, smooth=False, lower_case=False,
+                 bpe=False, split_compound_word=False):
+    r"""Compute bleu score of translation against references.
+
+    Parameters
+    ----------
+    reference_corpus_list: list of list(list(str)) or list of list(str)
+        list of list(list(str)): tokenzied references
+        list of list(str): plain text
         List of references for each translation.
-    translation_corpus: list(list(str))
+    translation_corpus: list(list(str)) or list(str)
+        list(list(str)): tokenzied translation
+        list(str): plain text
         Translations to score.
+    tokenized: bool, default True
+        Whether the inputs has been tokenized.
+    tokenizer: str or None, default '13a'
+        '13a': follow the tokenizer in mteval-v13a.pl
+        'intl': follow the international tokenzier in mteval-v14.pl
+        None: identity mapping on the string.
+        This option is ignored if tokenized is True
     max_n: int, default 4
         Maximum n-gram order to use when computing BLEU score.
     smooth: bool, default False
         Whether or not to compute smoothed bleu score.
     lower_case: bool, default False
         Whether or not to use lower case of tokens
+    split_compound_word: bool, default False
+        Whether or not to split compound words
+        "rich-text format" --> rich ##AT##-##AT## text format.
+    bpe: bool, default False
+        Whether or not the inputs are in BPE format
 
     Returns
     -------
@@ -72,8 +198,26 @@ def compute_bleu(reference_corpus_list, translation_corpus,
     for references in reference_corpus_list:
         assert len(references) == len(translation_corpus), \
             'The number of translations and their references do not match'
-
+    if tokenized:
+        assert isinstance(reference_corpus_list[0][0], LIST_TYPES) and \
+               isinstance(translation_corpus[0], LIST_TYPES), \
+            'references and translation should have format of list of list(list(str)) ' \
+            'and list(list(str)), respectively, when toknized is True.'
+    else:
+        assert isinstance(reference_corpus_list[0][0], str) and \
+               isinstance(translation_corpus[0], str), \
+            'references and translation should have format of list(list(str)) ' \
+            'and list(str), respectively, when toknized is False.'
     for references, translation in zip(zip(*reference_corpus_list), translation_corpus):
+        if not tokenized:
+            references = [TOKENIZERS[tokenizer](reference).split() for reference in references]
+            translation = TOKENIZERS[tokenizer](translation).split()
+        if bpe:
+            references = [_bpe_to_words(reference) for reference in references]
+            translation = _bpe_to_words(translation)
+        if split_compound_word:
+            references = [_split_compound_word(reference) for reference in references]
+            translation = _split_compound_word(translation)
         if lower_case:
             references = [list(map(str.lower, reference)) for reference in references]
             translation = list(map(str.lower, translation))
