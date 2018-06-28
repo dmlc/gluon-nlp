@@ -20,11 +20,11 @@ Use the following commands to train the Transformer model on the WMT14 dataset f
    $ python train_transformer.py --dataset WMT2014BPE --src_lang en --tgt_lang de --batch_size 4096 \
                           --optimizer adam --num_accumulated 8 --lr 1.0 --warmup_steps 8000 \
                           --save_dir transformer_en_de_u512 --epochs 40 --gpus 0,1,2,3
-                          --average_start 5 --num_buckets 20 --bleu 13a
+                          --average_start 5 --num_buckets 20 --bucket_scheme exp --bleu 13a
 
-It gets official mteval-v13a BLEU score equals to 26.81 on newstest2014. This result is obtained by using averaged SGD in last 5 epochs.
-If we use international tokenization (i.e., ``--bleu intl``), we can obtain bleu score equals to 27.65. If we use ``--bleu t2t``,
-we obtain test BLEU score equals to 28.74 on newstest2014. This result is obtained on tweaked reference, where the tokenized reference text
+It gets official mteval-v13a BLEU score equals to 26.95 on newstest2014. This result is obtained by using averaged SGD in last 5 epochs.
+If we use international tokenization (i.e., ``--bleu intl``), we can obtain bleu score equals to 27.75. If we use ``--bleu t2t``,
+we obtain test BLEU score equals to 28.81 on newstest2014. This result is obtained on tweaked reference, where the tokenized reference text
 is put in ATAT format for historical reason and following preprocessing pipeline is done:
 
 .. code-block:: console

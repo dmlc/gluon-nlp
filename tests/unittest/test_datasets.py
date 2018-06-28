@@ -498,6 +498,10 @@ def test_wmt2014():
                                      root='tests/data/wmt2014')
     assert len(newstest_2014) == 3003
 
+    newstest_2014 = nlp.data.WMT2014(segment='newstest2014', src_lang='de', tgt_lang='en', full=True,
+                                     root='tests/data/wmt2014')
+    assert len(newstest_2014) == 3003
+
 
 def test_wmt2014bpe():
     train = nlp.data.WMT2014BPE(segment='train', src_lang='en', tgt_lang='de',
@@ -515,6 +519,10 @@ def test_wmt2014bpe():
     assert len(de_vocab) == 36794
 
     newstest_2014 = nlp.data.WMT2014BPE(segment='newstest2014', src_lang='de', tgt_lang='en',
+                                        root='tests/data/wmt2014bpe')
+    assert len(newstest_2014) == 3003
+
+    newstest_2014 = nlp.data.WMT2014BPE(segment='newstest2014', src_lang='de', tgt_lang='en', full=True,
                                         root='tests/data/wmt2014bpe')
     assert len(newstest_2014) == 3003
 
