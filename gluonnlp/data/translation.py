@@ -337,9 +337,11 @@ class WMT2014BPE(_TranslationDataset):
         else:
             if src_lang == 'de':
                 self._data_file[_get_pair_key('de', 'en')]['newstest2014_en'] = \
-                    ('newstest2014.tok.bpe.32000.ref.en', 'cd416085db722bf07cbba4ff29942fe94e966023')
+                    ('newstest2014.tok.bpe.32000.ref.en',
+                     'cd416085db722bf07cbba4ff29942fe94e966023')
                 self._data_file[_get_pair_key('de', 'en')]['newstest2014_de'] = \
-                    ('newstest2014.tok.bpe.32000.src.de', '9274d31f92141933f29a405753d5fae051fa5725')
+                    ('newstest2014.tok.bpe.32000.src.de',
+                     '9274d31f92141933f29a405753d5fae051fa5725')
         super(WMT2014BPE, self).__init__('wmt2014', segment=segment, src_lang=src_lang,
                                          tgt_lang=tgt_lang,
                                          root=os.path.join(root, _get_pair_key(src_lang, tgt_lang)))
