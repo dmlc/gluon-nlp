@@ -116,8 +116,9 @@ def _expand_to_beam_size(data, beam_size, batch_size, state_info=None):
                 for k, v in data.items()}
     elif isinstance(data, mx.nd.NDArray):
         if not state_info:
-            state_info = {'__layout__': 'NC'}
-        batch_axis = state_info['__layout__'].find('N')
+            batch_axis = 0
+        else:
+            batch_axis = batch_axis = state_info['__layout__'].find('N')
         if data.shape[batch_axis] != batch_size:
             raise ValueError('The batch dimension of all the inner elements in states must be '
                              '{}, Found shape={}'.format(batch_size, data.shape))
@@ -168,8 +169,9 @@ def _choose_states(F, states, state_info, indices):
                 for k, v in states.items()}
     elif isinstance(states, (mx.nd.NDArray, mx.sym.Symbol)):
         if not state_info:
-            state_info = {'__layout__': 'NC'}
-        batch_axis = state_info['__layout__'].find('N')
+            batch_axis = 0
+        else:
+            batch_axis = state_info['__layout__'].find('N')
         if batch_axis != 0:
             states = states.swapaxes(0, batch_axis)
         states = F.take(states, indices)
