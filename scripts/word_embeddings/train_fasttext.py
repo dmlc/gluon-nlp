@@ -52,6 +52,7 @@ import time
 import warnings
 
 import mxnet as mx
+from mxnet import nd
 import numpy as np
 import gluonnlp as nlp
 from gluonnlp.base import numba_njit, numba_prange
@@ -158,12 +159,14 @@ def get_train_data(args):
         ]
 
     with print_time('prune frequent words from sentences'):
-        f = idx_to_counts / np.sum(idx_to_counts)
+        num_tokens = int(np.sum(idx_to_counts))
+        f = idx_to_counts / num_tokens
         idx_to_pdiscard = 1 - np.sqrt(args.frequent_token_subsampling / f)
+        idx_to_pdiscard = idx_to_pdiscard.tolist()
 
-        prune_sentences_ = functools.partial(prune_sentences,
-                                             idx_to_pdiscard=idx_to_pdiscard)
-        coded_dataset = list(map(prune_sentences_, coded_dataset))
+        # prune_sentences_ = functools.partial(prune_sentences,
+        #                                      idx_to_pdiscard=idx_to_pdiscard)
+        # coded_dataset = list(map(prune_sentences_, coded_dataset))
 
     if args.ngram_buckets:  # Fasttext model
         with print_time('prepare subwords'):
@@ -184,9 +187,9 @@ def get_train_data(args):
                     'to avoid memory issues.'.format(max_subwordidxs_len))
 
         return (coded_dataset, negatives_sampler, vocab, subword_function,
-                get_subwords_masks)
+                get_subwords_masks, idx_to_pdiscard, num_tokens)
     else:
-        return coded_dataset, negatives_sampler, vocab
+        return coded_dataset, negatives_sampler, vocab, idx_to_pdiscard, num_tokens
 
 
 def get_subwords_masks_factory(idx_to_subwordidxs):
@@ -232,7 +235,8 @@ def train(args):
     """Training helper."""
     if args.ngram_buckets:  # Fasttext model
         coded_dataset, negatives_sampler, vocab, subword_function, \
-            get_subwords_masks = get_train_data(args)
+            get_subwords_masks, idx_to_pdiscard, num_tokens = \
+            get_train_data(args)
         embedding = nlp.model.train.FasttextEmbeddingModel(
             token_to_idx=vocab.token_to_idx,
             subword_function=subword_function,
@@ -241,7 +245,8 @@ def train(args):
             sparse_grad=not args.no_sparse_grad,
         )
     else:
-        coded_dataset, negatives_sampler, vocab = get_train_data(args)
+        coded_dataset, negatives_sampler, vocab, \
+            idx_to_pdiscard, num_tokens = get_train_data(args)
         embedding = nlp.model.train.SimpleEmbeddingModel(
             token_to_idx=vocab.token_to_idx,
             embedding_size=args.emsize,
@@ -268,7 +273,7 @@ def train(args):
         list(embedding_out.collect_params().values())
     trainer = mx.gluon.Trainer(params, args.optimizer, optimizer_kwargs)
 
-    if args.ngram_buckets:  # Fasttext model
+    if args.ngram_buckets:
         optimizer_subwords_kwargs = dict(learning_rate=args.lr_subwords)
         params_subwords = list(
             embedding.subword_embedding.collect_params().values())
@@ -276,119 +281,141 @@ def train(args):
                                             args.optimizer_subwords,
                                             optimizer_subwords_kwargs)
 
+    def skipgram_batch(data):
+        """Create a batch for Skipgram training objective."""
+        centers, word_context, word_context_mask = data
+        assert len(centers.shape) == 2
+        negatives_shape = (len(word_context), 2 * args.window * args.negative)
+        negatives, negatives_mask = remove_accidental_hits(
+            negatives_sampler(negatives_shape), word_context,
+            word_context_mask)
+        context_negatives = mx.nd.concat(word_context, negatives, dim=1)
+        masks = mx.nd.concat(word_context_mask, negatives_mask, dim=1)
+        labels = mx.nd.concat(word_context_mask, mx.nd.zeros_like(negatives),
+                              dim=1)
+        if not args.ngram_buckets:
+            return (centers.as_in_context(context[0]),
+                    context_negatives.as_in_context(context[0]),
+                    masks.as_in_context(context[0]),
+                    labels.as_in_context(context[0]))
+        else:
+            unique, inverse_unique_indices = np.unique(centers.asnumpy(),
+                                                       return_inverse=True)
+            inverse_unique_indices = mx.nd.array(inverse_unique_indices,
+                                                 ctx=context[0])
+            subwords, subwords_mask = get_subwords_masks(unique.astype(int))
+
+            return (centers.as_in_context(context[0]),
+                    context_negatives.as_in_context(context[0]),
+                    masks.as_in_context(context[0]),
+                    labels.as_in_context(context[0]),
+                    mx.nd.array(subwords, ctx=context[0]),
+                    mx.nd.array(subwords_mask, ctx=context[0]),
+                    inverse_unique_indices)
+
+    def cbow_batch(data):
+        """Create a batch for CBOW training objective."""
+        centers, word_context, word_context_mask = data
+        assert len(centers.shape) == 2
+        negatives_shape = (len(centers), args.negative)
+        negatives, negatives_mask = remove_accidental_hits(
+            negatives_sampler(negatives_shape), centers)
+        center_negatives = mx.nd.concat(centers, negatives, dim=1)
+        center_negatives_mask = mx.nd.concat(
+            mx.nd.ones_like(centers), negatives_mask, dim=1)
+        labels = mx.nd.concat(
+            mx.nd.ones_like(centers), mx.nd.zeros_like(negatives), dim=1)
+        if not args.ngram_buckets:
+            return (word_context.as_in_context(context[0]),
+                    word_context_mask.as_in_context(context[0]),
+                    center_negatives.as_in_context(context[0]),
+                    center_negatives_mask.as_in_context(context[0]),
+                    labels.as_in_context(context[0]))
+        else:
+            unique, inverse_unique_indices = np.unique(word_context.asnumpy(),
+                                                       return_inverse=True)
+            inverse_unique_indices = mx.nd.array(inverse_unique_indices,
+                                                 ctx=context[0])
+            subwords, subwords_mask = get_subwords_masks(unique.astype(int))
+            return (word_context.as_in_context(context[0]),
+                    word_context_mask.as_in_context(context[0]),
+                    center_negatives.as_in_context(context[0]),
+                    center_negatives_mask.as_in_context(context[0]),
+                    labels.as_in_context(context[0]),
+                    mx.nd.array(subwords, ctx=context[0]),
+                    mx.nd.array(subwords_mask, ctx=context[0]),
+                    inverse_unique_indices)
+
     num_update = 0
     for epoch in range(args.epochs):
         random.shuffle(coded_dataset)
-        context_sampler = nlp.data.ContextSampler(coded=coded_dataset,
-                                                  batch_size=args.batch_size,
-                                                  window=args.window)
-        num_batches = len(context_sampler)
+        context_stream = nlp.data.ContextStream(
+            stream=[coded_dataset], batch_size=args.batch_size,
+            p_discard=idx_to_pdiscard, window_size=args.window)
 
         # Logging variables
         log_wc = 0
         log_start_time = time.time()
         log_avg_loss = 0
 
-        for i, batch in enumerate(context_sampler):
-            progress = (epoch * num_batches + i) / (args.epochs * num_batches)
-            (center, word_context, word_context_mask) = batch
-            negatives_shape = (word_context.shape[0],
-                               word_context.shape[1] * args.negative)
-            negatives, negatives_mask = remove_accidental_hits(
-                negatives_sampler(negatives_shape), word_context,
-                word_context_mask)
+        for i, batch in enumerate(context_stream):
+            progress = (epoch * num_tokens + i * args.batch_size) / \
+                (args.epochs * num_tokens)
 
-            if args.ngram_buckets:  # Fasttext model
-                if args.model.lower() == 'skipgram':
-                    unique, inverse_unique_indices = np.unique(
-                        center.asnumpy(), return_inverse=True)
-                    inverse_unique_indices = mx.nd.array(
-                        inverse_unique_indices, ctx=context[0])
-                    subwords, subwords_mask = get_subwords_masks(
-                        unique.astype(int))
-                    subwords = mx.nd.array(subwords, ctx=context[0])
-                    subwords_mask = mx.nd.array(subwords_mask, ctx=context[0])
-                elif args.model.lower() == 'cbow':
-                    unique, inverse_unique_indices = np.unique(
-                        word_context.asnumpy(), return_inverse=True)
-                    inverse_unique_indices = mx.nd.array(
-                        inverse_unique_indices, ctx=context[0])
-                    subwords, subwords_mask = get_subwords_masks(
-                        unique.astype(int))
-                    subwords = mx.nd.array(subwords, ctx=context[0])
-                    subwords_mask = mx.nd.array(subwords_mask, ctx=context[0])
-                else:
-                    logging.error('Unsupported model %s.', args.model)
-                    sys.exit(1)
-
-            num_update += len(center)
-
-            # To GPU
-            center = center.as_in_context(context[0])
-            word_context = word_context.as_in_context(context[0])
-            word_context_mask = word_context_mask.as_in_context(context[0])
-            negatives = negatives.as_in_context(context[0])
-            negatives_mask = negatives_mask.as_in_context(context[0])
-
-            with mx.autograd.record():
-                # Combine subword level embeddings with word embeddings
-                if args.model.lower() == 'skipgram':
-                    if args.ngram_buckets:
+            if args.model.lower() == 'skipgram':
+                if args.ngram_buckets:
+                    (center, context_negatives, mask, label, subwords,
+                     subwords_mask,
+                     inverse_unique_indices) = skipgram_batch(batch)
+                    with mx.autograd.record():
                         emb_in = embedding(center, subwords,
                                            subwordsmask=subwords_mask,
                                            words_to_unique_subwords_indices=
                                            inverse_unique_indices)
-                    else:
+                        emb_out = embedding_out(context_negatives, mask)
+                        pred = mx.nd.batch_dot(emb_in, emb_out.swapaxes(1, 2))
+                        loss = loss_function(pred, label)
+                else:
+                    (center, context_negatives, mask,
+                     label) = skipgram_batch(batch)
+                    with mx.autograd.record():
                         emb_in = embedding(center)
-
-                    with mx.autograd.pause():
-                        word_context_negatives = mx.nd.concat(
-                            word_context, negatives, dim=1)
-                        word_context_negatives_mask = mx.nd.concat(
-                            word_context_mask, negatives_mask, dim=1)
-
-                    emb_out = embedding_out(word_context_negatives,
-                                            word_context_negatives_mask)
-
-                    # Compute loss
-                    pred = mx.nd.batch_dot(emb_in, emb_out.swapaxes(1, 2))
-                    pred = pred.squeeze() * word_context_negatives_mask
-                    label = mx.nd.concat(word_context_mask,
-                                         mx.nd.zeros_like(negatives), dim=1)
-
-                elif args.model.lower() == 'cbow':
-                    word_context = word_context.reshape((-3, 1))
-                    word_context_mask = word_context_mask.reshape((-3, 1))
-                    if args.ngram_buckets:
+                        emb_out = embedding_out(context_negatives, mask)
+                        pred = mx.nd.batch_dot(emb_in, emb_out.swapaxes(1, 2))
+                        loss = loss_function(pred, label)
+            elif args.model.lower() == 'cbow':
+                if args.ngram_buckets:
+                    (word_context, word_context_mask, center_negatives,
+                     center_negatives_mask, label, subwords, subwords_mask,
+                     inverse_unique_indices) = cbow_batch(batch)
+                    with mx.autograd.record():
                         emb_in = embedding(word_context, subwords,
-                                           word_context_mask, subwords_mask,
+                                           wordsmask=word_context_mask,
+                                           subwordsmask=subwords_mask,
+                                           words_to_unique_subwords_indices=
                                            inverse_unique_indices)
-                    else:
-                        emb_in = embedding(word_context, word_context_mask)
-
-                    with mx.autograd.pause():
-                        center = center.tile(args.window * 2).reshape((-1, 1))
-                        negatives = negatives.reshape((-1, args.negative))
-
-                        center_negatives = mx.nd.concat(
-                            center, negatives, dim=1)
-                        center_negatives_mask = mx.nd.concat(
-                            mx.nd.ones_like(center), negatives_mask, dim=1)
-
-                    emb_out = embedding_out(center_negatives,
-                                            center_negatives_mask)
-
-                    # Compute loss
-                    pred = mx.nd.batch_dot(emb_in, emb_out.swapaxes(1, 2))
-                    pred = pred.squeeze() * word_context_mask
-                    label = mx.nd.concat(
-                        mx.nd.ones_like(word_context),
-                        mx.nd.zeros_like(negatives), dim=1)
-
-                loss = loss_function(pred, label)
+                        emb_in = emb_in.mean(axis=1, keepdims=True)
+                        emb_out = embedding_out(
+                            center_negatives, wordsmask=center_negatives_mask)
+                        pred = mx.nd.batch_dot(emb_in, emb_out.swapaxes(1, 2))
+                        loss = loss_function(pred.squeeze(), label)
+                else:
+                    (word_context, word_context_mask, center_negatives,
+                     center_negatives_mask, label) = cbow_batch(batch)
+                    with mx.autograd.record():
+                        emb_in = embedding(word_context,
+                                           wordsmask=word_context_mask)
+                        emb_in = emb_in.mean(axis=1, keepdims=True)
+                        emb_out = embedding_out(
+                            center_negatives, wordsmask=center_negatives_mask)
+                        pred = mx.nd.batch_dot(emb_in, emb_out.swapaxes(1, 2))
+                        loss = loss_function(pred.squeeze(), label)
+            else:
+                logging.error('Unsupported model %s.', args.model)
+                sys.exit(1)
 
             loss.backward()
-
+            num_update += len(label)
             if args.optimizer.lower() != 'adagrad':
                 trainer.set_learning_rate(
                     max(0.0001, args.lr * (1 - progress)))
@@ -409,10 +436,11 @@ def train(args):
                 # Forces waiting for computation by computing loss value
                 log_avg_loss = log_avg_loss.asscalar() / args.log_interval
                 wps = log_wc / (time.time() - log_start_time)
+                # Due to subsampling, the overall number of batches is an upper bound
                 logging.info('[Epoch {} Batch {}/{}] loss={:.4f}, '
                              'throughput={:.2f}K wps, wc={:.2f}K'.format(
-                                 epoch, i + 1, num_batches, log_avg_loss,
-                                 wps / 1000, log_wc / 1000))
+                                 epoch, i + 1, num_tokens // args.batch_size,
+                                 log_avg_loss, wps / 1000, log_wc / 1000))
                 log_start_time = time.time()
                 log_avg_loss = 0
                 log_wc = 0

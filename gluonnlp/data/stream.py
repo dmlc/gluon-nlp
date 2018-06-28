@@ -22,7 +22,7 @@
 corpora and dataset files. Files can be streamed into formats that are
 ready for training and evaluation."""
 __all__ = ['DataStream', 'CorpusStream', 'LanguageModelStream', 'SimpleDataStream',
-           'PrefetchingStream']
+           'PrefetchingStream', 'ContextStream']
 
 import glob
 import itertools
@@ -37,12 +37,14 @@ import mxnet as mx
 from mxnet.gluon.data import RandomSampler, SequentialSampler
 
 from .dataset import CorpusDataset
+from .sampler import ContextSampler
 from .utils import line_splitter, whitespace_splitter
 
 try:
     import Queue as queue
 except ImportError:
     import queue
+
 
 class DataStream(object):
     """Abstract Data Stream Interface.
@@ -314,6 +316,7 @@ class LanguageModelStream(CorpusStream):
             corpus, vocab, seq_len, batch_size, sampler=self._get_sampler(
                 self._sampler), last_batch=last_batch)
 
+
 class _LanguageModelBPTTStream(DataStream):
     """Streams a corpus and produces a language modeling data stream.
 
@@ -517,3 +520,47 @@ class PrefetchingStream(DataStream):
             return _ThreadPrefetcher(self._stream, self._num_prefetch,
                                      seed=seed, np_seed=np_seed,
                                      mx_seed=mx_seed)
+
+
+class ContextStream(object):
+    """Transform a stream of coded sentences to centers and contexts.
+
+    Useful for embedding training.
+
+    Parameters
+    ----------
+    stream : DataStream
+        Stream of list of list/tuple of integers (a stream over shards of
+        the dataset).
+    batch_size : int
+    p_discard : list or tuple of int
+        Discard probabilities for each element in the lists / tuples of the
+        stream.
+    window_size : int, default 5
+    reduce_window_size_randomly : bool, default True
+
+    """
+
+    def __init__(self, stream, batch_size, p_discard, window_size=5,
+                 reduce_window_size_randomly=True):
+        self._stream = stream
+        self._batch_size = batch_size
+        assert isinstance(p_discard, (list, tuple)), \
+            'p_discard should be list or tuple.'
+        self.idx_to_pdiscard = p_discard
+        self._window_size = window_size
+        self._random_reduce = reduce_window_size_randomly
+
+    def __iter__(self):
+        for shard in self._stream:
+            shard = [[
+                t for t in sentence
+                if random.uniform(0, 1) > self.idx_to_pdiscard[t]
+            ] for sentence in shard]
+
+            context_sampler = ContextSampler(
+                shard, batch_size=self._batch_size, window=self._window_size,
+                reduce_window_size_randomly=self._random_reduce)
+
+            for batch in context_sampler:
+                yield batch
