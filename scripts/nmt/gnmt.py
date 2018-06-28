@@ -213,7 +213,8 @@ class GNMTDecoder(HybridBlock, Seq2SeqDecoder):
         self._use_residual = use_residual
         self._output_attention = output_attention
         with self.name_scope():
-            self.attention_cell = _get_attention_cell(attention_cell, units=hidden_size)
+            self.attention_cell = _get_attention_cell(attention_cell, units=hidden_size,
+                                                      use_bias=True)
             self.dropout_layer = nn.Dropout(dropout)
             self.rnn_cells = nn.HybridSequential()
             for i in range(num_layers):
