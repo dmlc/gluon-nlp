@@ -76,46 +76,45 @@ class BeamSearchScorer(HybridBlock):
 
 
 def _expand_to_beam_size(data, beam_size, batch_size, state_info=None):
-    """Tile all the states to have shape (beam_size, batch_size, ...)
+    """Tile all the states to have batch_size * beam_size on the batch axis.
 
     Parameters
     ----------
     data : A single NDArray or nested container with NDArrays
-        Each NDArray should have shape (batch_size, ...)
+        Each NDArray/Symbol should have shape (N, ...) when state_info is None,
+        or same as the layout in state_info when it's not None.
     beam_size : int
         Beam size
     batch_size : int
         Batch size
+    state_info : Nested structure of dictionary, default None.
+        Descriptors for states, usually from decoder's ``state_info()``.
+        When None, this method assumes that the batch axis is the first dimension.
     Returns
     -------
     new_states : Object that contains NDArrays
-        Each NDArray should have shape (batch_size * beam_size, ...)
+        Each NDArray should have shape batch_size * beam_size on the batch axis.
     """
+    assert not state_info or isinstance(state_info, (type(data), dict)), \
+            'data and state_info doesn\'t match, ' \
+            'got: {} vs {}.'.format(type(state_info), type(data))
     if isinstance(data, list):
-        assert not state_info or isinstance(state_info, list), \
-                'state and state_info doesn\'t match'
         if not state_info:
             state_info = [None] * len(data)
         return [_expand_to_beam_size(d, beam_size, batch_size, s)
                 for d, s in zip(data, state_info)]
     elif isinstance(data, tuple):
-        assert not state_info or isinstance(state_info, tuple), \
-                'state and state_info doesn\'t match'
         if not state_info:
             state_info = [None] * len(data)
             state_info = tuple(state_info)
         return tuple(_expand_to_beam_size(d, beam_size, batch_size, s)
                      for d, s in zip(data, state_info))
     elif isinstance(data, dict):
-        assert not state_info or isinstance(state_info, dict), \
-                'state and state_info doesn\'t match'
         if not state_info:
             state_info = {k: None for k in data.keys()}
         return {k: _expand_to_beam_size(v, beam_size, batch_size, state_info[k])
                 for k, v in data.items()}
     elif isinstance(data, mx.nd.NDArray):
-        assert not state_info or isinstance(state_info, dict), \
-                'state and state_info doesn\'t match'
         if not state_info:
             state_info = {'__layout__': 'NC'}
         batch_axis = state_info['__layout__'].find('N')
@@ -139,9 +138,11 @@ def _choose_states(F, states, state_info, indices):
     ----------
     F : ndarray or symbol
     states : Object contains NDArrays/Symbols
-        Each NDArray/Symbol should have shape (N, ...).
-    state_info : nested structure of dictionary
-        Descriptors for states, usually from state_info.
+        Each NDArray/Symbol should have shape (N, ...) when state_info is None,
+        or same as the layout in state_info when it's not None.
+    state_info : Nested structure of dictionary, default None.
+        Descriptors for states, usually from decoder's ``state_info()``.
+        When None, this method assumes that the batch axis is the first dimension.
     indices : NDArray or Symbol
         Indices of the states to take. Shape (N,).
     Returns
@@ -149,29 +150,23 @@ def _choose_states(F, states, state_info, indices):
     new_states : Object contains NDArrays/Symbols
         Each NDArray/Symbol should have shape (N, ...).
     """
+    assert not state_info or isinstance(state_info, (type(states), dict)), \
+            'states and state_info don\'t match'
     if isinstance(states, list):
-        assert not state_info or isinstance(state_info, list), \
-                'state and state_info doesn\'t match'
         if not state_info:
             state_info = [None] * len(states)
         return [_choose_states(F, d, s, indices) for d, s in zip(states, state_info)]
     elif isinstance(states, tuple):
-        assert not state_info or isinstance(state_info, tuple), \
-                'state and state_info doesn\'t match'
         if not state_info:
             state_info = [None] * len(states)
             state_info = tuple(state_info)
         return tuple(_choose_states(F, d, s, indices) for d, s in zip(states, state_info))
     elif isinstance(states, dict):
-        assert not state_info or isinstance(state_info, dict), \
-                'state and state_info doesn\'t match'
         if not state_info:
             state_info = {k: None for k in states.keys()}
         return {k: _choose_states(F, v, state_info[k], indices)
                 for k, v in states.items()}
     elif isinstance(states, (mx.nd.NDArray, mx.sym.Symbol)):
-        assert not state_info or isinstance(state_info, dict), \
-                'state and state_info doesn\'t match'
         if not state_info:
             state_info = {'__layout__': 'NC'}
         batch_axis = state_info['__layout__'].find('N')
@@ -186,15 +181,16 @@ def _choose_states(F, states, state_info, indices):
 
 
 class _BeamSearchStepUpdate(HybridBlock):
-    def __init__(self, beam_size, eos_id, scorer, prefix=None, params=None):
+    def __init__(self, beam_size, eos_id, scorer, state_info, prefix=None, params=None):
         super(_BeamSearchStepUpdate, self).__init__(prefix, params)
         self._beam_size = beam_size
         self._eos_id = eos_id
         self._scorer = scorer
+        self._state_info = state_info
         assert eos_id >= 0, 'eos_id cannot be negative! Received eos_id={}'.format(eos_id)
 
     def hybrid_forward(self, F, samples, valid_length, log_probs, scores, step, beam_alive_mask,   # pylint: disable=arguments-differ
-                       states, state_info, vocab_num, batch_shift):
+                       states, vocab_num, batch_shift):
         """
 
         Parameters
@@ -213,13 +209,12 @@ class _BeamSearchStepUpdate(HybridBlock):
         beam_alive_mask : NDArray or Symbol
             Shape (batch_size, beam_size)
         states : nested structure of NDArrays/Symbols
-            Inner NDArrays have shape (batch_size * beam_size, ...)
-        state_info : nested structure of dictionary
-            Descriptors for states, usually from state_info.
+            Each NDArray/Symbol should have shape (N, ...) when state_info is None,
+            or same as the layout in state_info when it's not None.
         vocab_num : NDArray or Symbol
             Shape (1,)
         batch_shift : NDArray or Symbol
-            Contains [0, beam_size, 2 * beam_size, (batch_size - 1) * beam_size].
+            Contains [0, beam_size, 2 * beam_size, ..., (batch_size - 1) * beam_size].
             Shape (batch_size,)
 
         Returns
@@ -271,7 +266,7 @@ class _BeamSearchStepUpdate(HybridBlock):
                                   batch_beam_indices.reshape(shape=(-1,))).reshape((-1, beam_size))\
                            + 1 - use_prev
         # Update the states
-        new_states = _choose_states(F, states, state_info, batch_beam_indices.reshape((-1,)))
+        new_states = _choose_states(F, states, self._state_info, batch_beam_indices.reshape((-1,)))
         # Update the alive mask.
         beam_alive_mask = F.take(beam_alive_mask.reshape(shape=(-1,)),
                                  batch_beam_indices.reshape(shape=(-1,)))\
@@ -316,8 +311,13 @@ class BeamSearchSampler(object):
         assert eos_id >= 0, 'eos_id cannot be negative! Received eos_id={}'.format(eos_id)
         self._max_length = max_length
         self._scorer = scorer
-        self._updater = _BeamSearchStepUpdate(beam_size=beam_size, eos_id=eos_id, scorer=scorer)
-        # self._updater.hybridize()
+        if hasattr(decoder, 'state_info'):
+            state_info = decoder.state_info()
+        else:
+            state_info = None
+        self._updater = _BeamSearchStepUpdate(beam_size=beam_size, eos_id=eos_id, scorer=scorer,
+                                              state_info=state_info)
+        self._updater.hybridize()
 
     def __call__(self, inputs, states):
         """Sample by beam search.
@@ -354,11 +354,11 @@ class BeamSearchSampler(object):
         # Except the first beam where the scores are set to be zero, all beams have -inf scores.
         # Valid length is initialized to be 1
         beam_alive_mask = mx.nd.ones(shape=(batch_size, beam_size), ctx=ctx)
+        valid_length = mx.nd.ones(shape=(batch_size, beam_size), ctx=ctx)
         scores = mx.nd.zeros(shape=(batch_size, beam_size), ctx=ctx)
         if beam_size > 1:
             scores[:, 1:beam_size] = LARGE_NEGATIVE_FLOAT
         samples = step_input.reshape((batch_size, beam_size, 1))
-        valid_length = mx.nd.ones(shape=(batch_size, beam_size), ctx=ctx)
         for i in range(self._max_length):
             log_probs, new_states = self._decoder(step_input, states)
             vocab_num_nd = mx.nd.array([log_probs.shape[1]], ctx=ctx)
@@ -366,7 +366,7 @@ class BeamSearchSampler(object):
             step_nd = mx.nd.array([i + 1], ctx=ctx)
             samples, valid_length, scores, chosen_word_ids, beam_alive_mask, states = \
                 self._updater(samples, valid_length, log_probs, scores, step_nd, beam_alive_mask,
-                              new_states, state_info, vocab_num_nd, batch_shift_nd)
+                              new_states, vocab_num_nd, batch_shift_nd)
             step_input = mx.nd.relu(chosen_word_ids).reshape((-1,))
             if mx.nd.sum(beam_alive_mask).asscalar() == 0:
                 return mx.nd.round(samples).astype(np.int32),\

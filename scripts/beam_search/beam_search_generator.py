@@ -83,7 +83,7 @@ class LMDecoder(object):
 
     def __call__(self, inputs, states):
         outputs, states = self._model(mx.nd.expand_dims(inputs, axis=0), states)
-        return outputs[0], states
+        return outputs[0].log_softmax(), states
 
     def state_info(self, *arg, **kwargs):
         return self._model.state_info(*arg, **kwargs)
