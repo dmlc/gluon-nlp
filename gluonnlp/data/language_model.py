@@ -35,7 +35,6 @@ from .dataset import LanguageModelDataset
 from .stream import LanguageModelStream
 from .registry import register
 from .utils import _get_home_dir, _load_pretrained_vocab
-from ..vocab import SortedVocab
 
 
 class _WikiText(LanguageModelDataset):
@@ -331,7 +330,6 @@ class GBWStream(_GBWStream):
     """
     def __init__(self, segment='train', skip_empty=True, bos=C.BOS_TOKEN, eos=C.EOS_TOKEN,
                  root=os.path.join(_get_home_dir(), 'datasets', 'gbw')):
-        assert segment == 'train', 'Only train segment is supported for GBW'
         self._archive_file = ('1-billion-word-language-modeling-benchmark-r13output.tar.gz',
                               '4df859766482e12264a5a9d9fb7f0e276020447d')
         self._data_file = {'train': ('training-monolingual.tokenized.shuffled',
