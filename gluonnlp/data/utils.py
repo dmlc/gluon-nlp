@@ -26,6 +26,7 @@ __all__ = ['Counter', 'count_tokens', 'concat_sequence', 'slice_sequence', 'trai
 import os
 import collections
 import zipfile
+import tarfile
 import numpy as np
 
 from mxnet.gluon.data import SimpleDataset
@@ -245,6 +246,7 @@ def short_hash(name):
         raise ValueError('Vocabulary for {name} is not available.'.format(name=name))
     return _vocab_sha1[name][:8]
 
+
 def _load_pretrained_vocab(name, root=os.path.join('~', '.mxnet', 'models')):
     """Load the accompanying vocabulary object for pretrained model.
 
@@ -292,6 +294,7 @@ def _load_pretrained_vocab(name, root=os.path.join('~', '.mxnet', 'models')):
     else:
         raise ValueError('Downloaded file has different hash. Please try again.')
 
+
 def _load_vocab_file(file_path):
     with open(file_path, 'r') as f:
         from ..vocab import Vocab
@@ -304,3 +307,24 @@ def _get_home_dir():
     # expand ~ to actual path
     _home_dir = os.path.expanduser(_home_dir)
     return _home_dir
+
+
+def _extract_archive(file, target_dir):
+    """Extract archive file
+
+    Parameters
+    ----------
+    file : str
+        Absolute path of the archive file.
+    target_dir : str
+        Target directory of the archive to be uncompressed
+
+    """
+    if file.endswith('.gz') or file.endswith('.tar') or file.endswith('.tgz'):
+        archive = tarfile.open(file, 'r')
+    elif file.endswith('.zip'):
+        archive = zipfile.ZipFile(file, 'r')
+    else:
+        raise Exception('Unrecognized file type: ' + file)
+    archive.extractall(path=target_dir)
+    archive.close()
