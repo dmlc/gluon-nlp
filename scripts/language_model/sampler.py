@@ -33,4 +33,4 @@ class LogUniformSampler():
         sampled_cls_fp64 = sampled_classes.astype('float64')
         prob_sampled = ((sampled_cls_fp64 + 2.0) / (sampled_cls_fp64 + 1.0)).log() / log_range
         count_sampled = self.prob_helper(num_tries, num_sampled, prob_sampled)
-        return sampled_classes, count_true, count_sampled
+        return sampled_classes.astype(np.float32), count_true.astype(np.float32), count_sampled.astype(np.float32)

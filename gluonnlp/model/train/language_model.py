@@ -24,7 +24,8 @@ from mxnet.gluon import nn, Block, contrib, rnn
 
 from gluonnlp.model.utils import _get_rnn_layer
 from gluonnlp.model.utils import apply_weight_drop
-from ..block import RNNCellLayer, SampledLogits, SampledLogitsDense
+from ..block import RNNCellLayer
+from ..sampled_block import SampledLogits, SparseSampledLogits
 
 class AWDRNN(Block):
     """AWD language model by salesforce.
@@ -304,7 +305,7 @@ class BigRNN(Block):
     """
     def __init__(self, vocab_size, embed_size, hidden_size, num_layers,
                  projection_size, num_sampled, dropout=0.0,
-                 sampler=nd.contrib.rand_zipfian, dense_weight=False, **kwargs):
+                 sparse_weight=True, sparse_grad=True, **kwargs):
         super(BigRNN, self).__init__(**kwargs)
         self._embed_size = embed_size
         self._hidden_size = hidden_size
@@ -313,43 +314,51 @@ class BigRNN(Block):
         self._dropout = dropout
         self._vocab_size = vocab_size
         self._num_sampled = num_sampled
-        self._sampler = sampler
-        self._dense_weight = dense_weight
-        assert num_layers == 1
+        self._sparse_weight = sparse_weight
+        self._sparse_grad = sparse_grad
+        if self._sparse_weight:
+            assert self._sparse_grad, 'Dense grad with sparse weight is not supported.'
 
         with self.name_scope():
             self.embedding = self._get_embedding()
             self.encoder = self._get_encoder()
-            self.dropout = nn.Dropout(dropout)
             self.decoder = self._get_decoder()
 
     def _get_embedding(self):
-        embedding = nn.HybridSequential() if self._dense_weight else nn.Sequential()
-        with embedding.name_scope():
-            if self._dense_weight:
-                embedding.add(nn.Embedding(self._vocab_size, self._embed_size, sparse_grad=True, prefix='embedding0_'))
+        prefix = 'embedding0_'
+        block = nn.Sequential() if self._sparse_weight else nn.HybridSequential()
+        with block.name_scope():
+            if self._sparse_weight:
+                embed = contrib.nn.SparseEmbedding(self._vocab_size, self._embed_size,
+                                                   prefix=prefix)
             else:
-                embedding.add(contrib.nn.SparseEmbedding(self._vocab_size, self._embed_size, prefix='embedding0_'))
+                embed = nn.Embedding(self._vocab_size,
+                                     self._embed_size, prefix=prefix)
+            block.add(embed)
             if self._dropout:
-                embedding.add(nn.Dropout(self._dropout))
-        return embedding
+                block.add(nn.Dropout(self._dropout))
+        return block
 
     def _get_encoder(self):
-        # TODO self._num_layers
-        encoder = rnn.SequentialRNNCell()
-        with encoder.name_scope():
-            encoder.add(contrib.rnn.LSTMPCell(self._hidden_size, self._projection_size))
-        return encoder
+        block = rnn.SequentialRNNCell()
+        with block.name_scope():
+            for i in range(self._num_layers):
+                block.add(contrib.rnn.LSTMPCell(self._hidden_size, self._projection_size))
+                if self._dropout:
+                    block.add(rnn.DropoutCell(self._dropout))
+        return block
 
     def _get_decoder(self):
         prefix = 'decoder0_'
-        if self._dense_weight:
-            output = SampledLogitsDense(self._vocab_size, self._num_sampled,
-                               self._projection_size, remove_accidental_hits=True, prefix=prefix)
+        if self._sparse_weight:
+            block = SparseSampledLogits(self._vocab_size, self._num_sampled,
+                                        self._projection_size, remove_accidental_hits=True,
+                                        prefix=prefix)
         else:
-            output = SampledLogits(self._vocab_size, self._num_sampled,
-                               self._projection_size, remove_accidental_hits=True, prefix=prefix)
-        return output
+            block = SampledLogits(self._vocab_size, self._num_sampled,
+                                  self._projection_size, remove_accidental_hits=True,
+                                  prefix=prefix)
+        return block
 
     def begin_state(self, **kwargs):
         return self.encoder.begin_state(**kwargs)
@@ -362,7 +371,6 @@ class BigRNN(Block):
         length = 20
         encoded, state = self.encoder.unroll(length, encoded, begin_state,
                                              layout='TNC', merge_outputs=True)
-        encoded = self.dropout(encoded)
         out, new_target = self.decoder(encoded, sampled_classes, exp_cnt_sampled,
                                        exp_cnt_true, label)
         return out, new_target, state

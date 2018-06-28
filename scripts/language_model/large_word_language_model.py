@@ -134,11 +134,13 @@ def _load(xs):
 def _split_and_sample(data):
     x, y, m = data
     num_ctx = len(context)
-    xs = gluon.utils.split_data(x, num_ctx, batch_axis=1, even_split=True)
-    ys = gluon.utils.split_data(y, num_ctx, batch_axis=1, even_split=True)
-    ms = gluon.utils.split_data(m, num_ctx, batch_axis=1, even_split=True)
+    if num_ctx > 1:
+        xs = gluon.utils.split_data(x, num_ctx, batch_axis=1, even_split=True)
+        ys = gluon.utils.split_data(y, num_ctx, batch_axis=1, even_split=True)
+        ms = gluon.utils.split_data(m, num_ctx, batch_axis=1, even_split=True)
+    else:
+        xs, ys, ms = [x], [y], [m]
     ss = [sampler.draw(x) for x in xs]
-
     xs = _load(xs)
     ys = _load(ys)
     ms = _load(ms)
@@ -222,7 +224,7 @@ def train():
                 for j, (X, y, m, s, h) in enumerate(zip(data_list, target_list, mask_list, sample_list, hiddens)):
                     output, new_target, h = model(X, y, h, s)
                     l = loss(output, new_target) * m.reshape((-1,))
-                    Ls.append(l/X.size)
+                    Ls.append(l/args.batch_size)
                     hiddens[j] = h
 
             autograd.backward(Ls)
@@ -237,7 +239,7 @@ def train():
 
             trainer.step(len(context))
 
-            total_L += sum([mx.nd.sum(L).asscalar() for L in Ls])
+            total_L += sum([mx.nd.sum(L).asscalar() / args.bptt for L in Ls])
             if args.profile and nbatch == 10:
                 mx.profiler.set_state('stop')
                 exit()
