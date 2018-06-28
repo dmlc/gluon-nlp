@@ -246,6 +246,7 @@ def short_hash(name):
         raise ValueError('Vocabulary for {name} is not available.'.format(name=name))
     return _vocab_sha1[name][:8]
 
+
 def _load_pretrained_vocab(name, root=os.path.join('~', '.mxnet', 'models')):
     """Load the accompanying vocabulary object for pretrained model.
 
@@ -293,6 +294,7 @@ def _load_pretrained_vocab(name, root=os.path.join('~', '.mxnet', 'models')):
     else:
         raise ValueError('Downloaded file has different hash. Please try again.')
 
+
 def _load_vocab_file(file_path):
     with open(file_path, 'r') as f:
         from ..vocab import Vocab
@@ -305,14 +307,6 @@ def _get_home_dir():
     # expand ~ to actual path
     _home_dir = os.path.expanduser(_home_dir)
     return _home_dir
-
-
-def _get_stanford_home_dir():
-    """Get home directory for stanford toolkits"""
-    _stanford_home_dir = os.environ.get('STANFORD_HOME',
-                                        os.path.join(_get_home_dir(), 'stanford'))
-    _stanford_home_dir = os.path.expanduser(_stanford_home_dir)
-    return _stanford_home_dir
 
 
 def _extract_archive(file, target_dir):
