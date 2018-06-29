@@ -98,7 +98,8 @@ def parse_args():
     group.add_argument('--window', type=int, default=5,
                        help='Context window size.')
     group.add_argument('--negative', type=int, default=5,
-                       help='Number of negative samples.')
+                       help='Number of negative samples '
+                       'per source-context word pair.')
     group.add_argument('--frequent-token-subsampling', type=float,
                        default=1E-4,
                        help='Frequent token subsampling constant.')
