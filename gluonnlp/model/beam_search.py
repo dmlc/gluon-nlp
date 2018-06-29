@@ -118,7 +118,7 @@ def _expand_to_beam_size(data, beam_size, batch_size, state_info=None):
         if not state_info:
             batch_axis = 0
         else:
-            batch_axis = batch_axis = state_info['__layout__'].find('N')
+            batch_axis = state_info['__layout__'].find('N')
         if data.shape[batch_axis] != batch_size:
             raise ValueError('The batch dimension of all the inner elements in states must be '
                              '{}, Found shape={}'.format(batch_size, data.shape))

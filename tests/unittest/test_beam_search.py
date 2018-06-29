@@ -199,12 +199,12 @@ def test_beam_search():
             self._vocab_num = vocab_num
             with self.name_scope():
                 self._embed = nn.Embedding(input_dim=vocab_num, output_dim=hidden_size)
-                self._rnn = RNN(hidden_size=hidden_size, num_layers=1)
+                self._rnn = RNN(hidden_size=hidden_size, num_layers=1, activation='tanh')
                 self._map_to_vocab = nn.Dense(vocab_num, flatten=False)
 
         def begin_state(self, batch_size):
             return self._rnn.begin_state(batch_size=batch_size,
-                                         func=functools.partial(mx.random.normal, loc=0, scale=1))
+                                         func=functools.partial(mx.random.normal, loc=0, scale=5))
 
         def state_info(self, *args, **kwargs):
             return self._rnn.state_info(*args, **kwargs)
