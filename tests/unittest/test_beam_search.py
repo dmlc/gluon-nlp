@@ -214,7 +214,7 @@ def test_beam_search():
 
         def forward(self, inputs, states):
             out, states = self._rnn(self._embed(inputs.expand_dims(0)), states)
-            log_probs = self._map_to_vocab(out)[0].log_softmax()
+            log_probs = self._map_to_vocab(out)[0]#.log_softmax()
             return log_probs, states
 
     # Begin Testing
