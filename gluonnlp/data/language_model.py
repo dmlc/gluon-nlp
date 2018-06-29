@@ -25,6 +25,7 @@ __all__ = ['WikiText2', 'WikiText103', 'WikiText2Raw', 'WikiText103Raw', 'GBWStr
 import os
 import zipfile
 import hashlib
+import tarfile
 import glob
 import shutil
 
