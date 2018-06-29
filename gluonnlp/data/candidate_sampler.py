@@ -18,7 +18,10 @@
 # under the License.
 """Candidate samplers"""
 
-__all__ = ['CandidateSampler']
+__all__ = ['CandidateSampler', 'UnigramCandidateSampler']
+
+import mxnet as mx
+import numpy as np
 
 
 class CandidateSampler(object):
@@ -31,3 +34,80 @@ class CandidateSampler(object):
 
     def __call__(self):
         raise NotImplementedError
+
+
+class UnigramCandidateSampler(CandidateSampler):
+    """Unigram Candidate Sampler
+
+    Draw random samples from a unigram distribution with specified weights
+    using the alias method.
+
+    Parameters
+    ----------
+    weights : mx.nd.NDArray
+        Unnormalized class probabilities. Samples are drawn and returned on the
+        same context as weights.context.
+
+    """
+
+    def __init__(self, weights):
+        self._context = weights.context
+        self.N = weights.size
+        total_weights = weights.sum()
+        self.prob = (weights * self.N / total_weights).asnumpy().tolist()
+        self.alias = [0] * self.N
+
+        # sort the data into the outcomes with probabilities
+        # that are high and low than 1/N.
+        low = []
+        high = []
+        for i in range(self.N):
+            if self.prob[i] < 1.0:
+                low.append(i)
+            else:
+                high.append(i)
+
+        # pair low with high
+        while len(low) > 0 and len(high) > 0:
+            l = low.pop()
+            h = high.pop()
+
+            self.alias[l] = h
+            self.prob[h] = self.prob[h] - (1.0 - self.prob[l])
+
+            if self.prob[h] < 1.0:
+                low.append(h)
+            else:
+                high.append(h)
+
+        for i in low + high:
+            self.prob[i] = 1
+            self.alias[i] = i
+
+        # convert to ndarrays
+        self.prob = mx.nd.array(self.prob, ctx=self._context)
+        self.alias = mx.nd.array(self.alias, ctx=self._context)
+
+    def __call__(self, shape):
+        """Draw samples from uniform distribution and return sampled candidates.
+
+        Parameters
+        ----------
+        shape: int or list/tuple of int
+            Shape of samples to return.
+
+        Returns
+        -------
+        samples: NDArray
+            The sampled candidate classes.
+        """
+        idx = mx.nd.random.uniform(low=0, high=self.N + 1, shape=shape,
+                                   ctx=self._context).floor()
+        prob = self.prob[idx]
+        alias = self.alias[idx]
+        where = mx.nd.random.uniform(shape=shape, ctx=self._context) < prob
+        hit = idx * where
+        alt = alias * (1 - where)
+        candidates = hit + alt
+
+        return candidates

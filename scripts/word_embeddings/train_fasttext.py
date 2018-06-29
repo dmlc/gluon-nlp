@@ -56,7 +56,7 @@ import numpy as np
 import evaluation
 import gluonnlp as nlp
 from utils import get_context, print_time, prune_sentences
-from candidate_sampler import UnigramCandidateSampler
+from candidate_sampler import remove_accidental_hits
 
 
 ###############################################################################
@@ -143,7 +143,7 @@ def get_train_data(args):
 
     idx_to_counts = np.array([counter[w] for w in vocab.idx_to_token])
     negatives_weights = idx_to_counts**0.75
-    negatives_sampler = UnigramCandidateSampler(
+    negatives_sampler = nlp.data.UnigramCandidateSampler(
         weights=mx.nd.array(negatives_weights))
 
     # Skip "unknown" tokens
@@ -302,8 +302,9 @@ def train(args):
             (center, word_context, word_context_mask) = batch
             negatives_shape = (word_context.shape[0],
                                word_context.shape[1] * args.negative)
-            negatives, negatives_mask = negatives_sampler(
-                negatives_shape, word_context, word_context_mask)
+            negatives, negatives_mask = remove_accidental_hits(
+                negatives_sampler(negatives_shape), word_context,
+                word_context_mask)
 
             if args.ngram_buckets:  # Fasttext model
                 if args.model.lower() == 'skipgram':
