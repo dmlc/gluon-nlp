@@ -294,8 +294,8 @@ class WMT2014BPE(_TranslationDataset):
                  root=os.path.join(_get_home_dir(), 'datasets', 'wmt2014')):
         self._supported_segments = ['train'] + ['newstest%d' % i for i in range(2009, 2015)]
         self._archive_file = {_get_pair_key('de', 'en'):
-                                  ('wmt2014bpe_de_en-c41078c1.zip',
-                                   'c41078c179659f5abb743a15c04781424e9c7900')}
+                                  ('wmt2014bpe_de_en-f5741007.zip',
+                                   'f5741007fd417b333e7cde7e03d8e3b948a7dba1')}
         self._data_file = {_get_pair_key('de', 'en'):
                                {'train_en': ('train.tok.clean.bpe.32000.en',
                                              'e3f093b64468db7084035c9650d9eecb86a3db5f'),
