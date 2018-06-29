@@ -259,7 +259,7 @@ encoder, decoder = get_gnmt_encoder_decoder(hidden_size=args.num_hidden,
 model = NMTModel(src_vocab=src_vocab, tgt_vocab=tgt_vocab, encoder=encoder, decoder=decoder,
                  embed_size=args.num_hidden, prefix='gnmt_')
 model.initialize(init=mx.init.Uniform(0.1), ctx=ctx)
-static_alloc=True
+static_alloc = True
 model.hybridize(static_alloc=static_alloc)
 logging.info(model)
 

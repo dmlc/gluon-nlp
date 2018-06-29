@@ -125,8 +125,8 @@ parser.add_argument('--full', type=bool, default=False,
                          ' http://statmt.org/wmt14/test-full.tgz')
 parser.add_argument('--bleu', type=str, default='tweaked',
                     help='Schemes for computing bleu score. It can be: '
-                    '"tweaked": it uses similar steps in get_ende_bleu.sh in tensor2tensor repository,'
-                    ' where compound words are put in ATAT format; '
+                    '"tweaked": it uses similar steps in get_ende_bleu.sh in tensor2tensor '
+                    'repository, where compound words are put in ATAT format; '
                     '"13a": This uses official WMT tokenization and produces the same results'
                     ' as official script (mteval-v13a.pl) used by WMT; '
                     '"intl": This use international tokenization in mteval-v14a.pl')
