@@ -12,4 +12,4 @@ dependencies:
   - flaky
   - pytest-cov
   - pip:
-    - mxnet-cu80>=1.2.0b20180518
+    - mxnet-cu80>=1.3.0b20180629
