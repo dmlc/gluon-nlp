@@ -142,7 +142,8 @@ def load_embedding_from_path(args):
         # token_embedding.idx_to_token etc.
         with utils.print_time('compute vectors from subwords '
                               'for {} words.'.format(len(token_set))):
-            embedding = nlp.embedding.TokenEmbedding(unknown_token=None)
+            embedding = nlp.embedding.TokenEmbedding(unknown_token=None,
+                                                     allow_extend=True)
             idx_to_tokens = list(token_set)
             embedding[idx_to_tokens] = model[idx_to_tokens]
 

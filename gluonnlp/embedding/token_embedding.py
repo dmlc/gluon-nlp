@@ -158,7 +158,7 @@ class TokenEmbedding(object):
     init_unknown_vec : callback
         The callback used to initialize the embedding vector for the unknown
         token. Only used if `unknown_token` is not None.
-    allow_extend : bool,  default  True
+    allow_extend : bool, default False
         If True, embedding vectors for previously unknown words can be added
         via token_embedding[tokens] = vecs. If False, only vectors for known
         tokens can be updated.
@@ -173,8 +173,9 @@ class TokenEmbedding(object):
 
     """
 
-    def __init__(self, unknown_token='<unk>', init_unknown_vec=nd.zeros, allow_extend=True,
-                 unknown_lookup=None, unknown_autoextend=True):
+    def __init__(self, unknown_token='<unk>', init_unknown_vec=nd.zeros,
+                 allow_extend=False, unknown_lookup=None,
+                 unknown_autoextend=True):
         self._unknown_token = unknown_token
         self._init_unknown_vec = init_unknown_vec
         self._allow_extend = allow_extend
@@ -587,6 +588,14 @@ class TokenEmbedding(object):
                 idx = len(self._token_to_idx)
                 self._token_to_idx[token] = idx
                 self._idx_to_token.append(token)
+
+            num_extended = len(self._token_to_idx) - self.idx_to_vec.shape[0]
+            if num_extended == 1:
+                warnings.warn(
+                    'When adding new tokens via TokenEmbedding.__setitem__ '
+                    'the internal embedding matrix needs to be reallocated. '
+                    'Users are therefore encouraged to batch their updates '
+                    '(i.e. add multiple new tokens at a time).')
 
             # Extend shape of idx_to_vec
             idx_to_vec = nd.zeros(shape=(len(self._token_to_idx),

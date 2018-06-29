@@ -854,7 +854,8 @@ def test_token_embedding_unknown_lookup():
     assert 'hello' not in token_embedding.token_to_idx
 
     token_embedding = nlp.embedding.token_embedding.TokenEmbedding(
-        unknown_lookup=NaiveLookup(), unknown_autoextend=True)
+        unknown_lookup=NaiveLookup(), unknown_autoextend=True,
+        allow_extend=True)
     assert 'hello' not in token_embedding.token_to_idx
     assert np.all(np.isclose(0, token_embedding['hello'].asnumpy()))
     assert 'hello' in token_embedding.token_to_idx
