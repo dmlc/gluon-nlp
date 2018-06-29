@@ -107,6 +107,7 @@ def test_beam_search():
             vocab_num = log_probs.shape[1]
             candidate_scores = scorer(log_probs, mx.nd.array(scores),
                                       mx.nd.array([step + 1])).asnumpy()
+            print('Candidate scores=', candidate_scores)
             beam_done_inds = np.where(beam_done)[0]
             if len(beam_done_inds) > 0:
                 candidate_scores[beam_done_inds, :] = -1e18
