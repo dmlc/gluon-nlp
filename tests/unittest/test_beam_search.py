@@ -248,6 +248,7 @@ def test_beam_search():
                             step_input = bos_id
                             npy_samples = _npy_beam_search(decoder, scorer, step_input, step_states,
                                                            eos_id, beam_size, max_length)
+                            print('npy done!')
                             selected_samples = samples[i, :, :max_beam_valid_length]
                             assert_allclose(npy_samples, selected_samples)
                             for j in range(beam_size):
