@@ -240,6 +240,7 @@ def test_beam_search():
                     for batch_size in [1, 2, 5]:
                         print(type(decoder).__name__, beam_size, bos_id, eos_id, alpha, K, batch_size)
                         states = decoder.begin_state(batch_size)
+                        print('initial states=', states)
                         inputs = mx.nd.full(shape=(batch_size,), val=bos_id)
                         samples, scores, valid_length = sampler(inputs, states)
                         samples = samples.asnumpy()
