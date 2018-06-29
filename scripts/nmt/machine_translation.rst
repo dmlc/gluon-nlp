@@ -24,7 +24,7 @@ Use the following commands to train the Transformer model on the WMT14 dataset f
 
 It gets official mteval-v13a BLEU score equals to 26.95 on newstest2014 (http://statmt.org/wmt14/test-filtered.tgz).
 This result is obtained by using averaged SGD in last 5 epochs. If we use international tokenization (i.e., ``--bleu intl``),
-we can obtain bleu score equals to 27.75. If we use ``--bleu tweaked``, we obtain test BLEU score equals to 28.81 on newstest2014.
+we can obtain bleu score equals to 27.75. If we use ``--bleu tweaked``, we obtain test BLEU score equals to 28.81.
 This result is obtained on tweaked reference, where the tokenized reference text is put in ATAT format for historical reason
 and following preprocessing pipeline is done:
 
@@ -35,4 +35,4 @@ and following preprocessing pipeline is done:
     mosesdecoder/scripts/tokenizer/tokenizer.perl -q -no-escape -protected mosesdecoder/scripts/tokenizer/basic-protected-patterns -l de.
 
 If we set ``--full True``, the testing is performed on newstest2014 (http://statmt.org/wmt14/test-full.tgz). Then, we can
-obtain BLEU=26.18 with ``--bleu 13a``, BLEU=26.84 with ``--bleu intl``, and BLEU=27.81 with ``--bleu tweaked``
+obtain BLEU=26.89 with ``--bleu 13a``, BLEU=27.66 with ``--bleu intl``, and BLEU=28.63 with ``--bleu tweaked``
