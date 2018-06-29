@@ -132,7 +132,7 @@ def test_beam_search():
             beam_done = np.logical_or(beam_done[sel_beam_ids], (np.array(sel_words) == eos_id))
             scores = new_scores
             print('NPY Version:, scores=', scores)
-        inputs = [0 if ele < 0 else ele for ele in sel_words]
+            inputs = [0 if ele < 0 else ele for ele in sel_words]
             if beam_done.all():
                 return samples
         concat_val = - np.ones((beam_size,), dtype='float32') * beam_done + (1 - beam_done) * np.ones(
