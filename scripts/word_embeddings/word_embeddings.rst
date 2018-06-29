@@ -20,19 +20,16 @@ included `evaluate_pretrained.py` as follows.
    $ python evaluate_pretrained.py
 
 Call the script with the `--help` option to get an overview of the supported
-options.
-
-The download link above contains a notebook with extended results comparing the
-different included pretrained embeddings on all Word Embedding Evaluation
-datasets included in the toolkit, providing detailed information per category in
-the respective datasets.
-
-We include a `run_all.sh` script to reproduce the results.
-
+options. We include a `run_all.sh` script to run the evaluation for the
+pretrained English Glove and fastText embeddings included in GluonNLP.
 
 .. code-block:: console
 
    $ run_all.sh
+
+The resulting logs and a notebook containing a ranking for the different
+evaluation tasks are available `here
+<https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/embedding_results/>`__.
 
 
 Word Embedding Training
