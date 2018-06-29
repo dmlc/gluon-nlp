@@ -5,6 +5,10 @@ from gluonnlp.data import batchify
 
 import pytest
 
+def test_pad():
+    padded = batchify.Pad(pad_val=-1)([mx.nd.array([]), mx.nd.arange(1)]).asnumpy().flatten().tolist()
+    assert padded == [-1.0, 0.0]
+
 def test_stack_batchify():
     batchify_fn = batchify.Stack()
     dat = [np.random.randint(5) for _ in range(10)]
