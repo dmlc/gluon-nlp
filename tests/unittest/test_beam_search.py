@@ -202,7 +202,7 @@ def test_beam_search():
             self._vocab_num = vocab_num
             with self.name_scope():
                 self._embed = nn.Embedding(input_dim=vocab_num, output_dim=hidden_size)
-                self._rnn = RNN(hidden_size=hidden_size, num_layers=1)
+                self._rnn = RNN(hidden_size=hidden_size, num_layers=1, activation='tanh')
                 self._map_to_vocab = nn.Dense(vocab_num, flatten=False)
 
         def begin_state(self, batch_size):
@@ -213,8 +213,8 @@ def test_beam_search():
             return self._rnn.state_info(*args, **kwargs)
 
         def forward(self, inputs, states):
-            out, states = self._rnn(self._embed(inputs.expand_dims(0)), states)
             print('states=', states)
+            out, states = self._rnn(self._embed(inputs.expand_dims(0)), states)
             print('out=', out)
             log_probs = self._map_to_vocab(out)[0]#.log_softmax()
             return log_probs, states
