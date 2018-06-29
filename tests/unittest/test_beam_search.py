@@ -202,7 +202,9 @@ def test_beam_search():
             self._vocab_num = vocab_num
             with self.name_scope():
                 self._embed = nn.Embedding(input_dim=vocab_num, output_dim=hidden_size)
-                self._rnn = RNN(hidden_size=hidden_size, num_layers=1, activation='tanh')
+                self._rnn = RNN(hidden_size=hidden_size, num_layers=1,
+                                i2h_bias_initializer=mx.init.Xavier(),
+                                h2h_bias_initializer=mx.init.Xavier())
                 self._map_to_vocab = nn.Dense(vocab_num, flatten=False)
 
         def begin_state(self, batch_size):
