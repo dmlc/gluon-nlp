@@ -18,12 +18,10 @@
 # under the License.
 """Candidate samplers"""
 
-__all__ = ['UnigramCandidateSampler']
+__all__ = ['remove_accidental_hits']
 
 import mxnet as mx
 import numpy as np
-
-import gluonnlp as nlp
 
 try:
     from numba import njit
@@ -70,5 +68,3 @@ def remove_accidental_hits(candidates, true_samples, true_samples_mask=None):
         _candidates_mask(candidates_np, true_samples_np, true_samples_mask_np))
 
     return candidates, candidates_mask.as_in_context(candidates.context)
-
-

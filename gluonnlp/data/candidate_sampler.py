@@ -21,7 +21,6 @@
 __all__ = ['CandidateSampler', 'UnigramCandidateSampler']
 
 import mxnet as mx
-import numpy as np
 
 
 class CandidateSampler(object):

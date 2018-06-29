@@ -24,18 +24,13 @@ __all__ = ['EmbeddingModel', 'SimpleEmbeddingModel', 'FasttextEmbeddingModel']
 
 import logging
 import struct
-import sys
 
 import numpy as np
 from mxnet import cpu, nd
 from mxnet.gluon import Block, HybridBlock, nn
 
 from ...vocab import create_subword_function
-
-if sys.version_info[0] == 3:
-    _str_types = (str, )
-else:
-    _str_types = (str, unicode)
+from ...base import _str_types
 
 
 class EmbeddingModel(Block):
@@ -110,11 +105,13 @@ class SimpleEmbeddingModel(EmbeddingModel, Block):
         Initializer for the embeddings matrix.
     sparse_grad : bool, default True
         Specifies mxnet.gluon.nn.Embedding sparse_grad argument.
+    dtype : str, default 'float32'
+        dtype argument passed to gluon.nn.Embedding
 
     """
 
     def __init__(self, token_to_idx, embedding_size, weight_initializer=None,
-                 sparse_grad=True, **kwargs):
+                 sparse_grad=True, dtype='float32', **kwargs):
         assert isinstance(token_to_idx, dict)
 
         super(SimpleEmbeddingModel,
@@ -122,11 +119,13 @@ class SimpleEmbeddingModel(EmbeddingModel, Block):
         self.token_to_idx = token_to_idx
         self.weight_initializer = weight_initializer
         self.sparse_grad = sparse_grad
+        self.dtype = dtype
 
         with self.name_scope():
             self.embedding = nn.Embedding(
                 len(token_to_idx), embedding_size,
-                weight_initializer=weight_initializer, sparse_grad=sparse_grad)
+                weight_initializer=weight_initializer, sparse_grad=sparse_grad,
+                dtype=dtype)
 
     def __call__(self, words, wordsmask=None):
         return super(SimpleEmbeddingModel, self).__call__(words, wordsmask)
@@ -139,7 +138,7 @@ class SimpleEmbeddingModel(EmbeddingModel, Block):
         words : mx.nd.NDArray
             Array of token indices.
         wordsmask : mx.nd.NDArray
-            Mask for embeddings returend by the word level embedding operator.
+            Mask for embeddings returned by the word level embedding operator.
 
         """
         #pylint: disable=arguments-differ
@@ -186,20 +185,19 @@ class SimpleEmbeddingModel(EmbeddingModel, Block):
 
 class _MaskedSumEmbedding(HybridBlock):
     def __init__(self, num_tokens, embedding_size, weight_initializer=None,
-                 sparse_grad=True, **kwargs):
+                 sparse_grad=True, dtype='float32', **kwargs):
         super(_MaskedSumEmbedding, self).__init__(**kwargs)
         self.num_tokens = num_tokens
         self.embedding_size = embedding_size
         self.weight_initializer = weight_initializer
         self.sparse_grad = sparse_grad
+        self.dtype = dtype
 
         with self.name_scope():
             self.embedding = nn.Embedding(
-                num_tokens,
-                embedding_size,
-                weight_initializer=weight_initializer,
-                sparse_grad=sparse_grad,
-            )
+                num_tokens, embedding_size,
+                weight_initializer=weight_initializer, sparse_grad=sparse_grad,
+                dtype=dtype)
 
     def hybrid_forward(self, F, x, mask):
         #pylint: disable=arguments-differ
@@ -208,7 +206,7 @@ class _MaskedSumEmbedding(HybridBlock):
         return F.sum(masked_embeddings, axis=-2)
 
 
-class FasttextEmbeddingModel(EmbeddingModel, Block):
+class FasttextEmbeddingModel(EmbeddingModel):
     """FastText embedding model.
 
     The FasttextEmbeddingModel combines a word level embedding matrix and a
@@ -234,32 +232,32 @@ class FasttextEmbeddingModel(EmbeddingModel, Block):
         Initializer for the embeddings and subword embeddings matrix.
     sparse_grad : bool, default True
         Specifies mxnet.gluon.nn.Embedding sparse_grad argument.
+    dtype : str, default 'float32'
+        dtype argument passed to gluon.nn.Embedding
 
     """
     FASTTEXT_FILEFORMAT_MAGIC = 793712314
 
     def __init__(self, token_to_idx, subword_function, embedding_size,
-                 weight_initializer=None, sparse_grad=True, **kwargs):
+                 weight_initializer=None, sparse_grad=True, dtype='float32',
+                 **kwargs):
         super(FasttextEmbeddingModel,
               self).__init__(embedding_size=embedding_size, **kwargs)
         self.token_to_idx = token_to_idx
         self.subword_function = subword_function
         self.weight_initializer = weight_initializer
         self.sparse_grad = sparse_grad
+        self.dtype = dtype
 
         with self.name_scope():
             self.embedding = nn.Embedding(
-                len(token_to_idx),
-                embedding_size,
-                weight_initializer=weight_initializer,
-                sparse_grad=sparse_grad,
-            )
+                len(token_to_idx), embedding_size,
+                weight_initializer=weight_initializer, sparse_grad=sparse_grad,
+                dtype=dtype)
             self.subword_embedding = _MaskedSumEmbedding(
-                len(subword_function),
-                embedding_size,
-                weight_initializer=weight_initializer,
-                sparse_grad=sparse_grad,
-            )
+                len(subword_function), embedding_size,
+                weight_initializer=weight_initializer, sparse_grad=sparse_grad,
+                dtype=dtype)
 
     @classmethod
     def load_fasttext_format(cls, path, ctx=cpu(), **kwargs):
@@ -451,7 +449,7 @@ class FasttextEmbeddingModel(EmbeddingModel, Block):
             subwords of the unique tokens in `words` with
             `words_to_unique_subwords_indices` containing the reverse mapping.
         wordsmask : mx.nd.NDArray, optional
-            Mask for embeddings returend by the word level embedding operator.
+            Mask for embeddings returned by the word level embedding operator.
         subwordsmask : mx.nd.NDArray, optional
             A mask for the subword embeddings looked up from `subwords`.
             Applied before sum reducing the subword embeddings.
