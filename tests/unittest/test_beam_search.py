@@ -26,7 +26,7 @@ def test_beam_search_score():
             assert_allclose(scores.asnumpy(), sum_log_probs.asnumpy() / lp, 1E-5, 1E-5)
 
 
-@pytest.mark.seed(1)
+@pytest.mark.seed(100)
 def test_beam_search():
     def _get_new_states(states, state_info, sel_beam_ids):
         assert not state_info or isinstance(state_info, (type(states), dict)), \
