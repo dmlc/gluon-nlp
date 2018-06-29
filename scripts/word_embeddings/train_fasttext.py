@@ -56,6 +56,7 @@ import numpy as np
 import evaluation
 import gluonnlp as nlp
 from utils import get_context, print_time, prune_sentences
+from candidate_sampler import UnigramCandidateSampler
 
 
 ###############################################################################
@@ -141,7 +142,7 @@ def get_train_data(args):
 
     idx_to_counts = np.array([counter[w] for w in vocab.idx_to_token])
     negatives_weights = idx_to_counts**0.75
-    negatives_sampler = nlp.data.UnigramCandidateSampler(
+    negatives_sampler = UnigramCandidateSampler(
         weights=mx.nd.array(negatives_weights))
 
     # Skip "unknown" tokens
