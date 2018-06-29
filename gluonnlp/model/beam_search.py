@@ -118,7 +118,7 @@ def _expand_to_beam_size(data, beam_size, batch_size, state_info=None):
         if not state_info:
             batch_axis = 0
         else:
-            batch_axis = batch_axis = state_info['__layout__'].find('N')
+            batch_axis = state_info['__layout__'].find('N')
         if data.shape[batch_axis] != batch_size:
             raise ValueError('The batch dimension of all the inner elements in states must be '
                              '{}, Found shape={}'.format(batch_size, data.shape))
@@ -348,8 +348,10 @@ class BeamSearchSampler(object):
             state_info = self._decoder.state_info(batch_size)
         else:
             state_info = None
+        print('Before expansion:', states)
         states = _expand_to_beam_size(states, beam_size=beam_size, batch_size=batch_size,
                                       state_info=state_info)
+        print('After expansion:', states)
         step_input = _expand_to_beam_size(inputs, beam_size=beam_size, batch_size=batch_size)
         # All beams are initialized to alive
         # Generated samples are initialized to be the inputs
