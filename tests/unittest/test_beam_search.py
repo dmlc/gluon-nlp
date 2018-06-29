@@ -104,6 +104,7 @@ def test_beam_search():
             state_info = None
         for step in range(max_length):
             log_probs, states = decoder(mx.nd.array(inputs), states)
+            print('log_probs=', log_probs)
             vocab_num = log_probs.shape[1]
             candidate_scores = scorer(log_probs, mx.nd.array(scores),
                                       mx.nd.array([step + 1])).asnumpy()
