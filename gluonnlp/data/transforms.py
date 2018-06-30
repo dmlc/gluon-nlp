@@ -23,10 +23,12 @@ clipping, padding, and tokenization."""
 from __future__ import absolute_import
 from __future__ import print_function
 
-__all__ = ['ClipSequence', 'PadSequence', 'SacreMosesTokenizer', 'SpacyTokenizer',
-           'SacreMosesDetokenizer', 'JiebaTokenizer', 'NLTKStanfordSegmenter']
+__all__ = ['ClipSequence', 'PadSequence', 'SacreMosesTokenizer', 'NLTKMosesTokenizer',
+           'SpacyTokenizer', 'SacreMosesDetokenizer', 'NLTKMosesDetokenizer', 'JiebaTokenizer',
+           'NLTKStanfordSegmenter']
 
 import os
+import warnings
 
 import numpy as np
 import mxnet as mx
@@ -134,7 +136,88 @@ class PadSequence(object):
                                           'mxnet.NDArray, received type=%s' % str(type(sample)))
 
 
-class SacreMosesTokenizer(object):
+class _MosesTokenizer(object):
+    r"""Base class for moses tokenizer.
+    """
+    def __init__(self):
+        try:
+            from sacremoses import MosesTokenizer
+        except ImportError:
+            warnings.warn('MosesTokenizer has been deprecated in nltk 3.3.0. '
+                          'Please use sacremoses or older nltk version, e.g. 3.2.5. '
+                          'To install sacremoses, use pip install -U sacremoses')
+            try:
+                from nltk.tokenize.moses import MosesTokenizer
+            except ImportError:
+                raise ImportError('NLTK or relevant packages are not installed. '
+                                  'You must install NLTK <= 3.2.5 in order to use the '
+                                  'NLTKMosesTokenizer. You can refer to the official '
+                                  'installation guide in https://www.nltk.org/install.html .')
+        self._tokenizer = MosesTokenizer()
+
+    def __call__(self, sample, return_str=False):
+        """
+
+        Parameters
+        ----------
+        sample: str
+            The sentence to tokenize
+        return_str: bool, default False
+            True: return a single string
+            False: return a list of tokens
+
+        Returns
+        -------
+        ret : list of strs or str
+            List of tokens or tokenized text
+        """
+        return self._tokenizer.tokenize(sample, return_str=return_str)
+
+
+class NLTKMosesTokenizer(_MosesTokenizer):
+    r"""Apply the Moses Tokenizer implemented in NLTK.
+
+    Users of this class are required to `install NLTK <https://www.nltk.org/install.html>`_
+    and install relevant NLTK packages, such as:
+
+    .. code:: python
+
+        python -m nltk.downloader perluniprops nonbreaking_prefixes
+
+    Examples
+    --------
+    >>> tokenizer = NLTKMosesTokenizer()
+    >>> tokenizer("Gluon NLP toolkit provides a suite of text processing tools.")
+    ['Gluon',
+     'NLP',
+     'toolkit',
+     'provides',
+     'a',
+     'suite',
+     'of',
+     'text',
+     'processing',
+     'tools',
+     '.']
+    >>> tokenizer("Das Gluon NLP-Toolkit stellt eine Reihe von Textverarbeitungstools "
+    ...           "zur Verfügung.")
+    ['Das',
+     'Gluon',
+     'NLP-Toolkit',
+     'stellt',
+     'eine',
+     'Reihe',
+     'von',
+     'Textverarbeitungstools',
+     'zur',
+     'Verfügung',
+     '.']
+    """
+    def __init__(self):
+        super(NLTKMosesTokenizer, self).__init__()
+
+
+class SacreMosesTokenizer(_MosesTokenizer):
     r"""Apply the Moses Tokenizer implemented in sacremoses.
 
     Users of this class are required to `install sacremoses
@@ -174,31 +257,7 @@ class SacreMosesTokenizer(object):
      '.']
     """
     def __init__(self):
-        try:
-            from sacremoses import MosesTokenizer
-        except ImportError:
-            raise ImportError('sacremoses is not installed. You must install sacremoses '
-                              'in order to use the SacreMosesTokenizer: '
-                              'pip install -U sacremoses .')
-        self._tokenizer = MosesTokenizer()
-
-    def __call__(self, sample, return_str=False):
-        """
-
-        Parameters
-        ----------
-        sample: str
-            The sentence to tokenize
-        return_str: bool, default False
-            True: return a single string
-            False: return a list of tokens
-
-        Returns
-        -------
-        ret : list of strs or str
-            List of tokens or tokenized text
-        """
-        return self._tokenizer.tokenize(sample, return_str=return_str)
+        super(SacreMosesTokenizer, self).__init__()
 
 
 class SpacyTokenizer(object):
@@ -283,7 +342,70 @@ class SpacyTokenizer(object):
         return [tok.text for tok in self._nlp(sample)]
 
 
-class SacreMosesDetokenizer(object):
+class _MosesDetokenizer(object):
+    r"""Base class for moses detokenizer.
+    """
+    def __init__(self):
+        try:
+            from sacremoses import MosesDetokenizer
+        except ImportError:
+            warnings.warn('MosesDetokenizer has been deprecated in nltk 3.3.0. '
+                          'Please use sacremoses or older nltk version, e.g. 3.2.5. '
+                          'To install sacremoses, use pip install -U sacremoses')
+            try:
+                from nltk.tokenize.moses import MosesDetokenizer
+            except ImportError:
+                raise ImportError('NLTK or relevant packages are not installed. '
+                                  'You must install NLTK <= 3.2.5 in order to use the '
+                                  'NLTKMosesDetokenizer. You can refer to the official '
+                                  'installation guide in https://www.nltk.org/install.html .')
+        self._detokenizer = MosesDetokenizer()
+
+    def __call__(self, sample, return_str=False):
+        """
+
+        Parameters
+        ----------
+        sample: list(str)
+            The sentence to detokenize
+        return_str: bool, default False
+            True: return a single string
+            False: return a list of words
+
+        Returns
+        -------
+        ret : list of strs or str
+            List of words or detokenized text
+        """
+        return self._detokenizer.detokenize(sample, return_str=return_str)
+
+
+class NLTKMosesDetokenizer(_MosesDetokenizer):
+    r"""Apply the Moses Detokenizer implemented in NLTK.
+
+    Users of this class are required to `install NLTK <https://www.nltk.org/install.html>`_
+    and install relevant NLTK packages, such as:
+
+    .. code:: python
+
+        python -m nltk.downloader perluniprops nonbreaking_prefixes
+
+    Examples
+    --------
+    >>> detokenizer = NLTKMosesDetokenizer()
+    >>> detokenizer(['Gluon', 'NLP', 'toolkit', 'provides', 'a', 'suite', \
+     'of', 'text', 'processing', 'tools', '.'], return_str=True)
+    "Gluon NLP toolkit provides a suite of text processing tools."
+
+    >>> detokenizer(['Das', 'Gluon','NLP-Toolkit','stellt','eine','Reihe','von', \
+     'Textverarbeitungstools','zur','Verfügung','.'], return_str=True)
+    'Das Gluon NLP-Toolkit stellt eine Reihe von Textverarbeitungstools zur Verfügung.'
+    """
+    def __init__(self):
+        super(_MosesDetokenizer, self).__init__()
+
+
+class SacreMosesDetokenizer(_MosesDetokenizer):
     r"""Apply the Moses Detokenizer implemented in sacremoses.
 
     Users of this class are required to `install sacremoses
@@ -305,31 +427,7 @@ class SacreMosesDetokenizer(object):
     'Das Gluon NLP-Toolkit stellt eine Reihe von Textverarbeitungstools zur Verfügung.'
     """
     def __init__(self):
-        try:
-            from sacremoses import MosesDetokenizer
-        except ImportError:
-            raise ImportError('sacremoses is not installed. You must install sacremoses '
-                              'in order to use the SacreMosesTokenizer: '
-                              'pip install -U sacremoses .')
-        self._detokenizer = MosesDetokenizer()
-
-    def __call__(self, sample, return_str=False):
-        """
-
-        Parameters
-        ----------
-        sample: list(str)
-            The sentence to detokenize
-        return_str: bool, default False
-            True: return a single string
-            False: return a list of words
-
-        Returns
-        -------
-        ret : list of strs or str
-            List of words or detokenized text
-        """
-        return self._detokenizer.detokenize(sample, return_str=return_str)
+        super(_MosesDetokenizer, self).__init__()
 
 
 class JiebaTokenizer(object):
