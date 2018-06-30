@@ -50,8 +50,9 @@ def test_beam_search():
         elif isinstance(states, mx.nd.NDArray):
             updated_states = []
             if not state_info:
-                state_info = {'__layout__': 'NC'}
-            batch_axis = state_info['__layout__'].find('N')
+                batch_axis = 0
+            else:
+                batch_axis = state_info['__layout__'].find('N')
             if batch_axis != 0:
                 states = states.swapaxes(0, batch_axis)
             for beam_id in sel_beam_ids:
@@ -82,8 +83,9 @@ def test_beam_search():
                     for k in states}
         elif isinstance(states, mx.nd.NDArray):
             if not state_info:
-                state_info = {'__layout__': 'NC'}
-            batch_axis = state_info['__layout__'].find('N')
+                batch_axis = 0
+            else:
+                batch_axis = state_info['__layout__'].find('N')
             if batch_axis != 0:
                 states = states.swapaxes(0, batch_axis)
             states = mx.nd.broadcast_axes(states[batch_id:(batch_id + 1)], axis=0, size=beam_size)
