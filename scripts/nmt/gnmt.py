@@ -213,8 +213,7 @@ class GNMTDecoder(HybridBlock, Seq2SeqDecoder):
         self._use_residual = use_residual
         self._output_attention = output_attention
         with self.name_scope():
-            self.attention_cell = _get_attention_cell(attention_cell, units=hidden_size,
-                                                      use_bias=True)
+            self.attention_cell = _get_attention_cell(attention_cell, units=hidden_size)
             self.dropout_layer = nn.Dropout(dropout)
             self.rnn_cells = nn.HybridSequential()
             for i in range(num_layers):
@@ -410,9 +409,10 @@ class GNMTDecoder(HybridBlock, Seq2SeqDecoder):
 
 
 def get_gnmt_encoder_decoder(cell_type='lstm', attention_cell='scaled_luong', num_layers=2,
-                             num_bi_layers=1, hidden_size=128, dropout=0.0, use_residual=True,
+                             num_bi_layers=1, hidden_size=128, dropout=0.0, use_residual=False,
                              i2h_weight_initializer=None, h2h_weight_initializer=None,
-                             i2h_bias_initializer='zeros', h2h_bias_initializer='zeros',
+                             i2h_bias_initializer=mx.init.LSTMBias(forget_bias=1.0),
+                             h2h_bias_initializer='zeros',
                              prefix='gnmt_', params=None):
     """Build a pair of GNMT encoder/decoder
 

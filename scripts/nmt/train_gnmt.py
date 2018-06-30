@@ -47,7 +47,8 @@ from mxnet import gluon
 from mxnet.gluon.data import ArrayDataset, SimpleDataset
 from mxnet.gluon.data import DataLoader
 import gluonnlp.data.batchify as btf
-from gluonnlp.data import FixedBucketSampler, IWSLT2015
+from gluonnlp.data import ConstWidthBucket, LinearWidthBucket, ExpWidthBucket, \
+    FixedBucketSampler, IWSLT2015
 from gluonnlp.model import BeamSearchScorer
 from gnmt import get_gnmt_encoder_decoder
 from translation import NMTModel, BeamSearchTranslator
@@ -81,6 +82,11 @@ parser.add_argument('--lp_alpha', type=float, default=1.0,
 parser.add_argument('--lp_k', type=int, default=5, help='K used in calculating the length penalty')
 parser.add_argument('--test_batch_size', type=int, default=32, help='Test batch size')
 parser.add_argument('--num_buckets', type=int, default=5, help='Bucket number')
+parser.add_argument('--bucket_scheme', type=str, default='constant',
+                    help='Strategy for generating bucket keys. It supports: '
+                         '"constant": all the buckets have the same width; '
+                         '"linear": the width of bucket increases linearly; '
+                         '"exp": the width of bucket increases exponentially')
 parser.add_argument('--bucket_ratio', type=float, default=0.0, help='Ratio for increasing the '
                                                                     'throughput of the bucketing')
 parser.add_argument('--src_max_len', type=int, default=50, help='Maximum length of the source '
@@ -148,8 +154,14 @@ class TrainValDataTransform(object):
         self._tgt_max_len = tgt_max_len
 
     def __call__(self, src, tgt):
-        src_sentence = self._src_vocab[src.split()[:self._src_max_len]]
-        tgt_sentence = self._tgt_vocab[tgt.split()[:self._tgt_max_len]]
+        if self._src_max_len > 0:
+            src_sentence = self._src_vocab[src.split()[:self._src_max_len]]
+        else:
+            src_sentence = self._src_vocab[src.split()]
+        if self._tgt_max_len > 0:
+            tgt_sentence = self._tgt_vocab[tgt.split()[:self._tgt_max_len]]
+        else:
+            tgt_sentence = self._tgt_vocab[tgt.split()]
         src_sentence.append(self._src_vocab[self._src_vocab.eos_token])
         tgt_sentence.insert(0, self._tgt_vocab[self._tgt_vocab.bos_token])
         tgt_sentence.append(self._tgt_vocab[self._tgt_vocab.eos_token])
@@ -158,11 +170,11 @@ class TrainValDataTransform(object):
         return src_npy, tgt_npy
 
 
-def process_dataset(dataset, src_vocab, tgt_vocab):
+def process_dataset(dataset, src_vocab, tgt_vocab, src_max_len=-1, tgt_max_len=-1):
     start = time.time()
     dataset_processed = dataset.transform(TrainValDataTransform(src_vocab, tgt_vocab,
-                                                                args.src_max_len,
-                                                                args.tgt_max_len), lazy=False)
+                                                                src_max_len,
+                                                                tgt_max_len), lazy=False)
     end = time.time()
     print('Processing Time spent: {}'.format(end - start))
     return dataset_processed
@@ -192,7 +204,8 @@ def load_translation_data(dataset, src_lang='en', tgt_lang='vi'):
     src_vocab, tgt_vocab = data_train.src_vocab, data_train.tgt_vocab
     data_train_processed = load_cached_dataset(common_prefix + '_train')
     if not data_train_processed:
-        data_train_processed = process_dataset(data_train, src_vocab, tgt_vocab)
+        data_train_processed = process_dataset(data_train, src_vocab, tgt_vocab,
+                                               args.src_max_len, args.tgt_max_len)
         cache_dataset(data_train_processed, common_prefix + '_train')
     data_val_processed = load_cached_dataset(common_prefix + '_val')
     if not data_val_processed:
@@ -202,7 +215,7 @@ def load_translation_data(dataset, src_lang='en', tgt_lang='vi'):
     if not data_test_processed:
         data_test_processed = process_dataset(data_test, src_vocab, tgt_vocab)
         cache_dataset(data_test_processed, common_prefix + '_test')
-    fetch_tgt_sentence = lambda src, tgt: tgt.split()[:args.tgt_max_len]
+    fetch_tgt_sentence = lambda src, tgt: tgt.split()
     val_tgt_sentences = list(data_val.transform(fetch_tgt_sentence))
     test_tgt_sentences = list(data_test.transform(fetch_tgt_sentence))
     return data_train_processed, data_val_processed, data_test_processed, \
@@ -246,18 +259,19 @@ encoder, decoder = get_gnmt_encoder_decoder(hidden_size=args.num_hidden,
 model = NMTModel(src_vocab=src_vocab, tgt_vocab=tgt_vocab, encoder=encoder, decoder=decoder,
                  embed_size=args.num_hidden, prefix='gnmt_')
 model.initialize(init=mx.init.Uniform(0.1), ctx=ctx)
-model.hybridize()
+static_alloc = True
+model.hybridize(static_alloc=static_alloc)
 logging.info(model)
 
 translator = BeamSearchTranslator(model=model, beam_size=args.beam_size,
                                   scorer=BeamSearchScorer(alpha=args.lp_alpha,
                                                           K=args.lp_k),
-                                  max_length=args.tgt_max_len)
+                                  max_length=args.tgt_max_len + 100)
 logging.info('Use beam_size={}, alpha={}, K={}'.format(args.beam_size, args.lp_alpha, args.lp_k))
 
 
 loss_function = SoftmaxCEMaskedLoss()
-loss_function.hybridize()
+loss_function.hybridize(static_alloc=static_alloc)
 
 
 def evaluate(data_loader):
@@ -318,11 +332,20 @@ def train():
 
     train_batchify_fn = btf.Tuple(btf.Pad(), btf.Pad(), btf.Stack(), btf.Stack())
     test_batchify_fn = btf.Tuple(btf.Pad(), btf.Pad(), btf.Stack(), btf.Stack(), btf.Stack())
+    if args.bucket_scheme == 'constant':
+        bucket_scheme = ConstWidthBucket()
+    elif args.bucket_scheme == 'linear':
+        bucket_scheme = LinearWidthBucket()
+    elif args.bucket_scheme == 'exp':
+        bucket_scheme = ExpWidthBucket(bucket_len_step=1.2)
+    else:
+        raise NotImplementedError
     train_batch_sampler = FixedBucketSampler(lengths=data_train_lengths,
                                              batch_size=args.batch_size,
                                              num_buckets=args.num_buckets,
                                              ratio=args.bucket_ratio,
-                                             shuffle=True)
+                                             shuffle=True,
+                                             bucket_scheme=bucket_scheme)
     logging.info('Train Batch Sampler:\n{}'.format(train_batch_sampler.stats()))
     train_data_loader = DataLoader(data_train,
                                    batch_sampler=train_batch_sampler,
@@ -406,7 +429,7 @@ def train():
             save_path = os.path.join(args.save_dir, 'valid_best.params')
             logging.info('Save best parameters to {}'.format(save_path))
             model.save_params(save_path)
-        else:
+        if epoch_id + 1 >= (args.epochs * 2) // 3:
             new_lr = trainer.learning_rate * args.lr_update_factor
             logging.info('Learning rate change to {}'.format(new_lr))
             trainer.set_learning_rate(new_lr)

@@ -209,7 +209,7 @@ class WMT2014(_TranslationDataset):
     tgt_lang : str, default 'de'
         The target language. Option for source and target languages are 'en' <-> 'de'
     full : bool, default False
-        In default, we use the test datset in http://statmt.org/wmt14/test-filtered.tgz.
+        In default, we use the test dataset in http://statmt.org/wmt14/test-filtered.tgz.
         When full is True, we use the test dataset in http://statmt.org/wmt14/test-full.tgz
     root : str, default '$MXNET_HOME/datasets/wmt2014'
         Path to temp folder for storing data.
@@ -284,7 +284,7 @@ class WMT2014BPE(_TranslationDataset):
     tgt_lang : str, default 'de'
         The target language. Option for source and target languages are 'en' <-> 'de'
     full : bool, default False
-        In default, we use the test datset in http://statmt.org/wmt14/test-filtered.tgz.
+        In default, we use the test dataset in http://statmt.org/wmt14/test-filtered.tgz.
         When full is True, we use the test dataset in http://statmt.org/wmt14/test-full.tgz
     root : str, default '$MXNET_HOME/datasets/wmt2014'
         Path to temp folder for storing data.
@@ -294,8 +294,8 @@ class WMT2014BPE(_TranslationDataset):
                  root=os.path.join(_get_home_dir(), 'datasets', 'wmt2014')):
         self._supported_segments = ['train'] + ['newstest%d' % i for i in range(2009, 2015)]
         self._archive_file = {_get_pair_key('de', 'en'):
-                                  ('wmt2014bpe_de_en-4c49878e.zip',
-                                   '4c49878e2a7a6af73080cf778b3cf91983881af9')}
+                                  ('wmt2014bpe_de_en-ace8f41c.zip',
+                                   'ace8f41c22c0da8729ff15f40d416ebd16738979')}
         self._data_file = {_get_pair_key('de', 'en'):
                                {'train_en': ('train.tok.clean.bpe.32000.en',
                                              'e3f093b64468db7084035c9650d9eecb86a3db5f'),
@@ -331,9 +331,9 @@ class WMT2014BPE(_TranslationDataset):
                                              '71413f497ce3a0fa691c55277f367e5d672b27ee')}}
         if full:
             self._data_file[_get_pair_key('de', 'en')]['newstest2014_en'] = \
-                ('newstest2014.tok.bpe.32000.full.en', 'c6e00064115f3131d316708d67a520d8f9a273e8')
+                ('newstest2014.tok.bpe.32000.full.en', '6c398b61641cd39f186b417c54b171876563193f')
             self._data_file[_get_pair_key('de', 'en')]['newstest2014_de'] = \
-                ('newstest2014.tok.bpe.32000.full.de', '8268af01426a6d198c948a9a9662e280c7ca3c20')
+                ('newstest2014.tok.bpe.32000.full.de', 'b890a8dfc2146dde570fcbcb42e4157292e95251')
         else:
             if src_lang == 'de':
                 self._data_file[_get_pair_key('de', 'en')]['newstest2014_en'] = \
