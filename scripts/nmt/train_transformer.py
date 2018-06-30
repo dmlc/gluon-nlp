@@ -118,10 +118,15 @@ parser.add_argument('--num_averages', type=int, default=5,
                          'This is only used if average_checkpoint is True')
 parser.add_argument('--average_start', type=int, default=5,
                     help='Perform average SGD on last average_start epochs')
-parser.add_argument('--bleu', type=str, default='t2t',
+parser.add_argument('--full', type=bool, default=False,
+                    help='In default, we use the test dataset in'
+                         ' http://statmt.org/wmt14/test-filtered.tgz.'
+                         ' When option full is True, we use the test dataset in'
+                         ' http://statmt.org/wmt14/test-full.tgz')
+parser.add_argument('--bleu', type=str, default='tweaked',
                     help='Schemes for computing bleu score. It can be: '
-                    '"t2t": it uses similar steps in get_ende_bleu.sh in tensor2tensor repository,'
-                    ' where compound words are put in ATAT format; '
+                    '"tweaked": it uses similar steps in get_ende_bleu.sh in tensor2tensor '
+                    'repository, where compound words are put in ATAT format; '
                     '"13a": This uses official WMT tokenization and produces the same results'
                     ' as official script (mteval-v13a.pl) used by WMT; '
                     '"intl": This use international tokenization in mteval-v14a.pl')
@@ -239,7 +244,8 @@ def load_translation_data(dataset, src_lang='en', tgt_lang='vi'):
                                                         args.src_max_len, args.tgt_max_len)
         data_train = WMT2014BPE('train', src_lang=src_lang, tgt_lang=tgt_lang)
         data_val = WMT2014BPE('newstest2013', src_lang=src_lang, tgt_lang=tgt_lang)
-        data_test = WMT2014BPE('newstest2014', src_lang=src_lang, tgt_lang=tgt_lang)
+        data_test = WMT2014BPE('newstest2014', src_lang=src_lang, tgt_lang=tgt_lang,
+                               full=args.full)
     else:
         raise NotImplementedError
     src_vocab, tgt_vocab = data_train.src_vocab, data_train.tgt_vocab
@@ -252,11 +258,11 @@ def load_translation_data(dataset, src_lang='en', tgt_lang='vi'):
     if not data_val_processed:
         data_val_processed = process_dataset(data_val, src_vocab, tgt_vocab)
         cache_dataset(data_val_processed, common_prefix + '_val')
-    data_test_processed = load_cached_dataset(common_prefix + '_test')
+    data_test_processed = load_cached_dataset(common_prefix + '_' + str(args.full) + '_test')
     if not data_test_processed:
         data_test_processed = process_dataset(data_test, src_vocab, tgt_vocab)
-        cache_dataset(data_test_processed, common_prefix + '_test')
-    if args.bleu == 't2t':
+        cache_dataset(data_test_processed, common_prefix + '_' + str(args.full) + '_test')
+    if args.bleu == 'tweaked':
         fetch_tgt_sentence = lambda src, tgt: tgt.split()
         val_tgt_sentences = list(data_val.transform(fetch_tgt_sentence))
         test_tgt_sentences = list(data_test.transform(fetch_tgt_sentence))
@@ -267,7 +273,8 @@ def load_translation_data(dataset, src_lang='en', tgt_lang='vi'):
             test_text = WMT2016('newstest2014', src_lang=src_lang, tgt_lang=tgt_lang)
         elif dataset == 'WMT2014BPE':
             val_text = WMT2014('newstest2013', src_lang=src_lang, tgt_lang=tgt_lang)
-            test_text = WMT2014('newstest2014', src_lang=src_lang, tgt_lang=tgt_lang)
+            test_text = WMT2014('newstest2014', src_lang=src_lang, tgt_lang=tgt_lang,
+                                full=args.full)
         else:
             raise NotImplementedError
         val_tgt_sentences = list(val_text.transform(fetch_tgt_sentence))
@@ -394,7 +401,7 @@ def evaluate(data_loader, context=ctx[0]):
     avg_loss = avg_loss / avg_loss_denom
     real_translation_out = [None for _ in range(len(all_inst_ids))]
     for ind, sentence in zip(all_inst_ids, translation_out):
-        if args.bleu == 't2t':
+        if args.bleu == 'tweaked':
             real_translation_out[ind] = sentence
         elif args.bleu == '13a' or args.bleu == 'intl':
             real_translation_out[ind] = detokenizer(_bpe_to_words(sentence),
@@ -468,7 +475,7 @@ def train():
                                   batchify_fn=test_batchify_fn,
                                   num_workers=8)
 
-    if args.bleu == 't2t':
+    if args.bleu == 'tweaked':
         bpe = True
         split_compound_word = True
         tokenized = True
