@@ -137,8 +137,8 @@ class PadSequence(object):
 class SacreMosesTokenizer(object):
     r"""Apply the Moses Tokenizer implemented in sacremoses.
 
-    Users of this class are required to `install sacremoses <https://github.com/alvations/sacremoses>`_.
-    For example, one can use:
+    Users of this class are required to `install sacremoses
+    <https://github.com/alvations/sacremoses>`_. For example, one can use:
 
     .. code:: python
 
@@ -178,7 +178,8 @@ class SacreMosesTokenizer(object):
             from sacremoses import MosesTokenizer
         except ImportError:
             raise ImportError('sacremoses is not installed. You must install sacremoses '
-                              'in order to use the SacreMosesTokenizer. pip install -U sacremoses .')
+                              'in order to use the SacreMosesTokenizer: '
+                              'pip install -U sacremoses .')
         self._tokenizer = MosesTokenizer()
 
     def __call__(self, sample, return_str=False):
@@ -285,8 +286,8 @@ class SpacyTokenizer(object):
 class SacreMosesDetokenizer(object):
     r"""Apply the Moses Detokenizer implemented in sacremoses.
 
-    Users of this class are required to `install sacremoses <https://github.com/alvations/sacremoses>`_.
-    For example, one can use:
+    Users of this class are required to `install sacremoses
+    <https://github.com/alvations/sacremoses>`_. For example, one can use:
 
     .. code:: python
 
@@ -308,7 +309,8 @@ class SacreMosesDetokenizer(object):
             from sacremoses import MosesDetokenizer
         except ImportError:
             raise ImportError('sacremoses is not installed. You must install sacremoses '
-                              'in order to use the SacreMosesTokenizer. pip install -U sacremoses .')
+                              'in order to use the SacreMosesTokenizer: '
+                              'pip install -U sacremoses .')
         self._detokenizer = MosesDetokenizer()
 
     def __call__(self, sample, return_str=False):
