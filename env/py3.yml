@@ -7,6 +7,7 @@ dependencies:
   - sphinx=1.7.5
   - spacy
   - nltk
+  - sacremoses
   - pytest
   - flaky
   - pytest-cov
