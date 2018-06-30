@@ -69,7 +69,7 @@ def test_pad_sequence():
 
 
 def test_moses_tokenizer():
-    tokenizer = NLTKMosesTokenizer()
+    tokenizer = SacreMosesTokenizer()
     text = u"Introducing Gluon: An Easy-to-Use Programming Interface for Flexible Deep Learning."
     try:
         ret = tokenizer(text)
@@ -93,7 +93,7 @@ def test_spacy_tokenizer():
 
 
 def test_moses_detokenizer():
-    detokenizer = NLTKMosesDetokenizer()
+    detokenizer = SacreMosesDetokenizer()
     text = ['Introducing', 'Gluon', ':', 'An', 'Easy-to-Use', 'Programming',
             'Interface', 'for', 'Flexible', 'Deep', 'Learning', '.']
     try:

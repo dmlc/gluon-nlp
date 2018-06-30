@@ -148,9 +148,9 @@ with `Dataset.transform` method.
 
     ClipSequence
     PadSequence
-    NLTKMosesTokenizer
+    SacreMosesTokenizer
     SpacyTokenizer
-    NLTKMosesDetokenizer
+    SacreMosesDetokenizer
 
 Samplers
 --------
