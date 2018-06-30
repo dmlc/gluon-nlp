@@ -58,6 +58,7 @@ stage("Deploy") {
     ws('workspace/gluon-nlp-docs') {
       checkout scm
       sh """#!/bin/bash
+      conda remove -n gluon_nlp_docs pandoc || echo
       conda env update --prune -f env/doc.yml
       source activate gluon_nlp_docs
       conda list
