@@ -402,7 +402,7 @@ class NLTKMosesDetokenizer(_MosesDetokenizer):
     'Das Gluon NLP-Toolkit stellt eine Reihe von Textverarbeitungstools zur Verfügung.'
     """
     def __init__(self):
-        super(_MosesDetokenizer, self).__init__()
+        super(NLTKMosesDetokenizer, self).__init__()
 
 
 class SacreMosesDetokenizer(_MosesDetokenizer):
@@ -427,7 +427,7 @@ class SacreMosesDetokenizer(_MosesDetokenizer):
     'Das Gluon NLP-Toolkit stellt eine Reihe von Textverarbeitungstools zur Verfügung.'
     """
     def __init__(self):
-        super(_MosesDetokenizer, self).__init__()
+        super(SacreMosesDetokenizer, self).__init__()
 
 
 class JiebaTokenizer(object):
