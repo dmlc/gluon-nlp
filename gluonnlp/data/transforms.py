@@ -23,8 +23,8 @@ clipping, padding, and tokenization."""
 from __future__ import absolute_import
 from __future__ import print_function
 
-__all__ = ['ClipSequence', 'PadSequence', 'NLTKMosesTokenizer', 'SpacyTokenizer',
-           'NLTKMosesDetokenizer', 'JiebaTokenizer', 'NLTKStanfordSegmenter']
+__all__ = ['ClipSequence', 'PadSequence', 'SacreMosesTokenizer', 'SpacyTokenizer',
+           'SacreMosesDetokenizer', 'JiebaTokenizer', 'NLTKStanfordSegmenter']
 
 import os
 
@@ -134,19 +134,19 @@ class PadSequence(object):
                                           'mxnet.NDArray, received type=%s' % str(type(sample)))
 
 
-class NLTKMosesTokenizer(object):
-    r"""Apply the Moses Tokenizer implemented in NLTK.
+class SacreMosesTokenizer(object):
+    r"""Apply the Moses Tokenizer implemented in sacremoses.
 
-    Users of this class are required to `install NLTK <https://www.nltk.org/install.html>`_
-    and install relevant NLTK packages, such as:
+    Users of this class are required to `install sacremoses <https://github.com/alvations/sacremoses>`_.
+    For example, one can use:
 
     .. code:: python
 
-        python -m nltk.downloader perluniprops nonbreaking_prefixes
+        pip install -U sacremoses
 
     Examples
     --------
-    >>> tokenizer = NLTKMosesTokenizer()
+    >>> tokenizer = SacreMosesTokenizer()
     >>> tokenizer("Gluon NLP toolkit provides a suite of text processing tools.")
     ['Gluon',
      'NLP',
@@ -175,11 +175,10 @@ class NLTKMosesTokenizer(object):
     """
     def __init__(self):
         try:
-            from nltk.tokenize.moses import MosesTokenizer
+            from sacremoses import MosesTokenizer
         except ImportError:
-            raise ImportError('NLTK or relevant packages are not installed. You must install NLTK '
-                              'in order to use the NLTKMosesTokenizer. You can refer to the '
-                              'official installation guide in https://www.nltk.org/install.html .')
+            raise ImportError('sacremoses is not installed. You must install sacremoses '
+                              'in order to use the SacreMosesTokenizer. pip install -U sacremoses .')
         self._tokenizer = MosesTokenizer()
 
     def __call__(self, sample, return_str=False):
@@ -283,19 +282,19 @@ class SpacyTokenizer(object):
         return [tok.text for tok in self._nlp(sample)]
 
 
-class NLTKMosesDetokenizer(object):
-    r"""Apply the Moses Detokenizer implemented in NLTK.
+class SacreMosesDetokenizer(object):
+    r"""Apply the Moses Detokenizer implemented in sacremoses.
 
-    Users of this class are required to `install NLTK <https://www.nltk.org/install.html>`_
-    and install relevant NLTK packages, such as:
+    Users of this class are required to `install sacremoses <https://github.com/alvations/sacremoses>`_.
+    For example, one can use:
 
     .. code:: python
 
-        python -m nltk.downloader perluniprops nonbreaking_prefixes
+        pip install -U sacremoses
 
     Examples
     --------
-    >>> detokenizer = NLTKMosesDetokenizer()
+    >>> detokenizer = SacreMosesDetokenizer()
     >>> detokenizer(['Gluon', 'NLP', 'toolkit', 'provides', 'a', 'suite', \
      'of', 'text', 'processing', 'tools', '.'], return_str=True)
     "Gluon NLP toolkit provides a suite of text processing tools."
@@ -306,11 +305,10 @@ class NLTKMosesDetokenizer(object):
     """
     def __init__(self):
         try:
-            from nltk.tokenize.moses import MosesDetokenizer
+            from sacremoses import MosesDetokenizer
         except ImportError:
-            raise ImportError('NLTK or relevant packages are not installed. You must install NLTK '
-                              'in order to use the NLTKMosesTokenizer. You can refer to the '
-                              'official installation guide in https://www.nltk.org/install.html .')
+            raise ImportError('sacremoses is not installed. You must install sacremoses '
+                              'in order to use the SacreMosesTokenizer. pip install -U sacremoses .')
         self._detokenizer = MosesDetokenizer()
 
     def __call__(self, sample, return_str=False):
