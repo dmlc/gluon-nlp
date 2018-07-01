@@ -216,6 +216,7 @@ def setup(app):
             }, True)
     app.add_transform(AutoStructify)
     app.add_javascript('google_analytics.js')
+    app.add_javascript('copybutton.js')
 
 
 sphinx_gallery_conf = {
