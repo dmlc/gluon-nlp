@@ -80,7 +80,7 @@ parser.add_argument('--num_layers', type=int, default=6,
                     help='number of layers in the encoder and decoder')
 parser.add_argument('--num_heads', type=int, default=8,
                     help='number of heads in multi-head attention')
-parser.add_argument('--scaled', type=bool, default=True, help='whether to use scale in attention')
+parser.add_argument('--scaled', action='store_true', help='Turn on to use scale in attention')
 parser.add_argument('--batch_size', type=int, default=1024,
                     help='Batch size. Number of tokens in a minibatch')
 parser.add_argument('--beam_size', type=int, default=4, help='Beam size')
@@ -109,8 +109,8 @@ parser.add_argument('--num_accumulated', type=int, default=1,
                          'This is useful to mimic large batch training with limited gpu memory')
 parser.add_argument('--magnitude', type=float, default=3.0,
                     help='Magnitude of Xavier initialization')
-parser.add_argument('--average_checkpoint', type=bool, default=False,
-                    help='Whether to perform final testing based on '
+parser.add_argument('--average_checkpoint', action='store_true',
+                    help='Turn on to perform final testing based on '
                          'the average of last few checkpoints')
 parser.add_argument('--num_averages', type=int, default=5,
                     help='Perform final testing based on the '
@@ -118,10 +118,10 @@ parser.add_argument('--num_averages', type=int, default=5,
                          'This is only used if average_checkpoint is True')
 parser.add_argument('--average_start', type=int, default=5,
                     help='Perform average SGD on last average_start epochs')
-parser.add_argument('--full', type=bool, default=False,
+parser.add_argument('--full', action='store_true',
                     help='In default, we use the test dataset in'
                          ' http://statmt.org/wmt14/test-filtered.tgz.'
-                         ' When option full is True, we use the test dataset in'
+                         ' When the option full is turned on, we use the test dataset in'
                          ' http://statmt.org/wmt14/test-full.tgz')
 parser.add_argument('--bleu', type=str, default='tweaked',
                     help='Schemes for computing bleu score. It can be: '
