@@ -480,8 +480,21 @@ class TokenEmbedding(object):
 
         return self._unknown_autoextend
 
-    def __contains__(self, x):
-        return x in self._token_to_idx
+    def __contains__(self, token):
+        """Check if token is known.
+
+        Parameters
+        ----------
+        token : str
+            A token.
+
+        Returns
+        -------
+        bool:
+            Return True if the token is known. A token is known if it has been
+            assigned an index and vector.
+        """
+        return token in self._token_to_idx
 
     def __eq__(self, other):
         if isinstance(other, TokenEmbedding):

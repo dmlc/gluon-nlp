@@ -84,7 +84,7 @@ class EmbeddingModel(Block):
         raise NotImplementedError
 
 
-class SimpleEmbeddingModel(EmbeddingModel, Block):
+class SimpleEmbeddingModel(EmbeddingModel):
     """A trainable embedding model.
 
     This class is a simple wrapper around the mxnet.gluon.nn.Embedding. It
