@@ -21,7 +21,6 @@
 __all__ = ['CandidateSampler', 'UnigramCandidateSampler']
 
 import mxnet as mx
-import numpy as np
 
 
 class CandidateSampler(object):
@@ -39,14 +38,19 @@ class CandidateSampler(object):
 class UnigramCandidateSampler(CandidateSampler):
     """Unigram Candidate Sampler
 
+    Draw random samples from a unigram distribution with specified weights
+    using the alias method.
+
     Parameters
     ----------
     weights : mx.nd.NDArray
-        Unnormalized class probabilities.
+        Unnormalized class probabilities. Samples are drawn and returned on the
+        same context as weights.context.
 
     """
 
     def __init__(self, weights):
+        self._context = weights.context
         self.N = weights.size
         total_weights = weights.sum()
         self.prob = (weights * self.N / total_weights).asnumpy().tolist()
@@ -80,15 +84,29 @@ class UnigramCandidateSampler(CandidateSampler):
             self.alias[i] = i
 
         # convert to ndarrays
-        self.prob = mx.nd.array(self.prob)
-        self.alias = mx.nd.array(self.alias)
+        self.prob = mx.nd.array(self.prob, ctx=self._context)
+        self.alias = mx.nd.array(self.alias, ctx=self._context)
 
-    def __call__(self, k):
-        """Draw k samples from the distribution."""
-        idx = mx.nd.array(np.random.randint(0, self.N, size=k))
+    def __call__(self, shape):
+        """Draw samples from uniform distribution and return sampled candidates.
+
+        Parameters
+        ----------
+        shape: int or list/tuple of int
+            Shape of samples to return.
+
+        Returns
+        -------
+        samples: NDArray
+            The sampled candidate classes.
+        """
+        idx = mx.nd.random.uniform(low=0, high=self.N + 1, shape=shape,
+                                   ctx=self._context).floor()
         prob = self.prob[idx]
         alias = self.alias[idx]
-        where = mx.nd.random.uniform(shape=k) < prob
+        where = mx.nd.random.uniform(shape=shape, ctx=self._context) < prob
         hit = idx * where
         alt = alias * (1 - where)
-        return hit + alt
+        candidates = hit + alt
+
+        return candidates

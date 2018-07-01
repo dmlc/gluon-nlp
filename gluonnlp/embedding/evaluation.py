@@ -170,12 +170,7 @@ def list_evaluation_functions(kind=None):
         reg = registry.get_registry(_REGSITRY_KIND_CLASS_MAP[kind])
         return list(reg.keys())
     else:
-        return {
-            embedding_name:
-            list(embedding_cls.pretrained_file_name_sha1.keys())
-            for embedding_name, embedding_cls in registry.get_registry(
-                TokenEmbedding).items()
-        }
+        return {name: list_evaluation_functions(kind=name) for name in kind}
 
 
 ###############################################################################

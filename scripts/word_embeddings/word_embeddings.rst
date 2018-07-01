@@ -20,34 +20,17 @@ included `evaluate_pretrained.py` as follows.
    $ python evaluate_pretrained.py
 
 Call the script with the `--help` option to get an overview of the supported
-options.
-
-The download link above contains a notebook with extended results comparing the
-different included pretrained embeddings on all Word Embedding Evaluation
-datasets included in the toolkit, providing detailed information per category in
-the respective datasets.
-
-We include a `run_all.sh` script to reproduce the results.
-
+options. We include a `run_all.sh` script to run the evaluation for the
+pretrained English Glove and fastText embeddings included in GluonNLP.
 
 .. code-block:: console
 
    $ run_all.sh
 
+The resulting logs and a notebook containing a ranking for the different
+evaluation tasks are available `here
+<https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/embedding_results/>`__.
 
-Loading of binary fasttext models
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Fasttext models trained with the library of facebookresearch are exported both
-in a text and a binary format. Unlike the text format, the binary format
-preserves information about subword units and consequently supports computation
-of word vectors for words unknown during training (and not included in the text
-format). `evaluate_fasttext_bin.py` shows how to load the binary format into a
-FasttextEmbeddingModel Block provided by the Gluon NLP toolkit.
-
-Using this Block together with the NGramHashes subword function of the Gluon NLP
-toolkit it is possible to compute word vectors for unknown words as part of your
-model.
 
 Word Embedding Training
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -75,40 +58,50 @@ default parameters. You can reproduce these results with runningand `python
 train_fasttext.py --gpu 0` respectively. For comparison we also report the
 results obtained by training FastText with the `facebookresearch/fastText
 implementation <https://github.com/facebookresearch/fastText>`_. All results are
-obtained by training 10 epochs on the `Text8
+obtained by training 5 epochs on the `Text8
 <http://mattmahoney.net/dc/textdata.html>`_ dataset.
 
+======================================  ===========================  ===================
+Similarity Dataset                        facebookresearch/fasttext    train_fasttext.py
+======================================  ===========================  ===================
+WordSim353-similarity                                     0.65275               0.687187
+WordSim353-relatedness                                    0.540742              0.612768
+MEN (test set)                                            0.659031              0.679318
+RadinskyMTurk                                             0.638946              0.619085
+RareWords                                                 0.40731               0.398834
+SimLex999                                                 0.314253              0.309361
+SimVerb3500                                               0.187372              0.190025
+SemEval17Task2 (test set)                                 0.535899              0.533027
+BakerVerb143                                              0.419168              0.478791
+YangPowersVerb130                                         0.429905              0.437008
+======================================  ===========================  ===================
 
-======================================  ===========================  ===================
-Similarity Dataset                      facebookresearch/fasttext    train_fasttext.py
-======================================  ===========================  ===================
-WordSim353-similarity                                  0.663724             0.718848
-WordSim353-relatedness                                 0.58125              0.606002
-MEN (test set)                                         0.705311             0.663146
-RadinskyMTurk                                          0.665705             0.652314
-RareWords                                              0.384798             0.378155
-SimLex999                                              0.302956             0.283543
-SimVerb3500                                            0.195971             0.189177
-SemEval17Task2 (test set)                              0.550221             0.559741
-BakerVerb143                                           0.419705             0.382791
-YangPowersVerb130                                      0.459764             0.374102
-======================================  ===========================  ===================
+===========================================  ===========================  ===================
+Google Analogy Dataset                        facebookresearch/fasttext    train_fasttext.py
+===========================================  ===========================  ===================
+capital-common-countries                              0.337945              0.405138
+capital-world                                         0.0935013             0.159151
+currency                                              0.0230947             0.0427252
+city-in-state                                         0.039319              0.06364
+family                                                0.3083                0.300395
+gram1-adjective-to-adverb                             0.694556              0.699597
+gram2-opposite                                        0.76601               0.713054
+gram3-comparative                                     0.721471              0.750751
+gram4-superlative                                     0.727273              0.574866
+gram5-present-participle                              0.5625                0.407197
+gram6-nationality-adjective                           0.829268              0.826141
+gram7-past-tense                                      0.173718              0.194872
+gram8-plural                                          0.760511              0.848348
+gram9-plural-verbs                                    0.752874              0.736782
+===========================================  ===========================  ===================
 
-===========================================  ===========================  ===================
-Googal Analogy Test Set Category             facebookresearch/fasttext    train_fasttext.py
-===========================================  ===========================  ===================
-capital-common-countries                             0.416996                  0.577075
-capital-world                                        0.114721                  0.22458
-currency                                             0.0103926                 0.0935335
-city-in-state                                        0.0689096                 0.143494
-family                                               0.247036                  0.460474
-gram1-adjective-to-adverb                            0.620968                  0.609879
-gram2-opposite                                       0.619458                  0.607143
-gram3-comparative                                    0.73048                   0.84009
-gram4-superlative                                    0.712121                  0.57041
-gram5-present-participle                             0.418561                  0.565341
-gram6-nationality-adjective                          0.809256                  0.847405
-gram7-past-tense                                     0.153205                  0.314103
-gram8-plural                                         0.850601                  0.772523
-gram9-plural-verbs                                   0.772414                  0.635632
-===========================================  ===========================  ===================
+Loading of fastText models with subword information
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Fasttext models trained with the library of facebookresearch are exported both
+in a text and a binary format. Unlike the text format, the binary format
+preserves information about subword units and consequently supports computation
+of word vectors for words unknown during training (and not included in the text
+format). Besides training new fastText embeddings with Gluon NLP it is also
+possible to load the binary format into a Block provided by the Gluon NLP
+toolkit using `FasttextEmbeddingModel.load_fasttext_format`.

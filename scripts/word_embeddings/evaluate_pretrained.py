@@ -43,12 +43,15 @@ def get_args():
 
     # Embeddings arguments
     group = parser.add_argument_group('Embedding arguments')
-    group.add_argument('--embedding-name', type=str, default='fasttext',
+    group.add_argument('--embedding-path', type=str,
+                       help='Path to a .vec in Word2Vec text foramt or '
+                       '.bin binary fastText model file. ')
+    group.add_argument('--embedding-name', type=str,
                        help=('Name of embedding type to load. '
                              'Valid entries: {}'.format(
                                  ', '.join(
                                      nlp.embedding.list_sources().keys()))))
-    group.add_argument('--embedding-source', type=str, default='wiki.simple',
+    group.add_argument('--embedding-source', type=str,
                        help=('Source from which to initialize the embedding.'
                              'Pass --list-embedding-sources to get a list of '
                              'valid sources for a given --embedding-name.'))
@@ -103,7 +106,51 @@ def validate_args(args):
         print(' '.join(nlp.embedding.list_sources()[args.embedding_name]))
         sys.exit(0)
 
+    if not (args.embedding_path or args.embedding_name):
+        print('You must specify either --embedding-path or --embedding-name ')
+        print('Use --embedding-path to load and evaluate '
+              'word embeddings from a Word2Vec text format '
+              'or fastText binary format file')
+        print('Use --embedding-name or to download one of '
+              'the pretrained embedding files included in GluonNLP.')
+        sys.exit(1)
+
+    if args.embedding_name and not args.embedding_source:
+        print('Please also specify --embedding-source'
+              ' to select the version of the pretrained embedding. '
+              'Use --list-embedding-sources to see all available sources')
+        sys.exit(1)
+
     print(args)
+
+
+def load_embedding_from_path(args):
+    """Load a TokenEmbedding."""
+    if 'bin' in args.embedding_path:
+        with utils.print_time('load fastText model.'):
+            model = \
+                nlp.model.train.FasttextEmbeddingModel.load_fasttext_format(
+                    args.embedding_path)
+
+        # Add OOV words if the token_embedding can impute them
+        token_set = set()
+        token_set.update(
+            filter(lambda x: x in model,
+                   evaluation.get_tokens_in_evaluation_datasets(args)))
+
+        # OOV words will be imputed and added to the
+        # token_embedding.idx_to_token etc.
+        with utils.print_time('compute vectors from subwords '
+                              'for {} words.'.format(len(token_set))):
+            embedding = nlp.embedding.TokenEmbedding(unknown_token=None,
+                                                     allow_extend=True)
+            idx_to_tokens = list(token_set)
+            embedding[idx_to_tokens] = model[idx_to_tokens]
+
+    else:
+        embedding = nlp.embedding.TokenEmbedding.from_file(args.embedding_path)
+
+    return embedding
 
 
 if __name__ == '__main__':
@@ -117,14 +164,22 @@ if __name__ == '__main__':
     # Load pretrained embeddings
     print('Loading embedding ', args_.embedding_name, ' from ',
           args_.embedding_source)
-    token_embedding = nlp.embedding.create(args_.embedding_name,
-                                           source=args_.embedding_source)
+    if not args_.embedding_path:
+        token_embedding = nlp.embedding.create(args_.embedding_name,
+                                               source=args_.embedding_source)
+        name = '-' + args_.embedding_name + '-' + args_.embedding_source
+    else:
+        token_embedding = load_embedding_from_path(args_)
+        name = ''
 
     if args_.max_vocab_size:
-        token_embedding._idx_to_token = \
-            token_embedding._idx_to_token[:args_.max_vocab_size]
-        token_embedding._idx_to_vec = \
-            token_embedding._idx_to_vec[:args_.max_vocab_size]
+        if args_.embedding_path and '.bin' in args_.embedding_path:
+            raise NotImplementedError(
+                'Not implemented for binary fastText model.')
+
+        size = min(len(token_embedding._idx_to_token), args_.max_vocab_size)
+        token_embedding._idx_to_token = token_embedding._idx_to_token[:size]
+        token_embedding._idx_to_vec = token_embedding._idx_to_vec[:size]
         token_embedding._token_to_idx = {
             token: idx
             for idx, token in enumerate(token_embedding._idx_to_token)
@@ -132,7 +187,7 @@ if __name__ == '__main__':
 
     similarity_results = evaluation.evaluate_similarity(
         args_, token_embedding, ctx, logfile=os.path.join(
-            args_.logdir, 'similarity-{}.tsv'.format(args_.embedding_name)))
+            args_.logdir, 'similarity{}.tsv'.format(name)))
     analogy_results = evaluation.evaluate_analogy(
         args_, token_embedding, ctx, logfile=os.path.join(
-            args_.logdir, 'analogy-{}.tsv'.format(args_.embedding_name)))
+            args_.logdir, 'analogy{}.tsv'.format(name)))

@@ -152,25 +152,35 @@ class TokenEmbedding(object):
     Parameters
     ----------
     unknown_token : hashable object or None, default '<unk>'
-        The representation for any unknown token. In other words, any unknown token will be indexed
-        as the same representation.
+        Any unknown token will be replaced by unknown_token and consequently
+        will be indexed as the same representation. Only used if oov_imputer is
+        not specified.
+    init_unknown_vec : callback
+        The callback used to initialize the embedding vector for the unknown
+        token. Only used if `unknown_token` is not None.
+    allow_extend : bool, default False
+        If True, embedding vectors for previously unknown words can be added
+        via token_embedding[tokens] = vecs. If False, only vectors for known
+        tokens can be updated.
+    unknown_lookup : object subscriptable with list of tokens returning nd.NDarray, default None
+        If not None, unknown_lookup[tokens] is called for any unknown tokens.
+        The result is cached if unknown_autoextend is True.
+    unknown_autoextend : bool, default True
+        If True, any unknown token for which a vector was looked up in
+        unknown_lookup together with the resulting vector will be added to
+        token_to_idx, idx_to_token and idx_to_vec, adding a new index. This
+        option is ignored if allow_extend is False.
 
-    Attributes
-    ----------
-    idx_to_token : list of strs
-        A list of indexed tokens where the list indices and the token indices are aligned.
-    token_to_idx : dict of strs
-        A dictionary of tokens with their corresponding index numbers; inverse vocab
-    idx_to_vec : mxnet.ndarray.NDArray
-        For all the indexed tokens in this embedding, this NDArray maps each token's index to an
-        embedding vector.
-    unknown_token : hashable object or None
-        The representation for any unknown token. In other words, any unknown token will be indexed
-        as the same representation.
     """
 
-    def __init__(self, unknown_token='<unk>'):
+    def __init__(self, unknown_token='<unk>', init_unknown_vec=nd.zeros,
+                 allow_extend=False, unknown_lookup=None,
+                 unknown_autoextend=True):
         self._unknown_token = unknown_token
+        self._init_unknown_vec = init_unknown_vec
+        self._allow_extend = allow_extend
+        self._unknown_lookup = unknown_lookup
+        self._unknown_autoextend = unknown_autoextend
         self._idx_to_token = [unknown_token] if unknown_token else []
         if unknown_token:
             self._token_to_idx = DefaultLookupDict(C.UNK_IDX)
@@ -206,7 +216,7 @@ class TokenEmbedding(object):
         return pretrained_file_path
 
     def _load_embedding(self, pretrained_file_path, elem_delim,
-                        init_unknown_vec, encoding='utf8'):
+                        encoding='utf8'):
         """Load embedding vectors from a pre-trained token embedding file.
 
         Both text files and TokenEmbedding serialization files are supported.
@@ -215,7 +225,7 @@ class TokenEmbedding(object):
         For every unknown token, if its representation `self.unknown_token` is encountered in the
         pre-trained token embedding file, index 0 of `self.idx_to_vec` maps to the pre-trained token
         embedding vector loaded from the file; otherwise, index 0 of `self.idx_to_vec` maps to the
-        text embedding vector initialized by `init_unknown_vec`.
+        text embedding vector initialized by `self._init_unknown_vec`.
 
         If a token is encountered multiple times in the pre-trained text embedding file, only the
         first-encountered token embedding vector will be loaded and the rest will be skipped.
@@ -233,22 +243,19 @@ class TokenEmbedding(object):
 
         if pretrained_file_path.endswith('.npz'):
             self._load_embedding_serialized(
-                pretrained_file_path=pretrained_file_path,
-                init_unknown_vec=init_unknown_vec)
+                pretrained_file_path=pretrained_file_path)
         else:
             self._load_embedding_txt(
                 pretrained_file_path=pretrained_file_path,
-                elem_delim=elem_delim, init_unknown_vec=init_unknown_vec,
-                encoding=encoding)
+                elem_delim=elem_delim, encoding=encoding)
 
-    def _load_embedding_txt(self, pretrained_file_path, elem_delim,
-                            init_unknown_vec, encoding='utf8'):
+    def _load_embedding_txt(self, pretrained_file_path, elem_delim, encoding='utf8'):
         """Load embedding vectors from a pre-trained token embedding file.
 
         For every unknown token, if its representation `self.unknown_token` is encountered in the
         pre-trained token embedding file, index 0 of `self.idx_to_vec` maps to the pre-trained token
         embedding vector loaded from the file; otherwise, index 0 of `self.idx_to_vec` maps to the
-        text embedding vector initialized by `init_unknown_vec`.
+        text embedding vector initialized by `self._init_unknown_vec`.
 
         If a token is encountered multiple times in the pre-trained text embedding file, only the
         first-encountered token embedding vector will be loaded and the rest will be skipped.
@@ -299,18 +306,17 @@ class TokenEmbedding(object):
 
         if self.unknown_token:
             if loaded_unknown_vec is None:
-                self._idx_to_vec[C.UNK_IDX] = init_unknown_vec(shape=vec_len)
+                self._idx_to_vec[C.UNK_IDX] = self._init_unknown_vec(shape=vec_len)
             else:
                 self._idx_to_vec[C.UNK_IDX] = nd.array(loaded_unknown_vec)
 
-    def _load_embedding_serialized(self, pretrained_file_path,
-                                   init_unknown_vec):
+    def _load_embedding_serialized(self, pretrained_file_path):
         """Load embedding vectors from a pre-trained token embedding file.
 
         For every unknown token, if its representation `self.unknown_token` is encountered in the
         pre-trained token embedding file, index 0 of `self.idx_to_vec` maps to the pre-trained token
         embedding vector loaded from the file; otherwise, index 0 of `self.idx_to_vec` maps to the
-        text embedding vector initialized by `init_unknown_vec`.
+        text embedding vector initialized by `self._init_unknown_vec`.
 
         ValueError is raised if a token occurs multiple times.
         """
@@ -334,7 +340,7 @@ class TokenEmbedding(object):
                 idx_to_vec = deserialized_embedding.idx_to_vec
                 idx_to_token[C.UNK_IDX] = self.unknown_token
                 vec_len = idx_to_vec.shape[1]
-                idx_to_vec[C.UNK_IDX] = init_unknown_vec(shape=vec_len)
+                idx_to_vec[C.UNK_IDX] = self._init_unknown_vec(shape=vec_len)
             else:
                 # If the TokenEmbedding shall not have an unknown token, we
                 # just delete the one in the npz.
@@ -365,7 +371,7 @@ class TokenEmbedding(object):
                 vec_len = idx_to_vec.shape[1]
                 idx_to_token.insert(0, self.unknown_token)
                 idx_to_vec = nd.concat(
-                    init_unknown_vec(shape=vec_len).reshape((1, -1)),
+                    self._init_unknown_vec(shape=vec_len).reshape((1, -1)),
                     idx_to_vec, dim=0)
 
         self._idx_to_token = idx_to_token
@@ -374,22 +380,121 @@ class TokenEmbedding(object):
 
     @property
     def idx_to_token(self):
+        """Index to token mapping.
+
+        Returns
+        -------
+        list of str:
+             A list of indexed tokens where the list indices and the token
+             indices are aligned.
+
+        """
         return self._idx_to_token
 
     @property
     def token_to_idx(self):
+        """Token to index mapping.
+
+        Returns
+        -------
+        dict of int to strs:
+             A dictionary of tokens with their corresponding index numbers;
+             inverse vocab.
+        """
         return self._token_to_idx
 
     @property
     def idx_to_vec(self):
+        """Index to vector mapping.
+
+        Returns
+        -------
+        mxnet.ndarray.NDArray:
+            For all the indexed tokens in this embedding, this NDArray maps
+            each token's index to an embedding vector.
+
+        """
         return self._idx_to_vec
 
     @property
     def unknown_token(self):
+        """Unknown token representation.
+
+        Any token that is unknown will be indexed using the representation of
+        unknown_token.
+
+        Returns
+        -------
+        hashable object or None:
+            Unknown token representation
+
+        """
         return self._unknown_token
 
-    def __contains__(self, x):
-        return x in self._token_to_idx
+    @property
+    def allow_extend(self):
+        """Allow extension of the TokenEmbedding with new tokens.
+
+        If True, `TokenEmbedding[tokens] = vec` can introduce new tokens that
+        were previously unknown. New indices will be assigned to the newly
+        introduced tokens. If False, only known tokens can be updated.
+
+        Returns
+        -------
+        bool:
+            Extension of the TokenEmbedding is allowed.
+
+        """
+        return self._allow_extend
+
+
+    @property
+    def unknown_lookup(self):
+        """Vector lookup for unknown tokens.
+
+        If not None, unknown_lookup[tokens] is called for any unknown tokens.
+        The result is cached if unknown_autoextend is True.
+
+        Returns
+        -------
+        Mapping[List[str], nd.NDarray]
+            Vector lookup mapping from tokens to vectors.
+
+        """
+        return self._unknown_lookup
+
+    @property
+    def unknown_autoextend(self):
+        """Autoextension behavior for unknown token lookup.
+
+        If True, any unknown token for which a vector was looked up in
+        unknown_lookup together with the resulting vector will be added to
+        token_to_idx, idx_to_token and idx_to_vec, adding a new index. Applies
+        only if unknown_lookup is not None.
+
+        Returns
+        -------
+        bool
+            Autoextension behavior
+        """
+
+        return self._unknown_autoextend
+
+    def __contains__(self, token):
+        """Check if token is known.
+
+        Parameters
+        ----------
+        token : str
+            A token.
+
+        Returns
+        -------
+        bool:
+            Return True if the token is known. A token is known if it has been
+            assigned an index and vector.
+        """
+        return token in self._token_to_idx
 
     def __eq__(self, other):
         if isinstance(other, TokenEmbedding):
@@ -410,12 +515,10 @@ class TokenEmbedding(object):
     def __getitem__(self, tokens):
         """Looks up embedding vectors of text tokens.
 
-
         Parameters
         ----------
         tokens : str or list of strs
             A token or a list of tokens.
-
 
         Returns
         -------
@@ -429,28 +532,27 @@ class TokenEmbedding(object):
         if to_reduce:
             tokens = [tokens]
 
-        indices = [self._token_to_idx[token] for token in tokens]
+        if self.unknown_lookup is not None and not self.unknown_autoextend:
+            vecs = [
+                self.idx_to_vec[self.token_to_idx[token]]
+                if token in self.token_to_idx else self.unknown_lookup[token]
+                for token in tokens
+            ]
+            vecs = nd.stack(*vecs, axis=0)
+        else:
+            if self.unknown_lookup is not None and self.unknown_autoextend:
+                new_tokens = [t for t in tokens if t not in self.token_to_idx]
+                self[new_tokens] = self.unknown_lookup[new_tokens]
 
-        vecs = nd.Embedding(nd.array(indices), self.idx_to_vec, self.idx_to_vec.shape[0],
-                            self.idx_to_vec.shape[1])
+            indices = [self._token_to_idx[token] for token in tokens]
+            vecs = nd.Embedding(
+                nd.array(indices), self.idx_to_vec, self.idx_to_vec.shape[0],
+                self.idx_to_vec.shape[1])
 
         return vecs[0] if to_reduce else vecs
 
-    def __setitem__(self, tokens, new_embedding):
-        """Updates embedding vectors for tokens.
-
-
-        Parameters
-        ----------
-        tokens : hashable object or a list or tuple of hashable objects
-            A token or a list of tokens whose embedding vector are to be updated.
-        new_embedding : mxnet.ndarray.NDArray
-            An NDArray to be assigned to the embedding vectors of `tokens`. Its length must be equal
-            to the number of `tokens` and its width must be equal to the dimension of embedding of
-            the glossary. If `tokens` is a singleton, it must be 1-D or 2-D. If `tokens` is a list
-            of multiple strings, it must be 2-D.
-        """
-
+    def _check_vector_update(self, tokens, new_embedding):
+        """Check that tokens and embedding are in the format for __setitem__."""
         assert self._idx_to_vec is not None, '`idx_to_vec` has not been initialized.'
 
         if not isinstance(tokens, (list, tuple)) or len(tokens) == 1:
@@ -464,9 +566,55 @@ class TokenEmbedding(object):
         else:
             assert isinstance(new_embedding, nd.NDArray) and len(new_embedding.shape) == 2, \
                 '`new_embedding` must be a 2-D NDArray if `tokens` is a list of multiple strings.'
-        assert new_embedding.shape == (len(tokens), self._idx_to_vec.shape[1]), \
-            'The length of `new_embedding` must be equal to the number of tokens and the width of' \
-            'new_embedding must be equal to the dimension of embedding of the glossary.'
+        if self._idx_to_vec is not None:
+            assert new_embedding.shape == (len(tokens), self._idx_to_vec.shape[1]), \
+                'The length of `new_embedding` must be equal to the number ' \
+                'of tokens and the width of new_embedding must be equal ' \
+                'to the dimension of embedding of the glossary.'
+        return tokens
+
+    def __setitem__(self, tokens, new_embedding):
+        """Updates embedding vectors for tokens.
+
+        If self.allow_extend is True, vectors for previously unknown tokens can be introduced.
+
+        Parameters
+        ----------
+        tokens : hashable object or a list or tuple of hashable objects
+            A token or a list of tokens whose embedding vector are to be updated.
+        new_embedding : mxnet.ndarray.NDArray
+            An NDArray to be assigned to the embedding vectors of `tokens`. Its length must be equal
+            to the number of `tokens` and its width must be equal to the dimension of embedding of
+            the glossary. If `tokens` is a singleton, it must be 1-D or 2-D. If `tokens` is a list
+            of multiple strings, it must be 2-D.
+        """
+        if self.allow_extend and self._idx_to_vec is None:
+            # Initialize self._idx_to_vec
+            assert C.UNK_IDX == 0
+            self._idx_to_vec = self._init_unknown_vec(shape=(1, new_embedding.shape[-1]))
+
+        tokens = self._check_vector_update(tokens, new_embedding)
+
+        if self.allow_extend:
+            # Add new / previously unknown tokens
+            for token in filter(lambda t: t not in self._token_to_idx, tokens):
+                idx = len(self._token_to_idx)
+                self._token_to_idx[token] = idx
+                self._idx_to_token.append(token)
+
+            num_extended = len(self._token_to_idx) - self.idx_to_vec.shape[0]
+            if num_extended == 1:
+                warnings.warn(
+                    'When adding new tokens via TokenEmbedding.__setitem__ '
+                    'the internal embedding matrix needs to be reallocated. '
+                    'Users are therefore encouraged to batch their updates '
+                    '(i.e. add multiple new tokens at a time).')
+
+            # Extend shape of idx_to_vec
+            idx_to_vec = nd.zeros(shape=(len(self._token_to_idx),
+                                         self.idx_to_vec.shape[1]))
+            idx_to_vec[:self.idx_to_vec.shape[0]] = self._idx_to_vec
+            self._idx_to_vec = idx_to_vec
 
         indices = []
         for token in tokens:
@@ -474,14 +622,14 @@ class TokenEmbedding(object):
                 indices.append(self._token_to_idx[token])
             else:
                 if self.unknown_token:
-                    raise KeyError('Token "{}" is unknown. To update the embedding vector for an'
-                                   ' unknown token, please explicitly include "{}" as the '
-                                   '`unknown_token` in `tokens`. This is to avoid unintended '
-                                   'updates.'.format(token, self._idx_to_token[C.UNK_IDX]))
+                    raise KeyError(('Token "{}" is unknown. To update the embedding vector for an'
+                                    ' unknown token, please explicitly include "{}" as the '
+                                    '`unknown_token` in `tokens`. This is to avoid unintended '
+                                    'updates.').format(token, self._idx_to_token[C.UNK_IDX]))
                 else:
-                    raise KeyError('Token "{}" is unknown. Updating the embedding vector for an '
-                                   'unknown token is not allowed because `unknown_token` is not '
-                                   'specified.'.format(token))
+                    raise KeyError(('Token "{}" is unknown. Updating the embedding vector for an '
+                                    'unknown token is not allowed because `unknown_token` is not '
+                                    'specified.').format(token))
 
         self._idx_to_vec[nd.array(indices)] = new_embedding
 
@@ -503,8 +651,7 @@ class TokenEmbedding(object):
                                ', '.join(cls.source_file_hash.keys())))
 
     @staticmethod
-    def from_file(file_path, elem_delim=' ', encoding='utf8',
-                  init_unknown_vec=nd.zeros, **kwargs):
+    def from_file(file_path, elem_delim=' ', encoding='utf8', **kwargs):
         """Creates a user-defined token embedding from a pre-trained embedding file.
 
 
@@ -527,8 +674,8 @@ class TokenEmbedding(object):
             line of the custom pre-trained token embedding file.
         encoding : str, default 'utf8'
             The encoding scheme for reading the custom pre-trained token embedding file.
-        init_unknown_vec : callback
-            The callback used to initialize the embedding vector for the unknown token.
+        kwargs : dict
+            All other keyword arguments are passed to the TokenEmbedding initializer.
 
 
         Returns
@@ -537,9 +684,7 @@ class TokenEmbedding(object):
             The user-defined token embedding instance.
         """
         embedding = TokenEmbedding(**kwargs)
-        embedding._load_embedding(file_path, elem_delim=elem_delim,
-                                  init_unknown_vec=init_unknown_vec,
-                                  encoding=encoding)
+        embedding._load_embedding(file_path, elem_delim=elem_delim, encoding=encoding)
         return embedding
 
     def serialize(self, file_path, compress=True):
@@ -562,6 +707,12 @@ class TokenEmbedding(object):
             Compress the Zipfile or leave it uncompressed.
 
         """
+        if self.unknown_lookup is not None:
+            warnings.warn(
+                'Serialization of `unknown_lookup` is not supported. '
+                'Save it manually and pass the loaded lookup object '
+                'during deserialization.')
+
         unknown_token = np.array(self.unknown_token)
         idx_to_token = np.array(self.idx_to_token)
         idx_to_vec = self.idx_to_vec.asnumpy()
@@ -580,7 +731,7 @@ class TokenEmbedding(object):
                                 idx_to_vec=idx_to_vec)
 
     @classmethod
-    def deserialize(cls, file_path):
+    def deserialize(cls, file_path, **kwargs):
         """Create a new TokenEmbedding from a serialized one.
 
         TokenEmbedding is serialized by converting the list of tokens, the
@@ -594,6 +745,9 @@ class TokenEmbedding(object):
         ----------
         file_path : str or file
             The path to a file that holds the serialized TokenEmbedding.
+        kwargs : dict
+            Keyword arguments are passed to the TokenEmbedding initializer.
+            Useful for attaching unknown_lookup.
         """
         npz_dict = np.load(file_path, allow_pickle=False)
 
@@ -609,7 +763,7 @@ class TokenEmbedding(object):
         idx_to_token = npz_dict['idx_to_token'].tolist()
         idx_to_vec = nd.array(npz_dict['idx_to_vec'])
 
-        embedding = cls(unknown_token=unknown_token)
+        embedding = cls(unknown_token=unknown_token, **kwargs)
         if unknown_token:
             assert unknown_token == idx_to_token[C.UNK_IDX]
             embedding._token_to_idx = DefaultLookupDict(C.UNK_IDX)
@@ -656,8 +810,6 @@ class GloVe(TokenEmbedding):
     embedding_root : str, default '$MXNET_HOME/embedding'
         The root directory for storing embedding-related files.
         MXNET_HOME defaults to '~/.mxnet'.
-    init_unknown_vec : callback
-        The callback used to initialize the embedding vector for the unknown token.
 
     Attributes
     ----------
@@ -673,15 +825,13 @@ class GloVe(TokenEmbedding):
     source_file_hash = C.GLOVE_NPZ_SHA1
 
     def __init__(self, source='glove.6B.50d',
-                 embedding_root=os.path.join(_get_home_dir(), 'embedding'),
-                 init_unknown_vec=nd.zeros, **kwargs):
+                 embedding_root=os.path.join(_get_home_dir(), 'embedding'), **kwargs):
         GloVe._check_source(source)
 
         super(GloVe, self).__init__(**kwargs)
         pretrained_file_path = GloVe._get_file_path(embedding_root, source)
 
-        self._load_embedding(pretrained_file_path, elem_delim=' ',
-                             init_unknown_vec=init_unknown_vec)
+        self._load_embedding(pretrained_file_path, elem_delim=' ')
 
 
 @register
@@ -731,8 +881,6 @@ class FastText(TokenEmbedding):
     embedding_root : str, default '$MXNET_HOME/embedding'
         The root directory for storing embedding-related files.
         MXNET_HOME defaults to '~/.mxnet'.
-    init_unknown_vec : callback
-        The callback used to initialize the embedding vector for the unknown token.
 
     Attributes
     ----------
@@ -748,12 +896,10 @@ class FastText(TokenEmbedding):
     source_file_hash = C.FAST_TEXT_NPZ_SHA1
 
     def __init__(self, source='wiki.simple',
-                 embedding_root=os.path.join(_get_home_dir(), 'embedding'),
-                 init_unknown_vec=nd.zeros, **kwargs):
+                 embedding_root=os.path.join(_get_home_dir(), 'embedding'), **kwargs):
         FastText._check_source(source)
 
         super(FastText, self).__init__(**kwargs)
         pretrained_file_path = FastText._get_file_path(embedding_root, source)
 
-        self._load_embedding(pretrained_file_path, elem_delim=' ',
-                             init_unknown_vec=init_unknown_vec)
+        self._load_embedding(pretrained_file_path, elem_delim=' ')
