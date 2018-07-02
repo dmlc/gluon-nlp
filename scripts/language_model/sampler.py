@@ -18,7 +18,6 @@
 
 import math
 import numpy as np
-import mxnet as mx
 import log_uniform
 from mxnet import ndarray
 from gluonnlp.data import CandidateSampler

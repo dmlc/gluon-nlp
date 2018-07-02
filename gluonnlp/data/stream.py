@@ -123,7 +123,7 @@ class PrefetchingStream(DataStream):
             # retrieve batch
             if batch[0] is None:
                 for i in batch:
-                    assert i is None, "Number of batches mismatches between data streams"
+                    assert i is None, 'Number of batches mismatches between data streams'
                 # no more batch, tear down
                 self._tear_down(key)
                 break
