@@ -352,12 +352,9 @@ class TokenEmbedding(object):
             else:
                 # If the TokenEmbedding shall not have an unknown token, we
                 # just delete the one in the npz.
-                idx_to_token = (
-                    deserialized_embedding.idx_to_token[:C.UNK_IDX] +
-                    deserialized_embedding.idx_to_token[C.UNK_IDX + 1:])
-                idx_to_vec = nd.concat(
-                    deserialized_embedding.idx_to_vec[:C.UNK_IDX],
-                    deserialized_embedding.idx_to_vec[C.UNK_IDX + 1:])
+                assert C.UNK_IDX == 0
+                idx_to_token = deserialized_embedding.idx_to_token[C.UNK_IDX + 1:]
+                idx_to_vec = deserialized_embedding.idx_to_vec[C.UNK_IDX + 1:]
         else:
             idx_to_token = deserialized_embedding.idx_to_token
             idx_to_vec = deserialized_embedding.idx_to_vec
