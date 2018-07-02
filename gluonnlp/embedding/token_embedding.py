@@ -721,7 +721,7 @@ class TokenEmbedding(object):
                 'during deserialization.')
 
         unknown_token = np.array(self.unknown_token)
-        idx_to_token = np.array(self.idx_to_token)
+        idx_to_token = np.array(self.idx_to_token, dtype='O')
         idx_to_vec = self.idx_to_vec.asnumpy()
 
         if not unknown_token:  # Store empty string instead of None
