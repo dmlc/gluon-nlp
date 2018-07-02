@@ -510,5 +510,6 @@ class BigRNN(Block):
         length = inputs.shape[0]
         encoded, state = self.encoder.unroll(length, encoded, begin_state,
                                              layout='TNC', merge_outputs=True)
+        encoded = encoded.reshape((-1, self._projection_size))
         out = self.decoder(encoded)
         return out, state

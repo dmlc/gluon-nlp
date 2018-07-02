@@ -1,0 +1,4 @@
+- pip install cython
+- make
+- python large_word_language_model.py --gpus=0,1,2,3
+- python large_word_language_model.py --eval-only --log-interval=1 --gpus=0 --batch-size=32

@@ -66,6 +66,8 @@ parser.add_argument('--nproj', type=int, default=512,
                     help='number of projection units per layer')
 parser.add_argument('--nlayers', type=int, default=1,
                     help='number of layers')
+parser.add_argument('--from-epoch', type=int, default=None,
+                    help='start training or testing from the provided epoch')
 parser.add_argument('--epochs', type=int, default=50,
                     help='number of epoch for training')
 parser.add_argument('--batch-size', type=int, default=256,
@@ -103,7 +105,7 @@ if args.test_mode:
     args.nhid = 200
     args.nlayers = 1
     args.epochs = 20
-    max_nbatch_eval = 5
+    max_nbatch_eval = 3
     segments = ['test', 'test']
 
 print(args)
@@ -160,7 +162,7 @@ train_data = train_data_stream.bptt_batchify(vocab, args.bptt, train_batch_size)
 train_data = train_data.transform(_split_and_sample)
 train_data = nlp.data.PrefetchingStream(train_data)
 
-test_batch_size = 1
+test_batch_size = args.batch_size
 test_data = test_data_stream.bptt_batchify(vocab, args.bptt, test_batch_size)
 test_data = nlp.data.PrefetchingStream(test_data)
 
@@ -185,14 +187,22 @@ def train():
     """Training loop for language model.
     """
     print(model)
+    from_epoch = 0
     model.initialize(mx.init.Xavier(), ctx=context)
+    if args.from_epoch:
+        from_epoch = args.from_epoch - 1
+        checkpoint_name = '%s.%s'%(args.save, format(from_epoch, '02d'))
+        model.load_parameters(checkpoint_name)
+        # warning: hidden states are not loaded from the previous checkpoint
+        print('Loaded parameters from checkpoint %s'%(checkpoint_name))
+
     model.hybridize(static_alloc=True, static_shape=True)
     trainer_params = {'learning_rate': args.lr, 'wd': 0, 'eps': args.eps}
     trainer = gluon.Trainer(model.collect_params(), 'adagrad', trainer_params)
 
     encoder_params = model.encoder.collect_params().values()
     embedding_params = list(model.embedding.collect_params().values())
-    for epoch in range(args.epochs):
+    for epoch in range(from_epoch, args.epochs):
         sys.stdout.flush()
         total_L = 0.0
         start_epoch_time = time.time()
@@ -291,8 +301,9 @@ def test(data_stream, batch_size, ctx=None):
 def evaluate():
     """ Evaluate loop for the trained model """
     print(eval_model)
+    eval_model.initialize(mx.init.Xavier(), ctx=context[0])
     eval_model.hybridize(static_alloc=True, static_shape=True)
-    epoch = 0
+    epoch = args.from_epoch if args.from_epoch else 0
     while epoch < args.epochs:
         checkpoint_name = '%s.%s'%(args.save, format(epoch, '02d'))
         if not os.path.exists(checkpoint_name):
@@ -301,7 +312,8 @@ def evaluate():
             time.sleep(600)
             continue
         eval_model.load_parameters(checkpoint_name)
-        final_test_L = test(test_data, test_batch_size, ctx=mx.cpu())
+        print('Loaded parameters from checkpoint %s'%(checkpoint_name))
+        final_test_L = test(test_data, test_batch_size, ctx=context[0])
         print('[Epoch %d] test loss %.2f, test ppl %.2f'%
               (epoch, final_test_L, math.exp(final_test_L)))
         sys.stdout.flush()
