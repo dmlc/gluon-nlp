@@ -29,7 +29,7 @@ import numpy as np
 from mxnet import cpu, nd
 from mxnet.gluon import Block, HybridBlock, nn
 
-from ...vocab import create_subword_function
+from ...vocab.subwords import create_subword_function
 from ...base import _str_types
 
 
