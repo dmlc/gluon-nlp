@@ -36,28 +36,29 @@ We implement the LSTM 2048-512 language model proposed in the following work.
 # specific language governing permissions and limitations
 # under the License.
 
-
 import time
 import math
 import os
 import sys
 import io
+import hashlib
+import argparse
 import numpy as np
 import mxnet as mx
 from mxnet import gluon, autograd
 import gluonnlp as nlp
 from sampler import LogUniformSampler
 
-import argparse
 curr_path = os.path.dirname(os.path.abspath(os.path.expanduser(__file__)))
 sys.path.append(os.path.join(curr_path, '..', '..'))
 
+###############################################################################
+# Arg parser
+###############################################################################
 parser = argparse.ArgumentParser(description=
                                  'Gluon-NLP Big LSTM 2048-512 Language Model on GBW')
 parser.add_argument('--save', type=str, default='model.params',
-                    help='path to save the final model')
-parser.add_argument('--load', type=str, default=None,
-                    help='path to load the final model')
+                    help='path to save the final model.')
 parser.add_argument('--emsize', type=int, default=512,
                     help='size of word embeddings')
 parser.add_argument('--nhid', type=int, default=2048,
@@ -90,8 +91,8 @@ parser.add_argument('--clip', type=float, default=10.0,
                     help='gradient clipping by global norm.')
 parser.add_argument('--test-mode', action='store_true',
                     help='Whether to run through the script with few examples')
-parser.add_argument('--eval', action='store_true',
-                    help='Whether to only evaluate the trained model')
+parser.add_argument('--eval-only', action='store_true',
+                    help='Whether to only run evluation for the trained model')
 args = parser.parse_args()
 
 segments = ['train', 'test']
@@ -99,11 +100,11 @@ max_nbatch_eval = None
 
 if args.test_mode:
     args.emsize = 200
-    args.log_interval = 5
+    args.log_interval = 1
     args.nhid = 200
     args.nlayers = 1
-    args.epochs = 1
-    max_nbatch_eval = 10
+    args.epochs = 20
+    max_nbatch_eval = 5
     segments = ['test', 'test']
 
 print(args)
@@ -175,13 +176,6 @@ eval_model = nlp.model.language_model.BigRNN(ntokens, args.emsize, args.nhid,
 model = nlp.model.language_model.train.BigRNN(ntokens, args.emsize, args.nhid,
                                               args.nlayers, args.nproj, args.k,
                                               dropout=args.dropout)
-print(model)
-model.initialize(mx.init.Xavier(), ctx=context)
-model.hybridize(static_alloc=True, static_shape=True)
-
-trainer_params = {'learning_rate': args.lr, 'wd': 0, 'eps': args.eps}
-
-trainer = gluon.Trainer(model.collect_params(), 'adagrad', trainer_params)
 loss = gluon.loss.SoftmaxCrossEntropyLoss()
 
 ###############################################################################
@@ -191,6 +185,12 @@ loss = gluon.loss.SoftmaxCrossEntropyLoss()
 def train():
     """Training loop for language model.
     """
+    print(model)
+    model.initialize(mx.init.Xavier(), ctx=context)
+    model.hybridize(static_alloc=True, static_shape=True)
+    trainer_params = {'learning_rate': args.lr, 'wd': 0, 'eps': args.eps}
+    trainer = gluon.Trainer(model.collect_params(), 'adagrad', trainer_params)
+
     best_val = float('Inf')
     start_train_time = time.time()
     parameters = model.collect_params().values()
@@ -240,12 +240,10 @@ def train():
                 total_L = 0.0
                 start_log_interval_time = time.time()
 
+        sys.stdout.flush()
         mx.nd.waitall()
-
-        model.save_parameters(args.save)
-        eval_model.load_parameters(args.save)
-        final_test_L = evaluate(test_data, test_batch_size, ctx=mx.cpu())
-        print('Epoch %d: test loss %.2f, test ppl %.2f'%(epoch, final_test_L, math.exp(final_test_L)))
+        checkpoint_name = '%s.%s'%(args.save, format(epoch, '02d'))
+        model.save_parameters(checkpoint_name)
 
 def detach(hidden):
     if isinstance(hidden, (tuple, list)):
@@ -254,13 +252,13 @@ def detach(hidden):
         hidden = hidden.detach()
     return hidden
 
-def evaluate(data_stream, batch_size, ctx=None):
+def test(data_stream, batch_size, ctx=None):
     """Evaluate the model on the dataset.
 
     Parameters
     ----------
     data_stream : DataStream
-        The dataset is evaluated on.
+        The dataset is testd on.
     batch_size : int
         The size of the mini-batch.
     ctx : mx.cpu() or mx.gpu()
@@ -282,30 +280,39 @@ def evaluate(data_stream, batch_size, ctx=None):
         output, hidden = eval_model(data, hidden)
         hidden = detach(hidden)
         L = loss(output, target.reshape(-1,)) * mask.reshape((-1,))
-        total_L += mx.nd.sum(L).asscalar()
-        ntotal += L.size
+        total_L += L.sum()
+        ntotal += mask.sum()
         nbatch += 1
-        avg = total_L / ntotal
+        avg = (total_L / ntotal).asscalar()
         if nbatch % args.log_interval == 0:
-            print('Evaluation till batch %d: test loss %.2f, test ppl %.2f'
+            print('Evaluation batch %d: test loss %.2f, test ppl %.2f'
                   %(nbatch, avg, math.exp(avg)))
         if max_nbatch_eval and nbatch > max_nbatch_eval:
             print('Quit evaluation early at batch %d'%nbatch)
             break
-    return total_L / ntotal
+    return avg
 
-def load():
-    model.load_parameters(args.load)
+def evaluate():
+    print(eval_model)
+    eval_model.hybridize(static_alloc=True, static_shape=True)
+    epoch = 0
+    while epoch < args.epochs:
+        checkpoint_name = '%s.%s'%(args.save, format(epoch, '02d'))
+        if not os.path.exists(checkpoint_name):
+            print('Wait for a new checkpoint...')
+            # check again after 600 seconds
+            time.sleep(600)
+            continue
+        eval_model.load_parameters(checkpoint_name)
+        final_test_L = test(test_data, test_batch_size, ctx=mx.cpu())
+        print('[Epoch %d] test loss %.2f, test ppl %.2f'%
+              (epoch, final_test_L, math.exp(final_test_L)))
+        sys.stdout.flush()
+        epoch += 1
 
 if __name__ == '__main__':
     start_pipeline_time = time.time()
-    if args.load:
-        load()
-    if not args.eval:
+    if args.eval_only:
+        evaluate()
+    else:
         train()
-    epoch = args.epochs - 1
-    nbatch = -1
-    eval_model.load_parameters(args.save)
-    final_test_L = evaluate(test_data, test_batch_size, ctx=mx.cpu())
-    print('[Epoch %d Batch %d] test loss %.2f, test ppl %.2f'%(epoch, nbatch, final_test_L, math.exp(final_test_L)))
-    print('Total time cost %.2fs'%(time.time()-start_pipeline_time))
