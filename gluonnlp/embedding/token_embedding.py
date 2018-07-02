@@ -537,7 +537,8 @@ class TokenEmbedding(object):
         if to_reduce:
             tokens = [tokens]
 
-        if self.unknown_lookup is not None and not self.unknown_autoextend:
+        if self.unknown_lookup is not None and (not self.allow_extend
+                                                or not self.unknown_autoextend):
             vecs = [
                 self.idx_to_vec[self.token_to_idx[token]]
                 if token in self.token_to_idx else self.unknown_lookup[token]
@@ -545,7 +546,7 @@ class TokenEmbedding(object):
             ]
             vecs = nd.stack(*vecs, axis=0)
         else:
-            if self.unknown_lookup is not None and self.unknown_autoextend:
+            if self.unknown_lookup is not None and self.allow_extend and self.unknown_autoextend:
                 new_tokens = [t for t in tokens if t not in self.token_to_idx]
                 self[new_tokens] = self.unknown_lookup[new_tokens]
 
