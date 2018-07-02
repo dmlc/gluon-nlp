@@ -265,8 +265,15 @@ class TokenEmbedding(object):
         all_elems = []
         tokens = set()
         loaded_unknown_vec = None
-        with io.open(pretrained_file_path, 'r', encoding=encoding) as f:
+        with io.open(pretrained_file_path, 'rb') as f:
             for line_num, line in enumerate(f):
+                try:
+                    line = line.decode(encoding)
+                except ValueError:
+                    warnings.warn('line {} in {}: failed to decode. Skipping.'
+                                  .format(line_num, pretrained_file_path))
+                    continue
+
                 elems = line.rstrip().split(elem_delim)
 
                 assert len(elems) > 1, 'line {} in {}: unexpected data format.'.format(
