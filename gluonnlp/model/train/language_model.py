@@ -24,7 +24,6 @@ from mxnet.gluon import nn, Block, contrib, rnn
 
 from gluonnlp.model.utils import _get_rnn_layer
 from gluonnlp.model.utils import apply_weight_drop
-from ..block import RNNCellLayer
 from ..sampled_block import SampledLogits, SparseSampledLogits
 
 class AWDRNN(Block):
@@ -366,7 +365,7 @@ class BigRNN(Block):
     def _get_encoder(self):
         block = rnn.SequentialRNNCell()
         with block.name_scope():
-            for i in range(self._num_layers):
+            for _ in range(self._num_layers):
                 block.add(contrib.rnn.LSTMPCell(self._hidden_size, self._projection_size))
                 if self._dropout:
                     block.add(rnn.DropoutCell(self._dropout))

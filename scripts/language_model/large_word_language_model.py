@@ -41,7 +41,6 @@ import math
 import os
 import sys
 import io
-import hashlib
 import argparse
 import numpy as np
 import mxnet as mx
@@ -191,12 +190,10 @@ def train():
     trainer_params = {'learning_rate': args.lr, 'wd': 0, 'eps': args.eps}
     trainer = gluon.Trainer(model.collect_params(), 'adagrad', trainer_params)
 
-    best_val = float('Inf')
-    start_train_time = time.time()
-    parameters = model.collect_params().values()
     encoder_params = model.encoder.collect_params().values()
     embedding_params = list(model.embedding.collect_params().values())
     for epoch in range(args.epochs):
+        sys.stdout.flush()
         total_L = 0.0
         start_epoch_time = time.time()
         start_log_interval_time = time.time()
@@ -208,7 +205,6 @@ def train():
             nbatch += 1
             hiddens = detach(hiddens)
             Ls = []
-            L = 0
             with autograd.record():
                 for j, (X, y, m, s, h) in enumerate(zip(data, target, mask, sample, hiddens)):
                     output, new_target, h = model(X, y, h, s)
@@ -239,8 +235,8 @@ def train():
                         train_batch_size*args.log_interval/(time.time()-start_log_interval_time)))
                 total_L = 0.0
                 start_log_interval_time = time.time()
-
-        sys.stdout.flush()
+        end_epoch_time = time.time()
+        print('Epoch %d took %.2f seconds.'%(epoch, end_epoch_time - start_epoch_time))
         mx.nd.waitall()
         checkpoint_name = '%s.%s'%(args.save, format(epoch, '02d'))
         model.save_parameters(checkpoint_name)
@@ -293,6 +289,7 @@ def test(data_stream, batch_size, ctx=None):
     return avg
 
 def evaluate():
+    """ Evaluate loop for the trained model """
     print(eval_model)
     eval_model.hybridize(static_alloc=True, static_shape=True)
     epoch = 0

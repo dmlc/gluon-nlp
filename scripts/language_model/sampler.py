@@ -14,6 +14,7 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+"""Log Uniform Candidate Sampler"""
 
 import math
 import numpy as np
@@ -51,7 +52,7 @@ class LogUniformSampler(CandidateSampler):
         self._range_max = range_max
         self._num_sampled = num_sampled
         self._csampler = log_uniform.LogUniformSampler(range_max)
-        self._dtype= np.float32 if dtype is None else dtype
+        self._dtype = np.float32 if dtype is None else dtype
 
     def _prob_helper(self, num_tries, num_sampled, prob):
         if num_tries == num_sampled:

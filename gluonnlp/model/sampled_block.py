@@ -21,8 +21,7 @@
 __all__ = ['SampledLogits', 'SparseSampledLogits']
 
 from mxnet import ndarray
-from mxnet.gluon import Block, HybridBlock, contrib
-from mxnet.gluon.contrib.nn import SparseEmbedding
+from mxnet.gluon import Block, HybridBlock
 
 
 class _SampledLogits(HybridBlock):
@@ -50,6 +49,7 @@ class _SampledLogits(HybridBlock):
 
     def hybrid_forward(self, F, x, sampled_candidates, expected_count_sampled,
                        expected_count_true, label, w_all, b_all):
+        """Forward computation."""
         # (num_sampled, in_unit)
         w_sampled = w_all.slice(begin=(0, 0), end=(self._num_sampled, None))
         w_true = w_all.slice(begin=(self._num_sampled, 0), end=(None, None))
@@ -76,7 +76,7 @@ class _SampledLogits(HybridBlock):
                                            shape=(1, self._num_sampled))
         expected_count_true = expected_count_true.reshape((-1,))
         logits_true = logits_true - F.log(expected_count_true)
-        logits_true = logits_true.reshape((-1,1))
+        logits_true = logits_true.reshape((-1, 1))
         logits_sampled = F.broadcast_sub(logits_sampled, F.log(expected_count_sampled))
 
         # logits and new_labels
@@ -178,17 +178,18 @@ class SampledLogits(HybridBlock):
         self._remove_accidental_hits = remove_accidental_hits
 
     def hybrid_forward(self, F, x, sampled_candidates, expected_count_sampled,
-                expected_count_true, label, weight, bias):
-        # (n,)
+                       expected_count_true, label, weight, bias):
+        """Forward computation."""
+        # (batch_size,)
         label = F.reshape(label, shape=(-1,))
-        # (num_sampled+n, )
+        # (num_sampled+batch_size,)
         ids = F.concat(sampled_candidates, label, dim=0)
         # lookup weights and biases
-        # (num_sampled+n, dim)
+        # (num_sampled+batch_size, dim)
         w_all = F.Embedding(data=ids, weight=weight,
                             input_dim=self._num_classes, output_dim=self._in_unit,
                             sparse_grad=True)
-        # (num_sampled+n, 1)
+        # (num_sampled+batch_size, 1)
         b_all = F.Embedding(data=ids, weight=bias,
                             input_dim=self._num_classes, output_dim=1,
                             sparse_grad=True)
@@ -301,6 +302,7 @@ class SparseSampledLogits(Block):
 
     def forward(self, x, sampled_candidates, expected_count_sampled,
                 expected_count_true, label):
+        """Forward computation."""
         # (batch_size,)
         label = label.reshape(shape=(-1,))
         # (num_sampled+batch_size,)

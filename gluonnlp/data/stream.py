@@ -21,7 +21,8 @@
 """NLP Toolkit Data Stream API. It allows easy and customizable streaming of
 corpora and dataset files. Files can be streamed into formats that are
 ready for training and evaluation."""
-__all__ = ['DataStream', 'CorpusStream', 'LanguageModelStream', 'SimpleDataStream', 'PrefetchingStream']
+__all__ = ['DataStream', 'CorpusStream', 'LanguageModelStream', 'SimpleDataStream',
+           'PrefetchingStream']
 
 import os
 import glob
@@ -74,7 +75,7 @@ class PrefetchingStream(DataStream):
         key = self._next_key
         self._next_key += 1
         num_streams = len(self._streams)
-        assert num_streams > 0, "Invalid number of Streams"
+        assert num_streams > 0, 'Invalid number of Streams'
 
         data_ready = [threading.Event() for i in range(num_streams)]
         data_taken = [threading.Event() for i in range(num_streams)]

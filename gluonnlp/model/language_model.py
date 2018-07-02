@@ -465,7 +465,7 @@ class BigRNN(Block):
 
     """
     def __init__(self, vocab_size, embed_size, hidden_size, num_layers,
-                 projection_size, dropout=0.0,**kwargs):
+                 projection_size, dropout=0.0, **kwargs):
         super(BigRNN, self).__init__(**kwargs)
         self._embed_size = embed_size
         self._hidden_size = hidden_size
@@ -491,7 +491,7 @@ class BigRNN(Block):
     def _get_encoder(self):
         block = rnn.SequentialRNNCell()
         with block.name_scope():
-            for i in range(self._num_layers):
+            for _ in range(self._num_layers):
                 block.add(contrib.rnn.LSTMPCell(self._hidden_size, self._projection_size))
                 if self._dropout:
                     block.add(rnn.DropoutCell(self._dropout))

@@ -14,15 +14,15 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-
+"""Setup script for log uniform sampler"""
 from distutils.core import setup, Extension
 from Cython.Build import cythonize
 import numpy
 
-extension_name = "log_uniform"
-sources = ["log_uniform.pyx", "LogUniformGenerator.cc"]
-setup(ext_modules = cythonize(Extension(extension_name,
-                                        sources=sources,
-                                        language="c++",
-                                        extra_compile_args=["-std=c++11"],
-                                        include_dirs=[numpy.get_include()])))
+extension_name = 'log_uniform'
+sources = ['log_uniform.pyx', 'LogUniformGenerator.cc']
+setup(ext_modules=cythonize(Extension(extension_name,
+                                      sources=sources,
+                                      language='c++',
+                                      extra_compile_args=['-std=c++11'],
+                                      include_dirs=[numpy.get_include()])))
