@@ -32,11 +32,12 @@ import os
 import warnings
 
 import numpy as np
-from mxnet import nd, registry
+from mxnet import nd, registry, cpu
 from mxnet.gluon.utils import download, check_sha1, _get_repo_file_url
 
 from .. import _constants as C
 from ..data.utils import DefaultLookupDict, _get_home_dir
+from ..model.train import FasttextEmbeddingModel
 
 
 def register(embedding_cls):
@@ -197,14 +198,14 @@ class TokenEmbedding(object):
         return _get_repo_file_url(namespace, cls.source_file_hash[source][0])
 
     @classmethod
-    def _get_file_path(cls, embedding_root, source):
+    def _get_file_path(cls, source_file_hash, embedding_root, source):
         cls_name = cls.__name__.lower()
         embedding_root = os.path.expanduser(embedding_root)
         url = cls._get_file_url(source)
 
         embedding_dir = os.path.join(embedding_root, cls_name)
 
-        pretrained_file_name, expected_file_hash = cls.source_file_hash[source]
+        pretrained_file_name, expected_file_hash = source_file_hash[source]
         pretrained_file_path = os.path.join(embedding_dir, pretrained_file_name)
 
         if not os.path.exists(pretrained_file_path) \
@@ -641,7 +642,7 @@ class TokenEmbedding(object):
         self._idx_to_vec[nd.array(indices)] = new_embedding
 
     @classmethod
-    def _check_source(cls, source):
+    def _check_source(cls, source_file_hash, source):
         """Checks if a pre-trained token embedding source name is valid.
 
 
@@ -651,11 +652,11 @@ class TokenEmbedding(object):
             The pre-trained token embedding source.
         """
         embedding_name = cls.__name__.lower()
-        if source not in cls.source_file_hash:
+        if source not in source_file_hash:
             raise KeyError('Cannot find pre-trained source {} for token embedding {}. '
                            'Valid pre-trained file names for embedding {}: {}'.format(
                                source, embedding_name, embedding_name,
-                               ', '.join(cls.source_file_hash.keys())))
+                               ', '.join(source_file_hash.keys())))
 
     @staticmethod
     def from_file(file_path, elem_delim=' ', encoding='utf8', **kwargs):
@@ -834,10 +835,10 @@ class GloVe(TokenEmbedding):
 
     def __init__(self, source='glove.6B.50d',
                  embedding_root=os.path.join(_get_home_dir(), 'embedding'), **kwargs):
-        GloVe._check_source(source)
+        GloVe._check_source(self.source_file_hash, source)
 
         super(GloVe, self).__init__(**kwargs)
-        pretrained_file_path = GloVe._get_file_path(embedding_root, source)
+        pretrained_file_path = GloVe._get_file_path(self.source_file_hash, embedding_root, source)
 
         self._load_embedding(pretrained_file_path, elem_delim=' ')
 
@@ -884,11 +885,23 @@ class FastText(TokenEmbedding):
 
     Parameters
     ----------
-    source : str, default 'glove.6B.50d'
+    source : str, default 'wiki.simple'
         The name of the pre-trained token embedding file.
     embedding_root : str, default '$MXNET_HOME/embedding'
         The root directory for storing embedding-related files.
         MXNET_HOME defaults to '~/.mxnet'.
+    load_ngrams : bool, default False
+        Load vectors for ngrams so that computing vectors for OOV words is
+        possible. This is disabled by default as it requires downloading an
+        additional 2GB file containing the vectors for ngrams. Note that
+        facebookresearch did not publish ngram vectors for all their models. If
+        load_ngrams is True, but no ngram vectors are available for the chosen
+        source this a RuntimeError is thrown. The ngram vectors are passed to
+        the resulting TokenEmbedding as `unknown_lookup`.
+    ctx : mx.Context, default mxnet.cpu()
+        Context to load the FasttextEmbeddingModel for ngram vectors to. This
+        parameter is ignored if load_ngrams is False.
+
 
     Attributes
     ----------
@@ -902,12 +915,23 @@ class FastText(TokenEmbedding):
 
     # Map a pre-trained token embedding file and its SHA-1 hash.
     source_file_hash = C.FAST_TEXT_NPZ_SHA1
+    source_bin_file_hash = C.FAST_TEXT_BIN_SHA1
 
-    def __init__(self, source='wiki.simple',
-                 embedding_root=os.path.join(_get_home_dir(), 'embedding'), **kwargs):
-        FastText._check_source(source)
+    def __init__(self, source='wiki.simple', embedding_root=os.path.join(
+            _get_home_dir(), 'embedding'), load_ngrams=False, ctx=cpu(), **kwargs):
+        FastText._check_source(self.source_file_hash, source)
 
-        super(FastText, self).__init__(**kwargs)
-        pretrained_file_path = FastText._get_file_path(embedding_root, source)
+        if load_ngrams:
+            FastText._check_source(self.source_bin_file_hash, source)
+            pretrained_bin_file_path = FastText._get_file_path(self.source_bin_file_hash,
+                                                               embedding_root, source)
+            unknown_lookup = FasttextEmbeddingModel.load_fasttext_format(
+                pretrained_bin_file_path, ctx=ctx)
+        else:
+            unknown_lookup = None
+
+        super(FastText, self).__init__(unknown_lookup=unknown_lookup, **kwargs)
+        pretrained_file_path = FastText._get_file_path(self.source_file_hash, embedding_root,
+                                                       source)
 
         self._load_embedding(pretrained_file_path, elem_delim=' ')

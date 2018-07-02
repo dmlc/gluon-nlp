@@ -837,6 +837,18 @@ def test_token_embedding_from_file_S3_with_custom_unknown_token(unknown_token):
                                  unknown_token=unknown_token)
 
 
+@pytest.mark.parametrize('load_ngrams', [True, False])
+def test_token_embedding_from_S3_fasttext_with_ngrams(load_ngrams):
+    embed = nlp.embedding.create('fasttext', source='wiki.simple', load_ngrams=load_ngrams,
+                                 unknown_token=None)
+
+    if load_ngrams:
+        embed['$$$unknownword$$$']
+    else:
+        with pytest.raises(KeyError):
+            embed['$$$unknownword$$$']
+
+
 def test_token_embedding_unknown_lookup():
     class NaiveLookup(object):
         dim = 300
