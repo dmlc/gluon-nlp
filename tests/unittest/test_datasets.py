@@ -261,8 +261,6 @@ def test_verb130():
 
 
 @flaky(max_runs=2, min_passes=1)
-@pytest.mark.skipif(datetime.date.today() < datetime.date(2018, 5, 7),
-                    reason='Disabled for 2 weeks due to server downtime.')
 def test_rare_words():
     data = nlp.data.RareWords(
         root=os.path.join('tests', 'externaldata', 'rarewords'))
@@ -390,6 +388,8 @@ def test_conll2002_esp(segment, length):
         assert all(isinstance(n, _str_types) for n in ner), ner
 
 
+@pytest.mark.skipif(datetime.date.today() < datetime.date(2018, 7, 7),
+                    reason='Disabled for 1 weeks due to server downtime.')
 @flaky(max_runs=2, min_passes=1)
 @pytest.mark.parametrize('segment,length', [
     ('train', 8936),

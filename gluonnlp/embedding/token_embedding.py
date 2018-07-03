@@ -721,7 +721,7 @@ class TokenEmbedding(object):
                 'during deserialization.')
 
         unknown_token = np.array(self.unknown_token)
-        idx_to_token = np.array(self.idx_to_token)
+        idx_to_token = np.array(self.idx_to_token, dtype='O')
         idx_to_vec = self.idx_to_vec.asnumpy()
 
         if not unknown_token:  # Store empty string instead of None
@@ -756,7 +756,8 @@ class TokenEmbedding(object):
             Keyword arguments are passed to the TokenEmbedding initializer.
             Useful for attaching unknown_lookup.
         """
-        npz_dict = np.load(file_path, allow_pickle=False)
+        # idx_to_token is of dtype 'O' so we need to allow pickle
+        npz_dict = np.load(file_path, allow_pickle=True)
 
         unknown_token = npz_dict['unknown_token']
         if not unknown_token:
