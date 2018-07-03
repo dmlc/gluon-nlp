@@ -936,11 +936,11 @@ def test_word_embedding_similarity_evaluation_models(similarity_function):
         similarity_function=similarity_function)
     evaluator.initialize()
 
-    words1, words2 = mx.nd.array(words1), mx.nd.array(words2)
+    words1, words2 = nd.array(words1), nd.array(words2)
     pred_similarity = evaluator(words1, words2)
 
     sr = stats.spearmanr(pred_similarity.asnumpy(), np.array(scores))
-    assert np.isclose(0.6194264760578906, sr.correlation)
+    assert np.isclose(0.6076485693769645, sr.correlation)
 
 
 @pytest.mark.parametrize(
@@ -957,7 +957,7 @@ def test_word_embedding_analogy_evaluation_models(analogy_function):
 
     dataset_coded = [[vocab[d[0]], vocab[d[1]], vocab[d[2]], vocab[d[3]]]
                      for d in dataset]
-    dataset_coded_nd = mx.nd.array(dataset_coded)
+    dataset_coded_nd = nd.array(dataset_coded)
 
     for k in [1, 3]:
         for exclude_question_words in [True, False]:
@@ -974,17 +974,16 @@ def test_word_embedding_analogy_evaluation_models(analogy_function):
 
             # If we don't exclude inputs most predictions should be wrong
             words4 = dataset_coded_nd[:, 3]
-            accuracy = mx.nd.mean(pred_idxs[:, 0] == mx.nd.array(words4))
+            accuracy = nd.mean(pred_idxs[:, 0] == nd.array(words4))
             accuracy = accuracy.asscalar()
-            if exclude_question_words == False:
+            if not exclude_question_words:
                 assert accuracy <= 0.1
 
                 # Instead the model would predict W3 most of the time
-                accuracy_w3 = mx.nd.mean(
-                    pred_idxs[:, 0] == mx.nd.array(words3))
+                accuracy_w3 = nd.mean(pred_idxs[:, 0] == nd.array(words3))
                 assert accuracy_w3.asscalar() >= 0.89
 
-            elif exclude_question_words == True:
+            else:
                 # The wiki.simple vectors don't perform too good
                 assert accuracy >= 0.29
 
