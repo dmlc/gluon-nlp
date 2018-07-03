@@ -193,7 +193,6 @@ def train():
         from_epoch = args.from_epoch - 1
         checkpoint_name = '%s.%s'%(args.save, format(from_epoch, '02d'))
         model.load_parameters(checkpoint_name)
-        # warning: hidden states are not loaded from the previous checkpoint
         print('Loaded parameters from checkpoint %s'%(checkpoint_name))
 
     model.hybridize(static_alloc=True, static_shape=True)
@@ -320,7 +319,6 @@ def evaluate():
         epoch += 1
 
 if __name__ == '__main__':
-    start_pipeline_time = time.time()
     if args.eval_only:
         evaluate()
     else:

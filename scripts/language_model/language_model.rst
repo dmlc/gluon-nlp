@@ -144,3 +144,32 @@ The dataset used for training the models is wikitext-2.
 .. code-block:: console
 
    $ python -u cache_language_model.py --gpus 0 --save standard_lstm_lm_200
+
+Large Scale Word Language Model
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Reference: Jozefowicz, Rafal, et al. "`Exploring the limits of language modeling <https://arxiv.org/abs/1602.02410>`_". arXiv preprint arXiv:1602.02410 (2016).
+
+The key features used to reproduce the results for pre-trained models are listed in the following tables.
+
+The dataset used for training the models is Google's 1 billion words dataset.
+
+| Model           | LSTM-2048-512 |
+| --------------- | ------------- |
+| Mode            | LSTM          |
+| Num layers      | 1             |
+| Embed size      | 512           |
+| Hidden size     | 2048          |
+| Projection size | 512           |
+| Dropout         | 0.1           |
+| Learning rate   | 0.2           |
+| Num samples     | 8192          |
+| Test perplexity | 44.0          |
+| Tied            | True          |
+
+[1] LSTM-2048-512 (Test PPL 44.0)
+
+.. code-block:: console
+
+   $ python large_word_language_model.py --gpus 0,1,2,3
+   $ python large_word_language_model.py --gpus 0 --eval-only --batch-size=32 --log-interval=1

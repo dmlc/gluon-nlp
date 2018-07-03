@@ -55,11 +55,11 @@ class _SampledLogits(HybridBlock):
         w_true = w_all.slice(begin=(self._num_sampled, 0), end=(None, None))
         b_sampled = b_all.slice(begin=(0,), end=(self._num_sampled,))
         b_true = b_all.slice(begin=(self._num_sampled,), end=(None,))
-        # true
+        # true logits
         # (batch_size, 1)
         x = x.reshape((-1, self._in_unit))
         logits_true = (w_true * x).sum(axis=1) + b_true
-        # samples
+        # samples logits
         # (batch_size, num_sampled)
         b_sampled = F.reshape(b_sampled, (-1,))
         logits_sampled = F.FullyConnected(x, weight=w_sampled, bias=b_sampled,
@@ -72,6 +72,7 @@ class _SampledLogits(HybridBlock):
             mask = F.broadcast_equal(label_vec, sample_vec) * -1e37
             logits_sampled = logits_sampled + mask
 
+        # subtract log(q)
         expected_count_sampled = F.reshape(expected_count_sampled,
                                            shape=(1, self._num_sampled))
         expected_count_true = expected_count_true.reshape((-1,))
