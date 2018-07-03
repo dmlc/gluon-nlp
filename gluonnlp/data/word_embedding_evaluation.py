@@ -847,7 +847,7 @@ class BiggerAnalogyTestSet(WordAnalogyEvaluationDataset):
 
     def __init__(self, category=None, form_analogy_pairs=True,
                  drop_alternative_solutions=True, root=os.path.join(
-                     _get_home_dir(), 'datasets', 'simverb3500')):
+                     _get_home_dir(), 'datasets', 'bigger_analogy')):
         self.form_analogy_pairs = form_analogy_pairs
         self.drop_alternative_solutions = drop_alternative_solutions
         self.category = category
