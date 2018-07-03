@@ -132,10 +132,9 @@ class ConvolutionalEncoder(gluon.HybridBlock):
                 self._projection = None
                 self._output_size = maxpool_output_size
 
-    def hybrid_forward(self, F, inputs, mask=None): # pylint: disable=arguments-differ
+    def hybrid_forward(self, F, inputs, mask=None):  # pylint: disable=arguments-differ
         r"""
         Forward computation for char_encoder
-
         Parameters
         ----------
         inputs: NDArray
@@ -143,12 +142,10 @@ class ConvolutionalEncoder(gluon.HybridBlock):
         mask: NDArray
             The mask applied to the input of shape `(seq_len, batch_size)`, the mask will
             be broadcasted along the embedding dimension.
-
         Returns
         ----------
         output: NDArray
             The output of the encoder with shape `(batch_size, output_size)`
-
         """
         if mask is not None:
             inputs = F.broadcast_mul(inputs, mask.expand_dims(-1))
