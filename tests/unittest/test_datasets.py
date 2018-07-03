@@ -219,13 +219,17 @@ def _assert_similarity_dataset(data):
 
 
 @flaky(max_runs=2, min_passes=1)
-def test_wordsim353():
-    for segment, length in (("all", 252 + 203), ("relatedness", 252),
-                            ("similarity", 203)):
-        data = nlp.data.WordSim353(segment=segment, root=os.path.join(
-            'tests', 'externaldata', 'wordsim353'))
-        assert len(data) == length, len(data)
-        _assert_similarity_dataset(data)
+@pytest.mark.parametrize('segment,length', [('all', 352), ('relatedness', 252),
+                                            ('similarity', 203)])
+def test_wordsim353(segment, length):
+    # 'all' has length 352 as the original dataset contains the 'money/cash'
+    # pair twice with different similarity ratings, which was fixed by the
+    # http://alfonseca.org/eng/research/wordsim353.html version of the dataset
+    # that we are using.
+    data = nlp.data.WordSim353(segment=segment, root=os.path.join(
+        'tests', 'externaldata', 'wordsim353'))
+    assert len(data) == length, len(data)
+    _assert_similarity_dataset(data)
 
 
 def test_men():
