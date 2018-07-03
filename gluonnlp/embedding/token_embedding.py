@@ -756,7 +756,8 @@ class TokenEmbedding(object):
             Keyword arguments are passed to the TokenEmbedding initializer.
             Useful for attaching unknown_lookup.
         """
-        npz_dict = np.load(file_path, allow_pickle=False)
+        # idx_to_token is of dtype 'O' so we need to allow pickle
+        npz_dict = np.load(file_path, allow_pickle=True)
 
         unknown_token = npz_dict['unknown_token']
         if not unknown_token:
