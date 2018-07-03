@@ -152,6 +152,8 @@ Reference: Jozefowicz, Rafal, et al. "`Exploring the limits of language modeling
 
 The key features used to reproduce the results for pre-trained models are listed in the following tables.
 
+.. editting URL for the following table: https://bit.ly/2NoG2wL
+
 The dataset used for training the models is Google's 1 billion words dataset.
 
 | Model           | LSTM-2048-512 |

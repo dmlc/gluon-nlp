@@ -18,7 +18,8 @@
 # under the License.
 """Language models."""
 __all__ = ['AWDRNN', 'StandardRNN', 'awd_lstm_lm_1150', 'awd_lstm_lm_600',
-           'standard_lstm_lm_200', 'standard_lstm_lm_650', 'standard_lstm_lm_1500']
+           'standard_lstm_lm_200', 'standard_lstm_lm_650', 'standard_lstm_lm_1500',
+           'BigRNN']
 
 import os
 import warnings
