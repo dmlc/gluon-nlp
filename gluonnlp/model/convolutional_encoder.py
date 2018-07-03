@@ -31,7 +31,7 @@ from gluonnlp.initializer import HighwayBias
 from .highway import Highway
 
 
-class ConvolutionalEncoder(gluon.Block):
+class ConvolutionalEncoder(gluon.HybridBlock):
     r"""Convolutional encoder.
 
     We implement the convolutional encoder proposed in the following work::
@@ -131,7 +131,7 @@ class ConvolutionalEncoder(gluon.Block):
                 self._projection = None
                 self._output_size = maxpool_output_size
 
-    def forward(self, inputs, mask=None): # pylint: disable=arguments-differ
+    def hybrid_forward(self, F, inputs, mask=None): # pylint: disable=arguments-differ
         r"""
         Forward computation for char_encoder
 
@@ -152,7 +152,7 @@ class ConvolutionalEncoder(gluon.Block):
         if mask is not None:
             inputs = inputs * mask.expand_dims(-1)
 
-        inputs = nd.transpose(inputs, axes=(1, 2, 0))
+        inputs = F.transpose(inputs, axes=(1, 2, 0))
 
         filter_outputs = []
         for conv in self._convs:
@@ -160,7 +160,7 @@ class ConvolutionalEncoder(gluon.Block):
                 self._activation(conv(inputs).max(axis=2))
             )
 
-        output = nd.concat(*filter_outputs, dim=1) if len(filter_outputs) > 1 else filter_outputs[0]
+        output = F.concat(*filter_outputs, dim=1) if len(filter_outputs) > 1 else filter_outputs[0]
 
         if self._highways:
             output = self._highways(output)
