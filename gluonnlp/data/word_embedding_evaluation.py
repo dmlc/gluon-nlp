@@ -256,7 +256,7 @@ class WordSim353(WordSimilarityEvaluationDataset):
                     self.root,
                     'wordsim353_sim_rel/wordsim_similarity_goldstandard.txt'))
 
-        return [row for row in CorpusDataset(paths)]
+        return list({tuple(row) for row in CorpusDataset(paths)})
 
 
 @register(segment=['full', 'dev', 'test'])
