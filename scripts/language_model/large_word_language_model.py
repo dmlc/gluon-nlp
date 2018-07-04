@@ -188,19 +188,20 @@ def train():
     """
     print(model)
     from_epoch = 0
-    model.initialize(mx.init.Xavier(), ctx=context)
+    model.initialize(mx.init.Xavier(factor_type='out'), ctx=context)
+    trainer_params = {'learning_rate': args.lr, 'wd': 0, 'eps': args.eps}
+    trainer = gluon.Trainer(model.collect_params(), 'adagrad', trainer_params)
     if args.from_epoch:
-        from_epoch = args.from_epoch - 1
-        checkpoint_name = '%s.%s'%(args.save, format(from_epoch, '02d'))
+        from_epoch = args.from_epoch
+        checkpoint_name = '%s.%s'%(args.save, format(from_epoch - 1, '02d'))
         model.load_parameters(checkpoint_name)
+        trainer.load_states('%s.state'%args.save)
         print('Loaded parameters from checkpoint %s'%(checkpoint_name))
 
     model.hybridize(static_alloc=True, static_shape=True)
-    trainer_params = {'learning_rate': args.lr, 'wd': 0, 'eps': args.eps}
-    trainer = gluon.Trainer(model.collect_params(), 'adagrad', trainer_params)
-
     encoder_params = model.encoder.collect_params().values()
     embedding_params = list(model.embedding.collect_params().values())
+
     for epoch in range(from_epoch, args.epochs):
         sys.stdout.flush()
         total_L = 0.0
@@ -249,6 +250,7 @@ def train():
         mx.nd.waitall()
         checkpoint_name = '%s.%s'%(args.save, format(epoch, '02d'))
         model.save_parameters(checkpoint_name)
+        trainer.save_states('%s.state'%args.save)
 
 def detach(hidden):
     if isinstance(hidden, (tuple, list)):

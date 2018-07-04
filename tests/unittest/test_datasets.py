@@ -547,7 +547,7 @@ def test_lm_stream():
     train = nlp.data.WikiText2(segment='train', root=path)
     val = nlp.data.WikiText2(segment='val', root=path)
     test = nlp.data.WikiText2(segment='test', root=path)
-    lm_stream = nlp.data.LanguageModelStream(token_path, skip_empty=True, eos=EOS)
+    lm_stream = nlp.data.LanguageModelStream(token_path, skip_empty=True, eos=EOS, bos=EOS)
     counter = nlp.data.Counter(lm_stream)
     vocab = nlp.vocab.Vocab(counter, bos_token=None)
     seq_len = 35
@@ -566,8 +566,7 @@ def test_lm_stream():
         num_tokens += num_valid_tokens
     num_batches = sum(1 for _ in bptt_stream)
     # the last token doesn't appear in data
-    assert num_tokens >= total_num_tokens - batch_size, num_tokens
-    assert num_tokens < total_num_tokens, num_tokens
+    assert num_tokens < total_num_tokens
 
 def test_lazy_stream():
     EOS = nlp._constants.EOS_TOKEN
