@@ -55,6 +55,10 @@ parser.add_argument('--emsize', type=int, default=400,
                     help='size of word embeddings')
 parser.add_argument('--nhid', type=int, default=1150,
                     help='number of hidden units per layer')
+parser.add_argument('--nhid_last', type=int, default=650,
+                    help='number of hidden units for the last layer')
+parser.add_argument('--num_experts', type=int, default=15,
+                    help='number of softmaxes')
 parser.add_argument('--nlayers', type=int, default=3,
                     help='number of layers')
 parser.add_argument('--lr', type=float, default=30,
@@ -75,6 +79,8 @@ parser.add_argument('--dropout_i', type=float, default=0.65,
                     help='dropout applied to input layer (0 = no dropout)')
 parser.add_argument('--dropout_e', type=float, default=0.1,
                     help='dropout applied to embedding layer (0 = no dropout)')
+parser.add_argument('--dropout_l', type=float, default=0.29,
+                    help='dropout applied to latent layers (0 = no dropout)')
 parser.add_argument('--weight_dropout', type=float, default=0.5,
                     help='weight dropout applied to h2h weight matrix (0 = no weight dropout)')
 parser.add_argument('--tied', action='store_true',
@@ -150,7 +156,17 @@ print(args)
 
 ntokens = len(vocab)
 
-if args.weight_dropout > 0:
+if args.num_experts:
+    print('Use MoSRNN')
+    model_eval = nlp.model.MoSRNN(args.model, len(vocab), args.emsize, args.nhid, args.nhid_last,
+                                  args.nlayers, args.tied, args.dropout, args.weight_dropout,
+                                  args.dropout_h, args.dropout_i, args.dropout_e, args.dropout_l,
+                                  args.num_experts)
+    model = nlp.model.train.MoSRNN(args.model, len(vocab), args.emsize, args.nhid, args.nhid_last,
+                                   args.nlayers, args.tied, args.dropout, args.weight_dropout,
+                                   args.dropout_h, args.dropout_i, args.dropout_e, args.dropout_l,
+                                   args.num_experts)
+elif args.weight_dropout > 0:
     print('Use AWDRNN')
     model_eval = nlp.model.AWDRNN(args.model, len(vocab), args.emsize, args.nhid, args.nlayers,
                                   args.tied, args.dropout, args.weight_dropout,

@@ -19,7 +19,7 @@
 """Language models."""
 __all__ = ['AWDRNN', 'StandardRNN', 'BigRNN', 'awd_lstm_lm_1150', 'awd_lstm_lm_600',
            'standard_lstm_lm_200', 'standard_lstm_lm_650', 'standard_lstm_lm_1500',
-           'big_rnn_lm_2048_512']
+           'big_rnn_lm_2048_512', 'mos_lstm_lm_600_400']
 
 import os
 import warnings
@@ -423,6 +423,7 @@ model_store._model_sha1.update(
         ('f9562ed05d9bcc7e1f5b7f3c81a1988019878038', 'awd_lstm_lm_1150_wikitext-2'),
         ('e952becc7580a0b5a6030aab09d0644e9a13ce18', 'awd_lstm_lm_600_wikitext-2'),
         ('6bb3e991eb4439fabfe26c129da2fe15a324e918', 'big_rnn_lm_2048_512_gbw')
+        ('ec623c47880c0d1901033ef1df8f882da98ea416', 'mos_lstm_lm_600_400'),
     ]})
 
 class BigRNN(Block):
@@ -560,4 +561,149 @@ def big_rnn_lm_2048_512(dataset_name=None, vocab=None, pretrained=False, ctx=cpu
            'Cannot override predefined model settings.'
     predefined_args.update(kwargs)
     return _get_rnn_model(BigRNN, 'big_rnn_lm_2048_512', dataset_name, vocab, pretrained,
+                          ctx, root, **predefined_args)
+
+
+class MoSRNN(train.MoSRNN):
+    """Mos language model by Zhilin Yang, Zihang Dai, Ruslan Salakhutdinov, William W. Cohen.
+
+    Reference: https://github.com/zihangdai/mos
+
+    License: MIT License
+
+    Parameters
+    ----------
+    mode : str
+        The type of RNN to use. Options are 'lstm', 'gru', 'rnn_tanh', 'rnn_relu'.
+    vocab_size : int
+        Size of the input vocabulary.
+    embed_size : int
+        Dimension of embedding vectors.
+    hidden_size : int
+        Number of hidden units for RNN.
+    hidden_size_last : int
+        Number of hidden units for last RNN layer.
+    num_layers : int
+        Number of RNN layers.
+    tie_weights : bool, default False
+        Whether to tie the weight matrices of output dense layer and input embedding layer.
+    dropout : float
+        Dropout rate to use for encoder output.
+    weight_drop : float
+        Dropout rate to use on encoder h2h weights.
+    drop_h : float
+        Dropout rate to on the output of intermediate layers of encoder.
+    drop_i : float
+        Dropout rate to on the output of embedding.
+    drop_e : float
+        Dropout rate to use on the embedding layer.
+    drop_l : float
+        Dropout rate to use on the latent layer.
+    num_experts : int
+        Number of softmax.
+    """
+    def __init__(self, mode, vocab_size, embed_size, hidden_size, hidden_size_last,
+                 num_layers, tie_weights, dropout, weight_drop, drop_h,
+                 drop_i, drop_e, drop_l, num_experts, **kwargs):
+        super(MoSRNN, self).__init__(mode, vocab_size, embed_size, hidden_size,
+                                     hidden_size_last, num_layers, tie_weights, dropout,
+                                     weight_drop, drop_h, drop_i, drop_e, drop_l,
+                                     num_experts, **kwargs)
+
+    def forward(self, inputs, begin_state=None): # pylint: disable=arguments-differ
+        """Implement forward computation.
+
+        Parameters
+        -----------
+        inputs : NDArray
+            input tensor with shape `(sequence_length, batch_size)`
+            when `layout` is "TNC".
+        begin_state : list
+            initial recurrent state tensor with length equals to num_layers.
+            the initial state with shape `(1, batch_size, num_hidden)`
+
+        Returns
+        --------
+        out: NDArray
+            output tensor with shape `(sequence_length, batch_size, input_size)`
+            when `layout` is "TNC".
+        out_states: list
+            output recurrent state tensor with length equals to num_layers.
+            the state with shape `(1, batch_size, num_hidden)`
+        """
+        encoded = self.embedding(inputs)
+        if not begin_state:
+            begin_state = self.begin_state(batch_size=inputs.shape[1])
+        out_states = []
+        encoded_raw = []
+        encoded_dropped = []
+        for i, (e, s) in enumerate(zip(self.encoder, begin_state)):
+            encoded, state = e(encoded, s)
+            encoded_raw.append(encoded)
+            out_states.append(state)
+            if self._drop_h and i != len(self.encoder)-1:
+                encoded = nd.Dropout(encoded, p=self._drop_h, axes=(0,))
+                encoded_dropped.append(encoded)
+        if self._dropout:
+            encoded = nd.Dropout(encoded, p=self._dropout, axes=(0,))
+        encoded_dropped.append(encoded)
+        latent = nd.Dropout(self.latent(encoded), p=self._drop_l, axes=(0,))
+        logit = self.decoder(latent.reshape(-1, self._embed_size))
+        prior_logit = self.prior(encoded).reshape(-1, self._num_experts)
+        prior = nd.softmax(prior_logit)
+        prob = nd.softmax(logit.reshape(-1, self._vocab_size))
+        prob = prob.reshape(-1, self._num_experts, self._vocab_size)
+        prob = (prob * prior.expand_dims(2).broadcast_to(prob.shape)).sum(axis=1)
+        out = nd.log(nd.add(prob, 1e-8)).reshape(-1, inputs.shape[1], self._vocab_size)
+        return out, out_states
+
+
+def mos_lstm_lm_600_400(dataset_name=None, vocab=None, pretrained=False, ctx=cpu(),
+                        root=os.path.join('~', '.mxnet', 'models'), **kwargs):
+    """ 3-layer LSTM language model with weight-drop, variational dropout, tied weights
+        and mixture of softmaxes.
+
+    Embedding size is 200, hidden layer size is 600, and last huidden layer size is 400.
+
+    Parameters
+    ----------
+    dataset_name : str or None, default None
+        The dataset name on which the pretrained model is trained.
+        Options are 'wikitext-2'. If specified, then the returned vocabulary is extracted from
+        the training set of the dataset.
+        If None, then vocab is required, for specifying embedding weight size, and is directly
+        returned.
+        The pre-trained model achieves 75.71/71.99 ppl on Val and Test of wikitext-2 respectively.
+    vocab : gluonnlp.Vocab or None, default None
+        Vocab object to be used with the language model.
+        Required when dataset_name is not specified.
+    pretrained : bool, default False
+        Whether to load the pretrained weights for model.
+    ctx : Context, default CPU
+        The context in which to load the pretrained weights.
+    root : str, default '~/.mxnet/models'
+        Location for keeping the model parameters.
+
+    Returns
+    -------
+    gluon.Block, gluonnlp.Vocab
+    """
+    predefined_args = {'embed_size': 200,
+                       'hidden_size': 600,
+                       'hidden_size_last': 400,
+                       'mode': 'lstm',
+                       'num_layers': 3,
+                       'tie_weights': True,
+                       'dropout': 0.4,
+                       'weight_drop': 0.5,
+                       'drop_h': 0.2,
+                       'drop_i': 0.55,
+                       'drop_e': 0.1,
+                       'drop_l': 0.2,
+                       'num_experts': 7}
+    mutable_args = frozenset(['dropout', 'weight_drop', 'drop_h', 'drop_i', 'drop_e', 'drop_l'])
+    assert all((k not in kwargs or k in mutable_args) for k in predefined_args), \
+           'Cannot override predefined model settings.'
+    predefined_args.update(kwargs)
+    return _get_rnn_model(MoSRNN, 'mos_lstm_lm_600_400', dataset_name, vocab, pretrained,
                           ctx, root, **predefined_args)

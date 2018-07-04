@@ -68,12 +68,14 @@ def test_big_text_models(wikitext2_val_and_counter):
 
 @pytest.mark.serial
 def test_text_models():
-    text_models = ['standard_lstm_lm_200', 'standard_lstm_lm_650', 'standard_lstm_lm_1500', 'awd_lstm_lm_1150', 'awd_lstm_lm_600']
+    text_models = ['standard_lstm_lm_200', 'standard_lstm_lm_650', 'standard_lstm_lm_1500',
+                   'awd_lstm_lm_1150', 'awd_lstm_lm_600', 'mos_lstm_lm_600_400']
     pretrained_to_test = {'standard_lstm_lm_1500': 'wikitext-2',
                           'standard_lstm_lm_650': 'wikitext-2',
                           'standard_lstm_lm_200': 'wikitext-2',
                           'awd_lstm_lm_1150': 'wikitext-2',
-                          'awd_lstm_lm_600': 'wikitext-2'}
+                          'awd_lstm_lm_600': 'wikitext-2',
+                          'mos_lstm_lm_600_400': 'wikitext-2'}
 
     for model_name in text_models:
         eprint('testing forward for %s' % model_name)
@@ -93,7 +95,7 @@ def test_text_models():
 @pytest.mark.serial
 def test_cache_models():
     cache_language_models = ['awd_lstm_lm_1150', 'awd_lstm_lm_600', 'standard_lstm_lm_200',
-                   'standard_lstm_lm_650', 'standard_lstm_lm_1500']
+                             'standard_lstm_lm_650', 'standard_lstm_lm_1500', 'mos_lstm_lm_600_400']
     datasets = ['wikitext-2']
     for name in cache_language_models:
         for dataset_name in datasets:
@@ -116,7 +118,8 @@ def test_get_cache_model_noncache_models():
                               'awd_lstm_lm_600': 'awd_lstm_lm_600_wikitext-2-e952becc.params',
                               'standard_lstm_lm_200': 'standard_lstm_lm_200_wikitext-2-b233c700.params',
                               'standard_lstm_lm_650': 'standard_lstm_lm_650_wikitext-2-631f3904.params',
-                              'standard_lstm_lm_1500': 'standard_lstm_lm_1500_wikitext-2-a4163513.params'}
+                              'standard_lstm_lm_1500': 'standard_lstm_lm_1500_wikitext-2-a4163513.params',
+                              'mos_lstm_lm_600_400': 'mos_lstm_lm_600_400_wikitext-2-ec623c47.params'}
     datasets = ['wikitext-2']
     for name in language_models_params.keys():
         for dataset_name in datasets:
@@ -148,7 +151,7 @@ def test_get_cache_model_noncache_models():
 @pytest.mark.serial
 def test_save_load_cache_models():
     cache_language_models = ['awd_lstm_lm_1150', 'awd_lstm_lm_600', 'standard_lstm_lm_200',
-                   'standard_lstm_lm_650', 'standard_lstm_lm_1500']
+                   'standard_lstm_lm_650', 'standard_lstm_lm_1500', 'mos_lstm_lm_600_400']
     datasets = ['wikitext-2']
     for name in cache_language_models:
         for dataset_name in datasets:
