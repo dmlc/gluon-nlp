@@ -24,7 +24,11 @@ from __future__ import absolute_import, print_function
 import numpy as np
 from mxnet import nd, registry
 
-__all__ = ['SubwordFunction', 'ByteSubwords', 'NGramHashes']
+__all__ = [
+    'SubwordFunction', 'ByteSubwords', 'NGramHashes',
+    'register_subword_function', 'create_subword_function',
+    'list_subword_functions'
+]
 
 
 def register_subword_function(subword_cls):

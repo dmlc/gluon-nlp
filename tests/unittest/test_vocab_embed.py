@@ -461,13 +461,13 @@ def test_token_embedding_from_file(tmpdir, allow_extend):
 
 
 def test_embedding_get_and_pretrain_file_names():
-    assert len(nlp.embedding.list_sources(embedding_name='fasttext')) == 327
+    assert len(nlp.embedding.list_sources(embedding_name='fasttext')) == 484
     assert len(nlp.embedding.list_sources(embedding_name='glove')) == 10
 
     reg = nlp.embedding.list_sources(embedding_name=None)
 
     assert len(reg['glove']) == 10
-    assert len(reg['fasttext']) == 327
+    assert len(reg['fasttext']) == 484
 
     with pytest.raises(KeyError):
         nlp.embedding.list_sources('unknown$$')
@@ -770,11 +770,12 @@ def test_download_embed():
 
         def __init__(self, embedding_root='embedding', init_unknown_vec=nd.zeros, **kwargs):
             source = 'embedding_test'
-            Test._check_source(source)
+            Test._check_source(self.source_file_hash, source)
 
             super(Test, self).__init__(**kwargs)
 
-            file_path = Test._get_file_path(embedding_root, source)
+            file_path = Test._get_file_path(self.source_file_hash,
+                                            embedding_root, source)
 
             self._load_embedding(file_path, ' ')
 
@@ -891,11 +892,12 @@ def test_token_embedding_serialization():
 
         def __init__(self, embedding_root='tests/data/embedding', **kwargs):
             source = 'embedding_test'
-            Test._check_source(source)
+            Test._check_source(self.source_file_hash, source)
 
             super(Test, self).__init__(**kwargs)
 
-            file_path = Test._get_file_path(embedding_root, source)
+            file_path = Test._get_file_path(self.source_file_hash,
+                                            embedding_root, source)
 
             self._load_embedding(file_path, ' ')
 
