@@ -444,26 +444,6 @@ class BigRNN(Block):
     dropout : float
         Dropout rate to use for encoder output.
 
-    Inputs
-    ----------
-    inputs : NDArray
-        input tensor with shape `(sequence_length, batch_size)`
-          when `layout` is "TNC".
-    begin_state : list
-        initial recurrent state tensor with length equals to num_layers*2.
-        For each layer the two initial states have shape `(batch_size, num_hidden)`
-        and `(batch_size, num_projection)`
-
-    Outputs
-    -------
-    out : NDArray
-        output tensor with shape `(sequence_length*batch_size, vocab_size)`
-          when `layout` is "TNC".
-    out_states : list
-        output recurrent state tensor with length equals to num_layers*2.
-        For each layer the two initial states have shape `(batch_size, num_hidden)`
-        and `(batch_size, num_projection)`
-
     """
     def __init__(self, vocab_size, embed_size, hidden_size, num_layers,
                  projection_size, dropout=0.0, **kwargs):
@@ -506,7 +486,28 @@ class BigRNN(Block):
         return self.encoder.begin_state(**kwargs)
 
     def forward(self, inputs, begin_state): # pylint: disable=arguments-differ
-        """Defines the forward computation. """
+        """Implement forward computation.
+
+        Parameters
+        -----------
+        inputs : NDArray
+            input tensor with shape `(sequence_length, batch_size)`
+            when `layout` is "TNC".
+        begin_state : list
+            initial recurrent state tensor with length equals to num_layers*2.
+            For each layer the two initial states have shape `(batch_size, num_hidden)`
+            and `(batch_size, num_projection)`
+
+        Returns
+        --------
+        out : NDArray
+            output tensor with shape `(sequence_length*batch_size, vocab_size)`
+              when `layout` is "TNC".
+        out_states : list
+            output recurrent state tensor with length equals to num_layers*2.
+            For each layer the two initial states have shape `(batch_size, num_hidden)`
+            and `(batch_size, num_projection)`
+        """
         encoded = self.embedding(inputs)
         length = inputs.shape[0]
         encoded, state = self.encoder.unroll(length, encoded, begin_state,

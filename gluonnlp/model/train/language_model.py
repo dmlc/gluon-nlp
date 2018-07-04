@@ -298,34 +298,6 @@ class BigRNN(Block):
     sparse_grad : bool
         Whether to use RowSparseNDArray for the gradients w.r.t.
         weights of input and output embeddings.
-
-    Inputs
-    ----------
-    inputs : NDArray
-        input tensor with shape `(sequence_length, batch_size)`
-          when `layout` is "TNC".
-    begin_state : list
-        initial recurrent state tensor with length equals to num_layers*2.
-        For each layer the two initial states have shape `(batch_size, num_hidden)`
-        and `(batch_size, num_projection)`
-    sampled_values : list
-        a list of three tensors for `sampled_classes` with shape `(num_samples,)`,
-        `expected_count_true` with shape `(sequence_length, batch_size)`, and
-        `expected_count_sampled` with shape `(num_samples,)`.
-
-    Outputs
-    -------
-    out : NDArray
-        output tensor with shape `(sequence_length*batch_size, 1+num_samples)`
-          when `layout` is "TNC".
-    new_target : NDArray
-        output tensor with shape `(sequence_length*batch_size)`
-          when `layout` is "TNC".
-    out_states : list
-        output recurrent state tensor with length equals to num_layers*2.
-        For each layer the two initial states have shape `(batch_size, num_hidden)`
-        and `(batch_size, num_projection)`
-
     """
     def __init__(self, vocab_size, embed_size, hidden_size, num_layers,
                  projection_size, num_sampled, dropout=0.0,
@@ -387,7 +359,35 @@ class BigRNN(Block):
         return self.encoder.begin_state(**kwargs)
 
     def forward(self, inputs, label, begin_state, sampled_values): # pylint: disable=arguments-differ
-        """Defines the forward computation. """
+        """Defines the forward computation.
+
+        Parameters
+        -----------
+        inputs : NDArray
+            input tensor with shape `(sequence_length, batch_size)`
+            when `layout` is "TNC".
+        begin_state : list
+            initial recurrent state tensor with length equals to num_layers*2.
+            For each layer the two initial states have shape `(batch_size, num_hidden)`
+            and `(batch_size, num_projection)`
+        sampled_values : list
+            a list of three tensors for `sampled_classes` with shape `(num_samples,)`,
+            `expected_count_true` with shape `(sequence_length, batch_size)`, and
+            `expected_count_sampled` with shape `(num_samples,)`.
+
+        Returns
+        --------
+        out : NDArray
+            output tensor with shape `(sequence_length*batch_size, 1+num_samples)`
+            when `layout` is "TNC".
+        new_target : NDArray
+            output tensor with shape `(sequence_length*batch_size)`
+            when `layout` is "TNC".
+        out_states : list
+            output recurrent state tensor with length equals to num_layers*2.
+            For each layer the two initial states have shape `(batch_size, num_hidden)`
+            and `(batch_size, num_projection)`
+        """
         encoded = self.embedding(inputs)
         sampled_classes, exp_cnt_true, exp_cnt_sampled = sampled_values
         length = inputs.shape[0]
