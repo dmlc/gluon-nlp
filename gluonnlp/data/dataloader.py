@@ -19,7 +19,6 @@
 """DataLoader. An extension of Gluon data loader that allows multi-shard sampling."""
 __all__ = ['ShardedDataLoader']
 
-
 import sys
 import multiprocessing
 import multiprocessing.queues
