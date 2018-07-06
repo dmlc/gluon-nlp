@@ -1,7 +1,9 @@
 name: gluon_nlp_pylint
+channels:
+  - conda-forge
 dependencies:
-  - python
-  - pylint=1.8.4
-  - sphinx=1.7.2
+  - python=3.6
+  - pylint=1.9.2
+  - sphinx=1.7.5
   - pip:
     - pylint-quotes

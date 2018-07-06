@@ -1,7 +1,6 @@
 name: gluon_nlp_docs
 channels:
   - conda-forge
-  - defaults
 dependencies:
   - python
   - sphinx=1.7.5
