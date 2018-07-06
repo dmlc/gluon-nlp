@@ -24,17 +24,22 @@ def test_fixed_bucket_sampler():
                 for num_buckets in [1, 10, 100, 5000]:
                     for bucket_scheme in [ConstWidthBucket(), LinearWidthBucket(), ExpWidthBucket()]:
                         for use_average_length in [False, True]:
-                            sampler = FixedBucketSampler(seq_lengths,
-                                                         batch_size=8,
-                                                         num_buckets=num_buckets,
-                                                         ratio=ratio, shuffle=shuffle,
-                                                         use_average_length=use_average_length,
-                                                         bucket_scheme=bucket_scheme)
-                            print(sampler.stats())
-                            total_sampled_ids = []
-                            for batch_sample_ids in sampler:
-                                total_sampled_ids.extend(batch_sample_ids)
-                            assert len(set(total_sampled_ids)) == len(total_sampled_ids) == N
+                            for num_shards in [0, 1, 2, 3]:
+                                sampler = FixedBucketSampler(seq_lengths,
+                                                             batch_size=8,
+                                                             num_buckets=num_buckets,
+                                                             ratio=ratio, shuffle=shuffle,
+                                                             use_average_length=use_average_length,
+                                                             bucket_scheme=bucket_scheme)
+                                print(sampler.stats())
+                                total_sampled_ids = []
+                                for batch_sample_ids in sampler:
+                                    if num_shards > 0:
+                                        assert len(batch_sample_ids) == num_shards
+                                    else:
+                                        total_sampled_ids.extend(batch_sample_ids)
+                                if num_shards == 0:
+                                    assert len(set(total_sampled_ids)) == len(total_sampled_ids) == N
     for seq_lengths in [[np.random.randint(10, 100) for _ in range(N)]]:
         for bucket_keys in [[1, 5, 10, 100], [10, 100], [200]]:
             sampler = FixedBucketSampler(seq_lengths, batch_size=8, num_buckets=None,
