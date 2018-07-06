@@ -190,18 +190,16 @@ class TokenEmbedding(object):
         self._token_to_idx.update((token, idx) for idx, token in enumerate(self._idx_to_token))
         self._idx_to_vec = None
 
-    @classmethod
-    def _get_file_url(cls, source):
-        cls_name = cls.__name__.lower()
-
+    @staticmethod
+    def _get_file_url(cls_name, source_file_hash, source):
         namespace = 'gluon/embeddings/{}'.format(cls_name)
-        return _get_repo_file_url(namespace, cls.source_file_hash[source][0])
+        return _get_repo_file_url(namespace, source_file_hash[source][0])
 
     @classmethod
     def _get_file_path(cls, source_file_hash, embedding_root, source):
         cls_name = cls.__name__.lower()
         embedding_root = os.path.expanduser(embedding_root)
-        url = cls._get_file_url(source)
+        url = cls._get_file_url(cls_name, source_file_hash, source)
 
         embedding_dir = os.path.join(embedding_root, cls_name)
 
