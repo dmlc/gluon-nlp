@@ -3,6 +3,7 @@ channels:
   - conda-forge
 dependencies:
   - python
+  - ipython
   - sphinx=1.7.5
   - sphinx-gallery
   - sphinx_rtd_theme
