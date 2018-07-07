@@ -19,7 +19,7 @@
 """Language models."""
 __all__ = ['AWDRNN', 'StandardRNN', 'awd_lstm_lm_1150', 'awd_lstm_lm_600',
            'standard_lstm_lm_200', 'standard_lstm_lm_650', 'standard_lstm_lm_1500',
-           'BigRNN']
+           'SampledRNN']
 
 import os
 import warnings
@@ -424,7 +424,7 @@ model_store._model_sha1.update(
         ('7894a046f8286db0d5d2ed672b60f4f52b4bc3aa', 'awd_lstm_lm_600_wikitext-2')
     ]})
 
-class BigRNN(Block):
+class SampledRNN(Block):
     """Big language model with LSTMP for inference.
 
     Parameters
@@ -447,7 +447,7 @@ class BigRNN(Block):
     """
     def __init__(self, vocab_size, embed_size, hidden_size, num_layers,
                  projection_size, dropout=0.0, **kwargs):
-        super(BigRNN, self).__init__(**kwargs)
+        super(SampledRNN, self).__init__(**kwargs)
         self._embed_size = embed_size
         self._hidden_size = hidden_size
         self._projection_size = projection_size
@@ -510,8 +510,10 @@ class BigRNN(Block):
         """
         encoded = self.embedding(inputs)
         length = inputs.shape[0]
+        batch_size = inputs.shape[1]
         encoded, state = self.encoder.unroll(length, encoded, begin_state,
                                              layout='TNC', merge_outputs=True)
         encoded = encoded.reshape((-1, self._projection_size))
         out = self.decoder(encoded)
+        out = out.reshape((length, batch_size, -1))
         return out, state

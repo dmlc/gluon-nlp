@@ -16,7 +16,7 @@ Language Modeling
     StandardRNN
     CacheCell
     get_cache_model
-    BigRNN
+    SampledRNN
 
 
 Word Embeddings

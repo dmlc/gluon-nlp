@@ -17,7 +17,7 @@
 # specific language governing permissions and limitations
 # under the License.
 """Language models for training."""
-__all__ = ['AWDRNN', 'StandardRNN', 'BigRNN']
+__all__ = ['AWDRNN', 'StandardRNN', 'SampledRNN']
 
 from mxnet import init, nd, autograd
 from mxnet.gluon import nn, Block, contrib, rnn
@@ -270,7 +270,7 @@ class StandardRNN(Block):
         out = self.decoder(encoded)
         return out, state, encoded_raw, encoded_dropped
 
-class BigRNN(Block):
+class SampledRNN(Block):
     """Big language model with LSTMP and importance sampling.
 
     Reference: https://github.com/rafaljozefowicz/lm
@@ -302,7 +302,7 @@ class BigRNN(Block):
     def __init__(self, vocab_size, embed_size, hidden_size, num_layers,
                  projection_size, num_sampled, dropout=0.0,
                  sparse_weight=True, sparse_grad=True, **kwargs):
-        super(BigRNN, self).__init__(**kwargs)
+        super(SampledRNN, self).__init__(**kwargs)
         self._embed_size = embed_size
         self._hidden_size = hidden_size
         self._projection_size = projection_size
@@ -380,19 +380,22 @@ class BigRNN(Block):
         out : NDArray
             output tensor with shape `(sequence_length*batch_size, 1+num_samples)`
             when `layout` is "TNC".
-        new_target : NDArray
-            output tensor with shape `(sequence_length*batch_size)`
-            when `layout` is "TNC".
         out_states : list
             output recurrent state tensor with length equals to num_layers*2.
             For each layer the two initial states have shape `(batch_size, num_hidden)`
             and `(batch_size, num_projection)`
+        new_target : NDArray
+            output tensor with shape `(sequence_length*batch_size)`
+            when `layout` is "TNC".
         """
         encoded = self.embedding(inputs)
         sampled_classes, exp_cnt_true, exp_cnt_sampled = sampled_values
         length = inputs.shape[0]
+        batch_size = inputs.shape[1]
         encoded, out_states = self.encoder.unroll(length, encoded, begin_state,
                                                   layout='TNC', merge_outputs=True)
         out, new_target = self.decoder(encoded, sampled_classes, exp_cnt_sampled,
                                        exp_cnt_true, label)
-        return out, new_target, out_states
+        out = out.reshape((length, batch_size, -1))
+        new_target = new_target.reshape((length, batch_size))
+        return out, out_states, new_target

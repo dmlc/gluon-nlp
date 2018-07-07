@@ -20,7 +20,7 @@
 """Blocks for sampled losses."""
 __all__ = ['SampledLogits', 'SparseSampledLogits']
 
-from mxnet import ndarray
+from mxnet import nd
 from mxnet.gluon import Block, HybridBlock
 
 
@@ -100,14 +100,11 @@ class SampledLogits(HybridBlock):
     Please use `loss.SoftmaxCrossEntropyLoss` for sampled softmax loss, and
     `loss.SigmoidBinaryCrossEntropyLoss` for nce loss.
 
-    The block is designed for distributed training with extremely large
-    number of classes. Both weight and gradient w.r.t. weight are `RowSparseNDArray`.
-
     Example::
 
         # network with sampled_softmax_loss for training
         encoder = Encoder(..)
-        decoder = SampledLogits(.., prefix='decoder')
+        decoder = SampledLogits(..)
         train_net.add(encoder)
         train_net.add(decoder)
         loss = SoftmaxCrossEntropyLoss()
@@ -120,7 +117,7 @@ class SampledLogits(HybridBlock):
 
         # network for testing
         test_net.add(encoder)
-        test_net.add(Dense(..., prefix='decoder', params=decoder.params))
+        test_net.add(Dense(..., params=decoder.params))
 
         # testing
         for x, y in test_batches:
@@ -213,7 +210,8 @@ class SparseSampledLogits(Block):
     `loss.SigmoidBinaryCrossEntropyLoss` for nce loss.
 
     The block is designed for distributed training with extremely large
-    number of classes. Both weight and gradient w.r.t. weight are `RowSparseNDArray`.
+    number of classes to reduce communication overhead and memory consumption.
+    Both weight and gradient w.r.t. weight are `RowSparseNDArray`.
 
     Different from SampledLogits block, the parameters have to be saved before they
     are used for testing.
@@ -307,14 +305,14 @@ class SparseSampledLogits(Block):
         # (batch_size,)
         label = label.reshape(shape=(-1,))
         # (num_sampled+batch_size,)
-        ids = ndarray.concat(sampled_candidates, label, dim=0)
+        ids = nd.concat(sampled_candidates, label, dim=0)
         # lookup weights and biases
         weight = self.weight.row_sparse_data(ids)
         bias = self.bias.data(ids.context)
         # (num_sampled+batch_size, dim)
-        w_all = ndarray.Embedding(data=ids, weight=weight, **self._kwargs)
+        w_all = nd.Embedding(data=ids, weight=weight, **self._kwargs)
         # (num_sampled+batch_size,)
-        b_all = ndarray.take(bias, indices=ids)
+        b_all = nd.take(bias, indices=ids)
         out, new_targets = self._logits(x, sampled_candidates, expected_count_sampled,
                                         expected_count_true, label, w_all, b_all)
         return out, new_targets

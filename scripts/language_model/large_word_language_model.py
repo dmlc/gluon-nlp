@@ -171,12 +171,12 @@ test_data = nlp.data.PrefetchingStream(test_data)
 ###############################################################################
 
 
-eval_model = nlp.model.language_model.BigRNN(ntokens, args.emsize, args.nhid,
-                                             args.nlayers, args.nproj,
-                                             dropout=args.dropout)
-model = nlp.model.language_model.train.BigRNN(ntokens, args.emsize, args.nhid,
-                                              args.nlayers, args.nproj, args.k,
-                                              dropout=args.dropout)
+eval_model = nlp.model.language_model.SampledRNN(ntokens, args.emsize, args.nhid,
+                                                 args.nlayers, args.nproj,
+                                                 dropout=args.dropout)
+model = nlp.model.language_model.train.SampledRNN(ntokens, args.emsize, args.nhid,
+                                                  args.nlayers, args.nproj, args.k,
+                                                  dropout=args.dropout)
 loss = gluon.loss.SoftmaxCrossEntropyLoss()
 
 ###############################################################################
@@ -217,7 +217,9 @@ def train():
             Ls = []
             with autograd.record():
                 for j, (X, y, m, s, h) in enumerate(zip(data, target, mask, sample, hiddens)):
-                    output, new_target, h = model(X, y, h, s)
+                    output, h, new_target = model(X, y, h, s)
+                    output = output.reshape((-3, -1))
+                    new_target = new_target.reshape((-1,))
                     l = loss(output, new_target) * m.reshape((-1,))
                     Ls.append(l/args.batch_size)
                     hiddens[j] = h
@@ -238,7 +240,7 @@ def train():
 
             if nbatch % args.log_interval == 0:
                 cur_L = total_L / args.log_interval / len(context)
-                ppl = math.exp(cur_L) if cur_L < 100 else 99999999
+                ppl = math.exp(cur_L) if cur_L < 100 else float('inf')
                 print('[Epoch %d Batch %d] loss %.2f, ppl %.2f, '
                       'throughput %.2f samples/s'
                       %(epoch, nbatch, cur_L, ppl,
@@ -286,6 +288,7 @@ def test(data_stream, batch_size, ctx=None):
         mask = mask.as_in_context(ctx)
         output, hidden = eval_model(data, hidden)
         hidden = detach(hidden)
+        output = output.reshape((-3, -1))
         L = loss(output, target.reshape(-1,)) * mask.reshape((-1,))
         total_L += L.sum()
         ntotal += mask.sum()

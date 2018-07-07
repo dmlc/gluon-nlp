@@ -20,7 +20,7 @@ Language Modeling
     standard_lstm_lm_1500
     StandardRNN
     get_model
-    BigRNN
+    SampledRNN
 
 Convolutional Encoder
 ----------------------
@@ -67,6 +67,7 @@ Other Modeling Utilities
     WeightDropParameter
     apply_weight_drop
     L2Normalization
+    SampledLogits
     SparseSampledLogits
 
 API Reference
