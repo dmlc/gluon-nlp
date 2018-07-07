@@ -501,7 +501,7 @@ class SampledRNN(Block):
         Returns
         --------
         out : NDArray
-            output tensor with shape `(sequence_length*batch_size, vocab_size)`
+            output tensor with shape `(sequence_length, batch_size, vocab_size)`
               when `layout` is "TNC".
         out_states : list
             output recurrent state tensor with length equals to num_layers*2.

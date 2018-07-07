@@ -378,14 +378,14 @@ class SampledRNN(Block):
         Returns
         --------
         out : NDArray
-            output tensor with shape `(sequence_length*batch_size, 1+num_samples)`
+            output tensor with shape `(sequence_length, batch_size, 1+num_samples)`
             when `layout` is "TNC".
         out_states : list
             output recurrent state tensor with length equals to num_layers*2.
             For each layer the two initial states have shape `(batch_size, num_hidden)`
             and `(batch_size, num_projection)`
         new_target : NDArray
-            output tensor with shape `(sequence_length*batch_size)`
+            output tensor with shape `(sequence_length, batch_size)`
             when `layout` is "TNC".
         """
         encoded = self.embedding(inputs)
