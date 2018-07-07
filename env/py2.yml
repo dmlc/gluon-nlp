@@ -1,11 +1,10 @@
 name: gluon_nlp_py2
 channels:
   - conda-forge
-  - defaults
 dependencies:
   - python=2.7
   - perl
-  - sphinx=1.7.2
+  - sphinx=1.7.5
   - spacy
   - nltk
   - pytest

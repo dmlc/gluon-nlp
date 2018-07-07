@@ -1,17 +1,16 @@
 name: gluon_nlp_docs
 channels:
   - conda-forge
-  - defaults
 dependencies:
   - python
   - ipython
-  - sphinx=1.7.2
+  - sphinx=1.7.5
   - sphinx-gallery
   - sphinx_rtd_theme
-  - nbsphinx>=0.3.0
+  - nbsphinx>=0.3.3
   - recommonmark
   - spacy
   - nltk
-  - pandoc==1.19.2
+  - pandoc==2.2.1
   - pip:
     - mxnet-cu80>=1.3.0b20180629
