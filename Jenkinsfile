@@ -74,7 +74,10 @@ stage("Deploy") {
       make release
       printenv
       make -C docs html SPHINXOPTS=-W
-      printenv"""
+      EXIT_STATUS=\$?
+      printenv
+      exit \$EXIT_STATUS
+      """
 
       if (env.BRANCH_NAME.startsWith("PR-")) {
         sh """#!/bin/bash
