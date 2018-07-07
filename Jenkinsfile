@@ -3,8 +3,8 @@ stage("Sanity Check") {
     ws('workspace/gluon-nlp-lint') {
       checkout scm
       sh """#!/bin/bash
-      git clean -f -d -x --exclude='tests/externaldata/*'
-      conda env update --prune -f env/pylint.yml
+      git clean -f -d -x --exclude='tests/externaldata/*' --exclude=conda
+      conda env update --prune -f env/pylint.yml -p conda
       source activate gluon_nlp_pylint
       conda list
       make clean
@@ -20,8 +20,8 @@ stage("Unit Test") {
       ws('workspace/gluon-nlp-py2') {
         checkout scm
         sh """#!/bin/bash
-        git clean -f -d -x --exclude='tests/externaldata/*'
-        conda env update --prune -f env/py2.yml
+        git clean -f -d -x --exclude='tests/externaldata/*' --exclude=conda
+        conda env update --prune -f env/py2.yml -p conda
         source activate gluon_nlp_py2
         conda list
         python -m spacy download en
@@ -39,8 +39,8 @@ stage("Unit Test") {
         ws('workspace/gluon-nlp-py3') {
           checkout scm
           sh """#!/bin/bash
-          git clean -f -d -x --exclude='tests/externaldata/*'
-          conda env update --prune -f env/py3.yml
+          git clean -f -d -x --exclude='tests/externaldata/*' --exclude=conda
+          conda env update --prune -f env/py3.yml -p conda
           source activate gluon_nlp_py3
           conda list
           python -m spacy download en
@@ -64,8 +64,8 @@ stage("Deploy") {
       checkout scm
       sh """#!/bin/bash
       printenv
-      git clean -f -d -x --exclude='tests/externaldata/*'
-      conda env update --prune -f env/doc.yml
+      git clean -f -d -x --exclude='tests/externaldata/*' --exclude=conda
+      conda env update --prune -f env/doc.yml -p conda
       source activate gluon_nlp_docs
       conda list
       python setup.py install
