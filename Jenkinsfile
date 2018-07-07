@@ -65,8 +65,6 @@ stage("Deploy") {
       sh """#!/bin/bash
       git clean -f -d -x --exclude='tests/externaldata/*'
       conda env update --prune -f env/doc.yml
-      conda remove -n gluon_nlp_docs pandoc --force
-      conda install -n gluon_nlp_docs pandoc --force
       source activate gluon_nlp_docs
       conda list
       python setup.py install
