@@ -621,3 +621,5 @@ def _test_gbw_stream():
     # https://github.com/rafaljozefowicz/lm/blob/master/1b_word_vocab.txt
     assert counter['the'] == 35936573
     assert counter['.'] == 29969612
+    vocab = gbw.vocab
+    assert len(vocab) == 793471

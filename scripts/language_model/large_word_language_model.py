@@ -112,23 +112,17 @@ print(args)
 mx.random.seed(args.seed)
 np.random.seed(args.seed)
 
-###############################################################################
-# Vocab
-###############################################################################
-with io.open('gbw_vocab.json', 'r', encoding='utf-8') as in_file:
-    vocab = nlp.Vocab.from_json(in_file.read())
-ntokens = len(vocab)
-
-###############################################################################
-# Load data
-###############################################################################
-
 context = [mx.cpu()] if args.gpus is None or args.gpus == '' else \
           [mx.gpu(int(x)) for x in args.gpus.split(',')]
 
+###############################################################################
+# Data stream
+###############################################################################
 train_data_stream, test_data_stream = \
     [nlp.data.GBWStream(segment=segment, skip_empty=True, bos='<eos>', eos='<eos>')
      for segment in segments]
+vocab = train_data_stream.vocab
+ntokens = len(vocab)
 
 sampler = LogUniformSampler(ntokens, args.k)
 
