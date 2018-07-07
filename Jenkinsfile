@@ -63,6 +63,7 @@ stage("Deploy") {
     ws('workspace/gluon-nlp-docs') {
       checkout scm
       sh """#!/bin/bash
+      printenv
       git clean -f -d -x --exclude='tests/externaldata/*'
       conda env update --prune -f env/doc.yml
       source activate gluon_nlp_docs
@@ -71,7 +72,9 @@ stage("Deploy") {
       export LD_LIBRARY_PATH=/usr/local/cuda/lib64
       make clean
       make release
-      make -C docs html SPHINXOPTS=-W"""
+      printenv
+      make -C docs html SPHINXOPTS=-W
+      printenv"""
 
       if (env.BRANCH_NAME.startsWith("PR-")) {
         sh """#!/bin/bash
