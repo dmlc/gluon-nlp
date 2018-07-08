@@ -81,7 +81,7 @@ parser.add_argument('--k', type=int, default=8192,
                     help='number of noise samples for estimation')
 parser.add_argument('--gpus', type=str,
                     help='list of gpus to run, e.g. 0 or 0,2,5. empty means using cpu.')
-parser.add_argument('--log-interval', type=int, default=200,
+parser.add_argument('--log-interval', type=int, default=1000,
                     help='report interval')
 parser.add_argument('--seed', type=int, default=1,
                     help='random seed')
@@ -318,9 +318,12 @@ def evaluate():
             continue
         eval_model.load_parameters(checkpoint_name)
         print('Loaded parameters from checkpoint %s'%(checkpoint_name))
+        start_epoch_time = time.time()
         final_test_L = test(test_data, test_batch_size, ctx=context[0])
+        end_epoch_time = time.time()
         print('[Epoch %d] test loss %.2f, test ppl %.2f'%
               (epoch, final_test_L, math.exp(final_test_L)))
+        print('Epoch %d took %.2f seconds.'%(epoch, end_epoch_time - start_epoch_time))
         sys.stdout.flush()
         epoch += 1
 
