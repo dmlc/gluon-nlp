@@ -143,17 +143,16 @@ def _split_and_sample(data):
         ms = gluon.utils.split_data(m, num_ctx, batch_axis=1, even_split=True)
     else:
         xs, ys, ms = [x], [y], [m]
-    ss = [sampler(x) for x in xs]
     xs = _load(xs)
     ys = _load(ys)
     ms = _load(ms)
+    ss = [sampler(x) for x in xs]
     ss = _load(ss)
     return xs, ys, ms, ss
 
 train_batch_size = args.batch_size * len(context)
 train_data = train_data_stream.bptt_batchify(vocab, args.bptt, train_batch_size)
 train_data = train_data.transform(_split_and_sample)
-train_data = nlp.data.PrefetchingStream(train_data)
 
 test_batch_size = args.batch_size
 test_data = test_data_stream.bptt_batchify(vocab, args.bptt, test_batch_size)
@@ -203,8 +202,11 @@ def train():
         hiddens = [model.begin_state(batch_size=args.batch_size,
                                      func=mx.nd.zeros, ctx=ctx) for ctx in context]
         nbatch = 0
+        has_next = True
+        train_data_iter = iter(train_data)
+        data, target, mask, sample = next(train_data_iter)
 
-        for data, target, mask, sample in train_data:
+        while has_next:
             nbatch += 1
             hiddens = detach(hiddens)
             Ls = []
@@ -219,11 +221,17 @@ def train():
 
             autograd.backward(Ls)
 
+            # prefetch the next batch of data
+            try:
+                data, target, mask, sample = next(train_data_iter)
+            except StopIteration:
+                has_next = False
+
             # rescale embedding grad
-            for d in data:
-                x = embedding_params[0].grad(d.context)
+            for ctx in context:
+                x = embedding_params[0].grad(ctx)
                 x[:] *= args.batch_size
-                encoder_grad = [p.grad(d.context) for p in encoder_params]
+                encoder_grad = [p.grad(ctx) for p in encoder_params]
                 # perform gradient clipping per ctx
                 gluon.utils.clip_global_norm(encoder_grad, args.clip)
 
