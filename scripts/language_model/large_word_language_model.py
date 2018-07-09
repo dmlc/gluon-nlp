@@ -73,7 +73,7 @@ parser.add_argument('--batch-size', type=int, default=256,
                     help='batch size per gpu')
 parser.add_argument('--dropout', type=float, default=0.1,
                     help='dropout applied to layers (0 = no dropout)')
-parser.add_argument('--eps', type=float, default=1,
+parser.add_argument('--eps', type=float, default=0.1,
                     help='initial history accumulation or adagrad')
 parser.add_argument('--bptt', type=int, default=20,
                     help='sequence length')

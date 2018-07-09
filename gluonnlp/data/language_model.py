@@ -349,16 +349,16 @@ class GBWStream(_GBWStream):
                  root=os.path.join(_get_home_dir(), 'datasets', 'gbw')):
         self._archive_data = ('1-billion-word-language-modeling-benchmark-r13output.tar.gz',
                               '4df859766482e12264a5a9d9fb7f0e276020447d')
-        self._archive_vocab = ('gbw_vocab-4e138c34.zip',
-                               '4de32e889412b238ffce8e675267589fbe291ac3')
+        self._archive_vocab = ('gbw_vocab-b3e83215.zip',
+                               'dce420f63bbe2a14c9b14c10413618831ac0987d')
         self._data_file = {'train': ('training-monolingual.tokenized.shuffled',
                                      'news.en-00*-of-00100',
                                      '5e0d7050b37a99fd50ce7e07dc52468b2a9cd9e8'),
                            'test': ('heldout-monolingual.tokenized.shuffled',
                                     'news.en.heldout-00000-of-00050',
                                     '0a8e2b7496ba0b5c05158f282b9b351356875445')}
-        self._vocab_file = ('gbw_vocab-4e138c34.json',
-                            '4e138c341f759b9d84509e3c6853da7421b88fb3')
+        self._vocab_file = ('gbw_vocab-b3e83215.json',
+                            'b3e832155eb66018b8dfe0b77c00b498c29bed67')
         super(GBWStream, self).__init__('gbw', segment, bos, eos, skip_empty, root)
 
     @property
