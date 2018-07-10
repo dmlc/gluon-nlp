@@ -5,7 +5,7 @@ stage("Sanity Check") {
       sh """#!/bin/bash
       git clean -f -d -x --exclude='tests/externaldata/*' --exclude=conda
       conda env update --prune -f env/pylint.yml -p conda
-      source activate gluon_nlp_pylint
+      conda activate $(pwd)/conda
       conda list
       make clean
       make pylint
@@ -22,7 +22,7 @@ stage("Unit Test") {
         sh """#!/bin/bash
         git clean -f -d -x --exclude='tests/externaldata/*' --exclude=conda
         conda env update --prune -f env/py2.yml -p conda
-        source activate gluon_nlp_py2
+        conda activate $(pwd)/conda
         conda list
         python -m spacy download en
         python -m nltk.downloader all
@@ -41,7 +41,7 @@ stage("Unit Test") {
           sh """#!/bin/bash
           git clean -f -d -x --exclude='tests/externaldata/*' --exclude=conda
           conda env update --prune -f env/py3.yml -p conda
-          source activate gluon_nlp_py3
+          conda activate $(pwd)/conda
           conda list
           python -m spacy download en
           python -m nltk.downloader all
@@ -66,7 +66,7 @@ stage("Deploy") {
       printenv
       git clean -f -d -x --exclude='tests/externaldata/*' --exclude=conda
       conda env update --prune -f env/doc.yml -p conda
-      source activate gluon_nlp_docs
+      conda activate $(pwd)/conda
       conda list
       python setup.py install
       export LD_LIBRARY_PATH=/usr/local/cuda/lib64
