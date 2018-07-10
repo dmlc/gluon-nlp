@@ -1,0 +1,9 @@
+Formula-dependent equivalence for compositional CTL model checking
+We present a polytime computable state equivalence that is defined with respect
+	to a given CTL formula. Since it does not attempt to preserve all CTL
+	formulas, like bisimulation does, we can expect to compute coarser
+	equivalences. This equivalence can be used to reduce the complexity of
+	model checking a system of interacting FSM. Additionally, we show that
+	in some cases our techniques can detect if a formula passes or fails,
+	without forming the entire product machine. The method is exact and
+	fully automatic, and handles full CTL

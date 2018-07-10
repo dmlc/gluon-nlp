@@ -1,0 +1,4 @@
+regularized conjugate gradient method; symmetric positive definite system;
+	linear equations; large sparse system; coefficient matrix; convergence
+	properties; classical relaxation methods; classical conjugate direction
+	methods; ill-conditioned linear system

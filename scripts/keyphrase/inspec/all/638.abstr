@@ -1,0 +1,19 @@
+Scalable secure group communication over IP multicast
+We introduce and analyze a scalable rekeying scheme for implementing secure
+	group communications Internet protocol multicast. We show that our
+	scheme incurs constant processing, message, and storage overhead for a
+	rekey operation when a single member joins or leaves the group, and
+	logarithmic overhead for bulk simultaneous changes to the group
+	membership. These bounds hold even when group dynamics are not known a
+	priori. Our rekeying algorithm requires a particular clustering of the
+	members of the secure multicast group. We describe a protocol to
+	achieve such clustering and show that it is feasible to efficiently
+	cluster members over realistic Internet-like topologies. We evaluate
+	the overhead of our own rekeying scheme and also of previously
+	published schemes via simulation over an Internet topology map
+	containing over 280 000 routers. Through analysis and detailed
+	simulations, we show that this rekeying scheme performs better than
+	previous schemes for a single change to group membership. Further, for
+	bulk group changes, our algorithm outperforms all previously known
+	schemes by several orders of magnitude in terms of actual bandwidth
+	usage, processing costs, and storage requirements

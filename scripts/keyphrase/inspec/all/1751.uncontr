@@ -1,0 +1,3 @@
+adaptive time step procedure; parabolic problem; fully discrete approximation;
+	nonlinear boundary condition; standard linear elements; Runge-Kutta
+	methods; explicit Euler approximation

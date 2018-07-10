@@ -1,0 +1,19 @@
+International swinging: making Swing components locale-sensitive
+Although Java and its GUI library Swing provide software developers with a
+	highly customizable framework for creating truly "international"
+	applications, the Swing library is not sensitive to locale switches: it
+	cannot automatically change an application's appearance to conform to
+	the conventions of a specific locale at run time. Several types of
+	applications benefit from the ability to easily switch the language at
+	run time. Training applications and other programs that run on
+	computers in public spaces (such as libraries, airports, or government
+	offices) may need to support multiple languages. Other applications
+	(like travel dictionaries or translation programs) are inherently
+	multilingual and are specifically designed to support users of
+	dissimilar tongues. Such applications would greatly benefit if the
+	user-interface language could be customized at run time. The article
+	shows you how to customize Swing to support locale switching at run
+	time. The author has created a new look-and-feel called the
+	MLMetalLookandFeel (where ML stands for multilingual). This new
+	look-and-feel extends the standard Metal look-and-feel but is
+	locale-sensitive at run time

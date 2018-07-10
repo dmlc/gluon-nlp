@@ -1,0 +1,10 @@
+Quantum computation for physical modeling
+One of the most famous American physicists of the twentieth century, Richard
+	Feynman, in 1982 was the first to propose using a quantum mechanical
+	computing device to efficiently simulate quantum mechanical many-body
+	dynamics, a task that is exponentially complex in the number of
+	particles treated and is completely intractable by any classical
+	computing means for large systems of many particles. In the two decades
+	following his work, remarkable progress has been made both
+	theoretically and experimentally in the new field of quantum
+	computation

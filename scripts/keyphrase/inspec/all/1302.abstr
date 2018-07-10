@@ -1,0 +1,22 @@
+Dynamics of the firing probability of noisy integrate-and-fire neurons
+Cortical neurons in vivo undergo a continuous bombardment due to synaptic
+	activity, which acts as a major source of noise. We investigate the
+	effects of the noise filtering by synapses with various levels of
+	realism on integrate-and-fire neuron dynamics. The noise input is
+	modeled by white (for instantaneous synapses) or colored (for synapses
+	with a finite relaxation time) noise. Analytical results for the
+	modulation of firing probability in response to an oscillatory input
+	current are obtained by expanding a Fokker-Planck equation for small
+	parameters of the problem-when both the amplitude of the modulation is
+	small compared to the background firing rate and the synaptic time
+	constant is small compared to the membrane time constant. We report the
+	detailed calculations showing that if a synaptic decay time constant is
+	included in the synaptic current model, the firing-rate modulation of
+	the neuron due to an oscillatory input remains finite in the
+	high-frequency limit with no phase lag. In addition, we characterize
+	the low-frequency behavior and the behavior of the high-frequency limit
+	for intermediate decay times. We also characterize the effects of
+	introducing a rise time to the synaptic currents and the presence of
+	several synaptic receptors with different kinetics. In both cases, we
+	determine, using numerical simulations, an effective decay time
+	constant that describes the neuronal response completely

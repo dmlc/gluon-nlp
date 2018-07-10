@@ -1,0 +1,9 @@
+An interactive self-replicator implemented in hardware
+Self-replicating loops presented to date are essentially worlds unto
+	themselves, inaccessible to the observer once the replication process
+	is launched. We present the design of an interactive self-replicating
+	loop of arbitrary size, wherein the user can physically control the
+	loop's replication and induce its destruction. After introducing the
+	BioWall, a reconfigurable electronic wall for bio-inspired
+	applications, we describe the design of our novel loop and delineate
+	its hardware implementation in the wall

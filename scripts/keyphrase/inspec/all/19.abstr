@@ -1,0 +1,12 @@
+Decentralized adaptive output feedback stabilization for a class of
+	interconnected systems with unknown bound of uncertainties
+The problem of adaptive decentralized stabilization for a class of linear
+	time-invarying large-scale systems with nonlinear interconnectivity and
+	uncertainties is discussed. The bounds of uncertainties are assumed to
+	be unknown. For such uncertain dynamic systems, an adaptive
+	decentralized controller is presented. The resulting closed-loop
+	systems are asymptotically stable in theory. Moreover, an adaptive
+	decentralized control scheme is given. The scheme ensures the
+	closed-loop systems exponentially practically stable and can be used in
+	practical engineering. Finally, simulations show that the control
+	scheme is effective

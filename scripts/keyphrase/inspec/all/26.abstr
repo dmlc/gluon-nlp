@@ -1,0 +1,8 @@
+Learning weights for the quasi-weighted means
+We study the determination of weights for quasi-weighted means (also called
+	quasi-linear means) when a set of examples is given. We consider first
+	a simple case, the learning of weights for weighted means, and then we
+	extend the approach to the more general case of a quasi-weighted mean.
+	We consider the case of a known arbitrary generator f. The paper
+	finishes considering the use of parametric functions that are suitable
+	when the values to aggregate are measure values or ratio

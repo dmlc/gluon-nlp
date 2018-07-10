@@ -1,0 +1,11 @@
+Adaptive stabilization of undamped flexible structures
+In the paper non-identifier-based adaptive stabilization of undamped flexible
+	structures is considered in the case of collocated input and output
+	operators. The systems have poles and zeros on the imaginary axis. In
+	the case where velocity feedback is available, the adaptive stabilizer
+	is constructed by an adaptive PD-controller (proportional plus
+	derivative controller). In the case where only position feedback is
+	available, the adaptive stabilizer is constructed by an adaptive
+	P-controller for the augmented system which consists of the controlled
+	system and a parallel compensator. Numerical examples are given to
+	illustrate the effectiveness of the proposed controllers

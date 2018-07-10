@@ -1,0 +1,15 @@
+Analyzing the potential of a firm: an operations research approach
+An approach to analyzing the potential of a firm, which is understood as the
+	firm's ability to provide goods or (and) services to be supplied to a
+	marketplace under restrictions imposed by a business environment in
+	which the firm functions, is proposed. The approach is based on using
+	linear inequalities and, generally, mixed variables in modelling this
+	ability for a broad spectrum of industrial, transportation,
+	agricultural, and other types of firms and allows one to formulate
+	problems of analyzing the potential of a firm as linear programming
+	problems or mixed programming problems with linear constraints. This
+	approach generalizes a previous one which was proposed for a more
+	narrow class of models, and allows one to effectively employ a widely
+	available software for solving practical problems of the considered
+	kind, especially for firms described by large scale models of
+	mathematical programming

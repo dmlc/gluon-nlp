@@ -1,0 +1,6 @@
+Estimation of the Poisson stream intensity in a multilinear queue with an
+	exponential job queue decay
+Times the busy queue periods start are found for a multilinear queue with an
+	exponential job queue decay and uniform resource allocation to
+	individual servers. The stream intensity and the average job are
+	estimated from observations of the times the queue busy periods start

@@ -1,0 +1,16 @@
+The Advanced Encryption Standard - implementation and transition to a new
+	cryptographic benchmark
+Cryptography is the science of coding information to create unintelligible
+	ciphers that conceal or hide messages. The process that achieves this
+	goal is commonly referred to as encryption. Although encryption
+	processes of various forms have been employed for centuries to protect
+	the exchange of messages, the advent of the information age has
+	underscored the importance of strong cryptography as a process to
+	secure data exchanged through electronic means, and has accentuated the
+	demand for products offering these services. This article describes the
+	process that has led to the development of the latest cryptographic
+	benchmark; the Advanced Encryption Standard (AES). The article briefly
+	examines the requirements set forth for its development, defines how
+	the new standard is implemented, and describes how government,
+	business, and industry can transition to AES with minimum impact to
+	operations

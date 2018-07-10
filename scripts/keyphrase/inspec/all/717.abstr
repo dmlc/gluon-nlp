@@ -1,0 +1,17 @@
+A network simplex algorithm with O(n) consecutive degenerate pivots
+We suggest a pivot rule for the primal simplex algorithm for the minimum cost
+	flow problem, known as the network simplex algorithm. Due to
+	degeneracy, cycling may occur in the network simplex algorithm. The
+	cycling can be prevented by maintaining strongly feasible bases
+	proposed by Cunningham (1976); however, if we do not impose any
+	restrictions on the entering variables, the algorithm can still perform
+	an exponentially long sequence of degenerate pivots. This phenomenon is
+	known as stalling. Researchers have suggested several pivot rules with
+	the following bounds on the number of consecutive degenerate pivots: m,
+	n/sup 2/, k(k + 1)/2, where n is the number of nodes in the network, m
+	is the number of arcs in the network, and k is the number of degenerate
+	arcs in the basis. (Observe that k <or= n.) In this paper, we
+	describe an anti-stalling pivot rule that ensures that the network
+	simplex algorithm performs at most k consecutive degenerate pivots.
+	This rule uses a negative cost augmenting cycle to identify a sequence
+	of entering variables

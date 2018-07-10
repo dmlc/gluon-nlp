@@ -1,0 +1,12 @@
+Application of hybrid models for prediction and optimization of enzyme
+	fermentation process. A comparative study
+The paper presents a comparison of the biotechnological process prediction and
+	optimization results obtained by using different structure hybrid
+	mathematical models for modeling of the same bioprocess. The hybrid
+	models under investigation consist of the product mass balance equation
+	in which different means - an artificial neural network, fuzzy-neural
+	network and cell age distribution based calculation scheme - are
+	incorporated for modeling the specific biosynthesis rate of a desired
+	product. Experimental data from alpha -amylase laboratory and
+	industrial fermentation processes are used for model parameter
+	identification and the process prediction tests

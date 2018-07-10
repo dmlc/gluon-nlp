@@ -1,0 +1,18 @@
+Elastically adaptive deformable models
+We present a technique for the automatic adaptation of a deformable model's
+	elastic parameters within a Kalman filter framework for shape
+	estimation applications. The novelty of the technique is that the
+	model's elastic parameters are not constant, but spatio-temporally
+	varying. The variation of the elastic parameters depends on the
+	distance of the model from the data and the rate of change of this
+	distance. Each pass of the algorithm uses physics-based modeling
+	techniques to iteratively adjust both the geometric and the elastic
+	degrees of freedom of the model in response to forces that are computed
+	from the discrepancy between the model and the data. By augmenting the
+	state equations of an extended Kalman filter to incorporate these
+	additional variables, we are able to significantly improve the quality
+	of the shape estimation. Therefore, the model's elastic parameters are
+	always initialized to the same value and they are subsequently modified
+	depending on the data and the noise distribution. We present results
+	demonstrating the effectiveness of our method for both two-dimensional
+	and three-dimensional data

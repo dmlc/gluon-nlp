@@ -1,0 +1,16 @@
+The development and evaluation of a fuzzy logic expert system for renal
+	transplantation assignment: Is this a useful tool?
+Allocating donor kidneys to patients is a complex, multicriteria
+	decision-making problem which involves not only medical, but also
+	ethical and political issues. In this paper, a fuzzy logic expert
+	system approach was proposed as an innovative way to deal with the
+	vagueness and complexity faced by medical doctors in kidney allocation
+	decision making. A pilot fuzzy logic expert system for kidney
+	allocation was developed and evaluated in comparison with two existing
+	allocation algorithms: a priority sorting system used by multiple organ
+	retrieval and exchange (MORE) in Canada and a point scoring systems
+	used by united network for organ sharing (UNOS) in US. Our simulated
+	experiment based on real data indicated that the fuzzy logic system can
+	represent the expert's thinking well in handling complex tradeoffs, and
+	overall, the fuzzy logic derived recommendations were more acceptable
+	to the expert than those from the MORE and UNOS algorithms

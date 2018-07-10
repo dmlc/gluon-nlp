@@ -1,0 +1,15 @@
+Preintegration lateral inhibition enhances unsupervised learning
+A large and influential class of neural network architectures uses
+	postintegration lateral inhibition as a mechanism for competition. We
+	argue that these algorithms are computationally deficient in that they
+	fail to generate, or learn, appropriate perceptual representations
+	under certain circumstances. An alternative neural network architecture
+	is presented here in which nodes compete for the right to receive
+	inputs rather than for the right to generate outputs. This form of
+	competition, implemented through preintegration lateral inhibition,
+	does provide appropriate coding properties and can be used to learn
+	such representations efficiently. Furthermore, this architecture is
+	consistent with both neuroanatomical and neuropsychological data. We
+	thus argue that preintegration lateral inhibition has computational
+	advantages over conventional neural network architectures while
+	remaining equally biologically plausible

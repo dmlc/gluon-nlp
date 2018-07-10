@@ -1,0 +1,8 @@
+An interlingua-based Chinese-English MT system
+Chinese-English machine translation is a significant and challenging problem in
+	information processing. The paper presents an interlingua-based
+	Chinese-English natural language translation system (ICENT). It
+	introduces the realization mechanism of Chinese language analysis,
+	which contains syntactic parsing and semantic analyzing and gives the
+	design of interlingua in details. Experimental results and system
+	evaluation are given. The result is satisfying

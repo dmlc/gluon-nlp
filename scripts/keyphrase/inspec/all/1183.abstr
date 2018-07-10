@@ -1,0 +1,11 @@
+Evolving robust asynchronous cellular automata for the density task
+In this paper the evolution of three kinds of asynchronous cellular automata
+	are studied for the density task. Results are compared with those
+	obtained for synchronous automata and the influence of various
+	asynchronous update policies on the computational strategy is
+	described. How synchronous and asynchronous cellular automata behave is
+	investigated when the update policy is gradually changed, showing that
+	asynchronous cellular automata are more adaptable. The behavior of
+	synchronous and asynchronous evolved automata are studied under the
+	presence of random noise of two kinds and it is shown that asynchronous
+	cellular automata implicitly offer superior fault tolerance

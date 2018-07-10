@@ -1,0 +1,18 @@
+Enhanced product support through intelligent product manuals
+The scope of this paper is the provision of intelligent product support within
+	the distributed Intranet/Internet environment. From the point of view
+	of user requirements, the limitations of conventional product manuals
+	and methods of authoring them are first outlined. It is argued that
+	enhanced product support requires new technology solutions both for
+	product manuals and for their authoring and presentation. The concept
+	and the architecture of intelligent product manuals are then discussed.
+	A prototype system called ProARTWeb is presented to demonstrate
+	advanced features of intelligent product manuals. Next, the problem of
+	producing such manuals in a cost-effective way is addressed and a
+	concurrent engineering approach to their authoring is proposed. An
+	integrated environment for collaborative authoring called ProAuthor is
+	described to illustrate the approach suggested and to show how
+	consistent, up-to-date and user-oriented-product manuals can be
+	designed. The solutions presented here enable product knowledge to be
+	captured and delivered to users and developers of product manuals when,
+	where and in the form they need it

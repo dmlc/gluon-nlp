@@ -1,0 +1,7 @@
+Accuracy and stability of splitting with Stabilizing Corrections
+This paper contains a convergence analysis for the method of stabilizing
+	corrections, which is an internally consistent splitting scheme for
+	initial-boundary value problems. To obtain more accuracy and a better
+	treatment of explicit terms several extensions are regarded and
+	analyzed. The relevance of the theoretical results is tested for
+	convection-diffusion-reaction equations

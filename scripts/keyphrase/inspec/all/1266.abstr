@@ -1,0 +1,22 @@
+An intelligent information gathering method for dynamic information mediators
+The Internet is spreading into our society rapidly and is becoming one of the
+	information infrastructures that are indispensable for our daily life.
+	In particular, the WWW is widely used for various purposes such as
+	sharing personal information, academic research, business work, and
+	electronic commerce, and the amount of available information is
+	increasing rapidly. We usually utilize information sources on the
+	Internet as individual stand-alone sources, but if we can integrate
+	them, we can add more value to each of them. Hence, information
+	mediators, which integrate information distributed on the Internet, are
+	drawing attention. In this paper, under the assumption that the
+	information sources to be integrated are updated frequently and
+	asynchronously, we propose an information gathering method that
+	constructs an answer to a query from a user, accessing information
+	sources to be integrated properly within an allowable time period. The
+	proposed method considers the reliability of data in the cache and the
+	quality of answer in order to efficiently access information sources
+	and to provide appropriate answers to the user. As evaluation, we show
+	the effectiveness of the proposed method by using an artificial
+	information integration problem, in which some parameters can be
+	modified, and a real-world flight information service compared with a
+	conventional FIFO information gathering method

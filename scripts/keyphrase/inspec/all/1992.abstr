@@ -1,0 +1,26 @@
+Geometrically invariant watermarking using feature points
+This paper presents a new approach for watermarking of digital images providing
+	robustness to geometrical distortions. The weaknesses of classical
+	watermarking methods to geometrical distortions are outlined first.
+	Geometrical distortions can be decomposed into two classes: global
+	transformations such as rotations and translations and local
+	transformations such as the StirMark attack. An overview of existing
+	self-synchronizing schemes is then presented. Theses schemes can use
+	periodical properties of the mark, invariant properties of transforms,
+	template insertion, or information provided by the original image to
+	counter geometrical distortions. Thereafter, a new class of
+	watermarking schemes using the image content is presented. We propose
+	an embedding and detection scheme where the mark is bound with a
+	content descriptor defined by salient points. Three different types of
+	feature points are studied and their robustness to geometrical
+	transformations is evaluated to develop an enhanced detector. The
+	embedding of the signature is done by extracting feature points of the
+	image and performing a Delaunay tessellation on the set of points. The
+	mark is embedded using a classical additive scheme inside each triangle
+	of the tessellation. The detection is done using correlation properties
+	on the different triangles. The performance of the presented scheme is
+	evaluated after JPEG compression, geometrical attack and
+	transformations. Results show that the fact that the scheme is robust
+	to these different manipulations. Finally, in our concluding remarks,
+	we analyze the different perspectives of such content-based
+	watermarking scheme

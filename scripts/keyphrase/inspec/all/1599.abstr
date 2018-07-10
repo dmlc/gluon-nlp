@@ -1,0 +1,19 @@
+Evaluating the best main battle tank using fuzzy decision theory with
+	linguistic criteria evaluation
+In this paper, experts' opinions are described in linguistic terms which can be
+	expressed in trapezoidal (or triangular) fuzzy numbers. To make the
+	consensus of the experts consistent, we utilize the fuzzy Delphi method
+	to adjust the fuzzy rating of every expert to achieve the consensus
+	condition. For the aggregate of many experts' opinions, we take the
+	operation of fuzzy numbers to get the mean of fuzzy rating, x/sub ij/
+	and the mean of weight, w/sub .j/. In multi-alternatives and
+	multi-attributes cases, the fuzzy decision matrix X=[x/sub ij/]/sub
+	m*n/ is constructed by means of the fuzzy rating, x/sub ij/. Then, we
+	can derive the aggregate fuzzy numbers by multiplying the fuzzy
+	decision matrix with the corresponding fuzzy attribute weights. The
+	final results become a problem of ranking fuzzy numbers. We also
+	propose an easy procedure of using fuzzy numbers to rank aggregate
+	fuzzy numbers A/sub i/. In this way, we can obtain the best selection
+	for evaluating the system. For practical application, we propose an
+	algorithm for evaluating the best main battle tank by fuzzy decision
+	theory and comparing it with other methods

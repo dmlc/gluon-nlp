@@ -1,0 +1,7 @@
+Comparison of non-stationary time series in the frequency domain
+In this paper we compare two nonstationary time series using nonparametric
+	procedures. Evolutionary spectra are estimated for the two series.
+	Randomization tests are performed on groups of spectral estimates for
+	both related and independent time series. Simulation studies show that
+	in certain cases the tests perform reasonably well. The tests are
+	applied to observed geological and financial time series

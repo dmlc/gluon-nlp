@@ -1,0 +1,4 @@
+multistep methods; variable step-size extensions; collocation formulation;
+	difference operators; equidistant time grid; error-control algorithm;
+	piecewise polynomials; k-step method; variable step-size polynomial
+	collocation formulation

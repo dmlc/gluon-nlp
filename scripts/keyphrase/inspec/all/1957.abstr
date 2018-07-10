@@ -1,0 +1,12 @@
+The two populations' cellular automata model with predation based on the Penna
+	model
+In Penna's (1995) single-species asexual bit-string model of biological ageing,
+	the Verhulst factor has too strong a restraining effect on the
+	development of the population. Danuta Makowiec gave an improved model
+	based on the lattice, where the restraining factor of the four
+	neighbours take the place of the Verhulst factor. Here, we discuss the
+	two populations' Penna model with predation on the planar lattice of
+	two dimensions. A cellular automata model containing movable wolves and
+	sheep has been built. The results show that both the quantity of the
+	wolves and the sheep fluctuate in accordance with the law that one
+	quantity increases while the other one decreases

@@ -1,0 +1,8 @@
+On the contractivity of implicit-explicit linear multistep methods
+This paper is concerned with the class of implicit-explicit linear multistep
+	methods for the numerical solution of initial value problems for
+	ordinary differential equations which are composed of stiff and
+	nonstiff parts. We study the contractivity of such methods, with regard
+	to linear autonomous systems of ordinary differential equations and a
+	(scaled) Euclidean norm. In addition, we derive a strong stability
+	result based on the stability regions of these methods

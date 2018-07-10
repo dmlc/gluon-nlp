@@ -1,0 +1,7 @@
+Computation of unmeasured third-generation VCT views from measured views
+We compute unmeasured cone-beam projections from projections measured by a
+	third-generation helical volumetric computed tomography system by
+	solving a characteristic problem for an ultrahyperbolic differential
+	equation [John (1938)]. By working in the Fourier domain, we convert
+	the second-order PDE into a family of first-order ordinary differential
+	equations. A simple first-order integration is used to solve the ODES

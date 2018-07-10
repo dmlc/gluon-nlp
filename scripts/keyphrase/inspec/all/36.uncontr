@@ -1,0 +1,2 @@
+model predictive control; slow processes regulation; robust barrel temperature
+	control; extruders; autotuning; multiple parameter PID

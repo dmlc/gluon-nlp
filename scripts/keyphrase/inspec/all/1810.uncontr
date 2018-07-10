@@ -1,0 +1,5 @@
+I/O-based pole-placement controller; input-output based pole-placement
+	controller; time-delay systems; SISO plants; internal point delays; and
+	external point delays; finite spectrum assignment; infinite spectrum
+	assignment; point-delayed signals; controller synthesis; computational
+	cost; filtering

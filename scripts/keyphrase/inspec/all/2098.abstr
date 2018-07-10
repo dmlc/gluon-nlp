@@ -1,0 +1,14 @@
+Nonlinear systems arising from nonisothermal, non-Newtonian Hele-Shaw flows in
+	the presence of body forces and sources
+In this paper, we first give a formal derivation of several systems of
+	equations for injection moulding. This is done starting from the basic
+	equations for nonisothermal, non-Newtonian flows in a three-dimensional
+	domain. We derive systems for both (T/sup 0/, p/sup 0/) and (T/sup 1/,
+	p/sup 1/) in the presence of body forces and sources. We find that body
+	forces and sources have a nonlinear effect on the systems. We also
+	derive a nonlinear "Darcy law". Our formulation includes not only the
+	pressure gradient, but also body forces and sources, which play the
+	role of a nonlinearity. Later, we prove the existence of weak solutions
+	to certain boundary value problems and initial-boundary value problems
+	associated with the resulting equations for (T/sup 0/, p/sup 0/) but in
+	a more general mathematical setting

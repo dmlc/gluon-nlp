@@ -1,0 +1,14 @@
+Word spotting based on a posterior measure of keyword confidence
+In this paper, an approach of keyword confidence estimation is developed that
+	well combines acoustic layer scores and syllable-based statistical
+	language model (LM) scores. An a posteriori (AP) confidence measure and
+	its forward-backward calculating algorithm are deduced. A zero false
+	alarm (ZFA) assumption is proposed for evaluating relative confidence
+	measures by word spotting task. In a word spotting experiment with a
+	vocabulary of 240 keywords, the keyword accuracy under the AP measure
+	is above 94%, which well approaches its theoretical upper limit. In
+	addition, a syllable lattice Hidden Markov Model (SLHMM) is formulated
+	and a unified view of confidence estimation, word spotting, optimal
+	path search, and N-best syllable re-scoring is presented. The proposed
+	AP measure can be easily applied to various speech recognition systems
+	as well

@@ -1,0 +1,19 @@
+A scanline-based algorithm for the 2D free-form bin packing problem
+This paper describes a heuristic algorithm for the 2D free-form bin packing
+	(2D-FBP) problem. Given a set of 2D free-form bins and a set of 2D
+	free-form items, the 2D-FBP problem is to lay out items inside one or
+	more bins in such a way that the number of bins used is minimized, and
+	for each bin, the yield is maximized. The proposed algorithm handles
+	the problem as a variant of the 1D problem; i.e., items and bins are
+	approximated as sets of scanlines, and scanlines are packed. The
+	details of the algorithm are given, and its application to a nesting
+	problem in a shipbuilding company is reported. The proposed algorithm
+	consists of the basic and the group placement algorithms. The basic
+	placement algorithm is a variant of the first-fit decreasing algorithm
+	which is simply extended from the 1D case to the 2D case by a novel
+	scanline approximation. A numerical study with real instances shows
+	that the basic placement algorithm has sufficient performance for most
+	of the instances, however, the group placement algorithm is required
+	when items must be aligned in columns. The qualities of the resulting
+	layouts are good enough for practical use, and the processing times are
+	good

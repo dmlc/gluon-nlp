@@ -1,0 +1,13 @@
+The chromatic spectrum of mixed hypergraphs
+A mixed hypergraph is a triple H = (X, C, D), where X is the vertex set, and
+	each of C, D is a list of subsets of X. A strict k-coloring of H is a
+	surjection c : X {1,..., k} such that each member of le has two
+	vertices assigned a common value and each member of D has two vertices
+	assigned distinct values. The feasible set of H is {k: H has a strict
+	k-coloring}. Among other results, we prove that a finite set of
+	positive integers is the feasible set of some mixed hypergraph if and
+	only if it omits the number I or is an interval starting with 1. For
+	the set {s, t} with 2 <or= s <or= t - 2, the smallest realization
+	has 2t - s vertices. When every member of C union D is a single
+	interval in an underlying linear order on the vertices, the feasible
+	set is also a single interval of integers

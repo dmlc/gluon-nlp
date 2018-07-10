@@ -1,0 +1,11 @@
+Implementing equals for mixed-type comparison
+The idea of comparing objects of different types is not entirely off base, in
+	particular for classes from the same class hierarchy. After all,
+	objects from the same class hierarchy (and by class hierarchy we mean
+	all classes derived from a common superclass other than Object) have
+	something in common, namely at least the superclass part. As we
+	demonstrated in a previous paper (2002), providing a correct
+	implementation of a mixed-type comparison is a non-trivial task. In
+	this article, we will show one way of implementing a mixed-type
+	comparison of objects from the same class hierarchy that meets the
+	requirements of the equals contract

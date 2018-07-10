@@ -1,0 +1,14 @@
+A parallelized indexing method for large-scale case-based reasoning
+Case-based reasoning (CBR) is a problem solving methodology commonly seen in
+	artificial intelligence. It can correctly take advantage of the
+	situations and methods in former cases to find out suitable solutions
+	for new problems. CBR must accurately retrieve similar prior cases for
+	getting a good performance. In the past, many researchers proposed
+	useful technologies to handle this problem. However, the performance of
+	retrieving similar cases may be greatly influenced by the number of
+	cases. In this paper, the performance issue of large-scale CBR is
+	discussed and a parallelized indexing architecture is then proposed for
+	efficiently retrieving similar cases in large-scale CBR. Several
+	algorithms for implementing the proposed architecture are also
+	described. Some experiments are made and the results show the
+	efficiency of the proposed method

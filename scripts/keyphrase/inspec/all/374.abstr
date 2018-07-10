@@ -1,0 +1,10 @@
+Horizontal waypoint guidance design using optimal control
+A horizontal waypoint guidance algorithm is proposed by applying line-following
+	guidance to waypoint line segments in sequence. The line-following
+	guidance is designed using an LQR (linear quadratic regulator). Then,
+	the optimal waypoint changing points are derived by minimizing the
+	accelerations required for changing the waypoint line segments. Also
+	derived is a sufficient condition for the stability bound of ground
+	speed changes based on the Lyapunov stability theorem. Simulation
+	results show that the proposed algorithm can effectively guide a
+	vehicle along the sequence of waypoint line segments

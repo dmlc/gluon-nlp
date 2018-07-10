@@ -1,0 +1,16 @@
+Modelling of complete robot dynamics based on a multi-dimensional, RBF-like
+	neural architecture
+A neural network based identification approach of manipulator dynamics is
+	presented. For a structured modelling, RBF-like static neural networks
+	are used in order to represent and adapt all model parameters with
+	their non-linear dependences on the joint positions. The neural
+	architecture is hierarchically organised to reach optimal adjustment to
+	structural a priori-knowledge about the identification problem. The
+	model structure is substantially simplified by general system analysis
+	independent of robot type. But also a lot of specific features of the
+	utilised experimental robot are taken into account. A fixed, grid based
+	neuron placement together with application of B-spline polynomial basis
+	functions is utilised favourably for a very effective recursive
+	implementation of the neural architecture. Thus, an online
+	identification of a dynamic model is submitted for a complete 6 joint
+	industrial robot

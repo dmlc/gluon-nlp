@@ -1,0 +1,15 @@
+New approach to standing phase angle reduction for power system restoration
+During power system restoration, it is necessary to check the phase angle
+	between two buses before closing circuit breakers to connect a line
+	between them. These angles may occur across a tie line between two
+	systems or between two connected subsystems within a system. In case of
+	large standing phase angle (SPA) difference the synchro-check relay
+	does not allow closing of the breaker for this line. Therefore, this
+	excessive SPA has to be reduced before attempting to connect the line.
+	In this paper, a new and fast method for reducing SPA is presented. For
+	this purpose, the standing phase angle difference between two specific
+	buses is represented in terms of sensitivity factors associated with
+	the change in active power generations and consumption at the buses.
+	Then, the proposed method reschedule generation of selected units or
+	shed load of selected buses to reduce excessive SPA difference between
+	two buses based on sensitivity factors

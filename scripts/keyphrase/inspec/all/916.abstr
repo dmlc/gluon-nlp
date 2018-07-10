@@ -1,0 +1,16 @@
+Attribute generation based on association rules
+A decision tree is considered to be appropriate (1) if the tree can classify
+	the unseen data accurately, and (2) if the size of the tree is small.
+	One of the approaches to induce such a good decision tree is to add new
+	attributes and their values to enhance the expressiveness of the
+	training data at the data pre-processing stage. There are many existing
+	methods for attribute extraction and construction, but constructing new
+	attributes is still an art. These methods are very time consuming, and
+	some of them need a priori knowledge of the data domain. They are not
+	suitable for data mining dealing with large volumes of data. We propose
+	a novel approach that the knowledge on attributes relevant to the class
+	is extracted as association rules from the training data. The new
+	attributes and the values are generated from the association rules
+	among the originally given attributes. We elaborate on the method and
+	investigate its feature. The effectiveness of our approach is
+	demonstrated through some experiments

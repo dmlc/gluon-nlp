@@ -1,0 +1,14 @@
+Homogenization in L/sup infinity /
+Homogenization of deterministic control problems with L/sup infinity / running
+	cost is studied by viscosity solutions techniques. It is proved that
+	the value function of an L/sup infinity / problem in a medium with a
+	periodic micro-structure converges uniformly on the compact sets to the
+	value function of the homogenized problem as the period shrinks to 0.
+	Our main convergence result extends that of Ishii (Stochastic Analysis,
+	control, optimization and applications, pp. 305-324, Birkhauser Boston,
+	Boston, MA, 1999.) to the case of a discontinuous Hamiltonian. The cell
+	problem is solved, but, as nonuniqueness occurs, the effective
+	Hamiltonian must be selected in a careful way. The paper also provides
+	a representation formula for the effective Hamiltonian and gives
+	illustrations to calculus of variations, averaging and one-dimensional
+	problems

@@ -1,0 +1,5 @@
+Wavelet-based image segment representation
+An efficient representation method for arbitrarily shaped image segments is
+	proposed. This method includes a smart way to select a wavelet basis to
+	approximate the given image segment, with improved image quality and
+	reduced computational load

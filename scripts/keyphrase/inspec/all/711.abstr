@@ -1,0 +1,9 @@
+On bivariate dependence and the convex order
+We investigate the interplay between variability (in the sense of the convex
+	order) and dependence in a bivariate framework, extending some previous
+	results in this area. We exploit the fact that discrete uniform
+	distributions are dense in the space of probability measures in the
+	topology of weak convergence to prove our central result. We also
+	obtain a partial result in the general multivariate case. Our findings
+	can be interpreted in terms of the impact of component variability on
+	the mean life of correlated serial and parallel systems

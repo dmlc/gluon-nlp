@@ -1,0 +1,16 @@
+Use of natural language processing to translate clinical information from a
+	database of 889,921 chest radiographic reports
+The aim was to evaluate translation of chest radiographic reports using natural
+	language processing and to compare the findings with those in the
+	literature. A natural language processor coded 10 years of narrative
+	chest radiographic reports from an urban academic medical center.
+	Coding for 150 reports was compared with manual coding. Frequencies and
+	cooccurrences of 24 clinical conditions (diseases, abnormalities, and
+	clinical states) were estimated. The ratio of right to left lung mass,
+	association of pleural effusion with other conditions, and frequency of
+	bullet and stab wounds were compared with independent observations. The
+	sensitivity and specificity of the system's pneumothorax coding were
+	compared with those of manual financial coding. Internal and external
+	validation in this study confirmed the accuracy of natural language
+	processing for translating chest radiographic narrative reports into a
+	large database of information

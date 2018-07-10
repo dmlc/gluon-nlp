@@ -1,0 +1,19 @@
+Reaching for five nines: ActiveWatch and SiteSeer
+Every Web admin's dream is achieving the fabled five nines-99.999 percent
+	uptime. To attain such availability, your Web site must be down no more
+	than about five minutes per year. Technologies like RAID, clustering,
+	and load balancing make this easier, but to actually track uptime,
+	maintain auditable records, and discover patterns in failures to
+	prevent downtime in the future, you'll need to set up external
+	monitoring. Because your Internet connection is a key factor in
+	measuring uptime, you must monitor your site from the Internet itself,
+	beyond your firewall. You could monitor with custom software on remote
+	hosts, or you could use one of the two reasonably priced services
+	available: Mercury Interactive's ActiveWatch and Freshwater Software's
+	SiteSeer. (Freshwater Software has been a subsidiary of Mercury
+	Interactive for about a year now.) The two services offer a slightly
+	different mix of features and target different markets. Both services
+	offer availability and performance monitoring from several remote
+	locations, alerts to email or pager, and periodic reports. They differ
+	in what's most easily monitored, and in the way you interact with the
+	services

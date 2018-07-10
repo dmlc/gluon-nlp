@@ -1,0 +1,9 @@
+Learning spatial relations using an inductive logic programming system
+The ability to learn spatial relations is a prerequisite for performing many
+	relevant tasks such as those associated with motion, orientation,
+	navigation, etc. This paper reports on using an Inductive Logic
+	Programming (ILP) system for learning function-free Horn-clause
+	descriptions of spatial knowledge. Its main contribution, however, is
+	to show that an existing relation between two reference systems-the
+	speaker-relative and the absolute-can be automatically learned by an
+	ILP system, given the proper background knowledge and positive examples

@@ -1,0 +1,9 @@
+Optimization-based design of fixed-order controllers for command following
+For discrete-time scalar systems, we propose an approach for designing feedback
+	controllers of fixed order to minimize an upper bound on the peak
+	magnitude of the tracking error to a given command input. The work
+	makes use of linear programming to design over a class of closed-loop
+	systems proposed for the rejection of non-zero initial conditions and
+	bounded disturbances. We incorporate performance robustness in the form
+	of a guaranteed upper bound on the peak magnitude of the tracking error
+	under plant coprime factor uncertainty

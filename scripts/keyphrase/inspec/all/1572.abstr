@@ -1,0 +1,8 @@
+Ant colony optimization and stochastic gradient descent
+We study the relationship between the two techniques known as ant colony
+	optimization (ACO) and stochastic gradient descent. More precisely, we
+	show that some empirical ACO algorithms approximate stochastic gradient
+	descent in the space of pheromones, and we propose an implementation of
+	stochastic gradient descent that belongs to the family of ACO
+	algorithms. We then use this insight to explore the mutual
+	contributions of the two techniques

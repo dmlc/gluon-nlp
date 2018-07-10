@@ -1,0 +1,21 @@
+Estimation of the gradient of the solution of an adjoint diffusion equation by
+	the Monte Carlo method
+For the case of isotropic diffusion we consider the representation of the
+	weighted concentration of trajectories and its space derivatives in the
+	form of integrals (with some weights) of the solution to the
+	corresponding boundary value problem and its directional derivative of
+	a convective velocity. If the convective velocity at the domain
+	boundary is degenerate and some other additional conditions are imposed
+	this representation allows us to construct an efficient 'random walk by
+	spheres and balls' algorithm. When these conditions are violated,
+	transition to modelling the diffusion trajectories by the Euler scheme
+	is realized, and the directional derivative of velocity is estimated by
+	the dependent testing method, using the parallel modelling of two
+	closely-spaced diffusion trajectories. We succeeded in justifying this
+	method by statistically equivalent transition to modelling a single
+	trajectory after the first step in the Euler scheme, using a suitable
+	weight. This weight also admits direct differentiation with respect to
+	the initial coordinate along a given direction. The resulting weight
+	algorithm for calculating concentration derivatives is especially
+	efficient if the initial point is in the subdomain in which the
+	coefficients of the diffusion equation are constant

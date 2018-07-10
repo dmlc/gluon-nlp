@@ -1,0 +1,16 @@
+Nonlinear modeling and adaptive fuzzy control of MCFC stack
+To improve availability and performance of fuel cells, the operating
+	temperature of the molten carbonate fuel cells (MCFC) stack should be
+	controlled within a specified range. However, most existing models of
+	MCFC are not ready to be applied in synthesis. In the paper, a radial
+	basis function neural networks identification model of a MCFC stack is
+	developed based on the input-output sampled data. An adaptive fuzzy
+	control procedure for the temperature of the MCFC stack is also
+	developed. The parameters of the fuzzy control system are regulated by
+	back-propagation algorithm, and the rule database of the fuzzy system
+	is also adaptively adjusted by the nearest-neighbor-clustering
+	algorithm. Finally using the neural networks model of MCFC stack, the
+	simulation results of the control algorithm are presented. The results
+	show the effectiveness of the proposed modeling and design procedures
+	for the MCFC stack based on neural networks identification and the
+	novel adaptive fuzzy control

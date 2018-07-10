@@ -1,0 +1,13 @@
+Conformal-mapping design tools for coaxial couplers with complex cross section
+Numerical conformal mapping is exploited as a simple, accurate, and efficient
+	tool for the analysis and design of coaxial waveguides and couplers of
+	complex cross section. An implementation based on the
+	Schwarz-Christoffel Toolbox, a public-domain MATLAB package, is applied
+	to slotted coaxial cables and to symmetrical coaxial couplers, with
+	circular or polygonal inner conductors and external shields. The effect
+	of metallic diaphragms of arbitrary thickness, partially separating the
+	inner conductors, is also easily taken into account. The proposed
+	technique is validated against the results of the finite-element
+	method, showing excellent agreement at a fraction of the computational
+	cost, and is also extended to the case of nonsymmetrical couplers,
+	providing the designer with important additional degrees of freedom

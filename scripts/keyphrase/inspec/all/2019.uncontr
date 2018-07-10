@@ -1,0 +1,9 @@
+effective moving cast shadow detection; monocular color traffic image
+	sequences; accurate scene analysis; robust segmentation; moving
+	vehicles; stationary background; moving cast shadow; inaccurate vehicle
+	segmentation; erroneous scene analysis; luminance; chrominance;
+	gradient density; geometry domains; combined probability map; shadow
+	confidence score; input image; cast shadow; convex hull; selected
+	vehicle edge pixels; lighting conditions; vehicle images; sunny;
+	cloudy; viewing angles; vehicle sizes; average error rate; image
+	segmentation

@@ -1,0 +1,13 @@
+Dynamic neighborhood structures in parallel evolution strategies
+Parallelizing is a straightforward approach to reduce the total computation
+	time of evolutionary algorithms. Finding an appropriate communication
+	network within spatially structured populations for improving
+	convergence speed and convergence probability is a difficult task. A
+	new method that uses a dynamic communication scheme in an evolution
+	strategy will be compared with conventional static and dynamic
+	approaches. The communication structure is based on a so-called
+	diffusion model approach. The links between adjacent individuals are
+	dynamically chosen according to deterministic or probabilistic rules.
+	Due to self-organization effects, efficient and stable communication
+	structures are established that perform robustly and quickly on a
+	multimodal test function

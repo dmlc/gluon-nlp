@@ -1,0 +1,14 @@
+Conditions for decentralized integral controllability
+The term decentralized integral controllability (DIC) pertains to the existence
+	of stable decentralized controllers with integral action that have
+	closed-loop properties such as stable independent detuning. It is
+	especially useful to select control structures systematically at the
+	early stage of control system design because the only information
+	needed for DIC is the steady-state process gain matrix. Here, a
+	necessary and sufficient condition conjectured in the literature is
+	proved. The real structured singular value which can exploit realness
+	of the controller gain is used to describe computable conditions for
+	DIC. The primary usage of DIC is to eliminate unworkable pairings. For
+	this, two other simple necessary conditions are proposed. Examples are
+	given to illustrate the effectiveness of the proposed conditions for
+	DIC

@@ -1,0 +1,11 @@
+New methods for oscillatory problems based on classical codes
+The numerical integration of differential equations with oscillatory solutions
+	is a very common problem in many fields of the applied sciences. Some
+	methods have been specially devised for this kind of problem. In most
+	of them, the calculation of the coefficients needs more computational
+	effort than the classical codes because such coefficients depend on the
+	step-size in a not simple manner. On the contrary, in this work we
+	present new algorithms specially designed for perturbed oscillators
+	whose coefficients have a simple dependence on the step-size. The
+	methods obtained are competitive when comparing with classical and
+	special codes

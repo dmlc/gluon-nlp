@@ -1,0 +1,32 @@
+Towards an ontology of approximate reason
+This article introduces structural aspects in an ontology of approximate
+	reason. The basic assumption in this ontology is that approximate
+	reason is a capability of an agent. Agents are designed to classify
+	information granules derived from sensors that respond to stimuli in
+	the environment of an agent or received from other agents.
+	Classification of information granules is carried out in the context of
+	parameterized approximation spaces and a calculus of granules. Judgment
+	in agents is a faculty of thinking about (classifying) the particular
+	relative to decision rules derived from data. Judgment in agents is
+	reflective, but not in the classical philosophical sense (e.g., the
+	notion of judgment in Kant). In an agent, a reflective judgment itself
+	is an assertion that a particular decision rule derived from data is
+	applicable to an object (input). That is, a reflective judgment by an
+	agent is an assertion that a particular vector of attribute (sensor)
+	values matches to some degree the conditions for a particular rule. In
+	effect, this form of judgment is an assertion that a vector of sensor
+	values reflects a known property of data expressed by a decision rule.
+	Since the reasoning underlying a reflective judgment is inductive and
+	surjective (not based on a priori conditions or universals), this form
+	of judgment is reflective, but not in the sense of Kant. Unlike Kant, a
+	reflective judgment is surjective in the sense that it maps
+	experimental attribute values onto the most closely matching
+	descriptors (conditions) in a derived rule. Again, unlike Kant's notion
+	of judgment, a reflective judgment is not the result of searching for a
+	universal that pertains to a particular set of values of descriptors.
+	Rather, a reflective judgment by an agent is a form of recognition that
+	a particular vector of sensor values pertains to a particular rule in
+	some degree. This recognition takes the form of an assertion that a
+	particular descriptor vector is associated with a particular decision
+	rule. These considerations can be repeated for other forms of
+	classifiers besides those defined by decision rules

@@ -1,0 +1,10 @@
+A fractional-flow model of serial manufacturing systems with rework and its
+	reachability and controllability properties
+A dynamic fractional-flow model of a serial manufacturing system incorporating
+	rework is considered. Using some results on reachability and
+	controllability of positive linear systems the ability of serial
+	manufacturing systems with rework to "move in space", that is their
+	reachability and controllability properties, are studied. These
+	properties are important not only for optimising the performance of the
+	manufacturing system, possibly off-line, but also to improve its
+	functioning by using feedback control online

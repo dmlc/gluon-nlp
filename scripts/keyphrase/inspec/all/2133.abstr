@@ -1,0 +1,6 @@
+Nonlockability in multirings and hypercubes at serial transmission of data
+	blocks
+For the multiring and hypercube, a method of conflictless realization of an
+	arbitrary permutation of "large" data items that can be divided into
+	many "smaller" data blocks was considered, and its high efficiency was
+	demonstrated

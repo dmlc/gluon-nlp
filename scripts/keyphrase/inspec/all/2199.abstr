@@ -1,0 +1,6 @@
+Activity and location recognition using wearable sensors
+Using measured acceleration and angular velocity data gathered through
+	inexpensive, wearable sensors, this dead-reckoning method can determine
+	a user's location, detect transitions between preselected locations,
+	and recognize and classify sitting, standing, and walking behaviors.
+	Experiments demonstrate the proposed method's effectiveness

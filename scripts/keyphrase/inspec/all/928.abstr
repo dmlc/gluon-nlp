@@ -1,0 +1,19 @@
+Weighted energy linear quadratic regulator vibration control of piezoelectric
+	composite plates
+In this paper on finite element linear quadratic regulator (LQR) vibration
+	control of smart piezoelectric composite plates, we propose the use of
+	the total weighted energy method to select the weighting matrices. By
+	constructing the optimal performance function as a relative measure of
+	the total kinetic energy, strain energy and input energy of the system,
+	only three design variables need to be considered to achieve a balance
+	between the desired higher damping effect and lower input cost. Modal
+	control analysis is used to interpret the effects of three energy
+	weight factors on the damping ratios and modal voltages and it is shown
+	that the modal damping effect will increase with the kinetic energy
+	weight factor, approaching square root (2/2) as the strain energy
+	weight factor increases and decrease with the input energy weight
+	factor. Numerical results agree well with those from the modal control
+	analysis. Since the control problem is simplified to three design
+	variables only, the computational cost will be greatly reduced and a
+	more accurate structural control analysis becomes more attractive for
+	large systems

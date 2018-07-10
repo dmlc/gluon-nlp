@@ -1,0 +1,9 @@
+Technology CAD of SiGe-heterojunction field effect transistors
+A 2D virtual wafer fabrication simulation suite has been employed for the
+	technology CAD of SiGe channel heterojunction field effect transistors
+	(HFETs). Complete fabrication process of SiGe p-HFETs has been
+	simulated. The SiGe material parameters and mobility model were
+	incorporated to simulate Si/SiGe p-HFETs with a uniform germanium
+	channel having an L/sub eff/ of 0.5 mu m. A significant improvement in
+	linear transconductance is observed when compared to control-silicon
+	p-MOSFETs

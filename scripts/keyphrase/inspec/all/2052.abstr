@@ -1,0 +1,8 @@
+Blitzograms - interactive histograms
+As computers become ever faster, more and more procedures that were once viewed
+	as iterative will continue to become instantaneous. The blitzogram is
+	the application of this trend to histograms, which the author hopes
+	will lead to a better tacit understanding of probability distributions
+	among both students and managers. And this is not just an academic
+	exercise. Commercial Monte Carlo simulation packages like @RISK and
+	Crystal Ball, and my INSIGHT.xla are widely available

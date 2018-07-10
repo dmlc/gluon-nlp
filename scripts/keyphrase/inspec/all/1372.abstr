@@ -1,0 +1,14 @@
+Knowledge acquisition and ontology modelling for construction of a control and
+	monitoring expert system
+This paper presents the processes of knowledge acquisition and ontology
+	development for structuring the knowledge base of an expert system.
+	Ontological engineering is a process that facilitates construction of
+	the knowledge base of an intelligent system. Ontology is the study of
+	the organization and classification of knowledge. Ontological
+	engineering in artificial intelligence has the practical goal of
+	constructing frameworks for knowledge that allow computational systems
+	to tackle knowledge-intensive problems and it supports knowledge
+	sharing and reuse. To illustrate the process of conceptual modelling
+	using the Inferential Modelling Technique as a basis for ontology
+	construction, the tool and processes are applied to build an expert
+	system in the domain of monitoring of a petroleum-production facility

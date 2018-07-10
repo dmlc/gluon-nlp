@@ -1,0 +1,15 @@
+An unconditionally stable extended (USE) finite-element time-domain solution of
+	active nonlinear microwave circuits using perfectly matched layers
+This paper proposes an extension of the unconditionally stable finite-element
+	time-domain (FETD) method for the global electromagnetic analysis of
+	active microwave circuits. This formulation has two advantages. First,
+	the time-step size is no longer governed by the spatial discretization
+	of the mesh, but rather by the Nyquist sampling criterion. Second, the
+	implementation of the truncation by the perfectly matched layers (PML)
+	is straightforward. An anisotropic PML absorbing material is presented
+	for the truncation of FETD lattices. Reflection less than -50 dB is
+	obtained numerically over the entire propagation bandwidth in waveguide
+	and microstrip line. A benchmark test on a microwave amplifier
+	indicates that this extended FETD algorithm is not only superior to
+	finite-difference time-domain-based algorithm in mesh flexibility and
+	simulation accuracy, but also reduces computation time dramatically

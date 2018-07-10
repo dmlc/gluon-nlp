@@ -1,0 +1,23 @@
+Precoded OFDM with adaptive vector channel allocation for scalable video
+	transmission over frequency-selective fading channels
+Orthogonal frequency division multiplexing (OFDM) has been applied in broadband
+	wireline and wireless systems for high data rate transmission where
+	severe intersymbol interference (ISI) always occurs. The conventional
+	OFDM system provides advantages through conversion of an ISI channel
+	into ISI-free subchannels at multiple frequency bands. However, it may
+	suffer from channel spectral nulls and heavy data rate overhead due to
+	cyclic prefix insertion. Previously, a new OFDM framework, the precoded
+	OFDM, has been proposed to mitigate the above two problems through
+	precoding and conversion of an ISI channel into ISI-free vector
+	channels. In this paper, we consider the application of the precoded
+	OFDM system to efficient scalable video transmission. We propose to
+	enhance the precoded OFDM system with adaptive vector channel
+	allocation to provide stronger protection against errors to more
+	important layers in the layered bit stream structure of scalable video.
+	The more critical layers, or equivalently, the lower layers, are
+	allocated vector channels of higher transmission quality. The channel
+	quality is characterized by Frobenius norm metrics; based on channel
+	estimation at the receiver. The channel allocation information is fed
+	back periodically to the transmitter through a control channel.
+	Simulation results have demonstrated the robustness of the proposed
+	scheme to noise and fading inherent in wireless channels

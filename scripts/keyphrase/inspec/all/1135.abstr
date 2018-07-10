@@ -1,0 +1,14 @@
+A combinatorial, graph-based solution method for a class of continuous-time
+	optimal control problems
+The paper addresses a class of continuous-time, optimal control problems whose
+	solutions are typically characterized by both bang-bang and "singular"
+	control regimes. Analytical study and numerical computation of such
+	solutions are very difficult and far from complete when only techniques
+	from control theory are used. This paper solves optimal control
+	problems by reducing them to the combinatorial search for the shortest
+	path in a specially constructed graph. Since the nodes of the graph are
+	weighted in a sequence-dependent manner, we extend the classical,
+	shortest-path algorithm to our case. The proposed solution method is
+	currently limited to single-state problems with multiple control
+	functions. A production planning problem and a train operation problem
+	are optimally solved to illustrate the method

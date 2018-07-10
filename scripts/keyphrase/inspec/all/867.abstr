@@ -1,0 +1,15 @@
+Tracking control of the flexible slider-crank mechanism system under impact
+The variable structure control (VSC) and the stabilizer design by using the
+	pole placement technique are applied to the tracking control of the
+	flexible slider-crank mechanism under impact. The VSC strategy is
+	employed to track the crank angular position and speed, while the
+	stabilizer design is involved to suppress the flexible vibrations
+	simultaneously. From the theoretical impact consideration, three
+	approaches including the generalized momentum balance (GMB), the
+	continuous force model (CFM), and the CFM associated with the effective
+	mass compensation EMC are adopted, and are derived on the basis of the
+	energy and impulse-momentum conservations. Simulation results are
+	provided to demonstrate the performance of the motor-controller
+	flexible slider-crank mechanism not only accomplishing good tracking
+	trajectory of the crank angle, but also eliminating vibrations of the
+	flexible connecting rod

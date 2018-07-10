@@ -1,0 +1,11 @@
+Using DEVS formalism to operationalize ELP models for diagnosis in SACHEM
+This paper describes an original approach to discrete event control of
+	continuous processes by means of expert knowledge. We present an
+	application of this approach on the SACHEM diagnosis subsystem. The
+	SACHEM system is a large-scale knowledge-based system that aims in
+	helping a set of operators to control the dynamics of complex
+	continuous systems (e.g., blast furnaces). The proposed method is based
+	on: (i) The definition of a language facilitating the acquisition and
+	representation of expert knowledge, called ELP (Expert Language
+	Process); (ii) The use of the DEVS formalism to make ELP models
+	operational; (iii) Algorithms for exploiting operational models

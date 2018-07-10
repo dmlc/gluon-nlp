@@ -1,0 +1,13 @@
+A scalable and efficient systolic algorithm for the longest common subsequence
+	problem
+A longest common subsequence (LCS) of two strings is a common subsequence of
+	two strings of maximal length. The LCS problem is that of finding an
+	LCS of two given strings and the length of the LCS. This problem has
+	been the subject of much research because its solution can be applied
+	in many areas. In this paper, a scalable and efficient systolic
+	algorithm is presented. For two given strings of length m and n, where
+	m>or=n, the algorithm can solve the LCS problem in m+2r-1
+	(respectively n+2r-1) time steps with r<n/2 (respectively r<m/2)
+	processors. Experimental results show that the algorithm can be faster
+	on multicomputers than all the previous systolic algorithms for the
+	same problem

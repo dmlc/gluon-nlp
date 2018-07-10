@@ -1,0 +1,16 @@
+records	INSIDE_KP
+role	NO_KP
+in	NO_KP
+e-business	BEGIN_KP
+records	INSIDE_KP
+management	INSIDE_KP
+standards	NO_KP
+are	NO_KP
+now	NO_KP
+playing	NO_KP
+a	NO_KP
+key	NO_KP
+role	NO_KP
+in	NO_KP
+e-business	BEGIN_KP
+strategy	INSIDE_KP

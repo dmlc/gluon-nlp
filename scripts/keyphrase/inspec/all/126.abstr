@@ -1,0 +1,17 @@
+A new architecture for implementing pipelined FIR ADF based on classification
+	of coefficients
+In this paper, we propose a new method for implementing pipelined
+	finite-impulse response (FIR) adaptive digital filter (ADF), with an
+	aim of reducing the maximum delay of the filtering portion of
+	conventional delayed least mean square (DLMS) pipelined ADF. We achieve
+	a filtering section with a maximum delay of one by simplifying a
+	pre-upsampled and a post-downsampled FIR filter using the concept of
+	classification of coefficients. This reduction is independent of the
+	order of the filter, which is an advantage when the order of the filter
+	is very large, and as a result the method can also be applied to
+	infinite impulse response (IIR) filters. Furthermore, when the proposed
+	method is compared with the transpose ADF, which has a filtering
+	section with zero delay, it is realized that it significantly reduces
+	the maximum delay associated with updating the coefficients of FIR ADF.
+	The effect of this is that, the proposed method exhibits a higher
+	convergence speed in comparison to the transpose FIR ADF

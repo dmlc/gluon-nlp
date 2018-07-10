@@ -1,0 +1,10 @@
+A collocation formulation of multistep methods for variable step-size
+	extensions
+Multistep methods are classically constructed by specially designed difference
+	operators on an equidistant time grid. To make them practically useful,
+	they have to be implemented by varying the step-size according to some
+	error-control algorithm. It is well known how to extend Adams and BDF
+	formulas to a variable step-size formulation. In this paper we present
+	a collocation approach to construct variable step-size formulas. We
+	make use of piecewise polynomials to show that every k-step method of
+	order k+1 has a variable step-size polynomial collocation formulation

@@ -1,0 +1,9 @@
+Pipelined broadcast with enhanced wormhole routers
+This paper proposes a pipelined broadcast that broadcasts a message of size m
+	in O(m+n-1) time in an n-dimensional hypercube. It is based on the
+	replication tree, which is derived from reachable sets. It has greatly
+	improved performance compared to Ho-Kao's (1995) algorithm with the
+	time of O(m[n/log(n+1)]). The communication in the broadcast uses an
+	all-port wormhole router with message replication capability. This
+	paper includes the algorithm together with performance comparisons to
+	previous schemes in a practical implementation

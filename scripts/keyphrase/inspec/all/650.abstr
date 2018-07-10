@@ -1,0 +1,16 @@
+Molecular descriptor selection combining genetic algorithms and fuzzy logic:
+	application to database mining procedures
+A new algorithm, devoted to molecular descriptor selection in the context of
+	data mining problems, has been developed. This algorithm is based on
+	the concepts of genetic algorithms (GA) for descriptor hyperspace
+	exploration and combined with a stepwise approach to get local
+	convergence. Its selection power was evaluated by a fitness function
+	derived from a fuzzy clustering method. Different training and test
+	sets were randomly generated at each GA generation. The fitness score
+	was derived by combining the scores of the training and test sets. The
+	ability of the proposed algorithm to select relevant subsets of
+	descriptors was tested on two data sets. The first one, an academic
+	example, corresponded to the artificial problem of Bullseye, the second
+	was a real data set including 114 olfactory compounds divided into
+	three odor categories. In both cases, the proposed method allowed to
+	improve the separation between the different data set classes

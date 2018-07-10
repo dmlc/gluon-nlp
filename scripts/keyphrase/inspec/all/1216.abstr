@@ -1,0 +1,13 @@
+Knowledge flow management for distributed team software development
+Cognitive cooperation is often neglected in current team software development
+	processes. This issue becomes more important than ever when team
+	members are globally distributed. This paper presents a notion of
+	knowledge flow and the related management mechanism for realizing an
+	ordered knowledge sharing and cognitive cooperation in a geographically
+	distributed team software development process. The knowledge flow can
+	carry and accumulate knowledge when it goes through from one team
+	member to another. The coordination between the knowledge flow process
+	and the workflow process of a development team provides a new way to
+	improve traditional team software development processes. A knowledge
+	grid platform has been implemented to support the knowledge flow
+	management across the Internet

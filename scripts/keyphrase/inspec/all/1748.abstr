@@ -1,0 +1,25 @@
+On a general constitutive description for the inelastic and failure behavior of
+	fibrous laminates. I. Lamina theory
+It is well known that a structural design with isotropic materials can only be
+	accomplished based on a stress failure criterion. This is, however,
+	generally not true with laminated composites. Only when the laminate is
+	subjected to an in-plane load, can the ultimate failure of the laminate
+	correspond to its last-ply failure, and hence a stress failure
+	criterion may be sufficient to detect the maximum load that can be
+	sustained by the laminate. Even in such a case, the load shared by each
+	lamina in the laminate cannot be correctly determined if the lamina
+	instantaneous stiffness matrix is inaccurately provided, since the
+	lamina is always statically indeterminate in the laminate. If, however,
+	the laminate is subjected to a lateral load, its ultimate failure
+	occurs before last-ply failure and use of the stress failure criterion
+	is no longer sufficient; an additional critical deflection or curvature
+	condition must also be employed. This necessitates development of an
+	efficient constitutive relationship for laminated composites in order
+	that the laminate strains/deflections up to ultimate failure can be
+	accurately calculated. A general constitutive description for the
+	thermomechanical response of a fibrous laminate up to ultimate failure
+	with applications to various fibrous laminates is presented in the two
+	papers. The constitutive relationship is obtained by combining
+	classical lamination theory with a recently developed bridging
+	micromechanics model, through a layer-by-layer analysis. This paper
+	focuses on lamina analysis

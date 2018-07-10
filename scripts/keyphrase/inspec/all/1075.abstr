@@ -1,0 +1,10 @@
+Numerical simulation of information recovery in quantum computers
+Decoherence is the main problem to be solved before quantum computers can be
+	built. To control decoherence, it is possible to use error correction
+	methods, but these methods are themselves noisy quantum computation
+	processes. In this work, we study the ability of Steane's and Shor's
+	fault-tolerant recovering methods, as well as a modification of
+	Steane's ancilla network, to correct errors in qubits. We test a way to
+	measure correctly ancilla's fidelity for these methods, and state the
+	possibility of carrying out an effective error correction through a
+	noisy quantum channel, even using noisy error correction methods

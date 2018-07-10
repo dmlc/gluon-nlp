@@ -1,0 +1,24 @@
+Linear, parameter-varying control and its application to a turbofan engine
+This paper describes application of parameter-dependent control design methods
+	to a turbofan engine. Parameter-dependent systems are linear systems,
+	whose state-space descriptions are known functions of time-varying
+	parameters. The time variation of each of the parameters is not known
+	in advance, but is assumed to be measurable in real-time. Three linear,
+	parameter-varying (LPV) approaches to control design are discussed. The
+	first method is based on linear fractional transformations which relies
+	on the small gain theorem for bounds on performance and robustness. The
+	other methods make use of either a single (SQLF) or parameter-dependent
+	(PDQLF) quadratic Lyapunov function to bound the achievable level of
+	performance. The latter two techniques are used to synthesize
+	controllers for a high-performance turbofan engine. A LPV model of the
+	turbofan engine is constructed from Jacobian linearizations at fixed
+	power codes for control design. The control problem is formulated as a
+	model matching problem in the H/sub infinity / and LPV framework. The
+	objective is decoupled command response of the closed-loop system to
+	pressure and rotor speed requests. The performance of linear, H/sub
+	infinity / point designs are compared with the SQLF and PDQLF
+	controllers. Nonlinear simulations indicate that the controller
+	synthesized using the SQLF approach is slightly more conservative than
+	the PDQLF controller. Nonlinear simulations with the SQLF and PDQLF
+	controllers show very robust designs that achieve all desired
+	performance objectives

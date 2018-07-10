@@ -1,0 +1,12 @@
+Adaptive state feedback control for a class of linear systems with unknown
+	bounds of uncertainties
+The problem of adaptive robust stabilization for a class of linear time-varying
+	systems with disturbance and nonlinear uncertainties is considered. The
+	bounds of the disturbance and uncertainties are assumed to be unknown,
+	being even arbitrary. For such uncertain dynamical systems, the
+	adaptive robust state feedback controller is obtained. And the
+	resulting closed-loop systems are asymptotically stable in theory.
+	Moreover, an adaptive robust state feedback control scheme is given.
+	The scheme ensures the closed-loop systems exponentially practically
+	stable and can be used in practical engineering. Finally, simulations
+	show that the control scheme is effective

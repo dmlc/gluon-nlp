@@ -1,0 +1,14 @@
+An improved fuzzy MCDM model based on ideal and anti-ideal concepts
+Liang presented (1999) a fuzzy multiple criteria decision making (MCDM) method
+	based on the concepts of ideal and anti-ideal points. Despite its
+	merits, Liang method has the following limitations: (i) the objective
+	criteria are converted into dimensionless indices and the subjective
+	criteria are not converted, which may prevent compatibility for these
+	criteria, (ii) the formulas for converting objective criteria are not
+	reliable, and (iii) an unreliable ranking method, i.e. maximizing set
+	and minimizing set, is applied to rank the fuzzy numbers. This paper
+	applies the Hsu and Chen method and suggests a fuzzy number ranking
+	method to propose an improved fuzzy MCDM model based on ideal and
+	anti-ideal concepts to overcome the shortcomings of the Liang method.
+	Numerical examples demonstrate the effectiveness and feasibility of the
+	proposed ranking method and the improved model, respectively

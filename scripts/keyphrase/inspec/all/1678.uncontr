@@ -1,0 +1,4 @@
+parallel interior point schemes; multistage convex programming;
+	predictor-corrector interior-point path-following algorithm; dynamic
+	structure; block-tridiagonal system; Newton step; wrap-around
+	permutation; parallel computation

@@ -1,0 +1,17 @@
+Quantitative speed control for SRM drive using fuzzy adapted inverse model
+Quantitative and robust speed control for a switched reluctance motor (SRM)
+	drive is considered to be rather difficult and challenging owing to its
+	highly nonlinear dynamic behavior. A speed control scheme having
+	two-degree-of-freedom (2DOF) structure is developed here to improve the
+	speed dynamic response of an SRM drive. In the proposed control scheme,
+	the feedback controller is quantitatively designed to meet the desired
+	regulation control requirements first. Then a reference model and a
+	command feedforward controller based on an inverse plant model are
+	employed to yield the desired tracking response at nominal case. As the
+	variations of system parameters and operating conditions occur, the
+	prescribed control specifications may not be satisfied any more. To
+	improve this, the inverse model is adaptively tuned by a fuzzy control
+	scheme so that the model-following tracking error is significantly
+	reduced. In addition, a simple disturbance cancellation robust
+	controller is added to improve the tracking and regulation control
+	performances further

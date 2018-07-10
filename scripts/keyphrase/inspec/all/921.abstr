@@ -1,0 +1,17 @@
+Processing of complexly shaped multiply connected domains in finite element
+	mesh generation
+Large number of finite element models in modern materials science and
+	engineering is defined on complexly shaped domains, quite often
+	multiply connected. Generation of quality finite element meshes on such
+	domains, especially in cases when the mesh must be 100% quadrilateral,
+	is highly problematic. This paper describes mathematical fundamentals
+	and practical -implementation of a powerful method and algorithm
+	allowing transformation of multiply connected domains of arbitrary
+	geometrical complexity into a set of simple domains; the latter can
+	then be processed by broadly available finite element mesh generators.
+	The developed method was applied to a number of complex geometries,
+	including those arising in analysis of parasitic inductances and
+	capacitances in printed circuit boards. The quality of practical
+	results produced by the method and its programming implementation
+	provide evidence that the algorithm can be applied to other finite
+	element models with various physical backgrounds

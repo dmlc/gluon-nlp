@@ -1,0 +1,16 @@
+Multidimensional data visualization
+Historically, data visualization has been limited primarily to two dimensions
+	(e.g., histograms or scatter plots). Available software packages (e.g.,
+	Data Desk 6.1, MatLab 6.1, SAS-JMP 4.04, SPSS 10.0) are capable of
+	producing three-dimensional scatter plots with (varying degrees of)
+	user interactivity. We constructed our own data visualization
+	application with the Visualization Toolkit (Schroeder et al., 1998) and
+	Tcl/Tk to display multivariate data through the application of glyphs
+	(Ware, 2000). A glyph is a visual object onto which many data
+	parameters may be mapped, each with a different visual attribute (e.g.,
+	size or color). We used our multi-dimensional data viewer to explore
+	data from several psycholinguistic experiments. The graphical interface
+	provides flexibility when users dynamically explore the
+	multidimensional image rendered from raw experimental data. We
+	highlight advantages of multidimensional data visualization and
+	consider some potential limitations

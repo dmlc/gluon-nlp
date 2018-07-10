@@ -1,0 +1,20 @@
+Adaptive wavelet methods. II. Beyond the elliptic case
+This paper is concerned with the design and analysis of adaptive wavelet
+	methods for systems of operator equations. Its main accomplishment is
+	to extend the range of applicability of the adaptive wavelet-based
+	method developed previously for symmetric positive definite problems to
+	indefinite or unsymmetric systems of operator equations. This is
+	accomplished by first introducing techniques (such as the least squares
+	formulation developed previously) that transform the original
+	(continuous) problem into an equivalent infinite system of equations
+	which is now well-posed in the Euclidean metric. It is then shown how
+	to utilize adaptive techniques to solve the resulting infinite system
+	of equations. It is shown that for a wide range of problems, this new
+	adaptive method performs with asymptotically optimal complexity, i.e.,
+	it recovers an approximate solution with desired accuracy at a
+	computational expense that stays proportional to the number of terms in
+	a corresponding wavelet-best N-term approximation. An important
+	advantage of this adaptive approach is that it automatically stabilizes
+	the numerical procedure so that, for instance, compatibility
+	constraints on the choice of trial spaces, like the LBB condition, no
+	longer arise

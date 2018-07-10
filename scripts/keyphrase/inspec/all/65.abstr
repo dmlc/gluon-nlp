@@ -1,0 +1,13 @@
+The use of subtypes and stereotypes in the UML model
+Based on users' experiences of Version 1.3 of the Unified Modeling Language
+	(UML) of the Object Management Group (OMG), a Request For Information
+	in 1999 elicited several responses which were asked to identify
+	"problems" but not to offer any solutions. One of these responses is
+	examined for "problems" relating to the UML metamodel and here some
+	solutions to the problems identified there are proposed. Specifically,
+	we evaluate the metamodel relating to stereotypes versus subtypes; the
+	various kinds of Classifier (particularly Types, Interfaces and
+	Classes); the introduction of a new subtype for the whole part
+	relationship; as well as identifying areas in the metamodel where the
+	UML seems to have been used inappropriately in the very definition of
+	the UML's metamodel

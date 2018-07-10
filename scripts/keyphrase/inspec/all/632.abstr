@@ -1,0 +1,15 @@
+Modelling dependencies in paired comparison data a log-linear approach
+In many Bradley-Terry models a more or less explicit assumption is that all
+	decisions of the judges are independent. An assumption which might be
+	questionable at least for the decisions of a given judge. In paired
+	comparison studies, a judge chooses among objects several times, and in
+	such cases, judgements made by the same judge are likely to be
+	dependent. A log-linear representation for the Bradley-Terry model is
+	developed, which takes into account dependencies between judgements.
+	The modelling of the dependencies is embedded in the analysis of
+	multiple binomial responses, which has the advantage of
+	interpretability in terms of conditional odds ratios. Furthermore, the
+	modelling is done in the framework of generalized linear models, thus
+	parameter estimation and the assessment of goodness of fit can be
+	obtained in the standard way by using e.g. GLIM or another standard
+	software

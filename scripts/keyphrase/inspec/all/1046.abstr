@@ -1,0 +1,12 @@
+A suggestion of fractional-order controller for flexible spacecraft attitude
+	control
+A controller design method for flexible spacecraft attitude control is
+	proposed. The system is first described by a partial differential
+	equation with internal damping. Then the frequency response is
+	analyzed, and the three basic characteristics of the flexible system,
+	namely, average function, lower bound and upper bound are defined. On
+	this basis, a fractional-order controller is proposed, which functions
+	as phase stabilization control for lower frequency and smoothly enters
+	to amplitude stabilization at higher frequency by proper amplitude
+	attenuation. It is shown that the equivalent damping ratio increases in
+	proportion to the square of frequency

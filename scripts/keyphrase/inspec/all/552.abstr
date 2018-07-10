@@ -1,0 +1,16 @@
+Anatomy of the coupling query in a Web warehouse
+To populate a data warehouse specifically designed for Web data, i.e. Web
+	warehouse, it is imperative to harness relevant documents from the Web.
+	In this paper, we describe a query mechanism called coupling query to
+	glean relevant Web data in the context of our Web warehousing system
+	called Warehouse Of Web Data (WHOWEDA). A coupling query may be used
+	for querying both HTML and XML documents. Important features of our
+	query mechanism are the ability to query metadata, content, internal
+	and external (hyperlink) structure of Web documents based on partial
+	knowledge, ability to express constraints on tag attributes and tagless
+	segment of data, ability to express conjunctive as well as disjunctive
+	query conditions compactly, ability to control execution of a Web query
+	and preservation of the topological structure of hyperlinked documents
+	in the query results. We also discuss how to formulate a query
+	graphically and in textual form using a coupling graph and coupling
+	text, respectively

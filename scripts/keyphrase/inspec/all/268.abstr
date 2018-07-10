@@ -1,0 +1,14 @@
+A method for correlations analysis of coordinates: applications for molecular
+	conformations
+We describe a new method to analyze multiple correlations between subsets of
+	coordinates that represent a sample. The correlation is established
+	only between specific regions of interest at the coordinates. First,
+	the region(s) of interest are selected at each molecular coordinate.
+	Next, a correlation matrix is constructed for the selected regions. The
+	matrix is subject to further analysis, illuminating the
+	multidimensional structural characteristics that exist in the
+	conformational space. The method's abilities are demonstrated in
+	several examples: it is used to analyze the conformational space of
+	complex molecules, it is successfully applied to compare related
+	conformational spaces, and it is used to analyze a diverse set of
+	protein folding trajectories

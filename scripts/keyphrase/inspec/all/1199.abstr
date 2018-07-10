@@ -1,0 +1,10 @@
+Quasi stage order conditions for SDIRK methods
+The stage order condition is a simplifying assumption that reduces the number
+	of order conditions to be fulfilled when designing a Runge-Kutta (RK)
+	method. Because a DIRK (diagonally implicit RK) method cannot have
+	stage order greater than 1, we introduce quasi stage order conditions
+	and derive some of their properties for DIRKs. We use these conditions
+	to derive a low-order DIRK method with embedded error estimator.
+	Numerical tests with stiff ODEs and DAEs of index 1 and 2 indicate that
+	the method is competitive with other RK methods for low accuracy
+	tolerances

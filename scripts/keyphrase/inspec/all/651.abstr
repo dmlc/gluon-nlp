@@ -1,0 +1,23 @@
+Application-layer multicasting with Delaunay triangulation overlays
+Application-layer multicast supports group applications without the need for a
+	network-layer multicast protocol. Here, applications arrange themselves
+	in a logical overlay network and transfer data within the overlay. We
+	present an application-layer multicast solution that uses a Delaunay
+	triangulation as an overlay network topology. An advantage of using a
+	Delaunay triangulation is that it allows each application to locally
+	derive next-hop routing information without requiring a routing
+	protocol in the overlay. A disadvantage of using a Delaunay
+	triangulation is that the mapping of the overlay to the network
+	topology at the network and data link layer may be suboptimal. We
+	present a protocol, called Delaunay triangulation (DT protocol), which
+	constructs Delaunay triangulation overlay networks. We present
+	measurement experiments of the DT protocol for overlay networks with up
+	to 10 000 members, that are running on a local PC cluster with 100
+	Linux PCs. The results show that the protocol stabilizes quickly, e.g.,
+	an overlay network with 10 000 nodes can be built in just over 30 s.
+	The traffic measurements indicate that the average overhead of a node
+	is only a few kilobits per second if the overlay network is in a steady
+	state. Results of throughput experiments of multicast transmissions
+	(using TCP unicast connections between neighbors in the overlay
+	network) show an achievable throughput of approximately 15 Mb/s in an
+	overlay with 100 nodes and 2 Mb/s in an overlay with 1000 nodes

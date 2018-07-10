@@ -1,0 +1,16 @@
+Integrated process control using an in situ sensor for etch
+The migration to tighter geometries and more complex process sequence
+	integration schemes requires having the ability to compensate for
+	upstream deviations from target specifications. Doing so ensures
+	that-downstream process sequences operate on work-in-progress that is
+	well within control. Because point-of-use visibility of
+	work-in-progress quality has become of paramount concern in the
+	industry's drive to reduce scrap and improve yield, controlling trench
+	depth has assumed greater importance. An integrated, interferometric
+	based, rate monitor for etch-to-depth and spacer etch applications has
+	been developed for controlling this parameter. This article
+	demonstrates that the integrated rate monitor, using polarization and
+	digital signal processing, enhances control etch-to-depth processes and
+	can also be implemented as a predictive endpoint in a wafer
+	manufacturing environment for dual damascene trench etch and spacer
+	etch applications

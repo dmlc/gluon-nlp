@@ -1,0 +1,14 @@
+Variety identification of wheat using mass spectrometry with neural networks
+	and the influence of mass spectra processing prior to neural network
+	analysis
+The performance of matrix-assisted laser desorption/ionisation time-of-flight
+	mass spectrometry with neural networks in wheat variety classification
+	is further evaluated. Two principal issues were studied: (a) the number
+	of varieties that could be classified correctly; and (b) various means
+	of preprocessing mass spectrometric data. The number of wheat varieties
+	tested was increased from 10 to 30. The main pre-processing method
+	investigated was based on Gaussian smoothing of the spectra, but other
+	methods based on normalisation procedures and multiplicative scatter
+	correction of data were also used. With the final method, it was
+	possible to classify 30 wheat varieties with 87% correctly classified
+	mass spectra and a correlation coefficient of 0.90

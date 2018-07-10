@@ -1,0 +1,9 @@
+Design methodology for diagnostic strategies for industrial systems
+This paper presents a method for the construction of diagnostic systems for
+	complex industrial applications. The approach has been explicitely
+	developed to shorten the design cycle and meet some specific
+	requirements, such as modularity, flexibility, and the possibility of
+	merging many different sources of information. The method allows one to
+	consider multiple simultaneous failures and is specifically designed to
+	make easier the coordination and simplification of local diagnostic
+	algorithms developed by different teams

@@ -1,0 +1,7 @@
+Complex dynamics in nearly symmetric three-cell cellular neural networks
+The paper introduces a class of third-order nonsymmetric Cellular Neural
+	Networks (CNNs), and shows through computer simulations that they
+	undergo a cascade of period doubling bifurcations which leads to the
+	birth of a large-size complex attractor. A major point is that these
+	bifurcations and complex dynamics happen in a small neighborhood of a
+	particular CNN with a symmetric interconnection matrix

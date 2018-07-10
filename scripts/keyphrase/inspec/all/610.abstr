@@ -1,0 +1,17 @@
+AGC for autonomous power system using combined intelligent techniques
+In the present work two intelligent load frequency controllers have been
+	developed to regulate the power output and system frequency by
+	controlling the speed of the generator with the help of fuel rack
+	position control. The first controller is obtained using fuzzy logic
+	(FL) only, whereas the second one by using a combination of FL, genetic
+	algorithms and neural networks. The aim of the proposed controller(s)
+	is to restore in a very smooth way the frequency to its nominal value
+	in the shortest time possible whenever there is any change in the load
+	demand etc. The action of these controller(s) provides a satisfactory
+	balance between frequency overshoot and transient oscillations with
+	zero steady-state error. The design and performance evaluation of the
+	proposed controller(s) structure are illustrated with the help of case
+	studies applied (without loss of generality) to a typical single-area
+	power system. It is found that the proposed controllers exhibit
+	satisfactory overall dynamic performance and overcome the possible
+	drawbacks associated with other competing techniques

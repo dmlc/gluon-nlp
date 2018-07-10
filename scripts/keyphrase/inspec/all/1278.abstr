@@ -1,0 +1,8 @@
+Verification of timed automata based on similarity
+The paper presents a modification of the standard partitioning technique to
+	generate abstract state spaces preserving similarity for Timed
+	Automata. Since this relation is weaker than bisimilarity, most of the
+	obtained models (state spaces) are smaller than bisimilar ones, but
+	still preserve the universal fragments of branching time temporal
+	logics. The theoretical results are exemplified for strong, delay, and
+	observational simulation relations

@@ -1,0 +1,16 @@
+Layer-based machining: recent development and support structure design
+There is growing interest in additive and subtractive shaping theories that are
+	synthesized to integrate the layered manufacturing process and material
+	removal process. Layer-based machining has emerged as a promising
+	method for integrated additive and subtractive shaping theory. In the
+	paper, major layer-based machining systems are reviewed and compared
+	according to characteristics of stock layers, numerical control
+	machining configurations, stacking operations, input format and raw
+	materials. Support structure, a major issue in machining-based systems
+	which has seldom been addressed in previous research, is investigated
+	in the paper with considerations of four situations: floating overhang,
+	cantilever, vaulted overhang and ceiling. Except for the floating
+	overhang where a support structure should not be overlooked, the
+	necessity for support structures for the other three situations is
+	determined by stress and deflection analysis. This is demonstrated by
+	the machining of a large castle model

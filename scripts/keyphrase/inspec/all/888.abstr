@@ -1,0 +1,17 @@
+Storage functionals and Lyapunov functions for passive dynamical systems
+For nonlinear time-invariant input-output dynamical systems the passivity
+	conditions are obtained under some restrictions. The conditions imply
+	storage functions satisfying a dissipation inequality. A class of
+	storage functions allowing unique reconstruction of a passive dynamical
+	system is defined. These results are illustrated by an example of a
+	linear system with fading memory. An important, for practical
+	application, class of the linear relaxation systems without direct
+	input-output interaction is considered. A necessary condition for
+	dynamical systems to be of the relaxation type is obtained for this
+	class. The condition is connected with the existence of a unique
+	quadratic Lyapunov function satisfying the complete monotonicity
+	condition. This unique Lyapunov function corresponds to a "standard"
+	thermodynamic potential in a compact family of potentials in the
+	nonequilibrium thermodynamics. The results obtained can be useful in
+	automatic control, mechanics of viscoelastic materials, and various
+	applications in physics and the system theory

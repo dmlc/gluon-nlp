@@ -1,0 +1,14 @@
+Hierarchical neuro-fuzzy quadtree models
+Hybrid neuro-fuzzy systems have been in evidence during the past few years, due
+	to its attractive combination of the learning capacity of artificial
+	neural networks with the interpretability of the fuzzy systems. This
+	article proposes a new hybrid neuro-fuzzy model, named hierarchical
+	neuro-fuzzy quadtree (HNFQ), which is based on a recursive partitioning
+	method of the input space named quadtree. The article describes the
+	architecture of this new model, presenting its basic cell and its
+	learning algorithm. The HNFQ system is evaluated in three well known
+	benchmark applications: the sinc(x, y) function approximation, the
+	Mackey Glass chaotic series forecast and the two spirals problem. When
+	compared to other neuro-fuzzy systems, the HNFQ exhibits competing
+	results, with two major advantages it automatically creates its own
+	structure and it is not limited to few input variables

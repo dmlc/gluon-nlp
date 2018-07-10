@@ -1,0 +1,12 @@
+A comprehensive chatter prediction model for face turning operation including
+	tool wear effect
+Presents a three-dimensional mechanistic frequency domain chatter model for
+	face turning processes, that can account for the effects of tool wear
+	including process damping. New formulations are presented to model the
+	variation in process damping forces along nonlinear tool geometries
+	such as the nose radius. The underlying dynamic force model simulates
+	the variation in the chip cross-sectional area by accounting for the
+	displacements in the axial and radial directions. The model can be used
+	to determine stability boundaries under various cutting conditions and
+	different states of flank wear. Experimental results for different
+	amounts of wear are provided as a validation for the model

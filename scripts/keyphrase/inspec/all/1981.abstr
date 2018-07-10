@@ -1,0 +1,9 @@
+Optimal linear control in stabilizer design
+The most common method of improving stability of the power system is the
+	synthesis of the turbine and generator control systems, because of the
+	high effectiveness and relatively low cost of these elements. The
+	synthesis and construction of the effective synchronous generator and
+	turbine controller is a very difficult task. This paper describes the
+	seven step mu -synthesis approach to PSS design enabling the
+	synchronous generator to remain stable over a wide range of system
+	operating conditions

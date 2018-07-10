@@ -1,0 +1,11 @@
+Exact frequency-domain reconstruction for thermoacoustic tomography. II.
+	Cylindrical geometry
+For pt. I see ibid., vol. 21, no. 7, p. 823-8 (2002). Microwave-induced
+	thermoacoustic tomography (TAT) in a cylindrical configuration is
+	developed to image biological tissue. Thermoacoustic signals are
+	acquired by scanning a flat ultrasonic transducer. Using a new
+	expansion of a spherical wave in cylindrical coordinates, we apply the
+	Fourier and Hankel transforms to TAT and obtain an exact
+	frequency-domain reconstruction method. The effect of discrete spatial
+	sampling on image quality is analyzed. An aliasing-proof reconstruction
+	method is proposed. Numerical and experimental results are included

@@ -1,0 +1,9 @@
+All-optical XOR gate using semiconductor optical amplifiers without additional
+	input beam
+The novel design of an all-optical XOR gate by using cross-gain modulation of
+	semiconductor optical amplifiers has been suggested and demonstrated
+	successfully at 10 Gb/s. Boolean AB and AB of the two input signals A
+	and B have been obtained and combined to achieve the all-optical XOR
+	gate. No additional input beam such as a clock signal or continuous
+	wave light is used in this new design, which is required in other
+	all-optical XOR gates

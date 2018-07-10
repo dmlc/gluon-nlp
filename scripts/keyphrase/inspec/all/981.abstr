@@ -1,0 +1,16 @@
+Basin configuration of a six-dimensional model of an electric power system
+As part of an ongoing project on the stability of massively complex electrical
+	power systems, we discuss the global geometric structure of contacts
+	among the basins of attraction of a six-dimensional dynamical system.
+	This system represents a simple model of an electrical power system
+	involving three machines and an infinite bus. Apart from the possible
+	occurrence of attractors representing pathological states, the contacts
+	between the basins have a practical importance, from the point of view
+	of the operation of a real electrical power system. With the aid of a
+	global map of basins, one could hope to design an intervention strategy
+	to boot the power system back into its normal state. Our method
+	involves taking two-dimensional sections of the six-dimensional state
+	space, and then determining the basins directly by numerical simulation
+	from a dense grid of initial conditions. The relations among all the
+	basins are given for a specific numerical example, that is, choosing
+	particular values for the parameters in our model

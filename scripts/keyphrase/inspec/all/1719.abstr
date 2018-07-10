@@ -1,0 +1,11 @@
+The UPS as network management tool
+Uninterrupted power supplies (UPS), or battery backup systems, once provided a
+	relatively limited, although important, function-continual battery
+	support to connected equipment in the event of a power failure.
+	However, yesterday's "battery in a box" has evolved into a
+	sophisticated network power management tool that can monitor and
+	actively correct many of the problems that might plague a healthy
+	network. This new breed of UPS system provides such features as
+	automatic voltage regulation, generous runtimes and unattended system
+	shutdown, and now also monitors and automatically restarts critical
+	services and operating systems if they lock up or otherwise fail

@@ -1,0 +1,10 @@
+Quantum-state information retrieval in a Rydberg-atom data register
+We analyze a quantum search protocol to retrieve phase information from a
+	Rydberg-atom data register using a subpicosecond half-cycle electric
+	field pulse. Calculations show that the half-cycle pulse can perform
+	the phase retrieval only within a range of peak field values. By
+	varying the phases of the constituent orbitals of the Rydberg wave
+	packet register, we demonstrate coherent control of the phase retrieval
+	process. By specially programming the phases of the orbitals comprising
+	the initial wave packet, we show that it is possible to use the search
+	method as a way to synthesize single energy eigenstates

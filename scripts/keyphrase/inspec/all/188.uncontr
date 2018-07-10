@@ -1,0 +1,4 @@
+gain scheduled controller; sampled-data implementation; continuous-time
+	gain-scheduled controller; discrete-time controller; linearization
+	properties; multi-rate gain scheduled controllers; flight control
+	applications

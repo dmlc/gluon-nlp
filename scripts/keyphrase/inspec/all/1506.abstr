@@ -1,0 +1,11 @@
+Intelligent control of life support for space missions
+Future manned space operations will include a greater use of automation than we
+	currently see. For example, semiautonomous robots and software agents
+	will perform difficult tasks while operating unattended most of the
+	time. As these automated agents become more prevalent, human contact
+	with them will occur more often and become more routine, so designing
+	these automated agents according to the principles of human-centered
+	computing is important. We describe two cases of semiautonomous control
+	software developed and fielded in test environments at the NASA Johnson
+	Space Center. This software operated continuously at the JSC and
+	interacted closely with humans for months at a time

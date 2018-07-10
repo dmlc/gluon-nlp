@@ -1,0 +1,14 @@
+Fully automatic algorithm for region of interest location in camera calibration
+We present an automatic method for region of interest (ROI) location in camera
+	calibration used in computer vision inspection. An intelligent ROI
+	location algorithm based on the Radon transform is developed to
+	automate the calibration process. The algorithm remains robust even if
+	the anchor target has a notable rotation angle in the target plane.
+	This method functions well although the anchor target is not carefully
+	positioned. Several improvement methods are studied to avoid the
+	algorithm's huge time/space consumption problem. The algorithm runs
+	about 100 times faster if these improvement methods are applied. Using
+	this method fully automatic camera calibration is achieved without
+	human interactive ROI specification. Experiments show that this
+	algorithm can help to calibrate the intrinsic parameters of the zoom
+	lens and the camera parameters quickly and automatically

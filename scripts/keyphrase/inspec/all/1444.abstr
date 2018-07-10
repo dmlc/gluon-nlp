@@ -1,0 +1,11 @@
+Adaptable dialog boxes for cross-platform programming
+The author presents a framework for building dialog boxes that adapt to the
+	look and feel of their platform. This method also helps with a few
+	related problems: specifying cross-platform resources and handling
+	dialog size changes due to localization. He uses a combination of XML,
+	automatic layout, and run-time dialog creation to give you most of the
+	benefits of platform-specific resources, without the associated pain.
+	Source code with an implementation of the layout engine for Mac OS 9.1
+	("Carbon"), Mac OS X, and Microsoft Windows can be downloaded from the
+	CUJ website at <www.cuj.com/code>. You can use this code as is,
+	or as a starting point for your own more complete implementation

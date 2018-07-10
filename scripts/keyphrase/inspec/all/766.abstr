@@ -1,0 +1,7 @@
+Physical quantum algorithms
+I review the differences between classical and quantum systems, emphasizing the
+	connection between no-hidden variable theorems and superior
+	computational power of quantum computers. Using quantum lattice gas
+	automata as examples, I describe possibilities for efficient simulation
+	of quantum and classical systems with a quantum computer. I conclude
+	with a list of research directions

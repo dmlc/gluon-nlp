@@ -1,0 +1,22 @@
+Web-based experiments controlled by JavaScript: an example from probability
+	learning
+JavaScript programs can be used to control Web experiments. This technique is
+	illustrated by an experiment that tested the effects of advice on
+	performance in the classic probability-learning paradigm. Previous
+	research reported that people tested via the Web or in the lab tended
+	to match the probabilities of their responses to the probabilities that
+	those responses would be reinforced. The optimal strategy, however, is
+	to consistently choose the more frequent event; probability matching
+	produces suboptimal performance. We investigated manipulations we
+	reasoned should improve performance. A horse race scenario in which
+	participants predicted the winner in each of a series of races between
+	two horses was compared with an abstract scenario used previously. Ten
+	groups of learners received different amounts of advice, including all
+	combinations of (1) explicit instructions concerning the optimal
+	strategy, (2) explicit instructions concerning a monetary sum to
+	maximize, and (3) accurate information concerning the probabilities of
+	events. The results showed minimal effects of horse race versus
+	abstract scenario. Both advice concerning the optimal strategy and
+	probability information contributed significantly to performance in the
+	task. This paper includes a brief tutorial on JavaScript, explaining
+	with simple examples how to assemble a browser-based experiment

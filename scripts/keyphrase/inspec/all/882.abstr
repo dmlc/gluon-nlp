@@ -1,0 +1,12 @@
+On M/D/1 queue with deterministic server vacations
+We study a single server vacation queue with Poisson arrivals, deterministic
+	service of constant duration b (> 0) and deterministic vacations of
+	constant duration d (> 0) and designate this model as M/D/D/1. After
+	completion of each service, the server may take a vacation with
+	probability p or may continue working in the system with probability 1
+	- p. We obtain time-dependent as well as steady state probability
+	generation functions for the number in the system. For the steady state
+	we obtain explicitly the mean number and the mean waiting time for the
+	system and for the queue. All known results of the M/D/1 queue are
+	derived as a special case. Finally, a numerical illustration is
+	discussed

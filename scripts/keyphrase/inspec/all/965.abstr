@@ -1,0 +1,11 @@
+Sliding mode control of chaos in the cubic Chua's circuit system
+In this paper, a sliding mode controller is applied to control the cubic Chua's
+	circuit system. The sliding surface of this paper used is one dimension
+	higher than the traditional surface and guarantees its passage through
+	the initial states of the controlled system. Therefore, using the
+	characteristic of this sliding mode we aim to design a controller that
+	can meet the desired specification and use less control energy by
+	comparing with the result in the current existing literature. The
+	results show that the proposed controller can steer Chua's circuit
+	system to the desired state without the chattering phenomenon and
+	abrupt state change

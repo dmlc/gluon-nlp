@@ -1,0 +1,9 @@
+An intelligent tutoring system for a power plant simulator
+In this paper, an intelligent tutoring system (ITS) is proposed for a power
+	plant simulator. With a well designed ITS, the need for an instructor
+	is minimized and the operator may readily and efficiently take, in
+	real-time, the control of simulator with appropriate messages he(she)
+	gets from the tutoring system. Using SIMULINK and based on object
+	oriented programming (OOP) and C programming language, a fossil-fuelled
+	power plant simulator with an ITS is proposed. Promising results are
+	demonstrated for a typical power plant

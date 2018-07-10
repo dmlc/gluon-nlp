@@ -1,0 +1,16 @@
+Hordes: a multicast based protocol for anonymity
+With widespread acceptance of the Internet as a public medium for communication
+	and information retrieval, there has been rising concern that the
+	personal privacy of users can be eroded by cooperating network
+	entities. A technical solution to maintaining privacy is to provide
+	anonymity. We present a protocol for initiator anonymity called Hordes,
+	which uses forwarding mechanisms similar to those used in previous
+	protocols for sending data, but is the first protocol to make use of
+	multicast routing to anonymously receive data. We show this results in
+	shorter transmission latencies and requires less work of the protocol
+	participants, in terms of the messages processed. We also present a
+	comparison of the security and anonymity of Hordes with previous
+	protocols, using the first quantitative definition of anonymity and
+	unlinkability. Our analysis shows that Hordes provides anonymity in a
+	degree similar to that of Crowds and Onion Routing, but also that
+	Hordes has numerous performance advantages

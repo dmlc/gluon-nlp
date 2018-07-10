@@ -1,0 +1,6 @@
+A generalized PERT/CPM implementation in a spreadsheet
+This paper describes the implementation of the traditional PERT/CPM algorithm
+	for finding the critical path in a project network in a spreadsheet.
+	The problem is of importance due to the recent shift of attention to
+	using the spreadsheet environment as a vehicle for delivering
+	management science/operations research (MS/OR) techniques to end-users

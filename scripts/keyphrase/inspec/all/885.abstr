@@ -1,0 +1,13 @@
+Assignment of periods and priorities of messages and tasks in distributed
+	control systems
+Presents a task and message-based scheduling method to guarantee the given
+	end-to-end constraints including precedence constraints, time
+	constraints, and period and priority of task and message. The method is
+	an integrated one considering both tasks executed in each node and
+	messages transmitted via the network and is designed to apply to a
+	general distributed control system that has multiple loops and a single
+	loop has sensor nodes with multiple sensors, actuator nodes with
+	multiple actuators, controller nodes with multiple tasks, and several
+	types of constraints. The assigning method of the optimal period and
+	priority of task and message is proposed, using the presented task and
+	message-based scheduling method

@@ -1,0 +1,12 @@
+A simple graphic approach for observer decomposition
+Based upon the proposition that the roles of inputs and outputs in a physical
+	system and those in the corresponding output-injection observer do not
+	really have to be consistent, a systematic procedure is developed in
+	this work to properly divide a set of sparse system models and
+	measurement models into a number of independent subsets with the help
+	of a visual aid. Several smaller sub-observers can then be constructed
+	accordingly to replace the original one. The size of each sub-observer
+	may be further reduced by strategically selecting one or more appended
+	states. These techniques are shown to be quite effective in relieving
+	on-line computation load of the output-injection observers and also in
+	identifying detectable sub-systems

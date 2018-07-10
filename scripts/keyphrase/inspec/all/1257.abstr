@@ -1,0 +1,22 @@
+Definition of a similarity measure between cases based on auto/cross-fuzzy
+	thesauri
+A similarity measure between cases is needed in order to evaluate the degree of
+	similarity when using past similar cases in order to resolve current
+	problems. In similar case retrieval, multiple indices are set up in
+	order to characterize the queries and individual cases, then terms are
+	given as values to each. The similarity measure between cases commonly
+	used is defined using the rate at which the values provided from the
+	corresponding indices match. In practice, however, values cannot be
+	expected to be mutually exclusive. As a result, a natural expansion of
+	this approach is to have relationships in which mutually similar
+	meanings are reflected in the similarity measure between cases. In this
+	paper the authors consider an auto-fuzzy thesaurus which gives the
+	relationship for values between corresponding indices and a cross-fuzzy
+	thesaurus which gives the relationship for values between mutually
+	distinct indices, then defines a similarity measure between cases which
+	considers the relationship of index values based on these thesauri.
+	This definition satisfies the characteristics required for the
+	operation of case-based retrieval even when one value is not
+	necessarily given in the index. Finally, using a test similar case
+	retrieval system, the authors perform a comparative analysis of the
+	proposed similarity measure between cases and a conventional approach

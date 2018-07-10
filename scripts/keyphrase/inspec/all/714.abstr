@@ -1,0 +1,5 @@
+Embeddings of planar graphs that minimize the number of long-face cycles
+We consider the problem of finding embeddings of planar graphs that minimize
+	the number of long-face cycles. We prove that for any k >or= 4, it
+	is NP-complete to find an embedding that minimizes the number of face
+	cycles of length at least k

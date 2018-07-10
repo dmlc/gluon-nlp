@@ -1,0 +1,17 @@
+what's	NO_KP
+in	NO_KP
+a	NO_KP
+name?	NO_KP
+[mobile	NO_KP
+telephony	BEGIN_KP
+branding]	NO_KP
+mobile	BEGIN_KP
+operators	NO_KP
+are	NO_KP
+frantically	NO_KP
+consolidating	BEGIN_KP
+businesses	INSIDE_KP
+into	NO_KP
+single	NO_KP
+international	NO_KP
+brands	NO_KP

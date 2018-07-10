@@ -1,0 +1,16 @@
+Detection of flaws in composites from scattered elastic-wave field using an
+	improved mu GA and a local optimizer
+An effective technique for flaw detection of composites is proposed. In this
+	technique, the detection problem is formulated as an optimization
+	problem minimizing the difference between the measured and calculated
+	surface displacement response derived from scattered elastic-wave
+	fields. A combined optimization technique using an improved mu GA and a
+	local optimizer is developed to solve the optimization problem so as to
+	obtain the flaw parameters defining flaw configurations. Guidelines for
+	implementing the detection technique, including formulation of the
+	objective function of the optimization problem using different error
+	norms, improvement of mu GA convergence performance, switching from mu
+	GA to local optimizer in the optimization process, and suppression of
+	the effect of noise on detection results, are addressed in detail.
+	Numerical examples are presented to demonstrate the effectiveness and
+	efficiency of the proposed detection technique

@@ -1,0 +1,9 @@
+Solving the multiple competitive facilities location problem
+In this paper we propose five heuristic procedures for the solution of the
+	multiple competitive facilities location problem. A franchise of
+	several facilities is to be located in a trade area where competing
+	facilities already exist. The objective is to maximize the market share
+	captured by the franchise as a whole. We perform extensive
+	computational tests and conclude that a two-step heuristic procedure
+	combining simulated annealing and an ascent algorithm provides the best
+	solutions

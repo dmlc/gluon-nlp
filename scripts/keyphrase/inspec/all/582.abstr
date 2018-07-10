@@ -1,0 +1,6 @@
+Optimal estimation of a finite sample of a discrete chaotic process
+The synthesis of optimal algorithms for estimating discrete chaotic processes
+	specified by a finite sample is considered; various possible approaches
+	are discussed. Expressions determining the potential accuracy in
+	estimating a single value of the chaotic process are derived. An
+	example of the application of the general equations obtained is given

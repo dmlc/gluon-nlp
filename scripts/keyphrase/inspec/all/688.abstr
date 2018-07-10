@@ -1,0 +1,13 @@
+Active vibration control of piezolaminated smart beams
+This paper deals with the active vibration control of beam like structures with
+	distributed piezoelectric sensor and actuator layers bonded on top and
+	bottom surfaces of the beam. A finite element model based on
+	Euler-Bernoulli beam theory has been developed. The contribution of the
+	piezoelectric sensor and actuator layers on the mass and stiffness of
+	the beam is considered. Three types of classical control strategies,
+	namely direct proportional feedback, constant-gain negative velocity
+	feedback and Lyapunov feedback and an optimal control strategy, linear
+	quadratic regulator (LQR) scheme are applied to study their control
+	effectiveness. Also, the control performance with different types of
+	loading, such as impulse loading, step loading, harmonic and random
+	loading is studied

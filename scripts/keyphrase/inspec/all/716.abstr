@@ -1,0 +1,7 @@
+Algorithmic results for ordered median problems
+In a series of papers a new type of objective function in location theory,
+	called ordered median function, has been introduced and analyzed. This
+	objective function unifies and generalizes most common objective
+	functions used in location theory. In this paper we identify finite
+	dominating sets for these models and develop polynomial time algorithms
+	together with a detailed complexity analysis

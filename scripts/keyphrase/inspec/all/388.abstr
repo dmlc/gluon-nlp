@@ -1,0 +1,22 @@
+Noninvasive myocardial activation time imaging: a novel inverse algorithm
+	applied to clinical ECG mapping data
+Linear approaches like the minimum-norm least-square algorithm show
+	insufficient performance when it comes to estimating the activation
+	time map on the surface of the heart from electrocardiographic (ECG)
+	mapping data. Additional regularization has to be considered leading to
+	a nonlinear problem formulation. The Gauss-Newton approach is one of
+	the standard mathematical tools capable of solving this kind of
+	problem. To our experience, this algorithm has specific drawbacks which
+	are caused by the applied regularization procedure. In particular,
+	under clinical conditions the amount of regularization cannot be
+	determined clearly. For this reason, we have developed an iterative
+	algorithm solving this nonlinear problem by a sequence of regularized
+	linear problems. At each step of iteration, an individual L-curve is
+	computed. Subsequent iteration steps are performed with the individual
+	optimal regularization parameter. This novel approach is compared with
+	the standard Gauss-Newton approach. Both methods are applied to
+	simulated ECG mapping data as well as to single beat sinus rhythm data
+	from two patients recorded in the catheter laboratory. The proposed
+	approach shows excellent numerical and computational performance, even
+	under clinical conditions at which the Gauss-Newton approach begins to
+	break down

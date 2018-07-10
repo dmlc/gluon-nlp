@@ -1,0 +1,9 @@
+Computing failure probabilities. Applications to reliability analysis
+The paper presents one method for calculating failure probabilities with
+	applications to reliability analysis. The method is based on
+	transforming the initial set of variables to a n-dimensional uniform
+	random variable in the unit hypercube, together with the limit
+	condition set and calculating the associated probability using a
+	recursive method based on the Gauss-Legendre quadrature formulas to
+	calculate the resulting multiple integrals. An example of application
+	is used to illustrate the proposed method

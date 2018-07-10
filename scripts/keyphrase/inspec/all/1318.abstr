@@ -1,0 +1,16 @@
+Network intrusion and fault detection: a statistical anomaly approach
+With the advent and explosive growth of the global Internet and electronic
+	commerce environments, adaptive/automatic network/service intrusion and
+	anomaly detection in wide area data networks and e-commerce
+	infrastructures is fast gaining critical research and practical
+	importance. We present and demonstrate the use of a general-purpose
+	hierarchical multitier multiwindow statistical anomaly detection
+	technology and system that operates automatically, adaptively, and
+	proactively, and can be applied to various networking technologies,
+	including both wired and wireless ad hoc networks. Our method uses
+	statistical models and multivariate classifiers to detect anomalous
+	network conditions. Some numerical results are also presented that
+	demonstrate that our proposed methodology can reliably detect attacks
+	with traffic anomaly intensity as low as 3-5 percent of the typical
+	background traffic intensity, thus promising to generate an effective
+	early warning

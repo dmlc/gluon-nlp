@@ -1,0 +1,25 @@
+Angular disparity in ETACT scintimammography
+Emission tuned aperture computed tomography (ETACT) has been previously shown
+	to have the potential for the detection of small tumors (<1 cm) in
+	scintimammography. However, the optimal approach to the application of
+	ETACT in the clinic has yet to be determined. Therefore, we sought to
+	determine the effect of the angular disparity between the ETACT
+	projections on image quality through the use of a computer simulation.
+	A small, spherical tumor of variable size (5, 7.5 or 10 mm) was placed
+	at the center of a hemispherical breast (15 cm diameter). The tumor to
+	nontumor ratio was either 5:1 or 10:1. The detector was modeled to be a
+	gamma camera fitted with a 4-mm-diam pinhole collimator. The
+	pinhole-to-detector and the pinhole-to-tumor distances were 25 and 15
+	cm, respectively. A ray tracing technique was used to generate three
+	sets of projections (10 degrees , 15 degrees , and 20 degrees , angular
+	disparity). These data were blurred to a resolution consistent with the
+	4 mm pinhole. The TACT reconstruction method was used to reconstruct
+	these three image sets. The tumor contrast and the axial spatial
+	resolution was measured. Smaller angular disparity led to an
+	improvement in image contrast but at a cost of degraded axial spatial
+	resolution. The improvement in contrast is due to a slight improvement
+	in the in-plane spatial resolution. Since improved contrast should lead
+	to better tumor detectability, smaller angular disparity should be
+	used. However, the difference in contrast between 10 degrees and 15
+	degrees was very slight and therefore a reasonable clinical choice for
+	angular disparity is 15 degrees

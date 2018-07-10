@@ -1,0 +1,12 @@
+Automated post bonding inspection by using machine vision techniques
+Inspection plays an important role in the semiconductor industry. In this
+	paper, we focus on the inspection task after wire bonding in packaging.
+	The purpose of wire bonding (W/B) is to connect the bond pads with the
+	lead fingers. Two major types of defects are (1) bonding line missing
+	and (2) bonding line breakage. The numbers of bonding lines and bonding
+	balls are used as the features for defect classification. The proposed
+	method consists of image preprocessing, orientation determination,
+	connection detection, bonding line detection, bonding ball detection,
+	and defect classification. The proposed method is simple and fast. The
+	experimental results show that the proposed method can detect the
+	defects effectively

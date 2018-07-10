@@ -1,0 +1,21 @@
+Advanced optimization strategies in the Rice dHPF compiler
+High-Performance Fortran (HPF) was envisioned as a vehicle for modernizing
+	legacy Fortran codes to achieve scalable parallel performance. To a
+	large extent, today's commercially available HPF compilers have failed
+	to deliver scalable parallel performance for a broad spectrum of
+	applications because of insufficiently powerful compiler analysis and
+	optimization. Substantial restructuring and hand-optimization can be
+	required to achieve acceptable performance with an HPF port of an
+	existing Fortran application, even for regular data-parallel
+	applications. A key goal of the Rice dHPF compiler project has been to
+	develop optimization techniques that enable a wide range of existing
+	scientific applications to be ported easily to efficient HPF with
+	minimal restructuring. This paper describes the challenges to effective
+	parallelization presented by complex (but regular) data-parallel
+	applications, and then describes how the novel analysis and
+	optimization technologies in the dHPF compiler address these challenges
+	effectively, without major rewriting of the applications. We illustrate
+	the techniques by describing their use for parallelizing the NAS SP and
+	BT benchmarks. The dHPF compiler generates multipartitioned
+	parallelizations of these codes that are approaching the scalability
+	and efficiency of sophisticated hand-coded parallelizations

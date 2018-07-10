@@ -1,0 +1,13 @@
+3D reconstruction from uncalibrated-camera optical flow and its reliability
+	evaluation
+We present a scheme for reconstructing a 3D structure from optical flow
+	observed by a camera with an unknown focal length in a statistically
+	optimal way as well as evaluating the reliability of the computed
+	shape. First, the flow fundamental matrices are optimally computed from
+	the observed flow. They are then decomposed into the focal length, its
+	rate of change, and the motion parameters. Next, the flow is optimally
+	corrected so that it satisfies the epipolar equation exactly. Finally,
+	the 3D positions are computed, and their covariance matrices are
+	evaluated. By simulations and real-image experiments, we test the
+	performance of our system and observe how the normalization (gauge) for
+	removing indeterminacy affects the description of uncertainty

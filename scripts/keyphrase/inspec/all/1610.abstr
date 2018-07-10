@@ -1,0 +1,10 @@
+Dynamic multi-objective heating optimization
+We develop a multicriteria approach to the problem of space heating under a
+	time varying price of electricity. In our dynamic goal programming
+	model the goals are ideal temperature intervals and the other criteria
+	are the costs and energy consumption. We discuss the modelling
+	requirements in multicriteria problems with a dynamic structure and
+	present a new relaxation method combining the traditional epsilon
+	-constraint and goal programming (GP) methods. The multi-objective
+	heating optimization (MOHO) application in a spreadsheet environment
+	with numerical examples is described

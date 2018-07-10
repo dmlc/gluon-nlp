@@ -1,0 +1,15 @@
+Relationship between strong monotonicity property, P/sub 2/-property, and the
+	GUS-property in semidefinite linear complementarity problems
+In a recent paper on semidefinite linear complementarity problems, Gowda and
+	Song (2000) introduced and studied the P-property, P/sub 2/-property,
+	GUS-property, and strong monotonicity property for linear
+	transformation L: S/sup n/ to S/sup n/, where S/sup n/ is the space of
+	all symmetric and real n * n matrices. In an attempt to characterize
+	the P/sub 2/-property, they raised the following two questions: (i)
+	Does the strong monotonicity imply the P/sub 2/-property? (ii) Does the
+	GUS-property imply the P/sub 2/-property? In this paper, we show that
+	the strong monotonicity property implies the P/sub 2/-property for any
+	linear transformation and describe an equivalence between these two
+	properties for Lyapunov and other transformations. We show by means of
+	an example that the GUS-property need not imply the P/sub 2/-property,
+	even for Lyapunov transformations

@@ -1,0 +1,18 @@
+Successive expansion method of network planning applying symbolic analysis
+	method
+The conventional power system network successive expansion planning method is
+	discussed in the context of the new paradigm of competitive electric
+	power, energy and service market. In sequel, the paper presents an
+	application of the conceptually new computer program, based on the
+	symbolic analysis of load flows in power system networks. The network
+	parameters and variables are defined as symbols. The symbolic analyzer,
+	which models analytically the power system DC load flows, enables the
+	sensitivity analysis of the power system to parameter and variable
+	variations (costs, transfers, injections), a valuable tool for the
+	expansion planning analysis. That virtue could not be found within the
+	conventional approach, relying on compensation methods, precalculated
+	distribution factors, and so on. This novel application sheds some
+	light on the traditional power system network expansion planning
+	method, as well as on its possible application within the system
+	network expansion planning in the new environment assuming the
+	competitive electric power market

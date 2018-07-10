@@ -1,0 +1,9 @@
+Integrated optical metrology controls post etch CDs
+Control of the transistor gate critical dimension (CD) on the order of a few
+	nanometers is a top priority in many advanced IC fabs. Each nanometer
+	deviation from the target gate length translates directly into the
+	operational speed of these devices. However, using in-line process
+	control by linking the lithography and etch tools can improve CD
+	performance beyond what each individual tool can achieve. The
+	integration of optical CD metrology tools to etch mainframes can result
+	in excellent etcher stability and better control of post-etch CDs

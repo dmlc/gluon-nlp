@@ -1,0 +1,14 @@
+The creation of a high-fidelity finite element model of the kidney for use in
+	trauma research
+A detailed finite element model of the human kidney for trauma research has
+	been created directly from the National Library of Medicine Visible
+	Human Female (VHF) Project data set. An image segmentation and organ
+	reconstruction software package has been developed and employed to
+	transform the 2D VHF images into a 3D polygonal representation.
+	Nonuniform rational B-spline (NURBS) surfaces were then mapped to the
+	polygonal surfaces, and were finally utilized to create a robust 3D
+	hexahedral finite element mesh within a commercially available meshing
+	software. The model employs a combined viscoelastic and hyperelastic
+	material model to successfully simulate the behaviour of biological
+	soft tissues. The finite element model was then validated for use in
+	biomechanical research

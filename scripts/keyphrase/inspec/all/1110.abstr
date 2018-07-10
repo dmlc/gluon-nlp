@@ -1,0 +1,14 @@
+A hybrid model for smoke simulation
+A smoke simulation approach based on the integration of traditional particle
+	systems and density functions is presented in this paper. By attaching
+	a density function to each particle as its attribute, the diffusion of
+	smoke can be described by the variation of particles' density
+	functions, along with the effect on airflow by controlling particles'
+	movement and fragmentation. In addition, a continuous density field for
+	realistic rendering can be generated quickly through the look-up tables
+	of particle's density functions. Compared with traditional particle
+	systems, this approach can describe smoke diffusion, and provide a
+	continuous density field for realistic rendering with much less
+	computation. A quick rendering scheme is also presented in this paper
+	as a useful preview tool for tuning appropriate parameters in the smoke
+	model

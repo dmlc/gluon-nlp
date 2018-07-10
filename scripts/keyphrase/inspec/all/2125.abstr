@@ -1,0 +1,12 @@
+Stochastic systems with a random jump in phase trajectory: stability of their
+	motions
+The probabilistic stability of the perturbed motion of a system with parameters
+	under the action of a general Markov process is studied. The phase
+	vector is assumed to experience random jumps when the structure the
+	system suffers random jumps. Such a situation is encountered, for
+	example, in the motion of a solid with random jumps in its mass. The
+	mean-square stability of random-structure linear systems and stability.
+	of nonlinear systems in the first approximation are studied. The
+	applied approach is helpful in studying the asymptotic probabilistic
+	stability and mean-square exponential stability of stochastic systems
+	through the stability of the respective deterministic systems

@@ -1,0 +1,11 @@
+Supervisory control design based on hybrid systems and fuzzy events detection.
+	Application to an oxichlorination reactor
+This paper presents a supervisory control scheme based on hybrid systems theory
+	and fuzzy events detection. The fuzzy event detector is a linguistic
+	model, which synthesizes complex relations between process variables
+	and process events incorporating experts' knowledge about the process
+	operation. This kind of detection allows the anticipation of
+	appropriate control actions, which depend upon the selected membership
+	functions used to characterize the process under scrutiny. The proposed
+	supervisory control scheme was successfully implemented for an
+	oxichlorination reactor in a vinyl monomer plant

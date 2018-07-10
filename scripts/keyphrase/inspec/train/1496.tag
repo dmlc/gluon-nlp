@@ -1,0 +1,17 @@
+web	BEGIN_KP
+ad	NO_KP
+explosion	NO_KP
+financed	NO_KP
+by	NO_KP
+advertising	BEGIN_KP
+dollars	NO_KP
+from	NO_KP
+big	NO_KP
+names,	NO_KP
+online	BEGIN_KP
+marketers	INSIDE_KP
+are	NO_KP
+embracing	NO_KP
+more	NO_KP
+aggressive	NO_KP
+tactics	NO_KP

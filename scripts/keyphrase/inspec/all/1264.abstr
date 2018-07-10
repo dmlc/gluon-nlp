@@ -1,0 +1,12 @@
+Estimation of the vanishing point for automatic driving system using a cross
+	ratio
+This paper proposes a new method to estimate the vanishing point used as the
+	vehicle heading, which is essential in automatic driving systems. The
+	proposed method uses a cross ratio comprised of a ratio of lengths from
+	four collinear points for extracting the edges that shape the vanishing
+	point. Then, lines that intersect at one point are fitted to the edges
+	in a Hough space. Consequently, the vanishing point is estimated
+	robustly even when the lane markings are occluded by other vehicles. In
+	the presence of lane markings, the road boundaries are also estimated
+	at the same time. Experimental results from images of a real road scene
+	show the effectiveness of the proposed method

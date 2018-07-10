@@ -1,0 +1,17 @@
+Design and modeling of an interval-based ABR flow control protocol
+A novel flow control protocol is presented for availability bit rate (ABR)
+	service in asynchronous transfer mode (ATM) networks. This scheme
+	features periodic explicit rate feedback that enables precise
+	allocation of link bandwidth and buffer space on a hop-by-hop basis to
+	guarantee maximum throughput, minimum cell loss, and high resource
+	efficiency. With the inclusion of resource management cell
+	synchronization and consolidation algorithms, this protocol is capable
+	of controlling point-to-multipoint ABR services within a unified
+	framework. The authors illustrate the modeling of single ABR
+	connection, the interaction between multiple ABR connections, and the
+	constraints applicable to flow control decisions. A loss-free flow
+	control mechanism is presented for high-speed ABR connections using a
+	fluid traffic model. Supporting algorithms and ATM signaling procedures
+	are specified, in company with linear system modeling, numerical
+	analysis, and simulation results, which demonstrate its performance and
+	cost benefits in high-speed backbone networking scenarios

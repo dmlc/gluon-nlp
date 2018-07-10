@@ -1,0 +1,12 @@
+Mathematical properties of dominant AHP and concurrent convergence method
+This study discusses the mathematical structure of the dominant AHP and the
+	concurrent convergence method which were originally developed by
+	Kinoshita and Nakanishi. They introduced a new concept of a regulating
+	alternative into an analyzing tool for a simple evaluation problem with
+	a criterion set and an alternative set. Although the original idea of
+	the dominant AHP and the concurrent convergence method is unique, the
+	dominant AHP and the concurrent convergence method are not sufficiently
+	analyzed in mathematical theory. This study shows that the dominant AHP
+	consists of a pair of evaluation rules satisfying a certain property of
+	overall evaluation vectors. This study also shows that the convergence
+	of concurrent convergence method is guaranteed theoretically

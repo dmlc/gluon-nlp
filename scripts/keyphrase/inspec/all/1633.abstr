@@ -1,0 +1,6 @@
+48 Gbit/s InP DHBT MS-DFF with very low time jitter
+A master-slave D-type flip-flop (MS DFF) fabricated in a self-aligned InP DHBT
+	technology is presented. The packaged circuit shows full-rate clock
+	operation at 48 Gbit/s. Very low time jitter and good retiming
+	capabilities are observed. Layout aspects, packaging and measurement
+	issues are discussed in particular

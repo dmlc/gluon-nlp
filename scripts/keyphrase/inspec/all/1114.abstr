@@ -1,0 +1,11 @@
+A new algebraic modelling approach to distributed problem-solving in MAS
+This paper is devoted to a new algebraic modelling approach to distributed
+	problem-solving in multi-agent systems (MAS), which is featured by a
+	unified framework for describing and treating social behaviors, social
+	dynamics and social intelligence. A conceptual architecture of
+	algebraic modelling is presented. The algebraic modelling of typical
+	social behaviors, social situation and social dynamics is discussed in
+	the context of distributed problem-solving in MAS. The comparison and
+	simulation on distributed task allocations and resource assignments in
+	MAS show more advantages of the algebraic approach than other
+	conventional methods

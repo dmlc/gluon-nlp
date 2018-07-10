@@ -1,0 +1,14 @@
+Shaping the future. BendWizard: a tool for off-line programming of robotic
+	tending systems
+Setting up a robot to make metal cabinets or cases for desktop computers can be
+	a complex operation. For instance, one expert might be required to
+	carry out a feasibility study, and then another to actually program the
+	robot. Understandably, the need for so much expertise, and the time
+	that's required, generally limits the usefulness of automation to
+	high-volume production. Workshops producing parts in batches smaller
+	than 50 or so, or which rely heavily on semiskilled operators, are
+	therefore often discouraged from investing in automation, and so miss
+	out on its many advantages. What is needed is a software tool that
+	operators without special knowledge of robotics, or with no more than
+	rudimentary CAD skills, can use. One which allows easy offline
+	programming and simulation of the work cell on a PC

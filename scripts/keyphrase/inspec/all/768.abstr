@@ -1,0 +1,10 @@
+Critical lines identification on voltage collapse analysis
+This paper deals with critical lines identification on voltage collapse
+	analysis. It is known, from the literature, that voltage collapse is a
+	local phenomenon that spreads around an initial neighborhood Therefore,
+	identifying the system critical bus plays an important role on voltage
+	collapse prevention. For this purpose, the system critical transmission
+	lines should also be identified In this paper, these issues are
+	addressed, yielding reliable results in a short computational time.
+	Tests are done with the help of the IEEE-118 bus and the Southeastern
+	Brazilian systems

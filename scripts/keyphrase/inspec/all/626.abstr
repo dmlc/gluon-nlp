@@ -1,0 +1,17 @@
+Approximate confidence intervals for one proportion and difference of two
+	proportions
+Constructing a confidence interval for a binomial proportion or the difference
+	of two proportions is a routine exercise in daily data analysis. The
+	best-known method is the Wald interval based on the asymptotic normal
+	approximation to the distribution of the observed sample proportion,
+	though it is known to have bad performance for small to medium sample
+	sizes. Agresti et al. (1998, 2000) proposed an Adding-4 method: 4
+	pseudo-observations are added with 2 successes and 2 failures and then
+	the resulting (pseudo-)sample proportion is used. The method is simple
+	and performs extremely well. Here we propose an approximate method
+	based on a t-approximation that takes account of the uncertainty in
+	estimating the variance of the observed (pseudo-)sample proportion. It
+	follows the same line of using a t-test, rather than z-test, in testing
+	the mean of a normal distribution with an unknown variance. For some
+	circumstances our proposed method has a higher coverage probability
+	than the Adding-4 method

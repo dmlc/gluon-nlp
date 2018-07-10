@@ -1,0 +1,16 @@
+A summary of methods applied to tool condition monitoring in drilling
+Presents a summary of the monitoring methods, signal analysis and diagnostic
+	techniques for tool wear and failure monitoring in drilling that have
+	been tested and reported in the literature. The paper covers only
+	indirect monitoring methods such as force, vibration and current
+	measurements. Signal analysis techniques cover all the methods that
+	have been used with indirect measurements including e.g. statistical
+	parameters and Fast Fourier and Wavelet Transform. Only a limited
+	number of automatic diagnostic tools have been developed for diagnosis
+	of the condition of the tool in drilling. All of these rather diverse
+	approaches that have been available are covered in this study. Only in
+	a few of the papers have attempts been made to compare the chosen
+	approach with other methods. Many of the papers only present one
+	approach and unfortunately quite often the test material of the study
+	is limited especially in what comes to the cutting process parameter
+	variation and also workpiece material

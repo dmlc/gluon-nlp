@@ -1,0 +1,3 @@
+loop restructuring; data I/O minimization; on-chip memory; data traffic;
+	embedded processors; loop fusion; data locality; program dependence
+	graph; Petit; fused loop nest; closeness factor; DSP

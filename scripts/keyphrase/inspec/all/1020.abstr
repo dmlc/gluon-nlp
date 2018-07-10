@@ -1,0 +1,19 @@
+Supersampling multiframe blind deconvolution resolution enhancement of adaptive
+	optics compensated imagery of low earth orbit satellites
+We describe a postprocessing methodology for reconstructing undersampled image
+	sequences with randomly varying blur that can provide image enhancement
+	beyond the sampling resolution of the sensor. This method is
+	demonstrated on simulated imagery and on
+	adaptive-optics-(AO)-compensated imagery taken by the Starfire Optical
+	Range 3.5-m telescope that has been artificially undersampled. Also
+	shown are the results of multiframe blind deconvolution of some of the
+	highest quality optical imagery of low earth orbit satellites collected
+	with a ground-based telescope to date. The algorithm used is a
+	generalization of multiframe blind deconvolution techniques that
+	include a representation of spatial sampling by the focal plane array
+	elements based on a forward stochastic model. This generalization
+	enables the random shifts and shape of the AO-compensated point spread
+	function (PSF) to be used to partially eliminate the aliasing effects
+	associated with sub-Nyquist sampling of the image by the focal plane
+	array. The method could be used to reduce resolution loss that occurs
+	when imaging in wide-field-of-view (FOV) modes

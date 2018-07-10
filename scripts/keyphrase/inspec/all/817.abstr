@@ -1,0 +1,15 @@
+Summarization beyond sentence extraction: A probabilistic approach to sentence
+	compression
+When humans produce summaries of documents, they do not simply extract
+	sentences and concatenate them. Rather, they create new sentences that
+	are grammatical, that cohere with one another, and that capture the
+	most salient pieces of information in the original document. Given that
+	large collections of text/abstract pairs are available online, it is
+	now possible to envision algorithms that are trained to mimic this
+	process. In this paper, we focus on sentence compression, a simpler
+	version of this larger challenge. We aim to achieve two goals
+	simultaneously: our compressions should be grammatical, and they should
+	retain the most important pieces of information. These two goals can
+	conflict. We devise both a noisy-channel and a decision-tree approach
+	to the problem, and we evaluate results against manual compressions and
+	a simple baseline

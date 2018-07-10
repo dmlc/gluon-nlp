@@ -1,0 +1,19 @@
+A building block approach to automated engineering
+Shenandoah Valley Electric Cooperative (SVEC, Mt. Crawford, Virginia, US)
+	recognized the need to automate engineering functions and create an
+	interactive model of its distribution system in the early 1990s. It had
+	used Milsoft's DA software for more than 10 years to make engineering
+	studies, and had a Landis and Gyr SCADA system and a hybrid load
+	management system for controlling water heater switches. With the
+	development of GIS and facilities management (FM) applications, SVEC
+	decided this should be the basis for an information system that would
+	model its physical plant and interface with its accounting and billing
+	systems. It could add applications such as outage management, staking,
+	line design and metering to use this information and interface with
+	these databases. However, based on SVEC's size it was not feasible to
+	implement a sophisticated and expensive GIS/FM system. Over the past
+	nine years, SVEC has had success with a building block approach, and
+	its customers and employees are realizing the benefits of the automated
+	applications. This building block approach is discussed in this article
+	including the GIS, outage management system, MapViewer and a staking
+	package. The lessons learned and future expansion are discussed

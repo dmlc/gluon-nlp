@@ -1,0 +1,13 @@
+Development of an Internet-based intelligent design support system for rolling
+	element bearings
+This paper presents a novel approach to developing an intelligent agile design
+	system for rolling bearings based on artificial intelligence (AI),
+	Internet and Web technologies and expertise. The underlying philosophy
+	of the approach is to use AI technology and Web-based design support
+	systems as smart tools from which design customers can rapidly and
+	responsively access the systems' built-in design expertise. The
+	approach is described in detail with a novel AI model and system
+	implementation issues. The major issues in implementing the approach
+	are discussed with particular reference to using AI technologies,
+	network programming, client-server technology and open computing of
+	bearing design and manufacturing requirements

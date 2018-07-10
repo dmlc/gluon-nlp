@@ -1,0 +1,15 @@
+Mining open answers in questionnaire data
+Surveys are important tools for marketing and for managing customer
+	relationships; the answers to open-ended questions, in particular,
+	often contain valuable information and provide an important basis for
+	business decisions. The summaries that human analysts make of these
+	open answers, however, tend to rely too much on intuition and so aren't
+	satisfactorily reliable. Moreover, because the Web makes it so easy to
+	take surveys and solicit comments, companies are finding themselves
+	inundated with data from questionnaires and other sources. Handling it
+	all manually would be not only cumbersome but also costly. Thus,
+	devising a computer system that can automatically mine useful
+	information from open answers has become an important issue. We have
+	developed a survey analysis system that works on these principles. The
+	system mines open answers through two statistical learning techniques:
+	rule learning (which we call rule analysis) and correspondence analysis

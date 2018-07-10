@@ -1,0 +1,9 @@
+More constructions for Boolean algebras
+We construct Boolean algebras with prescribed behaviour concerning depth for
+	the free product of two Boolean algebras over a third, in ZFC using
+	pcf; assuming squares we get results on ultraproducts. We also deal
+	with the family of cardinalities and topological density of homomorphic
+	images of Boolean algebras (you can translate it to topology-on the
+	cardinalities of closed subspaces); and lastly we deal with
+	inequalities between cardinal invariants, mainly d(B)/sup kappa
+	/<|B| implies ind(B)>/sup kappa /V Depth(B)>or=log(|B|)

@@ -1,0 +1,17 @@
+Instability phenomena in the gas-metal arc welding self-regulation process
+Arc instability is a very important determinant of weld quality. The
+	instability behaviour of the gas-metal arc welding (GMAW) process is
+	characterized by strong oscillations in arc length and current. In the
+	paper, a model of the GMAW process is developed using an exact arc
+	voltage characteristic. This model is used to study stability of the
+	self-regulation process and to develop a simulation program that helps
+	to understand the transient or dynamic nature of the GMAW process and
+	relationships among current, electrode extension and contact tube-work
+	distance. The process is shown to exhibit instabilities at both long
+	electrode extension and normal extension. Results obtained from
+	simulation runs of the model were also experimentally confirmed by the
+	present author, as reported in this study. In order to explain the
+	concept of the instability phenomena, the metal transfer mode and the
+	arc voltage-current characteristic were examined. Based on this
+	examination, the conclusion of this study is that their combined
+	effects lead to the oscillations in arc current and length

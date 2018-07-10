@@ -1,0 +1,8 @@
+Approximation of pathwidth of outerplanar graphs
+There exists a polynomial time algorithm to compute the pathwidth of
+	outerplanar graphs, but the large exponent makes this algorithm
+	impractical. In this paper, we give an algorithm that, given a
+	biconnected outerplanar graph G, finds a path decomposition of G of
+	pathwidth at most twice the pathwidth of G plus one. To obtain the
+	result, several relations between the pathwidth of a biconnected
+	outerplanar graph and its dual are established

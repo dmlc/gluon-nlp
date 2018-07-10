@@ -1,0 +1,8 @@
+Novel denoising algorithm for obtaining a superresolved position estimation
+We present a new algorithm that uses the randomness of the noise pattern to
+	achieve high positioning accuracy by applying a modified averaging
+	operation. Using the suggested approach, noise sensitivity of the
+	positioning accuracy can be significantly reduced. This new improved
+	algorithm can improve the performances of tracking systems used for
+	military as well as civil applications. The concept is demonstrated
+	theoretically as well as by optical experiment

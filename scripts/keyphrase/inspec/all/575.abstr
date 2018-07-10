@@ -1,0 +1,12 @@
+A new voltage-vector selection algorithm in direct torque control of induction
+	motor drives
+AC drives based on direct torque control of induction machines allow high
+	dynamic performance to be obtained with very simple control schemes.
+	The drive behavior, in terms of current, flux and torque ripple, is
+	dependent on the utilised voltage vector selection strategy and the
+	operating conditions. In this paper a new voltage vector selection
+	algorithm, which allows a sensible reduction of the RMS value of the
+	stator current ripple without increasing the average value of the
+	inverter switching frequency and without the need of a PWM pulse
+	generator block is presented Numerical simulations have been carried
+	out to validate the proposed method

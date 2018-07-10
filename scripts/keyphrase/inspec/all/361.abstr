@@ -1,0 +1,13 @@
+A pretopological approach for structural analysis
+The aim of this paper is to present a methodological approach for problems
+	encountered in structural analysis. This approach is based upon the
+	pretopological concepts of pseudoclosure and minimal closed subsets.
+	The advantage of this approach is that it provides a framework which is
+	general enough to model and formulate different types of connections
+	that exist between the elements of a population. In addition, it has
+	enabled us to develop a new structural analysis algorithm. An
+	explanation of the definitions and properties of the pretopological
+	concepts applied in this work is first shown and illustrated in sample
+	settings. The structural analysis algorithm is then described and the
+	results obtained in an economic study of the impact of geographic
+	proximity on scientific collaborations are presented

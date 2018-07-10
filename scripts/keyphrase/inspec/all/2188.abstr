@@ -1,0 +1,17 @@
+A nonlinear modulation strategy for hybrid AC/DC power systems
+A nonlinear control strategy to improve transient stability of a multi-machine
+	AC power system with several DC links terminated in the presence of
+	large disturbances is presented. The approach proposed in this paper is
+	based on differential geometric theory, and the HVDC systems are taken
+	as a variable admittance connected at the inverter or rectifier AC bus.
+	After deriving the analytical description of the relationship between
+	the variable admittance and active power flows of each generator, the
+	traditional generator dynamic equations can thus be expressed with the
+	variable admittance of HVDC systems as an additional state variable and
+	changed to an affine form, which is suitable for global linearization
+	method being used to determine its control variable. An important
+	feature of the proposed method is that, the modulated DC power is an
+	adaptive and non-linear function of AC system states, and it can be
+	realized by local feedback and less transmitted data from, adjacent
+	generators. The design procedure is tested on a dual-infeed hybrid
+	AC/DC system

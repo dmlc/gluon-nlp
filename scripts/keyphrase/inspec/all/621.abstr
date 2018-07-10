@@ -1,0 +1,7 @@
+MPEG-4 video object-based rate allocation with variable temporal rates
+In object-based coding, bit allocation is performed at the object level and
+	temporal rates of different objects may vary. The proposed algorithm
+	deals with these two issues when coding multiple video objects (MVOs).
+	The proposed algorithm is able to successfully achieve the target bit
+	rate, effectively code arbitrarily shaped MVOs with different temporal
+	rates, and maintain a stable buffer level

@@ -1,0 +1,17 @@
+Vibration control of structure by using tuned mass damper (development of
+	system which suppress displacement of auxiliary mass)
+In vibration control of a structure by using an active tuned mass damper
+	(ATMD), stroke of the auxiliary mass is so limited that it is difficult
+	to control the vibration in the case of large disturbance input. In
+	this paper, two methods are proposed for the problem. One of the
+	methods is a switching control system by two types of controllers. One
+	of the controllers is a normal controller under small relative
+	displacement of the auxiliary mass, and the other is not effective only
+	for first mode of vibration under large relative displacement of the
+	auxiliary mass. New variable gain control system is constructed by
+	switching these two controllers. The other method is the brake system.
+	In active vibration control, it is necessary to use actuator for active
+	control. By using the actuator, the proposed system puts on the brake
+	to suppress displacement increase of the auxiliary mass under large
+	disturbance input. Finally, the systems are designed and the
+	effectiveness of the systems is confirmed by the simulation

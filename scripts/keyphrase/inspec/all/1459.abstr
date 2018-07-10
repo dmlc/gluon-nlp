@@ -1,0 +1,17 @@
+Wave propagation related to high-speed train. A scaled boundary FE-approach for
+	unbounded domains
+Analysis of wave propagation in solid materials under moving loads is a topic
+	of great interest in railway engineering. The objective of the paper is
+	three-dimensional modelling of high-speed train related ground
+	vibrations; in particular the question of how to account for the
+	unbounded media is addressed. For efficient and accurate modelling of
+	railway structural components taking the unbounded media into account,
+	a hybrid method based on a combination of the conventional finite
+	element method and scaled boundary finite element method is
+	established. In the paper, element matrices and solution procedures for
+	the scaled boundary finite element method (SBFEM) are derived. A
+	non-linear finite element iteration scheme using Lagrange multipliers
+	and coupling between the unbounded domain and the finite element domain
+	are also discussed. Two numerical examples including one example
+	demonstrating the dynamical response of a railroad section are
+	presented to demonstrate the performance of the proposed method

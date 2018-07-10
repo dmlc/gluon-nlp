@@ -1,0 +1,9 @@
+Genetic algorithm-neural network estimation of Cobb angle from torso asymmetry
+	in scoliosis
+Scoliosis severity, measured by the Cobb angle, was estimated by artificial
+	neural network from indices of torso surface asymmetry using a genetic
+	algorithm to select the optimal set of input torso indices. Estimates
+	of the Cobb angle were accurate within 5 degrees in two-thirds, and
+	within 10 degrees in six-sevenths, of a test set of 115 scans of 48
+	scoliosis patients, showing promise for future longitudinal studies to
+	detect scoliosis progression without use of X-rays

@@ -1,0 +1,10 @@
+Voltage control methods with grid connected wind turbines: a tutorial review
+Within electricity grid networks it is conventional for large-scale central
+	generators to both provide power and control grid node voltage.
+	Therefore when wind turbines replace conventional power stations on a
+	substantial scale, they must not only generate power, but also control
+	grid node voltages. This paper reviews the basic principles of voltage
+	control for tutorial benefit and then considers application of
+	grid-connected wind turbines for voltage control. The most widely used
+	contemporary wind turbine types are considered and further detail is
+	given for determining the range of variables that allow control

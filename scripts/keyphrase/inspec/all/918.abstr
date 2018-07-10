@@ -1,0 +1,15 @@
+Schema evolution in data warehouses
+We address the issues related to the evolution and maintenance of data
+	warehousing systems, when underlying data sources change their schema
+	capabilities. These changes can invalidate views at the data
+	warehousing system. We present an approach for dynamically adapting
+	views according to schema changes arising on source relations. This
+	type of maintenance concerns both the schema and the data of the data
+	warehouse. The main issue is to avoid the view recomputation from
+	scratch especially when views are defined from multiple sources. The
+	data of the data warehouse is used primarily in organizational
+	decision-making and may be strategic. Therefore, the schema of the data
+	warehouse can evolve for modeling new requirements resulting from
+	analysis or data-mining processing. Our approach provides means to
+	support schema evolution of the data warehouse independently of the
+	data sources

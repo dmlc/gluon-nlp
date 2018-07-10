@@ -1,0 +1,12 @@
+A solvable queueing network model for railway networks and its validation and
+	applications for the Netherlands
+The performance of new railway networks cannot be measured or simulated, as no
+	detailed train schedules are available. Railway infrastructure and
+	capacities are to be determined long before the actual traffic is
+	known. This paper therefore proposes a solvable queueing network model
+	to compute performance measures of interest without requiring train
+	schedules (timetables). Closed form expressions for mean delays are
+	obtained. New network designs, traffic scenarios, and capacity
+	expansions can so be evaluated. A comparison with real delay data for
+	the Netherlands supports the practical value of the model. A special
+	Dutch cargo-line application is included

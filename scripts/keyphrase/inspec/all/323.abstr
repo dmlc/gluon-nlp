@@ -1,0 +1,10 @@
+A server-side program for delivering experiments with animations
+A server-side program for animation experiments is presented. The program is
+	capable of delivering an experiment composed of discrete animation
+	sequences in various file formats, collecting a discrete or continuous
+	response from the observer, evaluating the appropriateness of the
+	response, and ensuring that the user is not proceeding at an
+	unreasonable rate. Most parameters of the program are controllable by
+	experimenter-edited text files or simple switches in the program code,
+	thereby minimizing the need for programming to create new experiments.
+	A simple demonstration experiment is discussed and is freely available

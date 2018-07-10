@@ -1,0 +1,26 @@
+A comparison of computational color constancy Algorithms. II. Experiments with
+	image data
+For pt.I see ibid., vol. 11, no.9, p.972-84 (2002). We test a number of the
+	leading computational color constancy algorithms using a comprehensive
+	set of images. These were of 33 different scenes under 11 different
+	sources representative of common illumination conditions. The
+	algorithms studied include two gray world methods, a version of the
+	Retinex method, several variants of Forsyth's (1990) gamut-mapping
+	method, Cardei et al.'s (2000) neural net method, and Finlayson et
+	al.'s color by correlation method (Finlayson et al. 1997, 2001; Hubel
+	and Finlayson 2000). We discuss a number of issues in applying color
+	constancy ideas to image data, and study in depth the effect of
+	different preprocessing strategies. We compare the performance of the
+	algorithms on image data with their performance on synthesized data.
+	All data used for this study are available online at
+	http://www.cs.sfu.ca/~color/data, and implementations for most of the
+	algorithms are also available (http://www.cs.sfu.ca/~color/code).
+	Experiments with synthesized data (part one of this paper) suggested
+	that the methods which emphasize the use of the input data statistics,
+	specifically color by correlation and the neural net algorithm, are
+	potentially the most effective at estimating the chromaticity of the
+	scene illuminant. Unfortunately, we were unable to realize comparable
+	performance on real images. Here exploiting pixel intensity proved to
+	be more beneficial than exploiting the details of image chromaticity
+	statistics, and the three-dimensional (3-D) gamut-mapping algorithms
+	gave the best performance

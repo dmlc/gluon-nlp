@@ -1,0 +1,16 @@
+Rank tests of association for exchangeable paired data
+We describe two rank tests of association for paired exchangeable data
+	motivated by the study of lifespans in twins. The pooled sample is
+	ranked. The nonparametric test of association is based on R/sup +/, the
+	sum of the smaller within-pair ranks. A second measure L/sup +/ is the
+	sum of within-pair rank products. Under the null hypothesis of
+	within-pair independence, the two test statistics are approximately
+	normally distributed. Expressions for the exact means and variances of
+	R/sup +/ and L/sup +/ are given. We describe the power of these two
+	statistics under a close alternative hypothesis to that of
+	independence. Both the R/sup +/ and L/sup +/ tests indicate
+	nonparametric statistical evidence of positive association of longevity
+	in identical twins and a negligible relationship between the lifespans
+	of fraternal twins listed in the Danish twin registry. The statistics
+	are also applied to the analysis of a clinical trial studying the time
+	to failure of ventilation tubes in children with bilateral otitis media

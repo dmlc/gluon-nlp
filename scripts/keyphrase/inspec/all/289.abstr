@@ -1,0 +1,11 @@
+Noise effect on memory recall in dynamical neural network model of hippocampus
+We investigate some noise effect on a neural network model proposed by Araki
+	and Aihara (1998) for the memory recall of dynamical patterns in the
+	hippocampus and the entorhinal cortex; the noise effect is important
+	since the release of transmitters at synaptic clefts, the operation of
+	gate of ion channels and so on are known as stochastic phenomena. We
+	consider two kinds of noise effect due to a deterministic noise and a
+	stochastic noise. By numerical simulations, we find that reasonable
+	values of noise give better performance on the memory recall of
+	dynamical patterns. Furthermore we investigate the effect of the
+	strength of external inputs on the memory recall

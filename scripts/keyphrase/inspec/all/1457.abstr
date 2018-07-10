@@ -1,0 +1,10 @@
+A discontinuous Galerkin method for transient analysis of wave propagation in
+	unbounded domains
+A technique based on the discontinuous Galerkin finite element method is
+	developed and applied to the derivation of an absorbing boundary
+	condition for the analysis of transient wave propagation. The condition
+	is exact in that only discretization error is involved. Furthermore,
+	the computational cost associated with use of the condition is an order
+	of magnitude lower than for conditions based on Green functions. The
+	time-stepping scheme resulting from an implicit method in conjunction
+	with this boundary condition appears to be unconditionally stable

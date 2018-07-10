@@ -1,0 +1,13 @@
+Friedberg numberings of families of n-computably enumerable sets
+We establish a number of results on numberings, in particular, on Friedberg
+	numberings, of families of d.c.e. sets. First, it is proved that there
+	exists a Friedberg numbering of the family of all d.c.e. sets. We also
+	show that this result, patterned on Friedberg's famous theorem for the
+	family of all c.e. sets, holds for the family of all n-c.e. sets for
+	any n > 2. Second, it is stated that there exists an infinite family
+	of d.c.e. sets without a Friedberg numbering. Third, it is shown that
+	there exists an infinite family of c.e. sets (treated as a family of
+	d.c.e. sets) with a numbering which is unique up to equivalence.
+	Fourth, it is proved that there exists a family of d.c.e. sets with a
+	least numbering (under reducibility) which is Friedberg but is not the
+	only numbering (modulo reducibility)

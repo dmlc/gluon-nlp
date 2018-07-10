@@ -1,0 +1,9 @@
+Modeling dynamic objects in distributed systems with nested Petri nets
+Nested Petri nets (NP-nets) is a Petri net extension, allowing tokens in a net
+	marking to be represented by marked nets themselves. The paper
+	discusses applicability of NP-nets for modeling task planning systems,
+	multi-agent systems and recursive-parallel systems. A comparison of
+	NP-nets with some other formalisms, such as OPNs of R. Valk (2000),
+	recursive parallel programs of O. Kushnarenko and Ph. Schnoebelen
+	(1997) and process algebras is given. Some aspects of decidability for
+	object-oriented Petri net extensions are also discussed

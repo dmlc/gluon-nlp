@@ -1,0 +1,15 @@
+STEM: Secure Telephony Enabled Middlebox
+Dynamic applications, including IP telephony, have not seen wide acceptance
+	within enterprises because of problems caused by the existing network
+	infrastructure. Static elements, including firewalls and network
+	address translation devices, are not capable of allowing dynamic
+	applications to operate properly. The Secure Telephony Enabled
+	Middlebox (STEM) architecture is an enhancement of the existing network
+	design to remove the issues surrounding static devices. The
+	architecture incorporates an improved firewall that can interpret and
+	utilize information in the application layer of packets to ensure
+	proper functionality. In addition to allowing dynamic applications to
+	function normally, the STEM architecture also incorporates several
+	detection and response mechanisms for well-known network-based
+	vulnerabilities. This article describes the key components of the
+	architecture with respect to the SIP protocol

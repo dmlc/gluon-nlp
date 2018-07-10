@@ -1,0 +1,15 @@
+Run-time data-flow analysis
+Parallelizing compilers have made great progress in recent years. However,
+	there still remains a gap between the current ability of parallelizing
+	compilers and their final goals. In order to achieve the maximum
+	parallelism, run-time techniques were used in parallelizing compilers
+	during last few years. First, this paper presents a basic run-time
+	privatization method. The definition of run-time dead code is given and
+	its side effect is discussed. To eliminate the imprecision caused by
+	the run-time dead code, backward data-flow information must be used.
+	Proteus Test, which can use backward information in run-time, is then
+	presented to exploit more dynamic parallelism. Also, a variation of
+	Proteus Test, the Advanced Proteus Test, is offered to achieve partial
+	parallelism. Proteus Test was implemented on the parallelizing compiler
+	AFT. In the end of this paper the program fpppp.f of Spec95fp Benchmark
+	is taken as an example, to show the effectiveness of Proteus Test

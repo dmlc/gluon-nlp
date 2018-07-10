@@ -1,0 +1,8 @@
+Fault-tolerant computer-aided control systems with multiversion-threshold
+	adaptation: adaptation methods, reliability estimation, and choice of
+	an architecture
+For multiversion majority-redundant computer-aided control systems,
+	systematization of adaptation methods that are stable to hardware and
+	software failures, a method for estimating their reliability from an
+	event graph model, and a method for selecting a standard architecture
+	with regard for reliability requirements are studied

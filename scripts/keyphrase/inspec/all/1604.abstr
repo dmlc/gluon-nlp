@@ -1,0 +1,27 @@
+Improving supply-chain performance by sharing advance demand information
+In this paper, we analyze how sharing advance demand information (ADI) can
+	improve supply-chain performance. We consider two types of ADI,
+	aggregated ADI (A-ADI) and detailed ADI (D-ADI). With A-ADI, customers
+	share with manufacturers information about whether they will place an
+	order for some product in the next time period, but do not share
+	information about which product they will order and which of several
+	potential manufacturers will receive the order. With D-ADI, customers
+	additionally share information about which product they will order, but
+	which manufacturer will receive the order remains uncertain. We develop
+	and solve mathematical models of supply chains where ADI is shared. We
+	derive exact expressions and closed-form approximations for expected
+	costs, expected base-stock levels, and variations of the production
+	quantities. We show that both the manufacturer and the customers
+	benefit from sharing ADI, but that sharing ADI increases the bullwhip
+	effect. We also show that under certain conditions it is optimal to
+	collect ADI from either none or all of the customers. We study two
+	supply chains in detail: a supply chain with an arbitrary number of
+	products that have identical demand rates, and a supply chain with two
+	products that have arbitrary demand rates. For these two supply chains,
+	we analyze how the values of A-ADI and D-ADI depend on the
+	characteristics of the supply chain and on the quality of the shared
+	information, and we identify conditions under which sharing A-ADI and
+	D-ADI can significantly reduce cost. Our results can be used by
+	decision makers to analyze the cost savings that can be achieved by
+	sharing ADI and help them to determine if sharing ADI is beneficial for
+	their supply chains

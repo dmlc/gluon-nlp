@@ -1,0 +1,7 @@
+A switching synchronization scheme for a class of chaotic systems
+In this Letter, we propose an observer-based synchronization scheme for a class
+	of chaotic systems. This class of systems are given by piecewise-linear
+	dynamics. By using some properties of such systems, we give a procedure
+	to construct the gain of the observer. We prove various stability
+	results and comment on the robustness of the proposed scheme. We also
+	present some simulation results

@@ -1,0 +1,17 @@
+Modular and visual specification of hybrid systems: an introduction to HyCharts
+Visual description techniques are particularly important for the design of
+	hybrid systems, because specifications of such systems usually have to
+	be discussed between engineers from a number of different disciplines.
+	Modularity is vital for hybrid systems not only because it allows to
+	handle large systems, but also because it permits to think in terms of
+	components, which is familiar to engineers. Based on two different
+	interpretations for hierarchic graphs and on a clear hybrid computation
+	model, we develop HyCharts. HyCharts consist of two modular visual
+	formalisms, one for the specification of the architecture and one for
+	the specification of the behavior of hybrid systems. The operators on
+	hierarchic graphs enable us to give a surprisingly simple denotational
+	semantics for many concepts known from statechart-like formalisms. Due
+	to a very general composition operator, HyCharts can easily be composed
+	with description techniques from other engineering disciplines. Such
+	heterogeneous system specifications seem to be particularly appropriate
+	for hybrid systems because of their interdisciplinary character

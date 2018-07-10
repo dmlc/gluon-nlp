@@ -1,0 +1,14 @@
+Convolution-based global simulation technique for millimeter-wave photodetector
+	and photomixer circuits
+A fast convolution-based time-domain approach to global photonic-circuit
+	simulation is presented that incorporates a physical device model in
+	the complete detector or mixer circuit. The device used in the
+	demonstration of this technique is a GaAs metal-semiconductor-metal
+	(MSM) photodetector that offers a high response speed for the detection
+	and generation of millimeter waves. Global simulation greatly increases
+	the accuracy in evaluating the complete circuit performance because it
+	accounts for the effects of the millimeter-wave embedding circuit.
+	Device and circuit performance are assessed by calculating optical
+	responsivity and bandwidth. Device-only simulations using GaAs MSMs are
+	compared with global simulations that illustrate the strong
+	interdependence between device and external circuit

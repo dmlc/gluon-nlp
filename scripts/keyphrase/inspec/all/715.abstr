@@ -1,0 +1,8 @@
+The quadratic 0-1 knapsack problem with series-parallel support
+We consider various special cases of the quadratic 0-1 knapsack problem (QKP)
+	for which the underlying graph structure is fairly simple. For the
+	variant with edge series-parallel graphs, we give a dynamic programming
+	algorithm with pseudo-polynomial time complexity, and a fully
+	polynomial time approximation scheme. In strong contrast to this, the
+	variant with vertex series-parallel graphs is shown to be strongly
+	NP-complete

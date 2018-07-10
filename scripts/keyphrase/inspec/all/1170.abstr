@@ -1,0 +1,18 @@
+Upper bound analysis of oblique cutting with nose radius tools
+A generalized upper bound model for calculating the chip flow angle in oblique
+	cutting using flat-faced nose radius tools is described. The projection
+	of the uncut chip area on the rake face is divided into a number of
+	elements parallel to an assumed chip flow direction. The length of each
+	of these elements is used to find the length of the corresponding
+	element on the shear surface using the ratio of the shear velocity to
+	the chip velocity. The area of each element is found as the cross
+	product of the length and its width along the cutting edge. Summing up
+	the area of the elements along the shear surface, the total shear
+	surface area is obtained. The friction area is calculated using the
+	similarity between orthogonal and oblique cutting in the 'equivalent'
+	plane that includes both the cutting velocity and chip velocity. The
+	cutting power is obtained by summing the shear power and the friction
+	power. The actual chip flow angle and chip velocity are obtained by
+	minimizing the cutting power with respect to both these variables. The
+	shape of the curved shear surface, the chip cross section and the
+	cutting force obtained from this model are presented

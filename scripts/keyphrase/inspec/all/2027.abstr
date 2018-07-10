@@ -1,0 +1,9 @@
+Motion estimation using modified dynamic programming
+A new method for computing precise estimates of the motion vector field of
+	moving objects in a sequence of images is proposed. Correspondence
+	vector-field computation is formulated as a matching optimization
+	problem for multiple dynamic images. The proposed method is a heuristic
+	modification of dynamic programming applied to the 2-D optimization
+	problem. Motion-vector-field estimates using real movie images
+	demonstrate good performance of the algorithm in terms of dynamic
+	motion analysis

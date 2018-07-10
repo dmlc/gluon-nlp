@@ -1,0 +1,10 @@
+L/sub p/ boundedness of (C, 1) means of orthonormal expansions for general
+	exponential weights
+Let I be a finite or infinite interval, and let W:I to (0, infinity ). Assume
+	that W/sup 2/ is a weight, so that we may define orthonormal
+	polynomials corresponding to W/sup 2/. For f :R to R, let s/sub m/ [f]
+	denote the mth partial sum of the orthonormal expansion of f with
+	respect to these polynomials. We investigate boundedness in weighted
+	L/sub p/ spaces of the (C, 1) means 1/n /sub m=1/ Sigma /sup n/s/sub
+	m/[f]. The class of weights W/sup 2/ considered includes even and
+	noneven exponential weights

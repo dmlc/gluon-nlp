@@ -1,0 +1,5 @@
+MATLAB code for plotting ambiguity functions
+A MATLAB code capable of plotting ambiguity functions of many different radar
+	signals is presented. The program makes use of MATLAB's sparse matrix
+	operations, and avoids loops. The program could be useful as a
+	pedagogical tool in radar courses teaching pulse compression

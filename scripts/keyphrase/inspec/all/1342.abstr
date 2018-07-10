@@ -1,0 +1,16 @@
+Defending against flooding-based distributed denial-of-service attacks: a
+	tutorial
+Flooding-based distributed denial-of-service (DDoS) attack presents a very
+	serious threat to the stability of the Internet. In a typical DDoS
+	attack, a large number of compromised hosts are amassed to send useless
+	packets to jam a victim, or its Internet connection, or both. In the
+	last two years, it was discovered that DDoS attack methods and tools
+	are becoming more sophisticated, effective, and also more difficult to
+	trace to the real attackers. On the defense side, current technologies
+	are still unable to withstand large-scale attacks. The main purpose of
+	this article is therefore twofold. The first one is to describe various
+	DDoS attack methods, and to present a systematic review and evaluation
+	of the existing defense mechanisms. The second is to discuss a
+	longer-term solution, dubbed the Internet-firewall approach, that
+	attempts to intercept attack packets in the Internet core, well before
+	reaching the victim

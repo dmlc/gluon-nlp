@@ -1,0 +1,13 @@
+Multi-agent collaboration for B2B workflow monitoring
+Business-to-business (B2B) application environments are exceedingly dynamic and
+	competitive. This dynamism is manifested in the form of changing
+	process requirements and time constraints. However, current workflow
+	management technologies have difficulties trying to solve problems,
+	such as: how to deal with the dynamic nature of B2B commerce processes,
+	how to manage the distributed knowledge and recourses, and how to
+	reduce the transaction risk. In this paper, a collaborative multi-agent
+	system is proposed. Multiple intelligent agents in our system can work
+	together not only to identify the workflow problems, but also to solve
+	such problems, by applying business rules, such as re-organizing the
+	procurement and the transaction processes, and making necessary
+	workflow process changes

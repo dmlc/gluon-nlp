@@ -1,0 +1,26 @@
+Induced-shear piezoelectric actuators for rotor blade trailing edge flaps
+Much of the current rotorcraft research is focused on improving performance by
+	reducing unwanted helicopter noise and vibration. One of the most
+	promising active rotorcraft vibration control systems is an active
+	trailing edge flap. In this paper, an induced-shear piezoelectric tube
+	actuator is used in conjunction with a simple lever-cusp hinge
+	amplification device to generate a useful combination of trailing edge
+	flap deflections and hinge moments. A finite-element model of the
+	actuator tube and trailing edge flap (including aerodynamic and
+	inertial loading) was used to guide the design of the actuator-flap
+	system. A full-scale induced shear tube actuator flap system was
+	fabricated and bench top testing was conducted to validate the
+	analysis. Hinge moments corresponding to various rotor speeds were
+	applied to the actuator using mechanical springs. The testing
+	demonstrated that for an applied electric field of 3 kV cm/sup -1/ the
+	tube actuator deflected a representative full-scale 12 inch flap
+	+or-2.8 degrees at 0 rpm and +or-1.4 degrees for a hinge moment
+	simulating a 400 rpm condition. The per cent error between the
+	predicted and experimental full-scale flap deflections ranged from 4%
+	(low rpm) to 12.5% (large rpm). Increasing the electric field to 4 kV
+	cm/sup -1/ results in +or-2.5 degrees flap deflection at a rotation
+	speed of 400 rpm, according to the design analysis. A trade study was
+	conducted to compare the performance of the piezoelectric tube actuator
+	to the state of the art in trailing edge flap actuators and indicated
+	that the induced-shear tube actuator shows promise as a trailing edge
+	flap actuator

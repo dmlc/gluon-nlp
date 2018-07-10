@@ -1,0 +1,15 @@
+Mining the optimal class association rule set
+We define an optimal class association rule set to be the minimum rule set with
+	the same predictive power of the complete class association rule set.
+	Using this rule set instead of the complete class association rule set
+	we can avoid redundant computation that would otherwise be required for
+	mining predictive association rules and hence improve the efficiency of
+	the mining process significantly. We present an efficient algorithm for
+	mining the optimal class association rule set using an upward closure
+	property of pruning weak rules before they are actually generated. We
+	have implemented the algorithm and our experimental results show that
+	our algorithm generates the optimal class association rule set, whose
+	size is smaller than 1/17 of the complete class association rule set on
+	average, in significantly less time than generating the complete class
+	association rule set. Our proposed criterion has been shown very
+	effective for pruning weak rules in dense databases

@@ -1,0 +1,11 @@
+A min-max theorem on feedback vertex sets
+We establish a necessary and sufficient condition for the linear system {x : Hx
+	>or= e, x >or= 0} associated with a bipartite tournament to be
+	totally dual integral, where H is the cycle-vertex incidence matrix and
+	e is the all-one vector. The consequence is a min-max relation on
+	packing and covering cycles, together with strongly polynomial time
+	algorithms for the feedback vertex set problem and the cycle packing
+	problem on the corresponding bipartite tournaments. In addition, we
+	show that the feedback vertex set problem on general bipartite
+	tournaments is NP-complete and approximable within 3.5 based on the
+	min-max theorem

@@ -1,0 +1,19 @@
+A large deviations analysis of the transient of a queue with many Markov fluid
+	inputs: approximations and fast simulation
+This article analyzes the transient buffer content distribution of a queue fed
+	by a large number of Markov fluid sources. We characterize the
+	probability of overflow at time t, given the current buffer level and
+	the number of sources in the on-state. After scaling buffer and
+	bandwidth resources by the number of sources n, we can apply large
+	deviations techniques. The transient overflow probability decays
+	exponentially in n. In the case of exponential on/off sources, we
+	derive an expression for the decay rate of the rare event probability
+	under consideration. For general Markov fluid sources, we present a
+	plausible conjecture. We also provide the "most likely path" from the
+	initial state to overflow (at time t). Knowledge of the decay rate and
+	the most likely path to overflow leads to (i) approximations of the
+	transient overflow probability and (ii) efficient simulation methods of
+	the rare event of buffer overflow. The simulation methods, based on
+	importance sampling, give a huge speed-up compared to straightforward
+	simulations. The approximations are of low computational complexity and
+	are accurate, as verified by means of simulation experiments

@@ -1,0 +1,10 @@
+Accelerating filtering techniques for numeric CSPs
+Search algorithms for solving Numeric CSPs (Constraint Satisfaction Problems)
+	make an extensive use of filtering techniques. In this paper we show
+	how those filtering techniques can be accelerated by discovering and
+	exploiting some regularities during the filtering process. Two kinds of
+	regularities are discussed, cyclic phenomena in the propagation queue
+	and numeric regularities of the domains of the variables. We also
+	present in this paper an attempt to unify numeric CSPs solving methods
+	from two distinct communities, that of CSP in artificial intelligence,
+	and that of interval analysis

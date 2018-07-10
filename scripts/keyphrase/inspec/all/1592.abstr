@@ -1,0 +1,16 @@
+Hermite interpolation by rotation-invariant spatial Pythagorean-hodograph
+	curves
+The interpolation of first-order Hermite data by spatial Pythagorean-hodograph
+	curves that exhibit closure under arbitrary 3-dimensional rotations is
+	addressed. The hodographs of such curves correspond to certain
+	combinations of four polynomials, given by Dietz et al. (1993), that
+	admit compact descriptions in terms of quaternions - an instance of the
+	"PH representation map" proposed by Choi et al. (2002). The
+	lowest-order PH curves that interpolate arbitrary first-order spatial
+	Hermite data are quintics. It is shown that, with PH quintics, the
+	quaternion representation yields a reduction of the Hermite
+	interpolation problem to three "simple" quadratic equations in three
+	quaternion unknowns. This system admits a closed-form solution,
+	expressing all PH quintic interpolants to given spatial Hermite data as
+	a two-parameter family. An integral shape measure is invoked to fix
+	these two free parameters

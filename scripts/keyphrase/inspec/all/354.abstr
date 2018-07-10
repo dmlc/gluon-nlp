@@ -1,0 +1,10 @@
+Fault-tolerant Hamiltonian laceability of hypercubes
+It is known that every hypercube Q/sub n/ is a bipartite graph. Assume that
+	n>or=2 and F is a subset of edges with |F|<or=n-2. We prove that
+	there exists a Hamiltonian path in Q/sub n/-F between any two vertices
+	of different partite sets. Moreover, there exists a path of length
+	2/sup n/-2 between any two vertices of the same partite set. Assume
+	that n>or=3 and F is a subset of edges with |F|<or=n-3. We prove
+	that there exists a Hamiltonian path in Q/sub n/-{v}-F between any two
+	vertices in the partite set without v. Furthermore, all bounds are
+	tight

@@ -1,0 +1,6 @@
+word spotting; a posterior measure; keyword confidence; acoustic layer scores;
+	syllable-based statistical language model scores; a posteriori
+	confidence measure; forward-backward calculating algorithm; zero false
+	alarm assumption; relative confidence measures; word spotting task;
+	syllable lattice hidden Markov model; confidence estimation; optimal
+	path search; N-best syllable re-scoring; speech recognition systems

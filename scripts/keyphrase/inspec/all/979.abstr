@@ -1,0 +1,9 @@
+Design, analysis and testing of some parallel two-step W-methods for stiff
+	systems
+Parallel two-step W-methods are linearly-implicit integration methods where the
+	s stage values can be computed in parallel. We construct methods of
+	stage order q = s and order p = s with favourable stability properties.
+	Generalizations for the concepts of A- and L-stability are proposed and
+	conditions for stiff accuracy are given. Numerical comparisons on a
+	shared memory computer show the efficiency of the methods, especially
+	in combination with Krylov-techniques for large stiff systems

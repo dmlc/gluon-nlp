@@ -1,0 +1,6 @@
+Optimal strategies for a semi-Markovian inventory system
+Control for a semi-Markovian inventory system is considered. Under general
+	assumptions on system functioning, conditions for existence of an
+	optimal nonrandomized Markovian strategy are found. It is shown that
+	under some additional assumptions on storing conditions for the
+	inventory, the optimal strategy has a threshold (s, S)-frame

@@ -1,0 +1,7 @@
+A fuzzy logic adaptation circuit for control systems of deformable space
+	vehicles: its design
+A fuzzy-logic adaptation algorithm is designed for adjusting the discreteness
+	period of a control system for ensuring the stability and quality of
+	control process with regard to the elastic structural vibrations of a
+	deformable space vehicle. Its performance is verified by digital
+	modeling of a discrete control system with two objects

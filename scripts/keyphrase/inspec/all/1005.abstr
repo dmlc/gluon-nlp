@@ -1,0 +1,15 @@
+The average-case identifiability and controllability of large scale systems
+Needs for increased product quality, reduced pollution, and reduced energy and
+	material consumption are driving enhanced process integration. This
+	increases the number of manipulated and measured variables required by
+	the control system to achieve its objectives. This paper addresses the
+	question of whether processes tend to become increasingly more
+	difficult to identify and control as the process dimension increases.
+	Tools and results of multivariable statistics are used to show that,
+	under a variety of assumed distributions on the elements, square
+	processes of higher dimension tend to be more difficult to identify and
+	control, whereas the expected controllability and identifiability of
+	nonsquare processes depends on the relative numbers of measured and
+	manipulated variables. These results suggest that the procedure of
+	simplifying the control problem so that only a square process is
+	considered is a poor practice for large scale systems

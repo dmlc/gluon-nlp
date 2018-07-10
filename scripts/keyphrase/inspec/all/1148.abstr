@@ -1,0 +1,20 @@
+Benchmarking of the Dose Planning Method (DPM) Monte Carlo code using electron
+	beams from a racetrack microtron
+A comprehensive set of measurements and calculations has been conducted to
+	investigate the accuracy of the Dose Planning Method (DPM) Monte Carlo
+	code for dose calculations from 10 and 50 MeV scanned electron beams
+	produced from a racetrack microtron. Central axis depth dose
+	measurements and a series of profile scans at various depths were
+	acquired in a water phantom using a Scanditronix type RK ion chamber.
+	Source spatial distributions for the Monte Carlo calculations were
+	reconstructed from in-air ion chamber measurements carried out across
+	the two-dimensional beam profile at 100 cm downstream from the source.
+	The in-air spatial distributions were found to have full width at half
+	maximum of 4.7 and 1.3 cm, at 100 cm from the source, for the 10 and 50
+	MeV beams, respectively. Energy spectra for the 10 and 50 MeV beams
+	were determined by simulating the components of the microtron treatment
+	head using the code MCNP4B. DPM calculations are on average within
+	+or-2% agreement with measurement for all depth dose and profile
+	comparisons conducted in this study. The accuracy of the DPM code
+	illustrated in this work suggests that DPM may be used as a valuable
+	tool for electron beam dose calculations

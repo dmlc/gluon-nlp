@@ -1,0 +1,32 @@
+Matching PET and CT scans of the head and neck area: Development of method and
+	validation
+Positron emission tomography (PET) provides important information on tumor
+	biology, but lacks detailed anatomical information. Our aim in the
+	present study was to develop and validate an automatic registration
+	method for matching PET and CT scans of the head and neck. Three
+	difficulties in achieving this goal are (1) nonrigid motions of the
+	neck can hamper the use of automatic ridged body transformations; (2)
+	emission scans contain too little anatomical information to apply
+	standard image fusion methods; and (3) no objective way exists to
+	quantify the quality of the match results. These problems are solved as
+	follows: accurate and reproducible positioning of the patient was
+	achieved by using a radiotherapy treatment mask. The proposed method
+	makes use of the transmission rather than the emission scan. To obtain
+	sufficient (anatomical) information for matching, two bed positions for
+	the transmission scan were included in the protocol. A mutual
+	information-based algorithm was used as a registration technique. PET
+	and CT data were obtained in seven patients. Each patient had two CT
+	scans and one PET scan. The datasets were used to estimate the
+	consistency by matching PET to CT/sub 1/, CT/sub 1/ to CT/sub 2/, and
+	CT/sub 2/ to PET using the full circle consistency test. It was found
+	that using our method, consistency could be obtained of 4 mm and 1.3
+	degrees on average. The PET voxels used for registration were 5.15 mm,
+	so the errors compared quite favorably with the voxel size. Cropping
+	the images (removing the scanner bed from images) did not improve the
+	consistency of the algorithm. The transmission scan, however, could
+	potentially be reduced to a single position using this approach. In
+	conclusion, the represented algorithm and validation technique has
+	several features that are attractive from both theoretical and
+	practical point of view, it is a user-independent, automatic validation
+	technique for matching CT and PET scans of the head and neck, which
+	gives the opportunity to compare different image enhancements

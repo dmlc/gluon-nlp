@@ -1,0 +1,16 @@
+Scribe: a large-scale and decentralized application-level multicast
+	infrastructure
+This paper presents Scribe, a scalable application-level multicast
+	infrastructure. Scribe supports large numbers of groups, with a
+	potentially large number of members per group. Scribe is built on top
+	of Pastry, a generic peer-to-peer object location and routing substrate
+	overlayed on the Internet, and leverages Pastry's reliability,
+	self-organization, and locality properties. Pastry is used to create
+	and manage groups and to build efficient multicast trees for the
+	dissemination of messages to each group. Scribe provides best-effort
+	reliability guarantees, and we outline how an application can extend
+	Scribe to provide stronger reliability. Simulation results, based on a
+	realistic network topology model, show that Scribe scales across a wide
+	range of groups and group sizes. Also, it balances the load on the
+	nodes while achieving acceptable delay and link stress when compared
+	with Internet protocol multicast

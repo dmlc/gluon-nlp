@@ -1,0 +1,15 @@
+Duality revisited: construction of fractional frequency distributions based on
+	two dual Lotka laws
+Fractional frequency distributions of, for example, authors with a certain
+	(fractional) number of papers are very irregular, and therefore not
+	easy to model or to explain. The article gives a first attempt to this
+	by as suming two simple Lotka laws (with exponent 2): one for the
+	number of authors with n papers (total count here) and one for the
+	number of papers with n authors, n in N. Based on an earlier made
+	convolution model of Egghe, interpreted and reworked now for discrete
+	scores, we are able to produce theoretical fractional frequency
+	distributions with only one parameter, which are in very close
+	agreement with the practical ones as found in a large dataset produced
+	earlier by Rao (1995). The article also shows that (irregular)
+	fractional frequency distributions are a consequence of Lotka's law,
+	and are not examples of breakdowns of this famous historical law

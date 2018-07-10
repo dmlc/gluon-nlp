@@ -1,0 +1,20 @@
+A high-resolution high-frequency monolithic top-shooting microinjector free of
+	satellite drops - part II: fabrication, implementation, and
+	characterization
+For pt. I, see ibid., vol. 11, no. 5, p. 427-36 (2002). Describes the
+	fabrication, implementation and characterization of a thermal driven
+	microinjector, featuring a bubble check valve and monolithic
+	fabrication. Microfabrication of this microinjector is based on
+	bulk/surface-combined micromachining of the silicon wafer, free of the
+	bonding process that is commonly used in the fabrication of commercial
+	printing head, so that even solvents and fuels can be ejected. Droplet
+	ejection sequences of two microinjectors have been studied along with a
+	commercial inkjet printhead for comparison. The droplet ejection of our
+	microinjector with 10 mu m diameter nozzle has been characterized at a
+	frequency over 35 kHz, at least 3 times higher than those of commercial
+	counterparts. The droplet volume from this device is smaller than 1 pl,
+	10 times smaller than those of commercial inkjets employed in the
+	consumer market at the time of testing. Visualization results have
+	verified that our design, although far from being optimized, operates
+	in the frequency several times higher than those of commercial products
+	and reduces the crosstalk among neighboring chambers

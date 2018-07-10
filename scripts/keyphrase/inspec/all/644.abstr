@@ -1,0 +1,21 @@
+Three-dimensional spiral MR imaging: application to renal multiphase
+	contrast-enhanced angiography
+A fast MR pulse sequence with spiral in-plane readout and conventional 3D
+	partition encoding was developed for multiphase contrast-enhanced
+	magnetic resonance angiography (CE-MRA) of the renal vasculature.
+	Compared to a standard multiphase 3D CE-MRA with FLASH readout, an
+	isotropic in-plane spatial resolution of 1.4*1.4 mm/sup 2/ over 2.0*1.4
+	mm/sup 2/ could be achieved with a temporal resolution of 6 sec. The
+	theoretical gain of spatial resolution by using the spiral pulse
+	sequence and the performance in the presence of turbulent flow was
+	evaluated in phantom measurements. Multiphase 3D CE-MRA of the renal
+	arteries was performed in five healthy volunteers using both
+	techniques. A deblurring technique was used to correct the spiral raw
+	data. Thereby, the off-resonance frequencies were determined by
+	minimizing the imaginary part of the data in image space. The chosen
+	correction algorithm was able to reduce image blurring substantially in
+	all MRA phases. The image quality of the spiral CE-MRA pulse sequence
+	was comparable to that of the FLASH CE-MRA with increased spatial
+	resolution and a 25% reduced contrast-to-noise ratio. Additionally,
+	artifacts specific to spiral MRI could be observed which had no impact
+	on the assessment of the renal arteries

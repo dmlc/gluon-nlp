@@ -1,0 +1,10 @@
+Orthogonal decompositions of complete digraphs
+A family G of isomorphic copies of a given digraph G is said to be an
+	orthogonal decomposition of the complete digraph D/sub n/ by G, if
+	every arc of D/sub n/ belongs to exactly one member of G and the union
+	of any two different elements from G contains precisely one pair of
+	reverse arcs. Given a digraph h, an h family mh is the vertex-disjoint
+	union of m copies of h . In this paper, we consider orthogonal
+	decompositions by h-families. Our objective is to prove the existence
+	of such an orthogonal decomposition whenever certain necessary
+	conditions hold and m is sufficiently large

@@ -1,0 +1,5 @@
+horizontal waypoint guidance algorithm; line-following guidance; waypoint line
+	segments; LQR; linear quadratic regulator; optimal waypoint changing
+	points; stability bound; ground speed changes; Lyapunov stability
+	theorem; unmanned flying vehicle; threat avoidance; terrain masking;
+	attack directions; target location arrival time

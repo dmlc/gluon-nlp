@@ -1,0 +1,22 @@
+Speaker identification from voice using neural networks
+The paper provides three different schemes for speaker identification of
+	personnel from their voice using artificial neural networks. The first
+	scheme recognizes speakers by employing the classical backpropagation
+	algorithm pre-trained with known voice samples of the persons. The
+	second scheme provides a framework for classifying the known training
+	samples of the voice features using a hierarchical architecture
+	realized with a self-organizing feature map neural net. The first
+	scheme is highly robust as it is capable of identifying the personnel
+	from their noisy voice samples, but because of its excessive training
+	time it has limited applications for a large voice database. The second
+	scheme though not so robust as the former, however, can classify an
+	unknown voice sample to its nearest class. The time needed for
+	classification by the first scheme is always unique irrespective of the
+	voice sample. It is proportional to the number of feedforward layers in
+	the network. The time-requirement of the second classification scheme,
+	however, is not free from the voice features and is proportional to the
+	number of 2D arrays traversed by the algorithm on the hierarchical
+	structure. The third scheme is highly robust and mis-classification is
+	as low as 0.2 per cent. The third scheme combines the composite
+	benefits of a radial basis function neural net and backpropagation
+	trained neural net

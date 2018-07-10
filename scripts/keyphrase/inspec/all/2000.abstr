@@ -1,0 +1,10 @@
+Generalized predictive control for non-uniformly sampled systems
+In this paper, we study digital control systems with non-uniform updating and
+	sampling patterns, which include multirate sampled-data systems as
+	special cases. We derive lifted models in the state-space domain. The
+	main obstacle for generalized predictive control (GPC) design using the
+	lifted models is the so-called causality constraint. Taking into
+	account this design constraint, we propose a new GPC algorithm, which
+	results in optimal causal control laws for the non-uniformly sampled
+	systems. The solution applies immediately to multirate sampled-data
+	systems where rates are integer multiples of some base period

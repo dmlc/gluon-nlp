@@ -1,0 +1,20 @@
+Automated cerebrum segmentation from three-dimensional sagittal brain MR images
+We present a fully automated cerebrum segmentation algorithm for full
+	three-dimensional sagittal brain MR images. First, cerebrum
+	segmentation from a midsagittal brain MR image is performed utilizing
+	landmarks, anatomical information, and a connectivity-based threshold
+	segmentation algorithm as previously reported. Recognizing that the
+	cerebrum in laterally adjacent slices tends to have similar size and
+	shape, we use the cerebrum segmentation result from the midsagittal
+	brain MR image as a mask to guide cerebrum segmentation in adjacent
+	lateral slices in an iterative fashion. This masking operation yields a
+	masked image (preliminary cerebrum segmentation) for the next lateral
+	slice, which may truncate brain region(s). Truncated regions are
+	restored by first finding end points of their boundaries, by comparing
+	the mask image and masked image boundaries, and then applying a
+	connectivity-based algorithm. The resulting final extracted cerebrum
+	image for this slice is then used as a mask for the next lateral slice.
+	The algorithm yielded satisfactory fully automated cerebrum
+	segmentations in three-dimensional sagittal brain MR images, and had
+	performance superior to conventional edge detection algorithms for
+	segmentation of cerebrum from 3D sagittal brain MR images

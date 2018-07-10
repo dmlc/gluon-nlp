@@ -1,0 +1,10 @@
+Fractional differentiation in passive vibration control
+From a single-degree-of-freedom model used to illustrate the concept of
+	vibration isolation, a method to transform the design for a suspension
+	into a design for a robust controller is presented. Fractional
+	differentiation is used to model the viscoelastic behaviour of the
+	suspension. The use of fractional differentiation not only permits
+	optimisation of just four suspension parameters, showing the
+	'compactness' of the fractional derivative operator, but also leads to
+	robustness of the suspension's performance to uncertainty of the sprung
+	mass. As an example, an engine suspension is studied

@@ -1,0 +1,13 @@
+Direct gear tooth contact analysis for hypoid bevel gears
+A new methodology for tooth contact analysis based on a very general
+	mathematical model of the generating process is proposed. Considering
+	the line of action as a first order singularity of a certain operator
+	equation we develop first and second order conditions for a pair of
+	generated gear tooth flanks to be in contact. The constructive approach
+	allows the direct computation of the paths of contact as the solution
+	of a nonlinear equation system including the exact determination of the
+	bounds of the paths of contact. The transmission error as well as
+	curvature properties in the contact points are obtained in a convenient
+	way. The resulting contact ellipses approximate the bearing area.
+	Through the use of automatic differentiation all the geometric
+	quantities are calculable within the machine accuracy of the computer

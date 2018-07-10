@@ -1,0 +1,13 @@
+Operator splitting and approximate factorization for taxis-diffusion-reaction
+	models
+In this paper we consider the numerical solution of 2D systems of certain types
+	of taxis-diffusion-reaction equations from mathematical biology. By
+	spatial discretization these PDE systems are approximated by systems of
+	positive, nonlinear ODEs (Method of Lines). The aim of this paper is to
+	examine the numerical integration of these ODE systems for low to
+	moderate accuracy by means of splitting techniques. An important
+	consideration is maintenance of positivity. We apply operator splitting
+	and approximate matrix factorization using low order explicit
+	Runge-Kutta methods and linearly implicit Runge-Kutta-Rosenbrock
+	methods. As a reference method the general purpose solver VODPK is
+	applied

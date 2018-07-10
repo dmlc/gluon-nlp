@@ -1,0 +1,17 @@
+Median partitioning: a novel method for the selection of representative subsets
+	from large compound pools
+A method termed median partitioning (MP) has been developed to select diverse
+	sets of molecules from large compound pools. Unlike many other methods
+	for subset selection, the MP approach does not depend on pairwise
+	comparison of molecules and can therefore be applied to very large
+	compound collections. The only time limiting step is the calculation of
+	molecular descriptors for database compounds. MP employs arrays of
+	property descriptors with little correlation to divide large compound
+	pools into partitions from which representative molecules can be
+	selected. In each of n subsequent steps, a population of molecules is
+	divided into subpopulations above and below the median value of a
+	property descriptor until a desired number of 2/sup n/ partitions are
+	obtained. For descriptor evaluation and selection, an entropy
+	formulation was embedded in a genetic algorithm. MP has been applied to
+	generate a subset of the Available Chemicals Directory, and the results
+	have been compared with cell-based partitioning

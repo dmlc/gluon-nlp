@@ -1,0 +1,13 @@
+Techniques for compiling and implementing all NAS parallel benchmarks in HPF
+The NAS parallel benchmarks (NPB) are a well-known benchmark set for
+	high-performance machines. Much effort has been made to implement them
+	in High-Performance Fortran (HPF). In previous attempts, however, the
+	HPF versions did not include the complete set of benchmarks, and the
+	performance was not always good. In this study, we implement all eight
+	benchmarks of the NPB in HPF, and parallelize them using an HPF
+	compiler that we have developed. This report describes the
+	implementation techniques and compiler features necessary to achieve
+	good performance. We evaluate the HPF version on the Hitachi SR2201, a
+	distributed-memory parallel machine. With 16 processors, the execution
+	time of the HPF version is within a factor of 1.5 of the
+	hand-parallelized version of the NPB 2.3 beta

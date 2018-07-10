@@ -1,0 +1,14 @@
+Matched-filter template generation via spatial filtering: application to fetal
+	biomagnetic recordings
+We have developed a two-step procedure for signal processing of fetal
+	biomagnetic recordings that removes cardiac interference and noise.
+	First, a modified matched filter (MF) is applied to remove maternal
+	cardiac interference; then, a simple signal space projection (SSP) is
+	applied to remove noise. The key difference between our MF and a
+	conventional one is that the interference template and the template
+	scaling are derived from a signal that has been spatially filtered to
+	isolate the interference, rather than from the raw signal. Unlike
+	conventional MFs, ours is able to separate maternal and fetal cardiac
+	complexes, even when they have similar morphology and overlap strongly.
+	When followed by a SSP that preserves only the signal subspace, the
+	noise is reduced to a low level

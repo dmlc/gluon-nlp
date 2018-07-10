@@ -1,0 +1,15 @@
+Vector algebra proofs for geometry theorems
+Vector mathematics can generate simple and powerful proofs of theorems in plane
+	geometry. These proofs can also be used to generalize plane geometry
+	theorems to higher dimensions. We present three vector proofs that show
+	the power of this technique. 1. For any quadrilateral, the sum of the
+	squares of the diagonals is less than or equal to the sum of the
+	squares of the sides. 2. The area of a quadrilateral is half the
+	product of the diagonals multiplied by the sine of an included angle.
+	3. One quarter of all triangles are acute (Based upon the options
+	detailed below, with respect to the relative lengths of the sides).
+	This paper presents a set of examples of vector mathematics applied to
+	geometry problems. Some of the most beautiful and sophisticated proofs
+	in mathematics involve using multiple representations of the same data.
+	By leveraging the advantages of each representation one finds new and
+	useful mathematical facts

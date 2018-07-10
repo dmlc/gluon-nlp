@@ -1,0 +1,13 @@
+Robust control of nonlinear systems with parametric uncertainty
+Probabilistic robustness analysis and synthesis for nonlinear systems with
+	uncertain parameters are presented. Monte Carlo simulation is used to
+	estimate the likelihood of system instability and violation of
+	performance requirements subject to variations of the probabilistic
+	system parameters. Stochastic robust control synthesis searches the
+	controller design parameter space to minimize a cost that is a function
+	of the probabilities that design criteria will not be satisfied. The
+	robust control design approach is illustrated by a simple nonlinear
+	example. A modified feedback linearization control is chosen as
+	controller structure, and the design parameters are searched by a
+	genetic algorithm to achieve the tradeoff between stability and
+	performance robustness

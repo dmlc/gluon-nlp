@@ -1,0 +1,16 @@
+The 3D visibility complex
+Visibility problems are central to many computer graphics applications. The
+	most common examples include hidden-part removal for view computation,
+	shadow boundaries, mutual visibility of objects for lighting
+	simulation. In this paper, we present a theoretical study of 3D
+	visibility properties for scenes of smooth convex objects. We work in
+	the space of light rays, or more precisely, of maximal free segments.
+	We group segments that "see" the same object; this defines the 3D
+	visibility complex. The boundaries of these groups of segments
+	correspond to the visual events of the scene (limits of shadows,
+	disappearance of an object when the viewpoint is moved, etc.). We
+	provide a worst case analysis of the complexity of the visibility
+	complex of 3D scenes, as well as a probabilistic study under a simple
+	assumption for "normal" scenes. We extend the visibility complex to
+	handle temporal visibility. We give an output-sensitive construction
+	algorithm and present applications of our approach

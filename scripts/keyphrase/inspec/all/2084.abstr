@@ -1,0 +1,14 @@
+Evaluation of combined dispatching and routeing strategies for a flexible
+	manufacturing system
+This paper deals with the evaluation of combined dispatching and routeing
+	strategies on the performance of a flexible manufacturing system. Three
+	routeing policies - no alternative routings, alternative routeing
+	dynamics and alternative routeing plans - are considered with four
+	dispatching rules with finite buffer capacity. In addition, the effect
+	of changing part mix ratios is also discussed. The performance measures
+	considered are makespan, average machine utilization, average flow time
+	and average delay at local input buffers. Simulation results indicate
+	that the alternative routings dynamic policy gives the best results in
+	three performance measures except for average delay at local input
+	buffers. Further, the effect of changing part mix ratios is not
+	significant

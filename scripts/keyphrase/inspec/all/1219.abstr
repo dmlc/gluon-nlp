@@ -1,0 +1,12 @@
+Knowledge organisation of product design blackboard systems via graph
+	decomposition
+Knowledge organisation plays an important role in building a knowledge-based
+	product design blackboard system. Well-organised knowledge sources will
+	facilitate the effectiveness and efficiency of communication and data
+	exchange in a blackboard system. In a previous investigation, an
+	approach for constructing blackboard systems for product design using a
+	non-directed graph decomposition algorithm was proposed. In this paper,
+	the relationship between graph decomposition and the resultant
+	blackboard system is further studied. A case study of a number of
+	hypothetical blackboard systems that comprise different knowledge
+	organisations is provided

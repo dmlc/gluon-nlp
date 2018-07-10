@@ -1,0 +1,9 @@
+Web content extraction. A WhizBang! approach
+The extraction technology that Whizbang uses consists of a unique approach to
+	scouring the Web for current, very specific forms of information.
+	FlipDog, for example, checks company Web sites for hyperlinks to pages
+	that list job opportunities. It then crawls to the deeper page and,
+	using the WhizBang! Extraction Framework, extracts the key elements of
+	the postings, such as job title, name of employer, job category, and
+	job function. Click on a job and you are transferred to the company Web
+	site to view the job description as it appears there

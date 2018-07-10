@@ -1,0 +1,12 @@
+Topology-reducing surface simplification using a discrete solid representation
+This paper presents a new approach for generating coarse-level approximations
+	of topologically complex models. Dramatic topology reduction is
+	achieved by converting a 3D model to and from a volumetric
+	representation. Our approach produces valid, error-bounded models and
+	supports the creation of approximations that do not interpenetrate the
+	original model, either being completely contained in the input solid or
+	bounding it. Several simple to implement versions of our approach are
+	presented and discussed. We show that these methods perform
+	significantly better than other surface-based approaches when
+	simplifying topologically-rich models such as scene parts and complex
+	mechanical assemblies

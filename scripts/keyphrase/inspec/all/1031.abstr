@@ -1,0 +1,15 @@
+Noise-constrained hyperspectral data compression
+Storage and transmission requirements for hyperspectral data sets are
+	significant. To reduce hardware costs, well-designed compression
+	techniques are needed to preserve information content while maximizing
+	compression ratios. Lossless compression techniques maintain data
+	integrity, but yield small compression ratios. We present a slightly
+	lossy compression algorithm that uses the noise statistics of the data
+	to preserve information content while maximizing compression ratios.
+	The adaptive principal components analysis (APCA) algorithm uses noise
+	statistics to determine the number of significant principal components
+	and selects only those that are required to represent each pixel to
+	within the noise level. We demonstrate the effectiveness of these
+	methods with airborne visible/infrared spectrometer (AVIRIS),
+	hyperspectral digital imagery collection experiment (HYDICE),
+	hyperspectral mapper (HYMAP), and Hyperion datasets

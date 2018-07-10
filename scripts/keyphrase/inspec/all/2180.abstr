@@ -1,0 +1,11 @@
+Standard protocol for exchange of health-checkup data based on SGML: the
+	Health-checkup Data Markup Language (HDML)
+The objectives are to develop a health/medical data interchange model for
+	efficient electronic exchange of data among health-checkup facilities.
+	A Health-checkup Data Markup Language (HDML) was developed on the basis
+	of the Standard Generalized Markup Language (SGML), and a feasibility
+	study carried out, involving data exchange between two health checkup
+	facilities. The structure of HDML is described. The transfer of
+	numerical lab data, summary findings and health status assessment was
+	successful. HDML is an improvement to laboratory data exchange. Further
+	work has to address the exchange of qualitative and textual data

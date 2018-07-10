@@ -1,0 +1,10 @@
+Option pricing formulas based on a non-Gaussian stock price model
+Options are financial instruments that depend on the underlying stock. We
+	explain their non-Gaussian fluctuations using the nonextensive
+	thermodynamics parameter q. A generalized form of the Black-Scholes
+	(BS) partial differential equation (1973) and some closed-form
+	solutions are obtained. The standard BS equation (q = 1) which is used
+	by economists to calculate option prices requires multiple values of
+	the stock volatility (known as the volatility smile). Using q = 1.5
+	which well models the empirical distribution of returns, we get a good
+	description of option prices using a single volatility

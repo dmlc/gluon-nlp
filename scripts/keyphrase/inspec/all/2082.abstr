@@ -1,0 +1,14 @@
+Managing safety and strategic stocks to improve materials requirements planning
+	performance
+This paper provides a methodology for managing safety and strategic stocks in
+	materials requirements planning (MRP) environments to face uncertainty
+	in market demand. A set of recommended guidelines suggest where to
+	position, how to dimension and when to replenish both safety and
+	strategic stocks. Trade-offs between stock positioning and dimensioning
+	and between stock positioning and replenishment order triggering are
+	outlined. The study reveals also that most of the decisions are system
+	specific, so that they should be evaluated in a quantitative manner
+	through simulation. A case study is reported, where the benefits from
+	adopting the new proposed methodology lie in achieving the target
+	service level even under peak demand conditions, with the value of
+	safety stocks as a whole growing only by about 20 per cent

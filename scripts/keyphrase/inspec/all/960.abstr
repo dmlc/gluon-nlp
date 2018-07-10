@@ -1,0 +1,16 @@
+Bisimulation minimization and symbolic model checking
+State space minimization techniques are crucial for combating state explosion.
+	A variety of explicit-state verification tools use bisimulation
+	minimization to check equivalence between systems, to minimize
+	components before composition, or to reduce a state space prior to
+	model checking. Experimental results on bisimulation minimization in
+	symbolic model checking contexts, however, are mixed. We explore
+	bisimulation minimization as an optimization in symbolic model checking
+	of invariance properties. We consider three bisimulation minimization
+	algorithms. From each, we produce a BDD-based model checker for
+	invariant properties and compare this model checker to a conventional
+	one based on backwards reachability. Our comparisons, both theoretical
+	and experimental, suggest that bisimulation minimization is not viable
+	in the context of invariance verification, because performing the
+	minimization requires as many, if not more, computational resources as
+	model checking the unminimized system through backwards reachability

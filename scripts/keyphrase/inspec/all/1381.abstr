@@ -1,0 +1,19 @@
+An augmented spatial digital tree algorithm for contact detection in
+	computational mechanics
+Based on the understanding of existing spatial digital tree-based contact
+	detection approaches, and the alternating digital tree (ADT) algorithm
+	in particular, a more efficient algorithm, termed the augmented spatial
+	digital tree (ASDT) algorithm, is proposed in the present work. The
+	ASDT algorithm adopts a different point representation scheme that uses
+	only the lower comer vertex to represent a (hyper-)rectangle, with the
+	upper comer vertex serving as the augmented information. Consequently,
+	the ASDT algorithm can keep the working space the same as the original
+	n-dimensional space and, in general, a much better balanced tree can be
+	expected. This, together with the introduction of an additional
+	bounding subregion for the rectangles associated with each tree node,
+	makes it possible to significantly reduce the number of node visits in
+	the region search, although each node visit may be slightly more
+	expensive. Three examples arising in computational mechanics are
+	presented to provide an assessment of the performance of the ASDT. The
+	numerical results indicate that the ASDT is, at least, over 3.9 times
+	faster than the ADT

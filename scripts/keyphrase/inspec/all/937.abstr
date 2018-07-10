@@ -1,0 +1,22 @@
+Use of neural networks in the analysis of particle size distribution by laser
+	diffraction: tests with different particle systems
+The application of forward light scattering methods for estimating the particle
+	size distribution (PSD) is usually limited by the occurrence of
+	multiple scattering, which affects the angular distribution of light in
+	highly concentrated suspensions, thus resulting in false calculations
+	by the conventionally adopted algorithms. In this paper, a previously
+	proposed neural network-based method is tested with different particle
+	systems, in order to evaluate its applicability. In the first step of
+	the study, experiments were carried out with solid-liquid suspensions
+	having different characteristics of particle shape and size
+	distribution, under varying solid concentrations. The experimental
+	results, consisting of the angular distribution of light intensity,
+	particle shape and suspension concentration, were used as input data in
+	the fitting of neural network models (NN) that replaced the optical
+	model to provide the PSD. The reference values of particle shape and
+	PSD for the NN fitting were based on image analysis. Comparisons
+	between the PSD values computed by the NN model and the reference
+	values indicate that the method can be used in monitoring the PSD of
+	particles with different shapes in highly concentrated suspensions,
+	thus extending the range of application of forward laser diffraction to
+	a number of systems with industrial interest

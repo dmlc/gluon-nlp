@@ -1,0 +1,7 @@
+Recovering lost efficiency of exponentiation algorithms on smart cards
+At the RSA cryptosystem implementation stage, a major security concern is
+	resistance against so-called side-channel attacks. Solutions are known
+	but they increase the overall complexity by a non-negligible factor
+	(typically, a protected RSA exponentiation is 133% slower). For the
+	first time, protected solutions are proposed that do not penalise the
+	running time of an exponentiation

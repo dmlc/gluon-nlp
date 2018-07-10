@@ -1,0 +1,23 @@
+Mammogram synthesis using a 3D simulation. II. Evaluation of synthetic
+	mammogram texture
+We have evaluated a method for synthesizing mammograms by comparing the texture
+	of clinical and synthetic mammograms. The synthesis algorithm is based
+	upon simulations of breast tissue and the mammographic imaging process.
+	Mammogram texture was synthesized by projections of simulated adipose
+	tissue compartments. It was hypothesized that the synthetic and
+	clinical texture have similar properties, assuming that the mammogram
+	texture reflects the 3D tissue distribution. The size of the projected
+	compartments was computed by mathematical morphology. The texture
+	energy and fractal dimension were also computed and analyzed in terms
+	of the distribution of texture features within four different tissue
+	regions in clinical and synthetic mammograms. Comparison of the
+	cumulative distributions of the mean features computed from 95
+	mammograms showed that the synthetic images simulate the mean features
+	of the texture of clinical mammograms. Correlation of clinical and
+	synthetic texture feature histograms, averaged over all images, showed
+	that the synthetic images can simulate the range of features seen over
+	a large group of mammograms. The best agreement with clinical texture
+	was achieved for simulated compartments with radii of 4-13.3 mm in
+	predominantly adipose tissue regions, and radii of 2.7-5.33 and 1.3-2.7
+	mm in retroareolar and dense fibroglandular tissue regions,
+	respectively

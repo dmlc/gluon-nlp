@@ -1,0 +1,7 @@
+Lossy SPICE models produce realistic averaged simulations
+In previous averaged models, the state-space averaging technique or switch
+	waveforms analysis were usually applied over perfect elements,
+	non-inclusive of the ohmic losses. However, if these elements play an
+	active role in the DC transfer function, they affect the small-signal
+	AC analysis by introducing various damping effects. A model is
+	introduced in a boost voltage-mode application

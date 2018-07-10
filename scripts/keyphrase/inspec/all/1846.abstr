@@ -1,0 +1,12 @@
+Semantic B2B integration: issues in ontology-based approaches
+Solving queries to support e-commerce transactions can involve retrieving and
+	integrating information from multiple information resources. Often,
+	users don't care which resources are used to answer their query. In
+	such situations, the ideal solution would be to hide from the user the
+	details of the resources involved in solving a particular query. An
+	example would be providing seamless access to a set of heterogeneous
+	electronic product catalogues. There are many problems that must be
+	addressed before such a solution can be provided. In this paper, we
+	discuss a number of these problems, indicate how we have addressed
+	these and go on to describe the proof-of-concept demonstration system
+	we have developed

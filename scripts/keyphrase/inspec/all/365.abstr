@@ -1,0 +1,20 @@
+Self-organizing feature maps predicting sea levels
+In this paper, a new method for predicting sea levels employing self-organizing
+	feature maps is introduced. For that purpose the maps are transformed
+	from an unsupervised learning procedure to a supervised one. Two
+	concepts, originally developed to solve the problems of convergence of
+	other network types, are proposed to be applied to Kohonen networks: a
+	functional relationship between the number of neurons and the number of
+	learning examples and a criterion to break off learning. The latter one
+	can be shown to be conform with the process of self-organization by
+	using U-matrices for visualization of the learning procedure. The
+	predictions made using these neural models are compared for accuracy
+	with observations and with the prognoses prepared using six models: two
+	hydrodynamic models, a statistical model, a nearest neighbor model, the
+	persistence model, and the verbal forecasts that are broadcast and kept
+	on record by the Sea Level Forecast Service of the Federal Maritime and
+	Hydrography Agency (BSH) in Hamburg. Before training the maps, the
+	meteorological and oceanographic situation has to be condensed as well
+	as possible, and the weight and learning vectors have to be made as
+	small as possible. The self-organizing feature maps predict sea levels
+	better than all six models of comparison

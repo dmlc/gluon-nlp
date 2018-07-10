@@ -1,0 +1,12 @@
+Faking it: simulating dependent types in Haskell
+Dependent types reflect the fact that validity of data is often a relative
+	notion by allowing prior data to affect the types of subsequent data.
+	Not only does this make for a precise type system, but also a highly
+	generic one: both the type and the program for each instance of a
+	family of operations can be computed from the data which codes for that
+	instance. Recent experimental extensions to the Haskell type class
+	mechanism give us strong tools to relativize types to other types. We
+	may simulate some aspects of dependent typing by making counterfeit
+	type-level copies of data, with type constructors simulating data
+	constructors and type classes simulating datatypes. This paper gives
+	examples of the technique and discusses its potential

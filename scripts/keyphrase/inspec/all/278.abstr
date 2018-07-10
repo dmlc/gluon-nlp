@@ -1,0 +1,18 @@
+Novel ZE-isomerism descriptors derived from molecular topology and their
+	application to QSAR analysis
+We introduce several series of novel ZE-isomerism descriptors derived directly
+	from two-dimensional molecular topology. These descriptors make use of
+	a quantity named ZE-isomerism correction, which is added to the vertex
+	degrees of atoms connected by double bonds in Z and E configurations.
+	This approach is similar to the one described previously for
+	topological chirality descriptors (Golbraikh, A., et al. J. Chem. Inf.
+	Comput. Sci. 2001, 41, 147-158). The ZE-isomerism descriptors include
+	modified molecular connectivity indices, overall Zagreb indices,
+	extended connectivity, overall connectivity, and topological charge
+	indices. They can be either real or complex numbers. Mathematical
+	properties of different subgroups of ZE-isomerism descriptors are
+	discussed. These descriptors circumvent the inability of conventional
+	topological indices to distinguish between Z and E isomers. The
+	applicability of ZE-isomerism descriptors to QSAR analysis is
+	demonstrated in the studies of a series of 131 anticancer agents
+	inhibiting tubulin polymerization

@@ -1,0 +1,13 @@
+Color plane interpolation using alternating projections
+Most commercial digital cameras use color filter arrays to sample red, green,
+	and blue colors according to a specific pattern. At the location of
+	each pixel only one color sample is taken, and the values of the other
+	colors must be interpolated using neighboring samples. This color plane
+	interpolation is known as demosaicing; it is one of the important tasks
+	in a digital camera pipeline. If demosaicing is not performed
+	appropriately, images suffer from highly visible color artifacts. In
+	this paper we present a new demosaicing technique that uses
+	inter-channel correlation effectively in an alternating-projections
+	scheme. We have compared this technique with six state-of-the-art
+	demosaicing techniques, and it outperforms all of them, both visually
+	and in terms of mean square error

@@ -1,0 +1,17 @@
+Application of artificial intelligence to search ground-state geometry of
+	clusters
+We introduce a global optimization procedure, the neural-assisted genetic
+	algorithm (NAGA). It combines the power of an artificial neural network
+	(ANN) with the versatility of the genetic algorithm. This method is
+	suitable to solve optimization problems that depend on some kind of
+	heuristics to limit the search space. If a reasonable amount of data is
+	available, the ANN can "understand" the problem and provide the genetic
+	algorithm with a selected population of elements that will speed up the
+	search for the optimum solution. We tested the method in a search for
+	the ground-state geometry of silicon clusters. We trained the ANN with
+	information about the geometry and energetics of small silicon
+	clusters. Next, the ANN learned how to restrict the configurational
+	space for larger silicon clusters. For Si/sub 10/ and Si/sub 20/, we
+	noticed that the NAGA is at least three times faster than the "pure"
+	genetic algorithm. As the size of the cluster increases, it is expected
+	that the gain in terms of time will increase as well

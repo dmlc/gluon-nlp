@@ -1,0 +1,16 @@
+Modeling group foraging: individual suboptimality, interference, and a kind of
+	matching
+A series of agent-based models support the hypothesis that behaviors adapted to
+	a group situation may be suboptimal (or "irrational") when expressed by
+	an isolated individual. These models focus on two areas of current
+	concern in behavioral ecology and experimental psychology: the
+	"interference function" (which relates the intake rate of a focal
+	forager to the density of conspecifics) and the "matching law" (which
+	formalizes the observation that many animals match the frequency of
+	their response to different stimuli in proportion to the reward
+	obtained from each stimulus type). Each model employs genetic
+	algorithms to evolve foraging behaviors for multiple agents in
+	spatially explicit environments, structured at the level of situated
+	perception and action. A second concern of the article is to extend the
+	understanding of both matching and interference per se by modeling at
+	this level

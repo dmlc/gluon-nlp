@@ -1,0 +1,13 @@
+Generalized confidence sets for a statistically indeterminate random vector
+A problem is considered for the construction of confidence sets for a random
+	vector, the information on distribution parameters of which is
+	incomplete. To obtain exact estimates and a detailed analysis of the
+	problem, the notion is introduced of a generalized confidence set for a
+	statistically indeterminate random vector. Properties of generalized
+	confidence sets are studied. It is shown that the standard method of
+	estimation, which relies on the unification of confidence sets, leads
+	in many cases to wider confidence estimates. For a normally distributed
+	random vector with an inaccurately known mean value, generalized
+	confidence sets are built tip and the dependence of sizes of a
+	generalized confidence set on the forms and parameters of a set of
+	possible mean values is examined

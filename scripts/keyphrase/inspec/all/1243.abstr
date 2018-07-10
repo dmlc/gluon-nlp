@@ -1,0 +1,15 @@
+HPF/JA: extensions of High Performance Fortran for accelerating real-world
+	applications
+This paper presents a set of extensions on High Performance Fortran (HPF) to
+	make it more usable for parallelizing real-world production codes. HPF
+	has been effective for programs that a compiler can automatically
+	optimize efficiently. However, once the compiler cannot, there have
+	been no ways for the users to explicitly parallelize or optimize their
+	programs. In order to resolve the situation, we have developed a set of
+	HPF extensions (HPF/JA) to give the users more control over
+	sophisticated parallelization and communication optimizations. They
+	include parallelization of loops with complicated reductions,
+	asynchronous communication, user-controllable shadow, and communication
+	pattern reuse for irregular remote data accesses. Preliminary
+	experiments have proved that the extensions are effective at increasing
+	HPF's usability

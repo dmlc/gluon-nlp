@@ -1,0 +1,33 @@
+Time-varying properties of renal autoregulatory mechanisms
+In order to assess the possible time-varying properties of renal
+	autoregulation, time-frequency and time-scaling methods were applied to
+	renal blood flow under broad-band forced arterial blood pressure
+	fluctuations and single-nephron renal blood flow with spontaneous
+	oscillations obtained from normotensive (Sprague-Dawley, Wistar, and
+	Long-Evans) rats, and spontaneously hypertensive rats. Time-frequency
+	analyses of normotensive and hypertensive blood flow data obtained from
+	either the whole kidney or the single-nephron show that indeed both the
+	myogenic and tubuloglomerular feedback (TGF) mechanisms have
+	time-varying characteristics. Furthermore, we utilized the Renyi
+	entropy to measure the complexity of blood-flow dynamics in the
+	time-frequency plane in an effort to discern differences between
+	normotensive and hypertensive recordings. We found a clear difference
+	in Renyi entropy between normotensive and hypertensive blood flow
+	recordings at the whole kidney level for both forced (p < 0.037) and
+	spontaneous arterial pressure fluctuations (p < 0.033), and at the
+	single-nephron level (p < 0.008). Especially at the single-nephron
+	level, the mean Renyi entropy is significantly larger for hypertensive
+	than normotensive rats, suggesting more complex dynamics in the
+	hypertensive condition. To further evaluate whether or not the
+	separation of dynamics between normotensive and hypertensive rats is
+	found in the prescribed frequency ranges of the myogenic and TGF
+	mechanisms, we employed multiresolution wavelet transform. Our analysis
+	revealed that exclusively over scale ranges corresponding to the
+	frequency intervals of the myogenic and TGF mechanisms, the widths of
+	the blood flow wavelet coefficients fall into disjoint sets for
+	normotensive and hypertensive rats. The separation of the scales at the
+	myogenic and TGF frequency ranges is distinct and obtained with 100%
+	accuracy. However, this observation remains valid only for the whole
+	kidney blood pressure/flow data. The results suggest that understanding
+	of the time-varying properties of the two mechanisms is required for a
+	complete description of renal autoregulation

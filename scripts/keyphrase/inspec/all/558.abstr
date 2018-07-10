@@ -1,0 +1,11 @@
+OS porting and application development for SoC
+To deliver improved usability in high-end portable consumer products, the use
+	of an appropriate consumer operating system (OS) is becoming far more
+	widespread. Using a commercially supported OS also vastly increases the
+	availability of supported applications. For the device developer, this
+	trend adds major complexity to the problem of system implementation.
+	Porting a complete operating system to a new hardware design adds
+	significantly to the development burden, increasing both time-to-market
+	and expense. Even for those familiar with the integration of a
+	real-time OS, the porting, validation and support of a complex platform
+	OS is a formidable task

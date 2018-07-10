@@ -1,0 +1,13 @@
+Experimental feedforward and feedback control of a one-dimensional SMA
+	composite
+The control of embedded shape memory alloy (SMA) actuators has recently become
+	a topic of interest in the field of smart structures. The inherent
+	difficulties associated with SMA actuators has resulted in a variety of
+	approaches. Homogenization provides a simplified, yet mathematically
+	rigorous, method of determining average stress and strain fields in a
+	composite. A modified constitutive model is presented based on
+	experimental results demonstrating the inability of most simple
+	phenomenological models to capture the effective behavior of SMAs
+	during thermal activation. A feedforward controller is presented for a
+	SMA composite based on the homogenization of a modified
+	phenomenological model for SMAs in a linear matrix

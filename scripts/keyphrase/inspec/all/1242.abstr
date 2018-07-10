@@ -1,0 +1,16 @@
+VPP Fortran and the design of HPF/JA extensions
+VPP Fortran is a data parallel language that has been designed for the VPP
+	series of supercomputers. In addition to pure data parallelism, it
+	contains certain low-level features that were designed to extract high
+	performance from user programs. A comparison of VPP Fortran and
+	High-Performance Fortran (HPF) 2.0 shows that these low-level features
+	are not available in HPF 2.0. The features include asynchronous
+	interprocessor communication, explicit shadow, and the LOCAL directive.
+	They were shown in VPP Fortran to be very useful in handling real-world
+	applications, and they have been included in the HPF/JA extensions.
+	They are described in the paper. The HPF/JA Language Specification
+	Version 1.0 is an extension of HPF 2.0 to achieve practical performance
+	for real-world applications and is a result of collaboration in the
+	Japan Association for HPF (JAHPF). Some practical programming and
+	tuning procedures with the HPF/JA Language Specification are described,
+	using the NAS Parallel Benchmark BT as an example

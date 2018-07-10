@@ -1,0 +1,20 @@
+Efficient transitive closure reasoning in a combined class/part/containment
+	hierarchy
+Class hierarchies form the backbone of many implemented knowledge
+	representation and reasoning systems. They are used for inheritance,
+	classification and transitive closure reasoning. Part hierarchies are
+	also important in artificial intelligence. Other hierarchies, e.g.
+	containment hierarchies, have received less attention in artificial
+	intelligence. This paper presents an architecture and an implementation
+	of a hierarchy reasoner that integrates a class hierarchy, a part
+	hierarchy, and a containment hierarchy into one structure. In order to
+	make an implemented reasoner useful, it needs to operate at least at
+	speeds comparable to human reasoning. As real-world hierarchies are
+	always large, special techniques need to be used to achieve this. We
+	have developed a set of parallel algorithms and a data representation
+	called maximally reduced tree cover for that purpose. The maximally
+	reduced tree cover is an improvement of a materialized transitive
+	closure representation which has appeared in the literature. Our
+	experiments with a medical vocabulary show that transitive closure
+	reasoning for combined class/part/containment hierarchies in near
+	constant time is possible for a fixed hardware configuration

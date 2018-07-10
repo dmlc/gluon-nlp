@@ -1,0 +1,14 @@
+A formal model of computing with words
+Classical automata are formal models of computing with values. Fuzzy automata
+	are generalizations of classical automata where the knowledge about the
+	system's next state is vague or uncertain. It is worth noting that like
+	classical automata, fuzzy automata can only process strings of input
+	symbols. Therefore, such fuzzy automata are still (abstract) devices
+	for computing with values, although a certain vagueness or uncertainty
+	are involved in the process of computation. We introduce a new kind of
+	fuzzy automata whose inputs are instead strings of fuzzy subsets of the
+	input alphabet. These new fuzzy automata may serve as formal models of
+	computing with words. We establish an extension principle from
+	computing with values to computing with words. This principle indicates
+	that computing with words can be implemented with computing with values
+	with the price of a big amount of extra computations

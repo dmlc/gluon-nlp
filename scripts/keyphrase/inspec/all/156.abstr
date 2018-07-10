@@ -1,0 +1,9 @@
+Using extended logic programming for alarm-correlation in cellular phone
+	networks
+Alarm correlation is a necessity in large mobile phone networks, where the
+	alarm bursts resulting from severe failures would otherwise overload
+	the network operators. We describe how to realize alarm-correlation in
+	cellular phone networks using extended logic programming. To this end,
+	we describe an algorithm and system solving the problem, a model of a
+	mobile phone network application, and a detailed solution for a
+	specific scenario

@@ -1,0 +1,6 @@
+single machine earliness-tardiness scheduling; resource-dependent release
+	dates; common due date; job resource consumption cost; nonincreasing
+	linear function; job release date; total resource consumption
+	minimization; NP-hard problem; exact dynamic programming algorithm;
+	medium size problems; small size problems; heuristic algorithm;
+	large-scale problems; polynomial time algorithm

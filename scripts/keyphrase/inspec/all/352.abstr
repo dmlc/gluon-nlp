@@ -1,0 +1,17 @@
+An efficient retrieval selection algorithm for video servers with random
+	duplicated assignment storage technique
+Random duplicated assignment (RDA) is an approach in which video data is stored
+	by assigning a number of copies of each data block to different,
+	randomly chosen disks. It has been shown that this approach results in
+	smaller response times and lower disk and RAM costs compared to the
+	well-known disk stripping techniques. Based on this storage approach,
+	one has to determine, for each given batch of data blocks, from which
+	disk each of the data blocks is to be retrieved. This is to be done in
+	such a way that the maximum load of the disks is minimized. The problem
+	is called the retrieval selection problem (RSP). In this paper, we
+	propose a new efficient algorithm for RSP. This algorithm is based on
+	the breadth-first search approach and is able to guarantee optimal
+	solutions for RSP in O(n/sup 2/+mn), where m and n correspond to the
+	number of data blocks and the number of disks, respectively. We show
+	that our proposed algorithm has a lower time complexity than an
+	existing algorithm, called the MFS algorithm

@@ -1,0 +1,8 @@
+Q-learning for risk-sensitive control
+We propose for risk-sensitive control of finite Markov chains a counterpart of
+	the popular Q-learning algorithm for classical Markov decision
+	processes. The algorithm is shown to converge with probability one to
+	the desired solution. The proof technique is an adaptation of the
+	o.d.e. approach for the analysis of stochastic approximation
+	algorithms, with most of the work involved used for the analysis of the
+	specific o.d.e.s that arise

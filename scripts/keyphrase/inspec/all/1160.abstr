@@ -1,0 +1,7 @@
+Monoids all polygons over which are omega -stable: proof of the Mustafin-Poizat
+	conjecture
+A monoid S is called an omega -stabilizer (superstabilizer, or stabilizer) if
+	every S-polygon has an omega -stable (superstable, or stable) theory.
+	It is proved that every omega -stabilizer is a regular monoid. This
+	confirms the Mustafin-Poizat conjecture and allows us to end up the
+	description of omega -stabilizers

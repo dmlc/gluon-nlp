@@ -1,0 +1,16 @@
+Pattern recognition strategies for molecular surfaces. I. Pattern generation
+	using fuzzy set theory
+A new method for the characterization of molecules based on the model approach
+	of molecular surfaces is presented. We use the topographical properties
+	of the surface as well as the electrostatic potential, the local
+	lipophilicity/hydrophilicity, and the hydrogen bond density on the
+	surface for characterization. The definition and the calculation method
+	for these properties are reviewed. The surface is segmented into
+	overlapping patches with similar molecular properties. These patches
+	can be used to represent the characteristic local features of the
+	molecule in a way that is beyond the atomistic resolution but can
+	nevertheless be applied for the analysis of partial similarities of
+	different molecules as well as for the identification of molecular
+	complementarity in a very general sense. The patch representation can
+	be used for different applications, which will be demonstrated in
+	subsequent articles

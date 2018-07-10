@@ -1,0 +1,7 @@
+Quantum universal variable-length source coding
+We construct an optimal quantum universal variable-length code that achieves
+	the admissible minimum rate, i.e., our code is used for any probability
+	distribution of quantum states. Its probability of exceeding the
+	admissible minimum rate exponentially goes to 0. Our code is optimal in
+	the sense of its exponent. In addition, its average error
+	asymptotically tends to 0

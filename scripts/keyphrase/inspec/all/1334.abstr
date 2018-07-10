@@ -1,0 +1,12 @@
+A shy invariant of graphs
+Moving from a well known result of P.L. Hammer et al. (1982), we introduce a
+	new graph invariant, say lambda (G) referring to any graph G. It is a
+	non-negative integer which is non-zero whenever G contains particular
+	induced odd cycles or, equivalently, admits a particular minimum
+	clique-partition. We show that).(G) can be efficiently evaluated and
+	that its determination allows one to reduce the hard problem of
+	computing a minimum clique-cover of a graph to an identical problem of
+	smaller size and special structure. Furthermore, one has alpha (G)
+	<or= theta (G) - lambda (G), where alpha (G) and theta (G)
+	respectively denote the cardinality of a maximum stable set of G and of
+	a minimum clique-partition of G

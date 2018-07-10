@@ -1,0 +1,8 @@
+A linear time special case for MC games
+MC games are infinite duration two-player games played on graphs. Deciding the
+	winner in MC games is equivalent to the the modal mu-calculus model
+	checking. In this article we provide a linear time algorithm for a
+	class of MC games. We show that, if all cycles in each strongly
+	connected component of the game graph have at least one common vertex,
+	the winner can be found in linear time. Our results hold also for
+	parity games, which are equivalent to MC games

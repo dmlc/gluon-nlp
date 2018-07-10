@@ -1,0 +1,9 @@
+Elimination of zero-order diffraction in digital holography
+A simple method to suppress the zero-order diffraction in the reconstructed
+	image of digital holography is presented. In this method, the Laplacian
+	of a detected hologram is used instead of the hologram itself for
+	numerical reconstruction by computing the discrete Fresnel integral.
+	This method can significantly improve the image quality and give better
+	resolution and higher accuracy of the reconstructed image. The main
+	advantages of this method are its simplicity in experimental
+	requirements and convenience in data processing

@@ -1,0 +1,14 @@
+Blended implementation of block implicit methods for ODEs
+In this paper we further develop a new approach for naturally defining the
+	nonlinear splittings needed for the implementation of block implicit
+	methods for ODEs, which has been considered by Brugnano [J. Comput.
+	Appl. Math. 116 (2000) 41] and by Brugnano and Trigiante [in: Recent
+	Trends in Numerical Analysis, Nova Science, New York, 2000, pp.
+	81-105]. The basic idea is that of defining the numerical method as the
+	combination (blending) of two suitable component methods. By carefully
+	choosing such methods, it is shown that very efficient implementations
+	can be obtained. Moreover, some of them, characterized by a diagonal
+	splitting, are well suited for parallel computers. Numerical tests
+	comparing the performances of the proposed implementation with existing
+	ones are also presented, in order to make evident the potential of the
+	approach

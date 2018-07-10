@@ -1,0 +1,7 @@
+On the relationship between omega -automata and temporal logic normal forms
+We consider the relationship between omega -automata and a specific logical
+	formulation based on a normal form for temporal logic formulae. While
+	this normal form was developed for use with execution and clausal
+	resolution in temporal logics, we show how it can represent,
+	syntactically, omega -automata in a high-level way. Technical proofs of
+	the correctness of this representation are given

@@ -1,0 +1,14 @@
+Simulating fermions on a quantum computer
+The real-time probabilistic simulation of quantum systems in classical
+	computers is known to be limited by the so-called dynamical sign
+	problem, a problem leading to exponential complexity. In 1981 Richard
+	Feynman raised some provocative questions in connection to the "exact
+	imitation" of such systems using a special device named a "quantum
+	computer". Feynman hesitated about the possibility of imitating fermion
+	systems using such a device. Here we address some of his concerns and,
+	in particular, investigate the simulation of fermionic systems. We show
+	how quantum computers avoid the sign problem in some cases by reducing
+	the complexity from exponential to polynomial. Our demonstration is
+	based upon the use of isomorphisms of algebras. We present specific
+	quantum algorithms that illustrate the main points of our algebraic
+	approach

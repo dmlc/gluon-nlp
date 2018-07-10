@@ -1,0 +1,10 @@
+Three-dimensional periodic Voronoi grain models and micromechanical
+	FE-simulations of a two-phase steel
+A three-dimensional model is proposed for modeling of microstructures. The
+	model is based on the finite element method with periodic boundary
+	conditions. The Voronoi algorithm is used to generate the geometrical
+	model, which has a periodic grain structure that follows the original
+	boundaries of the Voronoi cells. As an application, the model is used
+	to model a two-phase ferrite/pearlite steel. It is shown that periodic
+	cells with only five grains generate representative stress-strain
+	curves

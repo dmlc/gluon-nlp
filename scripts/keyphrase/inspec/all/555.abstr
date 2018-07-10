@@ -1,0 +1,18 @@
+Computing transient gating charge movement of voltage-dependent ion channels
+The opening of voltage-gated sodium, potassium, and calcium ion channels has a
+	steep relationship with voltage. In response to changes in the
+	transmembrane voltage, structural movements of an ion channel that
+	precede channel opening generate a capacitative gating current. The net
+	gating charge displacement due to membrane depolarization is an index
+	of the voltage sensitivity of the ion channel activation process.
+	Understanding the molecular basis of voltage-dependent gating of ion
+	channels requires the measurement and computation of the gating charge,
+	Q. We derive a simple and accurate semianalytic approach to computing
+	the voltage dependence of transient gating charge movement (Q-V
+	relationship) of discrete Markov state models of ion channels using
+	matrix methods. This approach allows rapid computation of Q-V curves
+	for finite and infinite length step depolarizations and is consistent
+	with experimentally measured transient gating charge. This
+	computational approach was applied to Shaker potassium channel gating,
+	including the impact of inactivating particles on potassium channel
+	gating currents

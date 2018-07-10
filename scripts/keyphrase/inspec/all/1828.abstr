@@ -1,0 +1,22 @@
+Exploiting structure in quantified formulas
+We study the computational problem "find the value of the quantified formula
+	obtained by quantifying the variables in a sum of terms." The "sum" can
+	be based on any commutative monoid, the "quantifiers" need only satisfy
+	two simple conditions, and the variables can have any finite domain.
+	This problem is a generalization of the problem "given a
+	sum-of-products of terms, find the value of the sum" studied by R.E.
+	Stearns and H.B. Hunt III (1996). A data structure called a "structure
+	tree" is defined which displays information about "subproblems" that
+	can be solved independently during the process of evaluating the
+	formula. Some formulas have "good" structure trees which enable certain
+	generic algorithms to evaluate the formulas in significantly less time
+	than by brute force evaluation. By "generic algorithm," we mean an
+	algorithm constructed from uninterpreted function symbols, quantifier
+	symbols, and monoid operations. The algebraic nature of the model
+	facilitates a formal treatment of "local reductions" based on the
+	"local replacement" of terms. Such local reductions "preserve formula
+	structure" in the sense that structure trees with nice properties
+	transform into structure trees with similar properties. These local
+	reductions can also be used to transform hierarchical specified
+	problems with useful structure into hierarchically specified problems
+	having similar structure

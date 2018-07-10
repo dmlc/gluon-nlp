@@ -1,0 +1,10 @@
+Controlled projective synchronization in nonpartially-linear chaotic systems
+Projective synchronization (PS), in which the state vectors synchronize up to a
+	scaling factor, is usually observable only in partially linear systems.
+	We show that PS could, by means of control, be extended to general
+	classes of chaotic systems with nonpartial linearity. Performance of PS
+	may also be manipulated by controlling the scaling factor to any
+	desired value. In numerical experiments, we illustrate the applications
+	to a Rossler system and a Chua's circuit. The feasibility of the
+	control for high dimensional systems is demonstrated in a hyperchaotic
+	system

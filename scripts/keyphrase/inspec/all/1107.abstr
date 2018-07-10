@@ -1,0 +1,19 @@
+A knowledge-navigation system for dimensional metrology
+Geometric dimensioning and tolerancing (GD&T) is a method to specify the
+	dimensions and form of a part so that it will meet its design intent.
+	GD&T is difficult to master for two main reasons. First, it is based on
+	complex 3D geometric entities and relationships. Second, the geometry
+	is associated with a large, diverse knowledge base of dimensional
+	metrology with many interconnections. This paper describes an approach
+	to create a dimensional metrology knowledge base that is organized
+	around a set of key concepts and to represent those concepts as virtual
+	objects that can be navigated with interactive, computer visualization
+	techniques to access the associated knowledge. The approach can enable
+	several applications. First is the application to convey the definition
+	and meaning of GD&T over a broad range of tolerance types. Second is
+	the application to provide a visualization of dimensional metrology
+	knowledge within a control hierarchy of the inspection process. Third
+	is the application to show the coverage of interoperability standards
+	to enable industry to make decisions on standards development and
+	harmonization efforts. A prototype system has been implemented to
+	demonstrate the principles involved in the approach

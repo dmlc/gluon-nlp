@@ -1,0 +1,18 @@
+Perfusion quantification using Gaussian process deconvolution
+The quantification of perfusion using dynamic susceptibility contrast MRI
+	(DSC-MRI) requires deconvolution to obtain the residual impulse
+	response function (IRF). In this work, a method using the Gaussian
+	process for deconvolution (GPD) is proposed. The fact that the IRF is
+	smooth is incorporated as a constraint in the method. The GPD method,
+	which automatically estimates the noise level in each voxel, has the
+	advantage that model parameters are optimized automatically. The GPD is
+	compared to singular value decomposition (SVD) using a common threshold
+	for the singular values, and to SVD using a threshold optimized
+	according to the noise level in each voxel. The comparison is carried
+	out using artificial data as well as data from healthy volunteers. It
+	is shown that GPD is comparable to SVD with a variable optimized
+	threshold when determining the maximum of the IRF, which is directly
+	related to the perfusion. GPD provides a better estimate of the entire
+	IRF. As the signal-to-noise ratio (SNR) increases or the time
+	resolution of the measurements increases, GPD is shown to be superior
+	to SVD. This is also found for large distribution volumes

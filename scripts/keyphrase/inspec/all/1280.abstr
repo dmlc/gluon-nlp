@@ -1,0 +1,19 @@
+Products and polymorphic subtypes
+This paper is devoted to a comprehensive study of polymorphic subtypes with
+	products. We first present a sound and complete Hilbert style
+	axiomatization of the relation of being a subtype in presence of to , *
+	type constructors and the For all quantifier, and we show that such
+	axiornatization is not encodable in the system with to , For all only.
+	In order to give a logical semantics to such a subtyping relation, we
+	propose a new form of a sequent which plays a key role in a natural
+	deduction and a Gentzen style calculi. Interestingly enough, the
+	sequent must have the form E implies T, where E is a non-commutative,
+	non-empty sequence of typing assumptions and T is a finite binary tree
+	of typing judgements, each of them behaving like a pushdown store. We
+	study basic metamathematical properties of the two logical systems,
+	such as subject reduction and cut elimination. Some
+	decidability/undecidability issues related to the presented subtyping
+	relation are also explored: as expected, the subtyping over to , *, For
+	all is undecidable, being already undecidable for the to , For all
+	fragment (as proved in [15]), but for the *, For all fragment it turns
+	out to be decidable

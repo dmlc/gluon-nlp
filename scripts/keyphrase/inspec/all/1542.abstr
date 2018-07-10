@@ -1,0 +1,13 @@
+The open-source HCS project
+Despite the rumors, the HCS II project is not dead. In fact, HCS has been
+	licensed and is now an open-source project. In this article, the author
+	brings us up to speed on the HCS II project's past, present, and
+	future. The HCS II is an expandable, standalone, network-based
+	(RS-485), intelligent-node, industrial-oriented supervisory control
+	(SC) system intended for demanding home control applications. The HCS
+	incorporates direct and remote digital inputs and outputs, direct and
+	remote analog inputs and outputs, real time or Boolean decision event
+	triggering, X10 transmission and reception, infrared remote control
+	transmission and reception, remote LCDs, and a master console. Its
+	program is compiled on a PC with the XPRESS compiler and then
+	downloaded to the SC where it runs independently of the PC

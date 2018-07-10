@@ -1,0 +1,14 @@
+Parallel and distributed Haskells
+Parallel and distributed languages specify computations on multiple processors
+	and have a computation language to describe the algorithm, i.e. what to
+	compute, and a coordination language to describe how to organise the
+	computations across the processors. Haskell has been used as the
+	computation language for a wide variety of parallel and distributed
+	languages, and this paper is a comprehensive survey of implemented
+	languages. It outlines parallel and distributed language concepts and
+	classifies Haskell extensions using them. Similar example programs are
+	used to illustrate and contrast the coordination languages, and the
+	comparison is facilitated by the common computation language. A lazy
+	language is not an obvious choice for parallel or distributed
+	computation, and we address the question of why Haskell is a common
+	functional computation language

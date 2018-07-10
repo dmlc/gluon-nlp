@@ -1,0 +1,6 @@
+Neural networks in optimal filtration
+The combined use and mutual influence of neural networks and optimal filtering
+	is considered; the neural-network and filtering approaches are compared
+	by solving two simple optimal-filtering problems: linear filtering and
+	the filtering of a binary telegraph signal corresponding to
+	observations in discrete white noise

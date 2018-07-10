@@ -1,0 +1,11 @@
+Vehicle travel time models for AGV systems under various dispatching rules
+The design and evaluation of AGV-based material handling systems are highly
+	complex because of the randomness and the large number of variables
+	involved. Vehicle travel time is a fundamental parameter for solving
+	various flexible manufacturing system (FMS) design problems. This
+	article presents stochastic vehicle travel time models for AGV-based
+	material handling systems with emphasis on the empty travel times of
+	vehicles. Various vehicle dispatching rules examined here include the
+	nearest vehicle selection rule and longest idle vehicle selection rule.
+	A simulation experiment is used to evaluate and demonstrate the
+	presented models

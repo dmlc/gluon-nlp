@@ -1,0 +1,16 @@
+Design and analysis of optimal material distribution policies in flexible
+	manufacturing systems using a single AGV
+Modern automated manufacturing processes employ automated guided vehicles
+	(AGVs) for material handling, which serve several machine centres (MC)
+	in a factory. Optimal scheduling of AGVs can significantly help to
+	increase the efficiency of the manufacturing process by minimizing the
+	idle time of MCs waiting for the raw materials. We analyse the
+	requirements for an optimal schedule and then provide a mathematical
+	framework for an efficient schedule of material delivery by an AGV. A
+	mathematical model is developed and then a strategy for optimal
+	material distribution of the available raw material to the MCs is
+	derived. With this model, the optimal number of MCs to be utilized is
+	also determined. Finally, the material delivery schedule employing
+	multiple journeys to the MCs by the AGV is carried out. Through
+	rigorous analysis and simulation experiments, we show that such a
+	delivery strategy will optimize the overall performance

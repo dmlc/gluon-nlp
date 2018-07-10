@@ -1,0 +1,16 @@
+Using molecular equivalence numbers to visually explore structural features
+	that distinguish chemical libraries
+A molecular equivalence number (meqnum) classifies a molecule with respect to a
+	class of structural features or topological shapes such as its cyclic
+	system or its set of functional groups. Meqnums can be used to organize
+	molecular structures into nonoverlapping, yet highly relatable classes.
+	We illustrate the construction of some different types of meqnums and
+	present via examples some methods of comparing diverse chemical
+	libraries based on meqnums. In the examples we compare a library which
+	is a random sample from the MDL Drug Data Report (MDDR) with a library
+	which is a random sample from the Available Chemical Directory (ACD).
+	In our analyses, we discover some interesting features of the
+	topological shape of a molecule and its set of functional groups that
+	are strongly linked with compounds occurring in the MDDR but not in the
+	ACD. We also illustrate the utility of molecular equivalence indices in
+	delineating the structural domain over which an SAR conclusion is valid

@@ -1,0 +1,16 @@
+Fuzzy system modeling in pharmacology: an improved algorithm
+In this paper, we propose an improved fuzzy system modeling algorithm to
+	address some of the limitations of the existing approaches identified
+	during our modeling with pharmacological data. This algorithm differs
+	from the existing ones in its approach to the cluster validity problem
+	(i.e., number of clusters), the projection schema (i.e., input
+	membership assignment and rule determination), and significant input
+	determination. The new algorithm is compared with the Bazoon-Turksen
+	model, which is based on the well-known Sugeno-Yasukawa approach. The
+	comparison was made in terms of predictive performance using two
+	different data sets. The first comparison was with a two variable
+	nonlinear function prediction problem and the second comparison was
+	with a clinical pharmacokinetic modeling problem. It is shown that the
+	proposed algorithm provides more precise predictions. Determining the
+	degree of significance for each input variable, allows the user to
+	distinguish their relative importance

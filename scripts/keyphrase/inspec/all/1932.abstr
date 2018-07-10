@@ -1,0 +1,6 @@
+Solution of the safe problem on (0,1)-matrices
+A safe problem with mn locks is studied. It is reduced to a system of linear
+	equations in the modulo 2 residue class. There are three possible
+	variants defined by the numbers m and n evenness, with only one of them
+	having a solution. In two other cases, correction of the initial state
+	of the safe insuring a solution is proposed

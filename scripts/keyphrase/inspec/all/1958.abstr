@@ -1,0 +1,6 @@
+Option pricing from path integral for non-Gaussian fluctuations. Natural
+	martingale and application to truncated Levy distributions
+Within a path integral formalism for non-Gaussian price fluctuations, we set up
+	a simple stochastic calculus and derive a natural martingale for option
+	pricing from the wealth balance of options, stocks, and bonds. The
+	resulting formula is evaluated for truncated Levy distributions

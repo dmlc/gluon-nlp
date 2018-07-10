@@ -1,0 +1,22 @@
+Control of thin film growth in chemical vapor deposition manufacturing systems:
+	a feasibility study
+A study is carried out to design and optimize chemical vapor deposition (CVD)
+	systems for material fabrication. Design and optimization of the CVD
+	process is necessary to satisfying strong global demand and ever
+	increasing quality requirements for thin film production. Advantages of
+	computer aided optimization include high design turnaround time,
+	flexibility to explore a larger design space and the development and
+	adaptation of automation techniques for design and optimization. A CVD
+	reactor consisting of a vertical impinging jet at atmospheric pressure,
+	for growing titanium nitride films, is studied for thin film
+	deposition. Numerical modeling and simulation are used to determine the
+	rate of deposition and film uniformity over a wide range of design
+	variables and operating conditions. These results are used for system
+	design and optimization. The optimization procedure employs an
+	objective function characterizing film quality, productivity and
+	operational costs based on reactor gas flow rate, susceptor temperature
+	and precursor concentration. Parameter space mappings are used to
+	determine the design space, while a minimization algorithm, such as the
+	steepest descent method, is used to determine optimal operating
+	conditions for the system. The main features of computer aided design
+	and optimization using these techniques are discussed in detail

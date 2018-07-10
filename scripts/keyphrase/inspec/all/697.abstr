@@ -1,0 +1,24 @@
+Schedulability analysis of real-time traffic in WorldFIP networks: an
+	integrated approach
+The WorldFIP protocol is one of the profiles that constitute the European
+	fieldbus standard EN-50170. It is particularly well suited to be used
+	in distributed computer-controlled systems where a set of process
+	variables must be shared among network devices. To cope with the
+	real-time requirements of such systems, the protocol provides
+	communication services based on the exchange of periodic and aperiodic
+	identified variables. The periodic exchanges have the highest priority
+	and are executed at run time according to a cyclic schedule. Therefore,
+	the respective schedulability can be determined at pre-run-time when
+	building the schedule table. Concerning the aperiodic exchanges, the
+	situation is different since their priority is lower and they are
+	bandied according to a first-come-first-served policy. In this paper, a
+	response-time-based schedulability analysis for the real-time traffic
+	is presented. Such analysis considers both types of traffic in an
+	integrated way, according to their priorities. Furthermore, a
+	fixed-priorities-based policy is also used to schedule the periodic
+	traffic. The proposed analysis represents an improvement relative to
+	previous work and it can be evaluated online as part of a traffic
+	online admission control. This feature is of particular importance when
+	a planning scheduler is used, instead of the typical offline static
+	scheduler, to allow online changes to the set of periodic process
+	variables

@@ -1,0 +1,8 @@
+Dense coding in entangled states
+We consider the dense coding of entangled qubits shared between two parties,
+	Alice and Bob. The efficiency of classical information gain through
+	quantum entangled qubits is also considered for the case of pairwise
+	entangled qubits and maximally entangled qubits. We conclude that using
+	the pairwise entangled qubits can be more efficient when two parties
+	communicate whereas using the maximally entangled qubits can be more
+	efficient when the N parties communicate

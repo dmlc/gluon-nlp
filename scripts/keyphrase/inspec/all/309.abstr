@@ -1,0 +1,21 @@
+WEXTOR: a Web-based tool for generating and visualizing experimental designs
+	and procedures
+WEXTOR is a Javascript-based experiment generator and teaching tool on the
+	World Wide Web that can be used to design laboratory and Web
+	experiments in a guided step-by-step process. It dynamically creates
+	the customized Web pages and Javascripts needed for the experimental
+	procedure and provides experimenters with a print-ready visual display
+	of their experimental design. WEXTOR flexibly supports complete and
+	incomplete factorial designs with between-subjects, within-subjects,
+	and quasi-experimental factors, as well as mixed designs. The software
+	implements client-side response time measurement and contains a content
+	wizard for creating interactive materials, as well as dependent
+	measures (graphical scales, multiple-choice items, etc.), on the
+	experiment pages. However, it does not aim to replace a full-fledged
+	HTML editor. Several methodological features specifically needed in Web
+	experimental design have been implemented in the Web-based tool and are
+	described in this paper. WEXTOR is platform independent. The created
+	Web pages can be uploaded to any type of Web server in which data may
+	be recorded in logfiles or via a database. The current version of
+	WEXTOR is freely available for educational and noncommercial purposes.
+	Its Web address is http://www.genpsylab.unizh.ch/wextor/index.html

@@ -1,0 +1,11 @@
+An efficient and stable ray tracing algorithm for parametric surfaces
+In this paper, we propose an efficient and stable algorithm for finding
+	ray-surface intersections. Newton's method and Bezier clipping are
+	adapted to form the core of our algorithm. Ray coherence is used to
+	find starting points for Newton iteration. We introduce an obstruction
+	detection technique to verify whether an intersection point found using
+	Newton's method is the closest. When Newton's method fails to achieve
+	convergence, we use Bezier clipping substitution to find the
+	intersection points. This combination achieves a significant
+	improvement in tracing primary rays. A similar approach successfully
+	improves the performance of tracing secondary rays

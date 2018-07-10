@@ -1,0 +1,14 @@
+A unifying co-operative Web caching architecture
+Network caching of objects has become a standard way of reducing network
+	traffic and latency in the Web. However, Web caches exhibit poor
+	performance with a hit rate of about 30%. A solution to improve this
+	hit rate is to have a group of proxies form co-operation where objects
+	can be cached for later retrieval. A cooperative cache system includes
+	protocols for hierarchical and transversal caching. The drawback of
+	such a system lies in the resulting network load due to the number of
+	messages that need to be exchanged to locate an object. This paper
+	proposes a new co-operative Web caching architecture, which unifies
+	previous methods of Web caching. Performance results shows that the
+	architecture achieve up to 70% co-operative hit rate and accesses the
+	cached object in at most two hops. Moreover, the architecture is
+	scalable with low traffic and database overhead

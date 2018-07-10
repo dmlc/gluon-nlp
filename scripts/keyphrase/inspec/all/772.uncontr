@@ -1,0 +1,5 @@
+real-time procedural solid texturing; meshed atlases; texture atlas; one-to-one
+	mapping; object surface; texture space; graphics hardware;
+	rasterization; solid texture coordinates; colors; rendering;
+	multiresolution texture atlas; linear magnification filtering;
+	MIP-mapped minification antialiasing

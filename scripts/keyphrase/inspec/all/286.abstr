@@ -1,0 +1,15 @@
+Real-time tissue characterization on the basis of in vivo Raman spectra
+The application of in vivo Raman spectroscopy for clinical diagnosis demands
+	dedicated software that can perform the necessary signal processing and
+	subsequent (multivariate) data analysis, enabling clinically relevant
+	parameters to be extracted and made available in real time. Here we
+	describe the design and implementation of a software package that
+	allows for real-time signal processing and data analysis of Raman
+	spectra. The design is based on automatic data exchange between Grams,
+	a spectroscopic data acquisition and analysis program, and Matlab, a
+	program designed for array-based calculations. The data analysis
+	software has a modular design providing great flexibility in developing
+	custom data analysis routines for different applications. The
+	implementation is illustrated by a computationally demanding
+	application for the classification of skin spectra using principal
+	component analysis and linear discriminant analysis

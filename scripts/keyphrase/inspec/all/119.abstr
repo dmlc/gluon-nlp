@@ -1,0 +1,12 @@
+JPEG2000: standard for interactive imaging
+JPEG2000 is the latest image compression standard to emerge from the Joint
+	Photographic Experts Group (JPEG) working under the auspices of the
+	International Standards Organization. Although the new standard does
+	offer superior compression performance to JPEG, JPEG2000 provides a
+	whole new way of interacting with compressed imagery in a scalable and
+	interoperable fashion. This paper provides a tutorial-style review of
+	the new standard, explaining the technology on which it is based and
+	drawing comparisons with JPEG and other compression standards. The
+	paper also describes new work, exploiting the capabilities of JPEG2000
+	in client-server systems for efficient interactive browsing of images
+	over the Internet

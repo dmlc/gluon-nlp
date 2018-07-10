@@ -1,0 +1,17 @@
+Modeling discourse in collaborative work support systems: a knowledge
+	representation and configuration perspective
+Collaborative work processes usually raise a lot of intricate debates and
+	negotiations among participants, whereas conflicts of interest are
+	inevitable and support for achieving consensus and compromise is
+	required. Individual contributions, brought up by parties with
+	different backgrounds and interests, need to be appropriately
+	structured and maintained. This paper presents a model of discourse
+	acts that participants use to communicate their attitudes to each
+	other, or affect the attitudes of others, in such environments. The
+	first part deals with the knowledge representation and communication
+	aspects of the problem, while the second one, in the context of an
+	already implemented system, namely HERMES, with issues related to the
+	configuration of the contributions asserted at each discourse instance.
+	The overall work focuses on the machinery needed in a computer-assisted
+	collaborative work environment, the aim being to further enhance the
+	human-computer interaction

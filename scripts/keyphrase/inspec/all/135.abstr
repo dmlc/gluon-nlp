@@ -1,0 +1,7 @@
+Hysteretic threshold logic and quasi-delay insensitive asynchronous design
+We introduce the class of hysteretic linear-threshold (HLT) logic functions as
+	a novel extension of linear threshold logic, and prove their general
+	applicability for constructing state-holding Boolean functions. We then
+	demonstrate a fusion of HLT logic with the quasi-delay insensitive
+	style of asynchronous circuit design, complete with logical design
+	examples. Future research directions are also identified

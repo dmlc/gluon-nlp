@@ -1,0 +1,7 @@
+An object-oriented version of SIMLIB (a simple simulation package)
+This paper introduces an object-oriented version of SIMLIB (an
+	easy-to-understand discrete-event simulation package). The
+	object-oriented version is preferable to the original procedural
+	language versions of SIMLIB in that it is easier to understand and
+	teach simulation from an object point of view. A single-server queue
+	simulation is demonstrated using the object-oriented SIMLIB

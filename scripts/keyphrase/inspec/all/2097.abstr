@@ -1,0 +1,9 @@
+An algorithm to generate all spanning trees with flow
+Spanning tree enumeration in undirected graphs is an important issue and task
+	in many problems encountered in computer network and circuit analysis.
+	This paper discusses the spanning tree with flow for the case that
+	there are flow requirements between each node pair. An algorithm based
+	on minimal paths (MPs) is proposed to generate all spanning trees
+	without flow. The proposed algorithm is a structured approach, which
+	splits the system into structural MPs first, and also all steps in it
+	are easy to follow

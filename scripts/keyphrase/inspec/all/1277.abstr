@@ -1,0 +1,8 @@
+Dynamic modification of object Petri nets. An application to modelling
+	protocols with fork-join structures
+In this paper we discuss possibilities of modelling protocols by objects in
+	object-based high-level Petri nets. Some advantages of dynamically
+	modifying the structure of token objects are discussed and the need for
+	further investigations into mathematically rigorous foundations of
+	object net formalisms incorporating facilities for such operations on
+	its token nets is emphasised

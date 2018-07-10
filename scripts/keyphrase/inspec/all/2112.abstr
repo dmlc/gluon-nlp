@@ -1,0 +1,13 @@
+Allan variance and fractal Brownian motion
+Noise filtering is the subject of a voluminous literature in radio engineering.
+	The methods of filtering require knowledge of the frequency response,
+	which is usually unknown. D.W. Allan (see Proc. IEEE, vol.54, no.2,
+	p.221-30, 1966; IEEE Trans. Instr. Measur., vol.IM-36, p.646-54, 1987)
+	proposed a simple method of determining the interval between equally
+	accurate observations which does without this information. In this
+	method, the variances of the increments of noise and signal are equal,
+	so that, in observations with a greater step, the variations caused by
+	noise are smaller than those caused by the signal. This method is the
+	standard accepted by the USA metrology community. The present paper is
+	devoted to a statistical analysis of the Allan method and acquisition
+	of additional information

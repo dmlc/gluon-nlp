@@ -1,0 +1,12 @@
+Robust fuzzy controlled photovoltaic power inverter with Taguchi method
+This paper presents design and implementation of a robust fuzzy controlled
+	photovoltaic (PV) power inverter with Taguchi tuned scaling factors. To
+	achieve fast transient response, small steady-state error and system
+	robustness, a robust fuzzy controller is adopted, in which its input
+	and output scaling factors are determined efficiently by using the
+	Taguchi-tuning algorithm. The proposed system can operate in different
+	modes, grid-connection mode and stand-alone mode, and can accommodate
+	wide load variations. Simulation results and hardware measurements
+	obtained from a prototype with a microcontroller (Intel 80196KC) are
+	presented to verify the theoretical discussions, and its adaptivity,
+	robustness and feasibility

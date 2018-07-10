@@ -1,0 +1,21 @@
+Implementation and performance evaluation of a FIFO queue class library for
+	time warp
+The authors describe the implementation, use, and performance evaluation of a
+	FIFO queue class library by means of a high-performance, easy-to-use
+	interface employed for queuing simulations in parallel discrete
+	simulations based on the time warp method. Various general-purpose
+	simulation libraries and languages have been proposed, and among these
+	some have the advantage of not requiring users to define anything other
+	than the state vector, and not needing awareness of rollback under a
+	platform which performs state control based on copies. However, because
+	the state vectors must be defined as simple data structures without
+	pointers, dynamic data structures such as a FIFO queue cannot be
+	handled directly. Under the proposed class library, both the platform
+	and the user can handle such structures in the same fashion that
+	embedded data structures are handled. In addition, instead of all
+	stored data, just the operational history can be stored and recovered
+	efficiently at an effectively minimal cost by taking advantage of the
+	first-in-first-out characteristics of the above data structures. When
+	the kernel deletes past state histories during a simulation, garbage
+	collection is also performed transparently using the corresponding
+	method

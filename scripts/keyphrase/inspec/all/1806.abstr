@@ -1,0 +1,9 @@
+Fast and efficient algorithm for the multiplierless realisation of linear DSP
+	transforms
+A fast algorithm having a pseudopolynomial run-time and memory requirement in
+	the worst case is developed to generate multiplierless architectures at
+	all wordlengths for constant multiplications in linear DSP transforms.
+	It is also re-emphasised that indefinitely reducing operators for
+	multiplierless architectures is not sufficient to reduce the final chip
+	area. For a major reduction, techniques like resource folding must be
+	used. Simple techniques for improving the results are also presented

@@ -1,0 +1,11 @@
+Supply chain infrastructures: system integration and information sharing
+The need for supply chain integration (SCI) methodologies has been increasing
+	as a consequence of the globalization of production and sales, and the
+	advancement of enabling information technologies. In this paper, we
+	describe our experience with implementing and modeling SCIs. We present
+	the integration architecture and the software components of our
+	prototype implementation. We then discuss a variety of information
+	sharing methodologies. Then, within the framework of a multi-echelon
+	supply chain process model spanning multiple organizations, we
+	summarize research on the benefits of intraorganizational knowledge
+	sharing, and we discuss performance scalability

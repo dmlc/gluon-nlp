@@ -1,0 +1,10 @@
+Hidden Markov model-based tool wear monitoring in turning
+This paper presents a new modeling framework for tool wear monitoring in
+	machining processes using hidden Markov models (HMMs). Feature vectors
+	are extracted from vibration signals measured during turning. A
+	codebook is designed and used for vector quantization to convert the
+	feature vectors into a symbol sequence for the hidden Markov model. A
+	series of experiments are conducted to evaluate the effectiveness of
+	the approach for different lengths of training data and observation
+	sequence. Experimental results show that successful tool state
+	detection rates as high as 97% can be achieved by using this approach

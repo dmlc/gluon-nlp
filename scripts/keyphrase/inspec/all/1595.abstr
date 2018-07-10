@@ -1,0 +1,13 @@
+Convergence of finite element approximations and multilevel linearization for
+	Ginzburg-Landau model of d-wave superconductors
+In this paper, we consider the finite element approximations of a recently
+	proposed Ginzburg-Landau-type model for d-wave superconductors. In
+	contrast to the conventional Ginzburg-Landau model the scalar complex
+	valued order-parameter is replaced by a multicomponent complex
+	order-parameter and the free energy is modified according to the d-wave
+	paring symmetry. Convergence and optimal error estimates and some
+	super-convergent estimates for the derivatives are derived.
+	Furthermore, we propose a multilevel linearization procedure to solve
+	the nonlinear systems. It is proved that the optimal error estimates
+	and super-convergence for the derivatives are preserved by the
+	multi-level linearization algorithm

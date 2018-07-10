@@ -1,0 +1,16 @@
+A comparison of different decision algorithms used in volumetric storm cells
+	classification
+Decision algorithms useful in classifying meteorological volumetric radar data
+	are discussed. Such data come from the radar decision support system
+	(RDSS) database of Environment Canada and concern summer storms created
+	in this country. Some research groups used the data completed by RDSS
+	for verifying the utility of chosen methods in volumetric storm cells
+	classification. The paper consists of a review of experiments that were
+	made on the data from RDSS database of Environment Canada and presents
+	the quality of particular classifiers. The classification accuracy
+	coefficient is used to express the quality. For five research groups
+	that led their experiments in a similar way it was possible to compare
+	received outputs. Experiments showed that the support vector machine
+	(SVM) method and rough set algorithms which use object oriented reducts
+	for rule generation to classify volumetric storm data perform better
+	than other classifiers

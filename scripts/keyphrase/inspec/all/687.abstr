@@ -1,0 +1,10 @@
+Image reconstruction of simulated specimens using convolution back projection
+This paper reports the reconstruction of cross-sections of composite
+	structures. The convolution back projection (CBP) algorithm has been
+	used to capture the attenuation field over the specimen. Five different
+	test cases have been taken up for evaluation. These cases represent
+	varying degrees of complexity. In addition, the role of filters on the
+	nature of the reconstruction errors has also been discussed. Numerical
+	results obtained in the study reveal that CBP algorithm is a useful
+	tool for qualitative as well as quantitative assessment of composite
+	regions encountered in engineering applications

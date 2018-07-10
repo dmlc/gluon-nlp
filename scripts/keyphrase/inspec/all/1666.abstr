@@ -1,0 +1,12 @@
+Airline base schedule optimisation by flight network annealing
+A system for rigorous airline base schedule optimisation is described. The
+	architecture of the system reflects the underlying problem structure.
+	The architecture is hierarchical consisting of a master problem for
+	logical aircraft schedule optimisation and a sub-problem for schedule
+	evaluation. The sub-problem is made up of a number of component
+	sub-problems including connection generation, passenger choice
+	modelling, passenger traffic allocation by simulation and revenue and
+	cost determination. Schedule optimisation is carried out by means of
+	simulated annealing of flight networks. The operators for the simulated
+	annealing process are feasibility preserving and form a complete set of
+	operators

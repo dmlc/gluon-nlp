@@ -1,0 +1,15 @@
+Infrared-image classification using hidden Markov trees
+An image of a three-dimensional target is generally characterized by the
+	visible target subcomponents, with these dictated by the target-sensor
+	orientation (target pose). An image often changes quickly with variable
+	pose. We define a class as a set of contiguous target-sensor
+	orientations over which the associated target image is relatively
+	stationary with aspect. Each target is in general characterized by
+	multiple classes. A distinct set of Wiener filters are employed for
+	each class of images, to identify the presence of target subcomponents.
+	A Karhunen-Loeve representation is used to minimize the number of
+	filters (templates) associated with a given subcomponent. The
+	statistical relationships between the different target subcomponents
+	are modeled via a hidden Markov tree (HMT). The HMT classifier is
+	discussed and example results are presented for
+	forward-looking-infrared (FLIR) imagery of several vehicles

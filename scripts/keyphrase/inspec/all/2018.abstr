@@ -1,0 +1,19 @@
+Design and implementation of a 3-D mapping system for highly irregular shaped
+	objects with application to semiconductor manufacturing
+The basic technology for a robotic system is developed to automate the packing
+	of polycrystalline silicon nuggets into fragile fused silica crucible
+	in Czochralski (melt pulling) semiconductor wafer production. The
+	highly irregular shapes of the nuggets and the packing constraints make
+	this a difficult and challenging task. It requires the delicate
+	manipulation and packing of highly irregular polycrystalline silicon
+	nuggets into a fragile fused silica crucible. For this application, a
+	dual optical 3-D surface mapping system that uses active laser
+	triangulation has been developed and successfully tested. One part of
+	the system measures the geometry profile of a nugget being packed and
+	the other the profile of the nuggets already in the crucible. A
+	resolution of 1 mm with 15-KHz sampling frequency is achieved. Data
+	from the system are used by the packing algorithm, which determines
+	optimal nugget placement. The key contribution is to describe the
+	design and implementation of an efficient and robust 3-D imaging system
+	to map highly irregular shaped objects using conventional components in
+	context of real commercial manufacturing processes

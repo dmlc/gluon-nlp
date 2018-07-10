@@ -1,0 +1,13 @@
+NARX-based technique for the modelling of magneto-rheological damping devices
+This paper presents a methodology for identifying variable-structure nonlinear
+	models of magneto-rheological dampers (MRD) and similar devices. Its
+	peculiarity with respect to the mainstream literature is to be
+	especially conceived for obtaining models that are structurally simple,
+	easy to estimate and well suited for model-based control. This goal is
+	pursued by adopting linear-in-the-parameters NARX models, for which an
+	identification method is developed based on the minimization of the
+	simulation error. This method is capable of selecting the model
+	structure together with the parameters, thus it does not require a
+	priori structural information. A set of validation tests is reported,
+	with the aim of demonstrating the technique's efficiency by comparing
+	it to a widely accepted MRD modelling approach

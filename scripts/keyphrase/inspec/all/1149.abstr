@@ -1,0 +1,13 @@
+Deterministic calculations of photon spectra for clinical accelerator targets
+A method is proposed to compute photon energy spectra produced in clinical
+	electron accelerator targets, based on the deterministic solution of
+	the Boltzmann equation for coupled electron-photon transport in
+	one-dimensional (1-D) slab geometry. It is shown that the deterministic
+	method gives similar results as Monte Carlo calculations over the
+	angular range of interest for therapy applications. Relative energy
+	spectra computed by deterministic and 3-D Monte Carlo methods,
+	respectively, are compared for several realistic target materials and
+	different electron beams, and are found to give similar photon energy
+	distributions and mean energies. The deterministic calculations
+	typically require 1-2 mins of execution time on a Sun Workstation,
+	compared to 2-36 h for the Monte Carlo runs

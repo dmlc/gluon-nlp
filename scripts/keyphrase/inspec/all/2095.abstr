@@ -1,0 +1,22 @@
+Global stability of the attracting set of an enzyme-catalysed reaction system
+The essential feature of enzymatic reactions is a nonlinear dependency of
+	reaction rate on metabolite concentration taking the form of saturation
+	kinetics. Recently, it has been shown that this feature is associated
+	with the phenomenon of "loss of system coordination" (Liu, 1999). In
+	this paper, we study a system of ordinary differential equations
+	representing a branched biochemical system of enzyme-mediated
+	reactions. We show that this system can become very sensitive to
+	changes in certain maximum enzyme activities. In particular, we show
+	that the system exhibits three distinct responses: a unique,
+	globally-stable steady-state, large amplitude oscillations, and
+	asymptotically unbounded solutions, with the transition between these
+	states being almost instantaneous. It is shown that the appearance of
+	large amplitude, stable limit cycles occurs due to a "false"
+	bifurcation or canard explosion. The subsequent disappearance of limit
+	cycles corresponds to the collapse of the domain of attraction of the
+	attracting set for the system and occurs due to a global bifurcation in
+	the flow, namely, a saddle connection. Subsequently, almost all
+	nonnegative data become unbounded under the action of the dynamical
+	system and correspond exactly to loss of system coordination. We
+	discuss the relevance of these results to the possible consequences of
+	modulating such systems

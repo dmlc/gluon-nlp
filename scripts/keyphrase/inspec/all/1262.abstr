@@ -1,0 +1,15 @@
+The development and evaluation of SHOKE2000: the PCI-based FPGA card
+This paper describes a PCI-based FPGA card, SHOKE2000, which was developed in
+	order to study reconfigurable computing. Since the latest field
+	programmable gate arrays (FPGA) consist of input/output (I/O)
+	configurable blocks as well as internal configurable logic blocks, they
+	not only realize various user logic circuits but also connect with
+	popular I/O standards easily. These features enable FPGA to connect
+	several devices with different interfaces, and thus new reconfigurable
+	systems would be realizable by connecting the FPGA with devices such as
+	digital signal processors (DSP) and analog devices. This paper
+	describes the basic functions of SHOKE2000, which was developed for
+	realizing hybrid reconfigurable systems consisting of FPGA, DSP, and
+	analog devices. We also present application examples of SHOKE2000,
+	including a simple image recognition application, a distributed shared
+	memory computer cluster, and teaching materials for computer education

@@ -1,0 +1,11 @@
+Chaotic phenomena and fractional-order dynamics in the trajectory control of
+	redundant manipulators
+Redundant manipulators have some advantages when compared with classical arms
+	because they allow the trajectory optimization, both on the free space
+	and on the presence of obstacles, and the resolution of singularities.
+	For this type of arms the proposed kinematic control algorithms adopt
+	generalized inverse matrices but, in general, the corresponding
+	trajectory planning schemes show important limitations. Motivated by
+	these problems this paper studies the chaos revealed by the
+	pseudoinverse-based trajectory planning algorithms, using the theory of
+	fractional calculus

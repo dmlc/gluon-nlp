@@ -1,0 +1,7 @@
+Self-validating integration and approximation of piecewise analytic functions
+Let an analytic or a piecewise analytic function on a compact interval be
+	given. We present algorithms that produce enclosures for the integral
+	or the function itself. Under certain conditions on the representation
+	of the function, this is done with the minimal order of numbers of
+	operations. The integration algorithm is implemented and numerical
+	comparisons to non-validating integration software are presented

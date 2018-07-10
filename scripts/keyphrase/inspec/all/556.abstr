@@ -1,0 +1,27 @@
+Coarse-grained reduction and analysis of a network model of cortical response:
+	I. Drifting grating stimuli
+We present a reduction of a large-scale network model of visual cortex
+	developed by McLaughlin, Shapley, Shelley, and Wielaard. The reduction
+	is from many integrate-and-fire neurons to a spatially coarse-grained
+	system for firing rates of neuronal subpopulations. It accounts
+	explicitly for spatially varying architecture, ordered cortical maps
+	(such as orientation preference) that vary regularly across the
+	cortical layer, and disordered cortical maps (such as spatial phase
+	preference or stochastic input conductances) that may vary widely from
+	cortical neuron to cortical neuron. The result of the reduction is a
+	set of nonlinear spatiotemporal integral equations for "phase-averaged"
+	firing rates of neuronal subpopulations across the model cortex,
+	derived asymptotically from the full model without the addition of any
+	extra phenomological constants. This reduced system is used to study
+	the response of the model to drifting grating stimuli - where it is
+	shown to be useful for numerical investigations that reproduce, at far
+	less computational cost, the salient features of the point-neuron
+	network and for analytical investigations that unveil cortical
+	mechanisms behind the responses observed in the simulations of the
+	large-scale computational model. For example, the reduced equations
+	clearly show (1) phase averaging as the source of the time-invariance
+	of cortico-cortical conductances, (2) the mechanisms in the model for
+	higher firing rates and better orientation selectivity of simple cells
+	which are near pinwheel centers, (3) the effects of the length-scales
+	of cortico-cortical coupling, and (4) the role of noise in improving
+	the contrast invariance of orientation selectivity

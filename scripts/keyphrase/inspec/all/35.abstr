@@ -1,0 +1,18 @@
+Fusion of qualitative bond graph and genetic algorithms: A fault diagnosis
+	application
+In this paper, the problem of fault diagnosis via integration of genetic
+	algorithms (GA's) and qualitative bond graphs (QBG's) is addressed. We
+	suggest that GA's can be used to search for possible fault components
+	among a system of qualitative equations. The QBG is adopted as the
+	modeling scheme to generate a set of qualitative equations. The
+	qualitative bond graph provides a unified approach for modeling
+	engineering systems, in particular, mechatronic systems. In order to
+	demonstrate the performance of the proposed algorithm, we have tested
+	the proposed algorithm on an in-house designed and built floating disc
+	experimental setup. Results from fault diagnosis in the floating disc
+	system are presented and discussed. Additional measurements will be
+	required to localize the fault when more than one fault candidate is
+	inferred. Fault diagnosis is activated by a fault detection mechanism
+	when a discrepancy between measured abnormal behavior and predicted
+	system behavior is observed. The fault detection mechanism is not
+	presented here

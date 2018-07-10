@@ -1,0 +1,14 @@
+Using NetCloak to develop server-side Web-based experiments without writing CGI
+	programs
+Server-side experiments use the Web server, rather than the participant's
+	browser, to handle tasks such as random assignment, eliminating
+	inconsistencies with Java and other client-side applications.
+	Heretofore, experimenters wishing to create server-side experiments
+	have had to write programs to create common gateway interface (CGI)
+	scripts in programming languages such as Perl and C++. NetCloak uses
+	simple, HTML-like commands to create CGIs. We used NetCloak to
+	implement an experiment on probability estimation. Measurements of time
+	on task and participants' IP addresses assisted quality control.
+	Without prior training, in less than 1 month, we were able to use
+	NetCloak to design and create a Web-based experiment and to help
+	graduate students create three Web-based experiments of their own

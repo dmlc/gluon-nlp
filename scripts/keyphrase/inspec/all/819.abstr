@@ -1,0 +1,15 @@
+Local search with constraint propagation and conflict-based heuristics
+Search algorithms for solving CSP (Constraint Satisfaction Problems) usually
+	fall into one of two main families: local search algorithms and
+	systematic algorithms. Both families have their advantages. Designing
+	hybrid approaches seems promising since those advantages may be
+	combined into a single approach. In this paper, we present a new hybrid
+	technique. It performs a local search over partial assignments instead
+	of complete assignments, and uses filtering techniques and
+	conflict-based techniques to efficiently guide the search. This new
+	technique benefits from both classical approaches: a priori pruning of
+	the search space from filtering-based search and possible repair of
+	early mistakes from local search. We focus on a specific version of
+	this technique: tabu decision-repair. Experiments done on open-shop
+	scheduling problems show that our approach competes well with the best
+	highly specialized algorithms

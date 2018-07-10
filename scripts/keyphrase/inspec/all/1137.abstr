@@ -1,0 +1,15 @@
+On deciding stability of constrained homogeneous random walks and queueing
+	systems
+We investigate stability of scheduling policies in queueing systems. To this
+	day no algorithmic characterization exists for checking stability of a
+	given policy in a given queueing system. In this paper we introduce a
+	certain generalized priority policy and prove that the stability of
+	this policy is algorithmically undecidable. We also prove that
+	stability of a homogeneous random walk in L/sub +//sup d/ is
+	undecidable. Finally, we show that the problem of computing a fluid
+	limit of a queueing system or of a constrained homogeneous random walk
+	is undecidable. To the best of our knowledge these are the first
+	undecidability results in the area of stability of queueing systems and
+	random walks in L/sub +//sup d/. We conjecture that stability of common
+	policies like First-In-First-Out and priority policy is also an
+	undecidable problem

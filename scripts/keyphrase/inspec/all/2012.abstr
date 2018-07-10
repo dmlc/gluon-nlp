@@ -1,0 +1,12 @@
+Strain contouring using Gabor filters: principle and algorithm
+Moire interferometry is a powerful technique for high sensitivity in-plane
+	deformation contouring. However, from an engineering viewpoint, the
+	derivatives of displacement, i.e., strain, are the desired parameter.
+	Thus there is a need to differentiate the displacement field. Optical
+	and digital methods have been proposed for this differentiation.
+	Optical methods provide contours that still need to be quantified,
+	while digital methods suffer from drawbacks inherent in the digital
+	differentiation process. We describe a novel approach of strain
+	segmentation for the moire pattern using a multichannel Gabor filter.
+	Appropriate filter design allows for user-specific segmentation, which
+	is essentially in engineering design and analysis

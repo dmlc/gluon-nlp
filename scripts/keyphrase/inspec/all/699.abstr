@@ -1,0 +1,14 @@
+Novel line conditioner with voltage up/down capability
+In this paper, a novel pulsewidth-modulated line conditioner with fast output
+	voltage control is proposed. The line conditioner is made up of an AC
+	chopper with reversible voltage control and a transformer for series
+	voltage compensation. In the AC chopper, a proper switching operation
+	is achieved without the commutation problem. To absorb energy stored in
+	line stray inductance, a regenerative DC snubber can be utilized which
+	has only one capacitor without discharging resistors or complicated
+	regenerative circuit for snubber energy. Therefore, the proposed AC
+	chopper gives high efficiency and reliability. The output voltage of
+	the line conditioner is controlled using a fast sensing technique of
+	the output voltage. It is also shown via some experimental results that
+	the presented line conditioner gives good dynamic and steady-state
+	performance for high quality of the output voltage

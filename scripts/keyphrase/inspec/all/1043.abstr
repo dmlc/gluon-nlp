@@ -1,0 +1,13 @@
+Fractional motion control: application to an XY cutting table
+In path tracking design, the dynamic of actuators must be taken into account in
+	order to reduce overshoots appearing for small displacements. A new
+	approach to path tracking using fractional differentiation is proposed
+	with its application on a XY cutting table. It permits the generation
+	of optimal movement reference-input leading to a minimum path
+	completion time, taking into account both maximum velocity,
+	acceleration and torque and the bandwidth of the closed-loop system.
+	Fractional differentiation is used here through a Davidson-Cole filter.
+	A methodology aiming at improving the accuracy especially on
+	checkpoints is presented. The reference-input obtained is compared with
+	spline function. Both are applied to an XY cutting table model and
+	actuator outputs compared

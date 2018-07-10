@@ -1,0 +1,14 @@
+Use of Bayesian Belief Networks when combining disparate sources of information
+	in the safety assessment of software-based systems
+The paper discusses how disparate sources of information can be combined in the
+	safety assessment of software-based systems. The emphasis is put on an
+	emerging methodology, relevant for intelligent product-support systems,
+	to combine information about disparate evidences systematically based
+	on Bayesian Belief Networks. The objective is to show the link between
+	basic information and the confidence one can have in a system. How one
+	combines the Bayesian Belief Net (BBN) method with a software safety
+	standard (RTCA/DO-178B,) for safety assessment of software-based
+	systems is also discussed. Finally, the applicability of the BBN
+	methodology and experiences from cooperative research work together
+	with Kongsberg Defence & Aerospace and Det Norske Veritas, and ongoing
+	research with VTT Automation are presented

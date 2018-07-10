@@ -1,0 +1,12 @@
+On the monotonicity conservation in numerical solutions of the heat equation
+It is important to choose such numerical methods in practice that mirror the
+	characteristic properties of the described process beyond the stability
+	and convergence. The investigated qualitative property in this paper is
+	the conservation of the monotonicity in space of the initial heat
+	distribution. We prove some statements about the monotonicity
+	conservation and total monotonicity of one-step vector-iterations.
+	Then, applying these results, we consider the numerical solutions of
+	the one-dimensional heat equation. Our main theorem formulates the
+	necessary and sufficient condition of the uniform monotonicity
+	conservation. The sharpness of the conditions is demonstrated by
+	numerical examples

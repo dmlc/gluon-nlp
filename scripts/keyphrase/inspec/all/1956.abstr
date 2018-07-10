@@ -1,0 +1,9 @@
+Dynamical transition to periodic motions of a recurrent bus induced by nonstops
+We study the dynamical behavior of a recurrent bus on a circular route with
+	many bus stops when the recurrent bus passes some bus stops without
+	stopping. The recurrent time (one period) is described in terms of a
+	nonlinear map. It is shown that the recurrent bus exhibits the complex
+	periodic behaviors. The dynamical transitions to periodic motions occur
+	by increasing nonstops. The periodic motions depend on the property of
+	an attractor of the nonlinear map. The period n of the attractor varies
+	sensitively with the number of nonstops

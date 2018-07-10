@@ -1,0 +1,18 @@
+Reconstructing surfaces by volumetric regularization using radial basis
+	functions
+We present a new method of surface reconstruction that generates smooth and
+	seamless models from sparse, noisy, nonuniform, and low resolution
+	range data. Data acquisition techniques from computer vision, such as
+	stereo range images and space carving, produce 3D point sets that are
+	imprecise and nonuniform when compared to laser or optical range
+	scanners. Traditional reconstruction algorithms designed for dense and
+	precise data do not produce smooth reconstructions when applied to
+	vision-based data sets. Our method constructs a 3D implicit surface,
+	formulated as a sum of weighted radial basis functions. We achieve
+	three primary advantages over existing algorithms: (1) the implicit
+	functions we construct estimate the surface well in regions where there
+	is little data, (2) the reconstructed surface is insensitive to noise
+	in data acquisition because we can allow the surface to approximate,
+	rather than exactly interpolate, the data, and (3) the reconstructed
+	surface is locally detailed, yet globally smooth, because we use radial
+	basis functions that achieve multiple orders of smoothness

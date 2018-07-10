@@ -1,0 +1,9 @@
+The p-p rearrangement and failure-tolerance of double p-ary multirings and
+	generalized hypercubes
+It is shown that an arbitrary grouped p-element permutation can be implemented
+	in a conflict-free way through the commutation of channels on the
+	double p-ary multiring or the double p-ary hypercube. It is revealed
+	that in arbitrary single-element permutations, these commutators
+	display the property of the (p-1)-nodal failure-tolerance and the
+	generalized hypercube displays in addition the property of the
+	(p-1)-channel failure-tolerance

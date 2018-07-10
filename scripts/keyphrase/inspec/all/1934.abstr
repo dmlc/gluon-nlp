@@ -1,0 +1,7 @@
+Computational finite-element schemes for optimal control of an elliptic system
+	with conjugation conditions
+New optimal control problems are considered for distributed systems described
+	by elliptic equations with conjugate conditions and a quadratic
+	minimized function. Highly accurate computational discretization
+	schemes are constructed for the case where a feasible control set u/sub
+	delta / coincides with the full Hilbert space u of controls

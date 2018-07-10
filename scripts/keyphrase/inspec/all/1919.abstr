@@ -1,0 +1,16 @@
+Toward a formalism for conversation protocols using joint intention theory
+Conversation protocols are used to achieve certain goals or to bring about
+	certain states in the world. Therefore, one may identify the landmarks
+	or the states that must be brought about during the goal-directed
+	execution of a protocol. Accordingly, the landmarks, characterized by
+	propositions that are true in the state represented by that landmark,
+	are the most important aspect of a protocol. Families of conversation
+	protocols can be expressed formally as partially ordered landmarks
+	after the landmarks necessary to achieve a goal have been identified.
+	Concrete protocols represented as joint action expressions can, then,
+	be derived from the partially ordered landmarks and executed directly
+	by joint intention interpreters. This approach of applying Joint
+	Intention theory to protocols also supports flexibility in the actions
+	used to get to landmarks, shortcutting protocol execution, automatic
+	exception handling, and correctness criterion for protocols and
+	protocol compositions

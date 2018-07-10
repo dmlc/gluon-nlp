@@ -1,0 +1,21 @@
+Genetic algorithm guided selection: variable selection and subset selection
+A novel genetic algorithm guided selection method, GAS, has been described. The
+	method utilizes a simple encoding scheme which can represent both
+	compounds and variables used to construct a QSAR/QSPR model. A genetic
+	algorithm is then utilized to simultaneously optimize the encoded
+	variables that include both descriptors and compound subsets. The GAS
+	method generates multiple models each applying to a subset of the
+	compounds. Typically the subsets represent clusters with different
+	chemotypes. Also a procedure based on molecular similarity is presented
+	to determine which model should be applied to a given test set
+	compound. The variable selection method implemented in GAS has been
+	tested and compared using the Selwood data set (n = 31 compounds; nu =
+	53 descriptors). The results showed that the method is comparable to
+	other published methods. The subset selection method implemented in GAS
+	has been first tested using an artificial data set (n = 100 points; nu
+	= 1 descriptor) to examine its ability to subset data points and second
+	applied to analyze the XLOGP data set (n = 1831 compounds; nu = 126
+	descriptors). The method is able to correctly identify artificial data
+	points belonging to various subsets. The analysis of the XLOGP data set
+	shows that the subset selection method can be useful in improving a
+	QSAR/QSPR model when the variable selection method fails

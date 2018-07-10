@@ -1,0 +1,17 @@
+Improving the predicting power of partial order based QSARs through linear
+	extensions
+Partial order theory (POT) is an attractive and operationally simple method
+	that allows ordering of compounds, based on selected structural and/or
+	electronic descriptors (modeled order), or based on their end points,
+	e.g., solubility (experimental order). If the modeled order resembles
+	the experimental order, compounds that are not experimentally
+	investigated can be assigned a position in the model that eventually
+	might lead to a prediction of an end-point value. However, in the
+	application of POT in quantitative structure-activity relationship
+	modeling, only the compounds directly comparable to the noninvestigated
+	compounds are applied. To explore the possibilities of improving the
+	methodology, the theory is extended by application of the so-called
+	linear extensions of the model order. The study show that partial
+	ordering combined with linear extensions appears as a promising tool
+	providing probability distribution curves in the range of possible
+	end-point values for compounds not being experimentally investigated

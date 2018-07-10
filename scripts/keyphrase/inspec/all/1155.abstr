@@ -1,0 +1,34 @@
+A leaf sequencing algorithm to enlarge treatment field length in IMRT
+With MLC-based IMRT, the maximum usable field size is often smaller than the
+	maximum field size for conventional treatments. This is due to the
+	constraints of the overtravel distances of MLC leaves and/or jaws.
+	Using a new leaf sequencing algorithm, the usable IMRT field length
+	(perpendicular to the MLC motion) can be mostly made equal to the full
+	length of the MLC field without violating the upper jaw overtravel
+	limit. For any given intensity pattern, a criterion was proposed to
+	assess whether an intensity pattern can be delivered without violation
+	of the jaw position constraints. If the criterion is met, the new
+	algorithm will consider the jaw position constraints during the
+	segmentation for the step and shoot delivery method. The strategy
+	employed by the algorithm is to connect the intensity elements outside
+	the jaw overtravel limits with those inside the jaw overtravel limits.
+	Several methods were used to establish these connections during
+	segmentation by modifying a previously published algorithm (areal
+	algorithm), including changing the intensity level, alternating the
+	leaf-sequencing direction, or limiting the segment field size. The
+	algorithm was tested with 1000 random intensity patterns with
+	dimensions of 21*27 cm/sup 2/, 800 intensity patterns with higher
+	intensity outside the jaw overtravel limit, and three different types
+	of clinical treatment plans that were undeliverable using a
+	segmentation method from a commercial treatment planning system. The
+	new algorithm achieved a success rate of 100% with these test patterns.
+	For the 1000 random patterns, the new algorithm yields a similar
+	average number of segments of 36.9+or-2.9 in comparison to 36.6+or-1.3
+	when using the areal algorithm. For the 800 patterns with higher
+	intensities outside the jaw overtravel limits, the new algorithm
+	results in an increase of 25% in the average number of segments
+	compared to the areal algorithm. However, the areal algorithm fails to
+	create deliverable segments for 90% of these patterns. Using a single
+	isocenter, the new algorithm provides a solution to extend the usable
+	IMRT field length from 21 to 27 cm for IMRT on a commercial linear
+	accelerator using the step and shoot delivery method

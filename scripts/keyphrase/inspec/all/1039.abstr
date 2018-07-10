@@ -1,0 +1,10 @@
+Design of an adaptive vibration absorber to reduce electrical transformer
+	structural vibration
+This paper considers the design of a vibration absorber to reduce structural
+	vibration at multiple frequencies, with an enlarged bandwidth control
+	at these target frequencies. While the basic absorber is a passive
+	device a control system has been added to facilitate tuning,
+	effectively giving the combination of a passive and active device,
+	which leads to far greater stability and robustness. Experimental
+	results demonstrating the effectiveness of the absorber are also
+	described

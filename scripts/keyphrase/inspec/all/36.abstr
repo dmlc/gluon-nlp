@@ -1,0 +1,17 @@
+Model predictive control helps to regulate slow processes-robust barrel
+	temperature control
+Slow temperature control is a challenging control problem. The problem becomes
+	even more challenging when multiple zones are involved, such as in
+	barrel temperature control for extruders. Often, strict closed-loop
+	performance requirements (such as fast startup with no overshoot and
+	maintaining tight temperature control during production) are given for
+	such applications. When characteristics of the system are examined, it
+	becomes clear that a commonly used proportional plus integral plus
+	derivative (PID) controller cannot meet such performance specifications
+	for this kind of system. The system either will overshoot or not
+	maintain the temperature within the specified range during the
+	production run. In order to achieve the required performance, a control
+	strategy that utilizes techniques such as model predictive control,
+	autotuning, and multiple parameter PID is formulated. This control
+	strategy proves to be very effective in achieving the desired
+	specifications, and is very robust

@@ -1,0 +1,13 @@
+Vibration control of the rotating flexible-shaft/multi-flexible-disk system
+	with the eddy-current damper
+In this paper, the rotating flexible-Timoshenko-shaft/flexible-disk coupling
+	system is formulated by applying the assumed-mode method into the
+	kinetic and strain energies, and the virtual work done by the
+	eddy-current damper. From Lagrange's equations, the resulting
+	discretized equations of motion can be simplified as a bilinear system
+	(BLS). Introducing the control laws, including the quadratic, nonlinear
+	and optimal feedback control laws, into the BLS, it is found that the
+	eddy-current damper can be used to suppress flexible and shear
+	vibrations simultaneously, and the system is globally asymptotically
+	stable. Numerical results are provided to validate the theoretical
+	analysis

@@ -1,0 +1,15 @@
+The influence of tollbooths on highway traffic
+We study the effects of tollbooths on the traffic flow. The highway traffic is
+	simulated by the Nagel-Schreckenberg model. Various types of toll
+	collection are examined, which can be characterized either by a waiting
+	time or a reduced speed. A first-order phase transition is observed.
+	The phase separation results a saturated flow, which is observed as a
+	plateau region in the fundamental diagram. The effects of lane
+	expansion near the tollbooth are examined. The full capacity of a
+	highway can be restored. The emergence of vehicle queuing is studied.
+	Besides the numerical results, we also obtain analytical expressions
+	for various quantities. The numerical simulations can be well described
+	by the analytical formulas. We also discuss the influence on the travel
+	time and its variance. The tollbooth increases the travel time but
+	decreases its variance. The differences between long- and
+	short-distance travelers are also discussed

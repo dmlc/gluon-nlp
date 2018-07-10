@@ -1,0 +1,8 @@
+Pontryagin maximum principle of optimal control governed by fluid dynamic
+	systems with two point boundary state constraint
+We study the optimal control problem subject to the semilinear equation with a
+	state constraint. We prove certain theorems and give examples of state
+	constraints so that the maximum principle holds. The main difficulty of
+	the problem is to make the sensitivity analysis of the state with
+	respect to the control caused by the unboundedness and nonlinearity of
+	an operator

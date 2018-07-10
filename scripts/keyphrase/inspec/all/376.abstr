@@ -1,0 +1,12 @@
+Recursive state estimation for multiple switching models with unknown
+	transition probabilities
+This work considers hybrid systems with continuous-valued target states and
+	discrete-valued regime variable. The changes (switches) of the regime
+	variable are modeled by a finite state Markov chain with unknown and
+	random transition probabilities following Dirichlet distributions. Our
+	work analytically derives the marginal posterior distribution of the
+	states and regime variables, the transition probabilities being
+	integrated out. This leads to a variety of recursive hybrid state
+	estimation schemes which are an appealing intuitive and straightforward
+	extension of standard algorithms. Their performance is illustrated by a
+	maneuvering target tracking example

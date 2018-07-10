@@ -1,0 +1,10 @@
+Resonant controllers for smart structures
+In this paper we propose a special type of colocated feedback controller for
+	smart structures. The controller is a parallel combination of high-Q
+	resonant circuits. Each of the resonant circuits is tuned to a pole (or
+	the resonant frequency) of the smart structure. It is proven that the
+	parallel combination of resonant controllers is stable with an infinite
+	gain margin. Only one set of actuator-sensor can damp multiple resonant
+	modes with the resonant controllers. Experimental results are presented
+	to show the robustness of the proposed controller in damping multimode
+	resonances

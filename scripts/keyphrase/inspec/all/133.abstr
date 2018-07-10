@@ -1,0 +1,14 @@
+L/sub p/ stability and linearization
+A theorem by Hadamard gives a two-part condition under which a map from one
+	Banach space to another is a homeomorphism. The theorem, while often
+	very useful, is incomplete in the sense that it does not explicitly
+	specify the family of maps for which the condition is met. Recently,
+	under a typically weak additional assumption on the map, it was shown
+	that Hadamard's condition is met if and only if the map is a
+	homeomorphism with a Lipschitz continuous inverse. Here, an application
+	is given concerning the relation between the L/sub p/ stability (with 1
+	<or= p < infinity ) of a nonlinear system and the stability of
+	related linear systems. We also give a result that directs attention to
+	a fundamental limitation concerning what can be proved about
+	linearization and stability for a related familiar family of feedback
+	systems

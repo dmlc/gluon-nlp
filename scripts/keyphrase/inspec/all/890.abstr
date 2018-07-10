@@ -1,0 +1,14 @@
+Multiple criteria decision making without optimization
+We present a development intended to make interactive decision making schemes
+	accessible for a wider spectrum of decision makers. To this aim we
+	propose to eliminate the need to solve optimization problems at
+	successive iterations of interactive decision processes. We show that
+	the need for optimization can be eliminated by the ability of
+	establishing sufficiently tight bounds on criteria values for efficient
+	decisions prior to explicit identification of such decisions. We
+	present a technique, fully operational and numerically simple, for
+	establishing such bounds. Bounds are dynamic, i.e., they become
+	stronger with the growing number of decisions explicitly identified.
+	They are also parametric with respect to weighting coefficients. We
+	also point out how this technique can enhance the existing interactive
+	decision making methods

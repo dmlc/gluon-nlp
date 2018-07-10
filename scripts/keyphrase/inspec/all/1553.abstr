@@ -1,0 +1,14 @@
+Numerical solution of forward and backward problem for 2-D heat conduction
+	equation
+For a two-dimensional heat conduction problem, we consider its initial boundary
+	value problem and the related inverse problem of determining the
+	initial temperature distribution from transient temperature
+	measurements. The conditional stability for this inverse problem and
+	the error analysis for the Tikhonov regularization are presented. An
+	implicit inversion method, which is based on the regularization
+	technique and the successive over-relaxation (SOR) iteration process,
+	is established. Due to the explicit difference scheme for a direct heat
+	problem developed in this paper, the inversion process is very
+	efficient, while the application of SOR technique makes our inversion
+	convergent rapidly. Numerical results illustrating our method are also
+	given

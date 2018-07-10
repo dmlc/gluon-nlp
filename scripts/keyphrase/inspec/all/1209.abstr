@@ -1,0 +1,17 @@
+High-level language support for user-defined reductions
+The optimized handling of reductions on parallel supercomputers or clusters of
+	workstations is critical to high performance because reductions are
+	common in scientific codes and a potential source of bottlenecks. Yet
+	in many high-level languages, a mechanism for writing efficient
+	reductions remains surprisingly absent. Further, when such mechanisms
+	do exist, they often do not provide the flexibility a programmer needs
+	to achieve a desirable level of performance. In this paper, we present
+	a new language construct for arbitrary reductions that lets a
+	programmer achieve a level of performance equal to that achievable with
+	the highly flexible, but low-level combination of Fortran and MPI. We
+	have implemented this construct in the ZPL language and evaluate it in
+	the context of the initialization of the NAS MG benchmark. We show a 45
+	times speedup over the same code written in ZPL without this construct.
+	In addition, performance on a large number of processors surpasses that
+	achieved in the NAS implementation showing that our mechanism provides
+	programmers with the needed flexibility

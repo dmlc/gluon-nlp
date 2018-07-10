@@ -1,0 +1,28 @@
+Estimation of error in curvature computation on multi-scale free-form surfaces
+A novel technique for multi-scale curvature computation on a free-form 3-D
+	surface is presented. This is achieved by convolving local
+	parametrisations of the surface with 2-D Gaussian filters iteratively.
+	In our technique, semigeodesic coordinates are constructed at each
+	vertex of the mesh. Smoothing results are shown for 3-D surfaces with
+	different shapes indicating that surface noise is eliminated and
+	surface details are removed gradually. A number of evolution properties
+	of 3-D surfaces are described. Next, the surface Gaussian and mean
+	curvature values are estimated accurately at multiple scales which are
+	then mapped to colours and displayed directly on the surface. The
+	performance of the technique when selecting different directions as an
+	arbitrary direction for the geodesic at each vertex are also presented.
+	The results indicate that the error observed for the estimation of
+	Gaussian and mean curvatures is quite low after only one iteration.
+	Furthermore, as the surface is smoothed iteratively, the error is
+	further reduced. The results also show that the estimation error of
+	Gaussian curvature is less than that of mean curvature. Our experiments
+	demonstrate that estimation of smoothed surface curvatures are very
+	accurate and not affected by the arbitrary direction of the first
+	geodesic line when constructing semigeodesic coordinates. Our technique
+	is independent of the underlying triangulation and is also more
+	efficient than volumetric diffusion techniques since 2-D rather than
+	3-D convolutions are employed. Finally, the method presented here is a
+	generalisation of the Curvature Scale Space method for 2-D contours.
+	The CSS method has outperformed comparable techniques within the MPEG-7
+	evaluation framework. As a result, it has been selected for inclusion
+	in the MPEG-7 package of standards

@@ -1,0 +1,15 @@
+Text-independent speaker verification using utterance level scoring and
+	covariance modeling
+This paper describes a computationally simple method to perform text
+	independent speaker verification using second order statistics. The
+	suggested method, called utterance level scoring (ULS), allows one to
+	obtain a normalized score using a single pass through the frames of the
+	tested utterance. The utterance sample covariance is first calculated
+	and then compared to the speaker covariance using a distortion measure.
+	Subsequently, a distortion measure between the utterance covariance and
+	the sample covariance of data taken from different speakers is used to
+	normalize the score. Experimental results from the 2000 NIST speaker
+	recognition evaluation are presented for ULS, used with different
+	distortion measures, and for a Gaussian mixture model (GMM) system. The
+	results indicate that ULS as a viable alternative to GMM whenever the
+	computational complexity and verification accuracy needs to be traded

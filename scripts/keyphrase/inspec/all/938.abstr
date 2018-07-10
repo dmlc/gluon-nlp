@@ -1,0 +1,31 @@
+Fast accurate MEG source localization using a multilayer perceptron trained
+	with real brain noise
+Iterative gradient methods such as Levenberg-Marquardt (LM) are in widespread
+	use for source localization from electroencephalographic (EEG) and
+	magnetoencephalographic (MEG) signals. Unfortunately, LM depends
+	sensitively on the initial guess, necessitating repeated runs. This,
+	combined with LM's high per-step cost, makes its computational burden
+	quite high. To reduce this burden, we trained a multilayer perceptron
+	(MLP) as a realtime localizer. We used an analytical model of
+	quasistatic electromagnetic propagation through a spherical head to map
+	randomly chosen dipoles to sensor activities according to the sensor
+	geometry of a 4D Neuroimaging Neuromag-122 MEG system, and trained a
+	MLP to invert this mapping in the absence of noise or in the presence
+	of various sorts of noise such as white Gaussian noise, correlated
+	noise, or real brain noise. A MLP structure was chosen to trade off
+	computation and accuracy. This MLP was trained four times, with each
+	type of noise. We measured the effects of initial guesses on LM
+	performance, which motivated a hybrid MLP-start-LM method, in which the
+	trained MLP initializes LM. We also compared the localization
+	performance of LM, MLPs, and hybrid MLP-start-LMs for realistic brain
+	signals. Trained MLPs are much faster than other methods, while the
+	hybrid MLP-start-LMs are faster and more accurate than
+	fixed-4-start-LM. In particular, the hybrid MLP-start-LM initialized by
+	a MLP trained with the real brain noise dataset is 60 times faster and
+	is comparable in accuracy to random-20-start-LM, and this hybrid system
+	(localization error: 0.28 cm, computation time: 36 ms) shows almost as
+	good performance as optimal-1-start-LM (localization error: 0.23 cm,
+	computation time: 22 ms), which initializes LM with the correct dipole
+	location. MLPs trained with noise perform better than the MLP trained
+	without noise, and the MLP trained with real brain noise is almost as
+	good an initial guesser for LM as the correct dipole location

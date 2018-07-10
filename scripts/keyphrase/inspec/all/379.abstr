@@ -1,0 +1,17 @@
+Feedforward maximum power point tracking of PV systems using fuzzy controller
+A feedforward maximum power (MP) point tracking scheme is developed for the
+	interleaved dual boost (IDB) converter fed photovoltaic (PV) system
+	using fuzzy controller. The tracking algorithm changes the duty ratio
+	of the converter such that the solar cell array (SCA) voltage equals
+	the voltage corresponding to the MP point at that solar insolation.
+	This is done by the feedforward loop, which generates an error signal
+	by comparing the instantaneous array voltage and reference voltage. The
+	reference voltage for the feedforward loop, corresponding to the MP
+	point, is obtained by an off-line trained neural network. Experimental
+	data is used for off-line training of the neural network, which employs
+	back-propagation algorithm. The proposed fuzzy feedforward peak power
+	tracking effectiveness is demonstrated through the simulation and
+	experimental results, and compared with the conventional proportional
+	plus integral (PI) controller based system. Finally, a comparative
+	study of interleaved boost and conventional boost converter for the PV
+	applications is given and their suitability is discussed

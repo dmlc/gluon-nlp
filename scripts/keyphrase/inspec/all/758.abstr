@@ -1,0 +1,34 @@
+Four-terminal quantum resistor network for electron-wave computing
+Interconnected ultrathin conducting wires or, equivalently, interconnected
+	quasi-one-dimensional electron waveguides, which form a quantum
+	resistor network, are presented here in four-terminal configurations.
+	The transmission behaviors through such four-terminal networks are
+	evaluated and classified. In addition, we show that such networks can
+	be used as the basic building blocks for a possible massive wave
+	computing machine in the future. In a network, each interconnection, a
+	node point, is an elastic scatterer that routes the electron wave.
+	Routing and rerouting of electron waves in a network is described in
+	the framework of quantum transport from Landauer-Buttiker theory in the
+	presence of multiple elastic scatterers. Transmissions through various
+	types of four-terminal generalized clean Aharonov-Bohm rings are
+	investigated at zero temperature. Useful logic functions are gathered
+	based on the transmission probability to each terminal with the use of
+	the Buttiker symmetry rule. In the generalized rings, even and odd
+	numbers of terminals can possess some distinctly different transmission
+	characteristics as we have shown here and earlier. Just as an even or
+	odd number of atoms in a ring is an important quantity for classifying
+	the transmission behavior, we show here that whether the number of
+	terminals is an even or an odd number is just as important in
+	understanding the physics of transmission through such a ring.
+	Furthermore, we show that there are three basic classes of
+	four-terminal rings and the scaling relation for each class is
+	provided. In particular, the existence of equitransmission among all
+	four terminals is shown here. This particular physical phenomena cannot
+	exist in any three-terminal ring. Comparisons and discussions of
+	transmission characteristics between three-terminal and four-terminal
+	rings are also presented. The node-equation approach by considering the
+	Kirchhoff current conservation law at each node point is used for this
+	analysis. Many useful logic functions for electron-wave computing are
+	shown here. In particular, we show that a full adder can be constructed
+	very simply using the equitransmission property of the four-terminal
+	ring. This is in sharp contrast with circuits based on transistor logic

@@ -1,0 +1,46 @@
+Effect of multileaf collimator leaf width on physical dose distributions in the
+	treatment of CNS and head and neck neoplasms with intensity modulated
+	radiation therapy
+The purpose of this work is to examine physical radiation dose differences
+	between two multileaf collimator (MLC) leaf widths (5 and 10 mm) in the
+	treatment of CNS and head and neck neoplasms with intensity modulated
+	radiation therapy (IMRT). Three clinical patients with CNS tumors were
+	planned with two different MLC leaf sizes, 5 and 10 mm, representing
+	Varian-120 and Varian-80 Millennium multileaf collimators,
+	respectively. Two sets of IMRT treatment plans were developed. The goal
+	of the first set was radiation dose conformality in three dimensions.
+	The goal for the second set was organ avoidance of a nearby critical
+	structure while maintaining adequate coverage of the target volume.
+	Treatment planning utilized the CadPlan/Helios system (Varian Medical
+	Systems, Milpitas CA) for dynamic MLC treatment delivery. All beam
+	parameters and optimization (cost function) parameters were identical
+	for the 5 and 10 mm plans. For all cases the number of beams, gantry
+	positions, and table positions were taken from clinically treated
+	three-dimensional conformal radiotherapy plans. Conformality was
+	measured by the ratio of the planning isodose volume to the target
+	volume. Organ avoidance was measured by the volume of the critical
+	structure receiving greater than 90% of the prescription dose (V/sub
+	90/). For three patients with squamous cell carcinoma of the head and
+	neck (T2-T4 N0-N2c M0) 5 and 10 mm leaf widths were compared for
+	parotid preservation utilizing nine coplanar equally spaced beams
+	delivering a simultaneous integrated boost. Because modest differences
+	in physical dose to the parotid were detected, a NTCP model based upon
+	the clinical parameters of Eisbruch et al. was then used for
+	comparisons. The conformality improved in all three CNS cases for the 5
+	mm plans compared to the 10 mm plans. For the organ avoidance plans,
+	V/sub 90/ also improved in two of the three cases when the 5 mm leaf
+	width was utilized for IMRT treatment delivery. In the third case, both
+	the 5 and 10 mm plans were able to spare the critical structure with
+	none of the structure receiving more than 90% of the prescription dose,
+	but in the moderate dose range, less dose was delivered to the critical
+	structure with the 5 mm plan. For the head and neck cases both the 5
+	and 10*2.5 mm beamlets dMLC sliding window techniques spared the
+	contralateral parotid gland while maintaining target volume coverage.
+	The mean parotid dose was modestly lower with the smaller beamlet size
+	(21.04 Gy vs 22.36 Gy). The resulting average NTCP values were 13.72%
+	for 10 mm dMLC and 8.24% for 5 mm dMLC. In conclusion, five mm leaf
+	width results in an improvement in physical dose distribution over 10
+	mm leaf width that may be clinically relevant in some cases. These
+	differences may be most pronounced for single fraction radiosurgery or
+	in cases where the tolerance of the sensitive organ is less than or
+	close to the target volume prescription

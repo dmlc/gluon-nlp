@@ -1,0 +1,9 @@
+On fuzzy and probabilistic control charts
+In this article, different procedures of constructing control charts for
+	linguistic data, based on fuzzy and probability theory, are discussed.
+	Three sets of membership functions, with different degrees of
+	fuzziness, are proposed for fuzzy approaches. A comparison between
+	fuzzy and probability approaches, based on the Average Run Length and
+	samples under control, is conducted for real data. Contrary to the
+	conclusions of Raz and Wang (1990) the choice of degree of fuzziness
+	affected the sensitivity of control charts

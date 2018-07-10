@@ -1,0 +1,15 @@
+An improved self-organizing CPN-based fuzzy system with adaptive
+	back-propagation algorithm
+This paper describes an improved self-organizing CPN-based (Counter-Propagation
+	Network) fuzzy system. Two self-organizing algorithms IUSOCPN and
+	ISSOCPN, being unsupervised and supervised respectively, are
+	introduced. The idea is to construct the neural-fuzzy system with a
+	two-phase hybrid learning algorithm, which utilizes a CPN-based
+	nearest-neighbor clustering scheme for both structure learning and
+	initial parameters setting, and a gradient descent method with adaptive
+	learning rate for fine tuning the parameters. The obtained network can
+	be used in the same way as a CPN to model and control dynamic systems,
+	while it has a faster learning speed than the original back-propagation
+	algorithm. The comparative results on the examples suggest that the
+	method is fairly efficient in terms of simple structure, fast learning
+	speed, and relatively high modeling accuracy

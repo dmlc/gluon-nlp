@@ -1,0 +1,23 @@
+A knowledge-based approach for managing urban infrastructures
+This paper presents a knowledge e-based approach dedicated to the efficient
+	management, regulation, interactive and dynamic monitoring of urban
+	infrastructures. This approach identifies the data and related
+	treatments common to several municipal activities and defines the
+	requirements and functionalities of the computer tools developed to
+	improve the delivery and coordination of municipal services to the
+	population. The resulting cooperative system called SIGIU is composed
+	of a set of integrated operating systems (SYDEX) and the global
+	planning and coordination system (SYGEC). The objective is to integrate
+	the set of SYDEX and the SYGEC into a single coherent system for all
+	the SIGIU's users according to their tasks, their roles, and their
+	responsibilities within the municipal administration. SIGIU is provided
+	by different measurement and monitoring instruments installed on some
+	system's elements to be supervised. In this context, the information
+	can be presented in different forms: video, pictures, data and alarms.
+	One of SIGIU's objectives is the real-time management of urban
+	infrastructures' control mechanisms. To carry out this process, the
+	alarm control agent creates a mobile agent associated with the alarm,
+	which is sent to a mobile station and warns an operator. Preliminary
+	implementation results show that SIGIU supports effectively and
+	efficiently the decision making process related to managing urban
+	infrastructures

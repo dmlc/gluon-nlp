@@ -1,0 +1,7 @@
+Fast broadcasting and gossiping in radio networks
+We establish an O(n log/sup 2/ n) upper bound on the time for deterministic
+	distributed broadcasting in multi-hop radio networks with unknown
+	topology. This nearly matches the known lower bound of Omega (n log n).
+	The fastest previously known algorithm for this problem works in time
+	O(n/sup 3/2/). Using our broadcasting algorithm, we develop an O(n/sup
+	3/2/ log/sup 2/ n) algorithm for gossiping in the same network model

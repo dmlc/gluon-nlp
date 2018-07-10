@@ -1,0 +1,14 @@
+Development of an integrated and open-architecture precision motion control
+	system
+In this paper, the development of an integrated and open-architecture precision
+	motion control system is presented. The control system is generally
+	applicable, but it is developed with a particular focus on direct drive
+	servo systems based on linear motors. The overall control system is
+	comprehensive, comprising of various selected control and
+	instrumentation components, integrated within a configuration of
+	hardware architecture centred around a dSPACE DS1004 DSP processor
+	board. These components include a precision composite controller
+	(comprising of feedforward and feedback control), a disturbance
+	observer, an adaptive notch filter, and a geometrical error
+	compensator. The hardware architecture, software development platform,
+	user interface, and all constituent control components are described

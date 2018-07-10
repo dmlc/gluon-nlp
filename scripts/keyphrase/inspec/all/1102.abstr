@@ -1,0 +1,27 @@
+Design and implementation of a reusable and extensible HL7 encoding/decoding
+	framework
+The Health Level Seven (HL7), an international standard for electronic data
+	exchange in all health care environments, enables disparate computer
+	applications to exchange key sets of clinical and administrative
+	information. Above all, it defines the standard HL7 message formats
+	prescribed by the standard encoding rules. In this paper, we propose a
+	flexible, reusable, and extensible HL7 encoding and decoding framework
+	using a message object model (MOM) and message definition repository
+	(MDR). The MOM provides an abstract HL7 message form represented by a
+	group of objects and their relationships. It reflects logical
+	relationships among the standard HL7 message elements such as segments,
+	fields, and components, while enforcing the key structural constraints
+	imposed by the standard. Since the MOM completely eliminates the
+	dependency of the HL7 encoder and decoder on platform-specific data
+	formats, it makes it possible to build the encoder and decoder as
+	reusable standalone software components, enabling the interconnection
+	of arbitrary heterogeneous hospital information systems (HIS) with
+	little effort. Moreover, the MDR, an external database of key
+	definitions for HL7 messages, helps make the encoder and decoder as
+	resilient as possible to future modifications of the standard HL7
+	message formats. It is also used by the encoder and decoder to perform
+	a well-formedness check for their respective inputs (i.e., HL7 message
+	objects expressed in the MOM and encoded HL7 message strings). Although
+	we implemented a prototype version of the encoder and decoder using
+	JAVA, they can be easily packaged and delivered as standalone
+	components using the standard component frameworks

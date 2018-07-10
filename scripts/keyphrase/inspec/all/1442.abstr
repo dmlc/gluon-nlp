@@ -1,0 +1,16 @@
+Using constructed types in C++ unions
+The C++ Standard states that a union type cannot have a member with a
+	nontrivial constructor or destructor. While at first this seems
+	unreasonable, further thought makes it clear why this is the case: The
+	crux of the problem is that unions don't have built-in semantics for
+	denoting when a member is the "current" member of the union. Therefore,
+	the compiler can't know when it's appropriate to call constructors or
+	destructors on the union members. Still, there are good reasons for
+	wanting to use constructed object types in a union. For example, you
+	might want to implement a scripting language with a single variable
+	type that can either be an integer, a string, or a list. A union is the
+	perfect candidate for implementing such a composite type, but the
+	restriction on constructed union members may prevent you from using an
+	existing string or list class (for example, from the STL) to provide
+	the underlying functionality. Luckily, a feature of C++ called
+	placement new can provide a workaround

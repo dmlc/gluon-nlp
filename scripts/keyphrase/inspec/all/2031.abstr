@@ -1,0 +1,14 @@
+Efficient two-level image thresholding method based on Bayesian formulation and
+	the maximum entropy principle
+An efficient method for two-level thresholding is proposed based on the Bayes
+	formula and the maximum entropy principle, in which no assumptions of
+	the image histogram are made. An alternative criterion is derived based
+	on maximizing entropy and used for speeding up the searching algorithm.
+	Five forms of conditional probability distributions-simple, linear,
+	parabola concave, parabola convex, and S-function-are employed and
+	compared to each other for optimal threshold determination. The effect
+	of precision on optimal threshold determination is discussed and a
+	trade-off precision epsilon =0.001 is selected experimentally. Our
+	experiments demonstrate that the proposed method achieves a significant
+	improvement in speed from 26 to 57 times faster than the exhaustive
+	search method

@@ -1,0 +1,10 @@
+Numerical representation of binary relations with a multiplicative error
+	function
+This paper studies the case of the representation of a binary relation via a
+	numerical function with threshold (error) depending on both compared
+	alternatives. The error is considered to be multiplicative, its value
+	being either directly or inversely proportional to the values of the
+	numerical function. For the first case, it is proved that a binary
+	relation is a semiorder. Moreover, any semiorder can be represented in
+	this form. In the second case, the corresponding binary relation is an
+	interval order

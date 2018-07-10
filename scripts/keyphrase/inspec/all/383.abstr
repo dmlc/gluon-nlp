@@ -1,0 +1,17 @@
+Outlier resistant adaptive matched filtering
+Robust adaptive matched filtering (AMF) whereby outlier data vectors are
+	censored from the covariance matrix estimate is considered in a maximum
+	likelihood estimation (MLE) setting. It is known that outlier data
+	vectors whose steering vector is highly correlated with the desired
+	steering vector, can significantly degrade the performance of AMF
+	algorithms such as sample matrix inversion (SMI) or fast maximum
+	likelihood (FML). Four new algorithms that censor outliers are
+	presented which are derived via approximation to the MLE solution. Two
+	algorithms each are related to using the SMI or the FML to estimate the
+	unknown underlying covariance matrix. Results are presented using
+	computer simulations which demonstrate the relative effectiveness of
+	the four algorithms versus each other and also versus the SMI and FML
+	algorithms in the presence of outliers and no outliers. It is shown
+	that one of the censoring algorithms, called the reiterative censored
+	fast maximum likelihood (CFML) technique is significantly superior to
+	the other three censoring methods in stressful outlier scenarios

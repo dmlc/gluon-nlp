@@ -1,0 +1,5 @@
+randomized two-process wait-free test-and-set; randomized algorithm; 4-valued
+	single writer single reader atomic variables; expected elementary
+	steps; finite-state analysis; correctness proofs; symmetry breaking;
+	asynchronous distributed protocols; fault-tolerance; shared memory;
+	wait-free read/write registers

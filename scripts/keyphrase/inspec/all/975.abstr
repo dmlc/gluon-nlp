@@ -1,0 +1,12 @@
+Algebraic conditions for high-order convergent deferred correction schemes
+	based on Runge-Kutta-Nystrom methods for second order boundary value
+	problems
+In [T. Van Hecke, M. Van Daele, J. Comp. Appl. Math., vol. 132, p. 107-125,
+	(2001)] the investigation of high-order convergence of deferred
+	correction schemes for the numerical solution of second order nonlinear
+	two-point boundary value problems not containing the first derivative,
+	is made. The derivation of the algebraic conditions to raise the
+	increase of order by the deferred correction scheme was based on Taylor
+	series expansions. In this paper we describe a more elegant way by
+	means of P-series to obtain this necessary conditions and generalize
+	this idea to equations of the form y" = f (t, y, y')

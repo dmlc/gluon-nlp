@@ -1,0 +1,18 @@
+Evaluating alternative manufacturing control strategies using a benchmark
+	system
+This paper describes an investigation of the effects of dynamic job routing and
+	job sequencing decisions on the performance of a distributed control
+	system and its adaptability against disturbances. This experimental
+	work was carried out to compare the performance of alternative control
+	strategies in various manufacturing environments and to investigate the
+	relationship between the 'control' and 'controlled' systems. The
+	experimental test-bed presented in this paper consists of an
+	agent-based control system (implemented in C++) and a discrete-event
+	simulation model. Using this test-bed, various control strategies were
+	tested on a benchmark manufacturing system by varying production
+	volumes (to model the production system with looser/tighter schedules)
+	and disturbance frequencies. It was found that hybrid strategies that
+	combine reactive agent mechanisms (and allocation strategies such as
+	the contract net) with appropriate job sequencing heuristics provide
+	the best performance, particularly when job congestion increases on a
+	shop-floor

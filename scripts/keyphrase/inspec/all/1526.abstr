@@ -1,0 +1,25 @@
+GK-DEVS: Geometric and kinematic DEVS formalism for simulation modeling of
+	3-dimensional multi-component systems
+A combined discrete/continuous simulation methodology based on the DEVS
+	(discrete event system specification) formalism is presented in this
+	paper that satisfies the simulation requirements of 3-dimensional and
+	dynamic systems with multi-components. We propose a geometric and
+	kinematic DEVS (GK-DEVS) formalism that is able to describe the
+	geometric and kinematic structure of a system and its continuous state
+	dynamics as well as the interaction among the multi-components. To
+	establish one model having dynamic behavior and a particular
+	hierarchical structure, the atomic and the coupled model of the
+	conventional DEVS are merged into one model in the proposed formalism.
+	For simulation of the continuous motion of 3-D components, the
+	sequential state set is partitioned into the discrete and the
+	continuous state set and the rate of change function over the
+	continuous state set is employed. Although modified from the
+	conventional DEVS formalism, the GK-DEVS formalism preserves a
+	hierarchical, modular modeling fashion and a coupling scheme.
+	Furthermore, for the GK-DEVS model simulation, we propose an abstract
+	simulation algorithm, called a GK-Simulator, in which data and control
+	are separated and events are scheduled not globally but hierarchically
+	so that an object-oriented principle is satisfied. The proposed GK-DEVS
+	formalism and the GK-Simulator algorithm have been applied to the
+	simulation of a flexible manufacturing system consisting of a 2-axis
+	lathe, a 3-axis milling machine, and a vehicle-mounted robot

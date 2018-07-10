@@ -1,0 +1,19 @@
+Integrated support based on task models for the design, evaluation, and
+	documentation of interactive safety-critical systems: a case study in
+	the air-traffic control domain
+This paper presents an approach to using task models in both the design and the
+	evaluation phases of interactive safety-critical applications. We
+	explain how it is possible to use information contained in task models
+	to support the design and development of effective user interfaces.
+	Moreover, we show how task models can also support a systematic
+	inspection-based usability assessment by examining possible deviations
+	that can occur while users interact with the system, an important issue
+	especially when coping with the peculiar requirements of
+	safety-critical applications. Such evaluation provides useful technical
+	documentation to help users achieve an in-depth understanding of the
+	system and its design rationale. Lastly, a description of the
+	application of our approach to a real case study in the air-traffic
+	control domain will illustrate the main features of the proposed
+	method. In particular, we discuss examples taken from an application
+	for air-traffic controllers in an aerodrome supported by graphical user
+	interfaces for data-link communications with pilots

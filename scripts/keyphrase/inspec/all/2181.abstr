@@ -1,0 +1,17 @@
+Development of a health guidance support system for lifestyle improvement
+The objective is to provide automated advice for lifestyle adjustment based on
+	an assessment of the results of a questionnaire and medical examination
+	or health checkup data. A system was developed that gathers data based
+	on questions regarding weight gain, exercise, smoking, sleep, eating
+	habits, salt intake, animal fat intake, snacks, alcohol, and oral
+	hygiene, body mass index, resting blood pressure, fasting blood sugar,
+	total cholesterol, triglycerides, uric acid and liver function tests.
+	Based on the relationships between the lifestyle data and the health
+	checkup data, a health assessment sheet was generated for persons being
+	allocated to a multiple-risk factor syndrome group. Health assessment
+	and useful advice for lifestyle improvement were automatically
+	extracted with the system, toward the high risk group for life style
+	related diseases. The system is operational. In comparison with
+	conventional, limited advice methods, we developed a practical system
+	that defined the necessity for lifestyle improvement more clearly, and
+	made giving advice easier

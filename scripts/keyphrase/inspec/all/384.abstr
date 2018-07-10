@@ -1,0 +1,15 @@
+Brightness-independent start-up routine for star trackers
+Initial attitude acquisition by a modern star tracker is investigated here.
+	Criteria for efficient organization of the on-board database are
+	discussed with reference to a brightness-independent initial
+	acquisition algorithm. Star catalog generation preprocessing is
+	described, with emphasis on the identification of minimum star
+	brightness for detection by a sensor based on a charge coupled device
+	(CCD) photodetector. This is a crucial step for proper evaluation of
+	the attainable sky coverage when selecting the stars to be included in
+	the on-board catalog. Test results are also reported, both for
+	reliability and accuracy, even if the former is considered to be the
+	primary target. Probability of erroneous solution is 0.2% in the case
+	of single runs of the procedure, while attitude determination accuracy
+	is in the order of 0.02 degrees in the average for the computation of
+	the inertial pointing of the boresight axis

@@ -1,0 +1,15 @@
+A scalable and lightweight QoS monitoring technique combining passive and
+	active approaches: on the mathematical formulation of CoMPACT monitor
+To make a scalable and lightweight QoS monitoring system, we (2002) have
+	proposed a new QoS monitoring technique, called the change-of-measure
+	based passive/active monitoring (CoMPACT Monitor), which is based on
+	the change-of-measure framework and is an active measurement
+	transformed by using passively monitored data. This technique enables
+	us to measure detailed QoS information for individual users,
+	applications and organizations, in a scalable and lightweight manner.
+	In this paper, we present the mathematical foundation of CoMPACT
+	Monitor. In addition, we show its characteristics through simulations
+	in terms of typical implementation issues for inferring the delay
+	distributions. The results show that CoMPACT Monitor gives accurate QoS
+	estimations with only a small amount of extra traffic for active
+	measurement

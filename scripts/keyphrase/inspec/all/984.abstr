@@ -1,0 +1,19 @@
+Bistability of harmonically forced relaxation oscillations
+Relaxation oscillations appear in processes which involve transitions between
+	two states characterized by fast and slow time scales. When a
+	relaxation oscillator is coupled to an external periodic force its
+	entrainment by the force results in a response which can include
+	multiple periodicities and bistability. The prototype of these
+	behaviors is the harmonically driven van der Pol equation which
+	displays regions in the parameter space of the driving force amplitude
+	where stable orbits of periods 2n+or-1 coexist, flanked by regions of
+	periods 2n+1 and 2n-1. The parameter regions of such bistable orbits
+	are derived analytically for the closely related harmonically driven
+	Stoker-Haag piecewise discontinuous equation. The results are valid
+	over most of the control parameter space of the system. Also considered
+	are the reasons for the more complicated dynamics featuring regions of
+	high multiple periodicity which appear like noise between ordered
+	periodic regions. Since this system mimics in detail the less
+	analytically tractable forced van der Pol equation, the results suggest
+	extensions to situations where forced relaxation oscillations are a
+	component of the operating mechanisms

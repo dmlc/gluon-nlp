@@ -1,0 +1,14 @@
+An operations research approach to the problem of the sugar cane selection
+Selection for superior clones is the most important aspect of sugar cane
+	improvement programs, and is a long and expensive process. While
+	studies have investigated different components of selection
+	independently, there has not been a whole system approach to improve
+	the process. This study observes the problem as an integrated system,
+	where if one parameter changes the state of the whole system changes. A
+	computer based stochastic simulation model that accurately represents
+	the selection was developed. The paper describes the simulation model,
+	showing its accuracy as well as how a combination of dynamic
+	programming and branch and bound can be applied to the model to
+	optimise the selection system, giving a new application of these
+	techniques. The model can be directly applied to any region targeted by
+	sugar cane breeding programs or to other clonally propagated crops

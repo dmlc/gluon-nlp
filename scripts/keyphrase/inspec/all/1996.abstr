@@ -1,0 +1,16 @@
+Quality image metrics for synthetic images based on perceptual color
+	differences
+Due to the improvement of image rendering processes, and the increasing
+	importance of quantitative comparisons among synthetic color images, it
+	is essential to define perceptually based metrics which enable to
+	objectively assess the visual quality of digital simulations. In
+	response to this need, this paper proposes a new methodology for the
+	determination of an objective image quality metric, and gives an answer
+	to this problem through three metrics. This methodology is based on the
+	LLAB color space for perception of color in complex images, a
+	modification of the CIELab1976 color space. The first metric proposed
+	is a pixel by pixel metric which introduces a local distance map
+	between two images. The second metric associates, to a pair of images,
+	a global value. Finally, the third metric uses a recursive subdivision
+	of the images to obtain an adaptative distance map, rougher but less
+	expensive to compute than the first method

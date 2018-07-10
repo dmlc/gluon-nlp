@@ -1,0 +1,8 @@
+Construction of two-sided bounds for initial-boundary value problems
+This paper extends the bounding operator approach developed for boundary value
+	problems to the case of initial-boundary value problems (IBVPs).
+	Following the general principle of bounding operators enclosing methods
+	for the case of partial differential equations are discussed. In
+	particular, continuous discretization methods with an appropriate error
+	bound controlled shift and monotone extensions of Rothe's method for
+	parabolic problems are investigated

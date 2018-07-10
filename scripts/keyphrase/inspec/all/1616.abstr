@@ -1,0 +1,6 @@
+Pitch post-processing technique based on robust statistics
+A novel pitch post-processing technique based on robust statistics is proposed.
+	Performances in terms of pitch error rates and pitch contours show the
+	superiority of the proposed method compared with the median filtering
+	technique. Further improvement is achieved through incorporating an
+	uncertainty term in the robust statistics model

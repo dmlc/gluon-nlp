@@ -1,0 +1,17 @@
+Baseball, optimization, and the World Wide Web
+The competition for baseball play-off spots-the fabled pennant race-is one of
+	the most closely watched American sports traditions. While play-off
+	race statistics, such as games back and magic number, are informative,
+	they are overly conservative and do not account for the remaining
+	schedule of games. Using optimization techniques, one can model
+	schedule effects explicitly and determine precisely when a team has
+	secured a play-off spot or has been eliminated from contention. The
+	RIOT Baseball Play-off Races Web site developed at the University of
+	California, Berkeley, provides automatic updates of new,
+	optimization-based play-off race statistics each day of the major
+	league baseball season. In developing the site, we found that we could
+	determine the first-place elimination status of all teams in a division
+	using a single linear-programming formulation, since a minimum win
+	threshold for teams finishing in first place applies to all teams in a
+	division. We identified a similar (but weaker) result for the problem
+	of play-off elimination with wildcard teams

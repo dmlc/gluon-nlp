@@ -1,0 +1,28 @@
+Automated breath detection on long-duration signals using feedforward
+	backpropagation artificial neural networks
+A new breath-detection algorithm is presented, intended to automate the
+	analysis of respiratory data acquired during sleep. The algorithm is
+	based on two independent artificial neural networks (ANN/sub insp/ and
+	ANN/sub expi/) that recognize, in the original signal, windows of
+	interest where the onset of inspiration and expiration occurs.
+	Postprocessing consists in finding inside each of these windows of
+	interest minimum and maximum corresponding to each inspiration and
+	expiration. The ANN/sub insp/ and ANN/sub expi/ correctly determine
+	respectively 98.0% and 98.7% of the desired windows, when compared with
+	29 820 inspirations and 29 819 expirations detected by a human expert,
+	obtained from three entire-night recordings. Postprocessing allowed
+	determination of inspiration and expiration onsets with a mean
+	difference with respect to the same human expert of (mean +or- SD) 34
+	+or- 71 ms for inspiration and 5 +or- 46 ms for expiration. The method
+	proved to be effective in detecting the onset of inspiration and
+	expiration in full night continuous recordings. A comparison of five
+	human experts performing the same classification task yielded that the
+	automated algorithm was undifferentiable from these human experts,
+	failing within the distribution of human expert results. Besides being
+	applicable to adult respiratory volume data, the presented algorithm
+	was also successfully applied to infant sleep data, consisting of
+	uncalibrated rib cage and abdominal movement recordings. A comparison
+	with two previously published algorithms for breath detection in
+	respiratory volume signal shows that the presented algorithm has a
+	higher specificity, while presenting similar or higher positive
+	predictive values

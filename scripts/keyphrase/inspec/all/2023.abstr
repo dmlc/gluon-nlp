@@ -1,0 +1,24 @@
+Diffraction limit for a circular mask with a periodic rectangular apertures
+	array
+A mask with periodic apertures imaging system is adopted very widely and plays
+	a leading role in modern technology for uses such as pinhole cameras,
+	coded imaging systems, optical information processing, etc. because of
+	its high resolution, its infinite depth of focus, and its usefulness
+	over a broad frequency spectra ranging from visible light to X-rays and
+	gamma rays. While the masks with periodic apertures investigated in the
+	literature are limited only to far-field diffraction, they do not take
+	the shift of apertures within the mask into consideration. Therefore
+	the derivation of the far-field diffraction for a single aperture
+	cannot be applied to a mask with periodic apertures. The far-field
+	diffraction formula modified for a multiaperture mask has been proposed
+	in the past, the analysis remains too complicated to offer some
+	practical guidance for mask design. We study a circular mask with
+	periodic rectangular apertures and develop an easier way to interpret
+	it. First, the near-field diffraction intensity of a circular aperture
+	is calculated by means of Lommel's function. Then the convolution of
+	the circular mask diffraction with periodic rectangular apertures is
+	put together, and we can present a simple mathematical tool to analyze
+	the mask properties including the intensity distribution, blurring
+	aberration, and the criterion of defining the far- or near-field
+	diffraction. This concept can also be expanded to analyze different
+	types of masks with the arbitrarily shaped apertures

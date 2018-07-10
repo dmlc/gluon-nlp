@@ -1,0 +1,19 @@
+Data assimilation of local model error forecasts in a deterministic model
+One of the most popular data assimilation techniques in use today are of the
+	Kalman filter type, which provide an improved estimate of the state of
+	a system up to the current time level, based on actual measurements.
+	From a forecasting viewpoint, this corresponds to an updating of the
+	initial conditions. The standard forecasting procedure is to then run
+	the model uncorrected into the future, driven by predicted boundary and
+	forcing conditions. The problem with this methodology is that the
+	updated initial conditions quickly 'wash-out', thus, after a certain
+	forecast horizon the model predictions are no better than from an
+	initially uncorrected model. This study demonstrates that through the
+	assimilation of error forecasts (in the present case made using
+	so-called local models) entire model domains can be corrected for
+	extended forecast horizons (i.e. long after updated initial conditions
+	have become washed-out), thus demonstrating significant improvements
+	over the conventional methodology. Some alternate uses of local models
+	are also explored for the re-distribution of error forecasts over the
+	entire model domain, which are then compared with more conventional
+	Kalman filter type schemes

@@ -1,0 +1,12 @@
+Optimal learning for patterns classification in RBF networks
+The proposed modifying of the structure of the radial basis function (RBF)
+	network by introducing the weight matrix to the input layer (in
+	contrast to the direct connection of the input to the hidden layer of a
+	conventional RBF) so that the training space in the RBF network is
+	adaptively separated by the resultant decision boundaries and class
+	regions is reported. The training of this weight matrix is carried out
+	as for a single-layer perceptron together with the clustering process.
+	In this way the network is capable of dealing with complicated
+	problems, which have a high degree of interference in the training
+	data, and achieves a higher classification rate over the current
+	classifiers using RBF

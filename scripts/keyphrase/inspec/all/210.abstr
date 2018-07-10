@@ -1,0 +1,24 @@
+When a better interface and easy navigation aren't enough: examining the
+	information architecture in a law enforcement agency
+An information architecture that allows users to easily navigate through a
+	system and quickly recover from mistakes is often defined as a highly
+	usable system. But usability in systems design goes beyond a good
+	interface and efficient navigation. In this article we describe two
+	database systems in a law enforcement agency. One system is a legacy,
+	text-based system with cumbersome navigation (RMS); the newer system is
+	a graphical user interface with simplified navigation (CopNet). It is
+	hypothesized that law enforcement users will evaluate CopNet higher
+	than RMS, but experts of the older system will evaluate it higher than
+	others will. We conducted two user studies. One study examined what
+	users thought of RMS and CopNet, and compared RMS experts' evaluations
+	with nonexperts. We found that all users evaluated CopNet as more
+	effective, easier to use, and easier to navigate than RMS, and this was
+	especially noticeable for users who were not experts with the older
+	system. The second, follow-up study examined use behavior after CopNet
+	was deployed some time later. The findings revealed that evaluations of
+	CopNet were not associated with its use. If the newer system had a
+	better interface and was easier to navigate than the older, legacy
+	system, why were law enforcement personnel reluctant to switch? We
+	discuss reasons why switching to a new system is difficult, especially
+	for those who are most adept at using the older system. Implications
+	for system design and usability are also discussed

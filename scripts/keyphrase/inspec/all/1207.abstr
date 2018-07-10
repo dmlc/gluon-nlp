@@ -1,0 +1,19 @@
+Packet spacing: an enabling mechanism for delivering multimedia content in
+	computational grids
+Streaming multimedia with UDP has become increasingly popular over distributed
+	systems like the Internet. Scientific applications that stream
+	multimedia include remote computational steering of visualization data
+	and video-on-demand teleconferencing over the Access Grid. However, UDP
+	does not possess a self-regulating, congestion-control mechanism; and
+	most best-effort traffic is served by congestion-controlled TCP.
+	Consequently, UDP steals bandwidth from TCP such that TCP flows starve
+	for network resources. With the volume of Internet traffic continuing
+	to increase, the perpetuation of UDP-based streaming will cause the
+	Internet to collapse as it did in the mid-1980's due to the use of
+	non-congestion-controlled TCP. To address this problem, we introduce
+	the counter-intuitive notion of inter-packet spacing with control
+	feedback to enable UDP-based applications to perform well in the
+	next-generation Internet and computational grids. When compared with
+	traditional UDP-based streaming, we illustrate that our approach can
+	reduce packet loss over 50% without adversely affecting delivered
+	throughput

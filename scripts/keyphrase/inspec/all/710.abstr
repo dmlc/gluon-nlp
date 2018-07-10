@@ -1,0 +1,8 @@
+Optimal allocation of runs in a simulation metamodel with several independent
+	variables
+Cheng and Kleijnen (1999) propose a very general regression metamodel for
+	modelling the output of a queuing system. Its main limitations are that
+	the regression function is based on a polynomial and that it can use
+	only one independent variable. These limitations are removed here. We
+	derive an explicit formula for the optimal way of assigning simulation
+	runs to the different design points

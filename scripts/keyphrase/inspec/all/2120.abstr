@@ -1,0 +1,6 @@
+Control in active systems based on criteria and motivation
+For active systems where the principal varies the agents' goal functions by
+	adding to them appropriately weighted goal functions of other agents or
+	a balanced system of inter-agent transfers, the paper formulated and
+	solved the problems of control based on criteria and motivation. Linear
+	active systems were considered by way of example

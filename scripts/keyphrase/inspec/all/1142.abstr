@@ -1,0 +1,22 @@
+Fast and accurate leaf verification for dynamic multileaf collimation using an
+	electronic portal imaging device
+A prerequisite for accurate dose delivery of IMRT profiles produced with
+	dynamic multileaf collimation (DMLC) is highly accurate leaf
+	positioning. In our institution, leaf verification for DMLC was
+	initially done with film and ionization chamber. To overcome the
+	limitations of these methods, a fast, accurate and two-dimensional
+	method for daily leaf verification, using our CCD-camera based
+	electronic portal imaging device (EPID), has been developed. This
+	method is based on a flat field produced with a 0.5 cm wide sliding gap
+	for each leaf pair. Deviations in gap widths are detected as deviations
+	in gray scale value profiles derived from the EPID images, and not by
+	directly assessing leaf positions in the images. Dedicated software was
+	developed to reduce the noise level in the low signal images produced
+	with the narrow gaps. The accuracy of this quality assurance procedure
+	was tested by introducing known leaf position errors. It was shown that
+	errors in leaf gap as small as 0.01-0.02 cm could be detected, which is
+	certainly adequate to guarantee accurate dose delivery of DMLC
+	treatments, even for strongly modulated beam profiles. Using this
+	method, it was demonstrated that both short and long term
+	reproducibility in leaf positioning were within 0.01 cm (1 sigma ) for
+	all gantry angles, and that the effect of gravity was negligible

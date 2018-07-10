@@ -1,0 +1,13 @@
+Design of PID-type controllers using multiobjective genetic algorithms
+The design of a PID controller is a multiobjective problem. A plant and a set
+	of specifications to be satisfied are given. The designer has to adjust
+	the parameters of the PID controller such that the feedback
+	interconnection of the plant and the controller satisfies the
+	specifications. These specifications are usually competitive and any
+	acceptable solution requires a tradeoff among them. An approach for
+	adjusting the parameters of a PID controller based on multiobjective
+	optimization and genetic algorithms is presented in this paper. The
+	MRCD (multiobjective robust control design) genetic algorithm has been
+	employed. The approach can be easily generalized to design
+	multivariable coupled and decentralized PID loops and has been
+	successfully validated for a large number of experimental cases

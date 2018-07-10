@@ -1,0 +1,8 @@
+Post-projected Runge-Kutta methods for index-2 differential-algebraic equations
+A new projection technique for Runge-Kutta methods applied to index-2
+	differential-algebraic equations is presented in which the numerical
+	approximation is projected only as part of the output process. It is
+	shown that for methods that are strictly stable at infinity, the order
+	of convergence is unaffected compared to standard projected methods.
+	Gauss methods, for which this technique is of special interest when
+	some symmetry is to be preserved, are studied in more detail

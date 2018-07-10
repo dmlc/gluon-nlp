@@ -1,0 +1,12 @@
+Predictive control of a high temperature-short time pasteurisation process
+Modifications on the dynamic matrix control (DMC) algorithm are presented to
+	deal with transfer functions with varying parameters in order to
+	control a high temperature-short time pasteurisation process. To
+	control processes with first order with pure time delay models whose
+	parameters present an exogenous variable dependence, a new method of
+	free response calculation, using multiple model information, is
+	developed. Two methods, to cope with those nonlinear models that allow
+	a generalised Hammerstein model description, are proposed. The proposed
+	methods have been tested, both in simulation and in real cases, in
+	comparison with PID and DMC classic controllers, showing important
+	improvements on reference tracking and disturbance rejection

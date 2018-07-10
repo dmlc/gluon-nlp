@@ -1,0 +1,27 @@
+Turning telecommunications call details to churn prediction: a data mining
+	approach
+As deregulation, new technologies, and new competitors open up the mobile
+	telecommunications industry, churn prediction and management has become
+	of great concern to mobile service providers. A mobile service provider
+	wishing to retain its subscribers needs to be able to predict which of
+	them may be at-risk of changing services and will make those
+	subscribers the focus of customer retention efforts. In response to the
+	limitations of existing churn-prediction systems and the unavailability
+	of customer demographics in the mobile telecommunications provider
+	investigated, we propose, design, and experimentally evaluate a
+	churn-prediction technique that predicts churning from subscriber
+	contractual information and call pattern changes extracted from call
+	details. This proposed technique is capable of identifying potential
+	churners at the contract level for a specific prediction time-period.
+	In addition, the proposed technique incorporates the multi-classifier
+	class-combiner approach to address the challenge of a highly skewed
+	class distribution between churners and non-churners. The empirical
+	evaluation results suggest that the proposed call-behavior-based
+	churn-prediction technique exhibits satisfactory predictive
+	effectiveness when more recent call details are employed for the churn
+	prediction model construction. Furthermore, the proposed technique is
+	able to demonstrate satisfactory or reasonable predictive power within
+	the one-month interval between model construction and churn prediction.
+	Using a previous demographics-based churn-prediction system as a
+	reference, the lift factors attained by our proposed technique appear
+	largely satisfactory

@@ -1,0 +1,15 @@
+Completion to involution and semidiscretisations
+We discuss the relation between the completion to involution of linear
+	over-determined systems of partial differential equations with constant
+	coefficients and the properties of differential algebraic equations
+	obtained by their semidiscretisation. For a certain class of "weakly
+	over-determined" systems, we show that the differential algebraic
+	equations do not contain hidden constraints, if and only if the
+	original partial differential system is involutive. We also demonstrate
+	how the formal theory can be used to obtain an existence and uniqueness
+	theorem for smooth solutions of strongly hyperbolic systems and to
+	estimate the drift off the constraints, if an underlying equation is
+	numerically solved. Finally, we show for general linear systems how the
+	index of differential algebraic equations obtained by
+	semidiscretisations can be predicted from the result of a completion of
+	the partial differential system

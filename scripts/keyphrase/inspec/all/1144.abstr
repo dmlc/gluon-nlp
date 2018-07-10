@@ -1,0 +1,26 @@
+Simultaneous iterative reconstruction of emission and attenuation images in
+	positron emission tomography from emission data only
+For quantitative image reconstruction in positron emission tomography
+	attenuation correction is mandatory. In case that no data are available
+	for the calculation of the attenuation correction factors one can try
+	to determine them from the emission data alone. However, it is not
+	clear if the information content is sufficient to yield an adequate
+	attenuation correction together with a satisfactory activity
+	distribution. Therefore, we determined the log likelihood distribution
+	for a thorax phantom depending on the choice of attenuation and
+	activity pixel values to measure the crosstalk between both. In
+	addition an iterative image reconstruction (one-dimensional Newton-type
+	algorithm with a maximum likelihood estimator), which simultaneously
+	reconstructs the images of the activity distribution and the
+	attenuation coefficients is used to demonstrate the problems and
+	possibilities of such a reconstruction. As result we show that for a
+	change of the log likelihood in the range of statistical noise, the
+	associated change in the activity value of a structure is between 6%
+	and 263%. In addition, we show that it is not possible to choose the
+	best maximum on the basis of the log likelihood when a regularization
+	is used, because the coupling between different structures mediated by
+	the (smoothing) regularization prevents an adequate solution due to
+	crosstalk. We conclude that taking into account the attenuation
+	information in the emission data improves the performance of image
+	reconstruction with respect to the bias of the activities, however, the
+	reconstruction still is not quantitative

@@ -1,0 +1,14 @@
+Reaching strong consensus in a general network
+The strong consensus (SC) problem is a variant of the conventional distributed
+	consensus problem (also known as the Byzantine agreement problem). The
+	SC problem requires that the agreed value among fault-free processors
+	be one of the fault-free processor's initial values. Originally, the
+	problem was studied in a fully connected network with malicious faulty
+	processors. In this paper, the SC problem is re-examined in a general
+	network, in which the components (processors and communication links)
+	may be subjected to different faulty types simultaneously (also called
+	the hybrid fault model or mixed faulty types) and the network topology
+	does not have to be fully connected. The proposed protocol can tolerate
+	the maximum number of tolerable faulty components such that each
+	fault-free processor obtains a common value for the SC problem in a
+	general network

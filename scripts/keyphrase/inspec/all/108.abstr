@@ -1,0 +1,10 @@
+Exploiting randomness in quantum information processing
+We consider how randomness can be made to play a useful role in quantum
+	information processing-in particular, for decoherence control and the
+	implementation of quantum algorithms. For a two-level system in which
+	the decoherence channel is non-dissipative, we show that decoherence
+	suppression is possible if memory is present in the channel. Random
+	switching between two potentially harmful noise sources can then
+	provide a source of stochastic control. Such random switching can also
+	be used in an advantageous way for the implementation of quantum
+	algorithms

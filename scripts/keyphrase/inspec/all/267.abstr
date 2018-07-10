@@ -1,0 +1,11 @@
+An efficient parallel algorithm for the calculation of canonical MP2 energies
+We present the parallel version of a previous serial algorithm for the
+	efficient calculation of canonical MP2 energies. It is based on the
+	Saebo-Almlof direct-integral transformation, coupled with an efficient
+	prescreening of the AO integrals. The parallel algorithm avoids
+	synchronization delays by spawning a second set of slaves during the
+	bin-sort prior to the second half-transformation. Results are presented
+	for systems with up to 2000 basis functions. MP2 energies for molecules
+	with 400-500 basis functions can be routinely calculated to
+	microhartree accuracy on a small number of processors (6-8) in a matter
+	of minutes with modern PC-based parallel computers

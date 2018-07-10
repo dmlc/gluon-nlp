@@ -1,0 +1,24 @@
+A comparison of computational color constancy algorithms. I: Methodology and
+	experiments with synthesized data
+We introduce a context for testing computational color constancy, specify our
+	approach to the implementation of a number of the leading algorithms,
+	and report the results of three experiments using synthesized data.
+	Experiments using synthesized data are important because the ground
+	truth is known, possible confounds due to camera characterization and
+	pre-processing are absent, and various factors affecting color
+	constancy can be efficiently investigated because they can be
+	manipulated individually and precisely. The algorithms chosen for close
+	study include two gray world methods, a limiting case of a version of
+	the Retinex method, a number of variants of Forsyth's (1990)
+	gamut-mapping method, Cardei et al.'s (2000) neural net method, and
+	Finlayson et al.'s color by correlation method (Finlayson et al. 1997,
+	2001; Hubel and Finlayson 2000) . We investigate the ability of these
+	algorithms to make estimates of three different color constancy
+	quantities: the chromaticity of the scene illuminant, the overall
+	magnitude of that illuminant, and a corrected, illumination invariant,
+	image. We consider algorithm performance as a function of the number of
+	surfaces in scenes generated from reflectance spectra, the relative
+	effect on the algorithms of added specularities, and the effect of
+	subsequent clipping of the data. All data is available on-line at
+	http://www.cs.sfu.ca/~color/data, and implementations for most of the
+	algorithms are also available (http://www.cs.sfu.ca/~color/code)

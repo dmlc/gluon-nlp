@@ -1,0 +1,9 @@
+Sensitivity calibration of ultrasonic detectors based using ADD diagrams
+The paper considers basic problems related to utilization of ADD diagrams in
+	calibrating sensitivity of ultrasonic detectors. We suggest that a
+	convenient tool for solving such problems can be the software package
+	ADD Universal. Version 2.1 designed for plotting individual ADD
+	diagrams for normal and slanted transducers. The software is compatible
+	with the contemporary operational system Windows-95(98). Reference
+	signals for calibration are generated in a sample with cylindrical
+	holes

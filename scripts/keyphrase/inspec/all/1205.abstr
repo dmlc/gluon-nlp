@@ -1,0 +1,17 @@
+HPCVIEW: a tool for top-down analysis of node performance
+It is increasingly difficult for complex scientific programs to attain a
+	significant fraction of peak performance on systems that are based on
+	microprocessors with substantial instruction-level parallelism and deep
+	memory hierarchies. Despite this trend, performance analysis and tuning
+	tools are still not used regularly by algorithm and application
+	designers. To a large extent, existing performance tools fail to meet
+	many user needs and are cumbersome to use. To address these issues, we
+	developed HPCVIEW - a toolkit for combining multiple sets of program
+	profile data, correlating the data with source code, and generating a
+	database that can be analyzed anywhere with a commodity Web browser. We
+	argue that HPCVIEW addresses many of the issues that have limited the
+	usability and the utility of most existing tools. We originally built
+	HPCVIEW to facilitate our own work on data layout and optimizing
+	compilers. Now, in addition to daily use within our group, HPCVIEW is
+	being used by several code development teams in DoD and DoE
+	laboratories as well as at NCSA

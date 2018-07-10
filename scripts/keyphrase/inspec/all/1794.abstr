@@ -1,0 +1,15 @@
+Well-posed anisotropic diffusion for image denoising
+A nonlinear iterative smoothing filter based on a second-order partial
+	differential equation is introduced. It smooths out the image according
+	to an anisotropic diffusion process. The approach is based on a smooth
+	approximation of the total variation (TV) functional which overcomes
+	the non-differentiability of the TV functional at the origin. In
+	particular, the authors perform linear smoothing over smooth areas but
+	selective smoothing over candidate edges. By relating the smoothing
+	parameter to the time step, they arrive at a CFL condition which
+	guarantees the causality of the discrete scheme. This allows the
+	adoption of higher time discretisation steps, while ensuring the
+	absence of artefacts deriving from the non-smooth behaviour of the TV
+	functional at the origin. In particular, it is shown that the proposed
+	approach avoids the typical staircase effects in smooth areas which
+	occur in the standard time-marching TV scheme

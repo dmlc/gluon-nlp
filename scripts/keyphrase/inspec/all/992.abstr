@@ -1,0 +1,21 @@
+Cross-entropy and rare events for maximal cut and partition problems
+We show how to solve the maximal cut and partition problems using a randomized
+	algorithm based on the cross-entropy method. For the maximal cut
+	problem, the proposed algorithm employs an auxiliary Bernoulli
+	distribution, which transforms the original deterministic network into
+	an associated stochastic one, called the associated stochastic network
+	(ASN). Each iteration of the randomized algorithm for the ASN involves
+	the following two phases: (1) generation of random cuts using a
+	multidimensional Ber(p) distribution and calculation of the associated
+	cut lengths (objective functions) and some related quantities, such as
+	rare-event probabilities; (2) updating the parameter vector p on the
+	basis of the data collected in the first phase. We show that the Ber(p)
+	distribution converges in distribution to a degenerated one, Ber(p/sub
+	d/*), p/sub d/* = (p/sub d/,/sub 1/, p/sub d,n/) in the sense that some
+	elements of p/sub d/*, will be unities and the rest zeros. The unity
+	elements of p/sub d/* uniquely define a cut which will be taken as the
+	estimate of the maximal cut. A similar approach is used for the
+	partition problem. Supporting numerical results are given as well. Our
+	numerical studies suggest that for the maximal cut and partition
+	problems the proposed algorithm typically has polynomial complexity in
+	the size of the network

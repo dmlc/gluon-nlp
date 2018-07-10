@@ -1,0 +1,16 @@
+MRP in a job shop environment using a resource constrained project scheduling
+	model
+One of the most difficult tasks in a job shop manufacturing environment is to
+	balance schedule and capacity in an ongoing basis. MRP systems are
+	commonly used for scheduling, although their inability to deal with
+	capacity constraints adequately is a severe drawback. In this study, we
+	show that material requirements planning can be done more effectively
+	in a job shop environment using a resource constrained project
+	scheduling model. The proposed model augments MRP models by
+	incorporating capacity constraints and using variable lead time
+	lengths. The efficacy of this approach is tested on MRP systems by
+	comparing the inventory carrying costs and resource allocation of the
+	solutions obtained by the proposed model to those obtained by using a
+	traditional MRP model. In general, it is concluded that the proposed
+	model provides improved schedules with considerable reductions in
+	inventory carrying costs

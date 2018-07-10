@@ -1,0 +1,7 @@
+thrust-vectored flying wing control; receding horizon-LPV approach; hover
+	flight models; forward flight models; tethered flying wing; Caltech;
+	vertical landing take off aircraft; Harrier around hover;
+	thrust-vectored aircraft; F18-HARV; X-31; receding horizon techniques;
+	control Lyapunov function-based ideas; quasi-LPV methods; receding
+	horizon optimization; stability guarantee; numerical simulations;
+	terminal cost; nonlinear system

@@ -1,0 +1,18 @@
+Car-caravan snaking. 1. The influence of pintle pin friction
+A brief review of knowledge of car-caravan snaking is carried out. Against the
+	background described, a fairly detailed mathematical model of a
+	contemporary car-trailer system is constructed and a baseline set of
+	parameter values is given. In reduced form, the model is shown to give
+	results in accordance with literature. The properties of the baseline
+	combination are explored using both linear and non-linear versions of
+	the model. The influences of damping at the pintle joint and of several
+	other design parameters on the stability of the linear system in the
+	neighbourhood of the critical snaking speed are calculated and
+	discussed. Coulomb friction damping at the pintle pin is then included
+	and simulations are used to indicate the consequent amplitude-dependent
+	behaviour. The friction damping, especially when its level has to be
+	chosen by the user, is shown to give dangerous characteristics, despite
+	having some capacity for stabilization of the snaking motions. It is
+	concluded that pintle pin friction damping does not represent a
+	satisfactory solution to the snaking problem. The paper sets the scene
+	for the development of an improved solution

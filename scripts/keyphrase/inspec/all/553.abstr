@@ -1,0 +1,15 @@
+Application of traditional system design techniques to Web site design
+After several decades of computer program construction there emerged a set of
+	principles that provided guidance to produce more manageable programs.
+	With the emergence of the plethora of Internet web sites one wonders if
+	similar guidelines are followed in their construction. Since this is a
+	new technology no apparent universally accepted methods have emerged to
+	guide the designer in Web site construction. This paper reviews the
+	traditional principles of structured programming and the preferred
+	characteristics of Web sites. Finally a mapping of how the traditional
+	guidelines may be applied to Web site construction is presented. The
+	application of the traditional principles of structured programming to
+	the design of a Web site can provide a more usable site for the
+	visitors to the site. The additional benefit of using these
+	time-honored techniques is the creation of a Web site that will be
+	easier to maintain by the development staff

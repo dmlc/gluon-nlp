@@ -1,0 +1,5 @@
+computational color constancy algorithms; images; image data; illumination
+	conditions; gray world methods; Retinex method; gamut-mapping method;
+	neural net method; color by correlation method; preprocessing
+	strategies; synthesized data; input data statistics; chromaticity;
+	scene illuminant; pixel intensity

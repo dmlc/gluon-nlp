@@ -1,0 +1,28 @@
+Scale-invariant segmentation of dynamic contrast-enhanced perfusion MR images
+	with inherent scale selection
+Selection of the best set of scales is problematic when developing
+	signal-driven approaches for pixel-based image segmentation. Often,
+	different possibly conflicting criteria need to be fulfilled in order
+	to obtain the best trade-off between uncertainty (variance) and
+	location accuracy. The optimal set of scales depends on several
+	factors: the noise level present in the image material, the prior
+	distribution of the different types of segments, the class-conditional
+	distributions associated with each type of segment as well as the
+	actual size of the (connected) segments. We analyse, theoretically and
+	through experiments, the possibility of using the overall and
+	class-conditional error rates as criteria for selecting the optimal
+	sampling of the linear and morphological scale spaces. It is shown that
+	the overall error rate is optimized by taking the prior class
+	distribution in the image material into account. However, a uniform
+	(ignorant) prior distribution ensures constant class-conditional error
+	rates. Consequently, we advocate for a uniform prior class distribution
+	when an uncommitted, scale-invariant segmentation approach is desired.
+	Experiments with a neural net classifier developed for segmentation of
+	dynamic magnetic resonance (MR) images, acquired with a paramagnetic
+	tracer, support the theoretical results. Furthermore, the experiments
+	show that the addition of spatial features to the classifier, extracted
+	from the linear or morphological scale spaces, improves the
+	segmentation result compared to a signal-driven approach based solely
+	on the dynamic MR signal. The segmentation results obtained from the
+	two types of features are compared using two novel quality measures
+	that characterize spatial properties of labelled images

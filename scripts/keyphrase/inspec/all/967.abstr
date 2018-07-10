@@ -1,0 +1,13 @@
+On the relationship between parametric variation and state feedback in chaos
+	control
+In this Letter, we study the popular parametric variation chaos control and
+	state-feedback methodologies in chaos control, and point out for the
+	first time that they are actually equivalent in the sense that there
+	exist diffeomorphisms that can convert one to the other for most smooth
+	chaotic systems. Detailed conversions are worked out for typical
+	discrete chaotic maps (logistic, Henon) and continuous flows (Rossler,
+	Lorenz) for illustration. This unifies the two seemingly different
+	approaches from the physics and the engineering communities on chaos
+	control. This new perspective reveals some new potential applications
+	such as chaos synchronization and normal form analysis from a unified
+	mathematical point of view

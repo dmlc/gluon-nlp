@@ -1,0 +1,15 @@
+Real-time quasi-2-D inversion of array resistivity logging data using neural
+	network
+We present a quasi-2-D real-time inversion algorithm for a modern galvanic
+	array tool via dimensional reduction and neural network simulation.
+	Using reciprocity and superposition, we apply a numerical focusing
+	technique to the unfocused data. The numerically focused data are much
+	less subject to 2-D and layering effects and can be approximated as
+	from a cylindrical 1-D Earth. We then perform 1-D inversion on the
+	focused data to provide approximate information about the 2-D
+	resistivity structure. A neural network is used to perform forward
+	modeling in the 1-D inversion, which is several hundred times faster
+	than conventional numerical forward solutions. Testing our inversion
+	algorithm on both synthetic and field data shows that this fast
+	inversion algorithm is useful for providing formation resistivity
+	information at a well site

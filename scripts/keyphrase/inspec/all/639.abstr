@@ -1,0 +1,22 @@
+Distributed servers approach for large-scale secure multicast
+In order to offer backward and forward secrecy for multicast applications
+	(i.e., a new member cannot decrypt the multicast data sent before its
+	joining and a former member cannot decrypt the data sent after its
+	leaving), the data encryption key has to be changed whenever a user
+	joins or leaves the system. Such a change has to be made known to all
+	the current users. The bandwidth used for such re-key messaging can be
+	high when the user pool is large. We propose a distributed servers
+	approach to minimize the overall system bandwidth (and complexity) by
+	splitting the user pool into multiple groups each served by a (logical)
+	server. After presenting an analytic model for the system based on a
+	hierarchical key tree, we show that there is an optimal number of
+	servers to achieve minimum system bandwidth. As the underlying user
+	traffic fluctuates, we propose a simple dynamic scheme with low
+	overhead where a physical server adaptively splits and merges its
+	traffic into multiple groups each served by a logical server so as to
+	minimize its total bandwidth. Our results show that a distributed
+	servers approach is able to substantially reduce the total bandwidth
+	required as compared with the traditional single-server approach,
+	especially for those applications with a large user pool, short holding
+	time, and relatively low bandwidth of a data stream, as in the Internet
+	stock quote applications

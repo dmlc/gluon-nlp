@@ -1,0 +1,14 @@
+Choice from a three-element set: some lessons of the 2000 presidential campaign
+	in the United States
+We consider the behavior of four choice rules - plurality voting, approval
+	voting, Borda count, and self-consistent choice - when applied to
+	choose the best option from a three-element set. It is assumed that the
+	two main options are preferred by a large majority of the voters, while
+	the third option gets a very small number of votes and influences the
+	election outcome only when the two main options receive a close number
+	of votes. When used to rate the main options, Borda count and
+	self-consistent choice contain terms that allow both for the "strength
+	of preferences" of the voters and the rating of the main candidates by
+	voters who vote for the third option. In this way, it becomes possible
+	to determine more reliably the winner when plurality voting or approval
+	voting produce close results

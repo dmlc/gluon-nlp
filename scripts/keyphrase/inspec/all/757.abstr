@@ -1,0 +1,22 @@
+Ultrafast compound imaging for 2-D motion vector estimation: application to
+	transient elastography
+This paper describes a new technique for two-dimensional (2-D) imaging of the
+	motion vector at a very high frame rate with ultrasound. Its potential
+	is experimentally demonstrated for transient elastography. But, beyond
+	this application, it also could be promising for color flow and
+	reflectivity imaging. To date, only axial displacements induced in
+	human tissues by low-frequency vibrators were measured during transient
+	elastography. The proposed technique allows us to follow both axial and
+	lateral displacements during the shear wave propagation and thus should
+	improve Young's modulus image reconstruction. The process is a
+	combination of several ideas well-known in ultrasonic imaging:
+	ultra-fast imaging, multisynthetic aperture beamforming, 1-D speckle
+	tracking, and compound imaging. Classical beamforming in the transmit
+	mode is replaced here by a single plane wave insonification increasing
+	the frame rate by at least a factor of 128. The beamforming is achieved
+	only in the receive mode on two independent subapertures. Comparison of
+	successive frames by a classical 1-D speckle tracking algorithm allows
+	estimation of displacements along two different directions linked to
+	the subapertures beams. The variance of the estimates is finally
+	improved by tilting the emitting plane wave at each insonification,
+	thus allowing reception of successive decorrelated speckle patterns

@@ -1,0 +1,10 @@
+Application of Sugeno fuzzy-logic controller to the stator field-oriented
+	doubly-fed asynchronous motor drive
+This study deals with the application of the fuzzy-control theory to
+	wound-rotor asynchronous motor with both its stator and rotor fed by
+	two PWM voltage-source inverters, in which the system operates in
+	stator field-oriented control. Thus, after determining the model of the
+	machine, we present two types of fuzzy controller: Mamdani and Sugeno
+	controllers. The training of the last one is carried out starting from
+	the first. Simulation study is conducted to show the effectiveness of
+	the proposed method

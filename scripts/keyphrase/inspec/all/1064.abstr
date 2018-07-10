@@ -1,0 +1,10 @@
+Quantum-controlled measurement device for quantum-state discrimination
+We propose a "programmable" quantum device that is able to perform a specific
+	generalized measurement from a certain set of measurements depending on
+	a quantum state of a "program register." In particular, we study a
+	situation when the programmable measurement device serves for the
+	unambiguous discrimination between nonorthogonal states. The particular
+	pair of states that can be unambiguously discriminated is specified by
+	the state of a program qubit. The probability of successful
+	discrimination is not optimal for all admissible pairs. However, for
+	some subsets it can be very close to the optimal value

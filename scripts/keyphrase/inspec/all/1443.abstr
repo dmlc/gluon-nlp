@@ -1,0 +1,11 @@
+C and C++: a case for compatibility
+Modern C and C++ are sibling languages descended from Classic C. In many
+	people's minds, they are (wrongly, but understandably) fused into the
+	mythical C/C++ programming language. There is no C/C++ language, but
+	there is a C/C++ community. Previously the author described some of the
+	incompatibilities that complicate the work of developers within that
+	C/C++ community. In this article, he discusses some of the underlying
+	myths that help perpetuate these incompatibilities. He also shows why
+	more compatibility (ideally, full compatibility) is in the best
+	interest of the C/C++ community. In the next paper, he presents some
+	examples of how the incompatibilities in C and C++ might be resolved

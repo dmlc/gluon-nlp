@@ -1,0 +1,9 @@
+Synthetic simultaneity - natural and artificial
+In control loops, each element introduces time delays. If those time delays are
+	larger than the critical times for control of the system, a problem
+	exists. I show a simple approach to mitigating this problem by basing
+	the controller's decisions not on the observations themselves but on
+	our projections as to what the observations will be at the time our
+	controls reach the controlled system. Finally, I argue that synthetic
+	simultaneity explains Libet's (1993) results better than Libet's
+	explanation

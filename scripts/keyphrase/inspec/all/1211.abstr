@@ -1,0 +1,19 @@
+Hybrid decision tree
+In this paper, a hybrid learning approach named hybrid decision tree (HDT) is
+	proposed. HDT simulates human reasoning by using symbolic learning to
+	do qualitative analysis and using neural learning to do subsequent
+	quantitative analysis. It generates the trunk of a binary HDT according
+	to the binary information gain ratio criterion in an instance space
+	defined by only original unordered attributes. If unordered attributes
+	cannot further distinguish training examples falling into a leaf node
+	whose diversity is beyond the diversity-threshold, then the node is
+	marked as a dummy node. After all those dummy nodes are marked, a
+	specific feedforward neural network named FANNC that is trained in an
+	instance space defined by only original ordered attributes is exploited
+	to accomplish the learning task. Moreover, this paper distinguishes
+	three kinds of incremental learning tasks. Two incremental learning
+	procedures designed for example-incremental learning with different
+	storage requirements are provided, which enables HDT to deal gracefully
+	with data sets where new data are frequently appended. Also a
+	hypothesis-driven constructive induction mechanism is provided, which
+	enables HDT to generate compact concept descriptions

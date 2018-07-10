@@ -1,0 +1,12 @@
+Blending parametric patches with subdivision surfaces
+In this paper the problem of blending parametric surfaces using subdivision
+	patches is discussed. A new approach, named removing-boundary, is
+	presented to generate piecewise-smooth subdivision surfaces through
+	discarding the outmost quadrilaterals of the open meshes derived by
+	each subdivision step. Then the approach is employed both to blend
+	parametric bicubic B-spline surfaces and to fill n-sided holes. It is
+	easy to produce piecewise-smooth subdivision surfaces with both convex
+	and concave corners on the boundary, and limit surfaces are guaranteed
+	to be C/sup 2/ continuous on the boundaries except for a few singular
+	points by the removing-boundary approach. Thus the blending method is
+	very efficient and the blending surface generated is of good effect

@@ -1,0 +1,12 @@
+LMI approach to digital redesign of linear time-invariant systems
+A simple design methodology for the digital redesign of static state feedback
+	controllers by using linear matrix inequalities is presented. The
+	proposed method provides close matching of the states between the
+	original continuous-time system and those of the digitally redesigned
+	system with a guaranteed stability. Specifically, the digital redesign
+	problem is reformulated as linear matrix inequalities (LMIs) and solved
+	by a numerical optimisation technique. The main feature of the proposed
+	method is that the closed-loop stability of the digitally redesigned
+	system is explicitly guaranteed within the design procedure using the
+	LMI-based approach. A numerical example of the position control of a
+	simple crane system is presented

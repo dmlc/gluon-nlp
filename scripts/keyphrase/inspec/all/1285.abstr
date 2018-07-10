@@ -1,0 +1,28 @@
+On fractal dimension in information systems. Toward exact sets in infinite
+	information systems
+The notions of an exact as well as a rough set are well-grounded as basic
+	notions in rough set theory. They are however defined in the setting of
+	a finite information system i.e. an information system having finite
+	numbers of objects as well as attributes. In theoretical studies e.g.
+	of topological properties of rough sets, one has to trespass this
+	limitation and to consider information systems with potentially unbound
+	number of attributes. In such setting, the notions of rough and exact
+	sets may be defined in terms of topological operators of interior and
+	closure with respect to an appropriate topology following the ideas
+	from the finite case, where it is noticed that in the finite case
+	rough-set-theoretic operators of lower and upper approximation are
+	identical with the interior, respectively, closure operators in
+	topology induced by equivalence classes of the indiscernibility
+	relation. Extensions of finite information systems are also desirable
+	from application point of view in the area of knowledge discovery and
+	data mining, when demands of e.g. mass collaboration and/or huge
+	experimental data call for need of working with large data tables so
+	the sound theoretical generalization of these cases is an information
+	system with the number of attributes not bound in advance by a fixed
+	integer i.e. an information system with countably but infinitely many
+	attributes, In large information systems, a need arises for qualitative
+	measures of complexity of concepts involved free of parameters, cf.
+	e.g. applications for the Vapnik-Czervonenkis dimension. We study here
+	in the theoretical setting of infinite information system a proposal to
+	apply fractal dimensions suitably modified as measures of concept
+	complexity

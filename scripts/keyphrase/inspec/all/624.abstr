@@ -1,0 +1,23 @@
+A hybrid ML-EM algorithm for calculation of maximum likelihood estimates in
+	semiparametric shared frailty models
+This paper describes a generalised hybrid ML-EM algorithm for the calculation
+	of maximum likelihood estimates in semiparametric shared frailty
+	models, the Cox proportional hazard models with hazard functions
+	multiplied by a (parametric) frailty random variable. This hybrid
+	method is much faster than the standard EM method and faster than the
+	standard direct maximum likelihood method (ML, Newton-Raphson) for
+	large samples. We have previously applied this method to semiparametric
+	shared gamma frailty models, and verified by simulations the asymptotic
+	and small sample statistical properties of the frailty variance
+	estimates. Let theta /sub 0/ be the true value of the frailty variance
+	parameter. Then the asymptotic distribution is normal for theta /sub
+	0/>0 while it is a 50-50 mixture between a point mass at zero and a
+	normal random variable on the positive axis for theta /sub 0/=0. For
+	small samples, simulations suggest that the frailty variance estimates
+	are approximately distributed as an x-(100-x)% mixture,
+	0<or=x<or=50, between a point mass at zero and a normal random
+	variable on the positive axis even for theta /sub 0/>0. We apply
+	this method and verify by simulations these statistical results for
+	semiparametric shared log-normal frailty models. We also apply the
+	semiparametric shared gamma and log-normal frailty models to Busselton
+	Health Study coronary heart disease data

@@ -1,0 +1,13 @@
+Truss topology optimization by a modified genetic algorithm
+This paper describes the use of a stochastic search procedure based on genetic
+	algorithms for developing near-optimal topologies of load-bearing truss
+	structures. Most existing cases these publications express the truss
+	topology as a combination of members. These methods, however, have the
+	disadvantage that the resulting topology may include needless members
+	or those which overlap other members. In addition to these problems,
+	the generated structures are not necessarily structurally stable. A new
+	method, which resolves these problems by expressing the truss topology
+	as a combination of triangles, is proposed in this paper. Details of
+	the proposed methodology are presented as well as the results of
+	numerical examples that clearly show the effectiveness and efficiency
+	of the method

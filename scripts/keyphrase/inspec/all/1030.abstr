@@ -1,0 +1,17 @@
+Comparison of automated digital elevation model extraction results using
+	along-track ASTER and across-track SPOT stereo images
+A digital elevation model (DEM) can be extracted automatically from stereo
+	satellite images. During the past decade, the most common satellite
+	data used to extract DEM was the across-track SPOT. Recently, the
+	addition of along-track ASTER data, which can be downloaded freely,
+	provides another attractive alternative to extract DEM data. This work
+	compares the automated DEM extraction results using an ASTER stereo
+	pair and a SPOT stereo pair over an area of hilly mountains in Drum
+	Mountain, Utah, when compared to a USGS 7.5-min DEM standard product.
+	The result shows that SPOT produces better DEM results in terms of
+	accuracy and details, if the radiometric variations between the images,
+	taken on subsequent satellite revolutions, are small. Otherwise, the
+	ASTER stereo pair is a better choice because of simultaneous
+	along-track acquisition during a single pass. Compared to the USGS
+	7.5-min DEM, the ASTER and the SPOT extracted DEMs have a standard
+	deviation of 11.6 and 4.6 m, respectively

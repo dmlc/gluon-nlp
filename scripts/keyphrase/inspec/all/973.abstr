@@ -1,0 +1,24 @@
+Time-integration of multiphase chemistry in size-resolved cloud models
+The existence of cloud drops leads to a transfer of chemical species between
+	the gas and aqueous phases. Species concentrations in both phases are
+	modified by chemical reactions and by this phase transfer. The model
+	equations resulting from such multiphase chemical systems are
+	nonlinear, highly coupled and extremely stiff. In the paper we
+	investigate several numerical approaches for treating such processes.
+	The droplets are subdivided into several classes. This decomposition of
+	the droplet spectrum into classes is based on their droplet size and
+	the amount of scavenged material inside the drops, respectively. The
+	very fast dissociations in the aqueous phase chemistry are treated as
+	forward and backward reactions. The aqueous phase and gas phase
+	chemistry, the mass transfer between the different droplet classes
+	among themselves and with the gas phase are integrated in an implicit
+	and coupled manner by the second order BDF method. For this part we
+	apply a modification of the code LSODE with special linear system
+	solvers. These direct sparse techniques exploit the special block
+	structure of the corresponding Jacobian. Furthermore we investigate an
+	approximate matrix factorization which is related to operator splitting
+	at the linear algebra level. The sparse Jacobians are generated
+	explicitly and stored in a sparse form. The efficiency and accuracy of
+	our time-integration schemes is discussed for four multiphase chemistry
+	systems of different complexity and for a different number of droplet
+	classes

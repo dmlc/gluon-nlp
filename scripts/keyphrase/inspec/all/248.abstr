@@ -1,0 +1,15 @@
+Universal dynamic synchronous self-stabilization
+We prove the existence of a "universal" synchronous self-stabilizing protocol,
+	that is, a protocol that allows a distributed system to stabilize to a
+	desired nonreactive behaviour (as long as a protocol stabilizing to
+	that behaviour exists). Previous proposals required drastic increases
+	in asymmetry and knowledge to work, whereas our protocol does not use
+	any additional knowledge, and does not require more symmetry-breaking
+	conditions than available; thus, it is also stabilizing with respect to
+	dynamic changes in the topology. We prove an optimal quiescence time n
+	+ D for a synchronous network of n processors and diameter D; the
+	protocol can be made finite state with a negligible loss in quiescence
+	time. Moreover, an optimal D + 1 protocol is given for the case of
+	unique identifiers. As a consequence, we provide an effective proof
+	technique that allows one to show whether self-stabilization to a
+	certain behaviour is possible under a wide range of models

@@ -1,0 +1,10 @@
+A novel control logic for fast valving operations
+This letter proposes new control logic for operating parallel valves in fast
+	valving schemes in order to improve the transient stability performance
+	of power systems. A fast valving scheme using parallel valves overcomes
+	many of the limitations of the conventional scheme. The proposed
+	control logic for operating these valves has been applied to a typical
+	single machine infinite bus system. Single as well as multiple stroke
+	operations for controlling the turbine power output have been studied
+	with the new control sequences. Encouraging results have been shown
+	over the conventional schemes of fast valving

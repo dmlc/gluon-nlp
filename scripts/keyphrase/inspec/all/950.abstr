@@ -1,0 +1,12 @@
+Quantum sensitive dependence
+Wave functions of bounded quantum systems with time-independent potentials,
+	being almost periodic functions, cannot have time asymptotics as in
+	classical chaos. However, bounded quantum systems with time-dependent
+	interactions, as used in quantum control, may have continuous spectrum
+	and the rate of growth of observables is an issue of both theoretical
+	and practical concern. Rates of growth in quantum mechanics are
+	discussed by constructing quantities with the same physical meaning as
+	those involved in the classical Lyapunov exponent. A generalized notion
+	of quantum sensitive dependence is introduced and the mathematical
+	structure of the operator matrix elements that correspond to different
+	types of growth is characterized

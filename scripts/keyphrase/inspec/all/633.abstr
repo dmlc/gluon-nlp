@@ -1,0 +1,9 @@
+Using k-nearest-neighbor classification in the leaves of a tree
+We construct a hybrid (composite) classifier by combining two classifiers in
+	common use - classification trees and k-nearest-neighbor (k-NN). In our
+	scheme we divide the feature space up by a classification tree, and
+	then classify test set items using the k-NN rule just among those
+	training items in the same leaf as the test item. This reduces somewhat
+	the computational load associated with k-NN, and it produces a
+	classification rule that performs better than either trees or the usual
+	k-NN in a number of well-known data sets

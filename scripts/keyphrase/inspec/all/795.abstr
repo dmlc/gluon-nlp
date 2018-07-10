@@ -1,0 +1,12 @@
+Approximation and complexity. II. Iterated integration
+For pt. I. see ibid., no. 1, p. 289-95 (2001). We introduce two classes of real
+	analytic functions W contained in/implied by U on an interval. Starting
+	with rational functions to construct functions in W we allow the
+	application of three types of operations: addition, integration, and
+	multiplication by a polynomial with rational coefficients. In a similar
+	way, to construct functions in U we allow integration, addition, and
+	multiplication of functions already constructed in U and multiplication
+	by rational numbers. Thus, U is a subring of the ring of Pfaffian
+	functions. Two lower bounds on the L/sub infinity /-norm are proved on
+	a function f from W (or from U, respectively) in terms of the
+	complexity of constructing f

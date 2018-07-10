@@ -1,0 +1,11 @@
+Bounded model checking for the universal fragment of CTL
+Bounded Model Checking (BMC) has been recently introduced as an efficient
+	verification method for reactive systems. BMC based on SAT methods
+	consists in searching for a counterexample of a particular length and
+	generating a propositional formula that is satisfiable iff such a
+	counterexample-exists. This new technique has been introduced by E.
+	Clarke et al. for model checking of linear time temporal logic (LTL).
+	Our paper shows how the concept of bounded model checking can be
+	extended to ACTL (the universal fragment of CTL). The implementation of
+	the algorithm for Elementary Net Systems is described together with the
+	experimental results

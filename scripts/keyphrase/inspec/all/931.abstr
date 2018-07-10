@@ -1,0 +1,17 @@
+Active vibration control of composite sandwich beams with piezoelectric
+	extension-bending and shear actuators
+We have used quasi-static equations of piezoelectricity to derive a finite
+	element formulation capable of modelling two different kinds of
+	piezoelastically induced actuation in an adaptive composite sandwich
+	beam. This formulation is made to couple certain piezoelectric
+	constants to a transverse electric field to develop extension-bending
+	actuation and shear-induced actuation. As an illustration, we present a
+	sandwich model of three sublaminates: face/core/face. We develop a
+	control scheme based on the linear quadratic regulator/independent
+	modal space control (LQR/IMSC) method and use this to estimate the
+	active stiffness and the active damping introduced by shear and
+	extension-bending actuators. To assess the performance of each type of
+	actuator, a dynamic response study is carried out in the modal domain.
+	We observe that the shear actuator is more efficient in actively
+	controlling the vibration than the extension-bending actuator for the
+	same control effort

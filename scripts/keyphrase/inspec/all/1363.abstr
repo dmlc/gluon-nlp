@@ -1,0 +1,15 @@
+Heuristics for single-pass welding task sequencing
+Welding task sequencing is a prerequisite in the offline programming of robot
+	arc welding. Single-pass welding task sequencing can be modelled as a
+	modified travelling salesman problem. Owing to the difficulty of the
+	resulting arc-routing problems, effective local search heuristics are
+	developed. Computational speed becomes important because robot arc
+	welding is often part of an automated process-planning procedure.
+	Generating a reasonable solution in an acceptable time is necessary for
+	effective automated process planning. Several different heuristics are
+	proposed for solving the welding task-sequencing problem considering
+	both productivity and the potential for welding distortion.
+	Constructive heuristics based on the nearest neighbour concept and tabu
+	search heuristics are developed and enhanced using improvement
+	procedures. The effectiveness of the heuristics developed is tested and
+	verified on actual welded structure problems and random problems

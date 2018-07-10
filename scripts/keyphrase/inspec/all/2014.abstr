@@ -1,0 +1,16 @@
+Adaptive filtering for noise reduction in hue saturation intensity color space
+Even though the hue saturation intensity (HSI) color model has been widely used
+	in color image processing and analysis, the conversion formulas from
+	the RGB color model to HSI are nonlinear and complicated in comparison
+	with the conversion formulas of other color models. When an RGB image
+	is degraded by random Gaussian noise, this nonlinearity leads to a
+	nonuniform noise distribution in HSI, making accurate image analysis
+	more difficult. We have analyzed the noise characteristics of the HSI
+	color model and developed an adaptive spatial filtering method to
+	reduce the magnitude of noise and the nonuniformity of noise variance
+	in the HSI color space. With this adaptive filtering method, the filter
+	kernel for each pixel is dynamically adjusted, depending on the values
+	of intensity and saturation. In our experiments we have filtered the
+	saturation and hue components and generated edge maps from color
+	gradients. We have found that by using the adaptive filtering method,
+	the minimum error rate in edge detection improves by approximately 15%

@@ -1,0 +1,25 @@
+Development of visual design steering as an aid in large-scale
+	multidisciplinary design optimization. I. Method development
+A modified paradigm of computational steering (CS), termed visual design
+	steering (VDS), is developed in this paper. The VDS paradigm is applied
+	to optimal design problems to provide a means for capturing and
+	enabling designer insights. VDS allows a designer to make decisions
+	before, during or after an analysis or optimization via a visual
+	environment, in order to effectively steer the solution process. The
+	objective of VDS is to obtain a better solution in less time through
+	the use of designer knowledge and expertise. Using visual
+	representations of complex systems in this manner enables human
+	experience and judgement to be incorporated into the optimal design
+	process at appropriate steps, rather than having traditional black box
+	solvers return solutions from a prescribed input set. Part I of this
+	paper focuses on the research issues pertaining to the Graph Morphing
+	visualization method created to represent an n-dimensional optimization
+	problem using 2-dimensional and 3-dimensional visualizations. Part II
+	investigates the implementation of the VDS paradigm, using the graph
+	morphing approach, to improve an optimal design process. Specifically,
+	the following issues are addressed: impact of design variable changes
+	on the optimal design space; identification of possible constraint
+	redundancies; impact of constraint tolerances on the optimal solution:
+	and smoothness of the objective function contours. It is demonstrated
+	that graph morphing can effectively reduce the complexity and
+	computational time associated with some optimization problems

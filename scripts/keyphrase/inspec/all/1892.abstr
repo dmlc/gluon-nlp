@@ -1,0 +1,14 @@
+Closed-loop persistent identification of linear systems with unmodeled dynamics
+	and stochastic disturbances
+The essential issues of time complexity and probing signal selection are
+	studied for persistent identification of linear time-invariant systems
+	in a closed-loop setting. By establishing both upper and lower bounds
+	on identification accuracy as functions of the length of observation,
+	size of unmodeled dynamics, and stochastic disturbances, we demonstrate
+	the inherent impact of unmodeled dynamics on identification accuracy,
+	reduction of time complexity by stochastic averaging on disturbances,
+	and probing capability of full rank periodic signals for closed-loop
+	persistent identification. These findings indicate that the mixed
+	formulation, in which deterministic uncertainty of system dynamics is
+	blended with random disturbances, is beneficial to reduction of
+	identification complexity

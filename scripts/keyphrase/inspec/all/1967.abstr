@@ -1,0 +1,13 @@
+Modeling daily realized futures volatility with singular spectrum analysis
+Using singular spectrum analysis (SSA), we model the realized volatility and
+	logarithmic standard deviations of two important futures return series.
+	The realized volatility and logarithmic standard deviations are
+	constructed following the methodology of Andersen et al. [J. Am. Stat.
+	Ass. 96 (2001) 42-55] using intra-day transaction data. We find that
+	SSA decomposes the volatility series quite well and effectively
+	captures both the market trend (accounting for about 34-38% of the
+	total variance in the series) and, more importantly, a number of
+	underlying market periodicities. Reliable identification of any
+	periodicities is extremely important for options pricing and risk
+	management and we believe that SSA can be a useful addition to the
+	financial practitioners' toolbox

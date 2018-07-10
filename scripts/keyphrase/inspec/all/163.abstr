@@ -1,0 +1,9 @@
+Boolean operators and the naive end-user: moving to AND
+Since so few end-users make use of Boolean searching, it is obvious that any
+	effective solution needs to take this reality into account. The most
+	important aspect of a technical solution should be that it does not
+	require any effort on the part of users. What is clearly needed is for
+	search engine designers and programmers to take account of the
+	information-seeking behavior of Internet users. Users must be able to
+	enter a series of words at random and have those words automatically
+	treated as a carefully constructed Boolean AND search statement

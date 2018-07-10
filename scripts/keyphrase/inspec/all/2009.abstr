@@ -1,0 +1,19 @@
+A survey of interactive mesh-cutting techniques and a new method for
+	implementing generalized interactive mesh cutting using virtual tools
+In our experience, mesh-cutting methods can be distinguished by how their
+	solutions address the following major issues: definition of the cut
+	path, primitive removal and re-meshing, number of new primitives
+	created, when re-meshing is performed, and representation of the
+	cutting tool. Many researchers have developed schemes for interactive
+	mesh cutting with the goals of reducing the number of new primitives
+	created, creating new primitives with good aspect ratios, avoiding a
+	disconnected mesh structure between primitives in the cut path, and
+	representing the path traversed by the tool as accurately as possible.
+	The goal of this paper is to explain how, by using a very simple
+	framework, one can build a generalized cutting scheme. This method
+	allows for any arbitrary cut to be made within a virtual object, and
+	can simulate cutting surface, layered surface or tetrahedral objects
+	using a virtual scalpel, scissors, or loop cautery tool. This method
+	has been implemented in a real-time, haptic-rate surgical simulation
+	system allowing arbitrary cuts to be made on high-resolution
+	patient-specific models

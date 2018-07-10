@@ -1,0 +1,6 @@
+Mount Sinai Hospital uses integer programming to allocate operating room time
+An integer-programming model and a post-solution heuristic allocates operating
+	room time to the five surgical divisions at Toronto's Mount Sinai
+	Hospital. The hospital has used this approach for several years and
+	credits it with both administrative savings and the ability to produce
+	quickly an equitable master surgical schedule

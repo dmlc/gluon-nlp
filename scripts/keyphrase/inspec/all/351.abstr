@@ -1,0 +1,9 @@
+Optimal online algorithm for scheduling on two identical machines with machine
+	availability constraints
+This paper considers the online scheduling on two identical machines with
+	machine availability constraints for minimizing makespan. We assume
+	that machine M/sub j/ is unavailable during period from s/sub j/ to
+	t/sub j/ (0 <or= s/sub j/ < t/sub j/), j = 1, 2, and the
+	unavailable periods of two machines do not overlap. We show that the
+	competitive ratio of list scheduling is 3. We further give an optimal
+	algorithm with a competitive ratio 5/2

@@ -1,0 +1,6 @@
+Blind source separation applied to image cryptosystems with dual encryption
+Blind source separation (BSS) is explored to add another encryption level
+	besides the existing encryption methods for image cryptosystems. The
+	transmitted images are covered with a noise image by specific mixing
+	before encryption and then recovered through BSS after decryption.
+	Simulation results illustrate the validity of the proposed method

@@ -1,0 +1,10 @@
+Robust Kalman filter design for discrete time-delay systems
+The problem of finite- and infinite-horizon robust Kalman filtering for
+	uncertain discrete-time systems with state delay is addressed. The
+	system under consideration is subject to time-varying norm-bounded
+	parameter uncertainty in both the state and output matrices. We develop
+	a new methodology for designing a linear filter such that the error
+	variance of the filter is guaranteed to be within a certain upper bound
+	for any allowed uncertainty and time delay. The solution is given in
+	terms of two Riccati equations. Multiple time-delay systems are also
+	investigated

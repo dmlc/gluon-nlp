@@ -1,0 +1,5 @@
+fully automated cerebrum segmentation algorithm; full 3D sagittal brain MR
+	images; midsagittal brain MR image; landmarks; anatomical information;
+	connectivity-based threshold segmentation algorithm; laterally adjacent
+	slices; masking operation; brain region truncation; boundary end
+	points; masked image boundaries; connectivity-based algorithm

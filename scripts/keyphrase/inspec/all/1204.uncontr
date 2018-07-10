@@ -1,0 +1,5 @@
+performance tool interface; MPI profiling interface; API; source-level
+	instrumentation approach; OpenMP directive rewriting; directive
+	semantics; arbitrary code regions; performance libraries; EXPERT
+	automatic event trace analyzer; TAU performance analysis framework;
+	source-to-source translation tool; OPARI; parallel programming

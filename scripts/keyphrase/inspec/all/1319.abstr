@@ -1,0 +1,15 @@
+Routing security in wireless ad hoc networks
+A mobile ad hoc network consists of a collection of wireless mobile nodes that
+	are capable of communicating with each other without the use of a
+	network infrastructure or any centralized administration. MANET is an
+	emerging research area with practical applications. However, wireless
+	MANET is particularly vulnerable due to its fundamental
+	characteristics, such as open medium, dynamic topology, distributed
+	cooperation, and constrained capability. Routing plays an important
+	role in the security of the entire network. In general, routing
+	security in wireless MANETs appears to be a problem that is not trivial
+	to solve. In this article we study the routing security issues of
+	MANETs, and analyze in detail one type of attack-the "black hole"
+	problem-that can easily be employed against the MANETs. We also propose
+	a solution for the black hole problem for ad hoc on-demand distance
+	vector routing protocol

@@ -1,0 +1,21 @@
+Speaker adaptive modeling by vocal tract normalization
+This paper presents methods for speaker adaptive modeling using vocal tract
+	normalization (VTN) along with experimental tests on three databases.
+	We propose a new training method for VTN: By using single-density
+	acoustic models per HMM state for selecting the scale factor of the
+	frequency axis, we avoid the problem that a mixture-density tends to
+	learn the scale factors of the training speakers and thus cannot be
+	used for selecting the scale factor. We show that using single Gaussian
+	densities for selecting the scale factor in training results in lower
+	error rates than using mixture densities. For the recognition phase, we
+	propose an improvement of the well-known two-pass strategy: by using a
+	non-normalized acoustic model for the first recognition pass instead of
+	a normalized model, lower error rates are obtained. In recognition
+	tests, this method is compared with a fast variant of VTN. The two-pass
+	strategy is an efficient method, but it is suboptimal because the scale
+	factor and the word sequence are determined sequentially. We found that
+	for telephone digit string recognition this suboptimality reduces the
+	VTN gain in recognition performance by 30% relative. In summary, on the
+	German spontaneous speech task Verbmobil, the WSJ task and the German
+	telephone digit string corpus SieTill, the proposed methods for VTN
+	reduce the error rates significantly

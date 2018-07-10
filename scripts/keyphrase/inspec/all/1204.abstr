@@ -1,0 +1,23 @@
+Design and prototype of a performance tool interface for OpenMP
+This paper proposes a performance tools interface for OpenMP, similar in spirit
+	to the MPI profiling interface in its intent to define a clear and
+	portable API that makes OpenMP execution events visible to runtime
+	performance tools. We present our design using a source-level
+	instrumentation approach based on OpenMP directive rewriting. Rules to
+	instrument each directive and their combination are applied to generate
+	calls to the interface consistent with directive semantics and to pass
+	context information (e.g., source code locations) in a portable and
+	efficient way. Our proposed OpenMP performance API further allows user
+	functions and arbitrary code regions to be marked and performance
+	measurement to be controlled using new OpenMP directives. To prototype
+	the proposed OpenMP performance interface, we have developed compatible
+	performance libraries for the EXPERT automatic event trace analyzer
+	[17, 18] and the TAU performance analysis framework [13]. The directive
+	instrumentation transformations we define are implemented in a
+	source-to-source translation tool called OPARI. Application examples
+	are presented for both EXPERT and TAU to show the OpenMP performance
+	interface and OPARI instrumentation tool in operation. When used
+	together with the MPI profiling interface (as the examples also
+	demonstrate), our proposed approach provides a portable and robust
+	solution to performance analysis of OpenMP and mixed-mode (OpenMP +
+	MPI) applications

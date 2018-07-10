@@ -1,0 +1,20 @@
+Rational systems exhibit moderate risk aversion with respect to "gambles" on
+	variable-resolution compression
+In an embedded wavelet scheme for progressive transmission, a tree structure
+	naturally defines the spatial relationship on the hierarchical pyramid.
+	Transform coefficients over each tree correspond to a unique local
+	spatial region of the original image, and they can be coded bit-plane
+	by bit-plane through successive-approximation quantization. After
+	receiving the approximate value of some coefficients, the decoder can
+	obtain a reconstructed image. We show a rational system for progressive
+	transmission that, in absence of a priori knowledge about regions of
+	interest, chooses at any truncation time among alternative trees for
+	further transmission in such a way as to avoid certain forms of
+	behavioral inconsistency. We prove that some rational transmission
+	systems might exhibit aversion to risk involving "gambles" on
+	tree-dependent quality of encoding while others favor taking such
+	risks. Based on an acceptable predictor for visual distinctness from
+	digital imagery, we demonstrate that, without any outside knowledge,
+	risk-prone systems as well as those with strong risk aversion appear in
+	capable of attaining the quality of reconstructions that can be
+	achieved with moderate risk-averse behavior

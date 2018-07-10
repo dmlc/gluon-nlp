@@ -1,0 +1,21 @@
+Multilayered image representation: application to image compression
+The main contribution of this work is a new paradigm for image representation
+	and image compression. We describe a new multilayered representation
+	technique for images. An image is parsed into a superposition of
+	coherent layers: piecewise smooth regions layer, textures layer, etc.
+	The multilayered decomposition algorithm consists in a cascade of
+	compressions applied successively to the image itself and to the
+	residuals that resulted from the previous compressions. During each
+	iteration of the algorithm, we code the residual part in a lossy way:
+	we only retain the most significant structures of the residual part,
+	which results in a sparse representation. Each layer is encoded
+	independently with a different transform, or basis, at a different
+	bitrate, and the combination of the compressed layers can always be
+	reconstructed in a meaningful way. The strength of the multilayer
+	approach comes from the fact that different sets of basis functions
+	complement each others: some of the basis functions will give
+	reasonable account of the large trend of the data, while others will
+	catch the local transients, or the oscillatory patterns. This
+	multilayered representation has a lot of beautiful applications in
+	image understanding, and image and video coding. We have implemented
+	the algorithm and we have studied its capabilities

@@ -1,0 +1,23 @@
+Adjoint-based optimization of steady suction for disturbance control in
+	incompressible flows
+The optimal distribution of steady suction needed to control the growth of
+	single or multiple disturbances in quasi-three-dimensional
+	incompressible boundary layers on a flat plate is investigated. The
+	evolution of disturbances is analysed in the framework of the
+	parabolized stability equations (PSE). A gradient-based optimization
+	procedure is used and the gradients are evaluated using the adjoint of
+	the parabolized stability equations (APSE) and the adjoint of the
+	boundary layer equations (ABLE). The accuracy of the gradient is
+	increased by introducing a stabilization procedure for the PSE. Results
+	show that a suction peak appears in the upstream part of the suction
+	region for optimal control of Tollmien-Schlichting (T-S) waves, steady
+	streamwise streaks in a two-dimensional boundary layer and oblique
+	waves in a quasi-three-dimensional boundary layer subject to an adverse
+	pressure gradient. The mean flow modifications due to suction are shown
+	to have a stabilizing effect similar to that of a favourable pressure
+	gradient. It is also shown that the optimal suction distribution for
+	the disturbance of interest reduces the growth rate of other
+	perturbations. Results for control of a steady cross-flow mode in a
+	three-dimensional boundary layer subject to a favourable pressure
+	gradient show that not even large amounts of suction can completely
+	stabilize the disturbance

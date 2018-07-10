@@ -1,0 +1,19 @@
+Two efficient algorithms for the generalized maximum balanced flow problem
+Minoux (1976) considered the maximum balanced flow problem, i.e. the problem of
+	finding a maximum flow in a two-terminal network N = (V,A) with source
+	s and sink t satisfying the constraint that any arc-flow of N is
+	bounded by a fixed proportion of the total flow value from s to t,
+	where V is vertex set and A is arc set. As a generalization, we focus
+	on the problem of maximizing the total flow value of a generalized flow
+	in N with gains gamma (a) > 0 (a in A) where any arc-flow is bounded
+	by a fixed proportion of the total flow value, where gamma (a)f(a)
+	units arrive at the vertex w for each arc-flow f(a) (a identical to (
+	upsilon , w) in A) entering vertex upsilon in a generalized flow. Our
+	main results are to propose two polynomial algorithms for this problem.
+	The first algorithm runs in O(mM(n, m, B') log B) time, where B is the
+	maximum absolute value among integral values used by an instance of the
+	problem, and M(n, m, B') denotes the complexity of solving a
+	generalized maximum flow problem in a network with n vertices, and m
+	arcs, and a rational instance expressed with integers between 1 and B'.
+	In the second algorithm, using a parameterized technique, runs in
+	O({M(n, m, B')}/sup 2/) time

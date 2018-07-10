@@ -1,0 +1,14 @@
+Control of integral processes with dead-time. 2. Quantitative analysis
+For part 1, see ibid., p.285-90, (2002). Several different control schemes for
+	integral processes with dead time resulted in the same disturbance
+	response. It has already been shown that such a response is subideal.
+	Hence, it is necessary to quantitatively analyse the achievable
+	specifications and the robust stability regions. The control parameter
+	can be quantitatively determined with a compromise between the
+	disturbance response and the robustness. Four specifications:
+	(normalised) maximum dynamic error, maximum decay rate, (normalised)
+	control action bound and approximate recovery time are used to
+	characterise the step-disturbance response. It is shown that any
+	attempt to obtain a (normalised) dynamic error less than tau /sub m/ is
+	impossible and a sufficient condition on the (relative)
+	gain-uncertainty bound is square root (3)/2

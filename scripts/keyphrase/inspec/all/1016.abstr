@@ -1,0 +1,21 @@
+A scalable model of cerebellar adaptive timing and sequencing: the recurrent
+	slide and latch (RSL) model
+From the dawn of modern neural network theory, the mammalian cerebellum has
+	been a favored object of mathematical modeling studies. Early studies
+	focused on the fanout, convergence, thresholding, and learned weighting
+	of perceptual-motor signals within the cerebellar cortex. This led to
+	the still viable idea that the granule cell stage in the cerebellar
+	cortex performs a sparse expansive recoding of the time-varying input
+	vector. This recoding reveals and emphasizes combinations in a
+	distributed representation that serves as a basis for the learned,
+	state-dependent control actions engendered by cerebellar outputs to
+	movement related centers. To make optimal use of available signals, the
+	cerebellum must be able to sift the evolving state representation for
+	the most reliable predictors of the need for control actions, and to
+	use those predictors even if they appear only transiently and well in
+	advance of the optimal time for initiating the control action. The
+	paper proposes a modification to prior, population, models for
+	cerebellar adaptive timing and sequencing. Since it replaces a
+	population with a single element, the proposed RSL model is in one
+	sense maximally efficient, and therefore optimal from the perspective
+	of scalability

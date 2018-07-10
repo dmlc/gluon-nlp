@@ -1,0 +1,19 @@
+Succession in standardization: grafting XML onto SGML
+Succession in standardization is often a problem. The advantages of
+	improvements must be weighed against those of compatibility. If
+	compatibility considerations dominate, a grafting process takes place.
+	According to our taxonomy of succession, there are three types of
+	outcomes. A Type I succession, where grafting is successful, entails
+	compatibility between successors, technical paradigm compliance and
+	continuity in the standards trajectory. In this paper, we examine
+	issues of succession and focus on the Extensible Markup Language (XML).
+	It was to be grafted on the Standard Generalized Markup Language
+	(SGML), a stable standard since 1988. However, XML was a profile, a
+	subset and an extension of SGML (1988). Adaptation of SGML was needed
+	(SGML 1999) to forge full (downward) compatibility with XML (1998). We
+	describe the grafting efforts and analyze their outcomes. Our
+	conclusion is that although SGML was a technical exemplar for XML
+	developers, full compatibility was not achieved. The widespread use of
+	HyperText Mark-up Language (HTML) exemplified the desirability of
+	simplicity in XML, standardization. This and HTML's user market largely
+	explain the discontinuity in SGML-XML succession

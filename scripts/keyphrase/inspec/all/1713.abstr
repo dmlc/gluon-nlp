@@ -1,0 +1,19 @@
+A uniform framework for regulating service access and information release on
+	the Web
+The widespread use of Internet-based services is increasing the amount of
+	information (such as user profiles) that clients are required to
+	disclose. This information demand is necessary for regulating access to
+	services, and functionally convenient (e.g., to support service
+	customization), but it has raised privacy-related concerns which, if
+	not addressed, may affect the users disposition to use network
+	services. At the same time, servers need to regulate service access
+	without disclosing entirely the details of their access control policy.
+	There is therefore a pressing need for privacy-aware techniques to
+	regulate access to services open to the network. We propose an approach
+	for regulating service access and information disclosure on the Web.
+	The approach consists of a uniform formal framework to formulate - and
+	reason about - both service access and information disclosure
+	constraints. It also provides a means for parties to communicate their
+	requirements while ensuring that no private information be disclosed
+	and that the communicated requirements are correct with respect to the
+	constraints

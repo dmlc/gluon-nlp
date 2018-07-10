@@ -1,0 +1,14 @@
+Some recent advances in validated methods for IVPs for ODEs
+Compared to standard numerical methods for initial value problems (IVPs) for
+	ordinary differential equations (ODEs), validated methods (often called
+	interval methods) for IVPs for ODEs have two important advantages: if
+	they return a solution to a problem, then (1) the problem is guaranteed
+	to have a unique solution, and (2) an enclosure of the true solution is
+	produced. We present a brief overview of interval Taylor series (ITS)
+	methods for IVPs for ODEs and discuss some recent advances in the
+	theory of validated methods for IVPs for ODEs. In particular, we
+	discuss an interval Hermite-Obreschkoff (IHO) scheme for computing
+	rigorous bounds on the solution of an IVP for an ODE, the stability of
+	ITS and IHO methods, and a new perspective on the wrapping effect,
+	where we interpret the problem of reducing the wrapping effect as one
+	of finding a more stable scheme for advancing the solution

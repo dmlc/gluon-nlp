@@ -1,0 +1,14 @@
+TCP explicit congestion notification over ATM-UBR: a simulation study
+The enhancement of transmission control protocol's (TCP's) congestion control
+	mechanisms using explicit congestion notification (ECN) over
+	asynchronous transfer mode (ATM) networks is overviewed. TCP's
+	congestion control is enhanced so that congestion is indicated by not
+	only packet losses as is currently the case but an agent implemented at
+	the ATM network's edge as well. The novel idea uses EFCI (explicit
+	forward congestion indication) bits (available in every ATM cell
+	header) to generalize the ECN response to the UBR (unspecified bit
+	rate) service, notify congestion, and adjust the credit-based window
+	size of the TCR. The authors' simulation experiments show that TCP ECN
+	achieves significantly lower cell loss, packet retransmissions, and
+	buffer utilization, and exhibits better throughput than (non-ECN) TCP
+	Reno

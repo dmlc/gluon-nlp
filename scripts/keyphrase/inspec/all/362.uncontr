@@ -1,0 +1,3 @@
+B+-tree batch construction; algorithm performance evaluation; database bulk
+	loading; index structure; B+-tree page; page access; B+-tree insertion
+	algorithm; disk accesses; relocation process; simulation

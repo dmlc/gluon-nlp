@@ -1,0 +1,12 @@
+Bandwidth vs. gains design of H/sub infinity / tracking controllers for
+	current-fed induction motors
+Describes a systematic procedure for designing speed and rotor flux norm
+	tracking H/sub infinity /. controllers with unknown load torque
+	disturbances for current-fed induction motors. A new effective design
+	tool is developed to allow selection of the control gains so as to
+	adjust the disturbances' rejection capability of the controllers in the
+	face of the bandwidth requirements of the closed-loop system.
+	Application of the proposed design procedure is demonstrated in a case
+	study, and the results of numerical simulations illustrate the
+	satisfactory performance achievable even in presence of rotor
+	resistance uncertainty

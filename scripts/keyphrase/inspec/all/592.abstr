@@ -1,0 +1,10 @@
+Approximation theory of fuzzy systems based upon genuine many-valued
+	implications - SISO cases
+It is proved that the single input and single output (SISO) fuzzy systems based
+	upon genuine many-valued implications are universal approximators. It
+	is shown theoretically that fuzzy control systems based upon genuine
+	many-valued implications are equivalent to those based upon t-norm
+	implications, the general approach to construct fuzzy systems is given.
+	It is also shown that defuzzifier based upon center of areas is not
+	appropriate to the fuzzy systems based upon genuine many-valued
+	implications

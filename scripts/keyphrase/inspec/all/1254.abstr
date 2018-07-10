@@ -1,0 +1,22 @@
+Supporting unified interface to wrapper generator in integrated information
+	retrieval
+Given the ever-increasing scale and diversity of information and applications
+	on the Internet, improving the technology of information retrieval is
+	an urgent research objective. Retrieved information is either
+	semi-structured or unstructured in format and its sources are extremely
+	heterogeneous. In consequence, the task of efficiently gathering and
+	extracting information from documents can be both difficult and
+	tedious. Given this variety of sources and formats, many choose to use
+	mediator/wrapper architecture, but its use demands a fast means of
+	generating efficient wrappers. In this paper, we present a design for
+	an automatic eXtensible Markup Language (XML)-based framework with
+	which to generate wrappers rapidly. Wrappers created with this
+	framework support a unified interface for a meta-search information
+	retrieval system based on the Internet Search Service using the Common
+	Object Request Broker Architecture (CORBA) standard. Greatly advantaged
+	by the compatibility of CORBA and XML, a user can quickly and easily
+	develop information-gathering applications, such as a meta-search
+	engine or any other information source retrieval method. The two main
+	things our design provides are a method of wrapper generation that is
+	fast, simple, and efficient, and a wrapper generator that is CORBA and
+	XML-compliant and that supports a unified interface

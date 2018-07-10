@@ -1,0 +1,10 @@
+Controlling in between the Lorenz and the Chen systems
+This letter investigates a new chaotic system and its role as a joint function
+	between two complex chaotic systems, the Lorenz and the Chen systems,
+	using a simple variable constant controller. With the gradual tuning of
+	the controller, the controlled system evolves from the canonical Lorenz
+	attractor to the Chen attractor through the new transition chaotic
+	attractor. This evolving procedure reveals the forming mechanisms of
+	all similar and closely related chaotic systems, and demonstrates that
+	a simple control technique can be very useful in generating and
+	analyzing some complex chaotic dynamical phenomena

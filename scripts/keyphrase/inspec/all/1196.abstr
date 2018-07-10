@@ -1,0 +1,26 @@
+Multiple shooting using a dichotomically stable integrator for solving
+	differential-algebraic equations
+In previous work by the first author, it has been established that a
+	dichotomically stable discretization is needed when solving a stiff
+	boundary-value problem in ordinary differential equations (ODEs), when
+	sharp boundary layers may occur at each end of the interval. A
+	dichotomically stable implicit Runge-Kutta method, using the 3-stage,
+	fourth-order, Lobatto IIIA formulae, has been implemented in a variable
+	step-size initial-value integrator, which could be used in a
+	multiple-shooting approach. In the case of index-one
+	differential-algebraic equations (DAEs) the use of the Lobatto IIIA
+	formulae has an advantage, over a comparable Gaussian method, that the
+	order is the same for both differential and algebraic variables, and
+	there is no need to treat them separately. The ODE integrator has been
+	adapted for the solution of index-one DAEs, and the resulting
+	integrator (SYMDAE) has been inserted into the multiple-shooting code
+	(MSHDAE) previously developed by R. Lamour for differential-algebraic
+	boundary-value problems. The standard version of MSHDAE uses a BDF
+	integrator, which is not dichotomically stable, and for some stiff test
+	problems this fails to integrate across the interval of interest, while
+	the dichotomically stable integrator SYMDAE encounters no difficulty.
+	Indeed, for such problems, the modified version of MSHDAE produces an
+	accurate solution, and within limits imposed by computer word length,
+	the efficiency of the solution process improves with increasing
+	stiffness. For some nonstiff problems, the solution is also entirely
+	satisfactory

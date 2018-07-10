@@ -1,0 +1,15 @@
+The MAGNeT toolkit: design, implementation and evaluation
+The current trend in constructing high-performance computing systems is to
+	connect a large number of machines via a fast interconnect or a
+	large-scale network such as the Internet. This approach relies on the
+	performance of the interconnect (or Internet) to enable fast,
+	large-scale distributed computing. A detailed understanding of the
+	communication traffic is required in order to optimize the operation of
+	the entire system. Network researchers traditionally monitor traffic in
+	the network to gain the insight necessary to optimize network
+	operations. Recent work suggests additional insight can be obtained by
+	also monitoring traffic at the application level. The Monitor for
+	Application-Generated Network Traffic toolkit (MAGNeT) we describe here
+	monitors application traffic patterns in production systems, thus
+	enabling more highly optimized networks and interconnects for the next
+	generation of high-performance computing systems

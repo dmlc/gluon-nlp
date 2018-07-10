@@ -1,0 +1,4 @@
+Edit distance of run-length encoded strings
+Let X and Y be two run-length encoded strings, of encoded lengths k and l,
+	respectively. We present a simple O(|X|l+|Y|k) time algorithm that
+	computes their edit distance

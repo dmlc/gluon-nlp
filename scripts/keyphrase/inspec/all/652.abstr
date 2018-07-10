@@ -1,0 +1,25 @@
+A case for end system multicast
+The conventional wisdom has been that Internet protocol (IP) is the natural
+	protocol layer for implementing multicast related functionality.
+	However, more than a decade after its initial proposal, IP multicast is
+	still plagued with concerns pertaining to scalability, network
+	management, deployment, and support for higher layer functionality such
+	as error, flow, and congestion control. We explore an alternative
+	architecture that we term end system multicast, where end systems
+	implement all multicast related functionality including membership
+	management and packet replication. This shifting of multicast support
+	from routers to end systems has the potential to address most problems
+	associated with IP multicast. However, the key concern is the
+	performance penalty associated with such a model. In particular, end
+	system multicast introduces duplicate packets on physical links and
+	incurs larger end-to-end delays than IP multicast. We study these
+	performance concerns in the context of the Narada protocol. In Narada,
+	end systems self-organize into an overlay structure using a fully
+	distributed protocol. Further, end systems attempt to optimize the
+	efficiency of the overlay by adapting to network dynamics and by
+	considering application level performance. We present details of Narada
+	and evaluate it using both simulation and Internet experiments. Our
+	results indicate that the performance penalties are low both from the
+	application and the network perspectives. We believe the potential
+	benefits of transferring multicast functionality from end systems to
+	routers significantly outweigh the performance penalty incurred

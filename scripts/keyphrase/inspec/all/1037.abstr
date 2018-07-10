@@ -1,0 +1,13 @@
+A stochastic averaging approach for feedback control design of nonlinear
+	systems under random excitations
+This paper presents a method for designing and quantifying the performance of
+	feedback stochastic controls for nonlinear systems. The design makes
+	use of the method of stochastic averaging to reduce the dimension of
+	the state space and to derive the Ito stochastic differential equation
+	for the response amplitude process. The moment equation of the
+	amplitude process closed by the Rayleigh approximation is used as a
+	means to characterize the transient performance of the feedback
+	control. The steady state and transient response of the amplitude
+	process are used as the design criteria for choosing the feedback
+	control gains. Numerical examples are studied to demonstrate the
+	performance of the control

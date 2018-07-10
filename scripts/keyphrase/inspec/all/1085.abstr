@@ -1,0 +1,13 @@
+A variable-stepsize variable-order multistep method for the integration of
+	perturbed linear problems
+G. Scheifele (1971) wrote the solution of a perturbed oscillator as an
+	expansion in terms of a new set of functions, which extends the
+	monomials in the Taylor series of the solution. Recently, P. Martin and
+	J.M. Ferrandiz (1997) constructed a multistep code based on the
+	Scheifele technique, and it was generalized by D.J. Lopez and P. Martin
+	(1998) for perturbed linear problems. However, the remarked codes are
+	constant steplength methods, and efficient integrators must be able to
+	change the steplength. In this paper we extend the ideas of F.T. Krogh
+	(1974) from Adams methods to the algorithm proposed by Lopez and
+	Martin, and we show the advantages of the new code in perturbed
+	problems

@@ -1,0 +1,6 @@
+Regularization of linear regression problems
+The study considers robust estimation of linear regression parameters by the
+	regularization method, the pseudoinverse method, and the Bayesian
+	method allowing for correlations and errors in the data. Regularizing
+	algorithms are constructed and their relationship with pseudoinversion,
+	the Bayesian approach, and BLUE is investigated

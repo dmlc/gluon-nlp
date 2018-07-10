@@ -1,0 +1,19 @@
+An accurate COG defuzzifier design using Lamarckian co-adaptation of learning
+	and evolution
+This paper proposes a design technique of optimal center of gravity (COG)
+	defuzzifier using the Lamarckian co-adaptation of learning and
+	evolution. The proposed COG defuzzifier is specified by various design
+	parameters such as the centers, widths, and modifiers of MFs. The
+	design parameters are adjusted with the Lamarckian co-adaptation of
+	learning and evolution, where the learning performs a local search of
+	design parameters in an individual COG defuzzifier, but the evolution
+	performs a global search of design parameters among a population of
+	various COG defuzzifiers. This co-adaptation scheme allows to evolve
+	much faster than the non-learning case and gives a higher possibility
+	of finding an optimal solution due to its wider searching capability.
+	An application to the truck backer-upper control problem of the
+	proposed co-adaptive design method of COG defuzzifier is presented. The
+	approximation ability and control performance are compared with those
+	of the conventionally simplified COG defuzzifier in terms of the fuzzy
+	logic controller's approximation error and the average tracing
+	distance, respectively

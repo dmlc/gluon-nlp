@@ -1,0 +1,23 @@
+Estimation of blocking probabilities in cellular networks with dynamic channel
+	assignment
+Blocking probabilities in cellular mobile communication networks using dynamic
+	channel assignment are hard to compute for realistic sized systems.
+	This computational difficulty is due to the structure of the state
+	space, which imposes strong coupling constraints amongst components of
+	the occupancy vector. Approximate tractable models have been proposed,
+	which have product form stationary state distributions. However, for
+	real channel assignment schemes, the product form is a poor
+	approximation and it is necessary to simulate the actual occupancy
+	process in order to estimate the blocking probabilities. Meaningful
+	estimates of the blocking probability typically require an enormous
+	amount of CPU time for simulation, since blocking events are usually
+	rare. Advanced simulation approaches use importance sampling (IS) to
+	overcome this problem. We study two regimes under which blocking is a
+	rare event: low-load and high cell capacity. Our simulations use the
+	standard clock (SC) method. For low load, we propose a change of
+	measure that we call static ISSC, which has bounded relative error. For
+	high capacity, we use a change of measure that depends on the current
+	state of the network occupancy. This is the dynamic ISSC method. We
+	prove that this method yields zero variance estimators for single
+	clique models, and we empirically show the advantages of this method
+	over naive simulation for networks of moderate size and traffic loads

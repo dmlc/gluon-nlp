@@ -1,0 +1,14 @@
+Evaluation of existing and new feature recognition algorithms. 1. Theory and
+	implementation
+This is the first of two papers evaluating the performance of general-purpose
+	feature detection techniques for geometric models. In this paper, six
+	different methods are described to identify sets of faces that bound
+	depression and protrusion faces. Each algorithm has been implemented
+	and tested on eight components from the National Design Repository. The
+	algorithms studied include previously published general-purpose feature
+	detection algorithms such as the single-face inner-loop and concavity
+	techniques. Others are improvements to existing algorithms such as
+	extensions of the two-dimensional convex hull method to handle curved
+	faces as well as protrusions. Lastly, new algorithms based on the
+	three-dimensional convex hull, minimum concave, visible and
+	multiple-face inner-loop face sets are described

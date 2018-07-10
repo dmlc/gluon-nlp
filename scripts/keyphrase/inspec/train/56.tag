@@ -1,0 +1,15 @@
+new	NO_KP
+thinking	NO_KP
+on	NO_KP
+rendering	BEGIN_KP
+looks	NO_KP
+at	NO_KP
+how	NO_KP
+graphics	BEGIN_KP
+hardware	INSIDE_KP
+solves	NO_KP
+a	NO_KP
+range	NO_KP
+of	NO_KP
+rendering	BEGIN_KP
+problems	NO_KP

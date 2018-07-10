@@ -1,0 +1,16 @@
+Implementation and evaluation of HPF/SX V2
+We are developing HPF/SX V2, a High Performance Fortran (HPF) compiler for
+	vector parallel machines. It provides some unique extensions as well as
+	the features of HPF 2.0 and HPF/JA. In particular, this paper describes
+	four of them: (1) the ON directive of HPF 2.0; (2) the REFLECT and
+	LOCAL directives of HPF/JA; (3) vectorization directives; and (4)
+	automatic parallelization. We evaluate these features through some
+	benchmark programs on NEC SX-5. The results show that each of them
+	achieved a 5-8 times speedup in 8-CPU parallel execution and the four
+	features are useful for vector parallel execution. We also evaluate the
+	overall performance of HPF/SX V2 by using over 30 well-known benchmark
+	programs from HPFBench, APR Benchmarks, GENESIS Benchmarks, and NAS
+	Parallel Benchmarks. About half of the programs showed good
+	performance, while the other half suggest weakness of the compiler,
+	especially on its runtimes. It is necessary to improve them to put the
+	compiler to practical use

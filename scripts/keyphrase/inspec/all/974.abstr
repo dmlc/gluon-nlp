@@ -1,0 +1,6 @@
+Extrapolation in Lie groups with approximated BCH-formula
+We present an extrapolation algorithm for the integration of differential
+	equations in Lie groups which is a suitable generalization of the
+	well-known GBS-algorithm for ODEs. Sufficiently accurate approximations
+	to the BCH-formula are required to reach a given order. We give such
+	approximations with a minimized number of commutators

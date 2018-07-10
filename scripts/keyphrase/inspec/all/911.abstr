@@ -1,0 +1,14 @@
+Scheduling schemes for an integrated flight and propulsion control system
+We describe two schemes for scheduling an integrated flight and propulsion
+	control system for an experimental vertical/short take-off and landing
+	(V/STOL) aircraft concept in the acceleration from hover (0-120 kn)
+	flight phase. Multivariable integrated flight and propulsion
+	controllers are designed at several points over the V/STOL envelope and
+	implemented as exact plant observers with state feedback. In the first
+	scheduling scheme, the values of the state feedback and observer gain
+	matrices are interpolated between the fixed-point designs as a function
+	of aircraft speed. In the second approach, the control signals produced
+	by the different fixed-point controllers are blended, allowing a
+	significant reduction in the order of the scheduled controllers. Both
+	scheduling schemes are shown in nonlinear simulation to provide
+	excellent handling qualities as the aircraft accelerates from the hover

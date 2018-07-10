@@ -1,0 +1,18 @@
+Scalable techniques from nonparametric statistics for real time robot learning
+Locally weighted learning (LWL) is a class of techniques from nonparametric
+	statistics that provides useful representations and training algorithms
+	for learning about complex phenomena during autonomous adaptive control
+	of robotic systems. The paper introduces several LWL algorithms that
+	have been tested successfully in real-time learning of complex robot
+	tasks. We discuss two major classes of LWL, memory-based LWL and purely
+	incremental LWL that does not need to remember any data explicitly. In
+	contrast to the traditional belief that LWL methods cannot work well in
+	high-dimensional spaces, we provide new algorithms that have been
+	tested on up to 90 dimensional learning problems. The applicability of
+	our LWL algorithms is demonstrated in various robot learning examples,
+	including the learning of devil-sticking, pole-balancing by a humanoid
+	robot arm, and inverse-dynamics learning for a seven and a 30
+	degree-of-freedom robot. In all these examples, the application of our
+	statistical neural networks techniques allowed either faster or more
+	accurate acquisition of motor control than classical control
+	engineering

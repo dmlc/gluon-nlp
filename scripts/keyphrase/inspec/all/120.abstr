@@ -1,0 +1,12 @@
+Self-organized critical traffic in parallel computer networks
+In a recent paper, we analysed the dynamics of traffic flow in a simple, square
+	lattice architecture. It was shown that a phase transition takes place
+	between a free and a congested phase. The transition point was shown to
+	exhibit optimal information transfer and wide fluctuations in time,
+	with scale-free properties. In this paper, we further extend our
+	analysis by considering a generalization of the previous model in which
+	the rate of packet emission is regulated by the local congestion
+	perceived by each node. As a result of the feedback between traffic
+	congestion and packet release, the system is poised at criticality.
+	Many well-known statistical features displayed by Internet traffic are
+	recovered from our model in a natural way

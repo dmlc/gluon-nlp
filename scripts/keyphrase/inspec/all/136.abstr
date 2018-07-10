@@ -1,0 +1,13 @@
+Design of 1-D and 2-D variable fractional delay allpass filters using weighted
+	least-squares method
+In this paper, a weighted least-squares method is presented to design
+	one-dimensional and two-dimensional variable fractional delay allpass
+	filters. First, each coefficient of the variable allpass filter is
+	expressed as the polynomial of the fractional delay parameter. Then,
+	the nonlinear phase error is approximated by a weighted equation error
+	such that the cost function can be converted into a quadratic form.
+	Next, by minimizing the weighted equation error, the optimal polynomial
+	coefficients can be obtained iteratively by solving a set of linear
+	simultaneous equations at each iteration. Finally, the design examples
+	are demonstrated to illustrate the effectiveness of the proposed
+	approach

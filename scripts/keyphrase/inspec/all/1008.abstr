@@ -1,0 +1,15 @@
+Quadratic programming algorithms for large-scale model predictive control
+Quadratic programming (QP) methods are an important element in the application
+	of model predictive control (MPC). As larger and more challenging MPC
+	applications are considered, more attention needs to be focused on the
+	construction and tailoring of efficient QP algorithms. In this study,
+	we tailor and apply a new QP method, called QPSchur, to large MPC
+	applications, such as cross directional control problems in paper
+	machines. Written in C++, QPSchur is an object oriented implementation
+	of a novel dual space, Schur complement algorithm. We compare this
+	approach to three widely applied QP algorithms and show that QPSchur is
+	significantly more efficient (up to two orders of magnitude) than the
+	other algorithms. In addition, detailed simulations are considered that
+	demonstrate the importance of the flexible, object oriented
+	construction of QPSchur, along with additional features for constraint
+	handling, warm starts and partial solution

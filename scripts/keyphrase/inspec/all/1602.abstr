@@ -1,0 +1,15 @@
+An optimization approach to plan for reusable software components
+It is well acknowledged in software engineering that there is a great potential
+	for accomplishing significant productivity improvements through the
+	implementation of a successful software reuse program. On the other
+	hand, such gains are attainable only by instituting detailed action
+	plans at both the organizational and program level. Given this need,
+	the paucity of research papers related to planning, and in particular,
+	optimized planning is surprising. This research, which is aimed at this
+	gap, brings out an application of optimization for the planning of
+	reusable software components (SCs). We present a model that selects a
+	set of SCs that must be built, in order to lower development and
+	adaptation costs. We also provide implications to project management
+	based on simulation, an approach that has been adopted by other cost
+	models in the software engineering literature. Such a prescriptive
+	model does not exist in the literature

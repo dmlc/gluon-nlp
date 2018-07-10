@@ -1,0 +1,13 @@
+Work sequencing in a manufacturing cell with limited labour constraints
+This study focuses on the analysis of group scheduling heuristics in a
+	dual-constrained, automated manufacturing cell, where labour
+	utilization is limited to setups, tear-downs and loads/unloads. This
+	scenario is realistic in today's automated manufacturing cells. The
+	results indicate that policies for allocating labour to tasks have very
+	little impact in such an environment. Furthermore, the performance of
+	efficiency oriented, exhaustive, group scheduling heuristics
+	deteriorated while the performance of the more complex, non-exhaustive
+	heuristics improved. Thus, it is recommended that production managers
+	use the simplest labour scheduling policy, and instead focus their
+	efforts to activities such as job scheduling and production planning in
+	such environments

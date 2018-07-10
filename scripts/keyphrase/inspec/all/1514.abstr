@@ -1,0 +1,13 @@
+Universal parametrization in constructing smoothly-connected B-spline surfaces
+In this paper, we explore the feasibility of universal parametrization in
+	generating B-spline surfaces, which was proposed recently in the
+	literature (Lim, 1999). We present an interesting property of the new
+	parametrization that it guarantees Go continuity on B-spline surfaces
+	when several independently constructed patches are put together without
+	imposing any constraints. Also, a simple blending method of patchwork
+	is proposed to construct C/sup n-1/ surfaces, where overlapping control
+	nets are utilized. It takes into account the semi-localness property of
+	universal parametrization. It effectively helps us construct very
+	natural looking B-spline surfaces while keeping the deviation from
+	given data points very low. Experimental results are shown with several
+	sets of surface data points

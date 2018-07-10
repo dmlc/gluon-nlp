@@ -1,0 +1,21 @@
+Manufacturing data analysis of machine tool errors within a contemporary small
+	manufacturing enterprise
+The main focus of the paper is directed at the determination of manufacturing
+	errors within the contemporary smaller manufacturing enterprise sector.
+	The manufacturing error diagnosis is achieved through the manufacturing
+	data analysis of the results obtained from the inspection of the
+	component on a co-ordinate measuring machine. This manufacturing data
+	analysis activity adopts a feature-based approach and is conducted
+	through the application of a forward chaining expert system, called the
+	product data analysis distributed diagnostic expert system, which forms
+	part of a larger prototype feedback system entitled the production data
+	analysis framework. The paper introduces the manufacturing error
+	categorisations that are associated with milling type operations,
+	knowledge acquisition and representation, conceptual structure and
+	operating procedure of the prototype manufacturing data analysis
+	facility. The paper concludes with a brief evaluation of the logic
+	employed through the simulation of manufacturing error scenarios. This
+	prototype manufacturing data analysis expert system provides a valuable
+	aid for the rapid diagnosis and elimination of manufacturing errors on
+	a 3-axis vertical machining centre in an environment where operator
+	expertise is limited

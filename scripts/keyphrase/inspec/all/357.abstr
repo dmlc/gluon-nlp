@@ -1,0 +1,11 @@
+Embedding of level-continuous fuzzy sets on Banach spaces
+In this paper we present an extension of the Minkowski embedding theorem,
+	showing the existence of an isometric embedding between the classF/sub
+	c/(X) of compact-convex and level-continuous fuzzy sets on a real
+	separable Banach space X and C([0, 1] * B(X*)), the Banach space of
+	real continuous functions defined on the cartesian product between [0,
+	1] and the unit ball B(X*) in the dual space X*. Also, by using this
+	embedding, we give some applications to the characterization of
+	relatively compact subsets of F/sub c/(X). In particular, an
+	Ascoli-Arzela type theorem is proved and applied to solving the Cauchy
+	problem x(t) = f(t, x(t)), x(t/sub 0/) = x/sub 0/ on F/sub c/(X)

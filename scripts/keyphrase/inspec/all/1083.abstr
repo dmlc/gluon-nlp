@@ -1,0 +1,13 @@
+Differential algebraic systems anew
+It is proposed to figure out the leading term in differential algebraic systems
+	more precisely. Low index linear systems with those properly stated
+	leading terms are considered in detail. In particular, it is asked
+	whether a numerical integration method applied to the original system
+	reaches the inherent regular ODE without conservation, i.e., whether
+	the discretization and the decoupling commute in some sense. In general
+	one cannot expect this commutativity so that additional difficulties
+	like strong stepsize restrictions may arise. Moreover, abstract
+	differential algebraic equations in infinite-dimensional Hilbert spaces
+	are introduced, and the index notion is generalized to those equations.
+	In particular, partial differential algebraic equations are considered
+	in this abstract formulation

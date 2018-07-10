@@ -1,0 +1,23 @@
+Pareto-optimal formulations for cost versus colorimetric accuracy trade-offs in
+	printer color management
+Color management for the printing of digital images is a challenging task, due
+	primarily to nonlinear ink-mixing behavior and the presence of
+	redundant solutions for print devices with more than three inks.
+	Algorithms for the conversion of image data to printer-specific format
+	are typically designed to achieve a single predetermined rendering
+	intent, such as colorimetric accuracy. We present two CIELAB to CMYK
+	color conversion schemes based on a general Pareto-optimal formulation
+	for printer color management. The schemes operate using a 149-color
+	characterization data set selected to efficiently capture the entire
+	CMYK gamut. The first scheme uses artificial neural networks as
+	transfer functions between the CIELAB and CMYK spaces. The second
+	scheme is based on a reformulation of tetrahedral interpolation as an
+	optimization problem. Characterization data are divided into tetrahedra
+	for the interpolation-based approach using the program Qhull, which
+	removes the common restriction that characterization data be well
+	organized. Both schemes offer user control over trade-off problems such
+	as cost versus reproduction accuracy, allowing for user-specified print
+	objectives and the use of constraints such as maximum allowable ink and
+	maximum allowable AE*/sub ab/. A formulation for minimization of ink is
+	shown to be particularly favorable, integrating both a clipping and
+	gamut compression features into a single methodology

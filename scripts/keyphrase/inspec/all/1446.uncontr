@@ -1,0 +1,3 @@
+Java; critical resources; mutexes; database connections; transactions; file
+	handles; garbage collector; resource-releasing code; Tattletale
+	technique; resources leaking

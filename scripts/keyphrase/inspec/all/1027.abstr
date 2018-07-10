@@ -1,0 +1,15 @@
+Extracting straight road structure in urban environments using IKONOS satellite
+	imagery
+We discuss a fully automatic technique for extracting roads in urban
+	environments. The method has its bases in a vegetation mask derived
+	from multispectral IKONOS data and in texture derived from panchromatic
+	IKONOS data. These two techniques together are used to distinguish road
+	pixels. We then move from individual pixels to an object-based
+	representation that allows reasoning on a higher level. Recognition of
+	individual segments and intersections and the relationships among them
+	are used to determine underlying road structure and to then logically
+	hypothesize the existence of additional road network components. We
+	show results on an image of San Diego, California. The object-based
+	processing component may be adapted to utilize other basis techniques
+	as well, and could be used to build a road network in any scene having
+	a straight-line structured topology

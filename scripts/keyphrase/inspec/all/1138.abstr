@@ -1,0 +1,9 @@
+Approximating martingales for variance reduction in Markov process simulation
+"Knowledge of either analytical or numerical approximations should enable more
+	efficient simulation estimators to be constructed." This principle
+	seems intuitively plausible and certainly attractive, yet no completely
+	satisfactory general methodology has been developed to exploit it. The
+	authors present a new approach for obtaining variance reduction in
+	Markov process simulation that is applicable to a vast array of
+	different performance measures. The approach relies on the construction
+	of a martingale that is then used as an internal control variate

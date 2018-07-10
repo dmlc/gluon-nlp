@@ -1,0 +1,13 @@
+Multi-timescale Internet traffic engineering
+The Internet is a collection of packet-based hop-by-hop routed networks.
+	Internet traffic engineering is the process of allocating resources to
+	meet the performance requirements of users and operators for their
+	traffic. Current mechanisms for doing so, exemplified by TCP's
+	congestion control or the variety of packet marking disciplines,
+	concentrate on allocating resources on a per-packet basis or at data
+	timescales. This article motivates the need for traffic engineering in
+	the Internet at other timescales, namely control and management
+	timescales, and presents three mechanisms for this. It also presents a
+	scenario to show how these mechanisms increase the flexibility of
+	operators' service offerings and potentially also ease problems of
+	Internet management

@@ -1,0 +1,15 @@
+Adaptive optimizing compilers for the 21st century
+Historically, compilers have operated by applying a fixed set of optimizations
+	in a predetermined order. We call such an ordered list of optimizations
+	a compilation sequence. This paper describes a prototype system that
+	uses biased random search to discover a program-specific compilation
+	sequence that minimizes an explicit, external objective function. The
+	result is a compiler framework that adapts its behavior to the
+	application being compiled, to the pool of available transformations,
+	to the objective function, and to the target machine. This paper
+	describes experiments that attempt to characterize the space that the
+	adaptive compiler must search. The preliminary results suggest that
+	optimal solutions are rare and that local minima are frequent. If this
+	holds true, biased random searches, such as a,genetic algorithm, should
+	find good solutions more quickly than simpler strategies, such as hill
+	climbing

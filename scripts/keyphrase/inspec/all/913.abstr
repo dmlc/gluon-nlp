@@ -1,0 +1,28 @@
+Control of a coupled map lattice model for vortex shedding in the wake of a
+	cylinder
+The flow behind a vibrating flexible cable at low Reynolds numbers can exhibit
+	complex wake structures such as lace-like patterns, vortex dislocations
+	and frequency cells. These structures have been observed in experiments
+	and numerical simulations, and are predicted by a previously developed
+	low-order coupled map lattice (CML). The discrete (in time and space)
+	CML models consist of a series of diffusively coupled circle map
+	oscillators along the cable span. Motivated by a desire to modify the
+	complex wake patterns behind flexible vibrating cables, we have studied
+	the addition of control terms into the highly efficient CML models and
+	explored the resulting dynamics. Proportional, adaptive proportional
+	and discontinuous non-linear (DNL) control methods were used to derive
+	the control laws. The first method employed occasional proportional
+	feedback. The adaptive method used spatio-temporal feedback control.
+	The DNL method used a discontinuous feedback linearization procedure,
+	and the controller was designed for the resulting linearized system
+	using eigenvalue assignment. These techniques were applied to a modeled
+	vortex dislocation structure in the wake of a vibrating cable in
+	uniform freestream flow. Parallel shedding patterns were achieved for a
+	range of forcing frequency-forcing amplitude combinations studied to
+	validate the control theory. The adaptive proportional and DNL methods
+	were found to be more effective than the proportional control method
+	due to the incorporation of a spatially varying feedback gain across
+	the cylinder span. The DNL method was found to be the most efficient
+	controller of the low-order CML model. The required control level
+	across the cable span was correlated to the 1/1 lock-on behavior of the
+	temporal circle map

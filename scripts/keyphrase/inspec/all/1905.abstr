@@ -1,0 +1,9 @@
+Tool and process improvements from MFC control system technology
+A new approach to MFC calibration links the physical parameters of nitrogen to
+	the physical characteristics of various process gases. This precludes
+	the conventional need for surrogate gases. What results is a
+	physics-based tuning algorithm and enhanced digital control system that
+	enables rearranging and gas change of digital MFCs. The end result
+	should be better process control through more accurate gas flow. The
+	new method also decreases the number of MFC spare parts required to
+	back up a fab

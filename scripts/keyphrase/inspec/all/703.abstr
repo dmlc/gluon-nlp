@@ -1,0 +1,15 @@
+Direct self control with minimum torque ripple and high dynamics for a double
+	three-level GTO inverter drive
+A highly dynamic control scheme with very low torque ripple-direct self control
+	(DSC) with torque hysteresis control-for very high-power medium-voltage
+	induction motor drives fed by a double three-level inverter (D3LI) is
+	presented. In this arrangement, two three-level inverters that are
+	connected in parallel at their DC sides are feeding the open motor
+	windings. The DSC, well known from two- and three-level inverters, is
+	adapted to the D3LI and optimized for a minimum torque ripple. An
+	18-corner trajectory is chosen for the stator flux of the induction
+	machine since it is approaching the ideal circle much better than the
+	hexagon known from DSC for two-level inverters, without any detriment
+	to the torque ripple. The machine and inverter control are explained
+	and the proposed torque quality and dynamics are verified by
+	measurements on a 180-kW laboratory drive

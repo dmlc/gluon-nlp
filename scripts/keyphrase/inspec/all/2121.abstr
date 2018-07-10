@@ -1,0 +1,12 @@
+Flexibility analysis of complex technical systems under uncertainty
+An important problem in designing technical systems under partial uncertainty
+	of the initial physical, chemical, and technological data is the
+	determination of a design in which the technical system is flexible,
+	i.e., its control system is capable of guaranteeing that the
+	constraints hold even under changes in external and internal factors
+	and application of fuzzy mathematical models in its design. Three
+	flexibility problems, viz., the flexibility of a technical system of
+	given structure, structural flexibility of a technical system, and the
+	optimal design guaranteeing the flexibility of a technical system, are
+	studied. Two approaches to these problems are elaborated. Results of a
+	computation experiment are given

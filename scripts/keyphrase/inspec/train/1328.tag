@@ -1,0 +1,17 @@
+tablet	INSIDE_KP
+pcs	NO_KP
+on	NO_KP
+the	NO_KP
+way	NO_KP
+[publishing	NO_KP
+markets]	NO_KP
+previews	NO_KP
+of	NO_KP
+hardware	NO_KP
+and	NO_KP
+software	NO_KP
+look	NO_KP
+promising	NO_KP
+for	NO_KP
+publishing	BEGIN_KP
+markets	INSIDE_KP

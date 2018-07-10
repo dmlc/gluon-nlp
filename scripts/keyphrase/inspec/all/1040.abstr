@@ -1,0 +1,10 @@
+CRONE control: principles and extension to time-variant plants with
+	asymptotically constant coefficients
+The principles of CRONE control, a frequency-domain robust control design
+	methodology based on fractional differentiation, are presented.
+	Continuous time-variant plants with asymptotically constant
+	coefficients are analysed in the frequency domain, through their
+	representation using time-variant frequency responses. A stability
+	theorem for feedback systems including time-variant plants with
+	asymptotically constant coefficients is proposed. Finally, CRONE
+	control is extended to robust control of these plants

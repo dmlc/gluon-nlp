@@ -1,0 +1,6 @@
+The maximum possible EVPI
+In this paper we calculate the maximum expected value of perfect information
+	(EVPI) for any probability distribution for the states of the world.
+	This maximum EVPI is an upper bound for the EVPI with given
+	probabilities and thus an upper bound for any partial information about
+	the states of the world

@@ -1,0 +1,13 @@
+An analytical model for a composite adaptive rectangular structure using the
+	Heaviside function
+The objective of this article is to describe a mathematical model, based on the
+	Heaviside function and on the delta -Dirac distribution, for a
+	composite adaptive rectangular structure with embedded and/or bonded
+	piezoelectric actuators and sensors. In the adopted structure model,
+	the laminae are made up a configuration of rectangular nonpiezoelectric
+	and piezoelectric patches. The laminae do not all have the same area
+	nor do they present the same configuration, such that there are points
+	where there is no material. The equations of motion and the boundary
+	conditions, which describe the electromechanical coupling, are based on
+	the Mindlin displacement field, on the linear theory of
+	piezoelectricity, and on the Hamilton principle

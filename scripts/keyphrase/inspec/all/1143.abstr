@@ -1,0 +1,27 @@
+A three-source model for the calculation of head scatter factors
+Accurate determination of the head scatter factor S/sub c/ is an important
+	issue, especially for intensity modulated radiation therapy, where the
+	segmented fields are often very irregular and much less than the
+	collimator jaw settings. In this work, we report an S/sub c/
+	calculation algorithm for symmetric, asymmetric, and irregular open
+	fields shaped by the tertiary collimator (a multileaf collimator or
+	blocks) at different source-to-chamber distance. The algorithm was
+	based on a three-source model, in which the photon radiation to the
+	point of calculation was treated as if it originated from three
+	effective sources: one source for the primary photons from the target
+	and two extra-focal photon sources for the scattered photons from the
+	primary collimator and the flattening filter, respectively. The field
+	mapping method proposed by Kim et al. [Phys. Med. Biol. 43, 1593-1604
+	(1998)] was extended to two extra-focal source planes and the scatter
+	contributions were integrated over the projected areas (determined by
+	the detector's eye view) in the three source planes considering the
+	source intensity distributions. The algorithm was implemented using
+	Microsoft Visual C/C++ in the MS Windows environment. The only input
+	data required were head scatter factors for symmetric square fields,
+	which are normally acquired during machine commissioning. A large
+	number of different fields were used to evaluate the algorithm and the
+	results were compared with measurements. We found that most of the
+	calculated S/sub c/'s agreed with the measured values to within 0.4%.
+	The algorithm can also be easily applied to deal with irregular fields
+	shaped by a multileaf collimator that replaces the upper or lower
+	collimator jaws

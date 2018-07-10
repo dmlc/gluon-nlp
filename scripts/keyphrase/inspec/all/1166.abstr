@@ -1,0 +1,5 @@
+Embedding the outer automorphism group Out(F/sub n/) of a free group of rank n
+	in the group Out(F/sub m/) for m > n
+It is proved that for every n >or= 1, the group Out(F/sub n/) is embedded in
+	the group Out(F/sub m/) with m = 1 + (n - 1)k/sup n/, where k is an
+	arbitrary natural number coprime to n - 1

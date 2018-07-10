@@ -1,0 +1,16 @@
+Innovative phase unwrapping algorithm: hybrid approach
+We present a novel algorithm based on a hybrid of the global and local
+	treatment of a wrapped map. The proposed algorithm is especially
+	effective for the unwrapping of speckle-coded interferogram contour
+	maps. In contrast to earlier unwrapping algorithms by region, we
+	propose a local discontinuity-restoring criterion to serve as the
+	preprocessor or postprocessor of our hybrid algorithm, which makes the
+	unwrapping by region much easier and more efficient. With this hybrid
+	algorithm, a robust, stable, and especially time effective phase
+	unwrapping can be achieved. Additionally, the criterion and limitation
+	of this hybrid algorithm are fully described. The robustness,
+	stability, and speed of this hybrid algorithm are also studied. The
+	proposed algorithm can be easily upgraded with minor modifications to
+	solve the unwrapping problem of maps with phase inconsistency. Both
+	numerical simulation and experimental applications demonstrate the
+	effectiveness of the proposed algorithm

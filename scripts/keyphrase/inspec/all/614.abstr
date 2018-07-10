@@ -1,0 +1,16 @@
+An on-line distributed intelligent fault section estimation system for
+	large-scale power networks
+In this paper, a novel distributed intelligent system is suggested for on-line
+	fault section estimation (FSE) of large-scale power networks. As the
+	first step, a multi-way graph partitioning method based on weighted
+	minimum degree reordering is proposed for effectively partitioning the
+	original large-scale power network into the desired number of connected
+	sub-networks with quasi-balanced FSE burdens and minimum frontier
+	elements. After partitioning, a distributed intelligent system based on
+	radial basis function neural network (RBF NN) and companion fuzzy
+	system is suggested for FSE. The relevant theoretical analysis and
+	procedure are presented in the paper. The proposed distributed
+	intelligent FSE method has been implemented with sparse storage
+	technique and tested on the IEEE 14, 30 and 118-bus systems,
+	respectively. Computer simulation results show that the proposed FSE
+	method works successfully for large-scale power networks

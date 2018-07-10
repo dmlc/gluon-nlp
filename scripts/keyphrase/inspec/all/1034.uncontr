@@ -1,0 +1,6 @@
+rotating flexible-shaft/multi-flexible-disk system; eddy-current damper;
+	rotating flexible-Timoshenko-shaft/flexible-disk coupling system;
+	assumed-mode method; virtual work; Lagrange's equations; discretized
+	equations of motion; bilinear system; quadratic feedback control laws;
+	nonlinear feedback control laws; optimal feedback control laws; shear
+	vibrations; flexible vibrations

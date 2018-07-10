@@ -1,0 +1,11 @@
+Simple nonlinear dual-window operator for edge detection
+We propose a nonlinear edge detection technique based on a
+	two-concentric-circular-window operator. We perform a preliminary
+	selection of edge candidates using a standard gradient and use the
+	dual-window operator to reveal edges as zero-crossing points of a
+	simple difference function depending only on the minimum and maximum
+	values in the two windows. Comparisons with other well-established
+	techniques are reported in terms of visual appearance and computational
+	efficiency. They show that detected edges are surely comparable with
+	Canny's and Laplacian of Gaussian algorithms, with a noteworthy
+	reduction in terms of computational load

@@ -1,0 +1,17 @@
+Designing a screening experiment for highly reliable products
+Within a reasonable life-testing time, how to improve the reliability of highly
+	reliable products is one of the great challenges. By using a resolution
+	III experiment together with degradation test, Tseng et al. (1995)
+	presented a case study of improving the reliability of fluorescent
+	lamps. However, in conducting such an experiment, they did not address
+	the problem of how to choose the optimal settings of variables, such as
+	sample size, inspection frequency, and termination time for each run,
+	which are influential to the correct identification of significant
+	factors and the experimental cost. Assuming that the product's
+	degradation paths satisfy Wiener processes, this paper proposes a
+	systematic approach to the aforementioned problem. First, an
+	identification rule is proposed. Next, under the constraints of a
+	minimum probability of correct decision and a maximum probability of
+	incorrect decision of the proposed identification rule, the optimum
+	test plan can be obtained by minimizing the total experimental cost. An
+	example is provided to illustrate the proposed method

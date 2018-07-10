@@ -1,0 +1,14 @@
+Efficient simplicial reconstructions of manifolds from their samples
+An algorithm for manifold learning is presented. Given only samples of a
+	finite-dimensional differentiable manifold and no a priori knowledge of
+	the manifold's geometry or topology except for its dimension, the goal
+	is to find a description of the manifold. The learned manifold must
+	approximate the true manifold well, both geometrically and
+	topologically, when the sampling density is sufficiently high. The
+	proposed algorithm constructs a simplicial complex based on
+	approximations to the tangent bundle of the manifold. An important
+	property of the algorithm is that its complexity depends on the
+	dimension of the manifold, rather than that of the embedding space.
+	Successful examples are presented in the cases of learning curves in
+	the plane, curves in space, and surfaces in space; in addition, a case
+	when the algorithm fails is analyzed

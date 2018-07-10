@@ -1,0 +1,7 @@
+Estimation of trifocal tensor using GMM
+A novel estimation of a trifocal tensor based on the Gaussian mixture model
+	(GMM) is presented. The mixture model is built assuming that the
+	residuals of inliers and outliers belong to different Gaussian
+	distributions. The Bayesian rule is then employed to detect the inliers
+	for re-estimation. Experiments show that the presented method is more
+	precise and relatively unaffected by outliers

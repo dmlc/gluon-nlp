@@ -1,0 +1,16 @@
+On conflict-free executions of elementary nets
+Deals with analysis of elementary Petri nets with respect to possibilities of
+	avoiding conflicts during their executions. There are two main aims of
+	the paper. The first is to find a method of checking if a net is
+	conflict-avoidable (i.e., if it possesses a conflict-free fair run).
+	The second is to find a method of rebuilding any net to a totally
+	conflict-avoidable net (i.e., a net possessing a conflict-free fair run
+	in every one process) with the same behaviour. The main results are the
+	following: 1. The proof of decidability, for elementary nets, of the
+	problem of existence of a conflict-avoidable fair process (and an
+	algorithm producing all fair runs). 2. Construction, for an arbitrary
+	given elementary net, of a totally conflict-avoidable net with the same
+	behaviour. The net, completed this way, has the same behaviour as the
+	original one. Moreover, it is totally conflict-avoidable, and its
+	execution may be supervised (in order to ensure conflict-freeness) by
+	the reduced case graph built by the algorithm of the former section

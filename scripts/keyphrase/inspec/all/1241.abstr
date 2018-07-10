@@ -1,0 +1,19 @@
+Code generator for the HPF Library and Fortran 95 transformational functions
+One of the language features of the core language of HPF 2.0 (High Performance
+	Fortran) is the HPF Library. The HPF Library consists of 55 generic
+	functions. The implementation of this library presents the challenge
+	that all data types, data kinds, array ranks and input distributions
+	need to be supported. For instance, more than 2 billion separate
+	functions are required to support COPY-SCATTER fully. The efficient
+	support of these billions of specific functions is one of the
+	outstanding problems of HPF. We have solved this problem by developing
+	a library generator which utilizes the mechanism of parameterized
+	templates. This mechanism allows the procedures to be instantiated at
+	compile time for arguments with a specific type, kind, rank and
+	distribution over a specific processor array. We describe the
+	algorithms used in the different library functions. The implementation
+	gives the ease of generating a large number of library routines from a
+	single template. The templates can be extended with special code for
+	specific combinations of the input arguments. We describe in detail the
+	implementation and performance of the matrix multiplication template
+	for the Fujitsu VPP5000 platform

@@ -1,0 +1,14 @@
+Robust output feedback model predictive control using off-line linear matrix
+	inequalities
+A fundamental question about model predictive control (MPC) is its robustness
+	to model uncertainty. In this paper, we present a robust constrained
+	output feedback MPC algorithm that can stabilize plants with both
+	polytopic uncertainty and norm-bound uncertainty. The design procedure
+	involves off-line design of a robust constrained state feedback MPC law
+	and a state estimator using linear matrix inequalities (LMIs). Since we
+	employ an off-line approach for the controller design which gives a
+	sequence of explicit control laws, we are able to analyze the robust
+	stabilizability of the combined control laws and estimator, and by
+	adjusting the design parameters, guarantee robust stability of the
+	closed-loop system in the presence of constraints. The algorithm is
+	illustrated with two examples

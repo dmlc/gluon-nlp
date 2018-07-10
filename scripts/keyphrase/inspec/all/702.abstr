@@ -1,0 +1,18 @@
+A comparison of high-power converter topologies for the implementation of FACTS
+	controllers
+This paper compares four power converter topologies for the implementation of
+	flexible AC transmission system (FACTS) controllers: three multilevel
+	topologies (multipoint clamped (MPC), chain, and nested cell) and the
+	well-established multipulse topology. In keeping with the need to
+	implement very-high-power inverters, switching frequency is restricted
+	to line frequency. The study addresses device count, DC filter ratings,
+	restrictions on voltage control, active power transfer through the DC
+	link, and balancing of DC-link voltages. Emphasis is placed on
+	capacitor sizing because of its impact on the cost and size of the
+	FACTS controller. A method for the dimensioning the DC capacitor filter
+	is presented. It is found that the chain converter is attractive for
+	the implementation of a static compensator or a static synchronous
+	series compensator. The MPC converter is attractive for the
+	implementation of a unified power flow controller or an interline power
+	flow controller, but a special arrangement is required to overcome the
+	limitations on voltage control

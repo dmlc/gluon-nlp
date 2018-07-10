@@ -1,0 +1,17 @@
+Selecting rail grade crossing investments with a decision support system
+The Federal Railroad Administration (FRA) has developed a series of rail and
+	rail-related analysis tools that assist FRA officials, Metropolitan
+	Planning Organizations (MPOs), state Department of Transportation
+	(DOT), and other constituents in evaluating the cost and benefits of
+	potential infrastructure projects. To meet agency objectives, the FRA
+	wants to add a high-speed rail grade crossing analysis tool to its
+	package of rail and rail-related intermodal software products. This
+	paper presents a conceptual decision support system (DSS) that can
+	assist officials in achieving this goal. The paper first introduces the
+	FRA's objectives and the role of cost benefit analysis in achieving
+	these objectives. Next, there is a discussion of the models needed to
+	assess the feasibility of proposed high-speed rail grade crossing
+	investments and the presentation of a decision support system (DSS)
+	that can deliver these models transparently to users. Then, the paper
+	illustrates a system session and examines the potential benefits from
+	system use

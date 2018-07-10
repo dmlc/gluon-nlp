@@ -1,0 +1,15 @@
+Access privilege management in protection systems
+We consider the problem of managing access privileges on protected objects. We
+	associate one or more locks with each object, one lock for each access
+	right defined by the object type. Possession of an access right on a
+	given object is certified by possession of a key for this object, if
+	this key matches one of the object locks. We introduce a number of
+	variants to this basic key-lock technique. Polymorphic access rights
+	make it possible to decrease the number of keys required to certify
+	possession of complex access privileges that are defined in terms of
+	several access rights. Multiple locks on the same access right allow us
+	to exercise forms of selective revocation of access privileges. A lock
+	conversion function can be used to reduce the number of locks
+	associated with any given object to a single lock. The extent of the
+	results obtained is evaluated in relation to alternative methodologies
+	for access privilege management

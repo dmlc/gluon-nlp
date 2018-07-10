@@ -1,0 +1,4 @@
+The crossing number of P(N, 3)
+It is proved that the crossing number of the generalized Petersen graph P(3k +
+	h, 3) is k + h if h in {0, 2} and k + 3 if h = 1, for each k >or= 3,
+	with the single exception of P(9,3), whose crossing number is 2

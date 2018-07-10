@@ -1,0 +1,16 @@
+Measuring keyboard response delays by comparing keyboard and joystick inputs
+The response characteristics of PC keyboards have to be identified when they
+	are used as response devices in psychological experiments. In the past,
+	the proposed method has been to check the characteristics independently
+	by means of external measurement equipment. However, with the
+	availability of different PC models and the rapid pace of model change,
+	there is an urgent need for the development of convenient and accurate
+	methods of checking. The method proposed consists of raising the
+	precision of the PC's clock to the microsecond level and using a
+	joystick connected to the MIDI terminal of a sound board to give the PC
+	an independent timing function. Statistical processing of the data
+	provided by this method makes it possible to estimate accurately the
+	keyboard scanning interval time and the average keyboard delay time.
+	The results showed that measured keyboard delay times varied from 11 to
+	73 msec, depending on the keyboard model, with most values being less
+	than 30 msec

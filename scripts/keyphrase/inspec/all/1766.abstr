@@ -1,0 +1,6 @@
+A note on vector cascade algorithm
+The focus of this paper is on the relationship between accuracy of multivariate
+	refinable vector and vector cascade algorithm. We show that, if the
+	vector cascade algorithm (1.5) with isotropic dilation converges to a
+	vector-valued function with regularity, then the initial function must
+	satisfy the Strang-Fix conditions

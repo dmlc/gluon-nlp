@@ -1,0 +1,15 @@
+Application of an internally consistent material model to determine the effect
+	of tool edge geometry in orthogonal machining
+It is well known that the edge geometry of a cutting tool affects the forces
+	measured in metal cutting. Two experimental methods have been suggested
+	in the past to extract the ploughing (non-cutting) component from the
+	total measured force: (1) the extrapolation approach, and (2) the dwell
+	force technique. This study reports the behavior of zinc during
+	orthogonal machining using tools of controlled edge radius.
+	Applications of both the extrapolation and dwell approaches show that
+	neither produces an analysis that yields a material response consistent
+	with the known behavior of zinc. Further analysis shows that the edge
+	geometry modifies the shear zone of the material and thereby modifies
+	the forces. When analyzed this way, the measured force data yield the
+	expected material response without requiring recourse to an additional
+	ploughing component

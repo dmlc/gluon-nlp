@@ -1,0 +1,9 @@
+Comments on some recent methods for the simultaneous determination of
+	polynomial zeros
+In this note we give some comments on the recent results concerning a
+	simultaneous method of the fourth-order for finding complex zeros in
+	circular interval arithmetic. The main discussion is directed to a
+	rediscovered iterative formula and its modification, presented recently
+	in Sun and Kosmol, (2001). The presented comments include some critical
+	parts of the papers Petkovic, Trickovic, Herceg, (1998) and Sun and
+	Kosmol, (2001) which treat the same subject

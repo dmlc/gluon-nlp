@@ -1,0 +1,12 @@
+Stock market dynamics
+We elucidate on several empirical statistical observations of stock market
+	returns. Moreover, we find that these properties are recurrent and are
+	also present in invariant measures of low-dimensional dynamical
+	systems. Thus, we propose that the returns are modeled by the first
+	Poincare return time of a low-dimensional chaotic trajectory. This
+	modeling, which captures the recurrent properties of the return
+	fluctuations, is able to predict well the evolution of the observed
+	statistical quantities. In addition, it explains the reason for which
+	stocks present simultaneously dynamical properties and high
+	uncertainties. In our analysis, we use data from the S&P 500 index and
+	the Brazilian stock Telebras

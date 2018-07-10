@@ -1,0 +1,5 @@
+Unsafe at any speed?
+While Sun prides itself on Java's secure sandbox programming model, Microsoft
+	takes a looser approach. Its C# language incorporates C-like concepts,
+	including pointers and memory management. But is unsafe code really a
+	boon to programmers, or is it a step backward?

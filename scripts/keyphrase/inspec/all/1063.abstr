@@ -1,0 +1,22 @@
+Operations that do not disturb partially known quantum states
+Consider a situation in which a quantum system is secretly prepared in a state
+	chosen from the known set of states. We present a principle that gives
+	a definite distinction between the operations that preserve the states
+	of the system and those that disturb the states. The principle is
+	derived by alternately applying a fundamental property of classical
+	signals and a fundamental property of quantum ones. The principle can
+	be cast into a simple form by using a decomposition of the relevant
+	Hilbert space, which is uniquely determined by the set of possible
+	states. The decomposition implies the classification of the degrees of
+	freedom of the system into three parts depending on how they store the
+	information on the initially chosen state: one storing it classically,
+	one storing it nonclassically, and the other one storing no
+	information. Then the principle states that the nonclassical part is
+	inaccessible and the classical part is read-only if we are to preserve
+	the state of the system. From this principle, many types of no-cloning,
+	no-broadcasting, and no-imprinting conditions can easily be derived in
+	general forms including mixed states. It also gives a unified view on
+	how various schemes of quantum cryptography work. The principle helps
+	one to derive optimum amount of resources (bits, qubits, and ebits)
+	required in data compression or in quantum teleportation of mixed-state
+	ensembles

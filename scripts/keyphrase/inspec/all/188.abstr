@@ -1,0 +1,7 @@
+Sampled-data implementation of a gain scheduled controller
+A continuous-time gain-scheduled controller must be transformed to a
+	corresponding discrete-time controller for sampled-data implementation.
+	We show that certain linearization properties of a continuous-time gain
+	scheduled controller are inherited by its sampled-data implementation.
+	We also show that a similar relationship exists for multi-rate gain
+	scheduled controllers arising in flight control applications

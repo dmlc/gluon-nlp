@@ -1,0 +1,12 @@
+An exactly solvable random satisfiability problem
+We introduce a new model for the generation of random satisfiability problems.
+	It is an extension of the hyper-SAT model of Ricci-Tersenghi, Weigt and
+	Zecchina (2001), which is a variant of the famous K-SAT model: it is
+	extended to q-state variables and relates to a different choice of the
+	statistical ensemble. The model has an exactly solvable statistic: the
+	critical exponents and scaling functions of the SAT/UNSAT transition
+	are calculable at zero temperature, with no need of replicas, also with
+	exact finite-size corrections. We also introduce an exact duality of
+	the model, and show an analogy of thermodynamic properties with the
+	random energy model of disordered spin system theory. Relations with
+	error correcting codes are also discussed

@@ -1,0 +1,12 @@
+Testing statistical bounds on entanglement using quantum chaos
+Previous results indicate that while chaos can lead to substantial entropy
+	production, thereby maximizing dynamical entanglement, this still falls
+	short of maximality. Random matrix theory modeling of composite quantum
+	systems, investigated recently, entails a universal distribution of the
+	eigenvalues of the reduced density matrices. We demonstrate that these
+	distributions are realized in quantized chaotic systems by using a
+	model of two coupled and kicked tops. We derive an explicit statistical
+	universal bound on entanglement, which is also valid for the case of
+	unequal dimensionality of the Hilbert spaces involved, and show that
+	this describes well the bounds observed using composite quantized
+	chaotic systems such as coupled tops

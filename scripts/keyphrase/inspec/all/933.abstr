@@ -1,0 +1,28 @@
+Real-time estimations of multi-modal frequencies for smart structures
+In this paper, various methods for the real-time estimation of multi-modal
+	frequencies are realized in real time and compared through numerical
+	and experimental tests. These parameter-based frequency estimation
+	methods can be applied to various engineering fields such as
+	communications, radar and adaptive vibration and noise control.
+	Well-known frequency estimation methods are introduced and explained.
+	The Bairstow method is introduced to find the roots of a characteristic
+	equation for estimations of multi-modal frequencies, and the
+	computational efficiency of the Bairstow method is shown
+	quantitatively. For a simple numerical test, we consider two sinusoids
+	of the same amplitudes mixed with various amounts of white noise. The
+	test results show that the auto regressive (AR) and auto regressive and
+	moving average (ARMA) methods are unsuitable in noisy environments. The
+	other methods apart from the AR method have fast tracking capability.
+	From the point of view of computational efficiency, the results reveal
+	that the ARMA method is inefficient, while the cascade notch filter
+	method is very effective. The linearized adaptive notch filter and
+	recursive maximum likelihood methods have average performances.
+	Experimental tests are devised to confirm the feasibility of real-time
+	computations and to impose the severe conditions of drastically
+	different amplitudes and of considerable changes of natural
+	frequencies. We have performed experiments to extract the natural
+	frequencies from the vibration signal of wing-like composite plates in
+	real time. The natural frequencies of the specimen are changed by added
+	masses. Especially, the AR method exhibits a remarkable performance in
+	spite of the severe conditions. This study will be helpful to anyone
+	who needs a frequency estimation algorithm for real-time applications

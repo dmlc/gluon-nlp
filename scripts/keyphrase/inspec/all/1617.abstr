@@ -1,0 +1,7 @@
+Adaptive array antenna based on radial basis function network as multiuser
+	detection for WCDMA
+An adaptive array antenna is proposed based on the radial basis function (RBF)
+	network as a multiuser detector for a WCDMA system. The proposed system
+	calculates the optimal combining weight coefficients using sample
+	matrix inversion with a common correlation matrix algorithm and obtains
+	the channel response vector using the RBF output signal

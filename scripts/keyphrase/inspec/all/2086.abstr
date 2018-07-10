@@ -1,0 +1,18 @@
+A design to cost system for innovative product development
+Presents a prototype object-oriented and rule-based system for product cost
+	modelling and design for automation at an early design stage. The
+	developed system comprises a computer aided design (CAD) solid
+	modelling system, a material selection module, a knowledge-based system
+	(KBS), a process optimization module, a design for assembly module, a
+	cost estimation module and a user interface. Two manufacturing
+	processes, namely machining and injection moulding processes, were
+	considered in the developed system. The main function of the system,
+	besides estimating the product cost, is to generate initial process
+	planning, including the generation and selection of machining
+	processes, their sequence and their machining parameters, and to
+	recommend the most economical assembly technique for a product and
+	provide design improvement suggestions based on a design feasibility
+	technique. In addition, a feature-by-feature cost estimation report is
+	generated using the proposed system to highlight the features of high
+	manufacturing cost. Two case studies were used to validate the
+	developed system

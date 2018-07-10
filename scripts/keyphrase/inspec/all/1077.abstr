@@ -1,0 +1,21 @@
+Quantum learning and universal quantum matching machine
+Suppose that three kinds of quantum systems are given in some unknown states
+	|f>/sup (X)N/, |g/sub 1/>/sup (X)K/, and |g/sub 2/>/sup (X)K/,
+	and we want to decide which template state |g/sub 1/> or |g/sub
+	2/>, each representing the feature of the pattern class C/sub 1/ or
+	C/sub 2/, respectively, is closest to the input feature state |f>.
+	This is an extension of the pattern matching problem into the quantum
+	domain. Assuming that these states are known a priori to belong to a
+	certain parametric family of pure qubit systems, we derive two kinds of
+	matching strategies. The first one is a semiclassical strategy that is
+	obtained by the natural extension of conventional matching strategies
+	and consists of a two-stage procedure: identification (estimation) of
+	the unknown template states to design the classifier (learning process
+	to train the classifier) and classification of the input system into
+	the appropriate pattern class based on the estimated results. The other
+	is a fully quantum strategy without any intermediate measurement, which
+	we might call as the universal quantum matching machine. We present the
+	Bayes optimal solutions for both strategies in the case of K=1, showing
+	that there certainly exists a fully quantum matching procedure that is
+	strictly superior to the straightforward semiclassical extension of the
+	conventional matching strategy based on the learning process

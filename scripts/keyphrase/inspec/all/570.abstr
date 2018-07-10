@@ -1,0 +1,14 @@
+Prediction and compensation of dynamic errors for coordinate measuring machines
+Coordinate measuring machines (CMMs) are already widely utilized as measuring
+	tools in the modem manufacturing industry. Rapidly approaching now is
+	the trend for next-generation CMMs. However, the increases in measuring
+	velocity of CMM applications are limited by dynamic errors that occur
+	in CMMs. In this paper a systematic approach for modeling the dynamic
+	errors of a touch-trigger probe CMM is developed through theoretical
+	analysis and experimental study. An overall analysis of the dynamic
+	errors of CMMs is conducted, with weak components of the CMM identified
+	by a laser interferometer. The probing process, as conducted with a
+	touch-trigger probe, is analyzed. The dynamic errors are measured,
+	modeled, and predicted using neural networks. The results indicate
+	that, using this mode, it is possible to compensate for the dynamic
+	errors of CMMs

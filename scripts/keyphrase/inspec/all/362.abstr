@@ -1,0 +1,21 @@
+On batch-constructing B/sup +/-trees: algorithm and its performance evaluation
+Efficient construction of indexes is very important in bulk-loading a database
+	or adding a new index to an existing database since both of them should
+	handle an enormous volume of data. In this paper, we propose an
+	algorithm for batch-constructing the B/sup +/-tree, the most widely
+	used index structure in database systems. The main characteristic of
+	our algorithm is to simultaneously process all the key values to be
+	placed on each B+-tree page when accessing the page. This avoids the
+	overhead due to accessing the same page multiple times, which results
+	from applying the B+-tree insertion algorithm repeatedly. For
+	performance evaluation, we have analyzed our algorithm in terms of the
+	number of disk accesses. The results show that the number of disk
+	accesses excluding those in the relocation process is identical to the
+	number of pages belonging to the B/sup +/-tree. Considering that the
+	relocation process is an unavoidable preprocessing step for
+	batch-constructing of B/sup +/-trees, our algorithm requires just one
+	disk access per B+-tree page, and therefore turns out to be optimal. We
+	also present the performance tendency in relation with different
+	parameter values via simulation. Finally, we show the performance
+	enhancement effect of our algorithm, compared with the one using
+	repeated insertions through experiments

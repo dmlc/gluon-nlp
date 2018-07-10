@@ -1,0 +1,6 @@
+Self-describing Turing machines
+After a sketchy historical account on the question of self-describeness and
+	self-reproduction, and after discussing the definition of suitable
+	encodings for self-describeness, we give the construction of several
+	self-describing Turing machines, namely self-describing machines with,
+	respectively, 350, 267, 224 and 206 instructions

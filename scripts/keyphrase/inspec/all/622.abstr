@@ -1,0 +1,7 @@
+Source/channel coding of still images using lapped transforms and block
+	classification
+A novel scheme for joint source/channel coding of still images is proposed. By
+	using efficient lapped transforms, channel-optimised robust quantisers
+	and classification methods it is shown that significant improvements
+	over traditional source/channel coding of images can be obtained while
+	keeping the complexity low

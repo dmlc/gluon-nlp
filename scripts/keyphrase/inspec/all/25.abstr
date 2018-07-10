@@ -1,0 +1,17 @@
+Identification of evolving fuzzy rule-based models
+An approach to identification of evolving fuzzy rule-based (eR) models is
+	proposed. eR models implement a method for the noniterative update of
+	both the rule-base structure and parameters by incremental unsupervised
+	learning. The rule-base evolves by adding more informative rules than
+	those that previously formed the model. In addition, existing rules can
+	be replaced with new rules based on ranking using the informative
+	potential of the data. In this way, the rule-base structure is
+	inherited and updated when new informative data become available,
+	rather than being completely retrained. The adaptive nature of these
+	evolving rule-based models, in combination with the highly transparent
+	and compact form of fuzzy rules, makes them a promising candidate for
+	modeling and control of complex processes, competitive to neural
+	networks. The approach has been tested on a benchmark problem and on an
+	air-conditioning component modeling application using data from an
+	installation serving a real building. The results illustrate the
+	viability and efficiency of the approach

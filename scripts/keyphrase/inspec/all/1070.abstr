@@ -1,0 +1,11 @@
+Universal simulation of Hamiltonian dynamics for quantum systems with
+	finite-dimensional state spaces
+What interactions are sufficient to simulate arbitrary quantum dynamics in a
+	composite quantum system? Dodd et al. [Phys. Rev. A 65, 040301(R)
+	(2002)] provided a partial solution to this problem in the form of an
+	efficient algorithm to simulate any desired two-body Hamiltonian
+	evolution using any fixed two-body entangling N-qubit Hamiltonian, and
+	local unitaries. We extend this result to the case where the component
+	systems are qudits, that is, have D dimensions. As a consequence we
+	explain how universal quantum computation can be performed with any
+	fixed two-body entangling N-qudit Hamiltonian, and local unitaries

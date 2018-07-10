@@ -1,0 +1,16 @@
+Arranging solid balls to represent a graph
+By solid balls, we mean a set of balls in R/sup 3/ no two of which can
+	penetrate each other. Every finite graph G can be represented by
+	arranging solid balls in the following way: Put red balls in R/sup 3/,
+	one for each vertex of G, and connect two red balls by a chain when
+	they correspond to a pair of adjacent vertices of G, where a chain
+	means a finite sequence of blue solid balls in which each consecutive
+	balls are tangent. (We may omit the chain if the two red balls are
+	already tangent.) The ball number b(G) of G is the minimum number of
+	balls (red and blue) necessary to represent G. If we put the balls and
+	chains on a table so that all balls sit on the table, then the minimum
+	number of balls for G is denoted by bT(G). Among other things, we prove
+	that b(K/sub 6/) = 8, b(K/sub 7/) = 13 and b/sub T/(K/sub 5/) = 8,b/sub
+	T/(K/sub 6/) = 14. We also prove that c/sub 1/n/sup 3/ < b(K/sub n/)
+	< c/sub 2/n/sup 3/ log n, c/sub 3/n/sup 4//log n < b/sub T/(K/sub
+	n/) < c/sub 4/n/sup 4/

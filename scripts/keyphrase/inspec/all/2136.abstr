@@ -1,0 +1,9 @@
+A method of determining a sequence of the best solutions to the problems of
+	optimization on finite sets and the problem of network reconstruction
+A method of determining a sequence of the best solutions to the problems of
+	optimization on finite sets was proposed. Its complexity was estimated
+	by a polynomial of the dimension of problem input, given number of
+	sequence terms, and complexity of completing the design of the original
+	extremal problem. The technique developed was applied to the typical
+	problem of network reconstruction with the aim of increasing its
+	throughput under restricted reconstruction costs

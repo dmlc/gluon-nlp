@@ -1,0 +1,9 @@
+Fuzzy systems with overlapping Gaussian concepts: Approximation properties in
+	Sobolev norms
+In this paper the approximating capabilities of fuzzy systems with overlapping
+	Gaussian concepts are considered. The target function is assumed to be
+	sampled either on a regular gird or according to a uniform probability
+	density. By exploiting a connection with Radial Basis Functions
+	approximators, a new method for the computation of the system
+	coefficients is provided, showing that it guarantees uniform
+	approximation of the derivatives of the target function

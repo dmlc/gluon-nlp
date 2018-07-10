@@ -1,0 +1,18 @@
+Fuzzy polynomial neural networks: hybrid architectures of fuzzy modeling
+We introduce a concept of fuzzy polynomial neural networks (FPNNs), a hybrid
+	modeling architecture combining polynomial neural networks (PNNs) and
+	fuzzy neural networks (FNNs). The development of the FPNNs dwells on
+	the technologies of computational intelligence (CI), namely fuzzy sets,
+	neural networks, and genetic algorithms. The structure of the FPNN
+	results from a synergistic usage of FNN and PNN. FNNs contribute to the
+	formation of the premise part of the rule-based structure of the FPNN.
+	The consequence part of the FPNN is designed using PNNs. The structure
+	of the PNN is not fixed in advance as it usually takes place in the
+	case of conventional neural networks, but becomes organized dynamically
+	to meet the required approximation error. We exploit a group method of
+	data handling (GMDH) to produce this dynamic topology of the network.
+	The performance of the FPNN is quantified through experimentation that
+	exploits standard data already used in fuzzy modeling. The obtained
+	experimental results reveal that the proposed networks exhibit high
+	accuracy and generalization capabilities in comparison to other similar
+	fuzzy models

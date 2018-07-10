@@ -1,0 +1,7 @@
+Antipersistent Markov behavior in foreign exchange markets
+A quantitative check of efficiency in US dollar/Deutsche mark exchange rates is
+	developed using high-frequency (tick by tick) data. The antipersistent
+	Markov behavior of log-price fluctuations of given size implies, in
+	principle, the possibility of a statistical forecast. We introduce and
+	measure the available information of the quote sequence, and we show
+	how it can be profitable following a particular trading rule

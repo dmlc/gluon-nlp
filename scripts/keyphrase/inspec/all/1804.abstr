@@ -1,0 +1,13 @@
+Module placement with boundary constraints using B*-trees
+The module placement problem is to determine the co-ordinates of logic modules
+	in a chip such that no two modules overlap and some cost (e.g. silicon
+	area, interconnection length, etc.) is optimised. To shorten
+	connections between inputs and outputs and/or make related modules
+	adjacent, it is desired to place some modules along the specific
+	boundaries of a chip. To deal with such boundary constraints, we
+	explore the feasibility conditions of a B*-tree with boundary
+	constraints and develop a simulated annealing-based algorithm using
+	B*-trees. Unlike most previous work, the proposed algorithm guarantees
+	a feasible B*-tree with boundary constraints for each perturbation.
+	Experimental results show that the algorithm can obtain a smaller
+	silicon area than the most recent work based on sequence pairs

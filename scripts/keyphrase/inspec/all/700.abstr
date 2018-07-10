@@ -1,0 +1,14 @@
+Digital stochastic realization of complex analog controllers
+Stochastic logic is based on digital processing of a random pulse stream, where
+	the information is codified as the probability of a high level in a
+	finite sequence. This binary pulse sequence can be digitally processed
+	exploiting the similarity between Boolean algebra and statistical
+	algebra. Given a random pulse sequence, any Boolean operation among
+	individual pulses will correspond to an algebraic expression among the
+	variables represented by their respective average pulse rates.
+	Subsequently, this pulse stream can be digitally processed to perform
+	analog operations. In this paper, we propose a stochastic approach to
+	the digital implementation of complex controllers using programmable
+	devices as an alternative to traditional digital signal processors. As
+	an example, a practical realization of nonlinear dissipative
+	controllers for a series resonant converter is presented

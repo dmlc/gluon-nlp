@@ -1,0 +1,12 @@
+A study on meaning processing of dialogue with an example of development of
+	travel consultation system
+This paper describes an approach to processing meaning instead of processing
+	information in computing. Human intellectual activity is supported by
+	linguistic activities in the brain. Therefore, processing the meaning
+	of language instead of processing information should allow us to
+	realize human intelligence on a computer. As an example of the proposed
+	framework for processing meaning, we build a travel consultation
+	dialogue system which can understand utterance by a user and retrieve
+	information through dialogue. Through a simulation example of the
+	system, we show that both information processing and language
+	processing are integrated

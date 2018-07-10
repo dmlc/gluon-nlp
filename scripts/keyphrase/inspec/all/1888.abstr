@@ -1,0 +1,13 @@
+L/sub 2/ model reduction and variance reduction
+We examine certain variance properties of model reduction. The focus is on
+	L/sub 2/ model reduction, but some general results are also presented.
+	These general results can be used to analyze various other model
+	reduction schemes. The models we study are finite impulse response
+	(FIR) and output error (OE) models. We compare the variance of two
+	estimated models. The first one is estimated directly from data and the
+	other one is computed by reducing a high order model, by L/sub 2/ model
+	reduction. In the FIR case we show that it is never better to estimate
+	the model directly from data, compared to estimating it via L/sub 2/
+	model reduction of a high order FIR model. For OE models we show that
+	the reduced model has the same variance as the directly estimated one
+	if the reduced model class used contains the true system

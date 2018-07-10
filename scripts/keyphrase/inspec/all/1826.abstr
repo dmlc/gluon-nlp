@@ -1,0 +1,20 @@
+Modeling shape and topology of low-resolution density maps of biological
+	macromolecules
+We develop an efficient way of representing the geometry and topology of
+	volumetric datasets of biological structures from medium to low
+	resolution, aiming at storing and querying them in a database
+	framework. We make use of a new vector quantization algorithm to select
+	the points within the macromolecule that best approximate the
+	probability density function of the original volume data. Connectivity
+	among points is obtained with the use of the alpha shapes theory. This
+	novel data representation has a number of interesting characteristics,
+	such as (1) it allows us to automatically segment and quantify a number
+	of important structural features from low-resolution maps, such as
+	cavities and channels, opening the possibility of querying large
+	collections of maps on the basis of these quantitative structural
+	features; (2) it provides a compact representation in terms of size;
+	(3) it contains a subset of three-dimensional points that optimally
+	quantify the densities of medium resolution data; and (4) a general
+	model of the geometry and topology of the macromolecule (as opposite to
+	a spatially unrelated bunch of voxels) is easily obtained by the use of
+	the alpha shapes theory

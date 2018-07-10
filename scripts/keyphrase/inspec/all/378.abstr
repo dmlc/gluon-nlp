@@ -1,0 +1,15 @@
+Incremental motion control of linear synchronous motor
+In this study a particular incremental motion control problem, which is
+	specified by the trapezoidal velocity profile using multisegment
+	sliding mode control (MSSMC), is proposed to control a permanent magnet
+	linear synchronous motor (PMLSM) servo drive system. First, the
+	structure and operating principle of the PMLSM are described in detail.
+	Second, a field-oriented control PMLSM servo drive is introduced. Then,
+	each segment of the multisegment switching surfaces is designed to
+	match the corresponding part of the trapezoidal velocity profile, thus
+	the motor dynamics on the specified-segment switching surface have the
+	desired velocity or acceleration corresponding part of the trapezoidal
+	velocity profile. In addition, the proposed control system is
+	implemented in a PC-based computer control system. Finally, the
+	effectiveness of the proposed PMLSM servo drive system is demonstrated
+	by some simulated and experimental results

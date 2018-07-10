@@ -1,0 +1,15 @@
+Sensing and control of double-sided arc welding process
+The welding industry is driven to improve productivity without sacrificing
+	quality. For thick material welding, the current practice is to use
+	backing or multiple passes. The laser welding process, capable of
+	achieving deep narrow penetration, can significantly improve welding
+	productivity for such applications by reducing the number of passes.
+	However, its competitiveness in comparison with traditional arc welding
+	is weakened by its high cost, strict fit-up requirement, and difficulty
+	in welding large structures. In this work, a different method, referred
+	to as double-sided arc welding (DSAW) is developed to improve the arc
+	concentration for arc welding. A sensing and control system is
+	developed to achieve deep narrow penetration under variations in
+	welding conditions. Experiments verified that the pulsed keyhole DSAW
+	system developed is capable of achieving deep narrow penetration on a
+	1/2 inch thick square butt joint in a single pass

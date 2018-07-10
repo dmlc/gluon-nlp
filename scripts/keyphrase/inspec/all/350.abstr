@@ -1,0 +1,14 @@
+There is no optimal routing policy for the torus
+A routing policy is the method used to select a specific output channel for a
+	message from among a number of acceptable output channels. An optimal
+	routing policy is a policy that maximizes the probability of a message
+	reaching its destination without delays. Optimal routing policies have
+	been proposed for several regular networks, including the mesh and the
+	hypercube. An open problem in interconnection network research has been
+	the identification of an optimal routing policy for the torus. In this
+	paper, we show that there is no optimal routing policy for the torus.
+	Our result is demonstrated by presenting a detailed example in which
+	the best choice of output channel is dependent on the probability of
+	each channel being available. This result settles, in the negative, a
+	conjecture by J. Wu (1996) concerning an optimal routing policy for the
+	torus

@@ -1,0 +1,13 @@
+Block truncation image bit plane coding
+Block truncation coding (BTC) is a successful image compression technique due
+	to its simple and fast computational burden. The bit rate is fixed to
+	2.0 bits/pixel, whose performance is moderate in terms of compression
+	ratio compared to other compression schemes such as discrete cosine
+	transform (DCT), vector quantization (VQ), wavelet transform coding
+	(WTC), etc. Two kinds of overheads are required for BTC coding: bit
+	plane and quantization values, respectively. A new technique is
+	presented to reduce the bit plane overhead. Conventional bit plane
+	overhead is 1.0 bits/pixel; we decrease it to 0.734 bits/pixel while
+	maintaining the same decoded quality as absolute moment BTC (AMBTC)
+	does for the "Lena" image. Compared to other published bit plane coding
+	strategies, the proposed method outperforms all of the existing methods

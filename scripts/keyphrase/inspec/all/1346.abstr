@@ -1,0 +1,8 @@
+Automatic multilevel thresholding for image segmentation by the growing time
+	adaptive self-organizing map
+In this paper, a Growing TASOM (Time Adaptive Self-Organizing Map) network
+	called "GTASOM" along with a peak finding process is proposed for
+	automatic multilevel thresholding. The proposed GTASOM is tested for
+	image segmentation. Experimental results demonstrate that the GTASOM is
+	a reliable and accurate tool for image segmentation and its results
+	outperform other thresholding methods

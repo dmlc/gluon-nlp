@@ -1,0 +1,19 @@
+An efficient DIPIE algorithm for CAD of electrostatically actuated MEMS devices
+Pull-in parameters are important properties of electrostatic actuators.
+	Efficient and accurate analysis tools that can capture these parameters
+	for different design geometries, are therefore essential. Current
+	simulation tools approach the pull-in state by iteratively adjusting
+	the voltage applied across the actuator electrodes. The convergence
+	rate of this scheme gradually deteriorates as the pull-in state is
+	approached. Moreover, the convergence is inconsistent and requires many
+	mesh and accuracy refinements to assure reliable predictions. As a
+	result, the design procedure of electrostatically actuated MEMS devices
+	can be time-consuming. In this paper a novel Displacement Iteration
+	Pull-In Extraction (DIPIE) scheme is presented. The DIPIE scheme is
+	shown to converge consistently and far more rapidly than the Voltage
+	Iterations (VI) scheme (>100 times faster!). The DIPIE scheme
+	requires separate mechanical and electrostatic field solvers.
+	Therefore, it can be easily implemented in existing MOEMS CAD packages.
+	Moreover, using the DIPIE scheme, the pull-in parameters extraction can
+	be performed in a fully automated mode, and no user input for search
+	bounds is required

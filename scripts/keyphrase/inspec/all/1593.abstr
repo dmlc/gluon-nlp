@@ -1,0 +1,8 @@
+Single and multi-interval Legendre tau -methods in time for parabolic equations
+In this paper, we take the parabolic equation with periodic boundary conditions
+	as a model to present a spectral method with the Fourier approximation
+	in spatial and single/multi-interval Legendre Petrov-Galerkin methods
+	in time. For the single interval spectral method in time, we obtain the
+	optimal error estimate in L/sup 2/-norm. For the multi-interval
+	spectral method in time, the L/sup 2/-optimal error estimate is valid
+	in spatial. Numerical results show the efficiency of the methods

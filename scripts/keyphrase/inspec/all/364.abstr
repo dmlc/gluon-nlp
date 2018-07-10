@@ -1,0 +1,18 @@
+MACLP: multi agent constraint logic programming
+Multi agent systems (MAS) have become the key technology for decomposing
+	complex problems in order to solve them more efficiently, or for
+	problems distributed in nature. However, many industrial applications,
+	besides their distributed nature, also involve a large number of
+	parameters and constraints, i.e. they are combinatorial. Solving such
+	particularly hard problems efficiently requires programming tools that
+	combine MAS technology with a programming schema that facilitates the
+	modeling and solution of constraints. This paper presents MACLP (multi
+	agent constraint logic programming), a logic programming platform for
+	building, in a declarative way, multi agent systems with
+	constraint-solving capabilities. MACLP extends CSPCONS, a logic
+	programming system that permits distributed program execution through
+	communicating sequential Prolog processes with constraints, by
+	providing all the necessary facilities for communication between
+	agents. These facilities abstract from the programmer all the low-level
+	details of the communication and allow him to focus on the development
+	of the agent itself

@@ -1,0 +1,15 @@
+Hybrid broadcast for the video-on-demand service
+Multicast offers an efficient means of distributing video contents/programs to
+	multiple clients by batching their requests and then having them share
+	a server's video stream. Batching customers' requests is either
+	client-initiated or server-initiated. Most advanced client-initiated
+	video multicasts are implemented by patching. Periodic broadcast, a
+	typical server-initiated approach, can be entirety-based or
+	segment-based. This paper focuses on the performance of the VoD service
+	for popular videos. First, we analyze the limitation of conventional
+	patching when the customer request rate is high. Then, by combining the
+	advantages of each of the two broadcast schemes, we propose a hybrid
+	broadcast scheme for popular videos, which not only lowers the service
+	latency but also improves clients' interactivity by using an active
+	buffering technique. This is shown to be a good compromise for both
+	lowering service latency and improving the VCR-like interactivity

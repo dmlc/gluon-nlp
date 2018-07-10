@@ -1,0 +1,12 @@
+The existence condition of gamma -acyclic database schemes with MVDs
+	constraints
+It is very important to use database technology for a large-scale system such
+	as ERP and MIS. A good database design may improve the performance of
+	the system. Some research shows that a gamma -acyclic database scheme
+	has many good properties, e.g., each connected join expression is
+	monotonous, which helps to improve query performance of the database
+	system. Thus what conditions are needed to generate a gamma -acyclic
+	database scheme for a given relational scheme? In this paper, the
+	sufficient and necessary condition of the existence of gamma -acyclic,
+	join-lossless and dependencies-preserved database schemes meeting 4NF
+	is given

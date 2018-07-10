@@ -1,0 +1,16 @@
+Lung metastasis detection and visualization on CT images: a knowledge-based
+	method
+A solution to the problem of lung metastasis detection on computed tomography
+	(CT) scans of the thorax is presented. A knowledge-based top-down
+	approach for image interpretation is used. The method is inspired by
+	the manner in which a radiologist and radiotherapist interpret CT
+	images before radiotherapy is planned. A two-dimensional followed by a
+	three-dimensional analysis is performed. The algorithm first detects
+	the thorax contour, the lungs and the ribs, which further help the
+	detection of metastases. Thus, two types of tumors are detected:
+	nodules and metastases located at the lung extremities. A method to
+	visualize the anatomical structures segmented is also presented. The
+	system was tested on 20 patients (988 total images) from the Oncology
+	Department of La Chaux-de-Fonds Hospital and the results show that the
+	method is reliable as a computer-aided diagnostic tool for clinical
+	purpose in an oncology department

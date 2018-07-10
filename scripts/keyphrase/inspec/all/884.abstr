@@ -1,0 +1,10 @@
+A hybrid-neural network and population learning algorithm approach to solving
+	reliability optimization problem
+Proposes a hybrid approach integrating a dedicated artificial neural network
+	and population learning algorithm applied to maximising system
+	reliability under cost and technical feasibility constraints. The paper
+	includes a formulation of the system reliability optimisation (SRO)
+	problem and a description of the dedicated neural network trained by
+	applying the population learning algorithm. A solution to the example
+	SRO problem is shown and results of the computational experiment are
+	presented and discussed

@@ -1,0 +1,11 @@
+Stochastic optimization of acoustic response - a numerical and experimental
+	comparison
+The objective of the work presented is to compare results from numerical
+	optimization with experimental data and to highlight and discuss the
+	differences between two fundamentally different optimization methods.
+	The problem domain is minimization of acoustic emission and the
+	structure used in the work is a closed cylinder with forced vibration
+	of one end. The optimization method used in this paper is simulated
+	annealing (SA), a stochastic method. The results are compared with
+	those from a gradient-based method used on the same structure in an
+	earlier paper (Tinnsten, 2000)

@@ -1,0 +1,15 @@
+On generalized Gaussian quadratures for exponentials and their applications
+We introduce new families of Gaussian-type quadratures for weighted integrals
+	of exponential functions and consider their applications to integration
+	and interpolation of bandlimited functions. We use a generalization of
+	a representation theorem due to Caratheodory to derive these
+	quadratures. For each positive measure, the quadratures are
+	parameterized by eigenvalues of the Toeplitz matrix constructed from
+	the trigonometric moments of the measure. For a given accuracy epsilon
+	, selecting an eigenvalue close to epsilon yields an approximate
+	quadrature with that accuracy. To compute its weights and nodes, we
+	present a new fast algorithm. These new quadratures can be used to
+	approximate and integrate bandlimited functions, such as prolate
+	spheroidal wave functions, and essentially bandlimited functions, such
+	as Bessel functions. We also develop, for a given precision, an
+	interpolating basis for bandlimited functions on an interval

@@ -1,0 +1,10 @@
+Evolution complexity of the elementary cellular automaton rule 18
+Cellular automata are classes of mathematical systems characterized by
+	discreteness (in space, time, and state values), determinism, and local
+	interaction. Using symbolic dynamical theory, we coarse-grain the
+	temporal evolution orbits of cellular automata. By means of formal
+	languages and automata theory, we study the evolution complexity of the
+	elementary cellular automaton with local rule number 18 and prove that
+	its width 1-evolution language is regular, but for every n >or= 2
+	its width n-evolution language is not context free but context
+	sensitive

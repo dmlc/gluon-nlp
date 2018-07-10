@@ -1,0 +1,13 @@
+Estimation of an N-L-N Hammerstein-Wiener model
+Estimation of a single-input single-output block-oriented model is studied. The
+	model consists of a linear block embedded between two static nonlinear
+	gains. Hence, it is called an N-L-N Hammerstein-Wiener model. First,
+	the model structure is motivated and the disturbance model is
+	discussed. The paper then concentrates on parameter estimation. A
+	relaxation iteration scheme is proposed by making use of a model
+	structure in which the error is bilinear-in-parameters. This leads to a
+	simple algorithm which minimizes the original loss function. The
+	convergence and consistency of the algorithm are studied. In order to
+	reduce the variance error, the obtained linear model is further reduced
+	using frequency weighted model reduction. A simulation study is used to
+	illustrate the method

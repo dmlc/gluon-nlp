@@ -1,0 +1,11 @@
+Quadratic Newton iteration for systems with multiplicity
+Newton's iterator is one of the most popular components of polynomial equation
+	system solvers, either from the numeric or symbolic point of view. This
+	iterator usually handles smooth situations only (when the Jacobian
+	matrix associated to the system is invertible). This is often a
+	restrictive factor. Generalizing Newton's iterator is still an open
+	problem: How to design an efficient iterator with a quadratic
+	convergence even in degenerate cases? We propose an answer for an
+	m-adic topology when the ideal m can be chosen generic enough: compared
+	to a smooth case we prove quadratic convergence with a small overhead
+	that grows with the square of the multiplicity of the root

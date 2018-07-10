@@ -1,0 +1,23 @@
+Development of a real-time monitoring system
+This paper describes a pattern recognition (PR) technique, which uses learning
+	vector quantization (LVQ). This method is adapted for practical
+	application to solve problems in the area of condition monitoring and
+	fault diagnosis where a number of fault signatures are involved. In
+	these situations, the aim is health monitoring, including
+	identification of deterioration of the healthy condition and
+	identification of causes of the failure in real-time. For this reason a
+	fault database is developed which contains the collected information
+	about various states of operation of the system in the form of pattern
+	vectors. The task of the real-time monitoring system is to correlate
+	patterns of unknown faults with the known fault signatures in the fault
+	database. This will determine cause of failure and degree of
+	deterioration of the system under test. The problem of fault diagnosis
+	may involve a large number of patterns and large sampling time, which
+	affects the learning stage of neural networks. The study here also aims
+	to find a fast learning model of neural networks for instances when a
+	high number of patterns and numerous processing elements are involved.
+	It begins searching for an appropriate solution. The study is extended
+	to the enforcement learning models and considers LVQ as a network
+	emerged from the competitive learning model through enforcement
+	training. Finally, tests show an accuracy of 92.3 per cent in the fault
+	diagnostic capability of the technique

@@ -1,0 +1,16 @@
+Multi-hour design of survivable classical IP networks
+Most of Internet intra-domain routing protocols (OSPF, RIP, and IS-IS) are
+	based on shortest path routing. The path length is defined as the sum
+	of metrics associated with the path links. These metrics are often
+	managed by the network administrator. In this context, the design of an
+	Internet backbone network consists in dimensioning the network (routers
+	and transmission links) and establishing the metric. Many requirements
+	have to be satisfied. First, Internet traffic is not static as
+	significant variations can be observed during the day. Second, many
+	failures can occur (cable cuts, hardware failures, software failures,
+	etc.). We present algorithms (meta-heuristics and greedy heuristic) to
+	design Internet backbone networks, taking into account the multi-hour
+	behaviour of traffic and some survivability requirements. Many
+	multi-hour and protection strategies are studied and numerically
+	compared. Our algorithms can be extended to integrate other quality of
+	service constraints

@@ -1,0 +1,13 @@
+Riccati-based preconditioner for computing invariant subspaces of large
+	matrices
+This paper introduces and analyzes the convergence properties of a method that
+	computes an approximation to the invariant subspace associated with a
+	group of eigenvalues of a large not necessarily diagonalizable matrix.
+	The method belongs to the family of projection type methods. At each
+	step, it refines the approximate invariant subspace using a linearized
+	Riccati's equation which turns out to be the block analogue of the
+	correction used in the Jacobi-Davidson method. The analysis conducted
+	in this paper shows that the method converges at a rate quasi-quadratic
+	provided that the approximate invariant subspace is close to the exact
+	one. The implementation of the method based on multigrid techniques is
+	also discussed and numerical experiments are reported

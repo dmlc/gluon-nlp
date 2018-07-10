@@ -1,0 +1,15 @@
+A 0.8-V 128-kb four-way set-associative two-level CMOS cache memory using
+	two-stage wordline/bitline-oriented tag-compare (WLOTC/BLOTC) scheme
+This paper reports a 0.8-V 128-kb four-way set-associative two-level CMOS cache
+	memory using a novel two-stage wordline/bitline-oriented tag-compare
+	(WLOTC/BLOTC) and sense wordline/bitline (SWL/SBL) tag-sense amplifiers
+	with an eight-transistor (8-T) tag cell in Level 2 (L2) and a 10-T
+	shrunk logic swing (SLS) memory cell. with the ground/floating (G/F)
+	data sense amplifier in Level 1 (L1) for high-speed operation for
+	low-voltage low-power VLSI system applications. Owing to the reduced
+	loading at the SWL in the new 11-T tag cell using the WLOTC scheme, the
+	10-T SLS memory cell with G/F sense amplifier in L1, and the split
+	comparison of the index signal in the 8-T tag cells with SWL/SBL tag
+	sense amplifiers in L2, this 0.8-V cache memory implemented in a 1.8-V
+	0.18- mu m CMOS technology has a measured L1/L2 hit time of 11.6/20.5
+	ns at the average dissipation of 0.77 mW at 50 MHz

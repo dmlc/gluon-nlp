@@ -1,0 +1,20 @@
+Use of periodic and monotonic activation functions in multilayer feedforward
+	neural networks trained by extended Kalman filter algorithm
+The authors investigate the convergence and pruning performance of multilayer
+	feedforward neural networks with different types of neuronal activation
+	functions in solving various problems. Three types of activation
+	functions are adopted in the network, namely, the traditional sigmoid
+	function, the sinusoidal function and a periodic function that can be
+	considered as a combination of the first two functions. To speed up the
+	learning, as well as to reduce the network size, the extended Kalman
+	filter (EKF) algorithm conjunct with a pruning method is used to train
+	the network. The corresponding networks are applied to solve five
+	typical problems, namely, 4-point XOR logic function, parity
+	generation, handwritten digit recognition, piecewise linear function
+	approximation and sunspot series prediction. Simulation results show
+	that periodic activation functions perform better than monotonic ones
+	in solving multicluster classification problems. Moreover, the combined
+	periodic activation function is found to possess the fast convergence
+	and multicluster classification capabilities of the sinusoidal
+	activation function while keeping the robustness property of the
+	sigmoid function required in the modelling of unknown systems

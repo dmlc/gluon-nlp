@@ -1,0 +1,14 @@
+Adaptive tracking controller design for robotic systems using Gaussian wavelet
+	networks
+An adaptive tracking control design for robotic systems using Gaussian wavelet
+	networks is proposed. A Gaussian wavelet network with accurate
+	approximation capability is employed to approximate the unknown
+	dynamics of robotic systems by using an adaptive learning algorithm
+	that can learn the parameters of the dilation and translation of
+	Gaussian wavelet functions. Depending on the finite number of wavelet
+	basis functions which result in inevitable approximation errors, a
+	robust control law is provided to guarantee the stability of the
+	closed-loop robotic system that can be proved by Lyapunov theory.
+	Finally, the effectiveness of the Gaussian wavelet network-based
+	control approach is illustrated through comparative simulations on a
+	six-link robot manipulator

@@ -1,0 +1,17 @@
+Optimization of element-by-element FEM in HPF 1.1
+In this study, Poisson's equation is numerically evaluated by the
+	element-by-element (EBE) finite-element method in a parallel
+	environment using HPF 1.1 (High-Performance Fortran). In order to
+	achieve high parallel efficiency, the data structures have been altered
+	to node-based data instead of mixtures of node- and element-based data,
+	representing a node-based EBE finite-element scheme (nEBE). The
+	parallel machine used in this study was the NEC SX-4, and experiments
+	were performed on a single node having 32 processors sharing common
+	memory. The HPF compiler used in the experiments is HPF/SX Rev 2.0
+	released in 1997 (unofficial), which supports HPF 1.1. Models
+	containing approximately 200 000 and 1,500,000 degrees of freedom were
+	analyzed in order to evaluate the method. The calculation time,
+	parallel efficiency, and memory used were compared. The performance of
+	HPF in the conjugate gradient solver for the large model, using the NEC
+	SX-4 compiler option-noshrunk, was about 85% that of the message
+	passing interface

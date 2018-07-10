@@ -1,0 +1,7 @@
+Deriving model parameters from field test measurements [generator control
+	simulation]
+A major component of any power system simulation is the generating plant. The
+	purpose of DeriveAssist is to speed up the parameter derivation process
+	and to allow engineers less versed in parameter matching and
+	identification to get involved in the process of power plant electric
+	generator modelling

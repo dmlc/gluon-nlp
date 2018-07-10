@@ -1,0 +1,14 @@
+High-speed CMOS circuits with parallel dynamic logic and speed-enhanced skewed
+	static logic
+In this paper, we describe parallel dynamic logic (PDL) which exhibits high
+	speed without charge sharing problem. PDL uses only parallel-connected
+	transistors for fast logic evaluation and is a good candidate for
+	high-speed low-voltage operation. It has less back-bias effect compared
+	to other logic styles, which use stacked transistors. Furthermore, PDL
+	needs no signal ordering or tapering. PDL with speed-enhanced skewed
+	static logic renders straightforward logic synthesis without the usual
+	area penalty due to logic duplication. Our experimental results on two
+	32-bit carry lookahead adders using 0.25- mu m CMOS technology show
+	that PDL with speed-enhanced skewed static (SSS) look reduces the delay
+	over clock-delayed(CD)-domino by 15%-27% and the power-delay product by
+	20%-37%

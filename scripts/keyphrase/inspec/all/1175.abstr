@@ -1,0 +1,18 @@
+Prediction of tool and chip temperature in continuous and interrupted machining
+A numerical model based on the finite difference method is presented to predict
+	tool and chip temperature fields in continuous machining and time
+	varying milling processes. Continuous or steady state machining
+	operations like orthogonal cutting are studied by modeling the heat
+	transfer between the tool and chip at the tool-rake face contact zone.
+	The shear energy created in the primary zone, the friction energy
+	produced at the rake face-chip contact zone and the heat balance
+	between the moving chip and stationary tool are considered. The
+	temperature distribution is solved using the finite difference method.
+	Later, the model is extended to milling where the cutting is
+	interrupted and the chip thickness varies with time. The proposed model
+	combines the steady-state temperature prediction in continuous
+	machining with transient temperature evaluation in interrupted cutting
+	operations where the chip and the process change in a discontinuous
+	manner. The mathematical models and simulation results are in
+	satisfactory agreement with experimental temperature measurements
+	reported in the literature

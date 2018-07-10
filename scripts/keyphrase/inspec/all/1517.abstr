@@ -1,0 +1,13 @@
+Minimizing blossoms under symmetric linear constraints
+In this paper, we show that there exists a close dependence between the control
+	polygon of a polynomial and the minimum of its blossom under symmetric
+	linear constraints. We consider a given minimization problem P, for
+	which a unique solution will be a point delta on the Bezier curve. For
+	the minimization function f, two sufficient conditions exist that
+	ensure the uniqueness of the solution, namely, the concavity of the
+	control polygon of the polynomial and the characteristics of the Polya
+	frequency-control polygon where the minimum coincides with a critical
+	point of the polynomial. The use of the blossoming theory provides us
+	with a useful geometrical interpretation of the minimization problem.
+	In addition, this minimization approach leads us to a new method of
+	discovering inequalities about the elementary symmetric polynomials

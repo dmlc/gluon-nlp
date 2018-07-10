@@ -1,0 +1,14 @@
+Speech enhancement using a mixture-maximum model
+We present a spectral domain, speech enhancement algorithm. The new algorithm
+	is based on a mixture model for the short time spectrum of the clean
+	speech signal, and on a maximum assumption in the production of the
+	noisy speech spectrum. In the past this model was used in the context
+	of noise robust speech recognition. In this paper we show that this
+	model is also effective for improving the quality of speech signals
+	corrupted by additive noise. The computational requirements of the
+	algorithm can be significantly reduced, essentially without paying
+	performance penalties, by incorporating a dual codebook scheme with
+	tied variances. Experiments, using recorded speech signals and actual
+	noise sources, show that in spite of its low computational
+	requirements, the algorithm shows improved performance compared to
+	alternative speech enhancement algorithms

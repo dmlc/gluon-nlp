@@ -1,0 +1,24 @@
+Pulmonary perfusion patterns and pulmonary arterial pressure
+Uses artificial intelligence methods to determine whether quantitative
+	parameters describing the perfusion image can be synthesized to make a
+	reasonable estimate of the pulmonary arterial (PA) pressure measured at
+	angiography. Radionuclide perfusion images were obtained in 120
+	patients with normal chest radiographs who also underwent angiographic
+	PA pressure measurement within 3 days of the radionuclide study. An
+	artificial neural network (ANN) was constructed from several image
+	parameters describing statistical and boundary characteristics of the
+	perfusion images. With use of a leave-one-out cross-validation
+	technique, this method was used to predict the PA systolic pressure in
+	cases on which the ANN had not been trained. A Pearson correlation
+	coefficient was determined between the predicted and measured PA
+	systolic pressures. ANN predictions correlated with measured pulmonary
+	systolic pressures (r=0.846, P<.001). The accuracy of the
+	predictions was not influenced by the presence of pulmonary embolism.
+	None of the 51 patients with predicted PA pressures of less than 29 mm
+	Hg had pulmonary hypertension at angiography. All 13 patients with
+	predicted PA pressures greater than 48 mm Hg had pulmonary hypertension
+	at angiography. Meaningful information regarding PA pressure can be
+	derived from noninvasive radionuclide perfusion scanning. The use of
+	image analysis in concert with artificial intelligence methods helps to
+	reveal physiologic information not readily apparent at visual image
+	inspection

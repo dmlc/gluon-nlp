@@ -1,0 +1,9 @@
+Decomposition of additive cellular automata
+Finite additive cellular automata with fixed and periodic boundary conditions
+	are considered as endomorphisms over pattern spaces. A characterization
+	of the nilpotent and regular parts of these endomorphisms is given in
+	terms of their minimal polynomials. Generalized eigenspace
+	decomposition is determined and relevant cyclic subspaces are described
+	in terms of symmetries. As an application, the lengths and frequencies
+	of limit cycles in the transition diagram of the automaton are
+	calculated

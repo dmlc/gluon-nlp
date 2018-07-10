@@ -1,0 +1,16 @@
+Grey-box model identification via evolutionary computing
+This paper presents an evolutionary grey-box model identification methodology
+	that makes the best use of a priori knowledge on a clear-box model with
+	a global structural representation of the physical system under study,
+	whilst incorporating accurate blackbox models for immeasurable and
+	local nonlinearities of a practical system. The evolutionary technique
+	is applied to building dominant structural identification with local
+	parametric tuning without the need of a differentiable performance
+	index in the presence of noisy data. It is shown that the evolutionary
+	technique provides an excellent fitting performance and is capable of
+	accommodating multiple objectives such as to examine the relationships
+	between model complexity and fitting accuracy during the model building
+	process. Validation results show that the proposed method offers
+	robust, uncluttered and accurate models for two practical systems. It
+	is expected that this type of grey-box models will accommodate many
+	practical engineering systems for a better modelling accuracy

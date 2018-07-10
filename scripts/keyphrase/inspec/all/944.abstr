@@ -1,0 +1,6 @@
+Conditions for the local manipulation of Gaussian states
+We present a general necessary and sufficient criterion for the possibility of
+	a state transformation from one mixed Gaussian state to another of a
+	bipartite continuous-variable system with two modes. The class of
+	operations that will be considered is the set of local Gaussian
+	completely positive trace-preserving maps

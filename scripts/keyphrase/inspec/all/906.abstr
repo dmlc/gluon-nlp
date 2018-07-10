@@ -1,0 +1,10 @@
+High-performance servo systems based on multirate sampling control
+In this paper, novel multirate two-degree-of-freedom controllers are proposed
+	for digital control systems, in which the sampling period of plant
+	output is restricted to be relatively longer than the control period of
+	plant input. The proposed feedforward controller assures perfect
+	tracking at M inter-sampling points. On the other hand, the proposed
+	feedback controller assures perfect disturbance rejection at M
+	inter-sample points in the steady state. Illustrative examples of
+	position control for hard disk drive are presented, and advantages of
+	these approaches are demonstrated

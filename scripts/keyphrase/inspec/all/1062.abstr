@@ -1,0 +1,12 @@
+Fidelity of quantum teleportation through noisy channels
+We investigate quantum teleportation through noisy quantum channels by solving
+	analytically and numerically a master equation in the Lindblad form. We
+	calculate the fidelity as a function of decoherence rates and angles of
+	a state to be teleported. It is found that the average fidelity and the
+	range of states to be accurately teleported depend on types of noises
+	acting on quantum channels. If the quantum channels are subject to
+	isotropic noise, the average fidelity decays to 1/2, which is smaller
+	than the best possible value of 2/3 obtained only by the classical
+	communication. On the other hand, if the noisy quantum channel is
+	modeled by a single Lindblad operator, the average fidelity is always
+	greater than 2/3

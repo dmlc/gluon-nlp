@@ -1,0 +1,4 @@
+A sufficient condition for optimality in nondifferentiable invex programming
+A sufficient optimality condition is established for a nonlinear programming
+	problem without differentiability assumption on the data wherein
+	Clarke's (1975) generalized gradient is used to define invexity

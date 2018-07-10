@@ -1,0 +1,13 @@
+A new merging algorithm for constructing suffix trees for integer alphabets
+A new approach for constructing a suffix tree T/sub s/ for a given string S is
+	to construct recursively a suffix tree T/sub o/ for odd positions,
+	construct a suffix, tree T/sub e/ for even positions from T/sub o/ and
+	then merge T/sub o/ and T/sub e/ into T/sub s/. To construct suffix
+	trees for integer alphabets in linear time had been a major open
+	problem on index data structures. Farach used this approach and gave
+	the first linear-time algorithm for integer alphabets. The hardest part
+	of Farach's algorithm is the merging step. In this paper we present a
+	new and simpler merging algorithm based on a coupled BFS (breadth-first
+	search). Our merging algorithm is more intuitive than Farach's coupled
+	DFS (depth-first search) merging, and thus it can be easily extended to
+	other applications

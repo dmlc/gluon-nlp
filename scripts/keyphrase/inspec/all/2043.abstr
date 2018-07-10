@@ -1,0 +1,15 @@
+Limits for computational electromagnetics codes imposed by computer
+	architecture
+The algorithmic complexity of the innermost loops that determine the complexity
+	of algorithms in computational electromagnetics (CEM) codes are
+	analyzed according to their operation count and the impact of the
+	underlying computer hardware. As memory chips are much slower than
+	arithmetic processors, codes that involve a high data movement compared
+	to the number of arithmetic operations are executed comparatively
+	slower. Hence, matrix-matrix multiplications are much faster than
+	matrix-vector multiplications. It is seen that it is not sufficient to
+	compare only the complexity, but also the actual performance of
+	algorithms to judge on faster execution. Implications involve FDTD
+	loops, LU factorizations, and iterative solvers for dense matrices. Run
+	times on two reference platforms, namely an Athlon 900 MHz and an HP PA
+	8600 processor, verify the findings

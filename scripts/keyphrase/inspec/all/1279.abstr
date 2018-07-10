@@ -1,0 +1,9 @@
+Place/Transition Petri net evolutions: recording ways, analysis and synthesis
+Four semantic domains for Place/Transition Petri nets and their relationships
+	are considered. They are monoids of respectively: firing sequences,
+	processes, traces and dependence graphs. For each of them the analysis
+	and synthesis problem is stated and solved. The monoid of processes is
+	defined in a non-standard way, Nets under consideration involve weights
+	of arrows and capacities (finite or infinite) of places. However, the
+	analysis and synthesis tasks require nets to be pure, i.e. each of
+	their transition must have the pre-set and post-set disjoint

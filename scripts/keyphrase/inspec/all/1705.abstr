@@ -1,0 +1,17 @@
+The use of visual search for knowledge gathering in image decision support
+This paper presents a new method of knowledge gathering for decision support in
+	image understanding based on information extracted from the dynamics of
+	saccadic eye movements. The framework involves the construction of a
+	generic image feature extraction library, from which the feature
+	extractors that are most relevant to the visual assessment by domain
+	experts are determined automatically through factor analysis. The
+	dynamics of the visual search are analyzed by using the Markov model
+	for providing training information to novices on how and where to look
+	for image features. The validity of the framework has been evaluated in
+	a clinical scenario whereby the pulmonary vascular distribution on
+	Computed Tomography images was assessed by experienced radiologists as
+	a potential indicator of heart failure. The performance of the system
+	has been demonstrated by training four novices to follow the visual
+	assessment behavior of two experienced observers. In all cases, the
+	accuracy of the students improved from near random decision making
+	(33%) to accuracies ranging from 50% to 68%

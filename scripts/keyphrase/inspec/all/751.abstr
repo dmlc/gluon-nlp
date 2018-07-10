@@ -1,0 +1,15 @@
+A new method of regression on latent variables. Application to spectral data
+Several applications are based on the assessment of a linear model linking a
+	set of variables Y to a set of predictors X. In the presence of strong
+	colinearity among predictors, as in the case with spectral data,
+	several alternative procedures to ordinary least squares (OLS) are
+	proposed, We discuss a new alternative approach which we refer to as
+	regression models through constrained principal components analysis
+	(RM-CPCA). This method basically shares certain common characteristics
+	with PLS regression as the dependent variables play a central role in
+	determining the latent variables to be used as predictors. Unlike PLS,
+	however, the approach discussed leads to straightforward models. This
+	method also bears some similarity to latent root regression analysis
+	(LRR) that was discussed by several authors. Moreover, a tuning
+	parameter that ranges between 0 and 1 is introduced and the family of
+	models thus formed includes several other methods as particular cases

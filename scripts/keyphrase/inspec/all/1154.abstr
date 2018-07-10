@@ -1,0 +1,22 @@
+The effect of voxel size on the accuracy of dose-volume histograms of prostate
+	/sup 125/I seed implants
+Cumulative dose-volume histograms (DVH) are crucial in evaluating the quality
+	of radioactive seed prostate implants. When calculating DVHs, the
+	choice of voxel size is a compromise between computational speed
+	(larger voxels) and accuracy (smaller voxels). We quantified the effect
+	of voxel size on the accuracy of DVHs using an in-house computer
+	program. The program was validated by comparison with a hand-calculated
+	DVH for a single 0.4-U iodine-125 model 6711 seed. We used the program
+	to find the voxel size required to obtain accurate DVHs of five
+	iodine-125 prostate implant patients at our institution. One-millimeter
+	cubes were sufficient to obtain DVHs that are accurate within 5% up to
+	200% of the prescription dose. For the five patient plans, we obtained
+	good agreement with the VariSeed (version 6.7, Varian, USA) treatment
+	planning software's DVH algorithm by using voxels with a sup-inf
+	dimension equal to the spacing between successive transverse seed
+	implant planes (5 mm). The volume that receives at least 200% of the
+	target dose, V/sub 200/, calculated by VariSeed was 30% to 43% larger
+	than that calculated by our program with small voxels. The single-seed
+	DVH calculated by VariSeed fell below the hand calculation by up to 50%
+	at low doses (30 Gy), and above it by over 50% at high doses (>250
+	Gy)

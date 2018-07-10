@@ -1,0 +1,18 @@
+Autofocus system for microscope
+A technique is developed for microscope autofocusing, which is called the
+	eccentric light beam approach with high resolution, wide focusing
+	range, and compact construction. The principle is described. The
+	theoretical formula of the eccentric light beam approach deduced can be
+	applied not only to an object lens whose objective plane is just at the
+	focal plane, but also to an object lens whose objective plane is not at
+	the focal plane. The experimental setup uses a semiconductor laser
+	device as the light source. The laser beam that enters into the
+	microscope is eccentric with the main light axis. A defocused signal is
+	acquired by a symmetrical silicon photocell for the change of the
+	reflected light position caused by differential amplification and
+	processed by a microprocessor. Then the electric signal is
+	power-amplified and drives a dc motor, which moves a fine working
+	platform to an automatic focus of the microscope. The result of the
+	experiments shows a +or-0.1- mu m precision of autofocusing for a range
+	of +or-500- mu m defocusing. The system has high reliability and can
+	meet the requirements of various accurate micro measurement systems

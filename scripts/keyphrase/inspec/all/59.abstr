@@ -1,0 +1,26 @@
+Efficient tracking of the cross-correlation coefficient
+In many (audio) processing algorithms, involving manipulation of discrete-time
+	signals, the performance can vary strongly over the repertoire that is
+	used. This may be the case when the signals from the various channels
+	are allowed to be strongly positively or negatively correlated. We
+	propose and analyze a general formula for tracking the (time-dependent)
+	correlation between two signals. Some special cases of this formula
+	lead to classical results known from the literature, others are new.
+	This formula is recursive in nature, and uses only the instantaneous
+	values of the two signals, in a low-cost and low-complexity manner; in
+	particular, there is no need to take square roots or to carry out
+	divisions. Furthermore, this formula can be modified with respect to
+	the occurrence of the two signals so as to further decrease the
+	complexity, and increase ease of implementation. The latter
+	modification comes at the expense that not the actual correlation is
+	tracked, but, rather, a somewhat deformed version of it. To overcome
+	this problem, we propose, for a number of instances of the tracking
+	formula, a simple warping operation on the deformed correlation. Now we
+	obtain, at least for sinusoidal signals, the correct value of the
+	correlation coefficient. Special attention is paid to the convergence
+	behavior of the algorithm for stationary signals and the dynamic
+	behavior if there is a transition to another stationary state; the
+	latter is considered to be important to study the tracking abilities to
+	nonstationary signals. We illustrate tracking algorithm by using it for
+	stereo music fragments, obtained from a number of digital audio
+	recordings

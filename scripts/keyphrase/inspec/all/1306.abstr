@@ -1,0 +1,32 @@
+Scalable hybrid computation with spikes
+We outline a hybrid analog-digital scheme for computing with three important
+	features that enable it to scale to systems of large complexity: First,
+	like digital computation, which uses several one-bit precise logical
+	units to collectively compute a precise answer to a computation, the
+	hybrid scheme uses several moderate-precision analog units to
+	collectively compute a precise answer to a computation. Second,
+	frequent discrete signal restoration of the analog information prevents
+	analog noise and offset from degrading the computation. Third, a state
+	machine enables complex computations to be created using a sequence of
+	elementary computations. A natural choice for implementing this hybrid
+	scheme is one based on spikes because spike-count codes are digital,
+	while spike-time codes are analog. We illustrate how spikes afford easy
+	ways to implement all three components of scalable hybrid computation.
+	First, as an important example of distributed analog computation, we
+	show how spikes can create a distributed modular representation of an
+	analog number by implementing digital carry interactions between
+	spiking analog neurons. Second, we show how signal restoration may be
+	performed by recursive spike-count quantization of spike-time codes.
+	Third, we use spikes from an analog dynamical system to trigger state
+	transitions in a digital dynamical system, which reconfigures the
+	analog dynamical system using a binary control vector; such feedback
+	interactions between analog and digital dynamical systems create a
+	hybrid state machine (HSM). The HSM extends and expands the concept of
+	a digital finite-state-machine to the hybrid domain. We present
+	experimental data from a two-neuron HSM on a chip that implements
+	error-correcting analog-to-digital conversion with the concurrent use
+	of spike-time and spike-count codes. We also present experimental data
+	from silicon circuits that implement HSM-based pattern recognition
+	using spike-time synchrony. We outline how HSMs may be used to perform
+	learning, vector quantization, spike pattern recognition and
+	generation, and how they may be reconfigured

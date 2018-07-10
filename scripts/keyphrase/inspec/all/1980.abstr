@@ -1,0 +1,22 @@
+Lossy to lossless object-based coding of 3-D MRI data
+We propose a fully three-dimensional (3-D) object-based coding system
+	exploiting the diagnostic relevance of the different regions of the
+	volumetric data for rate allocation. The data are first decorrelated
+	via a 3-D discrete wavelet transform. The implementation via the
+	lifting steps scheme allows to map integer-to-integer values, enabling
+	lossless coding, and facilitates the definition of the object-based
+	inverse transform. The coding process assigns disjoint segments of the
+	bitstream to the different objects, which can be independently accessed
+	and reconstructed at any up-to-lossless quality. Two fully 3-D coding
+	strategies are considered: embedded zerotree coding (EZW-3D) and
+	multidimensional layered zero coding (MLZC), both generalized for
+	region of interest (ROI)-based processing. In order to avoid artifacts
+	along region boundaries, some extra coefficients must be encoded for
+	each object. This gives rise to an overheading of the bitstream with
+	respect to the case where the volume is encoded as a whole. The amount
+	of such extra information depends on both the filter length and the
+	decomposition depth. The system is characterized on a set of head
+	magnetic resonance images. Results show that MLZC and EZW-3D have
+	competitive performances. In particular, the best MLZC mode outperforms
+	the others state-of-the-art techniques on one of the datasets for which
+	results are available in the literature

@@ -1,0 +1,17 @@
+Structural interpretation of matched pole-zero discretisation
+Deals with matched pole-zero discretisation, which has been used in practice
+	for hand calculations in the digital redesign of continuous-time
+	systems but available only in the transfer-function form. Since this
+	form is inconvenient for characterising the time-domain properties of
+	sampled-data loops and for computerising the design of such systems, a
+	state-space formulation is developed. Under the new interpretation, the
+	matched pole-zero model is shown to be structurally identical to a
+	hold-equivalent discrete-time model, where the generalised hold takes
+	integral part, thus unifying the most widely used discretisation
+	approaches. An algorithm for obtaining the generalised hold function is
+	presented. The hold-equivalent structure of the matched pole-zero model
+	clarifies several discrete-time system properties, such as
+	controllability and observability, and their preservation or loss with
+	a matched pole-zero discretisation. With the proposed formulation, the
+	matched pole-zero, hold-equivalent, and mapping models can now all be
+	constructed with a single schematic model

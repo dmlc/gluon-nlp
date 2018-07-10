@@ -1,0 +1,7 @@
+Phase conditions for Schur polynomials
+The rate of change of phase of a real or complex Schur polynomial, evaluated
+	along the unit circle traversed counterclockwise, is strictly positive.
+	For polynomials with real coefficients, this bound can be tightened.
+	These and some other fundamental bounds on the rate of change of phase
+	are derived here, using the Tchebyshev representation of the image of a
+	real polynomial evaluated on the unit circle

@@ -1,0 +1,10 @@
+Standards for service discovery and delivery
+For the past five years, competing industries and standards developers have
+	been hotly pursuing automatic configuration, now coined the broader
+	term service discovery. Jini, Universal Plug and Play (UPnP),
+	Salutation, and Service Location Protocol are among the front-runners
+	in this new race. However, choosing service discovery as the topic of
+	the hour goes beyond the need for plug-and-play solutions or support
+	for the SOHO (small office/home office) user. Service discovery's
+	potential in mobile and pervasive computing environments motivated my
+	choice

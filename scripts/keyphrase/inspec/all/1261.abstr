@@ -1,0 +1,14 @@
+Topology-adaptive modeling of objects using surface evolutions based on 3D
+	mathematical morphology
+Level set methods were proposed mainly by mathematicians for constructing a
+	model of a 3D object of arbitrary topology. However, those methods are
+	computationally inefficient due to repeated distance transformations
+	and increased dimensions. In the paper, we propose a new method of
+	modeling fast objects of arbitrary topology by using a surface
+	evolution approach based on mathematical morphology. Given sensor data
+	covering the whole object surface, the method begins with an initial
+	approximation of the object by evolving a closed surface into a model
+	topologically equivalent to the real object. The refined approximation
+	is then performed using energy minimization. The method has been
+	applied in several experiments using range data, and the results are
+	reported in the paper

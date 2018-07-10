@@ -1,0 +1,5 @@
+Java portability put to the test
+Sun Microsystems' recently launched Java Verification Program aims to enable
+	companies to assess the cross-platform portability of applications
+	written in Java, and to help software vendors ensure that their
+	solutions can run in heterogenous J2EE application server environments

@@ -1,0 +1,9 @@
+Taking back control [SCADA system]
+Most common way to implement a SCADA system is to go outside. However, in the
+	author's opinion, to truly take control of a SCADA project, in-house
+	personnel should handle as much of the job as possible. This includes
+	design, equipment specification, installation, and programming. The
+	more of these tasks one does in-house, the more control and ownership
+	one has. To accomplish this, we first evaluated the existing SCADA
+	system and investigated new technologies to establish a list of
+	features the new system needed to incorporate

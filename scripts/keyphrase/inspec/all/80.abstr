@@ -1,0 +1,10 @@
+Evaluating the performance of a distributed database of repetitive elements in
+	complete genomes
+The original version of the Repeat Sequence Database (RSDB) was created based
+	on centralized database systems (CDBSs). RSDB presently includes an
+	enormous amount of data, with the amount of biological data increasing
+	rapidly. Distributed RSDB (DRSDB) is developed to yield better
+	performance. This study proposed many approaches to data distribution
+	and experimentally determines the best approach to obtain good
+	performance of our database. Experimental results indicate that DRSDB
+	performs well for particular types of query

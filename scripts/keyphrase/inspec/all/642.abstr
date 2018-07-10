@@ -1,0 +1,13 @@
+Reconstruction of MR images from data acquired on an arbitrary k-space
+	trajectory using the same-image weight
+A sampling density compensation function denoted "same-image (SI) weight" is
+	proposed to reconstruct MR images from the data acquired on an
+	arbitrary k-space trajectory. An equation for the SI weight is
+	established on the SI criterion and an iterative scheme is developed to
+	find the weight. The SI weight is then used to reconstruct images from
+	the data calculated on a random trajectory in a numerical phantom case
+	and from the data acquired on interleaved spirals in an in vivo
+	experiment, respectively. In addition, Pipe and Menon's weight (MRM
+	1999;41:179-186) is also used in the reconstructions to make a
+	comparison. The images obtained with the SI weight were found to be
+	slightly more accurate than those obtained with Pipe's weight

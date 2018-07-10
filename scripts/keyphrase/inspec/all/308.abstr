@@ -1,0 +1,14 @@
+On-line Homework/Quiz/Exam applet: freely available Java software for
+	evaluating performance on line
+The Homework/Quiz/Exam applet is a freely available Java program that can be
+	used to evaluate student performance on line for any content authored
+	by a teacher. It has database connectivity so that student scores are
+	automatically recorded. It allows several different types of questions.
+	Each question can be linked to images and detailed story problems.
+	Three levels of feedback are provided to student responses. It allows
+	teachers to randomize the sequence of questions and to randomize which
+	of several options is the correct answer in multiple-choice questions.
+	The creation and editing of questions involves menu selections, button
+	presses, and the typing of content; no programming knowledge is
+	required. The code is open source in order to encourage modifications
+	that will meet individual pedagogical needs

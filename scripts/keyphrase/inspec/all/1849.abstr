@@ -1,0 +1,13 @@
+An active functionality service for e-business applications
+Service based architectures are a powerful approach to meet the fast evolution
+	of business rules and the corresponding software. An active
+	functionality service that detects events and involves the appropriate
+	business rules is a critical component of such a service-based
+	middleware architecture. In this paper we present an active
+	functionality service that is capable of detecting events in
+	heterogeneous environments, it uses an integral ontology-based approach
+	for the semantic interpretation of heterogeneous events and data, and
+	provides notifications through a publish/subscribe notification
+	mechanism. The power of this approach is illustrated with the help of
+	an auction application and through the personalization of car and
+	driver portals in Internet-enabled vehicles

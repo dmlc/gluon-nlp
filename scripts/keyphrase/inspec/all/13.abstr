@@ -1,0 +1,13 @@
+Stability analysis of the characteristic polynomials whose coefficients are
+	polynomials of interval parameters using monotonicity
+We analyze the stability of the characteristic polynomials whose coefficients
+	are polynomials of interval parameters via monotonicity methods. Our
+	stability conditions are based on Frazer-Duncan's theorem and all
+	conditions can be checked using only endpoint values of interval
+	parameters. These stability conditions are necessary and sufficient
+	under the monotonicity assumptions. When the monotonicity conditions do
+	not hold on the whole parameter region, we present an interval division
+	method and a transformation algorithm in order to apply the
+	monotonicity conditions. Then, our stability analysis methods can be
+	applied to all characteristic polynomials whose coefficients are
+	polynomials of interval parameters

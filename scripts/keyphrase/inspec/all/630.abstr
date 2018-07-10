@@ -1,0 +1,13 @@
+Score tests for zero-inflated Poisson models
+In many situations count data have a large proportion of zeros and the
+	zero-inflated Poisson regression (ZIP) model may be appropriate. A
+	simple score test for zero-inflation, comparing the ZIP model with a
+	constant proportion of excess zeros to a standard Poisson regression
+	model, was given by van den Broek (1995). We extend this test to the
+	more general situation where the zero probability is allowed to depend
+	on covariates. The performance of this test is evaluated using a
+	simulation study. To identify potentially important covariates in the
+	zero-inflation model a composite test is proposed. The use of the
+	general score test and the composite procedure is illustrated on two
+	examples from the literature. The composite score test is found to
+	suggest appropriate models

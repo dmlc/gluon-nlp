@@ -1,0 +1,5 @@
+On lag windows connected with Jacobi polynomials
+Lag windows whose corresponding spectral windows are Jacobi polynomials or sums
+	of Jacobi polynomials are introduced. The bias and variance of their
+	spectral density estimators are investigated and their window bandwidth
+	and characteristic exponent are determined

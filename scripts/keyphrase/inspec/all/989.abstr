@@ -1,0 +1,15 @@
+A dynamic checkpoint scheduling scheme for fault tolerant distributed computing
+	systems
+The selection of the optimal checkpointing interval has been a very critical
+	issue in implementing checkpointing-recovery schemes for fault tolerant
+	distributed systems. This paper presents a new scheme that allows a
+	process to select the proper checkpointing interval dynamically. A
+	process in the system evaluates the cost of checkpointing and possible
+	rollback for each checkpointing interval and selects the proper time
+	interval for the next checkpointing. Unlike the other schemes, the
+	overhead incurred by both the checkpointing and rollback activities are
+	considered for the cost evaluation, and the current communication
+	pattern is reflected in the selection of the checkpointing interval.
+	Moreover, the proposed scheme requires no extra message communication
+	for the checkpointing interval selection and can easily be incorporated
+	into the existing checkpointing coordination schemes

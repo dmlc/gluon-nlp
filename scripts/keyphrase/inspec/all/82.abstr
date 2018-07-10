@@ -1,0 +1,10 @@
+Bit-serial AB/sup 2/ multiplier using modified inner product
+This paper presents a new multiplication algorithm and, based on this
+	algorithm, proposes a hardware architecture, called modified
+	inner-product multiplier (MIPM), which computes AB/sup 2/
+	multiplication based on a linear feedback shift register (LFSR). The
+	algorithm is based on the property of the irreducible all one
+	polynomial (AOP) over the finite field GF(2/sup m/). The proposed
+	architecture reduces the time and space complexity for computing AB/sup
+	2/. The proposed architecture has a potential application to
+	implementing exponentiation architecture for a public-key cryptosystem

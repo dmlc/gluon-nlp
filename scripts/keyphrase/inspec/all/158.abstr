@@ -1,0 +1,19 @@
+Neural and neuro-fuzzy integration in a knowledge-based system for air quality
+	prediction
+We propose a unified approach for integrating implicit and explicit knowledge
+	in neurosymbolic systems as a combination of neural and neuro-fuzzy
+	modules. In the developed hybrid system, a training data set is used
+	for building neuro-fuzzy modules, and represents implicit domain
+	knowledge. The explicit domain knowledge on the other hand is
+	represented by fuzzy rules, which are directly mapped into equivalent
+	neural structures. The aim of this approach is to improve the abilities
+	of modular neural structures, which are based on incomplete learning
+	data sets, since the knowledge acquired from human experts is taken
+	into account for adapting the general neural architecture. Three
+	methods to combine the explicit and implicit knowledge modules are
+	proposed. The techniques used to extract fuzzy rules from neural
+	implicit knowledge modules are described. These techniques improve the
+	structure and the behavior of the entire system. The proposed
+	methodology has been applied in the field of air quality prediction
+	with very encouraging results. These experiments show that the method
+	is worth further investigation

@@ -1,0 +1,16 @@
+Creating Web-based listings of electronic journals without creating extra work
+Creating up-to-date listings of electronic journals is challenging due to
+	frequent changes in titles available and in URLs for electronic journal
+	titles. However, many library users may want to browse Web pages which
+	contain listings of electronic journals arranged by title and/or
+	academic disciplines. This case study examines the development of a
+	system which automatically exports data from the online catalog and
+	incorporates it into dynamically-generated Web sites. These sites
+	provide multiple access points for journals, include Web-based
+	interfaces enabling subject specialists to manage the list of titles
+	which appears in their subject area. Because data are automatically
+	extracted from the catalog, overlap in updating titles and URLs is
+	avoided. Following the creation of this system, usage of electronic
+	journals dramatically increased and feedback has been positive. Future
+	challenges include developing more frequent updates and motivating
+	subject specialists to more regularly monitor new titles

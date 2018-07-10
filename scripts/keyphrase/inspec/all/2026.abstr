@@ -1,0 +1,16 @@
+Iterative regularized least-mean mixed-norm image restoration
+We develop a regularized mixed-norm image restoration algorithm to deal with
+	various types of noise. A mixed-norm functional is introduced, which
+	combines the least mean square (LMS) and the least mean fourth (LMF)
+	functionals, as well as a smoothing functional. Two regularization
+	parameters are introduced: one to determine the relative importance of
+	the LMS and LMF functionals, which is a function of the kurtosis, and
+	another to determine the relative importance of the smoothing
+	functional. The two parameters are chosen in such a way that the
+	proposed functional is convex, so that a unique minimizer exists. An
+	iterative algorithm is utilized for obtaining the solution, and its
+	convergence is analyzed. The novelty of the proposed algorithm is that
+	no knowledge of the noise distribution is required, and the relative
+	contributions of the LMS, the LMF, and the smoothing functionals are
+	adjusted based on the partially restored image. Experimental results
+	demonstrate the effectiveness of the proposed algorithm

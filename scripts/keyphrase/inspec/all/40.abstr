@@ -1,0 +1,16 @@
+New tuning method for PID controller
+In this paper, a tuning method for proportional-integral-derivative (PID)
+	controller and the performance assessment formulas for this method are
+	proposed. This tuning method is based on a genetic algorithm based PID
+	controller design method. For deriving the tuning formula, the genetic
+	algorithm based design method is applied to design PID controllers for
+	a variety of processes. The relationship between the controller
+	parameters and the parameters that characterize the process dynamics
+	are determined and the tuning formula is then derived. Using simulation
+	studies, the rules for assessing the performance of a PID controller
+	tuned by the proposed method are also given. This makes it possible to
+	incorporate the capability to determine if the PID controller is well
+	tuned or not into an autotuner. An autotuner based on this new tuning
+	method and the corresponding performance assessment rules is also
+	established. Simulations and real-time experimental results are given
+	to demonstrate the effectiveness and usefulness of these formulas

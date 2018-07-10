@@ -1,0 +1,10 @@
+Fast frequency acquisition phase-frequency detectors for Gsamples/s
+	phase-locked loops
+This paper describes two techniques for designing phase-frequency detectors
+	(PFDs) with higher operating frequencies [periods of less than 8* the
+	delay of a fan-out-4 inverter (FO-4)] and faster frequency acquisition.
+	Prototypes designed in 0.25- mu m CMOS process exhibit operating
+	frequencies of 1.25 GHz [=1/(8.FO-4)] and 1.5 GHz [=1/(6.7.FO-4)] for
+	two techniques, respectively, whereas a conventional PFD operates at
+	<1 GHz [=1/(10.FO-4)]. The two proposed PFDs achieve a capture range
+	of 1.7* and 1.4* the conventional design, respectively

@@ -1,0 +1,6 @@
+Error-probability analysis of MIL-STD-1773 optical fiber data buses
+We have analyzed the error probabilities of MIL-STD-1773 optical fiber data
+	buses with three modulation schemes, namely, original Manchester II
+	bi-phase coding, PTMBC, and EMBC-BSF. Using these derived expressions
+	of error probabilities, we can also compare the receiver sensitivities
+	of such optical fiber data buses

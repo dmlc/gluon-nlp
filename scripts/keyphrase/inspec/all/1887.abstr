@@ -1,0 +1,10 @@
+Doubly invariant equilibria of linear discrete-time games
+The notion of doubly invariant (DI) equilibrium is introduced. The concept
+	extends controlled and robustly controlled invariance notions to the
+	context of two-person dynamic games. Each player tries to keep the
+	state in a region of state space independently of the actions of the
+	rival player. The paper gives existence conditions, criteria and
+	algorithms for the determination of DI equilibria of linear dynamic
+	games in discrete time. Two examples illustrate the results. The first
+	one is in the area of fault-tolerant controller synthesis. The second
+	is an application to macroeconomics

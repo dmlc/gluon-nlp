@@ -1,0 +1,16 @@
+WebCAD: A computer aided design tool constrained with explicit 'design for
+	manufacturability' rules for computer numerical control milling
+A key element in the overall efficiency of a manufacturing enterprise is the
+	compatibility between the features that have been created in a newly
+	designed part, and the capabilities of the downstream manufacturing
+	processes. With this in mind, a process-aware computer aided design
+	(CAD) system called WebCAD has been developed. The system restricts the
+	freedom of the designer in such a way that the designed parts can be
+	manufactured on a three-axis computer numerical control milling
+	machine. This paper discusses the vision of WebCAD and explains the
+	rationale for its development in comparison with commercial CAD/CAM
+	(computer aided design/manufacture) systems. The paper then goes on to
+	describe the implementation issues that enforce the manufacturability
+	rules. Finally, certain design tools are described that aid a user
+	during the design process. Some examples are given of the parts
+	designed and manufactured with WebCAD

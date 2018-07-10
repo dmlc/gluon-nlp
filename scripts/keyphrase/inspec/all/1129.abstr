@@ -1,0 +1,9 @@
+Computing stationary Nash equilibria of undiscounted single-controller
+	stochastic games
+Given a two-person, nonzero-sum stochastic game where the second player
+	controls the transitions, we formulate a linear complementarity problem
+	LCP(q, M) whose solution gives a Nash equilibrium pair of stationary
+	strategies under the limiting average payoff criterion. The matrix M
+	constructed is of the copositive class so that Lemke's algorithm will
+	process it. We will also do the same for a special class of N-person
+	stochastic games called polymatrix stochastic games

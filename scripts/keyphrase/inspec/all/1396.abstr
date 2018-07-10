@@ -1,0 +1,17 @@
+Construction of double sampling s-control charts for agile manufacturing
+Double sampling (DS) X-control charts are designed to allow quick detection of
+	a small shift of process mean and provides a quick response in an agile
+	manufacturing environment. However, the DS X-control charts assume that
+	the process standard deviation remains unchanged throughout the entire
+	course of the statistical process control. Therefore, a complementary
+	DS chart that can be used to monitor the process variation caused by
+	changes in process standard deviation should be developed. In this
+	paper, the development of the DS s-charts for quickly detecting small
+	shift in process standard deviation for agile manufacturing is
+	presented. The construction of the DS s-charts is based on the same
+	concepts in constructing the DS X-charts and is formulated as an
+	optimization problem and solved with a genetic algorithm. The
+	efficiency of the DS s-control chart is compared with that of the
+	traditional s-control chart. The results show that the DS s-control
+	charts can be a more economically preferable alternative in detecting
+	small shifts than traditional s-control charts

@@ -1,0 +1,9 @@
+Design patterns for high availability
+It is possible to achieve five-nines reliability with everyday
+	commercial-quality hardware and software. The key is the way in which
+	these components are combined. The design of high availability systems
+	is based on a combination of redundant hardware components and software
+	to manage fault detection and correction without human intervention.
+	The author quickly reviews some definitions tied to high availability
+	and fault management, and then goes on to discuss some hardware and
+	software design patterns for fault tolerant systems

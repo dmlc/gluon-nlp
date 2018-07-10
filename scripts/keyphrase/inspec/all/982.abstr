@@ -1,0 +1,9 @@
+Abundance of mosaic patterns for CNN with spatially variant templates
+This work investigates the complexity of one-dimensional cellular neural
+	network mosaic patterns with spatially variant templates on finite and
+	infinite lattices. Various boundary conditions are considered for
+	finite lattices and the exact number of mosaic patterns is computed
+	precisely. The entropy of mosaic patterns with periodic templates can
+	also be calculated for infinite lattices. Furthermore, we show the
+	abundance of mosaic patterns with respect to template periods and,
+	which differ greatly from cases with spatially invariant templates

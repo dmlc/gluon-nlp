@@ -1,0 +1,15 @@
+Repeated games with lack of information on one side: the dual differential
+	approach
+We introduce the dual differential game of a repeated game with lack of
+	information on one side as the natural continuous time version of the
+	dual game introduced by De Meyer (1996). A traditional way to study the
+	value of differential games is through discrete time approximations.
+	Here, we follow the opposite approach: We identify the limit value of a
+	repeated game in discrete time as the value of a differential game.
+	Namely, we use the recursive structure for the finitely repeated
+	version of the dual game to construct a differential game for which the
+	upper values of the uniform discretization satisfy precisely the same
+	property. The value of the dual differential game exists and is the
+	unique viscosity solution of a first-order derivative equation with a
+	limit condition. We identify the solution by translating viscosity
+	properties in the primal

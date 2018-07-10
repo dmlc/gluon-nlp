@@ -1,0 +1,18 @@
+Detection and estimation of abrupt changes in the variability of a process
+Detection of change-points in normal means is a well-studied problem. The
+	parallel problem of detecting changes in variance has had less
+	attention. The form of the generalized likelihood ratio test statistic
+	has long been known, but its null distribution resisted exact analysis.
+	In this paper, we formulate the change-point problem for a sequence of
+	chi-square random variables. We describe a procedure that is exact for
+	the distribution of the likelihood ratio statistic for all even degrees
+	of freedom, and gives upper and lower bounds for odd (and also for
+	non-integer) degrees of freedom. Both the liberal and conservative
+	bounds for chi /sub 1//sup 2/ degrees of freedom are shown through
+	simulation to be reasonably tight. The important problem of testing for
+	change in the normal variance of individual observations corresponds to
+	the chi /sub 1//sup 2/ case. The non-null case is also covered, and
+	confidence intervals for the true change point are derived. The
+	methodology is illustrated with an application to quality control in a
+	deep level gold mine. Other applications include ambulatory monitoring
+	of medical data and econometrics

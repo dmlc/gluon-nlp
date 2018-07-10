@@ -1,0 +1,19 @@
+Semantic data broadcast for a mobile environment based on dynamic and adaptive
+	chunking
+Database broadcast is an effective and scalable approach to disseminate
+	information of high affinity to a large collection of mobile clients. A
+	common problem of existing broadcast approaches is the lack of
+	knowledge for a client to determine if all data items satisfying its
+	query could be obtained from the broadcast. We therefore propose a
+	semantic-based broadcast approach. A semantic descriptor is attached to
+	each broadcast unit, called a data chunk. This semantic descriptor
+	allows a client to determine if a query can be answered entirely based
+	on broadcast items and, if needed, identify the precise definition of
+	the remaining items in the form of a "supplementary" query. Data chunks
+	can be of static or dynamic sizes and organized hierarchically. Their
+	boundary can be determined on-the-fly, adaptive to the nature of client
+	queries. We investigate different ways of organizing the data chunks
+	over a broadcast channel to improve access performance. We introduce
+	the data affinity index metric, which more accurately reflects
+	client-perceived performance. A simulation model is built to evaluate
+	our semantic-based broadcast schemes

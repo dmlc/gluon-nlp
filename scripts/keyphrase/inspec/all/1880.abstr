@@ -1,0 +1,12 @@
+Simulation and transient testing of numerical relays
+A hybrid and practical solution for relay evaluation is presented. Two main
+	issues are taken into account: power system simulation and relay
+	simulation, both of which consist of different stages. System
+	simulation is carried out by means of EMTP and is complemented by
+	additional features, such as filtering for location and determination
+	of fault parameters that allow comparing simulated and actual fault
+	records to improve and guarantee a correct system simulation. Relay
+	simulation includes filtering algorithms, all the relaying units, and
+	the decision logic. Playing simulated or real faults over the actual
+	relay and comparing simulated and real responses can check for correct
+	relay simulation

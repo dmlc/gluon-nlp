@@ -1,0 +1,17 @@
+Modification for synchronization of Rossler and Chen chaotic systems
+Active control is an effective method for making two identical Rossler and Chen
+	systems be synchronized. However, this method works only for a certain
+	class of chaotic systems with known parameters both in drive systems
+	and response systems. Modification based on Lyapunov stability theory
+	is proposed in order to overcome this limitation. An adaptive
+	synchronization controller, which can make the states of two identical
+	Rossler and Chen systems globally asymptotically synchronized in the
+	presence of system's unknown constant parameters, is derived.
+	Especially, when some unknown parameters are positive, we can make the
+	controller more simple, besides, the controller is independent of those
+	positive uncertain parameters. At last, when the condition that
+	arbitrary unknown parameters in two systems are identical constants is
+	cancelled, we demonstrate that it is possible to synchronize two
+	chaotic systems. All results are proved using a well-known Lyapunov
+	stability theorem. Numerical simulations are given to validate the
+	proposed synchronization approach

@@ -1,0 +1,10 @@
+Formalising optimal feature weight setting in case based diagnosis as linear
+	programming problems
+Many approaches to case based reasoning (CBR) exploit feature weight setting
+	algorithms to reduce the sensitivity to distance functions. We
+	demonstrate that optimal feature weight setting in a special kind of
+	CBR problems can be formalised as linear programming problems.
+	Therefore, the optimal weight settings can be calculated in polynomial
+	time instead of searching in exponential weight space using heuristics
+	to get sub-optimal settings. We also demonstrate that our approach can
+	be used to solve classification problems

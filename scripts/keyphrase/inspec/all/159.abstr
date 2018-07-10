@@ -1,0 +1,15 @@
+An intelligent system combining different resource-bounded reasoning techniques
+In this paper, PRIMES (Progressive Reasoning and Intelligent multiple MEthods
+	System), a new architecture for resource-bounded reasoning that
+	combines a form of progressive reasoning and the so-called multiple
+	methods approach is presented. Each time-critical reasoning unit is
+	designed in such a way that it delivers an approximate result in time
+	whenever an overload or a failure prevents the system from producing
+	the most accurate result. Indeed, reasoning units use approximate
+	processing based on two salient features. First, an incremental
+	processing unit constructs an approximate solution quickly and then
+	refines it incrementally. Second, a multiple methods approach proposes
+	different alternatives to solve the problem, each of them being
+	selected according to the available resources. In allowing several
+	resource-bounded reasoning paradigms to be combined, we hope to extend
+	their actual scope to cover more real-world application domains

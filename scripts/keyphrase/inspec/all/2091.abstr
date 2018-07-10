@@ -1,0 +1,23 @@
+Prospects for quantitative computed tomography imaging in the presence of
+	foreign metal bodies using statistical image reconstruction
+X-ray computed tomography (CT) images of patients bearing metal intracavitary
+	applicators or other metal foreign objects exhibit severe artifacts
+	including streaks and aliasing. We have systematically evaluated via
+	computer simulations the impact of scattered radiation, the
+	polyenergetic spectrum, and measurement noise on the performance of
+	three reconstruction algorithms: conventional filtered backprojection
+	(FBP), deterministic iterative deblurring, and a new iterative
+	algorithm, alternating minimization (AM), based on a CT detector model
+	that includes noise, scatter, and polyenergetic spectra. Contrary to
+	the dominant view of the literature, FBP streaking artifacts are due
+	mostly to mismatches between FBP's simplified model of CT detector
+	response and the physical process of signal acquisition. Artifacts on
+	AM images are significantly mitigated as this algorithm substantially
+	reduces detector-model mismatches. However, metal artifacts are reduced
+	to acceptable levels only when prior knowledge of the metal object in
+	the patient, including its pose, shape, and attenuation map, are used
+	to constrain AM's iterations. AM image reconstruction, in combination
+	with object-constrained CT to estimate the pose of metal objects in the
+	patient, is a promising approach for effectively mitigating metal
+	artifacts and making quantitative estimation of tissue attenuation
+	coefficients a clinical possibility

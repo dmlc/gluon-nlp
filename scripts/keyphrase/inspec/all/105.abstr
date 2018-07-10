@@ -1,0 +1,7 @@
+Greenberger-Horne-Zeilinger paradoxes for many qubits
+We construct Greenberger-Horne-Zeilinger (GHZ) contradictions for three or more
+	parties sharing an entangled state, the dimension of each subsystem
+	being an even integer d. The simplest example that goes beyond the
+	standard GHZ paradox (three qubits) involves five ququats (d = 4). We
+	then examine the criteria that a GHZ paradox must satisfy in order to
+	be genuinely M partite and d dimensional

@@ -1,0 +1,15 @@
+Estimating long-range dependence: finite sample properties and confidence
+	intervals
+A major issue in financial economics is the behavior of asset returns over long
+	horizons. Various estimators of long-range dependence have been
+	proposed. Even though some have known asymptotic properties, it is
+	important to test their accuracy by using simulated series of different
+	lengths. We test R/S analysis, detrended fluctuation analysis and
+	periodogram regression methods on samples drawn from Gaussian white
+	noise. The DFA statistics turns out to be the unanimous winner.
+	Unfortunately, no asymptotic distribution theory has been derived for
+	this statistics so far. We were able, however, to construct empirical
+	(i.e. approximate) confidence intervals for all three methods. The
+	obtained values differ largely from heuristic values proposed by some
+	authors for the R/S statistics and are very close to asymptotic values
+	for the periodogram regression method

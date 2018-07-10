@@ -1,0 +1,10 @@
+Approximation theory of fuzzy systems based upon genuine many-valued
+	implications - MIMO cases
+It is constructively proved that the multi-input-multi-output fuzzy systems
+	based upon genuine many-valued implications are universal approximators
+	(they are called Boolean type fuzzy systems in this paper). The general
+	approach to construct such fuzzy systems is given, that is, through the
+	partition of the output region (by the given accuracy). Two examples
+	are provided to demonstrate the way in which fuzzy systems are designed
+	to approximate given functions with a given required approximation
+	accuracy

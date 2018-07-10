@@ -1,0 +1,13 @@
+A component-based software configuration management model and its supporting
+	system
+Software configuration management (SCM) is an important key technology in
+	software development. Component-based software development (CBSD) is an
+	emerging paradigm in software development. However, to apply CBSD
+	effectively in real world practice, supporting SCM in CBSD needs to be
+	further investigated. In this paper, the objects that need to be
+	managed in CBSD is analyzed and a component-based SCM model is
+	presented. In this model, components, as the integral logical
+	constituents in a system, are managed as the basic configuration items
+	in SCM, and the relationships between/among components are defined and
+	maintained. Based on this model, a configuration management system is
+	implemented

@@ -1,0 +1,13 @@
+A framework for image deblurring using wavelet packet bases
+We show that the average over translations of an operator diagonal in a wavelet
+	packet basis is a convolution. We also show that an operator diagonal
+	in a wavelet packet basis can be decomposed into several operators of
+	the same kind, each of them being better conditioned. We investigate
+	the possibility of using such a convolution to approximate a given
+	convolution (in practice an image blur). Then we use these
+	approximations to deblur images. First, we show that this framework
+	permits us to redefine existing deblurring methods. Then, we show that
+	it permits us to define a new variational method which combines the
+	wavelet packet and the total variation approaches. We argue and show by
+	experiments that this permits us to avoid the drawbacks of both
+	approaches which are, respectively, ringing and staircasing

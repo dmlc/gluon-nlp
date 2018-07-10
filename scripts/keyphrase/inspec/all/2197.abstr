@@ -1,0 +1,5 @@
+A context-aware decision engine for content adaptation
+Building a good content adaptation service for mobile devices poses many
+	challenges. To meet these challenges, this quality-of-service-aware
+	decision engine automatically negotiates for the appropriate adaptation
+	decision for synthesizing an optimal content version

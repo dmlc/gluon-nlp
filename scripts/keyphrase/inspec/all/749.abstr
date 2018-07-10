@@ -1,0 +1,17 @@
+Numerical modeling of the flow in stenosed coronary artery. The relationship
+	between main hemodynamic parameters
+The severity of coronary arterial stenosis is usually measured by either simple
+	geometrical parameters, such as percent diameter stenosis, or
+	hemodynamically based parameters, such as the fractional flow reserve
+	(FFR) or coronary flow reserve (CFR). The present study aimed to
+	establish a relationship between actual hemodynamic conditions and the
+	parameters that define stenosis severity in the clinical setting. We
+	used a computational model of the blood flow in a vessel with a blunt
+	stenosis and an autoregulated vascular bed to simulate a stenosed blood
+	vessel. A key point in creating realistic simulations is to properly
+	model arterial autoregulation. A constant flow regulation mechanism
+	resulted in CFR and FFR values that were within the physiological
+	range, while a constant wall-shear stress model yielded unrealistic
+	values. The simulation tools developed in the present study may be
+	useful in the clinical assessment of single and multiple stenoses by
+	means of minimally invasive methods

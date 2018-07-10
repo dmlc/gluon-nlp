@@ -1,0 +1,11 @@
+Neural networks for web content filtering
+With the proliferation of harmful Internet content such as pornography,
+	violence, and hate messages, effective content-filtering systems are
+	essential. Many Web-filtering systems are commercially available, and
+	potential users can download trial versions from the Internet. However,
+	the techniques these systems use are insufficiently accurate and do not
+	adapt well to the ever-changing Web. To solve this problem, we propose
+	using artificial neural networks to classify Web pages during content
+	filtering. We focus on blocking pornography because it is among the
+	most prolific and harmful Web content. However, our general framework
+	is adaptable for filtering other objectionable Web material

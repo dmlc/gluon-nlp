@@ -1,0 +1,21 @@
+Time-resolved contrast-enhanced imaging with isotropic resolution and broad
+	coverage using an undersampled 3D projection trajectory
+Time-resolved contrast-enhanced 3D MR angiography (MRA) methods have gained in
+	popularity but are still limited by the tradeoff between spatial and
+	temporal resolution. A method is presented that greatly reduces this
+	tradeoff by employing undersampled 3D projection reconstruction
+	trajectories. The variable density k-space sampling intrinsic to this
+	sequence is combined with temporal k-space interpolation to provide
+	time frames as short as 4 s. This time resolution reduces the need for
+	exact contrast timing while also providing dynamic information. Spatial
+	resolution is determined primarily by the projection readout resolution
+	and is thus isotropic across the FOV, which is also isotropic. Although
+	undersampling the outer regions of k-space introduces aliased energy
+	into the image, which may compromise resolution, this is not a limiting
+	factor in high-contrast applications such as MRA. Results from phantom
+	and volunteer studies are presented demonstrating isotropic resolution,
+	broad coverage with an isotropic field of view (FOV), minimal
+	projection reconstruction artifacts, and temporal information. In one
+	application, a single breath-hold exam covering the entire pulmonary
+	vasculature generates high-resolution, isotropic imaging volumes
+	depicting the bolus passage

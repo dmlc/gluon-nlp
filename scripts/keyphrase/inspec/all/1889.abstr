@@ -1,0 +1,19 @@
+Sliding mode dynamics in continuous feedback control for distributed
+	discrete-event scheduling
+A continuous feedback control approach for real-time scheduling of discrete
+	events is presented motivated by the need for control theoretic
+	techniques to analyze and design such systems in distributed
+	manufacturing applications. These continuous feedback control systems
+	exhibit highly nonlinear and discontinuous dynamics. Specifically, when
+	the production demand in the manufacturing system exceeds the available
+	resource capacity then the control system "chatters" and exhibits
+	sliding modes. This sliding mode behavior is advantageously used in the
+	scheduling application by allowing the system to visit different
+	schedules within an infinitesimal region near the sliding surface. In
+	the paper, an analytical model is developed to characterize the sliding
+	mode dynamics. This model is then used to design controllers in the
+	sliding mode domain to improve the effectiveness of the control system
+	to "search" for schedules with good performance. Computational results
+	indicate that the continuous feedback control approach can provide
+	near-optimal schedules and that it is computationally efficient
+	compared to existing scheduling techniques

@@ -1,0 +1,12 @@
+Geotensity: combining motion and lighting for 3D surface reconstruction
+This paper is about automatically reconstructing the full 3D surface of an
+	object observed in motion by a single static camera. Based on the two
+	paradigms, structure from motion and linear intensity subspaces, we
+	introduce the geotensity constraint that governs the relationship
+	between four or more images of a moving object. We show that it is
+	possible in theory to solve for 3D Lambertian surface structure for the
+	case of a single point light source and propose that a solution exists
+	for an arbitrary number point light sources. The surface may or may not
+	be textured. We then give an example of automatic surface
+	reconstruction of a face under a point light source using arbitrary
+	unknown object motion and a single fixed camera

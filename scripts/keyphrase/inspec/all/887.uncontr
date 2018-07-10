@@ -1,0 +1,5 @@
+strong stability; concurrent repetitive processes; common resources;
+	steady-state behaviour; cyclic processes; mutual exclusion; recurrent
+	equations framework; necessary and sufficient conditions; maximal
+	performance steady-state; waiting-free steady-states; constraint logic
+	programming; 3-process system; Oz language

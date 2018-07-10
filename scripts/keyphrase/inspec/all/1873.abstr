@@ -1,0 +1,12 @@
+A phytography of WALDMEISTER
+The architecture of the WALDMEISTER prover for unit equational deduction is
+	based on a strict separation of active and passive facts. After an
+	inspection of the system's proof procedure, the representation of each
+	of the central data structures is outlined, namely indexing for the
+	active facts, compression for the passive facts, successor sets for the
+	hypotheses, and minimal recording of inference steps for the proof
+	object. In order to cope with large search spaces, specialized
+	redundancy criteria are employed, and the empirically gained control
+	knowledge is integrated to ease the use of the system. The paper
+	concludes with a quantitative comparison of the WALDMEISTER versions
+	over the years, and a view of the future prospects

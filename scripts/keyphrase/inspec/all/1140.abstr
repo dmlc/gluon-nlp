@@ -1,0 +1,20 @@
+Computer aided classification of masses in ultrasonic mammography
+Frequency compounding was recently investigated for computer aided
+	classification of masses in ultrasonic B-mode images as benign or
+	malignant. The classification was performed using the normalized
+	parameters of the Nakagami distribution at a single region of interest
+	at the site of the mass. A combination of normalized Nakagami
+	parameters from two different images of a mass was undertaken to
+	improve the performance of classification. Receiver operating
+	characteristic (ROC) analysis showed that such an approach resulted in
+	an area of 0.83 under the ROC curve. The aim of the work described in
+	this paper is to see whether a feature describing the characteristic of
+	the boundary can be extracted and combined with the Nakagami parameter
+	to further improve the performance of classification. The combination
+	of the features has been performed using a weighted summation. Results
+	indicate a 10% improvement in specificity at a sensitivity of 96% after
+	combining the information at the site and at the boundary. Moreover,
+	the technique requires minimal clinical intervention and has a
+	performance that reaches that of the trained radiologist. It is hence
+	suggested that this technique may be utilized in practice to
+	characterize breast masses

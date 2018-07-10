@@ -1,0 +1,25 @@
+A knowledge intensive multi-agent framework for cooperative/collaborative
+	design modeling and decision support of assemblies
+Multi-agent modeling has emerged as a promising discipline for dealing with the
+	decision making process in distributed information system applications.
+	One of such applications is the modeling of distributed design or
+	manufacturing processes which can link up various designs or
+	manufacturing processes to form a virtual consortium on a global basis.
+	This paper proposes a novel knowledge intensive multi-agent
+	cooperative/collaborative framework for concurrent intelligent design
+	and assembly planning, which integrates product design, design for
+	assembly, assembly planning, assembly system design, and assembly
+	simulation subjected to econo-technical evaluations. An AI protocol
+	based method is proposed to facilitate the integration of intelligent
+	agents for assembly design, planning, evaluation and simulation
+	processes. A unified class of knowledge intensive Petri nets is defined
+	using the OO knowledge-based Petri net approach and used as an AI
+	protocol for handling both the integration and the negotiation problems
+	among multi-agents. The detailed cooperative/collaborative mechanism
+	and algorithms are given based on the knowledge object cooperation
+	formalisms. As such, the assembly-oriented design system can easily be
+	implemented under the multi-agent-based knowledge-intensive Petri net
+	framework with concurrent integration of multiple cooperative knowledge
+	sources and software. Thus, product design and assembly planning can be
+	carried out simultaneously and intelligently in an entirely
+	computer-aided concurrent design and assembly planning system

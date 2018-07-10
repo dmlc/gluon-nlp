@@ -1,0 +1,19 @@
+Chemical information based scaling of molecular descriptors: a universal
+	chemical scale for library design and analysis
+Scaling is a difficult issue for any analysis of chemical properties or
+	molecular topology when disparate descriptors are involved. To compare
+	properties across different data sets, a common scale must be defined.
+	Using several publicly available databases (ACD, CMC, MDDR, and NCI) as
+	a basis, we propose to define chemically meaningful scales for a number
+	of molecular properties and topology descriptors. These chemically
+	derived scaling functions have several advantages. First, it is
+	possible to define chemically relevant scales, greatly simplifying
+	similarity and diversity analyses across data sets. Second, this
+	approach provides a convenient method for setting descriptor boundaries
+	that define chemically reasonable topology spaces. For example,
+	descriptors can be scaled so that compounds with little potential for
+	biological activity, bioavailability, or other drug-like
+	characteristics are easily identified as outliers. We have compiled
+	scaling values for 314 molecular descriptors. In addition the 10th and
+	90th percentile values for each descriptor have been calculated for use
+	in outlier filtering

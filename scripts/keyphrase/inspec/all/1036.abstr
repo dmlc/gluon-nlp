@@ -1,0 +1,20 @@
+Nonlinear control of a shape memory alloy actuated manipulator
+This paper presents a nonlinear, robust control algorithm for accurate
+	positioning of a single degree of freedom rotary manipulator actuated
+	by Shape Memory Alloy (SMA). A model for an SMA actuated manipulator is
+	presented. The model includes nonlinear dynamics of the manipulator, a
+	constitutive model of Shape Memory Alloy, and electrical and heat
+	transfer behavior of SMA wire. This model is used for open and closed
+	loop motion simulations of the manipulator. Experiments are presented
+	that show results similar to both closed and open loop simulation
+	results. Due to modeling uncertainty and nonlinear behavior of the
+	system, classic control methods such as
+	Proportional-Integral-Derivative control are not able to present fast
+	and accurate performance. Hence a nonlinear, robust control algorithm
+	is presented based on Variable Structure Control. This algorithm is a
+	control gain switching technique based on the weighted average of
+	position and velocity feedbacks. This method has been designed through
+	simulation and tested experimentally. Results show fast, accurate, and
+	robust performance of the control system. Computer simulation and
+	experimental results for different stabilization and tracking
+	situations are also presented

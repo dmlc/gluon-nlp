@@ -1,0 +1,8 @@
+Lower bounds on the information rate of secret sharing schemes with homogeneous
+	access structure
+We present some new lower bounds on the optimal information rate and on the
+	optimal average information rate of secret sharing schemes with
+	homogeneous access structure. These bounds are found by using some
+	covering constructions and a new parameter, the k-degree of a
+	participant, that is introduced in this paper. Our bounds improve the
+	previous ones in almost all cases

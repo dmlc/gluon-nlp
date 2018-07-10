@@ -1,0 +1,18 @@
+Control of a heavy-duty robotic excavator using time delay control with
+	integral sliding surface
+The control of a robotic excavator is difficult from the standpoint of the
+	following problems: parameter variations in mechanical structures,
+	various nonlinearities in hydraulic actuators and disturbance due to
+	the contact with the ground. In addition, the more the size of robotic
+	excavators increases, the more the length and mass of the excavator
+	links; the more the parameters of a heavy-duty excavator vary. A
+	time-delay control with switching action (TDCSA) using an integral
+	sliding surface is proposed in this paper for the control of a 21-ton
+	robotic excavator. Through analysis and experiments, we show that using
+	an integral sliding surface for the switching action of TDCSA is better
+	than using a PD-type sliding surface. The proposed controller is
+	applied to straight-line motions of a 21-ton robotic excavator with a
+	speed level at which skillful operators work. Experiments, which were
+	designed for surfaces with various inclinations and over broad ranges
+	of joint motions, show that the proposed controller exhibits good
+	performance

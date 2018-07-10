@@ -1,0 +1,13 @@
+Behavior of Runge-Kutta discretizations near equilibria of index 2 differential
+	algebraic systems
+We analyze Runge-Kutta discretizations applied to index 2 differential
+	algebraic equations (DAE's) near equilibria. We compare the geometric
+	properties of the numerical and the exact solutions. It is shown that
+	projected and half-explicit Runge-Kutta methods reproduce the
+	qualitative features of the continuous system in the vicinity of an
+	equilibrium correctly. The proof combines cut-off and scaling
+	techniques for index 2 differential algebraic equations with some
+	invariant manifold results of Schropp (Geometric properties of
+	Runge-Kutta discretizations for index 2 differential algebraic
+	equations, Konstanzer Schriften in Mathematik und Informatik 128) and
+	classical results for discretized ordinary differential equations

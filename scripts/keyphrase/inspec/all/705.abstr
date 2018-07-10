@@ -1,0 +1,12 @@
+Use of extra degrees of freedom in multilevel drives
+Multilevel converters with series connection of semiconductors allow power
+	electronics to reach medium voltages (1-10 kV) with relatively standard
+	components. The increase of the number of semiconductors provides extra
+	degrees of freedom, which can be used to improve different
+	characteristics. This paper is focused on variable-speed drives and it
+	is shown that with the proposed multilevel direct torque control
+	strategy (DiCoIF) the tradeoff between the performances of the drive
+	(harmonic distortions, torque dynamics, voltage step gradients, etc.)
+	and the switching frequency of the semiconductors is improved. Then, a
+	slightly modified strategy reducing common-mode voltage and bearing
+	currents is presented

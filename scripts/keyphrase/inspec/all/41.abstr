@@ -1,0 +1,20 @@
+Controller performance analysis with LQG benchmark obtained under closed loop
+	conditions
+This paper proposes a new method for obtaining a linear quadratic Gaussian
+	(LQG) benchmark in terms of the variances of process input and output
+	from closed-loop data, for assessing the controller performance. LQG
+	benchmark has been proposed in the literature to assess controller
+	performance since the LQG tradeoff curve represents the limit of
+	performance in terms of input and output variances. However, an
+	explicit parametric model is required to calculate the LQG benchmark.
+	In this work, we propose a data driven subspace approach to calculate
+	the LQG benchmark under closed-loop conditions with certain external
+	excitations. The optimal LQG-benchmark variances are obtained directly
+	from the subspace matrices corresponding to the deterministic inputs
+	and the stochastic inputs, which are identified using closed-loop data
+	with setpoint excitation. These variances are used for assessing the
+	controller performance. The method proposed in this paper is applicable
+	to both univariate and multivariate systems. Profit analysis for the
+	implementation of feedforward control to the existing feedback-only
+	control system is also analyzed under the optimal LQG performance
+	framework

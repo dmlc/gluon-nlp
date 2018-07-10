@@ -1,0 +1,21 @@
+An attack-finding algorithm for security protocols
+This paper proposes an automatic attack construction algorithm in order to find
+	potential attacks on security protocols. It is based on a dynamic
+	strand space model, which enhances the original strand space model by
+	introducing active nodes on strands so as to characterize the dynamic
+	procedure of protocol execution. With exact causal dependency relations
+	between messages considered in the model, this algorithm can avoid
+	state space explosion caused by asynchronous composition. In order to
+	get a finite state space, a new method called strand-added on demand is
+	exploited, which extends a bundle in an incremental manner without
+	requiring explicit configuration of protocol execution parameters. A
+	finer granularity model of term structure is also introduced, in which
+	subterms are divided into check subterms and data subterms. Moreover,
+	data subterms can be further classified based on the compatible data
+	subterm relation to obtain automatically the finite set of valid
+	acceptable terms for an honest principal. In this algorithm, terms core
+	is designed to represent the intruder's knowledge compactly, and
+	forward search technology is used to simulate attack patterns easily.
+	Using this algorithm, a new attack on the Dolve-Yao protocol can be
+	found, which is even more harmful because the secret is revealed before
+	the session terminates

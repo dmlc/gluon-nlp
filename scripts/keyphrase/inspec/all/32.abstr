@@ -1,0 +1,12 @@
+Analysis and efficient implementation of a linguistic fuzzy c-means
+The paper is concerned with a linguistic fuzzy c-means (FCM) algorithm with
+	vectors of fuzzy numbers as inputs. This algorithm is based on the
+	extension principle and the decomposition theorem. It turns out that
+	using the extension principle to extend the capability of the standard
+	membership update equation to deal with a linguistic vector has a huge
+	computational complexity. In order to cope with this problem, an
+	efficient method based on fuzzy arithmetic and optimization has been
+	developed and analyzed. We also carefully examine and prove that the
+	algorithm behaves in a way similar to the FCM in the degenerate
+	linguistic case. Synthetic data sets and the iris data set have been
+	used to illustrate the behavior of this linguistic version of the FCM

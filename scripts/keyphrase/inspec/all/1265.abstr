@@ -1,0 +1,17 @@
+Optimization of requantization parameter for MPEG transcoding
+This paper considers transcoding in which an MPEG stream is converted to a
+	low-bit-rate MPEG stream, and proposes a method in which the
+	transcoding error can be reduced by optimally selecting the
+	quantization parameter for each macroblock. In transcoding with a low
+	compression ratio, it is crucial to prohibit transcoding with a
+	requantization parameter which is 1 to 2 times the quantization
+	parameter of the input stream. Consequently, as the first step, an
+	optimization method for the requantization parameter is proposed which
+	cares for the error propagation effect by interframe prediction. Then,
+	the proposed optimization method is extended so that the method can
+	also be applied to the case of a high compression ratio in which the
+	rate-distortion curve is approximated for each macroblock in the range
+	of requantization parameters larger than 2 times the quantization
+	parameter. It is verified by a simulation experiment that the PSNR is
+	improved by 0.5 to 0.8 dB compared to the case in which a 6 Mbit/s MPEG
+	stream is not optimized by twofold recompression

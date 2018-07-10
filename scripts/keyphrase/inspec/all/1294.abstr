@@ -1,0 +1,11 @@
+Multicriterion optimization of composite laminates for maximum failure margins
+	with an interactive descent algorithm
+An interactive multicriterion optimization method for composite laminates
+	subjected to multiple loading conditions is introduced. Laminate
+	margins to initial failure (first ply failure, FPF) with respect of the
+	applied loading conditions are treated as criteria. The original
+	problem is reduced to a, bicriterion problem by introducing parameters
+	to combine criteria in a linear manner. The problem is solved by using
+	an interactive descent algorithm. Both the conditions required for a
+	discrete procedure to converge towards a Pareto optimum and numerical
+	examples are given

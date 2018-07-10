@@ -1,0 +1,17 @@
+Robust self-tuning PID controller for nonlinear systems
+In this paper, we propose a robust self-tuning PID controller suitable for
+	nonlinear systems. The control system employs a preload relay (P_Relay)
+	in series with a PID controller. The P_Relay ensures a high gain to
+	yield a robust performance. However, it also incurs a chattering
+	phenomenon. In this paper, instead of viewing the chattering as an
+	undesirable yet inevitable feature, we use it as a naturally occurring
+	signal for tuning and re-tuning the PID controller as the operating
+	regime digresses. No other explicit input signal is required. Once the
+	PID controller is tuned for a particular operating point, the relay may
+	be disabled and chattering ceases correspondingly. However, it is
+	invoked when there is a change in setpoint to another operating regime.
+	In this way, the approach is also applicable to time-varying systems as
+	the PID tuning can be continuous, based on the latest set of chattering
+	characteristics. Analysis is provided on the stability properties of
+	the control scheme. Simulation results for the level control of fluid
+	in a spherical tank using the scheme are also presented

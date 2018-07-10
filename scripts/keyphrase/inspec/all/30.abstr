@@ -1,0 +1,13 @@
+Improvements and critique on Sugeno's and Yasukawa's qualitative modeling
+Investigates Sugeno's and Yasukawa's (1993) qualitative fuzzy modeling
+	approach. We propose some easily implementable solutions for the
+	unclear details of the original paper, such as trapezoid approximation
+	of membership functions, rule creation from sample data points, and
+	selection of important variables. We further suggest an improved
+	parameter identification algorithm to be applied instead of the
+	original one. These details are crucial concerning the method's
+	performance as it is shown in a comparative analysis and helps to
+	improve the accuracy of the built-up model. Finally, we propose a
+	possible further rule base reduction which can be applied successfully
+	in certain cases. This improvement reduces the time requirement of the
+	method by up to 16% in our experiments

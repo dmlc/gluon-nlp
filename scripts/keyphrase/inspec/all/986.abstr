@@ -1,0 +1,12 @@
+Wavelet-based level-of-detail representation of 3D objects
+In this paper, we propose a 3D object LOD (Level of Detail) modeling system
+	that constructs a mesh from range images and generates the mesh of
+	various LOD using the wavelet transform. In the initial mesh
+	generation, we use the marching cube algorithm. We modify the original
+	algorithm to apply it to construct the mesh from multiple range images
+	efficiently. To get the base mesh we use the decimation algorithm which
+	simplifies a mesh with preserving the topology. Finally, when
+	reconstructing new mesh which is similar to initial mesh we calculate
+	the wavelet coefficients by using the wavelet transform. We solve the
+	critical problem of wavelet-based methods - the surface crease problem
+	- by using the mesh simplification as the base mesh generation method

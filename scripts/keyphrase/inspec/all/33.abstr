@@ -1,0 +1,10 @@
+Fuzzy control of multivariable process by modified error decoupling
+In this paper, a control concept for the squared (equal number of inputs and
+	outputs) multivariable process systems is given. The proposed control
+	system consists of two parts, single loop fuzzy controllers in each
+	loop and a centralized decoupling unit. The fuzzy control system uses
+	feedback control to minimize the error in the loop and the decoupler
+	uses an adaptive technique to mitigate loop interactions. The decoupler
+	predicts the interacting loop changes and modifies the input (error) of
+	the loop controller. The controller was tested on the simulation model
+	of "single component vaporizer" process

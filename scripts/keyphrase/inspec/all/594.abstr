@@ -1,0 +1,10 @@
+Improved analysis for the nonlinear performance of CMOS current mirrors with
+	device mismatch
+The nonlinear performance of the simple and complementary MOSFET current
+	mirrors are analyzed. Closed-form expressions are obtained for the
+	harmonic and intermodulation components resulting from a
+	multisinusoidal input current. These expressions can be used for
+	predicting the limiting values of the input current under prespecified
+	conditions of threshold-voltage mismatches and/or transconductance
+	mismatches. The case of a single input sinusoid is discussed in detail
+	and the results are compared with SPICE simulations

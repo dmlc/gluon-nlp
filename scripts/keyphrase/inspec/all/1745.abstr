@@ -1,0 +1,17 @@
+Approximate relaxed descent method for optimal control problems
+We consider an optimal control problem for systems governed by ordinary
+	differential equations with control constraints. Since no convexity
+	assumptions are made on the data, the problem is reformulated in
+	relaxed form. The relaxed state equation is discretized by the implicit
+	trapezoidal scheme and the relaxed controls are approximated by
+	piecewise constant relaxed controls. We then propose a combined descent
+	and discretization method that generates sequences of discrete relaxed
+	controls and progressively refines the discretization. Since here the
+	adjoint of the discrete state equation is not defined, we use, at each
+	iteration, an approximate derivative of the cost functional defined by
+	discretizing the continuous adjoint equation and the integral involved
+	by appropriate trapezoidal schemes. It is proved that accumulation
+	points of sequences constructed by this method satisfy the strong
+	relaxed necessary conditions for optimality for the continuous problem.
+	Finally, the computed relaxed controls can be easily approximated by
+	piecewise constant classical controls

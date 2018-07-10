@@ -1,0 +1,14 @@
+Data allocation on wireless broadcast channels for efficient query processing
+Data broadcast is an excellent method for efficient data dissemination in the
+	mobile computing environment. The application domain of data broadcast
+	will be widely expanded in the near future, where the client is
+	expected to perform complex queries or transactions on the broadcast
+	data. To reduce the access latency for processing the complex query, it
+	is beneficial to place the data accessed in a query close to each other
+	on the broadcast channel. In this paper, we propose an efficient
+	algorithm to determine the allocation of the data on the broadcast
+	channel such that frequently co-accessed data are not only allocated
+	close to each other, but also in a particular order which optimizes the
+	performance of query processing. Our mechanism is based on the
+	well-known problem named optimal linear ordering. Experiments are
+	performed to justify the benefit of our approach

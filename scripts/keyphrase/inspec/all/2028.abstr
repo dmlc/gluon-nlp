@@ -1,0 +1,14 @@
+Centroid detection based on optical correlation
+We propose three correlation-based methods to simultaneously detect the
+	centroids of multiple objects in an input scene. The first method is
+	based on the modulus of the moment function, the second method is based
+	on squaring the moment function, and the third method works with a
+	single intensity filter. These methods are invariant to changes in the
+	position, orientation, and scale of the object and result in good
+	noise-smoothing performance. We use spatial light modulators (SLMs) to
+	directly implement the input of the image and filter information for
+	the purpose of these approaches. We present results showing simulations
+	from different approaches and provide comparisons between
+	optical-correlation- and digital-moment-based methods. Experimental
+	results corresponding to an optical correlator using SLMs for the
+	centroid detection are also presented

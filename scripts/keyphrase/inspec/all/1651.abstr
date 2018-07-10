@@ -1,0 +1,17 @@
+H-matrix approximation for the operator exponential with applications
+We previously developed a data-sparse and accurate approximation to parabolic
+	solution operators in the case of a rather general elliptic part given
+	by a strongly P-positive operator . Also a class of matrices
+	(H-matrices) has been analysed which are data-sparse and allow an
+	approximate matrix arithmetic with almost linear complexity. In
+	particular, the matrix-vector/matrix-matrix product with such matrices
+	as well as the computation of the inverse have linear-logarithmic cost.
+	In this paper, we apply the H-matrix techniques to approximate the
+	exponent of an elliptic operator. Starting with the Dunford-Cauchy
+	representation for the operator exponent, we then discretise the
+	integral by the exponentially convergent quadrature rule involving a
+	short sum of resolvents. The latter are approximated by the H-matrices.
+	Our algorithm inherits a two-level parallelism with respect to both the
+	computation of resolvents and the treatment of different time values.
+	In the case of smooth data (coefficients, boundaries), we prove the
+	linear-logarithmic complexity of the method

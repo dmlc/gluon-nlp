@@ -1,0 +1,11 @@
+Control of transient thermal response during sequential open-die forging: a
+	trajectory optimization approach
+A trajectory optimization approach is applied to the design of a sequence of
+	open-die forging operations in order to control the transient thermal
+	response of a large titanium alloy billet. The amount of time the
+	billet is soaked in furnace prior to each successive forging operation
+	is optimized to minimize the total process time while simultaneously
+	satisfying constraints on the maximum and minimum values of the billet
+	temperature distribution to avoid microstructural defects during
+	forging. The results indicate that a "differential" heating profile is
+	the most effective at meeting these design goals

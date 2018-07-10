@@ -1,0 +1,17 @@
+An adaptive sphere-fitting method for sequential tolerance control
+The machining of complex parts typically involves a logical and chronological
+	sequence of n operations on m machine tools. Because manufacturing
+	datums cannot always match design constraints, some of the design
+	specifications imposed on the part are usually satisfied by distinct
+	subsets of the n operations prescribed in the process plan.
+	Conventional tolerance control specifies a fixed set point for each
+	operation and a permissible variation about this set point to insure
+	compliance with the specifications, whereas sequential tolerance
+	control (STC) uses real-time measurement information at the completion
+	of one stage to reposition the set point for subsequent operations.
+	However, it has been shown that earlier sphere-fitting methods for STC
+	can lead to inferior solutions when the process distributions are
+	skewed. This paper introduces an extension of STC that uses an adaptive
+	sphere-fitting method that significantly improves the yield in the
+	presence of skewed distributions as well as significantly reducing the
+	computational effort required by earlier probabilistic search methods

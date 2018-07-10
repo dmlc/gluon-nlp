@@ -1,0 +1,12 @@
+A new identification approach for FIR models
+The identification of stochastic discrete systems disturbed with noise is
+	discussed in this brief. The concept of general prediction error (GPE)
+	criterion is introduced for the time-domain estimate with optimal
+	frequency estimation (OFE) introduced for the frequency-domain
+	estimate. The two estimation methods are combined to form a new
+	identification algorithm, which is called the empirical
+	frequency-domain optimal parameter (EFOP) estimate, for the finite
+	impulse response (FIR) model interfered by noise. The algorithm
+	theoretically provides the global optimum of the model frequency-domain
+	estimate. Some simulation examples are given to illustrate the new
+	identification method

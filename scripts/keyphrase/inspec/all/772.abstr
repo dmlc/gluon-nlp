@@ -1,0 +1,19 @@
+Meshed atlases for real-time procedural solid texturing
+We describe an implementation of procedural solid texturing that uses the
+	texture atlas, a one-to-one mapping from an object's surface into its
+	texture space. The method uses the graphics hardware to rasterize the
+	solid texture coordinates as colors directly into the atlas. A
+	texturing procedure is applied per-pixel to the texture map, replacing
+	each solid texture coordinate with its corresponding procedural solid
+	texture result. The procedural solid texture is then mapped back onto
+	the object surface using standard texture mapping. The implementation
+	renders procedural solid textures in real time, and the user can design
+	them interactively. The quality of this technique depends greatly on
+	the layout of the texture atlas. A broad survey of texture atlas
+	schemes is used to develop a set of general purpose mesh atlases and
+	tools for measuring their effectiveness at distributing as many
+	available texture samples as evenly across the surface as possible. The
+	main contribution of this paper is a new multiresolution texture atlas.
+	It distributes all available texture samples in a nearly uniform
+	distribution. This multiresolution texture atlas also supports
+	MIP-mapped minification antialiasing and linear magnification filtering

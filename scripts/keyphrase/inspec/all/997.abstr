@@ -1,0 +1,12 @@
+Production capacity of flexible manufacturing systems with fixed production
+	ratios
+Determining the production capacity of flexible manufacturing systems is a very
+	important issue in the design of such systems. We propose an approach
+	for determining the production capacity (i.e. the maximum production
+	rate) of a flexible manufacturing system with several part types,
+	dedicated pallets, and fixed production ratios among the different part
+	types. We show that the problem reduces to the determination of a
+	single parameter for which we propose an iterative procedure.
+	Simulation or approximate analytical techniques can be used as the
+	building block performance evaluation technique in the iterative
+	procedure

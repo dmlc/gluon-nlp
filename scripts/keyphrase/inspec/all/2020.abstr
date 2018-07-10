@@ -1,0 +1,20 @@
+Restoration of broadband imagery steered with a liquid-crystal optical phased
+	array
+In many imaging applications, it is highly desirable to replace mechanical
+	beam-steering components (i.e., mirrors and gimbals) with a
+	nonmechanical device. One such device is a nematic liquid crystal
+	optical phased array (LCOPA). An LCOPA can implement a blazed phase
+	grating to steer the incident light. However, when a phase grating is
+	used in a broadband imaging system, two adverse effects can occur.
+	First, dispersion will cause different incident wavelengths arriving at
+	the same angle to be steered to different output angles, causing
+	chromatic aberrations in the image plane. Second, the device will steer
+	energy not only to the first diffraction order, but to others as well.
+	This multiple-order effect results in multiple copies of the scene
+	appearing in the image plane. We describe a digital image restoration
+	technique designed to overcome these degradations. The proposed
+	postprocessing technique is based on a Wiener deconvolution filter. The
+	technique, however, is applicable only to scenes containing objects
+	with approximately constant reflectivities over the spectral region of
+	interest. Experimental results are presented to demonstrate the
+	effectiveness of this technique

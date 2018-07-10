@@ -1,0 +1,12 @@
+Parallel implicit predictor corrector methods
+The performance of parallel codes for the solution of initial value problems is
+	usually strongly sensitive to the dimension of the continuous problem.
+	This is due to the overhead related to the exchange of information
+	among the processors and motivates the problem of minimizing the amount
+	of communications. According to this principle, we define the so called
+	Parallel Implicit Predictor Corrector Methods and in this class we
+	derive A-stable, L-stable and numerically zero-stable formulas. The
+	latter property refers to the zero-stability condition of a given
+	formula when roundoff errors are introduced in its coefficients due to
+	their representation in finite precision arithmetic. Some numerical
+	experiment show the potentiality of this approach

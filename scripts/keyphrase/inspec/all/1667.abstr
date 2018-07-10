@@ -1,0 +1,13 @@
+Combining constraint programming and linear programming on an example of bus
+	driver scheduling
+Provides details of a successful application where the column generation
+	algorithm was used to combine constraint programming and linear
+	programming. In the past, constraint programming and linear programming
+	were considered to be two competing technologies that solved similar
+	types of problems. Both these technologies had their strengths and
+	weaknesses. The paper shows that the two technologies can be combined
+	together to extract the strengths of both these technologies. Details
+	of a real-world application to optimize bus driver duties are given.
+	This system was developed by ILOG for a major software house in Japan
+	using ILOG-Solver and ILOG-CPLEX, constraint programming and linear
+	programming C/C++ libraries

@@ -1,0 +1,15 @@
+Quantized-State Systems: A DEVS-approach for continuous system simulation
+A new class of dynamical systems, Quantized State Systems or QSS, is introduced
+	in this paper. QSS are continuous time systems where the input
+	trajectories are piecewise constant functions and the state variable
+	trajectories - being themselves piecewise linear functions - are
+	converted into piecewise constant functions via a quantization function
+	equipped with hysteresis. It is shown that QSS can be exactly
+	represented and simulated by a discrete event model, within the
+	framework of the DEVS-approach. Further, it is shown that QSS can be
+	used to approximate continuous systems, thus allowing their
+	discrete-event simulation in opposition to the classical discrete-time
+	simulation. It is also shown that in an approximating QSS, some
+	stability properties of the original system are conserved and the
+	solutions of the QSS go to the solutions of the original system when
+	the quantization goes to zero

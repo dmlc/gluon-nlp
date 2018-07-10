@@ -1,0 +1,12 @@
+Performance comparison between PID and dead-time compensating controllers
+This paper is intended to answer the question: "When can a simple dead-time
+	compensator be expected to perform better than a PID?". The performance
+	criterion used is the integrated absolute error (IAE). It is compared
+	for PI and PID controllers and a simple dead-time compensator (DTC)
+	when a step load disturbance is applied at the plant input. Both stable
+	and integrating processes are considered. For a fair comparison the
+	controllers should provide equal robustness in some sense. Here, as a
+	measure of robustness, the H/sub infinity / norm of the sum of the
+	absolute values of the sensitivity function and the complementary
+	sensitivity function is used. Performance of the DTC's is given also as
+	a function of dead-time margin (D/sub M/)

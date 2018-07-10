@@ -1,0 +1,13 @@
+A 120-mW 3-D rendering engine with 6-Mb embedded DRAM and 3.2-GB/s runtime
+	reconfigurable bus for PDA chip
+A low-power three-dimensional (3-D) rendering engine is implemented as part of
+	a mobile personal digital assistant (PDA) chip. Six-megabit embedded
+	DRAM macros attached to 8-pixel-parallel rendering logic are logically
+	localized with a 3.2-GB/s runtime reconfigurable bus, reducing the area
+	by 25% compared with conventional local frame-buffer architectures. The
+	low power consumption is achieved by polygon-dependent access to the
+	embedded DRAM macros with line-block mapping providing
+	read-modify-write data transaction. The 3-D rendering engine with
+	2.22-Mpolygons/s drawing speed was fabricated using 0.18- mu m CMOS
+	embedded memory logic technology. Its area is 24 mm/sup 2/ and its
+	power consumption is 120 mW

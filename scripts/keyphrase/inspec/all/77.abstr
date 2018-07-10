@@ -1,0 +1,14 @@
+Modeling frequently accessed wireless data with weak consistency
+To reduce the response times of wireless data access in a mobile network,
+	caches are utilized in wireless handheld devices. If the original data
+	entry has been updated, the cached data in the handheld device becomes
+	stale. Thus, a mechanism is required to predict when the cached copy
+	will expire. This paper studies a weakly consistent data access
+	mechanism that computes the time-to-live (TTL) interval to predict the
+	expiration time. We propose an analytic model to investigate this
+	TTL-based algorithm for frequently accessed data. The analytic model is
+	validated against simulation experiments. Our study quantitatively
+	indicates how the TTL-based algorithm reduces the wireless
+	communication cost by increasing the probability of stale accesses.
+	Depending on the requirements of the application, appropriate parameter
+	values can be selected based on the guidelines provided

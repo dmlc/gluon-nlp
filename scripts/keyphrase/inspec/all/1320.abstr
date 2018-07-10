@@ -1,0 +1,22 @@
+Securing the Internet routing infrastructure
+The unprecedented growth of the Internet over the last years, and the
+	expectation of an even faster increase in the numbers of users and
+	networked systems, resulted in the Internet assuming its position as a
+	mass communication medium. At the same time, the emergence of an
+	increasingly large number of application areas and the evolution of the
+	networking technology suggest that in the near future the Internet may
+	become the single integrated communication infrastructure. However, as
+	the dependence on the networking infrastructure grows, its security
+	becomes a major concern, in light of the increased attempt to
+	compromise the infrastructure. In particular, the routing operation is
+	a highly visible target that must be shielded against a wide range of
+	attacks. The injection of false routing information can easily degrade
+	network performance, or even cause denial of service for a large number
+	of hosts and networks over a long period of time. Different approaches
+	have been proposed to secure the routing protocols, with a variety of
+	countermeasures, which, nonetheless, have not eradicated the
+	vulnerability of the routing infrastructure. In this article, we survey
+	the up-to-date secure routing schemes. that appeared over the last few
+	years. Our critical point of view and thorough review of the literature
+	are an attempt to identify directions for future research on an indeed
+	difficult and still largely open problem

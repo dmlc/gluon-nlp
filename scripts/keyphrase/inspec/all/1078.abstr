@@ -1,0 +1,11 @@
+Action aggregation and defuzzification in Mamdani-type fuzzy systems
+Discusses the issues of action aggregation and defuzzification in Mamdani-type
+	fuzzy systems. The paper highlights the shortcomings of defuzzification
+	techniques associated with the customary interpretation of the sentence
+	connective 'and' by means of the set union operation. These include
+	loss of smoothness of the output characteristic and inaccurate mapping
+	of the fuzzy response. The most appropriate procedure for aggregating
+	the outputs of different fuzzy rules and converting them into crisp
+	signals is then suggested. The advantages in terms of increased
+	transparency and mapping accuracy of the fuzzy response are
+	demonstrated

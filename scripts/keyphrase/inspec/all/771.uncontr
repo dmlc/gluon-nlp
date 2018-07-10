@@ -1,0 +1,10 @@
+printer color management; digital image printing; nonlinear ink-mixing
+	behavior; redundant solutions; Pareto-optimal formulations; cost versus
+	colorimetric accuracy trade-offs; image data conversion; CIELAB to CMYK
+	color conversion schemes; color characterization data set; artificial
+	neural networks; transfer functions; tetrahedral interpolation;
+	optimization; tetrahedra; interpolation-based approach; Qhull program;
+	user control; cost versus reproduction accuracy; user-specified print
+	objectives; maximum allowable ink; constraints; gamut compression
+	features; clipping; MacBeth ColorChecker chart; grey component
+	replacement; rendering intent

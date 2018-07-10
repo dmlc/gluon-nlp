@@ -1,0 +1,15 @@
+Search for efficient solutions of multi-criterion problems by target-level
+	method
+The target-level method is considered for solving continuous multi-criterion
+	maximization problems. In the first step, the decision-maker specifies
+	a target-level point (the desired criterion values); then in the set of
+	vector evaluations we seek points that are closest to the target point
+	in the Chebyshev metric. The vector evaluations obtained in this way
+	are in general weakly efficient. To identify the efficient evaluations,
+	the second step maximizes the sum of the criteria on the set generated
+	in step 1. We prove the relationship between the evaluations and
+	decisions obtained by the proposed procedure, on the one hand, and the
+	efficient (weakly efficient) evaluations and decisions, on the other
+	hand. If the Edgeworth-Pareto hull of the set of vector evaluations is
+	convex, the set of efficient vector evaluations can be approximated by
+	the proposed method

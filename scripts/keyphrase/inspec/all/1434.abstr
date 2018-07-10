@@ -1,0 +1,12 @@
+A simple etalon-stabilized visible laser diode
+Visible laser diodes (LDs) are inexpensively available with
+	single-transverse-mode, single-longitudinal-mode operation with a
+	coherence length in the metre range. With constant current bias and
+	constant operating temperature, the optical output power and operating
+	wavelength are stable. A simple and inexpensive way is developed to
+	maintain a constant LD temperature as the temperature of the local
+	environment varies, by monitoring the initially changing wavelength
+	with an external etalon and using this information to apply a heating
+	correction to the monitor photodiode commonly integral to the LD
+	package. The fractional wavelength stability achieved is limited by the
+	solid etalon to 7*10/sup -6/ degrees C/sup -1/

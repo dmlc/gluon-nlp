@@ -1,0 +1,10 @@
+Lifting factorization of discrete W transform
+A general method is proposed to factor the type-IV discrete W transform
+	(DWT-IV) into lifting steps and additions. Then, based on the
+	relationships among various types of DWTs, four types of DWTs are
+	factored into lifting steps and additions. After approximating the
+	lifting matrices, we get four types of new integer DWTs (IntDWT-I,
+	IntDWT-II, IntDWT-III, and IntDWT-IV) which are floating-point
+	multiplication free. Integer-to-integer transforms (II-DWT), which
+	approximate to DWT, are also proposed. Fast algorithms are given for
+	the new transforms and their computational complexities are analyzed

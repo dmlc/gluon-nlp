@@ -1,0 +1,11 @@
+Applying BGL to computational geometry
+The author applies Boost Graph Library to the domain of computational geometry.
+	First, he formulates a concrete problem in graph terms. Second, he
+	develops a way to transform the output of an existing algorithm into an
+	appropriate Boost Graph Library data structure. Finally, he implements
+	two new algorithms for my Boost Graph Library graph. The first
+	algorithm gets the job done, but could have been written in any
+	programming language. The second algorithm, however, shows the power of
+	Boost Graph Library's generic programming approach.Graphs, graphics,
+	and generic programming combine in this novel use of the Boost Graph
+	Library

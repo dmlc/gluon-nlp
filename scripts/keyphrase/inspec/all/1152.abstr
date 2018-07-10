@@ -1,0 +1,29 @@
+Incorporating multi-leaf collimator leaf sequencing into iterative IMRT
+	optimization
+Intensity modulated radiation therapy (IMRT) treatment planning typically
+	considers beam optimization and beam delivery as separate tasks.
+	Following optimization, a multi-leaf collimator (MLC) or other beam
+	delivery device is used to generate fluence patterns for patient
+	treatment delivery. Due to limitations and characteristics of the MLC,
+	the deliverable intensity distributions often differ from those
+	produced by the optimizer, leading to differences between the delivered
+	and the optimized doses. Objective function parameters are then
+	adjusted empirically, and the plan is reoptimized to achieve a desired
+	deliverable dose distribution. The resulting plan, though usually
+	acceptable, may not be the best achievable. A method has been developed
+	to incorporate the MLC restrictions into the optimization process. Our
+	in-house IMRT system has been modified to include the calculation of
+	the deliverable intensity into the optimizer. In this process, prior to
+	dose calculation, the MLC leaf sequencer is used to convert intensities
+	to dynamic MLC sequences, from which the deliverable intensities are
+	then determined. All other optimization steps remain the same. To
+	evaluate the effectiveness of deliverable-based optimization, 17
+	patient cases have been studied. Compared with standard optimization
+	plus conversion to deliverable beams, deliverable-based optimization
+	results show improved isodose coverage and a reduced dose to critical
+	structures. Deliverable-based optimization results are close to the
+	original nondeliverable optimization results, suggesting that IMRT can
+	overcome the MLC limitations by adjusting individual beamlets. The use
+	of deliverable-based optimization may reduce the need for empirical
+	adjustment of objective function parameters and reoptimization of a
+	plan to achieve desired results

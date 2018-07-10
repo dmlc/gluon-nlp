@@ -1,0 +1,11 @@
+Micro-optical realization of arrays of selectively addressable dipole traps: a
+	scalable configuration for quantum computation with atomic qubits
+We experimentally demonstrate novel structures for the realization of registers
+	of atomic qubits: We trap neutral atoms in one- and two-dimensional
+	arrays of far-detuned dipole traps obtained by focusing a red-detuned
+	laser beam with a microfabricated array of microlenses. We are able to
+	selectively address individual trap sites due to their large lateral
+	separation of 125 mu m. We initialize and read out different internal
+	states for the individual sites. We also create two interleaved sets of
+	trap arrays with adjustable separation, as required for many proposed
+	implementations of quantum gate operations

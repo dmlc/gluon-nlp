@@ -1,0 +1,13 @@
+Virus hunting
+We all appreciate the need for, and hopefully we have all deployed, anti-virus
+	software. The good news is that AV software has come a long way fast.
+	Four or so years ago it was true to write that AV software could not
+	detect Trojan Horses and similar intrusion attempts. Now it can and
+	does. McAfee's VirusScan, for example, goes one further; it detects
+	viruses, worms and Trojan Horses and deploys itself as a firewall to
+	filter data packets, control access to Internet resources, activate
+	rule sets for specific applications, in general to protect against
+	hackers. But like so much software, we use it with little thought as to
+	how it came to do its job. Behind the scenes there is an army of top
+	notch programmers trying to stay ahead of the baddies who, at the last
+	count, had produced some 60,000 viruses

@@ -1,0 +1,12 @@
+Asymptotical stability in discrete-time neural networks
+In this work, we present a proof of the existence of a fixed point and a
+	generalized sufficient condition that guarantees the stability of it in
+	discrete-time neural networks by using the Lyapunov function method. We
+	also show that for both symmetric and asymmetric connections, the
+	unique attractor is a fixed point when several conditions are
+	satisfied. This is an extended result of Chen and Aihara (see Physica
+	D, vol. 104, no. 3/4, p. 286-325, 1997). In particular, we further
+	study the stability of equilibrium in discrete-time neural networks
+	with the connection weight matrix in form of an interval matrix.
+	Finally, several examples are shown to illustrate and reinforce our
+	theory

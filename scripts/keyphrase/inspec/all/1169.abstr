@@ -1,0 +1,12 @@
+An efficient algorithm for sequential generation of failure states in a network
+	with multi-mode components
+In this work, a new algorithm for the sequential generation of failure states
+	in a network with multi-mode components is proposed. The algorithm
+	presented in the paper transforms the state enumeration problem into a
+	K-shortest paths problem. Taking advantage of the inherent efficiency
+	of an algorithm for shortest paths enumeration and also of the
+	characteristics of the reliability problem in which it will be used, an
+	algorithm with lower complexity than the best algorithm in the
+	literature for solving this problem, was obtained. Computational
+	results will be presented for comparing the efficiency of both
+	algorithms in terms of CPU time and for problems of different size

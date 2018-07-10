@@ -1,0 +1,15 @@
+Bad pixel identification by means of principal components analysis
+Bad pixels are defined as those pixels showing a temporal evolution of the
+	signal different from the rest of the pixels of a given array.
+	Principal component analysis helps us to understand the definition of a
+	statistical distance associated with each pixels, and using this
+	distance it is possible to identify those pixels labeled as bad pixels.
+	The spatiality of a pixel is also calculated. An assumption about the
+	normality of the distribution of the distances of the pixels is
+	revised. Although the influence on the robustness of the identification
+	algorithm is negligible, the definition of a parameter related with
+	this nonnormality helps to identify those principal components and
+	eigenimages responsible for the departure from a multinormal
+	distribution. The method for identifying the bad pixels is successfully
+	applied to a set of frames obtained from a CCD visible and a focal
+	plane array (FPA) IR camera

@@ -1,0 +1,18 @@
+A self-adjusting quality of service control scheme
+We propose and analyze a self-adjusting Quality of Service (QoS) control scheme
+	with the goal of optimizing the system reward as a result of servicing
+	different priority clients with varying workload, QoS and
+	reward/penalty requirements. Our scheme is based on resource
+	partitioning and designated "degrade QoS areas" such that system
+	resources are partitioned into priority areas each of which is reserved
+	specifically to serve only clients in a corresponding class with no QoS
+	degradation, plus one "degraded QoS area" into which all clients can be
+	admitted with QoS adjustment being applied only to the lowest priority
+	clients. We show that the best partition is dictated by the workload
+	and the reward/penalty characteristics of clients in difference
+	priority classes. The analysis results can be used by a QoS manager to
+	optimize the system total reward dynamically in response to changing
+	workloads at run time. We demonstrate the validity of our scheme by
+	means of simulation and comparing the proposed QoS self-adjusting
+	scheme with those that do not use resource partitioning or designated
+	degraded QoS areas

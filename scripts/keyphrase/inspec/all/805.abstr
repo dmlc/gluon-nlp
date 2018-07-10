@@ -1,0 +1,15 @@
+Active pitch control in larger scale fixed speed horizontal axis wind turbine
+	systems. I. linear controller design
+This paper reviews and addresses the principles of linear controller design of
+	the fixed speed wind turbine system in above rated wind speed, using
+	pitch angle control of the blades and applying modern control theory.
+	First, the nonlinear equations of the system are built in under some
+	reasonable suppositions. Then, the nonlinear equations are linearised
+	at set operating point and digital simulation results are shown in this
+	paper. Finally, a linear quadratic optimal feedback controller is
+	designed and the dynamics of the closed circle system are simulated
+	with digital calculation. The advantages and disadvantages of the
+	assumptions and design method are also discussed. Because of the
+	inherent characteristics of the linear system control theory, the
+	performance of the linear controller is not sufficient for operating
+	wind turbines, as is discussed

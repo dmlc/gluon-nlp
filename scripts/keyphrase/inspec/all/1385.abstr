@@ -1,0 +1,17 @@
+Cache invalidation and replacement strategies for location-dependent data in
+	mobile environments
+Mobile location-dependent information services (LDISs) have become increasingly
+	popular in recent years. However, data caching strategies for LDISs
+	have thus far received little attention. In this paper, we study the
+	issues of cache invalidation and cache replacement for
+	location-dependent data under a geometric location model. We introduce
+	a new performance criterion, called caching efficiency, and propose a
+	generic method for location-dependent cache invalidation strategies. In
+	addition, two cache replacement policies, PA and PAID, are proposed.
+	Unlike the conventional replacement policies, PA and PAID take into
+	consideration the valid scope area of a data value. We conduct a series
+	of simulation experiments to study the performance of the proposed
+	caching schemes. The experimental results show that the proposed
+	location-dependent invalidation scheme is very effective and the PA and
+	PAID policies significantly outperform the conventional replacement
+	policies

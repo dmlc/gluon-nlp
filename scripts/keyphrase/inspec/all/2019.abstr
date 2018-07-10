@@ -1,0 +1,20 @@
+Effective moving cast shadow detection for monocular color traffic image
+	sequences
+For an accurate scene analysis using monocular color traffic image sequences, a
+	robust segmentation of moving vehicles from the stationary background
+	is generally required. However, the presence of moving cast shadow may
+	lead to an inaccurate vehicle segmentation, and as a result, may lead
+	to further erroneous scene analysis. We propose an effective method for
+	the detection of moving cast shadow. By observing the characteristics
+	of cast shadow in the luminance, chrominance, gradient density, and
+	geometry domains, a combined probability map, called a shadow
+	confidence score (SCS), is obtained. From the edge map of the input
+	image, each edge pixel is examined to determine whether it belongs to
+	the vehicle region based on its neighboring SCSs. The cast shadow is
+	identified as those regions with high SCSs, which are outside the
+	convex hull of the selected vehicle edge pixels. The proposed method is
+	tested on 100 vehicle images taken under different lighting conditions
+	(sunny and cloudy), viewing angles (roadside and overhead), vehicle
+	sizes (small, medium, and large), and colors (similar to the road and
+	not). The results indicate that an average error rate of around 14% is
+	obtained while the lowest error rate is around 3% for large vehicles

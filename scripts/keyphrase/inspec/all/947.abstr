@@ -1,0 +1,19 @@
+The fully entangled fraction as an inclusive measure of entanglement
+	applications
+Characterizing entanglement in all but the simplest case of a two qubit pure
+	state is a hard problem, even understanding the relevant experimental
+	quantities that are related to entanglement is difficult. It may not be
+	necessary, however, to quantify the entanglement of a state in order to
+	quantify the quantum information processing significance of a state. It
+	is known that the fully entangled fraction has a direct relationship to
+	the fidelity of teleportation maximized under the actions of local
+	unitary operations. In the case of two qubits we point out that the
+	fully entangled fraction can also be related to the fidelities,
+	maximized under the actions of local unitary operations, of other
+	important quantum information tasks such as dense coding, entanglement
+	swapping and quantum cryptography in such a way as to provide an
+	inclusive measure of these entanglement applications. For two qubit
+	systems the fully entangled fraction has a simple known closed-form
+	expression and we establish lower and upper bounds of this quantity
+	with the concurrence. This approach is readily extendable to more
+	complicated systems

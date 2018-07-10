@@ -1,0 +1,22 @@
+Modeling and simulation of an ABR flow control algorithm using a virtual
+	source/virtual destination switch
+The available bit rate (ABR) service class of asynchronous transfer mode
+	networks uses a feedback control mechanism to adapt to varying link
+	capacities. The virtual source/virtual destination (VS/VD) technique
+	offers the possibility of segmenting the otherwise end-to-end ABR
+	control loop into separate loops. The improved feedback delay and
+	control of ABR traffic inside closed segments provide a better
+	performance for ABR connections. This article presents the use of
+	classical linear control theory to model and develop an ABR VS/VD flow
+	control algorithm. Discrete event simulations are used to analyze the
+	behavior of the algorithm with respect to transient behavior and
+	correctness of the control model. Linear control theory offers the
+	means to derive correct choices of parameters and to assess performance
+	issues, such as stability of the system, during the design phase. The
+	performance goals are high link utilization, fair bandwidth
+	distribution, and robust operation in various environments, which are
+	verified by discrete event simulations. The major contribution of this
+	work is the use of analytic methods (linear control theory) to model
+	and design an ABR flow control algorithm tailored for the special
+	layout of a VS/VD switch, and the use of simulation techniques to
+	verify the result

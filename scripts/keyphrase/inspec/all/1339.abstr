@@ -1,0 +1,7 @@
+Edge-colorings with no large polychromatic stars
+Given a graph G and a positive integer r, let f/sub r/(G) denote the largest
+	number of colors that can be used in a coloring of E(G) such that each
+	vertex is incident to at most r colors. For all positive integers n and
+	r, we determine f/sub r/(K/sub n,n/) exactly and f/sub r/(K/sub n/)
+	within 1. In doing so, we disprove a conjecture by Y. Manoussakis et
+	al. (1996)

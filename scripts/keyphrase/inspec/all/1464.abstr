@@ -1,0 +1,23 @@
+LR parsing for conjunctive grammars
+The generalized LR parsing algorithm for context-free grammars, introduced by
+	Tomita in 1986, is a polynomial-time implementation of nondeterministic
+	LR parsing that uses graph-structured stack to represent the contents
+	of the nondeterministic parser's pushdown for all possible branches of
+	computation at a single computation step. It has been specifically
+	developed as a solution for practical parsing tasks arising in
+	computational linguistics, and indeed has proved itself to be very
+	suitable for natural language processing. Conjunctive grammars extend
+	context-free grammars by allowing the use of an explicit intersection
+	operation within grammar rules. This paper develops a new LR-style
+	parsing algorithm for these grammars, which is based on the very same
+	idea of a graph-structured pushdown, where the simultaneous existence
+	of several paths in the graph is used to perform the mentioned
+	intersection operation. The underlying finite automata are treated in
+	the most general way: instead of showing the algorithm's correctness
+	for some particular way of constructing automata, the paper defines a
+	wide class of automata usable with a given grammar, which includes not
+	only the traditional LR(k) automata, but also, for instance, a trivial
+	automaton with a single reachable state. A modification of the SLR(k)
+	table construction method that makes use of specific properties of
+	conjunctive grammars is provided as one possible way of making finite
+	automata to use with the algorithm

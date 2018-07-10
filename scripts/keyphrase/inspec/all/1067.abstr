@@ -1,0 +1,17 @@
+Quantum-information processing by nuclear magnetic resonance: Experimental
+	implementation of half-adder and subtractor operations using an
+	oriented spin-7/2 system
+The advantages of using quantum systems for performing many computational tasks
+	have already been established. Several quantum algorithms have been
+	developed which exploit the inherent property of quantum systems such
+	as superposition of states and entanglement for efficiently performing
+	certain tasks. The experimental implementation has been achieved on
+	many quantum systems, of which nuclear magnetic resonance has shown the
+	largest progress in terms of number of qubits. This paper describes the
+	use of a spin-7/2 as a three-qubit system and experimentally implements
+	the half-adder and subtractor operations. The required qubits are
+	realized by partially orienting /sup 133/Cs nuclei in a
+	liquid-crystalline medium, yielding a quadrupolar split well-resolved
+	septet. Another feature of this paper is the proposal that labeling of
+	quantum states of system can be suitably chosen to increase the
+	efficiency of a computational task

@@ -1,0 +1,15 @@
+An optimization based approach to the train operator scheduling problem at
+	Singapore MRT
+Singapore Mass Rapid Transit (SMRT) operates two train lines with 83 kilometers
+	of track and 48 stations. A total of 77 trains are in operation during
+	peak hours and 41 during off-peak hours. We report on an optimization
+	based approach to develop a computerized train-operator scheduling
+	system that has been implemented at SMRT. The approach involves a
+	bipartite matching algorithm for the generation of night duties and a
+	tabu search algorithm for the generation of day duties. The system
+	automates the train-operator scheduling process at SMRT and produces
+	favorable schedules in comparison with the manual process. It is also
+	able to handle the multiple objectives inherent in the crew scheduling
+	system. While trying to minimize the system wide crew-related costs,
+	the system is also able to address concern with respect to the number
+	of split duties

@@ -1,0 +1,16 @@
+Geometric source separation: merging convolutive source separation with
+	geometric beamforming
+Convolutive blind source separation and adaptive beamforming have a similar
+	goal-extracting a source of interest (or multiple sources) while
+	reducing undesired interferences. A benefit of source separation is
+	that it overcomes the conventional cross-talk or leakage problem of
+	adaptive beamforming. Beamforming on the other hand exploits geometric
+	information which is often readily available but not utilized in blind
+	algorithms. We propose to join these benefits by combining cross-power
+	minimization of second-order source separation with geometric linear
+	constraints used in adaptive beamforming. We find that the geometric
+	constraints resolve some of the ambiguities inherent in the
+	independence criterion such as frequency permutations and degrees of
+	freedom provided by additional sensors. We demonstrate the new method
+	in performance comparisons for actual room recordings of two and three
+	simultaneous acoustic sources

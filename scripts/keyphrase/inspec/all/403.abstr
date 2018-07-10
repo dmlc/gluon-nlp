@@ -1,0 +1,16 @@
+High-voltage transistor scaling circuit techniques for high-density
+	negative-gate channel-erasing NOR flash memories
+In order to scale high-voltage transistors for high-density negative-gate
+	channel-erasing NOR flash memories, two circuit techniques were
+	developed. A proposed level shifter with low operating voltage is
+	composed of three parts, a latch holding the negative erasing voltage,
+	two coupling capacitors connected with the latched nodes in the latch,
+	and high-voltage drivers inverting the latch, resulting in reduction of
+	the maximum internal voltage by 0.5 V. A proposed high-voltage
+	generator adds a path-gate logic to a conventional high-voltage
+	generator to realize both low noise and low ripple voltage, resulting
+	in a reduction of the maximum internal voltage by 0.5 V. As a result,
+	these circuit techniques along with high coupling-ratio cell technology
+	can scale down the high-voltage transistors by 15% and can realize
+	higher density negative-gate channel-erase NOR flash memories in
+	comparison with the source-erase NOR flash memories

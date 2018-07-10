@@ -1,0 +1,17 @@
+On-line robust processing techniques for elimination of measurement drop-out
+When processing measurement data, it is usually assumed that some amount of
+	normally distributed measurement noise is present. In some situations,
+	outliers are present in the measurements and consequently the noise is
+	far from normally distributed. In this case classical least-squares
+	procedures for estimating Fourier spectra (or derived quantities like
+	the frequency response function) can give results which are inaccurate
+	or even useless. In this paper, a novel technique for the on-line
+	processing of measurement outliers will be proposed. Both the
+	computation speed and the accuracy of the technique presented will be
+	compared with different classical approaches for handling outliers in
+	measurement data (i.e. filtering techniques, outlier rejection
+	techniques and robust regression techniques). In particular, all
+	processing techniques will be validated by applying them to the problem
+	of speckle drop-out in optical vibration measurements (performed with a
+	laser Doppler vibrometer), which typically causes outliers in the
+	measurements

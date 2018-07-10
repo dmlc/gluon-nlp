@@ -1,0 +1,24 @@
+Perceptual audio coding using adaptive pre- and post-filters and lossless
+	compression
+This paper proposes a versatile perceptual audio coding method that achieves
+	high compression ratios and is capable of low encoding/decoding delay.
+	It accommodates a variety of source signals (including both music and
+	speech) with different sampling rates. It is based on separating
+	irrelevance and redundancy reductions into independent functional
+	units. This contrasts traditional audio coding where both are
+	integrated within the same subband decomposition. The separation allows
+	for the independent optimization of the irrelevance and redundancy
+	reduction units. For both reductions, we rely on adaptive filtering and
+	predictive coding as much as possible to minimize the delay. A
+	psycho-acoustically controlled adaptive linear filter is used for the
+	irrelevance reduction, and the redundancy reduction is carried out by a
+	predictive lossless coding scheme, which is termed weighted cascaded
+	least mean squared (WCLMS) method. Experiments are carried out on a
+	database of moderate size which contains mono-signals of different
+	sampling rates and varying nature (music, speech, or mixed). They show
+	that the proposed WCLMS lossless coder outperforms other competing
+	lossless coders in terms of compression ratios and delay, as applied to
+	the pre-filtered signal. Moreover, a subjective listening test of the
+	combined pre-filter/lossless coder and a state-of-the-art perceptual
+	audio coder (PAC) shows that the new method achieves a comparable
+	compression ratio and audio quality with a lower delay

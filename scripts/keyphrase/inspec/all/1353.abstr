@@ -1,0 +1,9 @@
+Generalized spatio-chromatic diffusion
+A framework for diffusion of color images is presented. The method is based on
+	the theory of thermodynamics of irreversible transformations which
+	provides a suitable basis for designing correlations between the
+	different color channels. More precisely, we derive an equation for
+	color evolution which comprises a purely spatial diffusive term and a
+	nonlinear term that depends on the interactions among color channels
+	over space. We apply the proposed equation to images represented in
+	several color spaces, such as RGB, CIELAB, Opponent colors, and IHS

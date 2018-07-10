@@ -1,0 +1,9 @@
+Yet some more complexity results for default logic
+We identify several new tractable subsets and several new intractable simple
+	cases for reasoning in the propositional version of Reiter's default
+	logic. The majority of our findings are related to brave reasoning. By
+	making some intuitive observations, most classes that we identify can
+	be derived quite easily from some subsets of default logic already
+	known in the literature. Some of the subsets we discuss are subclasses
+	of the so-called "extended logic programs". All the tractable subsets
+	presented in this paper can be recognized in linear time

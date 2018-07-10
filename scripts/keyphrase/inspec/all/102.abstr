@@ -1,0 +1,9 @@
+Harmless delays in Cohen-Grossberg neural networks
+Without assuming monotonicity and differentiability of the activation functions
+	and any symmetry of interconnections, we establish some sufficient
+	conditions for the globally asymptotic stability of a unique
+	equilibrium for the Cohen-Grossberg (1983) neural network with multiple
+	delays. Lyapunov functionals and functions combined with the Razumikhin
+	technique are employed. The criteria are all independent of the
+	magnitudes of the delays, and thus the delays under these conditions
+	are harmless

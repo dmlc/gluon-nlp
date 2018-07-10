@@ -1,0 +1,12 @@
+Steinmetz system design under unbalanced conditions
+This paper studies and develops general analytical expressions to obtain
+	three-phase current symmetrization under unbalanced voltage conditions.
+	It proposes two procedures for this symmetrization: the application of
+	the traditional expressions assuming symmetry conditions and the use of
+	optimization methods based on the general analytical equations.
+	Specifically, the paper applies and evaluates these methods to analyze
+	the Steinmetz system design. Several graphics evaluating the error
+	introduced by assumption of balanced voltage in the design are plotted
+	and an example is studied to compare both procedures. In the example
+	the necessity to apply the optimization techniques in highly unbalanced
+	conditions is demonstrated

@@ -1,0 +1,12 @@
+Least load dispatching algorithm for parallel Web server nodes
+A least load dispatching algorithm for distributing requests to parallel Web
+	server nodes is described. In this algorithm, the load offered to a
+	node by a request is estimated based on the expected transfer time of
+	the corresponding reply through the Internet. This loading information
+	is then used by the algorithm to identify the least load node of the
+	Web site. By using this algorithm, each request will always be sent for
+	service at the earliest possible time. Performance comparison using
+	NASA and ClarkNet access logs between the proposed algorithm and
+	commonly used dispatching algorithms is performed. The results show
+	that the proposed algorithm gives 10% higher throughput than that of
+	the commonly used random and round-robin dispatching algorithms

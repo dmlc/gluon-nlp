@@ -1,0 +1,8 @@
+A second order characteristic finite element scheme for convection-diffusion
+	problems
+A new characteristic finite element scheme is presented for
+	convection-diffusion problems. It is of second order accuracy in time
+	increment, symmetric, and unconditionally stable. Optimal error
+	estimates are proved in the framework of L/sup 2/-theory. Numerical
+	results are presented for two examples, which show the advantage of the
+	scheme

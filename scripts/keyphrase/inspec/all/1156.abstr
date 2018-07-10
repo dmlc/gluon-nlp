@@ -1,0 +1,21 @@
+Favorable noise uniformity properties of Fourier-based interpolation and
+	reconstruction approaches in single-slice helical computed tomography
+Volumes reconstructed by standard methods from single-slice helical computed
+	tomography (CT) data have been shown to have noise levels that are
+	highly nonuniform relative to those in conventional CT. These noise
+	nonuniformities can affect low-contrast object detectability and have
+	also been identified as the cause of the zebra artifacts that plague
+	maximum intensity projection (MIP) images of such volumes. While these
+	spatially variant noise levels have their root in the peculiarities of
+	the helical scan geometry, there is also a strong dependence on the
+	interpolation and reconstruction algorithms employed. In this paper, we
+	seek to develop image reconstruction strategies that eliminate or
+	reduce, at its source, the nonuniformity of noise levels in helical CT
+	relative to that in conventional CT. We pursue two approaches,
+	independently and in concert. We argue, and verify, that Fourier-based
+	longitudinal interpolation approaches lead to more uniform noise ratios
+	than do the standard 360LI and 180LI approaches. We also demonstrate
+	that a Fourier-based fan-to-parallel rebinning algorithm, used as an
+	alternative to fanbeam filtered backprojection for slice
+	reconstruction, also leads to more uniform noise ratios, even when
+	making use of the 180LI and 360LI interpolation approaches

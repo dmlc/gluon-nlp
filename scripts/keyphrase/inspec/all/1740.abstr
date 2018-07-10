@@ -1,0 +1,8 @@
+Verification of ideological classifications-a statistical approach
+The paper presents a statistical method of verifying ideological
+	classifications of votes. Parliamentary votes, preclassified by an
+	expert (on a chosen subset), are verified at an assumed significance
+	level by seeking the most likely match with the actual vote results.
+	Classifications that do not meet the requirements defined are rejected.
+	The results obtained can be applied in the ideological dimensioning
+	algorithms, enabling ideological identification of dimensions obtained

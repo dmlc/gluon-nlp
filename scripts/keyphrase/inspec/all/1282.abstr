@@ -1,0 +1,12 @@
+Completeness of timed mu CRL
+Previously a straightforward extension of the process algebra mu CRL was
+	proposed to explicitly deal with time. The process algebra mu CRL has
+	been especially designed to deal with data in a process algebraic
+	context. Using the features for data, only a minor extension of the
+	language was needed to obtain a very expressive variant of time.
+	Previously it contained syntax, operational semantics and axioms
+	characterising timed mu CRL. It did not contain an in depth analysis of
+	theory of timed mu CRL. This paper fills this gap, by providing
+	soundness and completeness results. The main tool to establish these is
+	a mapping of timed to untimed mu CRL and employing the completeness
+	results obtained for untimed mu CRL

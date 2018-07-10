@@ -1,0 +1,15 @@
+Center-crossing recurrent neural networks for the evolution of rhythmic
+	behavior
+A center-crossing recurrent neural network is one in which the
+	null(hyper)surfaces of each neuron intersect at their exact centers of
+	symmetry, ensuring that each neuron's activation function is centered
+	over the range of net inputs that it receives. We demonstrate that
+	relative to a random initial population, seeding the initial population
+	of an evolutionary search with center-crossing networks significantly
+	improves both the frequency and the speed with which high-fitness
+	oscillatory circuits evolve on a simple walking task. The improvement
+	is especially striking at low mutation variances. Our results suggest
+	that seeding with center-crossing networks may often be beneficial,
+	since a wider range of dynamics is more likely to be easily accessible
+	from a population of center-crossing networks than from a population of
+	random networks

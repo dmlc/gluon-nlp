@@ -1,0 +1,12 @@
+Stability of W-methods with applications to operator splitting and to geometric
+	theory
+We analyze the stability properties of W-methods applied to the parabolic
+	initial value problem u' + Au = Bu. We work in an abstract Banach space
+	setting, assuming that A is the generator of an analytic semigroup and
+	that B is relatively bounded with respect to A. Since W-methods treat
+	the term with A implicitly, whereas the term involving B is discretized
+	in an explicit way, they can be regarded as splitting methods. As an
+	application of our stability results, convergence for nonsmooth initial
+	data is shown. Moreover, the layout of a geometric theory for
+	discretizations of semilinear parabolic problems u' + Au = f (u) is
+	presented

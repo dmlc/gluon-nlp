@@ -1,0 +1,10 @@
+Three-dimensional geometrical optics code for indoor propagation
+This paper presents a program, GO 3D, for computing the fields of a transmitter
+	in an indoor environment using geometrical optics. The program uses an
+	"image tree" data structure to construct the images needed to compute
+	all the rays carrying fields above a preset "threshold" value, no
+	matter how many reflections are needed. The paper briefly describes the
+	input file required to define wall construction, the floor plan, the
+	transmitter, and the receiver locations. A case study consisting of a
+	long corridor with a small room on one side is used to demonstrate the
+	features of the GO 3D program

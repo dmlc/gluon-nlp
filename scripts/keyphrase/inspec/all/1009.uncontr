@@ -1,0 +1,6 @@
+robust output feedback model predictive control; off-line linear matrix
+	inequalities; model uncertainty robustness; robust constrained output
+	feedback MPC algorithm; polytopic uncertainty; norm-bound uncertainty;
+	controller design procedure; robust constrained state feedback MPC law;
+	state estimator; explicit control law sequence; closed-loop system;
+	asymptotically stable invariant ellipsoid

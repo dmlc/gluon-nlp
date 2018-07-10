@@ -1,0 +1,21 @@
+Portal dose image prediction for dosimetric treatment verification in
+	radiotherapy. II. An algorithm for wedged beams
+A method is presented for calculation of a two-dimensional function, T/sub
+	wedge/(x,y), describing the transmission of a wedged photon beam
+	through a patient. This in an extension of the method that we have
+	published for open (nonwedged) fields [Med. Phys. 25, 830-840 (1998)].
+	Transmission functions for open fields are being used in our clinic for
+	prediction of portal dose images (PDI, i.e., a dose distribution behind
+	the patient in a plane normal to the beam axis), which are compared
+	with PDIs measured with an electronic portal imaging device (EPID). The
+	calculations are based on the planning CT scan of the patient and on
+	the irradiation geometry as determined in the treatment planning
+	process. Input data for the developed algorithm for wedged beams are
+	derived from (the already available) measured input data set for
+	transmission prediction in open beams, which is extended with only a
+	limited set of measurements in the wedged beam. The method has been
+	tested for a PDI plane at 160 cm from the focus, in agreement with the
+	applied focus-to-detector distance of our fluoroscopic EPIDs. For low
+	and high energy photon beams (6 and 23 MV) good agreement (~1%) has
+	been found between calculated and measured transmissions for a slab and
+	a thorax phantom

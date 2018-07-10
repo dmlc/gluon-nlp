@@ -1,0 +1,17 @@
+How airlines and airports recover from schedule perturbations: a survey
+The explosive growth in air traffic as well as the widespread adoption of
+	Operations Research techniques in airline scheduling has given rise to
+	tight flight schedules at major airports. An undesirable consequence of
+	this is that a minor incident such as a delay in the arrival of a small
+	number of flights can result in a chain reaction of events involving
+	several flights and airports, causing disruption throughout the system.
+	This paper reviews recent literature in the area of recovery from
+	schedule disruptions. First we review how disturbances at a given
+	airport could be handled, including the effects of runways and fixes.
+	Then we study the papers on recovery from airline schedule
+	perturbations, which involve adjustments in flight schedules, aircraft,
+	and crew. The mathematical programming techniques used in ground
+	holding are covered in some detail. We conclude the review with
+	suggestions on how singular perturbation theory could play a role in
+	analyzing disruptions to such highly sensitive schedules as those in
+	the civil aviation industry

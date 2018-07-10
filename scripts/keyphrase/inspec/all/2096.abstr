@@ -1,0 +1,26 @@
+A spatial rainfall simulator for crop production modeling in Southern Africa
+This paper describes a methodology for simulating rainfall in dekads across a
+	set of spatial units in areas where long-term meteorological records
+	are available for a small number of sites only. The work forms part of
+	a larger simulation model of the food system in a district of Zimbabwe,
+	which includes a crop production component for yields of maize, small
+	grains and groundnuts. Only a limited number of meteorological stations
+	are available within or surrounding the district that have long time
+	series of rainfall records. Preliminary analysis of rainfall data for
+	these stations suggested that intra-seasonal temporal correlation was
+	negligible, but that rainfall at any given station was correlated with
+	rainfall at neighbouring stations. This spatial correlation structure
+	can be modeled using a multivariate normal distribution consisting of
+	30 related variables, representing dekadly rainfall in each of the 30
+	wards. For each ward, log-transformed rainfall for each of the 36
+	dekads in the year was characterized by a mean and standard deviation,
+	which were interpolated from surrounding meteorological stations. A
+	covariance matrix derived from a distance measure was then used to
+	represent the spatial correlation between wards. Sets of random numbers
+	were then drawn from this distribution to simulate rainfall across the
+	wards in any given dekad. Cross-validation of estimated rainfall
+	parameters against observed parameters for the one meteorological
+	station within the district suggests that the interpolation process
+	works well. The methodology developed is useful in situations where
+	long-term climatic records are scarce and where rainfall shows
+	pronounced spatial correlation, but negligible temporal correlation

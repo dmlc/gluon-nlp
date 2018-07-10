@@ -1,0 +1,16 @@
+Application of time-frequency principal component analysis to text-independent
+	speaker identification
+We propose a formalism, called vector filtering of spectral trajectories, that
+	allows the integration of a number of speech parameterization
+	approaches (cepstral analysis, Delta and Delta Delta parameterizations,
+	auto-regressive vector modeling, ...) under a common formalism. We then
+	propose a new filtering, called contextual principal components (CPC)
+	or time-frequency principal components (TFPC). This filtering consists
+	in extracting the principal components of the contextual covariance
+	matrix, which is the covariance matrix of a sequence of vectors
+	expanded by their context. We apply this new filtering in the framework
+	of closed-set speaker identification, using a subset of the POLYCOST
+	database. When using speaker-dependent TFPC filters, our results show a
+	relative improvement of approximately 20% compared to the use of the
+	classical cepstral coefficients augmented by their Delta -coefficients,
+	which is significantly better with a 90% confidence level

@@ -1,0 +1,13 @@
+Metaschemas for ER, ORM and UML data models: a comparison
+This paper provides metaschemas for some of the main database modeling
+	notations used in industry. Two Entity Relationship (ER) notations
+	(Information Engineering and Barker) are examined in detail, as well as
+	Object Role Modeling (ORM) conceptual schema diagrams. The discussion
+	of optionality, cardinality and multiplicity is widened to include
+	Unified Modeling Language (UML) class diagrams. Issues addressed in the
+	metamodel analysis include the normalization impact of non-derived
+	constraints on derived associations, the influence of orthogonality on
+	language transparency, and trade-offs between simplicity and
+	expressibility. To facilitate comparison, the same modeling notation is
+	used to display each metaschema. For this purpose, ORM is used because
+	of its greater expressibility and clarity

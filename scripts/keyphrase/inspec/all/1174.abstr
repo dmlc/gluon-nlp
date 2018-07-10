@@ -1,0 +1,14 @@
+Optimization of cutting conditions for single pass turning operations using a
+	deterministic approach
+An optimization analysis, strategy and CAM software for the selection of
+	economic cutting conditions in single pass turning operations are
+	presented using a deterministic approach. The optimization is based on
+	criteria typified by the maximum production rate and includes a host of
+	practical constraints. It is shown that the deterministic optimization
+	approach involving mathematical analyses of constrained economic trends
+	and graphical representation on the feed-speed domain provides a
+	clearly defined strategy that not only provides a unique global optimum
+	solution, but also the software that is suitable for on-line CAM
+	applications. A numerical study has verified the developed optimization
+	strategies and software and has shown the economic benefits of using
+	optimization

@@ -1,0 +1,16 @@
+SRP rolls out reliability and asset management initiative
+Reliability planning analysis at the Salt River Project (SRP, Tempe, Arizona,
+	US) prioritizes geographic areas for preventive inspections based on a
+	cost benefit model. However, SRP wanted a new application system to
+	prioritize inspections and to predict when direct buried cable would
+	fail using the same cost benefit model. In the business cases, the
+	represented type of kilowatt load-residential, commercial or critical
+	circuit-determines the cost benefit per circuit. The preferred solution
+	was to develop a geographical information system (GIS) application
+	allowing for a circuit query for the specific geographic areas it
+	crosses and the density of load points of a given type within those
+	areas. The query returns results based on the type of equipment
+	analysis execution: wood pole, preventive maintenance for a line or
+	cable replacement. This differentiation insures that all the facilities
+	relevant to a specific analysis type influence prioritization of the
+	geographic areas

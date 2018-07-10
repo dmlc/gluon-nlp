@@ -1,0 +1,10 @@
+Taylor series based two-dimensional digital differentiators
+A new type of Taylor series based 2-D finite difference approximation is
+	presented, and it is shown that the coefficients of these
+	approximations are not unique. Explicit formulas are presented for one
+	of the possible sets of coefficients for an arbitrary order, by
+	extending the previously presented 1-D approximations. These
+	coefficients are implemented as maximally linear 2-D FIR digital
+	differentiators, and their formulas are modified to narrow the
+	inaccuracy regions on the resultant frequency responses, close to the
+	Nyquist frequencies

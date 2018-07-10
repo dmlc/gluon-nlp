@@ -1,0 +1,14 @@
+Searching a scalable approach to cerebellar based control
+Decades of research into the structure and function of the cerebellum have led
+	to a clear understanding of many of its cells, as well as how learning
+	might take place. Furthermore, there are many theories on what signals
+	the cerebellum operates on, and how it works in concert with other
+	parts of the nervous system. Nevertheless, the application of
+	computational cerebellar models to the control of robot dynamics
+	remains in its infant state. To date, few applications have been
+	realized. The currently emerging family of light-weight robots poses a
+	new challenge to robot control: due to their complex dynamics
+	traditional methods, depending on a full analysis of the dynamics of
+	the system, are no longer applicable since the joints influence each
+	other dynamics during movement. Can artificial cerebellar models
+	compete here?

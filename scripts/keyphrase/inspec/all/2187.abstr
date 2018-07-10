@@ -1,0 +1,9 @@
+Variable structure intelligent control for PM synchronous servo motor drive
+The variable structure control (VSC) of discrete time systems based on
+	intelligent control is presented in this paper. A novel approach is
+	proposed for the state estimation. A linear observer is firstly
+	designed. Then a neural network is used for compensating uncertainty.
+	The parameter of the VSC scheme is adjusted online by a neural network.
+	Practical operating results from a PM synchronous motor (PMSM)
+	illustrate the effectiveness and practicability of the proposed
+	approach

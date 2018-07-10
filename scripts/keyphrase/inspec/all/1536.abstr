@@ -1,0 +1,14 @@
+Connection management for QoS service on the Web
+The current Web service model treats all requests equivalently, both while
+	being processed by servers and while being transmitted over the
+	network. For some uses, such as multiple priority schemes, different
+	levels of service are desirable. We propose application-level TCP
+	connection management mechanisms for Web servers to provide two
+	different levels of Web service, high and low service, by setting
+	different time-outs for inactive TCP connections. We evaluated the
+	performance of the mechanism under heavy and light loading conditions
+	on the Web server. Our experiments show that, though heavy traffic
+	saturates the network, high level class performance is improved by as
+	much as 25-28%. Therefore, this mechanism can effectively provide QoS
+	guaranteed services even in the absence of operating system and network
+	supports

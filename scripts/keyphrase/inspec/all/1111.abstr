@@ -1,0 +1,11 @@
+The contiguity in R/M
+An r.e. degree c is contiguous if deg/sub wtt/(A)=deg/sub wtt/(B) for any r.e.
+	sets A,B in c. In this paper, we generalize the notation of contiguity
+	to the structure R/M, the upper semilattice of the r.e. degree set R
+	modulo the cappable r.e. degree set M. An element [c] in R/M is
+	contiguous if [deg/sub wtt/(A)]=[deg/sub wtt/(B)] for any r.e. sets A,
+	B such that deg/sub T/(A),deg/sub T/(B) in [c]. It is proved in this
+	paper that every nonzero element in R/M is not contiguous, i.e., for
+	every element [c] in R/M, if [c] not=[o] then there exist at least two
+	r.e. sets A, B such that deg/sub T/(A), deg/sub T/(B) in [c] and
+	[deg/sub wtt/(A)] not=[deg/sub wtt/(B)]

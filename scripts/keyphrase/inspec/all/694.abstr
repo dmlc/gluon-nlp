@@ -1,0 +1,18 @@
+A novel genetic algorithm for the design of a signed power-of-two coefficient
+	quadrature mirror filter lattice filter bank
+A novel genetic algorithm (GA) for the design of a canonical signed
+	power-of-two (SPT) coefficient lattice structure quadrature mirror
+	filter bank is presented. Genetic operations may render the SPT
+	representation of a value noncanonical. A new encoding scheme is
+	introduced to encode the SPT values. In this new scheme, the canonical
+	property of the SPT values is preserved under genetic operations.
+	Additionally, two new features that drastically improve the performance
+	of our GA are introduced. (1) An additional level of natural selection
+	is introduced to simulate the effect of natural selection when sperm
+	cells compete to fertilize an ovule; this dramatically improves the
+	offspring survival rate. A conventional GA is analogous to
+	intracytoplasmic sperm injection and has an extremely low offspring
+	survival rate, resulting in very slow convergence. (2) The probability
+	of mutation for each codon of a chromosome is weighted by the
+	reciprocal of its effect. Because of these new features, the
+	performance of our new GA outperforms conventional GAs

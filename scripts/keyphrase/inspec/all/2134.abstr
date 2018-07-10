@@ -1,0 +1,12 @@
+Linear models of circuits based on the multivalued components
+Linearization and planarization of the circuit models is pivotal to the
+	submicron technologies. On the other hand, the characteristics of the
+	VLSI circuits can be sometimes improved by using the multivalued
+	components. It was shown that any l-level circuit based on the
+	multivalued components is representable as an algebraic model based on
+	l linear arithmetic polynomials mapped correspondingly into l decision
+	diagrams that are linear and planar by nature. Complexity of
+	representing a circuit as the linear decision diagram was estimated as
+	O(G) with G for the number of multivalued components in the circuit.
+	The results of testing the LinearDesignMV algorithm on circuits of more
+	than 8000 LGSynth 93 multivalued components were presented

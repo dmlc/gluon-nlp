@@ -1,0 +1,19 @@
+Relevance of Web documents: ghosts consensus method
+The dominant method currently used to improve the quality of Internet search
+	systems is often called "digital democracy." Such an approach implies
+	the utilization of the majority opinion of Internet users to determine
+	the most relevant documents: for example, citation index usage for
+	sorting of search results (google.com) or an enrichment of a query with
+	terms that are asked frequently in relation with the query's theme.
+	"Digital democracy" is an effective instrument in many cases, but it
+	has an unavoidable shortcoming, which is a matter of principle: the
+	average intellectual and cultural level of Internet users is very low;
+	everyone knows what kind of information is dominant in Internet query
+	statistics. Therefore, when one searches the Internet by means of
+	"digital democracy" systems, one gets answers that reflect an
+	underlying assumption that the user's mind potential is very low, and
+	that his cultural interests are not demanding. Thus, it is more correct
+	to use the term "digital ochlocracy" to refer to Internet search
+	systems with "digital democracy." Based on the well-known mathematical
+	mechanism of linear programming, we propose a method to solve the
+	indicated problem

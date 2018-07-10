@@ -1,0 +1,19 @@
+Multiple model adaptive estimation with filter spawning
+Multiple model adaptive estimation (MMAE) with filter spawning is used to
+	detect and estimate partial actuator failures on the VISTA F-16. The
+	truth model is a full six-degree-of-freedom simulation provided by
+	Calspan and General Dynamics. The design models are chosen as 13-state
+	linearized models, including first order actuator models. Actuator
+	failures are incorporated into the truth model and design model
+	assuming a "failure to free stream." Filter spawning is used to include
+	additional filters with partial actuator failure hypotheses into the
+	MMAE bank. The spawned filters are based on varying degrees of partial
+	failures (in terms of effectiveness) associated with the
+	complete-actuaton-failure hypothesis with the highest conditional
+	probability of correctness at the current time. Thus, a blended
+	estimate of the failure effectiveness is found using the filters'
+	estimates based upon a no-failure hypothesis, a complete actuator
+	failure hypothesis, and the spawned filters' partial-failure
+	hypotheses. This yields substantial precision in effectiveness
+	estimation, compared with what is possible without spawning additional
+	filters, making partial failure adaptation a viable methodology

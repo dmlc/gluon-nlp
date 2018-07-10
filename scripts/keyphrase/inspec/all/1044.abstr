@@ -1,0 +1,11 @@
+Analogue realizations of fractional-order controllers
+An approach to the design of analogue circuits, implementing fractional-order
+	controllers, is presented. The suggested approach is based on the use
+	of continued fraction expansions; in the case of negative coefficients
+	in a continued fraction expansion, the use of negative impedance
+	converters is proposed. Several possible methods for obtaining suitable
+	rational approximations and continued fraction expansions are
+	discussed. An example of realization of a fractional-order I/sup lambda
+	/ controller is presented and illustrated by obtained measurements. The
+	suggested approach can be used for the control of very fast processes,
+	where the use of digital controllers is difficult or impossible

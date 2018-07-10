@@ -1,0 +1,15 @@
+Design and implementation of a brain-computer interface with high transfer
+	rates
+This paper presents a brain-computer interface (BCI) that can help users to
+	input phone numbers. The system is based on the steady-state visual
+	evoked potential (SSVEP). Twelve buttons illuminated at different rates
+	were displayed on a computer monitor. The buttons constituted a virtual
+	telephone keypad, representing the ten digits 0-9, BACKSPACE, and
+	ENTER. Users could input phone number by gazing at these buttons. The
+	frequency-coded SSVEP was used to judge which button the user desired.
+	Eight of the thirteen subjects succeeded in ringing the mobile phone
+	using the system. The average transfer rate over all subjects was 27.15
+	bits/min. The attractive features of the system are noninvasive signal
+	recording, little training required for use, and high information
+	transfer rate. Approaches to improve the performance of the system are
+	discussed

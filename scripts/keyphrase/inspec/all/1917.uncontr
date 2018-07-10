@@ -1,0 +1,9 @@
+interval-based ABR flow control protocol; modeling; design; availability bit
+	rate service; ATM networks; periodic explicit rate feedback; link
+	bandwidth allocation; buffer space allocation; maximum throughput;
+	minimum cell loss; high resource efficiency; resource management cell
+	synchronization algorithms; resource management cell consolidation
+	algorithms; point-to-multipoint services; flow control decisions;
+	loss-free flow control mechanism; high-speed ABR connections; fluid
+	traffic model; signaling; linear system modeling; numerical analysis;
+	simulation; high-speed backbone networking scenarios

@@ -1,0 +1,5 @@
+Solution of a Euclidean combinatorial optimization problem by the
+	dynamic-programming method
+A class of Euclidean combinatorial optimization problems is selected that can
+	be solved by the dynamic programming method. The problem of allocation
+	of servicing enterprises is solved as an example

@@ -1,0 +1,12 @@
+Model theory for hereditarily finite superstructures
+We study model-theoretic properties of hereditarily finite superstructures over
+	models of not more than countable signatures. A question is answered in
+	the negative inquiring whether theories of hereditarily finite
+	superstructures which have a unique (up to isomorphism) hereditarily
+	finite superstructure can be described via definable functions. Yet
+	theories for such superstructures admit a description in terms of
+	iterated families TF and SF. These are constructed using a definable
+	union taken over countable ordinals in the subsets which are unions of
+	finitely many complete subsets and of finite subsets, respectively.
+	Simultaneously, we describe theories that share a unique (up to
+	isomorphism) countable hereditarily finite superstructure

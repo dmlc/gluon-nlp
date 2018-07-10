@@ -1,0 +1,10 @@
+Influence of the process design on the control strategy: application in
+	electropneumatic field
+This article proposes an example of electropneumatic system where the
+	architecture of the process is modified with respect to both the
+	specifications for position and velocity tracking and a criterion
+	concerning the energy consumption. Experimental results are compared
+	and analyzed using an industrial bench test. For this, a complete model
+	of the system is presented, and two kinds of nonlinear control laws are
+	developed, a monovariable and multivariable type based on the flatness
+	theory

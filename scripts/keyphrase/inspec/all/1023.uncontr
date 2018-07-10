@@ -1,0 +1,6 @@
+nonlinear dual-window operator; edge detection; nonlinear edge detection
+	technique; two-concentric-circular-window operator; standard gradient;
+	dual window operator; zero-crossing points; difference function;
+	minimum values; maximum values; computational efficiency; detected
+	edges; Laplacian algorithms; Gaussian algorithms; Canny's algorithms;
+	computational load; nonlinear processing

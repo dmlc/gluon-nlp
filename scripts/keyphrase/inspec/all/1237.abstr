@@ -1,0 +1,19 @@
+High-performance numerical pricing methods
+The pricing of financial derivatives is an important field in finance and
+	constitutes a major component of financial management applications. The
+	uncertainty of future events often makes analytic approaches infeasible
+	and, hence, time-consuming numerical simulations are required. In the
+	Aurora Financial Management System, pricing is performed on the basis
+	of lattice representations of stochastic multidimensional scenario
+	processes using the Monte Carlo simulation and Backward Induction
+	methods, the latter allowing for the exploitation of shared-memory
+	parallelism. We present the parallelization of a Backward Induction
+	numerical pricing kernel on a cluster of SMPs using HPF+, an extended
+	version of High-Performance Fortran. Based on language extensions for
+	specifying a hierarchical mapping of data onto an SMP cluster, the
+	compiler generates a hybrid-parallel program combining
+	distributed-memory and shared-memory parallelism. We outline the
+	parallelization strategy adopted by the VFC compiler and present an
+	experimental evaluation of the pricing kernel on an NEC SX-5 vector
+	supercomputer and a Linux SMP cluster, comparing a pure MPI version to
+	a hybrid-parallel MPI/OpenMP version

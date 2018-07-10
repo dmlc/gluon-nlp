@@ -1,0 +1,9 @@
+Optical two-step modified signed-digit addition based on binary logic gates
+A new modified signed-digit (MSD) addition algorithm based on binary logic
+	gates is proposed for parallel computing. It is shown that by encoding
+	each of the input MSD digits and flag digits into a pair of binary
+	bits, the number of addition steps can be reduced to two. The flag
+	digit is introduced to characterize the next low order pair (NLOP) of
+	the input digits in order to suppress carry propagation. The rules for
+	two-step addition of binary coded MSD (BCMSD) numbers are formulated
+	that can be implemented using optical shadow-casting logic system

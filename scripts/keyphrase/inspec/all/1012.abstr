@@ -1,0 +1,18 @@
+Evolving receptive-field controllers for mobile robots
+The use of evolutionary methods to generate controllers for real-world
+	autonomous agents has attracted attention. Most of the pertinent
+	research has employed genetic algorithms or variations thereof.
+	Research has applied an alternative evolutionary method, evolution
+	strategies, to the generation of simple Braitenberg vehicles. This
+	application accelerates the development of such controllers by more
+	than an order of magnitude (a few hours compared to more than two
+	days). Motivated by this useful speedup, the paper investigates the
+	evolution of more complex architectures, receptive-field controllers,
+	that can employ nonlinear interactions and, therefore, can yield more
+	complex behavior. It is interesting to note that the evolution strategy
+	yields the same efficacy in terms of function evaluations, even though
+	the second class of controllers requires up to 10 times more parameters
+	than the simple Braitenberg architecture. In addition to the speedup,
+	there is an important theoretical reason for preferring an evolution
+	strategy over a genetic algorithm for this problem, namely the presence
+	of epistasis

@@ -1,0 +1,9 @@
+Model checking games for branching time logics
+This paper defines and examines model checking games for the branching time
+	temporal logic CTL*. The games employ a technique called focus which
+	enriches sets by picking out one distinguished element. This is
+	necessary to avoid ambiguities in the regeneration of temporal
+	operators. The correctness of these games is proved, and optimizations
+	are considered to obtain model checking games for important fragments
+	of CTL*. A game based model checking algorithm that matches the known
+	lower and upper complexity bounds is sketched

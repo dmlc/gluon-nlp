@@ -1,0 +1,11 @@
+Sharpening the estimate of the stability constant in the maximum-norm of the
+	Crank-Nicolson scheme for the one-dimensional heat equation
+This paper is concerned with the stability constant C/sub infinity / in the
+	maximum-norm of the Crank-Nicolson scheme applied. to the
+	one-dimensional heat equation. A well known result due to S.J.
+	Serdyukova is that C/sub infinity / < 23. In the present paper, by
+	using a sharp resolvent estimate for the discrete Laplacian together
+	with the Cauchy formula, it is shown that 3 <or= C/sub infinity /
+	< 4.325. This bound also holds when the heat equation is considered
+	on a bounded interval along with Dirichlet or Neumann boundary
+	conditions

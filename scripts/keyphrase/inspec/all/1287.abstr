@@ -1,0 +1,8 @@
+On average depth of decision trees implementing Boolean functions
+The article considers the representation of Boolean functions in the form of
+	decision trees. It presents the bounds on average time complexity of
+	decision trees for all classes of Boolean functions that are closed
+	over substitution, and the insertion and deletion of unessential
+	variables. The obtained results are compared with the results developed
+	by M.Ju. Moshkov (1995) that describe the worst case time complexity of
+	decision trees

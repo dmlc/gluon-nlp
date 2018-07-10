@@ -1,0 +1,14 @@
+An intelligent fuzzy decision system for a flexible manufacturing system with
+	multi-decision points
+This paper describes an intelligent fuzzy decision support system for real-time
+	scheduling and dispatching of parts in a flexible manufacturing system
+	(FMS), with alternative routing possibilities for all parts. A fuzzy
+	logic approach is developed to improve the system performance by
+	considering multiple performance measures and at multiple decision
+	points. The characteristics of the system status, instead of parts, are
+	fed back to assign priority to the parts waiting to be processed. A
+	simulation model is developed and it is shown that the proposed
+	intelligent fuzzy decision support system keeps all performance
+	measures at a good level. The proposed intelligent system is a
+	promising tool for dealing with scheduling FMSs, in contrast to
+	traditional rules

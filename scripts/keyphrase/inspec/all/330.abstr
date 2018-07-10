@@ -1,0 +1,23 @@
+Improving computer security for authentication of users: influence of proactive
+	password restrictions
+Entering a user name-password combination is a widely used procedure for
+	identification and authentication in computer systems. However, it is a
+	notoriously weak method, in that the passwords adopted by many users
+	are easy to crack. In an attempt to, improve security, proactive
+	password checking may be used, in which passwords must meet several
+	criteria to be more resistant to cracking. In two experiments, we
+	examined the influence of proactive password restrictions on the time
+	that it took to generate an acceptable password and to use it
+	subsequently to log in. The required length was a minimum of five
+	characters in experiment I and eight characters in experiment 2. In
+	both experiments, one condition had only the length restriction, and
+	the other had additional restrictions. The additional restrictions
+	greatly increased the time it took to generate the password but had
+	only a small effect on the time it took to use it subsequently to log
+	in. For the five-character passwords, 75% were cracked when no other
+	restrictions were imposed, and this was reduced to 33% with the
+	additional restrictions. For the eight-character passwords, 17% were
+	cracked with no other restrictions, and 12.5% with restrictions. The
+	results indicate that increasing the minimum character length reduces
+	crackability and increases security, regardless of whether additional
+	restrictions are imposed

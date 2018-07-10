@@ -1,0 +1,18 @@
+Numerical approximation of nonlinear BVPs by means of BVMs
+Boundary Value Methods (BVMs) would seem to be suitable candidates for the
+	solution of nonlinear Boundary Value Problems (BVPs). They have been
+	successfully used for solving linear BVPs together with a mesh
+	selection strategy based on the conditioning of the linear systems. Our
+	aim is to extend this approach so as to use them for the numerical
+	approximation of nonlinear problems. For this reason, we consider the
+	quasi-linearization technique that is an application of the Newton
+	method to the nonlinear differential equation. Consequently, each
+	iteration requires the solution of a linear BVP. In order to guarantee
+	the convergence to the solution of the continuous nonlinear problem, it
+	is necessary to determine how accurately the linear BVPs must be
+	solved. For this goal, suitable stopping criteria on the residual and
+	on the error for each linear BVP are given. Numerical experiments on
+	stiff problems give rather satisfactory results, showing that the
+	experimental code, called TOM, that uses a class of BVMs and the
+	quasi-linearization technique, may be competitive with well known
+	solvers for BVPs

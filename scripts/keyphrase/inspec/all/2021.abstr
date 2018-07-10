@@ -1,0 +1,12 @@
+One-step digit-set-restricted modified signed-digit adder using an incoherent
+	correlator based on a shared content-addressable memory
+An efficient one-step digit-set-restricted modified signed-digit (MSD) adder
+	based on symbolic substitution is presented. In this technique, carry
+	propagation is avoided by introducing reference digits to restrict the
+	intermediate carry and sum digits to {1,0} and {0,1}, respectively. The
+	proposed technique requires significantly fewer minterms and simplifies
+	system complexity compared to the reported one-step MSD addition
+	techniques. An incoherent correlator based on an optoelectronic shared
+	content-addressable memory processor is suggested to perform the
+	addition operation. In this technique, only one set of minterms needs
+	to be stored, independent of the operand length

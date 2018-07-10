@@ -1,0 +1,17 @@
+Fuzzy logic controlled shunt active power filter for power quality improvement
+The simulation and experimental study of a fuzzy logic controlled, three-phase
+	shunt active power filter to improve power quality by compensating
+	harmonics and reactive power required by a nonlinear load is presented.
+	The advantage of fuzzy control is that it is based on a linguistic
+	description and does not require a mathematical model of the system.
+	The fuzzy control scheme is realised on an inexpensive dedicated
+	micro-controller (INTEL 8031) based system. The compensation process is
+	based on sensing line currents only, an approach different from
+	conventional methods, which require harmonics or reactive volt-ampere
+	requirement of the load. The performance of the fuzzy logic controller
+	is compared with a conventional PI controller. The dynamic behavior of
+	the fuzzy controller is found to be better than the conventional PI
+	controller. PWM pattern generation is based on carrierless hysteresis
+	based current control to obtain the switching signals. Various
+	simulation and experimental results are presented under steady state
+	and transient conditions

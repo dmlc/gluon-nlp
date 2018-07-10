@@ -1,0 +1,6 @@
+Switching controller design via convex polyhedral Lyapunov functions
+We propose a systematic switching control design method for a class of
+	nonlinear discrete time hybrid systems. The novelty of the adopted
+	approach is in the fact that unlike conventional control the control
+	burden is shifted to a logical level thus creating the need for the
+	development of new analysis/design methods

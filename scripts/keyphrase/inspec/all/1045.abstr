@@ -1,0 +1,9 @@
+Using fractional order adjustment rules and fractional order reference models
+	in model-reference adaptive control
+This paper investigates the use of Fractional Order Calculus (FOC) in
+	conventional Model Reference Adaptive Control (MRAC) systems. Two
+	modifications to the conventional MRAC are presented, i.e., the use of
+	fractional order parameter adjustment rule and the employment of
+	fractional order reference model. Through examples, benefits from the
+	use of FOC are illustrated together with some remarks for further
+	research

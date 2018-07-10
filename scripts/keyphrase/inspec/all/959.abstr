@@ -1,0 +1,14 @@
+Silicon debug of a PowerPC TM microprocessor using model checking
+When silicon is available, newly designed microprocessors are tested in
+	specially equipped hardware laboratories, where real applications can
+	be run at hardware speeds. However, the large volumes of code being
+	run, plus the limited access to the internal nodes of the chip, make it
+	very difficult to characterize the nature of any failures that occur.
+	We describe how temporal logic model checking was used to quickly
+	characterize a design error exhibited during hardware testing of a
+	PowerPC microprocessor. We outline the conditions under which model
+	checking can efficiently characterize such failures, and show how the
+	particular error we detected could have been revealed early in the
+	design cycle, by model checking a short and simple correctness
+	specification. We discuss the implications of this for verification
+	methodologies over the full design cycle

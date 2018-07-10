@@ -1,0 +1,15 @@
+Adaptive and efficient mutual exclusion
+The paper presents adaptive algorithms for mutual exclusion using only read and
+	write operations; the performance of the algorithms depends only on the
+	point contention, i.e., the number of processes that are concurrently
+	active during algorithm execution (and not on n, the total number of
+	processes). Our algorithm has O(k) remote step complexity and O(log k)
+	system response time, where k is the point contention. The remote step
+	complexity is the maximal number of steps performed by a process where
+	a wait is counted as one step. The system response time is the time
+	interval between subsequent entries to the critical section, where one
+	time unit is the minimal interval in which every active process
+	performs at least one step. The space complexity of this algorithm is
+	O(N log n), where N is the range of process names. We show how to make
+	the space complexity of our algorithm depend solely on n, while
+	preserving the other performance measures of the algorithm

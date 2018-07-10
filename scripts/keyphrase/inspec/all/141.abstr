@@ -1,0 +1,19 @@
+A high-resolution high-frequency monolithic top-shooting microinjector free of
+	satellite drops - part I: concept, design, and model
+Introduces an innovative microinjector design, featuring a bubble valve, which
+	entails superior droplet ejection characteristics and monolithic
+	fabrication, which allows handling of a wide range of liquids. This new
+	microinjector uses asymmetric bubbles to reduce crosstalk, increase
+	frequency response and eliminate satellite droplets. During a firing,
+	i.e., droplet ejection, the "virtual valve" closes, by growing a
+	thermal bubble in the microchannel, to isolate the microchamber from
+	the liquid supply and neighboring chambers. Between firings, however,
+	the virtual valve opens, by collapsing the bubble, to reduce flow
+	restriction for fast refilling of the microchamber. The use of bubble
+	valves brings about fast and reliable device operation without imposing
+	the significant complication fabrication of physical microvalves would
+	call for. In addition, through a special heater configuration and
+	chamber designs, bubbles surrounding the nozzle cut off the tail of the
+	droplets being ejected and completely eliminate satellite droplets. A
+	simple one-dimensional model of the operation of the microinjector is
+	used to estimate the bubble formation and liquid refilling

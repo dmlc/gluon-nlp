@@ -1,0 +1,13 @@
+A framework for evaluating the data-hiding capacity of image sources
+An information-theoretic model for image watermarking and data hiding is
+	presented in this paper. Previous theoretical results are used to
+	characterize the fundamental capacity limits of image watermarking and
+	data-hiding systems. Capacity is determined by the statistical model
+	used for the host image, by the distortion constraints on the data
+	hider and the attacker, and by the information available to the data
+	hider, to the attacker, and to the decoder. We consider autoregressive,
+	block-DCT, and wavelet statistical models for images and compute
+	data-hiding capacity for compressed and uncompressed host-image
+	sources. Closed-form expressions are obtained under sparse-model
+	approximations. Models for geometric attacks and distortion measures
+	that are invariant to such attacks are considered

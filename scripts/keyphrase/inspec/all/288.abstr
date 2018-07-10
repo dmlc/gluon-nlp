@@ -1,0 +1,13 @@
+Complexity transitions in global algorithms for sparse linear systems over
+	finite fields
+We study the computational complexity of a very basic problem, namely that of
+	finding solutions to a very large set of random linear equations in a
+	finite Galois field modulo q. Using tools from statistical mechanics we
+	are able to identify phase transitions in the structure of the solution
+	space and to connect them to the changes in the performance of a global
+	algorithm, namely Gaussian elimination. Crossing phase boundaries
+	produces a dramatic increase in memory and CPU requirements necessary
+	for the algorithms. In turn, this causes the saturation of the upper
+	bounds for the running time. We illustrate the results on the specific
+	problem of integer factorization, which is of central interest for
+	deciphering messages encrypted with the RSA cryptosystem

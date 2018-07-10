@@ -1,0 +1,5 @@
+Embedded Linux and the law
+The rising popularity of Linux, combined with perceived cost savings, has
+	spurred many embedded developers to consider a real-time Linux variant
+	as an alternative to a traditional RTOS. The paper presents the legal
+	implications for the proprietary parts of firmware

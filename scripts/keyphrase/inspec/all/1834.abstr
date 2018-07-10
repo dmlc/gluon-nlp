@@ -1,0 +1,21 @@
+A formal model of correctness in a cadastre
+A key issue for cadastral systems is the maintenance of their correctness.
+	Correctness is defined to be the proper correspondence between the
+	valid legal situation and the content of the cadastre. This
+	correspondence is generally difficult to achieve, since the cadastre is
+	not a complete representation of all aspects influencing the legal
+	situation in reality. The goal of the paper is to develop a formal
+	model comprising representations of the cadastre and of reality that
+	allows the simulation and investigation of cases where this
+	correspondence is potentially violated. For this purpose the model
+	consists of two parts, the first part represents the valid legal
+	situation and the second part represents the cadastre. This makes it
+	feasible to mark the differences between reality and the cadastre. The
+	marking together with the two parts of the model facilitate the
+	discussion of issues in "real-world" cadastral systems where
+	incorrectness occurs. In order to develop a formal model, the paper
+	uses the transfer of ownership of a parcel between two persons as
+	minimal case study. The foundation for the formalization is a modern
+	version of the situation calculus. The focus moves from the analysis of
+	the cadastre to the preparation of a conceptual and a formalized model
+	and the implementation of a prototype

@@ -1,0 +1,15 @@
+Optical actuation of a bistable MEMS
+This paper presents an optical actuation scheme for MEMS devices based on the
+	well-established fact that light possesses momentum, and hence, imparts
+	a force equal to 2 W/c when reflected by a surface. Here, W is the
+	total power of the reflected light, and c is the speed of light.
+	Radiation pressure, as it is known, is nearly insignificant for most
+	macroscale applications, but it can be quite significant for MEMS
+	devices. In addition, light actuation offers a new paradigm. First,
+	intersecting light beams do not interfere, in contrast to electrical
+	conductors, which short when they come into contact. Second, light can
+	operate in high temperature and high radiation environments far outside
+	the capability of solid state electronic components. This actuation
+	method is demonstrated, both in air and in vacuum, by switching the
+	state of a bistable MEMS device. The associated heat transfer model is
+	also presented

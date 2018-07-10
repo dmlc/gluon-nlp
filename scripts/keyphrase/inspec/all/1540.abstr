@@ -1,0 +1,24 @@
+Adaptive thinning for bivariate scattered data
+This paper studies adaptive thinning strategies for approximating a large set
+	of scattered data by piecewise linear functions over triangulated
+	subsets. Our strategies depend on both the locations of the data points
+	in the plane, and the values of the sampled function at these points -
+	adaptive thinning. All our thinning strategies remove data points one
+	by one, so as to minimize an estimate of the error that results by the
+	removal of a point from the current set of points (this estimate is
+	termed "anticipated error"). The thinning process generates subsets of
+	"most significant" points, such that the piecewise linear interpolants
+	over the Delaunay triangulations of these subsets approximate
+	progressively the function values sampled at the original scattered
+	points, and such that the approximation errors are small relative to
+	the number of points in the subsets. We design various methods for
+	computing the anticipated error at reasonable cost, and compare and
+	test the performance of the methods. It is proved that for data sampled
+	from a convex function, with the strategy of convex triangulation, the
+	actual error is minimized by minimizing the best performing measure of
+	anticipated error. It is also shown that for data sampled from certain
+	quadratic polynomials, adaptive thinning is equivalent to thinning
+	which depends only on the locations of the data points - nonadaptive
+	thinning. Based on our numerical tests and comparisons, two practical
+	adaptive thinning algorithms are proposed for thinning large data sets,
+	one which is more accurate and another which is faster

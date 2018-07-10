@@ -1,0 +1,11 @@
+Generating code at run time with Reflection.Emit
+The .NET framework SDK includes several tools that convert source code into
+	executable code-the C# and VB.NET compilers get most of the attention,
+	but there are others. The Regex class (in the
+	System.Text.RegularExpressions namespace) has the ability to compile
+	favorite regular expressions into a .NET assembly. In fact, the NET
+	Common Language Runtime (CLR) contains a whole namespace full of
+	classes to help us build assemblies, define types, and emit their
+	implementations, all at run time. These classes, which comprise the
+	System.Reflection.Emit namespace, are known collectively as Reflection.
+	Emit

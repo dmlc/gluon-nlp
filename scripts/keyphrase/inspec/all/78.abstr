@@ -1,0 +1,17 @@
+Applying genetic algorithms to solve the fuzzy optimal profit problem
+This study investigated the application of genetic algorithms in solving a
+	fuzzy optimization problem that arises in business and economics. In
+	this problem, a fuzzy price is determined using a linear or a quadratic
+	fuzzy demand function as well as a linear cost function. The objective
+	is to find the optimal fuzzy profit, which is derived from the fuzzy
+	price and fuzzy cost. Traditional methods for solving this problem are
+	(1) the extension principle, and (2) using interval arithmetic and
+	alpha -cuts. However, we argue that traditional methods for solving
+	this problem are too restrictive to produce an optimal solution, and
+	that an alternative approach is possibly needed. We use genetic
+	algorithms to obtain an approximate solution for this fuzzy optimal
+	profit problem without using membership functions. We not only give
+	empirical examples to show the effectiveness of this approach, but also
+	give theoretical proofs to validate correctness of the algorithm. We
+	conclude that genetic algorithms can produce good approximate solutions
+	when applied to solve fuzzy optimization problems

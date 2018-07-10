@@ -1,0 +1,15 @@
+Multivariable H/sub infinity // mu feedback control design for high-precision
+	wafer stage motion
+Conventional PID-like SISO controllers are still the most common in industry,
+	but with performance requirements becoming tighter there is a growing
+	need for advanced controllers. For the positioning devices in
+	IC-manufacturing, plant interaction is a major performance-limiting
+	factor. MIMO control can be invoked to tackle this problem. A
+	practically feasible procedure is presented to design MIMO feedback
+	controllers for electromechanical positioning devices, using H/sub
+	infinity // mu techniques. Weighting filters are proposed to
+	straightforwardly and effectively impose performance and uncertainty
+	specifications. Experiments show that MIMO control can considerably
+	improve upon the performance with multiloop SISO control. Some problems
+	are highlighted that are important for industrial practice, but lacking
+	a workable solution

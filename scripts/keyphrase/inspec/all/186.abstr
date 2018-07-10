@@ -1,0 +1,15 @@
+The diameter of a long-range percolation graph
+We consider the following long-range percolation model: an undirected graph
+	with the node set {0, 1, . . . , N}/sup d/, has edges (x, y) selected
+	with probability approximately= beta /||x - y||/sup s/ if ||x - y||
+	> 1, and with probability 1 if ||x - y|| = 1, for some parameters
+	beta , s > 0. This model was introduced by who obtained bounds on
+	the diameter of this graph for the one-dimensional case d = 1 and for
+	various values of s, but left cases s = 1, 2 open. We show that, with
+	high probability, the diameter of this graph is Theta (log N/log log N)
+	when s = d, and, for some constants 0 < eta /sub 1/ < eta /sub 2/
+	< 1, it is at most N/sup eta 2/ when s = 2d, and is at least N/sup
+	eta 1/ when d = 1, s = 2, beta < 1 or when s > 2d. We also
+	provide a simple proof that the diameter is at most log/sup O(1)/ N
+	with high probability, when d < s < 2d, established previously in
+	Benjamini and Berger (2001)

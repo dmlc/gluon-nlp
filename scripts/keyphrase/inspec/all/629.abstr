@@ -1,0 +1,13 @@
+Calibrated initials for an EM applied to recursive models of categorical
+	variables
+The estimates from an EM, when it is applied to a large causal model of 10 or
+	more categorical variables, are often subject to the initial values for
+	the estimates. This phenomenon becomes more serious as the model
+	structure becomes more complicated involving more variables. As a
+	measure of compensation for this, it has been recommended in literature
+	that EMs are implemented several times with different sets of initial
+	values to obtain more appropriate estimates. We propose an improved
+	approach for initial values. The main idea is that we use initials that
+	are calibrated to data. A simulation result strongly indicates that the
+	calibrated initials give rise to the estimates that are far closer to
+	the true values than the initials that are not calibrated

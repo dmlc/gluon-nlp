@@ -1,0 +1,14 @@
+Simulation of evacuation processes using a bionics-inspired cellular automaton
+	model for pedestrian dynamics
+We present simulations of evacuation processes using a recently introduced
+	cellular automaton model for pedestrian dynamics. This model applies a
+	bionics approach to describe the interaction between the pedestrians
+	using ideas from chemotaxis. Here we study a rather simple situation,
+	namely the evacuation from a large room with one or two doors. It is
+	shown that the variation of the model parameters allows to describe
+	different types of behaviour, from regular to panic. We find a
+	non-monotonic dependence of the evacuation times on the coupling
+	constants. These times depend on the strength of the herding behaviour,
+	with minimal evacuation times for some intermediate values of the
+	couplings, i.e., a proper combination of herding and use of knowledge
+	about the shortest way to the exit

@@ -1,0 +1,19 @@
+A strategy for a payoff-switching differential game based on fuzzy reasoning
+In this paper, a new concept of a payoff-switching differential game is
+	introduced. In this new game, any one player at any time may have
+	several choices of payoffs for the future. Moreover, the
+	payoff-switching process, including the time of payoff switching and
+	the outcome payoff, of any one player is unknown to the other. Indeed,
+	the overall payoff, which is a sequence of several payoffs, is unknown
+	until the game ends. An algorithm for determining a reasoning strategy
+	based on fuzzy reasoning is proposed. In this algorithm, the fuzzy
+	theory is used to estimate the behavior of one player during a past
+	time interval. By deriving two fuzzy matrices GSM, game similarity
+	matrix, and VGSM, variation of GSM, the behavior of the player can be
+	quantified. Two weighting vectors are selected to weight the relative
+	importance of the player's behavior at each past time instant. Finally
+	a simple fuzzy inference rule is adopted to generate a linear reasoning
+	strategy. The advantage of this algorithm is that it provides a
+	flexible way for differential game specialists to convert their
+	knowledge into a "reasonable" strategy. A practical example of guarding
+	three territories is given to illustrate our main ideas

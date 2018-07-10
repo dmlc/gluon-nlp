@@ -1,0 +1,20 @@
+Node-capacitated ring routing
+We consider the node-capacitated routing problem in an undirected ring network
+	along with its fractional relaxation, the node-capacitated
+	multicommodity flow problem. For the feasibility problem, Farkas' lemma
+	provides a characterization for general undirected graphs, asserting
+	roughly that there exists such a flow if and only if the so-called
+	distance inequality holds for every choice of distance functions
+	arising from nonnegative node weights. For rings, this
+	(straightforward) result will be improved in two ways. We prove that,
+	independent of the integrality of node capacities, it suffices to
+	require the distance inequality only for distances arising from
+	(0-1-2)-valued node weights, a requirement that will be called the
+	double-cut condition. Moreover, for integer-valued node capacities, the
+	double-cut condition implies the existence of a half-integral
+	multicommodity flow. In this case there is even an integer-valued
+	multicommodity flow that violates each node capacity by at most one.
+	Our approach gives rise to a combinatorial, strongly polynomial
+	algorithm to compute either a violating double-cut or a
+	node-capacitated multicommodity flow. A relation of the problem to its
+	edge-capacitated counterpart will also be explained

@@ -1,0 +1,16 @@
+Intensity based affine registration including feature similarity for spatial
+	normalization
+This paper presents a new spatial normalization with affine transformation. The
+	quantitative comparison of brain architecture across different subjects
+	requires a common coordinate system. For the analysis of a specific
+	brain area, it is necessary to normalize and compare a region of
+	interest and the global brain. The intensity based registration method
+	matches the global brain well, but a region of interest may not be
+	locally normalized compared to the feature based method. The method in
+	this paper uses feature similarities of local regions as well as
+	intensity similarities. The lateral ventricle and central gray nuclei
+	of the brain, including the corpus callosum, which is used for features
+	in schizophrenia detection, is appropriately normalized. Our method
+	reduces the difference of feature areas such as the corpus callosum
+	(7.7%, 2.4%) and lateral ventricle (8.2%, 13.5%) compared with mutual
+	information and Talairach methods

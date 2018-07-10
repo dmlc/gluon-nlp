@@ -1,0 +1,16 @@
+Minimizing the number of successor states in the stubborn set method
+Combinatorial explosion which occurs in parallel compositions of LTSs can be
+	alleviated by letting the stubborn set method construct on-the-fly a
+	reduced LTS that is CFFD- or CSP-equivalent to the actual parallel
+	composition. This article considers the problem of minimizing the
+	number of successor states of a given state in the reduced LTS. The
+	problem can be solved by constructing an and/or-graph with weighted
+	vertices and by finding a set of vertices that satisfies a certain
+	constraint such that no set of vertices satisfying the constraint has a
+	smaller sum of weights. Without weights, the and/or-graph can be
+	constructed in low-degree polynomial time w.r.t. the length of the
+	input of the problem. However, since actions can be nondeterministic
+	and transitions can share target states, it is not known whether the
+	weights are generally computable in polynomial time. Consequently, it
+	is an open problem whether minimizing the number of successor states is
+	as "easy" as minimizing the number of successor transitions

@@ -1,0 +1,11 @@
+Implementation of universal quantum gates based on nonadiabatic geometric
+	phases
+We propose an experimentally feasible scheme to achieve quantum computation
+	based on nonadiabatic geometric phase shifts, in which a cyclic
+	geometric phase is used to realize a set of universal quantum gates.
+	Physical implementation of this set of gates is designed for Josephson
+	junctions and for NMR systems. Interestingly, we find that the
+	nonadiabatic phase shift may be independent of the operation time under
+	appropriate controllable conditions. A remarkable feature of the
+	present nonadiabatic geometric gates is that there is no intrinsic
+	limitation on the operation time

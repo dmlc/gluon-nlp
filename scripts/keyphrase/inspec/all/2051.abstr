@@ -1,0 +1,14 @@
+Who wants to see a $million error?
+Inspired by the popular television show "Who Wants to Be a Millionaire?", this
+	case discusses the monetary decisions contestants face on a game
+	consisting of 15 increasingly difficult multiple choice questions.
+	Since the game continues as long as a contestant answers correctly,
+	this case, at its core, is one of sequential decision analysis,
+	amenable to analysis via stochastic dynamic programming. The case is
+	also suitable for a course dealing with single decision analysis,
+	allowing for discussion of utility theory and Bayesian probability
+	revision. In developing a story line for the case, the author has
+	sprinkled in much background material on probability and statistics.
+	This material is placed in a historical context, illuminating some of
+	the influential scholars involved in the development of these subjects
+	as well as the birth of operations research and the management sciences

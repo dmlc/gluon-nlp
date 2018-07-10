@@ -1,0 +1,22 @@
+Permission grids: practical, error-bounded simplification
+We introduce the permission grid, a spatial occupancy grid which can be used to
+	guide almost any standard polygonal surface simplification algorithm
+	into generating an approximation with a guaranteed geometric error
+	bound. In particular, all points on the approximation are guaranteed to
+	be within some user-specified distance from the original surface. Such
+	bounds are notably absent from many current simplification methods, and
+	are becoming increasingly important for applications in scientific
+	computing and adaptive level of detail control. Conceptually simple,
+	the permission grid defines a volume in which the approximation must
+	lie, and does not permit the underlying simplification algorithm to
+	generate approximations outside the volume. The permission grid makes
+	three important, practical improvements over current error-bounded
+	simplification methods. First, it works on arbitrary triangular models,
+	handling all manners of mesh degeneracies gracefully. Further, the
+	error tolerance may be easily expanded as simplification proceeds,
+	allowing the construction of an error-bounded level of detail hierarchy
+	with vertex correspondences among all levels of detail. And finally,
+	the permission grid has a representation complexity independent of the
+	size of the input model, and a small running time overhead, making it
+	more practical and efficient than current methods with similar
+	guarantees

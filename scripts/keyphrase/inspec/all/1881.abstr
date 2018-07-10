@@ -1,0 +1,9 @@
+Stabilization of positive systems with first integrals
+Positive systems possessing first integrals are considered. These systems
+	frequently occur in applications. The paper is devoted to two
+	stabilization problems. The first is concerned with the design of
+	feedbacks to stabilize a given level set. Secondly, it is shown that
+	the same feedback allows us to globally stabilize an equilibrium point
+	if it is asymptotically stable with respect to initial conditions in
+	its level set. Two examples are provided and the results are compared
+	with those in the literature

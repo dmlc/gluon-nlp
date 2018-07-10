@@ -1,0 +1,11 @@
+Windows XP fast user switching
+The Windows NT family of operating systems has always supported the concept of
+	multiple user accounts, but they've taken the concept a step further
+	with Windows XP's Fast User Switching feature. Fast User Switching is a
+	new feature of Windows XP that allows multiple users to log on to the
+	same machine and quickly switch between the logged on accounts. Fast
+	User Switching is implemented using some of the built-in capabilities
+	of Terminal Services. Terminal Server has been around for a while but
+	is much more feature rich and integrated in Windows XP. A machine with
+	the terminal services (Remote Desktop) client can log on to and run
+	applications on a remote machine running the terminal server

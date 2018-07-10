@@ -1,0 +1,11 @@
+Implementation of DIMSIMs for stiff differential systems
+Some issues related to the implementation of diagonally implicit multistage
+	integration methods for stiff differential systems are discussed. They
+	include reliable estimation of the local discretization error,
+	construction of continuous interpolants, solution of nonlinear systems
+	of equations by simplified Newton iterations, choice of initial
+	stepsize and order, and step and order changing strategy. Numerical
+	results are presented which indicate that an experimental Matlab code
+	based on type 2 methods of order one, two and three outperforms ode15s
+	code from Matlab ODE suite on problems whose Jacobian has eigenvalues
+	which are close to the imaginary axis

@@ -1,0 +1,6 @@
+Adaptive image enhancement for retinal blood vessel segmentation
+Retinal blood vessel images are enhanced by removing the nonstationary
+	background, which is adaptively estimated based on local neighbourhood
+	information. The result is a much better segmentation of the blood
+	vessels with a simple algorithm and without the need to obtain a priori
+	illumination knowledge of the imaging system

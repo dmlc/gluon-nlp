@@ -1,0 +1,9 @@
+Combining PC control and HMI
+Integrating PC-based control with human machine interface (HMI) technology can
+	benefit a plant floor system. However, before one decides on PC-based
+	control, there are many things one should consider, especially when
+	using a soft programmable logic controller (PLC) to command the
+	input/output. There are three strategies to integrate a PC-based
+	control system with an HMI: treat the PC running the control
+	application as if it were a PLC, integrate the system using standard PC
+	interfaces; or using application programming interfaces

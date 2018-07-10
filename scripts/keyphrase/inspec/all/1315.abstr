@@ -1,0 +1,13 @@
+Traffic engineering with traditional IP routing protocols
+Traffic engineering involves adapting the routing of traffic to network
+	conditions, with the joint goals of good user performance and efficient
+	use of network resources. We describe an approach to intradomain
+	traffic engineering that works within the existing deployed base of
+	interior gateway protocols, such as Open Shortest Path First and
+	Intermediate System-Intermediate System. We explain how to adapt the
+	configuration of link weights, based on a networkwide view of the
+	traffic and topology within a domain. In addition, we summarize the
+	results of several studies of techniques for optimizing OSPF/IS-IS
+	weights to the prevailing traffic. The article argues that traditional
+	shortest path routing protocols are surprisingly effective for
+	engineering the flow of traffic in large IP networks

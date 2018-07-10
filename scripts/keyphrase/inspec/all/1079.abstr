@@ -1,0 +1,14 @@
+A novel robot hand with embedded shape memory alloy actuators
+Describes the development of an active robot hand, which allows smooth and
+	lifelike motions for anthropomorphic grasping and fine manipulations.
+	An active robot finger 10 mm in outer diameter with a shape memory
+	alloy (SMA) wire actuator embedded in the finger with a constant
+	distance from the geometric centre of the finger was designed and
+	fabricated. The practical specifications of the SMA wire and the
+	flexible rod were determined on the basis of a series of formulae. The
+	active finger consists of two bending parts, the SMA actuators and a
+	connecting part. The mechanical properties of the bending part are
+	investigated. The control system on the basis of resistance feedback is
+	also presented. Finally, a robot hand with three fingers was designed
+	and the grasping experiment was carried out to demonstrate its
+	performance

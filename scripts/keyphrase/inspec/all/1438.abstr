@@ -1,0 +1,19 @@
+Three-dimensional particle image tracking for dilute particle-liquid flows in a
+	pipe
+A three-dimensional (3D) particle image tracking technique was used to study
+	the coarse spherical particle-liquid flows in a pipe. The flow images
+	from both the front view and the normal side view, which was reflected
+	into the front view by a mirror, were recorded with a CCD camera and
+	digitized by a PC with an image grabber card. An image processing
+	program was developed to enhance and segment the flow image, and then
+	to identify the particles. Over 90% of all the particles can be
+	identified and located from the partially overlapped particle images
+	using the circular Hough transform. Then the 3D position of each
+	detected particle was determined by matching its front view image to
+	its side view image. The particle velocity was then obtained by pairing
+	its images in successive video fields. The measurements for the
+	spherical expanded polystyrene particle-oil flows show that the
+	particles, like the spherical bubbles in laminar bubbly flows, tend to
+	conglomerate near the pipe wall and to line up to form the particle
+	clusters. As liquid velocity decreases, the particle clusters disperse
+	and more particles are distributed in the pipe centre region

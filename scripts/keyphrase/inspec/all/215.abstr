@@ -1,0 +1,25 @@
+A conceptual framework for evaluation of information technology investments
+The decision to acquire a new information technology poses a number of serious
+	evaluation and selection problems to technology managers, because the
+	new system must not only meet current information requirements of the
+	organisation, but also the needs for future expansion. Tangible and
+	intangible benefits factors, as well as risks factors, must be
+	identified and evaluated. The paper provides a review of ten major
+	evaluation categories and available models, which fall under each
+	category, showing their advantages and disadvantages in handling the
+	above difficulties. This paper describes strategic implications
+	involved in the selection decision, and the inherent difficulties in:
+	(1) choosing or developing a model, (2) obtaining realistic inputs for
+	the model, and (3) making tradeoffs among the conflicting factors. It
+	proposes a conceptual framework to help the decision maker in choosing
+	the most appropriate methodology in the evaluation process. It also
+	offers a new model, called GAHP, for the evaluation problem combining
+	integer goal linear programming and analytic hierarchy process (AHP) in
+	a single hybrid multiple objective multi-criteria model. A goal
+	programming methodology, with zero-one integer variables and mixed
+	integer constraints, is used to set goal target values against which
+	information technology alternatives are evaluated and selected. AHP is
+	used to structure the evaluation process providing pairwise comparison
+	mechanisms to quantify subjective, nonmonetary, intangible benefits and
+	risks factors, in deriving data for the model. A case illustration is
+	provided showing how GAHP can be formulated and solved

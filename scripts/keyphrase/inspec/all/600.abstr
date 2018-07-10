@@ -1,0 +1,10 @@
+Development of railway VR safety simulation system
+Abnormal conditions occur in railway transportation due to trouble or accidents
+	and it affects a number of passengers. It is very important, therefore,
+	to quickly recover and return to normal train operation. For this
+	purpose we developed a system, "Computer VR Simulation System for the
+	Safety of Railway Transportation." It is a new type simulation system
+	to evaluate measures to be taken under abnormal conditions. Users of
+	this simulation system cooperate with one another to correct the
+	abnormal conditions that have occurred in virtual reality. This paper
+	reports the newly developed simulation system

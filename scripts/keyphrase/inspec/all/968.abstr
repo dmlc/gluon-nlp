@@ -1,0 +1,14 @@
+Stabilization of global invariant sets for chaotic systems: an energy based
+	control approach
+This paper presents a new control approach for steering trajectories of
+	three-dimensional nonlinear chaotic systems towards stable stationary
+	states or time-periodic orbits. The proposed method mainly consists in
+	a sliding mode-based control design that is extended by an explicit
+	consideration of system energy as basis for both controller design and
+	system stabilization. The control objective is then to regulate the
+	energy with respect to a shaped nominal representation implicitly
+	related to system trajectories. In this paper, we establish some
+	theoretical results to introduce the control design approach referred
+	to as energy based sliding mode control. Then, some capabilities of the
+	proposed approach are illustrated through examples related to the
+	chaotic circuit of Chua

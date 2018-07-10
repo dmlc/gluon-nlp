@@ -1,0 +1,17 @@
+Towards strong stability of concurrent repetitive processes sharing resources
+The paper presents a method for design of stability conditions of concurrent,
+	repetitive processes sharing common resources. Steady-state behaviour
+	of the system with m cyclic processes utilising a resource with the
+	mutual exclusion is considered. Based on a recurrent equations
+	framework necessary and sufficient conditions for the existence of
+	maximal performance steady-state are presented. It was shown that if
+	the conditions hold then the m-process system is marginally stable,
+	i.e., a steady-state of the system depends on the perturbations. The
+	problem of finding the relative positions of the processes leading to
+	waiting-free (maximal efficiency) steady-states of the system is
+	formulated as a constraint logic programming problem. An example
+	illustrating the solving of the problem for a 3-process system using
+	object-oriented, constraint logic programming language Oz is presented.
+	A condition sufficient for strong stability of the m-process system is
+	given. When the condition holds then for any initial phases of the
+	processes a waiting-free steady-state will be reached

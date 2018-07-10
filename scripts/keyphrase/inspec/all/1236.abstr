@@ -1,0 +1,20 @@
+Compatibility comparison and performance evaluation for Japanese HPF compilers
+	using scientific applications
+The lack of compatibility of High-Performance Fortran (HPF) between vender
+	implementations has been disheartening scientific application users so
+	as to hinder the development of portable programs. Thus parallel
+	computing is still unpopular in the computational science community,
+	even though parallel programming is common to the computer science
+	community. As users would like to run the same source code on parallel
+	machines with different architectures as fast as possible, we have
+	investigated the compatibility of source codes for Japanese HPF
+	compilers (NEC, Fujitsu and Hitachi) with two real-world applications:
+	a 3D fluid code and a 2D particle code. We have found that the
+	source-level compatibility between Japanese HPF compilers is almost
+	preserved, but more effort will be needed to sustain complete
+	compatibility. We have also evaluated parallel performance and found
+	that HPF can achieve good performance for the 3D fluid code with almost
+	the same source code. For the 2D particle code, good results have also
+	been obtained with a small number of processors, but some changes in
+	the original source code and the addition of interface blocks is
+	required

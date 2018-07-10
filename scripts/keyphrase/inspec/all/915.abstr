@@ -1,0 +1,18 @@
+A meteorological fuzzy expert system incorporating subjective user input
+We present a fuzzy expert system, MEDEX, for forecasting gale-force winds in
+	the Mediterranean basin. The most successful local wind forecasting in
+	this region is achieved by an expert human forecaster with access to
+	numerical weather prediction products. That forecaster's knowledge is
+	expressed as a set of 'rules-of-thumb'. Fuzzy set methodologies have
+	proved well suited for encoding the forecaster's knowledge, and for
+	accommodating the uncertainty inherent in the specification of rules,
+	as well as in subjective and objective input. MEDEX uses fuzzy set
+	theory in two ways: as a fuzzy rule base in the expert system, and for
+	fuzzy pattern matching to select dominant wind circulation patterns as
+	one input to the expert system. The system was developed, tuned, and
+	verified over a two-year period, during which the weather conditions
+	from 539 days were individually analyzed. Evaluations of MEDEX
+	performance for both the onset and cessation of winter and summer winds
+	are presented, and demonstrate that MEDEX has forecasting skill
+	competitive with the US Navy's regional forecasting center in Rota,
+	Spain

@@ -1,0 +1,18 @@
+Plenoptic image editing
+This paper presents a new class of interactive image editing operations
+	designed to maintain consistency between multiple images of a physical
+	3D scene. The distinguishing feature of these operations is that edits
+	to any one image propagate automatically to all other images as if the
+	(unknown) 3D scene had itself been modified. The modified scene can
+	then be viewed interactively from any other camera viewpoint and under
+	different scene illuminations. The approach is useful first as a
+	power-assist that enables a user to quickly modify many images by
+	editing just a few, and second as a means for constructing and editing
+	image-based scene representations by manipulating a set of photographs.
+	The approach works by extending operations like image painting,
+	scissoring, and morphing so that they alter a scene's plenoptic
+	function in a physically-consistent way, thereby affecting scene
+	appearance from all viewpoints simultaneously. A key element in
+	realizing these operations is a new volumetric decomposition technique
+	for reconstructing an scene's plenoptic function from an incomplete set
+	of camera viewpoints

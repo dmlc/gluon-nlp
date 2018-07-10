@@ -1,0 +1,8 @@
+Cooperative mutation based evolutionary programming for continuous function
+	optimization
+An evolutionary programming (EP) algorithm adapting a new mutation operator is
+	presented. Unlike most previous EPs, in which each individual is
+	mutated on its own, each individual in the proposed algorithm is
+	mutated in cooperation with the other individuals. This not only
+	enhances convergence speed but also gives more chance to escape from
+	local minima

@@ -1,0 +1,9 @@
+Efficient cellular automata based versatile multiplier for GF(2/sup m/)
+In this paper, a low-complexity programmable cellular automata (PCA) based
+	versatile modular multiplier in GF(2/sup m/) is presented. The proposed
+	versatile multiplier increases flexibility by using the same multiplier
+	in different security environments, and it reduces the user's cost.
+	Moreover, the multiplier can be easily extended to high order of m for
+	more security, and low-cost serial implementation is feasible in
+	restricted computing environments, such as smart cards and wireless
+	devices

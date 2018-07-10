@@ -1,0 +1,7 @@
+Much ado about nothing: Win32.Perrun
+JPEG files do not contain any executable code and it is impossible to infect
+	such files. The author takes a look at the details surrounding the
+	Win32.Perrun virus and make clear exactly what it does. The main virus
+	feature is its ability to affect JPEG image files (compressed graphic
+	images) and to spread via affected JPEG files. The virus affects, or
+	modifies, or alters JPEG files but does not "infect" them

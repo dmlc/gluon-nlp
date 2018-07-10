@@ -1,0 +1,13 @@
+Limitations of delayed state feedback: a numerical study
+Stabilization of a class of linear time-delay systems can be achieved by a
+	numerical procedure, called the continuous pole placement method
+	[Michiels et al., 2000]. This method can be seen as an extension of the
+	classical pole placement algorithm for ordinary differential equations
+	to a class of delay differential equations. In [Michiels et al., 2000]
+	it was applied to the stabilization of a linear time-invariant system
+	with an input delay using static state feedback. In this paper we study
+	the limitations of such delayed state feedback laws. More precisely we
+	completely characterize the class of stabilizable plants in the
+	2D-case. For that purpose we make use of numerical continuation
+	techniques. The use of delayed state feedback in various control
+	applications and the effect of its limitations are briefly discussed

@@ -1,0 +1,9 @@
+Full-screen ultrafast video modes over-clocked by simple VESA routines and
+	registers reprogramming under MS-DOS
+Fast full-screen presentation of stimuli is necessary in psychological
+	research. Although Spitczok von Brisinski (1994) introduced a method
+	that achieved ultrafast display by reprogramming the registers, he
+	could not produce an acceptable full-screen display. In this report,
+	the author introduces a new method combining VESA routine calling with
+	register reprogramming that can yield a display at 640 * 480
+	resolution, with a refresh rate of about 150 Hz

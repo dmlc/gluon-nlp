@@ -1,0 +1,21 @@
+H/sub 2/ optimization of the three-element type dynamic vibration absorbers
+The dynamic vibration absorber (DVA) is a passive vibration control device
+	which is attached to a vibrating body (called a primary system)
+	subjected to exciting force or motion. In this paper, we will discuss
+	an optimization problem of the three-element type DVA on the basis of
+	the H/sub 2/ optimization criterion. The objective of the H/sub 2/
+	optimization is to reduce the total vibration energy of the system for
+	overall frequencies; the total area under the power spectrum response
+	curve is minimized in this criterion. If the system is subjected to
+	random excitation instead of sinusoidal excitation, then the H/sub 2/
+	optimization is probably more desirable than the popular H/sub infinity
+	/ optimization. In the past decade there has been increasing interest
+	in the three-element type DVA. However, most previous studies on this
+	type of DVA were based on the H/sub infinity / optimization design, and
+	no one has been able to find the algebraic solution as of yet. We found
+	a closed-form exact solution for a special case where the primary
+	system has no damping. Furthermore, the general case solution including
+	the damped primary system is presented in the form of a numerical
+	solution. The optimum parameters obtained here are compared to those of
+	the conventional Voigt type DVA. They are also compared to other
+	optimum parameters based on the H/sub infinity / criterion

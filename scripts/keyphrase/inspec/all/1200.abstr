@@ -1,0 +1,12 @@
+From continuous recovery to discrete filtering in numerical approximations of
+	conservation laws
+Modern numerical approximations of conservation laws rely on numerical
+	dissipation as a means of stabilization. The older, alternative
+	approach is the use of central differencing with a dose of artificial
+	dissipation. In this paper we review the successful class of weighted
+	essentially non-oscillatory finite volume schemes which comprise
+	sophisticated methods of the first kind. New developments in image
+	processing have made new devices possible which can serve as highly
+	nonlinear artificial dissipation terms. We view artificial dissipation
+	as discrete filter operation and introduce several new algorithms
+	inspired by image processing

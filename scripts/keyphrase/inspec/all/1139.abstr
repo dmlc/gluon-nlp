@@ -1,0 +1,33 @@
+Development and evaluation of a case-based reasoning classifier for prediction
+	of breast biopsy outcome with BI-RADS/sup TM/ lexicon
+Approximately 70-85% of breast biopsies are performed on benign lesions. To
+	reduce this high number of biopsies performed on benign lesions, a
+	case-based reasoning (CBR) classifier was developed to predict biopsy
+	results from BI-RADS/sup TM/ findings. We used 1433 (931 benign)
+	biopsy-proven mammographic cases. CBR similarity was defined using
+	either the Hamming or Euclidean distance measure over case features.
+	Ten features represented each case: calcification distribution,
+	calcification morphology, calcification number, mass margin, mass
+	shape, mass density, mass size, associated findings, special cases, and
+	age. Performance was evaluated using Round Robin sampling, Receiver
+	Operating Characteristic (ROC) analysis, and bootstrap. To determine
+	the most influential features for the CBR, an exhaustive feature search
+	was performed over all possible feature combinations (1022) and
+	similarity thresholds. Influential features were defined as the most
+	frequently occurring features in the feature subsets with the highest
+	partial ROC areas (/sub 0.90/AUC). For CBR with Hamming distance, the
+	most influential features were found to be mass margin, calcification
+	morphology, age, calcification distribution, calcification number, and
+	mass shape, resulting in an /sub 0.90/AUC of 0.33. At 95% sensitivity,
+	the Hamming CBR would spare from biopsy 34% of the benign lesions. At
+	98% sensitivity, the Hamming CBR would spare 27% benign lesions. For
+	the CBR with Euclidean distance, the most influential feature subset
+	consisted of mass margin, calcification morphology, age, mass density,
+	and associated findings, resulting in /sub 0.90/AUC of 0.37. At 95%
+	sensitivity, the Euclidean CBR would spare from biopsy 41% benign
+	lesions. At 98% sensitivity, the Euclidean CBR would spare 27% benign
+	lesions. The profile of cases spared by both distance measures at 98%
+	sensitivity indicates that the CBR is a potentially useful diagnostic
+	tool for the classification of mammographic lesions, by recommending
+	short-term follow-up for likely benign lesions that is in agreement
+	with final biopsy results and mammographer's intuition

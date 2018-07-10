@@ -1,0 +1,14 @@
+Adaptive neural/fuzzy control for interpolated nonlinear systems
+Adaptive control for nonlinear time-varying systems is of both theoretical and
+	practical importance. We propose an adaptive control methodology for a
+	class of nonlinear systems with a time-varying structure. This class of
+	systems is composed of interpolations of nonlinear subsystems which are
+	input-output feedback linearizable. Both indirect and direct adaptive
+	control methods are developed, where the spatially localized models (in
+	the form of Takagi-Sugeno fuzzy systems or radial basis function neural
+	networks) are used as online approximators to learn the unknown
+	dynamics of the system. Without assumptions on rate of change of system
+	dynamics, the proposed adaptive control methods guarantee that all
+	internal signals of the system are bounded and the tracking error is
+	asymptotically stable. The performance of the adaptive controller is
+	demonstrated using a jet engine control problem

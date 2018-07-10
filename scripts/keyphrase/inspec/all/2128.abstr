@@ -1,0 +1,7 @@
+An optimal control algorithm based on reachability set approximation and
+	linearization
+The terminal functional of a general control system is refined by studying an
+	analogous problem for a variational system and regularization. A
+	sequential refinement method is designed by combining the local
+	approximation of the reachability set and reduction. The corresponding
+	algorithm has relaxation properties. An illustrative example is given

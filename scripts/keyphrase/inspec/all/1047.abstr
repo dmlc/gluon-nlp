@@ -1,0 +1,19 @@
+Dynamics and control of initialized fractional-order systems
+Due to the importance of historical effects in fractional-order systems, this
+	paper presents a general fractional-order system and control theory
+	that includes the time-varying initialization response. Previous
+	studies have not properly accounted for these historical effects. The
+	initialization response, along with the forced response, for
+	fractional-order systems is determined. The scalar fractional-order
+	impulse response is determined, and is a generalization of the
+	exponential function. Stability properties of fractional-order systems
+	are presented in the complex w-plane, which is a transformation of the
+	s-plane. Time responses are discussed with respect to pole positions in
+	the complex w-plane and frequency response behavior is included. A
+	fractional-order vector space representation, which is a generalization
+	of the state space concept, is presented including the initialization
+	response. Control methods for vector representations of initialized
+	fractional-order systems are shown. Finally, the fractional-order
+	differintegral is generalized to continuous order-distributions which
+	have the possibility of including all fractional orders in a transfer
+	function

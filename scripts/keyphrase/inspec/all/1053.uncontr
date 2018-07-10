@@ -1,0 +1,5 @@
+static semantics; Haskell 98; nonstrict purely functional programming language;
+	formal specification; type system; overloading; kind inference;
+	polymorphic recursion; explicit dictionary passing; polymorphic lambda
+	calculus; higher order polymorphism; explicit type abstraction; term
+	language; type checking; monomorphism restriction; inference rules

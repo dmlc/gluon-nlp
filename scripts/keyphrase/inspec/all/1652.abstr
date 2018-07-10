@@ -1,0 +1,12 @@
+Convergence of a finite volume scheme for nonlinear degenerate parabolic
+	equations
+One approximates the entropy weak solution u of a nonlinear parabolic
+	degenerate equation u/sub t/+div(qf(u))- Delta phi (u)=0 by a piecewise
+	constant function u/sub D/ using a discretization D in space and time
+	and a finite volume scheme. The convergence of u/sub D/ to u is shown
+	as the size of the space and time steps tend to zero. In a first step,
+	estimates on u/sub D/ are used to prove the convergence, up to a
+	subsequence, of u/sub D/ to a measure valued entropy solution (called
+	here an entropy process solution). A result of uniqueness of the
+	entropy process solution is proved, yielding the strong convergence of
+	u/sub D/ to u. Some numerical results on a model equation are shown

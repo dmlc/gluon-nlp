@@ -1,0 +1,10 @@
+On the discretization of double-bracket flows
+This paper extends the method of Magnus series to Lie-algebraic equations
+	originating in double-bracket flows. We show that the solution of the
+	isospectral flow Y' = [[Y,N],Y], Y(O) = Y/sub 0/ in Sym(n), can be
+	represented in the form Y(t) = e/sup Omega (t)/Y/sub 0/e/sup - Omega
+	(1)/, where the Taylor expansion of Omega can be constructed
+	explicitly, term-by-term, identifying individual expansion terms with
+	certain rooted trees with bicolor leaves. This approach is extended to
+	other Lie-algebraic equations that can be appropriately expressed in
+	terms of a finite "alphabet"

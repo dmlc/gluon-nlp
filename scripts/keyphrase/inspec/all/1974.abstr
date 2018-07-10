@@ -1,0 +1,17 @@
+Real-time implementation of a new low-memory SPIHT image coding algorithm using
+	DSP chip
+Among all algorithms based on wavelet transform and zerotree quantization, Said
+	and Pearlman's (1996) set partitioning in hierarchical trees (SPIHT)
+	algorithm is well-known for its simplicity and efficiency. This paper
+	deals with the real-time implementation of SPIHT algorithm using DSP
+	chip. In order to facilitate the implementation and improve the codec's
+	performance, some relative issues are thoroughly discussed, such as the
+	optimization of program structure to speed up the wavelet
+	decomposition. SPIHT's high memory requirement is a major drawback for
+	hardware implementation. In this paper, we modify the original SPIHT
+	algorithm by presenting two new concepts-number of error bits and
+	absolute zerotree. Consequently, the memory cost is significantly
+	reduced. We also introduce a new method to control the coding process
+	by number of error bits. Our experimental results show that the
+	implementation meets common requirement of real-time video coding and
+	is proven to be a practical and efficient DSP solution

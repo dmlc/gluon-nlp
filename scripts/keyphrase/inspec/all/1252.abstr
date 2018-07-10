@@ -1,0 +1,17 @@
+An agent-oriented and service-oriented environment for deploying dynamic
+	distributed systems
+This paper presents JASE, a Java-based Agent-oriented and Service-oriented
+	Environment for deploying dynamic distributed systems. JASE utilizes
+	two important concepts in the field of distributed computing: the
+	concept of services and remote programming with mobile agents. In JASE,
+	mobile agents are used to support applications, and service interface
+	agents are used to wrap services. Service inter-face agents can
+	dynamically register their services in Service Server. Mobile agent
+	locates a specific service interface agent by submitting requests to
+	the Service Server with descriptions of required services. JASE uses
+	XML to describe both service descriptions and the mobile agent's
+	queries. JASE supports two kinds of communication facility: tuple space
+	and asynchronous messages. In this paper, the design and implementation
+	of JASE are described. An application shows the suitability and the
+	effectiveness of the JASE and performance evaluation is also made.
+	Finally, related work and some conclusions are given

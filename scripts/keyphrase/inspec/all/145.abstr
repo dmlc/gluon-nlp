@@ -1,0 +1,16 @@
+If the RedBoot fits [open-source ROM monitor]
+Many embedded developers today use a ROM- or flash-resident software program
+	that provides functionality such as loading and running application
+	software, scripting, read/write access to processor registers, and
+	memory dumps. A ROM monitor, as it is often called, can be a useful and
+	far less expensive debugging tool than an in-circuit emulator. This
+	article describes the RedBoot ROM monitor. It takes a look at the
+	features offered by the RedBoot ROM monitor and sees how it can be
+	configured. It also walks through the steps of rebuilding and
+	installing a new RedBoot image on a target platform. Finally, it looks
+	at future enhancements that are coming in new releases and how to get
+	support and additional information when using RedBoot. Although RedBoot
+	uses software modules from the eCos real-time operating system (RTOS)
+	and is often used in systems running embedded Linux, it is completely
+	independent of both operating systems. RedBoot can be used with any
+	operating system or RTOS, or even without one

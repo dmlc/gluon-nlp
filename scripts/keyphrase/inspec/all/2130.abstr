@@ -1,0 +1,5 @@
+Synchronizing experiments with linear interval systems
+Concerns generalized control problems without exact information. <P>A
+	method of constructing a minimal synchronizing sequence for a linear
+	interval system over the field of real numbers is developed. This
+	problem is reduced to a system of linear inequalities

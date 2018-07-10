@@ -1,0 +1,10 @@
+Novel approach to super-resolution pits readout
+We proposed a novel method to realize the readout of super-resolution pits by
+	using a super-resolution reflective film to replace the reflective
+	layer of the conventional ROM. At the same time, by using Sb as the
+	super-resolution reflective layer and SiN as a dielectric layer, the
+	super-resolution pits with diameters of 380 nm were read out by a setup
+	whose laser wavelength is 632.8 nm and numerical aperture is 0.40. In
+	addition, the influence of the Sb thin film thickness on the readout
+	signal was investigated, the results showed that the optimum Sb thin
+	film thickness is 28 to 30 nm, and the maximum CNR is 38 to 40 dB

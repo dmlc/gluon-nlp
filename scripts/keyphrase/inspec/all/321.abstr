@@ -1,0 +1,11 @@
+A multimodal data collection tool using REALbasic and Mac OS X
+This project uses REALbasic 3.5 in the Mac OS X environment for development of
+	a configuration tool that builds a data collection procedure for
+	investigating the effectiveness of sonified graphs. The advantage of
+	using REALbasic with the Mac OS X system is that it provides rapid
+	development of stimulus presentation, direct recording of data to
+	files, and control over other procedural issues. The program can be
+	made to run natively on the new Mac OS X system, older Mac OS systems,
+	and Windows (98SE, ME, 2000 PRO). With modification, similar programs
+	could be used to present any number of visual/auditory stimulus
+	combinations, complete with questions for each stimulus

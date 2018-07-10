@@ -1,0 +1,16 @@
+An effective feedback control mechanism for DiffServ architecture
+As a scalable QoS (Quality of Service) architecture, Diffserv (Differentiated
+	Service) mainly consists of two components: traffic conditioning at the
+	edge of the Diffserv domain and simple packet forwarding inside the
+	DiffServ domain. DiffServ has many advantages such as flexibility,
+	scalability and simplicity. But when providing AF (Assured Forwarding)
+	services, DiffServ has some problems such as unfairness among
+	aggregated flows or among micro-flows belonging to an aggregated flow.
+	In this paper, a feedback mechanism for AF aggregated flows is proposed
+	to solve this problem. Simulation results show that this mechanism does
+	improve the performance of DiffServ. First, it can improve the fairness
+	among aggregated flows and make DiffServ more friendly toward TCP
+	(Transmission Control Protocol) flows. Second, it can decrease the
+	buffer requirements at the congested router and thus obtain lower delay
+	and packet loss rate. Third, it also keeps almost the same link utility
+	as in normal DiffServ. Finally, it is simple and easy to be implemented

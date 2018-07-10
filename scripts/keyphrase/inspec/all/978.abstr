@@ -1,0 +1,11 @@
+On Implicit Euler for high-order high-index DAEs
+The Implicit Euler method is seldom used to solve differential-algebraic
+	equations (DAEs) of differential index r >or= 3, since the method in
+	general fails to converge in the first r - 2 steps after a change of
+	stepsize. However, if the differential equation is of order d = r - 1
+	>or= 1, an alternative variable-step version of the Euler method can
+	be shown uniformly convergent. For d = r - 1, this variable-step method
+	is equivalent to the Implicit Euler except for the first r - 2 steps
+	after a change of stepsize. Generalization to DAEs with differential
+	equations of order d > r - 1 >or= 1, and to variable-order
+	formulas is discussed

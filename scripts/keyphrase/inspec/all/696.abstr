@@ -1,0 +1,13 @@
+Design and implementation of a new sliding-mode observer for speed-sensorless
+	control of induction machine
+In this letter, a new sliding-mode-sensorless control algorithm is proposed for
+	the field-oriented induction machine drive. In the proposed algorithm,
+	the terms containing flux, speed, and rotor time constant, which are
+	common in both current and flux equations, in the current model of the
+	induction machine are estimated by a sliding function. The flux and
+	speed estimation accuracy is guaranteed when the error between the
+	actual current and observed current converges to zero. Hence, the
+	fourth-order system is reduced to two second-order systems, and the
+	speed estimation becomes very simple and robust to the parameter
+	uncertainties. The new approach is verified by simulation and
+	experimental results

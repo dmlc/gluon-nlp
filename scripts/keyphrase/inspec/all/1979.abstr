@@ -1,0 +1,23 @@
+Combining spatial and scale-space techniques for edge detection to provide a
+	spatially adaptive wavelet-based noise filtering algorithm
+New methods for detecting edges in an image using spatial and scale-space
+	domains are proposed. A priori knowledge about geometrical
+	characteristics of edges is used to assign a probability factor to the
+	chance of any pixel being on an edge. An improved double thresholding
+	technique is introduced for spatial domain filtering. Probabilities
+	that pixels belong to a given edge are assigned based on pixel
+	similarity across gradient amplitudes, gradient phases and edge
+	connectivity. The scale-space approach uses dynamic range compression
+	to allow wavelet correlation over a wider range of scales. A
+	probabilistic formulation is used to combine the results obtained from
+	filtering in each domain to provide a final edge probability image
+	which has the advantages of both spatial and scale-space domain
+	methods. Decomposing this edge probability image with the same wavelet
+	as the original image permits the generation of adaptive filters that
+	can recognize the characteristics of the edges in all wavelet detail
+	and approximation images regardless of scale. These matched filters
+	permit significant reduction in image noise without contributing to
+	edge distortion. The spatially adaptive wavelet noise-filtering
+	algorithm is qualitatively and quantitatively compared to a frequency
+	domain and two wavelet based noise suppression algorithms using both
+	natural and computer generated noisy images

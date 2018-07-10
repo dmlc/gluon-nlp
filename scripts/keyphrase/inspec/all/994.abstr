@@ -1,0 +1,20 @@
+Design and implementation of a flexible manufacturing control system using
+	neural network
+Design and implementation of a sequential controller based on the concept of
+	artificial neural networks for a flexible manufacturing system are
+	presented. The recurrent neural network (RNN) type is used for such a
+	purpose. Contrary to the programmable controller, an RNN-based
+	sequential controller is based on a definite mathematical model rather
+	than depending on the experience and trial and error techniques. The
+	proposed controller is also more flexible because it is not limited by
+	the restrictions of the finite state automata theory. Adequate
+	guidelines of how to construct an RNN-based sequential controller are
+	presented. These guidelines are applied to different case studies. The
+	proposed controller is tested by simulations and real-time experiments.
+	These tests prove the successfulness of the proposed controller
+	performances. Theoretical as well as experimental results are presented
+	and discussed indicating that the proposed design procedure using
+	Elman's RNN can be effective in designing a sequential controller for
+	event-based type manufacturing systems. In addition, the simulation
+	results assure the effectiveness of the proposed controller to overcome
+	the effect of noisy inputs

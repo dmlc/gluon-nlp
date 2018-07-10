@@ -1,0 +1,12 @@
+A dataflow computer which accelerates execution of sequential programs by
+	precedent firing instructions
+In the dataflow machine, it is important to avoid degradation of performance in
+	sequential processing, and it is important from the viewpoint of
+	hardware scale to reduce the number of waiting operands. This paper
+	demonstrates that processing performance is degraded by sequential
+	processing in the switching process, and presents a method of remedy.
+	Precedent firing control is proposed as a means of remedy, and it is
+	shown by a simulation that the execution time and the total number of
+	waiting operands can be reduced by the precedent firing control. Then
+	the hardware scale is examined as an evaluation of precedent firing
+	control

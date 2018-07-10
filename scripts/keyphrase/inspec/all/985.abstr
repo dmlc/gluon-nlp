@@ -1,0 +1,14 @@
+Local activity criteria for discrete-map CNN
+Discrete-time CNN systems are studied in this paper by the application of
+	Chua's local activity principle. These systems are locally active
+	everywhere except for one isolated parameter value. As a result,
+	nonhomogeneous spatiotemporal patterns may be induced by any initial
+	setting of the CNN system when the strength of the system diffusion
+	coupling exceeds a critical threshold. The critical coupling
+	coefficient can be derived from the loaded cell impedance of the CNN
+	system. Three well-known 1D map CNN's (namely, the logistic map CNN,
+	the magnetic vortex pinning map CNN, and the spiral wave reproducing
+	map CNN) are introduced to illustrate the applications of the local
+	activity principle. In addition, we use the cell impedance to
+	demonstrate the period-doubling scenario in the logistic and the
+	magnetic vortex pinning maps

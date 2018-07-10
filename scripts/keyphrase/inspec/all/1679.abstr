@@ -1,0 +1,18 @@
+Project scheduling under time dependent costs-a branch and bound algorithm
+In a given project network, execution of each activity in normal duration
+	requires utilization of certain resources. If faster execution of an
+	activity is desired then additional resources at extra cost would be
+	required. Given a project network, the cost structure for each activity
+	and a planning horizon, the project compression problem is concerned
+	with the determination of optimal schedule of performing each activity
+	while satisfying given restrictions and minimizing the total cost of
+	project execution. The paper considers the project compression problem
+	with time dependent cost structure for each activity. The planning
+	horizon is divided into several regular time intervals over which the
+	cost structure of an activity may vary. But the cost structure of the
+	activities remains the same within a time interval. The objective is to
+	find an optimal project schedule minimizing the total project cost. We
+	present a mathematical model for this problem, develop some heuristics
+	and an exact branch and bound algorithm. Using simulated problems we
+	provide an insight into the computational performances of heuristics
+	and the branch and bound algorithm

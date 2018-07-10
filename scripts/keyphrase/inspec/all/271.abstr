@@ -1,0 +1,20 @@
+On the use of neural network ensembles in QSAR and QSPR
+Despite their growing popularity among neural network practitioners, ensemble
+	methods have not been widely adopted in structure-activity and
+	structure-property correlation. Neural networks are inherently
+	unstable, in that small changes in the training set and/or training
+	parameters can lead to large changes in their generalization
+	performance. Recent research has shown that by capitalizing on the
+	diversity of the individual models, ensemble techniques can minimize
+	uncertainty and produce more stable and accurate predictors. In this
+	work, we present a critical assessment of the most common ensemble
+	technique known as bootstrap aggregation, or bagging, as applied to
+	QSAR and QSPR. Although aggregation does offer definitive advantages,
+	we demonstrate that bagging may not be the best possible choice and
+	that simpler techniques such as retraining with the full sample can
+	often produce superior results. These findings are rationalized using
+	Krogh and Vedelsby's (1995) decomposition of the generalization error
+	into a term that measures the average generalization performance of the
+	individual networks and a term that measures the diversity among them.
+	For networks that are designed to resist over-fitting, the benefits of
+	aggregation are clear but not overwhelming

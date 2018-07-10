@@ -1,0 +1,15 @@
+Robust model-order reduction of complex biological processes
+This paper addresses robust model-order reduction of a high dimensional
+	nonlinear partial differential equation (PDE) model of a complex
+	biological process. Based on a nonlinear, distributed parameter model
+	of the same process which was validated against experimental data of an
+	existing, pilot-scale biological nutrient removal (BNR) activated
+	sludge plant, we developed a state-space model with 154 state
+	variables. A general algorithm for robustly reducing the nonlinear PDE
+	model is presented and, based on an investigation of five
+	state-of-the-art model-order reduction techniques, we are able to
+	reduce the original model to a model with only 30 states without
+	incurring pronounced modelling errors. The singular perturbation
+	approximation balanced truncating technique is found to give the lowest
+	modelling errors in low frequency ranges and hence is deemed most
+	suitable for controller design and other real-time applications

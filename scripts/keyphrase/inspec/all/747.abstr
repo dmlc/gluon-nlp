@@ -1,0 +1,11 @@
+Simulation of cardiovascular physiology: the diastolic function(s) of the heart
+The cardiovascular system was simulated by using an equivalent electronic
+	circuit. Four sets of simulations were performed. The basic variables
+	investigated were cardiac output and stroke volume. They were studied
+	as functions (i) of right ventricular capacitance and negative
+	intrathoracic pressure; (ii) of left ventricular relaxation and of
+	heart rate; and (iii) of left ventricle failure. It seems that a
+	satisfactory simulation of systolic and diastolic functions of the
+	heart is possible. Presented simulations improve our understanding of
+	the role of the capacitance of both ventricles and of the diastolic
+	relaxation in cardiovascular physiology

@@ -1,0 +1,18 @@
+Frontier between separability and quantum entanglement in a many spin system
+We discuss the critical point x/sub c/ separating the quantum entangled and
+	separable states in two series of N spins S in the simple mixed state
+	characterized by the matrix operator rho = x| phi >< phi
+	|+1-x/D/sup N/I/sub D/N, where x in [0, 1], D = 2S + 1, I/sub D/N is
+	the D/sup N/ * D/sup N/ unity matrix and | phi > is a special
+	entangled state. The cases x = 0 and x = 1 correspond respectively to
+	fully random spins and to a fully entangled state. In the first of
+	these series we consider special states | phi > invariant under
+	charge conjugation, that generalizes the N = 2 spin S = 1/2
+	Einstein-Podolsky-Rosen state, and in the second one we consider
+	generalizations of the Werner (1989) density matrices. The evaluation
+	of the critical point x/sub c/ was done through bounds coming from the
+	partial transposition method of Peres (1996) and the conditional
+	nonextensive entropy criterion. Our results suggest the conjecture that
+	whenever the bounds coming from both methods coincide the result of
+	x/sub c/ is the exact one. The results we present are relevant for the
+	discussion of quantum computing, teleportation and cryptography

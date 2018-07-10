@@ -1,0 +1,18 @@
+Support vector machines model for classification of thermal error in machine
+	tools
+This paper addresses a change in the concept of machine tool thermal error
+	prediction which has been hitherto carried out by directly mapping them
+	with the temperature of critical elements on the machine. The model
+	developed herein using support vector machines, a powerful
+	data-training algorithm, seeks to account for the impact of specific
+	operating conditions, in addition to temperature variation, on the
+	effective prediction of thermal errors. Several experiments were
+	conducted to study the error pattern, which was found to change
+	significantly with variation in operating conditions. This model
+	attempts to classify the error based on operating conditions. Once
+	classified, the error is then predicted based on the temperature
+	states. This paper also briefly describes the concept of the
+	implementation of such a comprehensive model along with an on-line
+	error assessment and calibration system in a PC-based open-architecture
+	controller environment, so that it could be employed in regular
+	production for the purpose of periodic calibration of machine tools

@@ -1,0 +1,8 @@
+Estimating the intrinsic dimension of data with a fractal-based method
+In this paper, the problem of estimating the intrinsic dimension of a data set
+	is investigated. A fractal-based approach using the
+	Grassberger-Procaccia algorithm is proposed. Since the
+	Grassberger-Procaccia algorithm (1983) performs badly on sets of high
+	dimensionality, an empirical procedure that improves the original
+	algorithm has been developed. The procedure has been tested on data
+	sets of known dimensionality and on time series of Santa Fe competition

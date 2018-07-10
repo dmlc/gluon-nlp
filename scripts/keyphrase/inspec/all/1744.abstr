@@ -1,0 +1,10 @@
+Convergence of Toland's critical points for sequences of DC functions and
+	application to the resolution of semilinear elliptic problems
+We prove that if a sequence (f/sub n/)/sub n/ of DC functions (difference of
+	two convex functions) converges to a DC function f in some appropriate
+	way and if u/sub n/ is a critical point of f/sub n/, in the sense
+	described by Toland (1978, 1979), and is such that (u/sub n/)/sub n/
+	converges to u, then u is a critical point of f, still in Toland's
+	sense. We also build a new algorithm which searches for this critical
+	point u and then apply it in order to compute the solution of a
+	semilinear elliptic equation

@@ -1,0 +1,12 @@
+Efficient feasibility testing for dial-a-ride problems
+Dial-a-ride systems involve dispatching a vehicle to satisfy demands from a set
+	of customers who call a vehicle-operating agency requesting that an
+	item tie picked up from a specific location and delivered to a specific
+	destination. Dial-a-ride problems differ from other routing and
+	scheduling problems, in that they typically involve service-related
+	constraints. It is common to have maximum wait time constraints and
+	maximum ride time constraints. In the presence of maximum wait time and
+	maximum ride time restrictions, it is not clear how to efficiently
+	determine, given a sequence of pickups and deliveries, whether a
+	feasible schedule exists. We demonstrate that this, in fact, can be
+	done in linear time

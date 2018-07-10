@@ -1,0 +1,11 @@
+Reachability in contextual nets
+Contextual nets, or Petri nets with read arcs, are models of concurrent systems
+	with context dependent actions. The problem of reachability in such
+	nets consists in finding a sequence of transitions that leads from the
+	initial marking of a given contextual net to a given goal marking. The
+	solution to this problem that is presented in this paper consists in
+	constructing a finite complete prefix of the unfolding of the given
+	contextual net, that is a finite prefix in which all the markings that
+	are reachable from the initial marking are present, and in searching in
+	each branch of this prefix for the goal marking by solving an
+	appropriate linear programming problem

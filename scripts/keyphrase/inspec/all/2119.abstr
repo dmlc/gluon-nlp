@@ -1,0 +1,8 @@
+Location of transport nets on a heterogeneous territory
+The location of transport routes on a heterogeneous territory is studied. The
+	network joins a given set of terminal points and a certain number of
+	additional (branch) points. The problem is formulated, properties of
+	the optimal solution for a. tree-like network, and the number of branch
+	points are studied. A stepwise optimization algorithm for a. network
+	with given adjacency matrix based on an algorithm for constructing
+	minimal-cost routes is designed

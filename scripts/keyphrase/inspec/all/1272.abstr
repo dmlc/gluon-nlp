@@ -1,0 +1,24 @@
+Global action rules in distributed knowledge systems
+Previously Z. Ras and J.M. Zytkow (2000) introduced and investigated query
+	answering system based on distributed knowledge mining. The notion of
+	an action rule was introduced by Z. Ras and A. Wieczorkowska (2000) and
+	its application domain e-business was taken. In this paper, we
+	generalize the notion of action rules in a similar way to handling
+	global queries. Mainly, when values of attributes for a given customer,
+	used in action rules, can not be easily changed by business user,
+	definitions of these attributes are extracted from other sites of a
+	distributed knowledge system. To be more precise, attributes at every
+	site of a distributed knowledge system are divided into two sets:
+	stable and flexible. Values of flexible attributes, for a given
+	consumer, sometime can be changed and this change can be influenced and
+	controlled by a business user. However, some of these changes (for
+	instance to the attribute "profit') can not be done directly to a
+	chosen attribute. In this case, definitions of such an attribute in
+	terms of other attributes have to be learned. These new definitions are
+	used to construct action rules showing what changes in values of
+	flexible attributes, for a given consumer, are needed in order to
+	re-classify this consumer the way business user wants. But, business
+	user may be either unable or unwilling to proceed with actions leading
+	to such changes. In all such cases we may search for definitions of
+	these flexible attributes looking at either local or remote sites for
+	help

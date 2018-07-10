@@ -1,0 +1,15 @@
+A mechanism for inferring approximate solutions under incomplete knowledge
+	based on rule similarity
+This paper proposes an inference method which can obtain an approximate
+	solution even if the knowledge stored in the problem-solving system is
+	incomplete. When a rule needed for solving the problem does not exist,
+	the problem can be solved by using rules similar to the existing rules.
+	In an implementation using the SLD procedure, a resolution is executed
+	between a subgoal and a rule if an atom of the subgoal is similar to
+	the consequence atom of the rule. Similarities between atoms are
+	calculated using a knowledge base of words with account of the
+	reasoning situation, and the reliability of the derived solution is
+	calculated based on these similarities. If many solutions are obtained,
+	they are grouped into classes of similar solutions and a representative
+	solution is then selected for each class. The proposed method was
+	verified experimentally by solving simple problems

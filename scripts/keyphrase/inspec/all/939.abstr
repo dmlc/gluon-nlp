@@ -1,0 +1,12 @@
+Image reconstruction from fan-beam projections on less than a short scan
+This work is concerned with 2D image reconstruction from fan-beam projections.
+	It is shown that exact and stable reconstruction of a given
+	region-of-interest in the object does not require all lines passing
+	through the object to be measured. Complete (non-truncated) fan-beam
+	projections provide sufficient information for reconstruction when
+	'every line passing through the region-of-interest intersects the
+	vertex path in a non-tangential way'. The practical implications of
+	this condition are discussed and a new filtered-backprojection
+	algorithm is derived for reconstruction. Experiments with
+	computer-simulated data are performed to support the mathematical
+	results

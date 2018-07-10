@@ -1,0 +1,19 @@
+Hybrid fuzzy modeling of chemical processes
+Fuzzy models have been proved to have the ability of modeling all plants
+	without any priori information. However, the performance of
+	conventional fuzzy models can be very poor in the case of insufficient
+	training data due to their poor extrapolation capacity. In order to
+	overcome this problem, a hybrid grey-box fuzzy modeling approach is
+	proposed in this paper to combine expert experience, local linear
+	models and historical data into a uniform framework. It consists of two
+	layers. The expert fuzzy model constructed from linguistic information,
+	the local linear model and the T-S type fuzzy model constructed from
+	data are all put in the first layer. Layer 2 is a fuzzy decision module
+	that is used to decide which model in the first layer should be
+	employed to make the final prediction. The output of the second layer
+	is the output of the hybrid fuzzy model. With the help of the
+	linguistic information, the poor extrapolation capacity problem caused
+	by sparse training data for conventional fuzzy models can be overcome.
+	Simulation result for pH neutralization process demonstrates its
+	modeling ability over the linear models, the expert fuzzy model and the
+	conventional fuzzy model

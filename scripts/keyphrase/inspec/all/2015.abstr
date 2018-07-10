@@ -1,0 +1,12 @@
+Optical recognition of three-dimensional objects with scale invariance using a
+	classical convergent correlator
+We present a real-time method for recognizing three-dimensional (3-D) objects
+	with scale invariance. The 3-D information of the objects is codified
+	in deformed fringe patterns using the Fourier transform profilometry
+	technique and is correlated using a classical convergent correlator.
+	The scale invariance property is achieved using two different
+	approaches: the Mellin radial harmonic decomposition and the
+	logarithmic radial harmonic filter. Thus, the method is invariant for
+	changes in the scale of the 3-D target within a defined interval of
+	scale factors. Experimental results show the utility of the proposed
+	method

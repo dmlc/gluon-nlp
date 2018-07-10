@@ -1,0 +1,16 @@
+Fuzzy business [Halden Reactor Project]
+The Halden Reactor Project has developed two systems to investigate how signal
+	validation and thermal performance monitoring techniques can be
+	improved. PEANO is an online calibration monitoring system that makes
+	use of artificial intelligence techniques. The system has been tested
+	in cooperation with EPRI and Edan Engineering, using real data from a
+	US PWR plant. These tests showed that PEANO could reliably assess the
+	performance of the process instrumentation at different plant
+	conditions. Real cases of zero and span drifts were successfully
+	detected by the system. TEMPO is a system for thermal performance
+	monitoring and optimisation, which relies on plant-wide first principle
+	models. The system has been installed on a Swedish BWR plant. Results
+	obtained show an overall rms deviation from measured values of a few
+	tenths of a percent, and giving goodness-of-fits in the order of 95%.
+	The high accuracy demonstrated is a good basis for detecting possible
+	faults and efficiency losses in steam turbine cycles

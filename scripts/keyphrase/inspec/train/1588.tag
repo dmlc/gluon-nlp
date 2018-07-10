@@ -1,0 +1,17 @@
+contentment	NO_KP
+management	BEGIN_KP
+andersen's	NO_KP
+william	NO_KP
+yarker	NO_KP
+and	NO_KP
+richard	NO_KP
+young	NO_KP
+outline	NO_KP
+the	NO_KP
+route	NO_KP
+to	NO_KP
+a	NO_KP
+successful	NO_KP
+content	BEGIN_KP
+management	INSIDE_KP
+strategy	INSIDE_KP

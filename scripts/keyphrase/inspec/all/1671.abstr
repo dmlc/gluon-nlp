@@ -1,0 +1,15 @@
+Cane railway scheduling via constraint logic programming: labelling order and
+	constraints in a real-life application
+In Australia, cane transport is the largest unit cost in the manufacturing of
+	raw sugar, making up around 35% of the total manufacturing costs.
+	Producing efficient schedules for the cane railways can result in
+	significant cost savings. The paper presents a study using constraint
+	logic programming (CLP) to solve the cane transport scheduling problem.
+	Tailored heuristic labelling order and constraints strategies are
+	proposed and encouraging results of application to several test
+	problems and one real-life case are presented. The preliminary results
+	demonstrate that CLP can be used as an effective tool for solving the
+	cane transport scheduling problem, with a potential decrease in
+	development costs of the scheduling system. It can also be used as an
+	efficient tool for rescheduling tasks which the existing cane transport
+	scheduling system cannot perform well

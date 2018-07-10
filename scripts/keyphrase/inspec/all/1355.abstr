@@ -1,0 +1,12 @@
+Comparison of push and pull systems with transporters: a metamodelling approach
+Analyses push and pull systems with transportation consideration. A
+	multiproduct, multiline, multistage production system was used to
+	compare the two systems. The effects of four factors (processing time
+	variation, demand variation, transporters, batch size) on throughput
+	rate, average waiting time in the system and machine utilization were
+	studied. The study uses metamodels to compare the two systems. They
+	serve a dual purpose of expressing system performance measures in the
+	form of a simple equation and reducing computational time when
+	comparing the two systems. Research shows that the number of
+	transporters used and the batch size have a significant effect on the
+	performance measures of both systems

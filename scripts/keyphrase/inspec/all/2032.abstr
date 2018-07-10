@@ -1,0 +1,8 @@
+Adaptive digital watermarking using fuzzy logic techniques
+Digital watermarking has been proposed for copyright protection in our digital
+	society. We propose an adaptive digital watermarking scheme based on
+	the human visual system model and a fuzzy logic technique. The fuzzy
+	logic approach is employed to obtain the different strengths and
+	lengths of a watermark by the local characteristics of the image in our
+	proposed scheme. In our experiments, this scheme provides a more robust
+	and imperceptible watermark

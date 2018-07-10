@@ -1,0 +1,10 @@
+Clausal resolution in a logic of rational agency
+A resolution based proof system for a Temporal Logic of Possible Belief is
+	presented. This logic is the combination of the branching-time temporal
+	logic CTL (representing change over time) with the modal logic KD45
+	(representing belief). Such combinations of temporal or dynamic logics
+	and modal logics are useful for specifying complex properties of
+	multi-agent systems. Proof methods are important for developing
+	verification techniques for these complex multi-modal logics.
+	Soundness, completeness and termination of the proof method are shown
+	and simple examples illustrating its use are given

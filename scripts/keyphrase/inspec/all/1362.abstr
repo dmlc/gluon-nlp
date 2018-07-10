@@ -1,0 +1,31 @@
+Process planning for reliable high-speed machining of moulds
+A method of generating NC programs for the high-speed milling of moulds is
+	investigated. Forging dies and injection moulds, whether plastic or
+	aluminium, have a complex surface geometry. In addition they are made
+	of steels of hardness as much as 30 or even 50 HRC. Since 1995,
+	high-speed machining has been much adopted by the die-making industry,
+	which with this technology can reduce its use of Sinking
+	Electrodischarge Machining (SEDM). EDM, in general, calls for longer
+	machining times. The use of high-speed machining makes it necessary to
+	redefine the preliminary stages of the process. In addition, it affects
+	the methodology employed in the generation of NC programs, which
+	requires the use of high-level CAM software. The aim is to generate
+	error-free programs that make use of optimum cutting strategies in the
+	interest of productivity and surface quality. The final result is a
+	more reliable manufacturing process. There are two risks in the use of
+	high-speed milling on hardened steels. One of these is tool breakage,
+	which may be very costly and may furthermore entail marks on the
+	workpiece. The other is collisions between the tool and the workpiece
+	or fixtures, the result of which may be damage to the ceramic bearings
+	in the spindles. in order to minimize these risks it is necessary that
+	new control and optimization steps be included in the CAM methodology.
+	There are three things that the firm adopting high-speed methods should
+	do. It should redefine its process engineering, it should systematize
+	access by its CAM programmers to high-speed knowhow, and it should take
+	up the use of process simulation tools. In the latter case, it will be
+	very advantageous to use tools for the estimation of cutting forces.
+	The new work methods proposed in this article have made it possible to
+	introduce high speed milling (HSM) into the die industry. Examples are
+	given of how the technique has been applied with CAM programming
+	re-engineered as here proposed, with an explanation of the novel
+	features and the results

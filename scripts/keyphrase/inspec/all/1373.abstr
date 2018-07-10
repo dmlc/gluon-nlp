@@ -1,0 +1,19 @@
+Agent-based product-support logistics system using XML and RDF
+The capability of the timely provision of maintenance services and service
+	parts is critical to the competitiveness of industrial systems. To
+	enhance the timely operations in a product-support logistics chain,
+	business partners (equipment manufacturers, parts distributors,
+	customers) may have to collaborate for the efficient exchange of
+	relevant information. We propose the architecture of an agent-based
+	product-support logistics system. Emphasis is placed on the problems of
+	sharing and exchanging information through agent communication. We
+	adopt the Resource Description Framework (RDF) schema for information
+	modelling in product-support logistics domain. The eXtensible Markup
+	Language (XML) serialization generates messages for agent
+	communication. The use of XML and RDF enables software agents to
+	understand the contents of messages correctly and consistently. We
+	demonstrate the feasibility of our agent architecture using a scenario
+	in logistical support processes. We believe that the approach can
+	provide a promising way to the automation of business processes in
+	product-support logistics through seamless communication among the
+	partners

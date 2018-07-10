@@ -1,0 +1,20 @@
+A novel preterm respiratory mechanics active simulator to test the performances
+	of neonatal pulmonary ventilators
+A patient active simulator is proposed which is capable of reproducing values
+	of the parameters of pulmonary mechanics of healthy newborns and
+	preterm pathological infants. The implemented prototype is able to: (a)
+	let the operator choose the respiratory pattern, times of apnea,
+	episodes of cough, sobs, etc., (b) continuously regulate and control
+	the parameters characterizing the pulmonary system; and, finally, (c)
+	reproduce the attempt of breathing of a preterm infant. Taking into
+	account both the limitation due to the chosen application field and the
+	preliminary autocalibration phase automatically carried out by the
+	proposed device, accuracy and reliability on the order of 1% is
+	estimated. The previously indicated value has to be considered
+	satisfactory in light of the field of application and the small values
+	of the simulated parameters. Finally, the achieved metrological
+	characteristics allow the described neonatal simulator to be adopted as
+	a reference device to test performances of neonatal ventilators and,
+	more specifically, to measure the time elapsed between the occurrence
+	of a potentially dangerous condition to the patient and the activation
+	of the corresponding alarm of the tested ventilator

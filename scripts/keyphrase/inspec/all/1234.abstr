@@ -1,0 +1,24 @@
+Achieving performance under OpenMP on ccNUMA and software distributed shared
+	memory systems
+OpenMP is emerging as a viable high-level programming model for shared memory
+	parallel systems. It was conceived to enable easy, portable application
+	development on this range of systems, and it has also been implemented
+	on cache-coherent Non-Uniform Memory Access (ccNUMA) architectures.
+	Unfortunately, it is hard to obtain high performance on the latter
+	architecture, particularly when large numbers of threads are involved.
+	In this paper, we discuss the difficulties faced when writing OpenMP
+	programs for ccNUMA systems, and explain how the vendors have attempted
+	to overcome them. We focus on one such system, the SGI Origin 2000, and
+	perform a variety of experiments designed to illustrate the impact of
+	the vendor's efforts. We compare codes written in a standard,
+	loop-level parallel style under OpenMP with alternative versions
+	written in a Single Program Multiple Data (SPMD) fashion, also realized
+	via OpenMP, and show that the latter consistently provides superior
+	performance. A carefully chosen set of language extensions can help us
+	translate programs from the former style to the latter (or to compile
+	directly, but in a similar manner). Syntax for these extensions can be
+	borrowed from HPF, and some aspects of HPF compiler technology can help
+	the translation process. It is our expectation that an extended
+	language, if well compiled, would improve the attractiveness of OpenMP
+	as a language for high-performance computation on an important class of
+	modern architectures

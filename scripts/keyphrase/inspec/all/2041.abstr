@@ -1,0 +1,8 @@
+Application of multiprocessor systems for computation of jets
+The article describes the implementation of methods for numerical solution of
+	gas-dynamic problems on a wide class of multiprocessor systems,
+	conventionally characterized as "cluster" systems. A standard
+	data-transfer interface - the so-called message passing interface - is
+	used for parallelization of application algorithms among processors.
+	Simulation of jets escaping into a low-pressure region is chosen as a
+	computational example

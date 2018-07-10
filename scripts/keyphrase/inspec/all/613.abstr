@@ -1,0 +1,14 @@
+Comparison between discrete STFT and wavelets for the analysis of power quality
+	events
+This paper deals with the comparison of signal processing tools for power
+	quality analysis. Two signal processing techniques are considered: the
+	wavelet filters and the discrete short-time Fourier transforms (STFT).
+	Then, examples of the two most frequent disturbances met in the power
+	system are chosen. An adjustable speed drive with a six-pulse converter
+	using EMTP/ATP is designed and normal energizing of utility capacitors
+	is presented . The analysis is tested on a system consisting of 13
+	buses and is representative of a medium-sized industrial plant.
+	Finally, each kind of electrical disturbance is analyzed with examples
+	representing each tool. A qualitative comparison of results shows the
+	advantages and drawbacks of each signal processing technique applied to
+	power quality analysis

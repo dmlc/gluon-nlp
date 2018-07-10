@@ -1,0 +1,24 @@
+Accurate modeling of lossy nonuniform transmission lines by using differential
+	quadrature methods
+This paper discusses an efficient numerical approximation technique, called the
+	differential quadrature method (DQM), which has been adapted to model
+	lossy uniform and nonuniform transmission lines. The DQM can quickly
+	compute the derivative of a function at any point within its bounded
+	domain by estimating a weighted linear sum of values of the function at
+	a small set of points belonging to the domain. Using the DQM, the
+	frequency-domain Telegrapher's partial differential equations for
+	transmission lines can be discretized into a set of easily solvable
+	algebraic equations. DQM reduces interconnects into multiport models
+	whose port voltages and currents are related by rational formulas in
+	the frequency domain. Although the rationalization process in DQM is
+	comparable with the Pade approximation of asymptotic waveform
+	evaluation (AWE) applied to transmission lines, the derivation
+	mechanisms in these two disparate methods are significantly different.
+	Unlike AWE, which employs a complex moment-matching process to obtain
+	rational approximation, the DQM requires no approximation of
+	transcendental functions, thereby avoiding the process of moment
+	generation and moment matching. Due to global sampling of points in the
+	DQM approximation, it requires far fewer grid points in order to build
+	accurate discrete models than other numerical methods do. The DQM-based
+	time-domain model can be readily integrated in a circuit simulator like
+	SPICE

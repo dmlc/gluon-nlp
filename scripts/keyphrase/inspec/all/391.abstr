@@ -1,0 +1,16 @@
+Model selection in electromagnetic source analysis with an application to VEFs
+In electromagnetic source analysis, it is necessary to determine how many
+	sources are required to describe the electroencephalogram or
+	magnetoencephalogram adequately. Model selection procedures (MSPs) or
+	goodness of fit procedures give an estimate of the required number of
+	sources. Existing and new MSPs are evaluated in different source and
+	noise settings: two sources which are close or distant and noise which
+	is uncorrelated or correlated. The commonly used MSP residual variance
+	is seen to be ineffective, that is it often selects too many sources.
+	Alternatives like the adjusted Hotelling's test, Bayes information
+	criterion and the Wald test on source amplitudes are seen to be
+	effective. The adjusted Hotelling's test is recommended if a
+	conservative approach is taken and MSPs such as Bayes information
+	criterion or the Wald test on source amplitudes are recommended if a
+	more liberal approach is desirable. The MSPs are applied to empirical
+	data (visual evoked fields)

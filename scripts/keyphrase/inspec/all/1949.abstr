@@ -1,0 +1,19 @@
+A new graphical user interface for fast construction of computation phantoms
+	and MCNP calculations: application to calibration of in vivo
+	measurement systems
+Reports on a new utility for development of computational phantoms for Monte
+	Carlo calculations and data analysis for in vivo measurements of
+	radionuclides deposited in tissues. The individual properties of each
+	worker can be acquired for a rather precise geometric representation of
+	his (her) anatomy, which is particularly important for low energy gamma
+	ray emitting sources such as thorium, uranium, plutonium and other
+	actinides. The software enables automatic creation of an MCNP input
+	data file based on scanning data. The utility includes segmentation of
+	images obtained with either computed tomography or magnetic resonance
+	imaging by distinguishing tissues according to their signal
+	(brightness) and specification of the source and detector. In addition,
+	a coupling of individual voxels within the tissue is used to reduce the
+	memory demand and to increase the calculational speed. The utility was
+	tested for low energy emitters in plastic and biological tissues as
+	well as for computed tomography and magnetic resonance imaging scanning
+	information

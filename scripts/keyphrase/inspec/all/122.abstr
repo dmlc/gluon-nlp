@@ -1,0 +1,19 @@
+A formal framework for viewpoint consistency
+Multiple viewpoint models of system development are becoming increasingly
+	important. Each viewpoint offers a different perspective on the target
+	system and system development involves parallel refinement of the
+	multiple views. Viewpoint related approaches have been considered in a
+	number of different guises by a spectrum of researchers. Our work
+	particularly focuses on the use of viewpoints in open distributed
+	processing (ODP) which is an ISO/ITU standardisation framework. The
+	requirements of viewpoint modelling in ODP are very broad and, hence,
+	demanding. Multiple viewpoints, though, prompt the issue of consistency
+	between viewpoints. This paper describes a very general interpretation
+	of consistency which we argue is broad enough to meet the requirements
+	of consistency in ODP. We present a formal framework for this general
+	interpretation; highlight basic properties of the interpretation and
+	locate restricted classes of consistency. Strategies for checking
+	consistency are also investigated. Throughout we illustrate our theory
+	using the formal description technique LOTOS. Thus, the paper also
+	characterises the nature of and options for consistency checking in
+	LOTOS

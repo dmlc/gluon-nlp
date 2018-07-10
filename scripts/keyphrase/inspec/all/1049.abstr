@@ -1,0 +1,13 @@
+A typed representation for HTML and XML documents in Haskell
+We define a family of embedded domain specific languages for generating HTML
+	and XML documents. Each language is implemented as a combinator library
+	in Haskell. The generated HTML/XML documents are guaranteed to be
+	well-formed. In addition, each library can guarantee that the generated
+	documents are valid XML documents to a certain extent (for HTML only a
+	weaker guarantee is possible). On top of the libraries, Haskell serves
+	as a meta language to define parameterized documents, to map structured
+	documents to HTML/XML, to define conditional content, or to define
+	entire Web sites. The combinator libraries support element-transforming
+	style, a programming style that allows programs to have a visual
+	appearance similar to HTML/XML documents, without modifying the syntax
+	of Haskell

@@ -1,0 +1,13 @@
+Low-voltage DRAM sensing scheme with offset-cancellation sense amplifier
+A novel bitline sensing scheme is proposed for low-voltage DRAM to achieve low
+	power dissipation and compatibility with low-voltage CMOS. One of the
+	major obstacles in low-voltage DRAM is the degradation of
+	data-retention time due to low signal level at the memory cell, which
+	requires power-consuming refresh operations more frequently. This paper
+	proposes an offset-cancellation sense-amplifier scheme (OCSA) that
+	improves data-retention time significantly even at low supply voltage.
+	It also improves die efficiency, because the proposed scheme reduces
+	the number of sense amplifiers by supporting more cells in each sense
+	amplifier. Measurements show that the data-retention time of the
+	proposed scheme at 1.5-V supply voltage is 2.4 times of the
+	conventional scheme at 2.0 V

@@ -1,0 +1,21 @@
+FLID-DL: congestion control for layered multicast
+We describe fair layered increase/decrease with dynamic layering (FLID-DL): a
+	new multirate congestion control algorithm for layered multicast
+	sessions. FLID-DL generalizes the receiver-driven layered congestion
+	control protocol (RLC) introduced by Vicisano et al. (Proc. IEEE
+	INFOCOM, San Francisco, CA, , p.996-1003, Mar. 1998)ameliorating the
+	problems associated with large Internet group management protocol
+	(IGMP) leave latencies and abrupt rate increases. Like RLC, FLID-DL, is
+	a scalable, receiver-driven congestion control mechanism in which
+	receivers add layers at sender-initiated synchronization points and
+	leave layers when they experience congestion. FLID-DL congestion
+	control coexists with transmission control protocol (TCP) flows as well
+	as other FLID-DL sessions and supports general rates on the different
+	multicast layers. We demonstrate via simulations that our congestion
+	control scheme exhibits better fairness properties and provides better
+	throughput than previous methods. A key contribution that enables
+	FLID-DL and may be useful elsewhere is dynamic layering (DL), which
+	mitigates the negative impact of long IGMP leave latencies and
+	eliminates the need for probe intervals present in RLC. We use DL to
+	respond to congestion much faster than IGMP leave operations, which
+	have proven to be a bottleneck in practice for prior work

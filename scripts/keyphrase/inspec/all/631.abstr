@@ -1,0 +1,14 @@
+A modified Fieller interval for the interval estimation of effective doses for
+	a logistic dose-response curve
+Interval estimation of the gamma % effective dose ( mu /sub gamma / say) is
+	often based on the asymptotic variance of the maximum likelihood
+	estimator (delta interval) or Fieller's theorem (Fieller interval).
+	Sitter and Wu (1993) compared the delta and Fieller intervals for the
+	median effective dose ( mu /sub 50/) assuming a logistic dose-response
+	curve. Their results indicated that although Fieller intervals are
+	generally superior to delta intervals, they appear to be conservative.
+	Here an adjusted form of the Fieller interval for mu /sub gamma /
+	termed an adjusted Fieller (AF) interval is introduced. A comparison of
+	the AF interval with the delta and Fieller intervals is provided and
+	the properties of these three interval estimation methods are
+	investigated

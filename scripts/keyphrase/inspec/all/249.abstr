@@ -1,0 +1,7 @@
+Randomized two-process wait-free test-and-set
+We present the first explicit, and currently simplest, randomized algorithm for
+	two-process wait-free test-and-set. It is implemented with two 4-valued
+	single writer single reader atomic variables. A test-and-set takes at
+	most 11 expected elementary steps, while a reset takes exactly 1
+	elementary step. Based on a finite-state analysis, the proofs of
+	correctness and expected length are compressed into one table

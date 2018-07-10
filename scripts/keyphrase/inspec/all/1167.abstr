@@ -1,0 +1,16 @@
+A new approach to the d-MC problem
+Many real-world systems are multi-state systems composed of multi-state
+	components in which the reliability can be computed in terms of the
+	lower bound points of level d, called d-Mincuts (d-MCs). Such systems
+	(electric power, transportation, etc.) may be regarded as flow networks
+	whose arcs have independent, discrete, limited and multi-valued random
+	capacities. In this paper, all MCs are assumed to be known in advance,
+	and the authors focused on how to verify each d-MC candidate before
+	using d-MCs to calculate the network reliability. The proposed
+	algorithm is more efficient than existing algorithms. The algorithm
+	runs in O(p sigma mn) time, a significant improvement over the previous
+	O(p sigma m/sup 2/) time bounds based on max-flow/min-cut, where p and
+	or are the number of MCs and d-MC candidates, respectively. It is
+	simple, intuitive and uses no complex data structures. An example is
+	given to show how all d-MC candidates are found and verified by the
+	proposed algorithm. Then the reliability of this example is computed

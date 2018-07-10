@@ -1,0 +1,23 @@
+Streaming, disruptive interference and power-law behavior in the exit dynamics
+	of confined pedestrians
+We analyze the exit dynamics of pedestrians who are initially confined in a
+	room. Pedestrians are modeled as cellular automata and compete to
+	escape via a known exit at the soonest possible time. A pedestrian
+	could move forward, backward, left or right within each iteration time
+	depending on adjacent cell vacancy and in accordance with simple rules
+	that determine the compulsion to move and physical capability relative
+	to his neighbors. The arching signatures of jamming were observed and
+	the pedestrians exited in bursts of various sizes. Power-law behavior
+	is found in the burst-size frequency distribution for exit widths w
+	greater than one cell dimension (w > 1). The slope of the power-law
+	curve varies with w from -1.3092 (w = 2) to -1.0720 (w = 20). Streaming
+	which is a diffusive behavior, arises in large burst sizes and is more
+	likely in a single-exit room with w = 1 and leads to a counterintuitive
+	result wherein an average exit throughput Q is obtained that is higher
+	than with w = 2, 3, or 4. For a two-exit room (w = 1), Q is not greater
+	than twice the yield of a single-exit room. If the doors are not
+	separated far enough (< 4w), Q becomes even significantly less due
+	to a collective slow-down that emerges among pedestrians crossing in
+	each other's path (disruptive interference effect). For the same w and
+	door number, Q is also higher with relaxed pedestrians than with
+	anxious ones

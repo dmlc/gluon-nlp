@@ -1,0 +1,18 @@
+High-speed consistency checking for hypothetical reasoning systems using
+	inference path network
+Hypothetical reasoning is popular in fault diagnostics and design systems, but
+	slow reasoning speed is its drawback. The goal of the current study is
+	developing hypothetical reasoning based on an inference path network,
+	which would overcome this drawback. In hypothetical reasoning systems
+	based on an inference path network, there is much room for improvement
+	regarding the computing costs of connotation processing and consistency
+	checking. The authors of this study demonstrate improvement ideas
+	regarding one of these problems, namely, consistency checking. First,
+	the authors obtained necessary and sufficient conditions under which
+	inconsistencies occur during hypothesis composition. Based on the
+	obtained results, the authors proposed an algorithm for speeding up the
+	process of consistency checking. Processing with this algorithm in its
+	core consists of transforming the inference path network in such a way
+	that inconsistencies do not occur during the hypothesis composition,
+	under the condition of unchanged solution hypotheses. The efficiency of
+	this algorithm was confirmed by tests

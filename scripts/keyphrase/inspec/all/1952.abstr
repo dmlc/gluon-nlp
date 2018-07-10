@@ -1,0 +1,12 @@
+Comprehensive encoding and decoupling solution to problems of decoherence and
+	design in solid-state quantum computing
+Proposals for scalable quantum computing devices suffer not only from
+	decoherence due to the interaction with their environment, but also
+	from severe engineering constraints. Here we introduce a practical
+	solution to these major concerns, addressing solid-state proposals in
+	particular. Decoherence is first reduced by encoding a logical qubit
+	into two qubits, then completely eliminated by an efficient set of
+	decoupling pulse sequences. The same encoding removes the need for
+	single-qubit operations, which pose a difficult design constraint. We
+	further show how the dominant decoherence processes can be identified
+	empirically, in order to optimize the decoupling pulses

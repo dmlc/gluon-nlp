@@ -1,0 +1,10 @@
+Setup cost and lead time reductions on stochastic inventory models with a
+	service level constraint
+The stochastic inventory models analyzed in this paper explore the problem of
+	lead time associated with setup cost reductions for the continuous
+	review and periodic review inventory models. For these two models with
+	a mixture of backorders and lost sales, we respectively assume that
+	their mean and variance of the lead time demand and protection interval
+	(i.e., lead time plus review period) demand are known, but their
+	probability distributions are unknown. We develop a minimax
+	distribution free procedure to find the optimal solution-for each case

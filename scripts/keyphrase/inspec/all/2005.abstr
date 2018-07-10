@@ -1,0 +1,22 @@
+State-of-the-art in orthopaedic surgical navigation with a focus on medical
+	image modalities
+This paper presents a review of surgical navigation systems in orthopaedics and
+	categorizes these systems according to the image modalities that are
+	used for the visualization of surgical action. Medical images used to
+	be an essential part of surgical education and documentation as well as
+	diagnosis and operation planning over many years. With the recent
+	introduction of navigation techniques in orthopaedic surgery, a new
+	field of application has been opened. Today surgical navigation systems
+	- also known as image-guided surgery systems - are available for
+	various applications in orthopaedic surgery. They visualize the
+	position and orientation of surgical instruments as graphical overlays
+	onto a medical image of the operated anatomy on a computer monitor.
+	Preoperative image data such as computed tomography scans or intra
+	operatively generated images (for example, ultrasonic, endoscopic or
+	fluoroscopic images) are suitable for this purpose. A new category of
+	medical images termed 'surgeon-defined anatomy' has been developed that
+	exclusively relies upon the usage of navigation technology. Points on
+	the anatomy are digitized interactively by the surgeon and are used to
+	build up an abstract geometrical model of the bony structures to be
+	operated on. This technique may be used when no other image data is
+	available or appropriate for a given application

@@ -1,0 +1,16 @@
+A static semantics for Haskell
+This paper gives a static semantics for Haskell 98, a non-strict purely
+	functional programming language. The semantics formally specifies
+	nearly all the details of the Haskell 98 type system, including the
+	resolution of overloading, kind inference (including defaulting) and
+	polymorphic recursion, the only major omission being a proper treatment
+	of ambiguous overloading and its resolution. Overloading is translated
+	into explicit dictionary passing, as in all current implementations of
+	Haskell. The target language of this translation is a variant of the
+	Girard-Reynolds polymorphic lambda calculus featuring higher order
+	polymorphism. and explicit type abstraction and application in the term
+	language. Translated programs can thus still be type checked, although
+	the implicit version of this system is impredicative. A surprising
+	result of this formalization effort is that the monomorphism
+	restriction, when rendered in a system of inference rules, compromises
+	the principal type property

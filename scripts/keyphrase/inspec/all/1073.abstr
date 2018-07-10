@@ -1,0 +1,14 @@
+Quantum retrodiction in open systems
+Quantum retrodiction involves finding the probabilities for various preparation
+	events given a measurement event. This theory has been studied for some
+	time but mainly as an interesting concept associated with time
+	asymmetry in quantum mechanics. Recent interest in quantum
+	communications and cryptography, however, has provided retrodiction
+	with a potential practical application. For this purpose quantum
+	retrodiction in open systems should be more relevant than in closed
+	systems isolated from the environment. In this paper we study
+	retrodiction in open systems and develop a general master equation for
+	the backward time evolution of the measured state, which can be used
+	for calculating preparation probabilities. We solve the master
+	equation, by way of example, for the driven two-level atom coupled to
+	the electromagnetic field

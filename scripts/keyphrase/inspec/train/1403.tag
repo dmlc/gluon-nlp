@@ -1,0 +1,16 @@
+it:	NO_KP
+utilities	BEGIN_KP
+a	NO_KP
+look	NO_KP
+at	NO_KP
+five	NO_KP
+utilities	BEGIN_KP
+to	NO_KP
+make	NO_KP
+your	NO_KP
+pcs	BEGIN_KP
+more,	NO_KP
+efficient,	NO_KP
+effective,	NO_KP
+and	NO_KP
+efficacious	NO_KP

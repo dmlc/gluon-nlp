@@ -1,0 +1,6 @@
+The mutual effects of grid and wind turbine voltage stability control
+This note considers the results of wind turbine modelling and power system
+	stability investigations. Voltage stability of the power grid with
+	grid-connected wind turbines will be improved by using blade angle
+	control for a temporary reduction of the wind turbine power during and
+	shortly after a short circuit fault in the grid

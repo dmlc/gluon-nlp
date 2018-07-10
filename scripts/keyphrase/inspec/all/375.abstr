@@ -1,0 +1,19 @@
+Separation and tracking of multiple broadband sources with one electromagnetic
+	vector sensor
+A structure for adaptively separating, enhancing and tracking uncorrelated
+	sources with an electromagnetic vector sensor (EMVS) is presented. The
+	structure consists of a set of parallel spatial processors, one for
+	each individual source. Two stages of processing are involved in each
+	spatial processor. The first preprocessing stage rejects all other
+	sources except the one of interest, while the second stage is an
+	adaptive one for maximizing the signal-to-noise ratio (SNR) and
+	tracking the desired source. The preprocessings are designed using the
+	latest source parameter estimates obtained from the source trackers,
+	and a redesign is activated periodically or whenever any source has
+	been detected by the source trackers to have made significant movement.
+	Compared with conventional adaptive beamforming, the algorithm has the
+	advantage that no a priori information on any desired signal location
+	is needed, the sources are separated at maximum SNR, and their
+	locations are available. The structure is also well suited for parallel
+	implementation. Numerical examples are included to illustrate the
+	capability and performance of the algorithm

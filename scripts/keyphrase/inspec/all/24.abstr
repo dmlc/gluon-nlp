@@ -1,0 +1,13 @@
+Fuzzy modeling based on generalized conjunction operations
+An approach to fuzzy modeling based on the tuning of parametric conjunction
+	operations is proposed. First, some methods for the construction of
+	parametric generalized conjunction operations simpler than the known
+	parametric classes of conjunctions are considered and discussed.
+	Second, several examples of function approximation by fuzzy models,
+	based on the tuning of the parameters of the new conjunction
+	operations, are given and their approximation performances are compared
+	with the approaches based on a tuning of membership functions and other
+	approaches proposed in the literature. It is seen that the tuning of
+	the conjunction operations can be used for obtaining fuzzy models with
+	a sufficiently good performance when the tuning of membership functions
+	is not possible or not desirable

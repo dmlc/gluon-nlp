@@ -1,0 +1,15 @@
+Numerical studies of 2D free surface waves with fixed bottom
+The motion of surface waves under the effect of bottom is a very interesting
+	and challenging phenomenon in the nature. we use boundary integral
+	method to compute and analyze this problem. In the linear analysis, the
+	linearized equations have bounded error increase under some compatible
+	conditions. This contributes to the cancellation of instable
+	Kelvin-Helmholtz terms. Under the effect of bottom, the existence of
+	equations is hard to determine, but given some limitations it proves
+	true. These limitations are that the swing of interfaces should be
+	small enough, and the distance between surface and bottom should be
+	large enough. In order to maintain the stability of computation, some
+	compatible relationship must be satisfied. In the numerical examples,
+	the simulation of standing waves and breaking waves are calculated. And
+	in the case of shallow bottom, we found that the behavior of waves are
+	rather singular

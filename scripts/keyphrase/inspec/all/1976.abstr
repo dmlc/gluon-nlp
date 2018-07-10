@@ -1,0 +1,16 @@
+Adaptive image denoising using scale and space consistency
+This paper proposes a new method for image denoising with edge preservation,
+	based on image multiresolution decomposition by a redundant wavelet
+	transform. In our approach, edges are implicitly located and preserved
+	in the wavelet domain, whilst image noise is filtered out. At each
+	resolution level, the image edges are estimated by gradient magnitudes
+	(obtained from the wavelet coefficients), which are modeled
+	probabilistically, and a shrinkage function is assembled based on the
+	model obtained. Joint use of space and scale consistency is applied for
+	better preservation of edges. The shrinkage functions are combined to
+	preserve edges that appear simultaneously at several resolutions, and
+	geometric constraints are applied to preserve edges that are not
+	isolated. The proposed technique produces a filtered version of the
+	original image, where homogeneous regions appear separated by
+	well-defined edges. Possible applications include image
+	presegmentation, and image denoising

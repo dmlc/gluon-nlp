@@ -1,0 +1,24 @@
+Absorption of long waves by nonresonant parametric microstructures
+Using simple acoustical and mechanical models, we consider the conceptual
+	possibility of designing an active absorbing (nonreflecting) coating in
+	the form of a thin layer with small-scale stratification and fast time
+	modulation of parameters. Algorithms for space-time modulation of the
+	controlled-layer structure are studied in detail for a one-dimensional
+	boundary-value problem. These algorithms do not require wave-field
+	measurements, which eliminates the self-excitation problem that is
+	characteristic of active systems. The majority of the considered
+	algorithms of parametric control transform the low-frequency incident
+	wave to high-frequency waves of the technological band for which the
+	waveguiding medium inside the layer is assumed to be opaque
+	(absorbing). The efficient use conditions are found for all the
+	algorithms. It is shown that the absorbing layer can be as thin as
+	desired with respect to the minimum spatial scale of the incident wave
+	and ensures efficient absorption in a wide frequency interval (starting
+	from zero frequency) that is bounded from above only by a finite
+	space-time resolution of the parameter-control operations. The
+	structure of a three-dimensional parametric "'black" coating whose
+	efficiency is independent of the angle of incidence of an incoming wave
+	is developed on the basis of the studied one-dimensional problems. The
+	general solution of the problem of diffraction of incident waves from
+	such a coating is obtained. This solution is analyzed in detail for the
+	case of a disk-shaped element

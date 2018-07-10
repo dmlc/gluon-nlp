@@ -1,0 +1,14 @@
+High dynamic control of a three-level voltage-source-converter drive for a main
+	strip mill
+A high dynamic control system for the Alspa VDM 7000 medium-voltage drive was
+	implemented, which provides fast torque response times of a few
+	milliseconds despite the typically low switching frequency of
+	gate-turn-off thyristors which is necessary to achieve high efficiency.
+	The drive system consists of a three-level voltage-source converter
+	with active front end and a synchronous motor. The drive has most
+	recently been applied to a main strip mill. It provides a maximum of
+	8.3-MW mechanical power with a rated motor voltage of 3 kV. Besides
+	motor torque as the main control objective, the control system has to
+	comply with a number of additional objectives and constraints like
+	DC-link voltage regulation and balancing, current and torque harmonics,
+	motor flux, and excitation

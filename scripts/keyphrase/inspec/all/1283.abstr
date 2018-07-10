@@ -1,0 +1,8 @@
+UPSILON: universal programming system with incomplete lazy object notation
+This paper presents a new model of computation that differs from prior models
+	in that it emphasizes data over flow control, has no named variables
+	and has an object-oriented flavor. We prove that this model is a
+	complete and confluent acceptable programming system and has a usable
+	type theory. A new data synchronization primitive is introduced in
+	order to achieve the above properties. Subtle variations of the model
+	are shown to fall short of having all these necessary properties

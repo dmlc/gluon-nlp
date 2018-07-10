@@ -1,0 +1,19 @@
+The visible cement data set
+With advances in x-ray microtomography, it is now possible to obtain
+	three-dimensional representations of a material's microstructure with a
+	voxel size of less than one micrometer. The Visible Cement Data Set
+	represents a collection of 3-D data sets obtained using the European
+	Synchrotron Radiation Facility in Grenoble, France in September 2000.
+	Most of the images obtained are for hydrating portland cement pastes,
+	with a few data sets representing hydrating Plaster of Paris and a
+	common building brick. All of these data sets are being made available
+	on the Visible Cement Data Set website at
+	http://visiblecement.nist.gov. The website includes the raw 3-D
+	datafiles, a description of the material imaged for each data set,
+	example two-dimensional images and visualizations for each data set,
+	and a collection of C language computer programs that will be of use in
+	processing and analyzing the 3-D microstructural images. This paper
+	provides the details of the experiments performed at the ESRF, the
+	analysis procedures utilized in obtaining the data set files, and a few
+	representative example images for each of the three materials
+	investigated

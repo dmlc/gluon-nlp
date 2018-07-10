@@ -1,0 +1,19 @@
+A Virtual Test Facility for the simulation of dynamic response in materials
+The Center for Simulating Dynamic Response of Materials at the California
+	Institute of Technology is constructing a virtual shock physics
+	facility for studying the response of various target materials to very
+	strong shocks. The Virtual Test Facility (VTF) is an end-to-end, fully
+	three-dimensional simulation of the detonation of high explosives (HE),
+	shock wave propagation, solid material response to pressure loading,
+	and compressible turbulence. The VTF largely consists of a parallel
+	fluid solver and a parallel solid mechanics package that are coupled
+	together by the exchange of boundary data. The Eulerian fluid code and
+	Lagrangian solid mechanics model interact via a novel approach based on
+	level sets. The two main computational packages are integrated through
+	the use of Pyre, a problem solving environment written in the Python
+	scripting language. Pyre allows application developers to interchange
+	various computational models and solver packages without recompiling
+	code, and it provides standardized access to several data visualization
+	engines and data input mechanisms. In this paper, we outline the main
+	components of the VTF, discuss their integration via Pyre, and describe
+	some recent accomplishments in large-scale simulation using the VTF

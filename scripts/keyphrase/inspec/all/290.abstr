@@ -1,0 +1,8 @@
+MEMS applications in computer disk drive dual-stage servo systems
+We present a decoupled discrete time pole placement design method, which can be
+	combined with a self-tuning scheme to compensate variations in the
+	microactuator's (MA's) resonance mode. Section I of the paper describes
+	the design and fabrication of a prototype microactuator with an
+	integrated gimbal structure. Section II presents a decoupled
+	track-following controller design and a self-tuning control scheme to
+	compensate for the MA's resonance mode variations

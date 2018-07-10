@@ -1,0 +1,13 @@
+Positional control of pneumatic manipulators for construction tasks
+This paper describes solutions that can be applied to pneumatic manipulator
+	problems in positioning, both for angle trajectories and for long
+	linear trajectories, used in construction tasks. Optimal positioning of
+	a pneumatic manipulator along angle trajectories with minimum control
+	energy consumption is given. The implementation of the control system
+	is presented. Control algorithms for a long linear trajectory
+	manipulator based on two-phase and three-phase motion modes of the
+	end-effector are investigated. Conventional and fuzzy logic controls of
+	a pneumatic manipulator were applied and experimental testing was
+	carried out. The obtained results allow widening the application range
+	of pneumatic manipulators in construction, particularly in gantry type
+	machines

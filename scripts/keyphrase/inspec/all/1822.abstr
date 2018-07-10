@@ -1,0 +1,13 @@
+Single-phase half-bridge converter topology for power quality compensation
+A high power factor half-bridge rectifier with neutral point switch clamped
+	scheme is proposed. Three power switches are employed in the proposed
+	rectifier. Two PWM control schemes are used to draw a sinusoidal line
+	current with low current distortion. The control signals of the power
+	switches are derived from the DC link voltage balance compensator, line
+	current controller and DC link voltage regulator. The hysteresis
+	current control scheme is employed to track the line current command.
+	The proposed control scheme and the circuit configuration can be
+	applied to the active power filter to eliminate the harmonic currents
+	and compensate the reactive power generated from the nonlinear load.
+	Analytical and experimental results are included to illustrate the
+	validity and effectiveness of the proposed control scheme

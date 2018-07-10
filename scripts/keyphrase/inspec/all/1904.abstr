@@ -1,0 +1,11 @@
+Component support in PLT scheme
+PLT Scheme (DrScheme and MzScheme) supports the Component Object Model (COM)
+	standard with two pieces of software. The first piece is MzCOM, a COM
+	class that makes a Scheme evaluator available to COM clients. With
+	MzCOM, programmers can embed Scheme code in programs written in
+	mainstream languages such as C++ or Visual BASIC. Some applications can
+	also be used as MzCOM clients. The other piece of component-support
+	software is MysterX, which makes COM classes available to PLT Scheme
+	programs. When needed, MysterX uses a programmable Web browser to
+	display COM objects. We describe the technical issues encountered in
+	building these two systems and sketch some applications

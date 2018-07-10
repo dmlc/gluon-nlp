@@ -1,0 +1,23 @@
+Stochastic recurrences of Jackpot Keno
+We describe a mathematical model and simulation study for Jackpot Keno, as
+	implemented by Jupiters Network Gaming (JNG) in the Australian state of
+	Queensland, and as controlled by the Queensland Office of Gaming
+	Regulation (QOGR) (http://www.qogr.qld.gov.au/keno.shtml). The
+	recurrences for the house net hold are derived and it is seen that
+	these are piecewise linear with a ternary domain split, and further,
+	the split points are stochastic in nature. Since this structure is
+	intractable (Brockett and Levine, Statistics & Probability & their
+	Applications, CBS College Publishing, 1984), estimation of house net
+	hold obtained through an appropriately designed simulator using a
+	random number generator with desirable properties is described. Since
+	the model and simulation naturally derives hold given payscale, but JNG
+	and QOGR require payscale given hold, an inverse problem was required
+	to be solved. This required development of a special algorithm, which
+	may be described as a stochastic binary search. Experimental results
+	are presented, in which the simulator is used to determine jackpot
+	pay-scales so as to satisfy legal requirements of approximately 75% of
+	net revenue returned to the players, i.e., 25% net hold for the house
+	(JNG). Details of the algorithm used to solve this problem are
+	presented, and notwithstanding the stochastic nature of the simulation,
+	convergence to a specified hold for the inverse problem has been
+	achieved to within 0.1% in all cases of interest to date

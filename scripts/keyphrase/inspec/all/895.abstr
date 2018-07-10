@@ -1,0 +1,10 @@
+Algorithms for improving the quality of R-trees
+A novel approach to operation with a structure for spatial indexing of extended
+	objects shaped as R-trees is considered. It consists of the initial
+	global construction of an efficient R-tree structure and the subsequent
+	operation with it using conventional dynamic algorithms. A global
+	strategy for constructing an R-tree reduced to a problem of dividing a
+	set of rectangular objects into K parts with minimum mutual overlay is
+	suggested. Base, box, and "Divide and Conquer" algorithms are
+	suggested. The results of experimental modeling of the execution of
+	various algorithms are discussed

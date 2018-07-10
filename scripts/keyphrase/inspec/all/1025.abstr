@@ -1,0 +1,21 @@
+Watermarking techniques for electronic delivery of remote sensing images
+Earth observation missions have recently attracted a growing interest, mainly
+	due to the large number of possible applications capable of exploiting
+	remotely sensed data and images. Along with the increase of market
+	potential, the need arises for the protection of the image products.
+	Such a need is a very crucial one, because the Internet and other
+	public/private networks have become preferred means of data exchange. A
+	critical issue arising when dealing with digital image distribution is
+	copyright protection. Such a problem has been largely addressed by
+	resorting to watermarking technology. A question that obviously arises
+	is whether the requirements imposed by remote sensing imagery are
+	compatible with existing watermarking techniques. On the basis of these
+	motivations, the contribution of this work is twofold: assessment of
+	the requirements imposed by remote sensing applications on
+	watermark-based copyright protection, and modification of two
+	well-established digital watermarking techniques to meet such
+	constraints. More specifically, the concept of near-lossless
+	watermarking is introduced and two possible algorithms matching such a
+	requirement are presented. Experimental results are shown to measure
+	the impact of watermark introduction on a typical remote sensing
+	application, i.e., unsupervised image classification

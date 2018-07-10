@@ -1,0 +1,5 @@
+Lattice Boltzmann schemes for quantum applications
+We review the basic ideas behind the quantum lattice Boltzmann equation (LBE),
+	and present a few thoughts on the possible use of such an equation for
+	simulating quantum many-body problems on both (parallel) electronic and
+	quantum computers

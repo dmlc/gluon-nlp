@@ -1,0 +1,7 @@
+four-way set-associative memory; two-level CMOS cache memory; cache memory
+	architecture; wordline/bitline-oriented tag-compare; sense
+	wordline/bitline amplifiers; tag-sense amplifiers; eight-transistor tag
+	cell; ten-transistor memory cell; shrunk logic swing memory cell;
+	ground/floating data sense amplifier; high-speed operation; low-voltage
+	VLSI system applications; low-power VLSI system applications; 0.8 V;
+	128 kbit; 50 MHz; 0.77 mW; 1.8 V; 0.18 micron; 11.6 ns; 20.5 ns

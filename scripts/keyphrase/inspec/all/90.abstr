@@ -1,0 +1,31 @@
+LAN-based building maintenance and surveillance robot
+The building and construction industry is the major industry of Hong Kong as in
+	many developed countries around the world. After the commissioning of a
+	high-rise building or a large estate, substantial manpower, both inside
+	the management centre under a standby manner, as well as surveillance
+	for security purposes around the whole building, is required for daily
+	operation to ensure a quality environment for the occupants. If the
+	surveillance job can be done by robots, the efficiency can be highly
+	enhanced, resulting in a great saving of manpower and the improved
+	safety of the management staff as a by-product. Furthermore, if the
+	robot can retrieve commands from the building management system via a
+	local area network (LAN), further savings in manpower can be achieved
+	in terms of first-line fault attendance by human management staff. This
+	paper describes the development of a robot prototype here in Hong Kong,
+	which can handle some daily routine maintenance works and surveillance
+	responsibilities. The hardware structure of the robot and its on-board
+	devices are described. Real-time images captured by a camera on the
+	robot with pan/tilt/zoom functions can be transmitted back to the
+	central management office via a local area network. The interface
+	between the robot and the building automation system (BAS) of the
+	building is discussed. This is the first key achievement of this
+	project with a strong implication on reducing the number of human staff
+	to manage a modem building. Teleoperation of the robot via the Internet
+	or intranet is also possible, which is the second achievement of this
+	project. Finally, the robot can identify its physical position inside
+	the building by a landmark recognition method based on standard CAD
+	drawings, which is the third achievement of this project. The main goal
+	of this paper is not the description of some groundbreaking technology
+	in robotic development. It is mainly intended to convince building
+	designers and managers to incorporate robotic systems when they are
+	managing modem buildings to save manpower and improve efficiency

@@ -1,0 +1,20 @@
+Modeling self-consistent multi-class dynamic traffic flow
+In this study, we present a systematic self-consistent multiclass multilane
+	traffic model derived from the vehicular Boltzmann equation and the
+	traffic dispersion model. The multilane domain is considered as a
+	two-dimensional space and the interaction among vehicles in the domain
+	is described by a dispersion model. The reason we consider a multilane
+	domain as a two-dimensional space is that the driving behavior of road
+	users may not be restricted by lanes, especially motorcyclists. The
+	dispersion model, which is a nonlinear Poisson equation, is derived
+	from the car-following theory and the equilibrium assumption. Under the
+	concept that all kinds of users share the finite section, the density
+	is distributed on a road by the dispersion model. In addition, the
+	dynamic evolution of the traffic flow is determined by the systematic
+	gas-kinetic model derived from the Boltzmann equation. Multiplying
+	Boltzmann equation by the zeroth, first- and second-order moment
+	functions, integrating both side of the equation and using chain rules,
+	we can derive continuity, motion and variance equation, respectively.
+	However, the second-order moment function, which is the square of the
+	individual velocity, is employed by previous researches does not have
+	physical meaning in traffic flow

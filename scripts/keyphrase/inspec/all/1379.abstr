@@ -1,0 +1,15 @@
+Web-based intelligent helpdesk-support environment
+With the advent of Internet technology, it is now feasible to provide effective
+	and efficient helpdesk service over the global Internet to meet
+	customers' requirements and satisfaction. In this research, we have
+	designed and developed a Web-based intelligent helpdesk-support
+	environment, WebHotLine, to support the customer service centre of a
+	large multinational corporation in the electronics industry. The paper
+	describes the basic architecture of the environment that supports the
+	major functions of Web-based fault information retrieval, online
+	multilingual translation capability, different operating modes of
+	video-conferencing for enhanced support and direct intelligent fault
+	diagnosis by customers or customer support engineers. As a result,
+	WebHotLine helps to save cost in eliminating the expensive overseas
+	telephone charges, reduction in machine down time and number of on-site
+	visits by service engineers as in traditional helpdesk environment

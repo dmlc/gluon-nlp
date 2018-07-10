@@ -1,0 +1,4 @@
+full 3D surface; single static camera; linear intensity subspaces; geotensity
+	constraint; 3D Lambertian surface structure; single point light source;
+	arbitrary number point light sources; automatic surface reconstruction;
+	point light source; linear image subspaces; structure-from-motion

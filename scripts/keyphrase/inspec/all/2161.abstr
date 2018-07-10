@@ -1,0 +1,11 @@
+On the Beth properties of some intuitionistic modal logics
+Let L be one of the intuitionistic modal logics. As in the classical modal
+	case, we define two different forms of the Beth property for L, which
+	are denoted by B1 and B2; in this paper we study the relation among B1,
+	B2 and the interpolation properties C1 and C2. It turns out that C1
+	implies B1, but contrary to the boolean case, is not equivalent to B1.
+	It is shown that B2 and C2 are independent, and moreover it comes out
+	that, in contrast to classical case, there exists an extension of the
+	intuitionistic modal logic of S/sub 4/-type, that has not the property
+	B2. Finally we give two algebraic properties, that characterize
+	respectively B1 and B2

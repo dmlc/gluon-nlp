@@ -1,0 +1,11 @@
+Building 3D anatomical scenes on the Web
+We propose a new service for building user-defined 3D anatomical structures on
+	the Web. The Web server is connected to a database storing more than
+	1000 3D anatomical models reconstructed from the Visible Human. Users
+	may combine existing models as well as planar oblique slices in order
+	to create their own structured anatomical scenes. Furthermore, they may
+	record sequences of scene construction and visualization actions. These
+	actions enable the server to construct high-quality video animations,
+	downloadable by the user. Professionals and students in anatomy,
+	medicine and related disciplines are invited to use the server and
+	create their own anatomical scenes

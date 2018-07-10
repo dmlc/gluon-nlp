@@ -1,0 +1,13 @@
+Improving the frequency stability of microwave oscillators by utilizing the
+	dual-mode sapphire-loaded cavity resonator
+The design and experimental testing of a novel control circuit to stabilize the
+	temperature of a sapphire-loaded cavity whispering gallery
+	resonator-oscillator and improve its medium-term frequency stability is
+	presented. Finite-element software was used to predict frequencies and
+	quality factors of WGE/sub 7,0,0/ and the WGH/sub 9,0,0/ modes near 9
+	GHz, and separated in frequency by approximately 80 MHz. Calculations
+	show that the novel temperature control circuits from the difference
+	frequency can result in a frequency stability of better than one part
+	in 10/sup 13/ at 270 K. Also, we present details on the best way to
+	couple orthogonally to two modes of similar frequency but different
+	polarization

@@ -1,0 +1,13 @@
+Simulation of physicochemical processes of erosion-corrosion of metals in
+	two-phase flows
+A computational model for the erosion-corrosion of the metals used in power
+	equipment in two-phase flows (RAMEK-2) was developed. The results of
+	calculations of the dependency of the intensity of the
+	erosion-corrosion of structural steels as a function of the
+	thermodynamic, hydrodynamic and water chemistry parameters of these
+	flows in the working paths of thermal power stations and nuclear power
+	stations are presented in a three-dimensional space. On the basis of
+	mathematical models, application software was created for forecasting
+	the erosion-corrosion resource and for optimizing the rules on
+	diagnosis and protective maintenance of erosion-corrosion of the
+	elements of the wet-steam path in power stations

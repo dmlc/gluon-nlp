@@ -1,0 +1,27 @@
+Direct aperture optimization: A turnkey solution for step-and-shoot IMRT
+IMRT treatment plans for step-and-shoot delivery have traditionally been
+	produced through the optimization of intensity distributions (or maps)
+	for each beam angle. The optimization step is followed by the
+	application of a leaf-sequencing algorithm that translates each
+	intensity map into a set of deliverable aperture shapes. In this
+	article, we introduce an automated planning system in which we bypass
+	the traditional intensity optimization, and instead directly optimize
+	the shapes and the weights of the apertures. We call this approach
+	"direct aperture optimization." This technique allows the user to
+	specify the maximum number of apertures per beam direction, and hence
+	provides significant control over the complexity of the treatment
+	delivery. This is possible because the machine dependent delivery
+	constraints imposed by the MLC are enforced within the aperture
+	optimization algorithm rather than in a separate leaf-sequencing step.
+	The leaf settings and the aperture intensities are optimized
+	simultaneously using a simulated annealing algorithm. We have tested
+	direct aperture optimization on a variety of patient cases using the
+	EGS4/BEAM Monte Carlo package for our dose calculation engine. The
+	results demonstrate that direct aperture optimization can produce
+	highly conformal step-and-shoot treatment plans using only three to
+	five apertures per beam direction. As compared with traditional
+	optimization strategies, our studies demonstrate that direct aperture
+	optimization can result in a significant reduction in both the number
+	of beam segments and the number of monitor units. Direct aperture
+	optimization therefore produces highly efficient treatment deliveries
+	that maintain the full dosimetric benefits of IMRT

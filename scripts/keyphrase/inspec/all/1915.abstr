@@ -1,0 +1,12 @@
+Multichannel scaler for general statistical analysis of dynamic light
+	scattering
+A four channel scaler for counting applications has been designed and built
+	using a standard high transfer rate parallel computer interface bus
+	parallel data card. The counter section is based on standard complex
+	programmable logic device integrated circuits. With a 200 MHz Pentium
+	based host PC a sustained counting and data transfer with channel
+	widths as short as 200 ns for a single channel is realized. The use of
+	the multichannel scaler is demonstrated in dynamic light scattering
+	experiments. The recorded traces are analyzed with wavelet and other
+	statistical techniques to obtain transient changes in the properties of
+	the scattered light

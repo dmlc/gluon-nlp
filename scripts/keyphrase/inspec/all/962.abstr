@@ -1,0 +1,16 @@
+Optimal control using the transport equation: the Liouville machine
+Transport theory describes the scattering behavior of physical particles such
+	as photons. Here we show how to connect this theory to optimal control
+	theory and to adaptive behavior of agents embedded in an environment.
+	Environments and tasks are defined by physical boundary conditions.
+	Given some task, we compute a set of probability densities on
+	continuous state and action and time. From these densities we derive an
+	optimal policy such that for all states the most likely action
+	maximizes the probability of reaching a predefined goal state.
+	Liouville's conservation theorem tells us that the conditional density
+	at time t, state s, and action a must equal the density at t + dt, s +
+	ds, a + da. Discretization yields a linear system that can be solved
+	directly and whose solution corresponds to an optimal policy.
+	Discounted reward schemes are incorporated naturally by taking the
+	Laplace transform of the equations. The Liouville machine quickly
+	solves rather complex maze problems

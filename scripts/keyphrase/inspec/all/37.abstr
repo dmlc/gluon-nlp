@@ -1,0 +1,17 @@
+Design PID controllers for desired time-domain or frequency-domain response
+Practical requirements on the design of control systems, especially process
+	control systems, are usually specified in terms of time-domain
+	response, such as overshoot and rise time, or frequency-domain
+	response, such as resonance peak and stability margin. Although
+	numerous methods have been developed for the design of the
+	proportional-integral-derivative (PID) controller, little work has been
+	done in relation to the quantitative time-domain and frequency-domain
+	responses. In this paper, we study the following problem: Given a
+	nominal stable process with time delay, we design a suboptimal PID
+	controller to achieve the required time-domain response or
+	frequency-domain response for the nominal system or the uncertain
+	system. An H/sub infinity / PID controller is developed based on
+	optimal control theory and the parameters are derived analytically. Its
+	properties are investigated and compared with that of two developed
+	suboptimal controllers: an H/sub 2/ PID controller and a Maclaurin PID
+	controller

@@ -1,0 +1,11 @@
+Optimization of the characteristics of computational processes in scalable
+	resources
+The scalableness of resources is taken to mean the possibility of the prior
+	change in the obtained dynamic characteristics of computational
+	processes for a certain basic set of processors and the communication
+	medium in an effort to optimize the dynamics of software applications.
+	A method is put forward for the generation of optimal strategies-a set
+	of the versions of the fulfillment of programs on the basis of a vector
+	criterion. The method is urgent for the effective use of resources of
+	computational clusters and metacomputational media and also for dynamic
+	control of processes in real time on the basis of the static scaling

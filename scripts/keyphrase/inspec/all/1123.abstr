@@ -1,0 +1,14 @@
+A transactional asynchronous replication scheme for mobile database systems
+In mobile database systems, mobility of users has a significant impact on data
+	replication. As a result, the various replica control protocols that
+	exist today in traditional distributed and multidatabase environments
+	are no longer suitable. To solve this problem, a new mobile database
+	replication scheme, the Transaction-Level Result-Set Propagation
+	(TLRSP) model, is put forward in this paper. The conflict detection and
+	resolution strategy based on TLRSP is discussed in detail, and the
+	implementation algorithm is proposed. In order to compare the
+	performance of the TLRSP model with that of other mobile replication
+	schemes, we have developed a detailed simulation model. Experimental
+	results show that the TLRSP model provides an efficient support for
+	replicated mobile database systems by reducing reprocessing overhead
+	and maintaining database consistency

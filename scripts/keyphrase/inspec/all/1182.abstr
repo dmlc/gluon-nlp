@@ -1,0 +1,16 @@
+Optimization of the memory weighting function in stochastic functional
+	self-organized sorting performed by a team of autonomous mobile agents
+The activity of a team of autonomous mobile agents formed by identical
+	"robot-like-ant" individuals capable of performing a random walk
+	through an environment that are able to recognize and move different
+	"objects" is modeled. The emergent desired behavior is a distributed
+	sorting and clustering based only on local information and a memory
+	register that records the past objects encountered. An optimum
+	weighting function for the memory registers is theoretically derived.
+	The optimum time-dependent weighting function allows sorting and
+	clustering of the randomly distributed objects in the shortest time. By
+	maximizing the average speed of a texture feature (the contrast) we
+	check the central assumption, the intermediate steady-states
+	hypothesis, of our theoretical result. It is proved that the algorithm
+	optimization based on maximum speed variation of the contrast feature
+	gives relationships similar to the theoretically derived annealing law

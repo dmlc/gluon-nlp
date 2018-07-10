@@ -1,0 +1,14 @@
+A digital fountain approach to asynchronous reliable multicast
+The proliferation of applications that must reliably distribute large, rich
+	content to a vast number of autonomous receivers motivates the design
+	of new multicast and broadcast protocols. We describe an ideal, fully
+	scalable protocol for these applications that we call a digital
+	fountain. A digital fountain allows any number of heterogeneous
+	receivers to acquire content with optimal efficiency at times of their
+	choosing. Moreover, no feedback channels are needed to ensure reliable
+	delivery, even in the face of high loss rates. We develop a protocol
+	that closely approximates a digital fountain using two new classes of
+	erasure codes that for large block sizes are orders of magnitude faster
+	than standard erasure codes. We provide performance measurements that
+	demonstrate the feasibility of our approach and discuss the design,
+	implementation, and performance of an experimental system

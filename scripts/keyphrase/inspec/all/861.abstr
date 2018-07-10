@@ -1,0 +1,21 @@
+The decision procedure for profitability of investment projects using the
+	internal rate of return of single-period projects
+The internal rate of return (IRR) criterion is often used to evaluate
+	profitability of investment projects. In this paper, we focus on a
+	single-period project which consists of two types of cash flows; an
+	investment at one period and a return at a succeeding period, and a
+	financing at one period and a repayment at a succeeding period. We
+	decompose the given investment project into a series of the
+	single-period projects. From the viewpoint of the single-period
+	project, we point out the applicability issue of the IRR criterion,
+	namely the IRR criterion cannot be applied in which a project is
+	composed of both investment type and financing type. Investigating the
+	properties of a series of the single-period projects, we resolve the
+	applicability issue of the IRR criterion and propose the decision
+	procedure for profitability judgment toward any type of investment
+	project based on the comparison between the IRR and the capital cost.
+	We develop a new algorithm to obtain the value of the project
+	investment rate (PIR) for the given project, which is a function of the
+	capital cost, only using the standard IRR computing routine. This
+	outcome is a theoretical breakthrough to widen the utilization of IRR
+	in practical applications

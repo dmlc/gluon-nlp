@@ -1,0 +1,17 @@
+Intelligent optimal sieving method for FACTS device control in multi-machine
+	systems
+A multi-target oriented optimal control strategy for FACTS devices installed in
+	multi-machine power systems is presented in this paper, which is named
+	the intelligent optimal sieving control (IOSC) method. This new method
+	divides the FACTS device output region into several parts and selects
+	one typical value from each part, which is called output candidate.
+	Then, an intelligent optimal sieve is constructed, which predicts the
+	impacts of each output candidate on a power system and sieves out an
+	optimal output from all of the candidates. The artificial neural
+	network technologies and fuzzy methods are applied to build the
+	intelligent sieve. Finally, the real control signal of FACTS devices is
+	calculated according to the selected optimal output through inverse
+	system method. Simulation has been done on a three-machine power system
+	and the results show that the proposed IOSC controller can effectively
+	attenuate system oscillations and enhance the power system transient
+	stability

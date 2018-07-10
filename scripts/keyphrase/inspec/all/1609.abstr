@@ -1,0 +1,17 @@
+Modeling undesirable factors in efficiency evaluation
+Data envelopment analysis (DEA) measures the relative efficiency of decision
+	making units (DMUs) with multiple performance factors which are grouped
+	into outputs and inputs. Once the efficient frontier is determined,
+	inefficient DMUs can improve their performance to reach the efficient
+	frontier by either increasing their current output levels or decreasing
+	their current input levels. However, both desirable (good) and
+	undesirable (bad) factors may be present. For example, if inefficiency
+	exists in production processes where final products are manufactured
+	with a production of wastes and pollutants, the outputs of wastes and
+	pollutants are undesirable and should be reduced to improve the
+	performance. Using the classification invariance property, we show that
+	the standard DEA model can be used to improve the performance via
+	increasing the desirable outputs and decreasing the undesirable
+	outputs. The method can also be applied to situations when some inputs
+	need to be increased to improve the performance. The linearity and
+	convexity of DEA are preserved through our proposal

@@ -1,0 +1,8 @@
+Nonlinear extrapolation algorithm for realization of a scalar random process
+A method of construction of a nonlinear extrapolation algorithm is proposed.
+	This method makes it possible to take into account any nonlinear random
+	dependences that exist in an investigated process and are described by
+	mixed central moment functions. The method is based on the V. S.
+	Pugachev canonical decomposition apparatus. As an example, the problem
+	of nonlinear extrapolation is solved for a moment function of third
+	order

@@ -1,0 +1,15 @@
+Sensorless control of induction motor drives
+Controlled induction motor drives without mechanical speed sensors at the motor
+	shaft have the attractions of low cost and high reliability. To replace
+	the sensor the information on the rotor speed is extracted from
+	measured stator voltages and currents at the motor terminals.
+	Vector-controlled drives require estimating the magnitude and spatial
+	orientation of the fundamental magnetic flux waves in the stator or in
+	the rotor. Open-loop estimators or closed-loop observers are used for
+	this purpose. They differ with respect to accuracy, robustness, and
+	sensitivity against model parameter variations. Dynamic performance and
+	steady-state speed accuracy in the low-speed range can be achieved by
+	exploiting parasitic effects of the machine. The overview in this paper
+	uses signal flow graphs of complex space vector quantities to provide
+	an insightful description of the systems used in sensorless control of
+	induction motors

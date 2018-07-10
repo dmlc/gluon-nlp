@@ -1,0 +1,15 @@
+Design of high-performance wavelets for image coding using a perceptual time
+	domain criterion
+This paper presents a new biorthogonal linear-phase wavelet design for image
+	compression. Instead of calculating the prototype filters as spectral
+	factors of a half-band filter, the design is based on the direct
+	optimization of the low pass analysis filter using an objective
+	function directly related to a perceptual criterion for image
+	compression. This function is defined as the product of the theoretical
+	coding gain and an index called the peak-to-peak ratio, which was shown
+	to have high correlation with perceptual quality. A distinctive feature
+	of the proposed technique is a procedure by which, given a "good"
+	starting filter, "good" filters of longer lengths are generated. The
+	results are excellent, showing a clear improvement in perceptual image
+	quality. Also, we devised a criterion for constraining the coefficients
+	of the filters in order to design wavelets with minimum ringing

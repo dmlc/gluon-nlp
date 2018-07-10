@@ -1,0 +1,16 @@
+Application of nonlinear time series analysis techniques to high-frequency
+	currency exchange data
+In this work we have applied nonlinear time series analysis to high-frequency
+	currency exchange data. The time series studied are the exchange rates
+	between the US Dollar and 18 other foreign currencies from within and
+	without the Euro zone. Our goal was to determine if their dynamical
+	behaviours were in some way correlated. The nonexistence of
+	stationarity called for the application of recurrence quantification
+	analysis as a tool for this analysis, and is based on the definition of
+	several parameters that allow for the quantification of recurrence
+	plots. The method was checked using the European Monetary System
+	currency exchanges. The results show, as expected, the high correlation
+	between the currencies that are part of the Euro, but also a strong
+	correlation between the Japanese Yen, the Canadian Dollar and the
+	British Pound. Singularities of the series are also demonstrated taking
+	into account historical events, in 1996, in the Euro zone

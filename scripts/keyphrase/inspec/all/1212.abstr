@@ -1,0 +1,14 @@
+TCRM: diagnosing tuple inconsistency for granulized datasets
+Many approaches to granularization have been presented for knowledge discovery.
+	However, the inconsistent tuples that exist in granulized datasets are
+	hardly ever revealed. We developed a model, tuple consistency
+	recognition model (TCRM) to help efficiently detect inconsistent tuples
+	for datasets that are granulized. The main outputs of the developed
+	model include explored inconsistent tuples and consumed processing
+	time. We further conducted an empirical test where eighteen continuous
+	real-life datasets granulized by the equal width interval technique
+	that embedded S-plus histogram binning algorithm (SHBA) and largest
+	binning size algorithm (LBSA) binning algorithms were diagnosed.
+	Remarkable results: almost 40% of the granulized datasets contain
+	inconsistent tuples and 22% have the amount of inconsistent tuples more
+	than 20%

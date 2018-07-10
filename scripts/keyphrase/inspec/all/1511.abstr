@@ -1,0 +1,6 @@
+Efficient algorithms for stiff elliptic problems with large parameters
+We consider a finite element approximation and iteration algorithms for solving
+	stiff elliptic boundary value problems with large parameters in front
+	of a higher derivative. The convergence rate of the algorithms is
+	independent of the spread in coefficients and a discretization
+	parameter

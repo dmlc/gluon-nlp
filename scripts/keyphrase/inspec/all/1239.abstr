@@ -1,0 +1,16 @@
+Three-dimensional global MHD simulation code for the Earth's magnetosphere
+	using HPF/JA
+We have translated a three-dimensional magnetohydrodynamic (MHD) simulation
+	code of the Earth's magnetosphere from VPP Fortran to HPF/JA on the
+	Fujitsu VPP5000/56 vector-parallel supercomputer and the MHD code was
+	fully vectorized and fully parallelized in VPP Fortran. The entire
+	performance and capability of the HPF MHD code could be shown to be
+	almost comparable to that of VPP Fortran. A three-dimensional global
+	MHD simulation of the Earth's magnetosphere was performed at a speed of
+	over 400 Gflops with an efficiency of 76.5% using 56 processing
+	elements of the Fujitsu VPP5000/56 in vector and parallel computation
+	that permitted comparison with catalog values. We have concluded that
+	fluid and MHD codes that are fully vectorized and fully parallelized in
+	VPP Fortran can be translated with relative ease to HPF/JA, and a code
+	in HPF/JA may be expected to perform comparably to the same code
+	written in VPP Fortran

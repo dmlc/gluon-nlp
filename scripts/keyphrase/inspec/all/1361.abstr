@@ -1,0 +1,18 @@
+Adaptive scheduling of batch servers in flow shops
+Batch servicing is a common way of benefiting from economies of scale in
+	manufacturing operations. Good examples of production systems that
+	allow for batch processing are ovens found in the aircraft industry and
+	in semiconductor manufacturing. In this paper we study the issue of
+	dynamic scheduling of such systems within the context of multi-stage
+	flow shops. So far, a great deal of research has concentrated on the
+	development of control strategies, which only address the batch stage.
+	This paper proposes an integral scheduling approach that also includes
+	succeeding stages. In this way, we aim for shop optimization, instead
+	of optimizing performance for a single stage. Our so-called look-ahead
+	strategy adapts its scheduling decision to shop status, which includes
+	information on a limited number of near-future arrivals. In particular,
+	we study a two-stage flow shop, in which the batch stage is succeeded
+	by a serial stage. The serial stage may be realized by a single machine
+	or by parallel machines. Through an extensive simulation study it is
+	demonstrated how shop performance can be improved by the proposed
+	strategy relative to existing strategies

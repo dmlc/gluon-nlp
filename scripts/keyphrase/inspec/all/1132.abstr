@@ -1,0 +1,10 @@
+Semidefinite programming vs. LP relaxations for polynomial programming
+We consider the global minimization of a multivariate polynomial on a
+	semi-algebraic set Omega defined with polynomial inequalities. We then
+	compare two hierarchies of relaxations, namely, LP relaxations based on
+	products of the original constraints, in the spirit of the RLT
+	procedure of Sherali and Adams (1990), and recent semidefinite
+	programming (SDP) relaxations introduced by the author. The comparison
+	is analyzed in light of recent results in real algebraic geometry on
+	various representations of polynomials, positive on a compact
+	semi-algebraic set

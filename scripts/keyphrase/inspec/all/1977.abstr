@@ -1,0 +1,14 @@
+Tracking nonparameterized object contours in video
+We propose a new method for contour tracking in video. The inverted distance
+	transform of the edge map is used as an edge indicator function for
+	contour detection. Using the concept of topographical distance, the
+	watershed segmentation can be formulated as a minimization. This new
+	viewpoint gives a way to combine the results of the watershed algorithm
+	on different surfaces. In particular, our algorithm determines the
+	contour as a combination of the current edge map and the contour,
+	predicted from the tracking result in the previous frame. We also show
+	that the problem of background clutter can be relaxed by taking the
+	object motion into account. The compensation with object motion allows
+	to detect and remove spurious edges in background. The experimental
+	results confirm the expected advantages of the proposed method over the
+	existing approaches

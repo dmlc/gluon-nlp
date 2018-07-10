@@ -1,0 +1,16 @@
+Computer program for calculating the p-value in testing process capability
+	index C/sub pmk/
+Many process capability indices, including C/sub p/, C/sub pk/, and C/sub pm/,
+	have been proposed to provide numerical measures on the process
+	potential and performance. Combining the advantages of these indices,
+	Pearn et al. (1992) introduced a new capability index called C/sub
+	pmk/, which has been shown to be a useful capability index for
+	processes with two-sided specification limits. In this paper, the
+	authors implement the theory of a testing hypothesis using the natural
+	estimator of C/sub pmk/, and provide an efficient Maple computer
+	program to calculate the p-values. They also provide tables of the
+	critical values for some commonly used capability requirements. Based
+	on the test, they develop a simple step-by-step procedure for in-plant
+	applications. The practitioners can use the proposed procedure to
+	determine whether their process meets the preset capability
+	requirement, and make reliable decisions

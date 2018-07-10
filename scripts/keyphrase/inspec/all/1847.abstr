@@ -1,0 +1,20 @@
+Conceptual modeling and specification generation for B2B business processes
+	based on ebXML
+In order to support dynamic setup of business processes among independent
+	organizations, a formal standard schema for describing the business
+	processes is basically required. The ebXML framework provides such a
+	specification schema called BPSS (Business Process Specification
+	Schema) which is available in two standalone representations: a UML
+	version, and an XML version. The former, however, is not intended for
+	the direct creation of business process specifications, but for
+	defining specification elements and their relationships required for
+	creating an ebXML-compliant business process specification. For this
+	reason, it is very important to support conceptual modeling that is
+	well organized and directly matched with major modeling concepts. This
+	paper deals with how to represent and manage B2B business processes
+	using UML-compliant diagrams. The major challenge is to organize UML
+	diagrams in a natural way that is well suited to the business process
+	meta-model and then to transform the diagrams into an XML version. This
+	paper demonstrates the usefulness of conceptually modeling business
+	processes by prototyping a business process editor tool called
+	ebDesigner

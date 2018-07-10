@@ -1,0 +1,19 @@
+Valuing corporate debt: the effect of cross-holdings of stock and debt
+We have developed a simple approach to valuing risky corporate debt when
+	corporations own securities issued by other corporations. We assume
+	that corporate debt can be valued as an option on corporate business
+	asset value, and derive payoff functions when there exist
+	cross-holdings of stock or debt between two firms. Next we show that
+	payoff functions with multiple cross-holdings can be solved by the
+	contraction principle. The payoff functions which we derive provide a
+	number of insights about the risk structure of company cross-holdings.
+	First, the Modigliani-Miller theorem can obtain when there exist
+	cross-holdings between firms. Second, by establishing
+	cross-shareholdings each of stock holders distributes a part of its
+	payoff values to the bond holder of the other's firm, so that both
+	firms can decrease credit risks by cross-shareholdings. In the
+	numerical examples, we show that the correlation in firms can be a
+	critical condition for reducing credit risk by cross-holdings of stock
+	using Monte Carlo simulation. Moreover, we show we can calculate the
+	default spread easily when complicated cross-holdings exist, and find
+	which shares are beneficial or disadvantageous

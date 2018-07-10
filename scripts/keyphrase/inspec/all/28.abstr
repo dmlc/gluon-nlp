@@ -1,0 +1,14 @@
+Uncertainty bounds and their use in the design of interval type-2 fuzzy logic
+	systems
+We derive inner- and outer-bound sets for the type-reduced set of an interval
+	type-2 fuzzy logic system (FLS), based on a new mathematical
+	interpretation of the Karnik-Mendel iterative procedure for computing
+	the type-reduced set. The bound sets can not only provide estimates
+	about the uncertainty contained in the output of an interval type-2
+	FLS, but can also be used to design an interval type-2 FLS. We
+	demonstrate, by means of a simulation experiment, that the resulting
+	system can operate without type-reduction and can achieve similar
+	performance to one that uses type-reduction. Therefore, our new design
+	method, based on the bound sets, can relieve the computation burden of
+	an interval type-2 FLS during its operation, which makes an interval
+	type-2 FLS useful for real-time applications

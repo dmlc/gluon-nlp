@@ -1,0 +1,11 @@
+Document-based workflow modeling: a case-based reasoning approach
+A workflow model is useful for business process analysis. A well-built workflow
+	can help a company streamline its internal processes by reducing
+	overhead. The results of workflow modeling need to be managed as
+	information assets in a systematic fashion. Reusing these results is
+	likely to enhance the quality of the modeling. Therefore, this paper
+	proposes a document-based workflow modeling mechanism, which employs a
+	case-based reasoning (CBR) technique for the effective reuse of design
+	outputs. A repository is proposed to support this CBR process. A
+	real-life case is illustrated to demonstrate the usefulness of our
+	approach

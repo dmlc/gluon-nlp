@@ -1,0 +1,25 @@
+Efficient parallel programming on scalable shared memory systems with High
+	Performance Fortran
+OpenMP offers a high-level interface for parallel programming on scalable
+	shared memory (SMP) architectures. It provides the user with simple
+	work-sharing directives while it relies on the compiler to generate
+	parallel programs based on thread parallelism. However, the lack of
+	language features for exploiting data locality often results in poor
+	performance since the non-uniform memory access times on scalable SMP
+	machines cannot be neglected. High Performance Fortran (HPF), the
+	de-facto standard for data parallel programming, offers a rich set of
+	data distribution directives in order to exploit data locality, but it
+	has been mainly targeted towards distributed memory machines. In this
+	paper we describe an optimized execution model for HPF programs on SMP
+	machines that avails itself with mechanisms provided by OpenMP for work
+	sharing and thread parallelism, while exploiting data locality based on
+	user-specified distribution directives. Data locality does not only
+	ensure that most memory accesses are close to the executing threads and
+	are therefore faster, but it also minimizes synchronization overheads,
+	especially in the case of unstructured reductions. The proposed shared
+	memory execution model for HPF relies on a small set of language
+	extensions, which resemble the OpenMP work-sharing features. These
+	extensions, together with an optimized shared memory parallelization
+	and execution model, have been implemented in the ADAPTOR HPF
+	compilation system and experimental results verify the efficiency of
+	the chosen approach

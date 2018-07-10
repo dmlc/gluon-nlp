@@ -1,0 +1,14 @@
+Ultra-high speed positioning control of a gravure engraving unit using a
+	discrete-time two-degree-of-freedom H/sub infinity / control
+The piezoelectric actuator has high-speed response in comparison with the
+	electro-magnetic actuator. However, it is not easy to achieve both
+	high-speed and high-precision response by feedforward control only
+	because the piezoelectric element has nonlinear properties such as the
+	hysteresis effect. Thus, feedback control is required to achieve good
+	performance. We develop a control design method to achieve both
+	high-speed and high-precision response for piezoelectric actuators
+	using the discrete-time H/sub infinity / control method and the
+	two-degree-of-freedom control scheme. The effectiveness of our proposed
+	method has been shown by simulation and experimental results. The most
+	important contribution of our study is that our method can be directly
+	applied to commercial machines

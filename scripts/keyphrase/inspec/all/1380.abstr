@@ -1,0 +1,20 @@
+A feature-preserving volumetric technique to merge surface triangulations
+Several extensions and improvements to surface merging procedures based on the
+	extraction of isosurfaces from a distance map defined on an adaptive
+	background grid are presented. The main objective is to extend the
+	application of these algorithms to surfaces with sharp edges and
+	comers. In order to deal with objects of different length scales, the
+	initial background grids are created using a Delaunay triangulation
+	method and local voxelizations. A point enrichment technique that
+	introduces points into the background grid along detected surface
+	features such as ridges is used to ensure that these features are
+	preserved in the final merged surface. The surface merging methodology
+	is extended to include other Boolean operations between surface
+	triangulations. The iso-surface extraction algorithms are modified to
+	obtain the correct iso-surface for multi-component objects. The
+	procedures are demonstrated with various examples, ranging from simple
+	geometrical entities to complex engineering applications. The present
+	algorithms allow realistic modelling of a large number of complex
+	engineering geometries using overlapping components defined discretely,
+	i.e. via surface triangulations. This capability is very useful for
+	grid generation starting from data originated in measurements or images

@@ -1,0 +1,19 @@
+DEVS simulation of distributed intrusion detection systems
+An intrusion detection system (IDS) attempts to identify unauthorized use,
+	misuse, and abuse of computer and network systems. As intrusions become
+	more sophisticated, dealing with them moves beyond the scope of one
+	IDS. The need arises for systems to cooperate with one another, to
+	manage diverse attacks across networks. The feature of recent attacks
+	is that the packet delivery is moderately slow, and the attack sources
+	and attack targets are distributed. These attacks are called "stealthy
+	attacks." To detect these attacks, the deployment of distributed IDSs
+	is needed. In such an environment, the ability of an IDS to share
+	advanced information about these attacks is especially important. In
+	this research, the IDS model exploits blacklist facts to detect the
+	attacks that are based on either slow or highly distributed packets. To
+	maintain the valid blacklist facts in the knowledge base of each IDS,
+	the model should communicate with the other IDSs. When attack level
+	goes beyond the interaction threshold, ID agents send interaction
+	messages to ID agents in other hosts. Each agent model is developed as
+	an interruptible atomic-expert model in which the expert system is
+	embedded as a model component

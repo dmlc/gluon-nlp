@@ -1,0 +1,6 @@
+combinational verification; overlapping local BDDs; hash table; combinational
+	circuit verification; case-by-case verification; internal node pairs;
+	internal correspondence based verification; heuristics; structural
+	levels; BDD manager; BDD sizes; cutsets; ISCAS85 benchmark circuits;
+	hard industrial circuits; internal equivalences; formal verification;
+	internal correspondence-based verification; binary decision diagrams

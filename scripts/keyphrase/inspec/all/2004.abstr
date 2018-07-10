@@ -1,0 +1,9 @@
+New paradigms for interactive 3D volume segmentation
+We present a new virtual reality-based interaction metaphor for semi-automatic
+	segmentation of medical 3D volume data. The mouse-based, manual
+	initialization of deformable surfaces in 3D represents a major
+	bottleneck in interactive segmentation. In our multi-modal system we
+	enhance this process with additional sensory feedback. A 3D haptic
+	device is used to extract the centreline of a tubular structure. Based
+	on the obtained path a cylinder with varying diameter is generated,
+	which in turn is used as the initial guess for a deformable surface

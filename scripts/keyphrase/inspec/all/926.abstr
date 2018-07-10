@@ -1,0 +1,12 @@
+Experimental investigation of active vibration control using neural networks
+	and piezoelectric actuators
+The use of neural networks for identification and control of smart structures
+	is investigated experimentally. Piezoelectric actuators are employed to
+	suppress the vibrations of a cantilevered plate subject to impulse,
+	sine wave and band-limited white noise disturbances. The neural
+	networks used are multilayer perceptrons trained with error
+	backpropagation. Validation studies show that the identifier predicts
+	the system dynamics accurately. The controller is trained adaptively
+	with the help of the neural identifier. Experimental results
+	demonstrate excellent closed-loop performance and robustness of the
+	neurocontroller

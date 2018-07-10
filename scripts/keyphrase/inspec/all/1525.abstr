@@ -1,0 +1,18 @@
+Dependence graphs: dependence within and between groups
+This paper applies the two-party dependence theory (Castelfranchi, Cesta and
+	Miceli, 1992, in Y. Demazeau and E. Werner (Eds.) Decentralized AI-3,
+	Elsevier, North Holland) to modelling multiagent and group dependence.
+	These have theoretical potentialities for the study of emerging groups
+	and collective structures, and more generally for understanding social
+	and organisational complexity, and practical utility for both
+	social-organisational and agent systems purposes. In the paper, the
+	dependence theory is extended to describe multiagent links, with a
+	special reference to group and collective phenomena, and is proposed as
+	a framework for the study of emerging social structures, such as groups
+	and collectives. In order to do so, we propose to extend the notion of
+	dependence networks (applied to a single agent) to dependence graphs
+	(applied to an agency). In its present version, the dependence theory
+	is argued to provide (a) a theoretical instrument for the study of
+	social complexity, and (b) a computational system for managing the
+	negotiation process in competitive contexts and for monitoring
+	complexity in organisational and other cooperative contexts

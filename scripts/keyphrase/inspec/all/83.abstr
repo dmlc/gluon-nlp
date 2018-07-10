@@ -1,0 +1,21 @@
+A distributed mobile agent framework for maintaining persistent distance
+	education
+Mobile agent techniques involve distributed control if communication is
+	required among different types of agents, especially when mobile agents
+	can migrate from station to station. This technique can be implemented
+	in a distributed distance learning environment, which allows students
+	or instructors to login from anywhere to a central server in an
+	education center while still retaining the look-and-feel of personal
+	setups. In this research paper, we propose a distributed agent
+	framework along with its communication messages to facilitate mobile
+	personal agents, which serve three different groups of distance
+	education users: instructors, students, and system administrators. We
+	propose an agent communication framework as well as agent evolution
+	states of mobile agents. The communication architecture and message
+	transmission protocols are illustrated. The system is implemented on
+	the Windows platform to support nomadic accessibility of remote
+	distance learning users. Personal data also migrate with the mobile
+	agents, allowing users to maintain accessibility to some extent even
+	when the Internet connection is temperately disconnected. Using
+	user-friendly personal agents, a distance education platform can
+	include different tools to meet different needs for users

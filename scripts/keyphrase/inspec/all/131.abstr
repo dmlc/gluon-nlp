@@ -1,0 +1,12 @@
+On biorthogonal nonuniform filter banks and tree structures
+This paper concerns biorthogonal nonuniform filter banks. It is shown that a
+	tree structured filter bank is biorthogonal if it is equivalent to a
+	tree structured filter bank whose matching constituent levels on the
+	analysis and synthesis sides are themselves biorthogonal pairs. We then
+	show that a stronger statement can be made about dyadic filter banks in
+	general: That a dyadic filter bank is biorthogonal if both the analysis
+	and synthesis banks can be decomposed into dyadic trees. We further
+	show that these decompositions are stability and FIR preserving. These
+	results, derived for filter banks having filters with rational transfer
+	functions, thus extend some of the earlier comparable results for
+	orthonormal filter banks

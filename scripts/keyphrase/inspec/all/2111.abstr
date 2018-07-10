@@ -1,0 +1,16 @@
+Extended depth-of-focus imaging of chlorophyll fluorescence from intact leaves
+Imaging dynamic changes in chlorophyll a fluorescence provides a valuable means
+	with which to examine localised changes in photosynthetic function.
+	Microscope-based systems provide excellent spatial resolution which
+	allows the response of individual cells to be measured. However, such
+	systems have a restricted depth of focus and, as leaves are inherently
+	uneven, only a small proportion of each image at any given focal plane
+	is in focus. In this report we describe the development of algorithms,
+	specifically adapted for imaging chlorophyll fluorescence and
+	photosynthetic function in living plant cells, which allow
+	extended-focus images to be reconstructed from images taken in
+	different focal planes. We describe how these procedures can be used to
+	reconstruct images of chlorophyll fluorescence and calculated
+	photosynthetic parameters, as well as producing a map of leaf topology.
+	The robustness of this procedure is demonstrated using leaves from a
+	number of different plant species

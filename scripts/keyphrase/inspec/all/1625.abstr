@@ -1,0 +1,8 @@
+Use of fuzzy weighted autocorrelation function for pitch extraction from noisy
+	speech
+An investigation is presented into the feasibility of incorporating a fuzzy
+	weighting scheme into the calculation of an autocorrelation function
+	for pitch extraction. Simulation results reveal that the proposed
+	method provides better robustness against background noise than the
+	conventional approaches for extracting pitch period in a noisy
+	environment

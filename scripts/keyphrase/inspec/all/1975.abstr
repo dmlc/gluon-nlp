@@ -1,0 +1,12 @@
+Efficient computation of local geometric moments
+Local moments have attracted attention as local features in applications such
+	as edge detection and texture segmentation. The main reason for this is
+	that they are inherently integral-based features, so that their use
+	reduces the effect of uncorrelated noise. The computation of local
+	moments, when viewed as a neighborhood operation, can be interpreted as
+	a convolution of the image with a set of masks. Nevertheless, moments
+	computed inside overlapping windows are not independent and convolution
+	does not take this fact into account. By introducing a matrix
+	formulation and the concept of accumulation moments, this paper
+	presents an algorithm which is computationally much more efficient than
+	convolving and yet as simple

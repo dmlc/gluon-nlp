@@ -1,0 +1,15 @@
+A 3-stage pipelined architecture for multi-view images decoder
+In this paper, we proposed the architecture of the decoder which implements the
+	multi-view images decoding algorithm. The study of the hardware
+	structure of the multi-view image processing has not been accomplished.
+	The proposed multi-view images decoder operates in a three stage
+	pipelined manner and extracts the depth of the pixels of the decoded
+	image every clock. The multi-view images decoder consists of three
+	modules, Node selector which transfers the value of the nodes
+	repeatedly and Depth Extractor which extracts the depth of each pixel
+	from the four values of the nodes and Affine Transformer which
+	generates the projecting position on the image plane from the values of
+	the pixels and the specified viewpoint. The proposed architecture is
+	designed and simulated by the Max+PlusII design tool and the operating
+	frequency is 30 MHz. The image can be constructed in a real time by the
+	decoder with the proposed architecture

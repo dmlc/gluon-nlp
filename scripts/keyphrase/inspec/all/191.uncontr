@@ -1,0 +1,8 @@
+turbofan engine; linear parameter-varying control; parameter-dependent control
+	design methods; state-space descriptions; time-varying parameters;
+	linear fractional transformations; small gain theorem; performance
+	bounds; robustness bounds; single quadratic Lyapunov function;
+	parameter-dependent quadratic Lyapunov function; Jacobian
+	linearizations; decoupled command response; closed-loop system; model
+	matching problem; H/sub infinity / framework; nonlinear simulations;
+	very robust designs

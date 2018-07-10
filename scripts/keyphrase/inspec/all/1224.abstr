@@ -1,0 +1,26 @@
+Formalization of weighted factors analysis
+Weighted factors analysis (WeFA) has been proposed as a new approach for
+	elicitation, representation, and manipulation of knowledge about a
+	given problem, generally at a high and strategic level. Central to this
+	proposal is that a group of experts in the area of the problem can
+	identify a hierarchy of factors with positive or negative influences on
+	the problem outcome. The tangible output of WeFA is a directed weighted
+	graph called a WeFA graph. This is a set of nodes denoting factors that
+	can directly or indirectly influence an overall aim of the graph. The
+	aim is also represented by a node. Each directed arc is a direct
+	influence of one factor on another. A chain of directed arcs indicates
+	an indirect influence. The influences may be identified as either
+	positive or negative. For example, sales and costs are two factors that
+	influence the aim of profitability in an organization. Sales has a
+	positive influence on profitability and costs has a negative influence
+	on profitability. In addition, the relative significance of each
+	influence is represented by a weight. We develop Binary WeFA which is a
+	variant of WeFA where the factors in the graph are restricted to being
+	either true or false. Imposing this restriction on a WeFA graph allows
+	us to be more precise about the meaning of the graph and of reasoning
+	in it. Binary WeFA is a new proposal that provides a formal yet
+	sufficiently simple language for logic-based argumentation for use by
+	business people in decision-support and knowledge management. Whilst
+	Binary WeFA is expressively simpler than other logic-based
+	argumentation formalisms, it does incorporate a novel formalization of
+	the notion of significance

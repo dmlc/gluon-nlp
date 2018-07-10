@@ -1,0 +1,7 @@
+Affine invariants of convex polygons
+In this correspondence, we prove that the affine invariants, for image
+	registration and object recognition, proposed recently by Yang and
+	Cohen (see ibid., vol.8, no.7, p.934-46, July 1999) are algebraically
+	dependent. We show how to select an independent and complete set of the
+	invariants. The use of this new set leads to a significant reduction of
+	the computing complexity without decreasing the discrimination power

@@ -1,0 +1,7 @@
+VoIP: leveraging existing cable architecture
+As operators prepare to enter the voice-over-IP fray, they are searching for
+	ways to leverage their existing two-way, interactive infrastructure.
+	There are several approaches for supporting VoIP on top of the core IP
+	transport network. The one garnering the most interest, especially in
+	the United States, is based on the PacketCable 1.x architecture. This
+	article discusses the PacketCable-based approach

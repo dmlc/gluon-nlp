@@ -1,0 +1,14 @@
+Nuclear magnetic resonance molecular photography
+A procedure is described for storing a two-dimensional (2D) pattern consisting
+	of 32*32=1024 bits in a spin state of a molecular system and then
+	retrieving the stored information as a stack of nuclear magnetic
+	resonance spectra. The system used is a nematic liquid crystal, the
+	protons of which act as spin clusters with strong intramolecular
+	interactions. The technique used is a programmable multifrequency
+	irradiation with low amplitude. When it is applied to the liquid
+	crystal, a large number of coherent long-lived /sup 1/H response
+	signals can be excited, resulting in a spectrum showing many sharp
+	peaks with controllable frequencies and amplitudes. The spectral
+	resolution is enhanced by using a second weak pulse with a 90 degrees
+	phase shift, so that the 1024 bits of information can be retrieved as a
+	set of well-resolved pseudo-2D spectra reproducing the input pattern

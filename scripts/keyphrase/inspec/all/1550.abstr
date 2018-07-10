@@ -1,0 +1,11 @@
+On the convergence of the Bermudez-Moreno algorithm with constant parameters
+A. Bermudez and C. Moreno (1981) presented a duality numerical algorithm for
+	solving variational inequalities of the second kind. The performance of
+	this algorithm strongly depends on the choice of two constant
+	parameters. Assuming a further hypothesis of the inf-sup type, we
+	present here a convergence theorem that improves on the one presented
+	by A. Bermudez and C. Moreno. We prove that the convergence is linear,
+	and we give the expression of the asymptotic error constant and the
+	explicit form of the optimal parameters, as a function of some
+	constants related to the variational inequality. Finally, we present
+	some numerical examples that confirm the theoretical results

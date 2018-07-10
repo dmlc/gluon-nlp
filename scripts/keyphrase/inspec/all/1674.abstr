@@ -1,0 +1,20 @@
+A column generation approach to delivery planning over time with inhomogeneous
+	service providers and service interval constraints
+We consider a problem of delivery planning over multiple time periods.
+	Deliveries must be made to customers having nominated demand in each
+	time period. Demand must be met in each time period by use of some
+	combination of inhomogeneous service providers. Each service provider
+	has a different delivery capacity, different cost of delivery to each
+	customer, a different utilisation requirement, and different rules
+	governing the spread of deliveries in time. The problem is to plan
+	deliveries so as to minimise overall costs, subject to demand being met
+	and service rules obeyed. A natural integer programming model was found
+	to be intractable, except on problems with loose demand constraints,
+	with gaps between best lower bound and best feasible solution of up to
+	35.1%, with an average of 15.4% over the test data set. In all but the
+	problem with loosest demand constraints, Cplex 6.5 applied to this
+	formulation failed to find the optimal solution before running out of
+	memory. However a column generation approach improved the lower bound
+	by between 0.6% and 21.9%, with an average of 9.9%, and in all cases
+	found the optimal solution at the root node, without requiring
+	branching

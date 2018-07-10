@@ -1,0 +1,14 @@
+Binocular model for figure-ground segmentation in translucent and occluding
+	images
+A Fourier-based solution to the problem of figure-ground segmentation in short
+	baseline binocular image pairs is presented. Each image is modeled as
+	an additive composite of two component images that exhibit a spatial
+	shift due to the binocular parallax. The segmentation is accomplished
+	by decoupling each Fourier component in one of the resultant additive
+	images into its two constituent phasors, allocating each to its
+	appropriate object-specific spectrum, and then reconstructing the
+	foreground and background using the inverse Fourier transform. It is
+	shown that the foreground and background shifts can be computed from
+	the differences of the magnitudes and phases of the Fourier transform
+	of the binocular image pair. While the model is based on translucent
+	objects, it also works with occluding objects

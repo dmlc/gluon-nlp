@@ -1,0 +1,11 @@
+System embedding. Control with reduced observer
+Two interrelated problems-design of the reduced observer of plant state
+	separately and together with its control system-were considered from
+	the standpoint of designing the multivariable linear systems from the
+	desired matrix transfer functions. The matrix equations defining the
+	entire constructive class of solutions of the posed problems were
+	obtained using the system embedding technology. As was demonstrated,
+	control based on the reduced observer is capable to provide the desired
+	response to the control input, as well as the response to the nonzero
+	initial conditions, only for the directly measurable part of the
+	components of the state vector. An illustrative example was presented

@@ -1,0 +1,11 @@
+Robust output-feedback control for linear continuous uncertain state delayed
+	systems with unknown time delay
+The state-delayed time often is unknown and independent of other variables in
+	most real physical systems. A new stability criterion for uncertain
+	systems with a state time-varying delay is proposed. Then, a robust
+	observer-based control law based on this criterion is constructed via
+	the sequential quadratic programming method. We also develop a
+	separation property so that the state feedback control law and observer
+	can be independently designed and maintain closed-loop system
+	stability. An example illustrates the availability of the proposed
+	design method

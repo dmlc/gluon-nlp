@@ -1,0 +1,21 @@
+Regression testing of database applications
+Database applications features such as Structured Query Language or SQL,
+	exception programming, integrity constraints, and table triggers pose
+	difficulties for maintenance activities; especially for regression
+	testing that follows modifications to database applications. In this
+	work, we address these difficulties and propose a two phase regression
+	testing methodology. In phase 1, we explore control flow and data flow
+	analysis issues of database applications. Then, we propose an impact
+	analysis technique that is based on dependencies that exist among the
+	components of database applications. This analysis leads to selecting
+	test cases from the initial test suite for regression testing the
+	modified application. In phase 2, further reduction in the regression
+	test cases is performed by using reduction algorithms. We present two
+	such algorithms. The Graph Walk algorithm walks through the control
+	flow graph of database modules and selects a safe set of test cases to
+	retest. The Call Graph Firewall algorithm uses a firewall for the inter
+	procedural level. Finally, a maintenance environment for database
+	applications is described. Our experience with this regression testing
+	methodology shows that the impact analysis technique is adequate for
+	selecting regression tests and that phase 2 techniques can be used for
+	further reduction in the number of theses tests

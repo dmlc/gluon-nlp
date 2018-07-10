@@ -1,0 +1,20 @@
+Analytic PCA construction for theoretical analysis of lighting variability in
+	images of a Lambertian object
+We analyze theoretically the subspace best approximating images of a convex
+	Lambertian object taken from the same viewpoint, but under different
+	distant illumination conditions. We analytically construct the
+	principal component analysis for images of a convex Lambertian object,
+	explicitly taking attached shadows into account, and find the principal
+	eigenmodes and eigenvalues with respect to lighting variability. Our
+	analysis makes use of an analytic formula for the irradiance in terms
+	of spherical-harmonic coefficients of the illumination and shows, under
+	appropriate assumptions, that the principal components or eigenvectors
+	are identical to the spherical harmonic basis functions evaluated at
+	the surface normal vectors. Our main contribution is in extending these
+	results to the single-viewpoint case, showing how the principal
+	eigenmodes and eigenvalues are affected when only a limited subset (the
+	upper hemisphere) of normals is available and the spherical harmonics
+	are no longer orthonormal over the restricted domain. Our results are
+	very close, both qualitatively and quantitatively, to previous
+	empirical observations and represent the first essentially complete
+	theoretical explanation of these observations

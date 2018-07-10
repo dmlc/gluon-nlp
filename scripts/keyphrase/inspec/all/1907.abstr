@@ -1,0 +1,14 @@
+Multiple comparison methods for means
+Multiple comparison methods (MCMs) are used to investigate differences between
+	pairs of population means or, more generally, between subsets of
+	population means using sample data. Although several such methods are
+	commonly available in statistical software packages, users may be
+	poorly informed about the appropriate method(s) to use and/or the
+	correct way to interpret the results. This paper classifies the MCMs
+	and presents the important methods for each class. Both simulated and
+	real data are used to compare the methods, and emphasis is placed on a
+	correct application and interpretation. We include suggestions for
+	choosing the best method. Mathematica programs developed by the authors
+	are used to compare MCMs. By taking the advantage of Mathematica's
+	notebook structure, all interested student can use these programs to
+	explore the subject more deeply

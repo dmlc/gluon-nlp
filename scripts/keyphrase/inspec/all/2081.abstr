@@ -1,0 +1,13 @@
+Three-dimensional optimum design of the cooling lines of injection moulds based
+	on boundary element design sensitivity analysis
+A three-dimensional numerical simulation using the boundary element method is
+	proposed, which can predict the cavity temperature distributions in the
+	cooling stage of injection moulding. Then, choosing the radii and
+	positions of cooling lines as design variables, the boundary integral
+	sensitivity formulations are deduced. For the optimum design of cooling
+	lines, the squared difference between the objective temperature and
+	temperature of the cavity is taken as the objective function. Based on
+	the optimization techniques with design sensitivity analysis, an
+	iterative algorithm to reach the minimum value of the objective
+	function is introduced, which leads to the optimum design of cooling
+	lines at the same time

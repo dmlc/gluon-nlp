@@ -1,0 +1,9 @@
+Bayesian nonstationary autoregressive models for biomedical signal analysis
+We describe a variational Bayesian algorithm for the estimation of a
+	multivariate autoregressive model with time-varying coefficients that
+	adapt according to a linear dynamical system. The algorithm allows for
+	time and frequency domain characterization of nonstationary
+	multivariate signals and is especially suited to the analysis of
+	event-related data. Results are presented on synthetic data and real
+	electroencephalogram data recorded in event-related desynchronization
+	and photic synchronization scenarios

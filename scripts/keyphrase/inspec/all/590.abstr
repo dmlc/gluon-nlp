@@ -1,0 +1,13 @@
+Universal approximation by hierarchical fuzzy system with constraints on the
+	fuzzy rule
+This paper presents a special hierarchical fuzzy system where the outputs of
+	the previous layer are not used in the IF-parts, but used only in the
+	THEN-parts of the fuzzy rules of the current layer. The proposed scheme
+	can be shown to be a universal approximator to any continuous function
+	on a compact set if complete fuzzy sets are used in the IF-parts of the
+	fuzzy rules with singleton fuzzifier and center average defuzzifier.
+	From the simulation of ball and beam control system, it is demonstrated
+	that the proposed scheme approximates with good accuracy the model
+	nonlinear controller with fewer fuzzy rules than the centralized fuzzy
+	system and its control performance is comparable to that of the
+	nonlinear controller

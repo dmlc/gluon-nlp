@@ -1,0 +1,22 @@
+The congenial talking philosophers problem in computer networks
+Group mutual exclusion occurs naturally in situations where a resource can be
+	shared by processes of the same group, but not by processes of
+	different groups. For example, suppose data is stored in a CD-jukebox.
+	Then, when a disc is loaded for access, users that need data on the
+	disc can concurrently access the disc, while users that need data on a
+	different disc have to wait until the current disc is unloaded. The
+	design issues for group mutual exclusion have been modeled as the
+	Congenial Talking Philosophers problem, and solutions for shared memory
+	models have been proposed (Y.-J. Young, 2000; P. Keane and M. Moir,
+	1999). As in ordinary mutual exclusion and many other problems in
+	distributed systems, however, techniques developed for shared memory do
+	not necessarily apply to message passing (and vice versa). We
+	investigate solutions for Congenial Talking Philosophers in computer
+	networks where processes communicate by asynchronous message passing.
+	We first present a solution that is a straightforward adaptation from
+	G. Ricart and A.K. Agrawala's (1981) algorithm for ordinary mutual
+	exclusion. Then we show that the simple modification suffers a severe
+	performance degradation that could cause the system to behave as though
+	only one process of a group can be in the critical section at a time.
+	We then present a more efficient and highly concurrent distributed
+	algorithm for the problem, the first such solution in computer networks

@@ -1,0 +1,12 @@
+Satellite image collection optimization
+Imaging satellite systems represent a high capital cost. Optimizing the
+	collection of images is critical for both satisfying customer orders
+	and building a sustainable satellite operations business. We describe
+	the functions of an operational, multivariable, time dynamic
+	optimization system that maximizes the daily collection of satellite
+	images. A graphical user interface allows the operator to quickly see
+	the results of what if adjustments to an image collection plan. Used
+	for both long range planning and daily collection scheduling of Space
+	Imaging's IKONOS satellite, the satellite control and tasking (SCT)
+	software allows collection commands to be altered up to 10 min before
+	upload to the satellite

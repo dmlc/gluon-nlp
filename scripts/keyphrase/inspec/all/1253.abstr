@@ -1,0 +1,9 @@
+Application of XML for neural network exchange
+This article introduces a framework for the interchange of trained neural
+	network models. An XML-based language (Neural Network Markup Language)
+	for the neural network model description is offered. It allows to write
+	down all the components of neural network model which are necessary for
+	its reproduction. We propose to use XML notation for the full
+	description of neural models, including data dictionary, properties of
+	training sample, preprocessing methods, details of network structure
+	and parameters and methods for network output interpretation

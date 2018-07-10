@@ -1,0 +1,14 @@
+Robust stability analysis for current-programmed regulators
+Uncertainty models for the three basic switch-mode converters: buck, boost, and
+	buck-boost are given in this paper. The resulting models are
+	represented by linear fractional transformations with structured
+	dynamic uncertainties. Uncertainties are assumed for the load
+	resistance R=R/sub O/(1+ delta /sub R/), inductance L=L/sub O/(1+ delta
+	/sub L/), and capacitance C=C/sub O/(1+ delta /sub C/). The interest in
+	these models is clearly motivated by the need to have models for
+	switch-mode DC-DC converters that are compatible with robust control
+	analysis, which require a model structure consisting of a nominal model
+	and a norm-bounded modeling uncertainty. Therefore, robust stability
+	analysis can be realized using standard mu -tools. At the end of the
+	paper, an illustrative example is given which shows the simplicity of
+	the procedure

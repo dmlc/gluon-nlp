@@ -1,0 +1,15 @@
+Characterization of sheet buckling subjected to controlled boundary constraints
+A wedge strip test is designed to study the onset and post-buckling behavior of
+	a sheet under various boundary constraints. The device can be easily
+	incorporated into a conventional tensile test machine, and material
+	resistance to buckling is measured as the buckling height versus the
+	in-plane strain state. The design yields different but consistent
+	buckling modes with easy changes of boundary conditions (either clamped
+	or freed) and sample geometry. Experimental results are then used to
+	verify a hybrid approach to buckling prediction, i.e., the combination
+	of the FEM analysis and an energy-based analytical wrinkling criterion.
+	The FEM analysis is used to obtain the stress field and deformed
+	geometry in a complex forming condition, while the analytical solution
+	is to provide the predictions less sensitive to artificial numerical
+	parameters. A good agreement between experimental data and numerical
+	predictions is obtained

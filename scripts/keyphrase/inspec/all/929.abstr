@@ -1,0 +1,17 @@
+Closed loop finite-element modeling of active constrained layer damping in the
+	time domain analysis
+A three-dimensional finite-element closed-loop model has been developed to
+	predict the effects of active-passive damping on a vibrating structure.
+	The Golla-Hughes-McTavish method is employed to capture the
+	viscoelastic material behavior in a time domain analysis. The
+	parametric study includes the different control gains as well as
+	geometric parameters related to the active constrained layer damping
+	(ACLD) treatment. Comparisons are made among several ACLD models, the
+	passive constrained model and the active damping model. The results
+	obtained here reiterate that ACLD is somewhat better for vibration
+	suppression than either the purely passive or the active system and
+	provides higher structural damping with less control gain when compared
+	to the purely active system. Since the ACLD performance can be reduced
+	by the viscoelastic layer, the design of the ACLD model must be given a
+	careful consideration in order to optimize the effect of passive
+	damping

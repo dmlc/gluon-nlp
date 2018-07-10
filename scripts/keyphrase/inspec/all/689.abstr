@@ -1,0 +1,8 @@
+Continuous-time linear systems: folklore and fact
+We consider a family of continuous input-output maps representing linear
+	time-invariant systems that take a set of signals into itself. It is
+	shown that this family contains maps whose impulse response is the zero
+	function, but which take certain inputs into nonzero outputs. It is
+	shown also that this family contains members whose input-output
+	properties are not described by their frequency domain response
+	functions, and that the maps considered need not even commute

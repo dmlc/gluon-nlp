@@ -1,0 +1,18 @@
+An automated parallel image registration technique based on the correlation of
+	wavelet features
+With the increasing importance of multiple multiplatform remote sensing
+	missions, fast and automatic integration of digital data from disparate
+	sources has become critical to the success of these endeavors. Our work
+	utilizes maxima of wavelet coefficients to form the basic features of a
+	correlation-based automatic registration algorithm. Our wavelet-based
+	registration algorithm is tested successfully with data from the
+	National Oceanic and Atmospheric Administration (NOAA) Advanced Very
+	High Resolution Radiometer (AVHRR) and the Landsat Thematic Mapper
+	(TM), which differ by translation and/or rotation. By the choice of
+	high-frequency wavelet features, this method is similar to an
+	edge-based correlation method, but by exploiting the multiresolution
+	nature of a wavelet decomposition, our method achieves higher
+	computational speeds for comparable accuracies. This algorithm has been
+	implemented on a single-instruction multiple-data (SIMD) massively
+	parallel computer, the MasPar MP-2, as well as on the CrayT3D, the Cray
+	T3E, and a Beowulf cluster of Pentium workstations

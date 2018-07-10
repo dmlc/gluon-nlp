@@ -1,0 +1,15 @@
+Identification of linear parameter varying models
+We consider identification of a certain class of discrete-time nonlinear
+	systems known as linear parameter varying system. We assume that
+	inputs, outputs and the scheduling parameters are directly measured,
+	and a form of the functional dependence of the system coefficients on
+	the parameters is known. We show how this identification problem can be
+	reduced to a linear regression, and provide compact formulae for the
+	corresponding least mean square and recursive least-squares algorithms.
+	We derive conditions on persistency of excitation in terms of the
+	inputs and scheduling parameter trajectories when the functional
+	dependence is of polynomial type. These conditions have a natural
+	polynomial interpolation interpretation, and do not require the
+	scheduling parameter trajectories to vary slowly. This method is
+	illustrated with a simulation example using two different parameter
+	trajectories

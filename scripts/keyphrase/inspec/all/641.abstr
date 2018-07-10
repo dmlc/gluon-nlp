@@ -1,0 +1,21 @@
+Multiecho segmented EPI with z-shimmed background gradient compensation
+	(MESBAC) pulse sequence for fMRI
+A MultiEcho Segmented EPI with z-shimmed BAckground gradient Compensation
+	(MESBAC) pulse sequence is proposed and validated for functional MRI
+	(fMRI) study in regions suffering from severe susceptibility artifacts.
+	This sequence provides an effective tradeoff between spatial and
+	temporal resolution and reduces image distortion and signal dropout.
+	The blood oxygenation level-dependent (BOLD)-weighted fMRI signal can
+	be reliably obtained in the region of the orbitofrontal cortex (OFC).
+	To overcome physiological motion artifacts during prolonged
+	multisegment EPI acquisition, two sets of navigator echoes were
+	acquired in both the readout and phase-encoding directions. Ghost
+	artifacts generally produced by single-shot EPI acquisition were
+	eliminated by separately placing the even and odd echoes in different
+	k-space trajectories. Unlike most z-shim methods that focus on
+	increasing temporal resolution for event-related functional brain
+	mapping, the MESBAC sequence simultaneously addresses problems of image
+	distortion and signal dropout while maintaining sufficient temporal
+	resolution. The MESBAC sequence will be particularly useful for
+	pharmacological and affective fMRI studies in brain regions such as the
+	OFC, nucleus accumbens, amygdala, para-hippocampus, etc

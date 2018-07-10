@@ -1,0 +1,15 @@
+ConChat: a context-aware chat program
+ConChat is a context-aware chat program that enriches electronic communication
+	by providing contextual information and resolving potential semantic
+	conflicts between users.ConChat uses contextual information to improve
+	electronic communication. Using contextual cues, users can infer during
+	a conversation what the other person is doing and what is happening in
+	his or her immediate surroundings. For example, if a user learns that
+	the other person is talking with somebody else or is involved in some
+	urgent activity, he or she knows to expect a slower response.
+	Conversely, if the user learns that the other person is sitting in a
+	meeting directly related to the conversation, he or she then knows to
+	respond more quickly. Also, by informing users about the other person's
+	context and tagging potentially ambiguous chat messages, ConChat
+	explores how context can improve electronic communication by reducing
+	semantic conflicts

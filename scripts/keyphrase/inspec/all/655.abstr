@@ -1,0 +1,18 @@
+Mapping CCF to MARC21: an experimental approach
+The purpose of this article is to raise and address a number of issues
+	pertaining to the conversion of Common Communication Format (CCF) into
+	MARC21. In this era of global resource sharing, exchange of
+	bibliographic records from one system to another is imperative in
+	today's library communities. Instead of using a single standard to
+	create machine-readable catalogue records, more than 20 standards have
+	emerged and are being used by different institutions. Because of these
+	variations in standards, sharing of resources and transfer of data from
+	one system to another among the institutions locally and globally has
+	become a significant problem. Addressing this problem requires keeping
+	in mind that countries such as India and others in southeast Asia are
+	using the CCF as a standard for creating bibliographic cataloguing
+	records. This paper describes a way to map the bibliographic catalogue
+	records from CCF to MARC21, although 100% mapping is not possible. In
+	addition, the paper describes an experimental approach that enumerates
+	problems that may occur during the mapping of records/exchanging of
+	records and how these problems can be overcome

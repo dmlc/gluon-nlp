@@ -1,0 +1,12 @@
+A new high resolution color flow system using an eigendecomposition-based
+	adaptive filter for clutter rejection
+We present a new signal processing strategy for high frequency color flow
+	mapping in moving tissue environments. A new application of an
+	eigendecomposition-based clutter rejection filter is presented with
+	modifications to deal with high blood-to-clutter ratios (BCR).
+	Additionally, a new method for correcting blood velocity estimates with
+	an estimated tissue motion profile is detailed. The performance of the
+	clutter filter and velocity estimation strategies is quantified using a
+	new swept-scan signal model. In vivo color flow images are presented to
+	illustrate the potential of the system for mapping blood flow in the
+	microcirculation with external tissue motion

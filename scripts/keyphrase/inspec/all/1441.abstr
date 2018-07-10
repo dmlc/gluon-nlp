@@ -1,0 +1,20 @@
+Handles and exception safety, Part 1. A simple handle class
+Every C++ program that uses inheritance must manage memory somehow. The most
+	obvious way to do so is directly, but programmers who create
+	complicated data structures often have trouble figuring out what parts
+	of those data structures are safe to delete when. The classical method
+	of dealing with such complexity is to hide it in a class. Such classes
+	are typically called handles; the idea is to attach a handle object to
+	another object that contains the actual data. The simplest form of a
+	handle, which we have discussed in this article, is one in which each
+	handle object corresponds to a single object from the inheritance
+	hierarchy. Such handles are straightforward to use and to implement and
+	tend to be intrinsically exception safe in almost all respects. The one
+	exception hazard in such a class is typically the assignment operator.
+	Assignment operators often test for self-assignment to avoid aliasing
+	problems. As Herb Sutter has observed (2000), programs that need such
+	tests are almost always exception unsafe. By rewriting the assignment
+	operator, we ensure that we do not do anything irrevocable until the
+	possibility of throwing an exception has passed. This strategy ensures
+	that if an exception occurs while our assignment operator is executing,
+	we do not corrupt the rest of our system

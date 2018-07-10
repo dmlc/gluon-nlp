@@ -1,0 +1,16 @@
+A novel approach for the detection of pathlines in X-ray angiograms: the
+	wavefront propagation algorithm
+Presents a new pathline approach, based on the wavefront propagation principle,
+	and developed in order to reduce the variability in the outcomes of the
+	quantitative coronary artery analysis. This novel approach, called
+	wavepath, reduces the influence of the user-defined start- and
+	endpoints of the vessel segment and is therefore more robust and
+	improves the reproducibility of the lesion quantification
+	substantially. The validation study shows that the wavepath method is
+	totally constant in the middle part of the pathline, even when using
+	the method for constructing a bifurcation or sidebranch pathline.
+	Furthermore, the number of corrections needed to guide the wavepath
+	through the correct vessel is decreased from an average of 0.44
+	corrections per pathline to an average of 0.12 per pathline. Therefore,
+	it can be concluded that the wavepath algorithm improves the overall
+	analysis substantially

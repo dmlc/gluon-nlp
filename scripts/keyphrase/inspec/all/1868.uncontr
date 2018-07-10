@@ -1,0 +1,5 @@
+N-L-N Hammerstein-Wiener model; single-input single-output block-oriented
+	model; linear block; static nonlinear gains; model structure;
+	disturbance model; parameter estimation; relaxation iteration scheme;
+	bilinear-in-parameters error; convergence; consistency; variance error;
+	frequency weighted model reduction; nonlinear process

@@ -1,0 +1,20 @@
+Tools for the analysis of dose optimization. I. Effect-volume histogram
+With the advent of dose optimization algorithms, predominantly for
+	intensity-modulated radiotherapy (IMRT), computer software has
+	progressed beyond the point of being merely a tool at the hands of an
+	expert and has become an active, independent mediator of the dosimetric
+	conflicts between treatment goals and risks. To understand and control
+	the internal decision finding as well as to provide means to influence
+	it, a tool for the analysis of the dose distribution is presented which
+	reveals the decision-making process performed by the algorithm. The
+	internal trade-offs between partial volumes receiving high or low doses
+	are driven by functions which attribute a weight to each volume
+	element. The statistics of the distribution of these weights is cast
+	into an effect-volume histogram (EVH) in analogy to dose-volume
+	histograms. The analysis of the EVH reveals which traits of the optimum
+	dose distribution result from the defined objectives, and which are a
+	random consequence of under- or misspecification of treatment goals.
+	The EVH can further assist in the process of finding suitable
+	objectives and balancing conflicting objectives. If biologically
+	inspired objectives are used, the EVH shows the distribution of local
+	dose effect relative to the prescribed level

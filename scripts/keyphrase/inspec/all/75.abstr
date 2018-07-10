@@ -1,0 +1,21 @@
+A portable Auto Attendant System with sophisticated dialog structure
+An attendant system connects the caller to the party he/she wants to talk to.
+	Traditional systems require the caller to know the full name of the
+	party. If the caller forgets the name, the system fails to provide
+	service for the caller. In this paper we propose a portable Auto
+	Attendant System (AAS) with sophisticated dialog structure that gives a
+	caller more flexibility while calling. The caller may interact with the
+	system to request a phone number by providing just a work area,
+	specialty, surname, or title, etc. If the party is absent, the system
+	may provide extra information such as where he went, when he will be
+	back, and what he is doing. The system is built modularly, with
+	components such as speech recognizer, language model, dialog manager
+	and text-to-speech that can be replaced if necessary. By simply
+	changing the personnel record database, the system can easily be ported
+	to other companies. The sophisticated dialog manager applies many
+	strategies to allow natural interaction between user and system.
+	Functions such as fuzzy request, user repairing, and extra information
+	query, which are not provided by other systems, are integrated into our
+	system. Experimental results and comparisons to other systems show that
+	our approach provides a more user friendly and natural interaction for
+	auto attendant system

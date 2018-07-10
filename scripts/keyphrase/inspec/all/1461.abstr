@@ -1,0 +1,11 @@
+Adaptive multiresolution approach for solution of hyperbolic PDEs
+This paper establishes an innovative and efficient multiresolution adaptive
+	approach combined with high-resolution methods, for the numerical
+	solution of a single or a system of partial differential equations. The
+	proposed methodology is unconditionally bounded (even for hyperbolic
+	equations) and dynamically adapts the grid so that higher spatial
+	resolution is automatically allocated to domain regions where strong
+	gradients are observed, thus possessing the two desired properties of a
+	numerical approach: stability and accuracy. Numerical results for five
+	test problems are presented which clearly show the robustness and cost
+	effectiveness of the proposed method

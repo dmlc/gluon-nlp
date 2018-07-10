@@ -1,0 +1,13 @@
+On quasi-linear PDAEs with convection: applications, indices, numerical
+	solution
+For a class of partial differential algebraic equations (PDAEs) of quasi-linear
+	type which include nonlinear terms of convection type, a possibility to
+	determine a time and spatial index is considered. As a typical example
+	we investigate an application from plasma physics. Especially we
+	discuss the numerical solution of initial boundary value problems by
+	means of a corresponding finite difference splitting procedure which is
+	a modification of a well-known fractional step method coupled with a
+	matrix factorization. The convergence of the numerical solution towards
+	the exact solution of the corresponding initial boundary value problem
+	is investigated. Some results of a numerical solution of the plasma
+	PDAE are given

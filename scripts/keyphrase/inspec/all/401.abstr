@@ -1,0 +1,11 @@
+A digital-to-analog converter based on differential-quad switching
+A high-conversion-rate high-resolution oversampling digital-to-analog converter
+	(DAC) for direct digital modulation is addressed in this paper. A new
+	type of switching scheme, called differential-quad switching, is
+	presented. To verify the feasibility of this scheme, essential parts
+	with some auxiliary circuitry for interfacing were fabricated in a 0.8-
+	mu m CMOS technology. Measured results show that the switching scheme
+	provides 11-b resolution at 100 MSamples/s and 6-b at 1 GSamples/s. The
+	degradation in signal-to-noise ratio is not observed for the variation
+	of the supply voltage down to 1.5 V, which means the proposed scheme is
+	suitable for low-voltage applications

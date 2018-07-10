@@ -1,0 +1,13 @@
+Information architecture without internal theory: an inductive design process
+This article suggests that Information Architecture (IA) design is primarily an
+	inductive process. Although top-level goals, user attributes and
+	available content are periodically considered, the process involves
+	bottom-up design activities. IA is inductive partly because it lacks
+	internal theory, and partly because it is an activity that supports
+	emergent phenomena (user experiences) from basic design components. The
+	nature of IA design is well described by Constructive Induction (CI), a
+	design process that involves locating the best representational
+	framework for the design problem, identifying a solution within that
+	framework and translating it back to the design problem at hand. The
+	future of IA, if it remains inductive or develops a body of theory (or
+	both), is considered

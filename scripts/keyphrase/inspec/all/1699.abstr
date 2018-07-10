@@ -1,0 +1,12 @@
+Time-domain reconstruction for thermoacoustic tomography in a spherical
+	geometry
+Reconstruction-based microwave-induced thermoacoustic tomography in a spherical
+	configuration is presented. Thermoacoustic waves from biological tissue
+	samples excited by microwave pulses are measured by a wide-band
+	unfocused ultrasonic transducer, which is set on a spherical surface
+	enclosing the sample. Sufficient data are acquired from different
+	directions to reconstruct the microwave absorption distribution. An
+	exact reconstruction solution is derived and approximated to a modified
+	backprojection algorithm. Experiments demonstrate that the
+	reconstructed images agree well with the original samples. The spatial
+	resolution of the system reaches 0.5 mm

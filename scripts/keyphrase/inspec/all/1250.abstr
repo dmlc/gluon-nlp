@@ -1,0 +1,12 @@
+The impact and implementation of XML on business-to-business commerce
+This paper discusses the impact analysis of the Extensible Markup Language
+	(XML). Each business partner within a supply chain will be allowed to
+	generate its own data exchange format by adopting an XML meta-data
+	management system in the local side. Followed after a brief
+	introduction of the information technology for Business to Customer
+	(B2C) and Business to Business (B2B) Electronic Commerce (EC), the
+	impact of XML on the tomorrow business world is discussed. A real case
+	study for impact analysis on information exchange platform, Microsoft's
+	BizTalk platform which is actually an XML schema builder and the
+	implementation of XML commerce application will provide an interest
+	insight for users' future implementation

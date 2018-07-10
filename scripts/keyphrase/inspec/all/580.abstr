@@ -1,0 +1,14 @@
+A genetic approach to the optimization of automatic generation control
+	parameters for power systems
+This paper presents a method based on genetic algorithm for the automatic
+	generation control of power systems. The technique is applied to
+	control a system, which includes two areas tied together through a
+	power line. As a consequence of continuous load variation, the
+	frequency of the power system changes with time. In conventional
+	studies, frequency transients are minimized by using integral
+	controllers and thus zero steady-state error is obtained. In this
+	paper, integral controller gains and frequency bias factors are
+	determined by using the genetic algorithm. The results of simulation
+	reveal the application of the genetic algorithm having easy
+	implementation to find the global optimum values of the control
+	parameters

@@ -1,0 +1,16 @@
+Modeling and simulation of adaptive available bit rate voice over asynchronous
+	transfer mode networks
+This article presents a modeling and simulation methodology to analyze the
+	performance of voice quality when sent over the available bit rate
+	service in asynchronous transfer mode networks. Sources can modify the
+	rate at which they send traffic to the network based on the feedback
+	carried in the resource management cells. This is achieved by changing
+	the encoding level. As the contention increases to network
+	resources-bandwidth in this case-sources start reducing the rate at
+	which they generate and send traffic. The efficiency of the scheme
+	under different scheduling/drop policies and other operating conditions
+	and environments is evaluated using simulation modeling. Furthermore,
+	sensitivity analysis is applied to different parameters, such as queue
+	size and averaging interval length, to investigate their impact on the
+	performance metrics. Results show that limiting the load to 41% of the
+	link capacity results in an acceptable quality

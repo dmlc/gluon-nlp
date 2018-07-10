@@ -1,0 +1,14 @@
+Improved approximation of Max-Cut on graphs of bounded degree
+Let alpha approximately=0.87856 denote the best approximation ratio currently
+	known for the Max-Cut problem on general graphs. We consider a
+	semidefinite relaxation of the Max-Cut problem, round it using the
+	random hyperplane rounding technique of M.X. Goemans and D.P.
+	Williamson (1995), and then add a local improvement step. We show that
+	for graphs of degree at most Delta , our algorithm achieves an
+	approximation ratio of at least alpha + epsilon , where epsilon >0
+	is a constant that depends only on Delta .. Using computer assisted
+	analysis, we show that for graphs of maximal degree 3 our algorithm
+	obtains an approximation ratio of at least 0.921, and for 3-regular
+	graphs the approximation ratio is at least 0.924. We note that for the
+	semidefinite relaxation of Max-Cut used by Goemans and Williamson the
+	integrality gap is at least 1/0.885, even for 2-regular graphs

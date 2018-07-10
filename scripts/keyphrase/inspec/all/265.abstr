@@ -1,0 +1,12 @@
+Pattern recognition strategies for molecular surfaces. II. Surface
+	complementarity
+For pt.I see ibid., vol.23, p.1176-87 (2002). Fuzzy logic based algorithms for
+	the quantitative treatment of complementarity of molecular surfaces are
+	presented. Therein, the overlapping surface patches defined in part I
+	of this series are used. The identification of complementary surface
+	patches can be considered as a first step for the solution of molecular
+	docking problems. Standard technologies can then be used for further
+	optimization of the resulting complex structures. The algorithms are
+	applied to 33 biomolecular complexes. After the optimization with a
+	downhill simplex method, for all these complexes one structure was
+	found, which is in very good agreement with the experimental results

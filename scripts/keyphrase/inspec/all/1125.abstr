@@ -1,0 +1,11 @@
+Structure of weakly invertible semi-input-memory finite automata with delay 1
+Semi-input-memory finite automata, a kind of finite automata introduced by the
+	first author of this paper for studying error propagation, are a
+	generalization of input memory finite automata by appending an
+	autonomous finite automaton component. In this paper, we give a
+	characterization of the structure of weakly invertible
+	semi-input-memory finite automata with delay 1, in which the state
+	graph of each autonomous finite automaton is a cycle. From a result on
+	mutual invertibility of finite automata obtained by the authors
+	recently, it leads to a characterization of the structure of
+	feedforward inverse finite automata with delay 1

@@ -1,0 +1,8 @@
+Statistical inference with partial prior information based on a Gauss-type
+	inequality
+Potter and Anderson (1983) have developed a Bayesian decision procedure
+	requiring the specification of a class of prior distributions
+	restricted to have a minimal probability content for a given subset of
+	the parameter space. They do not, however, provide a method for the
+	selection of that subset. We show how a generalization of Gauss'
+	inequality can be used to determine the relevant parameter subset

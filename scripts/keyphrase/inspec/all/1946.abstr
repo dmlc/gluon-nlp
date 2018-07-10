@@ -1,0 +1,17 @@
+Integrating building management system and facilities management on the
+	Internet
+Recently, it is of great interest to adopt the Internet/intranet to develop
+	building management systems (BMS) and facilities management systems
+	(FMS). This paper addresses two technical issues: the Web-based access
+	(including database integration) and the integration of BMS and FMS.
+	These should be addressed for accessing BMS remotely via the Internet,
+	integrating control networks using the Internet protocols and
+	infrastructures, and using Internet/intranet for building facilities
+	management. An experimental Internet-enabled system that integrates
+	building and facilities management systems has been developed and
+	tested. This system integrated open control networks with the Internet
+	and is developed utilizing the embedded Web server, the PC Web server
+	and the Distributed Component Object Model (DCOM) software development
+	technology on the platform of an open control network. Three strategies
+	for interconnecting BMS local networks via Internet/intranet are
+	presented and analyzed

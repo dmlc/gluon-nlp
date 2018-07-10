@@ -1,0 +1,4 @@
+quadratic 0-1 knapsack problem; series-parallel support; underlying graph
+	structure; dynamic programming algorithm; pseudo-polynomial time
+	complexity; fully polynomial time approximation scheme; NP-complete
+	problem

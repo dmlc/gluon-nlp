@@ -1,0 +1,13 @@
+.NET obfuscation and intellectual property
+The author considers obfuscation options for protecting .NET code. Many
+	programs won't need obfuscation because the loss caused by reverse
+	engineering will be nonexistent. Numerous obfuscators are already
+	available for the .NET platform, ranging from a basic renaming
+	obfuscator to a fully functional obfuscator that handles mixed
+	IL/native code assemblies created in any managed language, including
+	Microsoft's C++ with Managed Extensions. An obfuscator simply makes
+	your application harder to reverse engineer. It does not prevent
+	reverse engineering. However, the cost of obfuscation is insignificant
+	when compared to the cost of a typical software development project. If
+	you feel like an obfuscator provides you any benefit at all, it's
+	probably worth the price

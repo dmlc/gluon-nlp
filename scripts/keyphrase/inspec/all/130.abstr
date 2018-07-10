@@ -1,0 +1,9 @@
+Resolution of a current-mode algorithmic analog-to-digital converter
+Errors limiting the resolution of current-mode algorithmic analog-to-digital
+	converters are mainly related to current mirror operation. While
+	systematic errors can be minimized by proper circuit techniques, random
+	sources are unavoidable. In this paper a statistical analysis of the
+	resolution of a typical converter is carried out taking into account
+	process tolerances. To support the analysis, a 4-bit ADC, realized in a
+	0.35- mu m CMOS technology, was exhaustively simulated. Results were
+	found to be in excellent agreement with theoretical derivations

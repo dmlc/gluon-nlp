@@ -1,0 +1,12 @@
+The numerical solution of an evolution problem of second order in time on a
+	closed smooth boundary
+We consider an initial value problem for the second-order differential equation
+	with a Dirichlet-to-Neumann operator coefficient. For the numerical
+	solution we carry out semi-discretization by the Laguerre
+	transformation with respect to the time variable. Then an infinite
+	system of the stationary operator equations is obtained. By potential
+	theory, the operator equations are reduced to boundary integral
+	equations of the second kind with logarithmic or hypersingular kernels.
+	The full discretization is realized by Nystrom's method which is based
+	on the trigonometric quadrature rules. Numerical tests confirm the
+	ability of the method to solve these types of nonstationary problems

@@ -1,0 +1,25 @@
+Modeling cutting temperatures for turning inserts with various tool geometries
+	and materials
+Temperatures are of interest in machining because cutting tools often fail by
+	thermal softening or temperature-activated wear. Many models for
+	cutting temperatures have been developed, but these models consider
+	only simple tool geometries such as a rectangular slab with a sharp
+	corner. This report describes a finite element study of tool
+	temperatures in cutting that accounts for tool nose radius and included
+	angle effects. A temperature correction factor model that can be used
+	in the design and selection of inserts is developed to account for
+	these effects. A parametric mesh generator is used to generate the
+	finite element models of tool and inserts of varying geometries. The
+	steady-state temperature response is calculated using NASTRAN solver.
+	Several finite element analysis (FEA) runs are performed to quantify
+	the effects of inserts included angle, nose radius, and materials for
+	the insert and the tool holder on the cutting temperature at the insert
+	rake face. The FEA results are then utilized to develop a temperature
+	correction factor model that accounts for these effects. The
+	temperature correction factor model is integrated with an analytical
+	temperature model for rectangular inserts to predict cutting
+	temperatures for contour turning with inserts of various shapes and
+	nose radii. Finally, experimental measurements of cutting temperature
+	using the tool-work thermocouple technique are performed and compared
+	with the predictions of the new temperature model. The comparisons show
+	good agreement

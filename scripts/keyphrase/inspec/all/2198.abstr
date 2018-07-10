@@ -1,0 +1,7 @@
+Reconfigurable context-sensitive middleware for pervasive computing
+Context-sensitive applications need data from sensors, devices, and user
+	actions, and might need ad hoc communication support to dynamically
+	discover new devices and engage in spontaneous information exchange.
+	Reconfigurable Context-Sensitive Middleware facilitates the development
+	and runtime operations of context-sensitive pervasive computing
+	software

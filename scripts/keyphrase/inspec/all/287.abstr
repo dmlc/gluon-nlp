@@ -1,0 +1,15 @@
+Loudspeaker voice-coil inductance losses: circuit models, parameter estimation,
+	and effect on frequency response
+When the series resistance is separated and treated as a separate element, it
+	is shown that losses in an inductor require the ratio of the flux to
+	MMF in the core to be frequency dependent. For small-signal operation,
+	this dependence leads to a circuit model composed of a lossless
+	inductor and a resistor in parallel, both of which are frequency
+	dependent. Mathematical expressions for these elements are derived
+	under the assumption that the ratio of core flux to MMF varies as omega
+	/sup n-1/, where n is a constant. A linear regression technique is
+	described for extracting the model parameters from measured data.
+	Experimental data are presented to justify the model for the lossy
+	inductance of a loudspeaker voice-coil. A SPICE example is presented to
+	illustrate the effects of voice-coil inductor losses on the frequency
+	response of a typical driver

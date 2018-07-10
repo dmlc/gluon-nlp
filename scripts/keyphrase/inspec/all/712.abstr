@@ -1,0 +1,8 @@
+Waiting-time distribution of a discrete-time multiserver queue with correlated
+	arrivals and deterministic service times: D-MAP/D/k system
+We derive the waiting-time distribution of a discrete-time multiserver queue
+	with correlated arrivals and deterministic (or constant) service times.
+	We show that the procedure for obtaining the waiting-time distribution
+	of a multiserver queue is reduced to that of a single-server queue. We
+	present a complete solution to the waiting-time distribution of
+	D-MAP/D/k queue together with some computational results

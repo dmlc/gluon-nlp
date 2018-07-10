@@ -1,0 +1,13 @@
+Model intestinal microflora in computer simulation: a simulation and modeling
+	package for host-microflora interactions
+The ecology of the human intestinal microflora and its interaction with the
+	host are poorly understood. Though more and more data are being
+	acquired, in part using modern molecular methods, development of a
+	quantitative theory has not kept pace with this increase in observing
+	power. This is in part due to the complexity of the system and to the
+	lack of simulation environments in which to test what the ecological
+	effect of a hypothetical mechanism of interaction would be, before
+	resorting to laboratory experiments. The MIMICS project attempts to
+	address this through the development of a cellular automaton for
+	simulation of the intestinal microflora. In this paper, the design and
+	evaluation of this simulator is discussed

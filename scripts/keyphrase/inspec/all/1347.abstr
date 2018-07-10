@@ -1,0 +1,19 @@
+A maximum-likelihood surface estimator for dense range data
+Describes how to estimate 3D surface models from dense sets of noisy range data
+	taken from different points of view, i.e., multiple range maps. The
+	proposed method uses a sensor model to develop an expression for the
+	likelihood of a 3D surface, conditional on a set of noisy range
+	measurements. Optimizing this likelihood with respect to the model
+	parameters provides an unbiased and efficient estimator. The proposed
+	numerical algorithms make this estimation computationally practical for
+	a wide variety of circumstances. The results from this method compare
+	favorably with state-of-the-art approaches that rely on the
+	closest-point or perpendicular distance metric, a convenient heuristic
+	that produces biased solutions and fails completely when surfaces are
+	not sufficiently smooth, as in the case of complex scenes or noisy
+	range measurements. Empirical results on both simulated and real ladar
+	data demonstrate the effectiveness of the proposed method for several
+	different types of problems. Furthermore, the proposed method offers a
+	general framework that can accommodate extensions to include surface
+	priors, more sophisticated noise models, and other sensing modalities,
+	such as sonar or synthetic aperture radar

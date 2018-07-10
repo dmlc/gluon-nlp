@@ -1,0 +1,18 @@
+A unified view for vector rotational CORDIC algorithms and architectures based
+	on angle quantization approach
+Vector rotation is the key operation employed extensively in many digital
+	signal processing applications. In this paper, we introduce a new
+	design concept called Angle Quantization (AQ). It can be used as a
+	design index for vector rotational operation, where the rotational
+	angle is known in advance. Based on the AQ process, we establish a
+	unified design framework for cost-effective low-latency rotational
+	algorithms and architectures. Several existing works, such as
+	conventional COordinate Rotational Digital Computer (CORDIC),
+	AR-CORDIC, MVR-CORDIC, and EEAS-based CORDIC, can be fitted into the
+	design framework, forming a Vector Rotational CORDIC Family. Moreover,
+	we address four searching algorithms to solve the optimization problem
+	encountered in the proposed vector rotational CORDIC family. The
+	corresponding scaling operations of the CORDIC family are also
+	discussed. Based on the new design framework, we can realize
+	high-speed/low-complexity rotational VLSI circuits, whereas without
+	degrading the precision performance in fixed-point implementations

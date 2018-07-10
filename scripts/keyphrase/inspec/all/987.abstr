@@ -1,0 +1,11 @@
+Proof that the election problem belongs to NF-completeness problems in
+	asynchronous distributed systems
+This paper is about the hardness of the election problem in asynchronous
+	distributed systems in which processes can crash but links are
+	reliable. The hardness of the problem is defined with respect to the
+	difficulty to solve it despite failures. It is shown that problems
+	encountered in the system are classified as three classes of problems:
+	F (fault-tolerant), NF (Not fault-tolerant) and NFC (NF-completeness).
+	Among those, the class NFC are the hardest problems to solve. In this
+	paper, we prove that the Election problem is the most difficult problem
+	which belongs to the class NFC

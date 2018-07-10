@@ -1,0 +1,7 @@
+Learning nonregular languages: a comparison of simple recurrent networks and
+	LSTM
+Rodriguez (2001) examined the learning ability of simple recurrent nets (SRNs)
+	(Elman, 1990) on simple context-sensitive and context-free languages.
+	In response to Rodriguez's (2001) article, we compare the performance
+	of simple recurrent nets and long short-term memory recurrent nets on
+	context-free and context-sensitive languages

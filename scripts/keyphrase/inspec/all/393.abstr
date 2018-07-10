@@ -1,0 +1,22 @@
+The use of the SPSA method in ECG analysis
+The classification, monitoring, and compression of electrocardiogram (ECG)
+	signals recorded of a single patient over a relatively long period of
+	time is considered. The particular application we have in mind is
+	high-resolution ECG analysis, such as late potential analysis,
+	morphology changes in QRS during arrythmias, T-wave alternants, or the
+	study of drug effects on ventricular activation. We propose to apply a
+	modification of a classical method of cluster analysis or vector
+	quantization. The novelty of our approach is that we use a new
+	distortion measure to quantify the distance of two ECG cycles, and the
+	class-distortion measure is defined using a min-max criterion. The new
+	class-distortion-measure is much more sensitive to outliers than the
+	usual distortion measures using average-distance. The price of this
+	practical advantage is that computational complexity is significantly
+	increased. The resulting nonsmooth optimization problem is solved by an
+	adapted version of the simultaneous perturbation stochastic
+	approximation (SPSA) method of J. Spall (IEEE Trans. Automat. Contr.,
+	vol. 37, p. 332-41, Mar. 1992). The main idea is to generate a smooth
+	approximation by a randomization procedure. The viability of the method
+	is demonstrated on both simulated and real data. An experimental
+	comparison with the widely used correlation method is given on real
+	data

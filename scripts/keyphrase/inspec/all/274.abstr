@@ -1,0 +1,14 @@
+MTD-PLS: a PLS-based variant of the MTD method. II. Mapping ligand-receptor
+	interactions. Enzymatic acetic acid esters hydrolysis
+The PLS variant of the MTD method (T.I. Oprea et al., SAR QSAR Environ. Res.
+	2001, 12, 75-92) was applied to a series of 25 acetylcholinesterase
+	hydrolysis substrates. Statistically significant MTD-PLS models (q/sup
+	2/ between 0.7 and 0.8) are in agreement with previous MTD models, with
+	the advantage that local contributions are understood beyond the
+	occupancy/nonoccupancy interpretation in MTD. A "chemically intuitive"
+	approach further forces MTD-PLS coefficients to assume only negative
+	(or zero) values for fragmental volume descriptors and positive (or
+	zero) values for fragmental hydrophobicity descriptors. This further
+	separates the various kinds of local interactions at each vertex of the
+	MTD hypermolecule, making this method suitable for medicinal chemistry
+	synthesis planning

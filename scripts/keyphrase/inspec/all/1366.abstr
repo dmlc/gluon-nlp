@@ -1,0 +1,15 @@
+A fuzzy-soft learning vector quantization for control chart pattern recognition
+This paper presents a supervised competitive learning network approach, called
+	a fuzzy-soft learning vector quantization, for control chart pattern
+	recognition. Unnatural patterns in control charts mean that there are
+	some unnatural causes for variations in statistical process control
+	(SPC). Hence, control chart pattern recognition becomes more important
+	in SPC. In order to detect effectively the patterns for the six main
+	types of control charts, Pham and Oztemel (1994) described a class of
+	pattern recognizers for control charts based on the learning vector
+	quantization (LVQ) such as LVQ, LVQ2 and LVQ-X etc. In this paper, we
+	propose a new supervised LVQ for control charts based on a fuzzy-soft
+	competitive learning network. The proposed fuzzy-soft LVQ (FS-LVQ) uses
+	a fuzzy relaxation technique and simultaneously updates all neurons. It
+	can increase correct recognition accuracy and also decrease the
+	learning time. Comparisons between LVQ, LVQ-X and FS-LVQ are made

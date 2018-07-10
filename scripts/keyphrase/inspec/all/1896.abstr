@@ -1,0 +1,10 @@
+The dynamics of a railway freight wagon wheelset with dry friction damping
+We investigate the dynamics of a simple model of a wheelset that supports one
+	end of a railway freight wagon by springs with linear characteristics
+	and dry friction dampers. The wagon runs on an ideal, straight and
+	level track with constant speed. The lateral dynamics in dependence on
+	the speed is examined. We have included stick-slip and hysteresis in
+	our model of the dry friction and assume that Coulomb's law holds
+	during the slip phase. It is found that the action of dry friction
+	completely changes the bifurcation diagram, and that the longitudinal
+	component of the dry friction damping forces destabilizes the wagon

@@ -1,0 +1,10 @@
+Diagnostic expert system using non-monotonic reasoning
+The objective of this work is to develop an expert system for cucumber disorder
+	diagnosis using non-monotonic reasoning to handle the situation when
+	the system cannot reach a conclusion. One reason for this situation is
+	when the information is incomplete. Another reason is when the domain
+	knowledge itself is incomplete. Another reason is when the information
+	is inconsistent. This method maintains the truth of the system in case
+	of changing a piece of information. The proposed method uses two types
+	of non-monotonic reasoning namely: default reasoning and reasoning in
+	the presence of inconsistent information to achieve its goal

@@ -1,0 +1,11 @@
+Correlation of intuitionistic fuzzy sets by centroid method
+In this paper, we propose a method to calculate the correlation coefficient of
+	intuitionistic fuzzy sets by means of "centroid". This value obtained
+	from our formula tell us not only the strength of relationship between
+	the intuitionistic fuzzy sets, but also whether the intuitionistic
+	fuzzy sets are positively or negatively related. This approach looks
+	better than previous methods which only evaluate the strength of the
+	relation. Furthermore, we extend the "centroid" method to
+	interval-valued intuitionistic fuzzy sets. The value of the correlation
+	coefficient between interval-valued intuitionistic fuzzy sets lies in
+	the interval [-1, 1], as computed from our formula

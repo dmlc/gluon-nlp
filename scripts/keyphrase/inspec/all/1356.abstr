@@ -1,0 +1,13 @@
+Five-axis NC milling of ruled surfaces: optimal geometry of a conical tool
+The side milling of ruled surfaces using a conical milling cutter was studied.
+	This is a field that has largely been ignored by research scientists,
+	but it is much used in industry, especially to machine turbine blades.
+	We first suggest an improved positioning with respect to the
+	directrices of the ruled surface. As compared with the methods already
+	developed for the cylindrical cutter, this positioning enables the
+	error between the cutter and the work-piece to be reduced. An algorithm
+	is then introduced to calculate error so one can determine the cutter
+	dimensions (cone radius and angle) in order to respect the tolerance
+	interval imposed by the design office. This study provides an
+	opportunity to determine cutters with greater dimensions, thus
+	alleviating bending problems during milling

@@ -1,0 +1,22 @@
+Modelling tomographic cone-beam projection data from a polyhedral phantom
+Analytical phantoms are used to generate projection data for testing
+	reconstruction accuracy in computed axial tomography. A circular source
+	locus (equivalent to rotating specimen with a fixed source) provides
+	insufficient data for 'exact' reconstruction in cone-beam transmission
+	tomography, thus phantom data are useful for studying the consequent
+	errors and also for investigating alternative scanning loci and
+	reconstruction techniques. We present an algorithm that can compute
+	phantom cone-beam projection data from a phantom comprising
+	geometrically defined polyhedra. Each polyhedron is defined as a set of
+	polygons enclosing a volume of fixed linear attenuation coefficient.
+	The algorithm works by projecting each polygon in turn onto the
+	modelled detector array, which accumulates the product of source to
+	polygon intersection distance (for the rays intersecting each detector
+	element), linear attenuation coefficient and sign of projected polygon
+	area (indicating whether rays enter or exit the polyhedron at this
+	face). The phantom data are rotated according to the projection angle,
+	whilst the source location and detector plane remain fixed. Polyhedra
+	can be of simple geometric form, or complex surfaces derived from 3D
+	images of real specimens. This algorithm is illustrated using a phantom
+	comprising 989 238 polygons, representing an iso-surface generated from
+	a microtomographic reconstruction of a piece of walrus tusk

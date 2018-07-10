@@ -1,0 +1,18 @@
+A self-organizing context-based approach to the tracking of multiple robot
+	trajectories
+We have combined competitive and Hebbian learning in a neural network designed
+	to learn and recall complex spatiotemporal sequences. In such
+	sequences, a particular item may occur more than once or the sequence
+	may share states with another sequence. Processing of repeated/shared
+	states is a hard problem that occurs very often in the domain of
+	robotics. The proposed model consists of two groups of synaptic
+	weights: competitive interlayer and Hebbian intralayer connections,
+	which are responsible for encoding respectively the spatial and
+	temporal features of the input sequence. Three additional mechanisms
+	allow the network to deal with shared states: context units, neurons
+	disabled from learning, and redundancy used to encode sequence states.
+	The network operates by determining the current and the next state of
+	the learned sequences. The model is simulated over various sets of
+	robot trajectories in order to evaluate its storage and retrieval
+	abilities; its sequence sampling effects; its robustness to noise and
+	its tolerance to fault

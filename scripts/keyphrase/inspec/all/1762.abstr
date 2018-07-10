@@ -1,0 +1,6 @@
+Laguerre pseudospectral method for nonlinear partial differential equations
+The Laguerre Gauss-Radau interpolation is investigated. Some approximation
+	results are obtained. As an example, the Laguerre pseudospectral scheme
+	is constructed for the BBM equation. The stability and the convergence
+	of proposed scheme are proved. The numerical results show the high
+	accuracy of this approach

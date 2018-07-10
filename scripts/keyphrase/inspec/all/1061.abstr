@@ -1,0 +1,9 @@
+Abacus, EFI and anti-virus
+The Extensible Firmware Interface (EFI) standard emerged as a logical step to
+	provide flexibility and extensibility to boot sequence processes,
+	enabling the complete abstraction of a system's BIOS interface from the
+	system's hardware. In doing so, this provided the means of
+	standardizing a boot-up sequence, extending device drivers and boot
+	time applications' portability to non PC-AT-based architectures,
+	including embedded systems like Internet appliances, TV Internet
+	set-top boxes and 64-bit Itanium platforms

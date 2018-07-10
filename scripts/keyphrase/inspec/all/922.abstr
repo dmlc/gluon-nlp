@@ -1,0 +1,13 @@
+Smart collision information processing sensors for fast moving objects
+In this technical note we survey the area of smart collision information
+	processing sensors. We review the existing technologies to detect
+	collision or overlap between fast moving physical objects or objects in
+	virtual environments, physical environments or a combination of
+	physical and virtual objects. We report developments in the collision
+	detection of fast moving objects at discrete time steps such as two
+	consecutive time frames, as well as continuous time intervals such as
+	in an interframe collision detection system. Our discussion of
+	computational techniques in this paper is limited to convex objects.
+	Techniques exist however to efficiently decompose non-convex objects
+	into convex objects. We also discuss the tracking technologies for
+	objects from the standpoint of collision detection or avoidance

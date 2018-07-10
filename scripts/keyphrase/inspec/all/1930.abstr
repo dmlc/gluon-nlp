@@ -1,0 +1,9 @@
+A new method of systemological analysis coordinated with the procedure of
+	object-oriented design. II
+For pt.I. see Vestn. KhGPU, no.81, p.15-18 (2000). The paper presents the
+	results of development of an object-oriented systemological method used
+	to design complex systems. A formal system representation, as well as
+	an axiomatics of the calculus of systems as functional flow-type
+	objects based on a Node-Function-Object class hierarchy are proposed. A
+	formalized NFO/UFO analysis algorithm and CASE tools used to support it
+	are considered

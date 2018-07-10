@@ -1,0 +1,13 @@
+Control of integral processes with dead-time. 1. Disturbance observer-based 2
+	DOF control scheme
+A disturbance observer-based control scheme (a version of 2 DOF internal model
+	control) which is very effective in controlling integral processes with
+	dead time is presented. The controller can be designed to reject ramp
+	disturbances as well as step disturbances and even arbitrary
+	disturbances. When the plant model is available only two parameters are
+	left to tune. One is the time constant of the set-point response and
+	the other is the time constant of the disturbance response. The latter
+	is tuned according to the compromise between disturbance response and
+	robustness. This control scheme has a simple, clear, easy-to-design,
+	easy-to-implement structure and good performance. It is compared to the
+	best results (so far) using some simulation examples

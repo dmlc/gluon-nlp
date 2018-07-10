@@ -1,0 +1,14 @@
+Efficient combinational verification using overlapping local BDDs and a hash
+	table
+We propose a novel methodology that combines local BDDs (binary decision
+	diagrams) with a hash table for very efficient verification of
+	combinational circuits. The main purpose of this technique is to remove
+	the considerable overhead associated with case-by-case verification of
+	internal node pairs in typical internal correspondence based
+	verification methods. Two heuristics based on the number of structural
+	levels of circuitry looked at and the total number of nodes in the BDD
+	manager are used to control the BDD sizes and introduce new cutsets
+	based on already found equivalent nodes. We verify the ISCAS85
+	benchmark circuits and demonstrate significant speedup over existing
+	methods. We also verify several hard industrial circuits and show our
+	superiority in extracting internal equivalences

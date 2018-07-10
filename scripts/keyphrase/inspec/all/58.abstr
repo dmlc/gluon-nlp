@@ -1,0 +1,24 @@
+Robust speech recognition using probabilistic union models
+This paper introduces a new statistical approach, namely the probabilistic
+	union model, for speech recognition involving partial, unknown
+	frequency-band corruption. Partial frequency-band corruption accounts
+	for the effect of a family of real-world noises. Previous methods based
+	on the missing feature theory usually require the identity of the noisy
+	bands. This identification can be difficult for unexpected noise with
+	unknown, time-varying band characteristics. The new model combines the
+	local frequency-band information based on the union of random events,
+	to reduce the dependence of the model on information about the noise.
+	This model partially accomplishes the target: offering robustness to
+	partial frequency-band corruption, while requiring no information about
+	the noise. This paper introduces the theory and implementation of the
+	union model, and is focused on several important advances. These new
+	developments include a new algorithm for automatic order selection, a
+	generalization of the modeling principle to accommodate partial feature
+	stream corruption, and a combination of the union model with
+	conventional noise reduction techniques to deal with a mixture of
+	stationary noise and unknown, nonstationary noise. For the evaluation,
+	we used the TIDIGITS database for speaker-independent connected digit
+	recognition. The utterances were corrupted by various types of additive
+	noise, stationary or time-varying, assuming no knowledge about the
+	noise characteristics. The results indicate that the new model offers
+	significantly improved robustness in comparison to other models

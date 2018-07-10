@@ -1,0 +1,26 @@
+Dynamic spectrum management for next-generation DSL systems
+The performance of DSL systems is severely constrained by crosstalk due to the
+	electromagnetic coupling among the multiple twisted pairs making up a
+	phone cable. In order to reduce performance loss arising from
+	crosstalk, DSL systems are currently designed under the assumption of
+	worst-case crosstalk scenarios leading to overly conservative DSL
+	deployments. This article presents a new paradigm for DSL system
+	design, which takes into account the multi-user aspects of the DSL
+	transmission environment. Dynamic spectrum management (DSM) departs
+	from the current design philosophy by enabling transceivers to
+	autonomously and dynamically optimize their communication settings with
+	respect to both the channel and the transmissions of neighboring
+	systems. Along with this distributed optimization, when an additional
+	degree of coordination becomes available for future DSL deployment, DSM
+	will allow even greater improvement in DSL performance. Implementations
+	are readily applicable without causing any performance degradation to
+	the existing DSLs under static spectrum management. After providing an
+	overview of the DSM concept, this article reviews two practical DSM
+	methods: iterative water-filling, an autonomous distributed power
+	control method enabling great improvement in performance, which can be
+	implemented through software options in some existing ADSL and VDSL
+	systems; and vectored-DMT, a coordinated transmission/reception
+	technique achieving crosstalk-free communication for DSL systems, which
+	brings within reach the dream of providing universal Internet access at
+	speeds close to 100 Mb/s to 500 m on 1-2 lines and beyond 1 km on 2-4
+	lines. DSM-capable DSL thus enables the broadband age

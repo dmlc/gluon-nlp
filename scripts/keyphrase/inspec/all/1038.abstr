@@ -1,0 +1,11 @@
+The analysis and control of longitudinal vibrations from wave viewpoint
+The analysis and control of longitudinal vibrations in a rod from feedback wave
+	viewpoint are synthesized. Both collocated and noncollocated feedback
+	wave control strategies are explored. The control design is based on
+	the local properties of wave transmission and reflection in the
+	vicinity of the control force applied area, hence there is no complex
+	closed form solution involved. The controller is designed to achieve
+	various goals, such as absorbing the incoming vibration energy,
+	creating a vibration free zone and eliminating standing waves in the
+	structure. The findings appear to be very useful in practice due to the
+	simplicity in the implementation of the controllers

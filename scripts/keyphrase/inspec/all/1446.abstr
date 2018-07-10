@@ -1,0 +1,17 @@
+The Tattletale technique
+Practical experience has taught many Java developers one thing: critical
+	resources (mutexes, database connections, transactions, file handles,
+	etc.) require timely and systematic release. Unfortunately, Java's
+	garbage collector is not up to that job. According to the Java Language
+	Specification, there are no guarantees when a garbage collector will
+	run, when it will collect an object, or when it will finalize an object
+	- if ever. Even more unfortunately, Java's counterpart to the C++
+	destructor (the finally block) is both tedious and error-prone,
+	requiring developers to constantly remember and duplicate
+	resource-releasing code. Consequently, even good Java developers can
+	forget to release critical resources. There is a light at the end of
+	the tunnel. Java may make it easier to leak critical resources, but it
+	also provides the necessary mechanisms to easily track them down. The
+	Tattletale technique is a simple method for designing new classes and
+	retrofitting existing classes to quickly and easily detect the
+	offending code responsible for leaking resources

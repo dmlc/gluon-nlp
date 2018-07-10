@@ -1,0 +1,10 @@
+Methods for outlier detection in prediction
+If a prediction sample is different from the calibration samples, it can be
+	considered as an outlier in prediction. In this work, two techniques,
+	the use of uncertainty estimation and the convex hull method are
+	studied to detect such prediction outliers. Classical techniques
+	(Mahalanobis distance and X-residuals), potential functions and robust
+	techniques are used for comparison. It is concluded that the
+	combination of the convex hull method and uncertainty estimation offers
+	a practical way for detecting outliers in prediction. By adding the
+	potential function method, inliers can also be detected

@@ -1,0 +1,19 @@
+An ACL for a dynamic system of agents
+In this article we present the design of an ACL for a dynamic system of agents.
+	The ACL includes a set of conversation performatives extended with
+	operations to register, create, and terminate agents. The main design
+	goal at the agent-level is to provide only knowledge-level primitives
+	that are well integrated with the dynamic nature of the system. This
+	goal has been achieved by defining an anonymous interaction protocol
+	which enables agents to request and supply knowledge without
+	considering symbol-level issues concerning management of agent names,
+	routing, and agent reachability. This anonymous interaction protocol
+	exploits a distributed facilitator schema which is hidden at the
+	agent-level and provides mechanisms for registering capabilities of
+	agents and delivering requests according to the competence of agents.
+	We present a formal specification of the ACL and of the underlying
+	architecture, exploiting an algebra of actors, and illustrate it with
+	the help of a graphical notation. This approach provides the basis for
+	discussing dynamic primitives in ACL and for studying properties of
+	dynamic multi agent systems, for example concerning the behavior of
+	agents and the correctness of their conversation policies

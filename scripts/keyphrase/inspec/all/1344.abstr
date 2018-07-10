@@ -1,0 +1,14 @@
+Restoration of archival documents using a wavelet technique
+This paper addresses a problem of restoring handwritten archival documents by
+	recovering their contents from the interfering handwriting on the
+	reverse side caused by the seeping of ink. We present a novel method
+	that works by first matching both sides of a document such that the
+	interfering strokes are mapped with the corresponding strokes
+	originating from the reverse side. This facilitates the identification
+	of the foreground and interfering strokes. A wavelet reconstruction
+	process then iteratively enhances the foreground strokes and smears the
+	interfering strokes so as to strengthen the discriminating capability
+	of an improved Canny edge detector against the interfering strokes. The
+	method has been shown to restore the documents effectively with average
+	precision and recall rates for foreground text extraction at 84 percent
+	and 96 percent, respectively

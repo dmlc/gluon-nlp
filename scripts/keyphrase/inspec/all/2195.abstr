@@ -1,0 +1,15 @@
+Modeling privacy control in context-aware systems
+Significant complexity issues challenge designers of context-aware systems with
+	privacy control. Information spaces provide a way to organize
+	information, resources, and services around important privacy-relevant
+	contextual factors. In this article, we describe a theoretical model
+	for privacy control in context-aware systems based on a core
+	abstraction of information spaces. We have previously focused on
+	deriving socially based privacy objectives in pervasive computing
+	environments. Building on Ravi Sandhu's four-layer OM-AM (objectives,
+	models, architectures, and mechanisms) idea, we aim to use information
+	spaces to construct a model for privacy control that supports our
+	socially based privacy objectives. We also discuss how we can introduce
+	decentralization, a desirable property for many pervasive computing
+	systems, into our information space model, using unified privacy
+	tagging

@@ -1,0 +1,21 @@
+I-WAP: an intelligent WAP site management system
+The popularity regarding wireless communications is such that more and more WAP
+	sites have been developed with wireless markup language (WML).
+	Meanwhile, to translate hypertext markup language (HTML) pages into
+	proper WML ones becomes imperative since it is difficult for WAP users
+	to read most contents designed for PC users via their mobile phone
+	screens. However, for those sites that have been maintained with
+	hypertext markup language (HTML), considerable time and manpower costs
+	will be incurred to rebuild them with WML. In this paper, we propose an
+	intelligent WAP site management system to cope with these problems.
+	With the help of the intelligent management system, the original
+	contents of HTML Web sites can be automatically translated to proper
+	WAP content in an efficient way. As a consequence, the costs associated
+	with maintaining WAP sites could be significantly reduced. The
+	management system also allows the system manager to define the
+	relevance of numerals and keywords for removing unimportant or
+	meaningless contents. The original contents will be reduced and
+	reorganized to fit the size of mobile phone screens, thus reducing the
+	communication cost and enhancing readability. Numerical results gained
+	through various experiments have evinced the effective performance of
+	the WAP management system

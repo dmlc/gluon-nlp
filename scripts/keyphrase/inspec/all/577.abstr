@@ -1,0 +1,7 @@
+A robust H/sub infinity / control approach for induction motors
+This paper deals with the robustness and stability of an induction motor
+	control structure against internal and external disturbances. In the
+	proposed control scheme, we have used an H/sub infinity / controller
+	with field orientation and input-output linearization to achieve the
+	above-specified features. Simulation results are included to illustrate
+	the control approach performances

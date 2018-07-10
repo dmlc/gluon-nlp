@@ -1,0 +1,9 @@
+Numerical behaviour of stable and unstable solitary waves
+In this paper we analyse the behaviour in time of the numerical approximations
+	to solitary wave solutions of the generalized Benjamin-Bona-Mahony
+	equation. This equation possesses an important property: the stability
+	of these solutions depends on their velocity. We identify the error
+	propagation mechanisms in both the stable and unstable case. In
+	particular, we show that in the stable case, numerical methods that
+	preserve some conserved quantities of the problem are more appropriate
+	for the simulation of this kind of solutions

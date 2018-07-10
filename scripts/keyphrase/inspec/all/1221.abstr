@@ -1,0 +1,10 @@
+An approach to developing computational supports for reciprocal tutoring
+This study presents a novel approach to developing computational supports for
+	reciprocal tutoring. Reciprocal tutoring is a collaborative learning
+	activity, where two participants take turns to play the role of a tutor
+	and a tutee. The computational supports include scaffolding tools for
+	the tutor and a computer-simulated virtual participant. The approach,
+	including system architecture, implementations of scaffolding tools for
+	the tutor and of a virtual participant is presented herein.
+	Furthermore, a system for reciprocal tutoring is implemented as an
+	example of the approach

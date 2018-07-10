@@ -1,0 +1,19 @@
+Extinction cross sections of realistic raindrops: data-bank established using
+	T-matrix method and nonlinear fitting technique
+A new computer program is developed based on the T-matrix method to generate a
+	large number of total (extinction) cross sections (TCS) values of the
+	realistic raindrops that are deformed due to a balance of the forces
+	that act on a drop failing under gravity, and were described in shape
+	by Pruppacher and Pitter (1971). These data for various dimensions of
+	the raindrops (mean effective radius from 0 to 3.25 mm), frequencies
+	(10 to 80 GHz), (horizontal and vertical) polarizations, and
+	temperatures (0, 10 and 20 degrees C) are stored to establish a data
+	bank. Furthermore, a curve fitting technique, i.e., interpolation of
+	order 3, is implemented for the TCS values in the data bank. Therefore,
+	the interpolated TCS results can be obtained readily from the
+	interpolation process with negligible or even null computational time
+	and efforts. Error analysis is carried out to show the high accuracy of
+	the present analysis and applicability of the interpolation. At three
+	operating frequencies of 15, 21.225, and 38 GHz locally used in
+	Singapore, some new TCS values are obtained from the new fast and
+	efficient interpolation with a good accuracy

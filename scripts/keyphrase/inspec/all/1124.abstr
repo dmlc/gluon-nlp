@@ -1,0 +1,17 @@
+Data extraction from the Web based on pre-defined schema
+With the development of the Internet, the World Wide Web has become an
+	invaluable information source for most organizations. However, most
+	documents available from the Web are in HTML form which is originally
+	designed for document formatting with little consideration of its
+	contents. Effectively extracting data from such documents remains a
+	nontrivial task. In this paper, we present a schema-guided approach to
+	extracting data from HTML pages. Under the approach, the user defines a
+	schema specifying what to be extracted and provides sample mappings
+	between the schema and the HTML page. The system will induce the
+	mapping rules and generate a wrapper that takes the HTML page as input
+	and produces the required data in the form of XML conforming to the
+	user-defined schema. A prototype system implementing the approach has
+	been developed. The preliminary experiments indicate that the proposed
+	semi-automatic approach is not only easy to use but also able to
+	produce a wrapper that extracts required data from inputted pages with
+	high accuracy

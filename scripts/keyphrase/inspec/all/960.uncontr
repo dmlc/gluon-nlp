@@ -1,0 +1,4 @@
+bisimulation minimization; symbolic model checking; state space minimization
+	techniques; state explosion; explicit-state verification tools;
+	experimental results; optimization; invariance properties; BDD; binary
+	decision diagram; backwards reachability; invariance verification

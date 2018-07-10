@@ -1,0 +1,17 @@
+How closely can a personal computer clock track the UTC timescale via the
+	Internet?
+Nowadays many software packages allow you to keep the clock of your personal
+	computer synchronized to time servers spread over the internet. We
+	present how a didactic laboratory can evaluate, in a statistical sense,
+	the minimum synch error of this process (the other extreme, the
+	maximum, is guaranteed by the code itself). The measurement set-up
+	utilizes the global positioning system satellite constellation in
+	'common view' between two similar timing stations: one acts as a time
+	server for the other, so the final timing difference at the second
+	station represents the total synch error through the internet. Data
+	recorded over batches of 10000 samples show a typical RMS value of 35
+	ms. This measurement configuration allows students to obtain a much
+	better understanding of the synch task and pushes them, at all times,
+	to look for an experimental verification of data results, even when
+	they come from the most sophisticated 'black boxes' now readily
+	available off the shelf

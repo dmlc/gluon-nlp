@@ -1,0 +1,11 @@
+Optical encoding of color three-dimensional correlation
+Three-dimensional (3D) correlation of color images, considering the color
+	distribution as the third dimension, has been shown to be useful for
+	color pattern recognition tasks. Nevertheless, 3D correlation cannot be
+	directly performed on an optical correlator, that can only process
+	two-dimensional (2D) signals. We propose a method to encode 3D
+	functions onto 2D ones in such a way that the Fourier transform and
+	correlation of these signals, that can be optically performed, encode
+	the 3D Fourier transform and correlation of the 3D signals. The theory
+	for the encoding is given and experimental results obtained in an
+	optical correlator are shown

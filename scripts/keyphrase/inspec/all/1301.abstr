@@ -1,0 +1,23 @@
+Integrate-and-fire neurons driven by correlated stochastic input
+Neurons are sensitive to correlations among synaptic inputs. However,
+	analytical models that explicitly include correlations are hard to
+	solve analytically, so their influence on a neuron's response has been
+	difficult to ascertain. To gain some intuition on this problem, we
+	studied the firing times of two simple integrate-and-fire model neurons
+	driven by a correlated binary variable that represents the total input
+	current. Analytic expressions were obtained for the average firing rate
+	and coefficient of variation (a measure of spike-train variability) as
+	functions of the mean, variance, and correlation time of the stochastic
+	input. The results of computer simulations were in excellent agreement
+	with these expressions. In these models, an increase in correlation
+	time in general produces an increase in both the average firing rate
+	and the variability of the output spike trains. However, the magnitude
+	of the changes depends differentially on the relative values of the
+	input mean and variance: the increase in firing rate is higher when the
+	variance is large relative to the mean, whereas the increase in
+	variability is higher when the variance is relatively small. In
+	addition, the firing rate always tends to a finite limit value as the
+	correlation time increases toward infinity, whereas the coefficient of
+	variation typically diverges. These results suggest that temporal
+	correlations may play a major role in determining the variability as
+	well as the intensity of neuronal spike trains

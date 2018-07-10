@@ -1,0 +1,11 @@
+A scalable intelligent takeoff controller for a simulated running jointed leg
+Running with jointed legs poses a difficult control problem in robotics. Neural
+	controllers are attractive because they allow the robot to adapt to
+	changing environmental conditions. However, scalability is an issue
+	with many neural controllers. The paper describes the development of a
+	scalable neurofuzzy controller for the takeoff phase of the running
+	stride. Scalability is achieved by selecting a controller whose size
+	does not grow with the dimensionality of the problem. Empirical results
+	show that with proper design the takeoff controller scales from a leg
+	with a single movable link to one with three movable links without a
+	corresponding growth in size and without a loss of accuracy

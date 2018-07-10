@@ -1,0 +1,7 @@
+Getting the most out of intrusion detection systems
+Intrusion detection systems (IDS) can play a very valuable role in the defence
+	of a network. However, it is important to understand not just what it
+	will do (and how it does it) - but what it won't do (and why). This
+	article does not go into the technical working of IDS in too much
+	detail, rather it limits itself to a discussion of some of the
+	capabilities and failings of the technology

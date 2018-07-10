@@ -1,0 +1,12 @@
+A fuzzy logic approach to accommodate thermal stress and improve the start-up
+	phase in combined cycle power plants
+Use of combined cycle power generation plant has increased dramatically over
+	the last decade. A supervisory control approach based on a dynamic
+	model is developed, which makes use of proportional-integral-derivative
+	(PID), fuzzy logic and fuzzy PID schemes. The aim is to minimize the
+	steam turbine plant start-up time, without violating maximum thermal
+	stress limits. An existing start-up schedule provides the benchmark by
+	which the performance of candidate controllers is assessed.
+	Improvements regarding possible reduced start-up times and satisfaction
+	of maximum thermal stress restrictions have been realized using the
+	proposed control scheme

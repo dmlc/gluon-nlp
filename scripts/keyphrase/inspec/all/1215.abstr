@@ -1,0 +1,9 @@
+A knowledge-based approach for business process reengineering, SHAMASH
+We present an overview of SHAMASH, a process modelling tool for business
+	process reengineering. The main features that differentiate it from
+	most current related tools are its ability to define and use
+	organisation standards, functional structure, and develop automatic
+	model simulation and optimisation. SHAMASH is a knowledge-based system,
+	and we include a discussion on how knowledge acquisition takes place.
+	Furthermore, we introduce a high level description of the architecture,
+	the conceptual model, and other important modules of the system

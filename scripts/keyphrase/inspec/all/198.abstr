@@ -1,0 +1,21 @@
+Computational capacity of an odorant discriminator: the linear separability of
+	curves
+We introduce and study an artificial neural network inspired by the
+	probabilistic receptor affinity distribution model of olfaction. Our
+	system consists of N sensory neurons whose outputs converge on a single
+	processing linear threshold element. The system's aim is to model
+	discrimination of a single target odorant from a large number p of
+	background odorants within a range of odorant concentrations. We show
+	that this is possible provided p does not exceed a critical value p/sub
+	c/ and calculate the critical capacity alpha c=p/sub c//N. The critical
+	capacity depends on the range of concentrations in which the
+	discrimination is to be accomplished. If the olfactory bulb may be
+	thought of as a collection of such processing elements, each
+	responsible for the discrimination of a single odorant, our study
+	provides a quantitative analysis of the potential computational
+	properties of the olfactory bulb. The mathematical formulation of the
+	problem we consider is one of determining the capacity for linear
+	separability of continuous curves, embedded in a large-dimensional
+	space. This is accomplished here by a numerical study, using a method
+	that signals whether the discrimination task is realizable, together
+	with a finite-size scaling analysis

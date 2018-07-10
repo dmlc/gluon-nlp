@@ -1,0 +1,13 @@
+Study of ambiguities inherent to the spectral analysis of Voigt profiles-a
+	modified Simplex approach
+In pulsed spectrometries, temporal transients are often analyzed directly in
+	the temporal domain, assuming they consist only of purely exponentially
+	decaying sinusoids. When experimental spectra actually consist of
+	Gaussian or Voigt profiles (Gauss-Lorentz profiles), we show that the
+	direct methods may erroneously interpret such lines as the sum of two
+	or more Lorentzian profiles. Using a Nelder and Mead Simplex method,
+	modified by introducing new means to avoid degeneracies and quenchings
+	in secondary minima, we demonstrate that a large number of different
+	solutions can be obtained with equivalent accuracy over the limited
+	acquisition time interval, with final peak parameters devoid of
+	physical or chemical meaning

@@ -1,0 +1,11 @@
+Identifying multivariate discordant observations: a computer-intensive approach
+The problem of identifying multiple outliers in a multivariate normal sample is
+	approached via successive testing using P-values rather than tabled
+	critical values. Caroni and Prescott (Appl. Statist. 41, p.355, 1992)
+	proposed a generalization of the EDR-ESD procedure of Rosner
+	(Technometrics, 25, 1983)). Venter and Viljoen (Comput. Statist. Data
+	Anal. 29, p.261, 1999) introduced a computer intensive method to
+	identify outliers in a univariate outlier situation. We now generalize
+	this method to the multivariate outlier situation and compare this new
+	procedure with that of Caroni and Prescott (Appl. Statist. 4, p.355,
+	1992)

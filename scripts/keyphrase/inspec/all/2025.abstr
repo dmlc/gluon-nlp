@@ -1,0 +1,13 @@
+Multispectral color image capture using a liquid crystal tunable filter
+We describe the experimental setup of a multispectral color image acquisition
+	system consisting of a professional monochrome CCD camera and a tunable
+	filter in which the spectral transmittance can be controlled
+	electronically. We perform a spectral characterization of the
+	acquisition system taking into account the acquisition noise. To
+	convert the camera output signals to device-independent color data, two
+	main approaches are proposed and evaluated. One consists in applying
+	regression methods to convert from the K camera outputs to a
+	device-independent color space such as CIEXYZ or CIELAB. Another method
+	is based on a spectral model of the acquisition system. By inverting
+	the model using a principal eigenvector approach, we estimate the
+	spectral reflectance of each pixel of the imaged surface

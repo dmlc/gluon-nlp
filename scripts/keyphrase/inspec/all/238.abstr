@@ -1,0 +1,13 @@
+The Open Archives Initiative: realizing simple and effective digital library
+	interoperability
+The Open Archives Initiative (OAI) is dedicated to solving problems of digital
+	library interoperability. Its focus has been on defining simple
+	protocols, most recently for the exchange of metadata from archives.
+	The OAI evolved out of a need to increase access to scholarly
+	publications by supporting the creation of interoperable digital
+	libraries. As a first step towards such interoperability, a metadata
+	harvesting protocol was developed to support the streaming of metadata
+	from one repository to another, ultimately to a provider of user
+	services such as browsing, searching, or annotation. This article
+	provides an overview of the mission, philosophy, and technical
+	framework of the OAI

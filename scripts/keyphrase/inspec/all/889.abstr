@@ -1,0 +1,13 @@
+Synthesis of the control systems via reflection onto auxiliary surfaces
+An approach to robust control systems synthesis, both linear and nonlinear, and
+	nonstationary is offered. The control is carried out, providing the
+	given phase constraints varied in acceptable limits, in view of
+	constraints on its value and incompleteness of the information about
+	functioning disturbances. The approach is based on the introduction of
+	auxiliary integral surfaces, on which the initial moving is projected.
+	As a result the reduced equivalent moving is formed, being described by
+	the scalar equation which in many important cases can be integrated
+	directly. On the basis of the equation obtained solving a synthesis
+	task is carried out and can be reduced to algebraic or integral
+	inequalities. The final relations defined for linear equivalent moving
+	are presented

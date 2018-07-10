@@ -1,0 +1,13 @@
+An approximation to the F distribution using the chi-square distribution
+For the cumulative distribution function (c.d.f.) of the F distribution, F(x;
+	k, n), with associated degrees of freedom, k and n, a shrinking factor
+	approximation (SFA), G( lambda kx; k), is proposed for large n and any
+	fixed k, where G(x; k) is the chi-square c.d.f. with degrees of
+	freedom, k, and lambda = lambda (kx; n) is the shrinking factor.
+	Numerical analysis indicates that for n/k >or= 3, approximation
+	accuracy of the SFA is to the fourth decimal place for most small
+	values of k. This is a substantial improvement on the accuracy that is
+	achievable using the normal, ordinary chi-square, and Scheffe-Tukey
+	approximations. In addition, it is shown that the theoretical
+	approximation error of the SFA, |F(x; k,n)-G( lambda kx; k)|, is
+	O(1/n/sup 2/) uniformly over x

@@ -1,0 +1,13 @@
+Observer-based strict positive real (SPR) feedback control system design
+Presents theory for stability analysis and design for a class of observer-based
+	feedback control systems. Relaxation of the controllability and
+	observability conditions imposed in the Yakubovich-Kalman-Popov lemma
+	can be made for a class of nonlinear systems described by a linear
+	time-invariant system with a feedback-connected cone-bounded nonlinear
+	element. It is shown how a circle-criterion approach can be used to
+	design an observer-based state feedback control which yields a
+	closed-loop system with specified robustness characteristics. The
+	approach is relevant for design with preservation of stability when a
+	cone-bounded nonlinearity is introduced in the feedback loop. Important
+	applications are to be found in nonlinear control with high robustness
+	requirements

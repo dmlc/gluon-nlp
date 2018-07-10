@@ -1,0 +1,13 @@
+A PID standard: What, why, how?
+The paper is written for all who develop and use P&IDs. It will aid in solving
+	the long existing and continuing problem of confusing information on
+	P&IDs. The acronym P&ID is widely understood to mean the principal
+	document used to define the details of how a process works and how it
+	is controlled. The ISA Dictionary definition for P&ID tells what they
+	do, "show the interconnection of process equipment and the
+	instrumentation used to control the process. In the process industry a
+	standard set of symbols is used to prepare drawings of processes. The
+	instrument symbols used in these drawings are generally based on
+	ISA-S5.1." In the paper the ISA standard is referred to as ISA-5.1. The
+	article develops the concept of the "standard" and poses some of the
+	questions that the "standard" can answer

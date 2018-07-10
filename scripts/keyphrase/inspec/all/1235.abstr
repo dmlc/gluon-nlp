@@ -1,0 +1,22 @@
+Finding performance bugs with the TNO HPF benchmark suite
+High-Performance Fortran (HPF) has been designed to provide portable
+	performance on distributed memory machines. An important aspect of
+	portable performance is the behavior of the available HPF compilers.
+	Ideally, a programmer may expect comparable performance between
+	different HPF compilers, given the same program and the same machine.
+	To test the performance portability between compilers, we have designed
+	a special benchmark suite, called the TNO HPF benchmark suite. It
+	consists of a set of HPF programs that test various aspects of
+	efficient parallel code generation. The benchmark suite consists of a
+	number of template programs that are used to generate test programs
+	with different array sizes, alignments, distributions, and iteration
+	spaces. It ranges from very simple assignments to more complex
+	assignments such as triangular iteration spaces, convex iteration
+	spaces, coupled subscripts, and indirection arrays. We have run the TNO
+	HPF benchmark suite on three compilers: the PREPARE prototype compiler,
+	the PGI-HPF compiler, and the GMD Adaptor HPF compiler. Results show
+	performance differences that can be quite large (up to two orders of
+	magnitude for the same test program). Closer inspection reveals that
+	the origin of most of the differences in performance is due to
+	differences in local enumeration and storage of distributed array
+	elements

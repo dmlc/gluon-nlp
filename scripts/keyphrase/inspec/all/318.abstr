@@ -1,0 +1,9 @@
+Note on "Deterministic inventory lot-size models under inflation with shortages
+	and deterioration for fluctuating demand" by Yang et al
+For original paper see H.-L. Yang et al., ibid., vol.48, p.144-58 (2001). Yang
+	et al. extended the lot-size models to allow for inflation and
+	fluctuating demand. For this model they proved that the optimal
+	replenishment schedule exists and is unique. They also proposed an
+	algorithm to find the optimal policy. The present paper provides
+	examples, which show that the optimal replenishment schedule and
+	consequently the overall optimal policy may not exist

@@ -1,0 +1,20 @@
+On the emergence of rules in neural networks
+A simple associationist neural network learns to factor abstract rules (i.e.,
+	grammars) from sequences of arbitrary input symbols by inventing
+	abstract representations that accommodate unseen symbol sets as well as
+	unseen but similar grammars. The neural network is shown to have the
+	ability to transfer grammatical knowledge to both new symbol
+	vocabularies and new grammars. Analysis of the state-space shows that
+	the network learns generalized abstract structures of the input and is
+	not simply memorizing the input strings. These representations are
+	context sensitive, hierarchical, and based on the state variable of the
+	finite-state machines that the neural network has learned.
+	Generalization to new symbol sets or grammars arises from the spatial
+	nature of the internal representations used by the network, allowing
+	new symbol sets to be encoded close to symbol sets that have already
+	been learned in the hidden unit space of the network. The results are
+	counter to the arguments that learning algorithms based on weight
+	adaptation after each exemplar presentation (such as the long term
+	potentiation found in the mammalian nervous system) cannot in principle
+	extract symbolic knowledge from positive examples as prescribed by
+	prevailing human linguistic theory and evolutionary psychology

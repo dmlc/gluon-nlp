@@ -1,0 +1,21 @@
+Loop restructuring for data I/O minimization on limited on-chip memory embedded
+	processors
+In this paper, we propose a framework for analyzing the flow of values and
+	their reuse in loop nests to minimize data traffic under the
+	constraints of limited on-chip memory capacity and dependences. Our
+	analysis first undertakes fusion of possible loop nests
+	intra-procedurally and then performs loop distribution. The analysis
+	discovers the closeness factor of two statements which is a
+	quantitative measure of data traffic saved per unit memory occupied if
+	the statements were under the same loop nest over the case where they
+	are under different loop nests. We then develop a greedy algorithm
+	which traverses the program dependence graph to group statements
+	together under the same loop nest legally to promote maximal reuse per
+	unit of memory occupied. We implemented our framework in Petit, a tool
+	for dependence analysis and loop transformations. We compared our
+	method with one based on tiling of fused loop nest and one based on a
+	greedy strategy to purely maximize reuse. We show that our methods work
+	better than both of these strategies in most cases for processors such
+	as TMS320Cxx, which have a very limited amount of on-chip memory. The
+	improvements in data I/O range from 10 to 30 percent over tiling and
+	from 10 to 40 percent over maximal reuse for JPEG loops

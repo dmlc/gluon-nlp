@@ -1,0 +1,9 @@
+A note on an axiomatization of the core of market games
+As shown by Peleg (1993), the core of market games is characterized by
+	nonemptiness, individual rationality, superadditivity, the weak reduced
+	game property, the converse reduced game property, and weak symmetry.
+	It was not known whether weak symmetry was logically independent. With
+	the help of a certain transitive 4-person TU game, it is shown that
+	weak symmetry is redundant in this result. Hence, the core on market
+	games is axiomatized by the remaining five properties, if the universe
+	of players contains at least four members

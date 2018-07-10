@@ -1,0 +1,18 @@
+Generalized mosaicing: wide field of view multispectral imaging
+We present an approach to significantly enhance the spectral resolution of
+	imaging systems by generalizing image mosaicing. A filter transmitting
+	spatially varying spectral bands is rigidly attached to a camera. As
+	the system moves, it senses each scene point multiple times, each time
+	in a different spectral band. This is an additional dimension of the
+	generalized mosaic paradigm, which has demonstrated yielding high
+	radiometric dynamic range images in a wide field of view, using a
+	spatially varying density filter. The resulting mosaic represents the
+	spectrum at each scene point. The image acquisition is as easy as in
+	traditional image mosaics. We derive an efficient scene sampling rate,
+	and use a registration method that accommodates the spatially varying
+	properties of the filter. Using the data acquired by this method, we
+	demonstrate scene rendering under different simulated illumination
+	spectra. We are also able to infer information about the scene
+	illumination. The approach was tested using a standard 8-bit
+	black/white video camera and a fixed spatially varying spectral
+	(interference) filter

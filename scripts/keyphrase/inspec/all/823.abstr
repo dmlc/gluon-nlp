@@ -1,0 +1,10 @@
+Estimation of thermal coefficients of magneto-optical media
+Previously we described a method for estimating the thermal conductivity of
+	magneto-optic recording media. The method relies on identifying the
+	laser power that brings the maximum temperature of the TbFeCo layer to
+	as high as the Curie temperature. We extensively use a similar method
+	to estimate the heat capacity of a dielectric layer, a TbFeCo layer,
+	and an aluminum alloy layer of magneto-optic recording media.
+	Measurements are conducted on static disks with a beam of light focused
+	on a TbFeCo layer. The method has the advantage of thermal diffusion
+	depending on a multilayer structure and irradiation time

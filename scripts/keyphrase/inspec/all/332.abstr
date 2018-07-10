@@ -1,0 +1,13 @@
+Fitting mixed-effects models for repeated ordinal outcomes with the NLMIXED
+	procedure
+This paper presents an analysis of repeated ordinal outcomes arising from two
+	psychological studies. The first case is a repeated measures analysis
+	of variance; the second is a mixed-effects regression. in a
+	longitudinal design. In both, the subject-specific variation is modeled
+	by including random effects in the linear predictor (inside a link
+	function) of a generalized linear model. The NLMIXED procedure in SAS
+	is used to fit the mixed-effects models for the categorical response
+	data. The presentation emphasizes the parallel between the model.
+	specifications and the SAS statements. The purpose of this paper is to
+	facilitate the use of mixed-effects models in the analysis of repeated
+	ordinal outcomes

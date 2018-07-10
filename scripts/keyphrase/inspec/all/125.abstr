@@ -1,0 +1,12 @@
+A fast implementation of correlation of long data sequences for coherent
+	receivers
+Coherent reception depends upon matching of phase between the transmitted and
+	received signal. Fast convolution techniques based on fast Fourier
+	transform (FFT) are widely used for extracting time delay information
+	from such matching. The latency in processing a large data window of
+	the received signal is a serious overhead for mission critical real
+	time applications. The implementation of a parallel algorithm for
+	correlation of long data sequences in multiprocessor environment is
+	demonstrated here. The algorithm does processing while acquiring the
+	received signal and reduces the computation overhead considerably
+	because of inherent parallelism

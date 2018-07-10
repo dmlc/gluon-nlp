@@ -1,0 +1,10 @@
+The semi-algebraic theory of stochastic games
+The asymptotic behavior of the min-max value of a finite-state zero-sum
+	discounted stochastic game, as the discount rate approaches 0, has been
+	studied in the past using the theory of real-closed fields. We use the
+	theory of semi-algebraic sets and mappings to prove some asymptotic
+	properties of the min-max value, which hold uniformly for all
+	stochastic games in which the number of states and players' actions are
+	predetermined to some fixed values. As a corollary, we prove a uniform
+	polynomial convergence rate of the value of the N-stage game to the
+	value of the nondiscount game, over a bounded set of payoffs

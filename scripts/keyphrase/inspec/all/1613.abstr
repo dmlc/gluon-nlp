@@ -1,0 +1,12 @@
+Current waveform control of a high-power-factor rectifier circuit for harmonic
+	suppression of voltage and current in a distribution system
+This paper presents the input current waveform control of the rectifier circuit
+	which realizes simultaneously the high input power factor and the
+	harmonics suppression of the receiving-end voltage and the source
+	current under the distorted receiving-end voltage. The proposed input
+	current waveform includes the harmonic components which are in phase
+	with the receiving-end voltage harmonics. The control parameter in the
+	proposed waveform is designed by examining the characteristics of both
+	the harmonic suppression effect in the distribution system and the
+	input power factor of the rectifier circuit. The effectiveness of the
+	proposed current waveform has been confirmed experimentally

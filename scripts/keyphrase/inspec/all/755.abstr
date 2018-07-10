@@ -1,0 +1,29 @@
+Hardware and software platform for real-time processing and visualization of
+	echographic radiofrequency signals
+In this paper the architecture of a hardware and software platform, for
+	ultrasonic investigation is presented. The platform, used in
+	conjunction with an analog front-end hardware for driving the
+	ultrasonic transducers of any commercial echograph, having the
+	radiofrequency echo signal access, make it possible to dispose of a
+	powerful echographic system for experimenting any processing technique,
+	also in a clinical environment in which real-time operation mode is an
+	essential prerequisite. The platform transforms any echograph into a
+	test-system for evaluating the diagnostic effectiveness of new
+	investigation techniques. A particular user interface was designed in
+	order to allow a real-time and simultaneous visualization of the
+	results produced in the different stages of the chosen processing
+	procedure. This is aimed at obtaining a better optimization of the
+	processing algorithm. The most important platform aspect, which also
+	constitutes the basic differentiation with respect to similar systems,
+	is the direct processing of the radiofrequency echo signal, which is
+	essential for a complete analysis of the particular ultrasound-media
+	interaction phenomenon. The platform completely integrates the
+	architecture of a personal computer (PC) giving rise to several
+	benefits, such as the quick technological evolution in the PC field and
+	an extreme degree of programmability for different applications. The PC
+	also constitutes the user interface, as a flexible and intuitive
+	visualization support, and performs some software signal processing, by
+	custom algorithms and commercial libraries. The realized close synergy
+	between hardware and software allows the acquisition and real-time
+	processing of the echographic radiofrequency (RF) signal with fast data
+	representation

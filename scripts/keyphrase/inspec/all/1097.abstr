@@ -1,0 +1,11 @@
+A study on an automatic seam tracking system by using an electromagnetic sensor
+	for sheet metal arc welding of butt joints
+Many sensors, such as the vision sensor and the laser displacement sensor, have
+	been developed to automate the arc welding process. However, these
+	sensors have some problems due to the effects of arc light, fumes and
+	spatter. An electromagnetic sensor, which utilizes the generation of an
+	eddy current, was developed for detecting the weld line of a butt joint
+	in which the root gap size was zero. An automatic seam tracking system
+	designed for sheet metal arc welding was constructed with a sensor.
+	Through experiments, it was revealed that the system had an excellent
+	seam tracking accuracy of the order of +or-0.2 mm

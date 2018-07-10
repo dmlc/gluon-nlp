@@ -1,0 +1,4 @@
+adaptive stabilization; undamped flexible structures; poles and zeros;
+	imaginary axis; velocity feedback; adaptive PD-controller; proportional
+	plus derivative controller; position feedback; adaptive P-controller;
+	augmented system; parallel compensator

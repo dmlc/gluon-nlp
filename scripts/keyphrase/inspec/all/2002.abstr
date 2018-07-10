@@ -1,0 +1,19 @@
+A new subspace identification approach based on principal component analysis
+Principal component analysis (PCA) has been widely used for monitoring complex
+	industrial processes with multiple variables and diagnosing process and
+	sensor faults. The objective of this paper is to develop a new subspace
+	identification algorithm that gives consistent model estimates under
+	the errors-in-variables (EIV) situation. In this paper, we propose a
+	new subspace identification approach using principal component
+	analysis. PCA naturally falls into the category of EIV formulation,
+	which resembles total least squares and allows for errors in both
+	process input and output. We propose to use PCA to determine the system
+	observability subspace, the matrices and the system order for an EIV
+	formulation. Standard PCA is modified with instrumental variables in
+	order to achieve consistent estimates of the system matrices. The
+	proposed subspace identification method is demonstrated using a
+	simulated process and a real industrial process for model
+	identification and order determination. For comparison the MOESP
+	algorithm and N4SID algorithm are used as benchmarks to demonstrate the
+	advantages of the proposed PCA based subspace model identification
+	(SMI) algorithm

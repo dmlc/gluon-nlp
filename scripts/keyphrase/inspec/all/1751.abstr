@@ -1,0 +1,15 @@
+An adaptive time step procedure for a parabolic problem with blow-up
+In this paper we introduce and analyze a fully discrete approximation for a
+	parabolic problem with a nonlinear boundary condition which implies
+	that the solutions blow up in finite time. We use standard linear
+	elements with mass lumping for the space variable. For the time
+	discretization we write the problem in an equivalent form which is
+	obtained by introducing an appropriate time re-scaling and then, we use
+	explicit Runge-Kutta methods for this equivalent problem. In order to
+	motivate our procedure we present it first in the case of a simple
+	ordinary differential equation and show how the blow up time is
+	approximated in this case. We obtain necessary and sufficient
+	conditions for the blowup of the numerical solution and prove that the
+	numerical blow-up time converges to the continuous one. We also study,
+	for the explicit Euler approximation, the localization of blow-up
+	points for the numerical scheme

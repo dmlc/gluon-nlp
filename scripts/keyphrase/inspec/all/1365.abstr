@@ -1,0 +1,24 @@
+Deadlock-free scheduling in flexible manufacturing systems using Petri nets
+This paper addresses the deadlock-free scheduling problem in Flexible
+	Manufacturing Systems. An efficient deadlock-free scheduling algorithm
+	was developed, using timed Petri nets, for a class of FMSs called
+	Systems of Sequential Systems with Shared Resources (S/sup 4/ R). The
+	algorithm generates a partial reachability graph to find the optimal or
+	near-optimal deadlock-free schedule in terms of the firing sequence of
+	the transitions of the Petri net model. The objective is to minimize
+	the mean flow time (MFT). An efficient truncation technique, based on
+	the siphon concept, has been developed and used to generate the minimum
+	necessary portion of the reachability graph to be searched. It has been
+	shown experimentally that the developed siphon truncation technique
+	enhances the ability to develop deadlock-free schedules of systems with
+	a high number of deadlocks, which cannot be achieved using standard
+	Petri net scheduling approaches. It may be necessary, in some cases, to
+	relax the optimality condition for large FMSs in order to make the
+	search effort reasonable. Hence, a User Control Factor (UCF) was
+	defined and used in the scheduling algorithm. The objective of using
+	the UCF is to achieve an acceptable trade-off between the solution
+	quality and the search effort. Its effect on the MFT and the CPU time
+	has been investigated. Randomly generated examples are used for
+	illustration and comparison. Although the effect of UCF did not affect
+	the mean flow time, it was shown that increasing it reduces the search
+	effort (CPU time) significantly

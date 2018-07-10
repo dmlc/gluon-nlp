@@ -1,0 +1,8 @@
+Correction to construction of panoramic image mosaics with global and local
+	alignment
+For original paper see ibid., vol. 36, no. 2, p. 101-30 (2000). The authors had
+	given a method for the construction of panoramic image mosaics with
+	global and local alignment. Unfortunately a mistake had led to an
+	incorrect equation which whilst making little difference in many cases,
+	for faster (and assured) convergence, the correct formulae given here
+	should be used

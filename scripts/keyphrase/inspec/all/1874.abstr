@@ -1,0 +1,7 @@
+E - a brainiac theorem prover
+We describe the superposition-based theorem prover E. E is a sound and complete
+	prover for clausal first order logic with equality. Important
+	properties of the prover include strong redundancy elimination
+	criteria, the DISCOUNT loop proof procedure, a very flexible interface
+	for specifying search control heuristics, and an efficient inference
+	engine. We also discuss the strengths and weaknesses of the system

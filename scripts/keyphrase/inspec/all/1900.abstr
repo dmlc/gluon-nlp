@@ -1,0 +1,12 @@
+Robust L/sub 2/ disturbance attenuation for nonlinear systems with input
+	dynamical uncertainty
+Deals with the problem of robust L/sub 2/ disturbance attenuation for nonlinear
+	systems with input dynamical uncertainty. The input dynamical
+	uncertainty is restricted to be minimum-phase and relative degree zero.
+	A sufficient condition. is given such that the nonlinear system
+	satisfies the L/sub 2/ gain performance and input-to-state stable
+	property. Using this condition, a design approach is given for a smooth
+	state feedback control law that solves the robust L/sub 2/ disturbance
+	attenuation problem, and the approach is extended to a more general
+	case where the nominal system has higher relative degree. Finally, a
+	numerical example is given to demonstrate the proposed approach

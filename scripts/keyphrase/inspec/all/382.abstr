@@ -1,0 +1,18 @@
+Robust wavelet neuro control for linear brushless motors
+Design, simulation and experimental implementation of a wavelet basis function
+	network learning controller for linear brushless dc motors (LBDCM) are
+	considered. Stability robustness with position tracking is the primary
+	concern. The proposed controller deals mainly with external
+	disturbances, e.g. nonlinear friction force and payload variation in
+	motion control of linear motors. It consists of two parts, one is a
+	state feedback component, and the other one is a learning feedback
+	component. The state feedback controller is designed on the basis of a
+	simple linear model, and the learning feedback component is a wavelet
+	neural controller. The attenuation effect of wavelet neural networks on
+	friction force is first verified by the numerical method. The learning
+	effect of wavelet neural networks on friction force is also shown in
+	the numerical results. Then, a wavelet neural network is applied on a
+	real LBDCM to on-line suppress the friction force, which may be
+	variable due to the different lubrication. The effectiveness of the
+	proposed control schemes is demonstrated by simulated and experimental
+	results

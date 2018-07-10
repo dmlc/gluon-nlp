@@ -1,0 +1,30 @@
+Self-calibration from image derivatives
+This study investigates the problem of estimating camera calibration parameters
+	from image motion fields induced by a rigidly moving camera with
+	unknown parameters, where the image formation is modeled with a linear
+	pinhole-camera model. The equations obtained show the flow to be
+	separated into a component due to the translation and the calibration
+	parameters and a component due to the rotation and the calibration
+	parameters. A set of parameters encoding the latter component is
+	linearly related to the flow, and from these parameters the calibration
+	can be determined. However, as for discrete motion, in general it is
+	not possible to decouple image measurements obtained from only two
+	frames into translational and rotational components. Geometrically, the
+	ambiguity takes the form of a part of the rotational component being
+	parallel to the translational component, and thus the scene can be
+	reconstructed only up to a projective transformation. In general, for
+	full calibration at least four successive image frames are necessary,
+	with the 3D rotation changing between the measurements. The geometric
+	analysis gives rise to a direct self-calibration method that avoids
+	computation of optical flow or point correspondences and uses only
+	normal flow measurements. New constraints on the smoothness of the
+	surfaces in view are formulated to relate structure and motion directly
+	to image derivatives, and on the basis of these constraints the
+	transformation of the viewing geometry between consecutive images is
+	estimated. The calibration parameters are then estimated from the
+	rotational components of several flow fields. As the proposed technique
+	neither requires a special set up nor needs exact correspondence it is
+	potentially useful for the calibration of active vision systems which
+	have to acquire knowledge about their intrinsic parameters while they
+	perform other tasks, or as a tool for analyzing image sequences in
+	large video databases

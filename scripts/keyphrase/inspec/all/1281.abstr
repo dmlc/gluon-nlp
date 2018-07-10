@@ -1,0 +1,9 @@
+A notion of non-interference for timed automata
+The non-interference property of concurrent systems is a security property
+	concerning the flow of information among different levels of security
+	of the system. In this paper we introduce a notion of timed
+	non-interference for real-time systems specified by timed automata. The
+	notion is presented using an automata based approach and then it is
+	characterized also by operations and equivalence between timed
+	languages. The definition is applied to an example of a time-critical
+	system modeling a simplified control of an airplane

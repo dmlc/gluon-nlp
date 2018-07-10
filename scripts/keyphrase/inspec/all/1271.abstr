@@ -1,0 +1,9 @@
+Verification of non-functional properties of a composable architecture with
+	Petri nets
+In this paper, we introduce our concept of composability and present the MSS
+	architecture as an example for a composable architecture. MSS claims to
+	be composable with respect to timing properties. We discuss, how to
+	model and prove properties in such an architecture with time-extended
+	Petrinets. As a result, the first step of a proof of composability is
+	presented as well as a new kind of Petri net, which is more suitable
+	for modeling architectures like MSS

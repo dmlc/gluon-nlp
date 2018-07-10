@@ -1,0 +1,15 @@
+Towards a NMR implementation of a quantum lattice gas algorithm
+Recent theoretical results suggest that an array of quantum information
+	processors communicating via classical channels can be used to solve
+	fluid dynamics problems. Quantum lattice-gas algorithms (QLGA) running
+	on such architectures have been shown to solve the diffusion equation
+	and the nonlinear Burgers equations. In this report, we describe
+	progress towards an ensemble nuclear magnetic resonance (NMR)
+	implementation of a QLGA that solves the diffusion equation. The
+	methods rely on NMR techniques to encode an initial mass density into
+	an ensemble of two-qubit quantum information processors. Using standard
+	pulse techniques, the mass density can then manipulated and evolved
+	through the steps of the algorithm. We provide the experimental results
+	of our first attempt to realize the NMR implementation. The results
+	qualitatively follow the ideal simulation, but the observed
+	implementation errors highlight the need for improved control

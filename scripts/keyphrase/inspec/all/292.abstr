@@ -1,0 +1,17 @@
+Novel active noise-reducing headset using earshell vibration control
+Active noise-reducing (ANR) headsets are available commercially in applications
+	varying from aviation communication to consumer audio. Current ANR
+	systems use passive attenuation at high frequencies and
+	loudspeaker-based active noise control at low frequencies to achieve
+	broadband noise reduction. This paper presents a novel ANR headset in
+	which the external noise transmitted to the user's ear via earshell
+	vibration is reduced by controlling the vibration of the earshell using
+	force actuators acting against an inertial mass or the earshell
+	headband. Model-based theoretical analysis using velocity feedback
+	control showed that current piezoelectric actuators provide sufficient
+	force but require lower stiffness for improved low-frequency
+	performance. Control simulations based on experimental data from a
+	laboratory headset showed that good performance can potentially be
+	achieved in practice by a robust feedback controller, while a
+	single-frequency real-time control experiment verified that noise
+	reduction can be achieved using earshell vibration control

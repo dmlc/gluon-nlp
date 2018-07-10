@@ -1,0 +1,14 @@
+Toward an Experimental Timing Standards Lab: benchmarking precision in the real
+	world
+Much discussion has taken place over the relative merits of various platforms
+	and operating systems for real-time data collection. Most would agree
+	that, provided great care is taken, many are capable of millisecond
+	timing precision. However, to date, much of this work has focused on
+	the theoretical aspects of raw performance. It is our belief that
+	researchers would be better informed if they could place confidence
+	limits on their own specific paradigms in situ and without
+	modification. To this end, we have developed a millisecond precision
+	test rig that can control and time experiments on a second presentation
+	machine. We report on the specialist hardware and software used. We
+	elucidate the importance of the approach in relation to real-world
+	experimentation

@@ -1,0 +1,15 @@
+Optimal bandwidth utilization of all-optical ring with a converter of degree 4
+In many models of all-optical routing, a set of communication paths in a
+	network is given, and a wavelength is to be assigned to each path so
+	that paths sharing an edge receive different wavelengths. The goal is
+	to assign as few wavelengths as possible, in order to use the optical
+	bandwidth efficiently. If a node of a network contains a wavelength
+	converter, any path that passes through this node may change its
+	wavelength. Having converters at some of the nodes can reduce the
+	number of wavelengths required for routing. This paper presents a
+	wavelength converter with degree 4 and gives a routing algorithm which
+	shows that any routing with load L can be realized with L wavelengths
+	when a node of an all-optical ring hosts such a wavelength converter.
+	It is also proved that 4 is the minimum degree of the converter to
+	reach the full utilization of the available wavelengths if only one
+	node of an all-optical ring hosts a converter

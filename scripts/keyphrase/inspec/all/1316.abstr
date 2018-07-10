@@ -1,0 +1,21 @@
+Understanding Internet traffic streams: dragonflies and tortoises
+We present the concept of network traffic streams and the ways they aggregate
+	into flows through Internet links. We describe a method of measuring
+	the size and lifetime of Internet streams, and use this method to
+	characterize traffic distributions at two different sites. We find that
+	although most streams (about 45 percent of them) are dragonflies,
+	lasting less than 2 seconds, a significant number of streams have
+	lifetimes of hours to days, and can carry a high proportion (50-60
+	percent) of the total bytes on a given link. We define tortoises as
+	streams that last longer than 15 minutes. We point out that streams can
+	be classified not only by lifetime (dragonflies and tortoises) but also
+	by size (mice and elephants), and note that stream size and lifetime
+	are independent dimensions. We submit that ISPs need to be aware of the
+	distribution of Internet stream sizes, and the impact of the difference
+	in behavior between short and long streams. In particular, any
+	forwarding cache mechanisms in Internet routers must be able to cope
+	with a high volume of short streams. In addition ISPs should realize
+	that long-running streams can contribute a significant fraction of
+	their packet and byte volumes-something they may not have allowed for
+	when using traditional "flat rate user bandwidth consumption"
+	approaches to provisioning and engineering

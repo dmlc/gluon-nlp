@@ -1,0 +1,11 @@
+Multicell converters: active control and observation of flying-capacitor
+	voltages
+The multicell converters introduced more than ten years ago make it possible to
+	distribute the voltage constraints among series-connected switches and
+	to improve the output waveforms (increased number of levels and
+	apparent frequency). The balance of the constraints requires an
+	appropriate distribution of the flying voltages. This paper presents
+	some solutions for the active control of the voltages across the flying
+	capacitors in the presence of rapid variation of the input voltage. The
+	latter part of this paper is dedicated to the observation of these
+	voltages using an original modeling of the converter

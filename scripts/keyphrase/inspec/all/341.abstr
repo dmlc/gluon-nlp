@@ -1,0 +1,7 @@
+How should team captains order golfers on the final day of the Ryder Cup
+	matches?
+I used game theory to examine how team captains should select their slates for
+	the final day of the Ryder Cup matches. Under the assumption that
+	golfers have different abilities and are not influenced by pressure or
+	momentum, I found that drawing names from a hat will do no worse than
+	any other strategy

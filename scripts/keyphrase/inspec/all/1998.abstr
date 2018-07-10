@@ -1,0 +1,9 @@
+A friction compensator for pneumatic control valves
+A procedure that compensates for static friction (stiction) in pneumatic
+	control valves is presented. The compensation is obtained by adding
+	pulses to the control signal. The characteristics of the pulses are
+	determined from the control action. The compensator is implemented in
+	industrial controllers and control systems, and the industrial
+	experiences show that the procedure reduces the control error during
+	stick-slip motion significantly compared to standard control without
+	stiction compensation

@@ -1,0 +1,21 @@
+On optimality in auditory information processing
+We study limits for the detection and estimation of weak sinusoidal signals in
+	the primary part of the mammalian auditory system using a stochastic
+	Fitzhugh-Nagumo model and an action-recovery model for synaptic
+	depression. Our overall model covers the chain from a hair cell to a
+	point just after the synaptic connection with a cell in the cochlear
+	nucleus. The information processing performance of the system is
+	evaluated using so-called phi -divergences from statistics that
+	quantify "dissimilarity" between probability measures and are
+	intimately related to a number of fundamental limits in statistics and
+	information theory (IT). We show that there exists a set of parameters
+	that can optimize several important phi -divergences simultaneously and
+	that this set corresponds to a constant quiescent firing rate (QFR) of
+	the spiral ganglion neuron. The optimal value of the QFR is frequency
+	dependent but is essentially independent of the amplitude of the signal
+	(for small amplitudes). Consequently, optimal processing according to
+	several standard IT criteria can be accomplished for this model if and
+	only if the parameters are "tuned" to values that correspond to one and
+	the same QFR. This offers a new explanation for the QFR and can provide
+	new insight into the role played by several other parameters of the
+	peripheral auditory system

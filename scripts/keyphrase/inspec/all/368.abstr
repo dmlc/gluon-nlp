@@ -1,0 +1,23 @@
+From a biological to a computational model for the autonomous behavior of an
+	animat
+Endowing an autonomous system like a robot with intelligent behavior is
+	difficult for several reasons. First, behavior is such a wide topic
+	that a general framework paradigm of inspiration must be chosen in
+	order to obtain a consistent model. Such a framework can be, for
+	example, biological modeling or an artificial intelligence approach.
+	Second, a general framework is not sufficient to determine a fully
+	specified program to be implemented in a robot. Many choices, tuning
+	and tests must be carried out before obtaining a robust system. A
+	biological model is presented, based on the definition of cortex-like
+	automata, representing elementary functions in the perceptive, motor or
+	associative domain. These automata are connected in a network whose
+	architecture, functioning and learning rules are described in a
+	cortical framework. Second, the computational model derived from that
+	biological model is specified. The way units exchange and compute
+	variables through links is explained, with reference to corresponding
+	biological elements. It is then easier to report experiments allowing
+	an autonomous system to learn regularities of a simple environment and
+	to exploit them to satisfy some internal drives. Even if additional
+	biological hints can be added, this model allow us to better understand
+	how a biological model can be implemented and how biological properties
+	can emerge from a distributed set of units

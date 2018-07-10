@@ -1,0 +1,17 @@
+Prediction of ultraviolet spectral absorbance using quantitative
+	structure-property relationships
+High performance liquid chromatography (HPLC) with ultraviolet (UV)
+	spectrophotometric detection is a common method for analyzing reaction
+	products in organic chemistry. This procedure would benefit from a
+	computational model for predicting the relative response of organic
+	molecules. Models are now reported for the prediction of the integrated
+	UV absorbance for a diverse set of organic compounds using a
+	quantitative structure-property relationship (QSPR) approach. A
+	seven-descriptor linear correlation with a squared correlation
+	coefficient (R/sup 2/) of 0.815 is reported for a data set of
+	521.compounds. Using the sum of ZINDO oscillator strengths in the
+	integration range as an additional descriptor allowed reduction in the
+	number of descriptors producing a robust model for 460 compounds with
+	five descriptors and a squared correlation coefficient 0.857. The
+	descriptors used in the models are discussed with respect to the
+	physical nature of the UV absorption process

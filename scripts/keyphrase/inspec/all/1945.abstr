@@ -1,0 +1,20 @@
+The development of a mobile manipulator imaging system for bridge crack
+	inspection
+A mobile manipulator imaging system is developed for the automation of bridge
+	crack inspection. During bridge safety inspections, an eyesight
+	inspection is made for preliminary evaluation and screening before a
+	more precise inspection. The inspection for cracks is an important part
+	of the preliminary evaluation. Currently, the inspectors must stand on
+	the platform of a bridge inspection vehicle or a temporarily erected
+	scaffolding to examine the underside of a bridge. However, such a
+	procedure is risky. To help automate the bridge crack inspection
+	process, we installed two CCD cameras and a four-axis manipulator
+	system on a mobile vehicle. The parallel cameras are used to detect
+	cracks. The manipulator system is equipped with binocular charge
+	coupled devices (CCD) for examining structures that may not be
+	accessible to the eye. The system also reduces the danger of accidents
+	to the human inspectors. The manipulator system consists of four arms.
+	Balance weights are placed at the ends of arms 2 and 4, respectively,
+	to maintain the center of gravity during operation. Mechanically, arms
+	2 and 4 can revolve smoothly. Experiments indicated that the system
+	could be useful for bridge crack inspections
