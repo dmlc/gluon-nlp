@@ -4,6 +4,7 @@ channels:
 dependencies:
   - python=3.6
   - ipython
+  - ipykernel
   - sphinx=1.7.5
   - sphinx-gallery
   - sphinx_rtd_theme

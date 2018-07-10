@@ -21,14 +21,10 @@ pylint:
 	pylint --rcfile=$(ROOTDIR)/.pylintrc gluonnlp scripts/*/*.py
 
 docs: release
-	make -C docs html
+	make -C docs html SPHINXOPTS=-W
 
 clean:
-	rm -rf gluonnlp.egg-info build dist | true
-	rm -rf tests/data | true
-	rm scripts/*.zip | true
-	rm docs/examples/*.zip | true
-	rm docs/examples/*/*.ipynb | true
+	git clean -f -d -x --exclude="$(ROOTDIR)/tests/externaldata/*" --exclude=conda
 	make -C docs clean
 
 compile_notebooks:
