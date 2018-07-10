@@ -76,6 +76,11 @@ def create(embedding_name, **kwargs):
     ----------
     embedding_name : str
         The token embedding name (case-insensitive).
+    kwargs : dict
+        All other keyword arguments are passed to the initializer of token
+        embedding class. For example `create(embedding_name='fasttext',
+        source='wiki.simple', load_ngrams=True)` will return
+        `FastText(source='wiki.simple', load_ngrams=True)`.
 
 
     Returns
