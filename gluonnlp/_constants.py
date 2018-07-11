@@ -285,7 +285,7 @@ FAST_TEXT_NPZ_SHA1 = {
     'wiki.nn': ('wiki.nn.npz', '8e5059ddeb24050fadaa5cc4622b13feb3e4a226'),
     'wiki.no': ('wiki.no.npz', '5ce6e0f793e66f081652f64013968099de03d9f9'),
     'wiki.nov': ('wiki.nov.npz', '95ed23b4cfd7a65afa1c12c7dbdce6af53923d77'),
-    'wiki.vec': ('wiki.vec.npz', '08ebb912efeb9df1c7d05e1af90484d210dff47e'),
+    'wiki.vec': ('wiki.npz.npz', '08ebb912efeb9df1c7d05e1af90484d210dff47e'),
     'wiki.nrm': ('wiki.nrm.npz', 'e58614b4508ff9810f0b58fd818f973775bc918d'),
     'wiki.nso': ('wiki.nso.npz', '56a2ebe260241402d117cd89c5c872b9c96ff05b'),
     'wiki.nv': ('wiki.nv.npz', 'c713051fe03ec1f60314bb42161b2a47fb5e169a'),
