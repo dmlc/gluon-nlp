@@ -24,17 +24,8 @@
 import logging
 import time
 from contextlib import contextmanager
-import random
 
 import mxnet as mx
-
-try:
-    from numba import njit
-    numba_njit = njit(nogil=True)
-except ImportError:
-    # Define numba shims
-    def numba_njit(func):
-        return func
 
 
 def get_context(args):
@@ -55,9 +46,3 @@ def print_time(task):
     logging.info('Finished to {} in {:.2f} seconds'.format(
         task,
         time.time() - start_time))
-
-
-@numba_njit
-def prune_sentences(coded, idx_to_pdiscard):
-    """Downsample frequent words."""
-    return [t for t in coded if random.uniform(0, 1) > idx_to_pdiscard[t]]

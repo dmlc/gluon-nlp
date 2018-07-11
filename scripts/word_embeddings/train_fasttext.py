@@ -42,24 +42,24 @@ import os
 os.environ['MXNET_FORCE_ADDTAKEGRAD'] = '1'
 
 import argparse
-import functools
 import itertools
 import logging
 import random
+import math
 import sys
 import tempfile
 import time
 import warnings
 
 import mxnet as mx
-from mxnet import nd
 import numpy as np
 import gluonnlp as nlp
 from gluonnlp.base import numba_njit, numba_prange
 
 import evaluation
+from data import WikiDumpStream
 from candidate_sampler import remove_accidental_hits
-from utils import get_context, print_time, prune_sentences
+from utils import get_context, print_time
 
 
 ###############################################################################
@@ -70,6 +70,16 @@ def parse_args():
     parser = argparse.ArgumentParser(
         description='Word embedding training with Gluon.',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+
+    # Data options
+    group = parser.add_argument_group('Data arguments')
+    group.add_argument('--data', type=str, default='text8',
+                       help='Training dataset.')
+    group.add_argument('--wiki-root', type=str, default='text8',
+                       help='Root under which preprocessed wiki dump.')
+    group.add_argument('--wiki-language', type=str, default='text8',
+                       help='Language of wiki dump.')
+    group.add_argument('--wiki-date', help='Date of wiki dump.')
 
     # Computation options
     group = parser.add_argument_group('Computation arguments')
@@ -135,40 +145,51 @@ def parse_args():
 
 def get_train_data(args):
     """Helper function to get training data."""
-    with print_time('load training dataset'):
-        dataset = nlp.data.Text8(segment='train')
 
-    with print_time('count tokens'):
-        counter = nlp.data.count_tokens(itertools.chain.from_iterable(dataset))
+    def text8():
+        data = nlp.data.Text8(segment='train')
+        counter = nlp.data.count_tokens(itertools.chain.from_iterable(data))
+        vocab = nlp.Vocab(counter, unknown_token=None, padding_token=None,
+                          bos_token=None, eos_token=None, min_freq=5)
+        idx_to_counts = [counter[w] for w in vocab.idx_to_token]
+        data = nlp.data.SimpleDataStream([data])
+        return data, vocab, idx_to_counts
 
-    vocab = nlp.Vocab(counter, unknown_token=None, padding_token=None,
-                      bos_token=None, eos_token=None, min_freq=5)
+    def wiki():
+        data = WikiDumpStream(
+            root=os.path.expanduser(args.wiki_root),
+            language=args.wiki_language, date=args.wiki_date)
+        vocab = data.vocab
+        idx_to_counts = data.idx_to_counts
+        return data, vocab, idx_to_counts
 
-    idx_to_counts = np.array([counter[w] for w in vocab.idx_to_token])
-    negatives_weights = idx_to_counts**0.75
+    with print_time('load training data'):
+        f_data = text8 if args.data == 'text8' else wiki
+        data, vocab, idx_to_counts = f_data()
+
+    # Apply transforms
+    def code(shard):
+        with print_time('code shard'):
+            return [[vocab[token] for token in sentence if token in vocab]
+                    for sentence in shard]
+
+    def shuffle(shard):
+        random.shuffle(shard)
+        return shard
+
+    data = data.transform(code)
+    data = data.transform(shuffle)
+
     negatives_sampler = nlp.data.UnigramCandidateSampler(
-        weights=mx.nd.array(negatives_weights))
+        weights=mx.nd.array(idx_to_counts)**0.75)
 
-    # Skip "unknown" tokens
-    with print_time('code dataset'):
-        coded_dataset = [[
-            vocab[token] for token in sentence if token in vocab
-        ] for sentence in dataset]
-        coded_dataset = [
-            sentence for sentence in coded_dataset if len(sentence)
-        ]
+    sum_counts = sum(idx_to_counts)
+    idx_to_pdiscard = [
+        1 - math.sqrt(args.frequent_token_subsampling / (count / sum_counts))
+        for count in idx_to_counts
+    ]
 
-    with print_time('prune frequent words from sentences'):
-        num_tokens = int(np.sum(idx_to_counts))
-        f = idx_to_counts / num_tokens
-        idx_to_pdiscard = 1 - np.sqrt(args.frequent_token_subsampling / f)
-        idx_to_pdiscard = idx_to_pdiscard.tolist()
-
-        # prune_sentences_ = functools.partial(prune_sentences,
-        #                                      idx_to_pdiscard=idx_to_pdiscard)
-        # coded_dataset = list(map(prune_sentences_, coded_dataset))
-
-    if args.ngram_buckets:  # Fasttext model
+    if args.ngram_buckets:
         with print_time('prepare subwords'):
             subword_function = nlp.vocab.create_subword_function(
                 'NGramHashes', ngrams=args.ngrams,
@@ -186,10 +207,10 @@ def get_train_data(args):
                     'You should filter out very long words '
                     'to avoid memory issues.'.format(max_subwordidxs_len))
 
-        return (coded_dataset, negatives_sampler, vocab, subword_function,
-                get_subwords_masks, idx_to_pdiscard, num_tokens)
+        return (data, negatives_sampler, vocab, subword_function,
+                get_subwords_masks, idx_to_pdiscard, sum_counts)
     else:
-        return coded_dataset, negatives_sampler, vocab, idx_to_pdiscard, num_tokens
+        return data, negatives_sampler, vocab, idx_to_pdiscard, sum_counts
 
 
 def get_subwords_masks_factory(idx_to_subwordidxs):
@@ -233,8 +254,8 @@ def save_params(args, embedding, embedding_out):
 ###############################################################################
 def train(args):
     """Training helper."""
-    if args.ngram_buckets:  # Fasttext model
-        coded_dataset, negatives_sampler, vocab, subword_function, \
+    if args.ngram_buckets:
+        data, negatives_sampler, vocab, subword_function, \
             get_subwords_masks, idx_to_pdiscard, num_tokens = \
             get_train_data(args)
         embedding = nlp.model.train.FasttextEmbeddingModel(
@@ -245,7 +266,7 @@ def train(args):
             sparse_grad=not args.no_sparse_grad,
         )
     else:
-        coded_dataset, negatives_sampler, vocab, \
+        data, negatives_sampler, vocab, \
             idx_to_pdiscard, num_tokens = get_train_data(args)
         embedding = nlp.model.train.SimpleEmbeddingModel(
             token_to_idx=vocab.token_to_idx,
@@ -348,10 +369,9 @@ def train(args):
 
     num_update = 0
     for epoch in range(args.epochs):
-        random.shuffle(coded_dataset)
         context_stream = nlp.data.ContextStream(
-            stream=[coded_dataset], batch_size=args.batch_size,
-            p_discard=idx_to_pdiscard, window_size=args.window)
+            stream=data, batch_size=args.batch_size, p_discard=idx_to_pdiscard,
+            window_size=args.window)
 
         # Logging variables
         log_wc = 0

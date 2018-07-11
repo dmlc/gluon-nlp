@@ -31,9 +31,6 @@ from .dataset import CorpusDataset
 from .utils import _get_home_dir
 
 
-###############################################################################
-# Datasets
-###############################################################################
 class Text8(CorpusDataset):
     """Text8 corpus
 
