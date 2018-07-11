@@ -214,7 +214,7 @@ class TokenEmbedding(object):
         if not os.path.exists(pretrained_file_path) \
            or not check_sha1(pretrained_file_path, expected_file_hash):
             print('Embedding file {} is not found. Downloading from Gluon Repository. '
-                  'This may time some time.'.format(pretrained_file_name))
+                  'This may take some time.'.format(pretrained_file_name))
             download(url, pretrained_file_path, sha1_hash=expected_file_hash)
 
         return pretrained_file_path
