@@ -145,7 +145,7 @@ todo_include_todos = False
 # -- Options for HTML output ----------------------------------------------
 
 # The theme is set by the make target
-html_theme = os.environ.get('NNVM_THEME', 'rtd')
+html_theme = os.environ.get('GLUONNLP_THEME', 'rtd')
 
 on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
 # only import rtd theme and set it if want to build docs locally
@@ -174,19 +174,6 @@ latex_documents = [
    author, 'manual'),
 ]
 
-# hook for doxygen
-def run_doxygen(folder):
-    """Run the doxygen make command in the designated folder."""
-    try:
-        #retcode = subprocess.call("cd %s; make doc" % folder, shell=True)
-        retcode = subprocess.call("rm -rf _build/html/doxygen", shell=True)
-        retcode = subprocess.call("mkdir -p _build/html", shell=True)
-        retcode = subprocess.call("cp -rf doxygen/html _build/html/doxygen", shell=True)
-        if retcode < 0:
-            sys.stderr.write("doxygen terminated by signal %s" % (-retcode))
-    except OSError as e:
-        sys.stderr.write("doxygen execution failed: %s" % e)
-
 intersphinx_mapping = {
     'python': ('https://docs.python.org/{.major}'.format(sys.version_info), None),
     'mxnet': ('https://mxnet.apache.org/', None),
@@ -204,14 +191,7 @@ gallery_dirs = []
 
 subsection_order = ExplicitOrder([])
 
-def generate_doxygen_xml(app):
-    """Run the doxygen make commands if we're on the ReadTheDocs server"""
-    run_doxygen('..')
-
 def setup(app):
-    # Add hook for building doxygen xml when needed
-    # no c++ API for now
-    app.connect("builder-inited", generate_doxygen_xml)
     app.add_config_value('recommonmark_config', {
         'url_resolver': lambda url: github_doc_root + url,
         'auto_doc_ref': True

@@ -21,20 +21,20 @@ pylint:
 	pylint --rcfile=$(ROOTDIR)/.pylintrc gluonnlp scripts/*/*.py
 
 docs: release
-	make -C docs html
+	make -C docs html SPHINXOPTS=-W
 
 clean:
-	rm -rf gluonnlp.egg-info build dist | true
-	rm -rf tests/data | true
-	rm scripts/*.zip | true
-	rm docs/examples/*.zip | true
+	git clean -f -d -x --exclude="$(ROOTDIR)/tests/externaldata/*" --exclude=conda
 	make -C docs clean
+
+compile_notebooks:
+	find docs/examples/* -type f -name '*.md' | xargs -n 1 -I{} python docs/md2ipynb.py {}
 
 dist_scripts:
 	find scripts/* -type d -prune | grep -v 'tests\|__pycache__' | xargs -n 1 -I{} zip -r {}.zip {}
 
-dist_notebooks:
-	find docs/examples/* -type d -prune | grep -v 'tests\|__pycache__' | xargs -n 1 -I{} zip -r {}.zip {}
+dist_notebooks: compile_notebooks
+	find docs/examples/* -type d -prune | grep -v 'tests\|__pycache__' | xargs -n 1 -I{} zip -r {}.zip {} -x "*.md"
 
 test:
 	py.test -v --capture=no --durations=0  tests/unittest scripts

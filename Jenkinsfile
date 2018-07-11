@@ -4,8 +4,8 @@ stage("Sanity Check") {
       checkout scm
       sh """#!/bin/bash
       git clean -f -d -x --exclude='tests/externaldata/*' --exclude=conda
-      conda env update --prune -f env/pylint.yml -p conda
-      source activate gluon_nlp_pylint
+      conda env update --prune -f env/pylint.yml -p conda/lint
+      source activate ./conda/lint
       conda list
       make clean
       make pylint
@@ -21,8 +21,8 @@ stage("Unit Test") {
         checkout scm
         sh """#!/bin/bash
         git clean -f -d -x --exclude='tests/externaldata/*' --exclude=conda
-        conda env update --prune -f env/py2.yml -p conda
-        source activate gluon_nlp_py2
+        conda env update --prune -f env/py2.yml -p conda/py2
+        source activate ./conda/py2
         conda list
         python -m spacy download en
         python -m nltk.downloader all
@@ -40,8 +40,8 @@ stage("Unit Test") {
           checkout scm
           sh """#!/bin/bash
           git clean -f -d -x --exclude='tests/externaldata/*' --exclude=conda
-          conda env update --prune -f env/py3.yml -p conda
-          source activate gluon_nlp_py3
+          conda env update --prune -f env/py3.yml -p conda/py3
+          source activate ./conda/py3
           conda list
           python -m spacy download en
           python -m nltk.downloader all
@@ -65,15 +65,14 @@ stage("Deploy") {
       sh """#!/bin/bash
       printenv
       git clean -f -d -x --exclude='tests/externaldata/*' --exclude=conda
-      conda env update --prune -f env/doc.yml -p conda
-      source activate gluon_nlp_docs
+      conda env update --prune -f env/doc.yml -p conda/docs
+      source activate ./conda/docs
       conda list
       python setup.py install
       export LD_LIBRARY_PATH=/usr/local/cuda/lib64
       make clean
-      make release
       printenv
-      make -C docs html SPHINXOPTS=-W
+      make docs
       EXIT_STATUS=\$?
       printenv
       exit \$EXIT_STATUS
