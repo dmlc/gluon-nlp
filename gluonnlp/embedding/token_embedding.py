@@ -362,7 +362,7 @@ class TokenEmbedding(object):
             idx_to_token = deserialized_embedding.idx_to_token
             idx_to_vec = deserialized_embedding.idx_to_vec
 
-        if not np.all(np.unique(idx_to_token, return_counts=True)[1] == 1):
+        if not len(set(idx_to_token)) == len(idx_to_token):
             raise ValueError('Serialized embedding invalid. '
                              'It contains duplicate tokens.')
 
@@ -506,10 +506,10 @@ class TokenEmbedding(object):
 
     def __eq__(self, other):
         if isinstance(other, TokenEmbedding):
-            return self.unknown_token == other.unknown_token and np.all(
-                self.idx_to_token == other.idx_to_token) and ((
-                    self.idx_to_vec == other.idx_to_vec).min().asscalar() == 1) and (
-                        self._token_to_idx == other._token_to_idx)
+            return self.unknown_token == other.unknown_token \
+                and self.idx_to_token == other.idx_to_token and \
+                ((self.idx_to_vec == other.idx_to_vec).min().asscalar() == 1) \
+                and (self._token_to_idx == other._token_to_idx)
         else:
             return NotImplemented
 
