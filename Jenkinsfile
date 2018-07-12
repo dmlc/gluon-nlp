@@ -8,7 +8,7 @@ stage("Sanity Check") {
       source activate ./conda/lint
       conda list
       make clean
-      make pylint
+      make pylint && python setup.py check --restructuredtext --strict
       """
     }
   }
