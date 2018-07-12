@@ -39,7 +39,7 @@ You can install ``MXNet`` and ``GluonNLP`` using pip:
     pip install gluonnlp
 
 Docs 📖
-======
+=======
 
 GluonNLP documentation is available at `our
 website <http://gluon-nlp.mxnet.io/master/index.html>`__.
