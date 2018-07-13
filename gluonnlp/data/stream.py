@@ -16,20 +16,34 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-
-# pylint: disable=undefined-all-variable
 """NLP Toolkit Data Stream API. It allows easy and customizable streaming of
 corpora and dataset files. Files can be streamed into formats that are
 ready for training and evaluation."""
-__all__ = ['DataStream', 'CorpusStream', 'LanguageModelStream', 'SimpleDataStream']
+__all__ = [
+    'DataStream', 'CorpusStream', 'LanguageModelStream', 'SimpleDataStream',
+    'StreamDataLoader'
+]
 
-import os
 import glob
-import numpy as np
+import multiprocessing
+import os
+import sys
+import threading
 
 import mxnet as mx
+import mxnet.gluon.data as gdata
 from mxnet.gluon.data import RandomSampler, SequentialSampler
+import numpy as np
+
 from .dataset import CorpusDataset
+
+try:  # Python 2
+    import Queue as queue
+    from itertools import izip as zip  # pylint: disable=redefined-builtin
+    from itertools import izip_longest as zip_longest
+except ImportError:  # Python 3
+    from itertools import zip_longest as zip_longest
+    import queue
 
 class DataStream(object):
     """Abstract Data Stream Interface."""
@@ -353,3 +367,194 @@ class _LanguageModelBPTTStream(DataStream):
             if has_token_buffered or self._last_batch == 'keep':
                 yield mx.nd.array(data).T, mx.nd.array(target).T, mx.nd.array(mask).T
         return
+
+
+def worker_loop(batched_stream, control_queue, data_queue, batchify_fn):
+    """Worker loop for multiprocessing DataLoader."""
+    batched_stream_iter = iter(batched_stream)
+    while True:
+        idx, get_next = control_queue.get()
+        if not get_next:
+            break
+        try:
+            batch = batchify_fn(next(batched_stream_iter))
+        except StopIteration:
+            batch = None
+        data_queue.put((idx, batch))
+
+
+class _MultiWorkerIter(object):
+    """Interal multi-worker iterator for DataLoader."""
+
+    def __init__(self, prefetch, batched_stream, batchify_fn):
+        self._prefetch = prefetch
+        self._batched_stream = batched_stream
+        self._batchify_fn = batchify_fn
+        self._control_queue = gdata.dataloader.Queue()
+        self._data_queue = gdata.dataloader.Queue() \
+                            if sys.version_info[0] <= 2 \
+                            else gdata.dataloader.SimpleQueue()
+        self._data_buffer = {}
+        self._rcvd_idx = 0
+        self._sent_idx = 0
+        self._shutdown = False
+
+        worker = multiprocessing.Process(
+            target=worker_loop, args=(self._batched_stream,
+                                      self._control_queue, self._data_queue,
+                                      self._batchify_fn))
+        worker.daemon = True
+        worker.start()
+
+        # pre-fetch
+        for _ in range(self._prefetch):
+            self._push_next()
+
+    def __del__(self):
+        self.shutdown()
+
+    def _push_next(self):
+        """Assign next batch workload to workers."""
+        self._control_queue.put((self._sent_idx, True))
+        self._sent_idx += 1
+
+    def __next__(self):
+        assert not self._shutdown, 'call __next__ after shutdown is forbidden'
+
+        while True:
+            self._push_next()
+            if self._rcvd_idx in self._data_buffer:
+                batch = self._data_buffer.pop(self._rcvd_idx)
+                self._rcvd_idx += 1
+                return batch
+            idx, batch = self._data_queue.get()
+            if batch is None and not self._data_buffer:
+                self.shutdown()
+                raise StopIteration
+            self._data_buffer[idx] = batch
+
+    def next(self):
+        return self.__next__()
+
+    def __iter__(self):
+        return self
+
+    def shutdown(self):
+        """Shutdown internal workers by pushing terminate signals."""
+        if not self._shutdown:
+            self._control_queue.put((None, None))
+            try:
+                while not self._data_queue.empty():
+                    self._data_queue.get()
+            except IOError:
+                pass
+            self._shutdown = True
+
+
+class _ThreadedIter(threading.Thread):
+    def __init__(self, prefetch, batched_stream, batchify_fn):
+        super(_ThreadedIter, self).__init__()
+        self.queue = queue.Queue(prefetch)
+        self.batched_stream = batched_stream
+        self.batchify_fn = batchify_fn
+        self.daemon = True
+        self.start()
+
+    def run(self):
+        for data in self.batched_stream:
+            self.queue.put(self.batchify_fn(data))
+        self.queue.put(None)
+
+    def __next__(self):
+        next_item = self.queue.get()
+        if next_item is None:
+            raise StopIteration
+        return next_item
+
+    def next(self):
+        return self.__next__()
+
+    def __iter__(self):
+        return self
+
+
+class StreamDataLoader(object):
+    """Loads data from a stream and returns mini-batches of data.
+
+    Parameters
+    ----------
+    stream : DataStream
+        Source stream.
+    batch_size : int
+        Size of mini-batch.
+    last_batch : {'discard', 'keep'}, default 'keep'
+        How to handle the last batch if batch_size does not evenly divide
+        `len(dataset)`.
+        discard - The last batch is discarded if its incomplete.
+        keep - A batch with less samples than previous batches is returned.
+    batchify_fn : callable
+        Callback function to allow users to specify how to merge samples
+        into a batch. Defaults to `default_batchify_fn`::
+
+            def default_batchify_fn(data):
+                if isinstance(data[0], nd.NDArray):
+                    return nd.stack(*data)
+                elif isinstance(data[0], tuple):
+                    data = zip(*data)
+                    return [default_batchify_fn(i) for i in data]
+                else:
+                    data = np.asarray(data)
+                    return nd.array(data, dtype=data.dtype)
+
+    prefetch : bool, default False
+        If `prefetch > 0`, use a separate thread or process for fetching
+        `prefetch` elements from the stream. Not supported on Windows yet.
+    multiprocessing : bool, default False
+        Use a multiprocessing worker for prefetching. Only taken into account
+        if `prefetch > 0`.
+    """
+
+    def __init__(self, stream, batch_size, last_batch='keep', batchify_fn=None,
+                 prefetch=0, use_multiprocessing=False):
+        self._stream = stream
+        self._batch_size = batch_size
+        self._prefetch = prefetch
+        self._multiprocessing = use_multiprocessing
+
+        if batchify_fn is None:
+            if self._prefetch and self._multiprocessing:
+                batchify_fn = gdata.dataloader.default_mp_batchify_fn
+            else:
+                batchify_fn = gdata.dataloader.default_batchify_fn
+        assert last_batch in ('discard', 'keep')
+        self._last_batch = last_batch
+        if self._last_batch == 'keep':
+            self._last_batch_pad = object()
+
+            def unpad_batches(data):
+                data = [d for d in data if d is not self._last_batch_pad]
+                return batchify_fn(data)
+
+            self._batchify_fn = unpad_batches
+        else:
+            self._batchify_fn = batchify_fn
+
+    def __iter__(self):
+        # Duplicate the stream iterator batch_size times so zip can retrieve
+        # batch_size elements
+        zip_args = [iter(self._stream)] * self._batch_size
+        if self._last_batch == 'discard':
+            batch_data_generator = zip(*zip_args)
+        else:
+            batch_data_generator = zip_longest(*zip_args,
+                                               fillvalue=self._last_batch_pad)
+
+        if not self._prefetch:
+            return (self._batchify_fn(batch_data)
+                    for batch_data in batch_data_generator)
+        elif self._multiprocessing:
+            return _MultiWorkerIter(self._prefetch, batch_data_generator,
+                                    self._batchify_fn)
+        else:
+            return _ThreadedIter(self._prefetch, batch_data_generator,
+                                 self._batchify_fn)

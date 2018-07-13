@@ -32,6 +32,8 @@ from .candidate_sampler import *
 
 from .dataset import *
 
+# Needed for izip / zip in stream.py.
+# pylint: disable=redefined-builtin
 from .stream import *
 
 from .language_model import *
