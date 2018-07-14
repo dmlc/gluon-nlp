@@ -87,12 +87,14 @@ def test_fasttext_embedding(sparse_grad, hybridize, wordsmask, subwordsmask):
     loss.asnumpy()
 
 
-def test_fasttext_embedding_load_binary_compare_vec(datadir):
+def test_fasttext_embedding_load_binary_compare_vec():
+    test_dir = os.path.dirname(os.path.realpath(__file__))
     token_embedding_vec = nlp.embedding.TokenEmbedding.from_file(
-        os.path.join(str(datadir), 'lorem_ipsum.vec'), unknown_token=None)
+        os.path.join(str(test_dir), 'test_embedding', 'lorem_ipsum.vec'),
+        unknown_token=None)
 
     model = nlp.model.train.FasttextEmbeddingModel.load_fasttext_format(
-        os.path.join(str(datadir), 'lorem_ipsum.bin'))
+        os.path.join(str(test_dir), 'test_embedding', 'lorem_ipsum.bin'))
     idx_to_vec = model[token_embedding_vec.idx_to_token]
     assert np.all(
         np.isclose(a=token_embedding_vec.idx_to_vec.asnumpy(),
