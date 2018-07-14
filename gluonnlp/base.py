@@ -20,9 +20,17 @@
 # pylint: disable=abstract-method
 """Helper functions."""
 
-__all__ = ['_str_types']
+__all__ = ['_str_types', 'numba_njit']
 
 try:
     _str_types = (str, unicode)
 except NameError:  # Python 3
     _str_types = (str, )
+
+try:
+    from numba import njit
+    numba_njit = njit(nogil=True)
+except ImportError:
+    # Define numba shims
+    def numba_njit(func):
+        return func

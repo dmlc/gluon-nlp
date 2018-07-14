@@ -436,8 +436,7 @@ class FasttextEmbeddingModel(EmbeddingModel):
             else:
                 word = nd.array([0], ctx=ctx)
                 wordmask = nd.zeros_like(word)
-            subwords = self.subword_function([token])[0].expand_dims(0)
-            subwords = subwords.as_in_context(ctx)
+            subwords = nd.array(self.subword_function([token]), ctx=ctx)
             if subwords.shape[1]:
                 vec = self(word, subwords, wordsmask=wordmask)
             else:
