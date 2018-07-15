@@ -99,3 +99,4 @@ def test_fasttext_embedding_load_binary_compare_vec():
     assert np.all(
         np.isclose(a=token_embedding_vec.idx_to_vec.asnumpy(),
                    b=idx_to_vec.asnumpy(), atol=0.001))
+    assert all(token in model for token in token_embedding_vec.idx_to_token)

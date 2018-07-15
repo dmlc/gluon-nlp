@@ -401,8 +401,8 @@ class FasttextEmbeddingModel(EmbeddingModel):
     def __contains__(self, token):
         # supports computing vector for any str that is at least either in the
         # word level vocabulary or contains subwords
-        return (token in self.idx_to_token
-                or self.subword_function([token])[0].shape[0])
+        return (token in self.token_to_idx
+                or self.subword_function([token])[0])
 
     def __getitem__(self, tokens):
         """Looks up embedding vectors of text tokens.

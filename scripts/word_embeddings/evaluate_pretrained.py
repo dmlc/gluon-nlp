@@ -162,9 +162,9 @@ if __name__ == '__main__':
     os.makedirs(args_.logdir, exist_ok=True)
 
     # Load pretrained embeddings
-    print('Loading embedding ', args_.embedding_name, ' from ',
-          args_.embedding_source)
     if not args_.embedding_path:
+        print('Loading embedding ', args_.embedding_name, ' from ',
+              args_.embedding_source)
         token_embedding = nlp.embedding.create(args_.embedding_name,
                                                source=args_.embedding_source)
         name = '-' + args_.embedding_name + '-' + args_.embedding_source
