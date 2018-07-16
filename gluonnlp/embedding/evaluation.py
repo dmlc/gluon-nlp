@@ -377,7 +377,8 @@ class WordEmbeddingSimilarity(HybridBlock):
 
         if not isinstance(self.similarity, WordEmbeddingSimilarityFunction):
             raise RuntimeError(
-                '{} is not a WordEmbeddingAnalogyFunction'.format(name))
+                '{} is not a WordEmbeddingAnalogyFunction'.format(
+                    self.similarity.__class__.__name__))
 
     def hybrid_forward(self, F, words1, words2, weight):  # pylint: disable=arguments-differ
         """Predict the similarity of words1 and words2.
@@ -436,7 +437,8 @@ class WordEmbeddingAnalogy(Block):
 
         if not isinstance(self.analogy, WordEmbeddingAnalogyFunction):
             raise RuntimeError(
-                '{} is not a WordEmbeddingAnalogyFunction'.format(name))
+                '{} is not a WordEmbeddingAnalogyFunction'.format(
+                    self.analogy.__class__.__name__))
 
     def forward(self, words1, words2, words3):  # pylint: disable=arguments-differ
         """Implement forward computation.
