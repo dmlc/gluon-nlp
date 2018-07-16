@@ -27,6 +27,7 @@ import zipfile
 import hashlib
 import glob
 import shutil
+import tarfile
 
 from mxnet.gluon.utils import download, check_sha1, _get_repo_file_url
 
