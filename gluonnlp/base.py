@@ -20,7 +20,7 @@
 # pylint: disable=abstract-method
 """Helper functions."""
 
-__all__ = ['_str_types', 'numba_njit']
+__all__ = ['_str_types', 'numba_njit', 'numba_prange']
 
 try:
     _str_types = (str, unicode)
@@ -28,9 +28,12 @@ except NameError:  # Python 3
     _str_types = (str, )
 
 try:
-    from numba import njit
+    from numba import njit, prange
     numba_njit = njit(nogil=True)
+    numba_prange = prange
 except ImportError:
     # Define numba shims
     def numba_njit(func):
         return func
+
+    numba_prange = range

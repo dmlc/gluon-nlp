@@ -53,10 +53,10 @@ import warnings
 
 import mxnet as mx
 import numpy as np
+import gluonnlp as nlp
+from gluonnlp.base import numba_njit, numba_prange
 
 import evaluation
-import gluonnlp as nlp
-import numba
 from candidate_sampler import remove_accidental_hits
 from utils import get_context, print_time, prune_sentences
 
@@ -201,13 +201,13 @@ def get_subwords_masks_factory(idx_to_subwordidxs):
     return get_subwords_masks
 
 
-@numba.njit()
+@numba_njit
 def _get_subwords_masks(subwords):
     lengths = np.array([len(s) for s in subwords])
     length = np.max(lengths)
     subwords_arr = np.zeros((len(subwords), length))
     mask = np.zeros((len(subwords), length))
-    for i in numba.prange(len(subwords)):
+    for i in numba_prange(len(subwords)):
         s = subwords[i]
         subwords_arr[i, :len(s)] = s
         mask[i, :len(s)] = 1
