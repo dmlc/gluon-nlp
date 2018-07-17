@@ -23,7 +23,6 @@ import datetime
 import json
 import os
 import random
-import sys
 
 from flaky import flaky
 import mxnet as mx
@@ -32,10 +31,10 @@ import pytest
 
 import gluonnlp as nlp
 
-if sys.version_info[0] == 3:
-    _str_types = (str, )
-else:
+try:
     _str_types = (str, unicode)
+except NameError:  # Python 3
+    _str_types = (str, )
 
 
 ###############################################################################
