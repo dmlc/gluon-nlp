@@ -22,9 +22,7 @@
 
 __all__ = ['_str_types']
 
-import sys
-
-if sys.version_info[0] == 3:
-    _str_types = (str, )
-else:
+try:
     _str_types = (str, unicode)
+excpet NameError:  # Python 3
+    _str_types = (str, )
