@@ -24,5 +24,5 @@ __all__ = ['_str_types']
 
 try:
     _str_types = (str, unicode)
-excpet NameError:  # Python 3
+except NameError:  # Python 3
     _str_types = (str, )
