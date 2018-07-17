@@ -24,7 +24,7 @@ import numpy as np
 import mxnet as mx
 
 
-def _pad_arrs_to_max_length(arrs, pad_axis, pad_val, use_shared_mem=False):
+def _pad_arrs_to_max_length(arrs, pad_axis, pad_val, use_shared_mem=False, dtype=None):
     """Inner Implementation of the Pad batchify
 
     Parameters
@@ -47,12 +47,19 @@ def _pad_arrs_to_max_length(arrs, pad_axis, pad_val, use_shared_mem=False):
     ret_shape[pad_axis] = max_size
     ret_shape = (len(arrs), ) + tuple(ret_shape)
     if use_shared_mem:
-        ret = mx.nd.full(shape=ret_shape, val=pad_val, ctx=mx.Context('cpu_shared', 0),
-                         dtype=arrs[0].dtype)
+        if dtype is not None:
+            ret = mx.nd.full(shape=ret_shape, val=pad_val, ctx=mx.Context('cpu_shared', 0),
+                             dtype=dtype)
+        else:
+            ret = mx.nd.full(shape=ret_shape, val=pad_val, ctx=mx.Context('cpu_shared', 0),
+                             dtype=arrs[0].dtype)
         original_length = mx.nd.array(original_length, ctx=mx.Context('cpu_shared', 0),
                                       dtype=np.int32)
     else:
-        ret = mx.nd.full(shape=ret_shape, val=pad_val, dtype=arrs[0].dtype)
+        if dtype is not None:
+            ret = mx.nd.full(shape=ret_shape, val=pad_val, dtype=dtype)
+        else:
+            ret = mx.nd.full(shape=ret_shape, val=pad_val, dtype=arrs[0].dtype)
         original_length = mx.nd.array(original_length, dtype=np.int32)
     for i, arr in enumerate(arrs):
         if arr.shape[pad_axis] == max_size:
@@ -66,23 +73,43 @@ def _pad_arrs_to_max_length(arrs, pad_axis, pad_val, use_shared_mem=False):
     return ret, original_length
 
 
-def _stack_arrs(arrs, use_shared_mem=False):
+def _stack_arrs(arrs, use_shared_mem=False, dtype=None):
     if isinstance(arrs[0], mx.nd.NDArray):
         if use_shared_mem:
-            out = mx.nd.empty((len(arrs),) + arrs[0].shape, dtype=arrs[0].dtype,
-                              ctx=mx.Context('cpu_shared', 0))
+            if dtype is not None:
+                out = mx.nd.empty((len(arrs),) + arrs[0].shape, dtype=dtype,
+                                  ctx=mx.Context('cpu_shared', 0))
+            else:
+                out = mx.nd.empty((len(arrs),) + arrs[0].shape, dtype=arrs[0].dtype,
+                                  ctx=mx.Context('cpu_shared', 0))
             return mx.nd.stack(*arrs, out=out)
         else:
             return mx.nd.stack(*arrs)
     else:
         out = np.asarray(arrs)
         if use_shared_mem:
-            return mx.nd.array(out, ctx=mx.Context('cpu_shared', 0), dtype=out.dtype)
+            if dtype is not None:
+                return mx.nd.array(out, ctx=mx.Context('cpu_shared', 0), dtype=dtype)
+            else:
+                return mx.nd.array(out, ctx=mx.Context('cpu_shared', 0), dtype=out.dtype)
         else:
             return mx.nd.array(out, dtype=out.dtype)
 
 
-class Stack(object):
+class Batchify(object):
+    r""""Base class for applying batchify function on input data.
+
+    Parameters
+    ----------
+    dtype : str or numpy.dtype, default None
+        The value type of the output. If it is set to None, the input data type is used.
+    """
+
+    def __init__(self, dtype=None):
+        self._dtype = dtype
+
+
+class Stack(Batchify):
     r"""Stack the input data samples to construct the batch.
 
     The N input samples must have the same shape/length and will be stacked to construct a batch.
@@ -132,10 +159,10 @@ class Stack(object):
         -------
         batch_data : NDArray
         """
-        return _stack_arrs(data, True)
+        return _stack_arrs(data, True, self._dtype)
 
 
-class Pad(object):
+class Pad(Batchify):
     """Pad the input ndarrays along the specific padding axis and stack them to get the output.
 
     Input of the function will be N samples. Each sample should contain a single element that
@@ -202,7 +229,8 @@ class Pad(object):
       [ 1.  2. -1. -1.]]]
     <NDArray 2x2x4 @cpu(0)>
     """
-    def __init__(self, axis=0, pad_val=0, ret_length=False):
+    def __init__(self, axis=0, pad_val=0, ret_length=False, dtype=None):
+        super(Pad, self).__init__(dtype=dtype)
         self._axis = axis
         assert isinstance(axis, int), 'axis must be an integer! ' \
                                       'Received axis=%s, type=%s.' % (str(axis),
@@ -229,7 +257,8 @@ class Pad(object):
         """
         if isinstance(data[0], (mx.nd.NDArray, np.ndarray, list)):
             padded_arr, original_length = _pad_arrs_to_max_length(data, self._axis,
-                                                                  self._pad_val, True)
+                                                                  self._pad_val, True,
+                                                                  self._dtype)
             if self._ret_length:
                 return padded_arr, original_length
             else:

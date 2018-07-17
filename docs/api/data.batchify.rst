@@ -12,6 +12,7 @@ Batch Loaders
 .. autosummary::
     :nosignatures:
 
+    Batchify
     Stack
     Pad
     Tuple
