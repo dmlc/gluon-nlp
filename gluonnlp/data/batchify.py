@@ -24,7 +24,7 @@ import numpy as np
 import mxnet as mx
 
 
-def _pad_arrs_to_max_length(arrs, pad_axis, pad_val, use_shared_mem=False, dtype=None):
+def _pad_arrs_to_max_length(arrs, pad_axis, pad_val, use_shared_mem, dtype):
     """Inner Implementation of the Pad batchify
 
     Parameters
@@ -46,20 +46,14 @@ def _pad_arrs_to_max_length(arrs, pad_axis, pad_val, use_shared_mem=False, dtype
     ret_shape = list(arrs[0].shape)
     ret_shape[pad_axis] = max_size
     ret_shape = (len(arrs), ) + tuple(ret_shape)
+    dtype = arrs[0].dtype if dtype is None else dtype
     if use_shared_mem:
-        if dtype is not None:
-            ret = mx.nd.full(shape=ret_shape, val=pad_val, ctx=mx.Context('cpu_shared', 0),
-                             dtype=dtype)
-        else:
-            ret = mx.nd.full(shape=ret_shape, val=pad_val, ctx=mx.Context('cpu_shared', 0),
-                             dtype=arrs[0].dtype)
+        ret = mx.nd.full(shape=ret_shape, val=pad_val, ctx=mx.Context('cpu_shared', 0),
+                         dtype=dtype)
         original_length = mx.nd.array(original_length, ctx=mx.Context('cpu_shared', 0),
                                       dtype=np.int32)
     else:
-        if dtype is not None:
-            ret = mx.nd.full(shape=ret_shape, val=pad_val, dtype=dtype)
-        else:
-            ret = mx.nd.full(shape=ret_shape, val=pad_val, dtype=arrs[0].dtype)
+        ret = mx.nd.full(shape=ret_shape, val=pad_val, dtype=dtype)
         original_length = mx.nd.array(original_length, dtype=np.int32)
     for i, arr in enumerate(arrs):
         if arr.shape[pad_axis] == max_size:
@@ -73,25 +67,20 @@ def _pad_arrs_to_max_length(arrs, pad_axis, pad_val, use_shared_mem=False, dtype
     return ret, original_length
 
 
-def _stack_arrs(arrs, use_shared_mem=False, dtype=None):
+def _stack_arrs(arrs, use_shared_mem, dtype):
     if isinstance(arrs[0], mx.nd.NDArray):
+        dtype = arrs[0].dtype if dtype is None else dtype
         if use_shared_mem:
-            if dtype is not None:
-                out = mx.nd.empty((len(arrs),) + arrs[0].shape, dtype=dtype,
-                                  ctx=mx.Context('cpu_shared', 0))
-            else:
-                out = mx.nd.empty((len(arrs),) + arrs[0].shape, dtype=arrs[0].dtype,
-                                  ctx=mx.Context('cpu_shared', 0))
+            out = mx.nd.empty((len(arrs),) + arrs[0].shape, dtype=dtype,
+                              ctx=mx.Context('cpu_shared', 0))
             return mx.nd.stack(*arrs, out=out)
         else:
             return mx.nd.stack(*arrs)
     else:
         out = np.asarray(arrs)
+        dtype = out.dtype if dtype is None else dtype
         if use_shared_mem:
-            if dtype is not None:
-                return mx.nd.array(out, ctx=mx.Context('cpu_shared', 0), dtype=dtype)
-            else:
-                return mx.nd.array(out, ctx=mx.Context('cpu_shared', 0), dtype=out.dtype)
+            return mx.nd.array(out, ctx=mx.Context('cpu_shared', 0), dtype=dtype)
         else:
             return mx.nd.array(out, dtype=out.dtype)
 
