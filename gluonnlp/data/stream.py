@@ -29,10 +29,19 @@ import glob
 import itertools
 import threading
 import numpy as np
+import os
+import random
+import multiprocessing
+import threading
 
 import mxnet as mx
 from mxnet.gluon.data import RandomSampler, SequentialSampler
 from .dataset import CorpusDataset
+
+try:
+    import Queue as queue
+except ImportError:
+    import queue
 
 class DataStream(object):
     """Abstract Data Stream Interface.
@@ -77,107 +86,6 @@ class DatasetStream(DataStream):
 
     def __iter__(self):
         raise NotImplementedError
-
-
-class PrefetchingStream(DataStream):
-    """Performs pre-fetch for other data iterators.
-    This iterator will create another thread to perform ``iter_next`` and then
-    store the data in memory. It potentially accelerates the data read, at the
-    cost of more memory usage.
-
-    Parameters
-    ----------
-    streams : DataStream or list of DataStream
-        The data streams to be pre-fetched.
-
-    """
-    def __init__(self, streams):
-        super(PrefetchingStream, self).__init__()
-        if not isinstance(streams, list):
-            streams = [streams]
-        self._streams = streams
-        # cleaned up by worker threads
-        self._started = {}
-        self._data_taken = {}
-        # cleaned up by the main thread
-        self._prefetch_threads = {}
-        self._next_key = 0
-
-    def __iter__(self):
-        key = self._next_key
-        self._next_key += 1
-        num_streams = len(self._streams)
-        assert num_streams > 0, 'Invalid number of Streams'
-
-        data_ready = [threading.Event() for i in range(num_streams)]
-        data_taken = [threading.Event() for i in range(num_streams)]
-        batch = [None for i in range(num_streams)]
-        for i in data_taken:
-            i.set()
-
-        # register
-        self._data_taken[key] = data_taken
-        self._started[key] = True
-
-        def prefetch_func(self, data_ready, batch, key, i):
-            """Thread entry"""
-            stream = iter(self._streams[i])
-            while True:
-                self._data_taken[key][i].wait()
-                if not self._started[key]:
-                    break
-                try:
-                    batch[i] = next(stream)
-                except StopIteration:
-                    batch[i] = None
-                self._data_taken[key][i].clear()
-                data_ready[i].set()
-            # tear down
-            self._started.pop(key, None)
-            self._data_taken.pop(key, None)
-
-        # setup prefetching threads
-        prefetch_threads = []
-        for i in range(num_streams):
-            args = [self, data_ready, batch, key, i]
-            thread = threading.Thread(target=prefetch_func, args=args)
-            prefetch_threads.append(thread)
-        self._prefetch_threads[key] = prefetch_threads
-        # start threads
-        for thread in prefetch_threads:
-            thread.setDaemon(True)
-            thread.start()
-
-        while True:
-            # wait for batch to be ready
-            for i in data_ready:
-                i.wait()
-            # retrieve batch
-            if batch[0] is None:
-                for i in batch:
-                    assert i is None, 'Number of batches mismatches between data streams'
-                # no more batch, tear down
-                self._tear_down(key)
-                break
-            # valid batch
-            current_batch = [data for data in batch] if num_streams > 1 else batch[0]
-            for i in data_ready:
-                i.clear()
-            for i in data_taken:
-                i.set()
-            yield current_batch
-
-    def _tear_down(self, key):
-        self._started[key] = False
-        for i in self._data_taken[key]:
-            i.set()
-        for thread in self._prefetch_threads[key]:
-            thread.join()
-        self._prefetch_threads.pop(key, None)
-
-    def __del__(self):
-        for key in list(self._started.keys()):
-            self._tear_down(key)
 
 
 class SimpleDataStream(DataStream):
@@ -492,3 +400,77 @@ class _LanguageModelBPTTStream(DataStream):
             if has_token_buffered or self._last_batch == 'keep':
                 yield mx.nd.array(data).T, mx.nd.array(target).T, mx.nd.array(mask).T
         return
+
+
+class _Prefetcher(object):
+    """Interal shared prefetcher logic."""
+    def __init__(self, stream, num_prefetch):
+        super(_Prefetcher, self).__init__()
+        self.stream = stream
+        self.num_prefetch = num_prefetch
+
+    def run(self):
+        for data in self.stream:
+            self.queue.put(data)
+        self.queue.put(None)
+
+    def __next__(self):
+        next_item = self.queue.get()
+        if next_item is None:
+            raise StopIteration
+        return next_item
+
+    def next(self):
+        return self.__next__()
+
+    def __iter__(self):
+        return self
+
+
+class _ProcessPrefetcher(_Prefetcher, multiprocessing.Process):
+    """Interal multi-processing prefetcher."""
+    def __init__(self, *args, **kwargs):
+        super(_ProcessPrefetcher, self).__init__(*args, **kwargs)
+        self.queue = multiprocessing.Queue(self.num_prefetch)
+        self.daemon = True
+        self.start()
+
+
+class _ThreadPrefetcher(_Prefetcher, threading.Thread):
+    """Interal threaded prefetcher."""
+    def __init__(self, *args, **kwargs):
+        super(_ThreadPrefetcher, self).__init__(*args, **kwargs)
+        self.queue = queue.Queue(self.num_prefetch)
+        self.daemon = True
+        self.start()
+
+
+class PrefetchingStream(object):
+    """Prefetch a DataStream in a separate Thread or Process.
+
+    This iterator will create another thread or process to perform
+    ``iter_next`` and then store the data in memory. It potentially accelerates
+    the data read, at the cost of more memory usage.
+
+
+    Parameters
+    ----------
+    stream : DataStream
+        Source stream.
+    num_prefetch : int, default 1
+        Number of elements to prefetch from the stream.
+    worker_type : 'thread' or 'process', default 'thread'
+        Use a separate Python Thread or Process to prefetch.
+    """
+
+    def __init__(self, stream, num_prefetch=1, worker_type='thread'):
+        self._stream = stream
+        self._num_prefetch = num_prefetch
+        assert worker_type.lower() in ['thread', 'process']
+        self._multiprocessing = worker_type.lower() == 'process'
+
+    def __iter__(self):
+        if self._multiprocessing:
+            return _ProcessPrefetcher(self._stream, self._num_prefetch)
+        else:
+            return _ThreadPrefetcher(self._stream, self._num_prefetch)
