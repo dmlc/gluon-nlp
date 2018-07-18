@@ -120,7 +120,6 @@ def test_pad_wrap_batchify():
                             batch_data, valid_length = batchify_fn(random_data_npy)
                             batch_data_use_mx, valid_length_use_mx = batchify_fn(
                                 [mx.nd.array(ele, dtype=dtype) for ele in random_data_npy])
-                            assert_allclose(batch_data_use_mx.asnumpy(), batch_data.asnumpy())
                             assert_allclose(valid_length_use_mx.asnumpy(), valid_length.asnumpy())
                             assert batch_data.dtype == batch_data_use_mx.dtype == _dtype
                             assert valid_length.dtype == valid_length_use_mx.dtype == np.int32
