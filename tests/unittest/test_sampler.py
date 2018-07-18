@@ -55,6 +55,14 @@ def test_fixed_bucket_sampler():
             assert len(set(total_sampled_ids)) == len(total_sampled_ids) == N
 
 
+def test_fixed_bucket_sampler_compactness():
+    samples = list(
+        FixedBucketSampler(
+            np.arange(16, 32), 8, num_buckets=2,
+            bucket_scheme=nlp.data.ConstWidthBucket()))
+    assert len(samples) == 2
+
+
 def test_sorted_bucket_sampler():
     N = 1000
     for seq_lengths in [[np.random.randint(10, 100) for _ in range(N)],
