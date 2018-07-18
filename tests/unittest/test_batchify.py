@@ -20,6 +20,10 @@ def test_stack_batchify():
             npy_out = np.array(dat)
             assert_allclose(batchify_out, npy_out)
             assert batchify_out.dtype == npy_out.dtype
+        for _dtype in [np.float16, np.float32]:
+            batchify_fn = batchify.Stack(dtype=_dtype)
+            batchify_out = batchify_fn(dat).asnumpy()
+            assert batchify_out.dtype == _dtype
 
 
 def test_pad_wrap_batchify():
@@ -106,3 +110,18 @@ def test_pad_wrap_batchify():
                                         _verify_padded_arr(batch_data[i], random_data_npy[i][j], axis, pad_val,
                                                            pad_length,
                                                            dtype)
+                        for _dtype in [np.float16, np.float32]:
+                            shapes = [[2 for _ in range(ndim)] for _ in range(batch_size)]
+                            for i in range(len(shapes)):
+                                shapes[i][axis] = np.random.randint(length_min, length_max)
+                            random_data_npy = [np.random.normal(0, 1, shape).astype(dtype)
+                                               for shape in shapes]
+                            batchify_fn = batchify.Pad(axis=axis, pad_val=pad_val, ret_length=True, dtype=_dtype)
+                            batch_data, valid_length = batchify_fn(random_data_npy)
+                            batch_data_use_mx, valid_length_use_mx = batchify_fn(
+                                [mx.nd.array(ele, dtype=dtype) for ele in random_data_npy])
+                            assert_allclose(batch_data_use_mx.asnumpy(), batch_data.asnumpy())
+                            assert_allclose(valid_length_use_mx.asnumpy(), valid_length.asnumpy())
+                            assert batch_data.dtype == batch_data_use_mx.dtype == _dtype
+                            assert valid_length.dtype == valid_length_use_mx.dtype == np.int32
+
