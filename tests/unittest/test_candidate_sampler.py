@@ -9,4 +9,4 @@ def test_unigram_candidate_sampler():
     N = 1000
     sampler = UnigramCandidateSampler(mx.nd.arange(N))
     sampled = sampler(3)
-    assert all(mx.nd.array([523, 729, 698]) == sampled)
+    assert all(mx.nd.array([729, 593, 689]) == sampled)
