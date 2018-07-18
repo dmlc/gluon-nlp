@@ -82,26 +82,18 @@ def _stack_arrs(arrs, use_shared_mem, dtype):
         if use_shared_mem:
             return mx.nd.array(out, ctx=mx.Context('cpu_shared', 0), dtype=dtype)
         else:
-            return mx.nd.array(out, dtype=out.dtype)
+            return mx.nd.array(out, dtype=dtype)
 
 
-class Batchify(object):
-    r""""Base class for applying batchify function on input data.
+class Stack(object):
+    r"""Stack the input data samples to construct the batch.
+
+    The N input samples must have the same shape/length and will be stacked to construct a batch.
 
     Parameters
     ----------
     dtype : str or numpy.dtype, default None
         The value type of the output. If it is set to None, the input data type is used.
-    """
-
-    def __init__(self, dtype=None):
-        self._dtype = dtype
-
-
-class Stack(Batchify):
-    r"""Stack the input data samples to construct the batch.
-
-    The N input samples must have the same shape/length and will be stacked to construct a batch.
 
     Examples
     --------
@@ -136,6 +128,9 @@ class Stack(Batchify):
       [1. 2. 3. 4.]]]
     <NDArray 2x2x4 @cpu(0)>
     """
+    def __init__(self, dtype=None):
+        self._dtype = dtype
+
     def __call__(self, data):
         """Batchify the input data
 
@@ -151,7 +146,7 @@ class Stack(Batchify):
         return _stack_arrs(data, True, self._dtype)
 
 
-class Pad(Batchify):
+class Pad(object):
     """Pad the input ndarrays along the specific padding axis and stack them to get the output.
 
     Input of the function will be N samples. Each sample should contain a single element that
@@ -172,6 +167,8 @@ class Pad(Batchify):
         The padding value.
     ret_length : bool, default False
         Whether to return the valid length in the output.
+    dtype : str or numpy.dtype, default None
+        The value type of the output. If it is set to None, the input data type is used.
 
     Examples
     --------
@@ -219,13 +216,13 @@ class Pad(Batchify):
     <NDArray 2x2x4 @cpu(0)>
     """
     def __init__(self, axis=0, pad_val=0, ret_length=False, dtype=None):
-        super(Pad, self).__init__(dtype=dtype)
         self._axis = axis
         assert isinstance(axis, int), 'axis must be an integer! ' \
                                       'Received axis=%s, type=%s.' % (str(axis),
                                                                       str(type(axis)))
         self._pad_val = pad_val
         self._ret_length = ret_length
+        self._dtype = dtype
 
     def __call__(self, data):
         """Batchify the input data.
