@@ -38,10 +38,12 @@ Word Embedding Training
 Besides loading pretrained embeddings, the Gluon NLP toolkit also makes it easy
 to train embeddings.
 
-`train_word2vec.py` shows how to facilitate the embeddings related functionality
-in the Gluon NLP toolkit to train Word2Vec word embedding models. Similarly
-`train_fasttext.py` shows how to train an embedding model that facilitates
-subword information.
+`train_fasttext.py` shows how to use Gluon NLP to train fastText or Word2Vec
+models. The script and parts of the Gluon NLP library support just-in-time
+compilation with `numba <http://numba.pydata.org/>`_, which is enabled
+automatically when numba is installed on the system. Please `pip
+install --upgrade numba` to make sure training speed is not needlessly throttled
+by Python.
 
 Word2Vec models were introduced by
 

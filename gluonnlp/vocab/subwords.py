@@ -20,9 +20,12 @@
 # pylint: disable=consider-iterating-dictionary
 """Subword functions."""
 from __future__ import absolute_import, print_function
+import sys
 
 import numpy as np
-from mxnet import nd, registry
+from mxnet import registry
+
+from ..base import numba_njit
 
 __all__ = [
     'SubwordFunction', 'ByteSubwords', 'NGramHashes',
@@ -118,10 +121,13 @@ class ByteSubwords(SubwordFunction):
         self.encoding = encoding
 
     def __call__(self, words):
-        return [
-            nd.array(np.frombuffer(word.encode(self.encoding), dtype=np.uint8).astype(np.int_))
-            for word in words
-        ]
+        if sys.version_info[0] == 3:
+            return [list(word.encode(self.encoding)) for word in words]
+        else:
+            return [
+                list((ord(c) for c in word.encode(self.encoding)))
+                for word in words
+            ]
 
     def __len__(self):
         return 256
@@ -162,6 +168,62 @@ class ByteSubwords(SubwordFunction):
         return subwords
 
 
+@numba_njit
+def _byte_to_int(b):
+    return b
+
+
+if sys.version_info[0] == 2:
+    # Python 2 requires an extra `ord()` when operating on memoryview outside of numba
+
+    try:
+        import numba
+        if numba.config.DISABLE_JIT:
+            # JIT disabled is equivalent to numba not being present
+            raise ImportError
+    except ImportError:
+
+        # pylint: disable=function-redefined
+        @numba_njit
+        def _byte_to_int(b):
+            return ord(b)
+
+
+@numba_njit
+def _fasttext_ngram_hashes(word, ns, bucket_size):
+    hashes = []
+    max_n = np.max(ns)
+    for i in range(len(word)):  # pylint: disable=consider-using-enumerate
+        if (_byte_to_int(word[i]) & 0xC0) == 0x80:
+            # Byte is continuation byte
+            continue
+        n = 0
+        for j in range(i, len(word)):
+            if (j + 1 < len(word)
+                    and _byte_to_int(word[j + 1]) & 0xC0) == 0x80:
+                # Next byte is continuation byte
+                continue
+            n += 1
+            if (np.sum(n == ns)  # n in ns
+                    and not (n == 1 and (i == 0 or j == len(word)))):
+                ngram = word[i:j + 1]
+                h = _fasttext_hash(ngram)
+                hashes.append(h % bucket_size)
+            if n >= max_n:
+                break
+    return hashes
+
+
+@numba_njit
+def _fasttext_hash(ngram):
+    h = np.uint32(2166136261)
+    for c in ngram:
+        # Extra np.uint32 casts due to https://github.com/numba/numba/issues/3112
+        h = np.uint32(h ^ np.uint32(np.int8(_byte_to_int(c))))
+        h = np.uint32(h * np.uint32(16777619))
+    return h
+
+
 @register_subword_function
 class NGramHashes(SubwordFunction):
     """Map words to a list of hashes in a restricted domain.
@@ -177,50 +239,36 @@ class NGramHashes(SubwordFunction):
         n-s for which to hash the ngrams
     special_tokens : set of str, default None
         Set of words for which not to look up subwords.
-    cache : bool, default True
-        Cache the word to hash computation.
 
     """
 
-    def __init__(self, num_subwords, ngrams=(3, 4, 5, 6), special_tokens=None, cache=True):
+    def __init__(self, num_subwords, ngrams=(3, 4, 5, 6), special_tokens=None):
         self.num_subwords = num_subwords
         self.ngrams = ngrams
+        self._ngrams = np.asarray(ngrams)
 
         if special_tokens is None:
             special_tokens = set()
 
         self.special_tokens = special_tokens
 
-        self.cache = cache
-        self._cache = {}
-
         # Information for __repr__
         self.ngrams = ngrams
 
     @staticmethod
-    def fasttext_hash_asbytes(s, encoding='utf-8'):
-        h = np.uint32(2166136261)
-        s = s.encode(encoding)
-        old_settings = np.seterr(all='ignore')
-        for c in bytearray(s):
-            h = h ^ np.uint32(np.int8(c))
-            h = h * np.uint32(16777619)
-        np.seterr(**old_settings)
-        return h
+    def fasttext_hash_asbytes(ngram, encoding='utf-8'):
+        ngram_enc = bytearray(ngram.encode(encoding))
+        _fasttext_hash(ngram_enc)
 
     def _word_to_hashes(self, word):
-        if word not in self._cache:
-            if word not in self.special_tokens:
-                hashes = nd.array([
-                    self.fasttext_hash_asbytes((u'<' + word + u'>')[i:i + N]) % self.num_subwords
-                    for N in self.ngrams for i in range((len(word) + 2) - N + 1)
-                ])
-            else:
-                hashes = nd.zeros(shape=0)
-            if self.cache:
-                self._cache[word] = hashes
-            return hashes
-        return self._cache[word]
+        if word not in self.special_tokens:
+            word_enc = bytearray((u'<' + word + u'>').encode('utf-8'))
+            hashes = _fasttext_ngram_hashes(
+                memoryview(word_enc), ns=self._ngrams,
+                bucket_size=self.num_subwords)
+        else:
+            hashes = []
+        return hashes
 
     def __call__(self, words):
         return [self._word_to_hashes(word) for word in words]

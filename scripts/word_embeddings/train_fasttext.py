@@ -49,14 +49,16 @@ import random
 import sys
 import tempfile
 import time
+import warnings
 
 import mxnet as mx
 import numpy as np
+import gluonnlp as nlp
+from gluonnlp.base import numba_njit, numba_prange
 
 import evaluation
-import gluonnlp as nlp
-from utils import get_context, print_time, prune_sentences
 from candidate_sampler import remove_accidental_hits
+from utils import get_context, print_time, prune_sentences
 
 
 ###############################################################################
@@ -169,26 +171,47 @@ def get_train_data(args):
                 'NGramHashes', ngrams=args.ngrams,
                 num_subwords=args.ngram_buckets)
 
-            # Precompute a idx to subwordidxs mapping to support fast lookup
+            # Store subword indices for all words in vocabulary
             idx_to_subwordidxs = list(subword_function(vocab.idx_to_token))
+            get_subwords_masks = get_subwords_masks_factory(idx_to_subwordidxs)
             max_subwordidxs_len = max(len(s) for s in idx_to_subwordidxs)
+            if max_subwordidxs_len > 500:
+                warnings.warn(
+                    'The word with largest number of subwords '
+                    'has {} subwords, suggesting there are '
+                    'some noisy words in your vocabulary. '
+                    'You should filter out very long words '
+                    'to avoid memory issues.'.format(max_subwordidxs_len))
 
-            # Padded max_subwordidxs_len + 1 so each row contains at least one -1
-            # element which can be found by np.argmax below.
-            idx_to_subwordidxs = np.stack(
-                np.pad(b.asnumpy(), (0, max_subwordidxs_len - len(b) + 1), \
-                       constant_values=-1, mode='constant')
-                for b in idx_to_subwordidxs).astype(np.float32)
-            idx_to_subwordidxs = mx.nd.array(idx_to_subwordidxs)
-
-            logging.info('Using %s to obtain subwords. '
-                         'The word with largest number of subwords '
-                         'has %s subwords.', subword_function,
-                         max_subwordidxs_len)
         return (coded_dataset, negatives_sampler, vocab, subword_function,
-                idx_to_subwordidxs)
+                get_subwords_masks)
     else:
         return coded_dataset, negatives_sampler, vocab
+
+
+def get_subwords_masks_factory(idx_to_subwordidxs):
+    idx_to_subwordidxs = [
+        np.array(i, dtype=np.int_) for i in idx_to_subwordidxs
+    ]
+
+    def get_subwords_masks(indices):
+        subwords = [idx_to_subwordidxs[i] for i in indices]
+        return _get_subwords_masks(subwords)
+
+    return get_subwords_masks
+
+
+@numba_njit
+def _get_subwords_masks(subwords):
+    lengths = np.array([len(s) for s in subwords])
+    length = np.max(lengths)
+    subwords_arr = np.zeros((len(subwords), length))
+    mask = np.zeros((len(subwords), length))
+    for i in numba_prange(len(subwords)):
+        s = subwords[i]
+        subwords_arr[i, :len(s)] = s
+        mask[i, :len(s)] = 1
+    return subwords_arr, mask
 
 
 def save_params(args, embedding, embedding_out):
@@ -202,37 +225,6 @@ def save_params(args, embedding, embedding_out):
     os.replace(path, os.path.join(args.logdir, 'embedding_out.params'))
 
 
-def indices_to_subwordindices_mask(indices, idx_to_subwordidxs):
-    """Return array of subwordindices for indices.
-
-    A padded numpy array and a mask is returned. The mask is used as
-    indices map to varying length subwords.
-
-    Parameters
-    ----------
-    indices : list of int, numpy array or mxnet NDArray
-        Token indices that should be mapped to subword indices.
-
-    Returns
-    -------
-    Array of subword indices.
-
-    """
-    if not isinstance(indices, mx.nd.NDArray):
-        indices = mx.nd.array(indices)
-    subwords = idx_to_subwordidxs[indices]
-    mask = mx.nd.zeros_like(subwords)
-    mask += subwords != -1
-    lengths = mx.nd.argmax(subwords == -1, axis=1)
-    subwords += subwords == -1
-
-    new_length = int(max(mx.nd.max(lengths).asscalar(), 1))
-    subwords = subwords[:, :new_length]
-    mask = mask[:, :new_length]
-
-    return subwords, mask
-
-
 ###############################################################################
 # Training code
 ###############################################################################
@@ -240,7 +232,7 @@ def train(args):
     """Training helper."""
     if args.ngram_buckets:  # Fasttext model
         coded_dataset, negatives_sampler, vocab, subword_function, \
-            idx_to_subwordidxs = get_train_data(args)
+            get_subwords_masks = get_train_data(args)
         embedding = nlp.model.train.FasttextEmbeddingModel(
             token_to_idx=vocab.token_to_idx,
             subword_function=subword_function,
@@ -310,19 +302,21 @@ def train(args):
                 if args.model.lower() == 'skipgram':
                     unique, inverse_unique_indices = np.unique(
                         center.asnumpy(), return_inverse=True)
-                    unique = mx.nd.array(unique)
                     inverse_unique_indices = mx.nd.array(
                         inverse_unique_indices, ctx=context[0])
-                    subwords, subwords_mask = \
-                        indices_to_subwordindices_mask(unique, idx_to_subwordidxs)
+                    subwords, subwords_mask = get_subwords_masks(
+                        unique.astype(int))
+                    subwords = mx.nd.array(subwords, ctx=context[0])
+                    subwords_mask = mx.nd.array(subwords_mask, ctx=context[0])
                 elif args.model.lower() == 'cbow':
                     unique, inverse_unique_indices = np.unique(
                         word_context.asnumpy(), return_inverse=True)
-                    unique = mx.nd.array(unique)
                     inverse_unique_indices = mx.nd.array(
                         inverse_unique_indices, ctx=context[0])
-                    subwords, subwords_mask = \
-                        indices_to_subwordindices_mask(unique, idx_to_subwordidxs)
+                    subwords, subwords_mask = get_subwords_masks(
+                        unique.astype(int))
+                    subwords = mx.nd.array(subwords, ctx=context[0])
+                    subwords_mask = mx.nd.array(subwords_mask, ctx=context[0])
                 else:
                     logging.error('Unsupported model %s.', args.model)
                     sys.exit(1)
@@ -331,10 +325,6 @@ def train(args):
 
             # To GPU
             center = center.as_in_context(context[0])
-            if args.ngram_buckets:  # Fasttext model
-                subwords = subwords.as_in_context(context[0])
-                subwords_mask = subwords_mask.astype(np.float32).as_in_context(
-                    context[0])
             word_context = word_context.as_in_context(context[0])
             word_context_mask = word_context_mask.as_in_context(context[0])
             negatives = negatives.as_in_context(context[0])
@@ -416,9 +406,9 @@ def train(args):
             log_wc += loss.shape[0]
             log_avg_loss += loss.mean()
             if (i + 1) % args.log_interval == 0:
-                wps = log_wc / (time.time() - log_start_time)
                 # Forces waiting for computation by computing loss value
                 log_avg_loss = log_avg_loss.asscalar() / args.log_interval
+                wps = log_wc / (time.time() - log_start_time)
                 logging.info('[Epoch {} Batch {}/{}] loss={:.4f}, '
                              'throughput={:.2f}K wps, wc={:.2f}K'.format(
                                  epoch, i + 1, num_batches, log_avg_loss,
