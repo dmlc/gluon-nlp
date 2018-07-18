@@ -26,6 +26,7 @@ __all__ = ['DataStream', 'CorpusStream', 'LanguageModelStream', 'SimpleDataStrea
 
 import os
 import glob
+import itertools
 import threading
 import numpy as np
 
@@ -34,18 +35,49 @@ from mxnet.gluon.data import RandomSampler, SequentialSampler
 from .dataset import CorpusDataset
 
 class DataStream(object):
-    """Abstract Data Stream Interface."""
+    """Abstract Data Stream Interface.
+
+    DataStreams are useful to avoid loading big datasets to memory. A
+    DataStream is a iterable object (it implements the __iter__ function).
+    Whenever an iteration over the DataStream is requested (e.g. in a for loop
+    or by calling iter(datastream)), a new iterator over all samples in the
+    DataStream is returned. DataStreams can be lazily transformed by calling
+    `transform()` which returns a DataStream over the transformed samples.
+
+    """
+
     def __iter__(self):
         raise NotImplementedError
 
     def transform(self, fn):
-        """
+        """Transform a DataStream lazily.
+
         Returns
         -------
         DataStream
             The data stream that lazily transforms the data while streaming.
         """
+
         return _LazyTransformDataStream(self, fn)
+
+class DatasetStream(DataStream):
+    """Abstract Dataset Stream Interface.
+
+    A DatasetStream is a DataStream where each sample is a
+    `mxnet.gluon.data.Dataset`. An iteration over a DatasetStream iterates over
+    `mxnet.gluon.data.Dataset` objects, representing a chunk or shards of some
+    large datasets.
+
+    Iterating over sizeable chunks of a dataset can be helpful to speed up
+    preprocessing as the overhead of preprocessing each sample individually is
+    reduced (this is similar to the idea of using batches for training a
+    model).
+
+    """
+
+    def __iter__(self):
+        raise NotImplementedError
+
 
 class PrefetchingStream(DataStream):
     """Performs pre-fetch for other data iterators.
@@ -147,13 +179,20 @@ class PrefetchingStream(DataStream):
         for key in list(self._started.keys()):
             self._tear_down(key)
 
+
 class SimpleDataStream(DataStream):
-    """Simple DataStream wrapper for a stream."""
-    def __init__(self, stream):
-        self._stream = stream
+    """SimpleDataStream wraps iterables to expose the DataStream API.
+
+    Unlike the iterable itself, the SimpleDataStream exposes the DataStream API
+    and allows lazy transformation of the iterable.
+
+    """
+    def __init__(self, iterable):
+        self._stream = iterable
 
     def __iter__(self):
         return iter(self._stream)
+
 
 class _LazyTransformDataStream(DataStream):
     """Data stream that lazily transforms the data."""
@@ -177,12 +216,13 @@ class _LazyTransformDataStream(DataStream):
             for item in stream_iter:
                 yield self._fn(item)
 
-class CorpusStream(DataStream):
-    """Common text data stream that streams a corpus consisting of multiple text files
-    that match provided `file_pattern`. One file is read at a time.
 
-    The returned dataset includes samples, each of which can either be a list of tokens if tokenizer
-    is specified, or otherwise a single string segment produced by the `sample_splitter`.
+class CorpusStream(DatasetStream):
+    """CorpusStream streams a number of CorpusDatasets.
+
+    The CorpusDatasets are created from multiple text files that match provided
+    `file_pattern`. One file is read at a time and the corresponding
+    CorpusDataset is returned.
 
     Parameters
     ----------
@@ -206,11 +246,6 @@ class CorpusStream(DataStream):
     eos : str or None, default None
         The token to add at the end of each sequence. If None, or if tokenizer is not
         specified, then nothing is added.
-    sampler : str, {'sequential', 'random'}, defaults to 'random'
-        The sampler used to sample texts within a file.
-
-        - 'sequential': SequentialSampler
-        - 'random': RandomSampler
     file_sampler : str, {'sequential', 'random'}, defaults to 'random'
         The sampler used to sample a file.
 
@@ -219,7 +254,7 @@ class CorpusStream(DataStream):
     """
     def __init__(self, file_pattern, encoding='utf8', flatten=False, skip_empty=True,
                  sample_splitter=lambda s: s.splitlines(), tokenizer=lambda s: s.split(),
-                 bos=None, eos=None, sampler='random', file_sampler='random'):
+                 bos=None, eos=None, file_sampler='random'):
         assert sample_splitter, 'sample_splitter must be specified.'
         if not isinstance(file_pattern, str):
             raise TypeError('file_pattern must be str, but got %s'%type(file_pattern))
@@ -231,7 +266,6 @@ class CorpusStream(DataStream):
         self._tokenizer = tokenizer
         self._bos = bos
         self._eos = eos
-        self._sampler = sampler
         self._file_sampler = file_sampler
 
     def _get_sampler(self, sampler):
@@ -243,7 +277,6 @@ class CorpusStream(DataStream):
         raise ValueError('sampler must be either "random" or "sequential", but got %s'%(sampler))
 
     def __iter__(self):
-        sampler = self._get_sampler(self._sampler)
         file_sampler = self._get_sampler(self._file_sampler)
         # generate file samples
         files = sorted(glob.glob(self._file_pattern))
@@ -251,14 +284,10 @@ class CorpusStream(DataStream):
             raise ValueError('Cannot find any file with path "%s"'%self._file_pattern)
         for file_idx in iter(file_sampler(len(files))):
             filename = files[file_idx]
-            corpus = CorpusDataset(filename, encoding=self._encoding,
-                                   flatten=self._flatten, skip_empty=self._skip_empty,
-                                   sample_splitter=self._sample_splitter,
-                                   tokenizer=self._tokenizer, bos=self._bos, eos=self._eos)
-            # generate samples
-            num_samples = len(corpus)
-            for idx in iter(sampler(num_samples)):
-                yield corpus[idx]
+            yield CorpusDataset(filename, encoding=self._encoding,
+                                flatten=self._flatten, skip_empty=self._skip_empty,
+                                sample_splitter=self._sample_splitter,
+                                tokenizer=self._tokenizer, bos=self._bos, eos=self._eos)
 
 class LanguageModelStream(CorpusStream):
     """Streams a corpus consisting of multiple text files that match provided
@@ -299,22 +328,13 @@ class LanguageModelStream(CorpusStream):
     def __init__(self, file_pattern, encoding='utf8', skip_empty=True,
                  sample_splitter=lambda s: s.splitlines(), tokenizer=lambda s: s.split(),
                  bos=None, eos=None, sampler='random', file_sampler='random'):
-        self._file_pattern = file_pattern
-        self._encoding = encoding
-        self._skip_empty = skip_empty
-        self._sample_splitter = sample_splitter
-        self._tokenizer = tokenizer
-        self._bos = bos
-        self._eos = eos
+        super(LanguageModelStream, self).__init__(file_pattern, flatten=True,
+                                                  encoding=encoding,
+                                                  skip_empty=skip_empty,
+                                                  sample_splitter=sample_splitter,
+                                                  tokenizer=tokenizer, bos=bos,
+                                                  eos=eos, file_sampler=file_sampler)
         self._sampler = sampler
-        self._file_sampler = file_sampler
-        super(LanguageModelStream, self).__init__(self._file_pattern, flatten=True,
-                                                  encoding=self._encoding,
-                                                  skip_empty=self._skip_empty,
-                                                  sample_splitter=self._sample_splitter,
-                                                  tokenizer=self._tokenizer, bos=self._bos,
-                                                  eos=self._eos, sampler=self._sampler,
-                                                  file_sampler=self._file_sampler)
 
     def bptt_batchify(self, vocab, seq_len, batch_size, last_batch='keep'):
         """The corpus is transformed into batches of numericalized samples, in the way that the
@@ -379,8 +399,10 @@ class LanguageModelStream(CorpusStream):
         corpus = CorpusStream(self._file_pattern, flatten=False, encoding=self._encoding,
                               skip_empty=self._skip_empty, sample_splitter=self._sample_splitter,
                               tokenizer=self._tokenizer, bos=self._bos, eos=self._eos,
-                              sampler=self._sampler, file_sampler=self._file_sampler)
-        return _LanguageModelBPTTStream(corpus, vocab, seq_len, batch_size, last_batch=last_batch)
+                              file_sampler=self._file_sampler)
+        return _LanguageModelBPTTStream(
+            corpus, vocab, seq_len, batch_size, sampler=self._get_sampler(
+                self._sampler), last_batch=last_batch)
 
 class _LanguageModelBPTTStream(DataStream):
     """Streams a corpus and produces a language modeling data stream.
@@ -394,13 +416,15 @@ class _LanguageModelBPTTStream(DataStream):
         The length of each of the samples for truncated back-propagation-through-time (TBPTT).
     batch_size : int
         The number of samples in each batch.
+     sampler : mx.gluon.data.Sampler
+        The sampler used to sample texts within a file.
     last_batch : {'keep', 'discard'}
         How to handle the last batch if the remaining length is less than `seq_len`.
 
         - keep: A batch with less samples than previous batches is returned.
         - discard: The last batch is discarded if it's smaller than `(seq_len, batch_size)`.
     """
-    def __init__(self, corpus, vocab, seq_len, batch_size, last_batch='keep'):
+    def __init__(self, corpus, vocab, seq_len, batch_size, sampler, last_batch='keep'):
         if corpus._flatten:
             raise ValueError('_LanguageModelBPTTStream does not support flatten corpus. '\
                              'Please create a CorpusStream with flatten=False.')
@@ -408,6 +432,7 @@ class _LanguageModelBPTTStream(DataStream):
         self._vocab = vocab
         self._seq_len = seq_len
         self._batch_size = batch_size
+        self._sampler = sampler
         self._last_batch = last_batch
         self._padding_idx = 0
         if last_batch == 'keep':
@@ -446,7 +471,9 @@ class _LanguageModelBPTTStream(DataStream):
         data = np.empty([self._batch_size, self._seq_len], dtype=np.float32)
         target = np.empty([self._batch_size, self._seq_len], dtype=np.float32)
         mask = np.empty([self._batch_size, self._seq_len], dtype=np.float32)
-        corpus = iter(self._corpus)
+        corpus = itertools.chain.from_iterable(
+            (corpus_dataset[idx] for idx in self._sampler(len(corpus_dataset)))
+            for corpus_dataset in self._corpus)
 
         while has_next or has_token_buffered:
             _init(data, target, mask, self._padding_idx)
