@@ -100,8 +100,9 @@ class UnigramCandidateSampler(CandidateSampler):
         samples: NDArray
             The sampled candidate classes.
         """
-        idx = mx.nd.random.uniform(low=0, high=self.N + 1, shape=shape,
-                                   ctx=self._context).floor()
+        idx = mx.nd.random.uniform(low=0, high=self.N, shape=shape,
+                                   ctx=self._context,
+                                   dtype='float64').floor().astype('float32')
         prob = self.prob[idx]
         alias = self.alias[idx]
         where = mx.nd.random.uniform(shape=shape, ctx=self._context) < prob
