@@ -182,7 +182,7 @@ test_dataset, test_data_lengths = preprocess_dataset(test_dataset)
 
 # Construct the DataLoader
 batchify_fn = nlp.data.batchify.Tuple(nlp.data.batchify.Pad(axis=0, ret_length=True),
-                                      nlp.data.batchify.Stack())  # Pad data and stack label
+                                      nlp.data.batchify.Stack(dtype='float32'))  # Pad data and stack label
 if args.bucket_type is None:
     print('Bucketing strategy is not used!')
     train_dataloader = DataLoader(dataset=train_dataset,
