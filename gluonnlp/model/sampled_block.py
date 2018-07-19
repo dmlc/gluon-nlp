@@ -413,7 +413,8 @@ class _SparseSampledLogits(Block):
                                           init=weight_initializer, dtype=dtype,
                                           grad_stype='row_sparse', stype='row_sparse')
             self.bias = self.params.get('bias', shape=(num_classes,), init=bias_initializer)
-            self._logits = _SampledLogitsHelper(num_classes, num_sampled, in_unit, remove_accidental_hits)
+            self._logits = _SampledLogitsHelper(num_classes, num_sampled, in_unit,
+                                                remove_accidental_hits)
         self._num_classes = num_classes
         self._num_sampled = num_sampled
         self._in_unit = in_unit
@@ -440,7 +441,6 @@ class _SparseSampledLogits(Block):
         return out, new_targets
 
     def __repr__(self):
-        # TODO fix this
         s = '{name}({mapping})'
         mapping = '{0} -> {1}, num_sampled = {2}, remove_accidental_hits = {3}'
         mapping = mapping.format(self._in_unit, self._num_classes, self._num_sampled,
@@ -618,6 +618,6 @@ class SparseNCELogits(_SparseSampledLogits):
     def __init__(self, num_classes, num_sampled, in_unit, remove_accidental_hits=True,
                  dtype='float32', weight_initializer=None, bias_initializer='zeros',
                  prefix=None, params=None):
-        super(SparseISLogits, self).__init__(num_classes, num_sampled, in_unit,
-                                             remove_accidental_hits, dtype, weight_initializer,
-                                             bias_initializer, prefix=prefix, params=params)
+        super(SparseNCELogits, self).__init__(num_classes, num_sampled, in_unit,
+                                              remove_accidental_hits, dtype, weight_initializer,
+                                              bias_initializer, prefix=prefix, params=params)
