@@ -5,7 +5,7 @@ stage("Sanity Check") {
       sh """#!/bin/bash
       git clean -f -d -x --exclude='tests/externaldata/*' --exclude=conda
       conda env update --prune -f env/pylint.yml -p conda/lint
-      source activate ./conda/lint
+      conda activate ./conda/lint
       conda list
       make clean
       make pylint && python setup.py check --restructuredtext --strict
@@ -22,7 +22,7 @@ stage("Unit Test") {
         sh """#!/bin/bash
         git clean -f -d -x --exclude='tests/externaldata/*' --exclude=conda
         conda env update --prune -f env/py2.yml -p conda/py2
-        source activate ./conda/py2
+        conda activate ./conda/py2
         conda list
         python -m spacy download en
         python -m nltk.downloader all
@@ -41,7 +41,7 @@ stage("Unit Test") {
           sh """#!/bin/bash
           git clean -f -d -x --exclude='tests/externaldata/*' --exclude=conda
           conda env update --prune -f env/py3.yml -p conda/py3
-          source activate ./conda/py3
+          conda activate ./conda/py3
           conda list
           python -m spacy download en
           python -m nltk.downloader all
@@ -66,7 +66,7 @@ stage("Deploy") {
       printenv
       git clean -f -d -x --exclude='tests/externaldata/*' --exclude=conda
       conda env update --prune -f env/doc.yml -p conda/docs
-      source activate ./conda/docs
+      conda activate ./conda/docs
       conda list
       python setup.py install
       export LD_LIBRARY_PATH=/usr/local/cuda/lib64
