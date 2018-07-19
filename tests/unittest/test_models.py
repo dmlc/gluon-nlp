@@ -34,7 +34,7 @@ def eprint(*args, **kwargs):
 def get_frequencies(dataset):
     return nlp.data.utils.Counter(x for tup in dataset for x in tup[0]+tup[1][-1:])
 
-def test_big_text_models():
+def _test_big_text_models():
     val = nlp.data.GBWStream(segment='test', root='tests/data/gbw')
     val_freq = nlp.data.utils.Counter(x for x in val)
     vocab = nlp.Vocab(val_freq)
