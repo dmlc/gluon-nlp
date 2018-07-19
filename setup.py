@@ -60,6 +60,7 @@ setup(
             'jieba',
         ],
         'dev': [
+            'flake8',
             'pytest',
             'recommonmark',
             'sphinx-gallery',
