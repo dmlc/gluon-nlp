@@ -20,7 +20,7 @@ Language Modeling
     standard_lstm_lm_1500
     StandardRNN
     get_model
-    SampledRNN
+    BigRNN
 
 Convolutional Encoder
 ----------------------

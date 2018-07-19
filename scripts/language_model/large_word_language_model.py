@@ -73,7 +73,7 @@ parser.add_argument('--batch-size', type=int, default=256,
                     help='batch size per gpu')
 parser.add_argument('--dropout', type=float, default=0.1,
                     help='dropout applied to layers (0 = no dropout)')
-parser.add_argument('--eps', type=float, default=0.1,
+parser.add_argument('--eps', type=float, default=1,
                     help='initial history accumulation or adagrad')
 parser.add_argument('--bptt', type=int, default=20,
                     help='sequence length')
@@ -110,6 +110,7 @@ if args.test_mode:
 print(args)
 mx.random.seed(args.seed)
 np.random.seed(args.seed)
+os.environ['MXNET_GPU_MEM_POOL_TYPE'] = "Round"
 
 context = [mx.cpu()] if args.gpus is None or args.gpus == '' else \
           [mx.gpu(int(x)) for x in args.gpus.split(',')]
@@ -163,12 +164,12 @@ test_data = nlp.data.PrefetchingStream(test_data)
 ###############################################################################
 
 
-eval_model = nlp.model.language_model.SampledRNN(ntokens, args.emsize, args.nhid,
-                                                 args.nlayers, args.nproj,
-                                                 dropout=args.dropout)
-model = nlp.model.language_model.train.SampledRNN(ntokens, args.emsize, args.nhid,
-                                                  args.nlayers, args.nproj, args.k,
-                                                  dropout=args.dropout)
+eval_model = nlp.model.language_model.BigRNN(ntokens, args.emsize, args.nhid,
+                                             args.nlayers, args.nproj,
+                                             dropout=args.dropout)
+model = nlp.model.language_model.train.BigRNN(ntokens, args.emsize, args.nhid,
+                                              args.nlayers, args.nproj, args.k,
+                                              dropout=args.dropout)
 loss = gluon.loss.SoftmaxCrossEntropyLoss()
 
 ###############################################################################

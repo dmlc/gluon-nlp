@@ -17,14 +17,14 @@
 # specific language governing permissions and limitations
 # under the License.
 """Language models for training."""
-__all__ = ['AWDRNN', 'StandardRNN', 'SampledRNN']
+__all__ = ['AWDRNN', 'StandardRNN', 'BigRNN']
 
 from mxnet import init, nd, autograd
 from mxnet.gluon import nn, Block, contrib, rnn
 
 from gluonnlp.model.utils import _get_rnn_layer
 from gluonnlp.model.utils import apply_weight_drop
-from ..sampled_block import SampledLogits, SparseSampledLogits
+from ..sampled_block import ISLogits, SparseISLogits
 
 class AWDRNN(Block):
     """AWD language model by salesforce.
@@ -270,7 +270,7 @@ class StandardRNN(Block):
         out = self.decoder(encoded)
         return out, state, encoded_raw, encoded_dropped
 
-class SampledRNN(Block):
+class BigRNN(Block):
     """Big language model with LSTMP and importance sampling.
 
     Reference: https://github.com/rafaljozefowicz/lm
@@ -302,7 +302,7 @@ class SampledRNN(Block):
     def __init__(self, vocab_size, embed_size, hidden_size, num_layers,
                  projection_size, num_sampled, dropout=0.0,
                  sparse_weight=True, sparse_grad=True, **kwargs):
-        super(SampledRNN, self).__init__(**kwargs)
+        super(BigRNN, self).__init__(**kwargs)
         self._embed_size = embed_size
         self._hidden_size = hidden_size
         self._projection_size = projection_size
@@ -346,13 +346,13 @@ class SampledRNN(Block):
     def _get_decoder(self):
         prefix = 'decoder0_'
         if self._sparse_weight:
-            block = SparseSampledLogits(self._vocab_size, self._num_sampled,
-                                        self._projection_size, remove_accidental_hits=True,
-                                        prefix=prefix)
+            block = SparseISLogits(self._vocab_size, self._num_sampled,
+                                   self._projection_size, remove_accidental_hits=True,
+                                   prefix=prefix)
         else:
-            block = SampledLogits(self._vocab_size, self._num_sampled,
-                                  self._projection_size, remove_accidental_hits=True,
-                                  prefix=prefix)
+            block = ISLogits(self._vocab_size, self._num_sampled,
+                             self._projection_size, remove_accidental_hits=True,
+                             prefix=prefix)
         return block
 
     def begin_state(self, **kwargs):
