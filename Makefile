@@ -17,8 +17,19 @@
 
 ROOTDIR = $(CURDIR)
 
+flake8:
+	flake8 . --exclude conda --count --select=E901,E999,F821,F822,F823 --show-source --statistics
+
 pylint:
 	pylint --rcfile=$(ROOTDIR)/.pylintrc gluonnlp scripts/*/*.py
+
+restruc:
+	python setup.py check --restructuredtext --strict
+
+lint:
+	make flake8
+	make pylint
+	make restruc
 
 docs: release
 	make -C docs html SPHINXOPTS=-W
