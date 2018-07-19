@@ -18,7 +18,7 @@
 ROOTDIR = $(CURDIR)
 
 flake8:
-	flake8 . --count --select=E901,E999,F821,F822,F823 --show-source --statistics
+	flake8 . --exclude conda --count --select=E901,E999,F821,F822,F823 --show-source --statistics
 
 pylint:
 	pylint --rcfile=$(ROOTDIR)/.pylintrc gluonnlp scripts/*/*.py
