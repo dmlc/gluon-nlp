@@ -3,7 +3,7 @@ stage("Sanity Check") {
     ws('workspace/gluon-nlp-lint') {
       checkout scm
       sh """#!/bin/bash
-      git clean -f -d -x --exclude='tests/externaldata/*' --exclude=conda
+      git clean -f -d -x
       conda env update --prune -f env/pylint.yml -p conda/lint
       conda activate ./conda/lint
       conda list
