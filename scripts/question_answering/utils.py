@@ -110,12 +110,12 @@ def masked_softmax(vector, mask):
     that uses categorical cross-entropy loss.
     """
     if mask is None:
-        result = nd.softmax(vector, dim=-1)
+        result = nd.softmax(vector, axis=-1)
     else:
         # To limit numerical errors from large vector elements outside the mask, we zero these out.
-        result = nd.softmax(vector * mask, dim=-1)
+        result = nd.softmax(vector * mask, axis=-1)
         result = result * mask
-        result = result / (result.sum(dim=1, keepdim=True) + 1e-13)
+        result = result / (result.sum(axis=1, keepdims=True) + 1e-13)
     return result
 
 
@@ -144,7 +144,7 @@ def masked_log_softmax(vector, mask):
         # just add 1e-45 before calling mask.log().  We use 1e-45 because 1e-46 is so small it
         # becomes 0 - this is just the smallest value we can actually use.
         vector = vector + (mask + 1e-45).log()
-    return nd.log_softmax(vector, dim=1)
+    return nd.log_softmax(vector, axis=1)
 
 
 def _last_dimension_applicator(function_to_apply,
@@ -157,15 +157,15 @@ def _last_dimension_applicator(function_to_apply,
     has the same shape as the tensor, then flatten them both to be 2D, pass them through
     the function and put the tensor back in its original shape.
     """
-    tensor_shape = tensor.size()
-    reshaped_tensor = tensor.view(-1, tensor.size()[-1])
+    tensor_shape = tensor.shape
+    reshaped_tensor = tensor.reshape(-1, tensor.shape[-1])
     if mask is not None:
-        while mask.dim() < tensor.dim():
-            mask = mask.unsqueeze(1)
-        mask = mask.expand_as(tensor).contiguous().float()
-        mask = mask.view(-1, mask.size()[-1])
+        while mask.shape[0] < tensor.shape[0]:
+            mask = mask.expand_dims(1)
+        mask = mask.broadcast_to(tensor).contiguous().float()
+        mask = mask.reshape(-1, mask.shape[-1])
     reshaped_result = function_to_apply(reshaped_tensor, mask)
-    return reshaped_result.view(*tensor_shape)
+    return reshaped_result.reshape(*tensor_shape)
 
 
 def last_dim_softmax(tensor, mask):
@@ -210,18 +210,18 @@ def weighted_sum(matrix, attention):
     ``(batch_size, num_documents, num_queries, embedding_dim)`` respectively.
     """
 
-    if attention.dim() == 2 and matrix.dim() == 3:
-        return attention.unsqueeze(1).bmm(matrix).squeeze(1)
-    if attention.dim() == 3 and matrix.dim() == 3:
-        return attention.bmm(matrix)
-    if matrix.dim() - 1 < attention.dim():
-        expanded_size = list(matrix.size())
-        for i in range(attention.dim() - matrix.dim() + 1):
-            matrix = matrix.unsqueeze(1)
-            expanded_size.insert(i + 1, attention.size(i + 1))
-        matrix = matrix.expand(*expanded_size)
-    intermediate = attention.unsqueeze(-1).expand_as(matrix) * matrix
-    return intermediate.sum(dim=-2)
+    if attention.shape[0] == 2 and matrix.shape[0] == 3:
+        return attention.expand_dims(1).batch_dot(matrix).squeeze(1)
+    if attention.shape[0] == 3 and matrix.shape[0] == 3:
+        return attention.batch_dot(matrix)
+    if matrix.shape[0] - 1 < attention.shape[0]:
+        expanded_size = list(matrix.shape)
+        for i in range(attention.shape[0] - matrix.shape[0] + 1):
+            matrix = matrix.expand_dims(1)
+            expanded_size.insert(i + 1, attention.shape[i + 1])
+        matrix = matrix.broadcast_to(*expanded_size)
+    intermediate = attention.expand_dims(-1).broadcast_to(matrix.shape) * matrix
+    return intermediate.sum(axis=-2)
 
 
 def replace_masked_values(tensor, mask, replace_with):
