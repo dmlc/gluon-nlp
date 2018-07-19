@@ -18,6 +18,7 @@ GluonNLP: Your Choice of Deep Learning for NLP
    <a href='http://ci.mxnet.io/job/gluon-nlp/job/master/'><img src='https://img.shields.io/badge/python-2.7%2C%203.6-blue.svg'></a>
    <a href='https://codecov.io/gh/dmlc/gluon-nlp'><img src='https://codecov.io/gh/dmlc/gluon-nlp/branch/master/graph/badge.svg'></a>
    <a href='http://ci.mxnet.io/job/gluon-nlp/job/master/'><img src='http://ci.mxnet.io/job/gluon-nlp/job/master/badge/icon'></a>
+   <a href='https://pypi.org/project/gluonnlp/#history'><img src='https://img.shields.io/pypi/v/gluonnlp.svg'></a>
 
 GluonNLP is a toolkit that enables easy text preprocessing, datasets
 loading and neural models building to help you speed up your Natural
@@ -38,7 +39,7 @@ You can install ``MXNet`` and ``GluonNLP`` using pip:
     pip install gluonnlp
 
 Docs 📖
-======
+=======
 
 GluonNLP documentation is available at `our
 website <http://gluon-nlp.mxnet.io/master/index.html>`__.

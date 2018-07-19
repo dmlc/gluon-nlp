@@ -39,6 +39,8 @@ def add_parameters(parser):
     """Add evaluation specific parameters to parser."""
     group = parser.add_argument_group('Evaluation arguments')
 
+    group.add_argument('--eval-batch-size', type=int, default=1024)
+
     # Datasets
     group.add_argument(
         '--similarity-datasets', type=str,
@@ -210,7 +212,7 @@ def evaluate_analogy(args, token_embedding, ctx, logfile=None, global_step=0):
             num_dropped = initial_length - len(dataset_coded)
 
             dataset_coded_batched = mx.gluon.data.DataLoader(
-                dataset_coded, batch_size=args.batch_size)
+                dataset_coded, batch_size=args.eval_batch_size)
 
             acc = mx.metric.Accuracy()
             for batch in dataset_coded_batched:

@@ -1,3 +1,5 @@
+# coding: utf-8
+
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -15,29 +17,10 @@
 # specific language governing permissions and limitations
 # under the License.
 
-ROOTDIR = $(CURDIR)
+# pylint: disable=wildcard-import
+"""Vocabulary."""
 
-pylint:
-	pylint --rcfile=$(ROOTDIR)/.pylintrc gluonnlp scripts/*/*.py
+from .vocab import *
+from .subwords import *
 
-docs: release
-	make -C docs html SPHINXOPTS=-W
-
-clean:
-	git clean -f -d -x --exclude="$(ROOTDIR)/tests/externaldata/*" --exclude=conda
-	make -C docs clean
-
-compile_notebooks:
-	find docs/examples/* -type f -name '*.md' | xargs -n 1 -I{} python docs/md2ipynb.py {}
-
-dist_scripts:
-	find scripts/* -type d -prune | grep -v 'tests\|__pycache__' | xargs -n 1 -I{} zip -r {}.zip {}
-
-dist_notebooks: compile_notebooks
-	find docs/examples/* -type d -prune | grep -v 'tests\|__pycache__' | xargs -n 1 -I{} zip -r {}.zip {} -x "*.md"
-
-test:
-	py.test -v --capture=no --durations=0  tests/unittest scripts
-
-release: dist_scripts dist_notebooks
-	python setup.py sdist
+__all__ = vocab.__all__ + subwords.__all__

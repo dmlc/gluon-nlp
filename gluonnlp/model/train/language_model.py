@@ -114,6 +114,9 @@ class AWDRNN(Block):
     def begin_state(self, *args, **kwargs):
         return [c.begin_state(*args, **kwargs) for c in self.encoder]
 
+    def state_info(self, *args, **kwargs):
+        return [c.state_info(*args, **kwargs) for c in self.encoder]
+
     def forward(self, inputs, begin_state=None): # pylint: disable=arguments-differ
         """Implement the forward computation that the awd language model and cache model use.
 
@@ -229,6 +232,9 @@ class StandardRNN(Block):
 
     def begin_state(self, *args, **kwargs):
         return self.encoder.begin_state(*args, **kwargs)
+
+    def state_info(self, *args, **kwargs):
+        return self.encoder.state_info(*args, **kwargs)
 
     def forward(self, inputs, begin_state=None): # pylint: disable=arguments-differ
         """Defines the forward computation. Arguments can be either

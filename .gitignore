@@ -116,3 +116,6 @@ docs/html
 # release
 scripts/*.zip
 docs/examples/*.zip
+docs/examples/*/*.ipynb
+
+conda

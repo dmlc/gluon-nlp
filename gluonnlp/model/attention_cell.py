@@ -456,6 +456,11 @@ class DotProductAttentionCell(AttentionCell):
             query = self._proj_query(query)
             if not self._luong_style:
                 key = self._proj_key(key)
+            elif F == mx.nd:
+                assert query.shape[-1] == key.shape[-1], 'Luong style attention requires key to ' \
+                                                         'have the same dim as the projected ' \
+                                                         'query. Received key {}, query {}.'.format(
+                                                             key.shape, query.shape)
         if self._normalized:
             query = self._l2_norm(query)
             key = self._l2_norm(key)
