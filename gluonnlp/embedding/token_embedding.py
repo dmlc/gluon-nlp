@@ -17,14 +17,16 @@
 # specific language governing permissions and limitations
 # under the License.
 
-# pylint: disable=consider-iterating-dictionary
+# pylint: disable=consider-iterating-dictionary, too-many-lines
 
 """Text token embedding."""
 from __future__ import absolute_import
 from __future__ import print_function
 
-__all__ = ['register', 'create', 'list_sources',
-           'TokenEmbedding', 'GloVe', 'FastText']
+__all__ = [
+    'register', 'create', 'list_sources', 'TokenEmbedding', 'GloVe',
+    'FastText', 'Word2Vec'
+]
 
 import io
 import logging
@@ -820,6 +822,9 @@ class GloVe(TokenEmbedding):
     embedding_root : str, default '$MXNET_HOME/embedding'
         The root directory for storing embedding-related files.
         MXNET_HOME defaults to '~/.mxnet'.
+    kwargs
+        All other keyword arguments are passed to
+        `gluonnlp.embedding.TokenEmbedding`.
 
     Attributes
     ----------
@@ -836,7 +841,7 @@ class GloVe(TokenEmbedding):
 
     def __init__(self, source='glove.6B.50d',
                  embedding_root=os.path.join(_get_home_dir(), 'embedding'), **kwargs):
-        GloVe._check_source(self.source_file_hash, source)
+        self._check_source(self.source_file_hash, source)
 
         super(GloVe, self).__init__(**kwargs)
         pretrained_file_path = GloVe._get_file_path(self.source_file_hash, embedding_root, source)
@@ -902,6 +907,9 @@ class FastText(TokenEmbedding):
     ctx : mx.Context, default mxnet.cpu()
         Context to load the FasttextEmbeddingModel for ngram vectors to. This
         parameter is ignored if load_ngrams is False.
+    kwargs
+        All other keyword arguments are passed to
+        `gluonnlp.embedding.TokenEmbedding`.
 
 
     Attributes
@@ -920,10 +928,10 @@ class FastText(TokenEmbedding):
 
     def __init__(self, source='wiki.simple', embedding_root=os.path.join(
             _get_home_dir(), 'embedding'), load_ngrams=False, ctx=cpu(), **kwargs):
-        FastText._check_source(self.source_file_hash, source)
+        self._check_source(self.source_file_hash, source)
 
         if load_ngrams:
-            FastText._check_source(self.source_bin_file_hash, source)
+            self._check_source(self.source_bin_file_hash, source)
             pretrained_bin_file_path = FastText._get_file_path(self.source_bin_file_hash,
                                                                embedding_root, source)
             unknown_lookup = FasttextEmbeddingModel.load_fasttext_format(
@@ -934,5 +942,71 @@ class FastText(TokenEmbedding):
         super(FastText, self).__init__(unknown_lookup=unknown_lookup, **kwargs)
         pretrained_file_path = FastText._get_file_path(self.source_file_hash, embedding_root,
                                                        source)
+
+        self._load_embedding(pretrained_file_path, elem_delim=' ')
+
+
+@register
+class Word2Vec(TokenEmbedding):
+    """The Word2Vec word embedding.
+
+    Word2Vec is an unsupervised learning algorithm for obtaining vector
+    representations for words. Training is performed with continuous
+    bag-of-words or skip-gram architecture for computing vector
+    representations of words.
+
+    References:
+
+    [1] Tomas Mikolov, Kai Chen, Greg Corrado, and Jeffrey Dean. Efficient
+    Estimation of Word Representations in Vector Space. In Proceedings of
+    Workshop at ICLR, 2013.
+
+    [2] Tomas Mikolov, Ilya Sutskever, Kai Chen, Greg Corrado, and Jeffrey
+    Dean. Distributed Representations of Words and Phrases and their
+    Compositionality. In Proceedings of NIPS, 2013.
+
+    [3] Tomas Mikolov, Wen-tau Yih, and Geoffrey Zweig. Linguistic Regularities
+    in Continuous Space Word Representations. In Proceedings of NAACL HLT,
+    2013.
+
+    Website:
+
+    https://code.google.com/archive/p/word2vec/
+
+    License for pre-trained embedding:
+
+    Unspecified
+
+    Parameters
+    ----------
+    source : str, default 'GoogleNews-vectors-negative300'
+        The name of the pre-trained token embedding file.
+    embedding_root : str, default '$MXNET_HOME/embedding'
+        The root directory for storing embedding-related files.
+        MXNET_HOME defaults to '~/.mxnet'.
+    kwargs
+        All other keyword arguments are passed to
+        `gluonnlp.embedding.TokenEmbedding`.
+
+    Attributes
+    ----------
+    idx_to_vec : mxnet.ndarray.NDArray
+        For all the indexed tokens in this embedding, this NDArray maps each token's index to an
+        embedding vector.
+    unknown_token : hashable object
+        The representation for any unknown token. In other words, any unknown token will be indexed
+        as the same representation.
+
+    """
+
+    # Map a pre-trained token embedding file and its SHA-1 hash.
+    source_file_hash = C.WORD2VEC_NPZ_SHA1
+
+    def __init__(self, source='GoogleNews-vectors-negative300',
+                 embedding_root=os.path.join(_get_home_dir(), 'embedding'), **kwargs):
+        self._check_source(self.source_file_hash, source)
+
+        super(Word2Vec, self).__init__(**kwargs)
+        pretrained_file_path = self._get_file_path(self.source_file_hash, embedding_root, source)
 
         self._load_embedding(pretrained_file_path, elem_delim=' ')

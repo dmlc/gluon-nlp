@@ -62,6 +62,15 @@ GLOVE_NPZ_SHA1 = \
      'glove.twitter.27B.50d': ('glove.twitter.27B.50d.npz',
                                'ce9959c056f2a0a780c468feeb4f823af51630e9')}
 
+WORD2VEC_NPZ_SHA1 = {
+    'GoogleNews-vectors-negative300': ('GoogleNews-vectors-negative300-be6d6f98.npz',
+                                       'be6d6f98609bd65db8f6991ecaed923f1b1c8377'),
+    'freebase-vectors-skipgram1000-en': ('freebase-vectors-skipgram1000-en-6086803e.npz',
+                                         '6086803e4fd0b60e12b79031d585ef2c63ca71e6'),
+    'freebase-vectors-skipgram1000': ('freebase-vectors-skipgram1000-827a5d3a.npz',
+                                      '827a5d3a777ea3de21be4f61dad4de6510d77ee3')
+}
+
 FAST_TEXT_NPZ_SHA1 = {
     'crawl-300d-2M': ('crawl-300d-2M.npz', '9dd611a1fe280c63050cd546d3595400fc0eede4'),
     'wiki.aa': ('wiki.aa.npz', '48f163b80eb37f1806142169d3d4c05cf75b7339'),
