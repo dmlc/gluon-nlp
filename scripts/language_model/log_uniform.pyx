@@ -20,14 +20,14 @@ import cython
 
 cdef extern from "LogUniformGenerator.h":
     cdef cppclass LogUniformGenerator:
-        LogUniformGenerator(int) except +
+        LogUniformGenerator(int, int) except +
         unordered_set[long] draw(int, int*) except +
 
 cdef class LogUniformSampler:
     cdef LogUniformGenerator* c_sampler
 
-    def __cinit__(self, N):
-        self.c_sampler = new LogUniformGenerator(N)
+    def __cinit__(self, N, seed):
+        self.c_sampler = new LogUniformGenerator(N, seed)
 
     def __dealloc__(self):
         del self.c_sampler

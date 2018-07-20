@@ -37,7 +37,7 @@ private:
   std::default_random_engine generator_;
   std::uniform_real_distribution<double> distribution_;
 public:
-  LogUniformGenerator(const int);
+  LogUniformGenerator(const int, const int);
   std::unordered_set<long> draw(const size_t, int*);
 };
 

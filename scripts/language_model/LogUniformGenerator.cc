@@ -31,9 +31,9 @@
 
 #include "LogUniformGenerator.h"
 
-LogUniformGenerator::LogUniformGenerator(const int range_max)
+LogUniformGenerator::LogUniformGenerator(const int range_max, const int seed)
   : range_max_(range_max), log_range_max_(log(range_max)),
-    generator_(), distribution_(0.0, 1.0) {}
+    generator_(seed), distribution_(0.0, 1.0) {}
 
 std::unordered_set<long> LogUniformGenerator::draw(const size_t size, int* num_tries) {
   std::unordered_set<long> result;

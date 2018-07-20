@@ -46,11 +46,14 @@ class LogUniformSampler(CandidateSampler):
         The number of classes to randomly sample.
     range_max: int
         The number of possible classes.
+    seed: int
+        The random seed.
     """
-    def __init__(self, range_max, num_sampled, dtype=None):
+    def __init__(self, range_max, num_sampled, dtype=None, seed=0):
         self._range_max = range_max
         self._num_sampled = num_sampled
-        self._csampler = log_uniform.LogUniformSampler(range_max)
+        self._log_range = math.log(range_max + 1)
+        self._csampler = log_uniform.LogUniformSampler(range_max, seed)
         self._dtype = np.float32 if dtype is None else dtype
 
     def _prob_helper(self, num_tries, num_sampled, prob):
@@ -79,8 +82,8 @@ class LogUniformSampler(CandidateSampler):
         range_max = self._range_max
         num_sampled = self._num_sampled
         ctx = true_classes.context
-        log_range = math.log(range_max + 1)
         num_tries = 0
+        log_range = self._log_range
         sampled_classes, num_tries = self._csampler.sample_unique(num_sampled)
         # expected count for true classes
         true_cls = true_classes.as_in_context(ctx).astype('float64')
