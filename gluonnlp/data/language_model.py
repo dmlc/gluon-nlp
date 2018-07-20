@@ -277,8 +277,9 @@ class _GBWStream(LanguageModelStream):
         self._file_pattern = os.path.join(self._subdir, pattern)
         self._data_hash = data_hash
         self._get_data()
+        sampler = 'sequential' if segment != 'train' else 'random'
         super(_GBWStream, self).__init__(self._file_pattern, skip_empty=skip_empty, bos=bos,
-                                         eos=eos)
+                                         eos=eos, sampler=sampler, file_sampler=sampler)
 
     def _get_data(self):
         archive_file_name, archive_hash = self._archive_data
