@@ -57,6 +57,7 @@ setup(
             'nltk==3.2.5',
             'scipy',
             'numba',
+            'jieba',
         ],
         'dev': [
             'pytest',

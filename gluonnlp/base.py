@@ -1,3 +1,5 @@
+# coding: utf-8
+
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -15,29 +17,23 @@
 # specific language governing permissions and limitations
 # under the License.
 
-ROOTDIR = $(CURDIR)
+# pylint: disable=abstract-method
+"""Helper functions."""
 
-pylint:
-	pylint --rcfile=$(ROOTDIR)/.pylintrc gluonnlp scripts/*/*.py
+__all__ = ['_str_types', 'numba_njit', 'numba_prange']
 
-docs: release
-	make -C docs html SPHINXOPTS=-W
+try:
+    _str_types = (str, unicode)
+except NameError:  # Python 3
+    _str_types = (str, )
 
-clean:
-	git clean -f -d -x --exclude="$(ROOTDIR)/tests/externaldata/*" --exclude=conda
-	make -C docs clean
+try:
+    from numba import njit, prange
+    numba_njit = njit(nogil=True)
+    numba_prange = prange
+except ImportError:
+    # Define numba shims
+    def numba_njit(func):
+        return func
 
-compile_notebooks:
-	find docs/examples/* -type f -name '*.md' | xargs -n 1 -I{} python docs/md2ipynb.py {}
-
-dist_scripts:
-	find scripts/* -type d -prune | grep -v 'tests\|__pycache__' | xargs -n 1 -I{} zip -r {}.zip {}
-
-dist_notebooks: compile_notebooks
-	find docs/examples/* -type d -prune | grep -v 'tests\|__pycache__' | xargs -n 1 -I{} zip -r {}.zip {} -x "*.md"
-
-test:
-	py.test -v --capture=no --durations=0  tests/unittest scripts
-
-release: dist_scripts dist_notebooks
-	python setup.py sdist
+    numba_prange = range

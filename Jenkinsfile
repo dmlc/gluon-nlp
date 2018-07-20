@@ -3,11 +3,12 @@ stage("Sanity Check") {
     ws('workspace/gluon-nlp-lint') {
       checkout scm
       sh """#!/bin/bash
-      conda env update --prune -f env/pylint.yml
-      source activate gluon_nlp_pylint
+      git clean -f -d -x --exclude='tests/externaldata/*' --exclude=conda
+      conda env update --prune -f env/pylint.yml -p conda/lint
+      conda activate ./conda/lint
       conda list
       make clean
-      make pylint
+      make pylint && python setup.py check --restructuredtext --strict
       """
     }
   }
@@ -19,8 +20,9 @@ stage("Unit Test") {
       ws('workspace/gluon-nlp-py2') {
         checkout scm
         sh """#!/bin/bash
-        conda env update --prune -f env/py2.yml
-        source activate gluon_nlp_py2
+        git clean -f -d -x --exclude='tests/externaldata/*' --exclude=conda
+        conda env update --prune -f env/py2.yml -p conda/py2
+        conda activate ./conda/py2
         conda list
         python -m spacy download en
         python -m nltk.downloader all
@@ -37,15 +39,18 @@ stage("Unit Test") {
         ws('workspace/gluon-nlp-py3') {
           checkout scm
           sh """#!/bin/bash
-          conda env update --prune -f env/py3.yml
-          source activate gluon_nlp_py3
+          git clean -f -d -x --exclude='tests/externaldata/*' --exclude=conda
+          conda env update --prune -f env/py3.yml -p conda/py3
+          conda activate ./conda/py3
           conda list
           python -m spacy download en
           python -m nltk.downloader all
           make clean
           python setup.py install
           py.test -v --capture=no --durations=0 --cov=gluonnlp --cov=scripts tests/unittest scripts
+          EXIT_STATUS=\$?
           bash ./codecov.sh
+          exit \$EXIT_STATUS
           """
         }
       }
@@ -58,14 +63,16 @@ stage("Deploy") {
     ws('workspace/gluon-nlp-docs') {
       checkout scm
       sh """#!/bin/bash
-      conda env update --prune -f env/doc.yml
-      source activate gluon_nlp_docs
+      printenv
+      git clean -f -d -x --exclude='tests/externaldata/*' --exclude=conda
+      conda env update --prune -f env/doc.yml -p conda/docs
+      conda activate ./conda/docs
       conda list
       python setup.py install
       export LD_LIBRARY_PATH=/usr/local/cuda/lib64
       make clean
-      make release
-      make -C docs html SPHINXOPTS=-W"""
+      make docs
+      """
 
       if (env.BRANCH_NAME.startsWith("PR-")) {
         sh """#!/bin/bash

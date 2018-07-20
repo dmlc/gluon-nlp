@@ -18,13 +18,13 @@
 # under the License.
 
 """Blocks for sampled losses."""
-__all__ = ['SampledLogits', 'SparseSampledLogits']
+__all__ = ['ISLogits', 'NCELogits', 'SparseISLogits', 'SparseNCELogits']
 
 from mxnet import nd
 from mxnet.gluon import Block, HybridBlock
 
 
-class _SampledLogits(HybridBlock):
+class _SampledLogitsHelper(HybridBlock):
     """A helper Block for calculating sampled logits.
 
     Parameters
@@ -41,7 +41,7 @@ class _SampledLogits(HybridBlock):
     """
     def __init__(self, num_classes, num_sampled, in_unit, remove_accidental_hits,
                  prefix=None, params=None):
-        super(_SampledLogits, self).__init__(prefix=prefix, params=params)
+        super(_SampledLogitsHelper, self).__init__(prefix=prefix, params=params)
         self._num_classes = num_classes
         self._num_sampled = num_sampled
         self._in_unit = in_unit
@@ -93,36 +93,12 @@ class _SampledLogits(HybridBlock):
                         mapping=mapping,
                         **self.__dict__)
 
-class SampledLogits(HybridBlock):
+class _SampledLogits(HybridBlock):
     """Block that computes sampled output training logits and labels suitable for
     sampled softmax loss or noise contrastive estimation loss.
 
     Please use `loss.SoftmaxCrossEntropyLoss` for sampled softmax loss, and
     `loss.SigmoidBinaryCrossEntropyLoss` for nce loss.
-
-    Example::
-
-        # network with sampled_softmax_loss for training
-        encoder = Encoder(..)
-        decoder = SampledLogits(..)
-        train_net.add(encoder)
-        train_net.add(decoder)
-        loss = SoftmaxCrossEntropyLoss()
-
-        # training
-        for x, y, sampled_values in train_batches:
-            sampled_cls, cnt_sampled, cnt_true = sampled_values
-            logits, new_targets = train_net(x, sampled_cls, cnt_sampled, cnt_true, y)
-            l = loss(logits, new_targets)
-
-        # network for testing
-        test_net.add(encoder)
-        test_net.add(Dense(..., params=decoder.params))
-
-        # testing
-        for x, y in test_batches:
-            logits = test_net(x)
-            l = loss(logits, y)
 
     Parameters
     ----------
@@ -163,13 +139,13 @@ class SampledLogits(HybridBlock):
     """
     def __init__(self, num_classes, num_sampled, in_unit, remove_accidental_hits,
                  prefix=None, params=None):
-        super(SampledLogits, self).__init__(prefix=prefix, params=params)
+        super(_SampledLogits, self).__init__(prefix=prefix, params=params)
         with self.name_scope():
             self.weight = self.params.get('weight', shape=(num_classes, in_unit),
                                           grad_stype='row_sparse')
             self.bias = self.params.get('bias', shape=(num_classes, 1),
                                         grad_stype='row_sparse')
-        self.block = _SampledLogits(num_classes, num_sampled, in_unit, remove_accidental_hits)
+        self.block = _SampledLogitsHelper(num_classes, num_sampled, in_unit, remove_accidental_hits)
         self._num_classes = num_classes
         self._num_sampled = num_sampled
         self._in_unit = in_unit
@@ -202,7 +178,153 @@ class SampledLogits(HybridBlock):
                         mapping=mapping,
                         **self.__dict__)
 
-class SparseSampledLogits(Block):
+class NCELogits(_SampledLogits):
+    """Block that computes sampled output training logits and labels suitable for
+    noise contrastive estimation loss.
+
+    Please use `loss.SigmoidBinaryCrossEntropyLoss` for noise contrastive estimation loss
+    during training.
+
+    Example::
+
+        # network with sampling for training
+        encoder = Encoder(..)
+        decoder = NCELogits(..)
+        train_net.add(encoder)
+        train_net.add(decoder)
+        loss_train = SigmoidBinaryCrossEntropyLoss()
+
+        # training
+        for x, y, sampled_values in train_batches:
+            sampled_cls, cnt_sampled, cnt_true = sampled_values
+            logits, new_targets = train_net(x, sampled_cls, cnt_sampled, cnt_true, y)
+            l = loss_train(logits, new_targets)
+
+        # network for testing
+        test_net.add(encoder)
+        test_net.add(Dense(..., params=decoder.params))
+        loss_test = SoftmaxCrossEntropyLoss()
+
+        # testing
+        for x, y in test_batches:
+            logits = test_net(x)
+            l = loss_test(logits, y)
+
+    Parameters
+    ----------
+    num_classes: int
+        Number of possible classes.
+    num_sampled: int
+        Number of classes randomly sampled for each batch.
+    in_unit: int
+        Dimensionality of the input space.
+    remove_accidental_hits: bool, default False
+        Whether to remove "accidental hits" when a sampled candidate is equal to
+        one of the true classes.
+    dtype : str or np.dtype, default 'float32'
+        Data type of output embeddings.
+    weight_initializer : str or `Initializer`, optional
+        Initializer for the `kernel` weights matrix.
+    bias_initializer: str or `Initializer`, optional
+        Initializer for the bias vector.
+
+    Inputs:
+        - **x**: A tensor of shape `(batch_size, in_unit)`. The forward activation of
+          the input network.
+        - **sampled_candidates**: A tensor of shape `(num_sampled,)`.
+          The sampled candidate classes.
+        - **expected_count_sampled**: A tensor of shape `(num_sampled,)`.
+          The expected count for sampled candidates.
+        - **expected_count_true**: A tensor of shape `(num_sampled)`.
+          The expected count for true classes.
+        - **label**: A tensor of shape `(batch_size,1)`.
+          The target classes.
+
+    Outputs:
+        - **out**: A tensor of shape `(batch_size, 1+num_sampled)`.
+          The output probability for the true class and sampled classes
+        - **new_targets**: A tensor of shape `(batch_size,)`.
+          The new target classes.
+
+    """
+    def __init__(self, num_classes, num_sampled, in_unit, remove_accidental_hits=False,
+                 prefix=None, params=None):
+        super(NCELogits, self).__init__(num_classes, num_sampled, in_unit,
+                                        remove_accidental_hits, prefix=prefix, params=params)
+
+class ISLogits(_SampledLogits):
+    """Block that computes sampled output training logits and labels suitable for
+    importance sampled softmax loss.
+
+    Please use `loss.SoftmaxCrossEntropyLoss` for sampled softmax loss.
+
+    Example::
+
+        # network with importance sampling for training
+        encoder = Encoder(..)
+        decoder = ISLogits(..)
+        train_net.add(encoder)
+        train_net.add(decoder)
+        loss = SoftmaxCrossEntropyLoss()
+
+        # training
+        for x, y, sampled_values in train_batches:
+            sampled_cls, cnt_sampled, cnt_true = sampled_values
+            logits, new_targets = train_net(x, sampled_cls, cnt_sampled, cnt_true, y)
+            l = loss(logits, new_targets)
+
+        # network for testing
+        test_net.add(encoder)
+        test_net.add(Dense(..., params=decoder.params))
+
+        # testing
+        for x, y in test_batches:
+            logits = test_net(x)
+            l = loss(logits, y)
+
+    Parameters
+    ----------
+    num_classes: int
+        Number of possible classes.
+    num_sampled: int
+        Number of classes randomly sampled for each batch.
+    in_unit: int
+        Dimensionality of the input space.
+    remove_accidental_hits: bool, default True
+        Whether to remove "accidental hits" when a sampled candidate is equal to
+        one of the true classes.
+    dtype : str or np.dtype, default 'float32'
+        Data type of output embeddings.
+    weight_initializer : str or `Initializer`, optional
+        Initializer for the `kernel` weights matrix.
+    bias_initializer: str or `Initializer`, optional
+        Initializer for the bias vector.
+
+    Inputs:
+        - **x**: A tensor of shape `(batch_size, in_unit)`. The forward activation of
+          the input network.
+        - **sampled_candidates**: A tensor of shape `(num_sampled,)`.
+          The sampled candidate classes.
+        - **expected_count_sampled**: A tensor of shape `(num_sampled,)`.
+          The expected count for sampled candidates.
+        - **expected_count_true**: A tensor of shape `(num_sampled)`.
+          The expected count for true classes.
+        - **label**: A tensor of shape `(batch_size,1)`.
+          The target classes.
+
+    Outputs:
+        - **out**: A tensor of shape `(batch_size, 1+num_sampled)`.
+          The output probability for the true class and sampled classes
+        - **new_targets**: A tensor of shape `(batch_size,)`.
+          The new target classes.
+
+    """
+    def __init__(self, num_classes, num_sampled, in_unit, remove_accidental_hits=True,
+                 prefix=None, params=None):
+        super(ISLogits, self).__init__(num_classes, num_sampled, in_unit,
+                                       remove_accidental_hits, prefix=prefix, params=params)
+
+class _SparseSampledLogits(Block):
     """Block that computes sampled output training logits and labels suitable for
     sampled softmax loss or noise contrastive estimation loss.
 
@@ -285,13 +407,14 @@ class SparseSampledLogits(Block):
     def __init__(self, num_classes, num_sampled, in_unit, remove_accidental_hits,
                  dtype='float32', weight_initializer=None, bias_initializer='zeros',
                  prefix=None, params=None):
-        super(SparseSampledLogits, self).__init__(prefix=prefix, params=params)
+        super(_SparseSampledLogits, self).__init__(prefix=prefix, params=params)
         with self.name_scope():
             self.weight = self.params.get('weight', shape=(num_classes, in_unit),
                                           init=weight_initializer, dtype=dtype,
                                           grad_stype='row_sparse', stype='row_sparse')
             self.bias = self.params.get('bias', shape=(num_classes,), init=bias_initializer)
-            self._logits = _SampledLogits(num_classes, num_sampled, in_unit, remove_accidental_hits)
+            self._logits = _SampledLogitsHelper(num_classes, num_sampled, in_unit,
+                                                remove_accidental_hits)
         self._num_classes = num_classes
         self._num_sampled = num_sampled
         self._in_unit = in_unit
@@ -324,3 +447,177 @@ class SparseSampledLogits(Block):
                                  str(self._remove_accidental_hits))
         return s.format(name=self.__class__.__name__,
                         mapping=mapping, **self.__dict__)
+
+class SparseISLogits(_SparseSampledLogits):
+    """Block that computes sampled output training logits and labels suitable for
+    importance sampled softmax loss.
+
+    Please use `loss.SoftmaxCrossEntropyLoss` for sampled softmax loss.
+
+    The block is designed for distributed training with extremely large
+    number of classes to reduce communication overhead and memory consumption.
+    Both weight and gradient w.r.t. weight are `RowSparseNDArray`.
+
+    Different from ISLogits block, the parameters have to be saved before they
+    are used for testing.
+
+    Example::
+
+        # network with importance sampled softmax for training
+        encoder = Encoder(..)
+        train_net.add(encoder)
+        train_net.add(SparseISLogits(.., prefix='decoder')))
+        loss = SoftmaxCrossEntropyLoss()
+
+        # training
+        for x, y, sampled_values in train_batches:
+            sampled_cls, cnt_sampled, cnt_true = sampled_values
+            logits, new_targets = train_net(x, sampled_cls, cnt_sampled, cnt_true, y)
+            l = loss(logits, new_targets)
+
+        # save params
+        train_net.save_parameters('net.params')
+
+        # network for testing
+        test_net.add(encoder)
+        test_net.add(Dense(..., prefix='decoder'))
+
+        # load params
+        test_net.load_parameters('net.params')
+
+        # testing
+        for x, y in test_batches:
+            logits = test_net(x)
+            l = loss(logits, y)
+
+    Parameters
+    ----------
+    num_classes: int
+        Number of possible classes.
+    num_sampled: int
+        Number of classes randomly sampled for each batch.
+    in_unit: int
+        Dimensionality of the input space.
+    remove_accidental_hits: bool, default True
+        Whether to remove "accidental hits" when a sampled candidate is equal to
+        one of the true classes.
+    dtype : str or np.dtype, default 'float32'
+        Data type of output embeddings.
+    weight_initializer : str or `Initializer`, optional
+        Initializer for the `kernel` weights matrix.
+    bias_initializer: str or `Initializer`, optional
+        Initializer for the bias vector.
+
+    Inputs:
+        - **x**: A tensor of shape `(batch_size, in_unit)`. The forward activation of
+          the input network.
+        - **sampled_candidates**: A tensor of shape `(num_sampled,)`.
+          The sampled candidate classes.
+        - **expected_count_sampled**: A tensor of shape `(num_sampled,)`.
+          The expected count for sampled candidates.
+        - **expected_count_true**: A tensor of shape `(num_sampled)`.
+          The expected count for true classes.
+        - **label**: A tensor of shape `(batch_size,1)`.
+          The target classes.
+
+    Outputs:
+        - **out**: A tensor of shape `(batch_size, 1+num_sampled)`.
+          The output probability for the true class and sampled classes
+        - **new_targets**: A tensor of shape `(batch_size,)`.
+          The new target classes.
+
+    """
+    def __init__(self, num_classes, num_sampled, in_unit, remove_accidental_hits=True,
+                 dtype='float32', weight_initializer=None, bias_initializer='zeros',
+                 prefix=None, params=None):
+        super(SparseISLogits, self).__init__(num_classes, num_sampled, in_unit,
+                                             remove_accidental_hits, dtype, weight_initializer,
+                                             bias_initializer, prefix=prefix, params=params)
+
+class SparseNCELogits(_SparseSampledLogits):
+    """Block that computes sampled output training logits and labels suitable for
+    noise contrastive estimation loss.
+
+    Please use `loss.SigmoidBinaryCrossEntropyLoss` for noise contrastive estimation loss
+    during training.
+
+    The block is designed for distributed training with extremely large
+    number of classes to reduce communication overhead and memory consumption.
+    Both weight and gradient w.r.t. weight are `RowSparseNDArray`.
+
+    Different from NCELogits block, the parameters have to be saved before they
+    are used for testing.
+
+    Example::
+
+        # network with importance sampled softmax for training
+        encoder = Encoder(..)
+        train_net.add(encoder)
+        train_net.add(SparseNCELogits(.., prefix='decoder')))
+        train_loss = SigmoidBinaryCrossEntropyLoss()
+
+        # training
+        for x, y, sampled_values in train_batches:
+            sampled_cls, cnt_sampled, cnt_true = sampled_values
+            logits, new_targets = train_net(x, sampled_cls, cnt_sampled, cnt_true, y)
+            l = train_loss(logits, new_targets)
+
+        # save params
+        train_net.save_parameters('net.params')
+
+        # network for testing
+        test_net.add(encoder)
+        test_net.add(Dense(..., prefix='decoder'))
+
+        # load params
+        test_net.load_parameters('net.params')
+        test_loss = SoftmaxCrossEntropyLoss()
+
+        # testing
+        for x, y in test_batches:
+            logits = test_net(x)
+            l = test_loss(logits, y)
+
+    Parameters
+    ----------
+    num_classes: int
+        Number of possible classes.
+    num_sampled: int
+        Number of classes randomly sampled for each batch.
+    in_unit: int
+        Dimensionality of the input space.
+    remove_accidental_hits: bool, default True
+        Whether to remove "accidental hits" when a sampled candidate is equal to
+        one of the true classes.
+    dtype : str or np.dtype, default 'float32'
+        Data type of output embeddings.
+    weight_initializer : str or `Initializer`, optional
+        Initializer for the `kernel` weights matrix.
+    bias_initializer: str or `Initializer`, optional
+        Initializer for the bias vector.
+
+    Inputs:
+        - **x**: A tensor of shape `(batch_size, in_unit)`. The forward activation of
+          the input network.
+        - **sampled_candidates**: A tensor of shape `(num_sampled,)`.
+          The sampled candidate classes.
+        - **expected_count_sampled**: A tensor of shape `(num_sampled,)`.
+          The expected count for sampled candidates.
+        - **expected_count_true**: A tensor of shape `(num_sampled)`.
+          The expected count for true classes.
+        - **label**: A tensor of shape `(batch_size,1)`.
+          The target classes.
+
+    Outputs:
+        - **out**: A tensor of shape `(batch_size, 1+num_sampled)`.
+          The output probability for the true class and sampled classes
+        - **new_targets**: A tensor of shape `(batch_size,)`.
+          The new target classes.
+
+    """
+    def __init__(self, num_classes, num_sampled, in_unit, remove_accidental_hits=True,
+                 dtype='float32', weight_initializer=None, bias_initializer='zeros',
+                 prefix=None, params=None):
+        super(SparseNCELogits, self).__init__(num_classes, num_sampled, in_unit,
+                                              remove_accidental_hits, dtype, weight_initializer,
+                                              bias_initializer, prefix=prefix, params=params)

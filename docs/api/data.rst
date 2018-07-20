@@ -136,6 +136,7 @@ stream large custom data.
     SimpleDataStream
     CorpusStream
     LanguageModelStream
+    PrefetchingStream
 
 Transforms
 ----------

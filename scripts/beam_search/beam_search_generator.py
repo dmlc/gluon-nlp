@@ -77,11 +77,16 @@ def _transform_layout(data):
 
 # Define the decoder function, we use log_softmax to map the output scores to log-likelihoods
 # Also, we transform the layout to NTC
-def decoder(inputs, states):
-    states = _transform_layout(states)
-    outputs, states = lm_model(mx.nd.expand_dims(inputs, axis=0), states)
-    states = _transform_layout(states)
-    return outputs[0], states
+class LMDecoder(object):
+    def __init__(self, model):
+        self._model = model
+
+    def __call__(self, inputs, states):
+        outputs, states = self._model(mx.nd.expand_dims(inputs, axis=0), states)
+        return outputs[0].log_softmax(), states
+
+    def state_info(self, *arg, **kwargs):
+        return self._model.state_info(*arg, **kwargs)
 
 
 def generate():
@@ -89,9 +94,10 @@ def generate():
     eos_id = vocab[args.eos]
     begin_states = lm_model.begin_state(batch_size=1, ctx=ctx)
     if len(bos_ids) > 1:
-        _, begin_states = lm_model(mx.nd.expand_dims(mx.nd.array(bos_ids[:-1]), axis=1),
+        _, begin_states = lm_model(mx.nd.expand_dims(mx.nd.array(bos_ids[:-1], ctx=ctx), axis=1),
                                    begin_states)
     inputs = mx.nd.full(shape=(1,), ctx=ctx, val=bos_ids[-1])
+    decoder = LMDecoder(lm_model)
     scorer = nlp.model.BeamSearchScorer(alpha=args.alpha, K=args.k)
     sampler = nlp.model.BeamSearchSampler(beam_size=args.beam_size,
                                           decoder=decoder,

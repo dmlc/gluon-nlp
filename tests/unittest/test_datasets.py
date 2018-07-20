@@ -23,7 +23,6 @@ import datetime
 import json
 import os
 import random
-import sys
 
 from flaky import flaky
 import mxnet as mx
@@ -32,10 +31,10 @@ import pytest
 
 import gluonnlp as nlp
 
-if sys.version_info[0] == 3:
-    _str_types = (str, )
-else:
+try:
     _str_types = (str, unicode)
+except NameError:  # Python 3
+    _str_types = (str, )
 
 
 ###############################################################################
@@ -219,13 +218,17 @@ def _assert_similarity_dataset(data):
 
 
 @flaky(max_runs=2, min_passes=1)
-def test_wordsim353():
-    for segment, length in (("all", 252 + 203), ("relatedness", 252),
-                            ("similarity", 203)):
-        data = nlp.data.WordSim353(segment=segment, root=os.path.join(
-            'tests', 'externaldata', 'wordsim353'))
-        assert len(data) == length, len(data)
-        _assert_similarity_dataset(data)
+@pytest.mark.parametrize('segment,length', [('all', 352), ('relatedness', 252),
+                                            ('similarity', 203)])
+def test_wordsim353(segment, length):
+    # 'all' has length 352 as the original dataset contains the 'money/cash'
+    # pair twice with different similarity ratings, which was fixed by the
+    # http://alfonseca.org/eng/research/wordsim353.html version of the dataset
+    # that we are using.
+    data = nlp.data.WordSim353(segment=segment, root=os.path.join(
+        'tests', 'externaldata', 'wordsim353'))
+    assert len(data) == length, len(data)
+    _assert_similarity_dataset(data)
 
 
 def test_men():
@@ -261,8 +264,6 @@ def test_verb130():
 
 
 @flaky(max_runs=2, min_passes=1)
-@pytest.mark.skipif(datetime.date.today() < datetime.date(2018, 5, 7),
-                    reason='Disabled for 2 weeks due to server downtime.')
 def test_rare_words():
     data = nlp.data.RareWords(
         root=os.path.join('tests', 'externaldata', 'rarewords'))
@@ -390,6 +391,8 @@ def test_conll2002_esp(segment, length):
         assert all(isinstance(n, _str_types) for n in ner), ner
 
 
+@pytest.mark.skipif(datetime.date.today() < datetime.date(2018, 7, 7),
+                    reason='Disabled for 1 weeks due to server downtime.')
 @flaky(max_runs=2, min_passes=1)
 @pytest.mark.parametrize('segment,length', [
     ('train', 8936),
@@ -498,6 +501,10 @@ def test_wmt2014():
                                      root='tests/data/wmt2014')
     assert len(newstest_2014) == 3003
 
+    newstest_2014 = nlp.data.WMT2014(segment='newstest2014', src_lang='de', tgt_lang='en', full=True,
+                                     root='tests/data/wmt2014')
+    assert len(newstest_2014) == 3003
+
 
 def test_wmt2014bpe():
     train = nlp.data.WMT2014BPE(segment='train', src_lang='en', tgt_lang='de',
@@ -515,6 +522,10 @@ def test_wmt2014bpe():
     assert len(de_vocab) == 36794
 
     newstest_2014 = nlp.data.WMT2014BPE(segment='newstest2014', src_lang='de', tgt_lang='en',
+                                        root='tests/data/wmt2014bpe')
+    assert len(newstest_2014) == 3003
+
+    newstest_2014 = nlp.data.WMT2014BPE(segment='newstest2014', src_lang='de', tgt_lang='en', full=True,
                                         root='tests/data/wmt2014bpe')
     assert len(newstest_2014) == 3003
 

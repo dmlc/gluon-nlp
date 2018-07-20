@@ -409,9 +409,10 @@ class GNMTDecoder(HybridBlock, Seq2SeqDecoder):
 
 
 def get_gnmt_encoder_decoder(cell_type='lstm', attention_cell='scaled_luong', num_layers=2,
-                             num_bi_layers=1, hidden_size=128, dropout=0.0, use_residual=True,
+                             num_bi_layers=1, hidden_size=128, dropout=0.0, use_residual=False,
                              i2h_weight_initializer=None, h2h_weight_initializer=None,
-                             i2h_bias_initializer='zeros', h2h_bias_initializer='zeros',
+                             i2h_bias_initializer=mx.init.LSTMBias(forget_bias=1.0),
+                             h2h_bias_initializer='zeros',
                              prefix='gnmt_', params=None):
     """Build a pair of GNMT encoder/decoder
 

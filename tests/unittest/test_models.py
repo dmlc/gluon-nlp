@@ -34,6 +34,27 @@ def eprint(*args, **kwargs):
 def get_frequencies(dataset):
     return nlp.data.utils.Counter(x for tup in dataset for x in tup[0]+tup[1][-1:])
 
+def _test_big_text_models():
+    val = nlp.data.GBWStream(segment='test', root='tests/data/gbw')
+    val_freq = nlp.data.utils.Counter(x for x in val)
+    vocab = nlp.Vocab(val_freq)
+    text_models = ['big_rnn_lm_2048_512']
+    pretrained_to_test = {'big_rnn_lm_2048_512': 'gbw'}
+
+    for model_name in text_models:
+        eprint('testing forward for %s' % model_name)
+        pretrained_dataset = pretrained_to_test.get(model_name)
+        model, _ = get_text_model(model_name, vocab=vocab, dataset_name=pretrained_dataset,
+                                  pretrained=pretrained_dataset is not None, root='tests/data/model/')
+
+        print(model)
+        if not pretrained_dataset:
+            model.collect_params().initialize()
+        batch_size = 10
+        hidden = model.begin_state(batch_size=batch_size, func=mx.nd.zeros)
+        output, state = model(mx.nd.arange(330).reshape((33, 10)), hidden)
+        output.wait_to_read()
+
 def test_text_models():
     val = nlp.data.WikiText2(segment='val', root='tests/data/wikitext-2')
     val_freq = get_frequencies(val)

@@ -73,7 +73,7 @@ parser.add_argument('--batch-size', type=int, default=256,
                     help='batch size per gpu')
 parser.add_argument('--dropout', type=float, default=0.1,
                     help='dropout applied to layers (0 = no dropout)')
-parser.add_argument('--eps', type=float, default=0.1,
+parser.add_argument('--eps', type=float, default=1,
                     help='initial history accumulation or adagrad')
 parser.add_argument('--bptt', type=int, default=20,
                     help='sequence length')
@@ -110,6 +110,7 @@ if args.test_mode:
 print(args)
 mx.random.seed(args.seed)
 np.random.seed(args.seed)
+os.environ['MXNET_GPU_MEM_POOL_TYPE'] = 'Round'
 
 context = [mx.cpu()] if args.gpus is None or args.gpus == '' else \
           [mx.gpu(int(x)) for x in args.gpus.split(',')]
@@ -118,7 +119,7 @@ context = [mx.cpu()] if args.gpus is None or args.gpus == '' else \
 # Data stream
 ###############################################################################
 train_data_stream, test_data_stream = \
-    [nlp.data.GBWStream(segment=segment, skip_empty=True, bos='<eos>', eos='<eos>')
+    [nlp.data.GBWStream(segment=segment, skip_empty=True, bos='<bos>', eos='<eos>')
      for segment in segments]
 vocab = train_data_stream.vocab
 ntokens = len(vocab)
@@ -146,7 +147,7 @@ def _split_and_sample(data):
     xs = _load(xs)
     ys = _load(ys)
     ms = _load(ms)
-    ss = [sampler(x) for x in xs]
+    ss = [sampler(y) for y in ys]
     ss = _load(ss)
     return xs, ys, ms, ss
 
@@ -163,12 +164,12 @@ test_data = nlp.data.PrefetchingStream(test_data)
 ###############################################################################
 
 
-eval_model = nlp.model.language_model.SampledRNN(ntokens, args.emsize, args.nhid,
-                                                 args.nlayers, args.nproj,
-                                                 dropout=args.dropout)
-model = nlp.model.language_model.train.SampledRNN(ntokens, args.emsize, args.nhid,
-                                                  args.nlayers, args.nproj, args.k,
-                                                  dropout=args.dropout)
+eval_model = nlp.model.language_model.BigRNN(ntokens, args.emsize, args.nhid,
+                                             args.nlayers, args.nproj,
+                                             dropout=args.dropout)
+model = nlp.model.language_model.train.BigRNN(ntokens, args.emsize, args.nhid,
+                                              args.nlayers, args.nproj, args.k,
+                                              dropout=args.dropout)
 loss = gluon.loss.SoftmaxCrossEntropyLoss()
 
 ###############################################################################
@@ -248,6 +249,7 @@ def train():
                         train_batch_size*args.log_interval/(time.time()-start_log_interval_time)))
                 total_L = 0.0
                 start_log_interval_time = time.time()
+                sys.stdout.flush()
         end_epoch_time = time.time()
         print('Epoch %d took %.2f seconds.'%(epoch, end_epoch_time - start_epoch_time))
         mx.nd.waitall()
@@ -291,8 +293,8 @@ def test(data_stream, batch_size, ctx=None):
         hidden = detach(hidden)
         output = output.reshape((-3, -1))
         L = loss(output, target.reshape(-1,)) * mask.reshape((-1,))
-        total_L += L.sum()
-        ntotal += mask.sum()
+        total_L += L.mean()
+        ntotal += mask.mean()
         nbatch += 1
         avg = (total_L / ntotal).asscalar()
         if nbatch % args.log_interval == 0:

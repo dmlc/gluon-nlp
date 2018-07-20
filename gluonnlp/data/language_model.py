@@ -25,13 +25,12 @@ __all__ = ['WikiText2', 'WikiText103', 'WikiText2Raw', 'WikiText103Raw', 'GBWStr
 import os
 import io
 import zipfile
-import hashlib
 import tarfile
+import hashlib
 import glob
 import shutil
 
 from mxnet.gluon.utils import download, check_sha1, _get_repo_file_url
-
 from .. import _constants as C
 from ..vocab import Vocab
 from .dataset import LanguageModelDataset
@@ -349,15 +348,15 @@ class GBWStream(_GBWStream):
                  root=os.path.join(_get_home_dir(), 'datasets', 'gbw')):
         self._archive_data = ('1-billion-word-language-modeling-benchmark-r13output.tar.gz',
                               '4df859766482e12264a5a9d9fb7f0e276020447d')
-        self._archive_vocab = ('gbw_vocab-b3e83215.zip',
-                               'dce420f63bbe2a14c9b14c10413618831ac0987d')
+        self._archive_vocab = ('gbw-b3e83215.zip',
+                               '9502eb728bf492a382b1cd57b374734ff82f8553')
         self._data_file = {'train': ('training-monolingual.tokenized.shuffled',
                                      'news.en-00*-of-00100',
                                      '5e0d7050b37a99fd50ce7e07dc52468b2a9cd9e8'),
                            'test': ('heldout-monolingual.tokenized.shuffled',
                                     'news.en.heldout-00000-of-00050',
                                     '0a8e2b7496ba0b5c05158f282b9b351356875445')}
-        self._vocab_file = ('gbw_vocab-b3e83215.json',
+        self._vocab_file = ('gbw-b3e83215.vocab',
                             'b3e832155eb66018b8dfe0b77c00b498c29bed67')
         super(GBWStream, self).__init__('gbw', segment, bos, eos, skip_empty, root)
 

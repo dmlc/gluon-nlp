@@ -208,16 +208,19 @@ class WMT2014(_TranslationDataset):
         The source language. Option for source and target languages are 'en' <-> 'de'
     tgt_lang : str, default 'de'
         The target language. Option for source and target languages are 'en' <-> 'de'
+    full : bool, default False
+        In default, we use the test dataset in http://statmt.org/wmt14/test-filtered.tgz.
+        When full is True, we use the test dataset in http://statmt.org/wmt14/test-full.tgz
     root : str, default '$MXNET_HOME/datasets/wmt2014'
         Path to temp folder for storing data.
         MXNET_HOME defaults to '~/.mxnet'.
     """
-    def __init__(self, segment='train', src_lang='en', tgt_lang='de',
+    def __init__(self, segment='train', src_lang='en', tgt_lang='de', full=False,
                  root=os.path.join(_get_home_dir(), 'datasets', 'wmt2014')):
         self._supported_segments = ['train'] + ['newstest%d' % i for i in range(2009, 2015)]
         self._archive_file = {_get_pair_key('de', 'en'):
-                                  ('wmt2014_de_en-aa7daefa.zip',
-                                   'aa7daefa3da3b040b13d8ea6084d01abf5fc30e1')}
+                                  ('wmt2014_de_en-b0e0e703.zip',
+                                   'b0e0e7036217ffa94f4b35a5b5d2a96a27f680a4')}
         self._data_file = {_get_pair_key('de', 'en'):
                                {'train_en': ('train.en',
                                              'cec2d4c5035df2a54094076348eaf37e8b588a9b'),
@@ -247,11 +250,17 @@ class WMT2014(_TranslationDataset):
                                                     '610c5bb4cc866ad04ab1f6f80d740e1f4435027c'),
                                 'newstest2014_de': ('newstest2014.ref.de',
                                                     '03b02c7f60c8509ba9bb4c85295358f7c9f00d2d')}}
-        if src_lang == 'de':
+        if full:
             self._data_file[_get_pair_key('de', 'en')]['newstest2014_en'] = \
-                ('newstest2014.ref.en', 'cf23229ec6db8b85f240618d2a245f69afebed1f')
+                ('newstest2014.full.en', '528742a3a9690995d031f49d1dbb704844684976')
             self._data_file[_get_pair_key('de', 'en')]['newstest2014_de'] = \
-                ('newstest2014.src.de', '791d644b1a031268ca19600b2734a63c7bfcecc4')
+                ('newstest2014.full.de', '2374b6a28cecbd965b73a9acc35a425e1ed81963')
+        else:
+            if src_lang == 'de':
+                self._data_file[_get_pair_key('de', 'en')]['newstest2014_en'] = \
+                    ('newstest2014.ref.en', 'cf23229ec6db8b85f240618d2a245f69afebed1f')
+                self._data_file[_get_pair_key('de', 'en')]['newstest2014_de'] = \
+                    ('newstest2014.src.de', '791d644b1a031268ca19600b2734a63c7bfcecc4')
         super(WMT2014, self).__init__('wmt2014', segment=segment, src_lang=src_lang,
                                       tgt_lang=tgt_lang,
                                       root=os.path.join(root, _get_pair_key(src_lang, tgt_lang)))
@@ -274,16 +283,19 @@ class WMT2014BPE(_TranslationDataset):
         The source language. Option for source and target languages are 'en' <-> 'de'
     tgt_lang : str, default 'de'
         The target language. Option for source and target languages are 'en' <-> 'de'
+    full : bool, default False
+        In default, we use the test dataset in http://statmt.org/wmt14/test-filtered.tgz.
+        When full is True, we use the test dataset in http://statmt.org/wmt14/test-full.tgz
     root : str, default '$MXNET_HOME/datasets/wmt2014'
         Path to temp folder for storing data.
         MXNET_HOME defaults to '~/.mxnet'.
     """
-    def __init__(self, segment='train', src_lang='en', tgt_lang='de',
+    def __init__(self, segment='train', src_lang='en', tgt_lang='de', full=False,
                  root=os.path.join(_get_home_dir(), 'datasets', 'wmt2014')):
         self._supported_segments = ['train'] + ['newstest%d' % i for i in range(2009, 2015)]
         self._archive_file = {_get_pair_key('de', 'en'):
-                                  ('wmt2014bpe_de_en-93c96c14.zip',
-                                   '93c96c14b094b60c9bbe316221211cf1164ab6b9')}
+                                  ('wmt2014bpe_de_en-ace8f41c.zip',
+                                   'ace8f41c22c0da8729ff15f40d416ebd16738979')}
         self._data_file = {_get_pair_key('de', 'en'):
                                {'train_en': ('train.tok.clean.bpe.32000.en',
                                              'e3f093b64468db7084035c9650d9eecb86a3db5f'),
@@ -317,11 +329,19 @@ class WMT2014BPE(_TranslationDataset):
                                              '71413f497ce3a0fa691c55277f367e5d672b27ee'),
                                 'vocab_de': ('vocab.bpe.32000.json',
                                              '71413f497ce3a0fa691c55277f367e5d672b27ee')}}
-        if src_lang == 'de':
+        if full:
             self._data_file[_get_pair_key('de', 'en')]['newstest2014_en'] = \
-                ('newstest2014.tok.bpe.32000.ref.en', 'cd416085db722bf07cbba4ff29942fe94e966023')
+                ('newstest2014.tok.bpe.32000.full.en', '6c398b61641cd39f186b417c54b171876563193f')
             self._data_file[_get_pair_key('de', 'en')]['newstest2014_de'] = \
-                ('newstest2014.tok.bpe.32000.src.de', '9274d31f92141933f29a405753d5fae051fa5725')
+                ('newstest2014.tok.bpe.32000.full.de', 'b890a8dfc2146dde570fcbcb42e4157292e95251')
+        else:
+            if src_lang == 'de':
+                self._data_file[_get_pair_key('de', 'en')]['newstest2014_en'] = \
+                    ('newstest2014.tok.bpe.32000.ref.en',
+                     'cd416085db722bf07cbba4ff29942fe94e966023')
+                self._data_file[_get_pair_key('de', 'en')]['newstest2014_de'] = \
+                    ('newstest2014.tok.bpe.32000.src.de',
+                     '9274d31f92141933f29a405753d5fae051fa5725')
         super(WMT2014BPE, self).__init__('wmt2014', segment=segment, src_lang=src_lang,
                                          tgt_lang=tgt_lang,
                                          root=os.path.join(root, _get_pair_key(src_lang, tgt_lang)))

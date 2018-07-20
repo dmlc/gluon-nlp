@@ -27,3 +27,4 @@ API Reference
 .. automodule:: gluonnlp.embedding
     :members:
     :imported-members:
+    :special-members: __contains__, __getitem__, __setitem__

@@ -17,9 +17,9 @@
 # specific language governing permissions and limitations
 # under the License.
 """Language models."""
-__all__ = ['AWDRNN', 'StandardRNN', 'awd_lstm_lm_1150', 'awd_lstm_lm_600',
+__all__ = ['AWDRNN', 'StandardRNN', 'BigRNN', 'awd_lstm_lm_1150', 'awd_lstm_lm_600',
            'standard_lstm_lm_200', 'standard_lstm_lm_650', 'standard_lstm_lm_1500',
-           'SampledRNN']
+           'big_rnn_lm_2048_512']
 
 import os
 import warnings
@@ -94,7 +94,7 @@ class AWDRNN(train.AWDRNN):
             the state with shape `(1, batch_size, num_hidden)`
         """
         encoded = self.embedding(inputs)
-        if not begin_state:
+        if begin_state is None:
             begin_state = self.begin_state(batch_size=inputs.shape[1])
         out_states = []
         for i, (e, s) in enumerate(zip(self.encoder, begin_state)):
@@ -161,7 +161,7 @@ class StandardRNN(train.StandardRNN):
             the state with shape `(num_layers, batch_size, num_hidden)`
         """
         encoded = self.embedding(inputs)
-        if not begin_state:
+        if begin_state is None:
             begin_state = self.begin_state(batch_size=inputs.shape[1])
         encoded, state = self.encoder(encoded, begin_state)
         if self._dropout:
@@ -421,10 +421,11 @@ model_store._model_sha1.update(
         ('140416672f27691173523a7535b13cb3adf050a1', 'standard_lstm_lm_650_wikitext-2'),
         ('700b532dc96a29e39f45cb7dd632ce44e377a752', 'standard_lstm_lm_200_wikitext-2'),
         ('45d6df33f35715fb760ec8d18ed567016a897df7', 'awd_lstm_lm_1150_wikitext-2'),
-        ('7894a046f8286db0d5d2ed672b60f4f52b4bc3aa', 'awd_lstm_lm_600_wikitext-2')
+        ('7894a046f8286db0d5d2ed672b60f4f52b4bc3aa', 'awd_lstm_lm_600_wikitext-2'),
+        ('711cea2d963f30fd733aeeee33a5f8fe031ab7b8', 'big_rnn_lm_2048_512_gbw'),
     ]})
 
-class SampledRNN(Block):
+class BigRNN(Block):
     """Big language model with LSTMP for inference.
 
     Parameters
@@ -439,15 +440,13 @@ class SampledRNN(Block):
         Number of LSTMP layers.
     projection_size : int
         Number of projection units for LSTMP.
-    num_sampled : int
-        Number of sampled classes for the decoder.
     dropout : float
         Dropout rate to use for encoder output.
 
     """
     def __init__(self, vocab_size, embed_size, hidden_size, num_layers,
                  projection_size, dropout=0.0, **kwargs):
-        super(SampledRNN, self).__init__(**kwargs)
+        super(BigRNN, self).__init__(**kwargs)
         self._embed_size = embed_size
         self._hidden_size = hidden_size
         self._projection_size = projection_size
@@ -517,3 +516,44 @@ class SampledRNN(Block):
         out = self.decoder(encoded)
         out = out.reshape((length, batch_size, -1))
         return out, state
+
+def big_rnn_lm_2048_512(dataset_name=None, vocab=None, pretrained=False, ctx=cpu(),
+                        root=os.path.join('~', '.mxnet', 'models'), **kwargs):
+    r"""Big 1-layer LSTMP language model.
+
+    Both embedding and projection size are 512. Hidden size is 2048.
+
+    Parameters
+    ----------
+    dataset_name : str or None, default None
+        The dataset name on which the pretrained model is trained.
+        Options are 'gbw'. If specified, then the returned vocabulary is extracted from
+        the training set of the dataset.
+        If None, then vocab is required, for specifying embedding weight size, and is directly
+        returned.
+        The pre-trained model achieves 44.05 ppl on Test of GBW dataset.
+    vocab : gluonnlp.Vocab or None, default None
+        Vocabulary object to be used with the language model.
+        Required when dataset_name is not specified.
+    pretrained : bool, default False
+        Whether to load the pretrained weights for model.
+    ctx : Context, default CPU
+        The context in which to load the pretrained weights.
+    root : str, default '~/.mxnet/models'
+        Location for keeping the model parameters.
+
+    Returns
+    -------
+    gluon.Block, gluonnlp.Vocab
+    """
+    predefined_args = {'embed_size': 512,
+                       'hidden_size': 2048,
+                       'projection_size': 512,
+                       'num_layers': 1,
+                       'dropout': 0.1}
+    mutable_args = ['dropout']
+    assert all((k not in kwargs or k in mutable_args) for k in predefined_args), \
+           'Cannot override predefined model settings.'
+    predefined_args.update(kwargs)
+    return _get_rnn_model(BigRNN, 'big_rnn_lm_2048_512', dataset_name, vocab, pretrained,
+                          ctx, root, **predefined_args)

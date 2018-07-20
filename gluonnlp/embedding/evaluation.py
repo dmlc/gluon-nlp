@@ -170,12 +170,7 @@ def list_evaluation_functions(kind=None):
         reg = registry.get_registry(_REGSITRY_KIND_CLASS_MAP[kind])
         return list(reg.keys())
     else:
-        return {
-            embedding_name:
-            list(embedding_cls.pretrained_file_name_sha1.keys())
-            for embedding_name, embedding_cls in registry.get_registry(
-                TokenEmbedding).items()
-        }
+        return {name: list_evaluation_functions(kind=name) for name in kind}
 
 
 ###############################################################################
@@ -382,7 +377,8 @@ class WordEmbeddingSimilarity(HybridBlock):
 
         if not isinstance(self.similarity, WordEmbeddingSimilarityFunction):
             raise RuntimeError(
-                '{} is not a WordEmbeddingAnalogyFunction'.format(name))
+                '{} is not a WordEmbeddingAnalogyFunction'.format(
+                    self.similarity.__class__.__name__))
 
     def hybrid_forward(self, F, words1, words2, weight):  # pylint: disable=arguments-differ
         """Predict the similarity of words1 and words2.
@@ -441,7 +437,8 @@ class WordEmbeddingAnalogy(Block):
 
         if not isinstance(self.analogy, WordEmbeddingAnalogyFunction):
             raise RuntimeError(
-                '{} is not a WordEmbeddingAnalogyFunction'.format(name))
+                '{} is not a WordEmbeddingAnalogyFunction'.format(
+                    self.analogy.__class__.__name__))
 
     def forward(self, words1, words2, words3):  # pylint: disable=arguments-differ
         """Implement forward computation.
