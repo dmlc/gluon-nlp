@@ -150,7 +150,7 @@ class _SampledLogits(HybridBlock):
                                           dtype=dtype, grad_stype=grad_stype)
             self.bias = self.params.get('bias', shape=(num_classes,), init=bias_initializer,
                                         dtype=dtype)
-        self.block = _SampledLogitsHelper(num_classes, num_sampled, in_unit, remove_accidental_hits)
+        self._logits = _SampledLogitsHelper(num_classes, num_sampled, in_unit, remove_accidental_hits)
         self._num_classes = num_classes
         self._num_sampled = num_sampled
         self._in_unit = in_unit
@@ -170,8 +170,8 @@ class _SampledLogits(HybridBlock):
                             sparse_grad=True)
         # (num_sampled+batch_size, 1)
         b_all = nd.take(bias, indices=ids)
-        return self.block(x, sampled_candidates, expected_count_sampled,
-                          expected_count_true, label, w_all, b_all)
+        return self._logits(x, sampled_candidates, expected_count_sampled,
+                            expected_count_true, label, w_all, b_all)
 
     def __repr__(self):
         s = '{name}({mapping})'
