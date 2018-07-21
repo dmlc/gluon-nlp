@@ -404,19 +404,36 @@ class _LanguageModelBPTTStream(DataStream):
 
 class _Prefetcher(object):
     """Interal shared prefetcher logic."""
+    data_queue = None
+    control_queue = None
+
     def __init__(self, stream, num_prefetch):
         super(_Prefetcher, self).__init__()
         self.stream = stream
+        assert num_prefetch > 0, 'Unbounded Prefetcher is unsupported.'
         self.num_prefetch = num_prefetch
 
     def run(self):
-        for data in self.stream:
-            self.queue.put(data)
-        self.queue.put(None)
+        """Method representing the process’s activity."""
+        stream_iter = iter(self.stream)
+        while True:
+            try:  # Check control queue
+                c = self.control_queue.get(False)
+                if c is None:
+                    break
+            except queue.Empty:
+                pass
+
+            try:
+                data = next(stream_iter)
+                self.data_queue.put(data)
+            except StopIteration:
+                self.data_queue.put(None)
 
     def __next__(self):
-        next_item = self.queue.get()
+        next_item = self.data_queue.get()
         if next_item is None:
+            self.control_queue.put(None)
             raise StopIteration
         return next_item
 
@@ -429,18 +446,22 @@ class _Prefetcher(object):
 
 class _ProcessPrefetcher(_Prefetcher, multiprocessing.Process):
     """Interal multi-processing prefetcher."""
+
     def __init__(self, *args, **kwargs):
         super(_ProcessPrefetcher, self).__init__(*args, **kwargs)
-        self.queue = multiprocessing.Queue(self.num_prefetch)
+        self.data_queue = multiprocessing.Queue(self.num_prefetch)
+        self.control_queue = multiprocessing.Queue()
         self.daemon = True
         self.start()
 
 
 class _ThreadPrefetcher(_Prefetcher, threading.Thread):
     """Interal threaded prefetcher."""
+
     def __init__(self, *args, **kwargs):
         super(_ThreadPrefetcher, self).__init__(*args, **kwargs)
-        self.queue = queue.Queue(self.num_prefetch)
+        self.data_queue = queue.Queue(self.num_prefetch)
+        self.control_queue = queue.Queue()
         self.daemon = True
         self.start()
 
@@ -458,7 +479,7 @@ class PrefetchingStream(object):
     stream : DataStream
         Source stream.
     num_prefetch : int, default 1
-        Number of elements to prefetch from the stream.
+        Number of elements to prefetch from the stream. Must be greater 0.
     worker_type : 'thread' or 'process', default 'thread'
         Use a separate Python Thread or Process to prefetch.
     """
