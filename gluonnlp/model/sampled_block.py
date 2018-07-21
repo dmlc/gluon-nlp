@@ -150,7 +150,8 @@ class _SampledLogits(HybridBlock):
                                           dtype=dtype, grad_stype=grad_stype)
             self.bias = self.params.get('bias', shape=(num_classes,), init=bias_initializer,
                                         dtype=dtype)
-        self._logits = _SampledLogitsHelper(num_classes, num_sampled, in_unit, remove_accidental_hits)
+        self._logits = _SampledLogitsHelper(num_classes, num_sampled, in_unit,
+                                            remove_accidental_hits)
         self._num_classes = num_classes
         self._num_sampled = num_sampled
         self._in_unit = in_unit

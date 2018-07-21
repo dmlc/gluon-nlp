@@ -50,7 +50,6 @@ class LogUniformSampler(CandidateSampler):
         The random seed.
     """
     def __init__(self, range_max, num_sampled, dtype=None, seed=0):
-        self._range_max = range_max
         self._num_sampled = num_sampled
         self._log_range = math.log(range_max + 1)
         self._csampler = log_uniform.LogUniformSampler(range_max, seed)
@@ -79,7 +78,6 @@ class LogUniformSampler(CandidateSampler):
         expected_count_sample: NDArray
             The expected count for sampled candidates.
         """
-        range_max = self._range_max
         num_sampled = self._num_sampled
         ctx = true_classes.context
         num_tries = 0
