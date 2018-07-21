@@ -161,6 +161,9 @@ The dataset used for training the models is Google's 1 billion words dataset.
 | Num layers      | 1             |
 | Embed size      | 512           |
 | Hidden size     | 2048          |
+| Batch size      | 256           |
+| Batch size      | 256           |
+| Graident clip   | 10.0          |
 | Projection size | 512           |
 | Dropout         | 0.1           |
 | Learning rate   | 0.2           |
@@ -172,5 +175,5 @@ The dataset used for training the models is Google's 1 billion words dataset.
 
 .. code-block:: console
 
-   $ python large_word_language_model.py --gpus 0,1,2,3 --epochs=48
+   $ python large_word_language_model.py --gpus 0,1,2,3 --epochs=48 --batch-size=256 --clip=10
    $ python large_word_language_model.py --gpus 0 --eval-only --batch-size=32 --log-interval=1

@@ -69,7 +69,7 @@ parser.add_argument('--from-epoch', type=int, default=None,
                     help='start training or testing from the provided epoch')
 parser.add_argument('--epochs', type=int, default=50,
                     help='number of epoch for training')
-parser.add_argument('--batch-size', type=int, default=256,
+parser.add_argument('--batch-size', type=int, default=128,
                     help='batch size per gpu')
 parser.add_argument('--dropout', type=float, default=0.1,
                     help='dropout applied to layers (0 = no dropout)')
@@ -87,7 +87,7 @@ parser.add_argument('--seed', type=int, default=1,
                     help='random seed')
 parser.add_argument('--lr', type=float, default=0.2,
                     help='initial learning rate')
-parser.add_argument('--clip', type=float, default=10.0,
+parser.add_argument('--clip', type=float, default=1.0,
                     help='gradient clipping by global norm.')
 parser.add_argument('--test-mode', action='store_true',
                     help='Whether to run through the script with few examples')
@@ -166,10 +166,12 @@ test_data = nlp.data.PrefetchingStream(test_data)
 
 eval_model = nlp.model.language_model.BigRNN(ntokens, args.emsize, args.nhid,
                                              args.nlayers, args.nproj,
-                                             dropout=args.dropout)
+                                             embed_dropout=args.dropout,
+                                             encode_dropout=args.dropout)
 model = nlp.model.language_model.train.BigRNN(ntokens, args.emsize, args.nhid,
                                               args.nlayers, args.nproj, args.k,
-                                              dropout=args.dropout)
+                                              embed_dropout=args.dropout,
+                                              encode_dropout=args.dropout)
 loss = gluon.loss.SoftmaxCrossEntropyLoss()
 
 ###############################################################################

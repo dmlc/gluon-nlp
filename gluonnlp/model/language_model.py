@@ -440,18 +440,21 @@ class BigRNN(Block):
         Number of LSTMP layers.
     projection_size : int
         Number of projection units for LSTMP.
-    dropout : float
+    embed_dropout : float
+        Dropout rate to use for embedding output.
+    encode_dropout : float
         Dropout rate to use for encoder output.
 
     """
     def __init__(self, vocab_size, embed_size, hidden_size, num_layers,
-                 projection_size, dropout=0.0, **kwargs):
+                 projection_size, embed_dropout=0.0, encode_dropout=0.0, **kwargs):
         super(BigRNN, self).__init__(**kwargs)
         self._embed_size = embed_size
         self._hidden_size = hidden_size
         self._projection_size = projection_size
         self._num_layers = num_layers
-        self._dropout = dropout
+        self._embed_dropout = embed_dropout
+        self._encode_dropout = encode_dropout
         self._vocab_size = vocab_size
 
         with self.name_scope():
@@ -464,8 +467,8 @@ class BigRNN(Block):
         embedding = nn.Sequential()
         with embedding.name_scope():
             embedding.add(nn.Embedding(self._vocab_size, self._embed_size, prefix=prefix))
-            if self._dropout:
-                embedding.add(nn.Dropout(self._dropout))
+            if self._embed_dropout:
+                embedding.add(nn.Dropout(self._embed_dropout))
         return embedding
 
     def _get_encoder(self):
@@ -474,8 +477,8 @@ class BigRNN(Block):
             for _ in range(self._num_layers):
                 block.add(contrib.rnn.LSTMPCell(self._hidden_size, self._projection_size,
                                                 i2h_bias_initializer='lstmbias'))
-                if self._dropout:
-                    block.add(rnn.DropoutCell(self._dropout))
+                if self._encode_dropout:
+                    block.add(rnn.DropoutCell(self._encode_dropout))
         return block
 
     def _get_decoder(self):
@@ -551,8 +554,9 @@ def big_rnn_lm_2048_512(dataset_name=None, vocab=None, pretrained=False, ctx=cpu
                        'hidden_size': 2048,
                        'projection_size': 512,
                        'num_layers': 1,
-                       'dropout': 0.1}
-    mutable_args = ['dropout']
+                       'embed_dropout': 0.1,
+                       'encode_dropout': 0.1}
+    mutable_args = ['embed_dropout', 'encode_dropout']
     assert all((k not in kwargs or k in mutable_args) for k in predefined_args), \
            'Cannot override predefined model settings.'
     predefined_args.update(kwargs)

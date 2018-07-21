@@ -297,7 +297,9 @@ class BigRNN(Block):
         Number of projection units for LSTMP.
     num_sampled : int
         Number of sampled classes for the decoder.
-    dropout : float
+    embed_dropout : float
+        Dropout rate to use for embedding output.
+    encoder_dropout : float
         Dropout rate to use for encoder output.
     sparse_weight : bool
         Whether to use RowSparseNDArray for weights of input and output embeddings.
@@ -306,14 +308,15 @@ class BigRNN(Block):
         weights of input and output embeddings.
     """
     def __init__(self, vocab_size, embed_size, hidden_size, num_layers,
-                 projection_size, num_sampled, dropout=0.0,
+                 projection_size, num_sampled, embed_dropout=0.0, encode_dropout=0.0,
                  sparse_weight=True, sparse_grad=True, **kwargs):
         super(BigRNN, self).__init__(**kwargs)
         self._embed_size = embed_size
         self._hidden_size = hidden_size
         self._projection_size = projection_size
         self._num_layers = num_layers
-        self._dropout = dropout
+        self._embed_dropout = embed_dropout
+        self._encode_dropout = encode_dropout
         self._vocab_size = vocab_size
         self._num_sampled = num_sampled
         self._sparse_weight = sparse_weight
@@ -338,8 +341,8 @@ class BigRNN(Block):
                 embed = nn.Embedding(self._vocab_size, self._embed_size, prefix=prefix,
                                      sparse_grad=self._sparse_grad)
             block.add(embed)
-            if self._dropout:
-                block.add(nn.Dropout(self._dropout))
+            if self._embed_dropout:
+                block.add(nn.Dropout(self._embed_dropout))
         return block
 
     def _get_encoder(self):
@@ -348,8 +351,8 @@ class BigRNN(Block):
             for _ in range(self._num_layers):
                 block.add(contrib.rnn.LSTMPCell(self._hidden_size, self._projection_size,
                                                 i2h_bias_initializer='lstmbias'))
-                if self._dropout:
-                    block.add(rnn.DropoutCell(self._dropout))
+                if self._encode_dropout:
+                    block.add(rnn.DropoutCell(self._encode_dropout))
         return block
 
     def _get_decoder(self):
