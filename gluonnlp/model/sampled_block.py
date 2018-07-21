@@ -117,6 +117,8 @@ class _SampledLogits(HybridBlock):
         Initializer for the `kernel` weights matrix.
     bias_initializer: str or `Initializer`, optional
         Initializer for the bias vector.
+    sparse_grad: bool, default True.
+        Whether to use sparse gradient.
 
     Inputs:
         - **x**: A tensor of shape `(batch_size, in_unit)`. The forward activation of
@@ -138,13 +140,16 @@ class _SampledLogits(HybridBlock):
 
     """
     def __init__(self, num_classes, num_sampled, in_unit, remove_accidental_hits,
-                 prefix=None, params=None):
+                 dtype='float32', weight_initializer=None, bias_initializer='zeros',
+                 sparse_grad=True, prefix=None, params=None):
         super(_SampledLogits, self).__init__(prefix=prefix, params=params)
         with self.name_scope():
+            grad_stype = 'row_sparse' if sparse_grad else 'default'
             self.weight = self.params.get('weight', shape=(num_classes, in_unit),
-                                          grad_stype='row_sparse')
-            self.bias = self.params.get('bias', shape=(num_classes, 1),
-                                        grad_stype='row_sparse')
+                                          init=weight_initializer,
+                                          dtype=dtype, grad_stype=grad_stype)
+            self.bias = self.params.get('bias', shape=(num_classes,), init=bias_initializer,
+                                        dtype=dtype)
         self.block = _SampledLogitsHelper(num_classes, num_sampled, in_unit, remove_accidental_hits)
         self._num_classes = num_classes
         self._num_sampled = num_sampled
@@ -164,9 +169,7 @@ class _SampledLogits(HybridBlock):
                             input_dim=self._num_classes, output_dim=self._in_unit,
                             sparse_grad=True)
         # (num_sampled+batch_size, 1)
-        b_all = F.Embedding(data=ids, weight=bias,
-                            input_dim=self._num_classes, output_dim=1,
-                            sparse_grad=True)
+        b_all = nd.take(bias, indices=ids)
         return self.block(x, sampled_candidates, expected_count_sampled,
                           expected_count_true, label, w_all, b_all)
 
@@ -227,6 +230,8 @@ class NCELogits(_SampledLogits):
         Initializer for the `kernel` weights matrix.
     bias_initializer: str or `Initializer`, optional
         Initializer for the bias vector.
+    sparse_grad: bool, default True.
+        Whether to use sparse gradient.
 
     Inputs:
         - **x**: A tensor of shape `(batch_size, in_unit)`. The forward activation of
@@ -248,9 +253,12 @@ class NCELogits(_SampledLogits):
 
     """
     def __init__(self, num_classes, num_sampled, in_unit, remove_accidental_hits=False,
-                 prefix=None, params=None):
-        super(NCELogits, self).__init__(num_classes, num_sampled, in_unit,
-                                        remove_accidental_hits, prefix=prefix, params=params)
+                 dtype='float32', weight_initializer=None, bias_initializer='zeros',
+                 sparse_grad=True, prefix=None, params=None):
+        super(NCELogits, self).__init__(num_classes, num_sampled, in_unit, remove_accidental_hits,
+                                        dtype=dtype, weight_initializer=weight_initializer,
+                                        bias_initializer=bias_initializer, sparse_grad=sparse_grad,
+                                        prefix=prefix, params=params)
 
 class ISLogits(_SampledLogits):
     """Block that computes sampled output training logits and labels suitable for
@@ -299,6 +307,8 @@ class ISLogits(_SampledLogits):
         Initializer for the `kernel` weights matrix.
     bias_initializer: str or `Initializer`, optional
         Initializer for the bias vector.
+    sparse_grad: bool, default True.
+        Whether to use sparse gradient.
 
     Inputs:
         - **x**: A tensor of shape `(batch_size, in_unit)`. The forward activation of
@@ -320,9 +330,12 @@ class ISLogits(_SampledLogits):
 
     """
     def __init__(self, num_classes, num_sampled, in_unit, remove_accidental_hits=True,
-                 prefix=None, params=None):
-        super(ISLogits, self).__init__(num_classes, num_sampled, in_unit,
-                                       remove_accidental_hits, prefix=prefix, params=params)
+                 dtype='float32', weight_initializer=None, bias_initializer='zeros',
+                 sparse_grad=True, prefix=None, params=None):
+        super(ISLogits, self).__init__(num_classes, num_sampled, in_unit, remove_accidental_hits,
+                                       dtype=dtype, weight_initializer=weight_initializer,
+                                       bias_initializer=bias_initializer, sparse_grad=sparse_grad,
+                                       prefix=prefix, params=params)
 
 class _SparseSampledLogits(Block):
     """Block that computes sampled output training logits and labels suitable for
@@ -412,7 +425,8 @@ class _SparseSampledLogits(Block):
             self.weight = self.params.get('weight', shape=(num_classes, in_unit),
                                           init=weight_initializer, dtype=dtype,
                                           grad_stype='row_sparse', stype='row_sparse')
-            self.bias = self.params.get('bias', shape=(num_classes,), init=bias_initializer)
+            self.bias = self.params.get('bias', shape=(num_classes,), init=bias_initializer,
+                                        dtype=dtype)
             self._logits = _SampledLogitsHelper(num_classes, num_sampled, in_unit,
                                                 remove_accidental_hits)
         self._num_classes = num_classes

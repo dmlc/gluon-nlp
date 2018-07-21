@@ -331,17 +331,19 @@ class BigRNN(Block):
         block = nn.Sequential() if self._sparse_weight else nn.HybridSequential()
         with block.name_scope():
             if self._sparse_weight:
+                # sparse embedding has both sparse weight and sparse grad
                 embed = contrib.nn.SparseEmbedding(self._vocab_size, self._embed_size,
                                                    prefix=prefix)
             else:
-                embed = nn.Embedding(self._vocab_size, self._embed_size, prefix=prefix)
+                embed = nn.Embedding(self._vocab_size, self._embed_size, prefix=prefix,
+                                     sparse_grad=self._sparse_grad)
             block.add(embed)
             if self._dropout:
                 block.add(nn.Dropout(self._dropout))
         return block
 
     def _get_encoder(self):
-        block = rnn.SequentialRNNCell()
+        block = rnn.HybridSequentialRNNCell()
         with block.name_scope():
             for _ in range(self._num_layers):
                 block.add(contrib.rnn.LSTMPCell(self._hidden_size, self._projection_size,
@@ -353,13 +355,14 @@ class BigRNN(Block):
     def _get_decoder(self):
         prefix = 'decoder0_'
         if self._sparse_weight:
+            # sparse IS logits has both sparse weight and sparse grad
             block = SparseISLogits(self._vocab_size, self._num_sampled,
                                    self._projection_size, remove_accidental_hits=True,
                                    prefix=prefix)
         else:
             block = ISLogits(self._vocab_size, self._num_sampled,
                              self._projection_size, remove_accidental_hits=True,
-                             prefix=prefix)
+                             prefix=prefix, sparse_grad=self._sparse_grad)
         return block
 
     def begin_state(self, **kwargs):

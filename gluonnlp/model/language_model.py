@@ -469,7 +469,7 @@ class BigRNN(Block):
         return embedding
 
     def _get_encoder(self):
-        block = rnn.SequentialRNNCell()
+        block = rnn.HybridSequentialRNNCell()
         with block.name_scope():
             for _ in range(self._num_layers):
                 block.add(contrib.rnn.LSTMPCell(self._hidden_size, self._projection_size,
