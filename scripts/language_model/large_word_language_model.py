@@ -62,7 +62,7 @@ parser.add_argument('--emsize', type=int, default=512,
 parser.add_argument('--nhid', type=int, default=2048,
                     help='number of hidden units per layer')
 parser.add_argument('--nproj', type=int, default=512,
-                    help='number of projection units per layer')
+                    help='number of projection units per layer. Could be different from embsize')
 parser.add_argument('--nlayers', type=int, default=1,
                     help='number of layers')
 parser.add_argument('--from-epoch', type=int, default=None,
