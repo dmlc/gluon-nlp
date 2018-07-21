@@ -790,7 +790,7 @@ class TransformerDecoder(HybridBlock, Seq2SeqDecoder):
 
 
 def get_transformer_encoder_decoder(num_layers=2,
-                                    num_heads=5, scaled=True,
+                                    num_heads=8, scaled=True,
                                     units=512, hidden_size=2048, dropout=0.0, use_residual=True,
                                     max_src_length=50, max_tgt_length=50,
                                     weight_initializer=None, bias_initializer='zeros',
