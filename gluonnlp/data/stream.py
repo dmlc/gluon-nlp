@@ -498,6 +498,7 @@ class PrefetchingStream(DataStream):
         Number of elements to prefetch from the stream. Must be greater 0.
     worker_type : 'thread' or 'process', default 'thread'
         Use a separate Python Thread or Process to prefetch.
+
     """
 
     def __init__(self, stream, num_prefetch=1, worker_type='thread'):

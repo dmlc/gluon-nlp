@@ -123,6 +123,7 @@ def parse_args():
     group.add_argument('--lr', type=float, default=0.05)
     group.add_argument('--optimizer-subwords', type=str, default='adagrad')
     group.add_argument('--lr-subwords', type=float, default=0.5)
+    group.add_argument('--seed', type=int, default=1, help='random seed')
 
     # Logging
     group = parser.add_argument_group('Logging arguments')
@@ -140,6 +141,11 @@ def parse_args():
 
     args = parser.parse_args()
     evaluation.validate_args(args)
+
+    random.seed(args.seed)
+    mx.random.seed(args.seed)
+    np.random.seed(args.seed)
+
     return args
 
 
