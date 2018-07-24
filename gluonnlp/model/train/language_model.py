@@ -302,10 +302,24 @@ class BigRNN(Block):
     encoder_dropout : float
         Dropout rate to use for encoder output.
     sparse_weight : bool
-        Whether to use RowSparseNDArray for weights of input and output embeddings.
+        Whether to use RewSparseNDArray for weights of input and output embeddings.
     sparse_grad : bool
         Whether to use RowSparseNDArray for the gradients w.r.t.
         weights of input and output embeddings.
+
+    .. note: If `sparse_grad` is set to True, the gradient w.r.t input and output
+             embeddings will be sparse. Only a subset of optimizers support
+             sparse gradients, including SGD, AdaGrad and Adam.
+             By default `lazy_update` is turned on for these optimizers,
+             which may perform differently from standard updates.
+             For more details, please check the Optimization API at:
+             https://mxnet.incubator.apache.org/api/python/optimization/optimization.html
+
+    .. note: If `sparse_weight` is set to True, the parameters in the embedding block and
+             decoder block will be stored in row_sparse format, which helps reduce memory
+             consumption and communication overhead during multi-GPU training. However,
+             sparse parameters cannot be shared with other blocks, nor could we hybridize
+             a block containinng sparse parameters.
     """
     def __init__(self, vocab_size, embed_size, hidden_size, num_layers,
                  projection_size, num_sampled, embed_dropout=0.0, encode_dropout=0.0,
@@ -349,8 +363,7 @@ class BigRNN(Block):
         block = rnn.HybridSequentialRNNCell()
         with block.name_scope():
             for _ in range(self._num_layers):
-                block.add(contrib.rnn.LSTMPCell(self._hidden_size, self._projection_size,
-                                                i2h_bias_initializer='lstmbias'))
+                block.add(contrib.rnn.LSTMPCell(self._hidden_size, self._projection_size))
                 if self._encode_dropout:
                     block.add(rnn.DropoutCell(self._encode_dropout))
         return block

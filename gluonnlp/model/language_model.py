@@ -475,8 +475,7 @@ class BigRNN(Block):
         block = rnn.HybridSequentialRNNCell()
         with block.name_scope():
             for _ in range(self._num_layers):
-                block.add(contrib.rnn.LSTMPCell(self._hidden_size, self._projection_size,
-                                                i2h_bias_initializer='lstmbias'))
+                block.add(contrib.rnn.LSTMPCell(self._hidden_size, self._projection_size))
                 if self._encode_dropout:
                     block.add(rnn.DropoutCell(self._encode_dropout))
         return block
