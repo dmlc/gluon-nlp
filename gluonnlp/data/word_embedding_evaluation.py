@@ -25,21 +25,12 @@ import tarfile
 import zipfile
 
 from mxnet.gluon.data.dataset import SimpleDataset
-from mxnet.gluon.utils import check_sha1, _get_repo_file_url
+from mxnet.gluon.utils import check_sha1, _get_repo_file_url, download
 
 from .. import _constants as C
 from .dataset import CorpusDataset
 from .registry import register
 from .utils import _get_home_dir
-
-try:
-    import requests
-except ImportError:
-
-    class requests_failed_to_import(object):
-        pass
-
-    requests = requests_failed_to_import
 
 base_datasets = [
     'WordSimilarityEvaluationDataset', 'WordAnalogyEvaluationDataset'
@@ -50,63 +41,6 @@ word_similarity_datasets = [
 ]
 word_analogy_datasets = ['GoogleAnalogyTestSet', 'BiggerAnalogyTestSet']
 __all__ = base_datasets + word_similarity_datasets + word_analogy_datasets
-
-
-# TODO Remove once verify support is merged in mxnet.gluon.utils.download
-def download(url, path=None, overwrite=False, sha1_hash=None, verify=True):
-    """Download an given URL
-
-    Parameters
-    ----------
-    url : str
-        URL to download
-    path : str, optional
-        Destination path to store downloaded file. By default stores to the
-        current directory with same name as in url.
-    overwrite : bool, optional
-        Whether to overwrite destination file if already exists.
-    sha1_hash : str, optional
-        Expected sha1 hash in hexadecimal digits. Will ignore existing file when hash is specified
-        but doesn't match.
-    verify : bool
-        Toggle verification of SSL certificates.
-
-    Returns
-    -------
-    str
-        The file path of the downloaded file.
-    """
-    if path is None:
-        fname = url.split('/')[-1]
-    else:
-        path = os.path.expanduser(path)
-        if os.path.isdir(path):
-            fname = os.path.join(path, url.split('/')[-1])
-        else:
-            fname = path
-
-    if overwrite or not os.path.exists(fname) or (
-            sha1_hash and not check_sha1(fname, sha1_hash)):
-        dirname = os.path.dirname(os.path.abspath(os.path.expanduser(fname)))
-        if not os.path.exists(dirname):
-            os.makedirs(dirname)
-
-        print('Downloading %s from %s...' % (fname, url))
-        r = requests.get(url, stream=True, verify=verify)
-        if r.status_code != 200:
-            raise RuntimeError('Failed downloading url %s' % url)
-        with open(fname, 'wb') as f:
-            for chunk in r.iter_content(chunk_size=1024):
-                if chunk:  # filter out keep-alive new chunks
-                    f.write(chunk)
-
-        if sha1_hash and not check_sha1(fname, sha1_hash):
-            raise UserWarning('File {} is downloaded but the content hash does not match. ' \
-                              'The repo may be outdated or download may be incomplete. ' \
-                              'If the "repo_url" is overridden, consider switching to ' \
-                              'the default repo.'.format(fname))
-
-    return fname
 
 
 class _Dataset(SimpleDataset):
@@ -136,7 +70,7 @@ class _Dataset(SimpleDataset):
                     url = self._url
                 downloaded_file_path = download(url, path=self.root,
                                                 sha1_hash=archive_hash,
-                                                verify=self._verify_ssl)
+                                                verify_ssl=self._verify_ssl)
 
                 if downloaded_file_path.lower().endswith('zip'):
                     with zipfile.ZipFile(downloaded_file_path, 'r') as zf:
