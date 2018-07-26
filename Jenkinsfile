@@ -62,17 +62,20 @@ stage("Deploy") {
   node {
     ws('workspace/gluon-nlp-docs') {
       checkout scm
-      sh """#!/bin/bash
-      printenv
-      git clean -f -d -x --exclude='tests/externaldata/*' --exclude=conda
-      conda env update --prune -f env/doc.yml -p conda/docs
-      conda activate ./conda/docs
-      conda list
-      python setup.py install
-      export LD_LIBRARY_PATH=/usr/local/cuda/lib64
-      make clean
-      make docs
-      """
+
+      retry(3) {
+        sh """#!/bin/bash
+        printenv
+        git clean -f -d -x --exclude='tests/externaldata/*' --exclude=conda
+        conda env update --prune -f env/doc.yml -p conda/docs
+        conda activate ./conda/docs
+        conda list
+        python setup.py install
+        export LD_LIBRARY_PATH=/usr/local/cuda/lib64
+        make clean
+        make docs
+        """
+      }
 
       if (env.BRANCH_NAME.startsWith("PR-")) {
         sh """#!/bin/bash
