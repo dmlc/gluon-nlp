@@ -56,6 +56,7 @@ from loss import SoftmaxCEMaskedLoss
 from utils import logging_config
 from bleu import compute_bleu
 import _constants as _C
+from dataset import TOY
 
 np.random.seed(100)
 random.seed(100)
@@ -199,6 +200,12 @@ def load_translation_data(dataset, src_lang='en', tgt_lang='vi'):
         data_train = IWSLT2015('train', src_lang=src_lang, tgt_lang=tgt_lang)
         data_val = IWSLT2015('val', src_lang=src_lang, tgt_lang=tgt_lang)
         data_test = IWSLT2015('test', src_lang=src_lang, tgt_lang=tgt_lang)
+    elif dataset == 'TOY':
+        common_prefix = 'TOY_{}_{}_{}_{}'.format(src_lang, tgt_lang,
+                                                 args.src_max_len, args.tgt_max_len)
+        data_train = TOY('train', src_lang=src_lang, tgt_lang=tgt_lang)
+        data_val = TOY('val', src_lang=src_lang, tgt_lang=tgt_lang)
+        data_test = TOY('test', src_lang=src_lang, tgt_lang=tgt_lang)
     else:
         raise NotImplementedError
     src_vocab, tgt_vocab = data_train.src_vocab, data_train.tgt_vocab
