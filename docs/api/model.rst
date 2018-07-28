@@ -18,8 +18,10 @@ Language Modeling
     standard_lstm_lm_200
     standard_lstm_lm_650
     standard_lstm_lm_1500
+    big_rnn_lm_2048_512
     StandardRNN
     get_model
+    BigRNN
 
 Convolutional Encoder
 ----------------------
@@ -66,6 +68,10 @@ Other Modeling Utilities
     WeightDropParameter
     apply_weight_drop
     L2Normalization
+    ISLogits
+    NCELogits
+    SparseISLogits
+    SparseNCELogits
 
 API Reference
 -------------

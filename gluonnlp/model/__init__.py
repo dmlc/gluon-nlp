@@ -63,13 +63,15 @@ from .block import *
 
 from .highway import *
 
+from .sampled_block import *
+
 from .convolutional_encoder import *
 
 from . import train
 
 __all__ = language_model.__all__ + beam_search.__all__ + attention_cell.__all__ + \
           utils.__all__ + parameter.__all__ + block.__all__ + highway.__all__ + \
-          convolutional_encoder.__all__ + ['get_model'] + ['train']
+          convolutional_encoder.__all__ + sampled_block.__all__ + ['get_model'] + ['train']
 
 
 def get_model(name, dataset_name='wikitext-2', **kwargs):
@@ -104,7 +106,8 @@ def get_model(name, dataset_name='wikitext-2', **kwargs):
               'standard_lstm_lm_650': standard_lstm_lm_650,
               'standard_lstm_lm_1500': standard_lstm_lm_1500,
               'awd_lstm_lm_1150': awd_lstm_lm_1150,
-              'awd_lstm_lm_600': awd_lstm_lm_600}
+              'awd_lstm_lm_600': awd_lstm_lm_600,
+              'big_rnn_lm_2048_512': big_rnn_lm_2048_512}
     name = name.lower()
     if name not in models:
         raise ValueError(

@@ -21,10 +21,12 @@
 """NLP Toolkit Data Stream API. It allows easy and customizable streaming of
 corpora and dataset files. Files can be streamed into formats that are
 ready for training and evaluation."""
-__all__ = ['DataStream', 'CorpusStream', 'LanguageModelStream', 'SimpleDataStream']
+__all__ = ['DataStream', 'CorpusStream', 'LanguageModelStream', 'SimpleDataStream',
+           'PrefetchingStream']
 
 import os
 import glob
+import threading
 import numpy as np
 
 import mxnet as mx
@@ -44,6 +46,106 @@ class DataStream(object):
             The data stream that lazily transforms the data while streaming.
         """
         return _LazyTransformDataStream(self, fn)
+
+class PrefetchingStream(DataStream):
+    """Performs pre-fetch for other data iterators.
+    This iterator will create another thread to perform ``iter_next`` and then
+    store the data in memory. It potentially accelerates the data read, at the
+    cost of more memory usage.
+
+    Parameters
+    ----------
+    streams : DataStream or list of DataStream
+        The data streams to be pre-fetched.
+
+    """
+    def __init__(self, streams):
+        super(PrefetchingStream, self).__init__()
+        if not isinstance(streams, list):
+            streams = [streams]
+        self._streams = streams
+        # cleaned up by worker threads
+        self._started = {}
+        self._data_taken = {}
+        # cleaned up by the main thread
+        self._prefetch_threads = {}
+        self._next_key = 0
+
+    def __iter__(self):
+        key = self._next_key
+        self._next_key += 1
+        num_streams = len(self._streams)
+        assert num_streams > 0, 'Invalid number of Streams'
+
+        data_ready = [threading.Event() for i in range(num_streams)]
+        data_taken = [threading.Event() for i in range(num_streams)]
+        batch = [None for i in range(num_streams)]
+        for i in data_taken:
+            i.set()
+
+        # register
+        self._data_taken[key] = data_taken
+        self._started[key] = True
+
+        def prefetch_func(self, data_ready, batch, key, i):
+            """Thread entry"""
+            stream = iter(self._streams[i])
+            while True:
+                self._data_taken[key][i].wait()
+                if not self._started[key]:
+                    break
+                try:
+                    batch[i] = next(stream)
+                except StopIteration:
+                    batch[i] = None
+                self._data_taken[key][i].clear()
+                data_ready[i].set()
+            # tear down
+            self._started.pop(key, None)
+            self._data_taken.pop(key, None)
+
+        # setup prefetching threads
+        prefetch_threads = []
+        for i in range(num_streams):
+            args = [self, data_ready, batch, key, i]
+            thread = threading.Thread(target=prefetch_func, args=args)
+            prefetch_threads.append(thread)
+        self._prefetch_threads[key] = prefetch_threads
+        # start threads
+        for thread in prefetch_threads:
+            thread.setDaemon(True)
+            thread.start()
+
+        while True:
+            # wait for batch to be ready
+            for i in data_ready:
+                i.wait()
+            # retrieve batch
+            if batch[0] is None:
+                for i in batch:
+                    assert i is None, 'Number of batches mismatches between data streams'
+                # no more batch, tear down
+                self._tear_down(key)
+                break
+            # valid batch
+            current_batch = [data for data in batch] if num_streams > 1 else batch[0]
+            for i in data_ready:
+                i.clear()
+            for i in data_taken:
+                i.set()
+            yield current_batch
+
+    def _tear_down(self, key):
+        self._started[key] = False
+        for i in self._data_taken[key]:
+            i.set()
+        for thread in self._prefetch_threads[key]:
+            thread.join()
+        self._prefetch_threads.pop(key, None)
+
+    def __del__(self):
+        for key in list(self._started.keys()):
+            self._tear_down(key)
 
 class SimpleDataStream(DataStream):
     """Simple DataStream wrapper for a stream."""
@@ -310,10 +412,8 @@ class _LanguageModelBPTTStream(DataStream):
 
         def _read(buffers, i, vocab, corpus):
             """Read a sentence from the corpus into i-th buffer."""
-            if buffers[i] is None:
+            if buffers[i] is None or len(buffers[i]) <= 1:
                 buffers[i] = vocab[next(corpus)]
-            if len(buffers[i]) <= 1:
-                buffers[i].extend(vocab[next(corpus)])
 
         def _write(data, target, buffers, seq_len, i, length):
             """Write a sentence from i-th buffer to data and target."""

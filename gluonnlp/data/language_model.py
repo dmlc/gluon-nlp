@@ -23,15 +23,16 @@
 __all__ = ['WikiText2', 'WikiText103', 'WikiText2Raw', 'WikiText103Raw', 'GBWStream']
 
 import os
+import io
 import zipfile
+import tarfile
 import hashlib
 import glob
 import shutil
-import tarfile
 
 from mxnet.gluon.utils import download, check_sha1, _get_repo_file_url
-
 from .. import _constants as C
+from ..vocab import Vocab
 from .dataset import LanguageModelDataset
 from .stream import LanguageModelStream
 from .registry import register
@@ -276,11 +277,12 @@ class _GBWStream(LanguageModelStream):
         self._file_pattern = os.path.join(self._subdir, pattern)
         self._data_hash = data_hash
         self._get_data()
+        sampler = 'sequential' if segment != 'train' else 'random'
         super(_GBWStream, self).__init__(self._file_pattern, skip_empty=skip_empty, bos=bos,
-                                         eos=eos)
+                                         eos=eos, sampler=sampler, file_sampler=sampler)
 
     def _get_data(self):
-        archive_file_name, archive_hash = self._archive_file
+        archive_file_name, archive_hash = self._archive_data
         archive_file_path = os.path.join(self._root, archive_file_name)
         exists = False
         if os.path.exists(self._dir) and os.path.exists(self._subdir):
@@ -306,6 +308,20 @@ class _GBWStream(LanguageModelStream):
             with tarfile.open(archive_file_path, 'r:gz') as tf:
                 tf.extractall(path=self._root)
 
+    def _get_vocab(self):
+        archive_file_name, archive_hash = self._archive_vocab
+        vocab_file_name, vocab_hash = self._vocab_file
+        namespace = 'gluon/dataset/vocab'
+        root = self._root
+        path = os.path.join(root, vocab_file_name)
+        if not os.path.exists(path) or not check_sha1(path, vocab_hash):
+            downloaded_path = download(_get_repo_file_url(namespace, archive_file_name),
+                                       path=root, sha1_hash=archive_hash)
+
+            with zipfile.ZipFile(downloaded_path, 'r') as zf:
+                zf.extractall(path=root)
+        return path
+
 class GBWStream(_GBWStream):
     """1-Billion-Word word-level dataset for language modeling, from Google.
 
@@ -316,7 +332,7 @@ class GBWStream(_GBWStream):
 
     Parameters
     ----------
-    segment : {'train',}, default 'train'
+    segment : {'train', 'test'}, default 'train'
         Dataset segment.
     skip_empty : bool, default True
         Whether to skip the empty samples produced from sample_splitters. If False, `bos` and `eos`
@@ -331,10 +347,22 @@ class GBWStream(_GBWStream):
     """
     def __init__(self, segment='train', skip_empty=True, bos=C.BOS_TOKEN, eos=C.EOS_TOKEN,
                  root=os.path.join(_get_home_dir(), 'datasets', 'gbw')):
-        assert segment == 'train', 'Only train segment is supported for GBW'
-        self._archive_file = ('1-billion-word-language-modeling-benchmark-r13output.tar.gz',
+        self._archive_data = ('1-billion-word-language-modeling-benchmark-r13output.tar.gz',
                               '4df859766482e12264a5a9d9fb7f0e276020447d')
+        self._archive_vocab = ('gbw-b3e83215.zip',
+                               '9502eb728bf492a382b1cd57b374734ff82f8553')
         self._data_file = {'train': ('training-monolingual.tokenized.shuffled',
                                      'news.en-00*-of-00100',
-                                     '5e0d7050b37a99fd50ce7e07dc52468b2a9cd9e8')}
+                                     '5e0d7050b37a99fd50ce7e07dc52468b2a9cd9e8'),
+                           'test': ('heldout-monolingual.tokenized.shuffled',
+                                    'news.en.heldout-00000-of-00050',
+                                    '0a8e2b7496ba0b5c05158f282b9b351356875445')}
+        self._vocab_file = ('gbw-b3e83215.vocab',
+                            'b3e832155eb66018b8dfe0b77c00b498c29bed67')
         super(GBWStream, self).__init__('gbw', segment, bos, eos, skip_empty, root)
+
+    @property
+    def vocab(self):
+        path = self._get_vocab()
+        with io.open(path, 'r', encoding='utf-8') as in_file:
+            return Vocab.from_json(in_file.read())

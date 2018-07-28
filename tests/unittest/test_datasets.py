@@ -558,7 +558,7 @@ def test_lm_stream():
     train = nlp.data.WikiText2(segment='train', root=path)
     val = nlp.data.WikiText2(segment='val', root=path)
     test = nlp.data.WikiText2(segment='test', root=path)
-    lm_stream = nlp.data.LanguageModelStream(token_path, skip_empty=True, eos=EOS)
+    lm_stream = nlp.data.LanguageModelStream(token_path, skip_empty=True, eos=EOS, bos=EOS)
     counter = nlp.data.Counter(lm_stream)
     vocab = nlp.vocab.Vocab(counter, bos_token=None)
     seq_len = 35
@@ -577,8 +577,7 @@ def test_lm_stream():
         num_tokens += num_valid_tokens
     num_batches = sum(1 for _ in bptt_stream)
     # the last token doesn't appear in data
-    assert num_tokens >= total_num_tokens - batch_size, num_tokens
-    assert num_tokens < total_num_tokens, num_tokens
+    assert num_tokens < total_num_tokens
 
 def test_lazy_stream():
     EOS = nlp._constants.EOS_TOKEN
@@ -590,6 +589,17 @@ def test_lazy_stream():
     transformed_corpus = nlp.data.SimpleDataStream(corpus).transform(lambda s: s.lower())
     for x, y in zip(corpus, transformed_corpus):
         assert y == x.lower()
+
+def test_prefetch_stream():
+    EOS = nlp._constants.EOS_TOKEN
+    path = os.path.join('tests', 'data', 'wikitext-2')
+    token_path = os.path.join('tests', 'data', 'wikitext-2/*test*.tokens')
+    test = nlp.data.WikiText2(segment='test', root=path)
+    corpus = nlp.data.CorpusStream(token_path, flatten=True,
+                                   skip_empty=True, eos=EOS, sampler='sequential')
+    prefetch_corpus = nlp.data.PrefetchingStream(corpus)
+    for x, y in zip(corpus, prefetch_corpus):
+        assert y == x
 
 ###############################################################################
 # Question answering
@@ -622,3 +632,5 @@ def _test_gbw_stream():
     # https://github.com/rafaljozefowicz/lm/blob/master/1b_word_vocab.txt
     assert counter['the'] == 35936573
     assert counter['.'] == 29969612
+    vocab = gbw.vocab
+    assert len(vocab) == 793471
