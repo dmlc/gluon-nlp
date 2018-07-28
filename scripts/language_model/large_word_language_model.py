@@ -74,7 +74,7 @@ parser.add_argument('--batch-size', type=int, default=128,
 parser.add_argument('--dropout', type=float, default=0.1,
                     help='dropout applied to layers (0 = no dropout)')
 parser.add_argument('--eps', type=float, default=1,
-                    help='initial history accumulation or adagrad')
+                    help='initial history accumulation for adagrad')
 parser.add_argument('--bptt', type=int, default=20,
                     help='sequence length')
 parser.add_argument('--k', type=int, default=8192,
