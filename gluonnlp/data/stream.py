@@ -407,14 +407,21 @@ class _Prefetcher(object):
     data_queue = None
     control_queue = None
 
-    def __init__(self, stream, num_prefetch):
+    def __init__(self, stream, num_prefetch, seed, np_seed, mx_seed):
         super(_Prefetcher, self).__init__()
         self.stream = stream
         assert num_prefetch > 0, 'Unbounded Prefetcher is unsupported.'
         self.num_prefetch = num_prefetch
+        self.seed = seed
+        self.np_seed = np_seed
+        self.mx_seed = mx_seed
 
     def run(self):
         """Method representing the process’s activity."""
+        random.seed(self.seed)
+        np.random.seed(self.np_seed)
+        mx.random.seed(self.mx_seed)
+
         stream_iter = iter(self.stream)
         while True:
             try:  # Check control queue
@@ -473,6 +480,11 @@ class PrefetchingStream(object):
     ``iter_next`` and then store the data in memory. It potentially accelerates
     the data read, at the cost of more memory usage.
 
+    The python, numpy and mxnet random states in the launched Thread or Process
+    will be initialized randomly based on the next 32 bit integer in the
+    python, numpy and mxnet random generator of the caller respectively
+    (random.getrandbits(32), numpy.random.randint(0, 2**32),
+    int(mx.nd.random.uniform(0, 2**32).asscalar())).
 
     Parameters
     ----------
@@ -491,7 +503,14 @@ class PrefetchingStream(object):
         self._multiprocessing = worker_type.lower() == 'process'
 
     def __iter__(self):
+        seed = random.getrandbits(32)
+        np_seed = np.random.randint(0, 2**32)
+        mx_seed = int(mx.nd.random.uniform(0, 2**32).asscalar())
         if self._multiprocessing:
-            return _ProcessPrefetcher(self._stream, self._num_prefetch)
+            return _ProcessPrefetcher(self._stream, self._num_prefetch,
+                                      seed=seed, np_seed=np_seed,
+                                      mx_seed=mx_seed)
         else:
-            return _ThreadPrefetcher(self._stream, self._num_prefetch)
+            return _ThreadPrefetcher(self._stream, self._num_prefetch,
+                                     seed=seed, np_seed=np_seed,
+                                     mx_seed=mx_seed)
