@@ -24,18 +24,18 @@ ready for training and evaluation."""
 __all__ = ['DataStream', 'CorpusStream', 'LanguageModelStream', 'SimpleDataStream',
            'PrefetchingStream']
 
-import os
 import glob
 import itertools
-import threading
-import numpy as np
+import multiprocessing
 import os
 import random
-import multiprocessing
 import threading
+
+import numpy as np
 
 import mxnet as mx
 from mxnet.gluon.data import RandomSampler, SequentialSampler
+
 from .dataset import CorpusDataset
 
 try:
