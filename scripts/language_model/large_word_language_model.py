@@ -93,6 +93,9 @@ parser.add_argument('--test-mode', action='store_true',
                     help='Whether to run through the script with few examples')
 parser.add_argument('--eval-only', action='store_true',
                     help='Whether to only run evluation for the trained model')
+parser.add_argument('--dataset', type=str, default='gbw',
+                    help='Dataset to use for training and evaluation. '
+                    'Can be gbw, wikitext-2 or wikitext-103.')
 args = parser.parse_args()
 
 segments = ['train', 'test']
@@ -118,10 +121,25 @@ context = [mx.cpu()] if args.gpus is None or args.gpus == '' else \
 ###############################################################################
 # Data stream
 ###############################################################################
-train_data_stream, test_data_stream = \
-    [nlp.data.GBWStream(segment=segment, skip_empty=True, bos='<bos>', eos='<eos>')
-     for segment in segments]
-vocab = train_data_stream.vocab
+train_batch_size = args.batch_size * len(context)
+test_batch_size = args.batch_size
+
+if args.dataset.lower() == 'gbw':
+    train_data_stream, test_data_stream = \
+        [nlp.data.GBWStream(segment=segment, skip_empty=True, bos='<bos>', eos='<eos>')
+         for segment in segments]
+    vocab = train_data_stream.vocab
+    train_data = train_data_stream.bptt_batchify(vocab, args.bptt, train_batch_size)
+    test_data = test_data_stream.bptt_batchify(vocab, args.bptt, test_batch_size)
+    test_data = nlp.data.PrefetchingStream(test_data)
+elif args.dataset.lower() in ['wikitext-2', 'wikitext-103']:
+    Dataset = nlp.data.WikiText2 if args.dataset.lower() == 'wikitext-2' else nlp.data.WikiText103
+    train_dataset, test_dataset = \
+        [Dataset(segment=segment, skip_empty=False, bos=None, eos='<eos>')
+         for segment in ['train', 'test']]
+    vocab = nlp.Vocab(counter=nlp.data.Counter(train_dataset[0]), padding_token='<pad>', bos_token=None)
+    train_data = train_dataset.bptt_batchify(vocab, args.bptt, train_batch_size)
+    test_data = test_dataset.bptt_batchify(vocab, args.bptt, test_batch_size)
 ntokens = len(vocab)
 
 sampler = LogUniformSampler(ntokens, args.k)
@@ -151,13 +169,8 @@ def _split_and_sample(x, y):
     ss = _load(ss)
     return xs, ys, ms, ss
 
-train_batch_size = args.batch_size * len(context)
-train_data = train_data_stream.bptt_batchify(vocab, args.bptt, train_batch_size)
 train_data = train_data.transform(_split_and_sample)
 
-test_batch_size = args.batch_size
-test_data = test_data_stream.bptt_batchify(vocab, args.bptt, test_batch_size)
-test_data = nlp.data.PrefetchingStream(test_data)
 
 ###############################################################################
 # Build the model
