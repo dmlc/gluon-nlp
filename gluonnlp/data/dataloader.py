@@ -20,13 +20,9 @@
 __all__ = ['ShardedDataLoader']
 
 
-import pickle
-import io
 import sys
-import numpy as np
 import multiprocessing
 import multiprocessing.queues
-import mxnet as mx
 from mxnet.gluon.data.dataloader import Queue, SimpleQueue, DataLoader, _MultiWorkerIter
 
 
@@ -47,7 +43,7 @@ def worker_loop(dataset, key_queue, data_queue, batchify_fn):
 class _ShardedMultiWorkerIter(_MultiWorkerIter):
     """Interal multi-worker iterator for ShardedDataLoader."""
     def __init__(self, num_workers, dataset, batchify_fn, batch_sampler):
-        assert num_workers > 0, "_MultiWorkerIter is not for {} workers".format(num_workers)
+        assert num_workers > 0, '_MultiWorkerIter is not for {} workers'.format(num_workers)
         self._num_workers = num_workers
         self._dataset = dataset
         self._batchify_fn = batchify_fn
@@ -138,6 +134,3 @@ class ShardedDataLoader(DataLoader):
         # multi-worker
         return _ShardedMultiWorkerIter(self._num_workers, self._dataset,
                                        self._batchify_fn, self._batch_sampler)
-
-
-
