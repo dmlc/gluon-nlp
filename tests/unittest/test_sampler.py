@@ -30,7 +30,8 @@ def test_fixed_bucket_sampler():
                                                              num_buckets=num_buckets,
                                                              ratio=ratio, shuffle=shuffle,
                                                              use_average_length=use_average_length,
-                                                             bucket_scheme=bucket_scheme)
+                                                             bucket_scheme=bucket_scheme,
+                                                             num_shards=num_shards)
                                 print(sampler.stats())
                                 total_sampled_ids = []
                                 for batch_sample_ids in sampler:
