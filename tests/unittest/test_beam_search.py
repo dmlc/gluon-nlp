@@ -7,7 +7,7 @@ from mxnet.gluon import Block, HybridBlock, nn
 from mxnet.gluon.rnn import RNNCell, RNN
 from numpy.testing import assert_allclose
 
-from gluonnlp.model import BeamSearchSampler, BeamSearchScorer
+from gluonnlp.model import BeamSearchSampler, BeamSearchScorer, HybridBeamSearchSampler
 
 
 def test_beam_search_score():
@@ -27,7 +27,9 @@ def test_beam_search_score():
 
 
 @pytest.mark.seed(1)
-def test_beam_search():
+@pytest.mark.parametrize('hybridize', [False, True])
+@pytest.mark.parametrize('sampler_cls', [HybridBeamSearchSampler, BeamSearchSampler])
+def test_beam_search(hybridize, sampler_cls):
     def _get_new_states(states, state_info, sel_beam_ids):
         assert not state_info or isinstance(state_info, (type(states), dict)), \
                 'states and state_info don\'t match'
@@ -229,12 +231,22 @@ def test_beam_search():
                 state_info = decoder.state_info()
             else:
                 state_info = None
+            if sampler_cls is HybridBeamSearchSampler and decoder_fn is RNNLayerDecoder:
+                # Hybrid beam search does not work on non-hybridizable object
+                continue
             for beam_size, bos_id, eos_id, alpha, K in [(2, 1, 3, 0, 1.0),  (4, 2, 3, 1.0, 5.0)]:
                 scorer = BeamSearchScorer(alpha=alpha, K=K)
                 for max_length in [10, 20]:
-                    sampler = BeamSearchSampler(beam_size=beam_size, decoder=decoder, eos_id=eos_id,
-                                                scorer=scorer, max_length=max_length)
                     for batch_size in [1, 2, 5]:
+                        if sampler_cls is HybridBeamSearchSampler:
+                            sampler = sampler_cls(batch_size=batch_size, beam_size=beam_size,
+                                                  decoder=decoder, eos_id=eos_id, vocab_size=vocab_num,
+                                                  scorer=scorer, max_length=max_length)
+                            if hybridize:
+                                sampler.hybridize()
+                        else:
+                            sampler = sampler_cls(beam_size=beam_size, decoder=decoder, eos_id=eos_id,
+                                                  scorer=scorer, max_length=max_length)
                         print(type(decoder).__name__, beam_size, bos_id, eos_id, alpha, K, batch_size)
                         states = decoder.begin_state(batch_size)
                         inputs = mx.nd.full(shape=(batch_size,), val=bos_id)
