@@ -56,6 +56,17 @@ class DataStream(object):
     """
 
     def __iter__(self):
+        """Return an iterator over all elements of the DataStream.
+
+        This method returns a new iterator object that can iterate over
+        all the objects in the DataStream.
+
+        Returns
+        -------
+        iterator
+            An object implementing the Python *iterator protocol*.
+
+        """
         raise NotImplementedError
 
     def transform(self, fn):

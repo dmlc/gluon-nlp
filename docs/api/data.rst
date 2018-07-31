@@ -210,3 +210,4 @@ API Reference
 .. automodule:: gluonnlp.data
    :members:
    :imported-members:
+   :special-members: __iter__
