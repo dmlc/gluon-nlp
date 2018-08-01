@@ -24,6 +24,7 @@ from mxnet.gluon import nn, Block, contrib, rnn
 
 from ..utils import _get_rnn_layer, apply_weight_drop
 from ..sampled_block import ISLogits, SparseISLogits
+from ..convolutional_encoder import ConvolutionalEncoder
 
 class AWDRNN(Block):
     """AWD language model by salesforce.
@@ -305,6 +306,17 @@ class BigRNN(Block):
     sparse_grad : bool
         Whether to use RowSparseNDArray for the gradients w.r.t.
         weights of input and output embeddings.
+    char_cnn_embedding : dict, default None
+        If not None, use the specified dict to initialize a
+        ConvolutionalEncoder Block as a character level embedding function to
+        compute input embeddings. 'output_size' must not be specified in the
+        dict. It will be set based on embed_size.
+    char_vocab_size : int, default None
+        Size of character level vocabulary. Must be specified if
+        char_cnn_embedding is not None.
+    char_embed_size : int, default None
+        Size of character level embeddings. Must be specified if
+        char_cnn_embedding is not None.
 
     .. note: If `sparse_grad` is set to True, the gradient w.r.t input and output
              embeddings will be sparse. Only a subset of optimizers support
@@ -320,9 +332,12 @@ class BigRNN(Block):
              sparse parameters cannot be shared with other blocks, nor could we hybridize
              a block containinng sparse parameters.
     """
+
     def __init__(self, vocab_size, embed_size, hidden_size, num_layers,
-                 projection_size, num_sampled, embed_dropout=0.0, encode_dropout=0.0,
-                 sparse_weight=True, sparse_grad=True, **kwargs):
+                 projection_size, num_sampled, embed_dropout=0.0,
+                 encode_dropout=0.0, sparse_weight=True, sparse_grad=True,
+                 char_cnn_embedding=False, char_vocab_size=None,
+                 char_embed_size=15, **kwargs):
         super(BigRNN, self).__init__(**kwargs)
         self._embed_size = embed_size
         self._hidden_size = hidden_size
@@ -334,11 +349,17 @@ class BigRNN(Block):
         self._num_sampled = num_sampled
         self._sparse_weight = sparse_weight
         self._sparse_grad = sparse_grad
-        if self._sparse_weight:
+        self._char_cnn_embedding = char_cnn_embedding
+        self._char_vocab_size = char_vocab_size
+        self._char_embed_size = char_embed_size
+        if self._sparse_weight and self._char_cnn_embedding is None:
             assert self._sparse_grad, 'Dense grad with sparse weight is not supported.'
 
         with self.name_scope():
-            self.embedding = self._get_embedding()
+            if self._char_cnn_embedding is None:
+                self.embedding = self._get_embedding()
+            else:
+                self.embedding = self._get_char_cnn_embedding()
             self.encoder = self._get_encoder()
             self.decoder = self._get_decoder()
 
@@ -354,6 +375,39 @@ class BigRNN(Block):
                 embed = nn.Embedding(self._vocab_size, self._embed_size, prefix=prefix,
                                      sparse_grad=self._sparse_grad)
             block.add(embed)
+            if self._embed_dropout:
+                block.add(nn.Dropout(self._embed_dropout))
+        return block
+
+    def _get_char_cnn_embedding(self):
+        if self._char_vocab_size is None:
+            raise ValueError(
+                'Must specify char_vocab_size for character CNN embedding.')
+
+        self._conv_encoder = ConvolutionalEncoder(output_size=self._embed_size,
+                                                  **self._char_cnn_embedding)
+        prefix = 'embedding0_'
+        block = nn.Sequential()
+        with block.name_scope():
+            hybrid = nn.HybridSequential()
+            with hybrid.name_scope():
+                char_embed = nn.Embedding(self._char_vocab_size,
+                                          self._char_embed_size, prefix=prefix,
+                                          sparse_grad=self._sparse_grad)
+                hybrid.add(char_embed)
+                # Move character dimension to front for ConvolutionalEncoder
+                hybrid.add(nn.HybridLambda(lambda F, x: F.transpose(x, axes=(2, 0, 1, 3))))
+            block.add(hybrid)
+
+            def _enc(x):
+                initial_shape = x.shape
+                x = x.reshape((0, -1, self._char_embed_size))
+                x = self._conv_encoder(x)
+                x = x.reshape(initial_shape[1:-1] + (self._embed_size, ))
+                return x
+
+            block.add(nn.Lambda(_enc))
+
             if self._embed_dropout:
                 block.add(nn.Dropout(self._embed_dropout))
         return block

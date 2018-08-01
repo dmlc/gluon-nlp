@@ -59,6 +59,8 @@ parser.add_argument('--save', type=str, default='model.params',
                     help='path to save the final model.')
 parser.add_argument('--emsize', type=int, default=512,
                     help='size of word embeddings')
+parser.add_argument('--char-cnn-embedding', action='store_true',
+                    help='If specified, use character level CNN to compute word embeddings.')
 parser.add_argument('--nhid', type=int, default=2048,
                     help='number of hidden units per layer')
 parser.add_argument('--nproj', type=int, default=512,
@@ -125,24 +127,58 @@ train_batch_size = args.batch_size * len(context)
 test_batch_size = args.batch_size
 
 if args.dataset.lower() == 'gbw':
-    train_data_stream, test_data_stream = \
+    train_data, test_data = \
         [nlp.data.GBWStream(segment=segment, skip_empty=True, bos='<bos>', eos='<eos>')
          for segment in segments]
-    vocab = train_data_stream.vocab
-    train_data = train_data_stream.bptt_batchify(vocab, args.bptt, train_batch_size)
-    test_data = test_data_stream.bptt_batchify(vocab, args.bptt, test_batch_size)
-    test_data = nlp.data.PrefetchingStream(test_data)
+    vocab = train_data.vocab
 elif args.dataset.lower() in ['wikitext-2', 'wikitext-103']:
-    Dataset = nlp.data.WikiText2 if args.dataset.lower() == 'wikitext-2' else nlp.data.WikiText103
-    train_dataset, test_dataset = \
+    Dataset = nlp.data.WikiText2 if args.dataset.lower() == 'wikitext-2' \
+        else nlp.data.WikiText103
+    if args.char_cnn_embedding:
+        print('Using character CNN embedding for word-level wikitext dataset. '
+              'It is recommended to use the wikitext raw datasets '
+              'for character level work.')
+    train_data, test_data = \
         [Dataset(segment=segment, skip_empty=False, bos=None, eos='<eos>')
          for segment in ['train', 'test']]
-    vocab = nlp.Vocab(counter=nlp.data.Counter(train_dataset[0]), padding_token='<pad>', bos_token=None)
-    train_data = train_dataset.bptt_batchify(vocab, args.bptt, train_batch_size)
-    test_data = test_dataset.bptt_batchify(vocab, args.bptt, test_batch_size)
+    vocab = nlp.Vocab(
+        counter=nlp.data.Counter(train_data[0]), padding_token='<pad>',
+        bos_token=None)
+elif args.dataset.lower() in ['wikitext-2-raw', 'wikitext-103-raw']:
+    Dataset = nlp.data.WikiText2Raw if args.dataset.lower() == 'wikitext-2' \
+        else nlp.data.WikiText103Raw
+    if not args.char_cnn_embedding:
+        print(
+            'Using word-level vocabulary on character-level wikitext dataset. '
+            'It is recommended to use the word level wikitext datasets instead.'
+        )
+    train_data, test_data = \
+        [Dataset(segment=segment, skip_empty=False, bos=None, eos='<eos>')
+         for segment in ['train', 'test']]
+    vocab = nlp.Vocab(
+        counter=nlp.data.Counter(train_data[0]), padding_token='<pad>',
+        bos_token=None)
+
+train_data = train_data.bptt_batchify(vocab, args.bptt, train_batch_size)
+test_data = test_data.bptt_batchify(vocab, args.bptt, test_batch_size)
+
+if args.char_cnn_embedding:
+    subword_function = nlp.vocab.create_subword_function(
+        'CharacterSubwords', vocab=vocab)
+    idx_to_subword = subword_function(vocab.idx_to_token)
+    subword_pad_val = subword_function.char_to_idx[subword_function.padding_character]
+    subword_pad = nlp.data.batchify.Pad(pad_val=subword_pad_val)
+
 ntokens = len(vocab)
 
 sampler = LogUniformSampler(ntokens, args.k)
+
+def _load_all(xs, ys, ms, ss):
+    xs = _load(xs)
+    ys = _load(ys)
+    ms = _load(ms)
+    ss = _load(ss)
+    return xs, ys, ms, ss
 
 def _load(xs):
     ret = []
@@ -162,14 +198,40 @@ def _split_and_sample(x, y):
         ms = gluon.utils.split_data(m, num_ctx, batch_axis=1, even_split=True)
     else:
         xs, ys, ms = [x], [y], [m]
-    xs = _load(xs)
-    ys = _load(ys)
-    ms = _load(ms)
+
+    if args.char_cnn_embedding:
+        xs = [x.asnumpy().astype(int) for x in xs]
+        xs = [
+            mx.nd.reshape(
+                subword_pad([idx_to_subword[idx]
+                             for idx in x.flat]), (-4, ) + x.shape + (-2, ))
+            for x in xs
+        ]
+
     ss = [sampler(y) for y in ys]
-    ss = _load(ss)
     return xs, ys, ms, ss
 
+
+def _test_data_transform(x, y):
+    m = x != vocab[vocab.padding_token]  # mask padding
+    if args.char_cnn_embedding:
+        x = x.asnumpy().astype(int)
+        x = mx.nd.reshape(
+            subword_pad([idx_to_subword[idx]
+                         for idx in x.flat]), (-4, ) + x.shape + (-2, ))
+    return x, y, m
+
+
 train_data = train_data.transform(_split_and_sample)
+test_data = test_data.transform(_test_data_transform)
+train_data = nlp.data.PrefetchingStream(train_data, worker_type='thread')
+# TODO With worker_type='process', worker processes die once we get to the
+# second epoch with: mxnet.base.MXNetError: [19:28:56]
+# src/common/random_generator.cu:58: Check failed: err == cudaSuccess (3 vs. 0)
+# Name: rand_generator_seed_kernel ErrStr:initialization error
+train_data = train_data.transform(_load_all)
+if args.dataset.lower() == 'gbw':
+    test_data = nlp.data.PrefetchingStream(test_data)
 
 
 ###############################################################################
@@ -177,14 +239,18 @@ train_data = train_data.transform(_split_and_sample)
 ###############################################################################
 
 
-eval_model = nlp.model.language_model.BigRNN(ntokens, args.emsize, args.nhid,
-                                             args.nlayers, args.nproj,
-                                             embed_dropout=args.dropout,
-                                             encode_dropout=args.dropout)
-model = nlp.model.language_model.train.BigRNN(ntokens, args.emsize, args.nhid,
-                                              args.nlayers, args.nproj, args.k,
-                                              embed_dropout=args.dropout,
-                                              encode_dropout=args.dropout)
+eval_model = nlp.model.language_model.BigRNN(
+    ntokens, args.emsize, args.nhid, args.nlayers, args.nproj,
+    embed_dropout=args.dropout, encode_dropout=args.dropout,
+    char_cnn_embedding={}
+    if args.char_cnn_embedding else None, char_vocab_size=len(subword_function)
+    if args.char_cnn_embedding else None)
+model = nlp.model.language_model.train.BigRNN(
+    ntokens, args.emsize, args.nhid, args.nlayers, args.nproj, args.k,
+    embed_dropout=args.dropout, encode_dropout=args.dropout,
+    char_cnn_embedding={}
+    if args.char_cnn_embedding else None, char_vocab_size=len(subword_function)
+    if args.char_cnn_embedding else None)
 loss = gluon.loss.SoftmaxCrossEntropyLoss()
 
 ###############################################################################
@@ -205,7 +271,6 @@ def train():
         model.load_parameters(checkpoint_name)
         trainer.load_states('%s.state'%args.save)
         print('Loaded parameters from checkpoint %s'%(checkpoint_name))
-
     model.hybridize(static_alloc=True, static_shape=True)
     encoder_params = model.encoder.collect_params().values()
     embedding_params = list(model.embedding.collect_params().values())
@@ -237,6 +302,7 @@ def train():
 
             autograd.backward(Ls)
 
+
             # prefetch the next batch of data
             try:
                 data, target, mask, sample = next(train_data_iter)
@@ -245,8 +311,9 @@ def train():
 
             # rescale embedding grad
             for ctx in context:
-                x = embedding_params[0].grad(ctx)
-                x[:] *= args.batch_size
+                if not args.char_cnn_embedding:
+                    x = embedding_params[0].grad(ctx)
+                    x[:] *= args.batch_size
                 encoder_grad = [p.grad(ctx) for p in encoder_params]
                 # perform gradient clipping per ctx
                 gluon.utils.clip_global_norm(encoder_grad, args.clip)
@@ -300,10 +367,10 @@ def test(data_stream, batch_size, ctx=None):
     ntotal = 0
     nbatch = 0
     hidden = eval_model.begin_state(batch_size=batch_size, func=mx.nd.zeros, ctx=ctx)
-    for data, target in data_stream:
+    for data, target, mask in data_stream:
         data = data.as_in_context(ctx)
+        mask = mask.as_in_context(ctx)
         target = target.as_in_context(ctx)
-        mask = data != vocab[vocab.padding_token]
         output, hidden = eval_model(data, hidden)
         hidden = detach(hidden)
         output = output.reshape((-3, -1))

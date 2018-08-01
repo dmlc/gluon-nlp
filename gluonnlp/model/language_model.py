@@ -29,8 +29,10 @@ from mxnet.gluon import Block, nn, rnn, contrib
 from mxnet import nd, cpu, autograd
 from mxnet.gluon.model_zoo import model_store
 
-from gluonnlp.model import train
-from gluonnlp.data.utils import _load_pretrained_vocab
+from . import train
+from ..data.utils import _load_pretrained_vocab
+
+from .convolutional_encoder import ConvolutionalEncoder
 
 
 class AWDRNN(train.AWDRNN):
@@ -444,10 +446,20 @@ class BigRNN(Block):
         Dropout rate to use for embedding output.
     encode_dropout : float
         Dropout rate to use for encoder output.
+    char_cnn_embedding : bool
+        Whether to use a character level CNN to compute input embeddings.
+    char_vocab_size : int, default None
+        Size of character level vocabulary. Must be specified if
+        char_cnn_embedding is not None.
+    char_embed_size : int, default 15
+        Size of character level embeddings.
 
     """
+
     def __init__(self, vocab_size, embed_size, hidden_size, num_layers,
-                 projection_size, embed_dropout=0.0, encode_dropout=0.0, **kwargs):
+                 projection_size, embed_dropout=0.0, encode_dropout=0.0,
+                 char_cnn_embedding=False, char_vocab_size=None,
+                 char_embed_size=15, **kwargs):
         super(BigRNN, self).__init__(**kwargs)
         self._embed_size = embed_size
         self._hidden_size = hidden_size
@@ -456,9 +468,15 @@ class BigRNN(Block):
         self._embed_dropout = embed_dropout
         self._encode_dropout = encode_dropout
         self._vocab_size = vocab_size
+        self._char_cnn_embedding = char_cnn_embedding
+        self._char_vocab_size = char_vocab_size
+        self._char_embed_size = char_embed_size
 
         with self.name_scope():
-            self.embedding = self._get_embedding()
+            if self._char_cnn_embedding is None:
+                self.embedding = self._get_embedding()
+            else:
+                self.embedding = self._get_char_cnn_embedding()
             self.encoder = self._get_encoder()
             self.decoder = self._get_decoder()
 
@@ -470,6 +488,38 @@ class BigRNN(Block):
             if self._embed_dropout:
                 embedding.add(nn.Dropout(self._embed_dropout))
         return embedding
+
+    def _get_char_cnn_embedding(self):
+        if self._char_vocab_size is None:
+            raise ValueError(
+                'Must specify char_vocab_size for character CNN embedding.')
+
+        self._conv_encoder = ConvolutionalEncoder(output_size=self._embed_size,
+                                                  **self._char_cnn_embedding)
+        prefix = 'embedding0_'
+        block = nn.Sequential()
+        with block.name_scope():
+            hybrid = nn.HybridSequential()
+            with hybrid.name_scope():
+                char_embed = nn.Embedding(self._char_vocab_size,
+                                          self._char_embed_size, prefix=prefix)
+                hybrid.add(char_embed)
+                # Move character dimension to front for ConvolutionalEncoder
+                hybrid.add(nn.HybridLambda(lambda F, x: F.transpose(x, axes=(2, 0, 1, 3))))
+            block.add(hybrid)
+
+            def _enc(x):
+                initial_shape = x.shape
+                x = x.reshape((0, -1, self._char_embed_size))
+                x = self._conv_encoder(x)
+                x = x.reshape(initial_shape[1:-1] + (self._embed_size, ))
+                return x
+
+            block.add(nn.Lambda(_enc))
+
+            if self._embed_dropout:
+                block.add(nn.Dropout(self._embed_dropout))
+        return block
 
     def _get_encoder(self):
         block = rnn.HybridSequentialRNNCell()

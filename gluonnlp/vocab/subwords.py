@@ -20,6 +20,7 @@
 # pylint: disable=consider-iterating-dictionary
 """Subword functions."""
 from __future__ import absolute_import, print_function
+import itertools
 import sys
 
 import numpy as np
@@ -104,6 +105,145 @@ class SubwordFunction(object):
 
         """
         raise NotImplementedError
+
+
+@register_subword_function
+class CharacterSubwords(SubwordFunction):
+    """Map words to a list of character indices.
+
+    Parameters
+    ----------
+    vocab : gluonnlp.Vocab
+        Word level vocabulary. The characters modeled by this CharacterSubwords
+        object are extracted from the words in the vocabulary. Any reserved
+        tokens or unknown token defined by the vocabulary are treated as a
+        single character.
+    bow_token : str or None, default '<bow>'
+        If not None, reserve a character index for a special 'begin of word'
+        (bow) character. The bow index is automatically prependend to every
+        character sequence created by this subword function.
+    eow_token : str or None, default '<eow>'
+        If not None, reserve a character index for a special 'end of word'
+        (eow) character. The eow index is automatically prependend to every
+        character sequence created by this subword function.
+    padding_token : str or None, default '<pad>'
+        If not None, reserve a character index for a special 'padding'
+        character. The index associated with this special character is
+        automatically prependend to every character sequence created by this
+        subword function.
+    encoding : str, default 'utf-8
+        Encoding to use for obtaining bytes.
+
+    Attributes
+    ----------
+    bow_character : str or None
+        The representation for beginning-of-word character.
+    eow_character : str or None
+        The representation for end-of-word character.
+    padding_character : str or None
+        The representation for padding character.
+
+    """
+
+    def __init__(self, vocab, bow_character='<bow>', eow_character='<eow>',
+                 padding_character='<p>', encoding='utf-8'):
+        self._vocab = vocab
+        self._encoding = encoding
+
+        # Special characters
+        self.bow_character = bow_character
+        self.eow_character = eow_character
+        self.padding_character = padding_character
+
+        special = []
+        for c in [bow_character, eow_character, padding_character]:
+            if c is not None:
+                special.append(c)
+
+        # Special tokens in vocab
+        special.extend(vocab.reserved_tokens)
+        if vocab.unknown_token is not None:
+            special.append(vocab.unknown_token)
+        special_set = set(special)
+        self._special = special_set
+        if not len(special_set) == len(special):
+            raise ValueError(
+                'The unknown token and reserved tokens of the vocabulary '
+                'must have separate string representations '
+                'from the special characters for CharacterSubwords. '
+                '"{}" contains duplicates'.format(', '.join(special)))
+
+        chars = sorted(set(itertools.chain.from_iterable(
+            t for t in vocab.idx_to_token if t not in special)))
+        self.idx_to_char = special + chars
+        self.char_to_idx = {c: i for i, c in enumerate(self.idx_to_char)}
+
+        self._bow = self.char_to_idx[bow_character] if bow_character else None
+        self._eow = self.char_to_idx[eow_character] if eow_character else None
+
+    def __call__(self, words):
+        return [([self._bow] if self._bow else []) +
+                [self.char_to_idx[c] for c in w] +
+                ([self._eow] if self._eow else [])
+                if w not in self._special
+                else [self.char_to_idx[w]] for w in words]
+
+    def __len__(self):
+        return len(self.char_to_idx)
+
+    def __repr__(self):
+        return 'CharacterSubwords(vocab={}, encoding={})'.format(
+            self._vocab, self._encoding)
+
+    @property
+    def idx_to_character(self):
+        return self._idx_to_token
+
+    @property
+    def reserved_tokens(self):
+        return self._reserved_tokens
+
+    @property
+    def token_to_idx(self):
+        return self._token_to_idx
+
+    @property
+    def unknown_token(self):
+        return self._unknown_token
+
+    @property
+    def padding_token(self):
+        return self._padding_token
+
+    def indices_to_subwords(self, indices):
+        """Return list of characters  associated with character indices.
+
+        Parameters
+        ----------
+        subwordindices : iterable of int
+            Subword indices to look up.
+
+        Returns
+        -------
+        Iterable of str.
+
+        """
+        return [self.idx_to_char[i] for i in indices]
+
+    def subwords_to_indices(self, subwords):
+        """Return list of subwordindices associated with subwords.
+
+        Parameters
+        ----------
+        subwords : iterable of str
+            Subwords to replace by indices.
+
+        Returns
+        -------
+        Iterable of int.
+
+        """
+        return [self.char_to_idx[c] for c in subwords]
 
 
 @register_subword_function
