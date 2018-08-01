@@ -533,7 +533,7 @@ class HybridBeamSearchSampler(HybridBlock):
             return new_samples, new_new_valid_length
 
         def _else_func():
-            final_word = F.where(beam_alive_mask,
+            final_word = F.where(new_beam_alive_mask,
                                  F.full(shape=(batch_size, beam_size), val=self._eos_id),
                                  F.full(shape=(batch_size, beam_size), val=-1))
             new_samples = F.concat(
