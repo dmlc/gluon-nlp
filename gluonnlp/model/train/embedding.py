@@ -304,7 +304,7 @@ class FasttextEmbeddingModel(EmbeddingModel):
         subword_idx_to_vec = nd.array(matrix[len(idx_to_token):])
         subword_function = create_subword_function(
             'NGramHashes', num_subwords=subword_idx_to_vec.shape[0],
-            ngrams=list(range(minn, maxn + 1)), special_tokens='</s>')
+            ngrams=list(range(minn, maxn + 1)), special_tokens={'</s>'})
 
         self = cls(token_to_idx, subword_function, embedding_size=dim,
                    **kwargs)
