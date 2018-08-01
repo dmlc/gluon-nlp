@@ -135,7 +135,8 @@ def _load(xs):
             ret.append(x.as_in_context(ctx))
     return ret
 
-def _split_and_sample(x, y, m):
+def _split_and_sample(x, y):
+    m = x != vocab[vocab.padding_token]  # mask padding
     num_ctx = len(context)
     if num_ctx > 1:
         xs = gluon.utils.split_data(x, num_ctx, batch_axis=1, even_split=True)
@@ -286,10 +287,10 @@ def test(data_stream, batch_size, ctx=None):
     ntotal = 0
     nbatch = 0
     hidden = eval_model.begin_state(batch_size=batch_size, func=mx.nd.zeros, ctx=ctx)
-    for data, target, mask in data_stream:
+    for data, target in data_stream:
         data = data.as_in_context(ctx)
         target = target.as_in_context(ctx)
-        mask = mask.as_in_context(ctx)
+        mask = data != vocab[vocab.padding_token]
         output, hidden = eval_model(data, hidden)
         hidden = detach(hidden)
         output = output.reshape((-3, -1))
