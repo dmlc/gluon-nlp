@@ -49,25 +49,18 @@ These models can constructed by passing ``pretrained=True``:
 .. _AWD: https://arxiv.org/abs/1404.5997
 """
 
-from .language_model import *
 
-from .beam_search import *
-
+from . import (attention_cell, beam_search, block, convolutional_encoder,
+               highway, language_model, parameter, sampled_block, train, utils)
 from .attention_cell import *
-
-from .utils import *
-
-from .parameter import *
-
+from .beam_search import *
 from .block import *
-
-from .highway import *
-
-from .sampled_block import *
-
 from .convolutional_encoder import *
-
-from . import train
+from .highway import *
+from .language_model import *
+from .parameter import *
+from .sampled_block import *
+from .utils import *
 
 __all__ = language_model.__all__ + beam_search.__all__ + attention_cell.__all__ + \
           utils.__all__ + parameter.__all__ + block.__all__ + highway.__all__ + \

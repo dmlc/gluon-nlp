@@ -20,7 +20,8 @@
 # pylint: disable=wildcard-import
 """Vocabulary."""
 
-from .vocab import *
+from . import subwords, vocab
 from .subwords import *
+from .vocab import *
 
 __all__ = vocab.__all__ + subwords.__all__
