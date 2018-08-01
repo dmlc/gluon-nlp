@@ -107,6 +107,9 @@ def test_bptt_batchify(batch_size, seq_len):
 
 
 def test_wikitext2():
+    batch_size = 80
+    seq_len = 35
+
     train = nlp.data.WikiText2(
         segment='train', root=os.path.join('tests', 'data', 'wikitext-2'))
     val = nlp.data.WikiText2(
@@ -127,16 +130,16 @@ def test_wikitext2():
     assert len(serialized_vocab) == 962190, len(serialized_vocab)
     assert json.loads(serialized_vocab)['idx_to_token'] == vocab._idx_to_token
 
-    train_data = train.bptt_batchify(vocab, 35, 80, last_batch='discard')
+    train_data = train.bptt_batchify(vocab, seq_len, batch_size, last_batch='discard')
     assert len(train_data) == 741, len(train_data)
 
     for i, (data, target) in enumerate(train_data):
         mx.test_utils.assert_almost_equal(data[1:].asnumpy(), target[:-1].asnumpy())
-        assert data.shape == target.shape == (35, 80)
+        assert data.shape == target.shape == (seq_len, batch_size)
 
-    train_data = train.bptt_batchify(vocab, 35, 80, last_batch='keep')
+    train_data = train.bptt_batchify(vocab, seq_len, batch_size, last_batch='keep')
     assert len(train_data) == 742, len(train_data)
-    assert train_data[-1][0].shape[0] < 35
+    assert train_data[-1][0].shape[0] <= seq_len
     for i, (data, target) in enumerate(train_data):
         mx.test_utils.assert_almost_equal(data[1:].asnumpy(), target[:-1].asnumpy())
         assert data.shape == target.shape
@@ -161,8 +164,8 @@ def test_wikitext2():
     assert len(test[0]) == 245569, len(test[0])
     assert len(test_freq) == 14143, len(test_freq)
     assert test_freq['English'] == 32, test_freq['English']
-    batched_data = train.batchify(vocab, 80)
-    assert batched_data.shape == (26107, 80)
+    batched_data = train.batchify(vocab, batch_size)
+    assert batched_data.shape == (26107, batch_size)
 
 
 def test_wikitext2_raw():
