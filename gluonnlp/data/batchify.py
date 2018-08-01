@@ -24,7 +24,7 @@ import numpy as np
 import mxnet as mx
 
 
-def _pad_arrs_to_max_length(arrs, pad_axis, pad_val, use_shared_mem=False):
+def _pad_arrs_to_max_length(arrs, pad_axis, pad_val, use_shared_mem, dtype):
     """Inner Implementation of the Pad batchify
 
     Parameters
@@ -46,13 +46,14 @@ def _pad_arrs_to_max_length(arrs, pad_axis, pad_val, use_shared_mem=False):
     ret_shape = list(arrs[0].shape)
     ret_shape[pad_axis] = max_size
     ret_shape = (len(arrs), ) + tuple(ret_shape)
+    dtype = arrs[0].dtype if dtype is None else dtype
     if use_shared_mem:
         ret = mx.nd.full(shape=ret_shape, val=pad_val, ctx=mx.Context('cpu_shared', 0),
-                         dtype=arrs[0].dtype)
+                         dtype=dtype)
         original_length = mx.nd.array(original_length, ctx=mx.Context('cpu_shared', 0),
                                       dtype=np.int32)
     else:
-        ret = mx.nd.full(shape=ret_shape, val=pad_val, dtype=arrs[0].dtype)
+        ret = mx.nd.full(shape=ret_shape, val=pad_val, dtype=dtype)
         original_length = mx.nd.array(original_length, dtype=np.int32)
     for i, arr in enumerate(arrs):
         if arr.shape[pad_axis] == max_size:
@@ -60,25 +61,28 @@ def _pad_arrs_to_max_length(arrs, pad_axis, pad_val, use_shared_mem=False):
         else:
             slices = [slice(None) for _ in range(arr.ndim)]
             slices[pad_axis] = slice(0, arr.shape[pad_axis])
-            slices = [slice(i, i + 1)] + slices
-            ret[tuple(slices)] = arr
+            if slices[pad_axis].start != slices[pad_axis].stop:
+                slices = [slice(i, i + 1)] + slices
+                ret[tuple(slices)] = arr
     return ret, original_length
 
 
-def _stack_arrs(arrs, use_shared_mem=False):
+def _stack_arrs(arrs, use_shared_mem, dtype):
     if isinstance(arrs[0], mx.nd.NDArray):
+        dtype = arrs[0].dtype if dtype is None else dtype
         if use_shared_mem:
-            out = mx.nd.empty((len(arrs),) + arrs[0].shape, dtype=arrs[0].dtype,
+            out = mx.nd.empty((len(arrs),) + arrs[0].shape, dtype=dtype,
                               ctx=mx.Context('cpu_shared', 0))
             return mx.nd.stack(*arrs, out=out)
         else:
             return mx.nd.stack(*arrs)
     else:
         out = np.asarray(arrs)
+        dtype = out.dtype if dtype is None else dtype
         if use_shared_mem:
-            return mx.nd.array(out, ctx=mx.Context('cpu_shared', 0))
+            return mx.nd.array(out, ctx=mx.Context('cpu_shared', 0), dtype=dtype)
         else:
-            return mx.nd.array(out)
+            return mx.nd.array(out, dtype=dtype)
 
 
 class Stack(object):
@@ -86,14 +90,19 @@ class Stack(object):
 
     The N input samples must have the same shape/length and will be stacked to construct a batch.
 
+    Parameters
+    ----------
+    dtype : str or numpy.dtype, default None
+        The value type of the output. If it is set to None, the input data type is used.
+
     Examples
     --------
-    >>> from gluonnlp.data import bf
+    >>> from gluonnlp.data import batchify
     >>> # Stack multiple lists
     >>> a = [1, 2, 3, 4]
     >>> b = [4, 5, 6, 8]
     >>> c = [8, 9, 1, 2]
-    >>> bf.Stack()([a, b, c])
+    >>> batchify.Stack()([a, b, c])
     [[1. 2. 3. 4.]
      [4. 5. 6. 8.]
      [8. 9. 1. 2.]]
@@ -102,7 +111,7 @@ class Stack(object):
     >>> import numpy as np
     >>> a = np.array([[1, 2, 3, 4], [5, 6, 7, 8]])
     >>> b = np.array([[5, 6, 7, 8], [1, 2, 3, 4]])
-    >>> bf.Stack()([a, b])
+    >>> batchify.Stack()([a, b])
     [[[1. 2. 3. 4.]
       [5. 6. 7. 8.]]
      [[5. 6. 7. 8.]
@@ -112,13 +121,16 @@ class Stack(object):
     >>> import mxnet as mx
     >>> a = mx.nd.array([[1, 2, 3, 4], [5, 6, 7, 8]])
     >>> b = mx.nd.array([[5, 6, 7, 8], [1, 2, 3, 4]])
-    >>> bf.Stack()([a, b])
+    >>> batchify.Stack()([a, b])
     [[[1. 2. 3. 4.]
       [5. 6. 7. 8.]]
      [[5. 6. 7. 8.]
       [1. 2. 3. 4.]]]
     <NDArray 2x2x4 @cpu(0)>
     """
+    def __init__(self, dtype=None):
+        self._dtype = dtype
+
     def __call__(self, data):
         """Batchify the input data
 
@@ -131,7 +143,7 @@ class Stack(object):
         -------
         batch_data : NDArray
         """
-        return _stack_arrs(data, True)
+        return _stack_arrs(data, True, self._dtype)
 
 
 class Pad(object):
@@ -155,15 +167,17 @@ class Pad(object):
         The padding value.
     ret_length : bool, default False
         Whether to return the valid length in the output.
+    dtype : str or numpy.dtype, default None
+        The value type of the output. If it is set to None, the input data type is used.
 
     Examples
     --------
-    >>> from gluonnlp.data import bf
+    >>> from gluonnlp.data import batchify
     >>> # Inputs are multiple lists
     >>> a = [1, 2, 3, 4]
     >>> b = [4, 5, 6]
     >>> c = [8, 2]
-    >>> bf.Pad()([a, b, c])
+    >>> batchify.Pad()([a, b, c])
     [[ 1  2  3  4]
      [ 4  5  6  0]
      [ 8  2  0  0]]
@@ -172,7 +186,7 @@ class Pad(object):
     >>> a = [1, 2, 3, 4]
     >>> b = [4, 5, 6]
     >>> c = [8, 2]
-    >>> bf.Pad(ret_length=True)([a, b, c])
+    >>> batchify.Pad(ret_length=True)([a, b, c])
     (
      [[1 2 3 4]
       [4 5 6 0]
@@ -184,7 +198,7 @@ class Pad(object):
     >>> import numpy as np
     >>> a = np.array([[1, 2, 3, 4], [5, 6, 7, 8]])
     >>> b = np.array([[5, 8], [1, 2]])
-    >>> bf.Pad(axis=1, pad_val=-1)([a, b])
+    >>> batchify.Pad(axis=1, pad_val=-1)([a, b])
     [[[ 1  2  3  4]
       [ 5  6  7  8]]
      [[ 5  8 -1 -1]
@@ -194,20 +208,21 @@ class Pad(object):
     >>> import mxnet as mx
     >>> a = mx.nd.array([[1, 2, 3, 4], [5, 6, 7, 8]])
     >>> b = mx.nd.array([[5, 8], [1, 2]])
-    >>> bf.Pad(axis=1, pad_val=-1)([a, b])
+    >>> batchify.Pad(axis=1, pad_val=-1)([a, b])
     [[[ 1.  2.  3.  4.]
       [ 5.  6.  7.  8.]]
      [[ 5.  8. -1. -1.]
       [ 1.  2. -1. -1.]]]
     <NDArray 2x2x4 @cpu(0)>
     """
-    def __init__(self, axis=0, pad_val=0, ret_length=False):
+    def __init__(self, axis=0, pad_val=0, ret_length=False, dtype=None):
         self._axis = axis
         assert isinstance(axis, int), 'axis must be an integer! ' \
                                       'Received axis=%s, type=%s.' % (str(axis),
                                                                       str(type(axis)))
         self._pad_val = pad_val
         self._ret_length = ret_length
+        self._dtype = dtype
 
     def __call__(self, data):
         """Batchify the input data.
@@ -228,7 +243,8 @@ class Pad(object):
         """
         if isinstance(data[0], (mx.nd.NDArray, np.ndarray, list)):
             padded_arr, original_length = _pad_arrs_to_max_length(data, self._axis,
-                                                                  self._pad_val, True)
+                                                                  self._pad_val, True,
+                                                                  self._dtype)
             if self._ret_length:
                 return padded_arr, original_length
             else:
@@ -255,11 +271,11 @@ class Tuple(object):
 
     Examples
     --------
-    >>> from gluonnlp.data import bf
+    >>> from gluonnlp.data import batchify
     >>> a = ([1, 2, 3, 4], 0)
     >>> b = ([5, 7], 1)
     >>> c = ([1, 2, 3, 4, 5, 6, 7], 0)
-    >>> bf.Tuple(bf.Pad(), bf.Stack())([a, b])
+    >>> batchify.Tuple(batchify.Pad(), batchify.Stack())([a, b])
     (
      [[1 2 3 4]
       [5 7 0 0]]
@@ -267,7 +283,7 @@ class Tuple(object):
      [0. 1.]
      <NDArray 2 @cpu(0)>)
     >>> # Input can also be a list
-    >>> bf.Tuple([bf.Pad(), bf.Stack()])([a, b])
+    >>> batchify.Tuple([batchify.Pad(), batchify.Stack()])([a, b])
     (
      [[1 2 3 4]
       [5 7 0 0]]
@@ -278,7 +294,7 @@ class Tuple(object):
     >>> a = ([1, 2, 3, 4], [5, 6], 1)
     >>> b = ([1, 2], [3, 4, 5, 6], 0)
     >>> c = ([1], [2, 3, 4, 5, 6], 0)
-    >>> bf.Tuple(bf.Pad(), bf.Pad(), bf.Stack())([a, b, c])
+    >>> batchify.Tuple(batchify.Pad(), batchify.Pad(), batchify.Stack())([a, b, c])
     (
      [[1 2 3 4]
       [1 2 0 0]

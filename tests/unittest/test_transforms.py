@@ -19,6 +19,8 @@
 
 from __future__ import print_function
 
+import sys
+import pytest
 from gluonnlp.data.transforms import *
 import numpy as np
 from numpy.testing import assert_allclose
@@ -67,7 +69,8 @@ def test_pad_sequence():
                             ret_l = np.array(pad_seq(dat_npy.tolist()))
                             assert_allclose(ret_l, gt_npy)
 
-
+@pytest.mark.skipif(sys.version_info <= (2,7),
+                    reason="requires python3.5 or higher")
 def test_moses_tokenizer():
     tokenizer = SacreMosesTokenizer()
     text = u"Introducing Gluon: An Easy-to-Use Programming Interface for Flexible Deep Learning."
@@ -91,7 +94,8 @@ def test_spacy_tokenizer():
     assert isinstance(ret, list)
     assert len(ret) > 0
 
-
+@pytest.mark.skipif(sys.version_info < (2,7),
+                    reason="requires python3.5 or higher")
 def test_moses_detokenizer():
     detokenizer = SacreMosesDetokenizer()
     text = ['Introducing', 'Gluon', ':', 'An', 'Easy-to-Use', 'Programming',

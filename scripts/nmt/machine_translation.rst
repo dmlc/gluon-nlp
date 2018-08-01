@@ -19,7 +19,7 @@ Use the following commands to train the Transformer model on the WMT14 dataset f
 
    $ python train_transformer.py --dataset WMT2014BPE --src_lang en --tgt_lang de --batch_size 4096 \
                           --optimizer adam --num_accumulated 8 --lr 1.0 --warmup_steps 8000 \
-                          --save_dir transformer_en_de_u512 --epochs 40 --gpus 0,1,2,3 --full False
+                          --save_dir transformer_en_de_u512 --epochs 40 --gpus 0,1,2,3 --scaled \
                           --average_start 5 --num_buckets 20 --bucket_scheme exp --bleu 13a
 
 It gets official mteval-v13a BLEU score equals to 26.95 on newstest2014 (http://statmt.org/wmt14/test-filtered.tgz).
@@ -34,5 +34,5 @@ and following preprocessing pipeline is done:
     mosesdecoder/scripts/tokenizer/remove-non-printing-char.perl
     mosesdecoder/scripts/tokenizer/tokenizer.perl -q -no-escape -protected mosesdecoder/scripts/tokenizer/basic-protected-patterns -l de.
 
-If we set ``--full True``, the testing is performed on newstest2014 (http://statmt.org/wmt14/test-full.tgz). Then, we can
+If we turn on  ``--full``, the testing is performed on newstest2014 (http://statmt.org/wmt14/test-full.tgz). Then, we can
 obtain BLEU=26.89 with ``--bleu 13a``, BLEU=27.66 with ``--bleu intl``, and BLEU=28.63 with ``--bleu tweaked``

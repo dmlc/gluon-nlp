@@ -24,14 +24,14 @@ from __future__ import print_function
 
 __all__ = ['ConvolutionalEncoder']
 
-from mxnet import gluon, nd
+from mxnet import gluon
 from mxnet.gluon import nn
 from gluonnlp.initializer import HighwayBias
 
 from .highway import Highway
 
 
-class ConvolutionalEncoder(gluon.Block):
+class ConvolutionalEncoder(gluon.HybridBlock):
     r"""Convolutional encoder.
 
     We implement the convolutional encoder proposed in the following work::
@@ -104,17 +104,19 @@ class ConvolutionalEncoder(gluon.Block):
         self._output_size = output_size
 
         with self.name_scope():
-            self._convs = nn.HybridSequential()
+            self._convs = gluon.contrib.nn.HybridConcurrent()
             maxpool_output_size = 0
             with self._convs.name_scope():
                 for num_filter, ngram_size in zip(self._num_filters, self._ngram_filter_sizes):
-                    self._convs.add(nn.Conv1D(in_channels=self._embed_size,
-                                              channels=num_filter,
-                                              kernel_size=ngram_size,
-                                              use_bias=True))
+                    seq = nn.HybridSequential()
+                    seq.add(nn.Conv1D(in_channels=self._embed_size,
+                                      channels=num_filter,
+                                      kernel_size=ngram_size,
+                                      use_bias=True))
+                    seq.add(gluon.nn.HybridLambda(lambda F, x: F.max(x, axis=2)))
+                    seq.add(nn.Activation(conv_layer_activation))
+                    self._convs.add(seq)
                     maxpool_output_size += num_filter
-
-            self._activation = nn.Activation(conv_layer_activation)
 
             if self._num_highway:
                 self._highways = Highway(maxpool_output_size,
@@ -131,7 +133,7 @@ class ConvolutionalEncoder(gluon.Block):
                 self._projection = None
                 self._output_size = maxpool_output_size
 
-    def forward(self, inputs, mask=None): # pylint: disable=arguments-differ
+    def hybrid_forward(self, F, inputs, mask=None): # pylint: disable=arguments-differ
         r"""
         Forward computation for char_encoder
 
@@ -150,17 +152,11 @@ class ConvolutionalEncoder(gluon.Block):
 
         """
         if mask is not None:
-            inputs = inputs * mask.expand_dims(-1)
+            inputs = F.broadcast_mul(inputs, mask.expand_dims(-1))
 
-        inputs = nd.transpose(inputs, axes=(1, 2, 0))
+        inputs = F.transpose(inputs, axes=(1, 2, 0))
 
-        filter_outputs = []
-        for conv in self._convs:
-            filter_outputs.append(
-                self._activation(conv(inputs).max(axis=2))
-            )
-
-        output = nd.concat(*filter_outputs, dim=1) if len(filter_outputs) > 1 else filter_outputs[0]
+        output = self._convs(inputs)
 
         if self._highways:
             output = self._highways(output)

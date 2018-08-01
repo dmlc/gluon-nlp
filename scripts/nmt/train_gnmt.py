@@ -330,8 +330,11 @@ def train():
     """Training function."""
     trainer = gluon.Trainer(model.collect_params(), args.optimizer, {'learning_rate': args.lr})
 
-    train_batchify_fn = btf.Tuple(btf.Pad(), btf.Pad(), btf.Stack(), btf.Stack())
-    test_batchify_fn = btf.Tuple(btf.Pad(), btf.Pad(), btf.Stack(), btf.Stack(), btf.Stack())
+    train_batchify_fn = btf.Tuple(btf.Pad(), btf.Pad(),
+                                  btf.Stack(dtype='float32'), btf.Stack(dtype='float32'))
+    test_batchify_fn = btf.Tuple(btf.Pad(), btf.Pad(),
+                                 btf.Stack(dtype='float32'), btf.Stack(dtype='float32'),
+                                 btf.Stack())
     if args.bucket_scheme == 'constant':
         bucket_scheme = ConstWidthBucket()
     elif args.bucket_scheme == 'linear':

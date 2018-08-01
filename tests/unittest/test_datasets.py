@@ -23,7 +23,6 @@ import datetime
 import json
 import os
 import random
-import sys
 
 from flaky import flaky
 import mxnet as mx
@@ -32,10 +31,10 @@ import pytest
 
 import gluonnlp as nlp
 
-if sys.version_info[0] == 3:
-    _str_types = (str, )
-else:
+try:
     _str_types = (str, unicode)
+except NameError:  # Python 3
+    _str_types = (str, )
 
 
 ###############################################################################
@@ -219,13 +218,17 @@ def _assert_similarity_dataset(data):
 
 
 @flaky(max_runs=2, min_passes=1)
-def test_wordsim353():
-    for segment, length in (("all", 252 + 203), ("relatedness", 252),
-                            ("similarity", 203)):
-        data = nlp.data.WordSim353(segment=segment, root=os.path.join(
-            'tests', 'externaldata', 'wordsim353'))
-        assert len(data) == length, len(data)
-        _assert_similarity_dataset(data)
+@pytest.mark.parametrize('segment,length', [('all', 352), ('relatedness', 252),
+                                            ('similarity', 203)])
+def test_wordsim353(segment, length):
+    # 'all' has length 352 as the original dataset contains the 'money/cash'
+    # pair twice with different similarity ratings, which was fixed by the
+    # http://alfonseca.org/eng/research/wordsim353.html version of the dataset
+    # that we are using.
+    data = nlp.data.WordSim353(segment=segment, root=os.path.join(
+        'tests', 'externaldata', 'wordsim353'))
+    assert len(data) == length, len(data)
+    _assert_similarity_dataset(data)
 
 
 def test_men():
@@ -261,8 +264,6 @@ def test_verb130():
 
 
 @flaky(max_runs=2, min_passes=1)
-@pytest.mark.skipif(datetime.date.today() < datetime.date(2018, 5, 7),
-                    reason='Disabled for 2 weeks due to server downtime.')
 def test_rare_words():
     data = nlp.data.RareWords(
         root=os.path.join('tests', 'externaldata', 'rarewords'))
@@ -390,6 +391,8 @@ def test_conll2002_esp(segment, length):
         assert all(isinstance(n, _str_types) for n in ner), ner
 
 
+@pytest.mark.skipif(datetime.date.today() < datetime.date(2018, 7, 7),
+                    reason='Disabled for 1 weeks due to server downtime.')
 @flaky(max_runs=2, min_passes=1)
 @pytest.mark.parametrize('segment,length', [
     ('train', 8936),
@@ -555,7 +558,7 @@ def test_lm_stream():
     train = nlp.data.WikiText2(segment='train', root=path)
     val = nlp.data.WikiText2(segment='val', root=path)
     test = nlp.data.WikiText2(segment='test', root=path)
-    lm_stream = nlp.data.LanguageModelStream(token_path, skip_empty=True, eos=EOS)
+    lm_stream = nlp.data.LanguageModelStream(token_path, skip_empty=True, eos=EOS, bos=EOS)
     counter = nlp.data.Counter(lm_stream)
     vocab = nlp.vocab.Vocab(counter, bos_token=None)
     seq_len = 35
@@ -574,8 +577,7 @@ def test_lm_stream():
         num_tokens += num_valid_tokens
     num_batches = sum(1 for _ in bptt_stream)
     # the last token doesn't appear in data
-    assert num_tokens >= total_num_tokens - batch_size, num_tokens
-    assert num_tokens < total_num_tokens, num_tokens
+    assert num_tokens < total_num_tokens
 
 def test_lazy_stream():
     EOS = nlp._constants.EOS_TOKEN
@@ -587,6 +589,17 @@ def test_lazy_stream():
     transformed_corpus = nlp.data.SimpleDataStream(corpus).transform(lambda s: s.lower())
     for x, y in zip(corpus, transformed_corpus):
         assert y == x.lower()
+
+def test_prefetch_stream():
+    EOS = nlp._constants.EOS_TOKEN
+    path = os.path.join('tests', 'data', 'wikitext-2')
+    token_path = os.path.join('tests', 'data', 'wikitext-2/*test*.tokens')
+    test = nlp.data.WikiText2(segment='test', root=path)
+    corpus = nlp.data.CorpusStream(token_path, flatten=True,
+                                   skip_empty=True, eos=EOS, sampler='sequential')
+    prefetch_corpus = nlp.data.PrefetchingStream(corpus)
+    for x, y in zip(corpus, prefetch_corpus):
+        assert y == x
 
 ###############################################################################
 # Question answering
@@ -619,3 +632,5 @@ def _test_gbw_stream():
     # https://github.com/rafaljozefowicz/lm/blob/master/1b_word_vocab.txt
     assert counter['the'] == 35936573
     assert counter['.'] == 29969612
+    vocab = gbw.vocab
+    assert len(vocab) == 793471

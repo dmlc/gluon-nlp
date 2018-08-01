@@ -123,7 +123,7 @@ class ConstWidthBucket(BucketScheme):
             A list including the keys of the buckets.
         """
         if not isinstance(max_lengths, INT_TYPES):
-            bucket_width_l = [max((max_len - min_len) // num_buckets, 1)
+            bucket_width_l = [max((1 + max_len - min_len) // num_buckets, 1)
                               for max_len, min_len in
                               zip(max_lengths, min_lengths)]
             bucket_keys = \
@@ -131,7 +131,7 @@ class ConstWidthBucket(BucketScheme):
                        zip(max_lengths, min_lengths, bucket_width_l))
                  for i in range(num_buckets)]
         else:
-            bucket_width = max((max_lengths - min_lengths) // num_buckets, 1)
+            bucket_width = max((1 + max_lengths - min_lengths) // num_buckets, 1)
             bucket_keys = [max(max_lengths - i * bucket_width, min_lengths)
                            for i in range(num_buckets)]
         return bucket_keys
@@ -561,8 +561,9 @@ def _context_generator(coded_sentences, sentence_boundaries, window,
     word_pointer = 0
     while True:
         batch_size = min(batch_size, len(coded_sentences) - word_pointer)
-        center = coded_sentences[word_pointer:
-                                 word_pointer + batch_size].astype(np.float32)
+        center = np.expand_dims(
+            coded_sentences[word_pointer:word_pointer + batch_size],
+            -1).astype(np.float32)
         context = np.zeros((batch_size, window * 2), dtype=np.float32)
         mask = np.zeros((batch_size, window * 2), dtype=np.float32)
 

@@ -34,12 +34,51 @@ def eprint(*args, **kwargs):
 def get_frequencies(dataset):
     return nlp.data.utils.Counter(x for tup in dataset for x in tup[0]+tup[1][-1:])
 
+# disabled since it takes a long time to download the model
+def _test_pretrained_big_text_models():
+    text_models = ['big_rnn_lm_2048_512']
+    pretrained_to_test = {'big_rnn_lm_2048_512': 'gbw'}
+
+    for model_name in text_models:
+        eprint('testing forward for %s' % model_name)
+        pretrained_dataset = pretrained_to_test.get(model_name)
+        model, _ = get_text_model(model_name, dataset_name=pretrained_dataset,
+                                  pretrained=True, root='tests/data/model/')
+
+        print(model)
+        batch_size = 10
+        hidden = model.begin_state(batch_size=batch_size, func=mx.nd.zeros)
+        output, state = model(mx.nd.arange(330).reshape((33, 10)), hidden)
+        output.wait_to_read()
+
+def test_big_text_models():
+    # use a small vocabulary for testing
+    val = nlp.data.WikiText2(segment='val', root='tests/data/wikitext-2')
+    val_freq = get_frequencies(val)
+    vocab = nlp.Vocab(val_freq)
+    text_models = ['big_rnn_lm_2048_512']
+
+    for model_name in text_models:
+        eprint('testing forward for %s' % model_name)
+        model, _ = get_text_model(model_name, vocab=vocab, root='tests/data/model/')
+
+        print(model)
+        model.collect_params().initialize()
+        batch_size = 10
+        hidden = model.begin_state(batch_size=batch_size, func=mx.nd.zeros)
+        output, state = model(mx.nd.arange(330).reshape((33, 10)), hidden)
+        output.wait_to_read()
+
 def test_text_models():
     val = nlp.data.WikiText2(segment='val', root='tests/data/wikitext-2')
     val_freq = get_frequencies(val)
     vocab = nlp.Vocab(val_freq)
     text_models = ['standard_lstm_lm_200', 'standard_lstm_lm_650', 'standard_lstm_lm_1500', 'awd_lstm_lm_1150', 'awd_lstm_lm_600']
-    pretrained_to_test = {'standard_lstm_lm_1500': 'wikitext-2', 'standard_lstm_lm_650': 'wikitext-2', 'standard_lstm_lm_200': 'wikitext-2', 'awd_lstm_lm_1150': 'wikitext-2', 'awd_lstm_lm_600': 'wikitext-2'}
+    pretrained_to_test = {'standard_lstm_lm_1500': 'wikitext-2',
+                          'standard_lstm_lm_650': 'wikitext-2',
+                          'standard_lstm_lm_200': 'wikitext-2',
+                          'awd_lstm_lm_1150': 'wikitext-2',
+                          'awd_lstm_lm_600': 'wikitext-2'}
 
     for model_name in text_models:
         eprint('testing forward for %s' % model_name)
@@ -115,3 +154,56 @@ def test_save_load_cache_models():
             print(cache_cell)
             cache_cell.save_params('tests/data/model/' + name + '-' + dataset_name + '.params')
             cache_cell.load_params('tests/data/model/' + name + '-' + dataset_name + '.params')
+
+def test_save_load_big_rnn_models():
+    ctx = mx.cpu()
+    batch_size = 1
+    num_sampled = 6
+    eval_model = nlp.model.language_model.BigRNN(10, 2, 3, 4, 5, 0.1, prefix='bigrnn')
+    model = nlp.model.language_model.train.BigRNN(10, 2, 3, 4, 5, num_sampled, 0.1,
+                                                  prefix='bigrnn')
+    model_params = sorted(model.collect_params().keys())
+    eval_model_params = sorted(eval_model.collect_params().keys())
+    for p0, p1 in zip(model_params, eval_model_params):
+        assert p0 == p1, (p0, p1)
+    model.initialize(mx.init.Xavier(), ctx=ctx)
+    trainer = mx.gluon.Trainer(model.collect_params(), 'sgd')
+    batch_size = 1
+    x = mx.nd.ones((1,1))
+    y = mx.nd.ones((1,1))
+    samples = (mx.nd.ones((num_sampled,)), mx.nd.ones((1,1)), mx.nd.ones((num_sampled)))
+    hidden = model.begin_state(batch_size=batch_size, func=mx.nd.zeros, ctx=ctx)
+    model(x, y, hidden, samples)
+    mx.nd.waitall()
+    path = 'tests/data/model/test_save_load_big_rnn_models.params'
+    model.save_parameters(path)
+    eval_model.load_parameters(path)
+
+def test_big_rnn_model_share_params():
+    ctx = mx.cpu()
+    seq_len = 2
+    batch_size = 1
+    num_sampled = 6
+    vocab_size = 10
+    shape = (seq_len, batch_size)
+    model = nlp.model.language_model.train.BigRNN(vocab_size, 2, 3, 4, 5, num_sampled, 0.1,
+                                                  prefix='bigrnn', sparse_weight=False,
+                                                  sparse_grad=False)
+    model.initialize(mx.init.Xavier(), ctx=ctx)
+    trainer = mx.gluon.Trainer(model.collect_params(), 'sgd')
+    batch_size = 1
+    x = mx.nd.ones(shape)
+    y = mx.nd.ones(shape)
+    samples = (mx.nd.ones((num_sampled,)), mx.nd.ones(shape), mx.nd.ones((num_sampled,)))
+    hidden = model.begin_state(batch_size=batch_size, func=mx.nd.zeros, ctx=ctx)
+    logits, hidden, new_y = model(x, y, hidden, samples)
+    assert logits.shape == (seq_len, batch_size, 1+num_sampled)
+    assert new_y.shape == (seq_len, batch_size)
+    assert model.decoder.weight._grad_stype == 'default'
+    mx.nd.waitall()
+    eval_model = nlp.model.language_model.BigRNN(vocab_size, 2, 3, 4, 5, 0.1, prefix='bigrnn',
+                                                 params=model.collect_params())
+    eval_model.initialize(mx.init.Xavier(), ctx=ctx)
+    logits, hidden = eval_model(x, hidden)
+    assert logits.shape == (seq_len, batch_size, vocab_size)
+    mx.nd.waitall()
