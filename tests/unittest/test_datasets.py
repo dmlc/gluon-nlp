@@ -620,15 +620,25 @@ def test_lazy_stream():
     for x, y in zip(corpus, transformed_corpus):
         assert all([sx.lower() == sy for sx, sy in zip(x, y)])
 
-def test_prefetch_stream():
+@pytest.mark.parametrize('num_prefetch', [0, 1, 10])
+@pytest.mark.parametrize('worker_type', ['thread', 'process'])
+def test_prefetch_stream(num_prefetch, worker_type):
     EOS = nlp._constants.EOS_TOKEN
     path = os.path.join('tests', 'data', 'wikitext-2')
     token_path = os.path.join('tests', 'data', 'wikitext-2/*test*.tokens')
     test = nlp.data.WikiText2(segment='test', root=path)
     corpus = nlp.data.CorpusStream(token_path, flatten=True, skip_empty=True, eos=EOS)
-    prefetch_corpus = nlp.data.PrefetchingStream(corpus)
-    for x, y in zip(corpus, prefetch_corpus):
-        assert all([sx == sy for sx, sy in zip(x, y)])
+    if num_prefetch < 1:
+        with pytest.raises(ValueError):
+            prefetch_corpus = nlp.data.PrefetchingStream(
+                corpus, num_prefetch=num_prefetch, worker_type=worker_type)
+    else:
+        prefetch_corpus = nlp.data.PrefetchingStream(
+            corpus, num_prefetch=num_prefetch, worker_type=worker_type)
+        prefetch_corpus_iter = iter(prefetch_corpus)
+        for x in corpus:
+            y = next(prefetch_corpus_iter)
+            assert all([sx == sy for sx, sy in zip(x, y)])
 
 ###############################################################################
 # Question answering

@@ -510,6 +510,8 @@ class PrefetchingStream(object):
     def __init__(self, stream, num_prefetch=1, worker_type='thread'):
         self._stream = stream
         self._num_prefetch = num_prefetch
+        if num_prefetch < 1:
+            raise ValueError('num_prefetch must be greater 0.')
         assert worker_type.lower() in ['thread', 'process']
         self._multiprocessing = worker_type.lower() == 'process'
 
