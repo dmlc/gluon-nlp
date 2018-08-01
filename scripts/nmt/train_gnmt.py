@@ -443,7 +443,8 @@ def train():
             new_lr = trainer.learning_rate * args.lr_update_factor
             logging.info('Learning rate change to {}'.format(new_lr))
             trainer.set_learning_rate(new_lr)
-    model.load_params(os.path.join(args.save_dir, 'valid_best.params'))
+    if os.path.exists(os.path.join(args.save_dir, 'valid_best.params')):
+        model.load_params(os.path.join(args.save_dir, 'valid_best.params'))
     valid_loss, valid_translation_out = evaluate(val_data_loader)
     valid_bleu_score, _, _, _, _ = compute_bleu([val_tgt_sentences], valid_translation_out)
     logging.info('Best model valid Loss={:.4f}, valid ppl={:.4f}, valid bleu={:.2f}'

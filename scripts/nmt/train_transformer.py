@@ -503,8 +503,6 @@ def train():
     step_num = 0
     warmup_steps = args.warmup_steps
     grad_interval = args.num_accumulated
-    save_path = os.path.join(args.save_dir, 'valid_best.params')
-    model.save_params(save_path)
     model.collect_params().setattr('grad_req', 'add')
     average_start = (len(train_data_loader) // grad_interval) * (args.epochs - args.average_start)
     average_param_dict = None
