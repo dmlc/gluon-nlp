@@ -180,6 +180,7 @@ class NLTKMosesTokenizer(object):
             from nltk.tokenize.moses import MosesTokenizer
         except ImportError:
             warnings.warn('NLTK or relevant packages are not installed. '
+                          'Due to the LGPL 2.1+, moses has been deprecated in NLTK since 3.3.0. '
                           'You must install NLTK <= 3.2.5 in order to use the '
                           'NLTKMosesTokenizer. You can refer to the official '
                           'installation guide in https://www.nltk.org/install.html .'
@@ -393,6 +394,7 @@ class NLTKMosesDetokenizer(object):
             from nltk.tokenize.moses import MosesDetokenizer
         except ImportError:
             warnings.warn('NLTK or relevant packages are not installed. '
+                          'Due to the LGPL 2.1+, moses has been deprecated in NLTK since 3.3.0. '
                           'You must install NLTK <= 3.2.5 in order to use the '
                           'NLTKMosesDetokenizer. You can refer to the official '
                           'installation guide in https://www.nltk.org/install.html .'
