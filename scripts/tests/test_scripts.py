@@ -30,7 +30,6 @@ def test_gnmt():
                                      '--optimizer', 'adam', '--lr', '0.0025', '--save_dir', 'test',
                                      '--epochs', '20', '--gpu', '0', '--num_buckets', '5',
                                      '--num_hidden', '64', '--num_layers', '2'])
-    process.communicate()
 
 
 def test_transformer():
@@ -43,4 +42,3 @@ def test_transformer():
                                      '1', '--num_buckets', '5', '--bleu', 'tweaked', '--num_units',
                                      '32', '--hidden_size', '64', '--num_layers', '2',
                                      '--num_heads', '4', '--test_batch_size', '128'])
-    process.communicate()
