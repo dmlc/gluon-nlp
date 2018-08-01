@@ -162,8 +162,20 @@ class _LazyTransformDataStream(DataStream):
         self._fn = fn
 
     def __iter__(self):
-        for item in iter(self._stream):
+        stream_iter = iter(self._stream)
+        try:
+            item = next(stream_iter)
+        except StopIteration:
+            return
+        istuple = isinstance(item, tuple)
+        if istuple:
+            yield self._fn(*item)
+            for item in stream_iter:
+                yield self._fn(*item)
+        else:
             yield self._fn(item)
+            for item in stream_iter:
+                yield self._fn(item)
 
 class CorpusStream(DataStream):
     """Common text data stream that streams a corpus consisting of multiple text files
