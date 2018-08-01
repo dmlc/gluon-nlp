@@ -335,7 +335,7 @@ class _LanguageModelBPTTStream(DataStream):
         The length of each of the samples for truncated back-propagation-through-time (TBPTT).
     batch_size : int
         The number of samples in each batch.
-     sampler : mx.gluon.data.Sampler
+    sampler : mx.gluon.data.Sampler
         The sampler used to sample texts within a file.
     last_batch : {'keep', 'discard'}
         How to handle the last batch if the remaining length is less than `seq_len`.
