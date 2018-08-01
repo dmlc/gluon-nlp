@@ -28,7 +28,8 @@ import math
 
 import mxnet as mx
 from mxnet.gluon.data import SimpleDataset
-from .utils import concat_sequence, slice_sequence, _slice_pad_length
+from .utils import (concat_sequence, slice_sequence, _slice_pad_length,
+                    line_splitter, whitespace_splitter)
 
 
 class TextLineDataset(SimpleDataset):
@@ -80,7 +81,7 @@ class CorpusDataset(SimpleDataset):
         specified, then nothing is added.
     """
     def __init__(self, filename, encoding='utf8', flatten=False, skip_empty=True,
-                 sample_splitter=lambda s: s.splitlines(), tokenizer=lambda s: s.split(),
+                 sample_splitter=line_splitter, tokenizer=whitespace_splitter,
                  bos=None, eos=None):
         assert sample_splitter, 'sample_splitter must be specified.'
 
@@ -93,24 +94,31 @@ class CorpusDataset(SimpleDataset):
         self._skip_empty = skip_empty
         self._sample_splitter = sample_splitter
         self._tokenizer = tokenizer
-        def process(s):
-            tokens = [bos] if bos else []
-            tokens.extend(s)
-            if eos:
-                tokens.append(eos)
-            return tokens
-        self._process = process
+        self._bos = bos
+        self._eos = eos
         super(CorpusDataset, self).__init__(self._read())
 
     def _read(self):
         all_samples = []
+        bos = self._bos
+        eos = self._eos
         for filename in self._filenames:
             with io.open(filename, 'r', encoding=self._encoding) as fin:
                 content = fin.read()
             samples = (s.strip() for s in self._sample_splitter(content))
             if self._tokenizer:
-                samples = [self._process(self._tokenizer(s)) for s in samples
-                           if s or not self._skip_empty]
+                if bos and eos:
+                    samples = [[bos] + self._tokenizer(s) + [eos] for s in samples
+                               if s or not self._skip_empty]
+                elif bos:
+                    samples = [[bos] + self._tokenizer(s) for s in samples
+                               if s or not self._skip_empty]
+                elif eos:
+                    samples = [
+                        self._tokenizer(s) + [eos] for s in samples if s or not self._skip_empty
+                    ]
+                else:
+                    samples = [self._tokenizer(s) for s in samples if s or not self._skip_empty]
                 if self._flatten:
                     samples = concat_sequence(samples)
             elif self._skip_empty:
@@ -143,8 +151,8 @@ class LanguageModelDataset(CorpusDataset):
         The token to add at the end of each sentence. If None, nothing is added.
     """
     def __init__(self, filename, encoding='utf8', skip_empty=True,
-                 sample_splitter=lambda s: s.splitlines(),
-                 tokenizer=lambda s: s.split(), bos=None, eos=None):
+                 sample_splitter=line_splitter,
+                 tokenizer=whitespace_splitter, bos=None, eos=None):
         assert tokenizer, 'Tokenizer must be specified for reading language model corpus.'
         super(LanguageModelDataset, self).__init__(filename, encoding, True, skip_empty,
                                                    sample_splitter, tokenizer, bos, eos)
@@ -218,4 +226,8 @@ class LanguageModelDataset(CorpusDataset):
         data = mx.nd.array(coded).reshape((batch_size, -1)).T
         batches = slice_sequence(data, seq_len + 1, overlap=1)
 
-        return SimpleDataset(batches).transform(lambda x: (x[:-1], x[1:]))
+        return SimpleDataset(batches).transform(_split_data_label)
+
+
+def _split_data_label(x):
+    return x[:-1, :], x[1:, :]

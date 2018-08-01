@@ -37,6 +37,7 @@ import mxnet as mx
 from mxnet.gluon.data import RandomSampler, SequentialSampler
 
 from .dataset import CorpusDataset
+from .utils import line_splitter, whitespace_splitter
 
 try:
     import Queue as queue
@@ -172,7 +173,7 @@ class CorpusStream(DatasetStream):
         - 'random': RandomSampler
     """
     def __init__(self, file_pattern, encoding='utf8', flatten=False, skip_empty=True,
-                 sample_splitter=lambda s: s.splitlines(), tokenizer=lambda s: s.split(),
+                 sample_splitter=line_splitter, tokenizer=whitespace_splitter,
                  bos=None, eos=None, file_sampler='random'):
         assert sample_splitter, 'sample_splitter must be specified.'
         if not isinstance(file_pattern, str):
@@ -245,7 +246,7 @@ class LanguageModelStream(CorpusStream):
         - 'random': RandomSampler
     """
     def __init__(self, file_pattern, encoding='utf8', skip_empty=True,
-                 sample_splitter=lambda s: s.splitlines(), tokenizer=lambda s: s.split(),
+                 sample_splitter=line_splitter, tokenizer=whitespace_splitter,
                  bos=None, eos=None, sampler='random', file_sampler='random'):
         super(LanguageModelStream, self).__init__(file_pattern, flatten=True,
                                                   encoding=encoding,
