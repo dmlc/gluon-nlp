@@ -439,9 +439,11 @@ class FasttextEmbeddingModel(EmbeddingModel):
             subwords = nd.array(self.subword_function([token]), ctx=ctx)
             if subwords.shape[1]:
                 vec = self(word, subwords, wordsmask=wordmask)
+            elif token not in self.token_to_idx:
+                assert token not in self  # Assert consistency with __contains__
+                raise KeyError
             else:
-                # token is a special_token and subwords are not taken into account
-                assert token in self.token_to_idx
+                # Known tokens (eg. special token such as EOS) without subwords
                 vec = self.embedding(word)
 
             vecs.append(vec)
