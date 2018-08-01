@@ -204,10 +204,10 @@ class LanguageModelDataset(CorpusDataset):
                 raise ValueError('vocab.padding_token must be specified '
                                  'in vocab when last_batch="keep".')
             coded = vocab[self._data[0]]
-            sample_len = math.ceil(len(coded) / batch_size)
+            sample_len = math.ceil(float(len(coded)) / batch_size)
             padding_size = _slice_pad_length(sample_len, seq_len + 1, 1) * batch_size + \
                 sample_len * batch_size - len(coded)
-            coded.extend([vocab[vocab.padding_token]] * padding_size)
+            coded.extend([vocab[vocab.padding_token]] * int(padding_size))
             assert len(coded) % batch_size == 0
             assert not _slice_pad_length(len(coded) / batch_size, seq_len + 1, 1)
         else:
