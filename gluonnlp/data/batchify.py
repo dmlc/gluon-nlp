@@ -97,12 +97,12 @@ class Stack(object):
 
     Examples
     --------
-    >>> from gluonnlp.data import bf
+    >>> from gluonnlp.data import batchify
     >>> # Stack multiple lists
     >>> a = [1, 2, 3, 4]
     >>> b = [4, 5, 6, 8]
     >>> c = [8, 9, 1, 2]
-    >>> bf.Stack()([a, b, c])
+    >>> batchify.Stack()([a, b, c])
     [[1. 2. 3. 4.]
      [4. 5. 6. 8.]
      [8. 9. 1. 2.]]
@@ -111,7 +111,7 @@ class Stack(object):
     >>> import numpy as np
     >>> a = np.array([[1, 2, 3, 4], [5, 6, 7, 8]])
     >>> b = np.array([[5, 6, 7, 8], [1, 2, 3, 4]])
-    >>> bf.Stack()([a, b])
+    >>> batchify.Stack()([a, b])
     [[[1. 2. 3. 4.]
       [5. 6. 7. 8.]]
      [[5. 6. 7. 8.]
@@ -121,7 +121,7 @@ class Stack(object):
     >>> import mxnet as mx
     >>> a = mx.nd.array([[1, 2, 3, 4], [5, 6, 7, 8]])
     >>> b = mx.nd.array([[5, 6, 7, 8], [1, 2, 3, 4]])
-    >>> bf.Stack()([a, b])
+    >>> batchify.Stack()([a, b])
     [[[1. 2. 3. 4.]
       [5. 6. 7. 8.]]
      [[5. 6. 7. 8.]
@@ -172,12 +172,12 @@ class Pad(object):
 
     Examples
     --------
-    >>> from gluonnlp.data import bf
+    >>> from gluonnlp.data import batchify
     >>> # Inputs are multiple lists
     >>> a = [1, 2, 3, 4]
     >>> b = [4, 5, 6]
     >>> c = [8, 2]
-    >>> bf.Pad()([a, b, c])
+    >>> batchify.Pad()([a, b, c])
     [[ 1  2  3  4]
      [ 4  5  6  0]
      [ 8  2  0  0]]
@@ -186,7 +186,7 @@ class Pad(object):
     >>> a = [1, 2, 3, 4]
     >>> b = [4, 5, 6]
     >>> c = [8, 2]
-    >>> bf.Pad(ret_length=True)([a, b, c])
+    >>> batchify.Pad(ret_length=True)([a, b, c])
     (
      [[1 2 3 4]
       [4 5 6 0]
@@ -198,7 +198,7 @@ class Pad(object):
     >>> import numpy as np
     >>> a = np.array([[1, 2, 3, 4], [5, 6, 7, 8]])
     >>> b = np.array([[5, 8], [1, 2]])
-    >>> bf.Pad(axis=1, pad_val=-1)([a, b])
+    >>> batchify.Pad(axis=1, pad_val=-1)([a, b])
     [[[ 1  2  3  4]
       [ 5  6  7  8]]
      [[ 5  8 -1 -1]
@@ -208,7 +208,7 @@ class Pad(object):
     >>> import mxnet as mx
     >>> a = mx.nd.array([[1, 2, 3, 4], [5, 6, 7, 8]])
     >>> b = mx.nd.array([[5, 8], [1, 2]])
-    >>> bf.Pad(axis=1, pad_val=-1)([a, b])
+    >>> batchify.Pad(axis=1, pad_val=-1)([a, b])
     [[[ 1.  2.  3.  4.]
       [ 5.  6.  7.  8.]]
      [[ 5.  8. -1. -1.]
@@ -271,11 +271,11 @@ class Tuple(object):
 
     Examples
     --------
-    >>> from gluonnlp.data import bf
+    >>> from gluonnlp.data import batchify
     >>> a = ([1, 2, 3, 4], 0)
     >>> b = ([5, 7], 1)
     >>> c = ([1, 2, 3, 4, 5, 6, 7], 0)
-    >>> bf.Tuple(bf.Pad(), bf.Stack())([a, b])
+    >>> batchify.Tuple(batchify.Pad(), batchify.Stack())([a, b])
     (
      [[1 2 3 4]
       [5 7 0 0]]
@@ -283,7 +283,7 @@ class Tuple(object):
      [0. 1.]
      <NDArray 2 @cpu(0)>)
     >>> # Input can also be a list
-    >>> bf.Tuple([bf.Pad(), bf.Stack()])([a, b])
+    >>> batchify.Tuple([batchify.Pad(), batchify.Stack()])([a, b])
     (
      [[1 2 3 4]
       [5 7 0 0]]
@@ -294,7 +294,7 @@ class Tuple(object):
     >>> a = ([1, 2, 3, 4], [5, 6], 1)
     >>> b = ([1, 2], [3, 4, 5, 6], 0)
     >>> c = ([1], [2, 3, 4, 5, 6], 0)
-    >>> bf.Tuple(bf.Pad(), bf.Pad(), bf.Stack())([a, b, c])
+    >>> batchify.Tuple(batchify.Pad(), batchify.Pad(), batchify.Stack())([a, b, c])
     (
      [[1 2 3 4]
       [1 2 0 0]
