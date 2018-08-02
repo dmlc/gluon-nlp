@@ -20,6 +20,8 @@
 into batches for fast processing."""
 __all__ = ['Stack', 'Pad', 'Tuple']
 
+import logging
+
 import numpy as np
 import mxnet as mx
 
@@ -39,22 +41,23 @@ def _pad_arrs_to_max_length(arrs, pad_axis, pad_val, use_shared_mem, dtype):
     ret : NDArray
     original_length : NDArray
     """
-    if not isinstance(arrs[0], (mx.nd.NDArray, np.ndarray)):
+    if isinstance(arrs[0], mx.nd.NDArray):
+        dtype = arrs[0].dtype if dtype is None else dtype
+        arrs = [arr.asnumpy() for arr in arrs]
+    elif not isinstance(arrs[0], np.ndarray):
         arrs = [np.asarray(ele) for ele in arrs]
+    else:
+        dtype = arrs[0].dtype if dtype is None else dtype
+
     original_length = [ele.shape[pad_axis] for ele in arrs]
     max_size = max(original_length)
+
     ret_shape = list(arrs[0].shape)
     ret_shape[pad_axis] = max_size
     ret_shape = (len(arrs), ) + tuple(ret_shape)
-    dtype = arrs[0].dtype if dtype is None else dtype
-    if use_shared_mem:
-        ret = mx.nd.full(shape=ret_shape, val=pad_val, ctx=mx.Context('cpu_shared', 0),
-                         dtype=dtype)
-        original_length = mx.nd.array(original_length, ctx=mx.Context('cpu_shared', 0),
-                                      dtype=np.int32)
-    else:
-        ret = mx.nd.full(shape=ret_shape, val=pad_val, dtype=dtype)
-        original_length = mx.nd.array(original_length, dtype=np.int32)
+
+    ret = np.full(shape=ret_shape, fill_value=pad_val, dtype=dtype)
+
     for i, arr in enumerate(arrs):
         if arr.shape[pad_axis] == max_size:
             ret[i] = arr
@@ -64,6 +67,11 @@ def _pad_arrs_to_max_length(arrs, pad_axis, pad_val, use_shared_mem, dtype):
             if slices[pad_axis].start != slices[pad_axis].stop:
                 slices = [slice(i, i + 1)] + slices
                 ret[tuple(slices)] = arr
+
+    ctx = mx.Context('cpu_shared', 0) if use_shared_mem else mx.cpu()
+    ret = mx.nd.array(ret, ctx=ctx, dtype=dtype)
+    original_length = mx.nd.array(original_length, ctx=ctx, dtype=np.int32)
+
     return ret, original_length
 
 
@@ -147,14 +155,7 @@ class Stack(object):
 
 
 class Pad(object):
-    """Pad the input ndarrays along the specific padding axis and stack them to get the output.
-
-    Input of the function will be N samples. Each sample should contain a single element that
-    can be 1) numpy.ndarray, 2) mxnet.nd.NDArray, 3) list of numbers
-
-    The arrays will be padded to the largest dimension at `axis` and then
-    stacked to form the final output. In addition, the function will output the original dimensions
-    at the `axis` if ret_length is turned on.
+    """Return a callable that pads and stacks data.
 
     Parameters
     ----------
@@ -204,16 +205,7 @@ class Pad(object):
      [[ 5  8 -1 -1]
       [ 1  2 -1 -1]]]
     <NDArray 2x2x4 @cpu(0)>
-    >>> # Inputs are multiple NDArrays
-    >>> import mxnet as mx
-    >>> a = mx.nd.array([[1, 2, 3, 4], [5, 6, 7, 8]])
-    >>> b = mx.nd.array([[5, 8], [1, 2]])
-    >>> batchify.Pad(axis=1, pad_val=-1)([a, b])
-    [[[ 1.  2.  3.  4.]
-      [ 5.  6.  7.  8.]]
-     [[ 5.  8. -1. -1.]
-      [ 1.  2. -1. -1.]]]
-    <NDArray 2x2x4 @cpu(0)>
+
     """
     def __init__(self, axis=0, pad_val=0, ret_length=False, dtype=None):
         self._axis = axis
@@ -227,11 +219,18 @@ class Pad(object):
     def __call__(self, data):
         """Batchify the input data.
 
+        The input can be list of numpy.ndarray, list of numbers or list of
+        mxnet.nd.NDArray. Inputting mxnet.nd.NDArray is discouraged as each
+        array need to be converted to numpy for efficient padding.
+
+        The arrays will be padded to the largest dimension at `axis` and then
+        stacked to form the final output. In addition, the function will output
+        the original dimensions at the `axis` if ret_length is turned on.
+
         Parameters
         ----------
-        data : list
-            A list of N samples. Each sample can be 1) ndarray or
-             2) a list/tuple of ndarrays
+        data : List[np.ndarray] or List[List[dtype]] or List[mx.nd.NDArray]
+            List of samples to pad and stack.
 
         Returns
         -------
@@ -240,7 +239,15 @@ class Pad(object):
         valid_length: NDArray, optional
             The sequences' original lengths at the padded axis. Shape is (N,). This will only be
             returned in `ret_length` is True.
+
         """
+
+        if isinstance(data[0], mx.nd.NDArray):
+            logging.warning(
+                'Using Pad with NDArrays is discouraged for speed reasons. '
+                'Instead you should pad your data while it is still a list '
+                'and before converting to an NDArray. '
+                'Alternatively you can consider inputting a numpy.ndarray.')
         if isinstance(data[0], (mx.nd.NDArray, np.ndarray, list)):
             padded_arr, original_length = _pad_arrs_to_max_length(data, self._axis,
                                                                   self._pad_val, True,

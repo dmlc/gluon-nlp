@@ -22,3 +22,4 @@ API Reference
 .. automodule:: gluonnlp.data.batchify
    :members:
    :imported-members:
+   :special-members: __call__
