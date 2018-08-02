@@ -485,7 +485,7 @@ class _ThreadPrefetcher(_Prefetcher, threading.Thread):
         self.start()
 
 
-class PrefetchingStream(object):
+class PrefetchingStream(DataStream):
     """Prefetch a DataStream in a separate Thread or Process.
 
     This iterator will create another thread or process to perform

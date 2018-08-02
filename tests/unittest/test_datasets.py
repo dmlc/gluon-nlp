@@ -610,15 +610,24 @@ def test_lm_stream():
     # the last token doesn't appear in data
     assert num_tokens < total_num_tokens
 
-def test_lazy_stream():
+@pytest.mark.parametrize('prefetch', [None, "thread", "process"])
+def test_lazy_stream(prefetch):
     EOS = nlp._constants.EOS_TOKEN
     path = os.path.join('tests', 'data', 'wikitext-2')
     token_path = os.path.join('tests', 'data', 'wikitext-2/*test*.tokens')
     test = nlp.data.WikiText2(segment='test', root=path)
     corpus = nlp.data.CorpusStream(token_path, flatten=True, skip_empty=True, eos=EOS)
-    transformed_corpus = corpus.transform(lambda d: [s.lower() for s in d])
-    for x, y in zip(corpus, transformed_corpus):
-        assert all([sx.lower() == sy for sx, sy in zip(x, y)])
+    if prefetch:
+        prefetch_corpus = nlp.data.PrefetchingStream(corpus, worker_type=prefetch)
+    else:
+        prefetch_corpus = corpus
+    transformed_corpus = prefetch_corpus.transform(lambda d: [s.lower() for s in d])
+    prefetch_corpus_iter = iter(prefetch_corpus)
+    transformed_corpus_iter = iter(transformed_corpus)
+    for x in corpus:
+        y = next(prefetch_corpus_iter)
+        z = next(transformed_corpus_iter)
+        assert all([sx.lower() == sy.lower() == sz for sx, sy, sz in zip(x, y, z)])
 
 @pytest.mark.parametrize('num_prefetch', [0, 1, 10])
 @pytest.mark.parametrize('worker_type', ['thread', 'process'])
