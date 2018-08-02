@@ -197,7 +197,9 @@ class LanguageModelDataset(CorpusDataset):
             - discard: The last batch is discarded if it's smaller than `(seq_len, batch_size)`.
         """
         if last_batch not in ['keep', 'discard']:
-            raise ValueError('last_batch must be "keep" or "discard".')
+            raise ValueError(
+                'Got invalid last_batch: "{}". Must be "keep" or "discard".'.
+                format(last_batch))
 
         if last_batch == 'keep':
             if not vocab.padding_token:
