@@ -155,14 +155,7 @@ class Stack(object):
 
 
 class Pad(object):
-    """Pad the input ndarrays along the specific padding axis and stack them to get the output.
-
-    Input of the function will be N samples. Each sample should contain a single element that
-    can be 1) numpy.ndarray, 2) mxnet.nd.NDArray, 3) list of numbers
-
-    The arrays will be padded to the largest dimension at `axis` and then
-    stacked to form the final output. In addition, the function will output the original dimensions
-    at the `axis` if ret_length is turned on.
+    """Return a callable that pads and stacks data.
 
     Parameters
     ----------
@@ -212,16 +205,7 @@ class Pad(object):
      [[ 5  8 -1 -1]
       [ 1  2 -1 -1]]]
     <NDArray 2x2x4 @cpu(0)>
-    >>> # Inputs are multiple NDArrays
-    >>> import mxnet as mx
-    >>> a = mx.nd.array([[1, 2, 3, 4], [5, 6, 7, 8]])
-    >>> b = mx.nd.array([[5, 8], [1, 2]])
-    >>> batchify.Pad(axis=1, pad_val=-1)([a, b])
-    [[[ 1.  2.  3.  4.]
-      [ 5.  6.  7.  8.]]
-     [[ 5.  8. -1. -1.]
-      [ 1.  2. -1. -1.]]]
-    <NDArray 2x2x4 @cpu(0)>
+
     """
     def __init__(self, axis=0, pad_val=0, ret_length=False, dtype=None):
         self._axis = axis
@@ -235,11 +219,18 @@ class Pad(object):
     def __call__(self, data):
         """Batchify the input data.
 
+        The input can be list of numpy.ndarray, list of numbers or list of
+        mxnet.nd.NDArray. Inputting mxnet.nd.NDArray is discouraged as each
+        array need to be converted to numpy for efficient padding.
+
+        The arrays will be padded to the largest dimension at `axis` and then
+        stacked to form the final output. In addition, the function will output
+        the original dimensions at the `axis` if ret_length is turned on.
+
         Parameters
         ----------
-        data : list
-            A list of N samples. Each sample can be 1) ndarray or
-             2) a list/tuple of ndarrays
+        data : List[np.ndarray] or List[List[dtype]] or List[mx.nd.NDArray]
+            List of samples to pad and stack.
 
         Returns
         -------
@@ -248,6 +239,7 @@ class Pad(object):
         valid_length: NDArray, optional
             The sequences' original lengths at the padded axis. Shape is (N,). This will only be
             returned in `ret_length` is True.
+
         """
 
         if isinstance(data[0], mx.nd.NDArray):
