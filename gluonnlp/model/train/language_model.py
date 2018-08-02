@@ -22,8 +22,7 @@ __all__ = ['AWDRNN', 'StandardRNN', 'BigRNN']
 from mxnet import init, nd, autograd
 from mxnet.gluon import nn, Block, contrib, rnn
 
-from gluonnlp.model.utils import _get_rnn_layer
-from gluonnlp.model.utils import apply_weight_drop
+from ..utils import _get_rnn_layer, apply_weight_drop
 from ..sampled_block import ISLogits, SparseISLogits
 
 class AWDRNN(Block):
