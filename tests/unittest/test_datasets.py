@@ -299,6 +299,8 @@ def test_rare_words():
     _assert_similarity_dataset(data)
 
 
+@pytest.mark.skipif(datetime.date.today() < datetime.date(2018, 8, 16),
+                    reason='Disabled for 1 weeks due to server downtime.')
 @flaky(max_runs=2, min_passes=1)
 def test_simlex999():
     data = nlp.data.SimLex999(
