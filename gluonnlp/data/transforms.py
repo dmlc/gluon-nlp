@@ -260,7 +260,7 @@ class SacreMosesTokenizer(object):
             from sacremoses import MosesTokenizer
             self._tokenizer = MosesTokenizer()
         except (ImportError, TypeError) as err:
-            if type(err) == TypeError:
+            if isinstance(err, TypeError):
                 warnings.warn('The instantiation of MosesTokenizer in sacremoses is'
                               ' currently only supported in python3.'
                               ' Now try NLTKMosesTokenizer using NLTK ...')
@@ -466,7 +466,7 @@ class SacreMosesDetokenizer(object):
             from sacremoses import MosesDetokenizer
             self._detokenizer = MosesDetokenizer()
         except (ImportError, TypeError) as err:
-            if type(err) == TypeError:
+            if isinstance(err, TypeError):
                 warnings.warn('The instantiation of MosesDetokenizer in sacremoses is'
                               ' currently only supported in python3.'
                               ' Now try NLTKMosesDetokenizer using NLTK ...')
