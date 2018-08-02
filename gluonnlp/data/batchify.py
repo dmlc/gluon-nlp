@@ -215,6 +215,7 @@ class Pad(object):
         self._pad_val = pad_val
         self._ret_length = ret_length
         self._dtype = dtype
+        self._warned = False
 
     def __call__(self, data):
         """Batchify the input data.
@@ -242,7 +243,8 @@ class Pad(object):
 
         """
 
-        if isinstance(data[0], mx.nd.NDArray):
+        if isinstance(data[0], mx.nd.NDArray) and not self._warned:
+            self._warned = True
             logging.warning(
                 'Using Pad with NDArrays is discouraged for speed reasons. '
                 'Instead you should pad your data while it is still a list '
