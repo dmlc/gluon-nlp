@@ -188,9 +188,9 @@ class NLTKMosesTokenizer(object):
             try:
                 from sacremoses import MosesTokenizer
             except ImportError:
-                warnings.warn('sacremoses is also not installed. '
-                              'Please use sacremoses or older nltk version, e.g. 3.2.5. '
-                              'To install sacremoses, use pip install -U sacremoses')
+                raise ImportError('sacremoses is also not installed. '
+                                  'Please use sacremoses or older nltk version, e.g. 3.2.5. '
+                                  'To install sacremoses, use pip install -U sacremoses')
         self._tokenizer = MosesTokenizer()
 
     def __call__(self, sample, return_str=False):
@@ -261,10 +261,10 @@ class SacreMosesTokenizer(object):
             try:
                 from nltk.tokenize.moses import MosesTokenizer
             except ImportError:
-                warnings.warn('NLTK is also not installed. '
-                              'You must install NLTK <= 3.2.5 in order to use the '
-                              'NLTKMosesTokenizer. You can refer to the official '
-                              'installation guide in https://www.nltk.org/install.html .')
+                raise ImportError('NLTK is also not installed. '
+                                  'You must install NLTK <= 3.2.5 in order to use the '
+                                  'NLTKMosesTokenizer. You can refer to the official '
+                                  'installation guide in https://www.nltk.org/install.html .')
         self._tokenizer = MosesTokenizer()
 
     def __call__(self, sample, return_str=False):
@@ -402,9 +402,9 @@ class NLTKMosesDetokenizer(object):
             try:
                 from sacremoses import MosesDetokenizer
             except ImportError:
-                warnings.warn('sacremoses is also not installed. '
-                              'Please use sacremoses or older nltk version, e.g. 3.2.5. '
-                              'To install sacremoses, use pip install -U sacremoses')
+                raise ImportError('sacremoses is also not installed. '
+                                  'Please use sacremoses or older nltk version, e.g. 3.2.5. '
+                                  'To install sacremoses, use pip install -U sacremoses')
         self._detokenizer = MosesDetokenizer()
 
     def __call__(self, sample, return_str=False):
@@ -457,10 +457,10 @@ class SacreMosesDetokenizer(object):
             try:
                 from nltk.tokenize.moses import MosesDetokenizer
             except ImportError:
-                warnings.warn('NLTK is also not installed. '
-                              'You must install NLTK <= 3.2.5 in order to use the '
-                              'NLTKMosesDetokenizer. You can refer to the official '
-                              'installation guide in https://www.nltk.org/install.html .')
+                raise ImportError('NLTK is also not installed. '
+                                  'You must install NLTK <= 3.2.5 in order to use the '
+                                  'NLTKMosesDetokenizer. You can refer to the official '
+                                  'installation guide in https://www.nltk.org/install.html .')
         self._detokenizer = MosesDetokenizer()
 
     def __call__(self, sample, return_str=False):
