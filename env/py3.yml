@@ -12,3 +12,4 @@ dependencies:
   - pytest-cov
   - pip:
     - mxnet-cu80>=1.3.0b20180725
+    - sacremoses

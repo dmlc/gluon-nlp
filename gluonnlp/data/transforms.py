@@ -23,10 +23,12 @@ clipping, padding, and tokenization."""
 from __future__ import absolute_import
 from __future__ import print_function
 
-__all__ = ['ClipSequence', 'PadSequence', 'NLTKMosesTokenizer', 'SpacyTokenizer',
-           'NLTKMosesDetokenizer', 'JiebaTokenizer', 'NLTKStanfordSegmenter']
+__all__ = ['ClipSequence', 'PadSequence', 'SacreMosesTokenizer', 'NLTKMosesTokenizer',
+           'SpacyTokenizer', 'SacreMosesDetokenizer', 'NLTKMosesDetokenizer', 'JiebaTokenizer',
+           'NLTKStanfordSegmenter']
 
 import os
+import warnings
 
 import numpy as np
 import mxnet as mx
@@ -177,9 +179,92 @@ class NLTKMosesTokenizer(object):
         try:
             from nltk.tokenize.moses import MosesTokenizer
         except ImportError:
-            raise ImportError('NLTK or relevant packages are not installed. You must install NLTK '
-                              'in order to use the NLTKMosesTokenizer. You can refer to the '
-                              'official installation guide in https://www.nltk.org/install.html .')
+            warnings.warn('NLTK or relevant packages are not installed. '
+                          'Due to the LGPL 2.1+, moses has been deprecated in NLTK since 3.3.0. '
+                          'You must install NLTK <= 3.2.5 in order to use the '
+                          'NLTKMosesTokenizer. You can refer to the official '
+                          'installation guide in https://www.nltk.org/install.html .'
+                          ' Now try SacreMosesTokenizer using sacremoses ...')
+            try:
+                from sacremoses import MosesTokenizer
+            except ImportError:
+                raise ImportError('sacremoses is also not installed. '
+                                  'Please use sacremoses or older nltk version, e.g. 3.2.5. '
+                                  'To install sacremoses, use pip install -U sacremoses')
+        self._tokenizer = MosesTokenizer()
+
+    def __call__(self, sample, return_str=False):
+        """
+
+        Parameters
+        ----------
+        sample: str
+            The sentence to tokenize
+        return_str: bool, default False
+            True: return a single string
+            False: return a list of tokens
+
+        Returns
+        -------
+        ret : list of strs or str
+            List of tokens or tokenized text
+        """
+        return self._tokenizer.tokenize(sample, return_str=return_str)
+
+
+class SacreMosesTokenizer(object):
+    r"""Apply the Moses Tokenizer implemented in sacremoses.
+
+    Users of this class are required to `install sacremoses
+    <https://github.com/alvations/sacremoses>`_. For example, one can use:
+
+    .. code:: python
+
+        pip install -U sacremoses
+
+    Examples
+    --------
+    >>> tokenizer = SacreMosesTokenizer()
+    >>> tokenizer("Gluon NLP toolkit provides a suite of text processing tools.")
+    ['Gluon',
+     'NLP',
+     'toolkit',
+     'provides',
+     'a',
+     'suite',
+     'of',
+     'text',
+     'processing',
+     'tools',
+     '.']
+    >>> tokenizer("Das Gluon NLP-Toolkit stellt eine Reihe von Textverarbeitungstools "
+    ...           "zur Verfügung.")
+    ['Das',
+     'Gluon',
+     'NLP-Toolkit',
+     'stellt',
+     'eine',
+     'Reihe',
+     'von',
+     'Textverarbeitungstools',
+     'zur',
+     'Verfügung',
+     '.']
+    """
+    def __init__(self):
+        try:
+            from sacremoses import MosesTokenizer
+        except ImportError:
+            warnings.warn('sacremoses is not installed. '
+                          'To install sacremoses, use pip install -U sacremoses'
+                          ' Now try NLTKMosesTokenizer using NLTK ...')
+            try:
+                from nltk.tokenize.moses import MosesTokenizer
+            except ImportError:
+                raise ImportError('NLTK is also not installed. '
+                                  'You must install NLTK <= 3.2.5 in order to use the '
+                                  'NLTKMosesTokenizer. You can refer to the official '
+                                  'installation guide in https://www.nltk.org/install.html .')
         self._tokenizer = MosesTokenizer()
 
     def __call__(self, sample, return_str=False):
@@ -308,9 +393,74 @@ class NLTKMosesDetokenizer(object):
         try:
             from nltk.tokenize.moses import MosesDetokenizer
         except ImportError:
-            raise ImportError('NLTK or relevant packages are not installed. You must install NLTK '
-                              'in order to use the NLTKMosesTokenizer. You can refer to the '
-                              'official installation guide in https://www.nltk.org/install.html .')
+            warnings.warn('NLTK or relevant packages are not installed. '
+                          'Due to the LGPL 2.1+, moses has been deprecated in NLTK since 3.3.0. '
+                          'You must install NLTK <= 3.2.5 in order to use the '
+                          'NLTKMosesDetokenizer. You can refer to the official '
+                          'installation guide in https://www.nltk.org/install.html .'
+                          ' Now try SacreMosesDetokenizer using sacremoses ...')
+            try:
+                from sacremoses import MosesDetokenizer
+            except ImportError:
+                raise ImportError('sacremoses is also not installed. '
+                                  'Please use sacremoses or older nltk version, e.g. 3.2.5. '
+                                  'To install sacremoses, use pip install -U sacremoses')
+        self._detokenizer = MosesDetokenizer()
+
+    def __call__(self, sample, return_str=False):
+        """
+
+        Parameters
+        ----------
+        sample: list(str)
+            The sentence to detokenize
+        return_str: bool, default False
+            True: return a single string
+            False: return a list of words
+
+        Returns
+        -------
+        ret : list of strs or str
+            List of words or detokenized text
+        """
+        return self._detokenizer.detokenize(sample, return_str=return_str)
+
+
+class SacreMosesDetokenizer(object):
+    r"""Apply the Moses Detokenizer implemented in sacremoses.
+
+    Users of this class are required to `install sacremoses
+    <https://github.com/alvations/sacremoses>`_. For example, one can use:
+
+    .. code:: python
+
+        pip install -U sacremoses
+
+    Examples
+    --------
+    >>> detokenizer = SacreMosesDetokenizer()
+    >>> detokenizer(['Gluon', 'NLP', 'toolkit', 'provides', 'a', 'suite', \
+     'of', 'text', 'processing', 'tools', '.'], return_str=True)
+    "Gluon NLP toolkit provides a suite of text processing tools."
+
+    >>> detokenizer(['Das', 'Gluon','NLP-Toolkit','stellt','eine','Reihe','von', \
+     'Textverarbeitungstools','zur','Verfügung','.'], return_str=True)
+    'Das Gluon NLP-Toolkit stellt eine Reihe von Textverarbeitungstools zur Verfügung.'
+    """
+    def __init__(self):
+        try:
+            from sacremoses import MosesDetokenizer
+        except ImportError:
+            warnings.warn('sacremoses is not installed. '
+                          'To install sacremoses, use pip install -U sacremoses'
+                          ' Now try NLTKMosesDetokenizer using NLTK ...')
+            try:
+                from nltk.tokenize.moses import MosesDetokenizer
+            except ImportError:
+                raise ImportError('NLTK is also not installed. '
+                                  'You must install NLTK <= 3.2.5 in order to use the '
+                                  'NLTKMosesDetokenizer. You can refer to the official '
+                                  'installation guide in https://www.nltk.org/install.html .')
         self._detokenizer = MosesDetokenizer()
 
     def __call__(self, sample, return_str=False):

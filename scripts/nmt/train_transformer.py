@@ -47,7 +47,7 @@ from mxnet import gluon
 from mxnet.gluon.data import ArrayDataset, SimpleDataset
 from mxnet.gluon.data import DataLoader
 import gluonnlp.data.batchify as btf
-from gluonnlp.data import NLTKMosesDetokenizer
+from gluonnlp.data import SacreMosesDetokenizer
 from gluonnlp.data import ConstWidthBucket, LinearWidthBucket, ExpWidthBucket,\
     FixedBucketSampler, IWSLT2015, WMT2016, WMT2016BPE, WMT2014, WMT2014BPE
 from gluonnlp.model import BeamSearchScorer
@@ -366,7 +366,7 @@ loss_function.hybridize(static_alloc=static_alloc)
 test_loss_function = SoftmaxCEMaskedLoss()
 test_loss_function.hybridize(static_alloc=static_alloc)
 
-detokenizer = NLTKMosesDetokenizer()
+detokenizer = SacreMosesDetokenizer()
 
 
 def evaluate(data_loader, context=ctx[0]):

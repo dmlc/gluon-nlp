@@ -150,7 +150,9 @@ with `Dataset.transform` method.
     ClipSequence
     PadSequence
     NLTKMosesTokenizer
+    SacreMosesTokenizer
     SpacyTokenizer
+    SacreMosesDetokenizer
     NLTKMosesDetokenizer
 
 Samplers
