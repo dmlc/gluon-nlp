@@ -23,7 +23,7 @@
 from . import (batchify, candidate_sampler, conll, dataset, language_model,
                question_answering, registry, sampler, sentiment, stream,
                transforms, translation, utils, word_embedding_evaluation,
-               word_embedding_training)
+               word_embedding_training, dataloader)
 from .candidate_sampler import *
 from .conll import *
 from .dataset import *
@@ -38,6 +38,7 @@ from .translation import *
 from .utils import *
 from .word_embedding_evaluation import *
 from .word_embedding_training import *
+from .dataloader import *
 
 __all__ = (['batchify'] + utils.__all__ + transforms.__all__ + sampler.__all__
            + dataset.__all__ + language_model.__all__ + sentiment.__all__ +
