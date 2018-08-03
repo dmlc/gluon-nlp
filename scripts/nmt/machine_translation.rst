@@ -17,14 +17,14 @@ Use the following commands to train the Transformer model on the WMT14 dataset f
 
 .. code-block:: console
 
-   $ python train_transformer.py --dataset WMT2014BPE --src_lang en --tgt_lang de --batch_size 4096 \
-                          --optimizer adam --num_accumulated 8 --lr 1.0 --warmup_steps 8000 \
-                          --save_dir transformer_en_de_u512 --epochs 40 --gpus 0,1,2,3 --scaled \
-                          --average_start 5 --num_buckets 20 --bucket_scheme exp --bleu 13a
+   $ python train_transformer.py --dataset WMT2014BPE --src_lang en --tgt_lang de --batch_size 2700 \
+                          --optimizer adam --num_accumulated 16 --lr 2.0 --warmup_steps 4000 \
+                          --save_dir transformer_en_de_u512 --epochs 30 --gpus 0,1,2,3,4,5,6,7 --scaled \
+                          --average_start 5 --num_buckets 20 --bucket_scheme exp --bleu 13a --log_interval 10
 
-It gets official mteval-v13a BLEU score equals to 26.95 on newstest2014 (http://statmt.org/wmt14/test-filtered.tgz).
+It gets official mteval-v13a BLEU score equals to 27.09 on newstest2014 (http://statmt.org/wmt14/test-filtered.tgz).
 This result is obtained by using averaged SGD in last 5 epochs. If we use international tokenization (i.e., ``--bleu intl``),
-we can obtain bleu score equals to 27.75. If we use ``--bleu tweaked``, we obtain test BLEU score equals to 28.81.
+we can obtain bleu score equals to 27.89. If we use ``--bleu tweaked``, we obtain test BLEU score equals to 28.96.
 This result is obtained on tweaked reference, where the tokenized reference text is put in ATAT format for historical reason
 and following preprocessing pipeline is done:
 
@@ -35,4 +35,4 @@ and following preprocessing pipeline is done:
     mosesdecoder/scripts/tokenizer/tokenizer.perl -q -no-escape -protected mosesdecoder/scripts/tokenizer/basic-protected-patterns -l de.
 
 If we turn on  ``--full``, the testing is performed on newstest2014 (http://statmt.org/wmt14/test-full.tgz). Then, we can
-obtain BLEU=26.89 with ``--bleu 13a``, BLEU=27.66 with ``--bleu intl``, and BLEU=28.63 with ``--bleu tweaked``
+obtain BLEU=27.05 with ``--bleu 13a``, BLEU=27.81 with ``--bleu intl``, and BLEU=28.80 with ``--bleu tweaked``

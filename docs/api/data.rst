@@ -177,6 +177,16 @@ The `FixedBucketSampler` uses following bucket scheme classes to generate bucket
     LinearWidthBucket
     ExpWidthBucket
 
+DataLoaders
+-----------
+
+DataLoaders loads data from a dataset and returns mini-batches of data
+
+.. autosummary::
+    :nosignatures:
+
+    ShardedDataLoader
+
 Utilities
 ---------
 
