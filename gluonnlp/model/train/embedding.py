@@ -304,7 +304,7 @@ class FasttextEmbeddingModel(EmbeddingModel):
         subword_idx_to_vec = nd.array(matrix[len(idx_to_token):])
         subword_function = create_subword_function(
             'NGramHashes', num_subwords=subword_idx_to_vec.shape[0],
-            ngrams=list(range(minn, maxn + 1)), special_tokens='</s>')
+            ngrams=list(range(minn, maxn + 1)), special_tokens={'</s>'})
 
         self = cls(token_to_idx, subword_function, embedding_size=dim,
                    **kwargs)
@@ -439,9 +439,11 @@ class FasttextEmbeddingModel(EmbeddingModel):
             subwords = nd.array(self.subword_function([token]), ctx=ctx)
             if subwords.shape[1]:
                 vec = self(word, subwords, wordsmask=wordmask)
+            elif token not in self.token_to_idx:
+                assert token not in self  # Assert consistency with __contains__
+                raise KeyError
             else:
-                # token is a special_token and subwords are not taken into account
-                assert token in self.token_to_idx
+                # Known tokens (eg. special token such as EOS) without subwords
                 vec = self.embedding(word)
 
             vecs.append(vec)

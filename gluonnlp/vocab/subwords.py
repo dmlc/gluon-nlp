@@ -247,6 +247,7 @@ class NGramHashes(SubwordFunction):
         self.ngrams = ngrams
         self._ngrams = np.asarray(ngrams)
 
+        assert not isinstance(special_tokens, str)
         if special_tokens is None:
             special_tokens = set()
 
