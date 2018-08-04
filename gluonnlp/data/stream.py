@@ -415,7 +415,7 @@ class _LanguageModelBPTTStream(DataStream):
 
 
 class _Prefetcher(object):
-    """Interal shared prefetcher logic."""
+    """Internal shared prefetcher logic."""
     data_queue = None
     control_queue = None
 
@@ -464,7 +464,7 @@ class _Prefetcher(object):
 
 
 class _ProcessPrefetcher(_Prefetcher, multiprocessing.Process):
-    """Interal multi-processing prefetcher."""
+    """Internal multi-processing prefetcher."""
 
     def __init__(self, *args, **kwargs):
         super(_ProcessPrefetcher, self).__init__(*args, **kwargs)
@@ -475,7 +475,7 @@ class _ProcessPrefetcher(_Prefetcher, multiprocessing.Process):
 
 
 class _ThreadPrefetcher(_Prefetcher, threading.Thread):
-    """Interal threaded prefetcher."""
+    """Internal threaded prefetcher."""
 
     def __init__(self, *args, **kwargs):
         super(_ThreadPrefetcher, self).__init__(*args, **kwargs)
