@@ -50,6 +50,14 @@ class TextLineDataset(SimpleDataset):
         super(TextLineDataset, self).__init__(lines)
 
 
+def _corpus_dataset_process(s, bos, eos):
+    tokens = [bos] if bos else []
+    tokens.extend(s)
+    if eos:
+        tokens.append(eos)
+    return tokens
+
+
 class CorpusDataset(SimpleDataset):
     """Common text dataset that reads a whole corpus based on provided sample splitter
     and word tokenizer.
@@ -100,25 +108,15 @@ class CorpusDataset(SimpleDataset):
 
     def _read(self):
         all_samples = []
-        bos = self._bos
-        eos = self._eos
         for filename in self._filenames:
             with io.open(filename, 'r', encoding=self._encoding) as fin:
                 content = fin.read()
             samples = (s.strip() for s in self._sample_splitter(content))
             if self._tokenizer:
-                if bos and eos:
-                    samples = [[bos] + self._tokenizer(s) + [eos] for s in samples
-                               if s or not self._skip_empty]
-                elif bos:
-                    samples = [[bos] + self._tokenizer(s) for s in samples
-                               if s or not self._skip_empty]
-                elif eos:
-                    samples = [
-                        self._tokenizer(s) + [eos] for s in samples if s or not self._skip_empty
-                    ]
-                else:
-                    samples = [self._tokenizer(s) for s in samples if s or not self._skip_empty]
+                samples = [
+                    _corpus_dataset_process(self._tokenizer(s), self._bos, self._eos)
+                    for s in samples if s or not self._skip_empty
+                ]
                 if self._flatten:
                     samples = concat_sequence(samples)
             elif self._skip_empty:
