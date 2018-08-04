@@ -234,7 +234,7 @@ def test_beam_search(hybridize, sampler_cls):
             if sampler_cls is HybridBeamSearchSampler and decoder_fn is RNNLayerDecoder:
                 # Hybrid beam search does not work on non-hybridizable object
                 continue
-            for beam_size, bos_id, eos_id, alpha, K in [(2, 1, 3, 0, 1.0),  (4, 2, 3, 1.0, 5.0)]:
+            for beam_size, bos_id, eos_id, alpha, K in [(2, 1, 3, 0, 1.0), (4, 2, 3, 1.0, 5.0)]:
                 scorer = BeamSearchScorer(alpha=alpha, K=K)
                 for max_length in [10, 20]:
                     for batch_size in [1, 2, 5]:
