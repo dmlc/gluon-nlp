@@ -77,7 +77,6 @@ parser.add_argument('--gpu', type=int, default=None,
 args = parser.parse_args()
 print(args)
 
-pretrained = not args.no_pretrained
 if args.gpu is None:
     print('Use cpu')
     context = mx.cpu()
