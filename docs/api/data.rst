@@ -150,7 +150,9 @@ with `Dataset.transform` method.
     ClipSequence
     PadSequence
     NLTKMosesTokenizer
+    SacreMosesTokenizer
     SpacyTokenizer
+    SacreMosesDetokenizer
     NLTKMosesDetokenizer
 
 Samplers
@@ -175,6 +177,16 @@ The `FixedBucketSampler` uses following bucket scheme classes to generate bucket
     LinearWidthBucket
     ExpWidthBucket
 
+DataLoaders
+-----------
+
+DataLoaders loads data from a dataset and returns mini-batches of data
+
+.. autosummary::
+    :nosignatures:
+
+    ShardedDataLoader
+
 Utilities
 ---------
 
@@ -198,3 +210,4 @@ API Reference
 .. automodule:: gluonnlp.data
    :members:
    :imported-members:
+   :special-members: __iter__

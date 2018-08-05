@@ -20,6 +20,7 @@
 from __future__ import print_function
 
 import datetime
+import itertools
 import json
 import os
 import random
@@ -81,7 +82,35 @@ def test_dataset_registry():
 ###############################################################################
 # Language model
 ###############################################################################
+@pytest.mark.parametrize('batch_size', [7, 80])
+@pytest.mark.parametrize('seq_len', [7, 35])
+def test_bptt_batchify(batch_size, seq_len):
+    data = nlp.data.WikiText2(
+        segment='test', root=os.path.join('tests', 'data', 'wikitext-2'))
+    vocab = nlp.Vocab(nlp.data.utils.Counter(data[0]))
+
+    # unsupported last_batch
+    with pytest.raises(ValueError):
+        data.bptt_batchify(vocab, seq_len, batch_size, last_batch='unsupported')
+
+    # last_batch='keep'
+    X, Y = zip(*(data.bptt_batchify(vocab, seq_len, batch_size, last_batch='keep')))
+    X, Y = mx.nd.concat(*X, dim=0), mx.nd.concat(*Y, dim=0)
+    coded = mx.nd.concat(X, Y[-1].expand_dims(0), dim=0).T.reshape(-1).asnumpy().tolist()
+    assert vocab[data[0]] == coded[:len(data[0])]
+    assert all(pad == vocab[vocab.padding_token] for pad in coded[len(data[0]):])
+
+    # last_batch='discard'
+    X, Y = zip(*(data.bptt_batchify(vocab, seq_len, batch_size, last_batch='discard')))
+    X, Y = mx.nd.concat(*X, dim=0), mx.nd.concat(*Y, dim=0)
+    coded = mx.nd.concat(X, Y[-1].expand_dims(0), dim=0).T.reshape(-1).asnumpy().tolist()
+    assert len(data[0]) - len(coded) < batch_size * seq_len
+
+
 def test_wikitext2():
+    batch_size = 80
+    seq_len = 35
+
     train = nlp.data.WikiText2(
         segment='train', root=os.path.join('tests', 'data', 'wikitext-2'))
     val = nlp.data.WikiText2(
@@ -102,16 +131,16 @@ def test_wikitext2():
     assert len(serialized_vocab) == 962190, len(serialized_vocab)
     assert json.loads(serialized_vocab)['idx_to_token'] == vocab._idx_to_token
 
-    train_data = train.bptt_batchify(vocab, 35, 80, last_batch='discard')
+    train_data = train.bptt_batchify(vocab, seq_len, batch_size, last_batch='discard')
     assert len(train_data) == 741, len(train_data)
 
     for i, (data, target) in enumerate(train_data):
         mx.test_utils.assert_almost_equal(data[1:].asnumpy(), target[:-1].asnumpy())
-        assert data.shape == target.shape == (35, 80)
+        assert data.shape == target.shape == (seq_len, batch_size)
 
-    train_data = train.bptt_batchify(vocab, 35, 80, last_batch='keep')
+    train_data = train.bptt_batchify(vocab, seq_len, batch_size, last_batch='keep')
     assert len(train_data) == 742, len(train_data)
-    assert train_data[-1][0].shape[0] < 35
+    assert train_data[-1][0].shape[0] <= seq_len
     for i, (data, target) in enumerate(train_data):
         mx.test_utils.assert_almost_equal(data[1:].asnumpy(), target[:-1].asnumpy())
         assert data.shape == target.shape
@@ -136,8 +165,8 @@ def test_wikitext2():
     assert len(test[0]) == 245569, len(test[0])
     assert len(test_freq) == 14143, len(test_freq)
     assert test_freq['English'] == 32, test_freq['English']
-    batched_data = train.batchify(vocab, 80)
-    assert batched_data.shape == (26107, 80)
+    batched_data = train.batchify(vocab, batch_size)
+    assert batched_data.shape == (26107, batch_size)
 
 
 def test_wikitext2_raw():
@@ -271,6 +300,8 @@ def test_rare_words():
     _assert_similarity_dataset(data)
 
 
+@pytest.mark.skipif(datetime.date.today() < datetime.date(2018, 8, 16),
+                    reason='Disabled for 1 weeks due to server downtime.')
 @flaky(max_runs=2, min_passes=1)
 def test_simlex999():
     data = nlp.data.SimLex999(
@@ -391,7 +422,7 @@ def test_conll2002_esp(segment, length):
         assert all(isinstance(n, _str_types) for n in ner), ner
 
 
-@pytest.mark.skipif(datetime.date.today() < datetime.date(2018, 7, 7),
+@pytest.mark.skipif(datetime.date.today() < datetime.date(2018, 8, 2),
                     reason='Disabled for 1 weeks due to server downtime.')
 @flaky(max_runs=2, min_passes=1)
 @pytest.mark.parametrize('segment,length', [
@@ -541,14 +572,14 @@ def test_corpus_stream():
     test = nlp.data.WikiText2(segment='test', root=path)
     corpus = nlp.data.CorpusStream(token_path, flatten=True,
                                    skip_empty=True, eos=EOS)
-    counter = nlp.data.Counter(corpus)
+    counter = nlp.data.Counter(itertools.chain.from_iterable(corpus))
     assert len(counter) == 33278, len(counter)
     # examine aggregated vocab
     vocab = nlp.vocab.Vocab(counter, bos_token=None, padding_token=None)
     assert len(vocab) == 33278, len(vocab)
     # examine aggregated stats
     assert sum(counter.values()) == 2075677 + 216347 + 244102
-    counter = nlp.data.Counter(corpus)
+    counter = nlp.data.Counter(itertools.chain.from_iterable(corpus))
     assert len(counter) == 33278, len(counter)
 
 def test_lm_stream():
@@ -559,7 +590,7 @@ def test_lm_stream():
     val = nlp.data.WikiText2(segment='val', root=path)
     test = nlp.data.WikiText2(segment='test', root=path)
     lm_stream = nlp.data.LanguageModelStream(token_path, skip_empty=True, eos=EOS, bos=EOS)
-    counter = nlp.data.Counter(lm_stream)
+    counter = nlp.data.Counter(itertools.chain.from_iterable(lm_stream))
     vocab = nlp.vocab.Vocab(counter, bos_token=None)
     seq_len = 35
     batch_size = 80
@@ -579,27 +610,44 @@ def test_lm_stream():
     # the last token doesn't appear in data
     assert num_tokens < total_num_tokens
 
-def test_lazy_stream():
+@pytest.mark.parametrize('prefetch', [None, "thread", "process"])
+def test_lazy_stream(prefetch):
     EOS = nlp._constants.EOS_TOKEN
     path = os.path.join('tests', 'data', 'wikitext-2')
     token_path = os.path.join('tests', 'data', 'wikitext-2/*test*.tokens')
     test = nlp.data.WikiText2(segment='test', root=path)
-    corpus = nlp.data.CorpusStream(token_path, flatten=True,
-                                   skip_empty=True, eos=EOS, sampler='sequential')
-    transformed_corpus = nlp.data.SimpleDataStream(corpus).transform(lambda s: s.lower())
-    for x, y in zip(corpus, transformed_corpus):
-        assert y == x.lower()
+    corpus = nlp.data.CorpusStream(token_path, flatten=True, skip_empty=True, eos=EOS)
+    if prefetch:
+        prefetch_corpus = nlp.data.PrefetchingStream(corpus, worker_type=prefetch)
+    else:
+        prefetch_corpus = corpus
+    transformed_corpus = prefetch_corpus.transform(lambda d: [s.lower() for s in d])
+    prefetch_corpus_iter = iter(prefetch_corpus)
+    transformed_corpus_iter = iter(transformed_corpus)
+    for x in corpus:
+        y = next(prefetch_corpus_iter)
+        z = next(transformed_corpus_iter)
+        assert all([sx.lower() == sy.lower() == sz for sx, sy, sz in zip(x, y, z)])
 
-def test_prefetch_stream():
+@pytest.mark.parametrize('num_prefetch', [0, 1, 10])
+@pytest.mark.parametrize('worker_type', ['thread', 'process'])
+def test_prefetch_stream(num_prefetch, worker_type):
     EOS = nlp._constants.EOS_TOKEN
     path = os.path.join('tests', 'data', 'wikitext-2')
     token_path = os.path.join('tests', 'data', 'wikitext-2/*test*.tokens')
     test = nlp.data.WikiText2(segment='test', root=path)
-    corpus = nlp.data.CorpusStream(token_path, flatten=True,
-                                   skip_empty=True, eos=EOS, sampler='sequential')
-    prefetch_corpus = nlp.data.PrefetchingStream(corpus)
-    for x, y in zip(corpus, prefetch_corpus):
-        assert y == x
+    corpus = nlp.data.CorpusStream(token_path, flatten=True, skip_empty=True, eos=EOS)
+    if num_prefetch < 1:
+        with pytest.raises(ValueError):
+            prefetch_corpus = nlp.data.PrefetchingStream(
+                corpus, num_prefetch=num_prefetch, worker_type=worker_type)
+    else:
+        prefetch_corpus = nlp.data.PrefetchingStream(
+            corpus, num_prefetch=num_prefetch, worker_type=worker_type)
+        prefetch_corpus_iter = iter(prefetch_corpus)
+        for x in corpus:
+            y = next(prefetch_corpus_iter)
+            assert all([sx == sy for sx, sy in zip(x, y)])
 
 ###############################################################################
 # Question answering

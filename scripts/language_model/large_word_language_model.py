@@ -135,8 +135,7 @@ def _load(xs):
             ret.append(x.as_in_context(ctx))
     return ret
 
-def _split_and_sample(data):
-    x, y, m = data
+def _split_and_sample(x, y, m):
     num_ctx = len(context)
     if num_ctx > 1:
         xs = gluon.utils.split_data(x, num_ctx, batch_axis=1, even_split=True)
