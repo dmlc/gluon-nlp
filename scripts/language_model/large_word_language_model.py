@@ -167,7 +167,8 @@ if args.char_cnn_embedding:
         'CharacterSubwords', vocab=vocab)
     idx_to_subword = subword_function(vocab.idx_to_token)
     subword_pad_val = subword_function.char_to_idx[subword_function.padding_character]
-    subword_pad = nlp.data.batchify.Pad(pad_val=subword_pad_val)
+    # min_length is hard-coded maximum filter size of ConvolutionalEncoder
+    subword_pad = nlp.data.batchify.Pad(pad_val=subword_pad_val, min_length=6)
 
 ntokens = len(vocab)
 
