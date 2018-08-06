@@ -49,8 +49,8 @@ parser = argparse.ArgumentParser(description='MXNet Sentiment Analysis Example o
                                              'We load a textCNN model as our encoder.')
 parser.add_argument('--data_name', choices=['MR', 'SST-1', 'SST-2', 'Subj', 'TREC'], default='MR',
                     help='specified data set')
-parser.add_argument('--model_mode', choices=['rand', 'static', 'non-static', 'multichannel'], default='multichannel',
-                    help='path to save the final model')
+parser.add_argument('--model_mode', choices=['rand', 'static', 'non-static', 'multichannel'],
+                    default='multichannel', help='path to save the final model')
 parser.add_argument('--lr', type=float, default=2.5E-3,
                     help='initial learning rate')
 parser.add_argument('--clip', type=float, default=None, help='gradient clipping')
@@ -82,8 +82,7 @@ else:
 class SentimentNet(Block):
     """Network for sentiment analysis."""
     def __init__(self, dropout, embed_size=300, vocab_size=100, prefix=None,
-                 params=None, num_filters=(100, 100, 100), ngram_filter_sizes=(3, 4, 5),
-                 output_size=2):
+                 params=None, num_filters=(100, 100, 100), ngram_filter_sizes=(3, 4, 5)):
         super(SentimentNet, self).__init__(prefix=prefix, params=params)
         with self.name_scope():
             self.embedding = gluon.nn.Embedding(vocab_size, embed_size)
