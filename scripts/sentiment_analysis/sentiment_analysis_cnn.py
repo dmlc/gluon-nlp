@@ -145,7 +145,7 @@ length_clip = nlp.data.ClipSequence(max_len)
 vocab = nlp.Vocab(nlp.data.count_tokens(all_token))
 vocab.set_embedding(nlp.embedding.create('Word2Vec', source='GoogleNews-vectors-negative300'))
 print(len(vocab))
-net = SentimentNet(dropout=args.dropout, vocab_size=len(vocab), output_size=output_size)
+net = SentimentNet(dropout=args.dropout, vocab_size=len(vocab))
 
 print('Tokenize using spaCy...')
 
