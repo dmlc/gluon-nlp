@@ -81,8 +81,8 @@ else:
 
 class SentimentNet(Block):
     """Network for sentiment analysis."""
-    def __init__(self, dropout, embed_size=300, vocab_size=100, prefix=None, 
-                 params=None, num_filters=(100, 100, 100), ngram_filter_sizes=(3, 4, 5), 
+    def __init__(self, dropout, embed_size=300, vocab_size=100, prefix=None,
+                 params=None, num_filters=(100, 100, 100), ngram_filter_sizes=(3, 4, 5),
                  output_size=2):
         super(SentimentNet, self).__init__(prefix=prefix, params=params)
         with self.name_scope():
@@ -109,39 +109,37 @@ class SentimentNet(Block):
         out = self.output(encoded)
         return out
 
-def choose_dataset(data_set):
-    if data_set == 'MR':
-        train_dataset, test_dataset = [nlp.data.MR(root='data/mr', segment=segment)
-                                       for segment in ('train', 'test')]
-        output_size = 2
-    elif data_set == 'SST-1':
-        train_dataset, test_dataset = [nlp.data.SST_1(root='data/sst-1', segment=segment)
-                                       for segment in ('train', 'test')]
-        output_size = 5
-    elif data_set == 'SST-2':
-        train_dataset, test_dataset = [nlp.data.SST_2(root='data/sst-2', segment=segment)
-                                       for segment in ('train', 'test')]
-        output_size = 2
-    elif data_set == 'Subj':
-        train_dataset, test_dataset = [nlp.data.SUBJ(root='data/Subj', segment=segment)
-                                       for segment in ('train', 'test')]
-        output_size = 2
-    elif data_set == 'TREC':
-        train_dataset, test_dataset = [nlp.data.TREC(root='data/trec', segment=segment)
-                                       for segment in ('train', 'test')]
-        output_size = 6
-    else:
-        print('Unable to find data set')
-        exit()
-    return train_dataset, test_dataset, output_size
-train_dataset, test_dataset, output_size = choose_dataset(args.data_name)  
+if args.data_name == 'MR':
+    train_dataset, test_dataset = [nlp.data.MR(root='data/mr', segment=segment)
+                                   for segment in ('train', 'test')]
+    output_size = 2
+elif args.data_name == 'SST-1':
+    train_dataset, test_dataset = [nlp.data.SST_1(root='data/sst-1', segment=segment)
+                                   for segment in ('train', 'test')]
+    output_size = 5
+elif args.data_name == 'SST-2':
+    train_dataset, test_dataset = [nlp.data.SST_2(root='data/sst-2', segment=segment)
+                                   for segment in ('train', 'test')]
+    output_size = 2
+elif args.data_name == 'Subj':
+    train_dataset, test_dataset = [nlp.data.SUBJ(root='data/Subj', segment=segment)
+                                   for segment in ('train', 'test')]
+    output_size = 2
+elif args.data_name == 'TREC':
+    train_dataset, test_dataset = [nlp.data.TREC(root='data/trec', segment=segment)
+                                   for segment in ('train', 'test')]
+    output_size = 6
+else:
+    print('Unable to find data set')
+    exit()
+
 train_dataset, valid_dataset = nlp.data.train_valid_split(train_dataset, args.valid_ratio)
 
 all_token = []
 max_len = 0
 for line in train_dataset:
     line = line[0].split(' ')
-    max_len = max_len if max_len>len(line) else len(line)
+    max_len = max_len if max_len > len(line) else len(line)
     all_token.extend(line)
 print(max_len)
 length_clip = nlp.data.ClipSequence(max_len)
