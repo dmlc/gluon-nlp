@@ -316,7 +316,9 @@ def train():
                     x[:] *= args.batch_size
                 encoder_grad = [p.grad(ctx) for p in encoder_params]
                 # perform gradient clipping per ctx
-                gluon.utils.clip_global_norm(encoder_grad, args.clip)
+                gluon.utils.clip_global_norm(encoder_grad, args.clip,
+                                             check_isfinite=False,
+                                             check_scale=False)
 
             trainer.step(len(context))
 
