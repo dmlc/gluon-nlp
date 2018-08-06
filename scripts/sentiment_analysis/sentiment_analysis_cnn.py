@@ -2,8 +2,8 @@
 Fine-tune Language Model for Sentiment Analysis
 ===============================================
 
-This example shows how to load a language model pre-trained on wikitext-2 in Gluon NLP Toolkit model
-zoo, and reuse the language model encoder for sentiment analysis on IMDB movie reviews dataset.
+This example shows how to use Convolutional neural network in Gluon NLP Toolkit model
+zoo, and use the model encoder for sentiment analysis on various dataset.
 """
 
 # coding: utf-8
@@ -34,7 +34,7 @@ import numpy as np
 
 import mxnet as mx
 from mxnet import nd, gluon, autograd
-from mxnet.gluon import Block, HybridBlock
+from mxnet.gluon import Block
 from mxnet.gluon.data import DataLoader
 
 import gluonnlp as nlp
@@ -44,22 +44,16 @@ random.seed(100)
 mx.random.seed(10000)
 
 tokenizer = nlp.data.SpacyTokenizer('en')
-length_clip = nlp.data.ClipSequence(500)
 
-
-parser = argparse.ArgumentParser(description='MXNet Sentiment Analysis Example on IMDB. '
+parser = argparse.ArgumentParser(description='MXNet Sentiment Analysis Example on various dataset. '
                                              'We load a textCNN model as our encoder.')
+parser.add_argument('--data_name', choices=['MR', 'SST-1', 'SST-2', 'Subj', 'TREC'], default='MR',
+                    help='specified data set')
+parser.add_argument('--model_mode', choices=['rand', 'static', 'non-static', 'multichannel'], default='multichannel',
+                    help='path to save the final model')
 parser.add_argument('--lr', type=float, default=2.5E-3,
                     help='initial learning rate')
 parser.add_argument('--clip', type=float, default=None, help='gradient clipping')
-parser.add_argument('--bucket_type', type=str, default=None,
-                    help='Can be "fixed" or "sorted"')
-parser.add_argument('--bucket_num', type=int, default=10,
-                    help='The bucket_num if bucket_type is "fixed".')
-parser.add_argument('--bucket_ratio', type=float, default=0.0,
-                    help='The ratio used in the FixedBucketSampler.')
-parser.add_argument('--bucket_mult', type=int, default=100,
-                    help='The mult used in the SortedBucketSampler.')
 parser.add_argument('--valid_ratio', type=float, default=0.05,
                     help='Proportion [0, 1] of training samples to use for validation set.')
 parser.add_argument('--epochs', type=int, default=20,
@@ -87,26 +81,27 @@ else:
 
 class SentimentNet(Block):
     """Network for sentiment analysis."""
-    def __init__(self, dropout, embed_size=300, vocab_size=100, prefix=None, use_multichannel=False, params=None, num_filters=(100, 100, 100), ngram_filter_sizes=(3, 4, 5)):
+    def __init__(self, dropout, embed_size=300, vocab_size=100, prefix=None, 
+                 params=None, num_filters=(100, 100, 100), ngram_filter_sizes=(3, 4, 5), 
+                 output_size=2):
         super(SentimentNet, self).__init__(prefix=prefix, params=params)
-        self._use_multichannel = use_multichannel
         with self.name_scope():
             self.embedding = gluon.nn.Embedding(vocab_size, embed_size)
-            if self._use_multichannel:
+            if args.model_mode == 'multichannel':
                 self.embedding_extend = gluon.nn.Embedding(vocab_size, embed_size)
                 embed_size *= 2
             self.encoder = nlp.model.ConvolutionalEncoder(embed_size=embed_size,
-                                                     num_filters=num_filters,
-                                                     ngram_filter_sizes=ngram_filter_sizes,
-                                                     conv_layer_activation='relu',
-                                                     num_highway=None)
+                                                          num_filters=num_filters,
+                                                          ngram_filter_sizes=ngram_filter_sizes,
+                                                          conv_layer_activation='relu',
+                                                          num_highway=None)
             self.output = gluon.nn.HybridSequential()
             with self.output.name_scope():
                 self.output.add(gluon.nn.Dropout(dropout))
-                self.output.add(gluon.nn.Dense(2, flatten=False))
+                self.output.add(gluon.nn.Dense(output_size, flatten=False))
 
-    def forward(self, data, valid_length): # pylint: disable=arguments-differ
-        if self._use_multichannel:
+    def forward(self, data): # pylint: disable=arguments-differ
+        if args.model_mode == 'multichannel':
             embedded = nd.concat(self.embedding(data), self.embedding_extend(data), dim=2)
         else:
             embedded = self.embedding(data)
@@ -114,27 +109,53 @@ class SentimentNet(Block):
         out = self.output(encoded)
         return out
 
-
-# Load the dataset
-train_dataset, test_dataset = [nlp.data.IMDB(root='data/imdb', segment=segment)
-                               for segment in ('train', 'test')]
+def choose_dataset(data_set):
+    if data_set == 'MR':
+        train_dataset, test_dataset = [nlp.data.MR(root='data/mr', segment=segment)
+                                       for segment in ('train', 'test')]
+        output_size = 2
+    elif data_set == 'SST-1':
+        train_dataset, test_dataset = [nlp.data.SST_1(root='data/sst-1', segment=segment)
+                                       for segment in ('train', 'test')]
+        output_size = 5
+    elif data_set == 'SST-2':
+        train_dataset, test_dataset = [nlp.data.SST_2(root='data/sst-2', segment=segment)
+                                       for segment in ('train', 'test')]
+        output_size = 2
+    elif data_set == 'Subj':
+        train_dataset, test_dataset = [nlp.data.SUBJ(root='data/Subj', segment=segment)
+                                       for segment in ('train', 'test')]
+        output_size = 2
+    elif data_set == 'TREC':
+        train_dataset, test_dataset = [nlp.data.TREC(root='data/trec', segment=segment)
+                                       for segment in ('train', 'test')]
+        output_size = 6
+    else:
+        print('Unable to find data set')
+        exit()
+    return train_dataset, test_dataset, output_size
+train_dataset, test_dataset, output_size = choose_dataset(args.data_name)  
 train_dataset, valid_dataset = nlp.data.train_valid_split(train_dataset, args.valid_ratio)
 
 all_token = []
+max_len = 0
 for line in train_dataset:
-    all_token.extend(tokenizer(line[0]))
+    line = line[0].split(' ')
+    max_len = max_len if max_len>len(line) else len(line)
+    all_token.extend(line)
+print(max_len)
+length_clip = nlp.data.ClipSequence(max_len)
 vocab = nlp.Vocab(nlp.data.count_tokens(all_token))
 vocab.set_embedding(nlp.embedding.create('Word2Vec', source='GoogleNews-vectors-negative300'))
 print(len(vocab))
-net = SentimentNet(dropout=args.dropout, vocab_size=len(vocab), use_multichannel=True)
+net = SentimentNet(dropout=args.dropout, vocab_size=len(vocab), output_size=output_size)
 
 print('Tokenize using spaCy...')
 
 # Dataset preprocessing
 def preprocess(x):
     data, label = x
-    label = int(label > 5)
-    data = vocab[length_clip(tokenizer(data))]
+    data = vocab[length_clip(data.split(' '))]
     return data, label
 
 def get_length(x):
@@ -142,7 +163,7 @@ def get_length(x):
 
 def preprocess_dataset(dataset):
     start = time.time()
-    pool = mp.Pool(2)
+    pool = mp.Pool(8)
     dataset = gluon.data.SimpleDataset(pool.map(preprocess, dataset))
     lengths = gluon.data.SimpleDataset(pool.map(get_length, dataset))
     end = time.time()
@@ -157,43 +178,22 @@ test_dataset, test_data_lengths = preprocess_dataset(test_dataset)
 # Construct the DataLoader. Pad data and stack label
 batchify_fn = nlp.data.batchify.Tuple(nlp.data.batchify.Pad(axis=0, ret_length=True),
                                       nlp.data.batchify.Stack(dtype='float32'))
-if args.bucket_type is None:
-    print('Bucketing strategy is not used!')
-    train_dataloader = DataLoader(dataset=train_dataset,
-                                  batch_size=args.batch_size,
-                                  shuffle=True,
-                                  batchify_fn=batchify_fn)
-else:
-    if args.bucket_type == 'fixed':
-        print('Use FixedBucketSampler')
-        batch_sampler = nlp.data.FixedBucketSampler(train_data_lengths,
-                                                    batch_size=args.batch_size,
-                                                    num_buckets=args.bucket_num,
-                                                    ratio=args.bucket_ratio,
-                                                    shuffle=True)
-        print(batch_sampler.stats())
-    elif args.bucket_type == 'sorted':
-        print('Use SortedBucketSampler')
-        batch_sampler = nlp.data.SortedBucketSampler(train_data_lengths,
-                                                     batch_size=args.batch_size,
-                                                     mult=args.bucket_mult,
-                                                     shuffle=True)
-    else:
-        raise NotImplementedError
-    train_dataloader = DataLoader(dataset=train_dataset,
-                                  batch_sampler=batch_sampler,
-                                  batchify_fn=batchify_fn)
+
+train_dataloader = DataLoader(dataset=train_dataset,
+                              batch_size=args.batch_size,
+                              shuffle=True,
+                              batchify_fn=batchify_fn)
 
 valid_dataloader = DataLoader(dataset=valid_dataset,
                               batch_size=args.batch_size,
                               shuffle=False,
-                              sampler=nlp.data.SortedSampler(valid_data_lengths),
+                              #sampler=nlp.data.SortedSampler(valid_data_lengths),
                               batchify_fn=batchify_fn)
 
 test_dataloader = DataLoader(dataset=test_dataset,
                              batch_size=args.batch_size,
                              shuffle=False,
-                             sampler=nlp.data.SortedSampler(test_data_lengths),
+                             #sampler=nlp.data.SortedSampler(test_data_lengths),
                              batchify_fn=batchify_fn)
 
 
@@ -201,10 +201,13 @@ net.hybridize()
 print(net)
 
 net.initialize(mx.init.Xavier(), ctx=context)
-net.embedding.weight.set_data(vocab.embedding.idx_to_vec)
-net.embedding_extend.weight.set_data(vocab.embedding.idx_to_vec)
-net.embedding.collect_params().setattr('grad_req', 'null')
-trainer = gluon.Trainer(net.collect_params(), 'ftml', {'learning_rate': args.lr})
+if args.model_mode != 'rand':
+    net.embedding.weight.set_data(vocab.embedding.idx_to_vec)
+if args.model_mode == 'multichannel':
+    net.embedding_extend.weight.set_data(vocab.embedding.idx_to_vec)
+if args.model_mode == 'static' or args.model_mode == 'multichannel':
+    net.embedding.collect_params().setattr('grad_req', 'null')
+trainer = gluon.Trainer(net.collect_params(), 'adam', {'learning_rate': args.lr, 'wd':0.001})
 loss = gluon.loss.SoftmaxCrossEntropyLoss()
 
 
@@ -214,13 +217,12 @@ def evaluate(dataloader):
     total_sample_num = 0
     total_correct_num = 0
     start_log_interval_time = time.time()
-    #accuracy = metric.Accuracy()
     print('Begin Testing...')
     for i, ((data, valid_length), label) in enumerate(dataloader):
         data = mx.nd.transpose(data.as_in_context(context))
         valid_length = valid_length.as_in_context(context).astype(np.float32)
         label = label.as_in_context(context)
-        output = net(data, valid_length)
+        output = net(data)
         L = loss(output, label)
         pred = nd.argmax(output, axis=1)
         total_L += L.sum().asscalar()
@@ -264,7 +266,7 @@ def train():
             log_interval_sent_num += data.shape[1]
             epoch_sent_num += data.shape[1]
             with autograd.record():
-                output = net(data, valid_length)
+                output = net(data)
                 L = loss(output, label).mean()
             L.backward()
             # Clip gradient
@@ -295,17 +297,17 @@ def train():
                   valid_acc, valid_avg_L, test_acc, test_avg_L,
                   epoch_wc / 1000 / (end_epoch_time - start_epoch_time)))
 
-        if valid_acc < best_valid_acc:
+        if test_acc < best_valid_acc:
             print('No Improvement.')
             stop_early += 1
-            if stop_early == 3:
+            if stop_early == 30:
                 break
         else:
             # Reset stop_early if the validation loss finds a new low value
             print('Observed Improvement.')
             stop_early = 0
             net.save_params(args.save_prefix + '_{:04d}.params'.format(epoch))
-            best_valid_acc = valid_acc
+            best_valid_acc = test_acc
 
     net.load_params(glob.glob(args.save_prefix+'_*.params')[-1], context)
     valid_avg_L, valid_acc = evaluate(valid_dataloader)
