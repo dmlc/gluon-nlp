@@ -156,20 +156,29 @@ The key features used to reproduce the results for pre-trained models are listed
 
 The dataset used for training the models is Google's 1 billion words dataset.
 
++-----------------+---------------+
 | Model           | LSTM-2048-512 |
-| --------------- | ------------- |
++=================+===============+
+| Mode            | LSTM          |
++-----------------+---------------+
 | Num layers      | 1             |
++-----------------+---------------+
 | Embed size      | 512           |
++-----------------+---------------+
 | Hidden size     | 2048          |
-| Batch size      | 256           |
-| Batch size      | 256           |
-| Graident clip   | 10.0          |
++-----------------+---------------+
 | Projection size | 512           |
++-----------------+---------------+
 | Dropout         | 0.1           |
++-----------------+---------------+
 | Learning rate   | 0.2           |
++-----------------+---------------+
 | Num samples     | 8192          |
-| Test perplexity | 44.05         |
-| Num epochs      | 48            |
++-----------------+---------------+
+| Test perplexity | 44.0          |
++-----------------+---------------+
+| Tied            | True          |
++-----------------+---------------+
 
 [1] LSTM-2048-512 (Test PPL 44.05)
 
