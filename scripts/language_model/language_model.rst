@@ -175,7 +175,13 @@ The dataset used for training the models is Google's 1 billion words dataset.
 +-----------------+---------------+
 | Num samples     | 8192          |
 +-----------------+---------------+
-| Test perplexity | 44.0          |
+| Batch size      | 256           |
++-----------------+---------------+
+| Graident clip   | 10.0          |
++-----------------+---------------+
+| Test perplexity | 44.05         |
++-----------------+---------------+
+| Num epochs      | 48            | 
 +-----------------+---------------+
 | Tied            | True          |
 +-----------------+---------------+
