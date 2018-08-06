@@ -326,7 +326,7 @@ def train(args):
         list(embedding_out.collect_params().values())
     trainer = mx.gluon.Trainer(params, args.optimizer, optimizer_kwargs)
 
-    def skipgram_batch(data):
+    def skipgram_batch(data, ctx):
         """Create a batch for Skipgram training objective."""
         centers, word_context, word_context_mask = data
         assert len(centers.shape) == 2
@@ -335,29 +335,26 @@ def train(args):
             negatives_sampler(negatives_shape), word_context)
         context_negatives = mx.nd.concat(word_context, negatives, dim=1)
         masks = mx.nd.concat(word_context_mask, negatives_mask, dim=1)
-        labels = mx.nd.concat(word_context_mask, mx.nd.zeros_like(negatives),
-                              dim=1)
+        labels = mx.nd.concat(
+            word_context_mask, mx.nd.zeros_like(negatives), dim=1)
         if not args.ngram_buckets:
-            return (centers.as_in_context(context[0]),
-                    context_negatives.as_in_context(context[0]),
-                    masks.as_in_context(context[0]),
-                    labels.as_in_context(context[0]))
+            return (centers.as_in_context(ctx),
+                    context_negatives.as_in_context(ctx),
+                    masks.as_in_context(ctx), labels.as_in_context(ctx))
         else:
-            unique, inverse_unique_indices = np.unique(centers.asnumpy(),
-                                                       return_inverse=True)
-            inverse_unique_indices = mx.nd.array(inverse_unique_indices,
-                                                 ctx=context[0])
+            unique, inverse_unique_indices = np.unique(
+                centers.asnumpy(), return_inverse=True)
+            inverse_unique_indices = mx.nd.array(
+                inverse_unique_indices, ctx=ctx)
             subwords, subwords_mask = subword_lookup.get(unique.astype(int))
 
-            return (centers.as_in_context(context[0]),
-                    context_negatives.as_in_context(context[0]),
-                    masks.as_in_context(context[0]),
-                    labels.as_in_context(context[0]),
-                    mx.nd.array(subwords, ctx=context[0]),
-                    mx.nd.array(subwords_mask, ctx=context[0]),
-                    inverse_unique_indices)
+            return (centers.as_in_context(ctx),
+                    context_negatives.as_in_context(ctx),
+                    masks.as_in_context(ctx), labels.as_in_context(ctx),
+                    mx.nd.array(subwords, ctx=ctx), mx.nd.array(
+                        subwords_mask, ctx=ctx), inverse_unique_indices)
 
-    def cbow_batch(data):
+    def cbow_batch(data, ctx):
         """Create a batch for CBOW training objective."""
         centers, word_context, word_context_mask = data
         assert len(centers.shape) == 2
@@ -370,25 +367,24 @@ def train(args):
         labels = mx.nd.concat(
             mx.nd.ones_like(centers), mx.nd.zeros_like(negatives), dim=1)
         if not args.ngram_buckets:
-            return (word_context.as_in_context(context[0]),
-                    word_context_mask.as_in_context(context[0]),
-                    center_negatives.as_in_context(context[0]),
-                    center_negatives_mask.as_in_context(context[0]),
-                    labels.as_in_context(context[0]))
+            return (word_context.as_in_context(ctx),
+                    word_context_mask.as_in_context(ctx),
+                    center_negatives.as_in_context(ctx),
+                    center_negatives_mask.as_in_context(ctx),
+                    labels.as_in_context(ctx))
         else:
-            unique, inverse_unique_indices = np.unique(word_context.asnumpy(),
-                                                       return_inverse=True)
-            inverse_unique_indices = mx.nd.array(inverse_unique_indices,
-                                                 ctx=context[0])
+            unique, inverse_unique_indices = np.unique(
+                word_context.asnumpy(), return_inverse=True)
+            inverse_unique_indices = mx.nd.array(
+                inverse_unique_indices, ctx=ctx)
             subwords, subwords_mask = subword_lookup.get(unique.astype(int))
-            return (word_context.as_in_context(context[0]),
-                    word_context_mask.as_in_context(context[0]),
-                    center_negatives.as_in_context(context[0]),
-                    center_negatives_mask.as_in_context(context[0]),
-                    labels.as_in_context(context[0]),
-                    mx.nd.array(subwords, ctx=context[0]),
-                    mx.nd.array(subwords_mask, ctx=context[0]),
-                    inverse_unique_indices)
+            return (word_context.as_in_context(ctx),
+                    word_context_mask.as_in_context(ctx),
+                    center_negatives.as_in_context(ctx),
+                    center_negatives_mask.as_in_context(ctx),
+                    labels.as_in_context(ctx), mx.nd.array(
+                        subwords, ctx=ctx), mx.nd.array(
+                            subwords_mask, ctx=ctx), inverse_unique_indices)
 
     # Helpers for bucketing
     def skipgram_length_fn(data):
@@ -443,6 +439,7 @@ def train(args):
                 batches, bucketing_split, length_fn, bucketing_batchify_fn)
 
         for i, batch in enumerate(batches):
+            ctx = context[i % len(context)]
             progress = (epoch * num_tokens + i * args.batch_size) / \
                 (args.epochs * num_tokens)
 
@@ -450,7 +447,7 @@ def train(args):
                 if args.ngram_buckets:
                     (center, context_negatives, mask, label, subwords,
                      subwords_mask,
-                     inverse_unique_indices) = skipgram_batch(batch)
+                     inverse_unique_indices) = skipgram_batch(batch, ctx)
                     with mx.autograd.record():
                         emb_in = embedding(center, subwords,
                                            subwordsmask=subwords_mask,
@@ -462,7 +459,7 @@ def train(args):
                                 mask.shape[1] / mask.sum(axis=1))
                 else:
                     (center, context_negatives, mask,
-                     label) = skipgram_batch(batch)
+                     label) = skipgram_batch(batch, ctx)
                     with mx.autograd.record():
                         emb_in = embedding(center)
                         emb_out = embedding_out(context_negatives, mask)
@@ -473,7 +470,7 @@ def train(args):
                 if args.ngram_buckets:
                     (word_context, word_context_mask, center_negatives,
                      center_negatives_mask, label, subwords, subwords_mask,
-                     inverse_unique_indices) = cbow_batch(batch)
+                     inverse_unique_indices) = cbow_batch(batch, ctx)
                     with mx.autograd.record():
                         emb_in = embedding(word_context, subwords,
                                            wordsmask=word_context_mask,
@@ -490,7 +487,7 @@ def train(args):
                                 center_negatives_mask.sum(axis=1))
                 else:
                     (word_context, word_context_mask, center_negatives,
-                     center_negatives_mask, label) = cbow_batch(batch)
+                     center_negatives_mask, label) = cbow_batch(batch, ctx)
                     with mx.autograd.record():
                         emb_in = embedding(word_context,
                                            wordsmask=word_context_mask)
@@ -512,11 +509,12 @@ def train(args):
                 trainer.set_learning_rate(
                     max(0.0001, args.lr * (1 - progress)))
 
-            trainer.step(batch_size=1)
+            if len(context) == 1 or (i + 1) % len(context) == 0:
+                trainer.step(batch_size=1)
 
             # Logging
             log_wc += loss.shape[0]
-            log_avg_loss += loss.mean()
+            log_avg_loss += loss.mean().as_in_context(context[0])
             if (i + 1) % args.log_interval == 0:
                 # Forces waiting for computation by computing loss value
                 log_avg_loss = log_avg_loss.asscalar() / args.log_interval
