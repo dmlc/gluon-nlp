@@ -3,7 +3,7 @@ Fine-tune Language Model for Sentiment Analysis
 ===============================================
 
 This example shows how to use Convolutional neural network in Gluon NLP Toolkit model
-zoo, and use the model encoder for sentiment analysis on various dataset.
+zoo, and use the model encoder for sentiment analysis on various datasets.
 """
 
 # coding: utf-8
@@ -34,7 +34,7 @@ import numpy as np
 
 import mxnet as mx
 from mxnet import nd, gluon, autograd
-from mxnet.gluon import Block
+from mxnet.gluon import HybridBlock
 from mxnet.gluon.data import DataLoader
 
 import gluonnlp as nlp
@@ -43,19 +43,14 @@ np.random.seed(100)
 random.seed(100)
 mx.random.seed(10000)
 
-tokenizer = nlp.data.SpacyTokenizer('en')
-
-parser = argparse.ArgumentParser(description='MXNet Sentiment Analysis Example on various dataset. '
-                                             'We load a textCNN model as our encoder.')
+parser = argparse.ArgumentParser(description='MXNet Sentiment Analysis Example on various datasets. '
+                                             'We load textCNN as our model.')
 parser.add_argument('--data_name', choices=['MR', 'SST-1', 'SST-2', 'Subj', 'TREC'], default='MR',
                     help='specified data set')
 parser.add_argument('--model_mode', choices=['rand', 'static', 'non-static', 'multichannel'],
-                    default='multichannel', help='path to save the final model')
+                    default='multichannel', help='the used model')
 parser.add_argument('--lr', type=float, default=2.5E-3,
                     help='initial learning rate')
-parser.add_argument('--clip', type=float, default=None, help='gradient clipping')
-parser.add_argument('--valid_ratio', type=float, default=0.05,
-                    help='Proportion [0, 1] of training samples to use for validation set.')
 parser.add_argument('--epochs', type=int, default=20,
                     help='upper epoch limit')
 parser.add_argument('--batch_size', type=int, default=50, metavar='N',
@@ -79,7 +74,7 @@ else:
     context = mx.gpu(args.gpu)
 
 
-class SentimentNet(Block):
+class SentimentNet(HybridBlock):
     """Network for sentiment analysis."""
     def __init__(self, dropout, embed_size=300, vocab_size=100, prefix=None,
                  params=None, num_filters=(100, 100, 100), ngram_filter_sizes=(3, 4, 5)):
@@ -99,9 +94,9 @@ class SentimentNet(Block):
                 self.output.add(gluon.nn.Dropout(dropout))
                 self.output.add(gluon.nn.Dense(output_size, flatten=False))
 
-    def forward(self, data): # pylint: disable=arguments-differ
+    def hybrid_forward(self, F, data): # pylint: disable=arguments-differ
         if args.model_mode == 'multichannel':
-            embedded = nd.concat(self.embedding(data), self.embedding_extend(data), dim=2)
+            embedded = F.concat(self.embedding(data), self.embedding_extend(data), dim=2)
         else:
             embedded = self.embedding(data)
         encoded = self.encoder(embedded)  # Shape(T, N, C)
@@ -128,31 +123,23 @@ elif args.data_name == 'TREC':
     train_dataset, test_dataset = [nlp.data.TREC(root='data/trec', segment=segment)
                                    for segment in ('train', 'test')]
     output_size = 6
-else:
-    print('Unable to find data set')
-    exit()
-
-train_dataset, valid_dataset = nlp.data.train_valid_split(train_dataset, args.valid_ratio)
 
 all_token = []
-max_len = 0
-for line in train_dataset:
-    line = line[0].split(' ')
-    max_len = max_len if max_len > len(line) else len(line)
-    all_token.extend(line)
-print(max_len)
-length_clip = nlp.data.ClipSequence(max_len)
+max_len = 0 
+for line in train_dataset: 
+    line = line[0].split(' ') 
+    max_len = max_len if max_len > len(line) else len(line) 
+    all_token.extend(line) 
 vocab = nlp.Vocab(nlp.data.count_tokens(all_token))
 vocab.set_embedding(nlp.embedding.create('Word2Vec', source='GoogleNews-vectors-negative300'))
-print(len(vocab))
 net = SentimentNet(dropout=args.dropout, vocab_size=len(vocab))
-
-print('Tokenize using spaCy...')
 
 # Dataset preprocessing
 def preprocess(x):
     data, label = x
-    data = vocab[length_clip(data.split(' '))]
+    data = vocab[data.split(' ')]
+    while len(data) < max_len:
+        data.append(0)
     return data, label
 
 def get_length(x):
@@ -169,29 +156,15 @@ def preprocess_dataset(dataset):
 
 # Preprocess the dataset
 train_dataset, train_data_lengths = preprocess_dataset(train_dataset)
-valid_dataset, valid_data_lengths = preprocess_dataset(valid_dataset)
 test_dataset, test_data_lengths = preprocess_dataset(test_dataset)
-
-# Construct the DataLoader. Pad data and stack label
-batchify_fn = nlp.data.batchify.Tuple(nlp.data.batchify.Pad(axis=0, ret_length=True),
-                                      nlp.data.batchify.Stack(dtype='float32'))
 
 train_dataloader = DataLoader(dataset=train_dataset,
                               batch_size=args.batch_size,
-                              shuffle=True,
-                              batchify_fn=batchify_fn)
-
-valid_dataloader = DataLoader(dataset=valid_dataset,
-                              batch_size=args.batch_size,
-                              shuffle=False,
-                              #sampler=nlp.data.SortedSampler(valid_data_lengths),
-                              batchify_fn=batchify_fn)
+                              shuffle=True)
 
 test_dataloader = DataLoader(dataset=test_dataset,
                              batch_size=args.batch_size,
-                             shuffle=False,
-                             #sampler=nlp.data.SortedSampler(test_data_lengths),
-                             batchify_fn=batchify_fn)
+                             shuffle=False)
 
 
 net.hybridize()
@@ -215,10 +188,9 @@ def evaluate(dataloader):
     total_correct_num = 0
     start_log_interval_time = time.time()
     print('Begin Testing...')
-    for i, ((data, valid_length), label) in enumerate(dataloader):
+    for i, (data, label) in enumerate(dataloader):
         data = mx.nd.transpose(data.as_in_context(context))
-        valid_length = valid_length.as_in_context(context).astype(np.float32)
-        label = label.as_in_context(context)
+        label = label.astype('float32').as_in_context(context)
         output = net(data)
         L = loss(output, label)
         pred = nd.argmax(output, axis=1)
@@ -253,11 +225,10 @@ def train():
         log_interval_sent_num = 0
         log_interval_L = 0.0
 
-        for i, ((data, valid_length), label) in enumerate(train_dataloader):
+        for i, (data, label) in enumerate(train_dataloader):
             data = mx.nd.transpose(data.as_in_context(context))
             label = label.as_in_context(context)
-            valid_length = valid_length.as_in_context(context).astype(np.float32)
-            wc = valid_length.sum().asscalar()
+            wc = max_len
             log_interval_wc += wc
             epoch_wc += wc
             log_interval_sent_num += data.shape[1]
@@ -266,10 +237,6 @@ def train():
                 output = net(data)
                 L = loss(output, label).mean()
             L.backward()
-            # Clip gradient
-            if args.clip is not None:
-                grads = [p.grad(context) for p in net.collect_params().values()]
-                gluon.utils.clip_global_norm(grads, args.clip)
             # Update parameter
             trainer.step(1)
             log_interval_L += L.asscalar()
@@ -285,13 +252,11 @@ def train():
                 log_interval_sent_num = 0
                 log_interval_L = 0
         end_epoch_time = time.time()
-        valid_avg_L, valid_acc = evaluate(valid_dataloader)
         test_avg_L, test_acc = evaluate(test_dataloader)
         print('[Epoch %d] train avg loss %g, '
-              'valid acc %.4f, valid avg loss %g, '
               'test acc %.4f, test avg loss %g, throughput %gK wps' % (
                   epoch, epoch_L / epoch_sent_num,
-                  valid_acc, valid_avg_L, test_acc, test_avg_L,
+                  test_acc, test_avg_L,
                   epoch_wc / 1000 / (end_epoch_time - start_epoch_time)))
 
         if test_acc < best_valid_acc:
@@ -307,9 +272,7 @@ def train():
             best_valid_acc = test_acc
 
     net.load_params(glob.glob(args.save_prefix+'_*.params')[-1], context)
-    valid_avg_L, valid_acc = evaluate(valid_dataloader)
     test_avg_L, test_acc = evaluate(test_dataloader)
-    print('Best validation loss %g, validation acc %.4f'%(valid_avg_L, valid_acc))
     print('Best test loss %g, test acc %.4f'%(test_avg_L, test_acc))
     print('Total time cost %.2fs'%(time.time()-start_pipeline_time))
 
