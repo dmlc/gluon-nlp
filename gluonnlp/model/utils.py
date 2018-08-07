@@ -21,8 +21,12 @@ __all__ = ['apply_weight_drop']
 
 import functools
 
-from mxnet.gluon import Block, HybridBlock, contrib, rnn
+from mxnet import nd
+from mxnet.gluon import Block, HybridBlock, contrib, nn, rnn
+
+from .convolutional_encoder import ConvolutionalEncoder
 from .parameter import WeightDropParameter
+
 
 def apply_weight_drop(block, local_param_name, rate, axes=(),
                       weight_dropout_mode='training'):
@@ -148,3 +152,47 @@ def _get_rnn_layer(mode, num_layers, input_size, hidden_size, dropout, weight_dr
         apply_weight_drop(block, 'h2h_weight', rate=weight_dropout)
 
     return block
+
+
+class _LMCharEmbedding(Block):
+    def __init__(self, embed_size, char_vocab_size, char_embed_size=15,
+                 conv_encoder_args={}, dropout=0.0, sparse_grad=True,
+                 **kwargs):
+        super(_LMCharEmbedding, self).__init__(**kwargs)
+        self._embed_size = embed_size
+        self._char_vocab_size = char_vocab_size
+        self._char_embed_size = char_embed_size
+        self._conv_encoder_args = conv_encoder_args
+        self._dropout = dropout
+        self._sparse_grad = sparse_grad
+
+        with self.name_scope():
+            self.embedding = self._get_embedding()
+            self.encoder = self._get_encoder()
+
+    def _get_encoder(self):
+        return ConvolutionalEncoder(output_size=self._embed_size,
+                                    **self._conv_encoder_args)
+
+    def _get_embedding(self):
+        char_embedding = nn.HybridSequential()
+        with char_embedding.name_scope():
+            # Change shape from T N #Characters to #Characters T N
+            char_embedding.add(
+                nn.HybridLambda(lambda F, x: F.transpose(x, axes=(2, 0, 1))))
+            char_embedding.add(
+                nn.Embedding(self._char_vocab_size, self._char_embed_size,
+                             sparse_grad=self._sparse_grad))
+        return char_embedding
+
+    def forward(self, x):
+        T, N, NumChar = x.shape
+        # self.embedding changes shape from [T,N,#Characters] to [#Characters,T,N,CharEmbSize]
+        char_emb = self.embedding(x)
+        # Merge token level T and N dimensions
+        char_emb = char_emb.reshape((NumChar, T * N, self._char_embed_size))
+        token_emb = self.encoder(char_emb)
+        token_emb = token_emb.reshape((T, N, self._embed_size))
+        if self._dropout:
+            token_emb = nd.Dropout(token_emb, p=self._dropout)
+        return token_emb
