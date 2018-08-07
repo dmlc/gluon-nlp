@@ -422,7 +422,7 @@ def test_conll2002_esp(segment, length):
         assert all(isinstance(n, _str_types) for n in ner), ner
 
 
-@pytest.mark.skipif(datetime.date.today() < datetime.date(2018, 8, 2),
+@pytest.mark.skipif(datetime.date.today() < datetime.date(2018, 8, 16),
                     reason='Disabled for 1 weeks due to server downtime.')
 @flaky(max_runs=2, min_passes=1)
 @pytest.mark.parametrize('segment,length', [
