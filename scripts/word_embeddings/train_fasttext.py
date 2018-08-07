@@ -325,8 +325,7 @@ def train(args):
         assert len(centers.shape) == 2
         negatives_shape = (len(word_context), 2 * args.window * args.negative)
         negatives, negatives_mask = remove_accidental_hits(
-            negatives_sampler(negatives_shape), word_context,
-            word_context_mask)
+            negatives_sampler(negatives_shape), word_context)
         context_negatives = mx.nd.concat(word_context, negatives, dim=1)
         masks = mx.nd.concat(word_context_mask, negatives_mask, dim=1)
         labels = mx.nd.concat(word_context_mask, mx.nd.zeros_like(negatives),
