@@ -252,7 +252,8 @@ def _choose_states(F, states, state_info, indices):
 
 
 class _BeamSearchStepUpdate(HybridBlock):
-    def __init__(self, beam_size, eos_id, scorer, state_info, single_step=False, prefix=None, params=None):
+    def __init__(self, beam_size, eos_id, scorer, state_info, single_step=False, \
+        prefix=None, params=None):
         super(_BeamSearchStepUpdate, self).__init__(prefix, params)
         self._beam_size = beam_size
         self._eos_id = eos_id
@@ -261,7 +262,7 @@ class _BeamSearchStepUpdate(HybridBlock):
         self._single_step = single_step
         assert eos_id >= 0, 'eos_id cannot be negative! Received eos_id={}'.format(eos_id)
 
-    def hybrid_forward(self, F, samples, valid_length, log_probs, scores, step, beam_alive_mask,   # pylint: disable=arguments-differ
+    def hybrid_forward(self, F, samples, valid_length, log_probs, scores, step, beam_alive_mask,  # pylint: disable=arguments-differ
                        states, vocab_num, batch_shift):
         """
 
@@ -556,13 +557,17 @@ class HybridBeamSearchSampler(HybridBlock):
         vocab_num = F.full(shape=(1, ), val=vocab_size)
         batch_shift = F.arange(0, batch_size * beam_size, beam_size)
 
-        def _loop_cond(i, _samples, _indices, _step_input, _valid_length, _scores, beam_alive_mask, *_states):
+        def _loop_cond(_i, _samples, _indices, _step_input, _valid_length, _scores, \
+            beam_alive_mask, *_states):
             return F.sum(beam_alive_mask) > 0
 
-        def _loop_func(i, samples, indices, step_input, valid_length, scores, beam_alive_mask, *states):
-            log_probs, new_states = self._decoder(step_input, _reconstruct_flattened_structure(state_structure, states))
+        def _loop_func(i, samples, indices, step_input, valid_length, scores, \
+            beam_alive_mask, *states):
+            log_probs, new_states = self._decoder(
+                step_input, _reconstruct_flattened_structure(state_structure, states))
             step = i + 1
-            new_samples, new_valid_length, new_scores, chosen_word_ids, new_beam_alive_mask, new_new_states = \
+            new_samples, new_valid_length, new_scores, \
+                chosen_word_ids, new_beam_alive_mask, new_new_states = \
                 self._updater(samples, valid_length, log_probs, scores, step, beam_alive_mask,
                               _extract_and_flatten_nested_structure(new_states)[-1],
                               vocab_num, batch_shift)
@@ -573,7 +578,8 @@ class HybridBeamSearchSampler(HybridBlock):
                 indices.slice_axis(axis=0, begin=0, end=1),
                 dim=0,
             )
-            return [], (step, new_samples, new_indices, new_step_input, new_valid_length, new_scores, new_beam_alive_mask) + tuple(new_new_states)
+            return [], (step, new_samples, new_indices, new_step_input, new_valid_length, \
+                   new_scores, new_beam_alive_mask) + tuple(new_new_states)
 
         _, pad_samples, indices, _, new_valid_length, new_scores, new_beam_alive_mask = \
             F.contrib.while_loop(
@@ -611,7 +617,8 @@ class HybridBeamSearchSampler(HybridBlock):
             new_new_valid_length = new_valid_length + new_beam_alive_mask
             return new_samples, new_new_valid_length
 
-        new_samples, new_new_valid_length = F.contrib.cond(F.sum(new_beam_alive_mask) == 0, _then_func, _else_func)
+        new_samples, new_new_valid_length = \
+            F.contrib.cond(F.sum(new_beam_alive_mask) == 0, _then_func, _else_func)
         return F.round(new_samples).astype(np.int32),\
                new_scores,\
                F.round(new_new_valid_length).astype(np.int32)

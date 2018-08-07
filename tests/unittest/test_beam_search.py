@@ -236,18 +236,21 @@ def test_beam_search(hybridize, sampler_cls):
                 continue
             for beam_size, bos_id, eos_id, alpha, K in [(2, 1, 3, 0, 1.0), (4, 2, 3, 1.0, 5.0)]:
                 scorer = BeamSearchScorer(alpha=alpha, K=K)
-                for max_length in [3, 5]:
+                for max_length in [2, 3]:
                     for batch_size in [1, 2, 5]:
                         if sampler_cls is HybridBeamSearchSampler:
-                            sampler = sampler_cls(batch_size=batch_size, beam_size=beam_size,
-                                                  decoder=decoder, eos_id=eos_id, vocab_size=vocab_num,
-                                                  scorer=scorer, max_length=max_length)
+                            sampler = sampler_cls(beam_size=beam_size, decoder=decoder,
+                                                  eos_id=eos_id,
+                                                  scorer=scorer, max_length=max_length,
+                                                  vocab_size=vocab_num, batch_size=batch_size)
                             if hybridize:
                                 sampler.hybridize()
                         else:
-                            sampler = sampler_cls(beam_size=beam_size, decoder=decoder, eos_id=eos_id,
+                            sampler = sampler_cls(beam_size=beam_size, decoder=decoder,
+                                                  eos_id=eos_id,
                                                   scorer=scorer, max_length=max_length)
-                        print(type(decoder).__name__, beam_size, bos_id, eos_id, alpha, K, batch_size)
+                        print(type(decoder).__name__, beam_size, bos_id, eos_id, \
+                              alpha, K, batch_size)
                         states = decoder.begin_state(batch_size)
                         inputs = mx.nd.full(shape=(batch_size,), val=bos_id)
                         samples, scores, valid_length = sampler(inputs, states)
