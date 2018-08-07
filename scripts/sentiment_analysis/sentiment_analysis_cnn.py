@@ -43,7 +43,7 @@ np.random.seed(100)
 random.seed(100)
 mx.random.seed(10000)
 
-parser = argparse.ArgumentParser(description='MXNet Sentiment Analysis Example on various datasets. '
+parser = argparse.ArgumentParser(description='MXNet Sentiment Analysis Example on various datasets.'
                                              'We load textCNN as our model.')
 parser.add_argument('--data_name', choices=['MR', 'SST-1', 'SST-2', 'Subj', 'TREC'], default='MR',
                     help='specified data set')
@@ -125,11 +125,11 @@ elif args.data_name == 'TREC':
     output_size = 6
 
 all_token = []
-max_len = 0 
-for line in train_dataset: 
-    line = line[0].split(' ') 
-    max_len = max_len if max_len > len(line) else len(line) 
-    all_token.extend(line) 
+max_len = 0
+for line in train_dataset:
+    line = line[0].split(' ')
+    max_len = max_len if max_len > len(line) else len(line)
+    all_token.extend(line)
 vocab = nlp.Vocab(nlp.data.count_tokens(all_token))
 vocab.set_embedding(nlp.embedding.create('Word2Vec', source='GoogleNews-vectors-negative300'))
 net = SentimentNet(dropout=args.dropout, vocab_size=len(vocab))
