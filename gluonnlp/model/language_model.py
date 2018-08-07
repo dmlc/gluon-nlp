@@ -130,6 +130,17 @@ class StandardRNN(train.StandardRNN):
         Dropout rate to use for encoder output.
     tie_weights : bool, default False
         Whether to tie the weight matrices of output dense layer and input embedding layer.
+    char_cnn_embedding : dict, default None
+        If not None, use the specified dict to initialize a
+        ConvolutionalEncoder Block as a character level embedding function to
+        compute input embeddings. 'output_size' must not be specified in the
+        dict. It will be set based on embed_size.
+    char_vocab_size : int, default None
+        Size of character level vocabulary. Must be specified if
+        char_cnn_embedding is not None.
+    char_embed_size : int, default None
+        Size of character level embeddings. Must be specified if
+        char_cnn_embedding is not None.
     """
     def __init__(self, mode, vocab_size, embed_size, hidden_size,
                  num_layers, dropout, tie_weights, **kwargs):

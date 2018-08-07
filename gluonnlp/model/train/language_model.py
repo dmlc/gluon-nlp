@@ -183,10 +183,24 @@ class StandardRNN(Block):
     dropout : float
         Dropout rate to use for encoder output.
     tie_weights : bool, default False
-        Whether to tie the weight matrices of output dense layer and input embedding layer.
+        Whether to tie the weight matrices of output dense layer and input
+        embedding layer. Only supported when char_cnn_embedding is False.
+    char_cnn_embedding : dict, default None
+        If not None, use the specified dict to initialize a
+        ConvolutionalEncoder Block as a character level embedding function to
+        compute input embeddings. 'output_size' must not be specified in the
+        dict. It will be set based on embed_size.
+    char_vocab_size : int, default None
+        Size of character level vocabulary. Must be specified if
+        char_cnn_embedding is not None.
+    char_embed_size : int, default None
+        Size of character level embeddings. Must be specified if
+        char_cnn_embedding is not None.
     """
-    def __init__(self, mode, vocab_size, embed_size, hidden_size,
-                 num_layers, dropout=0.5, tie_weights=False, **kwargs):
+
+    def __init__(self, mode, vocab_size, embed_size, hidden_size, num_layers,
+                 dropout=0.5, tie_weights=False, char_cnn_embedding=False,
+                 char_vocab_size=None, char_embed_size=15, **kwargs):
         if tie_weights:
             assert embed_size == hidden_size, 'Embedding dimension must be equal to ' \
                                               'hidden dimension in order to tie weights. ' \
@@ -200,9 +214,22 @@ class StandardRNN(Block):
         self._dropout = dropout
         self._tie_weights = tie_weights
         self._vocab_size = vocab_size
+        self._char_cnn_embedding = char_cnn_embedding
+        self._char_vocab_size = char_vocab_size
+        self._char_embed_size = char_embed_size
+
+        if self._char_cnn_embedding and self._tie_weights:
+            raise ValueError('tie_weights can\'t be True if character level CNN is used.')
 
         with self.name_scope():
-            self.embedding = self._get_embedding()
+            if self._char_cnn_embedding is None:
+                self.embedding = self._get_embedding()
+            else:
+                self.embedding = _LMCharEmbedding(
+                    self._embed_size, self._char_vocab_size,
+                    self._char_embed_size,
+                    conv_encoder_args=self._char_cnn_embedding,
+                    dropout=self._embed_dropout, sparse_grad=self._sparse_grad)
             self.encoder = self._get_encoder()
             self.decoder = self._get_decoder()
 
