@@ -54,7 +54,7 @@ import warnings
 import mxnet as mx
 import numpy as np
 import gluonnlp as nlp
-from gluonnlp.base import numba_njit, numba_prange
+from gluonnlp.base import numba_njit, numba_prange, numba_jitclass, numba_types
 
 import evaluation
 from data import WikiDumpStream
@@ -222,28 +222,37 @@ def get_train_data(args):
 
 
 def get_subwords_masks_factory(idx_to_subwordidxs):
-    idx_to_subwordidxs = [
-        np.array(i, dtype=np.int_) for i in idx_to_subwordidxs
-    ]
-
-    def get_subwords_masks(indices):
-        subwords = [idx_to_subwordidxs[i] for i in indices]
-        return _get_subwords_masks(subwords)
-
-    return get_subwords_masks
+    subword_lookup = SubwordLookup(len(idx_to_subwordidxs))
+    for i, subwords in enumerate( idx_to_subwordidxs ):
+        subword_lookup.set(i, np.array(subwords, dtype=np.int_))
+    return subword_lookup
 
 
-@numba_njit
-def _get_subwords_masks(subwords):
-    lengths = np.array([len(s) for s in subwords])
-    length = np.max(lengths)
-    subwords_arr = np.zeros((len(subwords), length))
-    mask = np.zeros((len(subwords), length))
-    for i in numba_prange(len(subwords)):
-        s = subwords[i]
-        subwords_arr[i, :len(s)] = s
-        mask[i, :len(s)] = 1
-    return subwords_arr, mask
+@numba_jitclass(
+[
+    ('idx_to_subwordidxs', numba_types.List(numba_types.int_[::1]))
+]
+)
+class SubwordLookup(object):
+    def __init__(self, length):
+        self.idx_to_subwordidxs = [
+            np.arange(1).astype(np.int_) for _ in range(length)
+        ]
+
+    def set(self, i, subwords):
+        self.idx_to_subwordidxs[i] = subwords
+
+    def get(self, indices):
+        subwords = [self.idx_to_subwordidxs[i] for i in indices]
+        lengths = np.array([len(s) for s in subwords])
+        length = np.max(lengths)
+        subwords_arr = np.zeros((len(subwords), length))
+        mask = np.zeros((len(subwords), length))
+        for i in numba_prange(len(subwords)):
+            s = subwords[i]
+            subwords_arr[i, :len(s)] = s
+            mask[i, :len(s)] = 1
+        return subwords_arr, mask
 
 
 def save_params(args, embedding, embedding_out):
@@ -332,7 +341,7 @@ def train(args):
                                                        return_inverse=True)
             inverse_unique_indices = mx.nd.array(inverse_unique_indices,
                                                  ctx=context[0])
-            subwords, subwords_mask = get_subwords_masks(unique.astype(int))
+            subwords, subwords_mask = get_subwords_masks.get(unique.astype(int))
 
             return (centers.as_in_context(context[0]),
                     context_negatives.as_in_context(context[0]),
@@ -365,7 +374,7 @@ def train(args):
                                                        return_inverse=True)
             inverse_unique_indices = mx.nd.array(inverse_unique_indices,
                                                  ctx=context[0])
-            subwords, subwords_mask = get_subwords_masks(unique.astype(int))
+            subwords, subwords_mask = get_subwords_masks.get(unique.astype(int))
             return (word_context.as_in_context(context[0]),
                     word_context_mask.as_in_context(context[0]),
                     center_negatives.as_in_context(context[0]),
