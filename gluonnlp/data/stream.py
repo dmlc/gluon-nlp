@@ -555,8 +555,8 @@ class ContextStream(object):
     def __iter__(self):
         for shard in self._stream:
             shard = [[
-                t for t in sentence
-                if random.uniform(0, 1) > self.idx_to_pdiscard[t]
+                t for t, r in zip(sentence, np.random.uniform(0, 1, size=len(sentence)))
+                if r > self.idx_to_pdiscard[t]
             ] for sentence in shard]
 
             context_sampler = ContextSampler(
