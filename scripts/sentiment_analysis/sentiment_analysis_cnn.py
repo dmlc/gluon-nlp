@@ -43,7 +43,7 @@ np.random.seed(100)
 random.seed(100)
 mx.random.seed(10000)
 
-parser = argparse.ArgumentParser(description='MXNet Sentiment Analysis Example on various datasets.'
+parser = argparse.ArgumentParser(description='MXNet Sentiment Analysis Example on various datasets. '
                                              'We load textCNN as our model.')
 parser.add_argument('--data_name', choices=['MR', 'SST-1', 'SST-2', 'Subj', 'TREC'], default='MR',
                     help='specified data set')
@@ -125,11 +125,11 @@ elif args.data_name == 'TREC':
     output_size = 6
 
 all_token = []
-max_len = 0
-for line in train_dataset:
-    line = line[0].split(' ')
-    max_len = max_len if max_len > len(line) else len(line)
-    all_token.extend(line)
+max_len = 0 
+for line in train_dataset: 
+    line = line[0].split(' ') 
+    max_len = max_len if max_len > len(line) else len(line) 
+    all_token.extend(line) 
 vocab = nlp.Vocab(nlp.data.count_tokens(all_token))
 vocab.set_embedding(nlp.embedding.create('Word2Vec', source='GoogleNews-vectors-negative300'))
 net = SentimentNet(dropout=args.dropout, vocab_size=len(vocab))
@@ -138,8 +138,11 @@ net = SentimentNet(dropout=args.dropout, vocab_size=len(vocab))
 def preprocess(x):
     data, label = x
     data = vocab[data.split(' ')]
-    while len(data) < max_len:
-        data.append(0)
+    if len(data) > max_len:
+        data = data[:max_len]
+    else:
+        while len(data) < max_len:
+            data.append(0)
     return data, label
 
 def get_length(x):
@@ -177,7 +180,7 @@ if args.model_mode == 'multichannel':
     net.embedding_extend.weight.set_data(vocab.embedding.idx_to_vec)
 if args.model_mode == 'static' or args.model_mode == 'multichannel':
     net.embedding.collect_params().setattr('grad_req', 'null')
-trainer = gluon.Trainer(net.collect_params(), 'adam', {'learning_rate': args.lr, 'wd':0.001})
+trainer = gluon.Trainer(net.collect_params(), 'sgd', {'learning_rate': args.lr, 'wd':0.004})
 loss = gluon.loss.SoftmaxCrossEntropyLoss()
 
 
@@ -190,13 +193,13 @@ def evaluate(dataloader):
     print('Begin Testing...')
     for i, (data, label) in enumerate(dataloader):
         data = mx.nd.transpose(data.as_in_context(context))
-        label = label.astype('float32').as_in_context(context)
+        label = label.as_in_context(context)
         output = net(data)
         L = loss(output, label)
         pred = nd.argmax(output, axis=1)
         total_L += L.sum().asscalar()
         total_sample_num += label.shape[0]
-        total_correct_num += (pred == label).sum().asscalar()
+        total_correct_num += (pred.astype('int') == label).sum().asscalar()
         if (i + 1) % args.log_interval == 0:
             print('[Batch {}/{}] elapsed {:.2f} s'.format(
                 i + 1, len(dataloader), time.time() - start_log_interval_time))
@@ -226,8 +229,10 @@ def train():
         log_interval_L = 0.0
 
         for i, (data, label) in enumerate(train_dataloader):
+
             data = mx.nd.transpose(data.as_in_context(context))
             label = label.as_in_context(context)
+
             wc = max_len
             log_interval_wc += wc
             epoch_wc += wc
