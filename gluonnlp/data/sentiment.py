@@ -83,7 +83,7 @@ class MR(SimpleDataset):
     Parameters
     ----------
     segment : str, default 'train'
-        Dataset segment. Options are 'train', 'test'.
+        Dataset segment. Options are 'train' and 'test'.
     root : str, default '$MXNET_HOME/datasets/mr'
         Path to temp folder for storing data.
         MXNET_HOME defaults to '~/.mxnet'.
@@ -123,7 +123,7 @@ class TREC(SimpleDataset):
     Parameters
     ----------
     segment : str, default 'train'
-        Dataset segment. Options are 'train', 'test'.
+        Dataset segment. Options are 'train' and 'test'.
     root : str, default '$MXNET_HOME/datasets/trec'
         Path to temp folder for storing data.
         MXNET_HOME defaults to '~/.mxnet'.
@@ -160,7 +160,7 @@ class SUBJ(SimpleDataset):
     Parameters
     ----------
     segment : str, default 'train'
-        Dataset segment. Options are 'train', 'test'.
+        Dataset segment. Options are 'train' and 'test'.
     root : str, default '$MXNET_HOME/datasets/subj'
         Path to temp folder for storing data.
         MXNET_HOME defaults to '~/.mxnet'.
@@ -193,6 +193,8 @@ class SUBJ(SimpleDataset):
 
 class SST_1(SimpleDataset):
     """Stanford Sentiment Treebank—an extension of MR.
+    but with train/dev/test splits provided and ﬁne-grained
+    labels (very positive, positive, neutral, negative, very negative)
 
     From
     http://nlp.stanford.edu/sentiment/
@@ -200,7 +202,7 @@ class SST_1(SimpleDataset):
     Parameters
     ----------
     segment : str, default 'train'
-        Dataset segment. Options are 'train', 'test'.
+        Dataset segment. Options are 'train' and 'test'.
     root : str, default '$MXNET_HOME/datasets/sst-1'
         Path to temp folder for storing data.
         MXNET_HOME defaults to '~/.mxnet'.
@@ -233,7 +235,7 @@ class SST_1(SimpleDataset):
 
 class SST_2(SimpleDataset):
     """Stanford Sentiment Treebank—an extension of MR.
-    Same as SST-1 but with neutral reviews removed and binary labels.
+    Same as SST-1, but with neutral reviews removed and binary labels(positive, negativee).
 
     From
     http://nlp.stanford.edu/sentiment/
@@ -241,7 +243,7 @@ class SST_2(SimpleDataset):
     Parameters
     ----------
     segment : str, default 'train'
-        Dataset segment. Options are 'train', 'test'.
+        Dataset segment. Options are 'train' and 'test'.
     root : str, default '$MXNET_HOME/datasets/sst-2'
         Path to temp folder for storing data.
         MXNET_HOME defaults to '~/.mxnet'.
