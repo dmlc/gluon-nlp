@@ -263,7 +263,7 @@ class _BeamSearchStepUpdate(HybridBlock):
         assert eos_id >= 0, 'eos_id cannot be negative! Received eos_id={}'.format(eos_id)
 
     def hybrid_forward(self, F, samples, valid_length, log_probs, scores, step, beam_alive_mask,  # pylint: disable=arguments-differ
-                       states, vocab_num, batch_shift):
+                       states, vocab_size, batch_shift):
         """
 
         Parameters
@@ -286,7 +286,7 @@ class _BeamSearchStepUpdate(HybridBlock):
         states : nested structure of NDArrays/Symbols
             Each NDArray/Symbol should have shape (N, ...) when state_info is None,
             or same as the layout in state_info when it's not None.
-        vocab_num : NDArray or Symbol
+        vocab_size : NDArray or Symbol
             Shape (1,)
         batch_shift : NDArray or Symbol
             Contains [0, beam_size, 2 * beam_size, ..., (batch_size - 1) * beam_size].
@@ -325,11 +325,11 @@ class _BeamSearchStepUpdate(HybridBlock):
                                     finished_scores, dim=1)
         # Get the top K scores
         new_scores, indices = F.topk(candidate_scores, axis=1, k=beam_size, ret_typ='both')
-        use_prev = F.broadcast_greater_equal(indices, beam_size * vocab_num)
-        chosen_word_ids = F.broadcast_mod(indices, vocab_num)
+        use_prev = F.broadcast_greater_equal(indices, beam_size * vocab_size)
+        chosen_word_ids = F.broadcast_mod(indices, vocab_size)
         beam_ids = F.where(use_prev,
-                           F.broadcast_minus(indices, beam_size * vocab_num),
-                           F.floor(F.broadcast_div(indices, vocab_num)))
+                           F.broadcast_minus(indices, beam_size * vocab_size),
+                           F.floor(F.broadcast_div(indices, vocab_size)))
         batch_beam_indices = F.broadcast_add(beam_ids, F.expand_dims(batch_shift, axis=1))
         chosen_word_ids = F.where(use_prev,
                                   -F.ones_like(indices),
@@ -440,12 +440,12 @@ class BeamSearchSampler(object):
         samples = step_input.reshape((batch_size, beam_size, 1))
         for i in range(self._max_length):
             log_probs, new_states = self._decoder(step_input, states)
-            vocab_num_nd = mx.nd.array([log_probs.shape[1]], ctx=ctx)
+            vocab_size_nd = mx.nd.array([log_probs.shape[1]], ctx=ctx)
             batch_shift_nd = mx.nd.arange(0, batch_size * beam_size, beam_size, ctx=ctx)
             step_nd = mx.nd.array([i + 1], ctx=ctx)
             samples, valid_length, scores, chosen_word_ids, beam_alive_mask, states = \
                 self._updater(samples, valid_length, log_probs, scores, step_nd, beam_alive_mask,
-                              new_states, vocab_num_nd, batch_shift_nd)
+                              new_states, vocab_size_nd, batch_shift_nd)
             step_input = mx.nd.relu(chosen_word_ids).reshape((-1,))
             if mx.nd.sum(beam_alive_mask).asscalar() == 0:
                 return mx.nd.round(samples).astype(np.int32),\
@@ -489,7 +489,7 @@ class HybridBeamSearchSampler(HybridBlock):
         The score function used in beam search.
     max_length : int, default 100
         The maximum search length.
-    vocab_num : int, default None, meaning `decoder._vocab_size`
+    vocab_size : int, default None, meaning `decoder._vocab_size`
         The vocabulary size
     """
     def __init__(self, batch_size, beam_size, decoder, eos_id,
@@ -554,7 +554,7 @@ class HybridBeamSearchSampler(HybridBlock):
                 F.full(shape=(batch_size, beam_size - 1), val=LARGE_NEGATIVE_FLOAT),
                 dim=1,
             )
-        vocab_num = F.full(shape=(1, ), val=vocab_size)
+        vocab_size = F.full(shape=(1, ), val=vocab_size)
         batch_shift = F.arange(0, batch_size * beam_size, beam_size)
 
         def _loop_cond(_i, _samples, _indices, _step_input, _valid_length, _scores, \
@@ -570,7 +570,7 @@ class HybridBeamSearchSampler(HybridBlock):
                 chosen_word_ids, new_beam_alive_mask, new_new_states = \
                 self._updater(samples, valid_length, log_probs, scores, step, beam_alive_mask,
                               _extract_and_flatten_nested_structure(new_states)[-1],
-                              vocab_num, batch_shift)
+                              vocab_size, batch_shift)
             new_step_input = F.relu(chosen_word_ids).reshape((-1,))
             # We are doing `new_indices = indices[1 : ] + indices[ : 1]`
             new_indices = F.concat(
