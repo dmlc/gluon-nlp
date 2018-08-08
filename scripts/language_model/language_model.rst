@@ -152,24 +152,41 @@ Reference: Jozefowicz, Rafal, et al. "`Exploring the limits of language modeling
 
 The key features used to reproduce the results for pre-trained models are listed in the following tables.
 
-.. editting URL for the following table: https://bit.ly/2NoG2wL
+.. editting URL for the following table: https://truben.no/table/#t=XQAAQAAWGgAAAAAAAAA9iIhmlCK88bNBnMeko9jCKiwvfh0avwECE54T6w60RPMmdWCWc96w5URdnwqt17coL3HokRLOtwgnovZfvXx9UMF7c1hizRpgjjJbQX6AG_ei_a_wwj8MArxnUM1VpDP6c7wDNLVpvL4ABUWmJYYJiEVbnHScrmEfMN3v4XQFicty4UltB13totjwwmbes4PR7E-029DytS7oAEF5CBpilEYIMPnT3aJ_8bGdYJfAm2SqDm8yk7eXM5lrHvmkLN0LF5H5vbHMDuSuE1pXlET1kpY9eSTyDi91NiQ08n-vvUpTPlEcEQaVXeNTiUxlKvkTl4GXUMSKU7tVGFzLAOC_dpWlMs3PAnUNlYkw2uAdgEOdglLc0D_opL7lo88dJFiZNeuBaKA-nQdq16y5ciYW9faf-Uq4kp3FC9uym_kQct23kKmAxL-ai4j2wKccE9MqBADBp4lcfiKFNH-LpivxcOKTL4K5Jl8XkpNc8A2q6f52oaNYuwQh9m8GBUHgy-MO3cRiNMzziXKgtC7DMaUpaaCaA0yKWBsoxI5AVev1aqevA1LNBGxJMogk9otuedm8TnuLLC3rACn3zukVTjeC4ZE1f4G948i-DjFPCBmUHli_vD_esSX-pTwyz4y3PzXR1ol4lUvqStj9kbhYEMrG7ULirny6Z-5AYNM_lIHfNRlDUxJiWU2jq-YMrxt_2x__oMvZIAAA
 
 The dataset used for training the models is Google's 1 billion words dataset.
 
-| Model           | LSTM-2048-512 |
-| --------------- | ------------- |
-| Num layers      | 1             |
-| Embed size      | 512           |
-| Hidden size     | 2048          |
-| Batch size      | 256           |
-| Batch size      | 256           |
-| Graident clip   | 10.0          |
-| Projection size | 512           |
-| Dropout         | 0.1           |
-| Learning rate   | 0.2           |
-| Num samples     | 8192          |
-| Test perplexity | 44.05         |
-| Num epochs      | 48            |
++-----------------+------------------------------------------------------------------------------------------------------------------+
+| Model           | LSTM-2048-512                                                                                                    |
++=================+==================================================================================================================+
+| Mode            | LSTMP                                                                                                            |
++-----------------+------------------------------------------------------------------------------------------------------------------+
+| Num layers      | 1                                                                                                                |
++-----------------+------------------------------------------------------------------------------------------------------------------+
+| Embed size      | 512                                                                                                              |
++-----------------+------------------------------------------------------------------------------------------------------------------+
+| Hidden size     | 2048                                                                                                             |
++-----------------+------------------------------------------------------------------------------------------------------------------+
+| Projection size | 512                                                                                                              |
++-----------------+------------------------------------------------------------------------------------------------------------------+
+| Dropout         | 0.1                                                                                                              |
++-----------------+------------------------------------------------------------------------------------------------------------------+
+| Learning rate   | 0.2                                                                                                              |
++-----------------+------------------------------------------------------------------------------------------------------------------+
+| Num samples     | 8192                                                                                                             |
++-----------------+------------------------------------------------------------------------------------------------------------------+
+| Batch size      | 256                                                                                                              |
++-----------------+------------------------------------------------------------------------------------------------------------------+
+| Graident clip   | 10.0                                                                                                             |
++-----------------+------------------------------------------------------------------------------------------------------------------+
+| Test perplexity | 44.05                                                                                                            |
++-----------------+------------------------------------------------------------------------------------------------------------------+
+| Num epochs      | 48                                                                                                               |
++-----------------+------------------------------------------------------------------------------------------------------------------+
+| Training logs   | https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/language_model/big_rnn_lm_2048_512_gbw.log            |
++-----------------+------------------------------------------------------------------------------------------------------------------+
+| Evaluation logs | https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/language_model/big_rnn_lm_2048_512_gbw-eval.log       |
++-----------------+------------------------------------------------------------------------------------------------------------------+
 
 [1] LSTM-2048-512 (Test PPL 44.05)
 
