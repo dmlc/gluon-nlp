@@ -400,7 +400,7 @@ def train(args):
                                            inverse_unique_indices)
                         emb_out = embedding_out(context_negatives, mask)
                         pred = mx.nd.batch_dot(emb_in, emb_out.swapaxes(1, 2))
-                        loss = loss_function(pred, label)
+                        loss = loss_function(pred, label, mask)
                 else:
                     (center, context_negatives, mask,
                      label) = skipgram_batch(batch)
@@ -408,7 +408,7 @@ def train(args):
                         emb_in = embedding(center)
                         emb_out = embedding_out(context_negatives, mask)
                         pred = mx.nd.batch_dot(emb_in, emb_out.swapaxes(1, 2))
-                        loss = loss_function(pred, label)
+                        loss = loss_function(pred, label, mask)
             elif args.model.lower() == 'cbow':
                 if args.ngram_buckets:
                     (word_context, word_context_mask, center_negatives,
@@ -424,7 +424,8 @@ def train(args):
                         emb_out = embedding_out(
                             center_negatives, wordsmask=center_negatives_mask)
                         pred = mx.nd.batch_dot(emb_in, emb_out.swapaxes(1, 2))
-                        loss = loss_function(pred.squeeze(), label)
+                        loss = loss_function(pred.squeeze(), label,
+                                             center_negatives_mask)
                 else:
                     (word_context, word_context_mask, center_negatives,
                      center_negatives_mask, label) = cbow_batch(batch)
@@ -435,7 +436,8 @@ def train(args):
                         emb_out = embedding_out(
                             center_negatives, wordsmask=center_negatives_mask)
                         pred = mx.nd.batch_dot(emb_in, emb_out.swapaxes(1, 2))
-                        loss = loss_function(pred.squeeze(), label)
+                        loss = loss_function(pred.squeeze(), label,
+                                             center_negatives_mask)
             else:
                 logging.error('Unsupported model %s.', args.model)
                 sys.exit(1)
