@@ -523,27 +523,35 @@ class PrefetchingStream(DataStream):
                                      mx_seed=mx_seed)
 
 
-class ContextStream(object):
+class ContextStream(DataStream):
     """Transform a stream of coded sentences to centers and contexts.
 
-    Useful for embedding training.
+    ContextStream wraps a stream of datasets that are a valid input to
+    `gluonnlp.data.ContextSampler`. Each dataset (or shard) in the wrapped
+    stream is independently subsampled and passed to ContextSampler to obtain
+    batches of centers and contexts.
 
     Parameters
     ----------
-    stream : DataStream
-        Stream of list of list/tuple of integers (a stream over shards of
-        the dataset).
+    stream : DatasetStream
+        Stream of Dataset or stream of list of list/tuple of integers (a stream
+        over shards of the dataset).
     batch_size : int
-    p_discard : list or tuple of int
+        Batch size passed to ContextSampler.
+    p_discard : list or tuple of int or None
         Discard probabilities for each element in the lists / tuples of the
-        stream.
+        stream. If None, no elements are discarded.
     window_size : int, default 5
+        Window size passed to ContextSampler.
     reduce_window_size_randomly : bool, default True
+         reduce_window_size_randomly size passed to ContextSampler.
+    shuffle : bool, default True
+         shuffle size passed to ContextSampler.
 
     """
 
     def __init__(self, stream, batch_size, p_discard, window_size=5,
-                 reduce_window_size_randomly=True):
+                 reduce_window_size_randomly=True, shuffle=True):
         self._stream = stream
         self._batch_size = batch_size
         assert isinstance(p_discard, (list, tuple)), \
@@ -551,8 +559,10 @@ class ContextStream(object):
         self.idx_to_pdiscard = p_discard
         self._window_size = window_size
         self._random_reduce = reduce_window_size_randomly
+        self._shuffle = shuffle
 
     def __iter__(self):
+        """"""
         for shard in self._stream:
             shard = [[
                 t for t, r in zip(sentence, np.random.uniform(0, 1, size=len(sentence)))
@@ -561,7 +571,7 @@ class ContextStream(object):
 
             context_sampler = ContextSampler(
                 shard, batch_size=self._batch_size, window=self._window_size,
-                reduce_window_size_randomly=self._random_reduce)
+                reduce_window_size_randomly=self._random_reduce, shuffle=self._shuffle)
 
             for batch in context_sampler:
                 yield batch

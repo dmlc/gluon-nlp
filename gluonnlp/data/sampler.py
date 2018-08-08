@@ -532,12 +532,11 @@ class ContextSampler(Sampler):
     """Sample batches of contexts (and their masks) from a corpus.
 
     The context size is choosen uniformly at random for every sample from [1,
-    `window`]. The mask is used to mask entries that lie outside of the
-    randomly chosen context size. Contexts do not cross sentence boundaries.
+    `window`] if reduce_window_size_randomly is True. The mask is used to mask
+    entries that lie outside of the randomly chosen context size. Contexts do
+    not cross sentence boundaries.
 
-    Batches are created lazily, to avoid generating all batches for shuffling
-    before training, simply shuffle the dataset before passing it to the
-    ContextSampler.
+    Batches are created lazily on a optionally shuffled version of the Dataset.
 
     Parameters
     ----------
@@ -545,12 +544,18 @@ class ContextSampler(Sampler):
         List of coded sentences. A coded sentence itself is a list of token
         indices. Context samples do not cross sentence boundaries.
     batch_size : int
-        Maximum size of batches. Actual batch returned can be smaller when
-        running out of samples.
+        Maximum size of batches returned. Actual batch returned can be smaller
+        when running out of samples.
     window : int, default 5
-        The maximum context size.
+        The maximum number of context elements to consider left and right of
+        each center element. Less elements may be considered if there are not
+        sufficient elements left / right of the center element or if a reduced
+        window size was drawn.
     reduce_window_size_randomly : bool, default True
+       If True, randomly draw a reduced window size for every center element
+       uniformly from [1, window].
     shuffle : bool, default True
+       If True, shuffle the sentences before lazily generating batches.
 
     Attributes
     ----------
@@ -628,7 +633,6 @@ def _context_generator(sentences, sentence_boundaries, window, batch_size,
 
         if word_pointer >= sentence_boundaries[-1]:
             break
-
 
 
 @numba_njit
