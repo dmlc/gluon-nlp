@@ -2,8 +2,7 @@
 Fine-tune Language Model for Sentiment Analysis
 ===============================================
 
-This example shows how to use Convolutional neural network in Gluon NLP Toolkit model
-zoo, and use the model encoder for sentiment analysis on various datasets.
+This example shows how to use convolutional neural networks (textCNN) for sentiment analysis on various datasets.
 """
 
 # coding: utf-8
@@ -28,6 +27,7 @@ zoo, and use the model encoder for sentiment analysis on various datasets.
 import argparse
 import time
 import random
+import re
 import glob
 import multiprocessing as mp
 import numpy as np
@@ -39,11 +39,11 @@ from mxnet.gluon.data import DataLoader
 
 import gluonnlp as nlp
 
-np.random.seed(100)
-random.seed(100)
-mx.random.seed(10000)
+np.random.seed(3435)
+random.seed(3435)
+mx.random.seed(3435)
 
-parser = argparse.ArgumentParser(description='MXNet Sentiment Analysis Example on various datasets.'
+parser = argparse.ArgumentParser(description='MXNet Sentiment Analysis Example on various datasets. '
                                              'We load textCNN as our model.')
 parser.add_argument('--data_name', choices=['MR', 'SST-1', 'SST-2', 'Subj', 'TREC'], default='MR',
                     help='specified data set')
@@ -123,26 +123,61 @@ elif args.data_name == 'TREC':
     train_dataset, test_dataset = [nlp.data.TREC(root='data/trec', segment=segment)
                                    for segment in ('train', 'test')]
     output_size = 6
+    
+def clean_str(string):
+    if args.data_name == 'SST-1' or args.data_name == 'SST-2' :
+        string = re.sub(r"[^A-Za-z0-9(),!?\'\`]", " ", string)   
+        string = re.sub(r"\s{2,}", " ", string)    
+        return string.strip().lower()
+    else:
+        string = re.sub(r"[^A-Za-z0-9(),!?\'\`]", " ", string)     
+        string = re.sub(r"\'s", " \'s", string) 
+        string = re.sub(r"\'ve", " \'ve", string) 
+        string = re.sub(r"n\'t", " n\'t", string) 
+        string = re.sub(r"\'re", " \'re", string) 
+        string = re.sub(r"\'d", " \'d", string) 
+        string = re.sub(r"\'ll", " \'ll", string) 
+        string = re.sub(r",", " , ", string) 
+        string = re.sub(r"!", " ! ", string) 
+        string = re.sub(r"\(", " \( ", string) 
+        string = re.sub(r"\)", " \) ", string) 
+        string = re.sub(r"\?", " \? ", string) 
+        string = re.sub(r"\s{2,}", " ", string)    
+        return string.strip() if args.data_name=='TREC' else string.strip().lower()
 
 all_token = []
-max_len = 0
-for line in train_dataset:
-    line = line[0].split(' ')
-    max_len = max_len if max_len > len(line) else len(line)
-    all_token.extend(line)
+max_len = 0 
+for i, line in enumerate(train_dataset): 
+    train_dataset[i][0] = clean_str(line[0])
+    line = train_dataset[i][0].split() 
+    max_len = max_len if max_len > len(line) else len(line) 
+    all_token.extend(line) 
+for i, line in enumerate(test_dataset): 
+    test_dataset[i][0] = clean_str(line[0])
+    line = test_dataset[i][0].split() 
+    max_len = max_len if max_len > len(line) else len(line) 
+    all_token.extend(line) 
 vocab = nlp.Vocab(nlp.data.count_tokens(all_token))
 vocab.set_embedding(nlp.embedding.create('Word2Vec', source='GoogleNews-vectors-negative300'))
+for line in vocab.embedding._idx_to_token:
+    if (vocab.embedding[line]==nd.zeros(300)).sum()==300:
+        vocab.embedding[line]=nd.random.uniform(-0.25,0.25,300)
+vocab.embedding['<unk>']=nd.zeros(300)
+vocab.embedding['<pad>']=nd.zeros(300)
+vocab.embedding['<bos>']=nd.zeros(300)
+vocab.embedding['<eos>']=nd.zeros(300)
+
 net = SentimentNet(dropout=args.dropout, vocab_size=len(vocab))
 
 # Dataset preprocessing
 def preprocess(x):
     data, label = x
-    data = vocab[data.split(' ')]
+    data = vocab[data.split()]
     if len(data) > max_len:
         data = data[:max_len]
     else:
         while len(data) < max_len:
-            data.append(0)
+            data.append(1)
     return data, label
 
 def get_length(x):
@@ -169,7 +204,6 @@ test_dataloader = DataLoader(dataset=test_dataset,
                              batch_size=args.batch_size,
                              shuffle=False)
 
-
 net.hybridize()
 print(net)
 
@@ -180,9 +214,8 @@ if args.model_mode == 'multichannel':
     net.embedding_extend.weight.set_data(vocab.embedding.idx_to_vec)
 if args.model_mode == 'static' or args.model_mode == 'multichannel':
     net.embedding.collect_params().setattr('grad_req', 'null')
-trainer = gluon.Trainer(net.collect_params(), 'sgd', {'learning_rate': args.lr, 'wd':0.004})
+trainer = gluon.Trainer(net.collect_params(), 'adam', {'learning_rate': args.lr, 'wd':0.0001})
 loss = gluon.loss.SoftmaxCrossEntropyLoss()
-
 
 def evaluate(dataloader):
     """Evaluate network on the specified dataset"""
@@ -227,12 +260,9 @@ def train():
         log_interval_wc = 0
         log_interval_sent_num = 0
         log_interval_L = 0.0
-
         for i, (data, label) in enumerate(train_dataloader):
-
             data = mx.nd.transpose(data.as_in_context(context))
             label = label.as_in_context(context)
-
             wc = max_len
             log_interval_wc += wc
             epoch_wc += wc
@@ -264,21 +294,14 @@ def train():
                   test_acc, test_avg_L,
                   epoch_wc / 1000 / (end_epoch_time - start_epoch_time)))
 
-        if test_acc < best_valid_acc:
+        if test_acc < best_test_acc:
             print('No Improvement.')
             stop_early += 1
-            if stop_early == 30:
+            if stop_early == 3:
                 break
-        else:
-            # Reset stop_early if the validation loss finds a new low value
-            print('Observed Improvement.')
-            stop_early = 0
-            net.save_params(args.save_prefix + '_{:04d}.params'.format(epoch))
-            best_valid_acc = test_acc
 
-    net.load_params(glob.glob(args.save_prefix+'_*.params')[-1], context)
     test_avg_L, test_acc = evaluate(test_dataloader)
-    print('Best test loss %g, test acc %.4f'%(test_avg_L, test_acc))
+    print('Test loss %g, test acc %.4f'%(test_avg_L, test_acc))
     print('Total time cost %.2fs'%(time.time()-start_pipeline_time))
 
 
