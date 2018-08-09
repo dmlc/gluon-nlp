@@ -400,7 +400,8 @@ def train(args):
                                            inverse_unique_indices)
                         emb_out = embedding_out(context_negatives, mask)
                         pred = mx.nd.batch_dot(emb_in, emb_out.swapaxes(1, 2))
-                        loss = loss_function(pred, label, mask)
+                        loss = (loss_function(pred, label, mask) *
+                                mask.shape[1] / mask.sum(axis=1))
                 else:
                     (center, context_negatives, mask,
                      label) = skipgram_batch(batch)
@@ -408,7 +409,8 @@ def train(args):
                         emb_in = embedding(center)
                         emb_out = embedding_out(context_negatives, mask)
                         pred = mx.nd.batch_dot(emb_in, emb_out.swapaxes(1, 2))
-                        loss = loss_function(pred, label, mask)
+                        loss = (loss_function(pred, label, mask) *
+                                mask.shape[1] / mask.sum(axis=1))
             elif args.model.lower() == 'cbow':
                 if args.ngram_buckets:
                     (word_context, word_context_mask, center_negatives,
@@ -424,8 +426,10 @@ def train(args):
                         emb_out = embedding_out(
                             center_negatives, wordsmask=center_negatives_mask)
                         pred = mx.nd.batch_dot(emb_in, emb_out.swapaxes(1, 2))
-                        loss = loss_function(pred.squeeze(), label,
-                                             center_negatives_mask)
+                        loss = (loss_function(pred.squeeze(), label,
+                                              center_negatives_mask) *
+                                center_negatives_mask.shape[1] /
+                                center_negatives_mask.sum(axis=1))
                 else:
                     (word_context, word_context_mask, center_negatives,
                      center_negatives_mask, label) = cbow_batch(batch)
@@ -436,8 +440,10 @@ def train(args):
                         emb_out = embedding_out(
                             center_negatives, wordsmask=center_negatives_mask)
                         pred = mx.nd.batch_dot(emb_in, emb_out.swapaxes(1, 2))
-                        loss = loss_function(pred.squeeze(), label,
-                                             center_negatives_mask)
+                        loss = (loss_function(pred.squeeze(), label,
+                                              center_negatives_mask) *
+                                center_negatives_mask.shape[1] /
+                                center_negatives_mask.sum(axis=1))
             else:
                 logging.error('Unsupported model %s.', args.model)
                 sys.exit(1)
