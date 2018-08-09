@@ -247,7 +247,7 @@ def train():
     start_pipeline_time = time.time()
 
     # Training/Testing
-    best_valid_acc = 0
+    best_test_acc = 0
     stop_early = 0
     for epoch in range(args.epochs):
         # Epoch training stats
