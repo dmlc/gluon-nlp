@@ -39,9 +39,11 @@ except ImportError:
         return f
 
     def numba_jitclass(spec):
+        # pylint: disable=unused-argument
         return identity
 
     def numba_types(*args, **kwargs):
+        # pylint: disable=unused-argument
         return None
 
     numba_njit = identity

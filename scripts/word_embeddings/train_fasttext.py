@@ -36,32 +36,29 @@ Word2Vec embedding model was introduced by
   of word representations in vector space. ICLR Workshop , 2013
 
 """
-# Set a few mxnet specific environment variables
-import os
-# Workaround for https://github.com/apache/incubator-mxnet/issues/11314
-os.environ['MXNET_FORCE_ADDTAKEGRAD'] = '1'
-
 import argparse
 import itertools
 import logging
-import random
 import math
+import os
+import random
 import sys
 import tempfile
 import time
 import warnings
 
+import gluonnlp as nlp
+from gluonnlp.base import numba_jitclass, numba_prange, numba_types
 import mxnet as mx
 import numpy as np
-import gluonnlp as nlp
-from gluonnlp.base import numba_njit, numba_prange, numba_jitclass, numba_types
 
 import evaluation
-from data import WikiDumpStream
 from candidate_sampler import remove_accidental_hits
-from utils import get_context, print_time
+from data import WikiDumpStream
 from stream import BucketingStream
+from utils import get_context, print_time
 
+os.environ['MXNET_GPU_MEM_POOL_TYPE'] = 'Round'
 
 ###############################################################################
 # Utils
@@ -204,7 +201,7 @@ def get_train_data(args):
 
             # Store subword indices for all words in vocabulary
             idx_to_subwordidxs = list(subword_function(vocab.idx_to_token))
-            get_subwords_masks = get_subwords_masks_factory(idx_to_subwordidxs)
+            subword_lookup = subword_lookup_factory(idx_to_subwordidxs)
             max_subwordidxs_len = max(len(s) for s in idx_to_subwordidxs)
             if max_subwordidxs_len > 500:
                 warnings.warn(
@@ -215,34 +212,46 @@ def get_train_data(args):
                     'to avoid memory issues.'.format(max_subwordidxs_len))
 
         return (data, negatives_sampler, vocab, subword_function,
-                get_subwords_masks, idx_to_pdiscard, sum_counts,
+                subword_lookup, idx_to_pdiscard, sum_counts,
                 idx_to_subwordidxs)
     else:
         return data, negatives_sampler, vocab, idx_to_pdiscard, sum_counts
 
 
-def get_subwords_masks_factory(idx_to_subwordidxs):
+def subword_lookup_factory(idx_to_subwordidxs):
+    """Create a SubwordLookup and initialize idx_to_subwordidxs mapping."""
     subword_lookup = SubwordLookup(len(idx_to_subwordidxs))
-    for i, subwords in enumerate( idx_to_subwordidxs ):
+    for i, subwords in enumerate(idx_to_subwordidxs):
         subword_lookup.set(i, np.array(subwords, dtype=np.int_))
     return subword_lookup
 
 
-@numba_jitclass(
-[
-    ('idx_to_subwordidxs', numba_types.List(numba_types.int_[::1]))
-]
-)
+@numba_jitclass([('idx_to_subwordidxs',
+                  numba_types.List(numba_types.int_[::1]))])
 class SubwordLookup(object):
+    """Just-in-time compiled helper class for fast, padded subword lookup.
+
+    SubwordLookup holds a mapping from token indices to variable length subword
+    arrays and allows fast access to padded and masked batches of subwords
+    given a list of token indices.
+
+    Parameters
+    ----------
+    length : int
+         Number of tokens for which to hold subword arrays.
+
+    """
     def __init__(self, length):
         self.idx_to_subwordidxs = [
             np.arange(1).astype(np.int_) for _ in range(length)
         ]
 
     def set(self, i, subwords):
+        """Set the subword array of the i-th token."""
         self.idx_to_subwordidxs[i] = subwords
 
     def get(self, indices):
+        """Get a padded array and mask of subwords for specified indices."""
         subwords = [self.idx_to_subwordidxs[i] for i in indices]
         lengths = np.array([len(s) for s in subwords])
         length = np.max(lengths)
@@ -256,6 +265,12 @@ class SubwordLookup(object):
 
 
 def save_params(args, embedding, embedding_out):
+    """Save parameters to logdir.
+
+    The parameters are first written to a temporary file and only if the saving
+    was successful atomically moved to the final location.
+
+    """
     f, path = tempfile.mkstemp(dir=args.logdir)
     os.close(f)
 
@@ -273,7 +288,7 @@ def train(args):
     """Training helper."""
     if args.ngram_buckets:
         data, negatives_sampler, vocab, subword_function, \
-            get_subwords_masks, idx_to_pdiscard, num_tokens, \
+            subword_lookup, idx_to_pdiscard, num_tokens, \
             idx_to_subwordidxs = get_train_data(args)
         embedding = nlp.model.train.FasttextEmbeddingModel(
             token_to_idx=vocab.token_to_idx,
@@ -340,7 +355,7 @@ def train(args):
                                                        return_inverse=True)
             inverse_unique_indices = mx.nd.array(inverse_unique_indices,
                                                  ctx=context[0])
-            subwords, subwords_mask = get_subwords_masks.get(unique.astype(int))
+            subwords, subwords_mask = subword_lookup.get(unique.astype(int))
 
             return (centers.as_in_context(context[0]),
                     context_negatives.as_in_context(context[0]),
@@ -373,7 +388,7 @@ def train(args):
                                                        return_inverse=True)
             inverse_unique_indices = mx.nd.array(inverse_unique_indices,
                                                  ctx=context[0])
-            subwords, subwords_mask = get_subwords_masks.get(unique.astype(int))
+            subwords, subwords_mask = subword_lookup.get(unique.astype(int))
             return (word_context.as_in_context(context[0]),
                     word_context_mask.as_in_context(context[0]),
                     center_negatives.as_in_context(context[0]),

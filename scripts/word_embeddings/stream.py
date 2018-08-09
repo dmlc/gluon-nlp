@@ -1,3 +1,5 @@
+"""Extensions to NLP Toolkit Data Stream API."""
+
 import mxnet as mx
 import numpy as np
 
