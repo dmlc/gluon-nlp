@@ -1,3 +1,4 @@
+
 entiment Analysis through Fine-tuning, w/ Bucketing
 ----------------------------------------------------
 
@@ -57,3 +58,5 @@ Use the following command to reproduce the textCNN paper's experimental results 
 .. code-block:: console
 
    $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 20 --dropout 0.5 --lr 0.005 --valid_ratio 0.1 --save-prefix sa_cnn_300 --model_mode multichannel --data_name TREC
+
+[1] Kim, Y. (2014). Convolutional neural networks for sentence classification. arXiv preprint arXiv:1408.5882.
