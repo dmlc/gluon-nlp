@@ -1,4 +1,4 @@
-Sentiment Analysis through Fine-tuning, w/ Bucketing
+entiment Analysis through Fine-tuning, w/ Bucketing
 ----------------------------------------------------
 
 :download:`[Download] </scripts/sentiment_analysis.zip>`
@@ -30,13 +30,11 @@ bucketing strategies to speed up training.
 
 Use the following command to reproduce the textCNN paper's experimental results for CNN-multichannel on the MR dataset [1]:
 
-
 .. code-block:: console
 
 $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 20 --dropout 0.5 --lr 0.005 --valid_ratio 0.1 --save-prefix sa_cnn_300 --model_mode multichannel --data_name MR
 
 Use the following command to reproduce the paper's experimental results for CNN-multichannel on the SST-1 dataset [1]
-
 
 .. code-block:: console
 
@@ -44,20 +42,17 @@ $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 20 --dropout
 
 Use the following command to reproduce the textCNN paper's experimental results for CNN-multichannel on the SST-2 dataset [1]:
 
-
 .. code-block:: console
 
 $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 20 --dropout 0.5 --lr 0.005 --valid_ratio 0.1 --save-prefix sa_cnn_300 --model_mode multichannel --data_name SST-2
 
 Use the following command to reproduce the textCNN paper's experimental results for CNN-multichannel on the Subj dataset [1]:
 
-
 .. code-block:: console
 
 $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 20 --dropout 0.5 --lr 0.005 --valid_ratio 0.1 --save-prefix sa_cnn_300 --model_mode multichannel --data_name Subj
 
 Use the following command to reproduce the textCNN paper's experimental results for CNN-multichannel on the TREC dataset [1]:
-
 
 .. code-block:: console
 
