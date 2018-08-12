@@ -18,7 +18,6 @@
 
 import math
 import numpy as np
-import log_uniform
 from mxnet import ndarray
 from gluonnlp.data import CandidateSampler
 
@@ -52,13 +51,11 @@ class LogUniformSampler(CandidateSampler):
     def __init__(self, range_max, num_sampled, dtype=None, seed=0):
         self._num_sampled = num_sampled
         self._log_range = math.log(range_max + 1)
-        self._csampler = log_uniform.LogUniformSampler(range_max, seed)
         self._dtype = np.float32 if dtype is None else dtype
+        self._range_max = range_max
 
     def _prob_helper(self, num_tries, num_sampled, prob):
-        if num_tries == num_sampled:
-            return prob * num_sampled
-        return (num_tries * (-prob).log1p()).expm1() * -1
+        return (num_tries.astype('float64') * (-prob).log1p()).expm1() * -1
 
     def __call__(self, true_classes):
         """Draw samples from log uniform distribution and returns sampled candidates,
@@ -81,8 +78,15 @@ class LogUniformSampler(CandidateSampler):
         num_sampled = self._num_sampled
         ctx = true_classes.context
         num_tries = 0
-        log_range = self._log_range
-        sampled_classes, num_tries = self._csampler.sample_unique(num_sampled)
+        log_range = math.log(self._range_max + 1)
+
+        # sample candidates
+        f = ndarray._internal._sample_unique_zipfian
+        sampled_classes, num_tries = f(self._range_max, shape=(1, num_sampled))
+        sampled_classes = sampled_classes.reshape((-1,))
+        sampled_classes = sampled_classes.as_in_context(ctx)
+        num_tries = num_tries.as_in_context(ctx)
+
         # expected count for true classes
         true_cls = true_classes.as_in_context(ctx).astype('float64')
         prob_true = ((true_cls + 2.0) / (true_cls + 1.0)).log() / log_range
