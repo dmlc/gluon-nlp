@@ -19,12 +19,16 @@
 """Building blocks and utility for models."""
 __all__ = ['apply_weight_drop']
 
+import collections
 import functools
+import re
+import warnings
 
-from mxnet.gluon import Block, HybridBlock, contrib, rnn
+from mxnet.gluon import Block, contrib, rnn
 from .parameter import WeightDropParameter
 
-def apply_weight_drop(block, local_param_name, rate, axes=(),
+# pylint: disable=too-many-nested-blocks
+def apply_weight_drop(block, local_param_regex, rate, axes=(),
                       weight_dropout_mode='training'):
     """Apply weight drop to the parameter of a block.
 
@@ -32,8 +36,8 @@ def apply_weight_drop(block, local_param_name, rate, axes=(),
     ----------
     block : Block or HybridBlock
         The block whose parameter is to be applied weight-drop.
-    local_param_name : str
-        The parameter name used on the block. such as 'weight'.
+    local_param_regex : str
+        The regex for parameter names used in the self.params.get(), such as 'weight'.
     rate : float
         Fraction of the input units to drop. Must be a number between 0 and 1.
     axes : tuple of int, default ()
@@ -44,46 +48,59 @@ def apply_weight_drop(block, local_param_name, rate, axes=(),
     if not rate:
         return
 
-    params = block.collect_params('.*{}'.format(local_param_name))
-    for full_param_name, param in params.items():
+    existing_params = _find_params(block, local_param_regex)
+    for (local_param_name, param), \
+        (ref_params_list, ref_reg_params_list) in existing_params.items():
         dropped_param = WeightDropParameter(param, rate, weight_dropout_mode, axes)
-        param_dicts, reg_param_dicts = _find_param(block, full_param_name, local_param_name)
-        for param_dict in param_dicts:
-            param_dict[full_param_name] = dropped_param
-        for reg_param_dict in reg_param_dicts:
-            reg_param_dict[local_param_name] = dropped_param
-        local_attr = getattr(block, local_param_name)
-        if local_attr == param:
-            super(Block, block).__setattr__(local_param_name, dropped_param)
-        else:
-            if isinstance(local_attr, (list, tuple)):
-                if isinstance(local_attr, tuple):
-                    local_attr = list(local_attr)
-                for i, v in enumerate(local_attr):
-                    if v == param:
-                        local_attr[i] = dropped_param
-            elif isinstance(local_attr, dict):
-                for k, v in local_attr:
-                    if v == param:
-                        local_attr[k] = dropped_param
-            else:
-                continue
-            super(Block, block).__setattr__(local_param_name, local_attr)
+        for ref_params in ref_params_list:
+            ref_params[param.name] = dropped_param
+        for ref_reg_params in ref_reg_params_list:
+            ref_reg_params[local_param_name] = dropped_param
+            if hasattr(block, local_param_name):
+                local_attr = getattr(block, local_param_name)
+                if local_attr == param:
+                    local_attr = dropped_param
+                elif isinstance(local_attr, (list, tuple)):
+                    if isinstance(local_attr, tuple):
+                        local_attr = list(local_attr)
+                    for i, v in enumerate(local_attr):
+                        if v == param:
+                            local_attr[i] = dropped_param
+                elif isinstance(local_attr, dict):
+                    for k, v in local_attr:
+                        if v == param:
+                            local_attr[k] = dropped_param
+                else:
+                    continue
+                if local_attr:
+                    super(Block, block).__setattr__(local_param_name, local_attr)
 
+# pylint: enable=too-many-nested-blocks
+def _find_params(block, local_param_regex):
+    # return {(local_param_name, parameter): (referenced_params_list,
+    #                                         referenced_reg_params_list)}
 
-def _find_param(block, full_param_name, local_param_name):
-    param_dict_results = []
-    reg_dict_results = []
-    params = block.params
+    results = collections.defaultdict(lambda: ([], []))
+    pattern = re.compile(local_param_regex)
+    local_param_names = ((local_param_name, p) for local_param_name, p in block._reg_params.items()
+                         if pattern.match(local_param_name))
 
-    if full_param_name in block.params._params:
-        if isinstance(block, HybridBlock) and local_param_name in block._reg_params:
-            reg_dict_results.append(block._reg_params)
+    for local_param_name, p in local_param_names:
+        ref_params_list, ref_reg_params_list = results[(local_param_name, p)]
+        ref_reg_params_list.append(block._reg_params)
+
+        params = block._params
         while params:
-            if full_param_name in params._params:
-                param_dict_results.append(params._params)
+            if p.name in params._params:
+                ref_params_list.append(params._params)
             if params._shared:
                 params = params._shared
+                warnings.warning('When applying weight drop, target parameter {} was found '
+                                 'in a shared parameter dict. The parameter attribute of the '
+                                 'original block on which the shared parameter dict was attached '
+                                 'will not be updated with WeightDropParameter. If necessary, '
+                                 'please update the attribute manually. The likely name of the '
+                                 'attribute is ".{}"'.format(p.name, local_param_name))
             else:
                 break
 
@@ -93,11 +110,13 @@ def _find_param(block, full_param_name, local_param_name):
         elif isinstance(block._children, dict):
             children = block._children.values()
         for c in children:
-            pd, rd = _find_param(c, full_param_name, local_param_name)
-            param_dict_results.extend(pd)
-            reg_dict_results.extend(rd)
+            child_results = _find_params(c, local_param_regex)
+            for (child_p_name, child_p), (child_pd_list, child_rd_list) in child_results.items():
+                pd_list, rd_list = results[(child_p_name, child_p)]
+                pd_list.extend(child_pd_list)
+                rd_list.extend(child_rd_list)
 
-    return param_dict_results, reg_dict_results
+    return results
 
 def _get_rnn_cell(mode, num_layers, input_size, hidden_size,
                   dropout, weight_dropout,
@@ -145,6 +164,6 @@ def _get_rnn_layer(mode, num_layers, input_size, hidden_size, dropout, weight_dr
                       input_size=input_size)
 
     if weight_dropout:
-        apply_weight_drop(block, 'h2h_weight', rate=weight_dropout)
+        apply_weight_drop(block, '.*h2h_weight', rate=weight_dropout)
 
     return block
