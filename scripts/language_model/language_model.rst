@@ -192,7 +192,5 @@ The dataset used for training the models is Google's 1 billion words dataset.
 
 .. code-block:: console
 
-   $ pip install cython
-   $ make
    $ python large_word_language_model.py --gpus 0,1,2,3 --epochs=48 --batch-size=256 --clip=10
-   $ python large_word_language_model.py --gpus 0 --eval-only --batch-size=32 --log-interval=1
+   $ python large_word_language_model.py --gpus 0 --eval-only --batch-size=32
