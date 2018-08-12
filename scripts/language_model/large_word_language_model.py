@@ -306,7 +306,7 @@ def test(data_stream, batch_size, ctx=None):
             throughput = batch_size*args.log_interval/(time.time()-start_time)
             print('Evaluation batch %d: test loss %.2f, test ppl %.2f, '
                   'throughput = %.2f samples/s'%(nbatch, avg_scalar, ppl, throughput))
-            start_log_interval_time = time.time()
+            start_time = time.time()
         if max_nbatch_eval and nbatch > max_nbatch_eval:
             print('Quit evaluation early at batch %d'%nbatch)
             break

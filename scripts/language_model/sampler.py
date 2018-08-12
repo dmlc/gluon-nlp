@@ -45,16 +45,16 @@ class LogUniformSampler(CandidateSampler):
         The number of classes to randomly sample.
     range_max: int
         The number of possible classes.
-    seed: int
-        The random seed.
+    dtype: str or np.dtype
+        The dtype for outputs
     """
-    def __init__(self, range_max, num_sampled, dtype=None, seed=0):
+    def __init__(self, range_max, num_sampled, dtype=None):
         self._num_sampled = num_sampled
         self._log_range = math.log(range_max + 1)
         self._dtype = np.float32 if dtype is None else dtype
         self._range_max = range_max
 
-    def _prob_helper(self, num_tries, num_sampled, prob):
+    def _prob_helper(self, num_tries, prob):
         return (num_tries.astype('float64') * (-prob).log1p()).expm1() * -1
 
     def __call__(self, true_classes):
@@ -90,12 +90,12 @@ class LogUniformSampler(CandidateSampler):
         # expected count for true classes
         true_cls = true_classes.as_in_context(ctx).astype('float64')
         prob_true = ((true_cls + 2.0) / (true_cls + 1.0)).log() / log_range
-        count_true = self._prob_helper(num_tries, num_sampled, prob_true)
+        count_true = self._prob_helper(num_tries, prob_true)
         # expected count for sampled classes
         sampled_classes = ndarray.array(sampled_classes, ctx=ctx, dtype='int64')
         sampled_cls_fp64 = sampled_classes.astype('float64')
         prob_sampled = ((sampled_cls_fp64 + 2.0) / (sampled_cls_fp64 + 1.0)).log() / log_range
-        count_sampled = self._prob_helper(num_tries, num_sampled, prob_sampled)
+        count_sampled = self._prob_helper(num_tries, prob_sampled)
         # convert to dtype
         sampled_classes = sampled_classes.astype(self._dtype, copy=False)
         count_true = count_true.astype(self._dtype, copy=False)
