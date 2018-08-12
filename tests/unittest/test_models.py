@@ -233,41 +233,47 @@ def test_weight_drop():
     shared_net3.add(gluon.rnn.LSTM(10, params=net3[0].collect_params()))
 
     x = mx.nd.ones((3, 4, 5))
-    net1.initialize('ones')
-    net2.initialize('ones')
-    net3.initialize('ones')
-    mx.test_utils.assert_almost_equal(net1(x).asnumpy(),
-                                      shared_net1(x).asnumpy())
-    mx.test_utils.assert_almost_equal(net2(x).asnumpy(),
-                                      shared_net2(x).asnumpy())
-    mx.test_utils.assert_almost_equal(net3(x).asnumpy(),
-                                      shared_net3(x).asnumpy())
-    with mx.autograd.train_mode():
-        mx.test_utils.assert_almost_equal(net1(x).asnumpy(),
-                                          shared_net1(x).asnumpy())
-        mx.test_utils.assert_almost_equal(net2(x).asnumpy(),
-                                          shared_net2(x).asnumpy())
-        mx.test_utils.assert_almost_equal(net3(x).asnumpy(),
-                                          shared_net3(x).asnumpy())
+    nets = [(net1, shared_net1),
+            (net2, shared_net2),
+            (net3, shared_net3)]
+    for net, shared_net in nets:
+        net.initialize('ones')
+        mx.test_utils.assert_almost_equal(net(x).asnumpy(),
+                                          shared_net(x).asnumpy())
+        with mx.autograd.train_mode():
+            mx.test_utils.assert_almost_equal(net(x).asnumpy(),
+                                              shared_net(x).asnumpy())
 
-    drop_rate = 0.5
-    nlp.model.utils.apply_weight_drop(net1, '.*h2h_weight', drop_rate)
-    nlp.model.utils.apply_weight_drop(net2, '.*h2h_weight', drop_rate)
-    nlp.model.utils.apply_weight_drop(net3, '.*h2h_weight', drop_rate)
-    net1.initialize('ones')
-    net2.initialize('ones')
-    net3.initialize('ones')
+        grads = {}
+        with mx.autograd.record():
+            y = net(x)
+        y.backward()
+        for name, param in net.collect_params().items():
+            grads[name] = param.grad().copy()
+        with mx.autograd.record():
+            y = shared_net(x)
+        y.backward()
+        for name, param in shared_net.collect_params().items():
+            mx.test_utils.assert_almost_equal(grads[name].asnumpy(), param.grad().asnumpy())
 
-    mx.test_utils.assert_almost_equal(net1(x).asnumpy(),
-                                      shared_net1(x).asnumpy())
-    mx.test_utils.assert_almost_equal(net2(x).asnumpy(),
-                                      shared_net2(x).asnumpy())
-    mx.test_utils.assert_almost_equal(net3(x).asnumpy(),
-                                      shared_net3(x).asnumpy())
-    with mx.autograd.train_mode():
-        assert not mx.test_utils.almost_equal(net1(x).asnumpy(),
-                                              shared_net1(x).asnumpy())
-        assert not mx.test_utils.almost_equal(net2(x).asnumpy(),
-                                              shared_net2(x).asnumpy())
-        assert not mx.test_utils.almost_equal(net3(x).asnumpy(),
-                                              shared_net3(x).asnumpy())
+        drop_rate = 0.5
+        nlp.model.utils.apply_weight_drop(net, '.*h2h_weight', drop_rate)
+        net.initialize('ones')
+
+        mx.test_utils.assert_almost_equal(net(x).asnumpy(),
+                                          shared_net(x).asnumpy())
+        with mx.autograd.train_mode():
+            assert not mx.test_utils.almost_equal(net(x).asnumpy(),
+                                                  shared_net(x).asnumpy())
+
+        grads = {}
+        with mx.autograd.record():
+            y = net(x)
+        y.backward()
+        for name, param in net.collect_params().items():
+            grads[name] = param.grad().copy()
+        with mx.autograd.record():
+            y = shared_net(x)
+        y.backward()
+        for name, param in shared_net.collect_params().items():
+            assert not mx.test_utils.almost_equal(grads[name].asnumpy(), param.grad().asnumpy())
