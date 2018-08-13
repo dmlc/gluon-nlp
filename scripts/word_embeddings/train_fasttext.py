@@ -450,7 +450,8 @@ def evaluate(args, embedding, vocab, global_step, eval_analogy=False):
 
         eval_tokens = list(eval_tokens_set)
 
-    os.makedirs(args.logdir, exist_ok=True)
+    if not os.path.isdir(args.logdir):
+        os.makedirs(args.logdir)
 
     # Compute their word vectors
     context = get_context(args)
