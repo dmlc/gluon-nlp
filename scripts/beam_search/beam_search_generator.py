@@ -47,6 +47,10 @@ parser.add_argument('--max_length', type=int, default=20, help='Maximum sentence
 parser.add_argument('--print_num', type=int, default=3, help='Number of sentences to display.')
 parser.add_argument('--gpu', type=int, default=None,
                     help='id of the gpu to use. Set it to empty means to use cpu.')
+parser.add_argument('--sampling', action='store_true',
+                    help='Use sampling instead of beam search')
+parser.add_argument('--temperature', type=float, default=1.0,
+                    help='Softmax temperature for sampling')
 args = parser.parse_args()
 print(args)
 if args.gpu is None:
@@ -78,11 +82,14 @@ def _transform_layout(data):
 # Define the decoder function, we use log_softmax to map the output scores to log-likelihoods
 # Also, we transform the layout to NTC
 class LMDecoder(object):
-    def __init__(self, model):
+    def __init__(self, model, sampling):
         self._model = model
+        self.sampling = sampling
 
     def __call__(self, inputs, states):
         outputs, states = self._model(mx.nd.expand_dims(inputs, axis=0), states)
+        if self.sampling:
+            return outputs[0], states
         return outputs[0].log_softmax(), states
 
     def state_info(self, *arg, **kwargs):
@@ -97,13 +104,16 @@ def generate():
         _, begin_states = lm_model(mx.nd.expand_dims(mx.nd.array(bos_ids[:-1], ctx=ctx), axis=1),
                                    begin_states)
     inputs = mx.nd.full(shape=(1,), ctx=ctx, val=bos_ids[-1])
-    decoder = LMDecoder(lm_model)
+    decoder = LMDecoder(lm_model, args.sampling)
     scorer = nlp.model.BeamSearchScorer(alpha=args.alpha, K=args.k)
     sampler = nlp.model.BeamSearchSampler(beam_size=args.beam_size,
                                           decoder=decoder,
                                           eos_id=eos_id,
                                           scorer=scorer,
-                                          max_length=args.max_length)
+                                          max_length=args.max_length,
+                                          sampling=args.sampling,
+                                          temperature=args.temperature,
+                                          )
     # samples have shape (1, beam_size, length), scores have shape (1, beam_size)
     samples, scores, valid_lengths = sampler(inputs, begin_states)
     samples = samples[0].asnumpy()
