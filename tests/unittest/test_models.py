@@ -22,10 +22,8 @@ from __future__ import print_function
 import sys
 
 import mxnet as mx
+from mxnet import gluon
 import gluonnlp as nlp
-from gluonnlp.model import get_model as get_text_model
-from gluonnlp.model.train import get_cache_model
-from gluonnlp.model.train import CacheCell
 
 def eprint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
@@ -42,8 +40,8 @@ def _test_pretrained_big_text_models():
     for model_name in text_models:
         eprint('testing forward for %s' % model_name)
         pretrained_dataset = pretrained_to_test.get(model_name)
-        model, _ = get_text_model(model_name, dataset_name=pretrained_dataset,
-                                  pretrained=True, root='tests/data/model/')
+        model, _ = nlp.model.get_model(model_name, dataset_name=pretrained_dataset,
+                                       pretrained=True, root='tests/data/model/')
 
         print(model)
         batch_size = 10
@@ -60,7 +58,7 @@ def test_big_text_models():
 
     for model_name in text_models:
         eprint('testing forward for %s' % model_name)
-        model, _ = get_text_model(model_name, vocab=vocab, root='tests/data/model/')
+        model, _ = nlp.model.get_model(model_name, vocab=vocab, root='tests/data/model/')
 
         print(model)
         model.collect_params().initialize()
@@ -83,8 +81,9 @@ def test_text_models():
     for model_name in text_models:
         eprint('testing forward for %s' % model_name)
         pretrained_dataset = pretrained_to_test.get(model_name)
-        model, _ = get_text_model(model_name, vocab=vocab, dataset_name=pretrained_dataset,
-                                  pretrained=pretrained_dataset is not None, root='tests/data/model/')
+        model, _ = nlp.model.get_model(model_name, vocab=vocab, dataset_name=pretrained_dataset,
+                                       pretrained=pretrained_dataset is not None,
+                                       root='tests/data/model/')
 
         print(model)
         if not pretrained_dataset:
@@ -98,8 +97,8 @@ def test_cache_models():
     datasets = ['wikitext-2']
     for name in cache_language_models:
         for dataset_name in datasets:
-            cache_cell = get_cache_model(name, dataset_name, window=1, theta=0.6,
-                                         lambdas=0.2, root='tests/data/model/')
+            cache_cell = nlp.model.train.get_cache_model(name, dataset_name, window=1, theta=0.6,
+                                                         lambdas=0.2, root='tests/data/model/')
             outs, word_history, cache_history, hidden = \
                 cache_cell(mx.nd.arange(10).reshape(10, 1), mx.nd.arange(10).reshape(10, 1), None, None)
             print(cache_cell)
@@ -120,15 +119,15 @@ def test_get_cache_model_noncache_models():
     datasets = ['wikitext-2']
     for name in language_models_params.keys():
         for dataset_name in datasets:
-            _, vocab = get_text_model(name=name, dataset_name=dataset_name, pretrained=True)
+            _, vocab = nlp.model.get_model(name=name, dataset_name=dataset_name, pretrained=True)
             ntokens = len(vocab)
 
-            cache_cell_0 = get_cache_model(name, dataset_name, window=1, theta=0.6,
-                                           lambdas=0.2, root='tests/data/model/')
+            cache_cell_0 = nlp.model.train.get_cache_model(name, dataset_name, window=1, theta=0.6,
+                                                           lambdas=0.2, root='tests/data/model/')
             print(cache_cell_0)
 
-            model, _ = get_text_model(name=name, dataset_name=dataset_name, pretrained=True)
-            cache_cell_1 = CacheCell(model, ntokens, window=1, theta=0.6, lambdas=0.2)
+            model, _ = nlp.model.get_model(name=name, dataset_name=dataset_name, pretrained=True)
+            cache_cell_1 = nlp.model.train.CacheCell(model, ntokens, window=1, theta=0.6, lambdas=0.2)
             cache_cell_1.load_params('tests/data/model/' + language_models_params.get(name))
             print(cache_cell_1)
 
@@ -149,8 +148,8 @@ def test_save_load_cache_models():
     datasets = ['wikitext-2']
     for name in cache_language_models:
         for dataset_name in datasets:
-            cache_cell = get_cache_model(name, dataset_name, window=1, theta=0.6,
-                                           lambdas=0.2, root='tests/data/model/')
+            cache_cell = nlp.model.train.get_cache_model(name, dataset_name, window=1, theta=0.6,
+                                                         lambdas=0.2, root='tests/data/model/')
             print(cache_cell)
             cache_cell.save_params('tests/data/model/' + name + '-' + dataset_name + '.params')
             cache_cell.load_params('tests/data/model/' + name + '-' + dataset_name + '.params')
@@ -207,3 +206,74 @@ def test_big_rnn_model_share_params():
     logits, hidden = eval_model(x, hidden)
     assert logits.shape == (seq_len, batch_size, vocab_size)
     mx.nd.waitall()
+
+def test_weight_drop():
+    class RefBiLSTM(gluon.Block):
+        def __init__(self, size, **kwargs):
+            super(RefBiLSTM, self).__init__(**kwargs)
+            with self.name_scope():
+                self._lstm_fwd = gluon.rnn.LSTM(size, bidirectional=False, prefix='l0')
+                self._lstm_bwd = gluon.rnn.LSTM(size, bidirectional=False, prefix='r0')
+
+        def forward(self, inpt):
+            fwd = self._lstm_fwd(inpt)
+            bwd_inpt = mx.nd.flip(inpt, 0)
+            bwd = self._lstm_bwd(bwd_inpt)
+            bwd = mx.nd.flip(bwd, 0)
+            return mx.nd.concat(fwd, bwd, dim=2)
+    net1 = RefBiLSTM(10)
+    shared_net1 = RefBiLSTM(10, params=net1.collect_params())
+
+    net2 = gluon.rnn.LSTM(10)
+    shared_net2 = gluon.rnn.LSTM(10, params=net2.collect_params())
+
+    net3 = gluon.nn.HybridSequential()
+    net3.add(gluon.rnn.LSTM(10))
+    shared_net3 = gluon.nn.HybridSequential(params=net3.collect_params())
+    shared_net3.add(gluon.rnn.LSTM(10, params=net3[0].collect_params()))
+
+    x = mx.nd.ones((3, 4, 5))
+    nets = [(net1, shared_net1),
+            (net2, shared_net2),
+            (net3, shared_net3)]
+    for net, shared_net in nets:
+        net.initialize('ones')
+        mx.test_utils.assert_almost_equal(net(x).asnumpy(),
+                                          shared_net(x).asnumpy())
+        with mx.autograd.train_mode():
+            mx.test_utils.assert_almost_equal(net(x).asnumpy(),
+                                              shared_net(x).asnumpy())
+
+        grads = {}
+        with mx.autograd.record():
+            y = net(x)
+        y.backward()
+        for name, param in net.collect_params().items():
+            grads[name] = param.grad().copy()
+        with mx.autograd.record():
+            y = shared_net(x)
+        y.backward()
+        for name, param in shared_net.collect_params().items():
+            mx.test_utils.assert_almost_equal(grads[name].asnumpy(), param.grad().asnumpy())
+
+        drop_rate = 0.5
+        nlp.model.utils.apply_weight_drop(net, '.*h2h_weight', drop_rate)
+        net.initialize('ones')
+
+        mx.test_utils.assert_almost_equal(net(x).asnumpy(),
+                                          shared_net(x).asnumpy())
+        with mx.autograd.train_mode():
+            assert not mx.test_utils.almost_equal(net(x).asnumpy(),
+                                                  shared_net(x).asnumpy())
+
+        grads = {}
+        with mx.autograd.record():
+            y = net(x)
+        y.backward()
+        for name, param in net.collect_params().items():
+            grads[name] = param.grad().copy()
+        with mx.autograd.record():
+            y = shared_net(x)
+        y.backward()
+        for name, param in shared_net.collect_params().items():
+            assert not mx.test_utils.almost_equal(grads[name].asnumpy(), param.grad().asnumpy())
