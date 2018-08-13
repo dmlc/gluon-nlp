@@ -358,8 +358,8 @@ class _LanguageModelBPTTStream(DataStream):
 
         def _read(buffers, i, vocab, corpus):
             """Read a sentence from the corpus into i-th buffer."""
-            if buffers[i] is None or len(buffers[i]) <= 1:
-                buffers[i] = vocab[next(corpus)]
+            if len(buffers[i]) <= 1:
+                buffers[i].extend(vocab[next(corpus)])
 
         def _write(data, target, buffers, seq_len, i, length):
             """Write a sentence from i-th buffer to data and target."""
@@ -373,7 +373,9 @@ class _LanguageModelBPTTStream(DataStream):
             return num_tokens
 
         # stream states
-        buffers = [None] * self._batch_size
+        buffers = [None] * self._batch_size    
+        for i in range(self._batch_size):
+            buffers[i] = []
         has_next = True
         has_token_buffered = False
         data = np.empty([self._batch_size, self._seq_len], dtype=np.float32)
