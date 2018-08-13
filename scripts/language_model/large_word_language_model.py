@@ -110,10 +110,13 @@ if args.test_mode:
 print(args)
 mx.random.seed(args.seed)
 np.random.seed(args.seed)
-os.environ['MXNET_GPU_MEM_POOL_TYPE'] = 'Round'
 
 context = [mx.cpu()] if args.gpus is None or args.gpus == '' else \
           [mx.gpu(int(x)) for x in args.gpus.split(',')]
+
+os.environ['MXNET_GPU_MEM_POOL_TYPE'] = 'Round'
+os.environ['MXNET_CPU_PARALLEL_RAND_COPY'] = len(context)
+os.environ['MXNET_CPU_WORKER_NTHREADS'] = len(context)
 
 ###############################################################################
 # Data stream
