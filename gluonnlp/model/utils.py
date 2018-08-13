@@ -135,12 +135,12 @@ def _find_params(block, local_param_regex):
                 ref_params_list.append(params._params)
             if params._shared:
                 params = params._shared
-                warnings.warning('When applying weight drop, target parameter {} was found '
-                                 'in a shared parameter dict. The parameter attribute of the '
-                                 'original block on which the shared parameter dict was attached '
-                                 'will not be updated with WeightDropParameter. If necessary, '
-                                 'please update the attribute manually. The likely name of the '
-                                 'attribute is ".{}"'.format(p.name, local_param_name))
+                warnings.warn('When applying weight drop, target parameter {} was found '
+                              'in a shared parameter dict. The parameter attribute of the '
+                              'original block on which the shared parameter dict was attached '
+                              'will not be updated with WeightDropParameter. If necessary, '
+                              'please update the attribute manually. The likely name of the '
+                              'attribute is ".{}"'.format(p.name, local_param_name))
             else:
                 break
 
