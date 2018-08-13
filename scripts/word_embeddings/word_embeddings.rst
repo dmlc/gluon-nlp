@@ -66,35 +66,35 @@ obtained by training 5 epochs on the `Text8
 ======================================  ===========================  ===================
 Similarity Dataset                        facebookresearch/fasttext    train_fasttext.py
 ======================================  ===========================  ===================
-WordSim353-similarity                                     0.653              0.685
-WordSim353-relatedness                                    0.541              0.592
-MEN (test set)                                            0.660              0.629
-RadinskyMTurk                                             0.639              0.609
-RareWords                                                 0.407              0.429
-SimLex999                                                 0.314              0.323
-SimVerb3500                                               0.187              0.191
-SemEval17Task2 (test set)                                 0.536              0.566
-BakerVerb143                                              0.419              0.363
-YangPowersVerb130                                         0.430              0.366
+WordSim353-similarity                                     0.670                0.685
+WordSim353-relatedness                                    0.557                0.592
+MEN (test set)                                            0.665                0.629
+RadinskyMTurk                                             0.640                0.609
+RareWords                                                 0.400                0.429
+SimLex999                                                 0.300                0.323
+SimVerb3500                                               0.170                0.191
+SemEval17Task2 (test set)                                 0.540                0.566
+BakerVerb143                                              0.390                0.363
+YangPowersVerb130                                         0.424                0.366
 ======================================  ===========================  ===================
 
 ===========================================  ===========================  ===================
 Google Analogy Dataset                        facebookresearch/fasttext    train_fasttext.py
 ===========================================  ===========================  ===================
-capital-common-countries                              0.338              0.470
-capital-world                                         0.094              0.148
-currency                                              0.023              0.043
-city-in-state                                         0.039              0.076
-family                                                0.308              0.342
-gram1-adjective-to-adverb                             0.695              0.663
-gram2-opposite                                        0.766              0.700
-gram3-comparative                                     0.721              0.740
-gram4-superlative                                     0.727              0.535
-gram5-present-participle                              0.563              0.399
-gram6-nationality-adjective                           0.830              0.830
-gram7-past-tense                                      0.174              0.200
-gram8-plural                                          0.761              0.860
-gram9-plural-verbs                                    0.753              0.800
+capital-common-countries                              0.581                0.470
+capital-world                                         0.176                0.148
+currency                                              0.046                0.043
+city-in-state                                         0.100                0.076
+family                                                0.375                0.342
+gram1-adjective-to-adverb                             0.695                0.663
+gram2-opposite                                        0.539                0.700
+gram3-comparative                                     0.523                0.740
+gram4-superlative                                     0.523                0.535
+gram5-present-participle                              0.480                0.399
+gram6-nationality-adjective                           0.830                0.830
+gram7-past-tense                                      0.269                0.200
+gram8-plural                                          0.703                0.860
+gram9-plural-verbs                                    0.575                0.800
 ===========================================  ===========================  ===================
 
 Loading of fastText models with subword information
