@@ -1,9 +1,11 @@
 import numpy as np
 import mxnet as mx
+from gluonnlp.data import FixedBucketSampler, ShardedDataLoader
 from mxnet import gluon
-from gluonnlp.data import ShardedDataLoader, FixedBucketSampler
+import pytest
 
 
+@pytest.mark.skip(reason="causes deadlocks on CI. Tracked in issue #274")
 def test_sharded_data_loader():
     X = np.random.uniform(size=(100, 20))
     Y = np.random.uniform(size=(100,))
