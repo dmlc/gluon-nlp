@@ -11,5 +11,5 @@ dependencies:
   - flaky
   - pytest-cov
   - pip:
-    - mxnet-cu80>=1.3.0b20180725
+    - mxnet-cu80>=1.3.0b20180809
     - sacremoses
