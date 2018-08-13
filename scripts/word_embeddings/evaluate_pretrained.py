@@ -159,7 +159,8 @@ if __name__ == '__main__':
 
     args_ = get_args()
     ctx = utils.get_context(args_)[0]
-    os.makedirs(args_.logdir, exist_ok=True)
+    if not os.path.isdir(args_.logdir):
+        os.makedirs(args_.logdir)
 
     # Load pretrained embeddings
     if not args_.embedding_path:
