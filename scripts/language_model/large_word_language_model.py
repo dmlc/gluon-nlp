@@ -110,10 +110,13 @@ if args.test_mode:
 print(args)
 mx.random.seed(args.seed)
 np.random.seed(args.seed)
-os.environ['MXNET_GPU_MEM_POOL_TYPE'] = 'Round'
 
 context = [mx.cpu()] if args.gpus is None or args.gpus == '' else \
           [mx.gpu(int(x)) for x in args.gpus.split(',')]
+
+os.environ['MXNET_GPU_MEM_POOL_TYPE'] = 'Round'
+os.environ['MXNET_CPU_PARALLEL_RAND_COPY'] = str(len(context))
+os.environ['MXNET_CPU_WORKER_NTHREADS'] = str(len(context))
 
 ###############################################################################
 # Data stream
@@ -251,6 +254,7 @@ def train():
                 total_L = 0.0
                 start_log_interval_time = time.time()
                 sys.stdout.flush()
+
         end_epoch_time = time.time()
         print('Epoch %d took %.2f seconds.'%(epoch, end_epoch_time - start_epoch_time))
         mx.nd.waitall()
@@ -286,6 +290,7 @@ def test(data_stream, batch_size, ctx=None):
     ntotal = 0
     nbatch = 0
     hidden = eval_model.begin_state(batch_size=batch_size, func=mx.nd.zeros, ctx=ctx)
+    start_time = time.time()
     for data, target, mask in data_stream:
         data = data.as_in_context(ctx)
         target = target.as_in_context(ctx)
@@ -297,14 +302,18 @@ def test(data_stream, batch_size, ctx=None):
         total_L += L.mean()
         ntotal += mask.mean()
         nbatch += 1
-        avg = (total_L / ntotal).asscalar()
+        avg = total_L / ntotal
         if nbatch % args.log_interval == 0:
-            print('Evaluation batch %d: test loss %.2f, test ppl %.2f'
-                  %(nbatch, avg, math.exp(avg)))
+            avg_scalar = float(avg.asscalar())
+            ppl = math.exp(avg_scalar)
+            throughput = batch_size*args.log_interval/(time.time()-start_time)
+            print('Evaluation batch %d: test loss %.2f, test ppl %.2f, '
+                  'throughput = %.2f samples/s'%(nbatch, avg_scalar, ppl, throughput))
+            start_time = time.time()
         if max_nbatch_eval and nbatch > max_nbatch_eval:
             print('Quit evaluation early at batch %d'%nbatch)
             break
-    return avg
+    return float(avg.asscalar())
 
 def evaluate():
     """ Evaluate loop for the trained model """

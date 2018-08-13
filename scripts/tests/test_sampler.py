@@ -1,3 +1,5 @@
+# coding: utf-8
+
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -15,11 +17,21 @@
 # specific language governing permissions and limitations
 # under the License.
 
-all: clean
-	python setup.py build_ext --inplace
+"""Test Sampler."""
+from __future__ import print_function
 
-clean:
-	rm -rf build
-	rm -rf __pycache__
-	rm -rf log_uniform.cpp
-	rm -rf log_uniform.*.so
+import mxnet as mx
+import numpy as np
+from numpy.testing import assert_allclose
+from ..language_model.sampler import LogUniformSampler
+
+
+def test_log_uniform_sampler():
+    ntokens = 793472
+    num_sampled = 8192
+    sampler = LogUniformSampler(ntokens, num_sampled)
+    true_cls = mx.nd.array([5, 10, 20])
+    sample, cnt_true, cnt_sample = sampler(true_cls)
+    assert np.unique(sample.asnumpy()).size == num_sampled
+    assert cnt_true.size == true_cls.size
+    assert cnt_sample.size == cnt_sample.size
