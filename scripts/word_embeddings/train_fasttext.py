@@ -81,7 +81,7 @@ def parse_args():
 
     # Computation options
     group = parser.add_argument_group('Computation arguments')
-    group.add_argument('--batch-size', type=int, default=2048,
+    group.add_argument('--batch-size', type=int, default=1024,
                        help='Batch size for training.')
     group.add_argument('--epochs', type=int, default=5, help='Epoch limit')
     group.add_argument('--gpu', type=int, nargs='+',
@@ -118,9 +118,7 @@ def parse_args():
     # Optimization options
     group = parser.add_argument_group('Optimization arguments')
     group.add_argument('--optimizer', type=str, default='adagrad')
-    group.add_argument('--lr', type=float, default=0.05)
-    group.add_argument('--optimizer-subwords', type=str, default='adagrad')
-    group.add_argument('--lr-subwords', type=float, default=0.5)
+    group.add_argument('--lr', type=float, default=0.1)
     group.add_argument('--seed', type=int, default=1, help='random seed')
 
     # Logging
@@ -322,17 +320,9 @@ def train(args):
         embedding_out.hybridize(static_alloc=not args.no_static_alloc)
 
     optimizer_kwargs = dict(learning_rate=args.lr)
-    params = list(embedding.embedding.collect_params().values()) + \
+    params = list(embedding.collect_params().values()) + \
         list(embedding_out.collect_params().values())
     trainer = mx.gluon.Trainer(params, args.optimizer, optimizer_kwargs)
-
-    if args.ngram_buckets:
-        optimizer_subwords_kwargs = dict(learning_rate=args.lr_subwords)
-        params_subwords = list(
-            embedding.subword_embedding.collect_params().values())
-        trainer_subwords = mx.gluon.Trainer(params_subwords,
-                                            args.optimizer_subwords,
-                                            optimizer_subwords_kwargs)
 
     def skipgram_batch(data):
         """Create a batch for Skipgram training objective."""
@@ -438,7 +428,7 @@ def train(args):
         # that batch are of similar length
         batches = BucketingStream(
             batches, bucketing_split, length_fn, bucketing_batchify_fn)
-        batches = nlp.data.PrefetchingStream(batches, worker_type='process')
+        # batches = nlp.data.PrefetchingStream(batches, worker_type='process')
 
     num_update = 0
     for epoch in range(args.epochs):
@@ -517,14 +507,7 @@ def train(args):
                 trainer.set_learning_rate(
                     max(0.0001, args.lr * (1 - progress)))
 
-            if (args.optimizer_subwords.lower() != 'adagrad'
-                    and args.ngram_buckets):
-                trainer_subwords.set_learning_rate(
-                    max(0.0001, args.lr_subwords * (1 - progress)))
-
             trainer.step(batch_size=1)
-            if args.ngram_buckets:
-                trainer_subwords.step(batch_size=1)
 
             # Logging
             log_wc += loss.shape[0]
