@@ -373,7 +373,7 @@ class _LanguageModelBPTTStream(DataStream):
             return num_tokens
 
         # stream states
-        buffers = [None] * self._batch_size    
+        buffers = [None] * self._batch_size
         for i in range(self._batch_size):
             buffers[i] = []
         has_next = True
