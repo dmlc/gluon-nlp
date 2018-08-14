@@ -22,7 +22,7 @@
 corpora and dataset files. Files can be streamed into formats that are
 ready for training and evaluation."""
 __all__ = ['DataStream', 'CorpusStream', 'LanguageModelStream', 'SimpleDataStream',
-           'PrefetchingStream']
+           'PrefetchingStream', 'ContextStream']
 
 import glob
 import itertools
@@ -37,12 +37,14 @@ import mxnet as mx
 from mxnet.gluon.data import RandomSampler, SequentialSampler
 
 from .dataset import CorpusDataset
+from .sampler import ContextSampler
 from .utils import line_splitter, whitespace_splitter
 
 try:
     import Queue as queue
 except ImportError:
     import queue
+
 
 class DataStream(object):
     """Abstract Data Stream Interface.
@@ -314,6 +316,7 @@ class LanguageModelStream(CorpusStream):
             corpus, vocab, seq_len, batch_size, sampler=self._get_sampler(
                 self._sampler), last_batch=last_batch)
 
+
 class _LanguageModelBPTTStream(DataStream):
     """Streams a corpus and produces a language modeling data stream.
 
@@ -495,6 +498,7 @@ class PrefetchingStream(DataStream):
         Number of elements to prefetch from the stream. Must be greater 0.
     worker_type : 'thread' or 'process', default 'thread'
         Use a separate Python Thread or Process to prefetch.
+
     """
 
     def __init__(self, stream, num_prefetch=1, worker_type='thread'):
@@ -517,3 +521,57 @@ class PrefetchingStream(DataStream):
             return _ThreadPrefetcher(self._stream, self._num_prefetch,
                                      seed=seed, np_seed=np_seed,
                                      mx_seed=mx_seed)
+
+
+class ContextStream(DataStream):
+    """Transform a stream of coded sentences to centers and contexts.
+
+    ContextStream wraps a stream of datasets that are a valid input to
+    `gluonnlp.data.ContextSampler`. Each dataset (or shard) in the wrapped
+    stream is independently subsampled and passed to ContextSampler to obtain
+    batches of centers and contexts.
+
+    Parameters
+    ----------
+    stream : DatasetStream
+        Stream of Dataset or stream of list of list/tuple of integers (a stream
+        over shards of the dataset).
+    batch_size : int
+        Batch size passed to ContextSampler.
+    p_discard : list or tuple of int or None
+        Discard probabilities for each element in the lists / tuples of the
+        stream. If None, no elements are discarded.
+    window_size : int, default 5
+        Window size passed to ContextSampler.
+    reduce_window_size_randomly : bool, default True
+         reduce_window_size_randomly size passed to ContextSampler.
+    shuffle : bool, default True
+         shuffle size passed to ContextSampler.
+
+    """
+
+    def __init__(self, stream, batch_size, p_discard, window_size=5,
+                 reduce_window_size_randomly=True, shuffle=True):
+        self._stream = stream
+        self._batch_size = batch_size
+        assert isinstance(p_discard, (list, tuple)), \
+            'p_discard should be list or tuple.'
+        self.idx_to_pdiscard = p_discard
+        self._window_size = window_size
+        self._random_reduce = reduce_window_size_randomly
+        self._shuffle = shuffle
+
+    def __iter__(self):
+        """"""
+        for shard in self._stream:
+            shard = [[
+                t for t, r in zip(sentence, np.random.uniform(0, 1, size=len(sentence)))
+                if r > self.idx_to_pdiscard[t]
+            ] for sentence in shard]
+
+            context_sampler = ContextSampler(
+                shard, batch_size=self._batch_size, window=self._window_size,
+                reduce_window_size_randomly=self._random_reduce, shuffle=self._shuffle)
+
+            for batch in context_sampler:
+                yield batch

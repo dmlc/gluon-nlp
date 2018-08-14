@@ -23,48 +23,19 @@ __all__ = ['remove_accidental_hits']
 import mxnet as mx
 import numpy as np
 
-try:
-    from numba import njit
-    numba_njit = njit(nogil=True)
-except ImportError:
 
-    def numba_njit(func):
-        return func
-
-
-@numba_njit
-def _candidates_mask(negatives, true_samples, true_samples_mask):
-    assert len(negatives.shape) == 2
-    assert len(true_samples.shape) == 2
-    assert negatives.shape[0] == true_samples.shape[0]
-
-    negatives_mask = np.ones(negatives.shape)
-
-    for i in range(negatives.shape[0]):
-        for j in range(negatives.shape[1]):
-            for z in range(true_samples.shape[1]):
-                if (true_samples_mask[i, z]
-                        and negatives[i, j] == true_samples[i, z]):
-                    negatives_mask[i, j] = 0
-    return negatives_mask
-
-
-def remove_accidental_hits(candidates, true_samples, true_samples_mask=None):
+def remove_accidental_hits(candidates, true_samples):
     """Compute a candidates_mask surpressing accidental hits.
 
     Accidental hits are candidates that occur in the same batch dimension of
-    true_samples. If true_samples_mask is specified, the masked entries of
-    true_samples are ignored when computing the candidates mask.
+    true_samples.
 
     """
     candidates_np = candidates.asnumpy()
     true_samples_np = true_samples.asnumpy()
-    if true_samples_mask is not None:
-        true_samples_mask_np = true_samples_mask.asnumpy()
-    else:
-        true_samples_mask_np = np.ones_like(true_samples_np)
 
-    candidates_mask = mx.nd.array(
-        _candidates_mask(candidates_np, true_samples_np, true_samples_mask_np))
+    candidates_mask = np.ones(candidates.shape, dtype=np.bool_)
+    for j in range(true_samples.shape[1]):
+        candidates_mask &= ~(candidates_np == true_samples_np[:, j:j + 1])
 
-    return candidates, candidates_mask.as_in_context(candidates.context)
+    return candidates, mx.nd.array(candidates_mask, ctx=candidates.context)
