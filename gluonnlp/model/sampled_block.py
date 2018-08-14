@@ -157,7 +157,7 @@ class _SampledLogits(HybridBlock):
 
     def hybrid_forward(self, F, x, sampled_values, label, weight, bias):
         """Forward computation."""
-        sampled_candidates, expected_count_sampled, expected_count_true = sampled_values
+        sampled_candidates, _, _ = sampled_values
         # (batch_size,)
         label = F.reshape(label, shape=(-1,))
         # (num_sampled+batch_size,)
@@ -442,7 +442,7 @@ class _SparseSampledLogits(Block):
 
     def forward(self, x, sampled_values, label):
         """Forward computation."""
-        sampled_candidates, expected_count_sampled, expected_count_true = sampled_values
+        sampled_candidates, _, _ = sampled_values
         # (batch_size,)
         label = label.reshape(shape=(-1,))
         # (num_sampled+batch_size,)
