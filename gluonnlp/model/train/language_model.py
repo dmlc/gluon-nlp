@@ -421,7 +421,7 @@ class BigRNN(Block):
         batch_size = inputs.shape[1]
         encoded, out_states = self.encoder.unroll(length, encoded, begin_state,
                                                   layout='TNC', merge_outputs=True)
-        out, new_target = self.decoder(encoded, *sampled_values, label)
+        out, new_target = self.decoder(encoded, sampled_values, label)
         out = out.reshape((length, batch_size, -1))
         new_target = new_target.reshape((length, batch_size))
         return out, out_states, new_target
