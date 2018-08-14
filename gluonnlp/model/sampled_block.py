@@ -156,6 +156,7 @@ class _SampledLogits(HybridBlock):
         self._num_sampled = num_sampled
         self._in_unit = in_unit
         self._remove_accidental_hits = remove_accidental_hits
+        self._sparse_grad = sparse_grad
 
     def hybrid_forward(self, F, x, sampled_candidates, expected_count_sampled,
                        expected_count_true, label, weight, bias):
@@ -168,9 +169,9 @@ class _SampledLogits(HybridBlock):
         # (num_sampled+batch_size, dim)
         w_all = F.Embedding(data=ids, weight=weight,
                             input_dim=self._num_classes, output_dim=self._in_unit,
-                            sparse_grad=True)
+                            sparse_grad=self._sparse_grad)
         # (num_sampled+batch_size, 1)
-        b_all = nd.take(bias, indices=ids)
+        b_all = F.take(bias, indices=ids)
         return self._logits(x, sampled_candidates, expected_count_sampled,
                             expected_count_true, label, w_all, b_all)
 

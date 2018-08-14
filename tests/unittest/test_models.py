@@ -188,6 +188,8 @@ def test_big_rnn_model_share_params():
     model = nlp.model.language_model.train.BigRNN(vocab_size, 2, 3, 4, 5, num_sampled, 0.1,
                                                   prefix='bigrnn', sparse_weight=False,
                                                   sparse_grad=False)
+    loss = mx.gluon.loss.SoftmaxCrossEntropyLoss()
+    model.hybridize()
     model.initialize(mx.init.Xavier(), ctx=ctx)
     trainer = mx.gluon.Trainer(model.collect_params(), 'sgd')
     batch_size = 1
@@ -195,13 +197,19 @@ def test_big_rnn_model_share_params():
     y = mx.nd.ones(shape)
     samples = (mx.nd.ones((num_sampled,)), mx.nd.ones(shape), mx.nd.ones((num_sampled,)))
     hidden = model.begin_state(batch_size=batch_size, func=mx.nd.zeros, ctx=ctx)
-    logits, hidden, new_y = model(x, y, hidden, samples)
-    assert logits.shape == (seq_len, batch_size, 1+num_sampled)
-    assert new_y.shape == (seq_len, batch_size)
+    with mx.autograd.record():
+        logits, hidden, new_y = model(x, y, hidden, samples)
+        assert logits.shape == (seq_len, batch_size, 1+num_sampled)
+        assert new_y.shape == (seq_len, batch_size)
+        logits = logits.reshape((-3, -1))
+        new_y = new_y.reshape((-1,))
+        l = loss(logits, new_y)
+    l.backward()
     assert model.decoder.weight._grad_stype == 'default'
     mx.nd.waitall()
     eval_model = nlp.model.language_model.BigRNN(vocab_size, 2, 3, 4, 5, 0.1, prefix='bigrnn',
                                                  params=model.collect_params())
+    eval_model.hybridize()
     eval_model.initialize(mx.init.Xavier(), ctx=ctx)
     logits, hidden = eval_model(x, hidden)
     assert logits.shape == (seq_len, batch_size, vocab_size)

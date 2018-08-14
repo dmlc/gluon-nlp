@@ -464,7 +464,7 @@ class BigRNN(Block):
 
     def _get_embedding(self):
         prefix = 'embedding0_'
-        embedding = nn.Sequential()
+        embedding = nn.HybridSequential(prefix=prefix)
         with embedding.name_scope():
             embedding.add(nn.Embedding(self._vocab_size, self._embed_size, prefix=prefix))
             if self._embed_dropout:
