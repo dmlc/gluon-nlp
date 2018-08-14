@@ -344,8 +344,11 @@ class BigRNN(Block):
 
     def _get_embedding(self):
         prefix = 'embedding0_'
-        block = nn.Sequential() if self._sparse_weight else nn.HybridSequential()
-        with block.name_scope():
+        if self._sparse_weight:
+            embedding = nn.Sequential(prefix=prefix)
+        else:
+            embedding = nn.HybridSequential(prefix=prefix)
+        with embedding.name_scope():
             if self._sparse_weight:
                 # sparse embedding has both sparse weight and sparse grad
                 embed = contrib.nn.SparseEmbedding(self._vocab_size, self._embed_size,
@@ -353,10 +356,10 @@ class BigRNN(Block):
             else:
                 embed = nn.Embedding(self._vocab_size, self._embed_size, prefix=prefix,
                                      sparse_grad=self._sparse_grad)
-            block.add(embed)
+            embedding.add(embed)
             if self._embed_dropout:
-                block.add(nn.Dropout(self._embed_dropout))
-        return block
+                embedding.add(nn.Dropout(self._embed_dropout))
+        return embedding
 
     def _get_encoder(self):
         block = rnn.HybridSequentialRNNCell()
