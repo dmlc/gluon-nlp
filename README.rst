@@ -110,7 +110,7 @@ Build vocabulary based on the above dataset, for example:
 `Neural Models Building <http://gluon-nlp.mxnet.io/master/api/model.html>`__
 -----------------------------------------------------------------------------------
 
-From the models package, apply an Standard RNN langauge model to the
+From the models package, apply a Standard RNN language model to the
 above dataset:
 
 .. code:: python
