@@ -25,7 +25,7 @@ import multiprocessing.queues
 import threading
 from mxnet import context
 from mxnet.gluon.data.dataloader import Queue, SimpleQueue, DataLoader, \
-    fetcher_loop, _as_in_context, _MultiWorkerIter
+    fetcher_loop, _as_in_context
 
 
 def worker_loop(dataset, key_queue, data_queue, batchify_fn):
@@ -92,9 +92,9 @@ class _ShardedMultiWorkerIter(object):
         self._sent_idx += 1
 
     def __next__(self):
-        assert not self._shutdown, "call __next__ after shutdown is forbidden"
+        assert not self._shutdown, 'call __next__ after shutdown is forbidden'
         if self._rcvd_idx == self._sent_idx:
-            assert not self._data_buffer, "Data buffer should be empty at this moment"
+            assert not self._data_buffer, 'Data buffer should be empty at this moment'
             self.shutdown()
             raise StopIteration
 
@@ -180,19 +180,20 @@ class ShardedDataLoader(DataLoader):
 
     def __iter__(self):
         if self._num_workers == 0:
-            def same_process_iter():
+            def _same_process_iter():
                 for batch in self._batch_sampler:
                     if isinstance(batch[0], (list, tuple)):
-                        rets = [self._batchify_fn([self._dataset[idx] for idx in shard]) for shard in batch]
+                        rets = [self._batchify_fn([self._dataset[idx] for idx in shard])
+                                for shard in batch]
                         if self._pin_memory:
                             rets = [_as_in_context(ret, context.cpu_pinned()) for ret in rets]
                         yield rets
-                    else: 
+                    else:
                         ret = self._batchify_fn([self._dataset[idx] for idx in batch])
                         if self._pin_memory:
                             ret = _as_in_context(ret, context.cpu_pinned())
                         yield ret
-            return same_process_iter()
+            return _same_process_iter()
 
         # multi-worker
         return _ShardedMultiWorkerIter(self._num_workers, self._dataset,
