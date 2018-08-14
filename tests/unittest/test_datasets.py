@@ -599,8 +599,9 @@ def test_lm_stream():
     total_num_tokens = sum(counter.values())
     num_tokens_per_batch = seq_len * batch_size
     num_tokens = 0
-    for i, (data, target, mask) in enumerate(bptt_stream):
+    for i, (data, target) in enumerate(bptt_stream):
         # count the valid tokens in the batch
+        mask = data == padding_idx
         num_valid_tokens = mask.sum().asscalar()
         if num_valid_tokens == num_tokens_per_batch:
             mx.test_utils.assert_almost_equal(data[1:].asnumpy(), target[:-1].asnumpy())

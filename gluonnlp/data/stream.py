@@ -281,11 +281,6 @@ class LanguageModelStream(CorpusStream):
             a b c d <eos>
             e f g h i
 
-        batch_0.mask.T::
-
-            1 1 1 1 1
-            1 1 1 1 1
-
         batch_1.data.T::
 
             <bos> k l m n
@@ -295,11 +290,6 @@ class LanguageModelStream(CorpusStream):
 
             k l m n <eos>
             j <bos> o <eos> <padding>
-
-        batch_1.mask.T::
-
-            1 1 1 1 1
-            1 1 1 1 0
 
         Parameters
         ----------
@@ -361,16 +351,15 @@ class _LanguageModelBPTTStream(DataStream):
             self._padding_idx = vocab[vocab.padding_token]
 
     def __iter__(self):
-        def _init(data, target, mask, value):
+        def _init(data, target, value):
             """Init the data and target with values."""
             data[:] = value
             target[:] = value
-            mask[:] = 0
 
         def _read(buffers, i, vocab, corpus):
             """Read a sentence from the corpus into i-th buffer."""
-            if buffers[i] is None or len(buffers[i]) <= 1:
-                buffers[i] = vocab[next(corpus)]
+            if len(buffers[i]) <= 1:
+                buffers[i].extend(vocab[next(corpus)])
 
         def _write(data, target, buffers, seq_len, i, length):
             """Write a sentence from i-th buffer to data and target."""
@@ -379,24 +368,24 @@ class _LanguageModelBPTTStream(DataStream):
             # fill in data and target
             data[i, length:length+num_tokens] = buffers[i][:num_tokens]
             target[i, length:length+num_tokens] = buffers[i][1:num_tokens+1]
-            mask[i, length:length+num_tokens] = 1
             # trim sentence in the buffer if too long. Used for the next batch
             buffers[i] = buffers[i][num_tokens:]
             return num_tokens
 
         # stream states
         buffers = [None] * self._batch_size
+        for i in range(self._batch_size):
+            buffers[i] = []
         has_next = True
         has_token_buffered = False
         data = np.empty([self._batch_size, self._seq_len], dtype=np.float32)
         target = np.empty([self._batch_size, self._seq_len], dtype=np.float32)
-        mask = np.empty([self._batch_size, self._seq_len], dtype=np.float32)
         corpus = itertools.chain.from_iterable(
             (corpus_dataset[idx] for idx in self._sampler(len(corpus_dataset)))
             for corpus_dataset in self._corpus)
 
         while has_next or has_token_buffered:
-            _init(data, target, mask, self._padding_idx)
+            _init(data, target, self._padding_idx)
             has_token_buffered = False
             for i in range(self._batch_size):
                 length = 0
@@ -410,7 +399,7 @@ class _LanguageModelBPTTStream(DataStream):
                 except StopIteration:
                     has_next = False
             if has_token_buffered or self._last_batch == 'keep':
-                yield mx.nd.array(data).T, mx.nd.array(target).T, mx.nd.array(mask).T
+                yield mx.nd.array(data).T, mx.nd.array(target).T
         return
 
 
