@@ -23,23 +23,18 @@
 __all__ = ['WikiText2', 'WikiText103', 'WikiText2Raw', 'WikiText103Raw']
 
 import os
-import io
-import zipfile
-import tarfile
-import hashlib
-import glob
 import shutil
+import zipfile
 
-from mxnet.gluon.utils import download, check_sha1, _get_repo_file_url
+from mxnet.gluon.utils import _get_repo_file_url, check_sha1, download
+
 from ... import _constants as C
-from ...vocab import Vocab
-from ..dataset import LanguageModelDataset
-from ..stream import LanguageModelStream
+from ..dataset import CorpusDataset
 from ..registry import register
 from ..utils import _get_home_dir
 
 
-class _WikiText(LanguageModelDataset):
+class _WikiText(CorpusDataset):
     def __init__(self, namespace, segment, bos, eos, skip_empty, root,
                  **kwargs):
         root = os.path.expanduser(root)
@@ -256,4 +251,3 @@ class WikiText103Raw(_WikiText):
         super(WikiText103Raw,
               self).__init__('wikitext-103', segment, bos, eos, skip_empty,
                              root, tokenizer=tokenizer, **kwargs)
-

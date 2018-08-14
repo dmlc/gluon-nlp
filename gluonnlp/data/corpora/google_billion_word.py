@@ -22,24 +22,22 @@
 
 __all__ = ['GBWStream']
 
-import os
-import io
-import zipfile
-import tarfile
-import hashlib
 import glob
-import shutil
+import hashlib
+import io
+import os
+import tarfile
+import zipfile
 
-from mxnet.gluon.utils import download, check_sha1, _get_repo_file_url
+from mxnet.gluon.utils import _get_repo_file_url, check_sha1, download
+
 from ... import _constants as C
 from ...vocab import Vocab
-from ..dataset import LanguageModelDataset
-from ..stream import LanguageModelStream
-from ..registry import register
+from ..stream import SimpleDatasetStream
 from ..utils import _get_home_dir
 
 
-class _GBWStream(LanguageModelStream):
+class _GBWStream(SimpleDatasetStream):
     def __init__(self, namespace, segment, bos, eos, skip_empty, root):
         """Directory layout:
            - root ($MXNET_HOME/datasets/gbw)

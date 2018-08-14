@@ -16,6 +16,18 @@ Batch Loaders
     Pad
     Tuple
 
+
+Language Modeling
+-----------------
+
+.. autosummary::
+    :nosignatures:
+
+    CorpusBatchify
+    CorpusBPTTBatchify
+    StreamBPTTBatchify
+
+
 API Reference
 -------------
 
