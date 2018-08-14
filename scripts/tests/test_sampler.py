@@ -31,7 +31,7 @@ def test_log_uniform_sampler():
     num_sampled = 8192
     sampler = LogUniformSampler(ntokens, num_sampled)
     true_cls = mx.nd.array([5, 10, 20])
-    sample, cnt_true, cnt_sample = sampler(true_cls)
+    sample, cnt_sample, cnt_true = sampler(true_cls)
     assert np.unique(sample.asnumpy()).size == num_sampled
     assert cnt_true.size == true_cls.size
     assert cnt_sample.size == cnt_sample.size
