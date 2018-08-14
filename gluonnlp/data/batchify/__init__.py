@@ -22,6 +22,7 @@
 
 from . import batchify, language_model
 from .batchify import *
+from .embedding import *
 from .language_model import *
 
-__all__ = batchify.__all__ + language_model.__all__
+__all__ = batchify.__all__ + language_model.__all__ + embedding.__all__
