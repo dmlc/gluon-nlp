@@ -22,24 +22,23 @@
 
 __all__ = ['GBWStream']
 
-import os
-import io
-import zipfile
-import tarfile
-import hashlib
 import glob
-import shutil
+import hashlib
+import io
+import os
+import tarfile
+import zipfile
 
-from mxnet.gluon.utils import download, check_sha1, _get_repo_file_url
+from mxnet.gluon.utils import _get_repo_file_url, check_sha1, download
+
 from ... import _constants as C
 from ...vocab import Vocab
-from ..dataset import LanguageModelDataset
-from ..stream import LanguageModelStream
-from ..registry import register
+from ..stream import SimpleDatasetStream
+from ..dataset import CorpusDataset
 from ..utils import _get_home_dir
 
 
-class _GBWStream(LanguageModelStream):
+class _GBWStream(SimpleDatasetStream):
     def __init__(self, namespace, segment, bos, eos, skip_empty, root):
         """Directory layout:
            - root ($MXNET_HOME/datasets/gbw)
@@ -60,8 +59,13 @@ class _GBWStream(LanguageModelStream):
         self._data_hash = data_hash
         self._get_data()
         sampler = 'sequential' if segment != 'train' else 'random'
-        super(_GBWStream, self).__init__(self._file_pattern, skip_empty=skip_empty, bos=bos,
-                                         eos=eos, sampler=sampler, file_sampler=sampler)
+        super(_GBWStream, self).__init__(
+            dataset=CorpusDataset,
+            file_pattern=self._file_pattern,
+            skip_empty=skip_empty,
+            bos=bos,
+            eos=eos,
+            file_sampler=sampler)
 
     def _get_data(self):
         archive_file_name, archive_hash = self._archive_data
@@ -107,8 +111,9 @@ class _GBWStream(LanguageModelStream):
 class GBWStream(_GBWStream):
     """1-Billion-Word word-level dataset for language modeling, from Google.
 
-    From
-    http://www.statmt.org/lm-benchmark
+    The GBWSream iterates over CorpusDatasets(flatten=False).
+
+    Source http://www.statmt.org/lm-benchmark
 
     License: Apache
 

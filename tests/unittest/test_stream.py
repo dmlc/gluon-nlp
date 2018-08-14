@@ -38,11 +38,18 @@ def test_corpus_stream():
     EOS = nlp._constants.EOS_TOKEN
     path = os.path.join('tests', 'data', 'wikitext-2')
     token_path = os.path.join('tests', 'data', 'wikitext-2/*.tokens')
+
+    # Make sure train, val and test files exist at given path
     train = nlp.data.WikiText2(segment='train', root=path)
     val = nlp.data.WikiText2(segment='val', root=path)
     test = nlp.data.WikiText2(segment='test', root=path)
-    corpus = nlp.data.CorpusStream(token_path, flatten=True,
-                                   skip_empty=True, eos=EOS)
+
+    corpus = nlp.data.SimpleDatasetStream(
+        nlp.data.CorpusDataset,
+        token_path,
+        flatten=True,
+        skip_empty=True,
+        eos=EOS)
     counter = nlp.data.Counter(itertools.chain.from_iterable(corpus))
     assert len(counter) == 33278, len(counter)
     # examine aggregated vocab
@@ -60,7 +67,12 @@ def test_lazy_stream(prefetch):
     path = os.path.join('tests', 'data', 'wikitext-2')
     token_path = os.path.join('tests', 'data', 'wikitext-2/*test*.tokens')
     test = nlp.data.WikiText2(segment='test', root=path)
-    corpus = nlp.data.CorpusStream(token_path, flatten=True, skip_empty=True, eos=EOS)
+    corpus = nlp.data.SimpleDatasetStream(
+        nlp.data.CorpusDataset,
+        token_path,
+        flatten=True,
+        skip_empty=True,
+        eos=EOS)
     if prefetch:
         prefetch_corpus = nlp.data.PrefetchingStream(corpus, worker_type=prefetch)
     else:
@@ -81,7 +93,7 @@ def test_prefetch_stream(num_prefetch, worker_type):
     path = os.path.join('tests', 'data', 'wikitext-2')
     token_path = os.path.join('tests', 'data', 'wikitext-2/*test*.tokens')
     test = nlp.data.WikiText2(segment='test', root=path)
-    corpus = nlp.data.CorpusStream(token_path, flatten=True, skip_empty=True, eos=EOS)
+    corpus = nlp.data.SimpleDatasetStream(nlp.data.CorpusDataset, token_path)
     if num_prefetch < 1:
         with pytest.raises(ValueError):
             prefetch_corpus = nlp.data.PrefetchingStream(
@@ -93,39 +105,6 @@ def test_prefetch_stream(num_prefetch, worker_type):
         for x in corpus:
             y = next(prefetch_corpus_iter)
             assert all([sx == sy for sx, sy in zip(x, y)])
-
-
-###############################################################################
-# Language model
-###############################################################################
-def test_lm_stream():
-    EOS = nlp._constants.EOS_TOKEN
-    path = os.path.join('tests', 'data', 'wikitext-2')
-    token_path = os.path.join('tests', 'data', 'wikitext-2/*.tokens')
-    train = nlp.data.WikiText2(segment='train', root=path)
-    val = nlp.data.WikiText2(segment='val', root=path)
-    test = nlp.data.WikiText2(segment='test', root=path)
-    lm_stream = nlp.data.LanguageModelStream(token_path, skip_empty=True, eos=EOS, bos=EOS)
-    counter = nlp.data.Counter(itertools.chain.from_iterable(lm_stream))
-    vocab = nlp.vocab.Vocab(counter, bos_token=None)
-    seq_len = 35
-    batch_size = 80
-    bptt_stream = lm_stream.bptt_batchify(vocab, seq_len, batch_size, last_batch='keep')
-    padding_idx = vocab[vocab.padding_token]
-    total_num_tokens = sum(counter.values())
-    num_tokens_per_batch = seq_len * batch_size
-    num_tokens = 0
-    for i, (data, target) in enumerate(bptt_stream):
-        # count the valid tokens in the batch
-        mask = data == padding_idx
-        num_valid_tokens = mask.sum().asscalar()
-        if num_valid_tokens == num_tokens_per_batch:
-            mx.test_utils.assert_almost_equal(data[1:].asnumpy(), target[:-1].asnumpy())
-            assert data.shape == target.shape == (seq_len, batch_size)
-        num_tokens += num_valid_tokens
-    num_batches = sum(1 for _ in bptt_stream)
-    # the last token doesn't appear in data
-    assert num_tokens < total_num_tokens
 
 
 ###############################################################################
