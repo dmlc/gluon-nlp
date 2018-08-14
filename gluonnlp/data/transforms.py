@@ -668,3 +668,36 @@ class NLTKStanfordSegmenter(object):
             List of tokens
         """
         return [tok for tok in self._tokenizer.segment(sample).strip().split()]
+
+
+class SubsampleCorpus(object):
+    """Remove words in a corpus independently according to given probability.
+
+    Parameters
+    ----------
+    idx_to_pdiscard : list of float
+        Discard probabilities for every index in the corpus.
+
+    Examples
+    --------
+    >>> from mxnet.gluon.data import SimpleDataset
+    >>> datasets = SimpleDataset([[1, 2, 3], [3, 2, 1]])
+    >>> list(datasets.transform(SubsampleCorpus([0.1, 0.5, 0.8])))
+    [[1, 2], [2]]
+
+    >>> from mxnet.gluon.data import SimpleDataset
+    >>> datasets = SimpleDataset([[1, 2, 3], [3, 2, 1]])
+    >>> list(datasets.transform(SubsampleCorpus([0.1, 0.5, 0.8])))
+    [[1, 2], [2]]
+    """
+    def __init__(self, idx_to_pdiscard):
+        self._pdiscard = idx_to_pdiscard
+
+    # TODO(leezu) extend to work with different nesting levels
+    def __call__(self, sample):
+        return [[
+            t for t, r in zip(sentence, np.random.uniform(0, 1, size=len(sentence)))
+            if r > self._pdiscard[t]
+        ] for sentence in sample]
+
+

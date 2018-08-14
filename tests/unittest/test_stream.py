@@ -19,19 +19,12 @@
 
 from __future__ import print_function
 
-import datetime
 import itertools
-import json
 import os
-import random
 
-import numpy as np
 import pytest
-from flaky import flaky
 
 import gluonnlp as nlp
-import mxnet as mx
-from gluonnlp.base import _str_types
 
 
 def test_corpus_stream():
@@ -105,24 +98,3 @@ def test_prefetch_stream(num_prefetch, worker_type):
         for x in corpus:
             y = next(prefetch_corpus_iter)
             assert all([sx == sy for sx, sy in zip(x, y)])
-
-
-###############################################################################
-# Embedding training
-###############################################################################
-@pytest.mark.parametrize('reduce_window_size_randomly', [True, False])
-@pytest.mark.parametrize('shuffle', [True, False])
-def test_context_stream(reduce_window_size_randomly, shuffle):
-    data = nlp.data.Text8(segment='train')[:3]
-    counter = nlp.data.count_tokens(itertools.chain.from_iterable(data))
-    vocab = nlp.Vocab(counter)
-    data = [vocab[sentence] for sentence in data]
-    data = nlp.data.SimpleDataStream([data, data])
-    idx_to_pdiscard = [0] * len(vocab)
-
-    context_stream = nlp.data.ContextStream(
-        stream=data, batch_size=8, p_discard=idx_to_pdiscard, window_size=5,
-        reduce_window_size_randomly=reduce_window_size_randomly,
-        shuffle=shuffle)
-
-    assert len(list(context_stream)) == 7500

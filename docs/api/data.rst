@@ -153,6 +153,7 @@ with `Dataset.transform` method.
     SpacyTokenizer
     SacreMosesDetokenizer
     NLTKMosesDetokenizer
+    SubsampleCorpus
 
 Samplers
 --------
