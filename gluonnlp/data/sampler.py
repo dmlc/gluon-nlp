@@ -532,12 +532,11 @@ class ContextSampler(Sampler):
     """Sample batches of contexts (and their masks) from a corpus.
 
     The context size is choosen uniformly at random for every sample from [1,
-    `window`]. The mask is used to mask entries that lie outside of the
-    randomly chosen context size. Contexts do not cross sentence boundaries.
+    `window`] if reduce_window_size_randomly is True. The mask is used to mask
+    entries that lie outside of the randomly chosen context size. Contexts do
+    not cross sentence boundaries.
 
-    Batches are created lazily, to avoid generating all batches for shuffling
-    before training, simply shuffle the dataset before passing it to the
-    ContextSampler.
+    Batches are created lazily on a optionally shuffled version of the Dataset.
 
     Parameters
     ----------
@@ -545,10 +544,18 @@ class ContextSampler(Sampler):
         List of coded sentences. A coded sentence itself is a list of token
         indices. Context samples do not cross sentence boundaries.
     batch_size : int
-        Maximum size of batches. Actual batch returned can be smaller when
-        running out of samples.
+        Maximum size of batches returned. Actual batch returned can be smaller
+        when running out of samples.
     window : int, default 5
-        The maximum context size.
+        The maximum number of context elements to consider left and right of
+        each center element. Less elements may be considered if there are not
+        sufficient elements left / right of the center element or if a reduced
+        window size was drawn.
+    reduce_window_size_randomly : bool, default True
+       If True, randomly draw a reduced window size for every center element
+       uniformly from [1, window].
+    shuffle : bool, default True
+       If True, shuffle the sentences before lazily generating batches.
 
     Attributes
     ----------
@@ -558,13 +565,14 @@ class ContextSampler(Sampler):
 
     """
 
-    def __init__(self, coded, batch_size, window=5):
+    def __init__(self, coded, batch_size, window=5,
+                 reduce_window_size_randomly=True, shuffle=True):
         self.batch_size = batch_size
         self.window = window
-        coded = [c for c in coded if len(c) > 1]
-        self._sentence_boundaries = np.cumsum([len(s) for s in coded])
-        self.num_samples = self._sentence_boundaries[-1]
-        self._coded = np.concatenate(coded)
+        self.reduce_window_size_randomly = reduce_window_size_randomly
+        self._shuffle = shuffle
+        self._coded = [c for c in coded if len(c) > 1]
+        self.num_samples = sum(len(c) for c in self._coded)
 
     def __len__(self):
         return math.ceil(self.num_samples / float(self.batch_size))
@@ -576,9 +584,16 @@ class ContextSampler(Sampler):
                 'with numba, but numba is not installed. '
                 'Consider "pip install numba" for significant speed-ups.')
 
+        if self._shuffle:
+            random.shuffle(self._coded)
+
+        sentence_boundaries = np.cumsum([len(c) for c in self._coded])
+        coded = np.concatenate(self._coded)  # numpy array for numba
+
         for center, context, mask in _context_generator(
-                self._coded, self._sentence_boundaries, self.window,
-                self.batch_size):
+                coded, sentence_boundaries, self.window, self.batch_size,
+                random_window_size=self.reduce_window_size_randomly,
+                seed=random.getrandbits(32)):
             yield nd.array(center), nd.array(context), nd.array(mask)
 
 
@@ -593,22 +608,24 @@ def _get_sentence_start_end(sentence_boundaries, sentence_pointer):
 
 
 @numba_njit
-def _context_generator(coded_sentences, sentence_boundaries, window,
-                       batch_size):
+def _context_generator(sentences, sentence_boundaries, window, batch_size,
+                       random_window_size, seed):
     word_pointer = 0
+    max_length = 2 * window
     while True:
-        batch_size = min(batch_size, len(coded_sentences) - word_pointer)
+        batch_size = min(batch_size, len(sentences) - word_pointer)
         center = np.expand_dims(
-            coded_sentences[word_pointer:word_pointer + batch_size],
+            sentences[word_pointer:word_pointer + batch_size],
             -1).astype(np.float32)
-        context = np.zeros((batch_size, window * 2), dtype=np.float32)
-        mask = np.zeros((batch_size, window * 2), dtype=np.float32)
+        context = np.zeros((batch_size, max_length), dtype=np.int_)
+        mask = np.zeros((batch_size, max_length), dtype=np.int_)
 
         for i in prange(batch_size):
-            context_, mask_ = _get_context(word_pointer + i, coded_sentences,
-                                           sentence_boundaries, window)
-            context[i] = context_
-            mask[i] = mask_
+            context_ = _get_context(word_pointer + i, sentences,
+                                    sentence_boundaries, window,
+                                    random_window_size, seed)
+            context[i, :len(context_)] = context_
+            mask[i, :len(context_)] = 1
 
         word_pointer += batch_size
 
@@ -619,34 +636,32 @@ def _context_generator(coded_sentences, sentence_boundaries, window,
 
 
 @numba_njit
-def _get_context(word_pointer, coded_sentences, sentence_boundaries, window):
-    sentence_pointer = np.searchsorted(sentence_boundaries, word_pointer)
+def _get_context(center_index, sentences, sentence_boundaries, window_size,
+                 random_window_size, seed):
+    """Compute the context with respect to a center word in a sentence.
+
+    Takes an numpy array of flattened sentences and their boundaries.
+
+    """
+    random.seed(seed + center_index)
+
+    sentence_index = np.searchsorted(sentence_boundaries, center_index)
     sentence_start, sentence_end = _get_sentence_start_end(
-        sentence_boundaries, sentence_pointer)
+        sentence_boundaries, sentence_index)
 
-    random_window_size = random.randint(1, window)
+    if random_window_size:
+        window_size = random.randint(1, window_size)
+    start_idx = max(sentence_start, center_index - window_size)
+    end_idx = min(sentence_end, center_index + window_size + 1)
 
-    start_idx = max(sentence_start, word_pointer - random_window_size)
-    # First index outside of the window
-    end_idx = min(sentence_end, word_pointer + random_window_size + 1)
+    if start_idx != center_index and center_index + 1 != end_idx:
+        context = np.concatenate((sentences[start_idx:center_index],
+                                  sentences[center_index + 1:end_idx]))
+    elif start_idx != center_index:
+        context = sentences[start_idx:center_index]
+    elif center_index + 1 != end_idx:
+        context = sentences[center_index + 1:end_idx]
+    else:
+        raise RuntimeError('Too short sentence passed to _one_center_context')
 
-    # A random reduced window size is drawn. The mask masks entries
-    # that fall inside the window, but outside random the reduced
-    # window size.
-    mask = np.ones(window * 2, dtype=np.float32)
-    mask[end_idx - start_idx:] = 0
-    context = np.zeros(window * 2, dtype=np.float32)
-
-    # Get contexts
-    next_context_idx = 0
-    context[:word_pointer - start_idx] = \
-        coded_sentences[start_idx:word_pointer]
-    next_context_idx += word_pointer - start_idx
-    context[next_context_idx:next_context_idx + end_idx -
-            (word_pointer + 1)] = coded_sentences[word_pointer + 1:end_idx]
-    next_context_idx += end_idx - (word_pointer + 1)
-
-    # Set mask
-    mask[next_context_idx:] = 0
-
-    return context, mask
+    return context

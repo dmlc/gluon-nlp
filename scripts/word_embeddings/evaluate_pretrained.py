@@ -138,6 +138,9 @@ def load_embedding_from_path(args):
             filter(lambda x: x in model,
                    evaluation.get_tokens_in_evaluation_datasets(args)))
 
+        if args.analogy_datasets:
+            token_set.update(model.token_to_idx.keys())
+
         # OOV words will be imputed and added to the
         # token_embedding.idx_to_token etc.
         with utils.print_time('compute vectors from subwords '
