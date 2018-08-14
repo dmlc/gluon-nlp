@@ -35,7 +35,6 @@ def test_gnmt():
                                      '--num_hidden', '64', '--num_layers', '2'])
 
 
-@pytest.mark.skip(reason="causes deadlocks on CI. Tracked in issue #274")
 def test_transformer():
     process = subprocess.check_call(['python', './scripts/nmt/train_transformer.py',
                                      '--dataset', 'TOY', '--src_lang', 'en', '--tgt_lang', 'de',
