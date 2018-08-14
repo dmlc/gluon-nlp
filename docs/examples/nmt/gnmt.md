@@ -74,7 +74,7 @@ logging_config(save_dir)
 The following shows how to process the dataset and cache the processed dataset
 for the future use. The processing steps include: 1) clip the source and target
 sequences and 2) split the string input to a list of tokens and 3) map the
-string token into its index in the vocabulary and 4) append EOS token to source
+string token into its index in the vocabulary and 4) append end-of-sentence (EOS) token to source
 sentence and add BOS and EOS tokens to target sentence.
 
 ```python
@@ -145,7 +145,7 @@ def process_dataset(dataset, src_vocab, tgt_vocab, src_max_len=-1, tgt_max_len=-
                                                                 src_max_len,
                                                                 tgt_max_len), lazy=False)
     end = time.time()
-    print('Processing Time spent: {}'.format(end - start))
+    print('Processing time spent: {}'.format(end - start))
     return dataset_processed
 
 
@@ -286,6 +286,7 @@ static_alloc = True
 model.hybridize(static_alloc=static_alloc)
 logging.info(model)
 
+# Due to the paddings, we need to mask out the losses corresponding to padding tokens.
 loss_function = SoftmaxCEMaskedLoss()
 loss_function.hybridize(static_alloc=static_alloc)
 ```
@@ -370,7 +371,7 @@ We can then write the training iteration. During the training, we perform the
 one evaluation on validation and testing dataset every epoch, and record the
 parameters that give the hightest BLEU score on validation dataset. Before
 performing forward and backward, we first use `as_in_context` function to copy
-the mini-batch to GPU. The statement `with mx.autograd.record()` tell Gluon
+the mini-batch to GPU. The statement `with mx.autograd.record()` tells Gluon
 backend to compute the gradients for the part inside the block.
 
 ```python
@@ -436,3 +437,8 @@ for epoch_id in range(epochs):
         logging.info('Learning rate change to {}'.format(new_lr))
         trainer.set_learning_rate(new_lr)
 ```
+
+## Summary
+In this notebook, we have shown how to train a GNMT model on IWSLT 2015 English-Vietnamese using Gluon NLP toolkit. 
+The complete training script can be found here https://github.com/dmlc/gluon-nlp/blob/master/scripts/nmt/train_gnmt.py. 
+The command to reproduce the result can be seen in https://github.com/dmlc/gluon-nlp/blob/master/scripts/nmt/machine_translation.rst.
