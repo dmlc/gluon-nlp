@@ -76,47 +76,47 @@ class _ShardedMultiWorkerIter(object):
         for _ in range(2 * self._num_workers):
             self._push_next()
 
-   def __len__(self):
+    def __len__(self):
         return len(self._batch_sampler)
 
-   def __del__(self):
-       self.shutdown()
+    def __del__(self):
+        self.shutdown()
 
-   def _push_next(self):
-       """Assign next batch workload to workers."""
-       r = next(self._iter, None)
-       if r is None:
-           return
-       self._key_queue.put((self._sent_idx, r))
-       self._sent_idx += 1
+    def _push_next(self):
+        """Assign next batch workload to workers."""
+        r = next(self._iter, None)
+        if r is None:
+            return
+        self._key_queue.put((self._sent_idx, r))
+        self._sent_idx += 1
 
-   def __next__(self):
-       assert not self._shutdown, "call __next__ after shutdown is forbidden"
-       if self._rcvd_idx == self._sent_idx:
-           assert not self._data_buffer, "Data buffer should be empty at this moment"
-           self.shutdown()
-           raise StopIteration
+    def __next__(self):
+        assert not self._shutdown, "call __next__ after shutdown is forbidden"
+        if self._rcvd_idx == self._sent_idx:
+            assert not self._data_buffer, "Data buffer should be empty at this moment"
+            self.shutdown()
+            raise StopIteration
 
-       while True:
-           if self._rcvd_idx in self._data_buffer:
-               batch = self._data_buffer.pop(self._rcvd_idx)
-               self._rcvd_idx += 1
-               self._push_next()
-               return batch
+        while True:
+            if self._rcvd_idx in self._data_buffer:
+                batch = self._data_buffer.pop(self._rcvd_idx)
+                self._rcvd_idx += 1
+                self._push_next()
+                return batch
 
-   def next(self):
-       return self.__next__()
+    def next(self):
+        return self.__next__()
 
-   def __iter__(self):
-       return self
+    def __iter__(self):
+        return self
 
-   def shutdown(self):
-       """Shutdown internal workers by pushing terminate signals."""
-       if not self._shutdown:
-           for _ in range(self._num_workers):
-               self._key_queue.put((None, None))
-           self._data_queue.put((None, None))
-           self._shutdown = True
+    def shutdown(self):
+        """Shutdown internal workers by pushing terminate signals."""
+        if not self._shutdown:
+            for _ in range(self._num_workers):
+                self._key_queue.put((None, None))
+            self._data_queue.put((None, None))
+            self._shutdown = True
 
 
 class ShardedDataLoader(DataLoader):
