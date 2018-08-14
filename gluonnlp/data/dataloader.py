@@ -23,8 +23,9 @@ import sys
 import multiprocessing
 import multiprocessing.queues
 import threading
+from mxnet import context
 from mxnet.gluon.data.dataloader import Queue, SimpleQueue, DataLoader, \
-    ifetcher_loop, _as_in_context, _MultiWorkerIter
+    fetcher_loop, _as_in_context, _MultiWorkerIter
 
 
 def worker_loop(dataset, key_queue, data_queue, batchify_fn):
