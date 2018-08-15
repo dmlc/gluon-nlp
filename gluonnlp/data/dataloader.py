@@ -19,12 +19,8 @@
 """DataLoader. An extension of Gluon data loader that allows multi-shard sampling."""
 __all__ = ['ShardedDataLoader']
 
-import sys
-import multiprocessing
-import multiprocessing.queues
-import threading
 from mxnet import context
-from mxnet.gluon.data.dataloader import DataLoader, _MultiWorkerIter,  _as_in_context
+from mxnet.gluon.data.dataloader import DataLoader, _MultiWorkerIter, _as_in_context
 
 
 def worker_loop(dataset, key_queue, data_queue, batchify_fn):
