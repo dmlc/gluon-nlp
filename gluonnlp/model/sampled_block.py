@@ -265,7 +265,6 @@ class NCELogits(_SampledLogits):
         which may perform differently from standard updates.
         For more details, please check the Optimization API at:
         https://mxnet.incubator.apache.org/api/python/optimization/optimization.html
-
     """
     def __init__(self, num_classes, num_sampled, in_unit, remove_accidental_hits=False,
                  dtype='float32', weight_initializer=None, bias_initializer='zeros',
