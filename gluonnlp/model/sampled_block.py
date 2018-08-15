@@ -186,6 +186,16 @@ class NCELogits(_SampledLogits):
     Please use `loss.SigmoidBinaryCrossEntropyLoss` for noise contrastive estimation loss
     during training.
 
+    .. note::
+
+        If `sparse_grad` is set to True, the gradient w.r.t input and output
+        embeddings will be sparse. Only a subset of optimizers support
+        sparse gradients, including SGD, AdaGrad and Adam.
+        By default `lazy_update` is turned on for these optimizers,
+        which may perform differently from standard updates.
+        For more details, please check the Optimization API at:
+        https://mxnet.incubator.apache.org/api/python/optimization/optimization.html
+
     Example::
 
         # network with sampling for training
@@ -248,13 +258,13 @@ class NCELogits(_SampledLogits):
 
     .. note::
 
-             If `sparse_grad` is set to True, the gradient w.r.t input and output
-             embeddings will be sparse. Only a subset of optimizers support
-             sparse gradients, including SGD, AdaGrad and Adam.
-             By default `lazy_update` is turned on for these optimizers,
-             which may perform differently from standard updates.
-             For more details, please check the Optimization API at:
-             https://mxnet.incubator.apache.org/api/python/optimization/optimization.html
+        If `sparse_grad` is set to True, the gradient w.r.t input and output
+        embeddings will be sparse. Only a subset of optimizers support
+        sparse gradients, including SGD, AdaGrad and Adam.
+        By default `lazy_update` is turned on for these optimizers,
+        which may perform differently from standard updates.
+        For more details, please check the Optimization API at:
+        https://mxnet.incubator.apache.org/api/python/optimization/optimization.html
 
     """
     def __init__(self, num_classes, num_sampled, in_unit, remove_accidental_hits=False,
@@ -270,6 +280,16 @@ class ISLogits(_SampledLogits):
     importance sampled softmax loss.
 
     Please use `loss.SoftmaxCrossEntropyLoss` for sampled softmax loss.
+
+    .. note::
+
+        If `sparse_grad` is set to True, the gradient w.r.t input and output
+        embeddings will be sparse. Only a subset of optimizers support
+        sparse gradients, including SGD, AdaGrad and Adam.
+        By default `lazy_update` is turned on for these optimizers,
+        which may perform differently from standard updates.
+        For more details, please check the Optimization API at:
+        https://mxnet.incubator.apache.org/api/python/optimization/optimization.html
 
     Example::
 
@@ -329,17 +349,6 @@ class ISLogits(_SampledLogits):
           The output probability for the true class and sampled classes
         - **new_targets**: A tensor of shape `(batch_size,)`.
           The new target classes.
-
-    .. note::
-
-             If `sparse_grad` is set to True, the gradient w.r.t input and output
-             embeddings will be sparse. Only a subset of optimizers support
-             sparse gradients, including SGD, AdaGrad and Adam.
-             By default `lazy_update` is turned on for these optimizers,
-             which may perform differently from standard updates.
-             For more details, please check the Optimization API at:
-             https://mxnet.incubator.apache.org/api/python/optimization/optimization.html
-
     """
     def __init__(self, num_classes, num_sampled, in_unit, remove_accidental_hits=True,
                  dtype='float32', weight_initializer=None, bias_initializer='zeros',
@@ -482,12 +491,12 @@ class SparseISLogits(_SparseSampledLogits):
 
     .. note::
 
-             Different from `ISLogits` block, the weight parameter is stored in
-             row_sparse format, which helps reduce memory consumption and
-             communication overhead during multi-GPU training. However,
-             sparse parameters cannot be shared with other blocks, nor could we hybridize
-             a block containinng sparse parameters. Therefore, the parameters have
-             to be saved before they are used for testing.
+        Different from `ISLogits` block, the weight parameter is stored in
+        row_sparse format, which helps reduce memory consumption and
+        communication overhead during multi-GPU training. However,
+        sparse parameters cannot be shared with other blocks, nor could we hybridize
+        a block containinng sparse parameters. Therefore, the parameters have
+        to be saved before they are used for testing.
 
     Example::
 
@@ -572,12 +581,12 @@ class SparseNCELogits(_SparseSampledLogits):
 
     .. note::
 
-             Different from `NCELogits` block, the weight parameter is stored
-             in row_sparse format, which helps reduce memory consumption and
-             communication overhead during multi-GPU training. However,
-             sparse parameters cannot be shared with other blocks, nor could we
-             hybridize a block containinng sparse parameters. Therefore, the
-             parameters have to be saved before they are used for testing.
+        Different from `NCELogits` block, the weight parameter is stored
+        in row_sparse format, which helps reduce memory consumption and
+        communication overhead during multi-GPU training. However,
+        sparse parameters cannot be shared with other blocks, nor could we
+        hybridize a block containinng sparse parameters. Therefore, the
+        parameters have to be saved before they are used for testing.
 
     Example::
 
