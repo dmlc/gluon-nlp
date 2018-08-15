@@ -1,15 +1,17 @@
-Beam Search Generator
----------------------
-
-:download:`[Download] </scripts/beam_search.zip>`
+Sequence Sampling
+-----------------
+:download:`[Download] </scripts/sequence_sampling.zip>`
 
 This script can be used to generate sentences using beam search from a pretrained language model.
 
-Use the following command to generate the sentences
+Beam Search Generator
+=====================
+
+Use the following command to decode using beam search.
 
 .. code-block:: console
 
-   $ python beam_search_generator.py --bos I love it --beam_size 5
+   $ python sequence_sampling.py --use-beam-search --bos I love it --beam_size 5
 
 Output is
 
@@ -25,7 +27,7 @@ You can also try a larger beam size.
 
 .. code-block:: console
 
-   $ python beam_search_generator.py --bos I love it --beam_size 10
+   $ python sequence_sampling.py --use-beam-search --bos I love it --beam_size 10
 
 Output is
 
@@ -42,7 +44,7 @@ Try beam size equals to 15
 
 .. code-block:: console
 
-   $ python beam_search_generator.py --bos I love it --beam_size 15
+   $ python sequence_sampling.py --use-beam-search --bos I love it --beam_size 15
 
 Output is
 
@@ -53,3 +55,13 @@ Output is
    ["I love it , and I don 't know how to do it , but I don ’ t think it would be .", 274.9892]
    ["I love it , and I don 't know how to do it , but I don ’ t think it will be .", 274.63895]
    ["I love it , and I don 't know how to do it , but I don ’ t want to do it .", 274.61063]
+
+Sequence Sampler
+================
+
+Use the following command to decode to sample from multinomial distribution, produced from softmax
+with temperature.
+
+.. code-block:: console
+
+   # TODO

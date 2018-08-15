@@ -20,13 +20,12 @@
 from __future__ import absolute_import
 from __future__ import print_function
 
-__all__ = ['BeamSearchScorer', 'BeamSearchSampler', 'HybridBeamSearchSampler']
+__all__ = ['BeamSearchScorer', 'BeamSearchSampler', 'HybridBeamSearchSampler', 'SequenceSampler']
 
 import numpy as np
 import mxnet as mx
 from mxnet.gluon import HybridBlock
 from .._constants import LARGE_NEGATIVE_FLOAT
-
 
 class BeamSearchScorer(HybridBlock):
     r"""Score function used in beam search.
@@ -41,36 +40,46 @@ class BeamSearchScorer(HybridBlock):
     ----------
     alpha : float, default 1.0
     K : float, default 5.0
+    from_logits : bool, default True
+        Whether input is a log probability (usually from log_softmax) instead
+        of unnormalized numbers.
     """
-    def __init__(self, alpha=1.0, K=5.0, prefix=None, params=None):
-        super(BeamSearchScorer, self).__init__(prefix=prefix, params=params)
+    def __init__(self, alpha=1.0, K=5.0, from_logits=True, **kwargs):
+        super(BeamSearchScorer, self).__init__(**kwargs)
         self._alpha = alpha
         self._K = K
+        self._from_logits = from_logits
 
-    def __call__(self, log_probs, scores, step): # pylint: disable=arguments-differ
+    def __call__(self, outputs, scores, step): # pylint: disable=arguments-differ
         """Compute new scores of each candidate
 
         Parameters
         ----------
-        log_probs : NDArray or Symbol
-            The log probabilities of the candidates. Shape (d1, d2, ..., dn, V)
+        outputs : NDArray or Symbol
+            If from_logits is True, outputs is the log probabilities of the candidates.
+            Shape (d1, d2, ..., dn, V).
+            Otherwise, outputs is the unnormalized outputs from predictor of the same shape,
+            before softmax/log_softmax.
         scores : NDArray or Symbol
             The original scores of the beams. Shape (d1, d2, ..., dn)
         step : NDArray or Symbol
             Step to calculate the score function. It starts from 1. Shape (1,)
+
         Returns
         -------
         candidate_scores : NDArray or Symbol
             The scores of all the candidates. Shape (d1, d2, ..., dn, V)
         """
-        return super(BeamSearchScorer, self).__call__(log_probs, scores, step)
+        return super(BeamSearchScorer, self).__call__(outputs, scores, step)
 
-    def hybrid_forward(self, F, log_probs, scores, step):   # pylint: disable=arguments-differ
+    def hybrid_forward(self, F, outputs, scores, step):   # pylint: disable=arguments-differ
+        if not self._from_logits:
+            outputs = outputs.log_softmax()
         prev_lp = (self._K + step - 1) ** self._alpha / (self._K + 1) ** self._alpha
         prev_lp = prev_lp * (step != 1) + (step == 1)
         scores = F.broadcast_mul(scores, prev_lp)
         lp = (self._K + step) ** self._alpha / (self._K + 1) ** self._alpha
-        candidate_scores = F.broadcast_add(log_probs, F.expand_dims(scores, axis=-1))
+        candidate_scores = F.broadcast_add(outputs, F.expand_dims(scores, axis=-1))
         candidate_scores = F.broadcast_div(candidate_scores, lp)
         return candidate_scores
 
@@ -262,7 +271,7 @@ class _BeamSearchStepUpdate(HybridBlock):
         self._single_step = single_step
         assert eos_id >= 0, 'eos_id cannot be negative! Received eos_id={}'.format(eos_id)
 
-    def hybrid_forward(self, F, samples, valid_length, log_probs, scores, step, beam_alive_mask,  # pylint: disable=arguments-differ
+    def hybrid_forward(self, F, samples, valid_length, outputs, scores, step, beam_alive_mask,   # pylint: disable=arguments-differ
                        states, vocab_size, batch_shift):
         """
 
@@ -275,8 +284,10 @@ class _BeamSearchStepUpdate(HybridBlock):
             When single_step is False, (batch_size, beam_size, L).
         valid_length : NDArray or Symbol
             The current valid lengths of the samples
-        log_probs : NDArray or Symbol
-            Log probability of the current step. Shape (batch_size * beam_size, V)
+        outputs : NDArray or Symbol
+            Outputs from predictor. If from_logits was set to True in scorer, then it's the
+            log probability of the current step. Else, it's the unnormalized outputs before
+            softmax or log_softmax. Shape (batch_size * beam_size, V).
         scores : NDArray or Symbol
             The previous scores. Shape (batch_size, beam_size)
         step : NDArray or Symbol
@@ -312,7 +323,7 @@ class _BeamSearchStepUpdate(HybridBlock):
         """
         beam_size = self._beam_size
         beam_alive_mask_bcast = F.expand_dims(beam_alive_mask, axis=2)
-        candidate_scores = self._scorer(log_probs.reshape(shape=(-4, -1, beam_size, 0)),
+        candidate_scores = self._scorer(outputs.reshape(shape=(-4, -1, beam_size, 0)),
                                         scores, step)
         # Concat the candidate scores and the scores of the finished beams
         # The resulting candidate score will have shape (batch_size, beam_size * |V| + beam_size)
@@ -363,10 +374,9 @@ class _SamplingStepUpdate(HybridBlock):
         self._temperature = temperature
         assert eos_id >= 0, 'eos_id cannot be negative! Received eos_id={}'.format(eos_id)
 
-    def hybrid_forward(self, F, samples, valid_length, outputs, scores, step, beam_alive_mask,   # pylint: disable=arguments-differ
-                       states, vocab_num, batch_shift):
+    # pylint: disable=arguments-differ
+    def hybrid_forward(self, F, samples, valid_length, outputs, scores, beam_alive_mask, states):
         """
-
         Parameters
         ----------
         F
@@ -375,22 +385,14 @@ class _SamplingStepUpdate(HybridBlock):
         valid_length : NDArray or Symbol
             The current valid lengths of the samples
         outputs: NDArray or Symbol
-            Decoder output (unnormalized) scores of the current step. Shape (batch_size * beam_size, V)
+            Decoder output (unnormalized) scores of the current step.
+            Shape (batch_size * beam_size, V)
         scores : NDArray or Symbol
             The previous scores. Shape (batch_size, beam_size)
-        step : NDArray or Symbol
-            The current step for doing beam search. Begins from 1. Shape (1,)
         beam_alive_mask : NDArray or Symbol
             Shape (batch_size, beam_size)
         states : nested structure of NDArrays/Symbols
             Inner NDArrays have shape (batch_size * beam_size, ...)
-        state_info : nested structure of dictionary
-            Descriptors for states, usually from state_info.
-        vocab_num : NDArray or Symbol
-            Shape (1,)
-        batch_shift : NDArray or Symbol
-            Contains [0, beam_size, 2 * beam_size, (batch_size - 1) * beam_size].
-            Shape (batch_size,)
 
         Returns
         -------
@@ -409,20 +411,22 @@ class _SamplingStepUpdate(HybridBlock):
             Inner NDArrays have shape (batch_size * beam_size, ...)
         """
         beam_size = self._beam_size
-        beam_alive_mask_bcast = F.expand_dims(beam_alive_mask, axis=2)
         # outputs: (batch_size, beam_size, vocab_size)
         outputs = outputs.reshape(shape=(-4, -1, beam_size, 0))
-        probs = (outputs / self._temperature).softmax(axis=2)
-        chosen_word_ids, _ = F.sample_multinomial(probs, get_prob=True)
-        chosen_word_ids = chosen_word_ids.astype('float32')  # (batch_size, beam_size)
+        smoothed_probs = (outputs / self._temperature).softmax(axis=2)
         log_probs = F.log_softmax(outputs, axis=2).reshape(-3, -1)
+
+        # (batch_size, beam_size)
+        chosen_word_ids = F.sample_multinomial(smoothed_probs).astype('float32')
         chosen_word_log_probs = log_probs[mx.nd.arange(log_probs.shape[0]),
-                        chosen_word_ids.reshape(-1)]\
-                        .reshape_like(chosen_word_ids)
+                                          chosen_word_ids.reshape(-1)] \
+                                .reshape_like(chosen_word_ids)
 
         # Don't update for finished beams
-        new_scores = scores + F.where(beam_alive_mask, chosen_word_log_probs, F.zeros_like(chosen_word_log_probs))
-        new_valid_length = valid_length + F.where(beam_alive_mask, F.ones_like(beam_alive_mask), F.zeros_like(beam_alive_mask))
+        new_scores = scores + F.where(beam_alive_mask,
+                                      chosen_word_log_probs,
+                                      F.zeros_like(chosen_word_log_probs))
+        new_valid_length = valid_length + beam_alive_mask
 
         # Update the samples and vaild_length
         new_samples = F.concat(samples, chosen_word_ids.expand_dims(2), dim=2)
@@ -461,13 +465,9 @@ class BeamSearchSampler(object):
         The score function used in beam search.
     max_length : int, default 100
         The maximum search length.
-    sampling : bool, default False
-        Whether to sample from the output distribution
-    temperature : float, default 1.0
-        Softmax temperature, only used for sampling
     """
     def __init__(self, beam_size, decoder, eos_id, scorer=BeamSearchScorer(alpha=1.0, K=5),
-                 max_length=100, sampling=False, temperature=1.0):
+                 max_length=100):
         self._beam_size = beam_size
         assert beam_size > 0,\
             'beam_size must be larger than 0. Received beam_size={}'.format(beam_size)
@@ -480,13 +480,9 @@ class BeamSearchSampler(object):
             state_info = decoder.state_info()
         else:
             state_info = None
-        self.sampling = sampling
-        if sampling:
-            self._updater = _SamplingStepUpdate(beam_size=beam_size, eos_id=eos_id, temperature=temperature)
-        else:
-            self._updater = _BeamSearchStepUpdate(beam_size=beam_size, eos_id=eos_id, scorer=scorer,
-                                                  state_info=state_info)
-            self._updater.hybridize()
+        self._updater = _BeamSearchStepUpdate(beam_size=beam_size, eos_id=eos_id, scorer=scorer,
+                                              state_info=state_info)
+        self._updater.hybridize()
 
     def __call__(self, inputs, states):
         """Sample by beam search.
@@ -525,9 +521,7 @@ class BeamSearchSampler(object):
         beam_alive_mask = mx.nd.ones(shape=(batch_size, beam_size), ctx=ctx)
         valid_length = mx.nd.ones(shape=(batch_size, beam_size), ctx=ctx)
         scores = mx.nd.zeros(shape=(batch_size, beam_size), ctx=ctx)
-        if self.sampling:
-            scores = 0.
-        elif beam_size > 1:
+        if beam_size > 1:
             scores[:, 1:beam_size] = LARGE_NEGATIVE_FLOAT
         samples = step_input.reshape((batch_size, beam_size, 1))
         for i in range(self._max_length):
@@ -714,3 +708,97 @@ class HybridBeamSearchSampler(HybridBlock):
         return F.round(new_samples).astype(np.int32),\
                new_scores,\
                F.round(new_new_valid_length).astype(np.int32)
+
+class SequenceSampler(object):
+    r"""Draw samples from the decoder according to the step-wise distribution.
+
+    Parameters
+    ----------
+    beam_size : int
+        The beam size.
+    decoder : callable
+        Function of the one-step-ahead decoder, should have the form::
+
+            outputs, new_states = decoder(step_input, states)
+
+        The outputs, input should follow these rules:
+
+        - step_input has shape (batch_size,),
+        - outputs is the unnormalized prediction before softmax with shape (batch_size, V)
+        - states and new_states have the same structure and the leading
+          dimension of the inner NDArrays is the batch dimension.
+    eos_id : int
+        Id of the EOS token. No other elements will be appended to the sample if it reaches eos_id.
+    max_length : int, default 100
+        The maximum search length.
+    temperature : float, default 1.0
+        Softmax temperature.
+    """
+    def __init__(self, beam_size, decoder, eos_id, max_length=100, temperature=1.0):
+        self._beam_size = beam_size
+        self._decoder = decoder
+        self._eos_id = eos_id
+        assert eos_id >= 0, 'eos_id cannot be negative! Received eos_id={}'.format(eos_id)
+        self._max_length = max_length
+        self._updater = _SamplingStepUpdate(beam_size=beam_size,
+                                            eos_id=eos_id,
+                                            temperature=temperature)
+
+    def __call__(self, inputs, states):
+        """Sample by beam search.
+
+        Parameters
+        ----------
+        inputs : NDArray
+            The initial input of the decoder. Shape is (batch_size,).
+        states : Object that contains NDArrays
+            The initial states of the decoder.
+        Returns
+        -------
+        samples : NDArray
+            Samples draw by beam search. Shape (batch_size, beam_size, length). dtype is int32.
+        scores : NDArray
+            Scores of the samples. Shape (batch_size, beam_size). We make sure that scores[i, :] are
+            in descending order.
+        valid_length : NDArray
+            The valid length of the samples. Shape (batch_size, beam_size). dtype will be int32.
+        """
+        batch_size = inputs.shape[0]
+        beam_size = self._beam_size
+        ctx = inputs.context
+        # Tile the states and inputs to have shape (batch_size * beam_size, ...)
+        if hasattr(self._decoder, 'state_info'):
+            state_info = self._decoder.state_info(batch_size)
+        else:
+            state_info = None
+        states = _expand_to_beam_size(states, beam_size=beam_size, batch_size=batch_size,
+                                      state_info=state_info)
+        step_input = _expand_to_beam_size(inputs, beam_size=beam_size, batch_size=batch_size)
+        # All beams are initialized to alive
+        # Generated samples are initialized to be the inputs
+        # Except the first beam where the scores are set to be zero, all beams have -inf scores.
+        # Valid length is initialized to be 1
+        beam_alive_mask = mx.nd.ones(shape=(batch_size, beam_size), ctx=ctx)
+        valid_length = mx.nd.ones(shape=(batch_size, beam_size), ctx=ctx)
+        scores = mx.nd.zeros(shape=(batch_size, beam_size), ctx=ctx)
+        scores = 0.
+        samples = step_input.reshape((batch_size, beam_size, 1))
+        for _ in range(self._max_length):
+            outputs, new_states = self._decoder(step_input, states)
+            samples, valid_length, scores, chosen_word_ids, beam_alive_mask, states = \
+                self._updater(samples, valid_length, outputs, scores, beam_alive_mask, new_states)
+            step_input = mx.nd.relu(chosen_word_ids).reshape((-1,))
+            if mx.nd.sum(beam_alive_mask).asscalar() == 0:
+                return mx.nd.round(samples).astype(np.int32),\
+                       scores,\
+                       mx.nd.round(valid_length).astype(np.int32)
+        final_word = mx.nd.where(beam_alive_mask,
+                                 mx.nd.full(shape=(batch_size, beam_size),
+                                            val=self._eos_id, ctx=ctx),
+                                 mx.nd.full(shape=(batch_size, beam_size),
+                                            val=-1, ctx=ctx))
+        samples = mx.nd.concat(samples, final_word.reshape((0, 0, 1)), dim=2)
+        valid_length += beam_alive_mask
+        return mx.nd.round(samples).astype(np.int32),\
+               scores,\
+               mx.nd.round(valid_length).astype(np.int32)
