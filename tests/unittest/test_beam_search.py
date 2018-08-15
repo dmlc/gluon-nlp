@@ -215,11 +215,11 @@ def test_beam_search(hybridize, sampler_cls):
 
         def hybrid_forward(self, F, inputs, states):
             out, states = self._rnn(self._embed(inputs.expand_dims(0)), states)
-            log_probs = self._map_to_vocab(out)[0].log_softmax()
+            log_probs = self._map_to_vocab(out).squeeze(axis=0).log_softmax()
             return log_probs, states
 
     # Begin Testing
-    for vocab_size in [4, 8]:
+    for vocab_size in [2, 3]:
         for decoder_fn in [RNNDecoder,
                            functools.partial(RNNDecoder2, use_tuple=False),
                            functools.partial(RNNDecoder2, use_tuple=True),
@@ -234,7 +234,7 @@ def test_beam_search(hybridize, sampler_cls):
             for beam_size, bos_id, eos_id, alpha, K in [(2, 1, 3, 0, 1.0), (4, 2, 3, 1.0, 5.0)]:
                 scorer = BeamSearchScorer(alpha=alpha, K=K)
                 for max_length in [2, 3]:
-                    for batch_size in [1, 2, 5]:
+                    for batch_size in [1, 5]:
                         if sampler_cls is HybridBeamSearchSampler:
                             sampler = sampler_cls(beam_size=beam_size, decoder=decoder,
                                                   eos_id=eos_id,
