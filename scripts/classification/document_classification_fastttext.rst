@@ -45,6 +45,7 @@ Use the following command to train a Classification model on the ag_news dataset
                                                 --output ag_news.gluon \
                                                  --validation ag_news.test \
                                                  --ngrams 1 --epochs 25 --lr 0.1 --emsize 100 --gpu 0
+
 It gives a validation accuracy of 91%
 Training logs : `log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/classification/fasttext-ag-news.log>`
  
