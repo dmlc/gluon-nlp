@@ -246,13 +246,16 @@ class NCELogits(_SampledLogits):
         - **new_targets**: A tensor of shape `(batch_size,)`.
           The new target classes.
 
-    .. note: If `sparse_grad` is set to True, the gradient w.r.t input and output
+    .. note::
+
+             If `sparse_grad` is set to True, the gradient w.r.t input and output
              embeddings will be sparse. Only a subset of optimizers support
              sparse gradients, including SGD, AdaGrad and Adam.
              By default `lazy_update` is turned on for these optimizers,
              which may perform differently from standard updates.
              For more details, please check the Optimization API at:
              https://mxnet.incubator.apache.org/api/python/optimization/optimization.html
+
     """
     def __init__(self, num_classes, num_sampled, in_unit, remove_accidental_hits=False,
                  dtype='float32', weight_initializer=None, bias_initializer='zeros',
@@ -327,7 +330,9 @@ class ISLogits(_SampledLogits):
         - **new_targets**: A tensor of shape `(batch_size,)`.
           The new target classes.
 
-    .. note: If `sparse_grad` is set to True, the gradient w.r.t input and output
+    .. note::
+
+             If `sparse_grad` is set to True, the gradient w.r.t input and output
              embeddings will be sparse. Only a subset of optimizers support
              sparse gradients, including SGD, AdaGrad and Adam.
              By default `lazy_update` is turned on for these optimizers,
@@ -475,7 +480,9 @@ class SparseISLogits(_SparseSampledLogits):
     number of classes to reduce communication overhead and memory consumption.
     Both weight and gradient w.r.t. weight are `RowSparseNDArray`.
 
-    .. note: Different from `ISLogits` block, the weight parameter is stored in
+    .. note::
+
+             Different from `ISLogits` block, the weight parameter is stored in
              row_sparse format, which helps reduce memory consumption and
              communication overhead during multi-GPU training. However,
              sparse parameters cannot be shared with other blocks, nor could we hybridize
@@ -563,7 +570,9 @@ class SparseNCELogits(_SparseSampledLogits):
     number of classes to reduce communication overhead and memory consumption.
     Both weight and gradient w.r.t. weight are `RowSparseNDArray`.
 
-    .. note: Different from `NCELogits` block, the weight parameter is stored
+    .. note::
+
+             Different from `NCELogits` block, the weight parameter is stored
              in row_sparse format, which helps reduce memory consumption and
              communication overhead during multi-GPU training. However,
              sparse parameters cannot be shared with other blocks, nor could we
