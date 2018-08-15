@@ -27,7 +27,7 @@ import pytest
 import gluonnlp as nlp
 
 
-def test_corpus_stream():
+def test_corpus_stream(stream_identity_wrappers):
     EOS = nlp._constants.EOS_TOKEN
     path = os.path.join('tests', 'data', 'wikitext-2')
     token_path = os.path.join('tests', 'data', 'wikitext-2/*.tokens')
@@ -37,25 +37,25 @@ def test_corpus_stream():
     val = nlp.data.WikiText2(segment='val', root=path)
     test = nlp.data.WikiText2(segment='test', root=path)
 
-    corpus = nlp.data.SimpleDatasetStream(
+    stream = nlp.data.SimpleDatasetStream(
         nlp.data.CorpusDataset,
         token_path,
         flatten=True,
         skip_empty=True,
         eos=EOS)
-    counter = nlp.data.Counter(itertools.chain.from_iterable(corpus))
+    stream = stream_identity_wrappers(stream)
+    counter = nlp.data.Counter(itertools.chain.from_iterable(stream))
     assert len(counter) == 33278, len(counter)
     # examine aggregated vocab
     vocab = nlp.vocab.Vocab(counter, bos_token=None, padding_token=None)
     assert len(vocab) == 33278, len(vocab)
     # examine aggregated stats
     assert sum(counter.values()) == 2075677 + 216347 + 244102
-    counter = nlp.data.Counter(itertools.chain.from_iterable(corpus))
+    counter = nlp.data.Counter(itertools.chain.from_iterable(stream))
     assert len(counter) == 33278, len(counter)
 
 
-@pytest.mark.parametrize('prefetch', [None, "thread", "process"])
-def test_lazy_stream(prefetch):
+def test_lazy_stream(stream_identity_wrappers):
     EOS = nlp._constants.EOS_TOKEN
     path = os.path.join('tests', 'data', 'wikitext-2')
     token_path = os.path.join('tests', 'data', 'wikitext-2/*test*.tokens')
@@ -66,17 +66,14 @@ def test_lazy_stream(prefetch):
         flatten=True,
         skip_empty=True,
         eos=EOS)
-    if prefetch:
-        prefetch_corpus = nlp.data.PrefetchingStream(corpus, worker_type=prefetch)
-    else:
-        prefetch_corpus = corpus
-    transformed_corpus = prefetch_corpus.transform(lambda d: [s.lower() for s in d])
+    wrapped_stream = stream_identity_wrappers(stream)
+    transformed_stream = wrapped_stream.transform(lambda d: [s.lower() for s in d])
 
-    prefetch_corpus_iter = iter(prefetch_corpus)
-    transformed_corpus_iter = iter(transformed_corpus)
+    wrapped_stream_iter = iter(wrapped_stream)
+    transformed_stream_iter = iter(transformed_stream)
     for dataset in stream:
-        prefetched_dataset = next(prefetch_corpus_iter)
-        transformed_dataset = next(transformed_corpus_iter)
+        prefetched_dataset = next(wrapped_stream_iter)
+        transformed_dataset = next(transformed_stream_iter)
         assert all([
             w1.lower() == w2.lower() == w3 == w4.lower() for w1, w2, w3, w4 in
             zip(dataset, prefetched_dataset, transformed_dataset, corpus)

@@ -97,7 +97,7 @@ def test_bptt_batchify_padding_token():
 
 @pytest.mark.parametrize('batch_size', [7, 80])
 @pytest.mark.parametrize('seq_len', [7, 35])
-def test_stream_bptt_batchify(seq_len, batch_size):
+def test_stream_bptt_batchify(seq_len, batch_size, stream_identity_wrappers):
     EOS = nlp._constants.EOS_TOKEN
     path = os.path.join('tests', 'data', 'wikitext-2')
     token_path = os.path.join('tests', 'data', 'wikitext-2/*.tokens')
@@ -119,7 +119,7 @@ def test_stream_bptt_batchify(seq_len, batch_size):
 
     bptt_keep = nlp.data.batchify.StreamBPTTBatchify(
         vocab, seq_len, batch_size, last_batch='keep')
-    bptt_stream = bptt_keep(stream)
+    bptt_stream = stream_identity_wrappers(bptt_keep(stream))
     padding_idx = vocab[vocab.padding_token]
     total_num_tokens = sum(counter.values())
     num_tokens_per_batch = seq_len * batch_size
