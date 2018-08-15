@@ -7,7 +7,7 @@ from mxnet.gluon import Block, HybridBlock, nn
 from mxnet.gluon.rnn import RNNCell, RNN
 from numpy.testing import assert_allclose
 
-from gluonnlp.model import BeamSearchSampler, BeamSearchScorer
+from gluonnlp.model import BeamSearchSampler, BeamSearchScorer, HybridBeamSearchSampler
 
 
 def test_beam_search_score():
@@ -27,7 +27,9 @@ def test_beam_search_score():
 
 
 @pytest.mark.seed(1)
-def test_beam_search():
+@pytest.mark.parametrize('hybridize', [False, True])
+@pytest.mark.parametrize('sampler_cls', [HybridBeamSearchSampler, BeamSearchSampler])
+def test_beam_search(hybridize, sampler_cls):
     def _get_new_states(states, state_info, sel_beam_ids):
         assert not state_info or isinstance(state_info, (type(states), dict)), \
                 'states and state_info don\'t match'
@@ -106,7 +108,7 @@ def test_beam_search():
             state_info = None
         for step in range(max_length):
             log_probs, states = decoder(mx.nd.array(inputs), states)
-            vocab_num = log_probs.shape[1]
+            vocab_size = log_probs.shape[1]
             candidate_scores = scorer(log_probs, mx.nd.array(scores),
                                       mx.nd.array([step + 1])).asnumpy()
             beam_done_inds = np.where(beam_done)[0]
@@ -122,12 +124,12 @@ def test_beam_search():
             sel_beam_ids = []
             new_scores = candidate_scores[indices]
             for ind in indices:
-                if ind < beam_size * vocab_num:
-                    sel_words.append(ind % vocab_num)
-                    sel_beam_ids.append(ind // vocab_num)
+                if ind < beam_size * vocab_size:
+                    sel_words.append(ind % vocab_size)
+                    sel_beam_ids.append(ind // vocab_size)
                 else:
                     sel_words.append(-1)
-                    sel_beam_ids.append(beam_done_inds[ind - beam_size * vocab_num])
+                    sel_beam_ids.append(beam_done_inds[ind - beam_size * vocab_size])
             states = _get_new_states(states, state_info, sel_beam_ids)
             samples = np.concatenate((samples[sel_beam_ids, :],
                                       np.expand_dims(np.array(sel_words), axis=1)), axis=1)
@@ -143,13 +145,13 @@ def test_beam_search():
 
     HIDDEN_SIZE = 2
     class RNNDecoder(HybridBlock):
-        def __init__(self, vocab_num, hidden_size, prefix=None, params=None):
+        def __init__(self, vocab_size, hidden_size, prefix=None, params=None):
             super(RNNDecoder, self).__init__(prefix=prefix, params=params)
-            self._vocab_num = vocab_num
+            self._vocab_size = vocab_size
             with self.name_scope():
-                self._embed = nn.Embedding(input_dim=vocab_num, output_dim=hidden_size)
+                self._embed = nn.Embedding(input_dim=vocab_size, output_dim=hidden_size)
                 self._rnn = RNNCell(hidden_size=hidden_size)
-                self._map_to_vocab = nn.Dense(vocab_num)
+                self._map_to_vocab = nn.Dense(vocab_size)
 
         def begin_state(self, batch_size):
             return self._rnn.begin_state(batch_size=batch_size,
@@ -161,15 +163,15 @@ def test_beam_search():
             return log_probs, states
 
     class RNNDecoder2(HybridBlock):
-        def __init__(self, vocab_num, hidden_size, prefix=None, params=None, use_tuple=False):
+        def __init__(self, vocab_size, hidden_size, prefix=None, params=None, use_tuple=False):
             super(RNNDecoder2, self).__init__(prefix=prefix, params=params)
-            self._vocab_num = vocab_num
+            self._vocab_size = vocab_size
             self._use_tuple = use_tuple
             with self.name_scope():
-                self._embed = nn.Embedding(input_dim=vocab_num, output_dim=hidden_size)
+                self._embed = nn.Embedding(input_dim=vocab_size, output_dim=hidden_size)
                 self._rnn1 = RNNCell(hidden_size=hidden_size)
                 self._rnn2 = RNNCell(hidden_size=hidden_size)
-                self._map_to_vocab = nn.Dense(vocab_num)
+                self._map_to_vocab = nn.Dense(vocab_size)
 
         def begin_state(self, batch_size):
             ret = [self._rnn1.begin_state(batch_size=batch_size,
@@ -195,14 +197,14 @@ def test_beam_search():
                 states = [states1, states2]
             return log_probs, states
 
-    class RNNLayerDecoder(Block):
-        def __init__(self, vocab_num, hidden_size, prefix=None, params=None):
+    class RNNLayerDecoder(HybridBlock):
+        def __init__(self, vocab_size, hidden_size, prefix=None, params=None):
             super(RNNLayerDecoder, self).__init__(prefix=prefix, params=params)
-            self._vocab_num = vocab_num
+            self._vocab_size = vocab_size
             with self.name_scope():
-                self._embed = nn.Embedding(input_dim=vocab_num, output_dim=hidden_size)
+                self._embed = nn.Embedding(input_dim=vocab_size, output_dim=hidden_size)
                 self._rnn = RNN(hidden_size=hidden_size, num_layers=1, activation='tanh')
-                self._map_to_vocab = nn.Dense(vocab_num, flatten=False)
+                self._map_to_vocab = nn.Dense(vocab_size, flatten=False)
 
         def begin_state(self, batch_size):
             return self._rnn.begin_state(batch_size=batch_size,
@@ -211,31 +213,41 @@ def test_beam_search():
         def state_info(self, *args, **kwargs):
             return self._rnn.state_info(*args, **kwargs)
 
-        def forward(self, inputs, states):
+        def hybrid_forward(self, F, inputs, states):
             out, states = self._rnn(self._embed(inputs.expand_dims(0)), states)
-            log_probs = self._map_to_vocab(out)[0].log_softmax()
+            log_probs = self._map_to_vocab(out).squeeze(axis=0).log_softmax()
             return log_probs, states
 
     # Begin Testing
-    for vocab_num in [4, 8]:
+    for vocab_size in [2, 3]:
         for decoder_fn in [RNNDecoder,
                            functools.partial(RNNDecoder2, use_tuple=False),
                            functools.partial(RNNDecoder2, use_tuple=True),
                            RNNLayerDecoder]:
-            decoder = decoder_fn(vocab_num=vocab_num, hidden_size=HIDDEN_SIZE)
+            decoder = decoder_fn(vocab_size=vocab_size, hidden_size=HIDDEN_SIZE)
             decoder.hybridize()
             decoder.initialize()
             if hasattr(decoder, 'state_info'):
                 state_info = decoder.state_info()
             else:
                 state_info = None
-            for beam_size, bos_id, eos_id, alpha, K in [(2, 1, 3, 0, 1.0),  (4, 2, 3, 1.0, 5.0)]:
+            for beam_size, bos_id, eos_id, alpha, K in [(2, 1, 3, 0, 1.0), (4, 2, 3, 1.0, 5.0)]:
                 scorer = BeamSearchScorer(alpha=alpha, K=K)
-                for max_length in [10, 20]:
-                    sampler = BeamSearchSampler(beam_size=beam_size, decoder=decoder, eos_id=eos_id,
-                                                scorer=scorer, max_length=max_length)
-                    for batch_size in [1, 2, 5]:
-                        print(type(decoder).__name__, beam_size, bos_id, eos_id, alpha, K, batch_size)
+                for max_length in [2, 3]:
+                    for batch_size in [1, 5]:
+                        if sampler_cls is HybridBeamSearchSampler:
+                            sampler = sampler_cls(beam_size=beam_size, decoder=decoder,
+                                                  eos_id=eos_id,
+                                                  scorer=scorer, max_length=max_length,
+                                                  vocab_size=vocab_size, batch_size=batch_size)
+                            if hybridize:
+                                sampler.hybridize()
+                        else:
+                            sampler = sampler_cls(beam_size=beam_size, decoder=decoder,
+                                                  eos_id=eos_id,
+                                                  scorer=scorer, max_length=max_length)
+                        print(type(decoder).__name__, beam_size, bos_id, eos_id, \
+                              alpha, K, batch_size)
                         states = decoder.begin_state(batch_size)
                         inputs = mx.nd.full(shape=(batch_size,), val=bos_id)
                         samples, scores, valid_length = sampler(inputs, states)
