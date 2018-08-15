@@ -400,8 +400,8 @@ class BigRNN(Block):
             and `(batch_size, num_projection)`
         sampled_values : list
             a list of three tensors for `sampled_classes` with shape `(num_samples,)`,
-            `expected_count_true` with shape `(sequence_length, batch_size)`, and
-            `expected_count_sampled` with shape `(num_samples,)`.
+            `expected_count_sampled` with shape `(num_samples,)`, and
+            `expected_count_true` with shape `(sequence_length, batch_size)`.
 
         Returns
         --------
@@ -417,13 +417,11 @@ class BigRNN(Block):
             when `layout` is "TNC".
         """
         encoded = self.embedding(inputs)
-        sampled_classes, exp_cnt_true, exp_cnt_sampled = sampled_values
         length = inputs.shape[0]
         batch_size = inputs.shape[1]
         encoded, out_states = self.encoder.unroll(length, encoded, begin_state,
                                                   layout='TNC', merge_outputs=True)
-        out, new_target = self.decoder(encoded, sampled_classes, exp_cnt_sampled,
-                                       exp_cnt_true, label)
+        out, new_target = self.decoder(encoded, sampled_values, label)
         out = out.reshape((length, batch_size, -1))
         new_target = new_target.reshape((length, batch_size))
         return out, out_states, new_target
