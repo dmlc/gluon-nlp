@@ -41,14 +41,6 @@ def worker_loop(dataset, key_queue, data_queue, batchify_fn):
         data_queue.put((idx, batch))
 
 
-class _ShardedMultiWorkerIter(_MultiWorkerIter):
-    """Interal multi-worker iterator for ShardedDataLoader."""
-    def __init__(self, num_workers, dataset, batchify_fn, batch_sampler, pin_memory=False):
-        super(_ShardedMultiWorkerIter, self).__init__(num_workers, dataset,
-                                                      batchify_fn, batch_sampler,
-                                                      pin_memory=pin_memory, worker_fn=worker_loop)
-
-
 class ShardedDataLoader(DataLoader):
     """Loads data from a dataset and returns mini-batches of data.
 
@@ -125,6 +117,6 @@ class ShardedDataLoader(DataLoader):
             return _same_process_iter()
 
         # multi-worker
-        return _ShardedMultiWorkerIter(self._num_workers, self._dataset,
-                                       self._batchify_fn, self._batch_sampler,
-                                       self._pin_memory, worker_loop)
+        return _MultiWorkerIter(self._num_workers, self._dataset,
+                                self._batchify_fn, self._batch_sampler,
+                                self._pin_memory, worker_loop)
