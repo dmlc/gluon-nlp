@@ -35,7 +35,7 @@ def test_corpus_batchify(batch_size):
     vocab = nlp.Vocab(nlp.data.utils.Counter(data))
     batchify = nlp.data.batchify.CorpusBatchify(vocab, batch_size)
     batches = batchify(data)
-    assert batches.shape == (len(data) // batch_size, batch_size)
+    assert batches[:].shape == (len(data) // batch_size, batch_size)
 
 
 @pytest.mark.parametrize('batch_size', [7, 80])

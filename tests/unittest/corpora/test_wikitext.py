@@ -94,7 +94,7 @@ def test_wikitext2():
     assert len(test_freq) == 14143
     assert test_freq['English'] == 32
     batched_data = nlp.data.batchify.CorpusBatchify(vocab, batch_size)(train)
-    assert batched_data.shape == (26107, batch_size)
+    assert batched_data[:].shape == (26107, batch_size)
 
 
 def test_wikitext2_raw():

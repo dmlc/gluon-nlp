@@ -274,7 +274,7 @@ def get_batch(data_source, i, seq_len=None):
 
     Parameters
     ----------
-    data_source : NDArray
+    data_source : NDArray or mxnet.gluon.Dataset
         The dataset is evaluated on.
     i : int
         The index of the batch, starting from 0.

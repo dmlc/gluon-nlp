@@ -42,11 +42,6 @@ class CorpusBatchify(object):
         index according to the vocabulary.
     batch_size : int
         The number of samples in each batch.
-
-    Returns
-    -------
-    NDArray of shape (num_tokens // N, N). Excessive tokens that don't align along
-    the batches are discarded.
     """
 
     def __init__(self, vocab, batch_size):
@@ -54,10 +49,25 @@ class CorpusBatchify(object):
         self._batch_size = batch_size
 
     def __call__(self, data):
+        """Batchify a dataset.
+
+        Parameters
+        ----------
+        data : mxnet.gluon.data.DataSet
+            A flat dataset to be batchified.
+
+        Returns
+        -------
+        mxnet.gluon.data.Dataset
+            NDArray of shape (len(data) // N, N) where N is the batch_size
+            wrapped by a mxnet.gluon.data.SimpleDataset. Excessive tokens that
+            don't align along the batches are discarded.
+        """
         sample_len = len(data) // self._batch_size
-        return mx.nd.array(
-            self._vocab[data[:sample_len * self._batch_size]]).reshape(
-                self._batch_size, -1).T
+        return SimpleDataset(
+            mx.nd.array(
+                self._vocab[data[:sample_len * self._batch_size]]).reshape(
+                    self._batch_size, -1).T)
 
 
 class CorpusBPTTBatchify(object):
