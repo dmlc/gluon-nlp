@@ -5,7 +5,6 @@ Use the following command to train the FastText classification model on the Yelp
 The model we have implemented is a slight variant of :
 
 - Joulin, Armand, et al. "`Bag of tricks for efficient text classification <https://arxiv.org/pdf/1607.01759.pdf>`"
- arXiv preprint arXiv:1607.01759 (2016).
 
 We have added dropout to the final layer, and the optimizer is changed from 'sgd' to 'adam'
 These are made for demo purposes and we can get very good numbers with original settings too, 
@@ -39,7 +38,8 @@ Training logs : `log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs
 
 
 Use the following command to train a Classification model on the ag_news dataset:
-..code-block:: console
+
+.. code-block:: console
 
    $ python train_classification_fasttext.py --input ag_news.train \
                                                 --output ag_news.gluon \
@@ -59,5 +59,6 @@ The training can benefit from preprocessing the dataset to lower case all the te
 Use the following linux utility for achieving the same:
 
 .. code-block:: console
-cat <input.txt> | sed -e "s/\([.\!?,'/()]\)/ \1 /g" | tr "[:upper:]" "[:lower:]" > input.preprocessed.txt
+
+	cat <input.txt> | sed -e "s/\([.\!?,'/()]\)/ \1 /g" | tr "[:upper:]" "[:lower:]" > input.preprocessed.txt
 

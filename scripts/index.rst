@@ -10,3 +10,5 @@ Scripts
 .. include:: sentiment_analysis/sentiment_analysis.rst
 
 .. include:: nmt/machine_translation.rst
+
+.. include:: classification/document_classification_fasttext.rst
