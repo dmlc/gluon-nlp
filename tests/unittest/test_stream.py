@@ -59,8 +59,8 @@ def test_lazy_stream(prefetch):
     EOS = nlp._constants.EOS_TOKEN
     path = os.path.join('tests', 'data', 'wikitext-2')
     token_path = os.path.join('tests', 'data', 'wikitext-2/*test*.tokens')
-    test = nlp.data.WikiText2(segment='test', root=path)
-    corpus = nlp.data.SimpleDatasetStream(
+    corpus = nlp.data.WikiText2(segment='test', root=path)
+    stream = nlp.data.SimpleDatasetStream(
         nlp.data.CorpusDataset,
         token_path,
         flatten=True,
@@ -71,12 +71,16 @@ def test_lazy_stream(prefetch):
     else:
         prefetch_corpus = corpus
     transformed_corpus = prefetch_corpus.transform(lambda d: [s.lower() for s in d])
+
     prefetch_corpus_iter = iter(prefetch_corpus)
     transformed_corpus_iter = iter(transformed_corpus)
-    for x in corpus:
-        y = next(prefetch_corpus_iter)
-        z = next(transformed_corpus_iter)
-        assert all([sx.lower() == sy.lower() == sz for sx, sy, sz in zip(x, y, z)])
+    for dataset in stream:
+        prefetched_dataset = next(prefetch_corpus_iter)
+        transformed_dataset = next(transformed_corpus_iter)
+        assert all([
+            w1.lower() == w2.lower() == w3 == w4.lower() for w1, w2, w3, w4 in
+            zip(dataset, prefetched_dataset, transformed_dataset, corpus)
+        ])
 
 
 @pytest.mark.parametrize('num_prefetch', [0, 1, 10])
@@ -86,7 +90,8 @@ def test_prefetch_stream(num_prefetch, worker_type):
     path = os.path.join('tests', 'data', 'wikitext-2')
     token_path = os.path.join('tests', 'data', 'wikitext-2/*test*.tokens')
     test = nlp.data.WikiText2(segment='test', root=path)
-    corpus = nlp.data.SimpleDatasetStream(nlp.data.CorpusDataset, token_path)
+    corpus = nlp.data.SimpleDatasetStream(
+        nlp.data.CorpusDataset, token_path, flatten=True, skip_empty=True)
     if num_prefetch < 1:
         with pytest.raises(ValueError):
             prefetch_corpus = nlp.data.PrefetchingStream(

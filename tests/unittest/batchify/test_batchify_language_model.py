@@ -33,7 +33,6 @@ import mxnet as mx
 def test_corpus_bptt_batchify(batch_size, seq_len):
     data = nlp.data.WikiText2(
         segment='test',
-        flatten=True,
         root=os.path.join('tests', 'data', 'wikitext-2'))
     vocab = nlp.Vocab(nlp.data.utils.Counter(data))
 

@@ -35,7 +35,7 @@ from ..utils import _get_home_dir
 
 
 class _WikiText(CorpusDataset):
-    def __init__(self, namespace, segment, bos, eos, skip_empty, root,
+    def __init__(self, namespace, segment, bos, eos, flatten, skip_empty, root,
                  **kwargs):
         root = os.path.expanduser(root)
         if not os.path.isdir(root):
@@ -43,8 +43,13 @@ class _WikiText(CorpusDataset):
         self._root = root
         self._namespace = 'gluon/dataset/{}'.format(namespace)
         self._segment = segment
-        super(_WikiText, self).__init__(self._get_data(), bos=bos, eos=eos,
-                                        skip_empty=skip_empty, **kwargs)
+        super(_WikiText, self).__init__(
+            self._get_data(),
+            bos=bos,
+            eos=eos,
+            flatten=flatten,
+            skip_empty=skip_empty,
+            **kwargs)
 
     def _get_data(self):
         archive_file_name, archive_hash = self._archive_file
@@ -71,6 +76,8 @@ class _WikiText(CorpusDataset):
 class WikiText2(_WikiText):
     """WikiText-2 word-level dataset for language modeling, from Salesforce research.
 
+    WikiText2 is implemented as CorpusDataset with the default flatten=True.
+
     From
     https://einstein.ai/research/the-wikitext-long-term-dependency-language-modeling-dataset
 
@@ -80,6 +87,8 @@ class WikiText2(_WikiText):
     ----------
     segment : {'train', 'val', 'test'}, default 'train'
         Dataset segment.
+    flatten : bool, default True
+        Whether to return all samples as flattened tokens. If True, each sample is a token.
     skip_empty : bool, default True
         Whether to skip the empty samples produced from sample_splitters. If False, `bos` and `eos`
         will be added in empty samples.
@@ -94,25 +103,42 @@ class WikiText2(_WikiText):
         MXNET_HOME defaults to '~/.mxnet'.
     """
 
-    def __init__(self, segment='train', skip_empty=True,
+    def __init__(self,
+                 segment='train',
+                 flatten=True,
+                 skip_empty=True,
                  tokenizer=lambda s: s.split(),
-                 bos=None, eos=C.EOS_TOKEN, root=os.path.join(
-                     _get_home_dir(), 'datasets', 'wikitext-2'), **kwargs):
-        self._archive_file = ('wikitext-2-v1.zip', '3c914d17d80b1459be871a5039ac23e752a53cbe')
-        self._data_file = {'train': ('wiki.train.tokens',
-                                     '863f29c46ef9d167fff4940ec821195882fe29d1'),
-                           'val': ('wiki.valid.tokens',
-                                   '0418625c8b4da6e4b5c7a0b9e78d4ae8f7ee5422'),
-                           'test': ('wiki.test.tokens',
-                                    'c7b8ce0aa086fb34dab808c5c49224211eb2b172')}
-        super(WikiText2,
-              self).__init__('wikitext-2', segment, bos, eos, skip_empty, root,
-                             tokenizer=tokenizer, **kwargs)
+                 bos=None,
+                 eos=C.EOS_TOKEN,
+                 root=os.path.join(_get_home_dir(), 'datasets', 'wikitext-2'),
+                 **kwargs):
+        self._archive_file = ('wikitext-2-v1.zip',
+                              '3c914d17d80b1459be871a5039ac23e752a53cbe')
+        self._data_file = {
+            'train': ('wiki.train.tokens',
+                      '863f29c46ef9d167fff4940ec821195882fe29d1'),
+            'val': ('wiki.valid.tokens',
+                    '0418625c8b4da6e4b5c7a0b9e78d4ae8f7ee5422'),
+            'test': ('wiki.test.tokens',
+                     'c7b8ce0aa086fb34dab808c5c49224211eb2b172')
+        }
+        super(WikiText2, self).__init__(
+            'wikitext-2',
+            segment=segment,
+            bos=bos,
+            eos=eos,
+            flatten=flatten,
+            skip_empty=skip_empty,
+            root=root,
+            tokenizer=tokenizer,
+            **kwargs)
 
 
 @register(segment=['train', 'val', 'test'])
 class WikiText103(_WikiText):
     """WikiText-103 word-level dataset for language modeling, from Salesforce research.
+
+    WikiText103 is implemented as CorpusDataset with the default flatten=True.
 
     From
     https://einstein.ai/research/the-wikitext-long-term-dependency-language-modeling-dataset
@@ -123,6 +149,8 @@ class WikiText103(_WikiText):
     ----------
     segment : {'train', 'val', 'test'}, default 'train'
         Dataset segment.
+    flatten : bool, default True
+        Whether to return all samples as flattened tokens. If True, each sample is a token.
     skip_empty : bool, default True
         Whether to skip the empty samples produced from sample_splitters. If False, `bos` and `eos`
         will be added in empty samples.
@@ -137,10 +165,16 @@ class WikiText103(_WikiText):
         MXNET_HOME defaults to '~/.mxnet'.
     """
 
-    def __init__(self, segment='train', skip_empty=True,
+    def __init__(self,
+                 segment='train',
+                 flatten=True,
+                 skip_empty=True,
                  tokenizer=lambda s: s.split(),
-                 bos=None, eos=C.EOS_TOKEN, root=os.path.join(
-                     _get_home_dir(), 'datasets', 'wikitext-103'), **kwargs):
+                 bos=None,
+                 eos=C.EOS_TOKEN,
+                 root=os.path.join(_get_home_dir(), 'datasets',
+                                   'wikitext-103'),
+                 **kwargs):
         self._archive_file = ('wikitext-103-v1.zip',
                               '0aec09a7537b58d4bb65362fee27650eeaba625a')
         self._data_file = {
@@ -151,14 +185,23 @@ class WikiText103(_WikiText):
             'test': ('wiki.test.tokens',
                      '8a5befc548865cec54ed4273cf87dbbad60d1e47')
         }
-        super(WikiText103,
-              self).__init__('wikitext-103', segment, bos, eos, skip_empty,
-                             root, tokenizer=tokenizer, **kwargs)
+        super(WikiText103, self).__init__(
+            'wikitext-103',
+            segment=segment,
+            bos=bos,
+            eos=eos,
+            flatten=flatten,
+            skip_empty=skip_empty,
+            root=root,
+            tokenizer=tokenizer,
+            **kwargs)
 
 
 @register(segment=['train', 'val', 'test'])
 class WikiText2Raw(_WikiText):
     """WikiText-2 character-level dataset for language modeling
+
+    WikiText2Raw is implemented as CorpusDataset with the default flatten=True.
 
     From Salesforce research:
     https://einstein.ai/research/the-wikitext-long-term-dependency-language-modeling-dataset
@@ -169,6 +212,8 @@ class WikiText2Raw(_WikiText):
     ----------
     segment : {'train', 'val', 'test'}, default 'train'
         Dataset segment.
+    flatten : bool, default True
+        Whether to return all samples as flattened tokens. If True, each sample is a token.
     skip_empty : bool, default True
         Whether to skip the empty samples produced from sample_splitters. If False, `bos` and `eos`
         will be added in empty samples.
@@ -185,10 +230,15 @@ class WikiText2Raw(_WikiText):
         MXNET_HOME defaults to '~/.mxnet'.
     """
 
-    def __init__(self, segment='train', skip_empty=True, bos=None, eos=None,
+    def __init__(self,
+                 segment='train',
+                 flatten=True,
+                 skip_empty=True,
+                 bos=None,
+                 eos=None,
                  tokenizer=lambda s: s.encode('utf-8'),
-                 root=os.path.join(_get_home_dir(), 'datasets',
-                                   'wikitext-2'), **kwargs):
+                 root=os.path.join(_get_home_dir(), 'datasets', 'wikitext-2'),
+                 **kwargs):
         self._archive_file = ('wikitext-2-raw-v1.zip',
                               '3b6993c138fc61c95f7fffd900fef68f8411371d')
         self._data_file = {
@@ -200,14 +250,23 @@ class WikiText2Raw(_WikiText):
                      '6f1fe2054a940eebfc76b284b09680763b37f5ea')
         }
 
-        super(WikiText2Raw,
-              self).__init__('wikitext-2', segment, bos, eos, skip_empty, root,
-                             tokenizer=tokenizer, **kwargs)
+        super(WikiText2Raw, self).__init__(
+            'wikitext-2',
+            segment=segment,
+            bos=bos,
+            eos=eos,
+            flatten=flatten,
+            skip_empty=skip_empty,
+            root=root,
+            tokenizer=tokenizer,
+            **kwargs)
 
 
 @register(segment=['train', 'val', 'test'])
 class WikiText103Raw(_WikiText):
     """WikiText-103 character-level dataset for language modeling
+
+    WikiText103Raw is implemented as CorpusDataset with the default flatten=True.
 
     From Salesforce research:
     https://einstein.ai/research/the-wikitext-long-term-dependency-language-modeling-dataset
@@ -218,6 +277,8 @@ class WikiText103Raw(_WikiText):
     ----------
     segment : {'train', 'val', 'test'}, default 'train'
         Dataset segment.
+    flatten : bool, default True
+        Whether to return all samples as flattened tokens. If True, each sample is a token.
     skip_empty : bool, default True
         Whether to skip the empty samples produced from sample_splitters. If False, `bos` and `eos`
         will be added in empty samples.
@@ -234,10 +295,16 @@ class WikiText103Raw(_WikiText):
         MXNET_HOME defaults to '~/.mxnet'.
     """
 
-    def __init__(self, segment='train', skip_empty=True,
-                 tokenizer=lambda s: s.encode('utf-8'), bos=None,
-                 eos=None, root=os.path.join(_get_home_dir(), 'datasets',
-                                             'wikitext-103'), **kwargs):
+    def __init__(self,
+                 segment='train',
+                 flatten=True,
+                 skip_empty=True,
+                 tokenizer=lambda s: s.encode('utf-8'),
+                 bos=None,
+                 eos=None,
+                 root=os.path.join(_get_home_dir(), 'datasets',
+                                   'wikitext-103'),
+                 **kwargs):
         self._archive_file = ('wikitext-103-raw-v1.zip',
                               '86f2375181b9247049d9c9205fad2b71b274b568')
         self._data_file = {
@@ -248,6 +315,13 @@ class WikiText103Raw(_WikiText):
             'test': ('wiki.test.raw',
                      '6f1fe2054a940eebfc76b284b09680763b37f5ea')
         }
-        super(WikiText103Raw,
-              self).__init__('wikitext-103', segment, bos, eos, skip_empty,
-                             root, tokenizer=tokenizer, **kwargs)
+        super(WikiText103Raw, self).__init__(
+            'wikitext-103',
+            segment=segment,
+            bos=bos,
+            eos=eos,
+            flatten=flatten,
+            skip_empty=skip_empty,
+            root=root,
+            tokenizer=tokenizer,
+            **kwargs)

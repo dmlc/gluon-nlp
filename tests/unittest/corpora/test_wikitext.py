@@ -31,17 +31,11 @@ def test_wikitext2():
     seq_len = 35
 
     train = nlp.data.WikiText2(
-        segment='train',
-        flatten=True,
-        root=os.path.join('tests', 'data', 'wikitext-2'))
+        segment='train', root=os.path.join('tests', 'data', 'wikitext-2'))
     val = nlp.data.WikiText2(
-        segment='val',
-        flatten=True,
-        root=os.path.join('tests', 'data', 'wikitext-2'))
+        segment='val', root=os.path.join('tests', 'data', 'wikitext-2'))
     test = nlp.data.WikiText2(
-        segment='test',
-        flatten=True,
-        root=os.path.join('tests', 'data', 'wikitext-2'))
+        segment='test', root=os.path.join('tests', 'data', 'wikitext-2'))
     train_freq, val_freq, test_freq = [
         nlp.data.utils.Counter(x) for x in [train, val, test]
     ]
@@ -79,17 +73,14 @@ def test_wikitext2():
     # skip_empty=False
     train = nlp.data.WikiText2(
         segment='train',
-        flatten=True,
         skip_empty=False,
         root=os.path.join('tests', 'data', 'wikitext-2'))
     val = nlp.data.WikiText2(
         segment='val',
-        flatten=True,
         skip_empty=False,
         root=os.path.join('tests', 'data', 'wikitext-2'))
     test = nlp.data.WikiText2(
         segment='test',
-        flatten=True,
         skip_empty=False,
         root=os.path.join('tests', 'data', 'wikitext-2'))
     train_freq, val_freq, test_freq = [
@@ -108,20 +99,13 @@ def test_wikitext2():
 
 def test_wikitext2_raw():
     train = nlp.data.WikiText2Raw(
-        segment='train',
-        flatten=True,
-        root=os.path.join('tests', 'data', 'wikitext-2'))
+        segment='train', root=os.path.join('tests', 'data', 'wikitext-2'))
     val = nlp.data.WikiText2Raw(
-        segment='val',
-        flatten=True,
-        root=os.path.join('tests', 'data', 'wikitext-2'))
+        segment='val', root=os.path.join('tests', 'data', 'wikitext-2'))
     test = nlp.data.WikiText2Raw(
-        segment='test',
-        flatten=True,
-        root=os.path.join('tests', 'data', 'wikitext-2'))
+        segment='test', root=os.path.join('tests', 'data', 'wikitext-2'))
     train_freq, val_freq, test_freq = [
-        nlp.data.utils.Counter(x)
-        for x in [train, val, test]
+        nlp.data.utils.Counter(x) for x in [train, val, test]
     ]
     assert len(train) == 10843541
     assert len(train_freq) == 192
@@ -134,17 +118,11 @@ def test_wikitext2_raw():
 
 def test_wikitext103_raw():
     train = nlp.data.WikiText103Raw(
-        segment='train',
-        flatten=True,
-        root=os.path.join('tests', 'data', 'wikitext-103'))
+        segment='train', root=os.path.join('tests', 'data', 'wikitext-103'))
     val = nlp.data.WikiText103Raw(
-        segment='val',
-        flatten=True,
-        root=os.path.join('tests', 'data', 'wikitext-103'))
+        segment='val', root=os.path.join('tests', 'data', 'wikitext-103'))
     test = nlp.data.WikiText103Raw(
-        segment='test',
-        flatten=True,
-        root=os.path.join('tests', 'data', 'wikitext-103'))
+        segment='test', root=os.path.join('tests', 'data', 'wikitext-103'))
     train_freq, val_freq, test_freq = [
         nlp.data.utils.Counter(x) for x in [train, val, test]
     ]
