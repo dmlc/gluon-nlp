@@ -156,23 +156,38 @@ def test_save_load_cache_models():
 
 def test_save_load_big_rnn_models():
     ctx = mx.cpu()
+    seq_len = 1
     batch_size = 1
     num_sampled = 6
+    # network
     eval_model = nlp.model.language_model.BigRNN(10, 2, 3, 4, 5, 0.1, prefix='bigrnn')
     model = nlp.model.language_model.train.BigRNN(10, 2, 3, 4, 5, num_sampled, 0.1,
                                                   prefix='bigrnn')
+    loss = mx.gluon.loss.SoftmaxCrossEntropyLoss()
+    # verify param names
     model_params = sorted(model.collect_params().keys())
     eval_model_params = sorted(eval_model.collect_params().keys())
     for p0, p1 in zip(model_params, eval_model_params):
         assert p0 == p1, (p0, p1)
     model.initialize(mx.init.Xavier(), ctx=ctx)
     trainer = mx.gluon.Trainer(model.collect_params(), 'sgd')
-    batch_size = 1
-    x = mx.nd.ones((1,1))
-    y = mx.nd.ones((1,1))
-    samples = (mx.nd.ones((num_sampled,)), mx.nd.ones((1,1)), mx.nd.ones((num_sampled)))
+    # prepare data, label and samples
+    x = mx.nd.ones((seq_len, batch_size))
+    y = mx.nd.ones((seq_len, batch_size))
+    sampled_cls = mx.nd.ones((num_sampled,))
+    sampled_cls_cnt = mx.nd.ones((num_sampled,))
+    true_cls_cnt = mx.nd.ones((seq_len,batch_size))
+    samples = (sampled_cls, sampled_cls_cnt, true_cls_cnt)
     hidden = model.begin_state(batch_size=batch_size, func=mx.nd.zeros, ctx=ctx)
-    model(x, y, hidden, samples)
+    # test forward
+    with mx.autograd.record():
+        logits, hidden, new_y = model(x, y, hidden, samples)
+        assert logits.shape == (seq_len, batch_size, 1+num_sampled)
+        assert new_y.shape == (seq_len, batch_size)
+        logits = logits.reshape((-3, -1))
+        new_y = new_y.reshape((-1,))
+        l = loss(logits, new_y)
+    l.backward()
     mx.nd.waitall()
     path = 'tests/data/model/test_save_load_big_rnn_models.params'
     model.save_parameters(path)
@@ -195,7 +210,10 @@ def test_big_rnn_model_share_params():
     batch_size = 1
     x = mx.nd.ones(shape)
     y = mx.nd.ones(shape)
-    samples = (mx.nd.ones((num_sampled,)), mx.nd.ones(shape), mx.nd.ones((num_sampled,)))
+    sampled_cls = mx.nd.ones((num_sampled,))
+    sampled_cls_cnt = mx.nd.ones((num_sampled,))
+    true_cls_cnt = mx.nd.ones(shape)
+    samples = (sampled_cls, sampled_cls_cnt, true_cls_cnt)
     hidden = model.begin_state(batch_size=batch_size, func=mx.nd.zeros, ctx=ctx)
     with mx.autograd.record():
         logits, hidden, new_y = model(x, y, hidden, samples)

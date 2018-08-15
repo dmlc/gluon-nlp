@@ -23,7 +23,6 @@ __all__ = ['ISLogits', 'NCELogits', 'SparseISLogits', 'SparseNCELogits']
 from mxnet import nd
 from mxnet.gluon import Block, HybridBlock
 
-
 class _SampledLogitsHelper(HybridBlock):
     """A helper Block for calculating sampled logits.
 
@@ -47,9 +46,9 @@ class _SampledLogitsHelper(HybridBlock):
         self._in_unit = in_unit
         self._remove_accidental_hits = remove_accidental_hits
 
-    def hybrid_forward(self, F, x, sampled_candidates, expected_count_sampled,
-                       expected_count_true, label, w_all, b_all):
+    def hybrid_forward(self, F, x, sampled_values, label, w_all, b_all):
         """Forward computation."""
+        sampled_candidates, expected_count_sampled, expected_count_true = sampled_values
         # (num_sampled, in_unit)
         w_sampled = w_all.slice(begin=(0, 0), end=(self._num_sampled, None))
         w_true = w_all.slice(begin=(self._num_sampled, 0), end=(None, None))
@@ -123,12 +122,10 @@ class _SampledLogits(HybridBlock):
     Inputs:
         - **x**: A tensor of shape `(batch_size, in_unit)`. The forward activation of
           the input network.
-        - **sampled_candidates**: A tensor of shape `(num_sampled,)`.
-          The sampled candidate classes.
-        - **expected_count_sampled**: A tensor of shape `(num_sampled,)`.
-          The expected count for sampled candidates.
-        - **expected_count_true**: A tensor of shape `(num_sampled)`.
-          The expected count for true classes.
+        - **sampled_values** : A list of three tensors for
+          `sampled_classes` with shape `(num_samples,)`,
+          `expected_count_sampled` with shape `(num_samples,)`, and
+          `expected_count_true` with shape `(sequence_length, batch_size)`.
         - **label**: A tensor of shape `(batch_size,1)`.
           The target classes.
 
@@ -158,9 +155,9 @@ class _SampledLogits(HybridBlock):
         self._remove_accidental_hits = remove_accidental_hits
         self._sparse_grad = sparse_grad
 
-    def hybrid_forward(self, F, x, sampled_candidates, expected_count_sampled,
-                       expected_count_true, label, weight, bias):
+    def hybrid_forward(self, F, x, sampled_values, label, weight, bias):
         """Forward computation."""
+        sampled_candidates, _, _ = sampled_values
         # (batch_size,)
         label = F.reshape(label, shape=(-1,))
         # (num_sampled+batch_size,)
@@ -172,8 +169,7 @@ class _SampledLogits(HybridBlock):
                             sparse_grad=self._sparse_grad)
         # (num_sampled+batch_size, 1)
         b_all = F.take(bias, indices=ids)
-        return self._logits(x, sampled_candidates, expected_count_sampled,
-                            expected_count_true, label, w_all, b_all)
+        return self._logits(x, sampled_values, label, w_all, b_all)
 
     def __repr__(self):
         s = '{name}({mapping})'
@@ -201,8 +197,7 @@ class NCELogits(_SampledLogits):
 
         # training
         for x, y, sampled_values in train_batches:
-            sampled_cls, cnt_sampled, cnt_true = sampled_values
-            logits, new_targets = train_net(x, sampled_cls, cnt_sampled, cnt_true, y)
+            logits, new_targets = train_net(x, sampled_values, y)
             l = loss_train(logits, new_targets)
 
         # network for testing
@@ -238,12 +233,10 @@ class NCELogits(_SampledLogits):
     Inputs:
         - **x**: A tensor of shape `(batch_size, in_unit)`. The forward activation of
           the input network.
-        - **sampled_candidates**: A tensor of shape `(num_sampled,)`.
-          The sampled candidate classes.
-        - **expected_count_sampled**: A tensor of shape `(num_sampled,)`.
-          The expected count for sampled candidates.
-        - **expected_count_true**: A tensor of shape `(num_sampled)`.
-          The expected count for true classes.
+        - **sampled_values** : A list of three tensors for
+          `sampled_classes` with shape `(num_samples,)`,
+          `expected_count_sampled` with shape `(num_samples,)`, and
+          `expected_count_true` with shape `(sequence_length, batch_size)`.
         - **label**: A tensor of shape `(batch_size,1)`.
           The target classes.
 
@@ -286,8 +279,7 @@ class ISLogits(_SampledLogits):
 
         # training
         for x, y, sampled_values in train_batches:
-            sampled_cls, cnt_sampled, cnt_true = sampled_values
-            logits, new_targets = train_net(x, sampled_cls, cnt_sampled, cnt_true, y)
+            logits, new_targets = train_net(x, sampled_values, y)
             l = loss(logits, new_targets)
 
         # network for testing
@@ -322,12 +314,10 @@ class ISLogits(_SampledLogits):
     Inputs:
         - **x**: A tensor of shape `(batch_size, in_unit)`. The forward activation of
           the input network.
-        - **sampled_candidates**: A tensor of shape `(num_sampled,)`.
-          The sampled candidate classes.
-        - **expected_count_sampled**: A tensor of shape `(num_sampled,)`.
-          The expected count for sampled candidates.
-        - **expected_count_true**: A tensor of shape `(num_sampled)`.
-          The expected count for true classes.
+        - **sampled_values** : A list of three tensors for
+          `sampled_classes` with shape `(num_samples,)`,
+          `expected_count_sampled` with shape `(num_samples,)`, and
+          `expected_count_true` with shape `(sequence_length, batch_size)`.
         - **label**: A tensor of shape `(batch_size,1)`.
           The target classes.
 
@@ -378,8 +368,7 @@ class _SparseSampledLogits(Block):
 
         # training
         for x, y, sampled_values in train_batches:
-            sampled_cls, cnt_sampled, cnt_true = sampled_values
-            logits, new_targets = train_net(x, sampled_cls, cnt_sampled, cnt_true, y)
+            logits, new_targets = train_net(x, sampled_values, y)
             l = loss(logits, new_targets)
 
         # save params
@@ -418,12 +407,10 @@ class _SparseSampledLogits(Block):
     Inputs:
         - **x**: A tensor of shape `(batch_size, in_unit)`. The forward activation of
           the input network.
-        - **sampled_candidates**: A tensor of shape `(num_sampled,)`.
-          The sampled candidate classes.
-        - **expected_count_sampled**: A tensor of shape `(num_sampled,)`.
-          The expected count for sampled candidates.
-        - **expected_count_true**: A tensor of shape `(num_sampled)`.
-          The expected count for true classes.
+        - **sampled_values** : A list of three tensors for
+          `sampled_classes` with shape `(num_samples,)`,
+          `expected_count_sampled` with shape `(num_samples,)`, and
+          `expected_count_true` with shape `(sequence_length, batch_size)`.
         - **label**: A tensor of shape `(batch_size,1)`.
           The target classes.
 
@@ -453,9 +440,9 @@ class _SparseSampledLogits(Block):
         self._kwargs = {'input_dim': self._num_classes, 'output_dim': self._in_unit,
                         'sparse_grad': True}
 
-    def forward(self, x, sampled_candidates, expected_count_sampled,
-                expected_count_true, label):
+    def forward(self, x, sampled_values, label):
         """Forward computation."""
+        sampled_candidates, _, _ = sampled_values
         # (batch_size,)
         label = label.reshape(shape=(-1,))
         # (num_sampled+batch_size,)
@@ -467,8 +454,7 @@ class _SparseSampledLogits(Block):
         w_all = nd.Embedding(data=ids, weight=weight, **self._kwargs)
         # (num_sampled+batch_size,)
         b_all = nd.take(bias, indices=ids)
-        out, new_targets = self._logits(x, sampled_candidates, expected_count_sampled,
-                                        expected_count_true, label, w_all, b_all)
+        out, new_targets = self._logits(x, sampled_values, label, w_all, b_all)
         return out, new_targets
 
     def __repr__(self):
@@ -506,8 +492,7 @@ class SparseISLogits(_SparseSampledLogits):
 
         # training
         for x, y, sampled_values in train_batches:
-            sampled_cls, cnt_sampled, cnt_true = sampled_values
-            logits, new_targets = train_net(x, sampled_cls, cnt_sampled, cnt_true, y)
+            logits, new_targets = train_net(x, sampled_values, y)
             l = loss(logits, new_targets)
 
         # save params
@@ -546,12 +531,10 @@ class SparseISLogits(_SparseSampledLogits):
     Inputs:
         - **x**: A tensor of shape `(batch_size, in_unit)`. The forward activation of
           the input network.
-        - **sampled_candidates**: A tensor of shape `(num_sampled,)`.
-          The sampled candidate classes.
-        - **expected_count_sampled**: A tensor of shape `(num_sampled,)`.
-          The expected count for sampled candidates.
-        - **expected_count_true**: A tensor of shape `(num_sampled)`.
-          The expected count for true classes.
+        - **sampled_values** : A list of three tensors for
+          `sampled_classes` with shape `(num_samples,)`,
+          `expected_count_sampled` with shape `(num_samples,)`, and
+          `expected_count_true` with shape `(sequence_length, batch_size)`.
         - **label**: A tensor of shape `(batch_size,1)`.
           The target classes.
 
@@ -597,8 +580,7 @@ class SparseNCELogits(_SparseSampledLogits):
 
         # training
         for x, y, sampled_values in train_batches:
-            sampled_cls, cnt_sampled, cnt_true = sampled_values
-            logits, new_targets = train_net(x, sampled_cls, cnt_sampled, cnt_true, y)
+            logits, new_targets = train_net(x, sampled_values, y)
             l = train_loss(logits, new_targets)
 
         # save params
@@ -638,12 +620,10 @@ class SparseNCELogits(_SparseSampledLogits):
     Inputs:
         - **x**: A tensor of shape `(batch_size, in_unit)`. The forward activation of
           the input network.
-        - **sampled_candidates**: A tensor of shape `(num_sampled,)`.
-          The sampled candidate classes.
-        - **expected_count_sampled**: A tensor of shape `(num_sampled,)`.
-          The expected count for sampled candidates.
-        - **expected_count_true**: A tensor of shape `(num_sampled)`.
-          The expected count for true classes.
+        - **sampled_values** : A list of three tensors for
+          `sampled_classes` with shape `(num_samples,)`,
+          `expected_count_sampled` with shape `(num_samples,)`, and
+          `expected_count_true` with shape `(sequence_length, batch_size)`.
         - **label**: A tensor of shape `(batch_size,1)`.
           The target classes.
 

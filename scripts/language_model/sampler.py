@@ -70,10 +70,10 @@ class LogUniformSampler(CandidateSampler):
         -------
         samples: NDArray
             The sampled candidate classes.
-        expected_count_true: NDArray
-            The expected count for true classes in the same shape as `true_classes`.
         expected_count_sample: NDArray
             The expected count for sampled candidates.
+        expected_count_true: NDArray
+            The expected count for true classes in the same shape as `true_classes`.
         """
         num_sampled = self._num_sampled
         ctx = true_classes.context
@@ -100,4 +100,4 @@ class LogUniformSampler(CandidateSampler):
         sampled_classes = sampled_classes.astype(self._dtype, copy=False)
         count_true = count_true.astype(self._dtype, copy=False)
         count_sampled = count_sampled.astype(self._dtype, copy=False)
-        return sampled_classes, count_true, count_sampled
+        return sampled_classes, count_sampled, count_true
