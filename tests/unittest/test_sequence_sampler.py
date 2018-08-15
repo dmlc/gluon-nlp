@@ -7,7 +7,7 @@ from mxnet.gluon import Block, HybridBlock, nn
 from mxnet.gluon.rnn import RNNCell, RNN
 from numpy.testing import assert_allclose
 
-from gluonnlp.model import BeamSearchSampler, BeamSearchScorer, HybridBeamSearchSampler
+from gluonnlp.model import BeamSearchSampler, BeamSearchScorer, HybridBeamSearchSampler, SequenceSampler
 
 
 def test_beam_search_score():
