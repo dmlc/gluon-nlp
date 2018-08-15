@@ -5,7 +5,6 @@ from mxnet import gluon
 import pytest
 
 
-@pytest.mark.skip(reason="causes deadlocks on CI. Tracked in issue #274")
 def test_sharded_data_loader():
     X = np.random.uniform(size=(100, 20))
     Y = np.random.uniform(size=(100,))
