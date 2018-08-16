@@ -37,14 +37,17 @@ class _SampledLogitsHelper(HybridBlock):
     remove_accidental_hits: bool
         Whether to remove "accidental hits" when a sampled candidate is equal to
         one of the true classes.
+    sparse_label: bool
+        Whether to output label as an integer array instead of probability distribution.
     """
     def __init__(self, num_classes, num_sampled, in_unit, remove_accidental_hits,
-                 prefix=None, params=None):
+                 sparse_label, prefix=None, params=None):
         super(_SampledLogitsHelper, self).__init__(prefix=prefix, params=params)
         self._num_classes = num_classes
         self._num_sampled = num_sampled
         self._in_unit = in_unit
         self._remove_accidental_hits = remove_accidental_hits
+        self._sparse_label = sparse_label
 
     def hybrid_forward(self, F, x, sampled_values, label, w_all, b_all):
         """Forward computation."""
@@ -82,7 +85,14 @@ class _SampledLogitsHelper(HybridBlock):
         # logits and new_labels
         # (batch_size, 1+num_sampled)
         logits = F.concat(logits_true, logits_sampled, dim=1)
-        return logits, F.zeros_like(label)
+        if self._sparse_label:
+            new_label = F.zeros_like(label)
+        else:
+            label_vec = F.reshape(label, (-1, 1))
+            new_label_sampled = F.zeros_like(logits_sampled)
+            new_label_true = F.ones_like(label_vec)
+            new_label = F.Concat(new_label_sampled, new_label_true, dim=1)
+        return logits, new_label
 
     def __repr__(self):
         s = '{name}({mapping})'
@@ -132,13 +142,14 @@ class _SampledLogits(HybridBlock):
     Outputs:
         - **out**: A tensor of shape `(batch_size, 1+num_sampled)`.
           The output probability for the true class and sampled classes
-        - **new_targets**: A tensor of shape `(batch_size,)`.
-          The new target classes.
+        - **new_targets**: A tensor.
+          The new target classes. The shape is `(batch_size, 1)` if `sparse_label` is `True`,
+          `(batch_size, 1+num_sampled)` otherwise.
 
     """
     def __init__(self, num_classes, num_sampled, in_unit, remove_accidental_hits,
-                 dtype='float32', weight_initializer=None, bias_initializer='zeros',
-                 sparse_grad=True, prefix=None, params=None):
+                 sparse_label, dtype='float32', weight_initializer=None,
+                 bias_initializer='zeros', sparse_grad=True, prefix=None, params=None):
         super(_SampledLogits, self).__init__(prefix=prefix, params=params)
         with self.name_scope():
             grad_stype = 'row_sparse' if sparse_grad else 'default'
@@ -148,7 +159,7 @@ class _SampledLogits(HybridBlock):
             self.bias = self.params.get('bias', shape=(num_classes,), init=bias_initializer,
                                         dtype=dtype)
         self._logits = _SampledLogitsHelper(num_classes, num_sampled, in_unit,
-                                            remove_accidental_hits)
+                                            remove_accidental_hits, sparse_label)
         self._num_classes = num_classes
         self._num_sampled = num_sampled
         self._in_unit = in_unit
@@ -253,14 +264,14 @@ class NCELogits(_SampledLogits):
     Outputs:
         - **out**: A tensor of shape `(batch_size, 1+num_sampled)`.
           The output probability for the true class and sampled classes
-        - **new_targets**: A tensor of shape `(batch_size,)`.
+        - **new_targets**: A tensor of shape `(batch_size, 1+num_sampled)`.
           The new target classes.
     """
     def __init__(self, num_classes, num_sampled, in_unit, remove_accidental_hits=False,
                  dtype='float32', weight_initializer=None, bias_initializer='zeros',
                  sparse_grad=True, prefix=None, params=None):
         super(NCELogits, self).__init__(num_classes, num_sampled, in_unit, remove_accidental_hits,
-                                        dtype=dtype, weight_initializer=weight_initializer,
+                                        False, dtype=dtype, weight_initializer=weight_initializer,
                                         bias_initializer=bias_initializer, sparse_grad=sparse_grad,
                                         prefix=prefix, params=params)
 
@@ -343,7 +354,7 @@ class ISLogits(_SampledLogits):
                  dtype='float32', weight_initializer=None, bias_initializer='zeros',
                  sparse_grad=True, prefix=None, params=None):
         super(ISLogits, self).__init__(num_classes, num_sampled, in_unit, remove_accidental_hits,
-                                       dtype=dtype, weight_initializer=weight_initializer,
+                                       True, dtype=dtype, weight_initializer=weight_initializer,
                                        bias_initializer=bias_initializer, sparse_grad=sparse_grad,
                                        prefix=prefix, params=params)
 
@@ -400,6 +411,8 @@ class _SparseSampledLogits(Block):
     remove_accidental_hits: bool
         Whether to remove "accidental hits" when a sampled candidate is equal to
         one of the true classes.
+    sparse_label: bool
+        Whether to output label as an integer array instead of probability distribution.
     dtype : str or np.dtype, default 'float32'
         Data type of output embeddings.
     weight_initializer : str or `Initializer`, optional
@@ -420,13 +433,14 @@ class _SparseSampledLogits(Block):
     Outputs:
         - **out**: A tensor of shape `(batch_size, 1+num_sampled)`.
           The output probability for the true class and sampled classes
-        - **new_targets**: A tensor of shape `(batch_size,)`.
-          The new target classes.
+        - **new_targets**: A tensor.
+          The new target classes. The shape is `(batch_size, 1)` if `sparse_label` is `True`,
+          `(batch_size, 1+num_sampled)` otherwise.
 
     """
     def __init__(self, num_classes, num_sampled, in_unit, remove_accidental_hits,
-                 dtype='float32', weight_initializer=None, bias_initializer='zeros',
-                 prefix=None, params=None):
+                 sparse_label, dtype='float32', weight_initializer=None,
+                 bias_initializer='zeros', prefix=None, params=None):
         super(_SparseSampledLogits, self).__init__(prefix=prefix, params=params)
         with self.name_scope():
             self.weight = self.params.get('weight', shape=(num_classes, in_unit),
@@ -435,7 +449,7 @@ class _SparseSampledLogits(Block):
             self.bias = self.params.get('bias', shape=(num_classes,), init=bias_initializer,
                                         dtype=dtype)
             self._logits = _SampledLogitsHelper(num_classes, num_sampled, in_unit,
-                                                remove_accidental_hits)
+                                                remove_accidental_hits, sparse_label)
         self._num_classes = num_classes
         self._num_sampled = num_sampled
         self._in_unit = in_unit
@@ -554,8 +568,9 @@ class SparseISLogits(_SparseSampledLogits):
                  dtype='float32', weight_initializer=None, bias_initializer='zeros',
                  prefix=None, params=None):
         super(SparseISLogits, self).__init__(num_classes, num_sampled, in_unit,
-                                             remove_accidental_hits, dtype, weight_initializer,
-                                             bias_initializer, prefix=prefix, params=params)
+                                             remove_accidental_hits, True, dtype,
+                                             weight_initializer, bias_initializer,
+                                             prefix=prefix, params=params)
 
 class SparseNCELogits(_SparseSampledLogits):
     """Block that computes sampled output training logits and labels suitable for
@@ -631,7 +646,7 @@ class SparseNCELogits(_SparseSampledLogits):
           `sampled_classes` with shape `(num_samples,)`,
           `expected_count_sampled` with shape `(num_samples,)`, and
           `expected_count_true` with shape `(sequence_length, batch_size)`.
-        - **label**: A tensor of shape `(batch_size,1)`.
+        - **label**: A tensor of shape `(batch_size, 1+num_samples)`.
           The target classes.
 
     Outputs:
@@ -646,4 +661,5 @@ class SparseNCELogits(_SparseSampledLogits):
                  prefix=None, params=None):
         super(SparseNCELogits, self).__init__(num_classes, num_sampled, in_unit,
                                               remove_accidental_hits, dtype, weight_initializer,
-                                              bias_initializer, prefix=prefix, params=params)
+                                              bias_initializer, False, prefix=prefix,
+                                              params=params)
