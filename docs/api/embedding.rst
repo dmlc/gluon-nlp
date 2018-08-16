@@ -39,6 +39,7 @@ Intrinsic evaluation
     WordEmbeddingSimilarityFunction
     WordEmbeddingAnalogyFunction
     CosineSimilarity
+    ThreeCosAdd
     ThreeCosMul
     WordEmbeddingSimilarity
     WordEmbeddingAnalogy
