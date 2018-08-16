@@ -5,7 +5,7 @@ Sequence Sampling
 This script can be used to generate sentences using beam search from a pretrained language model.
 
 Beam Search Generator
-=====================
+~~~~~~~~~~~~~~~~~~~~~
 
 Use the following command to decode using beam search.
 
@@ -54,7 +54,7 @@ Output is
    [u"I love it , and I don 't know how to do it , but I don 't think it 's a lot .", -29.43183]
 
 Sequence Sampler
-================
+~~~~~~~~~~~~~~~~
 
 Use the following command to decode to sample from multinomial distribution, produced from softmax
 with temperature 1.0.
