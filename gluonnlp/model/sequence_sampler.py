@@ -420,6 +420,9 @@ class _SamplingStepUpdate(HybridBlock):
 
         # (batch_size, beam_size)
         chosen_word_ids = F.sample_multinomial(smoothed_probs, dtype=np.int32)
+        chosen_word_ids = F.where(beam_alive_mask,
+                                  chosen_word_ids,
+                                  -1*F.ones_like(beam_alive_mask))
         chosen_word_log_probs = log_probs[mx.nd.arange(log_probs.shape[0]),
                                           chosen_word_ids.reshape(-1)].reshape(-4, -1, beam_size)
 
