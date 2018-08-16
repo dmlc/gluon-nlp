@@ -660,6 +660,6 @@ class SparseNCEDense(_SparseSampledDense):
                  dtype='float32', weight_initializer=None, bias_initializer='zeros',
                  prefix=None, params=None):
         super(SparseNCEDense, self).__init__(num_classes, num_sampled, in_unit,
-                                             remove_accidental_hits, dtype, weight_initializer,
-                                             bias_initializer, False, prefix=prefix,
-                                             params=params)
+                                             remove_accidental_hits, False,
+                                             dtype, weight_initializer, bias_initializer,
+                                             prefix=prefix, params=params)
