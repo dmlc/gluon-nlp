@@ -22,7 +22,10 @@ __all__ = ['ShardedDataLoader']
 import sys
 import multiprocessing
 import multiprocessing.queues
-from mxnet.gluon.data.dataloader import Queue, SimpleQueue, DataLoader, _MultiWorkerIter
+import threading
+from mxnet import context
+from mxnet.gluon.data.dataloader import Queue, SimpleQueue, DataLoader, \
+    fetcher_loop, _as_in_context
 
 
 def worker_loop(dataset, key_queue, data_queue, batchify_fn):
@@ -39,9 +42,9 @@ def worker_loop(dataset, key_queue, data_queue, batchify_fn):
         data_queue.put((idx, batch))
 
 
-class _ShardedMultiWorkerIter(_MultiWorkerIter):
+class _ShardedMultiWorkerIter(object):
     """Interal multi-worker iterator for ShardedDataLoader."""
-    def __init__(self, num_workers, dataset, batchify_fn, batch_sampler):
+    def __init__(self, num_workers, dataset, batchify_fn, batch_sampler, pin_memory=False):
         assert num_workers > 0, '_MultiWorkerIter is not for {} workers'.format(num_workers)
         self._num_workers = num_workers
         self._dataset = dataset
@@ -64,9 +67,57 @@ class _ShardedMultiWorkerIter(_MultiWorkerIter):
             worker.start()
             workers.append(worker)
 
+        self._fetcher = threading.Thread(
+            target=fetcher_loop,
+            args=(self._data_queue, self._data_buffer, pin_memory))
+        self._fetcher.daemon = True
+        self._fetcher.start()
+
         # pre-fetch
         for _ in range(2 * self._num_workers):
             self._push_next()
+
+    def __len__(self):
+        return len(self._batch_sampler)
+
+    def __del__(self):
+        self.shutdown()
+
+    def _push_next(self):
+        """Assign next batch workload to workers."""
+        r = next(self._iter, None)
+        if r is None:
+            return
+        self._key_queue.put((self._sent_idx, r))
+        self._sent_idx += 1
+
+    def __next__(self):
+        assert not self._shutdown, 'call __next__ after shutdown is forbidden'
+        if self._rcvd_idx == self._sent_idx:
+            assert not self._data_buffer, 'Data buffer should be empty at this moment'
+            self.shutdown()
+            raise StopIteration
+
+        while True:
+            if self._rcvd_idx in self._data_buffer:
+                batch = self._data_buffer.pop(self._rcvd_idx)
+                self._rcvd_idx += 1
+                self._push_next()
+                return batch
+
+    def next(self):
+        return self.__next__()
+
+    def __iter__(self):
+        return self
+
+    def shutdown(self):
+        """Shutdown internal workers by pushing terminate signals."""
+        if not self._shutdown:
+            for _ in range(self._num_workers):
+                self._key_queue.put((None, None))
+            self._data_queue.put((None, None))
+            self._shutdown = True
 
 
 class ShardedDataLoader(DataLoader):
@@ -110,26 +161,40 @@ class ShardedDataLoader(DataLoader):
     num_workers : int, default 0
         The number of multiprocessing workers to use for data preprocessing.
         `num_workers > 0` is not supported on Windows yet.
+    pin_memory : boolean, default False
+        If ``True``, the dataloader will copy NDArrays into pinned memory
+        before returning them. Copying from CPU pinned memory to GPU is faster
+        than from normal CPU memory.
     """
 
     def __init__(self, dataset, batch_size=None, shuffle=False, sampler=None,
-                 last_batch=None, batch_sampler=None, batchify_fn=None, num_workers=0):
+                 last_batch=None, batch_sampler=None, batchify_fn=None,
+                 num_workers=0, pin_memory=False):
         super(ShardedDataLoader, self).__init__(dataset, batch_size=batch_size, shuffle=shuffle,
                                                 sampler=sampler, last_batch=last_batch,
                                                 batch_sampler=batch_sampler,
                                                 batchify_fn=batchify_fn,
-                                                num_workers=num_workers)
+                                                num_workers=num_workers,
+                                                pin_memory=pin_memory)
 
 
     def __iter__(self):
         if self._num_workers == 0:
-            generator = lambda: [(yield self._batchify_fn([self._dataset[idx] for idx in batch]))
-                                 if not isinstance(batch[0], (list, tuple)) else
-                                 (yield [self._batchify_fn([self._dataset[idx] for idx in shard])
-                                         for shard in batch])
-                                 for batch in self._batch_sampler]
-            return generator()
+            def _same_process_iter():
+                for batch in self._batch_sampler:
+                    if isinstance(batch[0], (list, tuple)):
+                        rets = [self._batchify_fn([self._dataset[idx] for idx in shard])
+                                for shard in batch]
+                        if self._pin_memory:
+                            rets = [_as_in_context(ret, context.cpu_pinned()) for ret in rets]
+                        yield rets
+                    else:
+                        ret = self._batchify_fn([self._dataset[idx] for idx in batch])
+                        if self._pin_memory:
+                            ret = _as_in_context(ret, context.cpu_pinned())
+                        yield ret
+            return _same_process_iter()
 
         # multi-worker
         return _ShardedMultiWorkerIter(self._num_workers, self._dataset,
-                                       self._batchify_fn, self._batch_sampler)
+                                       self._batchify_fn, self._batch_sampler, self._pin_memory)
