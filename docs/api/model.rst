@@ -68,10 +68,10 @@ Other Modeling Utilities
     WeightDropParameter
     apply_weight_drop
     L2Normalization
-    ISLogits
-    NCELogits
-    SparseISLogits
-    SparseNCELogits
+    ISDense
+    NCEDense
+    SparseISDense
+    SparseNCEDense
 
 API Reference
 -------------

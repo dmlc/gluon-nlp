@@ -31,7 +31,7 @@ def test_nce_loss():
     num_sampled = 3
     vocab_size = 10
     num_hidden = 5
-    model = nlp.model.NCELogits(vocab_size, num_sampled, num_hidden)
+    model = nlp.model.NCEDense(vocab_size, num_sampled, num_hidden)
     loss = gluon.loss.SigmoidBCELoss()
     model.hybridize()
     model.initialize(mx.init.Xavier(), ctx=ctx)
@@ -43,10 +43,10 @@ def test_nce_loss():
     true_cls_cnt = mx.nd.ones((batch_size,))
     samples = (sampled_cls, sampled_cls_cnt, true_cls_cnt)
     with mx.autograd.record():
-        logits, new_y = model(x, samples, y)
-        assert logits.shape == (batch_size, 1+num_sampled)
+        pred, new_y = model(x, samples, y)
+        assert pred.shape == (batch_size, 1+num_sampled)
         assert new_y.shape == (batch_size, 1+num_sampled)
-        l = loss(logits, new_y)
+        l = loss(pred, new_y)
     l.backward()
     mx.nd.waitall()
 
@@ -56,7 +56,7 @@ def test_is_softmax_loss():
     num_sampled = 3
     vocab_size = 10
     num_hidden = 5
-    model = nlp.model.ISLogits(vocab_size, num_sampled, num_hidden)
+    model = nlp.model.ISDense(vocab_size, num_sampled, num_hidden)
     loss = gluon.loss.SoftmaxCrossEntropyLoss()
     model.hybridize()
     model.initialize(mx.init.Xavier(), ctx=ctx)
@@ -68,9 +68,9 @@ def test_is_softmax_loss():
     true_cls_cnt = mx.nd.ones((batch_size,))
     samples = (sampled_cls, sampled_cls_cnt, true_cls_cnt)
     with mx.autograd.record():
-        logits, new_y = model(x, samples, y)
-        assert logits.shape == (batch_size, 1+num_sampled)
+        pred, new_y = model(x, samples, y)
+        assert pred.shape == (batch_size, 1+num_sampled)
         assert new_y.shape == (batch_size,)
-        l = loss(logits, new_y)
+        l = loss(pred, new_y)
     l.backward()
     mx.nd.waitall()

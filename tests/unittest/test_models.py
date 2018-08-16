@@ -181,12 +181,12 @@ def test_save_load_big_rnn_models():
     hidden = model.begin_state(batch_size=batch_size, func=mx.nd.zeros, ctx=ctx)
     # test forward
     with mx.autograd.record():
-        logits, hidden, new_y = model(x, y, hidden, samples)
-        assert logits.shape == (seq_len, batch_size, 1+num_sampled)
+        pred, hidden, new_y = model(x, y, hidden, samples)
+        assert pred.shape == (seq_len, batch_size, 1+num_sampled)
         assert new_y.shape == (seq_len, batch_size)
-        logits = logits.reshape((-3, -1))
+        pred = pred.reshape((-3, -1))
         new_y = new_y.reshape((-1,))
-        l = loss(logits, new_y)
+        l = loss(pred, new_y)
     l.backward()
     mx.nd.waitall()
     path = 'tests/data/model/test_save_load_big_rnn_models.params'
@@ -216,12 +216,12 @@ def test_big_rnn_model_share_params():
     samples = (sampled_cls, sampled_cls_cnt, true_cls_cnt)
     hidden = model.begin_state(batch_size=batch_size, func=mx.nd.zeros, ctx=ctx)
     with mx.autograd.record():
-        logits, hidden, new_y = model(x, y, hidden, samples)
-        assert logits.shape == (seq_len, batch_size, 1+num_sampled)
+        pred, hidden, new_y = model(x, y, hidden, samples)
+        assert pred.shape == (seq_len, batch_size, 1+num_sampled)
         assert new_y.shape == (seq_len, batch_size)
-        logits = logits.reshape((-3, -1))
+        pred = pred.reshape((-3, -1))
         new_y = new_y.reshape((-1,))
-        l = loss(logits, new_y)
+        l = loss(pred, new_y)
     l.backward()
     assert model.decoder.weight._grad_stype == 'default'
     mx.nd.waitall()
@@ -229,8 +229,8 @@ def test_big_rnn_model_share_params():
                                                  params=model.collect_params())
     eval_model.hybridize()
     eval_model.initialize(mx.init.Xavier(), ctx=ctx)
-    logits, hidden = eval_model(x, hidden)
-    assert logits.shape == (seq_len, batch_size, vocab_size)
+    pred, hidden = eval_model(x, hidden)
+    assert pred.shape == (seq_len, batch_size, vocab_size)
     mx.nd.waitall()
 
 def test_weight_drop():
