@@ -540,9 +540,7 @@ class BeamSearchSampler(object):
                               new_states, vocab_size_nd, batch_shift_nd)
             step_input = mx.nd.relu(chosen_word_ids).reshape((-1,))
             if mx.nd.sum(beam_alive_mask).asscalar() == 0:
-                return mx.nd.round(samples).astype(np.int32),\
-                       scores,\
-                       mx.nd.round(valid_length).astype(np.int32)
+                return samples, scores, valid_length
         final_word = mx.nd.where(beam_alive_mask,
                                  mx.nd.full(shape=(batch_size, beam_size),
                                             val=self._eos_id, ctx=ctx, dtype=np.int32),
@@ -550,9 +548,7 @@ class BeamSearchSampler(object):
                                             val=-1, ctx=ctx, dtype=np.int32))
         samples = mx.nd.concat(samples, final_word.reshape((0, 0, 1)), dim=2)
         valid_length += beam_alive_mask
-        return mx.nd.round(samples).astype(np.int32),\
-               scores,\
-               mx.nd.round(valid_length).astype(np.int32)
+        return samples, scores, valid_length
 
 
 class HybridBeamSearchSampler(HybridBlock):
@@ -714,9 +710,7 @@ class HybridBeamSearchSampler(HybridBlock):
 
         new_samples, new_new_valid_length = \
             F.contrib.cond(F.sum(new_beam_alive_mask) == 0, _then_func, _else_func)
-        return F.round(new_samples).astype(np.int32),\
-               new_scores,\
-               F.round(new_new_valid_length).astype(np.int32)
+        return new_samples, new_scores, new_new_valid_length
 
 class SequenceSampler(object):
     r"""Draw samples from the decoder according to the step-wise distribution.
@@ -798,9 +792,7 @@ class SequenceSampler(object):
                 self._updater(samples, valid_length, outputs, scores, beam_alive_mask, new_states)
             step_input = mx.nd.relu(chosen_word_ids).reshape((-1,))
             if mx.nd.sum(beam_alive_mask).asscalar() == 0:
-                return mx.nd.round(samples).astype(np.int32),\
-                       scores,\
-                       mx.nd.round(valid_length).astype(np.int32)
+                return samples, scores, valid_length
         final_word = mx.nd.where(beam_alive_mask,
                                  mx.nd.full(shape=(batch_size, beam_size),
                                             val=self._eos_id, ctx=ctx, dtype=np.int32),
@@ -808,6 +800,4 @@ class SequenceSampler(object):
                                             val=-1, ctx=ctx, dtype=np.int32))
         samples = mx.nd.concat(samples, final_word.reshape((0, 0, 1)), dim=2)
         valid_length += beam_alive_mask
-        return mx.nd.round(samples).astype(np.int32),\
-               scores,\
-               mx.nd.round(valid_length).astype(np.int32)
+        return samples, scores, valid_length
