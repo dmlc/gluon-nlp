@@ -255,16 +255,6 @@ class NCELogits(_SampledLogits):
           The output probability for the true class and sampled classes
         - **new_targets**: A tensor of shape `(batch_size,)`.
           The new target classes.
-
-    .. note::
-
-        If `sparse_grad` is set to True, the gradient w.r.t input and output
-        embeddings will be sparse. Only a subset of optimizers support
-        sparse gradients, including SGD, AdaGrad and Adam.
-        By default `lazy_update` is turned on for these optimizers,
-        which may perform differently from standard updates.
-        For more details, please check the Optimization API at:
-        https://mxnet.incubator.apache.org/api/python/optimization/optimization.html
     """
     def __init__(self, num_classes, num_sampled, in_unit, remove_accidental_hits=False,
                  dtype='float32', weight_initializer=None, bias_initializer='zeros',
