@@ -122,7 +122,7 @@ os.environ['MXNET_CPU_WORKER_NTHREADS'] = str(len(context))
 # Data stream
 ###############################################################################
 train_data_stream, test_data_stream = \
-    [nlp.data.GBWStream(segment=segment, skip_empty=True, bos='<bos>', eos='<eos>')
+    [nlp.data.GBWStream(segment=segment, skip_empty=True, bos=None, eos='<eos>')
      for segment in segments]
 vocab = train_data_stream.vocab
 ntokens = len(vocab)

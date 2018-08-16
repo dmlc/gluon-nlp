@@ -34,6 +34,6 @@ def test_gbw():
     stream = nlp.data.GBWStream(segment='test')
     freq = nlp.data.utils.Counter(
         itertools.chain.from_iterable(itertools.chain.from_iterable(stream)))
-    assert len(freq) == 21546
-    assert sum(c for c in freq.values()) == 165733
+    assert len(freq) == 21545
+    assert sum(c for c in freq.values()) == 159658
     assert freq['English'] == 14

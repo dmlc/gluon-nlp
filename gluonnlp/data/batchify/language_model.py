@@ -53,7 +53,7 @@ class CorpusBatchify(object):
 
         Parameters
         ----------
-        data : mxnet.gluon.data.DataSet
+        data : mxnet.gluon.data.Dataset
             A flat dataset to be batchified.
 
         Returns
@@ -118,6 +118,21 @@ class CorpusBPTTBatchify(object):
                                  'in vocab when last_batch="keep".')
 
     def __call__(self, corpus):
+        """Batchify a dataset.
+
+        Parameters
+        ----------
+        corpus : mxnet.gluon.data.Dataset
+            A flat dataset to be batchified.
+
+        Returns
+        -------
+        mxnet.gluon.data.Dataset
+            Batches of numericalized samples such that the recurrent states
+            from last batch connects with the current batch for each sample.
+            Each element of the Dataset is a tuple of data and label arrays for
+            BPTT. They are of shape (seq_len, batch_size) respectively.
+        """
         if self._last_batch == 'keep':
             coded = self._vocab[list(corpus)]
             sample_len = math.ceil(float(len(coded)) / self._batch_size)
@@ -149,36 +164,35 @@ class StreamBPTTBatchify(object):
 
     For example, the following 4 sequences::
 
-        <bos> a b c d <eos>
-        <bos> e f g h i j <eos>
-        <bos> k l m n <eos>
-        <bos> o <eos>
+        a b c d <eos>
+        e f g h i j <eos>
+        k l m n <eos>
+        o <eos>
 
     will generate 2 batches with seq_len = 5, batch_size = 2 as follow (transposed):
 
     batch_0.data.T::
 
-        <bos> a b c d
-        <bos> e f g h
-
-    batch_0.target.T::
-
         a b c d <eos>
         e f g h i
 
+    batch_0.target.T::
+
+        b c d <eos> k
+        f g h i j
+
     batch_1.data.T::
 
-        <bos> k l m n
-        i j <bos> o <padding>
+        k l m n <eos>
+        j <eos> o <eos> <padding>
 
     batch_1.target.T::
 
-        k l m n <eos>
-        j <bos> o <eos> <padding>
+        l m n <eos> <padding>
+        <eos> o <eos> <padding> <padding>
 
     Parameters
     ----------
-    corpus : nlp.data.SimpleDatasetStream of CorpusDataset
     vocab : gluonnlp.Vocab
         The vocabulary to use for numericalizing the dataset. Each token will be mapped to the
         index according to the vocabulary.
@@ -231,6 +245,21 @@ class StreamBPTTBatchify(object):
             (sampler))
 
     def __call__(self, corpus):
+        """Batchify a stream.
+
+        Parameters
+        ----------
+        corpus : nlp.data.DatasetStream
+            A stream of un-flattened CorpusDataset.
+
+        Returns
+        -------
+        nlp.data.DataStream
+            Batches of numericalized samples such that the recurrent states
+            from last batch connects with the current batch for each sample.
+            Each element of the Dataset is a tuple of data and label arrays for
+            BPTT. They are of shape (seq_len, batch_size) respectively.
+        """
         return _StreamBPTTBatchify(
             corpus, self._vocab, self._seq_len, self._batch_size,
             self._get_sampler(self._sampler), self._last_batch)

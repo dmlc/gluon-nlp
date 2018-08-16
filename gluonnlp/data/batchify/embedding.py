@@ -65,18 +65,6 @@ class EmbeddingCenterContextBatchify(object):
     shuffle : bool, default True
        If True, shuffle the sentences before lazily generating batches.
 
-    Returns
-    -------
-    DataStream
-        Each element of the DataStream is a tuple of 3 NDArrays (center,
-        context, mask). The center array has shape (batch_size, 1). The context
-        and mask arrays have shape (batch_size, 2*window). The center and
-        context arrays contain the center and correpsonding context works
-        respectively. The mask array masks invalid elements in the context
-        array. Elements in the context array can be invalid due to insufficient
-        context elements at a certain position in a sentence or a randomly
-        reduced context size.
-
     """
 
     def __init__(self,
@@ -90,13 +78,26 @@ class EmbeddingCenterContextBatchify(object):
         self._shuffle = shuffle
 
     def __call__(self, corpus):
-        """
+        """Batchify a dataset.
 
         Parameters
         ----------
-        coded : list of lists of int
+        corpus : list of lists of int
             List of coded sentences. A coded sentence itself is a list of token
             indices. Context samples do not cross sentence boundaries.
+
+         Returns
+         -------
+         DataStream
+             Each element of the DataStream is a tuple of 3 NDArrays (center,
+             context, mask). The center array has shape (batch_size, 1). The context
+             and mask arrays have shape (batch_size, 2*window). The center and
+             context arrays contain the center and correpsonding context works
+             respectively. The mask array masks invalid elements in the context
+             array. Elements in the context array can be invalid due to insufficient
+             context elements at a certain position in a sentence or a randomly
+             reduced context size.
+
         """
         return _EmbeddingCenterContextBatchify(
             corpus, self._batch_size, self._window_size,
