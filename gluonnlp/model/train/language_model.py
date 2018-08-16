@@ -23,7 +23,7 @@ from mxnet import init, nd, autograd
 from mxnet.gluon import nn, Block, contrib, rnn
 
 from ..utils import _get_rnn_layer, apply_weight_drop
-from ..sampled_block import ISLogits, SparseISLogits
+from ..sampled_block import ISDense, SparseISDense
 
 class AWDRNN(Block):
     """AWD language model by salesforce.
@@ -373,14 +373,14 @@ class BigRNN(Block):
     def _get_decoder(self):
         prefix = 'decoder0_'
         if self._sparse_weight:
-            # sparse IS logits has both sparse weight and sparse grad
-            block = SparseISLogits(self._vocab_size, self._num_sampled,
-                                   self._projection_size, remove_accidental_hits=True,
-                                   prefix=prefix)
+            # sparse IS Dense has both sparse weight and sparse grad
+            block = SparseISDense(self._vocab_size, self._num_sampled,
+                                  self._projection_size, remove_accidental_hits=True,
+                                  prefix=prefix)
         else:
-            block = ISLogits(self._vocab_size, self._num_sampled,
-                             self._projection_size, remove_accidental_hits=True,
-                             prefix=prefix, sparse_grad=self._sparse_grad)
+            block = ISDense(self._vocab_size, self._num_sampled,
+                            self._projection_size, remove_accidental_hits=True,
+                            prefix=prefix, sparse_grad=self._sparse_grad)
         return block
 
     def begin_state(self, **kwargs):
