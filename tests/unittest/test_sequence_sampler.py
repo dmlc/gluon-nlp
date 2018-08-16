@@ -1,3 +1,4 @@
+import collections
 import functools
 
 import mxnet as mx
@@ -7,7 +8,7 @@ from mxnet.gluon import Block, HybridBlock, nn
 from mxnet.gluon.rnn import RNNCell, RNN
 from numpy.testing import assert_allclose
 
-from gluonnlp.model import BeamSearchSampler, BeamSearchScorer, HybridBeamSearchSampler
+from gluonnlp.model import BeamSearchSampler, BeamSearchScorer, HybridBeamSearchSampler, SequenceSampler
 
 
 def test_beam_search_score():
@@ -25,6 +26,21 @@ def test_beam_search_score():
             lp = (K + length) ** alpha / (K + 1) ** alpha
             assert_allclose(scores.asnumpy(), sum_log_probs.asnumpy() / lp, 1E-5, 1E-5)
 
+def test_sequence_sampler():
+    vocab_size = np.random.randint(5, 20)
+    batch_size = 1000
+    dist = mx.random.uniform(shape=(vocab_size,))
+    def context_free_distribution(step_input, states):
+        batch_size = step_input.shape[0]
+        return dist.expand_dims(0).broadcast_to(shape=(batch_size, vocab_size)), states
+    sampler = SequenceSampler(2, context_free_distribution, vocab_size+1, max_length=500)
+    samples, _, _ = sampler(mx.nd.ones((batch_size,)), mx.nd.ones((batch_size,)))
+    freq = collections.Counter(samples.asnumpy().flatten().tolist())
+    emp_dist = [0] * vocab_size
+    N = float(len(list(freq.elements())))
+    for i in range(vocab_size):
+        emp_dist[i] = freq[i] / N
+    assert_allclose(dist.softmax().asnumpy(), np.array(emp_dist), atol=0.01, rtol=0.1)
 
 @pytest.mark.seed(1)
 @pytest.mark.parametrize('hybridize', [False, True])
