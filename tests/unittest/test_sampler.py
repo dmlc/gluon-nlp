@@ -1,5 +1,5 @@
 from gluonnlp.data.sampler import ConstWidthBucket, LinearWidthBucket, ExpWidthBucket,\
-    SortedSampler, FixedBucketSampler, SortedBucketSampler, ContextSampler
+    SortedSampler, FixedBucketSampler, SortedBucketSampler
 from mxnet.gluon.data import SimpleDataset
 import numpy as np
 import gluonnlp as nlp
@@ -83,16 +83,3 @@ def test_sorted_bucket_sampler():
                     for batch_sample_ids in sampler:
                         total_sampled_ids.extend(batch_sample_ids)
                     assert len(set(total_sampled_ids)) == len(total_sampled_ids) == N
-
-
-def test_context_sampler():
-    dataset = [np.arange(1000).tolist()]
-    sampler = ContextSampler(dataset, batch_size=2, window=1)
-
-    assert len(sampler) == 500
-
-    center, context, mask = next(iter(sampler))
-
-    assert center.asnumpy().tolist() == [[0], [1]]
-    assert context.asnumpy().tolist() == [[1, 0], [0, 2]]
-    assert mask.asnumpy().tolist() == [[1, 0], [1, 1]]

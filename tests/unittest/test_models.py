@@ -29,9 +29,6 @@ def eprint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
 
 
-def get_frequencies(dataset):
-    return nlp.data.utils.Counter(x for tup in dataset for x in tup[0]+tup[1][-1:])
-
 # disabled since it takes a long time to download the model
 def _test_pretrained_big_text_models():
     text_models = ['big_rnn_lm_2048_512']
@@ -52,7 +49,7 @@ def _test_pretrained_big_text_models():
 def test_big_text_models():
     # use a small vocabulary for testing
     val = nlp.data.WikiText2(segment='val', root='tests/data/wikitext-2')
-    val_freq = get_frequencies(val)
+    val_freq = nlp.data.utils.Counter(val)
     vocab = nlp.Vocab(val_freq)
     text_models = ['big_rnn_lm_2048_512']
 
@@ -69,7 +66,7 @@ def test_big_text_models():
 
 def test_text_models():
     val = nlp.data.WikiText2(segment='val', root='tests/data/wikitext-2')
-    val_freq = get_frequencies(val)
+    val_freq = nlp.data.utils.Counter(val)
     vocab = nlp.Vocab(val_freq)
     text_models = ['standard_lstm_lm_200', 'standard_lstm_lm_650', 'standard_lstm_lm_1500', 'awd_lstm_lm_1150', 'awd_lstm_lm_600']
     pretrained_to_test = {'standard_lstm_lm_1500': 'wikitext-2',

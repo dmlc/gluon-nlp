@@ -128,13 +128,16 @@ train_dataset, val_dataset, test_dataset = \
                         skip_empty=False, bos=None, eos='<eos>')
      for segment in ['train', 'val', 'test']]
 
-vocab = nlp.Vocab(counter=nlp.data.Counter(train_dataset[0]), padding_token=None, bos_token=None)
+vocab = nlp.Vocab(counter=nlp.data.Counter(train_dataset), padding_token=None, bos_token=None)
 
-train_data = train_dataset.batchify(vocab, args.batch_size)
+train_batchify = nlp.data.batchify.CorpusBatchify(vocab, args.batch_size)
+train_data = train_batchify(train_dataset)
 val_batch_size = 10
-val_data = val_dataset.batchify(vocab, val_batch_size)
+val_batchify = nlp.data.batchify.CorpusBatchify(vocab, val_batch_size)
+val_data = val_batchify(val_dataset)
 test_batch_size = 1
-test_data = test_dataset.batchify(vocab, test_batch_size)
+test_batchify = nlp.data.batchify.CorpusBatchify(vocab, test_batch_size)
+test_data = test_batchify(test_dataset)
 
 if args.test_mode:
     args.emsize = 200
@@ -271,7 +274,7 @@ def get_batch(data_source, i, seq_len=None):
 
     Parameters
     ----------
-    data_source : NDArray
+    data_source : NDArray or mxnet.gluon.Dataset
         The dataset is evaluated on.
     i : int
         The index of the batch, starting from 0.

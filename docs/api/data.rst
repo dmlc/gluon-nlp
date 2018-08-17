@@ -121,7 +121,6 @@ load custom datasets.
 
     TextLineDataset
     CorpusDataset
-    LanguageModelDataset
 
 DataStreams
 -----------
@@ -134,8 +133,8 @@ stream large custom data.
 
     DataStream
     SimpleDataStream
-    CorpusStream
-    LanguageModelStream
+    DatasetStream
+    SimpleDatasetStream
     PrefetchingStream
 
 Transforms
