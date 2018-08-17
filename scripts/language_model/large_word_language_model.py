@@ -53,8 +53,9 @@ sys.path.append(os.path.join(curr_path, '..', '..'))
 ###############################################################################
 # Arg parser
 ###############################################################################
-parser = argparse.ArgumentParser(description=
-                                 'Gluon-NLP Big LSTM 2048-512 Language Model on GBW')
+parser = argparse.ArgumentParser(
+    description='Gluon-NLP Big LSTM 2048-512 Language Model on GBW',
+    formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument('--save', type=str, default='model.params',
                     help='path to save the final model.')
 parser.add_argument('--emsize', type=int, default=512,
