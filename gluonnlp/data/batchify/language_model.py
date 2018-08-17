@@ -291,9 +291,8 @@ class _StreamBPTTBatchify(DataStream):
             """Write a sentence from i-th buffer to data and target."""
             num_tokens = len(buffers[i]) - 1
             num_tokens = min(num_tokens, seq_len - length)
-            data_num_tokens = min(num_tokens + 1, seq_len - length)
             # fill in data and target
-            data[i, length:length+data_num_tokens] = buffers[i][:data_num_tokens]
+            data[i, length:length+num_tokens] = buffers[i][:num_tokens]
             target[i, length:length+num_tokens] = buffers[i][1:num_tokens+1]
             # trim sentence in the buffer if too long. Used for the next batch
             buffers[i] = buffers[i][num_tokens:]
