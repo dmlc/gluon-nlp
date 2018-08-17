@@ -16,10 +16,29 @@ Batch Loaders
     Pad
     Tuple
 
+
+Language Modeling
+-----------------
+
+.. autosummary::
+    :nosignatures:
+
+    CorpusBatchify
+    CorpusBPTTBatchify
+    StreamBPTTBatchify
+
+Embedding Training
+------------------
+
+.. autosummary::
+    :nosignatures:
+
+    EmbeddingCenterContextBatchify
+
 API Reference
 -------------
 
 .. automodule:: gluonnlp.data.batchify
    :members:
    :imported-members:
-   :special-members: __call__
+   :special-members: __call__, __iter__

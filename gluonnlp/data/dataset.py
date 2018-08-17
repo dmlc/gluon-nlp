@@ -20,16 +20,14 @@
 # pylint: disable=undefined-all-variable
 """NLP Toolkit Dataset API. It allows easy and customizable loading of corpora and dataset files.
 Files can be loaded into formats that are immediately ready for training and evaluation."""
-__all__ = ['TextLineDataset', 'CorpusDataset', 'LanguageModelDataset']
+__all__ = ['TextLineDataset', 'CorpusDataset']
 
 import io
 import os
-import math
 
-import mxnet as mx
 from mxnet.gluon.data import SimpleDataset
-from .utils import (concat_sequence, slice_sequence, _slice_pad_length,
-                    line_splitter, whitespace_splitter)
+
+from .utils import concat_sequence, line_splitter, whitespace_splitter
 
 
 class TextLineDataset(SimpleDataset):
@@ -124,108 +122,3 @@ class CorpusDataset(SimpleDataset):
 
             all_samples += samples
         return all_samples
-
-
-class LanguageModelDataset(CorpusDataset):
-    """Reads a whole corpus and produces a language modeling dataset given the provided
-    sample splitter and word tokenizer.
-
-    Parameters
-    ----------
-    filename : str
-        Path to the input text file.
-    encoding : str, default 'utf8'
-        File encoding format.
-    skip_empty : bool, default True
-        Whether to skip the empty samples produced from sample_splitters. If False, `bos` and `eos`
-        will be added in empty samples.
-    sample_splitter : function, default str.splitlines
-        A function that splits the dataset string into samples.
-    tokenizer : function, default str.split
-        A function that splits each sample string into list of tokens.
-    bos : str or None, default None
-        The token to add at the begining of each sentence. If None, nothing is added.
-    eos : str or None, default None
-        The token to add at the end of each sentence. If None, nothing is added.
-    """
-    def __init__(self, filename, encoding='utf8', skip_empty=True,
-                 sample_splitter=line_splitter,
-                 tokenizer=whitespace_splitter, bos=None, eos=None):
-        assert tokenizer, 'Tokenizer must be specified for reading language model corpus.'
-        super(LanguageModelDataset, self).__init__(filename, encoding, True, skip_empty,
-                                                   sample_splitter, tokenizer, bos, eos)
-
-    def _read(self):
-        return [super(LanguageModelDataset, self)._read()]
-
-    def batchify(self, vocab, batch_size):
-        """Transform the dataset into N independent sequences, where N is the batch size.
-
-        Parameters
-        ----------
-        vocab : gluonnlp.Vocab
-            The vocabulary to use for numericalizing the dataset. Each token will be mapped to the
-            index according to the vocabulary.
-        batch_size : int
-            The number of samples in each batch.
-
-        Returns
-        -------
-        NDArray of shape (num_tokens // N, N). Excessive tokens that don't align along
-        the batches are discarded.
-        """
-        data = self._data[0]
-        sample_len = len(data) // batch_size
-        return mx.nd.array(vocab[data[:sample_len*batch_size]]).reshape(batch_size, -1).T
-
-    def bptt_batchify(self, vocab, seq_len, batch_size, last_batch='keep'):
-        """Transform the dataset into batches of numericalized samples, in the way that the
-        recurrent states from last batch connects with the current batch for each sample.
-
-        Each sample is of shape `(seq_len, batch_size)`. When `last_batch='keep'`, the first
-        dimension of last sample may be shorter than `seq_len`.
-
-        Parameters
-        ----------
-        vocab : gluonnlp.Vocab
-            The vocabulary to use for numericalizing the dataset. Each token will be mapped to the
-            index according to the vocabulary.
-        seq_len : int
-            The length of each of the samples for truncated back-propagation-through-time (TBPTT).
-        batch_size : int
-            The number of samples in each batch.
-        last_batch : {'keep', 'discard'}
-            How to handle the last batch if the remaining length is less than `seq_len`.
-
-            - keep: A batch with less samples than previous batches is returned. vocab.padding_token
-              is used to pad the last batch based on batch size.
-
-            - discard: The last batch is discarded if it's smaller than `(seq_len, batch_size)`.
-        """
-        if last_batch not in ['keep', 'discard']:
-            raise ValueError(
-                'Got invalid last_batch: "{}". Must be "keep" or "discard".'.
-                format(last_batch))
-
-        if last_batch == 'keep':
-            if not vocab.padding_token:
-                raise ValueError('vocab.padding_token must be specified '
-                                 'in vocab when last_batch="keep".')
-            coded = vocab[self._data[0]]
-            sample_len = math.ceil(float(len(coded)) / batch_size)
-            padding_size = _slice_pad_length(sample_len, seq_len + 1, 1) * batch_size + \
-                sample_len * batch_size - len(coded)
-            coded.extend([vocab[vocab.padding_token]] * int(padding_size))
-            assert len(coded) % batch_size == 0
-            assert not _slice_pad_length(len(coded) / batch_size, seq_len + 1, 1)
-        else:
-            sample_len = len(self._data[0]) // batch_size
-            coded = vocab[self._data[0][:sample_len * batch_size]]
-        data = mx.nd.array(coded).reshape((batch_size, -1)).T
-        batches = slice_sequence(data, seq_len + 1, overlap=1)
-
-        return SimpleDataset(batches).transform(_split_data_label)
-
-
-def _split_data_label(x):
-    return x[:-1, :], x[1:, :]

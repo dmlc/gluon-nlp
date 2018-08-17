@@ -191,6 +191,14 @@ def get_train_data(args):
         for count in idx_to_counts
     ]
 
+    def subsample(shard):
+        return [[
+            t for t, r in zip(sentence, np.random.uniform(0, 1, size=len(sentence)))
+            if r > idx_to_pdiscard[t]
+        ] for sentence in shard]
+
+    data = data.transform(subsample)
+
     if args.ngram_buckets:
         with print_time('prepare subwords'):
             subword_function = nlp.vocab.create_subword_function(
@@ -210,10 +218,9 @@ def get_train_data(args):
                     'to avoid memory issues.'.format(max_subwordidxs_len))
 
         return (data, negatives_sampler, vocab, subword_function,
-                subword_lookup, idx_to_pdiscard, sum_counts,
-                idx_to_subwordidxs)
+                subword_lookup, sum_counts, idx_to_subwordidxs)
     else:
-        return data, negatives_sampler, vocab, idx_to_pdiscard, sum_counts
+        return data, negatives_sampler, vocab, sum_counts
 
 
 def subword_lookup_factory(idx_to_subwordidxs):
@@ -286,8 +293,7 @@ def train(args):
     """Training helper."""
     if args.ngram_buckets:
         data, negatives_sampler, vocab, subword_function, \
-            subword_lookup, idx_to_pdiscard, num_tokens, \
-            idx_to_subwordidxs = get_train_data(args)
+            subword_lookup, num_tokens, idx_to_subwordidxs = get_train_data(args)
         embedding = nlp.model.train.FasttextEmbeddingModel(
             token_to_idx=vocab.token_to_idx,
             subword_function=subword_function,
@@ -296,8 +302,7 @@ def train(args):
             sparse_grad=not args.no_sparse_grad,
         )
     else:
-        data, negatives_sampler, vocab, \
-            idx_to_pdiscard, num_tokens = get_train_data(args)
+        data, negatives_sampler, vocab, num_tokens = get_train_data(args)
         embedding = nlp.model.train.SimpleEmbeddingModel(
             token_to_idx=vocab.token_to_idx,
             embedding_size=args.emsize,
@@ -419,16 +424,11 @@ def train(args):
 
 
     bucketing_split = 16
-    batches = nlp.data.ContextStream(
-        stream=data, batch_size=args.batch_size * bucketing_split
+    batchify = nlp.data.batchify.EmbeddingCenterContextBatchify(
+        batch_size=args.batch_size * bucketing_split
         if args.ngram_buckets else args.batch_size,
-        p_discard=idx_to_pdiscard, window_size=args.window)
-    if args.ngram_buckets:
-        # For fastText training, create batches such that subwords used in
-        # that batch are of similar length
-        batches = BucketingStream(
-            batches, bucketing_split, length_fn, bucketing_batchify_fn)
-        # batches = nlp.data.PrefetchingStream(batches, worker_type='process')
+        window_size=args.window)
+    batches = data.transform(batchify)
 
     num_update = 0
     for epoch in range(args.epochs):
@@ -436,6 +436,14 @@ def train(args):
         log_wc = 0
         log_start_time = time.time()
         log_avg_loss = 0
+
+        batches = itertools.chain.from_iterable(batches)
+
+        if args.ngram_buckets:
+            # For fastText training, create batches such that subwords used in
+            # that batch are of similar length
+            batches = BucketingStream(
+                batches, bucketing_split, length_fn, bucketing_batchify_fn)
 
         for i, batch in enumerate(batches):
             progress = (epoch * num_tokens + i * args.batch_size) / \

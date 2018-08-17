@@ -122,7 +122,7 @@ os.environ['MXNET_CPU_WORKER_NTHREADS'] = str(len(context))
 # Data stream
 ###############################################################################
 train_data_stream, test_data_stream = \
-    [nlp.data.GBWStream(segment=segment, skip_empty=True, bos='<bos>', eos='<eos>')
+    [nlp.data.GBWStream(segment=segment, skip_empty=True, bos=None, eos='<eos>')
      for segment in segments]
 vocab = train_data_stream.vocab
 ntokens = len(vocab)
@@ -155,11 +155,13 @@ def _split_and_sample(x, y):
     return xs, ys, ms, ss
 
 train_batch_size = args.batch_size * len(context)
-train_data = train_data_stream.bptt_batchify(vocab, args.bptt, train_batch_size)
+train_batchify = nlp.data.batchify.StreamBPTTBatchify(vocab, args.bptt, train_batch_size)
+train_data = train_batchify(train_data_stream)
 train_data = train_data.transform(_split_and_sample)
 
 test_batch_size = args.batch_size
-test_data = test_data_stream.bptt_batchify(vocab, args.bptt, test_batch_size)
+test_batchify = nlp.data.batchify.StreamBPTTBatchify(vocab, args.bptt, test_batch_size)
+test_data = test_batchify(test_data_stream)
 test_data = nlp.data.PrefetchingStream(test_data)
 
 ###############################################################################

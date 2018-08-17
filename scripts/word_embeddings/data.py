@@ -27,21 +27,16 @@ import json
 import os
 
 from gluonnlp import Vocab
-from gluonnlp.data import CorpusStream
+from gluonnlp.data import SimpleDatasetStream, CorpusDataset
 
 
-class WikiDumpStream(CorpusStream):
+class WikiDumpStream(SimpleDatasetStream):
     """Stream for preprocessed Wikipedia Dumps.
 
     Expects data in format
     - root/date/wiki.language/*.txt
     - root/date/wiki.language/vocab.json
     - root/date/wiki.language/counts.json
-
-    From
-    http://www.statmt.org/lm-benchmark
-
-    License: Apache
 
     Parameters
     ----------
@@ -79,7 +74,11 @@ class WikiDumpStream(CorpusStream):
 
         self._file_pattern = os.path.join(self._path, '*.txt')
         super(WikiDumpStream, self).__init__(
-            self._file_pattern, skip_empty=skip_empty, bos=bos, eos=eos)
+            dataset=CorpusDataset,
+            file_pattern=self._file_pattern,
+            skip_empty=skip_empty,
+            bos=bos,
+            eos=eos)
 
     @property
     def vocab(self):

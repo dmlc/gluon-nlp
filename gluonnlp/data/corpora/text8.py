@@ -18,7 +18,7 @@
 # under the License.
 
 # pylint: disable=
-"""Word embedding training datasets."""
+"""Text8 dataset."""
 
 __all__ = ['Text8']
 
@@ -27,8 +27,8 @@ import zipfile
 
 from mxnet.gluon.utils import check_sha1, download
 
-from .dataset import CorpusDataset
-from .utils import _get_home_dir
+from ..dataset import CorpusDataset
+from ..utils import _get_home_dir
 
 
 class Text8(CorpusDataset):
