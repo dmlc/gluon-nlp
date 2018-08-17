@@ -182,7 +182,7 @@ def _load_vocab(dataset_name, vocab, root):
 
 def _load_pretrained_params(net, model_name, dataset_name, root, ctx):
     model_file = get_model_file('_'.join([model_name, dataset_name]), root=root)
-    net.load_params(model_file, ctx=ctx)
+    net.load_parameters(model_file, ctx=ctx)
 
 
 def _get_rnn_model(model_cls, model_name, dataset_name, vocab, pretrained, ctx, root, **kwargs):

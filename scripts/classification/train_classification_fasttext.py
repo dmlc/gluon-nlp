@@ -212,7 +212,7 @@ def get_label_mapping(train_labels):
 
 def save_model(net, output_file):
     """This method saves the model to file"""
-    net.save_params(output_file)
+    net.save_parameters(output_file)
 
 
 def get_context(args):

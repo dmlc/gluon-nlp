@@ -98,7 +98,7 @@ else:
                                    pretrained=False,
                                    ctx=context)
     cache_cell = nlp.model.train.CacheCell(model, ntokens, args.window, args.theta, args.lambdas)
-    cache_cell.load_params(args.path_to_params_file, ctx=context)
+    cache_cell.load_parameters(args.path_to_params_file, ctx=context)
 
 ###############################################################################
 # Load data

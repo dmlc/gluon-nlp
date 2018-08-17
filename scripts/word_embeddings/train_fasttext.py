@@ -269,7 +269,7 @@ class SubwordLookup(object):
         return subwords_arr, mask
 
 
-def save_params(args, embedding, embedding_out):
+def save_parameters(args, embedding, embedding_out):
     """Save parameters to logdir.
 
     The parameters are first written to a temporary file and only if the saving
@@ -280,9 +280,9 @@ def save_params(args, embedding, embedding_out):
     os.close(f)
 
     # write to temporary file; use os.replace
-    embedding.collect_params().save(path)
+    embedding.save_parameters(path)
     os.replace(path, os.path.join(args.logdir, 'embedding.params'))
-    embedding_out.collect_params().save(path)
+    embedding_out.save_parameters(path)
     os.replace(path, os.path.join(args.logdir, 'embedding_out.params'))
 
 
@@ -548,7 +548,7 @@ def train(args):
 
     # Save params
     with print_time('save parameters'):
-        save_params(args, embedding, embedding_out)
+        save_parameters(args, embedding, embedding_out)
 
 
 def evaluate(args, embedding, vocab, global_step, eval_analogy=False):
