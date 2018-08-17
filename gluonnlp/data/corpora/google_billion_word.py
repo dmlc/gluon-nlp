@@ -144,8 +144,8 @@ class GBWStream(_GBWStream):
                            'test': ('heldout-monolingual.tokenized.shuffled',
                                     'news.en.heldout-00000-of-00050',
                                     '0a8e2b7496ba0b5c05158f282b9b351356875445')}
-        self._vocab_file = ('gbw-b882c313.vocab',
-                            'b882c31330b06ef55bac4b9b365c6efe8646e1d6')
+        self._vocab_file = ('gbw-ebb1a287.vocab',
+                            'ebb1a287ca14d8fa6f167c3a779e5e7ed63ac69f')
         super(GBWStream, self).__init__('gbw', segment, bos, eos, skip_empty, root)
 
     @property
