@@ -125,7 +125,7 @@ def test_get_cache_model_noncache_models():
 
             model, _ = nlp.model.get_model(name=name, dataset_name=dataset_name, pretrained=True)
             cache_cell_1 = nlp.model.train.CacheCell(model, ntokens, window=1, theta=0.6, lambdas=0.2)
-            cache_cell_1.load_params('tests/data/model/' + language_models_params.get(name))
+            cache_cell_1.load_parameters('tests/data/model/' + language_models_params.get(name))
             print(cache_cell_1)
 
             outs0, word_history0, cache_history0, hidden0 = \
@@ -148,8 +148,8 @@ def test_save_load_cache_models():
             cache_cell = nlp.model.train.get_cache_model(name, dataset_name, window=1, theta=0.6,
                                                          lambdas=0.2, root='tests/data/model/')
             print(cache_cell)
-            cache_cell.save_params('tests/data/model/' + name + '-' + dataset_name + '.params')
-            cache_cell.load_params('tests/data/model/' + name + '-' + dataset_name + '.params')
+            cache_cell.save_parameters('tests/data/model/' + name + '-' + dataset_name + '.params')
+            cache_cell.load_parameters('tests/data/model/' + name + '-' + dataset_name + '.params')
 
 def test_save_load_big_rnn_models():
     ctx = mx.cpu()
