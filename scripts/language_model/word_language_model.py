@@ -316,9 +316,9 @@ def evaluate(data_source, batch_size, segment, ctx=None):
     total_L = 0.0
     ntotal = 0
     if segment == 'val':
-        model_eval.load_params(args.save + '.val', context)
+        model_eval.load_parameters(args.save + '.val', context)
     elif segment == 'test':
-        model_eval.load_params(args.save, context)
+        model_eval.load_parameters(args.save, context)
     hidden = model_eval.begin_state(batch_size, func=mx.nd.zeros, ctx=context[0])
     for i in range(0, len(data_source) - 1, args.bptt):
         data, target = get_batch(data_source, i)
@@ -390,7 +390,7 @@ def train():
 
         print('[Epoch %d] throughput %.2f samples/s'%(
             epoch, (args.batch_size * len(train_data)) / (time.time() - start_epoch_time)))
-        model.save_params(args.save + '.val')
+        model.save_parameters(args.save + '.val')
         val_L = evaluate(val_data, val_batch_size, 'val', context[0])
         print('[Epoch %d] time cost %.2fs, valid loss %.2f, valid ppl %.2f'%(
             epoch, time.time()-start_epoch_time, val_L, math.exp(val_L)))
@@ -398,7 +398,7 @@ def train():
         if val_L < best_val:
             update_lr_epoch = 0
             best_val = val_L
-            model.save_params(args.save)
+            model.save_parameters(args.save)
             test_L = evaluate(test_data, test_batch_size, 'test', context[0])
             print('test loss %.2f, test ppl %.2f'%(test_L, math.exp(test_L)))
         else:

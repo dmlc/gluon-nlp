@@ -73,15 +73,15 @@ class CacheCell(Block):
         with self.name_scope():
             self.lm_model = lm_model
 
-    def save_params(self, filename):
+    def save_parameters(self, filename):
         """Save parameters to file.
 
         filename : str
             Path to file.
         """
-        self.lm_model.save_params(filename)
+        self.lm_model.save_parameters(filename)
 
-    def load_params(self, filename, ctx=mx.cpu()): # pylint: disable=arguments-differ
+    def load_parameters(self, filename, ctx=mx.cpu()): # pylint: disable=arguments-differ
         """Load parameters from file.
 
         filename : str
@@ -89,7 +89,7 @@ class CacheCell(Block):
         ctx : Context or list of Context, default cpu()
             Context(s) initialize loaded parameters on.
         """
-        self.lm_model.load_params(filename, ctx=ctx)
+        self.lm_model.load_parameters(filename, ctx=ctx)
 
     def begin_state(self, *args, **kwargs):
         """Initialize the hidden states.

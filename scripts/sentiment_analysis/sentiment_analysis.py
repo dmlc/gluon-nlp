@@ -328,10 +328,10 @@ def train():
             # Reset stop_early if the validation loss finds a new low value
             print('Observed Improvement.')
             stop_early = 0
-            net.save_params(args.save_prefix + '_{:04d}.params'.format(epoch))
+            net.save_parameters(args.save_prefix + '_{:04d}.params'.format(epoch))
             best_valid_acc = valid_acc
 
-    net.load_params(glob.glob(args.save_prefix+'_*.params')[-1], context)
+    net.load_parameters(glob.glob(args.save_prefix+'_*.params')[-1], context)
     valid_avg_L, valid_acc = evaluate(valid_dataloader)
     test_avg_L, test_acc = evaluate(test_dataloader)
     print('Best validation loss %g, validation acc %.4f'%(valid_avg_L, valid_acc))

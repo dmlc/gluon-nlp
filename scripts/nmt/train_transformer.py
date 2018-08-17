@@ -592,9 +592,9 @@ def train():
             best_valid_bleu = valid_bleu_score
             save_path = os.path.join(args.save_dir, 'valid_best.params')
             logging.info('Save best parameters to {}'.format(save_path))
-            model.save_params(save_path)
+            model.save_parameters(save_path)
         save_path = os.path.join(args.save_dir, 'epoch{:d}.params'.format(epoch_id))
-        model.save_params(save_path)
+        model.save_parameters(save_path)
     save_path = os.path.join(args.save_dir, 'average.params')
     mx.nd.save(save_path, average_param_dict)
     if args.average_checkpoint:
@@ -609,7 +609,7 @@ def train():
         for k, v in model.collect_params().items():
             v.set_data(average_param_dict[k])
     else:
-        model.load_params(os.path.join(args.save_dir, 'valid_best.params'), ctx)
+        model.load_parameters(os.path.join(args.save_dir, 'valid_best.params'), ctx)
     valid_loss, valid_translation_out = evaluate(val_data_loader, ctx[0])
     valid_bleu_score, _, _, _, _ = compute_bleu([val_tgt_sentences], valid_translation_out,
                                                 tokenized=tokenized, tokenizer=args.bleu, bpe=bpe,
