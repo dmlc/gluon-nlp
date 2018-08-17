@@ -212,7 +212,7 @@ def _slice_pad_length(num_items, length, overlap=0):
 
 
 _vocab_sha1 = {'wikitext-2': 'be36dc5238c2e7d69720881647ab72eb506d0131',
-               'gbw': 'b3e832155eb66018b8dfe0b77c00b498c29bed67'}
+               'gbw': 'ebb1a287ca14d8fa6f167c3a779e5e7ed63ac69f'}
 _url_format = '{repo_url}gluon/dataset/vocab/{file_name}.zip'
 
 
