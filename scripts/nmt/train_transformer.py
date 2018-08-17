@@ -54,6 +54,7 @@ from gluonnlp.data import ConstWidthBucket, LinearWidthBucket, ExpWidthBucket,\
 from gluonnlp.model import BeamSearchScorer
 from translation import NMTModel, BeamSearchTranslator
 from transformer import get_transformer_encoder_decoder
+from universal_transformer import get_uni_transformer_encoder_decoder
 from loss import SoftmaxCEMaskedLoss, LabelSmoothing
 from utils import logging_config
 from bleu import _bpe_to_words, compute_bleu
@@ -74,12 +75,14 @@ parser.add_argument('--num_units', type=int, default=512, help='Dimension of the
                                                                'vectors and states.')
 parser.add_argument('--hidden_size', type=int, default=2048,
                     help='Dimension of the hidden state in position-wise feed-forward networks.')
+parser.add_argument('--universal', action='store_true', help='Turn on to use Universal Transformer')
 parser.add_argument('--dropout', type=float, default=0.1,
                     help='dropout applied to layers (0 = no dropout)')
 parser.add_argument('--epsilon', type=float, default=0.1,
                     help='epsilon parameter for label smoothing')
 parser.add_argument('--num_layers', type=int, default=6,
-                    help='number of layers in the encoder and decoder')
+                    help='number of layers in the encoder and decoder '
+                         'When universal is true, it is equivalent to the maximum of timestamp')
 parser.add_argument('--num_heads', type=int, default=8,
                     help='number of heads in multi-head attention')
 parser.add_argument('--scaled', action='store_true', help='Turn on to use scale in attention')
@@ -336,17 +339,30 @@ if args.tgt_max_len > 0:
     tgt_max_len = args.tgt_max_len
 else:
     tgt_max_len = max_len[1]
-encoder, decoder = get_transformer_encoder_decoder(units=args.num_units,
-                                                   hidden_size=args.hidden_size,
-                                                   dropout=args.dropout,
-                                                   num_layers=args.num_layers,
-                                                   num_heads=args.num_heads,
-                                                   max_src_length=max(src_max_len, 500),
-                                                   max_tgt_length=max(tgt_max_len, 500),
-                                                   scaled=args.scaled)
+
+if args.universal:
+    encoder, decoder = get_uni_transformer_encoder_decoder(units=args.num_units,
+                                                           hidden_size=args.hidden_size,
+                                                           dropout=args.dropout,
+                                                           max_time=args.num_layers,
+                                                           num_heads=args.num_heads,
+                                                           max_src_length=max(src_max_len, 500),
+                                                           max_tgt_length=max(tgt_max_len, 500),
+                                                           scaled=args.scaled)
+    model_prefix = 'universal_transformer_'
+else:
+    encoder, decoder = get_transformer_encoder_decoder(units=args.num_units,
+                                                       hidden_size=args.hidden_size,
+                                                       dropout=args.dropout,
+                                                       num_layers=args.num_layers,
+                                                       num_heads=args.num_heads,
+                                                       max_src_length=max(src_max_len, 500),
+                                                       max_tgt_length=max(tgt_max_len, 500),
+                                                       scaled=args.scaled)
+    model_prefix = 'transformer_'
 model = NMTModel(src_vocab=src_vocab, tgt_vocab=tgt_vocab, encoder=encoder, decoder=decoder,
                  share_embed=True, embed_size=args.num_units, tie_weights=True,
-                 embed_initializer=None, prefix='transformer_')
+                 embed_initializer=None, prefix=model_prefix)
 model.initialize(init=mx.init.Xavier(magnitude=args.magnitude), ctx=ctx)
 static_alloc = True
 model.hybridize(static_alloc=static_alloc)
