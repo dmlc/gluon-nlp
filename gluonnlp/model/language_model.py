@@ -422,7 +422,7 @@ model_store._model_sha1.update(
         ('700b532dc96a29e39f45cb7dd632ce44e377a752', 'standard_lstm_lm_200_wikitext-2'),
         ('45d6df33f35715fb760ec8d18ed567016a897df7', 'awd_lstm_lm_1150_wikitext-2'),
         ('7894a046f8286db0d5d2ed672b60f4f52b4bc3aa', 'awd_lstm_lm_600_wikitext-2'),
-        ('711cea2d963f30fd733aeeee33a5f8fe031ab7b8', 'big_rnn_lm_2048_512_gbw'),
+        ('92ed6f71c4b12f465b11d72e7271743d0c4c1a7a', 'big_rnn_lm_2048_512_gbw'),
     ]})
 
 class BigRNN(Block):
