@@ -136,8 +136,8 @@ class GBWStream(_GBWStream):
                  root=os.path.join(_get_home_dir(), 'datasets', 'gbw')):
         self._archive_data = ('1-billion-word-language-modeling-benchmark-r13output.tar.gz',
                               '4df859766482e12264a5a9d9fb7f0e276020447d')
-        self._archive_vocab = ('gbw-b882c313.zip',
-                               '84a07fe2405586f4c1dab1d43d25d68dcf42eb8a')
+        self._archive_vocab = ('gbw-ebb1a287.zip',
+                               '63b335dcc27b6804d0a14acb88332d2602fe0f59')
         self._data_file = {'train': ('training-monolingual.tokenized.shuffled',
                                      'news.en-00*-of-00100',
                                      '5e0d7050b37a99fd50ce7e07dc52468b2a9cd9e8'),
