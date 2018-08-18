@@ -237,9 +237,9 @@ def train(net, context, epochs):
             log_interval_sent_num += data.shape[1]
             epoch_sent_num += data.shape[1]
             with autograd.record():
-                output = net(data.T,
-                             length.astype(np.float32)
-                                   .as_in_context(context))
+                output = net(data.as_in_context(context).T,
+                             length.as_in_context(context)
+                                   .astype(np.float32))
                 L = L + loss(output, label).mean()
             L.backward()
             # Clip gradient
