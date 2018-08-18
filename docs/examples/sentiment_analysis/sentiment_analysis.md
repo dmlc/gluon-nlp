@@ -240,12 +240,12 @@ def train(net, context, epochs):
                 output = net(data.as_in_context(context).T,
                              length.as_in_context(context)
                                    .astype(np.float32))
-                L = L + loss(output, label).mean()
+                L = L + loss(output, label.as_in_context(context)).mean()
             L.backward()
             # Clip gradient
             if grad_clip:
                 gluon.utils.clip_global_norm(
-                    [p.grad(x.context) for p in parameters for x in data_list],
+                    [p.grad(context) for p in parameters],
                     grad_clip)
             # Update parameter
             trainer.step(1)
