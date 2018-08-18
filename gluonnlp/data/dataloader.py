@@ -19,13 +19,8 @@
 """DataLoader. An extension of Gluon data loader that allows multi-shard sampling."""
 __all__ = ['ShardedDataLoader']
 
-import sys
-import multiprocessing
-import multiprocessing.queues
-import threading
 from mxnet import context
-from mxnet.gluon.data.dataloader import Queue, SimpleQueue, DataLoader, \
-    fetcher_loop, _as_in_context
+from mxnet.gluon.data.dataloader import DataLoader, _MultiWorkerIter, _as_in_context
 
 
 def worker_loop(dataset, key_queue, data_queue, batchify_fn):
@@ -40,84 +35,6 @@ def worker_loop(dataset, key_queue, data_queue, batchify_fn):
         else:
             batch = batchify_fn([dataset[i] for i in samples])
         data_queue.put((idx, batch))
-
-
-class _ShardedMultiWorkerIter(object):
-    """Interal multi-worker iterator for ShardedDataLoader."""
-    def __init__(self, num_workers, dataset, batchify_fn, batch_sampler, pin_memory=False):
-        assert num_workers > 0, '_MultiWorkerIter is not for {} workers'.format(num_workers)
-        self._num_workers = num_workers
-        self._dataset = dataset
-        self._batchify_fn = batchify_fn
-        self._batch_sampler = batch_sampler
-        self._key_queue = Queue()
-        self._data_queue = Queue() if sys.version_info[0] <= 2 else SimpleQueue()
-        self._data_buffer = {}
-        self._rcvd_idx = 0
-        self._sent_idx = 0
-        self._iter = iter(self._batch_sampler)
-        self._shutdown = False
-
-        workers = []
-        for _ in range(self._num_workers):
-            worker = multiprocessing.Process(
-                target=worker_loop,
-                args=(self._dataset, self._key_queue, self._data_queue, self._batchify_fn))
-            worker.daemon = True
-            worker.start()
-            workers.append(worker)
-
-        self._fetcher = threading.Thread(
-            target=fetcher_loop,
-            args=(self._data_queue, self._data_buffer, pin_memory))
-        self._fetcher.daemon = True
-        self._fetcher.start()
-
-        # pre-fetch
-        for _ in range(2 * self._num_workers):
-            self._push_next()
-
-    def __len__(self):
-        return len(self._batch_sampler)
-
-    def __del__(self):
-        self.shutdown()
-
-    def _push_next(self):
-        """Assign next batch workload to workers."""
-        r = next(self._iter, None)
-        if r is None:
-            return
-        self._key_queue.put((self._sent_idx, r))
-        self._sent_idx += 1
-
-    def __next__(self):
-        assert not self._shutdown, 'call __next__ after shutdown is forbidden'
-        if self._rcvd_idx == self._sent_idx:
-            assert not self._data_buffer, 'Data buffer should be empty at this moment'
-            self.shutdown()
-            raise StopIteration
-
-        while True:
-            if self._rcvd_idx in self._data_buffer:
-                batch = self._data_buffer.pop(self._rcvd_idx)
-                self._rcvd_idx += 1
-                self._push_next()
-                return batch
-
-    def next(self):
-        return self.__next__()
-
-    def __iter__(self):
-        return self
-
-    def shutdown(self):
-        """Shutdown internal workers by pushing terminate signals."""
-        if not self._shutdown:
-            for _ in range(self._num_workers):
-                self._key_queue.put((None, None))
-            self._data_queue.put((None, None))
-            self._shutdown = True
 
 
 class ShardedDataLoader(DataLoader):
@@ -196,5 +113,6 @@ class ShardedDataLoader(DataLoader):
             return _same_process_iter()
 
         # multi-worker
-        return _ShardedMultiWorkerIter(self._num_workers, self._dataset,
-                                       self._batchify_fn, self._batch_sampler, self._pin_memory)
+        return _MultiWorkerIter(self._num_workers, self._dataset,
+                                self._batchify_fn, self._batch_sampler,
+                                self._pin_memory, worker_loop)
