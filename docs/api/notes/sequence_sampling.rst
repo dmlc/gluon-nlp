@@ -105,6 +105,8 @@ language model to get the initial states and set the initial input to be the wor
 Sequence Sampler
 ++++++++++++++++
 
+The previous generation results may look a bit borning. Now, let's use sequence sampler to get some more interesting results.
+
 ``SequenceSampler`` simply samples from the contextual multinomial distribution produced by the language model at each time step. Since we may want to control how "sharp" the distribution is to tradeoff diversity with correctness, we can use the ``temperature`` option in ``SequenceSampler``, which controls the temperature of the softmax function.
 
 .. code:: python
@@ -119,7 +121,7 @@ Sequence Sampler
 Generate Sequences w/ Sequence Sampler
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The previous generation results may look a bit borning. Now, let's use sequence sampler to get some more interesting results.
+Now, use the sequence sampler created to sample sequences based on the same inputs used previously.
 
 .. code:: python
 
