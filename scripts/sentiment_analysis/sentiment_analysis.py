@@ -132,7 +132,7 @@ class SentimentNet(HybridBlock):
                 self.output.add(gluon.nn.Dropout(dropout))
                 self.output.add(gluon.nn.Dense(1, flatten=False))
 
-    def hybrid_forward(self, F, data, valid_length): # pylint: disable=arguments-differ
+    def hybrid_forward(self, _, data, valid_length): # pylint: disable=arguments-differ
         encoded = self.encoder(self.embedding(data))  # Shape(T, N, C)
         agg_state = self.agg_layer(encoded, valid_length)
         out = self.output(agg_state)

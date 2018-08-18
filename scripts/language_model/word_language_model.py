@@ -206,7 +206,8 @@ class JointActivationRegularizationLoss(gluon.loss.Loss):
     alpha: float
         The activation regularization parameter in gluonnlp.loss.ActivationRegularizationLoss
     beta: float
-        The temporal activation regularization parameter in gluonnlp.loss.TemporalActivationRegularizationLoss
+        The temporal activation regularization parameter in
+        gluonnlp.loss.TemporalActivationRegularizationLoss
 
     Inputs:
         - **out**: NDArray
