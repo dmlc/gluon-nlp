@@ -67,6 +67,8 @@ Output is
 
 .. code-block:: console
 
+   Sampling Parameters: beam_size=5, temperature=1.0
+   Generation Result:
    [u'I love it and martial arts , history , and communism ; it is seems to be probably a date .', -76.772766]
    [u'I love it in all @-@ bodied households but like those who got part in the concept of refugee peoples , and had .', -96.42722]
    [u'I love it for adult people .', -17.899687]

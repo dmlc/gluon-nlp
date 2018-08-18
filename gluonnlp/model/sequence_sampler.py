@@ -68,11 +68,12 @@ class BeamSearchScorer(HybridBlock):
         Returns
         -------
         candidate_scores : NDArray or Symbol
-            The scores of all the candidates. Shape (d1, d2, ..., dn, V)
+            The scores of all the candidates. Shape (d1, d2, ..., dn, V), where V is the size
+            of the vocabulary.
         """
         return super(BeamSearchScorer, self).__call__(outputs, scores, step)
 
-    def hybrid_forward(self, F, outputs, scores, step):   # pylint: disable=arguments-differ
+    def hybrid_forward(self, F, outputs, scores, step):
         if not self._from_logits:
             outputs = outputs.log_softmax()
         prev_lp = (self._K + step - 1) ** self._alpha / (self._K + 1) ** self._alpha
@@ -250,11 +251,7 @@ def _choose_states(F, states, state_info, indices):
             batch_axis = 0
         else:
             batch_axis = state_info['__layout__'].find('N')
-        if batch_axis != 0:
-            states = states.swapaxes(0, batch_axis)
-        states = F.take(states, indices)
-        if batch_axis != 0:
-            states = states.swapaxes(0, batch_axis)
+        states = F.take(states, indices, axis=batch_axis)
         return states
     else:
         raise NotImplementedError

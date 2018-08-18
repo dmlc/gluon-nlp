@@ -10,7 +10,7 @@ Gluon NLP Toolkit API includes many useful building blocks for NLP data processi
 
    notes/data_api.rst
    notes/vocab_emb.rst
-   notes/beam_search_generation.rst
+   notes/sequence_sampling.rst
 
 .. toctree::
    :maxdepth: 2

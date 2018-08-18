@@ -50,14 +50,15 @@ Attention Cell
     MLPAttentionCell
     DotProductAttentionCell
 
-Beam Search
------------
+Sequence Sampling
+-----------------
 
 .. autosummary::
     :nosignatures:
 
     BeamSearchScorer
     BeamSearchSampler
+    SequenceSampler
 
 Other Modeling Utilities
 ------------------------

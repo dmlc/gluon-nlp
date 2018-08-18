@@ -35,7 +35,7 @@ import numpy as np
 
 import mxnet as mx
 from mxnet import gluon, autograd
-from mxnet.gluon import Block, HybridBlock
+from mxnet.gluon import HybridBlock
 from mxnet.gluon.data import DataLoader
 
 import gluonnlp as nlp
@@ -118,7 +118,7 @@ class AggregationLayer(HybridBlock):
         return agg_state
 
 
-class SentimentNet(Block):
+class SentimentNet(HybridBlock):
     """Network for sentiment analysis."""
     def __init__(self, dropout, use_mean_pool=False, prefix=None, params=None):
         super(SentimentNet, self).__init__(prefix=prefix, params=params)
@@ -132,7 +132,7 @@ class SentimentNet(Block):
                 self.output.add(gluon.nn.Dropout(dropout))
                 self.output.add(gluon.nn.Dense(1, flatten=False))
 
-    def forward(self, data, valid_length): # pylint: disable=arguments-differ
+    def hybrid_forward(self, _, data, valid_length): # pylint: disable=arguments-differ
         encoded = self.encoder(self.embedding(data))  # Shape(T, N, C)
         agg_state = self.agg_layer(encoded, valid_length)
         out = self.output(agg_state)
@@ -148,6 +148,7 @@ with net.name_scope():
 
 net.embedding = lm_model.embedding
 net.encoder = lm_model.encoder
+net.hybridize()
 
 
 # Dataset preprocessing

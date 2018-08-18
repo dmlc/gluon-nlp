@@ -70,6 +70,8 @@ stage("Deploy") {
         conda env update --prune -f env/doc.yml -p conda/docs
         conda activate ./conda/docs
         conda list
+        python -m spacy download en
+        python -m nltk.downloader all
         python setup.py install
         export LD_LIBRARY_PATH=/usr/local/cuda/lib64
         make clean

@@ -188,8 +188,6 @@ elif args.optimizer == 'adam':
 trainer = gluon.Trainer(model.collect_params(), args.optimizer, trainer_params)
 
 loss = gluon.loss.SoftmaxCrossEntropyLoss()
-ar_loss = nlp.loss.ActivationRegularizationLoss(args.alpha)
-tar_loss = nlp.loss.TemporalActivationRegularizationLoss(args.beta)
 
 
 class JointActivationRegularizationLoss(gluon.loss.Loss):
@@ -205,10 +203,11 @@ class JointActivationRegularizationLoss(gluon.loss.Loss):
     ----------
     loss : gluon.loss.Loss
         The standard loss
-    ar_loss: gluonnlp.loss.ActivationRegularizationLoss
-        The activation regularization
-    tar_loss: gluonnlp.loss.TemporalActivationRegularizationLoss
-        The temporal activation regularization
+    alpha: float
+        The activation regularization parameter in gluonnlp.loss.ActivationRegularizationLoss
+    beta: float
+        The temporal activation regularization parameter in
+        gluonnlp.loss.TemporalActivationRegularizationLoss
 
     Inputs:
         - **out**: NDArray
@@ -227,11 +226,14 @@ class JointActivationRegularizationLoss(gluon.loss.Loss):
           batch_axis are averaged out.
     """
 
-    def __init__(self, l, ar_l, tar_l, weight=None, batch_axis=None, **kwargs):
+    def __init__(self, l, alpha, beta, weight=None, batch_axis=None, **kwargs):
         super(JointActivationRegularizationLoss, self).__init__(weight, batch_axis, **kwargs)
         self._loss = l
-        self._ar_loss = ar_l
-        self._tar_loss = tar_l
+        self._alpha, self._beta = alpha, beta
+        if alpha:
+            self._ar_loss = nlp.loss.ActivationRegularizationLoss(alpha)
+        if beta:
+            self._tar_loss = nlp.loss.TemporalActivationRegularizationLoss(beta)
 
     def __repr__(self):
         s = 'JointActivationTemporalActivationRegularizationLoss'
@@ -240,12 +242,14 @@ class JointActivationRegularizationLoss(gluon.loss.Loss):
     def hybrid_forward(self, F, out, target, states, dropped_states): # pylint: disable=arguments-differ
         # pylint: disable=unused-argument
         l = self._loss(out.reshape(-3, -1), target.reshape(-1,))
-        l = l + self._ar_loss(*dropped_states)
-        l = l + self._tar_loss(*states)
+        if self._alpha:
+            l = l + self._ar_loss(*dropped_states)
+        if self._beta:
+            l = l + self._tar_loss(*states)
         return l
 
 
-joint_loss = JointActivationRegularizationLoss(loss, ar_loss, tar_loss)
+joint_loss = JointActivationRegularizationLoss(loss, args.alpha, args.beta)
 
 ###############################################################################
 # Training code
