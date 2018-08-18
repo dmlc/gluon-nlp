@@ -552,7 +552,7 @@ def train():
                                    src_valid_length, tgt_valid_length - 1)
                     smoothed_label = label_smoothing(tgt_seq[:, 1:])
                     ls = loss_function(out, smoothed_label, tgt_valid_length - 1).sum()
-                    Ls.append((ls * (tgt_seq.shape[1] - 1)) / args.batch_size / 10000.0)
+                    Ls.append((ls * (tgt_seq.shape[1] - 1)) / args.batch_size / 1000000.0)
             for L in Ls:
                 L.backward()
             if batch_id % grad_interval == grad_interval - 1 or\
@@ -560,7 +560,7 @@ def train():
                 if average_param_dict is None:
                     average_param_dict = {k: v.data(ctx[0]).copy() for k, v in
                                           model.collect_params().items()}
-                trainer.step(float(loss_denom) / args.batch_size / 10000.0)
+                trainer.step(float(loss_denom) / args.batch_size / 1000000.0)
                 param_dict = model.collect_params()
                 param_dict.zero_grad()
                 if step_num > average_start:
@@ -570,7 +570,7 @@ def train():
             step_loss += sum([L.asscalar() for L in Ls])
             if batch_id % grad_interval == grad_interval - 1 or\
                     batch_id == len(train_data_loader) - 1:
-                log_avg_loss += step_loss / loss_denom * args.batch_size * 10000.0
+                log_avg_loss += step_loss / loss_denom * args.batch_size * 1000000.0
                 loss_denom = 0
                 step_loss = 0
             log_wc += src_wc + tgt_wc
