@@ -40,7 +40,7 @@ def test_sentiment_analysis():
                                      '--save-prefix', 'imdb_lstm_200'])
 
 
-def test_sampling()
+def test_sampling():
     process = subprocess.check_call(['python', './scripts/sequence_sampling/sequence_sampling.py',
                                      '--use-beam-search', '--bos', 'I love it', '--beam_size', '5',
                                      '--print_num', '5'])
