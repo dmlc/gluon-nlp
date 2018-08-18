@@ -41,8 +41,6 @@ import os
 import io
 import logging
 import math
-os.environ['MXNET_GPU_MEM_POOL_TYPE'] = 'Round'
-
 import numpy as np
 import mxnet as mx
 from mxnet import gluon
