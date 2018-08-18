@@ -1,7 +1,7 @@
 gluonnlp.model.train
 =====================
 
-Gluon NLP Toolkit supplies models with train-mode since the corresponding models have different behaviors in training
+GluonNLP Toolkit supplies models with train-mode since the corresponding models have different behaviors in training
  and inference, e.g., the number and type of the outputs from the forward pass are different.
 
 .. currentmodule:: gluonnlp.model.train

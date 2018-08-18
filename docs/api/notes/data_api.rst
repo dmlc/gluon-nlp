@@ -276,7 +276,7 @@ based on sort_key and then batched.
     >>>                                                     mult=100,
     >>>                                                     shuffle=True)
 
-More details about the training using pretrained language model and bucketing can be found in the following:
+More details about the training using pre-trained language model and bucketing can be found in the following:
 
 .. toctree::
    :maxdepth: 1

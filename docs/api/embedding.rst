@@ -1,7 +1,7 @@
 gluonnlp.embedding
 ==================
 
-Gluon NLP Toolkit provides tools for working with embeddings.
+GluonNLP Toolkit provides tools for working with embeddings.
 
 .. currentmodule:: gluonnlp.embedding
 
@@ -11,8 +11,8 @@ pre-trained embedding vectors for text tokens and storing them in the
 of text embeddings.
 
 
-Pretrained Embeddings
----------------------
+Pre-trained Embeddings
+----------------------
 
 .. currentmodule:: gluonnlp.embedding
 .. autosummary::

@@ -1,12 +1,13 @@
-# Sentiment Analysis (SA) with pretrained Language Model (LM)
+# Sentiment Analysis (SA) with pre-trained Language Model (LM)
 
-In this notebook, we are going to build a sentiment analysis model based on the pretrained language model. We are focusing on the best usability to support traditional nlp tasks in a simple fashion. The building process is simple three steps. Let us get started now.
+Now that we've covered some advanced topics, let's go back and show how these techniques can help us even when addressing the comparatively simple problem of classification. In particular, we'll look at the classic problem of sentiment analysis: taking an input consisting of a string of text and classifying its sentiment as positive of negative.
 
-We use movie reviews from the Large Movie Review Dataset, as known as the IMDB dataset. In this task, given a moview, the model attemps to predict its sentiment, which can be positive or negative.
+In this notebook, we are going to use GluonNLP to build a sentiment analysis model whose weights are initialized based on a pretrained language model. Using pretrained language model weights is a common approach for semi-supervised learning in NLP. In order to do a good job with large language modeling on a large corpus of text, our model must learn representations that contain information about the structure of natural language. Intuitively, by starting with these good features, vs random features, we're able to converge faster upon a good model for our downsteam task.
 
-## Preparation and settings
+With GluonNLP, we can quickly prototype the model and it's easy to customize. The building process consists of just three simple steps. For this demonstration we'll focus on movie reviews from the Large Movie Review Dataset, also known as the IMDB dataset. Given a movie, our model will output prediction of its sentiment, which can be positive or negative.
 
-### Load mxnet and gluonnlp
+
+## Load mxnet and gluonnlp
 
 ```{.python .input  n=1}
 import warnings
@@ -27,6 +28,55 @@ np.random.seed(123)
 mx.random.seed(123)
 ```
 
+## Sentiment analysis model with pre-trained language model encoder
+
+So that we can easily transplant the pre-trained weights, we'll base our model architecture on the pre-trained LM. Following the LSTM layer, we have one representation vector for each word in the sentence. Because we plan to make a single prediction (not one per word), we'll first pool our predictions across time steps before feeding them through a dense layer to produce our final prediction (a single sigmoid output node).
+
+![sa-model](samodel-v3.png)
+
+Specifically, our model represents input words by their embeddings. Following the embedding layer, our model consists of a two-layer LSTM, followed by an average pooling layer, followed by a sigmoid output layer (all illustrated in the figure above)
+
+Thus, given an input sequence, the memory cells in the LSTM layer will produce a representation sequence. This representation sequence is then averaged over all timesteps resulting in a fixed-length sentence representation $h$. Finally, we apply a sigmoid output layer on top of $h$. We’re using the sigmoid  because we’re trying to predict if this text has positive or negative sentiment, and a sigmoid activation function squashes the output values to the range [0,1], allowing us to interpret this output as a probability.
+
+```{.python .input  n=11}
+class MeanPoolingLayer(gluon.HybridBlock):
+    """A block for mean pooling of encoder features"""
+    def __init__(self, prefix=None, params=None):
+        super(MeanPoolingLayer, self).__init__(prefix=prefix, params=params)
+
+    def hybrid_forward(self, F, data, valid_length): # pylint: disable=arguments-differ
+        """Forward logic"""
+        # Data will have shape (T, N, C)
+        masked_encoded = F.SequenceMask(data,
+                                        sequence_length=valid_length,
+                                        use_sequence_length=True)
+        agg_state = F.broadcast_div(F.sum(masked_encoded, axis=0),
+                                    F.expand_dims(valid_length, axis=1))
+        return agg_state
+
+
+class SentimentNet(gluon.HybridBlock):
+    """Network for sentiment analysis."""
+    def __init__(self, dropout, prefix=None, params=None):
+        super(SentimentNet, self).__init__(prefix=prefix, params=params)
+        with self.name_scope():
+            self.embedding = None # will set with lm embedding later
+            self.encoder = None # will set with lm encoder later
+            self.agg_layer = MeanPoolingLayer()
+            self.output = gluon.nn.HybridSequential()
+            with self.output.name_scope():
+                self.output.add(gluon.nn.Dropout(dropout))
+                self.output.add(gluon.nn.Dense(1, flatten=False))
+
+    def hybrid_forward(self, F, data, valid_length): # pylint: disable=arguments-differ
+        encoded = self.encoder(self.embedding(data))  # Shape(T, N, C)
+        agg_state = self.agg_layer(encoded, valid_length)
+        out = self.output(agg_state)
+        return out
+```
+
+## Hyperparameters and model initialization
+
 ### Hyperparameters
 
 Our model is based on a standard LSTM model. We use a hidden size of 200. We use bucketing for speeding up the processing of variable-length sequences.
@@ -46,58 +96,20 @@ log_interval = 100
 context = mx.gpu(0)
 ```
 
-## Sentiment analysis model with pre-trained language model encoder
+### Load pre-trained model
 
-The model architecture is based on pretrained LM:
+```{.python .input}
+lm_model, vocab = nlp.model.get_model(name=language_model_name,
+                                      dataset_name='wikitext-2',
+                                      pretrained=pretrained,
+                                      ctx=context,
+                                      dropout=dropout)
+```
 
-![sa-model](samodel-v3.png)
+### Create SA model from pre-trained model
 
-Our model is composed of a two-layer LSTM followed by an average pooling and a sigmoid output layer as illustrated in the Figure above. From the embedding layer, the new representations will be passed to LSTM cells. These will include information about the sequence of words in the data. Thus, given an input sequence, the memory cells in the LSTM layer will produce a representation sequence. This representation sequence is then averaged over all timesteps resulting in representation h. Finally, this representation is fed to a sigmoid output layer. We’re using the sigmoid  because we’re trying to predict if this text has positive or negative sentiment, and a sigmoid activation function allows the model to compute the posterior probability.
-
-```{.python .input  n=11}
-class AggregationLayer(gluon.HybridBlock):
-    """A block for mean pooling of encoder features"""
-    def __init__(self, prefix=None, params=None):
-        super(AggregationLayer, self).__init__(prefix=prefix, params=params)
-
-    def hybrid_forward(self, F, data, valid_length): # pylint: disable=arguments-differ
-        """Forward logic"""
-        # Data will have shape (T, N, C)
-        masked_encoded = F.SequenceMask(data,
-                                        sequence_length=valid_length,
-                                        use_sequence_length=True)
-        agg_state = F.broadcast_div(F.sum(masked_encoded, axis=0),
-                                    F.expand_dims(valid_length, axis=1))
-        return agg_state
-
-
-class SentimentNet(gluon.HybridBlock):
-    """Network for sentiment analysis."""
-    def __init__(self, dropout, prefix=None, params=None):
-        super(SentimentNet, self).__init__(prefix=prefix, params=params)
-        with self.name_scope():
-            self.embedding = None
-            self.encoder = None
-            self.agg_layer = AggregationLayer()
-            self.output = gluon.nn.HybridSequential()
-            with self.output.name_scope():
-                self.output.add(gluon.nn.Dropout(dropout))
-                self.output.add(gluon.nn.Dense(1, flatten=False))
-
-    def hybrid_forward(self, F, data, valid_length): # pylint: disable=arguments-differ
-        encoded = self.encoder(self.embedding(data))  # Shape(T, N, C)
-        agg_state = self.agg_layer(encoded, valid_length)
-        out = self.output(agg_state)
-        return out
-
+```{.python .input}
 net = SentimentNet(dropout=dropout)
-with net.name_scope():
-    lm_model, vocab = nlp.model.get_model(name=language_model_name,
-                                          dataset_name='wikitext-2',
-                                          pretrained=pretrained,
-                                          ctx=context,
-                                          dropout=dropout)
-
 net.embedding = lm_model.embedding
 net.encoder = lm_model.encoder
 net.hybridize()
@@ -105,29 +117,30 @@ net.output.initialize(mx.init.Xavier(), ctx=context)
 print(net)
 ```
 
-In the above code, we first acquire a pretrained model on Wikitext-2 dataset using nlp.model.get_model. We then construct a SentimentNet object, which takes as input the embedding layer and encoder of the pretrained model.
+In the above code, we first acquire a pre-trained model on the Wikitext-2 dataset using nlp.model.get_model. We then construct a SentimentNet object, which takes as input the embedding layer and encoder of the pre-trained model.
 
-As we employ the pretrained embedding layer and encoder, we only need to initialize the output layer using net.out_layer.initialize(mx.init.Xavier(), ctx=context).
+As we employ the pre-trained embedding layer and encoder, **we only need to initialize the output layer** using `net.out_layer.initialize(mx.init.Xavier(), ctx=context)`.
 
 ## Data pipeline
 
 ### Load sentiment analysis dataset -- IMDB reviews
 
-In the labeled train/test sets, a negative review has a score <= 4
-out of 10, and a positive review has a score >= 7 out of 10. Thus
-reviews with more neutral ratings are not included in the train/test
-sets. We labeled a negative review whose score <= 4 as 0, and a
+In the labeled train/test sets, out of a max score of 10, a negative review has a score of no more than 4, and a positive review has a score of no less than 7. Thus reviews with more neutral ratings are not included in the train/test sets. We labeled a negative review whose score <= 4 as 0, and a
 positive review whose score >= 7 as 1. As the neural ratings are not
-included in the datasets, we can simply use 5 as our threshold.
+included in the datasets, we can use 5 as our threshold.
 
 ```{.python .input}
-# Dataset preprocessing
+# tokenizer takes as input a string and outputs a list of tokens.
 tokenizer = nlp.data.SpacyTokenizer('en')
+
+# length_clip takes as input a list and outputs a list with maximum length 500.
 length_clip = nlp.data.ClipSequence(500)
 
 def preprocess(x):
     data, label = x
     label = int(label > 5)
+    # A token index or a list of token indices is
+    # returned according to the vocabulary.
     data = vocab[length_clip(tokenizer(data))]
     return data, label
 
@@ -141,9 +154,10 @@ print('Tokenize using spaCy...')
 
 def preprocess_dataset(dataset):
     start = time.time()
-    pool = mp.Pool(8)
-    dataset = gluon.data.SimpleDataset(pool.map(preprocess, dataset))
-    lengths = gluon.data.SimpleDataset(pool.map(get_length, dataset))
+    with mp.Pool() as pool:
+        # Each sample is processed in an asynchronous manner.
+        dataset = gluon.data.SimpleDataset(pool.map(preprocess, dataset))
+        lengths = gluon.data.SimpleDataset(pool.map(get_length, dataset))
     end = time.time()
     print('Done! Tokenizing Time={:.2f}s, #Sentences={}'.format(end - start, len(dataset)))
     return dataset, lengths
@@ -151,6 +165,36 @@ def preprocess_dataset(dataset):
 # Preprocess the dataset
 train_dataset, train_data_lengths = preprocess_dataset(train_dataset)
 test_dataset, test_data_lengths = preprocess_dataset(test_dataset)
+```
+
+In the following code, we use FixedBucketSampler, which assigns each data sample to a fixed bucket based on its length. The bucket keys are either given or generated from the input sequence lengths and the number of buckets.
+
+```{.python .input}
+def get_dataloader():
+    # Construct the DataLoader
+    # Pad data, stack label and lengths
+    batchify_fn = nlp.data.batchify.Tuple(
+        nlp.data.batchify.Pad(axis=0, ret_length=True),
+        nlp.data.batchify.Stack(dtype='float32'))
+    batch_sampler = nlp.data.sampler.FixedBucketSampler(
+        train_data_lengths,
+        batch_size=batch_size,
+        num_buckets=bucket_num,
+        ratio=bucket_ratio,
+        shuffle=True)
+    print(batch_sampler.stats())
+    train_dataloader = gluon.data.DataLoader(
+        dataset=train_dataset,
+        batch_sampler=batch_sampler,
+        batchify_fn=batchify_fn)
+    test_dataloader = gluon.data.DataLoader(
+        dataset=test_dataset,
+        batch_size=batch_size,
+        shuffle=False,
+        batchify_fn=batchify_fn)
+    return train_dataloader, test_dataloader
+
+train_dataloader, test_dataloader = get_dataloader()
 ```
 
 ## Training
@@ -193,27 +237,6 @@ def train(net, context, epochs):
                             {'learning_rate': learning_rate})
     loss = gluon.loss.SigmoidBCELoss()
 
-    # Construct the DataLoader
-    # Pad data, stack label and lengths
-    batchify_fn = nlp.data.batchify.Tuple(
-        nlp.data.batchify.Pad(axis=0, ret_length=True),
-        nlp.data.batchify.Stack(dtype='float32'))
-    batch_sampler = nlp.data.sampler.FixedBucketSampler(
-        train_data_lengths,
-        batch_size=batch_size,
-        num_buckets=bucket_num,
-        ratio=bucket_ratio,
-        shuffle=True)
-    print(batch_sampler.stats())
-    train_dataloader = gluon.data.DataLoader(
-        dataset=train_dataset,
-        batch_sampler=batch_sampler,
-        batchify_fn=batchify_fn)
-    test_dataloader = gluon.data.DataLoader(
-        dataset=test_dataset,
-        batch_size=batch_size,
-        shuffle=False,
-        batchify_fn=batchify_fn)
     parameters = net.collect_params().values()
 
     # Training/Testing
@@ -283,14 +306,11 @@ net(
         shape=(-1, 1)), mx.nd.array([4], ctx=context)).sigmoid()
 ```
 
+## Practice
+- Try with a negative sample. Does the network correctly predict the sentiment?
+
 ## Conclusion
 
-In summary, we have built a SA model using gluonnlp. It is:
-
-1) easy to use.
-
-2) simple to customize.
-
-3) fast to build the NLP prototype.
+We built a Sentiment Analysis by reusing the feature extractor from a pre-trained language model. The modular design of Gluon blocks makes it very easy to put together models for various needs. GluonNLP provides powerful building blocks that substantially simplify the process of constructing efficient data pipeline and versatile models.
 
 Gluonnlp documentation is here: http://gluon-nlp.mxnet.io/index.html

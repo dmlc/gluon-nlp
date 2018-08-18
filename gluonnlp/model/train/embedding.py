@@ -363,7 +363,7 @@ class FasttextEmbeddingModel(EmbeddingModel):
             idx_to_token.append(word)
 
         assert len(idx_to_token) == nwords, \
-            'Mismatch between words in pretrained model file ({} words), ' \
+            'Mismatch between words in pre-trained model file ({} words), ' \
             'and expected number of words ({} words)'.format(len(idx_to_token), nwords)
 
         if new_format:

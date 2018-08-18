@@ -2,7 +2,7 @@ Sequence Sampling
 -----------------
 :download:`[Download] </scripts/sequence_sampling.zip>`
 
-This script can be used to generate sentences using beam search from a pretrained language model.
+This script can be used to generate sentences using beam search from a pre-trained language model.
 
 Beam Search Generator
 ~~~~~~~~~~~~~~~~~~~~~
@@ -56,8 +56,7 @@ Output is
 Sequence Sampler
 ~~~~~~~~~~~~~~~~
 
-Use the following command to decode to sample from multinomial distribution, produced from softmax
-with temperature 1.0.
+Use the following command to decode to sample from the multinomial distribution, produced from softmax with temperature 1.0.
 
 .. code-block:: console
 
