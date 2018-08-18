@@ -70,21 +70,8 @@ to construct a beam search sampler. We will create a sampler with 4 beams and a 
     >>>                                       scorer=scorer,
     >>>                                       max_length=20)
 
-Sequence Sampler
-++++++++++++++++
-
-``SequenceSampler`` simply samples from the contextual multinomial distribution produced by the language model at each time step. Since we may want to control how "sharp" the distribution is to tradeoff diversity with correctness, we can use the ``temperature`` option in ``SequenceSampler``, which controls the temperature of the softmax function.
-
-.. code:: python
-
-     >>> sampler = nlp.model.SequenceSampler(beam_size=4,
-     >>>                                     decoder=decoder,
-     >>>                                     eos_id=eos_id,
-     >>>                                     max_length=20,
-     >>>                                     temperature=temperature)
-
 Generate Sequences w/ Beam Search
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Next, we are going to generate sentences starting with "I love it" using beam search first. We feed ['I', 'Love'] to the
 language model to get the initial states and set the initial input to be the word 'it'. We will then print the top-3 generations.
@@ -115,10 +102,26 @@ language model to get the initial states and set the initial input to be the wor
     ['I love it , but it is not a <unk> .', -15.624882]
     ['I love it , but it is not a <unk> , but it is not a <unk> .', -28.37084]
 
-Generate Sequences w/ Sequence Sampler
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Sequence Sampler
+++++++++++++++++
 
 The previous generation results may look a bit borning. Now, let's use sequence sampler to get some more interesting results.
+
+``SequenceSampler`` simply samples from the contextual multinomial distribution produced by the language model at each time step. Since we may want to control how "sharp" the distribution is to tradeoff diversity with correctness, we can use the ``temperature`` option in ``SequenceSampler``, which controls the temperature of the softmax function.
+
+.. code:: python
+
+     >>> sampler = nlp.model.SequenceSampler(beam_size=4,
+     >>>                                     decoder=decoder,
+     >>>                                     eos_id=eos_id,
+     >>>                                     max_length=100,
+     >>>                                     temperature=0.97)
+
+
+Generate Sequences w/ Sequence Sampler
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Now, use the sequence sampler created to sample sequences based on the same inputs used previously.
 
 .. code:: python
 
@@ -129,11 +132,6 @@ The previous generation results may look a bit borning. Now, let's use sequence 
     >>>     _, begin_states = lm_model(mx.nd.expand_dims(mx.nd.array(bos_ids[:-1]), axis=1),
     >>>                                begin_states)
     >>> inputs = mx.nd.full(shape=(1,), ctx=ctx, val=bos_ids[-1])
-    >>> sampler = nlp.model.SequenceSampler(beam_size=10,
-    >>>                                     decoder=decoder,
-    >>>                                     eos_id=eos_id,
-    >>>                                     max_length=100,
-    >>>                                     temperature=0.97)
     >>> samples, scores, valid_lengths = sampler(inputs, begin_states)
     >>> samples = samples[0].asnumpy()
     >>> scores = scores[0].asnumpy()
