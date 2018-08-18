@@ -70,19 +70,6 @@ to construct a beam search sampler. We will create a sampler with 4 beams and a 
     >>>                                       scorer=scorer,
     >>>                                       max_length=20)
 
-Sequence Sampler
-++++++++++++++++
-
-``SequenceSampler`` simply samples from the contextual multinomial distribution produced by the language model at each time step. Since we may want to control how "sharp" the distribution is to tradeoff diversity with correctness, we can use the ``temperature`` option in ``SequenceSampler``, which controls the temperature of the softmax function.
-
-.. code:: python
-
-     >>> sampler = nlp.model.SequenceSampler(beam_size=4,
-     >>>                                     decoder=decoder,
-     >>>                                     eos_id=eos_id,
-     >>>                                     max_length=20,
-     >>>                                     temperature=temperature)
-
 Generate Sequences w/ Beam Search
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -115,10 +102,26 @@ language model to get the initial states and set the initial input to be the wor
     ['I love it , but it is not a <unk> .', -15.624882]
     ['I love it , but it is not a <unk> , but it is not a <unk> .', -28.37084]
 
+Sequence Sampler
+++++++++++++++++
+
+The previous generation results may look a bit borning. Now, let's use sequence sampler to get some more interesting results.
+
+``SequenceSampler`` simply samples from the contextual multinomial distribution produced by the language model at each time step. Since we may want to control how "sharp" the distribution is to tradeoff diversity with correctness, we can use the ``temperature`` option in ``SequenceSampler``, which controls the temperature of the softmax function.
+
+.. code:: python
+
+     >>> sampler = nlp.model.SequenceSampler(beam_size=4,
+     >>>                                     decoder=decoder,
+     >>>                                     eos_id=eos_id,
+     >>>                                     max_length=20,
+     >>>                                     temperature=temperature)
+
+
 Generate Sequences w/ Sequence Sampler
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The previous generation results may look a bit borning. Now, let's use sequence sampler to get some more interesting results.
+Now, use sequence sampler with the same inputs to generate sequences.
 
 .. code:: python
 
