@@ -1,6 +1,6 @@
-# Sentiment Analysis (SA) with pretrained Language Model (LM)
+# Sentiment Analysis (SA) with pre-trained Language Model (LM)
 
-In this notebook, we are going to build a sentiment analysis model based on the pretrained language model. We are focusing on the best usability to support traditional nlp tasks in a simple fashion. The building process is simple three steps. Let us get started now.
+In this notebook, we are going to build a sentiment analysis model based on the pre-trained language model. We are focusing on the best usability to support traditional nlp tasks in a simple fashion. The building process is simple three steps. Let us get started now.
 
 We use movie reviews from the Large Movie Review Dataset, as known as the IMDB dataset. In this task, given a moview, the model attemps to predict its sentiment, which can be positive or negative.
 
@@ -48,7 +48,7 @@ context = mx.gpu(0)
 
 ## Sentiment analysis model with pre-trained language model encoder
 
-The model architecture is based on pretrained LM:
+The model architecture is based on pre-trained LM:
 
 ![sa-model](samodel-v3.png)
 
@@ -105,9 +105,9 @@ net.output.initialize(mx.init.Xavier(), ctx=context)
 print(net)
 ```
 
-In the above code, we first acquire a pretrained model on Wikitext-2 dataset using nlp.model.get_model. We then construct a SentimentNet object, which takes as input the embedding layer and encoder of the pretrained model.
+In the above code, we first acquire a pre-trained model on Wikitext-2 dataset using nlp.model.get_model. We then construct a SentimentNet object, which takes as input the embedding layer and encoder of the pre-trained model.
 
-As we employ the pretrained embedding layer and encoder, we only need to initialize the output layer using net.out_layer.initialize(mx.init.Xavier(), ctx=context).
+As we employ the pre-trained embedding layer and encoder, we only need to initialize the output layer using net.out_layer.initialize(mx.init.Xavier(), ctx=context).
 
 ## Data pipeline
 

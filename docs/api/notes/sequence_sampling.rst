@@ -1,11 +1,11 @@
 Sentence Generation from Language Model
 ---------------------------------------
 
-In this tutorial, we show how to load a pretrained language model on wikitext-2 in Gluon NLP Toolkit
+In this tutorial, we show how to load a pre-trained language model on wikitext-2 in GluonNLP Toolkit
 model zoo and use beam search sampler and sequence sampler to generate sentences.
 
-Load Pretrained Language Model
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Load Pre-trained Language Model
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. code:: python
 
@@ -13,7 +13,7 @@ Load Pretrained Language Model
     >>> import gluonnlp as nlp
     >>> ctx = mx.cpu()
 
-To load the pretrained model, gluon nlp API provides a convenient way as shown in the following codes:
+To load the pre-trained model, GluonNLP API provides a convenient way as shown in the following codes:
 
 .. code:: python
 
@@ -25,7 +25,7 @@ To load the pretrained model, gluon nlp API provides a convenient way as shown i
 
 Sampling a Sequence
 ~~~~~~~~~~~~~~~~~~~
-Generating sequences from language model is about generating sequences that are likely to occur according to the language model. Language model predicts the likelihood of a word occuring at certain time step, given the context from prior time steps. Given that at each time step, the possible output is any word from the vocabulary whose size is V, the number of all possible outcomes for a sequence of length T is thus V^T. While finding the absolute optimal outcome quickly becomes intractable as time step increases, there are stil many ways to sample reasonably good sequences. GluonNLP provides two of such samples: ``SequenceSampler`` and ``BeamSearchSampler``.
+Generating sequences from the language model is about generating sequences that are likely to occur according to the language model. Language model predicts the likelihood of a word occurring at a particular time step, given the context from prior time steps. Given that at each time step, the possible output is any word from the vocabulary whose size is V, the number of all possible outcomes for a sequence of length T is thus V^T. While finding the absolute optimal outcome quickly becomes intractable as time step increases, there are still many ways to sample reasonably good sequences. GluonNLP provides two such samples: ``SequenceSampler`` and ``BeamSearchSampler``.
 
 Beam Search Sampler
 +++++++++++++++++++
@@ -57,9 +57,9 @@ The next step is to define a beam search sampler. Before setting up a sampler, w
     >>>         return self._model.state_info(*arg, **kwargs)
     >>> decoder = LMDecoder(lm_model)
 
-Given a scorer and decoder, we are ready to create a sampler. We use symbol '.' to indicate the end of sentence (EOS).
-We can use ``vocab`` to get the index of the EOS, and then feed the index to the sampler. The following codes shows how
-to construct a beam search sampler. We will create a sampler with 4 beams and a maximum sample length of 20.
+Given a scorer and decoder, we are ready to create a sampler. We use the symbol '.' to indicate the end of a sentence (EOS).
+We can use ``vocab`` to get the index of the EOS, and then feed the index to the sampler. The following code shows how
+to construct a beam search sampler. We create a sampler with 4 beams and a maximum sample length of 20.
 
 .. code:: python
 
@@ -105,7 +105,7 @@ language model to get the initial states and set the initial input to be the wor
 Sequence Sampler
 ++++++++++++++++
 
-The previous generation results may look a bit borning. Now, let's use sequence sampler to get some more interesting results.
+The previous generation results may look a bit boring. Now, let's use sequence sampler to get some more exciting results.
 
 ``SequenceSampler`` simply samples from the contextual multinomial distribution produced by the language model at each time step. Since we may want to control how "sharp" the distribution is to tradeoff diversity with correctness, we can use the ``temperature`` option in ``SequenceSampler``, which controls the temperature of the softmax function.
 

@@ -49,7 +49,7 @@ parser = argparse.ArgumentParser(description=
 parser.add_argument('--bptt', type=int, default=2000,
                     help='sequence length')
 parser.add_argument('--model_name', type=str, default='awd_lstm_lm_1150',
-                    help='name of the pretrained language model')
+                    help='name of the pre-trained language model')
 parser.add_argument('--gpus', type=str,
                     help='list of gpus to run, e.g. 0 or 0,2,5. empty means using cpu.'
                          '(using single gpu is suggested)')

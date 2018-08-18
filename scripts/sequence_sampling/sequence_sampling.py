@@ -2,7 +2,7 @@
 Generate Sentences by Sampling and Beam Search
 ==============================================
 
-This example shows how to load a pretrained language model on wikitext-2 in Gluon NLP Toolkit model
+This example shows how to load a pre-trained language model on wikitext-2 in Gluon NLP Toolkit model
 zoo, and use sequence sampler and beam search sampler on the language model to generate sentences.
 """
 
@@ -31,7 +31,7 @@ import gluonnlp as nlp
 
 
 parser = argparse.ArgumentParser(description='Generate sentences by beam search. '
-                                             'We load a LSTM model that is pretrained on '
+                                             'We load a LSTM model that is pre-trained on '
                                              'WikiText as our encoder.')
 group = parser.add_mutually_exclusive_group(required=True)
 group.add_argument('--use-sampling', action='store_true',
@@ -39,7 +39,7 @@ group.add_argument('--use-sampling', action='store_true',
 group.add_argument('--use-beam-search', action='store_true',
                    help='Use beam search instead of random sampling.')
 parser.add_argument('--lm_model', type=str, default='awd_lstm_lm_1150',
-                    help='type of the pretrained model to load, can be "standard_lstm_lm_200", '
+                    help='type of the pre-trained model to load, can be "standard_lstm_lm_200", '
                          '"standard_lstm_lm_650", "standard_lstm_lm_1500", '
                          '"awd_lstm_lm_1150", etc.')
 parser.add_argument('--beam_size', type=int, default=5,

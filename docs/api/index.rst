@@ -1,7 +1,7 @@
 API Documentation
 =================
 
-Gluon NLP Toolkit API includes many useful building blocks for NLP data processing and modeling.
+GluonNLP Toolkit API includes many useful building blocks for NLP data processing and modeling.
 
 .. toctree::
    :glob:

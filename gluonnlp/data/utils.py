@@ -252,7 +252,7 @@ def short_hash(name):
 
 
 def _load_pretrained_vocab(name, root=os.path.join('~', '.mxnet', 'models')):
-    """Load the accompanying vocabulary object for pretrained model.
+    """Load the accompanying vocabulary object for pre-trained model.
 
     Parameters
     ----------
@@ -264,7 +264,7 @@ def _load_pretrained_vocab(name, root=os.path.join('~', '.mxnet', 'models')):
     Returns
     -------
     Vocab
-        Loaded vocabulary object for the pretrained model.
+        Loaded vocabulary object for the pre-trained model.
     """
     file_name = '{name}-{short_hash}'.format(name=name,
                                              short_hash=short_hash(name))

@@ -1,6 +1,6 @@
 Examples
 ========
-Here are several end-to-end examples of using Gluon NLP Toolkit for modeling tasks.
+Here are several end-to-end examples of using GluonNLP Toolkit for modeling tasks.
 
 .. toctree::
    :maxdepth: 1

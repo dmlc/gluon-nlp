@@ -203,7 +203,7 @@ def awd_lstm_lm_1150(dataset_name=None, vocab=None, pretrained=False, ctx=cpu(),
     Parameters
     ----------
     dataset_name : str or None, default None
-        The dataset name on which the pretrained model is trained.
+        The dataset name on which the pre-trained model is trained.
         Options are 'wikitext-2'. If specified, then the returned vocabulary is extracted from
         the training set of the dataset.
         If None, then vocab is required, for specifying embedding weight size, and is directly
@@ -213,9 +213,9 @@ def awd_lstm_lm_1150(dataset_name=None, vocab=None, pretrained=False, ctx=cpu(),
         Vocab object to be used with the language model.
         Required when dataset_name is not specified.
     pretrained : bool, default False
-        Whether to load the pretrained weights for model.
+        Whether to load the pre-trained weights for model.
     ctx : Context, default CPU
-        The context in which to load the pretrained weights.
+        The context in which to load the pre-trained weights.
     root : str, default '~/.mxnet/models'
         Location for keeping the model parameters.
 
@@ -250,7 +250,7 @@ def awd_lstm_lm_600(dataset_name=None, vocab=None, pretrained=False, ctx=cpu(),
     Parameters
     ----------
     dataset_name : str or None, default None
-        The dataset name on which the pretrained model is trained.
+        The dataset name on which the pre-trained model is trained.
         Options are 'wikitext-2'. If specified, then the returned vocabulary is extracted from
         the training set of the dataset.
         If None, then vocab is required, for specifying embedding weight size, and is directly
@@ -260,9 +260,9 @@ def awd_lstm_lm_600(dataset_name=None, vocab=None, pretrained=False, ctx=cpu(),
         Vocab object to be used with the language model.
         Required when dataset_name is not specified.
     pretrained : bool, default False
-        Whether to load the pretrained weights for model.
+        Whether to load the pre-trained weights for model.
     ctx : Context, default CPU
-        The context in which to load the pretrained weights.
+        The context in which to load the pre-trained weights.
     root : str, default '~/.mxnet/models'
         Location for keeping the model parameters.
 
@@ -296,7 +296,7 @@ def standard_lstm_lm_200(dataset_name=None, vocab=None, pretrained=False, ctx=cp
     Parameters
     ----------
     dataset_name : str or None, default None
-        The dataset name on which the pretrained model is trained.
+        The dataset name on which the pre-trained model is trained.
         Options are 'wikitext-2'. If specified, then the returned vocabulary is extracted from
         the training set of the dataset.
         If None, then vocab is required, for specifying embedding weight size, and is directly
@@ -306,9 +306,9 @@ def standard_lstm_lm_200(dataset_name=None, vocab=None, pretrained=False, ctx=cp
         Vocabulary object to be used with the language model.
         Required when dataset_name is not specified.
     pretrained : bool, default False
-        Whether to load the pretrained weights for model.
+        Whether to load the pre-trained weights for model.
     ctx : Context, default CPU
-        The context in which to load the pretrained weights.
+        The context in which to load the pre-trained weights.
     root : str, default '~/.mxnet/models'
         Location for keeping the model parameters.
 
@@ -339,7 +339,7 @@ def standard_lstm_lm_650(dataset_name=None, vocab=None, pretrained=False, ctx=cp
     Parameters
     ----------
     dataset_name : str or None, default None
-        The dataset name on which the pretrained model is trained.
+        The dataset name on which the pre-trained model is trained.
         Options are 'wikitext-2'. If specified, then the returned vocabulary is extracted from
         the training set of the dataset.
         If None, then vocab is required, for specifying embedding weight size, and is directly
@@ -349,9 +349,9 @@ def standard_lstm_lm_650(dataset_name=None, vocab=None, pretrained=False, ctx=cp
         Vocabulary object to be used with the language model.
         Required when dataset_name is not specified.
     pretrained : bool, default False
-        Whether to load the pretrained weights for model.
+        Whether to load the pre-trained weights for model.
     ctx : Context, default CPU
-        The context in which to load the pretrained weights.
+        The context in which to load the pre-trained weights.
     root : str, default '~/.mxnet/models'
         Location for keeping the model parameters.
 
@@ -382,7 +382,7 @@ def standard_lstm_lm_1500(dataset_name=None, vocab=None, pretrained=False, ctx=c
     Parameters
     ----------
     dataset_name : str or None, default None
-        The dataset name on which the pretrained model is trained.
+        The dataset name on which the pre-trained model is trained.
         Options are 'wikitext-2'. If specified, then the returned vocabulary is extracted from
         the training set of the dataset.
         If None, then vocab is required, for specifying embedding weight size, and is directly
@@ -392,9 +392,9 @@ def standard_lstm_lm_1500(dataset_name=None, vocab=None, pretrained=False, ctx=c
         Vocabulary object to be used with the language model.
         Required when dataset_name is not specified.
     pretrained : bool, default False
-        Whether to load the pretrained weights for model.
+        Whether to load the pre-trained weights for model.
     ctx : Context, default CPU
-        The context in which to load the pretrained weights.
+        The context in which to load the pre-trained weights.
     root : str, default '~/.mxnet/models'
         Location for keeping the model parameters.
 
@@ -529,7 +529,7 @@ def big_rnn_lm_2048_512(dataset_name=None, vocab=None, pretrained=False, ctx=cpu
     Parameters
     ----------
     dataset_name : str or None, default None
-        The dataset name on which the pretrained model is trained.
+        The dataset name on which the pre-trained model is trained.
         Options are 'gbw'. If specified, then the returned vocabulary is extracted from
         the training set of the dataset.
         If None, then vocab is required, for specifying embedding weight size, and is directly
@@ -539,9 +539,9 @@ def big_rnn_lm_2048_512(dataset_name=None, vocab=None, pretrained=False, ctx=cpu
         Vocabulary object to be used with the language model.
         Required when dataset_name is not specified.
     pretrained : bool, default False
-        Whether to load the pretrained weights for model.
+        Whether to load the pre-trained weights for model.
     ctx : Context, default CPU
-        The context in which to load the pretrained weights.
+        The context in which to load the pre-trained weights.
     root : str, default '~/.mxnet/models'
         Location for keeping the model parameters.
 

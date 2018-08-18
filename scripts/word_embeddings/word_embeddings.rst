@@ -21,7 +21,7 @@ included `evaluate_pretrained.py` as follows.
 
 Call the script with the `--help` option to get an overview of the supported
 options. We include a `run_all.sh` script to run the evaluation for the
-pretrained English Glove and fastText embeddings included in GluonNLP.
+pre-trained English Glove and fastText embeddings included in GluonNLP.
 
 .. code-block:: console
 
@@ -35,7 +35,7 @@ evaluation tasks are available `here
 Word Embedding Training
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-Besides loading pretrained embeddings, the Gluon NLP toolkit also makes it easy
+Besides loading pre-trained embeddings, the Gluon NLP toolkit also makes it easy
 to train embeddings.
 
 `train_fasttext.py` shows how to use Gluon NLP to train fastText or Word2Vec

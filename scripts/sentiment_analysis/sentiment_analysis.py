@@ -49,17 +49,17 @@ length_clip = nlp.data.ClipSequence(500)
 
 
 parser = argparse.ArgumentParser(description='MXNet Sentiment Analysis Example on IMDB. '
-                                             'We load a LSTM model that is pretrained on '
+                                             'We load a LSTM model that is pre-trained on '
                                              'WikiText as our encoder.')
 parser.add_argument('--lm_model', type=str, default='standard_lstm_lm_200',
-                    help='type of the pretrained model to load, can be "standard_lstm_200", '
+                    help='type of the pre-trained model to load, can be "standard_lstm_200", '
                          '"standard_lstm_200", etc.')
 parser.add_argument('--use-mean-pool', type=bool, default=True,
                     help='whether to use mean pooling to aggregate the states from '
                          'different timestamps.')
 parser.add_argument('--no_pretrained', action='store_true',
                     help='Turn on the option to just use the structure and '
-                         'not load the pretrained weights.')
+                         'not load the pre-trained weights.')
 parser.add_argument('--lr', type=float, default=2.5E-3,
                     help='initial learning rate')
 parser.add_argument('--clip', type=float, default=None, help='gradient clipping')
