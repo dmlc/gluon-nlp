@@ -68,7 +68,8 @@ class BeamSearchScorer(HybridBlock):
         Returns
         -------
         candidate_scores : NDArray or Symbol
-            The scores of all the candidates. Shape (d1, d2, ..., dn, V)
+            The scores of all the candidates. Shape (d1, d2, ..., dn, V), where V is the size
+            of the vocabulary.
         """
         return super(BeamSearchScorer, self).__call__(outputs, scores, step)
 
