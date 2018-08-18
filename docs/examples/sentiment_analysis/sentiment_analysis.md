@@ -1,8 +1,8 @@
 # Sentiment Analysis (SA) with pre-trained Language Model (LM)
 
-In this notebook, we are going to build a sentiment analysis model based on the pre-trained language model. We are focusing on the best usability to support traditional nlp tasks in a simple fashion. The building process is simple three steps. Let us get started now.
+In this notebook, we are going to build a sentiment analysis model based on the pre-trained language model. We are focusing on the best usability to support traditional NLP tasks easily. The building process is simple three steps. Let us get started now.
 
-We use movie reviews from the Large Movie Review Dataset, as known as the IMDB dataset. In this task, given a moview, the model attemps to predict its sentiment, which can be positive or negative.
+We use movie reviews from the Large Movie Review Dataset, as known as the IMDB dataset. In this task, given a movie review, the model predicts its sentiment, which can be either positive or negative.
 
 ## Preparation and settings
 
@@ -52,7 +52,7 @@ The model architecture is based on pre-trained LM:
 
 ![sa-model](samodel-v3.png)
 
-Our model is composed of a two-layer LSTM followed by an average pooling and a sigmoid output layer as illustrated in the Figure above. From the embedding layer, the new representations will be passed to LSTM cells. These will include information about the sequence of words in the data. Thus, given an input sequence, the memory cells in the LSTM layer will produce a representation sequence. This representation sequence is then averaged over all timesteps resulting in representation h. Finally, this representation is fed to a sigmoid output layer. We’re using the sigmoid  because we’re trying to predict if this text has positive or negative sentiment, and a sigmoid activation function allows the model to compute the posterior probability.
+Our model is composed of a two-layer LSTM followed by an average pooling and a sigmoid output layer as illustrated in the Figure above. From the embedding layer, the new representations are passed to LSTM cells. These include information about the sequence of words in the data. Thus, given an input sequence, the memory cells in the LSTM layer produce a representation sequence. This representation sequence is then averaged over all timesteps resulting in representation h. Finally, this representation is fed to a sigmoid output layer. We’re using the sigmoid because we’re trying to predict if this text has positive or negative sentiment, and a sigmoid activation function allows the model to compute the posterior probability.
 
 ```{.python .input  n=11}
 class AggregationLayer(gluon.HybridBlock):
@@ -105,20 +105,17 @@ net.output.initialize(mx.init.Xavier(), ctx=context)
 print(net)
 ```
 
-In the above code, we first acquire a pre-trained model on Wikitext-2 dataset using nlp.model.get_model. We then construct a SentimentNet object, which takes as input the embedding layer and encoder of the pre-trained model.
+In the above code, we first acquire a pre-trained model on the Wikitext-2 dataset using nlp.model.get_model. We then construct a SentimentNet object, which takes as input the embedding layer and encoder of the pre-trained model.
 
-As we employ the pre-trained embedding layer and encoder, we only need to initialize the output layer using net.out_layer.initialize(mx.init.Xavier(), ctx=context).
+As we employ the pre-trained embedding layer and encoder, we only need to initialize the output layer using `net.out_layer.initialize(mx.init.Xavier(), ctx=context)`.
 
 ## Data pipeline
 
 ### Load sentiment analysis dataset -- IMDB reviews
 
-In the labeled train/test sets, a negative review has a score <= 4
-out of 10, and a positive review has a score >= 7 out of 10. Thus
-reviews with more neutral ratings are not included in the train/test
-sets. We labeled a negative review whose score <= 4 as 0, and a
+In the labeled train/test sets, out of a max score of 10, a negative review has a score of no more than 4, and a positive review has a score of no less than 7. Thus reviews with more neutral ratings are not included in the train/test sets. We labeled a negative review whose score <= 4 as 0, and a
 positive review whose score >= 7 as 1. As the neural ratings are not
-included in the datasets, we can simply use 5 as our threshold.
+included in the datasets, we can use 5 as our threshold.
 
 ```{.python .input}
 # Dataset preprocessing
@@ -285,12 +282,6 @@ net(
 
 ## Conclusion
 
-In summary, we have built a SA model using gluonnlp. It is:
-
-1) easy to use.
-
-2) simple to customize.
-
-3) fast to build the NLP prototype.
+We built a Sentiment Analysis by reusing the feature extractor from a pre-trained language model. The modular design of Gluon blocks makes it very easy to put together models for various needs. GluonNLP provides powerful building blocks that substantially simplify the process of constructing efficient data pipeline and versatile models.
 
 Gluonnlp documentation is here: http://gluon-nlp.mxnet.io/index.html
