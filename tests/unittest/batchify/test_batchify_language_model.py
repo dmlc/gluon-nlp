@@ -125,7 +125,7 @@ def test_stream_bptt_batchify(seq_len, batch_size, stream_identity_wrappers):
     num_tokens_per_batch = seq_len * batch_size
     num_tokens = 0
     for i, (data, target) in enumerate(bptt_stream):
-        mask = data == padding_idx
+        mask = data != padding_idx
         # count the valid tokens in the batch
         num_valid_tokens = mask.sum().asscalar()
         if num_valid_tokens == num_tokens_per_batch:
