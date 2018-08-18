@@ -52,31 +52,31 @@ The dataset used for training the models is wikitext-2.
 
 .. code-block:: console
 
-   $ python -u word_language_model.py --gpus 0 --tied --save awd_lstm_lm_1150_wikitext-2
+   $ python word_language_model.py --gpus 0 --tied --save awd_lstm_lm_1150_wikitext-2
 
 [2] awd_lstm_lm_600_wikitext-2 (Val PPL 84.61 Test PPL 80.96)
 
 .. code-block:: console
 
-   $ python -u word_language_model.py --gpus 0 --emsize 200 --nhid 600 --epochs 750 --dropout 0.2 --dropout_h 0.1 --dropout_i 0.3 --dropout_e 0.05 --weight_drop 0.2 --tied --save awd_lstm_lm_600_wikitext-2
+   $ python word_language_model.py --gpus 0 --emsize 200 --nhid 600 --epochs 750 --dropout 0.2 --dropout_h 0.1 --dropout_i 0.3 --dropout_e 0.05 --weight_drop 0.2 --tied --save awd_lstm_lm_600_wikitext-2
 
 [3] standard_lstm_lm_1500_wikitext-2 (Val PPL 98.29 Test PPL 92.83)
 
 .. code-block:: console
 
-   $ python -u word_language_model.py --gpus 0 --emsize 1500 --nhid 1500 --nlayers 2 --lr 20 --epochs 750 --batch_size 20 --bptt 35 --dropout 0.65 --dropout_h 0 --dropout_i 0 --dropout_e 0 --weight_drop 0 --tied --wd 0 --alpha 0 --beta 0 --save standard_lstm_lm_1500_wikitext-2
+   $ python word_language_model.py --gpus 0 --emsize 1500 --nhid 1500 --nlayers 2 --lr 20 --epochs 750 --batch_size 20 --bptt 35 --dropout 0.65 --dropout_h 0 --dropout_i 0 --dropout_e 0 --weight_drop 0 --tied --wd 0 --alpha 0 --beta 0 --save standard_lstm_lm_1500_wikitext-2
 
 [4] standard_lstm_lm_650_wikitext-2 (Val PPL 98.96 Test PPL 93.90)
 
 .. code-block:: console
 
-   $ python -u word_language_model.py --gpus 0 --emsize 650 --nhid 650 --nlayers 2 --lr 20 --epochs 750 --batch_size 20 --bptt 35 --dropout 0.5 --dropout_h 0 --dropout_i 0 --dropout_e 0 --weight_drop 0 --tied --wd 0 --alpha 0 --beta 0 --save standard_lstm_lm_650_wikitext-2
+   $ python word_language_model.py --gpus 0 --emsize 650 --nhid 650 --nlayers 2 --lr 20 --epochs 750 --batch_size 20 --bptt 35 --dropout 0.5 --dropout_h 0 --dropout_i 0 --dropout_e 0 --weight_drop 0 --tied --wd 0 --alpha 0 --beta 0 --save standard_lstm_lm_650_wikitext-2
 
 [5] standard_lstm_lm_200_wikitext-2 (Val PPL 108.25 Test PPL 102.26)
 
 .. code-block:: console
 
-   $ python -u word_language_model.py --gpus 0 --emsize 200 --nhid 200 --nlayers 2 --lr 20 --epochs 750 --batch_size 20 --bptt 35 --dropout 0.2 --dropout_h 0 --dropout_i 0 --dropout_e 0 --weight_drop 0 --tied --wd 0 --alpha 0 --beta 0 --save standard_lstm_lm_200_wikitext-2
+   $ python word_language_model.py --gpus 0 --emsize 200 --nhid 200 --nlayers 2 --lr 20 --epochs 750 --batch_size 20 --bptt 35 --dropout 0.2 --dropout_h 0 --dropout_i 0 --dropout_e 0 --weight_drop 0 --tied --wd 0 --alpha 0 --beta 0 --save standard_lstm_lm_200_wikitext-2
 
 
 Cache Language Model
@@ -119,31 +119,31 @@ The dataset used for training the models is wikitext-2.
 
 .. code-block:: console
 
-   $ python -u cache_language_model.py --gpus 0 --save awd_lstm_lm_1150
+   $ python cache_language_model.py --gpus 0 --save awd_lstm_lm_1150
 
 [2] cache_awd_lstm_lm_600_wikitext-2 (Val PPL 64.51 Test PPL 62.19)
 
 .. code-block:: console
 
-   $ python -u cache_language_model.py --gpus 0 --save awd_lstm_lm_600
+   $ python cache_language_model.py --gpus 0 --save awd_lstm_lm_600
 
 [3] cache_standard_lstm_lm_1500_wikitext-2 (Val PPL 71.92 Test PPL 68.71)
 
 .. code-block:: console
 
-   $ python -u cache_language_model.py --gpus 0 --save standard_lstm_lm_1500
+   $ python cache_language_model.py --gpus 0 --save standard_lstm_lm_1500
 
 [4] cache_standard_lstm_lm_650_wikitext-2 (Val PPL 69.57 Test PPL 66.52)
 
 .. code-block:: console
 
-   $ python -u cache_language_model.py --gpus 0 --save standard_lstm_lm_650
+   $ python cache_language_model.py --gpus 0 --save standard_lstm_lm_650
 
 [5] cache_standard_lstm_lm_200_wikitext-2 (Val PPL 77.51 Test PPL 73.74)
 
 .. code-block:: console
 
-   $ python -u cache_language_model.py --gpus 0 --save standard_lstm_lm_200
+   $ python cache_language_model.py --gpus 0 --save standard_lstm_lm_200
 
 Large Scale Word Language Model
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
