@@ -14,6 +14,7 @@ We would like to express our thanks to our awesome `contributors <https://github
 -  `Li, Mu <https://github.com/mli>`__
 -  `Li, Xin <https://github.com/lixin4ever>`__
 -  `Lin, Haibin <https://github.com/eric-haibin-lin>`__
+-  `Lipton, Zachary <https://github.com/zackchase>`__
 -  `Ravu, Rahul <https://github.com/rravu3>`__
 -  `Shao, Junru <https://github.com/junrushao1994>`__
 -  `Shi, Xingjian <https://github.com/sxjscience>`__
