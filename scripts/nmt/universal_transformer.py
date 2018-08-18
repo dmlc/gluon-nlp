@@ -116,15 +116,15 @@ class UniversalTransformerEncoderCell(HybridBlock):
         outputs, attention_weights =\
             self.attention_cell(inputs, inputs, inputs, mask)
         outputs = self.proj(outputs)
+        outputs = self.dropout_layer(outputs)
         if self._use_residual:
             outputs = outputs + inputs
-        outputs = self.dropout_layer(outputs)
         outputs = self.layer_norm_in(outputs)
         inputs = outputs
         outputs = self.transition(inputs)
+        outputs = self.dropout_layer(outputs)
         if self._use_residual:
             outputs = outputs + inputs
-        outputs = self.dropout_layer(outputs)
         outputs = self.layer_norm_post(outputs)
         additional_outputs = []
         if self._output_attention:
@@ -235,23 +235,23 @@ class UniversalTransformerDecoderCell(HybridBlock):
         outputs, attention_in_outputs =\
             self.attention_cell_in(inputs, inputs, inputs, mask)
         outputs = self.proj_in(outputs)
+        outputs = self.dropout_layer(outputs)
         if self._use_residual:
             outputs = outputs + inputs
-        outputs = self.dropout_layer(outputs)
         outputs = self.layer_norm_in(outputs)
         inputs = outputs
         outputs, attention_inter_outputs = \
             self.attention_cell_inter(inputs, mem_value, mem_value, mem_mask)
         outputs = self.proj_inter(outputs)
+        outputs = self.dropout_layer(outputs)
         if self._use_residual:
             outputs = outputs + inputs
-        outputs = self.dropout_layer(outputs)
         outputs = self.layer_norm_inter(outputs)
         inputs = outputs
         outputs = self.transition(inputs)
+        outputs = self.dropout_layer(outputs)
         if self._use_residual:
             outputs = outputs + inputs
-        outputs = self.dropout_layer(outputs)
         outputs = self.layer_norm_post(outputs)
         additional_outputs = []
         if self._output_attention:
@@ -318,10 +318,10 @@ class UniversalTransformerEncoder(HybridBlock, Seq2SeqEncoder):
         with self.name_scope():
             self.dropout_layer = nn.Dropout(dropout)
             self.layer_norm = nn.LayerNorm()
-            self.position_weight = self.params.get_constant('const',
+            self.position_weight = self.params.get_constant('position_const',
                                                             _position_encoding_init(max_length,
                                                                                     units))
-            self.time_weight = self.params.get_constant('const',
+            self.time_weight = self.params.get_constant('time_const',
                                                         _position_encoding_init(max_time,
                                                                                 units))
             self.uni_transformer_cell = \
@@ -437,6 +437,7 @@ class UniversalTransformerEncoder(HybridBlock, Seq2SeqEncoder):
         else:
             mask = None
         additional_outputs = []
+        time = F.arange(self._max_time)
         for t in range(self._max_time):
             if states is not None:
                 # Positional Encoding
@@ -444,7 +445,7 @@ class UniversalTransformerEncoder(HybridBlock, Seq2SeqEncoder):
                                                                            self._max_length,
                                                                            self._units), axis=0))
             # Time Encoding
-            inputs = F.broadcast_add(inputs, F.expand_dims(F.Embedding(t, time_weight,
+            inputs = F.broadcast_add(inputs, F.expand_dims(F.Embedding(F.slice(time, t, t + 1), time_weight,
                                                                        self._max_time,
                                                                        self._units), axis=0))
             inputs = self.dropout_layer(inputs)
@@ -516,10 +517,10 @@ class UniversalTransformerDecoder(HybridBlock, Seq2SeqDecoder):
         with self.name_scope():
             self.dropout_layer = nn.Dropout(dropout)
             self.layer_norm = nn.LayerNorm()
-            self.position_weight = self.params.get_constant('const',
+            self.position_weight = self.params.get_constant('position_const',
                                                             _position_encoding_init(max_length,
                                                                                     units))
-            self.time_weight = self.params.get_constant('const',
+            self.time_weight = self.params.get_constant('time_const',
                                                         _position_encoding_init(max_time,
                                                                                 units))
             self.uni_transformer_cell = \
@@ -720,6 +721,7 @@ class UniversalTransformerDecoder(HybridBlock, Seq2SeqDecoder):
         outputs = inputs
         step_additional_outputs = []
         attention_weights_l = []
+        time = F.arange(self._max_time)
         for t in range(self._max_time):
             # Positional Encoding
             inputs = F.broadcast_add(inputs,
@@ -730,7 +732,7 @@ class UniversalTransformerDecoder(HybridBlock, Seq2SeqDecoder):
                                                    axis=0))
             # Time Encoding
             inputs = F.broadcast_add(inputs,
-                                     F.expand_dims(F.Embedding(t,
+                                     F.expand_dims(F.Embedding(F.slice(time, t, t + 1),
                                                                time_weight,
                                                                self._max_time,
                                                                self._units),
