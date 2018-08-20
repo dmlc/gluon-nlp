@@ -16,6 +16,7 @@
 # under the License.
 
 ROOTDIR = $(CURDIR)
+MD2IPYNB = $(ROOTDIR)/docs/md2ipynb.py
 
 flake8:
 	flake8 . --exclude conda --count --select=E901,E999,F821,F822,F823 --show-source --statistics
@@ -39,7 +40,14 @@ clean:
 	make -C docs clean
 
 compile_notebooks:
-	find docs/examples/* -type f -name '*.md' | xargs -n 1 -I{} python docs/md2ipynb.py {}
+	for f in $(shell find docs/examples -type f -name '*.md' -print) ; do \
+		DIR=`dirname $$f` ; \
+		BASENAME=`basename $$f` ; \
+		echo $$DIR $$BASENAME ; \
+		cd $$DIR ; \
+		python $(MD2IPYNB) $$BASENAME ; \
+		cd - ; \
+	done;
 
 dist_scripts:
 	find scripts/* -type d -prune | grep -v 'tests\|__pycache__' | xargs -n 1 -I{} zip -r {}.zip {}
