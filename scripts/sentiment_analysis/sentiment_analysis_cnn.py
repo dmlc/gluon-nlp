@@ -1,7 +1,6 @@
 """
 Fine-tune Language Model for Sentiment Analysis
 ===============================================
-
 This example shows how to use convolutional neural networks (textCNN) for sentiment analysis on various datasets.
 """
 
@@ -26,19 +25,17 @@ This example shows how to use convolutional neural networks (textCNN) for sentim
 
 import argparse
 import time
-import random
-import re
-import glob
-import multiprocessing as mp
-import numpy as np
+
 
 import mxnet as mx
 from mxnet import nd, gluon, autograd
 from mxnet.gluon import HybridBlock
 from mxnet.gluon.data import DataLoader
-
+import numpy as np
+import random
 import gluonnlp as nlp
-
+import process
+import textCNN
 np.random.seed(3435)
 random.seed(3435)
 mx.random.seed(3435)
@@ -72,149 +69,15 @@ if args.gpu is None:
 else:
     print('Use gpu%d' % args.gpu)
     context = mx.gpu(args.gpu)
-
-
-class SentimentNet(HybridBlock):
-    """Network for sentiment analysis."""
-    def __init__(self, dropout, embed_size=300, vocab_size=100, prefix=None,
-                 params=None, num_filters=(100, 100, 100), ngram_filter_sizes=(3, 4, 5)):
-        super(SentimentNet, self).__init__(prefix=prefix, params=params)
-        with self.name_scope():
-            self.embedding = gluon.nn.Embedding(vocab_size, embed_size)
-            if args.model_mode == 'multichannel':
-                self.embedding_extend = gluon.nn.Embedding(vocab_size, embed_size)
-                embed_size *= 2
-            self.encoder = nlp.model.ConvolutionalEncoder(embed_size=embed_size,
-                                                          num_filters=num_filters,
-                                                          ngram_filter_sizes=ngram_filter_sizes,
-                                                          conv_layer_activation='relu',
-                                                          num_highway=None)
-            self.output = gluon.nn.HybridSequential()
-            with self.output.name_scope():
-                self.output.add(gluon.nn.Dropout(dropout))
-                self.output.add(gluon.nn.Dense(output_size, flatten=False))
-
-    def hybrid_forward(self, F, data): # pylint: disable=arguments-differ
-        if args.model_mode == 'multichannel':
-            embedded = F.concat(self.embedding(data), self.embedding_extend(data), dim=2)
-        else:
-            embedded = self.embedding(data)
-        encoded = self.encoder(embedded)  # Shape(T, N, C)
-        out = self.output(encoded)
-        return out
-
-if args.data_name == 'MR':
-    train_dataset, test_dataset = [nlp.data.MR(root='data/mr', segment=segment)
-                                   for segment in ('train', 'test')]
-    output_size = 2
-elif args.data_name == 'SST-1':
-    train_dataset, test_dataset = [nlp.data.SST_1(root='data/sst-1', segment=segment)
-                                   for segment in ('train', 'test')]
-    output_size = 5
-elif args.data_name == 'SST-2':
-    train_dataset, test_dataset = [nlp.data.SST_2(root='data/sst-2', segment=segment)
-                                   for segment in ('train', 'test')]
-    output_size = 2
-elif args.data_name == 'Subj':
-    train_dataset, test_dataset = [nlp.data.SUBJ(root='data/Subj', segment=segment)
-                                   for segment in ('train', 'test')]
-    output_size = 2
-elif args.data_name == 'TREC':
-    train_dataset, test_dataset = [nlp.data.TREC(root='data/trec', segment=segment)
-                                   for segment in ('train', 'test')]
-    output_size = 6
     
-def clean_str(string):
-    if args.data_name == 'SST-1' or args.data_name == 'SST-2' :
-        string = re.sub(r"[^A-Za-z0-9(),!?\'\`]", " ", string)   
-        string = re.sub(r"\s{2,}", " ", string)    
-        return string.strip().lower()
-    else:
-        string = re.sub(r"[^A-Za-z0-9(),!?\'\`]", " ", string)     
-        string = re.sub(r"\'s", " \'s", string) 
-        string = re.sub(r"\'ve", " \'ve", string) 
-        string = re.sub(r"n\'t", " n\'t", string) 
-        string = re.sub(r"\'re", " \'re", string) 
-        string = re.sub(r"\'d", " \'d", string) 
-        string = re.sub(r"\'ll", " \'ll", string) 
-        string = re.sub(r",", " , ", string) 
-        string = re.sub(r"!", " ! ", string) 
-        string = re.sub(r"\(", " \( ", string) 
-        string = re.sub(r"\)", " \) ", string) 
-        string = re.sub(r"\?", " \? ", string) 
-        string = re.sub(r"\s{2,}", " ", string)    
-        return string.strip() if args.data_name=='TREC' else string.strip().lower()
+if args.data_name == 'MR' or args.data_name == 'Subj':
+    vocab, max_len, output_size, train_dataset, train_data_lengths = process.load_dataset(args.data_name)
+else:
+    vocab, max_len, output_size, train_dataset, train_data_lengths, test_dataset, test_data_lengths  = process.load_dataset(args.data_name)
 
-all_token = []
-max_len = 0 
-for i, line in enumerate(train_dataset): 
-    train_dataset[i][0] = clean_str(line[0])
-    line = train_dataset[i][0].split() 
-    max_len = max_len if max_len > len(line) else len(line) 
-    all_token.extend(line) 
-for i, line in enumerate(test_dataset): 
-    test_dataset[i][0] = clean_str(line[0])
-    line = test_dataset[i][0].split() 
-    max_len = max_len if max_len > len(line) else len(line) 
-    all_token.extend(line) 
-vocab = nlp.Vocab(nlp.data.count_tokens(all_token))
-vocab.set_embedding(nlp.embedding.create('Word2Vec', source='GoogleNews-vectors-negative300'))
-for line in vocab.embedding._idx_to_token:
-    if (vocab.embedding[line]==nd.zeros(300)).sum()==300:
-        vocab.embedding[line]=nd.random.uniform(-0.25,0.25,300)
-vocab.embedding['<unk>']=nd.zeros(300)
-vocab.embedding['<pad>']=nd.zeros(300)
-vocab.embedding['<bos>']=nd.zeros(300)
-vocab.embedding['<eos>']=nd.zeros(300)
-
-net = SentimentNet(dropout=args.dropout, vocab_size=len(vocab))
-
-# Dataset preprocessing
-def preprocess(x):
-    data, label = x
-    data = vocab[data.split()]
-    if len(data) > max_len:
-        data = data[:max_len]
-    else:
-        while len(data) < max_len:
-            data.append(1)
-    return data, label
-
-def get_length(x):
-    return float(len(x[0]))
-
-def preprocess_dataset(dataset):
-    start = time.time()
-    pool = mp.Pool(8)
-    dataset = gluon.data.SimpleDataset(pool.map(preprocess, dataset))
-    lengths = gluon.data.SimpleDataset(pool.map(get_length, dataset))
-    end = time.time()
-    print('Done! Tokenizing Time={:.2f}s, #Sentences={}'.format(end - start, len(dataset)))
-    return dataset, lengths
-
-# Preprocess the dataset
-train_dataset, train_data_lengths = preprocess_dataset(train_dataset)
-test_dataset, test_data_lengths = preprocess_dataset(test_dataset)
-
-train_dataloader = DataLoader(dataset=train_dataset,
-                              batch_size=args.batch_size,
-                              shuffle=True)
-
-test_dataloader = DataLoader(dataset=test_dataset,
-                             batch_size=args.batch_size,
-                             shuffle=False)
-
-net.hybridize()
+net = textCNN.net(args.dropout, vocab, args.model_mode, output_size)
 print(net)
 
-net.initialize(mx.init.Xavier(), ctx=context)
-if args.model_mode != 'rand':
-    net.embedding.weight.set_data(vocab.embedding.idx_to_vec)
-if args.model_mode == 'multichannel':
-    net.embedding_extend.weight.set_data(vocab.embedding.idx_to_vec)
-if args.model_mode == 'static' or args.model_mode == 'multichannel':
-    net.embedding.collect_params().setattr('grad_req', 'null')
-trainer = gluon.Trainer(net.collect_params(), 'adam', {'learning_rate': args.lr, 'wd':0.0001})
 loss = gluon.loss.SoftmaxCrossEntropyLoss()
 
 def evaluate(dataloader):
@@ -242,10 +105,20 @@ def evaluate(dataloader):
     return avg_L, acc
 
 
-def train():
+def train(train_dataset, test_dataset):
     """Training process"""
+    global net
     start_pipeline_time = time.time()
+    random.shuffle(train_dataset)
+    #random.shuffle(test_dataset)
+    net,trainer  = textCNN.init(net, args.model_mode, context, args.lr)
+    train_dataloader = DataLoader(dataset=train_dataset,
+                        batch_size=args.batch_size,
+                        shuffle=True)
 
+    test_dataloader = DataLoader(dataset=test_dataset,
+                       batch_size=args.batch_size,
+                       shuffle=False)
     # Training/Testing
     best_test_acc = 0
     stop_early = 0
@@ -268,6 +141,7 @@ def train():
             epoch_wc += wc
             log_interval_sent_num += data.shape[1]
             epoch_sent_num += data.shape[1]
+            
             with autograd.record():
                 output = net(data)
                 L = loss(output, label).mean()
@@ -303,7 +177,20 @@ def train():
     test_avg_L, test_acc = evaluate(test_dataloader)
     print('Test loss %g, test acc %.4f'%(test_avg_L, test_acc))
     print('Total time cost %.2fs'%(time.time()-start_pipeline_time))
-
+    return test_acc
+def k_fold_cross_valid(k, all_dataset):
+    test_acc = []
+    fold_size = len(all_dataset) // k
+    
+    for test_i in range(10):
+        test_dataset = all_dataset[test_i * fold_size: (test_i + 1) * fold_size]
+        train_dataset = all_dataset[: test_i * fold_size] + all_dataset[(test_i + 1) * fold_size:]
+        print(len(train_dataset), len(test_dataset))
+        test_acc.append(train(train_dataset, test_dataset))
+    print(sum(test_acc) / k)
 
 if __name__ == '__main__':
-    train()
+    if args.data_name != 'MR' and args.data_name != 'Subj':
+        train(train_dataset, test_dataset)
+    else:
+        k_fold_cross_valid(10, train_dataset)
