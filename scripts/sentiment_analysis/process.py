@@ -113,5 +113,5 @@ def load_dataset(data_name):
         _build_vocab(data_name, train_dataset, test_dataset)
         train_dataset, train_data_lengths = preprocess_dataset(train_dataset)
         test_dataset, test_data_lengths = preprocess_dataset(test_dataset)
-        return vocab, max_len, output_size, train_dataset, train_data_lengths, test_dataset,
+        return vocab, max_len, output_size, train_dataset, train_data_lengths, test_dataset, \
                test_data_lengths
