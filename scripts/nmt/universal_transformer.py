@@ -18,7 +18,7 @@
 # under the License.
 """Encoder and decoder usded in sequence-to-sequence learning."""
 __all__ = ['UniversalTransformerEncoder', 'UniversalTransformerDecoder',
-           'get_universal_transformer_encoder_decoder']
+           'get_uni_transformer_encoder_decoder']
 
 import math
 import numpy as np
@@ -27,237 +27,12 @@ from mxnet.gluon import nn
 from mxnet.gluon.block import HybridBlock
 try:
     from encoder_decoder import Seq2SeqEncoder, Seq2SeqDecoder, _get_attention_cell
-    from transformer import _position_encoding_init, PositionwiseFFN
+    from transformer import _position_encoding_init, PositionwiseFFN,\
+        TransformerEncoderCell, TransformerDecoderCell
 except ImportError:
     from .encoder_decoder import Seq2SeqEncoder, Seq2SeqDecoder, _get_attention_cell
-    from .transformer import _position_encoding_init, PositionwiseFFN
-
-
-class UniversalTransformerEncoderCell(HybridBlock):
-    """Structure of the Universal Transformer Encoder Cell.
-
-    Parameters
-    ----------
-    attention_cell : AttentionCell or str, default 'multi_head'
-        Arguments of the attention cell.
-        Can be 'multi_head', 'scaled_luong', 'scaled_dot', 'dot', 'cosine', 'normed_mlp', 'mlp'
-    units : int
-    hidden_size : int
-        number of units in the hidden layer of position-wise feed-forward networks
-    num_heads : int
-        Number of heads in multi-head attention
-    scaled : bool
-        Whether to scale the softmax input by the sqrt of the input dimension
-        in multi-head attention
-    dropout : float
-    use_residual : bool
-    output_attention: bool
-        Whether to output the attention weights
-    weight_initializer : str or Initializer
-        Initializer for the input weights matrix, used for the linear
-        transformation of the inputs.
-    bias_initializer : str or Initializer
-        Initializer for the bias vector.
-    prefix : str, default 'rnn_'
-        Prefix for name of `Block`s
-        (and name of weight if params is `None`).
-    params : Parameter or None
-        Container for weight sharing between cells.
-        Created if `None`.
-    """
-    def __init__(self, attention_cell='multi_head', units=128,
-                 hidden_size=512, num_heads=4, scaled=True,
-                 dropout=0.0, use_residual=True, output_attention=False,
-                 weight_initializer=None, bias_initializer='zeros',
-                 prefix=None, params=None):
-        super(UniversalTransformerEncoderCell, self).__init__(prefix=prefix, params=params)
-        self._units = units
-        self._num_heads = num_heads
-        self._dropout = dropout
-        self._use_residual = use_residual
-        self._output_attention = output_attention
-        with self.name_scope():
-            self.dropout_layer = nn.Dropout(dropout)
-            self.attention_cell = _get_attention_cell(attention_cell,
-                                                      units=units,
-                                                      num_heads=num_heads,
-                                                      scaled=scaled,
-                                                      dropout=dropout)
-            self.proj = nn.Dense(units=units, flatten=False, use_bias=False,
-                                 weight_initializer=weight_initializer,
-                                 bias_initializer=bias_initializer,
-                                 prefix='proj_')
-            self.transition = PositionwiseFFN(hidden_size=hidden_size, units=units,
-                                              use_residual=use_residual, dropout=dropout,
-                                              weight_initializer=weight_initializer,
-                                              bias_initializer=bias_initializer)
-            self.layer_norm_in = nn.LayerNorm()
-            self.layer_norm_post = nn.LayerNorm()
-
-    def hybrid_forward(self, F, inputs, mask=None):  # pylint: disable=arguments-differ
-        # pylint: disable=unused-argument
-        """Transformer Encoder Attention Cell.
-
-        Parameters
-        ----------
-        inputs : Symbol or NDArray
-            Input sequence. Shape (batch_size, length, C_in)
-        mask : Symbol or NDArray or None
-            Mask for inputs. Shape (batch_size, length, length)
-
-        Returns
-        -------
-        encoder_cell_outputs: list
-            Outputs of the encoder cell. Contains:
-
-            - outputs of the transformer encoder cell. Shape (batch_size, length, C_out)
-            - additional_outputs of all the transformer encoder cell
-        """
-        outputs, attention_weights =\
-            self.attention_cell(inputs, inputs, inputs, mask)
-        outputs = self.proj(outputs)
-        outputs = self.dropout_layer(outputs)
-        if self._use_residual:
-            outputs = outputs + inputs
-        outputs = self.layer_norm_in(outputs)
-        inputs = outputs
-        outputs = self.transition(inputs)
-        outputs = self.dropout_layer(outputs)
-        if self._use_residual:
-            outputs = outputs + inputs
-        outputs = self.layer_norm_post(outputs)
-        additional_outputs = []
-        if self._output_attention:
-            additional_outputs.append(attention_weights)
-        return outputs, additional_outputs
-
-
-class UniversalTransformerDecoderCell(HybridBlock):
-    """Structure of the Universal Transformer Decoder Cell.
-
-    Parameters
-    ----------
-    attention_cell : AttentionCell or str, default 'multi_head'
-        Arguments of the attention cell.
-        Can be 'multi_head', 'scaled_luong', 'scaled_dot', 'dot', 'cosine', 'normed_mlp', 'mlp'
-    units : int
-    hidden_size : int
-        number of units in the hidden layer of position-wise feed-forward networks
-    num_heads : int
-        Number of heads in multi-head attention
-    scaled : bool
-        Whether to scale the softmax input by the sqrt of the input dimension
-        in multi-head attention
-    dropout : float
-    use_residual : bool
-    output_attention: bool
-        Whether to output the attention weights
-    weight_initializer : str or Initializer
-        Initializer for the input weights matrix, used for the linear
-        transformation of the inputs.
-    bias_initializer : str or Initializer
-        Initializer for the bias vector.
-    prefix : str, default 'rnn_'
-        Prefix for name of `Block`s
-        (and name of weight if params is `None`).
-    params : Parameter or None
-        Container for weight sharing between cells.
-        Created if `None`.
-    """
-    def __init__(self, attention_cell='multi_head', units=128,
-                 hidden_size=512, num_heads=4, scaled=True,
-                 dropout=0.0, use_residual=True, output_attention=False,
-                 weight_initializer=None, bias_initializer='zeros',
-                 prefix=None, params=None):
-        super(UniversalTransformerDecoderCell, self).__init__(prefix=prefix, params=params)
-        self._units = units
-        self._num_heads = num_heads
-        self._dropout = dropout
-        self._use_residual = use_residual
-        self._output_attention = output_attention
-        self._scaled = scaled
-        with self.name_scope():
-            self.dropout_layer = nn.Dropout(dropout)
-            self.attention_cell_in = _get_attention_cell(attention_cell,
-                                                         units=units,
-                                                         num_heads=num_heads,
-                                                         scaled=scaled,
-                                                         dropout=dropout)
-            self.attention_cell_inter = _get_attention_cell(attention_cell,
-                                                            units=units,
-                                                            num_heads=num_heads,
-                                                            scaled=scaled,
-                                                            dropout=dropout)
-            self.proj_in = nn.Dense(units=units, flatten=False,
-                                    use_bias=False,
-                                    weight_initializer=weight_initializer,
-                                    bias_initializer=bias_initializer,
-                                    prefix='proj_in_')
-            self.proj_inter = nn.Dense(units=units, flatten=False,
-                                       use_bias=False,
-                                       weight_initializer=weight_initializer,
-                                       bias_initializer=bias_initializer,
-                                       prefix='proj_inter_')
-            self.transition = PositionwiseFFN(hidden_size=hidden_size,
-                                              units=units,
-                                              use_residual=use_residual,
-                                              dropout=dropout,
-                                              weight_initializer=weight_initializer,
-                                              bias_initializer=bias_initializer)
-
-            self.layer_norm_in = nn.LayerNorm()
-            self.layer_norm_inter = nn.LayerNorm()
-            self.layer_norm_post = nn.LayerNorm()
-
-    def hybrid_forward(self, F, inputs, mem_value, mask=None, mem_mask=None):  #pylint: disable=unused-argument
-        #  pylint: disable=arguments-differ
-        """Transformer Decoder Attention Cell.
-
-        Parameters
-        ----------
-        inputs : Symbol or NDArray
-            Input sequence. Shape (batch_size, length, C_in)
-        mem_value : Symbol or NDArrays
-            Memory value, i.e. output of the encoder. Shape (batch_size, mem_length, C_in)
-        mask : Symbol or NDArray or None
-            Mask for inputs. Shape (batch_size, length, length)
-        mem_mask : Symbol or NDArray or None
-            Mask for mem_value. Shape (batch_size, length, mem_length)
-
-        Returns
-        -------
-        decoder_cell_outputs: list
-            Outputs of the decoder cell. Contains:
-
-            - outputs of the transformer decoder cell. Shape (batch_size, length, C_out)
-            - additional_outputs of all the transformer decoder cell
-        """
-        outputs, attention_in_outputs =\
-            self.attention_cell_in(inputs, inputs, inputs, mask)
-        outputs = self.proj_in(outputs)
-        outputs = self.dropout_layer(outputs)
-        if self._use_residual:
-            outputs = outputs + inputs
-        outputs = self.layer_norm_in(outputs)
-        inputs = outputs
-        outputs, attention_inter_outputs = \
-            self.attention_cell_inter(inputs, mem_value, mem_value, mem_mask)
-        outputs = self.proj_inter(outputs)
-        outputs = self.dropout_layer(outputs)
-        if self._use_residual:
-            outputs = outputs + inputs
-        outputs = self.layer_norm_inter(outputs)
-        inputs = outputs
-        outputs = self.transition(inputs)
-        outputs = self.dropout_layer(outputs)
-        if self._use_residual:
-            outputs = outputs + inputs
-        outputs = self.layer_norm_post(outputs)
-        additional_outputs = []
-        if self._output_attention:
-            additional_outputs.append(attention_in_outputs)
-            additional_outputs.append(attention_inter_outputs)
-        return outputs, additional_outputs
+    from .transformer import _position_encoding_init, PositionwiseFFN,\
+        TransformerEncoderCell, TransformerDecoderCell
 
 
 class UniversalTransformerEncoder(HybridBlock, Seq2SeqEncoder):
@@ -325,7 +100,7 @@ class UniversalTransformerEncoder(HybridBlock, Seq2SeqEncoder):
                                                         _position_encoding_init(max_time,
                                                                                 units))
             self.uni_transformer_cell = \
-                UniversalTransformerEncoderCell(
+                TransformerEncoderCell(
                     units=units,
                     hidden_size=hidden_size,
                     num_heads=num_heads,
@@ -524,7 +299,7 @@ class UniversalTransformerDecoder(HybridBlock, Seq2SeqDecoder):
                                                         _position_encoding_init(max_time,
                                                                                 units))
             self.uni_transformer_cell = \
-                UniversalTransformerDecoderCell(
+                TransformerDecoderCell(
                     units=units,
                     hidden_size=hidden_size,
                     num_heads=num_heads,
