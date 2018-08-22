@@ -77,7 +77,7 @@ else:
     vocab, max_len, output_size, train_dataset, train_data_lengths, \
     test_dataset, test_data_lengths = process.load_dataset(args.data_name)
 
-net = textCNN.net(args.dropout, vocab, args.model_mode, output_size)
+net = textCNN.model(args.dropout, vocab, args.model_mode, output_size)
 print(net)
 
 loss = gluon.loss.SoftmaxCrossEntropyLoss()
@@ -106,7 +106,7 @@ def evaluate(dataloader):
     acc = total_correct_num / float(total_sample_num)
     return avg_L, acc
 
-def train(net, train_dataset, test_dataset, k=0):
+def train(net, train_dataset, test_dataset):
     """Training process"""
     start_pipeline_time = time.time()
     net, trainer  = textCNN.init(net, vocab, args.model_mode, context, args.lr)
