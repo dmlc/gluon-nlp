@@ -27,7 +27,7 @@ stage("Unit Test") {
         python -m spacy download en
         python -m nltk.downloader all
         make clean
-        python setup.py install
+        python setup.py install --force
         py.test -v --capture=no --durations=0 tests/unittest scripts
         """
       }
@@ -46,7 +46,7 @@ stage("Unit Test") {
           python -m spacy download en
           python -m nltk.downloader all
           make clean
-          python setup.py install
+          python setup.py install --force
           py.test -v --capture=no --durations=0 --cov=./ tests/unittest scripts
           EXIT_STATUS=\$?
           bash ./codecov.sh
@@ -72,7 +72,7 @@ stage("Deploy") {
         conda list
         python -m spacy download en
         python -m nltk.downloader all
-        python setup.py install
+        python setup.py install --force
         export LD_LIBRARY_PATH=/usr/local/cuda/lib64
         make clean
         make docs
