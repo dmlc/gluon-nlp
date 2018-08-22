@@ -27,6 +27,28 @@ def test_toy():
         assert lhs[0] == rhs[1] and rhs[0] == lhs[1]
 
 
+def test_sentiment_analysis():
+    process = subprocess.check_call(['python', './scripts/sentiment_analysis/sentiment_analysis.py',
+                                     '--gpu', '0', '--batch_size', '16', '--bucket_type', 'fixed',
+                                     '--epochs', '1', '--dropout', '0', '--no_pretrained',
+                                     '--lr', '0.005', '--valid_ratio', '0.1',
+                                     '--save-prefix', 'imdb_lstm_200'])
+    process = subprocess.check_call(['python', './scripts/sentiment_analysis/sentiment_analysis.py', 
+                                     '--gpu', '0', '--batch_size', '16', '--bucket_type', 'fixed', 
+                                     '--epochs', '1', '--dropout', '0',
+                                     '--lr', '0.005', '--valid_ratio', '0.1', 
+                                     '--save-prefix', 'imdb_lstm_200'])
+
+
+def test_sampling():
+    process = subprocess.check_call(['python', './scripts/sequence_sampling/sequence_sampling.py',
+                                     '--use-beam-search', '--bos', 'I love it', '--beam_size', '5',
+                                     '--print_num', '5'])
+    process = subprocess.check_call(['python', './scripts/sequence_sampling/sequence_sampling.py',
+                                     '--use-sampling', '--bos', 'I love it', '--beam_size', '5',
+                                     '--print_num', '5', '--temperature', '1.0'])
+
+
 def test_gnmt():
     process = subprocess.check_call(['python', './scripts/nmt/train_gnmt.py', '--dataset', 'TOY',
                                      '--src_lang', 'en', '--tgt_lang', 'de', '--batch_size', '3',
