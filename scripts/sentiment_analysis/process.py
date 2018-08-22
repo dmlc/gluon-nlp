@@ -1,6 +1,9 @@
+"""Load datasets."""
+
 import re
 import multiprocessing as mp
 import time
+from functools import partial
 
 import gluonnlp as nlp
 from mxnet import nd, gluon
@@ -51,7 +54,7 @@ def _clean_str(string, data_name):
         string = re.sub(r'\s{2,}', ' ', string)
         return string.strip() if data_name == 'TREC' else string.strip().lower()
 
-def _build_vocab(data_name, train_dataset, test_dataset=None):
+def _build_vocab(data_name, train_dataset, test_dataset=list()):
     all_token = []
     max_len = 0
     for i, line in enumerate(train_dataset):
@@ -68,22 +71,23 @@ def _build_vocab(data_name, train_dataset, test_dataset=None):
     vocab.set_embedding(nlp.embedding.create('Word2Vec', source='GoogleNews-vectors-negative300'))
     for line in vocab.embedding._idx_to_token:
         if (vocab.embedding[line] == nd.zeros(300)).sum() == 300:
-            vocab.embedding[line] = nd.random.uniform(-0.25, 0.25, 300)
+            vocab.embedding[line] = nd.random.normal(-1.0, 1.0, 300)
     vocab.embedding['<unk>'] = nd.zeros(300)
     vocab.embedding['<pad>'] = nd.zeros(300)
     vocab.embedding['<bos>'] = nd.zeros(300)
     vocab.embedding['<eos>'] = nd.zeros(300)
+    print(max_len)
     return vocab, max_len
 
 # Dataset preprocessing
-def preprocess(x):
+def preprocess(x, vocab, max_len):
     data, label = x
     data = vocab[data.split()]
     if len(data) > max_len:
         data = data[:max_len]
     else:
         while len(data) < max_len:
-            data.append(1)
+            data.append(0)
     return data, label
 
 def get_length(x):
@@ -92,7 +96,8 @@ def get_length(x):
 def preprocess_dataset(dataset, vocab, max_len):
     start = time.time()
     pool = mp.Pool(8)
-    dataset = pool.map(preprocess, dataset, vocab, max_len)
+    partial_work = partial(preprocess, vocab=vocab, max_len=max_len)
+    dataset = pool.map(partial_work, dataset)
     lengths = gluon.data.SimpleDataset(pool.map(get_length, dataset))
     end = time.time()
     print('Done! Tokenizing Time={:.2f}s, #Sentences={}'.format(end - start, len(dataset)))
@@ -102,12 +107,12 @@ def load_dataset(data_name):
     if data_name == 'MR' or data_name == 'Subj':
         train_dataset, output_size = _load_file(data_name)
         vocab, max_len = _build_vocab(data_name, train_dataset)
-        train_dataset, train_data_lengths = preprocess_dataset(train_dataset)
+        train_dataset, train_data_lengths = preprocess_dataset(train_dataset, vocab, max_len)
         return vocab, max_len, output_size, train_dataset, train_data_lengths
     else:
         train_dataset, test_dataset, output_size = _load_file(data_name)
         vocab, max_len = _build_vocab(data_name, train_dataset, test_dataset)
-        train_dataset, train_data_lengths = preprocess_dataset(train_dataset)
-        test_dataset, test_data_lengths = preprocess_dataset(test_dataset)
+        train_dataset, train_data_lengths = preprocess_dataset(train_dataset, vocab, max_len)
+        test_dataset, test_data_lengths = preprocess_dataset(test_dataset, vocab, max_len)
         return vocab, max_len, output_size, train_dataset, train_data_lengths, test_dataset, \
                test_data_lengths
