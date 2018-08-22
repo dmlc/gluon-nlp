@@ -5,9 +5,6 @@ import time
 import gluonnlp as nlp
 from mxnet import nd, gluon
 
-vocab = None
-max_len = 0
-
 def _load_file(data_name):
     if data_name == 'MR':
         train_dataset = nlp.data.MR(root='data/mr', segment='all')
@@ -56,7 +53,7 @@ def _clean_str(string, data_name):
 
 def _build_vocab(data_name, train_dataset, test_dataset=None):
     all_token = []
-
+    max_len = 0
     for i, line in enumerate(train_dataset):
         train_dataset[i][0] = _clean_str(line[0], data_name)
         line = train_dataset[i][0].split()
