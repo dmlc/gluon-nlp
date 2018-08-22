@@ -71,7 +71,7 @@ class IMDB(SimpleDataset):
                      path=root, sha1_hash=data_hash)
 
     def _read_data(self):
-        with open(os.path.join(self._root, self._segment+'.json')) as f:
+        with open(os.path.join(self._root, self._segment + '.json')) as f:
             samples = json.load(f)
         return samples
 
@@ -111,7 +111,7 @@ class MR(SimpleDataset):
                 f.extractall(root)
 
     def _read_data(self):
-        with open(os.path.join(self._root, self._segment+'_data.pkl'), 'rb') as f:
+        with open(os.path.join(self._root, self._segment + '_data.pkl'), 'rb') as f:
             samples = pickle.load(f)
         return samples
 
@@ -151,7 +151,7 @@ class TREC(SimpleDataset):
                 f.extractall(root)
 
     def _read_data(self):
-        with open(os.path.join(self._root, self._segment+'_data.pkl'), 'rb') as f:
+        with open(os.path.join(self._root, self._segment + '_data.pkl'), 'rb') as f:
             samples = pickle.load(f)
         return samples
 
@@ -188,7 +188,7 @@ class SUBJ(SimpleDataset):
                 f.extractall(root)
 
     def _read_data(self):
-        with open(os.path.join(self._root, self._segment+'_data.pkl'), 'rb') as f:
+        with open(os.path.join(self._root, self._segment + '_data.pkl'), 'rb') as f:
             samples = pickle.load(f)
         return samples
 
@@ -230,7 +230,7 @@ class SST_1(SimpleDataset):
                 f.extractall(root)
 
     def _read_data(self):
-        with open(os.path.join(self._root, self._segment+'_data.pkl'), 'rb') as f:
+        with open(os.path.join(self._root, self._segment + '_data.pkl'), 'rb') as f:
             samples = pickle.load(f)
         return samples
 
@@ -271,6 +271,6 @@ class SST_2(SimpleDataset):
                 f.extractall(root)
 
     def _read_data(self):
-        with open(os.path.join(self._root, self._segment+'_data.pkl'), 'rb') as f:
+        with open(os.path.join(self._root, self._segment + '_data.pkl'), 'rb') as f:
             samples = pickle.load(f)
         return samples
