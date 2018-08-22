@@ -182,10 +182,10 @@ def k_fold_cross_valid(k, net, all_dataset):
     fold_size = len(all_dataset) // k
     random.shuffle(all_dataset)
     for test_i in range(10):
-        test_dataset = all_dataset[test_i * fold_size: (test_i + 1) * fold_size]
-        train_dataset = all_dataset[: test_i * fold_size] + all_dataset[(test_i + 1) * fold_size:]
-        print(len(train_dataset), len(test_dataset))
-        test_acc.append(train(net, train_dataset, test_dataset, test_i))
+        test_data = all_dataset[test_i * fold_size: (test_i + 1) * fold_size]
+        train_data = all_dataset[: test_i * fold_size] + all_dataset[(test_i + 1) * fold_size:]
+        print(len(train_data), len(test_data))
+        test_acc.append(train(net, train_data, test_data, test_i))
     print(sum(test_acc) / k)
 
 if __name__ == '__main__':
