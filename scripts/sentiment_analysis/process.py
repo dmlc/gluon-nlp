@@ -105,6 +105,14 @@ def preprocess_dataset(dataset, vocab, max_len):
 
 """Load dataset."""
 def load_dataset(data_name):
+    """Load translation dataset
+    Parameters
+    ----------
+    data_name : str
+
+    Returns
+    -------
+    """
     if data_name == 'MR' or data_name == 'Subj':
         train_dataset, output_size = _load_file(data_name)
         vocab, max_len = _build_vocab(data_name, train_dataset, [])
