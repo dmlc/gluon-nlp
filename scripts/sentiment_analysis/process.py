@@ -54,7 +54,7 @@ def _clean_str(string, data_name):
         string = re.sub(r'\s{2,}', ' ', string)
         return string.strip() if data_name == 'TREC' else string.strip().lower()
 
-def _build_vocab(data_name, train_dataset, test_dataset=list()):
+def _build_vocab(data_name, train_dataset, test_dataset):
     all_token = []
     max_len = 0
     for i, line in enumerate(train_dataset):
@@ -106,7 +106,7 @@ def preprocess_dataset(dataset, vocab, max_len):
 def load_dataset(data_name):
     if data_name == 'MR' or data_name == 'Subj':
         train_dataset, output_size = _load_file(data_name)
-        vocab, max_len = _build_vocab(data_name, train_dataset)
+        vocab, max_len = _build_vocab(data_name, train_dataset, [])
         train_dataset, train_data_lengths = preprocess_dataset(train_dataset, vocab, max_len)
         return vocab, max_len, output_size, train_dataset, train_data_lengths
     else:
