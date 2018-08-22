@@ -77,8 +77,8 @@ else:
     vocab, max_len, output_size, train_dataset, train_data_lengths, \
     test_dataset, test_data_lengths = process.load_dataset(args.data_name)
 
-net = textCNN.model(args.dropout, vocab, args.model_mode, output_size)
-print(net)
+model = textCNN.model(args.dropout, vocab, args.model_mode, output_size)
+print(model)
 
 loss = gluon.loss.SoftmaxCrossEntropyLoss()
 
@@ -109,7 +109,7 @@ def evaluate(dataloader):
 def train(net, train_data, test_data):
     """Training process"""
     start_pipeline_time = time.time()
-    net, trainer  = textCNN.init(net, vocab, args.model_mode, context, args.lr)
+    net, trainer = textCNN.init(net, vocab, args.model_mode, context, args.lr)
     random.shuffle(train_data)
     sp = int(len(train_data)*0.9)
     train_dataloader = DataLoader(dataset=train_data[:sp],
@@ -190,6 +190,6 @@ def k_fold_cross_valid(k, net, all_dataset):
 
 if __name__ == '__main__':
     if args.data_name != 'MR' and args.data_name != 'Subj':
-        train(net, train_dataset, test_dataset)
+        train(model, train_dataset, test_dataset)
     else:
-        k_fold_cross_valid(10, net, train_dataset)
+        k_fold_cross_valid(10, model, train_dataset)
