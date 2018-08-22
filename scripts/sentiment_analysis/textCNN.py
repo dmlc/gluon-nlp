@@ -37,7 +37,7 @@ class SentimentNet(HybridBlock):
         out = self.output(encoded)
         return out
 
-def net(dropout, vocab, model_mode, output_size):
+def model(dropout, vocab, model_mode, output_size):
     textCNN = SentimentNet(dropout=dropout, vocab_size=len(vocab), model_mode=model_mode,\
                        output_size=output_size)
     textCNN.hybridize()
