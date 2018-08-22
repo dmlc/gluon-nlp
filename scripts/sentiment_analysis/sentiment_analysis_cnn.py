@@ -106,19 +106,19 @@ def evaluate(dataloader):
     acc = total_correct_num / float(total_sample_num)
     return avg_L, acc
 
-def train(net, train_dataset, test_dataset):
+def train(net, train_data, test_data):
     """Training process"""
     start_pipeline_time = time.time()
     net, trainer  = textCNN.init(net, vocab, args.model_mode, context, args.lr)
-    random.shuffle(train_dataset)
-    sp = int(len(train_dataset)*0.9)
-    train_dataloader = DataLoader(dataset=train_dataset[:sp],
+    random.shuffle(train_data)
+    sp = int(len(train_data)*0.9)
+    train_dataloader = DataLoader(dataset=train_data[:sp],
                                   batch_size=args.batch_size,
                                   shuffle=True)
-    val_dataloader = DataLoader(dataset=train_dataset[sp:],
+    val_dataloader = DataLoader(dataset=train_data[sp:],
                                 batch_size=args.batch_size,
                                 shuffle=False)
-    test_dataloader = DataLoader(dataset=test_dataset,
+    test_dataloader = DataLoader(dataset=test_data,
                                  batch_size=args.batch_size,
                                  shuffle=False)
     # Training/Testing
