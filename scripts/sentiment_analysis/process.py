@@ -27,7 +27,7 @@ def _load_file(data_name):
         train_dataset = nlp.data.SUBJ(root='data/Subj', segment='all')
         output_size = 2
         return train_dataset, output_size
-    else data_name == 'TREC':
+    else:
         train_dataset, test_dataset = [nlp.data.TREC(root='data/trec', segment=segment)
                                        for segment in ('train', 'test')]
         output_size = 6
