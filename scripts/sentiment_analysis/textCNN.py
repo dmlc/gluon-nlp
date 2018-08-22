@@ -43,13 +43,13 @@ def net(dropout, vocab, model_mode, output_size):
     textCNN.hybridize()
     return textCNN
 
-def init(net, vocab, model_mode, context, lr):
-    net.initialize(mx.init.Xavier(), ctx=context, force_reinit=True)
+def init(textCNN, vocab, model_mode, context, lr):
+    textCNN.initialize(mx.init.Xavier(), ctx=context, force_reinit=True)
     if model_mode != 'rand':
-        net.embedding.weight.set_data(vocab.embedding.idx_to_vec)
+        textCNN.embedding.weight.set_data(vocab.embedding.idx_to_vec)
     if model_mode == 'multichannel':
-        net.embedding_extend.weight.set_data(vocab.embedding.idx_to_vec)
+        textCNN.embedding_extend.weight.set_data(vocab.embedding.idx_to_vec)
     if model_mode == 'static' or model_mode == 'multichannel':
-        net.embedding.collect_params().setattr('grad_req', 'null')
-    trainer = gluon.Trainer(net.collect_params(), 'adam', {'learning_rate': lr})
-    return net, trainer
+        textCNN.embedding.collect_params().setattr('grad_req', 'null')
+    trainer = gluon.Trainer(textCNN.collect_params(), 'adam', {'learning_rate': lr})
+    return textCNN, trainer
