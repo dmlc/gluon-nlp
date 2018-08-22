@@ -25,7 +25,7 @@ This example shows how to use convolutional neural networks (textCNN) for sentim
 
 import argparse
 import time
-
+import glob
 
 import mxnet as mx
 from mxnet import nd, gluon, autograd
@@ -36,6 +36,8 @@ import random
 import gluonnlp as nlp
 import process
 import textCNN
+
+
 np.random.seed(3435)
 random.seed(3435)
 mx.random.seed(3435)
@@ -73,7 +75,8 @@ else:
 if args.data_name == 'MR' or args.data_name == 'Subj':
     vocab, max_len, output_size, train_dataset, train_data_lengths = process.load_dataset(args.data_name)
 else:
-    vocab, max_len, output_size, train_dataset, train_data_lengths, test_dataset, test_data_lengths  = process.load_dataset(args.data_name)
+    vocab, max_len, output_size, train_dataset, train_data_lengths, \
+    test_dataset, test_data_lengths = process.load_dataset(args.data_name)
 
 net = textCNN.net(args.dropout, vocab, args.model_mode, output_size)
 print(net)
@@ -105,24 +108,27 @@ def evaluate(dataloader):
     return avg_L, acc
 
 
-def train(train_dataset, test_dataset):
+def train(net, train_dataset, test_dataset, k=0):
     """Training process"""
-    global net
     start_pipeline_time = time.time()
     random.shuffle(train_dataset)
-    #random.shuffle(test_dataset)
-    net,trainer  = textCNN.init(net, args.model_mode, context, args.lr)
-    train_dataloader = DataLoader(dataset=train_dataset,
-                        batch_size=args.batch_size,
-                        shuffle=True)
-
+    sp = int(len(train_dataset)*0.9)
+    train_dataloader = DataLoader(dataset=train_dataset[:sp],
+                    batch_size=args.batch_size,
+                    shuffle=True)
+    val_dataloader = DataLoader(dataset=train_dataset[sp:],
+                    batch_size=args.batch_size,
+                    shuffle=False)
+    net, trainer  = textCNN.init(net, vocab, args.model_mode, context, args.lr)
     test_dataloader = DataLoader(dataset=test_dataset,
                        batch_size=args.batch_size,
                        shuffle=False)
     # Training/Testing
     best_test_acc = 0
+    best_val_acc = 0
     stop_early = 0
     for epoch in range(args.epochs):
+
         # Epoch training stats
         start_epoch_time = time.time()
         epoch_L = 0.0
@@ -161,36 +167,34 @@ def train(train_dataset, test_dataset):
                 log_interval_sent_num = 0
                 log_interval_L = 0
         end_epoch_time = time.time()
-        test_avg_L, test_acc = evaluate(test_dataloader)
+        val_avg_L, val_acc = evaluate(val_dataloader)
         print('[Epoch %d] train avg loss %g, '
               'test acc %.4f, test avg loss %g, throughput %gK wps' % (
                   epoch, epoch_L / epoch_sent_num,
-                  test_acc, test_avg_L,
+                  val_acc, val_avg_L,
                   epoch_wc / 1000 / (end_epoch_time - start_epoch_time)))
 
-        if test_acc < best_test_acc:
-            print('No Improvement.')
-            stop_early += 1
-            if stop_early == 3:
-                break
-
-    test_avg_L, test_acc = evaluate(test_dataloader)
+        if val_acc >= best_val_acc:
+            print('Observed Improvement.')
+            best_val_acc = val_acc
+            test_avg_L, test_acc = evaluate(test_dataloader)
+            
     print('Test loss %g, test acc %.4f'%(test_avg_L, test_acc))
     print('Total time cost %.2fs'%(time.time()-start_pipeline_time))
     return test_acc
-def k_fold_cross_valid(k, all_dataset):
+def k_fold_cross_valid(k, net, all_dataset):
     test_acc = []
     fold_size = len(all_dataset) // k
-    
+    random.shuffle(all_dataset)
     for test_i in range(10):
         test_dataset = all_dataset[test_i * fold_size: (test_i + 1) * fold_size]
         train_dataset = all_dataset[: test_i * fold_size] + all_dataset[(test_i + 1) * fold_size:]
         print(len(train_dataset), len(test_dataset))
-        test_acc.append(train(train_dataset, test_dataset))
+        test_acc.append(train(net, train_dataset, test_dataset, test_i))
     print(sum(test_acc) / k)
 
 if __name__ == '__main__':
     if args.data_name != 'MR' and args.data_name != 'Subj':
-        train(train_dataset, test_dataset)
+        train(net, train_dataset, test_dataset)
     else:
-        k_fold_cross_valid(10, train_dataset)
+        k_fold_cross_valid(10, net, train_dataset)
