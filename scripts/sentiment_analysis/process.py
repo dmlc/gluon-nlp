@@ -1,4 +1,4 @@
-"""Load datasets."""
+"""Load various datasets."""
 
 import re
 import multiprocessing as mp
@@ -103,7 +103,7 @@ def preprocess_dataset(dataset, vocab, max_len):
     print('Done! Tokenizing Time={:.2f}s, #Sentences={}'.format(end - start, len(dataset)))
     return dataset, lengths
 
-# load dataset
+"""Load dataset."""
 def load_dataset(data_name):
     if data_name == 'MR' or data_name == 'Subj':
         train_dataset, output_size = _load_file(data_name)
