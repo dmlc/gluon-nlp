@@ -1,7 +1,8 @@
 """
 Fine-tune Language Model for Sentiment Analysis
 ===============================================
-This example shows how to use convolutional neural networks (textCNN) for sentiment analysis on various datasets.
+This example shows how to use convolutional neural networks (textCNN)
+for sentiment analysis on various datasets.
 """
 
 # coding: utf-8
@@ -25,15 +26,12 @@ This example shows how to use convolutional neural networks (textCNN) for sentim
 
 import argparse
 import time
-import glob
+import random
 
 import mxnet as mx
 from mxnet import nd, gluon, autograd
-from mxnet.gluon import HybridBlock
 from mxnet.gluon.data import DataLoader
 import numpy as np
-import random
-import gluonnlp as nlp
 import process
 import textCNN
 
@@ -42,7 +40,7 @@ np.random.seed(3435)
 random.seed(3435)
 mx.random.seed(3435)
 
-parser = argparse.ArgumentParser(description='MXNet Sentiment Analysis Example on various datasets. '
+parser = argparse.ArgumentParser(description='MXNet Sentiment Analysis Example on various datasets.'
                                              'We load textCNN as our model.')
 parser.add_argument('--data_name', choices=['MR', 'SST-1', 'SST-2', 'Subj', 'TREC'], default='MR',
                     help='specified data set')
@@ -71,9 +69,10 @@ if args.gpu is None:
 else:
     print('Use gpu%d' % args.gpu)
     context = mx.gpu(args.gpu)
-    
+
 if args.data_name == 'MR' or args.data_name == 'Subj':
-    vocab, max_len, output_size, train_dataset, train_data_lengths = process.load_dataset(args.data_name)
+    vocab, max_len, output_size, train_dataset, train_data_lengths \
+    = process.load_dataset(args.data_name)
 else:
     vocab, max_len, output_size, train_dataset, train_data_lengths, \
     test_dataset, test_data_lengths = process.load_dataset(args.data_name)
@@ -107,28 +106,24 @@ def evaluate(dataloader):
     acc = total_correct_num / float(total_sample_num)
     return avg_L, acc
 
-
 def train(net, train_dataset, test_dataset, k=0):
     """Training process"""
     start_pipeline_time = time.time()
+    net, trainer  = textCNN.init(net, vocab, args.model_mode, context, args.lr)
     random.shuffle(train_dataset)
     sp = int(len(train_dataset)*0.9)
     train_dataloader = DataLoader(dataset=train_dataset[:sp],
-                    batch_size=args.batch_size,
-                    shuffle=True)
+                                  batch_size=args.batch_size,
+                                  shuffle=True)
     val_dataloader = DataLoader(dataset=train_dataset[sp:],
-                    batch_size=args.batch_size,
-                    shuffle=False)
-    net, trainer  = textCNN.init(net, vocab, args.model_mode, context, args.lr)
+                                batch_size=args.batch_size,
+                                shuffle=False)
     test_dataloader = DataLoader(dataset=test_dataset,
-                       batch_size=args.batch_size,
-                       shuffle=False)
+                                 batch_size=args.batch_size,
+                                 shuffle=False)
     # Training/Testing
-    best_test_acc = 0
     best_val_acc = 0
-    stop_early = 0
     for epoch in range(args.epochs):
-
         # Epoch training stats
         start_epoch_time = time.time()
         epoch_L = 0.0
@@ -147,7 +142,7 @@ def train(net, train_dataset, test_dataset, k=0):
             epoch_wc += wc
             log_interval_sent_num += data.shape[1]
             epoch_sent_num += data.shape[1]
-            
+
             with autograd.record():
                 output = net(data)
                 L = loss(output, label).mean()
@@ -178,7 +173,7 @@ def train(net, train_dataset, test_dataset, k=0):
             print('Observed Improvement.')
             best_val_acc = val_acc
             test_avg_L, test_acc = evaluate(test_dataloader)
-            
+
     print('Test loss %g, test acc %.4f'%(test_avg_L, test_acc))
     print('Total time cost %.2fs'%(time.time()-start_pipeline_time))
     return test_acc
