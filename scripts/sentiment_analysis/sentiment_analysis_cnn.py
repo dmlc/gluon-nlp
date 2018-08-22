@@ -82,7 +82,7 @@ print(model)
 
 loss = gluon.loss.SoftmaxCrossEntropyLoss()
 
-def evaluate(dataloader):
+def evaluate(net, dataloader):
     """Evaluate network on the specified dataset"""
     total_L = 0.0
     total_sample_num = 0
@@ -162,7 +162,7 @@ def train(net, train_data, test_data):
                 log_interval_sent_num = 0
                 log_interval_L = 0
         end_epoch_time = time.time()
-        val_avg_L, val_acc = evaluate(val_dataloader)
+        val_avg_L, val_acc = evaluate(net, val_dataloader)
         print('[Epoch %d] train avg loss %g, '
               'test acc %.4f, test avg loss %g, throughput %gK wps' % (
                   epoch, epoch_L / epoch_sent_num,
@@ -172,7 +172,7 @@ def train(net, train_data, test_data):
         if val_acc >= best_val_acc:
             print('Observed Improvement.')
             best_val_acc = val_acc
-            test_avg_L, test_acc = evaluate(test_dataloader)
+            test_avg_L, test_acc = evaluate(net, test_dataloader)
 
     print('Test loss %g, test acc %.4f'%(test_avg_L, test_acc))
     print('Total time cost %.2fs'%(time.time()-start_pipeline_time))
