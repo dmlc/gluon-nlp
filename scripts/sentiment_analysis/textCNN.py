@@ -1,3 +1,5 @@
+"""textCNN model."""
+
 import mxnet as mx
 from mxnet import nd, gluon, autograd
 from mxnet.gluon import HybridBlock
@@ -5,7 +7,6 @@ from mxnet.gluon.data import DataLoader
 import numpy as np
 import random
 import gluonnlp as nlp
-vocab = None
 class SentimentNet(HybridBlock):
     """Network for sentiment analysis."""
     def __init__(self, dropout, embed_size=300, vocab_size=100, prefix=None,
@@ -37,19 +38,18 @@ class SentimentNet(HybridBlock):
         out = self.output(encoded)
         return out
     
-def net(dropout, vocab_init, model_mode, output_size):
-    global vocab
-    vocab = vocab_init
+def net(dropout, vocab, model_mode, output_size):
     net = SentimentNet(dropout=dropout, vocab_size=len(vocab), model_mode=model_mode, output_size=output_size)
     net.hybridize()
     return net
-def init(net, model_mode, context, lr):
-    net.initialize(mx.init.Xavier(), ctx=context)
+
+def init(net,vocab, model_mode, context, lr):
+    net.initialize(mx.init.Xavier(), ctx=context, force_reinit=True)
     if model_mode != 'rand':
         net.embedding.weight.set_data(vocab.embedding.idx_to_vec)
     if model_mode == 'multichannel':
         net.embedding_extend.weight.set_data(vocab.embedding.idx_to_vec)
     if model_mode == 'static' or model_mode == 'multichannel':
         net.embedding.collect_params().setattr('grad_req', 'null')
-    trainer = gluon.Trainer(net.collect_params(), 'adam', {'learning_rate': lr, 'wd':0.002})
+    trainer = gluon.Trainer(net.collect_params(), 'adam', {'learning_rate': lr})
     return net, trainer
