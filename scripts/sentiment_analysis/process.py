@@ -103,7 +103,6 @@ def preprocess_dataset(dataset, vocab, max_len):
     print('Done! Tokenizing Time={:.2f}s, #Sentences={}'.format(end - start, len(dataset)))
     return dataset, lengths
 
-"""Load dataset."""
 def load_dataset(data_name):
     """Load translation dataset
     Parameters
