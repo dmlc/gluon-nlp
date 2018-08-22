@@ -35,8 +35,8 @@ def _load_file(data_name):
 
 def _clean_str(string, data_name):
     if data_name == 'SST-1' or data_name == 'SST-2':
-        string = re.sub(r"[^A-Za-z0-9(),!?\'\`]", " ", string)
-        string = re.sub(r"\s{2,}", " ", string)
+        string = re.sub(r'[^A-Za-z0-9(),!?\'\`]', ' ', string)
+        string = re.sub(r'\s{2,}', ' ', string)
         return string.strip().lower()
     else:
         string = re.sub(r'[^A-Za-z0-9(),!?\'\`]', ' ', string)
