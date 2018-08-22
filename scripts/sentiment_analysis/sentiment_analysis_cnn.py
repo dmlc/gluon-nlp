@@ -185,7 +185,7 @@ def k_fold_cross_valid(k, net, all_dataset):
         test_data = all_dataset[test_i * fold_size: (test_i + 1) * fold_size]
         train_data = all_dataset[: test_i * fold_size] + all_dataset[(test_i + 1) * fold_size:]
         print(len(train_data), len(test_data))
-        test_acc.append(train(net, train_data, test_data, test_i))
+        test_acc.append(train(net, train_data, test_data))
     print(sum(test_acc) / k)
 
 if __name__ == '__main__':
