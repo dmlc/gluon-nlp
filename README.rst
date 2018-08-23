@@ -48,7 +48,13 @@ Community
 =========
 
 For questions and comments, please visit our `forum <https://discuss.mxnet.io/>`__
-(and `Chinese version <https://discuss.gluon.ai/>`__). For bug reports, please submit Github issues.
+(and `Chinese version <https://discuss.gluon.ai/>`__). For bug reports, Github issues is the best
+way to reach us.
+
+We now have a new Slack channel `here <https://apache-mxnet.slack.com/messages/CCCDM10V9>`__.
+(`register <https://join.slack.com/t/apache-mxnet/shared_invite/enQtNDIzNjY0NjQ2NjYyLTI1ZGNiOGEwOTZkMzMyOTg2ZjNkOWQyNjA5NGRhOTI5NDY4MDY0NmE1MDc2NjEzYWQ1MDZhNzU2NjE5YTMyYTA>`__).
+
+We are featured in KDD 2018 London, Apache MXNet Gluon tutorial! Checkout it out at `kdd18.mxnet.io <https://kdd18.mxnet.io>`__.
 
 How to Contribute
 =================
