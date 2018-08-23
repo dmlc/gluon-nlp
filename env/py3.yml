@@ -4,7 +4,7 @@ channels:
 dependencies:
   - python=3.6
   - perl
-  - sphinx=1.7.5
+  - sphinx=1.7.7
   - spacy
   - nltk
   - pytest
