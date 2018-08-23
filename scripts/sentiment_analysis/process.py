@@ -76,11 +76,11 @@ def _build_vocab(data_name, train_dataset, test_dataset):
     vocab.embedding['<pad>'] = nd.zeros(300)
     vocab.embedding['<bos>'] = nd.zeros(300)
     vocab.embedding['<eos>'] = nd.zeros(300)
-    print(max_len)
+    print('maximum length (in tokens): ', max_len)
     return vocab, max_len
 
 # Dataset preprocessing
-def preprocess(x, vocab, max_len):
+def _preprocess(x, vocab, max_len):
     data, label = x
     data = vocab[data.split()]
     if len(data) > max_len:
@@ -90,15 +90,15 @@ def preprocess(x, vocab, max_len):
             data.append(0)
     return data, label
 
-def get_length(x):
+def _get_length(x):
     return float(len(x[0]))
 
-def preprocess_dataset(dataset, vocab, max_len):
+def _preprocess_dataset(dataset, vocab, max_len):
     start = time.time()
     pool = mp.Pool(8)
-    partial_work = partial(preprocess, vocab=vocab, max_len=max_len)
+    partial_work = partial(_preprocess, vocab=vocab, max_len=max_len)
     dataset = pool.map(partial_work, dataset)
-    lengths = gluon.data.SimpleDataset(pool.map(get_length, dataset))
+    lengths = gluon.data.SimpleDataset(pool.map(_get_length, dataset))
     end = time.time()
     print('Done! Tokenizing Time={:.2f}s, #Sentences={}'.format(end - start, len(dataset)))
     return dataset, lengths
