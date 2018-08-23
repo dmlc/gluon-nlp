@@ -1,8 +1,8 @@
 # Google NMT on IWSLT 2015 English-Vietnamese Translation
 
-In this notebook, we going to train Google NMT on IWSLT 2015 English-Vietnamese
-Dataset. The building prcoess includes: 1) load and process dataset and 2)
-create sampler and DataLoader and 3) build model and 4) write training epochs.
+In this notebook, we are going to train Google NMT on IWSLT 2015 English-Vietnamese
+Dataset. The building prcoess includes four steps: 1) load and process dataset, 2)
+create sampler and DataLoader, 3) build model, and 4) write training epochs.
 
 ## Load MXNET and Gluon
 
@@ -72,9 +72,9 @@ logging_config(save_dir)
 ## Load and Preprocess Dataset
 
 The following shows how to process the dataset and cache the processed dataset
-for the future use. The processing steps include: 1) clip the source and target
-sequences and 2) split the string input to a list of tokens and 3) map the
-string token into its index in the vocabulary and 4) append end-of-sentence (EOS) token to source
+for future use. The processing steps include: 1) clip the source and target
+sequences, 2) split the string input to a list of tokens, 3) map the
+string token into its integer index in the vocabulary, and 4) append end-of-sentence (EOS) token to source
 sentence and add BOS and EOS tokens to target sentence.
 
 ```python
@@ -229,7 +229,7 @@ test_batchify_fn = btf.Tuple(btf.Pad(), btf.Pad(),
 ```
 
 We can then construct bucketing samplers, which generate batches by grouping
-sequences with similar lengths.
+sequences with similar lengths. Here, the bucketing scheme is empirically determined.
 
 ```python
 train_batch_sampler = FixedBucketSampler(lengths=data_train_lengths,
@@ -269,10 +269,10 @@ test_data_loader = DataLoader(data_test,
 
 ## Build GNMT Model
 
-After obtaining DataLoader, we can build the model. The GNTM encoder and decoder
-can be easily obtained by calling `get_gnmt_encoder_decoder` function. Then, we
-feed encoder and decoder to `NMTModel` to construct the GNMT model.
-`model.hybridize` allows computation to be done using symbolic backend.
+After obtaining DataLoader, we can build the model. The GNMT encoder and decoder
+can be easily constructed by calling `get_gnmt_encoder_decoder` function. Then, we
+feed the encoder and decoder to `NMTModel` to construct the GNMT model.
+`model.hybridize` allows computation to be done using the symbolic backend.
 
 ```python
 encoder, decoder = get_gnmt_encoder_decoder(hidden_size=num_hidden,
@@ -291,7 +291,7 @@ loss_function = SoftmaxCEMaskedLoss()
 loss_function.hybridize(static_alloc=static_alloc)
 ```
 
-We can also build the translator the beam search
+We also build the beam search translator.
 
 ```python
 translator = BeamSearchTranslator(model=model, beam_size=beam_size,
@@ -360,16 +360,15 @@ def write_sentences(sentences, file_path):
 ## Training Epochs
 
 Before entering the training stage, we need to create trainer for updating the
-parameter. In the following example, we create a trainer that uses ADAM
+parameters. In the following example, we create a trainer that uses ADAM
 optimzier.
 
 ```python
 trainer = gluon.Trainer(model.collect_params(), 'adam', {'learning_rate': lr})
 ```
 
-We can then write the training iteration. During the training, we perform the
-one evaluation on validation and testing dataset every epoch, and record the
-parameters that give the hightest BLEU score on validation dataset. Before
+We can then write the training loop. During the training, we evaluate on the validation and testing datasets every epoch, and record the
+parameters that give the hightest BLEU score on the validation dataset. Before
 performing forward and backward, we first use `as_in_context` function to copy
 the mini-batch to GPU. The statement `with mx.autograd.record()` tells Gluon
 backend to compute the gradients for the part inside the block.
