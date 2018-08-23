@@ -1,9 +1,9 @@
 """Load various datasets."""
 
-import re
-import multiprocessing as mp
-import time
 from functools import partial
+import multiprocessing as mp
+import re
+import time
 
 import gluonnlp as nlp
 from mxnet import nd, gluon
