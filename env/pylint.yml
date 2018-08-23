@@ -4,7 +4,7 @@ channels:
 dependencies:
   - python=3.6
   - pylint=1.9.2
-  - sphinx=1.7.5
+  - sphinx=1.7.7
   - flake8
   - pip:
     - pylint-quotes
