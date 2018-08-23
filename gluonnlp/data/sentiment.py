@@ -194,8 +194,6 @@ class SUBJ(SimpleDataset):
 
 class SST_1(SimpleDataset):
     """Stanford Sentiment Treebank—an extension of MR.
-    but with train/dev/test splits provided and ﬁne-grained
-    labels (very positive, positive, neutral, negative, very negative)
 
     From
     http://nlp.stanford.edu/sentiment/
@@ -236,6 +234,7 @@ class SST_1(SimpleDataset):
 
 class SST_2(SimpleDataset):
     """Stanford Sentiment Treebank—an extension of MR.
+    
     Same as SST-1, but with neutral reviews removed and binary labels(positive, negativee).
 
     From
