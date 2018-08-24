@@ -234,7 +234,7 @@ class SST_1(SimpleDataset):
 
 class SST_2(SimpleDataset):
     """Stanford Sentiment Treebank—an extension of MR.
-    
+
     Same as SST-1, but with neutral reviews removed and binary labels(positive, negative).
 
     From
