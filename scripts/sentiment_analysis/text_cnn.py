@@ -37,12 +37,37 @@ class SentimentNet(HybridBlock):
         return out
 
 def model(dropout, vocab, model_mode, output_size):
+    """Construct this model.
+    Parameters
+    ----------
+    dropout : int
+    vocab
+    model_mode : str : Several variants of the model, rand,static,\
+                       non-static and multichannel.
+    Returns
+    -------
+    """
+    Several variants of the model, rand,static,\
+                    non-static and multichannel.
     textCNN = SentimentNet(dropout=dropout, vocab_size=len(vocab), model_mode=model_mode,\
                        output_size=output_size)
     textCNN.hybridize()
     return textCNN
 
 def init(textCNN, vocab, model_mode, context, lr):
+    """Initialization parameters.
+    Parameters
+    ----------
+    textCNN : model
+    vocab
+    model_mode : str : Several variants of the model, rand,static,\
+                       non-static and multichannel.
+    context : cpu or gpu
+    lr : int
+    
+    Returns 
+    -------
+    """
     textCNN.initialize(mx.init.Xavier(), ctx=context, force_reinit=True)
     if model_mode != 'rand':
         textCNN.embedding.weight.set_data(vocab.embedding.idx_to_vec)
