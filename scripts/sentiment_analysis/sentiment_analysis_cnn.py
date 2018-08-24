@@ -4,7 +4,8 @@ Fine-tune Language Model for Sentiment Analysis
 This example shows how to use convolutional neural networks (textCNN)
 for sentiment analysis on various datasets.
 
-Kim, Y. (2014). Convolutional neural networks for sentence classification. arXiv preprint arXiv:1408.5882.
+Kim, Y. (2014). Convolutional neural networks for sentence classification. 
+arXiv preprint arXiv:1408.5882.
 """
 
 # coding: utf-8
@@ -181,7 +182,7 @@ def train(net, train_data, test_data):
     print('Test loss %g, test acc %.4f'%(test_avg_L, test_acc))
     print('Total time cost %.2fs'%(time.time()-start_pipeline_time))
     return test_acc
-  
+
 def k_fold_cross_valid(k, net, all_dataset):
     test_acc = []
     fold_size = len(all_dataset) // k
