@@ -72,7 +72,8 @@ There are lots of opportunities for you to become our `contributors <https://git
 - Contribute bug reports `GitHub issues <https://github.com/dmlc/gluon-nlp/issues>`__.
 - Write new `scripts <https://github.com/dmlc/gluon-nlp/tree/master/scripts>`__ to reproduce
   state-of-the-art results.
-- Write new `examples <https://github.com/dmlc/gluon-nlp/tree/master/docs/examples>`__.
+- Write new `examples <https://github.com/dmlc/gluon-nlp/tree/master/docs/examples>`__ to explain
+  key ideas in NLP methods and models.
 - Write new `public datasets <https://github.com/dmlc/gluon-nlp/tree/master/gluonnlp/data>`__
   (license permitting).
 - Most importantly, if you have an idea of how to contribute, then do it!
