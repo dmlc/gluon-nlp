@@ -3,6 +3,8 @@ Fine-tune Language Model for Sentiment Analysis
 ===============================================
 This example shows how to use convolutional neural networks (textCNN)
 for sentiment analysis on various datasets.
+
+Kim, Y. (2014). Convolutional neural networks for sentence classification. arXiv preprint arXiv:1408.5882.
 """
 
 # coding: utf-8
@@ -27,13 +29,14 @@ for sentiment analysis on various datasets.
 import argparse
 import time
 import random
+import numpy as np
 
 import mxnet as mx
 from mxnet import nd, gluon, autograd
 from mxnet.gluon.data import DataLoader
-import numpy as np
-import process
-import textCNN
+
+import .process
+import .textCNN
 
 
 np.random.seed(3435)
@@ -45,7 +48,8 @@ parser = argparse.ArgumentParser(description='MXNet Sentiment Analysis Example o
 parser.add_argument('--data_name', choices=['MR', 'SST-1', 'SST-2', 'Subj', 'TREC'], default='MR',
                     help='specified data set')
 parser.add_argument('--model_mode', choices=['rand', 'static', 'non-static', 'multichannel'],
-                    default='multichannel', help='the used model')
+                    default='multichannel', help='Several variants of the model, rand,static,\
+                    non-static and multichannel.')
 parser.add_argument('--lr', type=float, default=2.5E-3,
                     help='initial learning rate')
 parser.add_argument('--epochs', type=int, default=20,
@@ -177,6 +181,7 @@ def train(net, train_data, test_data):
     print('Test loss %g, test acc %.4f'%(test_avg_L, test_acc))
     print('Total time cost %.2fs'%(time.time()-start_pipeline_time))
     return test_acc
+  
 def k_fold_cross_valid(k, net, all_dataset):
     test_acc = []
     fold_size = len(all_dataset) // k
