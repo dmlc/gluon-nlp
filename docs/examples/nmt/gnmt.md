@@ -160,7 +160,20 @@ def load_translation_data(dataset, src_lang='en', tgt_lang='vi'):
 
     Returns
     -------
-
+    data_train_processed : Dataset
+        The preprocessed training sentence pairs
+    data_val_processed : Dataset
+        The preprocessed validation sentence pairs
+    data_test_processed : Dataset
+        The preprocessed test sentence pairs
+    val_tgt_sentences : list
+        The target sentences in the validation set
+    test_tgt_sentences : list
+        The target sentences in the test set
+    src_vocab : Vocab
+        Vocabulary of the source language
+    tgt_vocab : Vocab
+        Vocabulary of the target language
     """
     common_prefix = 'IWSLT2015_{}_{}_{}_{}'.format(src_lang, tgt_lang,
                                                    src_max_len, tgt_max_len)
