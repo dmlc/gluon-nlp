@@ -35,8 +35,8 @@ import mxnet as mx
 from mxnet import nd, gluon, autograd
 from mxnet.gluon.data import DataLoader
 
-import .process
-import .textCNN
+import process
+import textCNN
 
 
 np.random.seed(3435)
