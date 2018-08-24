@@ -4,7 +4,7 @@ Fine-tune Language Model for Sentiment Analysis
 This example shows how to use convolutional neural networks (textCNN)
 for sentiment analysis on various datasets.
 
-Kim, Y. (2014). Convolutional neural networks for sentence classification. 
+Kim, Y. (2014). Convolutional neural networks for sentence classification.
 arXiv preprint arXiv:1408.5882.
 """
 
