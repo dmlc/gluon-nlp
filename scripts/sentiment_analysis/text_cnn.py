@@ -7,6 +7,7 @@ from mxnet.gluon import HybridBlock
 
 class SentimentNet(HybridBlock):
     """Network for sentiment analysis."""
+    
     def __init__(self, dropout, embed_size=300, vocab_size=100, prefix=None,
                  params=None, model_mode='multichannel', output_size=2,
                  num_filters=(100, 100, 100), ngram_filter_sizes=(3, 4, 5)):
@@ -38,6 +39,7 @@ class SentimentNet(HybridBlock):
 
 def model(dropout, vocab, model_mode, output_size):
     """Construct this model.
+ 
     Parameters
     ----------
     dropout : int
@@ -47,8 +49,6 @@ def model(dropout, vocab, model_mode, output_size):
     Returns
     -------
     """
-    Several variants of the model, rand,static,\
-                    non-static and multichannel.
     textCNN = SentimentNet(dropout=dropout, vocab_size=len(vocab), model_mode=model_mode,\
                        output_size=output_size)
     textCNN.hybridize()
@@ -56,6 +56,7 @@ def model(dropout, vocab, model_mode, output_size):
 
 def init(textCNN, vocab, model_mode, context, lr):
     """Initialization parameters.
+    
     Parameters
     ----------
     textCNN : model
