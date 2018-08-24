@@ -1,18 +1,37 @@
 Contribute
 ==========
 
-Latest documentation can be found `here <http://gluon-nlp.mxnet.io/master/index.html>`__.
+GluonNLP community welcomes contributions from anyone! Latest documentation can be found `here <http://gluon-nlp.mxnet.io/master/index.html>`__.
 
-GluonNLP toolkit has been developed by community members. Everyone is
-more than welcome to contribute. It is a way to make the project better
-and more accessible to more users.
+There are lots of opportunities for you to become our `contributors <https://github.com/dmlc/gluon-nlp/blob/master/contributor.rst>`__:
 
-Guidelines
-----------
+- Ask or answer questions on `GitHub issues <https://github.com/dmlc/gluon-nlp/issues>`__.
+- Propose ideas, or review proposed design ideas on `GitHub issues <https://github.com/dmlc/gluon-nlp/issues>`__.
+- Improve the `documentation <http://gluon-nlp.mxnet.io/master/index.html>`__.
+- Contribute bug reports `GitHub issues <https://github.com/dmlc/gluon-nlp/issues>`__.
+- Write new `scripts <https://github.com/dmlc/gluon-nlp/tree/master/scripts>`__ to reproduce
+  state-of-the-art results.
+- Write new `examples <https://github.com/dmlc/gluon-nlp/tree/master/docs/examples>`__.
+- Write new `public datasets <https://github.com/dmlc/gluon-nlp/tree/master/gluonnlp/data>`__
+  (license permitting).
+- Most importantly, if you have an idea of how to contribute, then do it!
 
--  `Submit Pull Request <#submit-pull-request>`__
--  `Git Workflow Howtos <#git-workflow-howtos>`__
+For a list of open starter tasks, check `good first issues <https://github.com/dmlc/gluon-nlp/labels/good%20first%20issue>`__.
 
+How-to
+++++++
+
+- `Make changes <#make-changes>`__
+
+- `Contribute scripts <#contribute-scripts>`__
+
+- `Contribute examples <#contribute-examples>`__
+
+- `Contribute new API <#contribute-new-api>`__
+
+- `Git Workflow Howtos <#git-workflow-howtos>`__
+
+   -  `How to submit pull request <#how-to-submit-pull-request>`__
    -  `How to resolve conflict with
       master <#how-to-resolve-conflict-with-master>`__
    -  `How to combine multiple commits into
@@ -20,14 +39,70 @@ Guidelines
    -  `What is the consequence of force
       push <#what-is-the-consequence-of-force-push>`__
 
--  `Document <#document>`__
--  `Testcases <#testcases>`__
--  `Examples <#examples>`__
--  `Core Library <#core-library>`__
--  `Python Package <#python-package>`__
 
-Submit Pull Request
+Make changes
+------------
+
+Our package uses continuous integration and code coverage tools for verifying pull requests. Before
+submitting, contributor should perform the following checks:
+
+- `Lint (code style) check <https://github.com/dmlc/gluon-nlp/blob/master/Jenkinsfile#L6-L11>`__.
+- `Py2 <https://github.com/dmlc/gluon-nlp/blob/master/Jenkinsfile#L23-L31>` and `Py3 <https://github.com/dmlc/gluon-nlp/blob/master/Jenkinsfile#L42-L50>` tests.
+
+Contribute Scripts
+------------------
+
+The `scripts <http://gluon-nlp.mxnet.io/master/scripts/index.html>`__ in GluonNLP are typically
+for reproducing state-of-the-art (SOTA) results, or for a simple and interesting application.
+They are intended for practitioners who are familiar with the libraries to tweak and hack. For SOTA
+scripts, we usually request training scripts to be uploaded `here <https://github.com/dmlc/web-data/tree/master/gluonnlp/logs>`__, and then linked to in the example documentation.
+
+See `existing examples <https://github.com/dmlc/gluon-nlp/tree/master/scripts>`__.
+
+Contribute Examples
 -------------------
+
+Our `examples <http://gluon-nlp.mxnet.io/master/examples/index.html>` are intended for people who
+are interested in NLP and want to get better familiarized on different parts in NLP. In order for
+people to easily understand the content, the code needs to be clean and readable, accompanied by
+good quality writing.
+
+See `existing examples <https://github.com/dmlc/gluon-nlp/tree/master/docs/examples>`__.
+
+Contribute new API
+------------------
+
+There are several different types of APIs, such as *model definition APIs, public dataset APIs, and
+building block APIs*.
+
+*Model definition APIs* facilitate the sharing of pre-trained models. If you'd like to contribute
+models with pre-trained weights, you can `open an issue <https://github.com/dmlc/gluon-nlp/issues/new>`
+and ping committers first, we will help with things such as hosting the model weights while you propose the patch.
+
+*Public dataset APIs* facilitate the sharing of public datasets. Like model definition APIs, if you'd like to contribute
+new public datasets, you can `open an issue <https://github.com/dmlc/gluon-nlp/issues/new>` and ping committers and review
+the dataset needs. If you're unsure, feel free to open an issue anyway.
+
+Finally, our *data and model building block APIs* come from repeated patterns in examples. It has the highest quality bar
+and should always starts from a good design. If you have an idea on proposing a new API, we
+encourage you to `draft a design proposal first <https://github.com/dmlc/gluon-nlp/labels/enhancement>__`, so that the community can help iterate.
+Once the design is finalized, everyone who are interested in making it happen can help by submitting
+patches. For designs that require larger scopes, we can help set up GitHub project to make it easier
+for others to join.
+
+Contribute Docs
+---------------
+
+Documentation is no less important than code. Good documentation delivers the correct message clearly and concisely.
+If you see any issue in the existing documentation, a patch to fix is most welcome! To locate the
+code responsible for the doc, you may use "View page source" in the top right corner, or the
+"[source]" links after each API. Also, `git grep` works nicely if there's unique string.
+
+Git Workflow Howtos
+-------------------
+
+How to submit pull request
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 -  Before submit, please rebase your code on the most recent version of
    master, you can do it by
@@ -44,9 +119,6 @@ Submit Pull Request
 
    -  Fix the problems reported by automatic checks
    -  If you are contributing a new module or new function, add a test.
-
-Git Workflow Howtos
--------------------
 
 How to resolve conflict with master
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -129,21 +201,3 @@ What is the consequence of force push
 The previous two tips requires force push, this is because we altered
 the path of the commits. It is fine to force push to your own fork, as
 long as the commits changed are only yours.
-
-Testcases
----------
-
--  All the testcases are in tests
-
-Core Library
-------------
-
--  Follow Google C style for C++.
--  We use doxygen to document all the interface code.
--  You can reproduce the linter checks by typing ``make lint``
-
-Python Package
---------------
-
--  Always add docstring to the new functions in numpydoc format.
--  You can reproduce the linter checks by typing ``make lint``
