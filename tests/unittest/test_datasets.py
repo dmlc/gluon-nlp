@@ -31,12 +31,7 @@ import numpy as np
 import pytest
 
 import gluonnlp as nlp
-
-try:
-    _str_types = (str, unicode)
-except NameError:  # Python 3
-    _str_types = (str, )
-
+from gluonnlp.base import _str_types
 
 ###############################################################################
 # Registry
@@ -80,135 +75,8 @@ def test_dataset_registry():
 
 
 ###############################################################################
-# Language model
+# Sentiment analysis
 ###############################################################################
-@pytest.mark.parametrize('batch_size', [7, 80])
-@pytest.mark.parametrize('seq_len', [7, 35])
-def test_bptt_batchify(batch_size, seq_len):
-    data = nlp.data.WikiText2(
-        segment='test', root=os.path.join('tests', 'data', 'wikitext-2'))
-    vocab = nlp.Vocab(nlp.data.utils.Counter(data[0]))
-
-    # unsupported last_batch
-    with pytest.raises(ValueError):
-        data.bptt_batchify(vocab, seq_len, batch_size, last_batch='unsupported')
-
-    # last_batch='keep'
-    X, Y = zip(*(data.bptt_batchify(vocab, seq_len, batch_size, last_batch='keep')))
-    X, Y = mx.nd.concat(*X, dim=0), mx.nd.concat(*Y, dim=0)
-    coded = mx.nd.concat(X, Y[-1].expand_dims(0), dim=0).T.reshape(-1).asnumpy().tolist()
-    assert vocab[data[0]] == coded[:len(data[0])]
-    assert all(pad == vocab[vocab.padding_token] for pad in coded[len(data[0]):])
-
-    # last_batch='discard'
-    X, Y = zip(*(data.bptt_batchify(vocab, seq_len, batch_size, last_batch='discard')))
-    X, Y = mx.nd.concat(*X, dim=0), mx.nd.concat(*Y, dim=0)
-    coded = mx.nd.concat(X, Y[-1].expand_dims(0), dim=0).T.reshape(-1).asnumpy().tolist()
-    assert len(data[0]) - len(coded) < batch_size * seq_len
-
-
-def test_wikitext2():
-    batch_size = 80
-    seq_len = 35
-
-    train = nlp.data.WikiText2(
-        segment='train', root=os.path.join('tests', 'data', 'wikitext-2'))
-    val = nlp.data.WikiText2(
-        segment='val', root=os.path.join('tests', 'data', 'wikitext-2'))
-    test = nlp.data.WikiText2(
-        segment='test', root=os.path.join('tests', 'data', 'wikitext-2'))
-    train_freq, val_freq, test_freq = [nlp.data.utils.Counter(x) for x in [train[0], val[0], test[0]]]
-    assert len(train[0]) == 2075677, len(train[0])
-    assert len(train_freq) == 33278, len(train_freq)
-    assert len(val[0]) == 216347, len(val[0])
-    assert len(val_freq) == 13777, len(val_freq)
-    assert len(test[0]) == 244102, len(test[0])
-    assert len(test_freq) == 14143, len(test_freq)
-    assert test_freq['English'] == 32, test_freq['English']
-
-    vocab = nlp.Vocab(train_freq)
-    serialized_vocab = vocab.to_json()
-    assert len(serialized_vocab) == 962190, len(serialized_vocab)
-    assert json.loads(serialized_vocab)['idx_to_token'] == vocab._idx_to_token
-
-    train_data = train.bptt_batchify(vocab, seq_len, batch_size, last_batch='discard')
-    assert len(train_data) == 741, len(train_data)
-
-    for i, (data, target) in enumerate(train_data):
-        mx.test_utils.assert_almost_equal(data[1:].asnumpy(), target[:-1].asnumpy())
-        assert data.shape == target.shape == (seq_len, batch_size)
-
-    train_data = train.bptt_batchify(vocab, seq_len, batch_size, last_batch='keep')
-    assert len(train_data) == 742, len(train_data)
-    assert train_data[-1][0].shape[0] <= seq_len
-    for i, (data, target) in enumerate(train_data):
-        mx.test_utils.assert_almost_equal(data[1:].asnumpy(), target[:-1].asnumpy())
-        assert data.shape == target.shape
-
-    train_freq, val_freq, test_freq = [nlp.data.utils.Counter(x) for x in [train[0], val[0], test[0]]]
-    train = nlp.data.WikiText2(
-        segment='train',
-        skip_empty=False,
-        root=os.path.join('tests', 'data', 'wikitext-2'))
-    val = nlp.data.WikiText2(
-        segment='val',
-        skip_empty=False,
-        root=os.path.join('tests', 'data', 'wikitext-2'))
-    test = nlp.data.WikiText2(
-        segment='test',
-        skip_empty=False,
-        root=os.path.join('tests', 'data', 'wikitext-2'))
-    assert len(train[0]) == 2088628, len(train[0])
-    assert len(train_freq) == 33278, len(train_freq)
-    assert len(val[0]) == 217646, len(val[0])
-    assert len(val_freq) == 13777, len(val_freq)
-    assert len(test[0]) == 245569, len(test[0])
-    assert len(test_freq) == 14143, len(test_freq)
-    assert test_freq['English'] == 32, test_freq['English']
-    batched_data = train.batchify(vocab, batch_size)
-    assert batched_data.shape == (26107, batch_size)
-
-
-def test_wikitext2_raw():
-    train = nlp.data.WikiText2Raw(segment='train', root=os.path.join(
-        'tests', 'data', 'wikitext-2'))
-    val = nlp.data.WikiText2Raw(segment='val', root=os.path.join(
-        'tests', 'data', 'wikitext-2'))
-    test = nlp.data.WikiText2Raw(segment='test', root=os.path.join(
-        'tests', 'data', 'wikitext-2'))
-    train_freq, val_freq, test_freq = [
-        nlp.data.utils.Counter(x) for x in [train[0], val[0], test[0]]
-    ]
-    assert len(train[0]) == 10843541, len(train[0])
-    assert len(train_freq) == 192, len(train_freq)
-    assert len(val[0]) == 1136862, len(val[0])
-    assert len(val_freq) == 168, len(val_freq)
-    assert len(test[0]) == 1278983, len(test[0])
-    assert len(test_freq) == 177, len(test_freq)
-    assert test_freq['a'.encode('utf-8')[0]] == 81512, \
-        test_freq['a'.encode('utf-8')[0]]
-
-
-def test_wikitext103_raw():
-    train = nlp.data.WikiText103Raw(segment='train', root=os.path.join(
-        'tests', 'data', 'wikitext-103'))
-    val = nlp.data.WikiText103Raw(segment='val', root=os.path.join(
-        'tests', 'data', 'wikitext-103'))
-    test = nlp.data.WikiText103Raw(segment='test', root=os.path.join(
-        'tests', 'data', 'wikitext-103'))
-    train_freq, val_freq, test_freq = [
-        nlp.data.utils.Counter(x) for x in [train[0], val[0], test[0]]
-    ]
-    assert len(train[0]) == 535800393, len(train[0])
-    assert len(train_freq) == 203, len(train_freq)
-    assert len(val[0]) == 1136862, len(val[0])
-    assert len(val_freq) == 168, len(val_freq)
-    assert len(test[0]) == 1278983, len(test[0])
-    assert len(test_freq) == 177, len(test_freq)
-    assert test_freq['a'.encode('utf-8')[0]] == 81512, \
-        test_freq['a'.encode('utf-8')[0]]
-
-
 def test_imdb():
     train = nlp.data.IMDB(
         root=os.path.join('tests', 'data', 'imdb'), segment='train')
@@ -232,6 +100,71 @@ def test_imdb():
         assert isinstance(data, _str_types)
         assert score == 0
 
+def test_mr():
+    all = nlp.data.MR(
+        root=os.path.join('tests', 'data', 'mr'), segment='all')
+    assert len(all) == 10662, len(all)
+
+    for i, (data, label) in enumerate(all):
+        assert isinstance(data, _str_types)
+        assert label <= 1
+
+def test_sst_1():
+    train = nlp.data.SST_1(
+        root=os.path.join('tests', 'data', 'sst-1'), segment='train')
+    test = nlp.data.SST_1(
+        root=os.path.join('tests', 'data', 'sst-1'), segment='test')
+    assert len(train) == 237107, len(train)
+    assert len(test) == 2125, len(test)
+
+    for i, (data, label) in enumerate(train):
+        assert isinstance(data, _str_types)
+        assert label <= 4
+
+    for i, (data, label) in enumerate(test):
+        assert isinstance(data, _str_types)
+        assert label <= 4
+
+def test_sst_2():
+    train = nlp.data.SST_2(
+        root=os.path.join('tests', 'data', 'sst-2'), segment='train')
+    test = nlp.data.SST_2(
+        root=os.path.join('tests', 'data', 'sst-2'), segment='test')
+    assert len(train) == 118038, len(train)
+    assert len(test) == 1745, len(test)
+
+    for i, (data, label) in enumerate(train):
+        assert isinstance(data, _str_types)
+        assert label <= 1
+
+    for i, (data, label) in enumerate(test):
+        assert isinstance(data, _str_types)
+        assert label <= 1  
+
+def test_subj():
+    all = nlp.data.SUBJ(
+        root=os.path.join('tests', 'data', 'mr'), segment='all')
+    assert len(all) == 10000, len(all)
+
+    for i, (data, label) in enumerate(all):
+        assert isinstance(data, _str_types)
+        assert label <= 1
+
+def test_trec():
+    train = nlp.data.TREC(
+        root=os.path.join('tests', 'data', 'trec'), segment='train')
+    test = nlp.data.TREC(
+        root=os.path.join('tests', 'data', 'trec'), segment='test')
+    assert len(train) == 11452, len(train)
+    assert len(test) == 500, len(test)
+
+    for i, (data, label) in enumerate(train):
+        assert isinstance(data, _str_types)
+        assert label <= 5
+
+    for i, (data, label) in enumerate(test):
+        assert isinstance(data, _str_types)
+        assert label <= 5  
 
 ###############################################################################
 # Word similarity and relatedness datasets
@@ -422,7 +355,7 @@ def test_conll2002_esp(segment, length):
         assert all(isinstance(n, _str_types) for n in ner), ner
 
 
-@pytest.mark.skipif(datetime.date.today() < datetime.date(2018, 8, 2),
+@pytest.mark.skipif(datetime.date.today() < datetime.date(2018, 8, 16),
                     reason='Disabled for 1 weeks due to server downtime.')
 @flaky(max_runs=2, min_passes=1)
 @pytest.mark.parametrize('segment,length', [
@@ -559,95 +492,6 @@ def test_wmt2014bpe():
     newstest_2014 = nlp.data.WMT2014BPE(segment='newstest2014', src_lang='de', tgt_lang='en', full=True,
                                         root='tests/data/wmt2014bpe')
     assert len(newstest_2014) == 3003
-
-###############################################################################
-# Stream
-###############################################################################
-def test_corpus_stream():
-    EOS = nlp._constants.EOS_TOKEN
-    path = os.path.join('tests', 'data', 'wikitext-2')
-    token_path = os.path.join('tests', 'data', 'wikitext-2/*.tokens')
-    train = nlp.data.WikiText2(segment='train', root=path)
-    val = nlp.data.WikiText2(segment='val', root=path)
-    test = nlp.data.WikiText2(segment='test', root=path)
-    corpus = nlp.data.CorpusStream(token_path, flatten=True,
-                                   skip_empty=True, eos=EOS)
-    counter = nlp.data.Counter(itertools.chain.from_iterable(corpus))
-    assert len(counter) == 33278, len(counter)
-    # examine aggregated vocab
-    vocab = nlp.vocab.Vocab(counter, bos_token=None, padding_token=None)
-    assert len(vocab) == 33278, len(vocab)
-    # examine aggregated stats
-    assert sum(counter.values()) == 2075677 + 216347 + 244102
-    counter = nlp.data.Counter(itertools.chain.from_iterable(corpus))
-    assert len(counter) == 33278, len(counter)
-
-def test_lm_stream():
-    EOS = nlp._constants.EOS_TOKEN
-    path = os.path.join('tests', 'data', 'wikitext-2')
-    token_path = os.path.join('tests', 'data', 'wikitext-2/*.tokens')
-    train = nlp.data.WikiText2(segment='train', root=path)
-    val = nlp.data.WikiText2(segment='val', root=path)
-    test = nlp.data.WikiText2(segment='test', root=path)
-    lm_stream = nlp.data.LanguageModelStream(token_path, skip_empty=True, eos=EOS, bos=EOS)
-    counter = nlp.data.Counter(itertools.chain.from_iterable(lm_stream))
-    vocab = nlp.vocab.Vocab(counter, bos_token=None)
-    seq_len = 35
-    batch_size = 80
-    bptt_stream = lm_stream.bptt_batchify(vocab, seq_len, batch_size, last_batch='keep')
-    padding_idx = vocab[vocab.padding_token]
-    total_num_tokens = sum(counter.values())
-    num_tokens_per_batch = seq_len * batch_size
-    num_tokens = 0
-    for i, (data, target, mask) in enumerate(bptt_stream):
-        # count the valid tokens in the batch
-        num_valid_tokens = mask.sum().asscalar()
-        if num_valid_tokens == num_tokens_per_batch:
-            mx.test_utils.assert_almost_equal(data[1:].asnumpy(), target[:-1].asnumpy())
-            assert data.shape == target.shape == (seq_len, batch_size)
-        num_tokens += num_valid_tokens
-    num_batches = sum(1 for _ in bptt_stream)
-    # the last token doesn't appear in data
-    assert num_tokens < total_num_tokens
-
-@pytest.mark.parametrize('prefetch', [None, "thread", "process"])
-def test_lazy_stream(prefetch):
-    EOS = nlp._constants.EOS_TOKEN
-    path = os.path.join('tests', 'data', 'wikitext-2')
-    token_path = os.path.join('tests', 'data', 'wikitext-2/*test*.tokens')
-    test = nlp.data.WikiText2(segment='test', root=path)
-    corpus = nlp.data.CorpusStream(token_path, flatten=True, skip_empty=True, eos=EOS)
-    if prefetch:
-        prefetch_corpus = nlp.data.PrefetchingStream(corpus, worker_type=prefetch)
-    else:
-        prefetch_corpus = corpus
-    transformed_corpus = prefetch_corpus.transform(lambda d: [s.lower() for s in d])
-    prefetch_corpus_iter = iter(prefetch_corpus)
-    transformed_corpus_iter = iter(transformed_corpus)
-    for x in corpus:
-        y = next(prefetch_corpus_iter)
-        z = next(transformed_corpus_iter)
-        assert all([sx.lower() == sy.lower() == sz for sx, sy, sz in zip(x, y, z)])
-
-@pytest.mark.parametrize('num_prefetch', [0, 1, 10])
-@pytest.mark.parametrize('worker_type', ['thread', 'process'])
-def test_prefetch_stream(num_prefetch, worker_type):
-    EOS = nlp._constants.EOS_TOKEN
-    path = os.path.join('tests', 'data', 'wikitext-2')
-    token_path = os.path.join('tests', 'data', 'wikitext-2/*test*.tokens')
-    test = nlp.data.WikiText2(segment='test', root=path)
-    corpus = nlp.data.CorpusStream(token_path, flatten=True, skip_empty=True, eos=EOS)
-    if num_prefetch < 1:
-        with pytest.raises(ValueError):
-            prefetch_corpus = nlp.data.PrefetchingStream(
-                corpus, num_prefetch=num_prefetch, worker_type=worker_type)
-    else:
-        prefetch_corpus = nlp.data.PrefetchingStream(
-            corpus, num_prefetch=num_prefetch, worker_type=worker_type)
-        prefetch_corpus_iter = iter(prefetch_corpus)
-        for x in corpus:
-            y = next(prefetch_corpus_iter)
-            assert all([sx == sy for sx, sy in zip(x, y)])
 
 ###############################################################################
 # Question answering
