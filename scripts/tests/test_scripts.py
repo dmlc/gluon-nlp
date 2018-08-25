@@ -33,10 +33,10 @@ def test_sentiment_analysis():
                                      '--epochs', '1', '--dropout', '0', '--no_pretrained',
                                      '--lr', '0.005', '--valid_ratio', '0.1',
                                      '--save-prefix', 'imdb_lstm_200'])
-    process = subprocess.check_call(['python', './scripts/sentiment_analysis/sentiment_analysis.py', 
-                                     '--gpu', '0', '--batch_size', '16', '--bucket_type', 'fixed', 
+    process = subprocess.check_call(['python', './scripts/sentiment_analysis/sentiment_analysis.py',
+                                     '--gpu', '0', '--batch_size', '16', '--bucket_type', 'fixed',
                                      '--epochs', '1', '--dropout', '0',
-                                     '--lr', '0.005', '--valid_ratio', '0.1', 
+                                     '--lr', '0.005', '--valid_ratio', '0.1',
                                      '--save-prefix', 'imdb_lstm_200'])
 
 
@@ -53,7 +53,7 @@ def test_gnmt():
     process = subprocess.check_call(['python', './scripts/nmt/train_gnmt.py', '--dataset', 'TOY',
                                      '--src_lang', 'en', '--tgt_lang', 'de', '--batch_size', '3',
                                      '--optimizer', 'adam', '--lr', '0.0025', '--save_dir', 'test',
-                                     '--epochs', '20', '--gpu', '0', '--num_buckets', '5',
+                                     '--epochs', '1', '--gpu', '0', '--num_buckets', '5',
                                      '--num_hidden', '64', '--num_layers', '2'])
 
 
@@ -63,7 +63,7 @@ def test_transformer():
                                      '--batch_size', '128', '--optimizer', 'adam',
                                      '--num_accumulated', '1', '--lr', '1.0',
                                      '--warmup_steps', '2000', '--save_dir', 'test',
-                                     '--epochs', '5', '--gpus', '0', '--scaled', '--average_start',
+                                     '--epochs', '1', '--gpus', '0', '--scaled', '--average_start',
                                      '1', '--num_buckets', '5', '--bleu', 'tweaked', '--num_units',
                                      '32', '--hidden_size', '64', '--num_layers', '2',
                                      '--num_heads', '4', '--test_batch_size', '128'])
