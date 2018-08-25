@@ -28,10 +28,9 @@ import mxnet as mx
 
 
 @pytest.mark.parametrize('batch_size', [7, 80])
-def test_corpus_batchify(batch_size):
-    data = nlp.data.WikiText2(
-        segment='test', root=os.path.join('tests', 'data', 'wikitext-2'))
-    vocab = nlp.Vocab(nlp.data.utils.Counter(data))
+def test_corpus_batchify(batch_size, wikitext2_test_and_counter):
+    data, counter = wikitext2_test_and_counter
+    vocab = nlp.Vocab(counter)
     batchify = nlp.data.batchify.CorpusBatchify(vocab, batch_size)
     batches = batchify(data)
     assert batches[:].shape == (len(data) // batch_size, batch_size)
@@ -39,11 +38,9 @@ def test_corpus_batchify(batch_size):
 
 @pytest.mark.parametrize('batch_size', [7, 80])
 @pytest.mark.parametrize('seq_len', [7, 35])
-def test_corpus_bptt_batchify(batch_size, seq_len):
-    data = nlp.data.WikiText2(
-        segment='test',
-        root=os.path.join('tests', 'data', 'wikitext-2'))
-    vocab = nlp.Vocab(nlp.data.utils.Counter(data))
+def test_corpus_bptt_batchify(batch_size, seq_len, wikitext2_test_and_counter):
+    data, counter = wikitext2_test_and_counter
+    vocab = nlp.Vocab(counter)
 
     # unsupported last_batch
     with pytest.raises(ValueError):
