@@ -20,7 +20,7 @@ stage("Unit Test") {
       ws('workspace/gluon-nlp-py2') {
         checkout scm
         sh """#!/bin/bash
-        git clean -f -d -x --exclude='tests/externaldata/*' --exclude=conda
+        git clean -f -d -x --exclude='tests/externaldata/*' --exclude='tests/data/*' --exclude=conda
         conda env update --prune -f env/py2.yml -p conda/py2
         conda activate ./conda/py2
         conda list
@@ -39,7 +39,7 @@ stage("Unit Test") {
         ws('workspace/gluon-nlp-py3') {
           checkout scm
           sh """#!/bin/bash
-          git clean -f -d -x --exclude='tests/externaldata/*' --exclude=conda
+          git clean -f -d -x --exclude='tests/externaldata/*' --exclude='tests/data/*' --exclude=conda
           conda env update --prune -f env/py3.yml -p conda/py3
           conda activate ./conda/py3
           conda list
@@ -66,7 +66,7 @@ stage("Deploy") {
       retry(3) {
         sh """#!/bin/bash
         printenv
-        git clean -f -d -x --exclude='tests/externaldata/*' --exclude=conda
+        git clean -f -d -x --exclude='tests/externaldata/*' --exclude='tests/data/*' --exclude=conda
         conda env update --prune -f env/doc.yml -p conda/docs
         conda activate ./conda/docs
         conda list
