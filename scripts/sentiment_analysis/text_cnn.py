@@ -46,7 +46,7 @@ def model(dropout, vocab, model_mode, output_size):
     return textCNN
 
 def init(textCNN, vocab, model_mode, context, lr):
-    """Initialize."""
+    """Initialize parameters."""
 
     textCNN.initialize(mx.init.Xavier(), ctx=context, force_reinit=True)
     if model_mode != 'rand':
