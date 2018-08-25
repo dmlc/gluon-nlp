@@ -112,7 +112,7 @@ def evaluate(net, dataloader):
     return avg_L, acc
 
 def train(net, train_data, test_data):
-    """Training process"""
+    """Train textCNN model for sentiment analysis."""
     start_pipeline_time = time.time()
     net, trainer = textCNN.init(net, vocab, args.model_mode, context, args.lr)
     random.shuffle(train_data)
@@ -126,7 +126,7 @@ def train(net, train_data, test_data):
     test_dataloader = DataLoader(dataset=test_data,
                                  batch_size=args.batch_size,
                                  shuffle=False)
-    # Training/Testing
+    # Training/Testing.
     best_val_acc = 0
     for epoch in range(args.epochs):
         # Epoch training stats
@@ -134,7 +134,7 @@ def train(net, train_data, test_data):
         epoch_L = 0.0
         epoch_sent_num = 0
         epoch_wc = 0
-        # Log interval training stats
+        # Log interval training stats.
         start_log_interval_time = time.time()
         log_interval_wc = 0
         log_interval_sent_num = 0
@@ -152,7 +152,7 @@ def train(net, train_data, test_data):
                 output = net(data)
                 L = loss(output, label).mean()
             L.backward()
-            # Update parameter
+            # Update parameter.
             trainer.step(1)
             log_interval_L += L.asscalar()
             epoch_L += L.asscalar()
@@ -161,7 +161,7 @@ def train(net, train_data, test_data):
                     epoch, i + 1, len(train_dataloader),
                     log_interval_L / log_interval_sent_num,
                     log_interval_wc / 1000 / (time.time() - start_log_interval_time)))
-                # Clear log interval training stats
+                # Clear log interval training stats.
                 start_log_interval_time = time.time()
                 log_interval_wc = 0
                 log_interval_sent_num = 0
