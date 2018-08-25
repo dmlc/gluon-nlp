@@ -94,3 +94,20 @@ def wikitext2_simpledatasetstream_skipempty_and_counter(
     counter = nlp.data.Counter(
         itertools.chain.from_iterable(itertools.chain.from_iterable(stream)))
     return stream, counter
+
+
+@pytest.fixture(scope="session")
+def wikitext2_simpledatasetstream_skipempty_flatten_and_counter(
+        wikitext2_train_and_counter, wikitext2_test_and_counter,
+        wikitext2_val_and_counter):
+    token_path = os.path.join('tests', 'data', 'wikitext-2/*.tokens')
+    assert len(glob.glob(token_path)) == 3
+    stream = nlp.data.SimpleDatasetStream(
+        nlp.data.CorpusDataset,
+        token_path,
+        flatten=True,
+        skip_empty=True,
+        eos=nlp._constants.EOS_TOKEN)
+    counter = nlp.data.Counter(
+        itertools.chain.from_iterable(itertools.chain.from_iterable(stream)))
+    return stream, counter
