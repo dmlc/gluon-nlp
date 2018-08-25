@@ -38,7 +38,7 @@ class SentimentNet(HybridBlock):
         return out
 
 def model(dropout, vocab, model_mode, output_size):
-    """Construct this model."""
+    """Construct the model."""
 
     textCNN = SentimentNet(dropout=dropout, vocab_size=len(vocab), model_mode=model_mode,\
                        output_size=output_size)
@@ -46,7 +46,7 @@ def model(dropout, vocab, model_mode, output_size):
     return textCNN
 
 def init(textCNN, vocab, model_mode, context, lr):
-    """Initialization parameters."""
+    """Initialize."""
 
     textCNN.initialize(mx.init.Xavier(), ctx=context, force_reinit=True)
     if model_mode != 'rand':
@@ -54,7 +54,7 @@ def init(textCNN, vocab, model_mode, context, lr):
     if model_mode == 'multichannel':
         textCNN.embedding_extend.weight.set_data(vocab.embedding.idx_to_vec)
     if model_mode == 'static' or model_mode == 'multichannel':
-        #keep static and only the other parameters of the model are learned.
+        # Parameters of textCNN.embedding are not updated during training.
         textCNN.embedding.collect_params().setattr('grad_req', 'null')
     trainer = gluon.Trainer(textCNN.collect_params(), 'adam', {'learning_rate': lr})
     return textCNN, trainer
