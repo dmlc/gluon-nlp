@@ -19,7 +19,6 @@
 
 from __future__ import print_function
 
-import itertools
 import os
 
 import pytest
@@ -97,24 +96,10 @@ def test_bptt_batchify_padding_token():
 
 @pytest.mark.parametrize('batch_size', [7, 80])
 @pytest.mark.parametrize('seq_len', [7, 35])
-def test_stream_bptt_batchify(seq_len, batch_size, stream_identity_wrappers):
-    EOS = nlp._constants.EOS_TOKEN
-    path = os.path.join('tests', 'data', 'wikitext-2')
-    token_path = os.path.join('tests', 'data', 'wikitext-2/*.tokens')
-
-    # Make sure train, val and test files exist at given path
-    train = nlp.data.WikiText2(segment='train', root=path)
-    val = nlp.data.WikiText2(segment='val', root=path)
-    test = nlp.data.WikiText2(segment='test', root=path)
-
-    stream = nlp.data.SimpleDatasetStream(
-        nlp.data.CorpusDataset,
-        token_path,
-        skip_empty=True,
-        eos=EOS)
-
-    counter = nlp.data.Counter(
-        itertools.chain.from_iterable(itertools.chain.from_iterable(stream)))
+def test_stream_bptt_batchify(
+        seq_len, batch_size, stream_identity_wrappers,
+        wikitext2_simpledatasetstream_skipempty_and_counter):
+    stream, counter = wikitext2_simpledatasetstream_skipempty_and_counter
     vocab = nlp.vocab.Vocab(counter, bos_token=None)
 
     bptt_keep = nlp.data.batchify.StreamBPTTBatchify(
