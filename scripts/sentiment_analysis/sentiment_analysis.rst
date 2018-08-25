@@ -29,34 +29,42 @@ This script can be used to train a sentiment analysis model.
 The convolutional models is loaded from Gluon NLP Toolkit model zoo. It also showcases how to use different 
 bucketing strategies to speed up training.
 
-Use the following command to reproduce the textCNN paper's experimental results for CNN-multichannel on the MR dataset [1]:
+epoch:
+|    |  MR  |  SST-1  |  SST-2  | Subj   |  TREC  |
+| --- | --- | --- | --- | --- | --- |
+|  rand  |  todo  |  todo  |   todo |  todo  |  todo  |
+|  static  |  todo  |   todo |  todo  |   todo |  todo  |
+|  non-static  |   todo |  todo  |   todo | todo   | todo   |
+|  multichannel  |  todo  |  todo  |   todo |   todo |  todo  |
+
+log:
+|    |  MR  |  SST-1  |  SST-2  | Subj   |  TREC  |
+| --- | --- | --- | --- | --- | --- |
+|  rand  |  [1]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment_analysis/cache_standard_mr_rand.log>` |  [5]  /`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment_analysis/cache_standard_sst1_rand.log>`|   [9] /`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment_analysis/cache_standard_sst2_rand.log>`|  [13]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment_analysis/cache_standard_subj_rand.log>`  |  [17]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment_analysis/cache_standard_trec_rand.log>`  |
+|  static  |  [2]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment_analysis/cache_standard_mr_static.log>`  |   [6]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment_analysis/cache_standard_sst1_static.log>` |  [10]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment_analysis/cache_standard_sst2_static.log>` |   [14]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment_analysis/cache_standard_subj_static.log>` |  [18]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment_analysis/cache_standard_trec_static.log>`  |
+|  non-static  |   [3]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment_analysis/cache_standard_mr_non-static.log>` |  [7]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment_analysis/cache_standard_sst1_non-static.log>`   |   [11]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment_analysis/cache_standard_sst2_non-static.log>`  | [15]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment_analysis/cache_standard_subj_non-static.log>`    | [19]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment_analysis/cache_standard_trec_non-static.log>`    |
+|  multichannel  |  [4]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment_analysis/cache_standard_mr_multichannel.log>`   |  [8]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment_analysis/cache_standard_sst1_multichannel.log>`  |   [12]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment_analysis/cache_standard_sst2_multichannel.log>` |   [16]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment_analysis/cache_standard_subj_multichannel.log>` |  [20]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment_analysis/cache_standard_trec_multichannel.log>`  |
+
+acc:
+|    |  MR  |  SST-1  |  SST-2  | Subj   |  TREC  |
+| --- | --- | --- | --- | --- | --- |
+|  rand  |  todo  |  todo  |   todo |  todo  |  todo  |
+|  static  |  todo  |   todo |  todo  |   todo |  todo  |
+|  non-static  |   todo |  todo  |   todo | todo   | todo   |
+|  multichannel  |  todo  |  todo  |   todo |   todo |  todo  |
+
+[1]:
 
 .. code-block:: console
 
    $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 20 --dropout 0.5 --lr 0.005 --valid_ratio 0.1 --save-prefix sa_cnn_300 --model_mode multichannel --data_name MR
 
-Use the following command to reproduce the paper's experimental results for CNN-multichannel on the SST-1 dataset [1]
+[2]:
 
 .. code-block:: console
 
-   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 20 --dropout 0.5 --lr 0.005 --valid_ratio 0.1 --save-prefix sa_cnn_300 --model_mode multichannel --data_name SST-1
+   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 20 --dropout 0.5 --lr 0.005 --valid_ratio 0.1 --save-prefix sa_cnn_300 --model_mode multichannel --data_name MR
 
-Use the following command to reproduce the textCNN paper's experimental results for CNN-multichannel on the SST-2 dataset [1]:
-
-.. code-block:: console
-
-   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 20 --dropout 0.5 --lr 0.005 --valid_ratio 0.1 --save-prefix sa_cnn_300 --model_mode multichannel --data_name SST-2
-
-Use the following command to reproduce the textCNN paper's experimental results for CNN-multichannel on the Subj dataset [1]:
-
-.. code-block:: console
-
-   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 20 --dropout 0.5 --lr 0.005 --valid_ratio 0.1 --save-prefix sa_cnn_300 --model_mode multichannel --data_name Subj
-
-Use the following command to reproduce the textCNN paper's experimental results for CNN-multichannel on the TREC dataset [1]:
-
-.. code-block:: console
-
-   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 20 --dropout 0.5 --lr 0.005 --valid_ratio 0.1 --save-prefix sa_cnn_300 --model_mode multichannel --data_name TREC
+...
 
 [1] Kim, Y. (2014). Convolutional neural networks for sentence classification. arXiv preprint arXiv:1408.5882.
