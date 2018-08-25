@@ -47,7 +47,7 @@ Our package uses continuous integration and code coverage tools for verifying pu
 submitting, contributor should perform the following checks:
 
 - `Lint (code style) check <https://github.com/dmlc/gluon-nlp/blob/master/Jenkinsfile#L6-L11>`__.
-- `Py2 <https://github.com/dmlc/gluon-nlp/blob/master/Jenkinsfile#L23-L31>` and `Py3 <https://github.com/dmlc/gluon-nlp/blob/master/Jenkinsfile#L42-L50>` tests.
+- `Py2 <https://github.com/dmlc/gluon-nlp/blob/master/Jenkinsfile#L23-L31>`__ and `Py3 <https://github.com/dmlc/gluon-nlp/blob/master/Jenkinsfile#L42-L50>`__ tests.
 
 Contribute Scripts
 ------------------
@@ -62,7 +62,7 @@ See `existing examples <https://github.com/dmlc/gluon-nlp/tree/master/scripts>`_
 Contribute Examples
 -------------------
 
-Our `examples <http://gluon-nlp.mxnet.io/master/examples/index.html>` are intended for people who
+Our `examples <http://gluon-nlp.mxnet.io/master/examples/index.html>`__ are intended for people who
 are interested in NLP and want to get better familiarized on different parts in NLP. In order for
 people to easily understand the content, the code needs to be clean and readable, accompanied by
 good quality writing.
@@ -76,16 +76,16 @@ There are several different types of APIs, such as *model definition APIs, publi
 building block APIs*.
 
 *Model definition APIs* facilitate the sharing of pre-trained models. If you'd like to contribute
-models with pre-trained weights, you can `open an issue <https://github.com/dmlc/gluon-nlp/issues/new>`
+models with pre-trained weights, you can `open an issue <https://github.com/dmlc/gluon-nlp/issues/new>`__
 and ping committers first, we will help with things such as hosting the model weights while you propose the patch.
 
 *Public dataset APIs* facilitate the sharing of public datasets. Like model definition APIs, if you'd like to contribute
-new public datasets, you can `open an issue <https://github.com/dmlc/gluon-nlp/issues/new>` and ping committers and review
+new public datasets, you can `open an issue <https://github.com/dmlc/gluon-nlp/issues/new>`__ and ping committers and review
 the dataset needs. If you're unsure, feel free to open an issue anyway.
 
 Finally, our *data and model building block APIs* come from repeated patterns in examples. It has the highest quality bar
 and should always starts from a good design. If you have an idea on proposing a new API, we
-encourage you to `draft a design proposal first <https://github.com/dmlc/gluon-nlp/labels/enhancement>__`, so that the community can help iterate.
+encourage you to `draft a design proposal first <https://github.com/dmlc/gluon-nlp/labels/enhancement>`__, so that the community can help iterate.
 Once the design is finalized, everyone who are interested in making it happen can help by submitting
 patches. For designs that require larger scopes, we can help set up GitHub project to make it easier
 for others to join.
