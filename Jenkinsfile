@@ -28,7 +28,7 @@ stage("Unit Test") {
         python -m nltk.downloader all
         make clean
         python setup.py install --force
-        py.test -v --durations=0 tests/unittest scripts
+        py.test -v -n auto --durations=0 tests/unittest scripts
         """
       }
     }
@@ -47,7 +47,7 @@ stage("Unit Test") {
           python -m nltk.downloader all
           make clean
           python setup.py install --force
-          py.test -v --durations=0 --cov=./ tests/unittest scripts
+          py.test -v -n auto --durations=0 --cov=./ tests/unittest scripts
           EXIT_STATUS=\$?
           bash ./codecov.sh
           exit \$EXIT_STATUS

@@ -221,7 +221,7 @@ def test_beam_search(hybridize, sampler_cls):
             self._vocab_size = vocab_size
             with self.name_scope():
                 self._embed = nn.Embedding(input_dim=vocab_size, output_dim=hidden_size)
-                self._rnn = RNN(hidden_size=hidden_size, num_layers=1, activation='tanh')
+                self._rnn = rnn.RNN(hidden_size=hidden_size, num_layers=1, activation='tanh')
                 self._map_to_vocab = nn.Dense(vocab_size, flatten=False)
 
         def begin_state(self, batch_size):
@@ -250,10 +250,10 @@ def test_beam_search(hybridize, sampler_cls):
             else:
                 state_info = None
             for beam_size, bos_id, eos_id, alpha, K in [(2, 1, 3, 0, 1.0), (4, 2, 3, 1.0, 5.0)]:
-                scorer = BeamSearchScorer(alpha=alpha, K=K)
+                scorer = model.BeamSearchScorer(alpha=alpha, K=K)
                 for max_length in [2, 3]:
                     for batch_size in [1, 5]:
-                        if sampler_cls is HybridBeamSearchSampler:
+                        if sampler_cls is model.HybridBeamSearchSampler:
                             sampler = sampler_cls(beam_size=beam_size, decoder=decoder,
                                                   eos_id=eos_id,
                                                   scorer=scorer, max_length=max_length,
