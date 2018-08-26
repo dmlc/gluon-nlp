@@ -18,19 +18,19 @@
 # under the License.
 """conftest.py contains configuration for pytest.
 
+Configuration file for tests in tests/ and scripts/ folders.
+
 Note that fixtures of higher-scoped fixtures (such as ``session``) are
 instantiated before lower-scoped fixtures (such as ``function``).
 
 """
 
-import functools
 import logging
 import os
 import random
 
-import gluonnlp as nlp
-import mxnet as mx
 import numpy as np
+import mxnet as mx
 import pytest
 
 
@@ -180,26 +180,3 @@ def function_scope_seed(request):
         logging.info(seed_message)
 
     np.random.set_state(post_test_state)
-
-
-###############################################################################
-# Shared test fixtures
-###############################################################################
-@pytest.fixture(params=["prefetch_process", "prefetch_thread", "none"])
-def stream_identity_wrappers(request):
-    """DataStream wrappers that don't change the content of a Stream.
-
-    All DataStreams included in Gluon-NLP should support being wrapped by one
-    of the wrappers returned by this test fixture. When writing a test to test
-    some Stream, make sure to parameterize it by stream_identity_wrappers so
-    that the stream is tested with all possible stream wrappers.
-
-    """
-    if request.param == "prefetch_process":
-        return functools.partial(nlp.data.PrefetchingStream, worker_type='process')
-    elif request.param == "prefetch_thread":
-        return functools.partial(nlp.data.PrefetchingStream, worker_type='thread')
-    elif request.param == "none":
-        return lambda x: x
-    else:
-        raise RuntimeError

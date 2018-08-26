@@ -46,10 +46,9 @@ def _test_pretrained_big_text_models():
         output, state = model(mx.nd.arange(330).reshape((33, 10)), hidden)
         output.wait_to_read()
 
-def test_big_text_models():
+def test_big_text_models(wikitext2_val_and_counter):
     # use a small vocabulary for testing
-    val = nlp.data.WikiText2(segment='val', root='tests/data/wikitext-2')
-    val_freq = nlp.data.utils.Counter(val)
+    val, val_freq = wikitext2_val_and_counter
     vocab = nlp.Vocab(val_freq)
     text_models = ['big_rnn_lm_2048_512']
 
@@ -64,9 +63,8 @@ def test_big_text_models():
         output, state = model(mx.nd.arange(330).reshape((33, 10)), hidden)
         output.wait_to_read()
 
-def test_text_models():
-    val = nlp.data.WikiText2(segment='val', root='tests/data/wikitext-2')
-    val_freq = nlp.data.utils.Counter(val)
+def test_text_models(wikitext2_val_and_counter):
+    val, val_freq = wikitext2_val_and_counter
     vocab = nlp.Vocab(val_freq)
     text_models = ['standard_lstm_lm_200', 'standard_lstm_lm_650', 'standard_lstm_lm_1500', 'awd_lstm_lm_1150', 'awd_lstm_lm_600']
     pretrained_to_test = {'standard_lstm_lm_1500': 'wikitext-2',
