@@ -129,6 +129,7 @@ ntokens = len(vocab)
 
 sampler = LogUniformSampler(ntokens, args.k)
 
+# Given a list of (array, context) pairs, load array[i] on context[i]
 def _load(xs):
     ret = []
     for x, ctx in zip(xs, context):
@@ -138,6 +139,11 @@ def _load(xs):
             ret.append(x.as_in_context(ctx))
     return ret
 
+# Transformation for a data batch for training.
+# First, load the data, target and mask to target contexts.
+# Second, the LSTM-2048-512 model performs importance sampling for decoding
+# during training, we need to sample negative candidate classes by invoking the
+# log uniform sampler.
 def _split_and_sample(x, y):
     m = x != vocab[vocab.padding_token]  # mask padding
     num_ctx = len(context)
