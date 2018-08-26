@@ -38,12 +38,17 @@ Word Embedding Training
 Besides loading pre-trained embeddings, the Gluon NLP toolkit also makes it easy
 to train embeddings.
 
-`train_fasttext.py` shows how to use Gluon NLP to train fastText or Word2Vec
+The following code block shows how to use Gluon NLP to train fastText or Word2Vec
 models. The script and parts of the Gluon NLP library support just-in-time
 compilation with `numba <http://numba.pydata.org/>`_, which is enabled
 automatically when numba is installed on the system. Please `pip
 install --upgrade numba` to make sure training speed is not needlessly throttled
 by Python.
+
+.. code-block:: console
+
+   $ python train_fasttext.py
+
 
 Word2Vec models were introduced by
 
@@ -55,7 +60,7 @@ FastText models were introudced by
 - Bojanowski, P., Grave, E., Joulin, A., & Mikolov, T. (2017). Enriching word
   vectors with subword information. TACL, 5(), 135–146.
 
-We report the results obtained by running the `train_fasttext.py` script with
+We report the results obtained by running the :code:`train_fasttext.py` script with
 default parameters. You can reproduce these results with runningand `python
 train_fasttext.py --gpu 0` respectively. For comparison we also report the
 results obtained by training FastText with the `facebookresearch/fastText
