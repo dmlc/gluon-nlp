@@ -17,17 +17,17 @@
 # specific language governing permissions and limitations
 # under the License.
 
-import mxnet as mx
-import pytest
 from numpy.testing import assert_almost_equal
-
-from gluonnlp.model import ConvolutionalEncoder
+import pytest
+import mxnet as mx
+from gluonnlp import model
 
 
 @pytest.mark.parametrize('hybridize', [True, False])
 @pytest.mark.parametrize('mask', [True, False])
 def test_conv_encoder_nonhighway_forward(hybridize, mask):
-    encoder = ConvolutionalEncoder(embed_size=2, num_filters=(1, 1), ngram_filter_sizes=(1, 2))
+    encoder = model.ConvolutionalEncoder(embed_size=2, num_filters=(1, 1),
+                                         ngram_filter_sizes=(1, 2))
     print(encoder)
     encoder.initialize(init='One')
     if hybridize:
@@ -48,10 +48,10 @@ def test_conv_encoder_nonhighway_forward(hybridize, mask):
 @pytest.mark.parametrize('hybridize', [True, False])
 @pytest.mark.parametrize('mask', [True, False])
 def test_conv_encoder_nohighway_forward_largeinputs(hybridize, mask):
-    encoder = ConvolutionalEncoder(embed_size=7,
-                                   num_filters=(1, 1, 2, 3),
-                                   ngram_filter_sizes=(1, 2, 3, 4),
-                                   output_size=30)
+    encoder = model.ConvolutionalEncoder(embed_size=7,
+                                         num_filters=(1, 1, 2, 3),
+                                         ngram_filter_sizes=(1, 2, 3, 4),
+                                         output_size=30)
     print(encoder)
     encoder.initialize()
     if hybridize:
@@ -67,11 +67,11 @@ def test_conv_encoder_nohighway_forward_largeinputs(hybridize, mask):
 @pytest.mark.parametrize('hybridize', [True, False])
 @pytest.mark.parametrize('mask', [True, False])
 def test_conv_encoder_highway_forward(hybridize, mask):
-    encoder = ConvolutionalEncoder(embed_size=2,
-                                   num_filters=(2, 1),
-                                   ngram_filter_sizes=(1, 2),
-                                   num_highway=2,
-                                   output_size=1)
+    encoder = model.ConvolutionalEncoder(embed_size=2,
+                                         num_filters=(2, 1),
+                                         ngram_filter_sizes=(1, 2),
+                                         num_highway=2,
+                                         output_size=1)
     print(encoder)
     encoder.initialize()
     if hybridize:
@@ -88,7 +88,7 @@ def test_conv_encoder_highway_forward(hybridize, mask):
 @pytest.mark.parametrize('hybridize', [True, False])
 @pytest.mark.parametrize('mask', [True, False])
 def test_conv_encoder_highway_default_forward(hybridize, mask):
-    encoder = ConvolutionalEncoder()
+    encoder = model.ConvolutionalEncoder()
     encoder.initialize(init='One')
     if hybridize:
         encoder.hybridize()

@@ -3,7 +3,7 @@ stage("Sanity Check") {
     ws('workspace/gluon-nlp-lint') {
       checkout scm
       sh """#!/bin/bash
-      git clean -f -d -x
+      git clean -f -d -x --exclude=conda
       conda env update --prune -f env/pylint.yml -p conda/lint
       conda activate ./conda/lint
       conda list
@@ -28,7 +28,7 @@ stage("Unit Test") {
         python -m nltk.downloader all
         make clean
         python setup.py install --force
-        py.test -v --capture=no --durations=0 tests/unittest scripts
+        py.test -v --durations=0 tests/unittest scripts
         """
       }
     }
@@ -47,7 +47,7 @@ stage("Unit Test") {
           python -m nltk.downloader all
           make clean
           python setup.py install --force
-          py.test -v --capture=no --durations=0 --cov=./ tests/unittest scripts
+          py.test -v --durations=0 --cov=./ tests/unittest scripts
           EXIT_STATUS=\$?
           bash ./codecov.sh
           exit \$EXIT_STATUS

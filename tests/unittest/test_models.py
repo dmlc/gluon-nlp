@@ -114,14 +114,16 @@ def test_get_cache_model_noncache_models():
     datasets = ['wikitext-2']
     for name in language_models_params.keys():
         for dataset_name in datasets:
-            _, vocab = nlp.model.get_model(name=name, dataset_name=dataset_name, pretrained=True)
+            _, vocab = nlp.model.get_model(name=name, dataset_name=dataset_name, pretrained=True,
+                                           root='tests/data/model')
             ntokens = len(vocab)
 
             cache_cell_0 = nlp.model.train.get_cache_model(name, dataset_name, window=1, theta=0.6,
                                                            lambdas=0.2, root='tests/data/model/')
             print(cache_cell_0)
 
-            model, _ = nlp.model.get_model(name=name, dataset_name=dataset_name, pretrained=True)
+            model, _ = nlp.model.get_model(name=name, dataset_name=dataset_name, pretrained=True,
+                                           root='tests/data/model/')
             cache_cell_1 = nlp.model.train.CacheCell(model, ntokens, window=1, theta=0.6, lambdas=0.2)
             cache_cell_1.load_parameters('tests/data/model/' + language_models_params.get(name))
             print(cache_cell_1)

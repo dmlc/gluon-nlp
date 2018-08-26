@@ -452,7 +452,7 @@ def test_counter():
 
 # this test is not tested on CI due to long running time
 def _test_gbw_stream():
-    gbw = nlp.data.GBWStream()
+    gbw = nlp.data.GBWStream(root=os.path.join('tests', 'data', 'gbw'))
     counter = nlp.data.Counter(gbw)
     counter.discard(3, '<unk>')
     # reference count obtained from:
