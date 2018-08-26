@@ -103,7 +103,7 @@ def test_imdb():
 def test_mr():
     all = nlp.data.MR(
         root=os.path.join('tests', 'data', 'mr'), segment='all')
-    assert len(all) == 10662, len(all)
+    assert len(all) == 10000, len(all)
 
     for i, (data, label) in enumerate(all):
         assert isinstance(data, _str_types)
