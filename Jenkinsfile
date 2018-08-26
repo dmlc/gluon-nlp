@@ -20,7 +20,7 @@ stage("Unit Test") {
       ws('workspace/gluon-nlp-py2') {
         checkout scm
         sh """#!/bin/bash
-        git clean -f -d -x --exclude='tests/externaldata/*' --exclude=conda
+        git clean -f -d -x --exclude='tests/externaldata/*' --exclude='tests/data/*' --exclude=conda
         conda env update --prune -f env/py2.yml -p conda/py2
         conda activate ./conda/py2
         conda list
@@ -39,7 +39,7 @@ stage("Unit Test") {
         ws('workspace/gluon-nlp-py3') {
           checkout scm
           sh """#!/bin/bash
-          git clean -f -d -x --exclude='tests/externaldata/*' --exclude=conda
+          git clean -f -d -x --exclude='tests/externaldata/*' --exclude='tests/data/*' --exclude=conda
           conda env update --prune -f env/py3.yml -p conda/py3
           conda activate ./conda/py3
           conda list
@@ -55,6 +55,41 @@ stage("Unit Test") {
         }
       }
     }
+  },
+  'Documentation': {
+    node {
+      ws('workspace/gluon-nlp-docs') {
+        checkout scm
+        retry(3) {
+          sh """#!/bin/bash
+          printenv
+          git clean -f -d -x --exclude='tests/externaldata/*' --exclude='tests/data/*' --exclude=conda
+          conda env update --prune -f env/doc.yml -p conda/docs
+          conda activate ./conda/docs
+          conda list
+          python -m spacy download en
+          python -m nltk.downloader all
+          python setup.py install --force
+          export LD_LIBRARY_PATH=/usr/local/cuda/lib64
+          make clean
+          make docs
+          """
+        }
+        if (env.BRANCH_NAME.startsWith("PR-")) {
+          sh """#!/bin/bash
+          echo "Uploading doc to s3://gluon-nlp-staging/${env.BRANCH_NAME}/${env.BUILD_NUMBER}/"
+          aws s3 sync --delete docs/_build/html/ s3://gluon-nlp-staging/${env.BRANCH_NAME}/${env.BUILD_NUMBER}/ --acl public-read
+          echo "Uploaded doc to http://gluon-nlp-staging.s3-accelerate.dualstack.amazonaws.com/${env.BRANCH_NAME}/${env.BUILD_NUMBER}/index.html"
+          """
+        } else {
+          sh """#!/bin/bash
+          echo "Uploading doc to s3://gluon-nlp/${env.BRANCH_NAME}/"
+          aws s3 sync --delete docs/_build/html/ s3://gluon-nlp/${env.BRANCH_NAME}/ --acl public-read
+          echo "Uploaded doc to http://gluon-nlp.mxnet.io/${env.BRANCH_NAME}/index.html"
+          """
+        }
+      }
+    }
   }
 }
 
@@ -62,34 +97,8 @@ stage("Deploy") {
   node {
     ws('workspace/gluon-nlp-docs') {
       checkout scm
-
-      retry(3) {
-        sh """#!/bin/bash
-        printenv
-        git clean -f -d -x --exclude='tests/externaldata/*' --exclude=conda
-        conda env update --prune -f env/doc.yml -p conda/docs
-        conda activate ./conda/docs
-        conda list
-        python -m spacy download en
-        python -m nltk.downloader all
-        python setup.py install --force
-        export LD_LIBRARY_PATH=/usr/local/cuda/lib64
-        make clean
-        make docs
-        """
-      }
-
       if (env.BRANCH_NAME.startsWith("PR-")) {
-        sh """#!/bin/bash
-        echo "Uploading doc to s3://gluon-nlp-staging/${env.BRANCH_NAME}/${env.BUILD_NUMBER}/"
-        aws s3 sync --delete docs/_build/html/ s3://gluon-nlp-staging/${env.BRANCH_NAME}/${env.BUILD_NUMBER}/ --acl public-read
-        echo "Uploaded doc to http://gluon-nlp-staging.s3-accelerate.dualstack.amazonaws.com/${env.BRANCH_NAME}/${env.BUILD_NUMBER}/index.html" """
         pullRequest.comment("Job ${env.BRANCH_NAME}/${env.BUILD_NUMBER} is complete. \nDocs are uploaded to http://gluon-nlp-staging.s3-accelerate.dualstack.amazonaws.com/${env.BRANCH_NAME}/${env.BUILD_NUMBER}/index.html")
-      } else {
-        sh """#!/bin/bash
-        echo "Uploading doc to s3://gluon-nlp/${env.BRANCH_NAME}/"
-        aws s3 sync --delete docs/_build/html/ s3://gluon-nlp/${env.BRANCH_NAME}/ --acl public-read
-        echo "Uploaded doc to http://gluon-nlp.mxnet.io/${env.BRANCH_NAME}/index.html" """
       }
     }
   }
