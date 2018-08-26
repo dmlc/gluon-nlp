@@ -127,6 +127,7 @@ train_data_stream, test_data_stream = \
 vocab = train_data_stream.vocab
 ntokens = len(vocab)
 
+# Sampler for generating negative classes during training with importance sampling
 sampler = LogUniformSampler(ntokens, args.k)
 
 # Given a list of (array, context) pairs, load array[i] on context[i]
