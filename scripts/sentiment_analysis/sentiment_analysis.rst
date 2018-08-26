@@ -30,28 +30,44 @@ The convolutional models is loaded from Gluon NLP Toolkit model zoo. It also sho
 bucketing strategies to speed up training.
 
 epoch:
-|    |  MR  |  SST-1  |  SST-2  | Subj   |  TREC  |
-| --- | --- | --- | --- | --- | --- |
-|  rand  |  todo  |  todo  |   todo |  todo  |  todo  |
-|  static  |  todo  |   todo |  todo  |   todo |  todo  |
-|  non-static  |   todo |  todo  |   todo | todo   | todo   |
-|  multichannel  |  todo  |  todo  |   todo |   todo |  todo  |
++----------------+--------+---------+---------+--------+--------+
+|                | MR     | SST-1   | SST-2   | Subj   | TREC   |
++================+========+=========+=========+========+========+
+| rand           | todo   | todo    | todo    | todo   | todo   |
++----------------+--------+---------+---------+--------+--------+
+| static         | todo   | todo    | todo    | todo   | todo   |
++----------------+--------+---------+---------+--------+--------+
+| non-static     | todo   | todo    | todo    | todo   | todo   |
++----------------+--------+---------+---------+--------+--------+
+| multichannel   | todo   | todo    | todo    | todo   | todo   |
++----------------+--------+---------+---------+--------+--------+
+
 
 log:
-|    |  MR  |  SST-1  |  SST-2  | Subj   |  TREC  |
-| --- | --- | --- | --- | --- | --- |
-|  rand  |  [1]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment_analysis/cache_standard_mr_rand.log>` |  [5]  /`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment_analysis/cache_standard_sst1_rand.log>`|   [9] /`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment_analysis/cache_standard_sst2_rand.log>`|  [13]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment_analysis/cache_standard_subj_rand.log>`  |  [17]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment_analysis/cache_standard_trec_rand.log>`  |
-|  static  |  [2]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment_analysis/cache_standard_mr_static.log>`  |   [6]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment_analysis/cache_standard_sst1_static.log>` |  [10]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment_analysis/cache_standard_sst2_static.log>` |   [14]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment_analysis/cache_standard_subj_static.log>` |  [18]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment_analysis/cache_standard_trec_static.log>`  |
-|  non-static  |   [3]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment_analysis/cache_standard_mr_non-static.log>` |  [7]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment_analysis/cache_standard_sst1_non-static.log>`   |   [11]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment_analysis/cache_standard_sst2_non-static.log>`  | [15]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment_analysis/cache_standard_subj_non-static.log>`    | [19]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment_analysis/cache_standard_trec_non-static.log>`    |
-|  multichannel  |  [4]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment_analysis/cache_standard_mr_multichannel.log>`   |  [8]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment_analysis/cache_standard_sst1_multichannel.log>`  |   [12]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment_analysis/cache_standard_sst2_multichannel.log>` |   [16]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment_analysis/cache_standard_subj_multichannel.log>` |  [20]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment_analysis/cache_standard_trec_multichannel.log>`  |
++----------------+-------------------------------------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------+----------------------------------------------------------------------------------------------------------------------+----------------------------------------------------------------------------------------------------------------------+----------------------------------------------------------------------------------------------------------------------+
+|                | MR                                                                                                                | SST-1                                                                                                               | SST-2                                                                                                                | Subj                                                                                                                 | TREC                                                                                                                 |
++================+===================================================================================================================+=====================================================================================================================+======================================================================================================================+======================================================================================================================+======================================================================================================================+
+| rand           | [1]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment_analysis/mr_rand.log>`__           | [5]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment_analysis/sst1_rand.log>`__           | [9]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment_analysis/sst2_rand.log>`__            | [13]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment_analysis/subj_rand.log>`__           | [17]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment_analysis/trec_rand.log>`__           |
++----------------+-------------------------------------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------+----------------------------------------------------------------------------------------------------------------------+----------------------------------------------------------------------------------------------------------------------+----------------------------------------------------------------------------------------------------------------------+
+| static         | [2]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment_analysis/mr_static.log>`__         | [6]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment_analysis/sst1_static.log>`__         | [10]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment_analysis/sst2_static.log>`__         | [14]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment_analysis/subj_static.log>`__         | [18]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment_analysis/trec_static.log>`__         |
++----------------+-------------------------------------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------+----------------------------------------------------------------------------------------------------------------------+----------------------------------------------------------------------------------------------------------------------+----------------------------------------------------------------------------------------------------------------------+
+| non-static     | [3]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment_analysis/mr_non-static.log>`__     | [7]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment_analysis/sst1_non-static.log>`__     | [11]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment_analysis/sst2_non-static.log>`__     | [15]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment_analysis/subj_non-static.log>`__     | [19]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment_analysis/trec_non-static.log>`__     |
++----------------+-------------------------------------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------+----------------------------------------------------------------------------------------------------------------------+----------------------------------------------------------------------------------------------------------------------+----------------------------------------------------------------------------------------------------------------------+
+| multichannel   | [4]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment_analysis/mr_multichannel.log>`__   | [8]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment_analysis/sst1_multichannel.log>`__   | [12]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment_analysis/sst2_multichannel.log>`__   | [16]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment_analysis/subj_multichannel.log>`__   | [20]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment_analysis/trec_multichannel.log>`__   |
++----------------+-------------------------------------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------+----------------------------------------------------------------------------------------------------------------------+----------------------------------------------------------------------------------------------------------------------+----------------------------------------------------------------------------------------------------------------------+
 
 acc:
-|    |  MR  |  SST-1  |  SST-2  | Subj   |  TREC  |
-| --- | --- | --- | --- | --- | --- |
-|  rand  |  todo  |  todo  |   todo |  todo  |  todo  |
-|  static  |  todo  |   todo |  todo  |   todo |  todo  |
-|  non-static  |   todo |  todo  |   todo | todo   | todo   |
-|  multichannel  |  todo  |  todo  |   todo |   todo |  todo  |
++----------------+--------+---------+---------+--------+--------+
+|                | MR     | SST-1   | SST-2   | Subj   | TREC   |
++================+========+=========+=========+========+========+
+| rand           | todo   | todo    | todo    | todo   | todo   |
++----------------+--------+---------+---------+--------+--------+
+| static         | todo   | todo    | todo    | todo   | todo   |
++----------------+--------+---------+---------+--------+--------+
+| non-static     | todo   | todo    | todo    | todo   | todo   |
++----------------+--------+---------+---------+--------+--------+
+| multichannel   | todo   | todo    | todo    | todo   | todo   |
++----------------+--------+---------+---------+--------+--------+
 
 [1]:
 
