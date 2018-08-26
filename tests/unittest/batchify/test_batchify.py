@@ -22,7 +22,7 @@ def test_stack_batchify(odtype, idtype, pass_dtype):
     batchify_out = batchify_fn(dat).asnumpy()
     npy_out = np.array(dat)
     assert_allclose(batchify_out, npy_out)
-    assert batchify_out.dtype == npy_out.dtype
+    assert batchify_out.dtype == npy_out.dtype if not pass_dtype else odtype
 
 
 def test_pad_wrap_batchify():
