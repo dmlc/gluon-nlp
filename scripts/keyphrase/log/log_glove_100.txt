@@ -1,0 +1,74 @@
+2018-07-28 14:33:37,803 - __main__ - INFO - ----Start training-----
+2018-07-28 14:33:37,804 - __main__ - INFO - Sequential(
+  (0): Embedding(18196 -> 100, float32)
+  (1): Dropout(p = 0.3)
+  (2): LSTM(None -> 600, NTC, dropout=0.5, bidirectional)
+  (3): Dense(None -> 3, linear)
+)
+2018-07-28 14:34:32,102 - __main__ - INFO - Epoch 0. Current Loss: 0.5191730558872223. train accu: 0.837334. val accu: 0.939408.
+2018-07-28 14:35:03,158 - __main__ - INFO - ----Start training-----
+2018-07-28 14:35:03,159 - __main__ - INFO - Sequential(
+  (0): Embedding(18196 -> 100, float32)
+  (1): Dropout(p = 0.3)
+  (2): LSTM(None -> 600, NTC, dropout=0.5, bidirectional)
+  (3): Dense(None -> 3, linear)
+)
+2018-07-28 14:35:51,023 - __main__ - INFO - Epoch 0. Current Loss: 0.5191730558872223. train accu: 0.837334. val accu: 0.939408.
+2018-07-28 14:36:37,185 - __main__ - INFO - Epoch 1. Current Loss: 0.19075650125741958. train accu: 0.939734. val accu: 0.939408.
+2018-07-28 14:37:23,730 - __main__ - INFO - Epoch 2. Current Loss: 0.18066173940896987. train accu: 0.939734. val accu: 0.939408.
+2018-07-28 14:38:09,768 - __main__ - INFO - Epoch 3. Current Loss: 0.17220486402511598. train accu: 0.939734. val accu: 0.939408.
+2018-07-28 14:38:56,052 - __main__ - INFO - Epoch 4. Current Loss: 0.1668930545449257. train accu: 0.9397360000000001. val accu: 0.939408.
+2018-07-28 14:39:43,318 - __main__ - INFO - Epoch 5. Current Loss: 0.16155380606651307. train accu: 0.9397719999999999. val accu: 0.939424.
+2018-07-28 14:40:28,821 - __main__ - INFO - Epoch 6. Current Loss: 0.15641080737113952. train accu: 0.9399120000000002. val accu: 0.9395479999999999.
+2018-07-28 14:41:13,886 - __main__ - INFO - Epoch 7. Current Loss: 0.15071381330490113. train accu: 0.9402860000000001. val accu: 0.939796.
+2018-07-28 14:41:59,265 - __main__ - INFO - Epoch 8. Current Loss: 0.14414460062980652. train accu: 0.9410599999999999. val accu: 0.9402440000000001.
+2018-07-28 14:42:44,282 - __main__ - INFO - Epoch 9. Current Loss: 0.13627591654658316. train accu: 0.9424059999999999. val accu: 0.9412200000000001.
+2018-07-28 14:43:29,680 - __main__ - INFO - Epoch 10. Current Loss: 0.12680317163467408. train accu: 0.9451979999999999. val accu: 0.943528.
+2018-07-28 14:44:14,944 - __main__ - INFO - Epoch 11. Current Loss: 0.115629543364048. train accu: 0.9505320000000002. val accu: 0.9492.
+2018-07-28 14:45:00,271 - __main__ - INFO - Epoch 12. Current Loss: 0.10465355440974236. train accu: 0.95737. val accu: 0.952688.
+2018-07-28 14:45:45,506 - __main__ - INFO - Epoch 13. Current Loss: 0.09499747157096863. train accu: 0.962664. val accu: 0.954156.
+2018-07-28 14:46:30,609 - __main__ - INFO - Epoch 14. Current Loss: 0.08616505116224289. train accu: 0.9668240000000001. val accu: 0.955392.
+2018-07-28 14:47:15,890 - __main__ - INFO - Epoch 15. Current Loss: 0.07910491526126862. train accu: 0.970322. val accu: 0.956184.
+2018-07-28 14:48:00,921 - __main__ - INFO - Epoch 16. Current Loss: 0.0727974072098732. train accu: 0.97312. val accu: 0.9568720000000001.
+2018-07-28 14:48:46,148 - __main__ - INFO - Epoch 17. Current Loss: 0.06783132031559944. train accu: 0.9749120000000001. val accu: 0.9578.
+2018-07-28 14:49:31,318 - __main__ - INFO - Epoch 18. Current Loss: 0.06641308180987834. train accu: 0.975246. val accu: 0.9580399999999999.
+2018-07-28 14:50:16,375 - __main__ - INFO - Epoch 19. Current Loss: 0.06178198456764221. train accu: 0.9772359999999999. val accu: 0.958604.
+2018-07-28 14:51:01,366 - __main__ - INFO - Epoch 20. Current Loss: 0.058509710058569905. train accu: 0.9782360000000001. val accu: 0.957948.
+2018-07-28 14:51:46,347 - __main__ - INFO - Epoch 21. Current Loss: 0.05687468647956848. train accu: 0.9789360000000003. val accu: 0.9574399999999998.
+2018-07-28 14:52:31,335 - __main__ - INFO - Epoch 22. Current Loss: 0.05588291101157665. train accu: 0.979228. val accu: 0.958104.
+2018-07-28 14:53:16,313 - __main__ - INFO - Epoch 23. Current Loss: 0.053632530942559244. train accu: 0.9800979999999999. val accu: 0.9581479999999999.
+2018-07-28 14:54:01,102 - __main__ - INFO - Epoch 24. Current Loss: 0.050463460758328436. train accu: 0.9814679999999999. val accu: 0.9579039999999999.
+2018-07-28 14:54:45,851 - __main__ - INFO - Epoch 25. Current Loss: 0.04844791032373905. train accu: 0.9821019999999999. val accu: 0.9576359999999999.
+2018-07-28 14:55:30,881 - __main__ - INFO - Epoch 26. Current Loss: 0.046475113555789. train accu: 0.9830099999999998. val accu: 0.9574639999999999.
+2018-07-28 14:56:15,837 - __main__ - INFO - Epoch 27. Current Loss: 0.0448509581387043. train accu: 0.9836779999999999. val accu: 0.95708.
+2018-07-28 14:57:00,902 - __main__ - INFO - Epoch 28. Current Loss: 0.043575449660420415. train accu: 0.984326. val accu: 0.957244.
+2018-07-28 14:57:45,678 - __main__ - INFO - Epoch 29. Current Loss: 0.04146542232483626. train accu: 0.9851960000000002. val accu: 0.9568559999999999.
+2018-07-28 14:58:30,490 - __main__ - INFO - Epoch 30. Current Loss: 0.040289331786334516. train accu: 0.985482. val accu: 0.9568080000000002.
+2018-07-28 14:59:15,490 - __main__ - INFO - Epoch 31. Current Loss: 0.03926744218915701. train accu: 0.9858360000000002. val accu: 0.956828.
+2018-07-28 15:00:00,392 - __main__ - INFO - Epoch 32. Current Loss: 0.03824601471424103. train accu: 0.98634. val accu: 0.956584.
+2018-07-28 15:00:45,233 - __main__ - INFO - Epoch 33. Current Loss: 0.03934138212352991. train accu: 0.9857059999999999. val accu: 0.95684.
+2018-07-28 15:01:29,650 - __main__ - INFO - Epoch 34. Current Loss: 0.03926060535013676. train accu: 0.985694. val accu: 0.9566360000000002.
+2018-07-28 15:02:13,758 - __main__ - INFO - Epoch 35. Current Loss: 0.039657579734921455. train accu: 0.9855560000000001. val accu: 0.954152.
+2018-07-28 15:02:57,975 - __main__ - INFO - Epoch 36. Current Loss: 0.040281283855438235. train accu: 0.985298. val accu: 0.954752.
+2018-07-28 15:03:41,918 - __main__ - INFO - Epoch 37. Current Loss: 0.03743865676224232. train accu: 0.986514. val accu: 0.955408.
+2018-07-28 15:04:25,930 - __main__ - INFO - Epoch 38. Current Loss: 0.04143197797238827. train accu: 0.9846199999999999. val accu: 0.955772.
+2018-07-28 15:05:09,797 - __main__ - INFO - Epoch 39. Current Loss: 0.04775485768914223. train accu: 0.981734. val accu: 0.956812.
+2018-07-28 15:05:53,963 - __main__ - INFO - Epoch 40. Current Loss: 0.04822793137282133. train accu: 0.981482. val accu: 0.9537359999999999.
+2018-07-28 15:06:37,820 - __main__ - INFO - Epoch 41. Current Loss: 0.04690401218831539. train accu: 0.9822660000000001. val accu: 0.9567120000000001.
+2018-07-28 15:07:22,105 - __main__ - INFO - Epoch 42. Current Loss: 0.03657139576971531. train accu: 0.987264. val accu: 0.9560000000000001.
+2018-07-28 15:08:05,796 - __main__ - INFO - Epoch 43. Current Loss: 0.036225941590964796. train accu: 0.986978. val accu: 0.95526.
+2018-07-28 15:08:49,762 - __main__ - INFO - Epoch 44. Current Loss: 0.035612751729786396. train accu: 0.987182. val accu: 0.956164.
+2018-07-28 15:09:33,676 - __main__ - INFO - Epoch 45. Current Loss: 0.03109191991388798. train accu: 0.989374. val accu: 0.9559159999999999.
+2018-07-28 15:10:17,761 - __main__ - INFO - Epoch 46. Current Loss: 0.029966097325086594. train accu: 0.989602. val accu: 0.9553879999999999.
+2018-07-28 15:11:01,880 - __main__ - INFO - Epoch 47. Current Loss: 0.028858794830739498. train accu: 0.989886. val accu: 0.9551400000000001.
+2018-07-28 15:11:45,713 - __main__ - INFO - Epoch 48. Current Loss: 0.02797953151166439. train accu: 0.9903500000000001. val accu: 0.955428.
+2018-07-28 15:12:29,557 - __main__ - INFO - Epoch 49. Current Loss: 0.02637632992118597. train accu: 0.9908579999999999. val accu: 0.9550879999999999.
+2018-07-28 15:12:29,583 - __main__ - INFO - ----Start testing-----
+2018-07-28 15:12:29,584 - __main__ - INFO - Sequential(
+  (0): Embedding(18196 -> 100, float32)
+  (1): Dropout(p = 0.3)
+  (2): LSTM(None -> 600, NTC, dropout=0.5, bidirectional)
+  (3): Dense(None -> 3, linear)
+)
+2018-07-28 15:12:38,289 - __main__ - INFO - precision 0.40480507706255664. recall 0.3397590361445783. f1 0.3694408053506171. 
+2018-07-28 15:12:38,290 - __main__ - INFO - correct 2679. extract 6618. standard 7885. 
