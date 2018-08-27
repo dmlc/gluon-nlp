@@ -1,8 +1,0 @@
-Quadratic interpolation on spheres
-Riemannian quadratics are C/sup 1/ curves on Riemannian manifolds, obtained by
-	performing the quadratic recursive deCastlejeau algorithm in a
-	Riemannian setting. They are of interest for interpolation problems in
-	Riemannian manifolds, such as trajectory-planning for rigid body
-	motion. Some interpolation properties of Riemannian quadratics are
-	analysed when the ambient manifold is a sphere or projective space,
-	with the usual Riemannian metrics

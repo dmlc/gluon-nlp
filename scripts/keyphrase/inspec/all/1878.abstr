@@ -1,9 +1,0 @@
-Max and min limiters
-If A contained in omega , n>or=2, and the function max({x/sub 1/,...,x/sub
-	n/} intersection A) is partial recursive, it is easily seen that A is
-	recursive. In this paper, we weaken this hypothesis in various ways
-	(and similarly for "min" in place of "max") and investigate what effect
-	this has on the complexity of A. We discover a sharp contrast between
-	retraceable and co-retraceable sets, and we characterize sets which are
-	the union of a recursive set and a co-r.e., retraceable set. Most of
-	our proofs are noneffective. Several open questions are raised

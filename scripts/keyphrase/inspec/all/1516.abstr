@@ -1,9 +1,0 @@
-Using duality to implicitize and find cusps and inflection points of Bezier
-	curves
-A planar algebraic curve C has an implicit equation and a tangential equation.
-	The tangential equation defines a dual curve to C. Starting with a
-	parametrization of C, we find a parametrization of the dual curve, and
-	the tangential equation and implicit equation of C in a novel way. We
-	also find equations whose roots are the parameter values of the cusps
-	and inflection points of C. Methods include polar reciprocation and the
-	theory of envelopes

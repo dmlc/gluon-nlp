@@ -1,6 +1,0 @@
-Tracking with sensor failures
-Studies the reliability with sensor failures of the asymptotic tracking problem
-	for linear time invariant systems using the factorization approach. The
-	plant is two-output and the compensator is two-degree-of-freedom.
-	Necessary and sufficient conditions are presented for the general
-	problem and a simple solution is given for problems with stable plants

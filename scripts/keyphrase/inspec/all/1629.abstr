@@ -1,8 +1,0 @@
-Robot trajectory control using neural networks
-The use of a new type of neural network (NN) for controlling the trajectory of
-	a robot is discussed. A control system is described which comprises an
-	NN-based controller and a fixed-gain feedback controller. The NN-based
-	controller employs a modified recurrent NN, the weights of which are
-	obtained by training another NN to identify online the inverse dynamics
-	of the robot. The work has confirmed the superiority of the proposed
-	NN-based control system in rejecting large disturbances

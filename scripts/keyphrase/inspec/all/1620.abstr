@@ -1,5 +1,0 @@
-Rapid Cauer filter design employing new filter model
-The exact three-dimensional (3D) design of a coaxial Cauer filter employing a
-	new filter model, a 3D field simulator and a circuit simulator, is
-	demonstrated. Only a few iterations between the field simulator and the
-	circuit simulator are necessary to meet a given specification

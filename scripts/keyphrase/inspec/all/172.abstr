@@ -1,5 +1,0 @@
-A VMEbus interface for multi-detector trigger and control system
-MUSE (MUltiplicity SElector) is the trigger and control system of CHIMERA, a 4
-	pi charged particle detector. Initialization of MUSE can be performed
-	via VMEbus. This paper describes the design of VMEbus interface and
-	functional module in MUSE, and briefly discusses an application of MUSE

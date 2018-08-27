@@ -1,6 +1,0 @@
-The design and implementation of VAMPIRE
-We describe VAMPIRE: a high-performance theorem prover for first-order logic.
-	As our description is mostly targeted to the developers of such systems
-	and specialists in automated reasoning, it focuses on the design of the
-	system and some key implementation features. We also analyze the
-	performance of the prover at CASC-JC

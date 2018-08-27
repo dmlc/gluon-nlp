@@ -1,9 +1,0 @@
-Regional flux target with minimum energy
-An extension of a gradient controllability problem to the case where the target
-	subregion is a part of the boundary of a parabolic system domain is
-	discussed. A definition and some properties adapted to this case are
-	presented. The focus is on the characterisation of the control
-	achieving a regional boundary gradient target with minimum energy. An
-	approach is developed that leads to a numerical algorithm for the
-	computation of optimal control. Numerical illustrations show the
-	efficiency of the approach and lead to conjectures

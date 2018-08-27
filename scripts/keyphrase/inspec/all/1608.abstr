@@ -1,8 +1,0 @@
-A geometric process equivalent model for a multistate degenerative system
-In this paper, a monotone process model for a one-component degenerative system
-	with k+1 states (k failure states and one working state) is studied. We
-	show that this model is equivalent to a geometric process (GP) model
-	for a two-state one component system such that both systems have the
-	same long-run average cost per unit time and the same optimal policy.
-	Furthermore, an explicit expression for the determination of an optimal
-	policy is derived

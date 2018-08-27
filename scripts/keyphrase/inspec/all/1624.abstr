@@ -1,8 +1,0 @@
-Genetic algorithm for input/output selection in MIMO systems based on
-	controllability and observability indices
-A time domain optimisation algorithm using a genetic algorithm in conjunction
-	with a linear search scheme has been developed to find the smallest or
-	near-smallest subset of inputs and outputs to control a
-	multi-input-multi-output system. Experimental results have shown that
-	this proposed algorithm has a very fast convergence rate and high
-	computation efficiency

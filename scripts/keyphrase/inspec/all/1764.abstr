@@ -1,8 +1,0 @@
-Two-scale curved element method for elliptic problems with small periodic
-	coefficients
-This paper is concerned with the second order elliptic problems with small
-	periodic coefficients on a bounded domain with a curved boundary. A
-	two-scale curved element method which couples linear elements and
-	isoparametric elements is proposed. The error estimate is obtained over
-	the given smooth domain. Furthermore an additive Schwarz method is
-	provided for the isoparametric element method

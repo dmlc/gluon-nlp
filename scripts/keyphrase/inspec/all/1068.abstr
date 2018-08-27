@@ -1,5 +1,0 @@
-Quantum phase gate for photonic qubits using only beam splitters and
-	postselection
-We show that a beam splitter of reflectivity one-third can be used to realize a
-	quantum phase gate operation if only the outputs conserving the number
-	of photons on each side are postselected

@@ -1,8 +1,0 @@
-A multi-agent system infrastructure for software component marketplace: an
-	ontological perspective
-In this paper, we introduce a multi-agent system architecture and an
-	implemented prototype for a software component marketplace. We
-	emphasize the ontological perspective by discussing ontology modeling
-	for the component marketplace, UML extensions for ontology modeling,
-	and the idea of ontology transfer which makes the multi-agent system
-	adapt itself to dynamically changing ontologies

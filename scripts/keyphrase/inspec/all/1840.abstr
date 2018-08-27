@@ -1,9 +1,0 @@
-Too much middleware
-The movement from client-server computing to multi-tier computing has created a
-	potpourri of so-called middleware systems, including application
-	servers, workflow products, EAI systems, ETL systems and federated data
-	systems. We argue that the explosion in middleware has created a myriad
-	of poorly integrated systems with overlapping functionality. The world
-	would be well served by considerable consolidation, and we present some
-	of the ways this might happen. Some of the points covered in the
-	article have been previously explored by P. Bernstein (1996)

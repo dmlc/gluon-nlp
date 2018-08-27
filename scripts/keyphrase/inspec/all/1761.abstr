@@ -1,8 +1,0 @@
-Superconvergence of discontinuous Galerkin method for nonstationary hyperbolic
-	equation
-For the first order nonstationary hyperbolic equation taking the piecewise
-	linear discontinuous Galerkin solver, we prove that under the uniform
-	rectangular partition, such a discontinuous solver, after
-	postprocessing, can have two and half approximative order which is half
-	order higher than the optimal estimate by P. Lesaint and P. Raviart
-	(1974) under the rectangular partition

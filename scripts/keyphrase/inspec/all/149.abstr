@@ -1,9 +1,0 @@
-Extending Kamp's theorem to model time granularity
-In this paper, a generalization of Kamp's theorem relative to the functional
-	completeness of the until operator is proved. Such a generalization
-	consists in showing the functional completeness of more expressive
-	temporal operators with respect to the extension of the first-order
-	theory of linear orders MFO[<] with an extra binary relational
-	symbol. The result is motivated by the search of a modal language
-	capable of expressing properties and operators suitable to model time
-	granularity in omega -layered temporal structures

@@ -1,8 +1,0 @@
-On the distribution of Lachlan nonsplitting bases
-We say that a computably enumerable (c.e.) degree b is a Lachlan nonsplitting
-	base (LNB), if there is a computably enumerable degree a such that
-	a>b, and for any c.e. degrees w, v<or=a, if a<or=wVvV b then
-	either a<or=wV b or a<or=vV b. In this paper we investigate the
-	relationship between bounding and nonbounding of Lachlan nonsplitting
-	bases and the high/low hierarchy. We prove that there is a non-Low/sub
-	2/ c.e. degree which bounds no Lachlan nonsplitting base

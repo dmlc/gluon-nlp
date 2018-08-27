@@ -1,9 +1,0 @@
-On the design of gain-scheduled trajectory tracking controllers [AUV
-	application]
-A new methodology is proposed for the design of trajectory tracking controllers
-	for autonomous vehicles. The design technique builds on gain scheduling
-	control theory. An application is made to the design of a trajectory
-	tracking controller for a prototype autonomous underwater vehicle
-	(AUV). The effectiveness and advantages of the new control laws derived
-	are illustrated in simulation using a full set of non-linear equations
-	of motion of the vehicle

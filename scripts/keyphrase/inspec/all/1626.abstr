@@ -1,6 +1,0 @@
-Modifier formula on mean square convergence of LMS algorithm
-In describing the mean square convergence of the LMS algorithm, the update
-	formula based on independence assumption will bring explicit errors,
-	especially when step-size is large. A modifier formula that describes
-	the convergence well, is proposed. Simulations support the proposed
-	formula in different conditions

@@ -1,8 +1,0 @@
-A dynamic method for weighted linear least squares problems
-A new method for solving the weighted linear least squares problems with full
-	rank is proposed. Based on the theory of Liapunov's stability, the
-	method associates a dynamic system with a weighted linear least squares
-	problem, whose solution we are interested in and integrates the former
-	numerically by an A-stable numerical method. The numerical tests
-	suggest that the new method is more than comparative with current
-	conventional techniques based on the normal equations

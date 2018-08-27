@@ -1,6 +1,0 @@
-Bivariate fractal interpolation functions on rectangular domains
-Non-tensor product bivariate fractal interpolation functions defined on gridded
-	rectangular domains are constructed. Linear spaces consisting of these
-	functions are introduced. The relevant Lagrange interpolation problem
-	is discussed. A negative result about the existence of affine fractal
-	interpolation functions defined on such domains is obtained

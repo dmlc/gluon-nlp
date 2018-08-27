@@ -1,8 +1,0 @@
-A numerical C/sup 1/-shadowing result for retarded functional differential
-	equations
-This paper gives a numerical C/sup 1/-shadowing between the exact solutions of
-	a functional differential equation and its numerical approximations.
-	The shadowing result is obtained by comparing exact solutions with
-	numerical approximation which do not share the same initial value.
-	Behavior of stable manifolds of functional differential equations under
-	numerics will follow from the shadowing result

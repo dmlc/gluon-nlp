@@ -1,8 +1,0 @@
-Risk theory with a nonlinear dividend barrier
-In the framework of classical risk theory we investigate a surplus process in
-	the presence of a nonlinear dividend barrier and derive equations for
-	two characteristics of such a process, the probability of survival and
-	the expected sum of discounted dividend payments. Number-theoretic
-	solution techniques are developed for approximating these quantities
-	and numerical illustrations are given for exponential claim sizes and a
-	parabolic dividend barrier

@@ -1,6 +1,0 @@
-One structure for fractional delay filter with small number of multipliers
-A wide-bandwidth, high-resolution fractional delay filter (FDF) structure with
-	a small number of multipliers per output sample and a short coefficient
-	computing time is presented. The proposal is based on the use of a
-	frequency FDF design method up to only half of the Nyquist frequency,
-	in a multirate structure

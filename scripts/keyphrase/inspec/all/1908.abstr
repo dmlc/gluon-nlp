@@ -1,8 +1,0 @@
-Explicit solutions for transcendental equations
-A simple method to formulate an explicit expression for the roots of any
-	analytic transcendental function is presented. The method is based on
-	Cauchy's integral theorem and uses only basic concepts of complex
-	integration. A convenient method for numerically evaluating the exact
-	expression is presented. The application of both the formulation and
-	evaluation of the exact expression is illustrated for several classical
-	root finding problems

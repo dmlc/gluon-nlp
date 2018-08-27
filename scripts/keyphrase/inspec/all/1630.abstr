@@ -1,7 +1,0 @@
-Digital-domain self-calibration technique for video-rate pipeline A/D
-	converters using Gaussian white noise
-A digital-domain self-calibration technique for video-rate pipeline A/D
-	converters based on a Gaussian white noise input signal is presented.
-	The proposed algorithm is simple and efficient. A design example is
-	shown to illustrate that the overall linearity of a pipeline ADC can be
-	highly improved using this technique

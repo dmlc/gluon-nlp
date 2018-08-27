@@ -1,9 +1,0 @@
-A comparison theorem for the iterative method with the preconditioner (I +
-	S/sub max/)
-A.D. Gunawardena et al. (1991) have reported the modified Gauss-Seidel method
-	with a preconditioner (I + S). In this article, we propose to use a
-	preconditioner (I + S/sub max/) instead of (I + S). Here, S/sub max/ is
-	constructed by only the largest element at each row of the upper
-	triangular part of A. By using the lemma established by M. Neumann and
-	R.J. Plemmons (1987), we get the comparison theorem for the proposed
-	method. Simple numerical examples are also given

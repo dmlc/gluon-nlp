@@ -1,9 +1,0 @@
-Orthogonality of the Jacobi polynomials with negative integer parameters
-It is well known that the Jacobi polynomials P/sub n//sup ( alpha , beta )/(x)
-	are orthogonal with respect to a quasi-definite linear functional
-	whenever alpha , beta , and alpha + beta + 1 are not negative integer
-	numbers. Recently, Sobolev orthogonality for these polynomials has been
-	obtained for alpha a negative integer and beta not a negative integer
-	and also for the case alpha = beta negative integer numbers. In this
-	paper, we give a Sobolev orthogonality for the Jacobi polynomials in
-	the remainder cases

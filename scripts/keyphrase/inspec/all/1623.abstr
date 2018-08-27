@@ -1,8 +1,0 @@
-Transmission of real-time video over IP differentiated services
-Multimedia applications require high bandwidth and guaranteed quality of
-	service (QoS). The current Internet, which provides 'best effort'
-	services, cannot meet the stringent QoS requirements for delivering
-	MPEG videos. It is proposed that MPEG frames are transported through
-	various service models of DiffServ. Performance analysis and simulation
-	results show that the proposed approach can not only guarantee QoS but
-	can also achieve high bandwidth utilisation

@@ -1,8 +1,0 @@
-Numerical validation of solutions of complementarity problems: the nonlinear
-	case
-This paper proposes a validation method for solutions of nonlinear
-	complementarity problems. The validation procedure performs a
-	computational test. If the result of the test is positive, then it is
-	guaranteed that a given multi-dimensional interval either includes a
-	solution or excludes all solutions of the nonlinear complementarity
-	problem

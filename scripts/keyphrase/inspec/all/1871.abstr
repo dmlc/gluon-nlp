@@ -1,7 +1,0 @@
-Strong and weak points of the MUSCADET theorem prover-examples from CASC-JC
-MUSCADET is a knowledge-based theorem prover based on natural deduction. It has
-	participated in CADE Automated theorem proving System Competitions. The
-	results show its complementarity with regard to resolution-based
-	provers. This paper presents some of its crucial methods and gives some
-	examples of MUSCADET proofs from the last competition (CASC-JC in IJCAR
-	2001)

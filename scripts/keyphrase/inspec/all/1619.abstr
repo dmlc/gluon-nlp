@@ -1,7 +1,0 @@
-Rate allocation for video transmission over lossy correlated networks
-A novel rate allocation algorithm for video transmission over lossy networks
-	subject to bursty packet losses is presented. A Gilbert-Elliot model is
-	used at the encoder to drive the selection of coding parameters.
-	Experimental results using the H.26L test model show a significant
-	performance improvement with respect to the assumption of independent
-	packet losses

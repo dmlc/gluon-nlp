@@ -1,9 +1,0 @@
-Steady-state mean-square error analysis of the cross-correlation and constant
-	modulus algorithm in a MIMO convolutive system
-The cross-correlation and constant modulus algorithm (CC-CMA) has been proven
-	to be an effective approach in the problem of joint blind equalisation
-	and source separation in a multi-input and multi-output system. In the
-	paper, the steady-state mean-square error performance of CC-CMA in a
-	noise-free environment is studied, and a new expression is derived
-	based on the energy preservation approach of Mai and Sayed (2000).
-	Simulation studies are undertaken to support the analysis

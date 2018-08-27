@@ -1,9 +1,0 @@
-Linear tense logics of increasing sets
-We provide an extension of the language of linear tense logic with future and
-	past connectives F and P, respectively, by a modality that quantifies
-	over the points of some set which is assumed to increase in the course
-	of time. In this way we obtain a general framework for modelling growth
-	qualitatively. We develop an appropriate logical system, prove a
-	corresponding completeness and decidability result and discuss the
-	various kinds of flow of time in the new context. We also consider
-	decreasing sets briefly

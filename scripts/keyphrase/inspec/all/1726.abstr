@@ -1,7 +1,0 @@
-Two-layer model for the formation of states of the hidden Markov chains
-Procedures for the formation of states of the hidden Markov models are
-	described. Formant amplitudes and frequencies are used as state
-	features. The training strategy is presented that allows one to
-	calculate the parameters of conditional probabilities of the generation
-	of a given formant set by a given hidden state with the help of the
-	maximum likelihood method

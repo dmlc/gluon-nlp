@@ -1,6 +1,0 @@
-Laguerre approximation of fractional systems
-Systems characterised by fractional power poles can be called fractional
-	systems. Here, Laguerre orthogonal polynomials are employed to
-	approximate fractional systems by minimum phase, reduced order,
-	rational transfer functions. Both the time and the frequency-domain
-	analysis exhibit the accuracy of the approximation

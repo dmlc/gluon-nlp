@@ -1,6 +1,0 @@
-Nonlinearities in NARX polynomial models: representation and estimation
-It is shown how nonlinearities are mapped in NARX polynomial models. General
-	expressions are derived for the gain and eigenvalue functions in terms
-	of the regressors and coefficients of NARX models. Such relationships
-	are useful in grey-box identification problems. The results are
-	illustrated using simulated and real data

@@ -1,9 +1,0 @@
-Non-asymptotic confidence ellipsoids for the least-squares estimate
-We consider the finite sample properties of least-squares system
-	identification, and derive non-asymptotic confidence ellipsoids for the
-	estimate. The shape of the confidence ellipsoids is similar to the
-	shape of the ellipsoids derived using asymptotic theory, but unlike
-	asymptotic theory, they are valid for a finite number of data points.
-	The probability that the estimate belongs to a certain ellipsoid has a
-	natural dependence on the volume of the ellipsoid, the data generating
-	mechanism, the model order and the number of data points available

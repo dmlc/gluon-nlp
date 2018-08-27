@@ -1,6 +1,0 @@
-Error resilient intra refresh scheme for H.26L stream
-Recently much attention has been focused on video streaming through IP-based
-	networks. An error resilient RD intra macro-block refresh scheme for
-	H.26L Internet video streaming is introduced. Various channel
-	simulations have proved that this scheme is more effective than those
-	currently adopted in H.26L

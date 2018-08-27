@@ -1,9 +1,0 @@
-Parallel interior point schemes for solving multistage convex programming
-The predictor-corrector interior-point path-following algorithm is promising in
-	solving multistage convex programming problems. Among many other
-	general good features of this algorithm, especially attractive is that
-	the algorithm allows the possibility to parallelise the major
-	computations. The dynamic structure of the multistage problems
-	specifies a block-tridiagonal system at each Newton step of the
-	algorithm. A wrap-around permutation is then used to implement the
-	parallel computation for this step

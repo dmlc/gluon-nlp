@@ -1,8 +1,0 @@
-A parareal in time procedure for the control of partial differential equations
-We have proposed in a previous note a time discretization for partial
-	differential evolution equation that allows for parallel
-	implementations. This scheme is here reinterpreted as a preconditioning
-	procedure on an algebraic setting of the time discretization. This
-	allows for extending the parallel methodology to the problem of optimal
-	control for partial differential equations. We report a first numerical
-	implementation that reveals a large interest

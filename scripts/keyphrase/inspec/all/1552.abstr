@@ -1,9 +1,0 @@
-Stability of Runge-Kutta methods for delay integro-differential equations
-We study stability of Runge-Kutta (RK) methods for delay integro-differential
-	equations with a constant delay on the basis of the linear equation
-	du/dt = Lu(t) + Mu(t- tau ) + K integral /sub t- tau //sup t/ u( theta
-	)d theta , where L, M, K are constant complex matrices. In particular,
-	we show that the same result as in the case K = 0 (Koto, 1994) holds
-	for this test equation, i.e., every A-stable RK method preserves the
-	delay-independent stability of the exact solution whenever a step-size
-	of the form h = tau /m is used, where m is a positive integer

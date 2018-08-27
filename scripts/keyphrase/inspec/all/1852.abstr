@@ -1,7 +1,0 @@
-The design and performance evaluation of alternative XML storage strategies
-This paper studies five strategies for storing XML documents including one that
-	leaves documents in the file system, three that use a relational
-	database system, and one that uses an object manager. We implement and
-	evaluate each approach using a number of XQuery queries. A number of
-	interesting insights are gained from these experiments and a summary of
-	the advantages and disadvantages of the approaches is presented

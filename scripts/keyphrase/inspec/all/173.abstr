@@ -1,6 +1,0 @@
-Stock market trading rule discovery using technical charting heuristics
-In this case study in knowledge engineering and data mining, we implement a
-	recognizer for two variations of the 'bull flag' technical charting
-	heuristic and use this recognizer to discover trading rules on the NYSE
-	Composite Index. Out-of-sample results indicate that these rules are
-	effective

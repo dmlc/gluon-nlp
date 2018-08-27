@@ -1,3 +1,0 @@
-parallel implicit predictor corrector methods; initial value problems;
-	numerically zero-stable formulas; zero-stability condition; roundoff
-	errors; finite precision arithmetic
