@@ -64,12 +64,12 @@ stage("Unit Test") {
           prepare_clean_env('py2')
           install_dep('py2')
           code = 0
-          code += run_test('py2', 'tests/unittest', 'auto', 'not serial',
+          code += run_test('py2', 'tests/unittest', '4', 'not serial',
                    env.BRANCH_NAME.startsWith('PR-')?'':'--capture=no')
           code += run_test('py2', 'tests/unittest', '0', 'serial',
                    env.BRANCH_NAME.startsWith('PR-')?'':'--capture=no')
           report_cov(env.BRANCH_NAME+'-py2', 'unittests')
-          code += run_test('py2', 'scripts', 'auto', 'not serial',
+          code += run_test('py2', 'scripts', '4', 'not serial',
                    env.BRANCH_NAME.startsWith('PR-')?'':'--capture=no')
           code += run_test('py2', 'scripts', '0', 'serial',
                    env.BRANCH_NAME.startsWith('PR-')?'':'--capture=no')
@@ -89,12 +89,12 @@ stage("Unit Test") {
           prepare_clean_env('py3')
           install_dep('py3')
           code = 0
-          code += run_test('py3', 'tests/unittest', 'auto', 'not serial',
+          code += run_test('py3', 'tests/unittest', '4', 'not serial',
                    env.BRANCH_NAME.startsWith('PR-')?'':'--capture=no')
           code += run_test('py3', 'tests/unittest', '0', 'serial',
                    env.BRANCH_NAME.startsWith('PR-')?'':'--capture=no')
           report_cov(env.BRANCH_NAME+'-py3', 'unittests')
-          code += run_test('py3', 'scripts', 'auto', 'not serial',
+          code += run_test('py3', 'scripts', '4', 'not serial',
                    env.BRANCH_NAME.startsWith('PR-')?'':'--capture=no')
           code += run_test('py3', 'scripts', '0', 'serial',
                    env.BRANCH_NAME.startsWith('PR-')?'':'--capture=no')
