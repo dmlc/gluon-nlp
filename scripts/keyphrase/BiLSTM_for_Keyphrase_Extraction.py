@@ -7,17 +7,31 @@ from mxnet.contrib import text
 from mxnet import gluon, autograd,nd, ndarray
 import gluonnlp as nlp
 import logging
+import argparse
+
+parser = argparse.ArgumentParser(description='')
+parser.add_argument('--hidden_units', type=int, default=300, help='hidden units in bilstm')
+parser.add_argument('--lstm_dropout', type=float, default=0.5, help='dropout applied to lstm layers ')
+parser.add_argument('--learning_rate', type=float, default=0.001, help='initial learning rate')
+parser.add_argument('--epochs', type=int, default=50, help='training epochs')
+parser.add_argument('--seq_len', type=int, default=500, help='max length of sequences')
+parser.add_argument('--batch_size', type=int, default=100, help='batch size')
+parser.add_argument('--dropout', type=float, default=0.3, help='dropout applied to fully connected layers')
+parser.add_argument('--logging_path', default="./log/log_glove_300.txt", help='logging file path')
+parser.add_argument('--model_path', default='./model/glove_300.model', help='saving model in model_path')
+args = parser.parse_args()
+print(args)
+
+# logging config
 logger = logging.getLogger(__name__)
 logger.setLevel(level = logging.INFO)
-handler = logging.FileHandler("./log/log_glove_300.txt")
+handler = logging.FileHandler(args.logging_path)
 handler.setLevel(logging.INFO)
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 handler.setFormatter(formatter)
 logger.addHandler(handler)
 
-'''
-对数据集进行预处理，对照'.uncontr'文件中的keyphrase,对'.abstr'文件的原始文本进行标注，生成dataset
-'''
+# data preprocessing
 def data_process():
     directory = "./inspec/all"
     articles = os.listdir(directory)
@@ -66,9 +80,9 @@ def data_process():
     return all_data, fullText
 all_data, fullText = data_process()
 
-'''
-加载外部glove词向量
-'''
+
+# add external glove word embedding
+
 counter = nlp.data.count_tokens(fullText)
 print(len(counter))
 
@@ -84,12 +98,10 @@ print(inputdim,outputemb)
 # my_vocab.set_embedding(my_embedding)
 # inputdim, outputemb = my_vocab.embedding.idx_to_vec.shape  # (18199,50)
 
-
-
 # word to idx
 dataset = []
 tag = []
-seq_len = 500
+seq_len = args.seq_len
 for i,(words, label) in enumerate(all_data):
     index = [my_embedding.token_to_idx[x] for x in words]
     if len(index)<seq_len:  # padding 0
@@ -111,7 +123,7 @@ train_data = gluon.data.ArrayDataset(dataset[:1000], tag[:1000])
 val_data = gluon.data.ArrayDataset(dataset[1000:1500], tag[1000:1500])
 test_data = gluon.data.ArrayDataset(dataset[1500:], tag[1500:])
 
-batch_size = 100
+batch_size = args.batch_size
 train_iter = gluon.data.DataLoader(train_data, batch_size=batch_size)
 val_iter = gluon.data.DataLoader(val_data, batch_size=batch_size)
 test_iter = gluon.data.DataLoader(test_data, batch_size=batch_size)
@@ -144,11 +156,10 @@ def train(hidden, lstm_dropout, learning_rate, epochs):
     net = gluon.nn.Sequential()
     with net.name_scope():
         net.add(gluon.nn.Embedding(inputdim, outputemb))
-        net.add(gluon.nn.Dropout(0.3))
+        net.add(gluon.nn.Dropout(args.dropout))
         net.add(gluon.rnn.LSTM(hidden_size=hidden//2, num_layers=1, layout='NTC', bidirectional=True, dropout=lstm_dropout))
         net.add(gluon.nn.Dense(3, flatten=False)) # activation=None,linear
     logger.info(net)
-
 
     net[0].weight.set_data(my_embedding.idx_to_vec)
     net.collect_params().initialize(mx.init.Normal(sigma=0.1))
@@ -160,7 +171,7 @@ def train(hidden, lstm_dropout, learning_rate, epochs):
     for e in range(epochs):
         train_loss = 0.
         train_acc = 0.
-        for i, (data, label) in enumerate(train_iter):  # 10 times
+        for i, (data, label) in enumerate(train_iter):
             with autograd.record():
                 output = net(data)  # batch_size，500，3
                 output = output.reshape((-1, 3))
@@ -175,7 +186,7 @@ def train(hidden, lstm_dropout, learning_rate, epochs):
         logger.info("Epoch {}. Current Loss: {}. train accu: {}. val accu: {}." \
               .format(e, train_loss / len(train_iter), train_acc / len(train_iter), val_accuracy))
 
-    model_path = './model/glove_300.model'  # mapping to different glove
+    model_path = args.model_path
     net.save_params(model_path)
     return model_path
 
@@ -233,15 +244,7 @@ def test(model_path, hidden, lstm_dropout):
 
 
 if __name__=='__main__':
-    # model params
-    hidden = 300
-    lstm_dropout = 0.5
-    learning_rate = 0.001
-    epochs = 50
-
-    model_path = train(hidden, lstm_dropout, learning_rate, epochs)
-
-    model_path = './model/glove_300.model'
-    test(model_path,hidden,lstm_dropout)
+    model_path = train(args.hidden, args.lstm_dropout, args.learning_rate, args.epochs)
+    test(model_path,args.hidden,args.lstm_dropout)
 
 
