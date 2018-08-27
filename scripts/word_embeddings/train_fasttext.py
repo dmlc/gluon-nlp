@@ -428,7 +428,7 @@ def train(args):
         batch_size=args.batch_size * bucketing_split
         if args.ngram_buckets else args.batch_size,
         window_size=args.window)
-    batches = data.transform(batchify)
+    data = data.transform(batchify)
 
     num_update = 0
     for epoch in range(args.epochs):
@@ -437,7 +437,7 @@ def train(args):
         log_start_time = time.time()
         log_avg_loss = 0
 
-        batches = itertools.chain.from_iterable(batches)
+        batches = itertools.chain.from_iterable(data)
 
         if args.ngram_buckets:
             # For fastText training, create batches such that subwords used in
