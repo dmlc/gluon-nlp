@@ -30,7 +30,7 @@ def test_toy():
 @pytest.mark.serial
 def test_embedding():
     process = subprocess.check_call(['python', './scripts/word_embeddings/train_fasttext.py',
-                                     '--gpu', '0', '--epochs', '1'])
+                                     '--gpu', '0', '--epochs', '1', '--optimizer', 'sgd'])
 
 
 @pytest.mark.serial
