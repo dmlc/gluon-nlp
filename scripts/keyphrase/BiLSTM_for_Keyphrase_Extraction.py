@@ -228,7 +228,7 @@ def test(model_path, hidden, lstm_dropout):
     net2 = gluon.nn.Sequential()
     with net2.name_scope():
         net2.add(gluon.nn.Embedding(inputdim, outputemb))
-        net2.add(gluon.nn.Dropout(0.3))
+        net2.add(gluon.nn.Dropout(args.dropout))
         net2.add(gluon.rnn.LSTM(hidden_size=hidden//2, num_layers=1,layout='NTC',bidirectional=True, dropout=lstm_dropout))
         net2.add(gluon.nn.Dense(3,flatten=False))
 
