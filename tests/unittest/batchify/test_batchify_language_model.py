@@ -28,6 +28,7 @@ import mxnet as mx
 
 
 @pytest.mark.parametrize('batch_size', [7, 80])
+@pytest.mark.serial
 def test_corpus_batchify(batch_size, wikitext2_test_and_counter):
     data, counter = wikitext2_test_and_counter
     vocab = nlp.Vocab(counter)
@@ -38,6 +39,7 @@ def test_corpus_batchify(batch_size, wikitext2_test_and_counter):
 
 @pytest.mark.parametrize('batch_size', [7, 80])
 @pytest.mark.parametrize('seq_len', [7, 35])
+@pytest.mark.serial
 def test_corpus_bptt_batchify(batch_size, seq_len, wikitext2_test_and_counter):
     data, counter = wikitext2_test_and_counter
     vocab = nlp.Vocab(counter)
@@ -67,6 +69,7 @@ def test_corpus_bptt_batchify(batch_size, seq_len, wikitext2_test_and_counter):
     assert len(data) - len(coded) < batch_size * seq_len
 
 
+@pytest.mark.serial
 def test_bptt_batchify_padding_token():
     vocab = nlp.Vocab(
         nlp.data.utils.Counter(['a', 'b', 'c']), padding_token=None)
@@ -93,6 +96,7 @@ def test_bptt_batchify_padding_token():
 
 @pytest.mark.parametrize('batch_size', [7, 80])
 @pytest.mark.parametrize('seq_len', [7, 35])
+@pytest.mark.serial
 def test_stream_bptt_batchify(
         seq_len, batch_size, stream_identity_wrappers,
         wikitext2_simpledatasetstream_skipempty_and_counter):

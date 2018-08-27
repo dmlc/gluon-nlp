@@ -1,8 +1,7 @@
 import random
+import pytest
 import numpy as np
 import mxnet as mx
-
-import pytest
 
 
 @pytest.mark.seed(1)

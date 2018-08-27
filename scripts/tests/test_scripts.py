@@ -27,6 +27,7 @@ def test_toy():
         assert lhs[0] == rhs[1] and rhs[0] == lhs[1]
 
 
+@pytest.mark.serial
 def test_sentiment_analysis():
     process = subprocess.check_call(['python', './scripts/sentiment_analysis/sentiment_analysis.py',
                                      '--gpu', '0', '--batch_size', '16', '--bucket_type', 'fixed',
@@ -49,6 +50,7 @@ def test_sampling():
                                      '--print_num', '5', '--temperature', '1.0'])
 
 
+@pytest.mark.serial
 def test_gnmt():
     process = subprocess.check_call(['python', './scripts/nmt/train_gnmt.py', '--dataset', 'TOY',
                                      '--src_lang', 'en', '--tgt_lang', 'de', '--batch_size', '3',
@@ -57,6 +59,7 @@ def test_gnmt():
                                      '--num_hidden', '64', '--num_layers', '2'])
 
 
+@pytest.mark.serial
 def test_transformer():
     process = subprocess.check_call(['python', './scripts/nmt/train_transformer.py',
                                      '--dataset', 'TOY', '--src_lang', 'en', '--tgt_lang', 'de',

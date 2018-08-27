@@ -11,19 +11,18 @@ def test_pad():
     assert padded == [-1.0, 0.0]
 
 
-def test_stack_batchify():
-    for dtype in [np.uint8, np.int32, np.int64, np.float16, np.float32, np.float64]:
-        dat = [np.random.randint(5, size=(10,)).astype(dtype) for _ in range(10)]
-        for _dtype in [None, dtype]:
-            batchify_fn = batchify.Stack(dtype=_dtype)
-            batchify_out = batchify_fn(dat).asnumpy()
-            npy_out = np.array(dat)
-            assert_allclose(batchify_out, npy_out)
-            assert batchify_out.dtype == npy_out.dtype
-        for _dtype in [np.float16, np.float32]:
-            batchify_fn = batchify.Stack(dtype=_dtype)
-            batchify_out = batchify_fn(dat).asnumpy()
-            assert batchify_out.dtype == _dtype
+@pytest.mark.parametrize('odtype', [np.uint8, np.int32, np.int64,
+                                    np.float16, np.float32, np.float64])
+@pytest.mark.parametrize('idtype', [np.uint8, np.int32, np.int64,
+                                    np.float16, np.float32, np.float64])
+@pytest.mark.parametrize('pass_dtype', [False, True])
+def test_stack_batchify(odtype, idtype, pass_dtype):
+    dat = [np.random.randint(5, size=(10,)).astype(idtype) for _ in range(10)]
+    batchify_fn = batchify.Stack(dtype=odtype if pass_dtype else None)
+    batchify_out = batchify_fn(dat).asnumpy()
+    npy_out = np.array(dat)
+    assert_allclose(batchify_out, npy_out)
+    assert batchify_out.dtype == npy_out.dtype if not pass_dtype else odtype
 
 
 def test_pad_wrap_batchify():

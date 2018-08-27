@@ -36,6 +36,7 @@ from gluonnlp.base import _str_types
 ###############################################################################
 # Registry
 ###############################################################################
+@pytest.mark.serial
 def test_dataset_registry():
     @nlp.data.register(segment=['train'])
     class MyDataset(mx.gluon.data.Dataset):
@@ -77,6 +78,7 @@ def test_dataset_registry():
 ###############################################################################
 # Sentiment analysis
 ###############################################################################
+@pytest.mark.serial
 def test_imdb():
     train = nlp.data.IMDB(
         root=os.path.join('tests', 'data', 'imdb'), segment='train')
@@ -117,6 +119,7 @@ def _assert_similarity_dataset(data):
 @flaky(max_runs=2, min_passes=1)
 @pytest.mark.parametrize('segment,length', [('all', 352), ('relatedness', 252),
                                             ('similarity', 203)])
+@pytest.mark.serial
 def test_wordsim353(segment, length):
     # 'all' has length 352 as the original dataset contains the 'money/cash'
     # pair twice with different similarity ratings, which was fixed by the
@@ -128,6 +131,7 @@ def test_wordsim353(segment, length):
     _assert_similarity_dataset(data)
 
 
+@pytest.mark.serial
 def test_men():
     for segment, length in [("full", 3000), ("dev", 2000), ("test", 1000)]:
         data = nlp.data.MEN(
@@ -137,6 +141,7 @@ def test_men():
 
 
 @flaky(max_runs=2, min_passes=1)
+@pytest.mark.serial
 def test_radinsky_mturk():
     data = nlp.data.RadinskyMTurk(
         root=os.path.join('tests', 'externaldata', 'radinsky'))
@@ -145,6 +150,7 @@ def test_radinsky_mturk():
 
 
 @flaky(max_runs=2, min_passes=1)
+@pytest.mark.serial
 def test_verb143():
     data = nlp.data.BakerVerb143(
         root=os.path.join('tests', 'externaldata', 'verb143'))
@@ -153,6 +159,7 @@ def test_verb143():
 
 
 @flaky(max_runs=2, min_passes=1)
+@pytest.mark.serial
 def test_verb130():
     data = nlp.data.YangPowersVerb130(
         root=os.path.join('tests', 'externaldata', 'verb130'))
@@ -161,6 +168,7 @@ def test_verb130():
 
 
 @flaky(max_runs=2, min_passes=1)
+@pytest.mark.serial
 def test_rare_words():
     data = nlp.data.RareWords(
         root=os.path.join('tests', 'externaldata', 'rarewords'))
@@ -171,6 +179,7 @@ def test_rare_words():
 @pytest.mark.skipif(datetime.date.today() < datetime.date(2018, 8, 16),
                     reason='Disabled for 1 weeks due to server downtime.')
 @flaky(max_runs=2, min_passes=1)
+@pytest.mark.serial
 def test_simlex999():
     data = nlp.data.SimLex999(
         root=os.path.join('tests', 'externaldata', 'simlex999'))
@@ -179,6 +188,7 @@ def test_simlex999():
 
 
 @flaky(max_runs=2, min_passes=1)
+@pytest.mark.serial
 def test_simverb3500():
     data = nlp.data.SimVerb3500(
         root=os.path.join('tests', 'externaldata', 'simverb3500'))
@@ -187,6 +197,7 @@ def test_simverb3500():
 
 
 @flaky(max_runs=2, min_passes=1)
+@pytest.mark.serial
 def test_semeval17task2():
     for segment, length in [("trial", 18), ("test", 500)]:
         data = nlp.data.SemEval17Task2(
@@ -200,6 +211,7 @@ def test_semeval17task2():
 # Word analogy datasets
 ###############################################################################
 @flaky(max_runs=2, min_passes=1)
+@pytest.mark.serial
 def test_googleanalogy():
     data = nlp.data.GoogleAnalogyTestSet(
         root=os.path.join('tests', 'externaldata', 'google_analogy'))
@@ -208,6 +220,7 @@ def test_googleanalogy():
 
 
 @flaky(max_runs=2, min_passes=1)
+@pytest.mark.serial
 def test_bigger_analogy():
     data = nlp.data.BiggerAnalogyTestSet(
         root=os.path.join('tests', 'externaldata', 'bigger_analogy'))
@@ -219,6 +232,7 @@ def test_bigger_analogy():
 # CONLL
 ###############################################################################
 @flaky(max_runs=2, min_passes=1)
+@pytest.mark.serial
 def test_conll2000():
     train = nlp.data.CoNLL2000(segment='train', root=os.path.join(
         'tests', 'externaldata', 'conll2000'))
@@ -239,6 +253,7 @@ def test_conll2000():
 
 
 @flaky(max_runs=2, min_passes=1)
+@pytest.mark.serial
 def test_conll2001():
     for part in range(1, 4):
         train = nlp.data.CoNLL2001(part, segment='train', root=os.path.join(
@@ -265,6 +280,7 @@ def test_conll2001():
     ('testa', 2895),
     ('testb', 5195),
 ])
+@pytest.mark.serial
 def test_conll2002_ned(segment, length):
     dataset = nlp.data.CoNLL2002('ned', segment=segment, root=os.path.join(
         'tests', 'externaldata', 'conll2002'))
@@ -281,6 +297,7 @@ def test_conll2002_ned(segment, length):
     ('testa', 1915),
     ('testb', 1517),
 ])
+@pytest.mark.serial
 def test_conll2002_esp(segment, length):
     dataset = nlp.data.CoNLL2002('esp', segment=segment, root=os.path.join(
         'tests', 'externaldata', 'conll2002'))
@@ -298,6 +315,7 @@ def test_conll2002_esp(segment, length):
     ('dev', 2012),
     ('test', 1671),
 ])
+@pytest.mark.serial
 def test_conll2004(segment, length):
     dataset = nlp.data.CoNLL2004(segment=segment, root=os.path.join(
         'tests', 'externaldata', 'conll2004'))
@@ -310,6 +328,7 @@ def test_conll2004(segment, length):
 
 
 @flaky(max_runs=2, min_passes=1)
+@pytest.mark.serial
 def test_ud21():
     test_langs = list(nlp._constants.UD21_DATA_FILE_SHA1.items())
     random.shuffle(test_langs)
@@ -331,6 +350,7 @@ def test_ud21():
 ###############################################################################
 # Translation
 ###############################################################################
+@pytest.mark.serial
 def test_iwlst2015():
     # Test en to vi
     train_en_vi = nlp.data.IWSLT2015(segment='train', root='tests/data/iwlst2015')
@@ -355,6 +375,7 @@ def test_iwlst2015():
         assert lhs[0] == rhs[1] and rhs[0] == lhs[1]
 
 
+@pytest.mark.serial
 def test_wmt2016():
     train = nlp.data.WMT2016(segment='train', src_lang='en', tgt_lang='de',
                              root='tests/data/wmt2016')
@@ -368,6 +389,7 @@ def test_wmt2016():
     assert len(newstest_2012_2015) == 3003 + 3000 + 3003 + 2169
 
 
+@pytest.mark.serial
 def test_wmt2016bpe():
     train = nlp.data.WMT2016BPE(segment='train', src_lang='en', tgt_lang='de',
                                 root='tests/data/wmt2016bpe')
@@ -384,6 +406,7 @@ def test_wmt2016bpe():
     assert len(de_vocab) == 36548
 
 
+@pytest.mark.serial
 def test_wmt2014():
     train = nlp.data.WMT2014(segment='train', src_lang='en', tgt_lang='de',
                              root='tests/data/wmt2014')
@@ -405,6 +428,7 @@ def test_wmt2014():
     assert len(newstest_2014) == 3003
 
 
+@pytest.mark.serial
 def test_wmt2014bpe():
     train = nlp.data.WMT2014BPE(segment='train', src_lang='en', tgt_lang='de',
                                 root='tests/data/wmt2014bpe')
@@ -431,6 +455,7 @@ def test_wmt2014bpe():
 ###############################################################################
 # Question answering
 ###############################################################################
+@pytest.mark.serial
 def test_load_dev_squad():
     # number of records in dataset is equal to number of different questions
     train_dataset = nlp.data.SQuAD(segment='train', root='tests/data/squad')
@@ -452,7 +477,7 @@ def test_counter():
 
 # this test is not tested on CI due to long running time
 def _test_gbw_stream():
-    gbw = nlp.data.GBWStream()
+    gbw = nlp.data.GBWStream(root=os.path.join('tests', 'data', 'gbw'))
     counter = nlp.data.Counter(gbw)
     counter.discard(3, '<unk>')
     # reference count obtained from:

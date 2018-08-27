@@ -1,13 +1,54 @@
+def prepare_clean_env(env_name) {
+  sh """#!/bin/bash
+  printenv
+  git clean -f -d -x --exclude='tests/externaldata/*' --exclude='tests/data/*' --exclude=conda
+  conda env update --prune -f env/${env_name}.yml -p conda/${env_name}
+  conda activate ./conda/${env_name}
+  conda list
+  make clean
+  """
+}
+
+def install_dep(env_name) {
+  sh """#!/bin/bash
+  conda activate ./conda/${env_name}
+  python setup.py install --force
+  python -m spacy download en
+  python -m nltk.downloader all
+  """
+}
+
+def run_test(env_name, folders, nproc, serial, capture_opt) {
+  code = sh script:"""#!/bin/bash
+  conda activate ./conda/${env_name}
+  printenv
+  py.test -v ${capture_opt} -n ${nproc} -m "${serial}" --durations=50 --cov=./ ${folders}
+  """, returnStatus:true
+  return code
+}
+
+def report_cov(name, flag) {
+  sh """#!/bin/bash
+  bash ./codecov.sh -c -F ${flag} -n ${name}
+  """
+}
+
+def upload_doc(bucket, path) {
+  sh """#!/bin/bash
+  echo "Uploading doc to s3://${bucket}/${path}/"
+  aws s3 sync --delete docs/_build/html/ s3://${bucket}/${path}/ --acl public-read
+  echo "Uploaded doc to http://${bucket}.s3-accelerate.dualstack.amazonaws.com/${path}/index.html"
+  """
+}
+
 stage("Sanity Check") {
   node {
     ws('workspace/gluon-nlp-lint') {
       checkout scm
+      prepare_clean_env('pylint')
       sh """#!/bin/bash
-      git clean -f -d -x
-      conda env update --prune -f env/pylint.yml -p conda/lint
-      conda activate ./conda/lint
-      conda list
-      make clean
+      conda activate ./conda/pylint
+      printenv
       make lint
       """
     }
@@ -17,19 +58,26 @@ stage("Sanity Check") {
 stage("Unit Test") {
   parallel 'Python 2': {
     node {
-      ws('workspace/gluon-nlp-py2') {
-        checkout scm
-        sh """#!/bin/bash
-        git clean -f -d -x --exclude='tests/externaldata/*' --exclude='tests/data/*' --exclude=conda
-        conda env update --prune -f env/py2.yml -p conda/py2
-        conda activate ./conda/py2
-        conda list
-        python -m spacy download en
-        python -m nltk.downloader all
-        make clean
-        python setup.py install --force
-        py.test -v --capture=no --durations=0 tests/unittest scripts
-        """
+      withCredentials([string(credentialsId: 'GluonNLPCodeCov', variable: 'CODECOV_TOKEN')]) {
+        ws('workspace/gluon-nlp-py2') {
+          checkout scm
+          prepare_clean_env('py2')
+          install_dep('py2')
+          code = 0
+          code += run_test('py2', 'tests/unittest', '4', 'not serial',
+                   env.BRANCH_NAME.startsWith('PR-')?'':'--capture=no')
+          code += run_test('py2', 'tests/unittest', '0', 'serial',
+                   env.BRANCH_NAME.startsWith('PR-')?'':'--capture=no')
+          report_cov(env.BRANCH_NAME+'-py2', 'unittests')
+          code += run_test('py2', 'scripts', '4', 'not serial',
+                   env.BRANCH_NAME.startsWith('PR-')?'':'--capture=no')
+          code += run_test('py2', 'scripts', '0', 'serial',
+                   env.BRANCH_NAME.startsWith('PR-')?'':'--capture=no')
+          report_cov(env.BRANCH_NAME+'-py2', 'integration')
+          if (code != 0) {
+            error('Test failed')
+          }
+        }
       }
     }
   },
@@ -38,20 +86,22 @@ stage("Unit Test") {
       withCredentials([string(credentialsId: 'GluonNLPCodeCov', variable: 'CODECOV_TOKEN')]) {
         ws('workspace/gluon-nlp-py3') {
           checkout scm
-          sh """#!/bin/bash
-          git clean -f -d -x --exclude='tests/externaldata/*' --exclude='tests/data/*' --exclude=conda
-          conda env update --prune -f env/py3.yml -p conda/py3
-          conda activate ./conda/py3
-          conda list
-          python -m spacy download en
-          python -m nltk.downloader all
-          make clean
-          python setup.py install --force
-          py.test -v --capture=no --durations=0 --cov=./ tests/unittest scripts
-          EXIT_STATUS=\$?
-          bash ./codecov.sh
-          exit \$EXIT_STATUS
-          """
+          prepare_clean_env('py3')
+          install_dep('py3')
+          code = 0
+          code += run_test('py3', 'tests/unittest', '4', 'not serial',
+                   env.BRANCH_NAME.startsWith('PR-')?'':'--capture=no')
+          code += run_test('py3', 'tests/unittest', '0', 'serial',
+                   env.BRANCH_NAME.startsWith('PR-')?'':'--capture=no')
+          report_cov(env.BRANCH_NAME+'-py3', 'unittests')
+          code += run_test('py3', 'scripts', '4', 'not serial',
+                   env.BRANCH_NAME.startsWith('PR-')?'':'--capture=no')
+          code += run_test('py3', 'scripts', '0', 'serial',
+                   env.BRANCH_NAME.startsWith('PR-')?'':'--capture=no')
+          report_cov(env.BRANCH_NAME+'-py3', 'integration')
+          if (code != 0) {
+            error('Test failed')
+          }
         }
       }
     }
@@ -61,32 +111,19 @@ stage("Unit Test") {
       ws('workspace/gluon-nlp-docs') {
         checkout scm
         retry(3) {
+          prepare_clean_env('doc')
+          install_dep('doc')
           sh """#!/bin/bash
-          printenv
-          git clean -f -d -x --exclude='tests/externaldata/*' --exclude='tests/data/*' --exclude=conda
-          conda env update --prune -f env/doc.yml -p conda/docs
-          conda activate ./conda/docs
-          conda list
-          python -m spacy download en
-          python -m nltk.downloader all
-          python setup.py install --force
+          conda activate ./conda/doc
           export LD_LIBRARY_PATH=/usr/local/cuda/lib64
-          make clean
+          printenv
           make docs
           """
         }
         if (env.BRANCH_NAME.startsWith("PR-")) {
-          sh """#!/bin/bash
-          echo "Uploading doc to s3://gluon-nlp-staging/${env.BRANCH_NAME}/${env.BUILD_NUMBER}/"
-          aws s3 sync --delete docs/_build/html/ s3://gluon-nlp-staging/${env.BRANCH_NAME}/${env.BUILD_NUMBER}/ --acl public-read
-          echo "Uploaded doc to http://gluon-nlp-staging.s3-accelerate.dualstack.amazonaws.com/${env.BRANCH_NAME}/${env.BUILD_NUMBER}/index.html"
-          """
+          upload_doc('gluon-nlp-staging', env.BRANCH_NAME+'/'+env.BUILD_NUMBER)
         } else {
-          sh """#!/bin/bash
-          echo "Uploading doc to s3://gluon-nlp/${env.BRANCH_NAME}/"
-          aws s3 sync --delete docs/_build/html/ s3://gluon-nlp/${env.BRANCH_NAME}/ --acl public-read
-          echo "Uploaded doc to http://gluon-nlp.mxnet.io/${env.BRANCH_NAME}/index.html"
-          """
+          upload_doc('gluon-nlp', env.BRANCH_NAME)
         }
       }
     }

@@ -115,7 +115,7 @@ def test_transformer_encoder():
                                 if mem_v_len > 0:
                                     assert_almost_equal(attention_out[i, :, :, :].sum(axis=-1),
                                                       np.ones(attention_out.shape[1:3]))
-                        else: 
+                        else:
                             assert(len(additional_outputs) == 0)
 
 def test_transformer_encoder_decoder():

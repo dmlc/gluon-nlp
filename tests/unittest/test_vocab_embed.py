@@ -372,6 +372,7 @@ def _mk_my_invalid_pretrain_file2(path, token_delim, pretrain_file):
 
 
 @pytest.mark.parametrize('allow_extend', [True, False])
+@pytest.mark.serial
 def test_token_embedding_from_file(tmpdir, allow_extend):
     embed_root = str(tmpdir)
     embed_name = 'my_embed'
@@ -761,6 +762,7 @@ def test_vocab_set_embedding_with_two_custom_embeddings(tmpdir, allow_extend):
                         )
 
 
+@pytest.mark.serial
 def test_download_embed():
     @nlp.embedding.register
     class Test(nlp.embedding.TokenEmbedding):
@@ -835,6 +837,7 @@ def test_token_embedding_from_serialized_file(tmpdir):
 
 @pytest.mark.parametrize('unknown_token',
                          ['<strangetoken>', None, nlp._constants.UNK_TOKEN])
+@pytest.mark.serial
 def test_token_embedding_from_file_S3_with_custom_unknown_token(unknown_token):
     nlp.embedding.create('glove', source='glove.6B.50d',
                          unknown_token=unknown_token,
@@ -842,6 +845,7 @@ def test_token_embedding_from_file_S3_with_custom_unknown_token(unknown_token):
 
 
 @pytest.mark.parametrize('load_ngrams', [True, False])
+@pytest.mark.serial
 def test_token_embedding_from_S3_fasttext_with_ngrams(load_ngrams):
     embed = nlp.embedding.create('fasttext', source='wiki.simple',
                                  load_ngrams=load_ngrams, unknown_token=None,
@@ -885,6 +889,7 @@ def test_token_embedding_unknown_lookup():
     assert 'hello' not in token_embedding.token_to_idx
 
 
+@pytest.mark.serial
 def test_token_embedding_serialization():
     @nlp.embedding.register
     class Test(nlp.embedding.TokenEmbedding):
@@ -940,6 +945,7 @@ def test_word_embedding_evaluation_registry():
 @pytest.mark.parametrize(
     'similarity_function',
     nlp.embedding.evaluation.list_evaluation_functions('similarity'))
+@pytest.mark.serial
 def test_word_embedding_similarity_evaluation_models(similarity_function):
     try:
         from scipy import stats
@@ -972,6 +978,7 @@ def test_word_embedding_similarity_evaluation_models(similarity_function):
 @pytest.mark.parametrize(
     'analogy_function',
     nlp.embedding.evaluation.list_evaluation_functions('analogy'))
+@pytest.mark.serial
 def test_word_embedding_analogy_evaluation_models(analogy_function):
     dataset = nlp.data.GoogleAnalogyTestSet()
     dataset = [d for i, d in enumerate(dataset) if i < 10]
