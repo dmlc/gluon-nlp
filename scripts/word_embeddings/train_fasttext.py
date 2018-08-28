@@ -185,7 +185,7 @@ def get_train_data(args):
     negatives_sampler = nlp.data.UnigramCandidateSampler(
         weights=mx.nd.array(idx_to_counts)**0.75)
 
-    sum_counts = sum(idx_to_counts)
+    sum_counts = float(sum(idx_to_counts))
     idx_to_pdiscard = [
         1 - math.sqrt(args.frequent_token_subsampling / (count / sum_counts))
         for count in idx_to_counts
@@ -267,23 +267,6 @@ class SubwordLookup(object):
             subwords_arr[i, :len(s)] = s
             mask[i, :len(s)] = 1
         return subwords_arr, mask
-
-
-def save_parameters(args, embedding, embedding_out):
-    """Save parameters to logdir.
-
-    The parameters are first written to a temporary file and only if the saving
-    was successful atomically moved to the final location.
-
-    """
-    f, path = tempfile.mkstemp(dir=args.logdir)
-    os.close(f)
-
-    # write to temporary file; use os.replace
-    embedding.save_parameters(path)
-    os.replace(path, os.path.join(args.logdir, 'embedding.params'))
-    embedding_out.save_parameters(path)
-    os.replace(path, os.path.join(args.logdir, 'embedding_out.params'))
 
 
 ###############################################################################
@@ -548,7 +531,8 @@ def train(args):
 
     # Save params
     with print_time('save parameters'):
-        save_parameters(args, embedding, embedding_out)
+        embedding.save_parameters(os.path.join(args.logdir, 'embedding.params'))
+        embedding_out.save_parameters(os.path.join(args.logdir, 'embedding_out.params'))
 
 
 def evaluate(args, embedding, vocab, global_step, eval_analogy=False):
