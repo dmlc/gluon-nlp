@@ -31,7 +31,8 @@ def test_toy():
 def test_embedding():
     process = subprocess.check_call([
         'python', './scripts/word_embeddings/train_fasttext.py', '--gpu', '0',
-        '--epochs', '1', '--optimizer', 'sgd', '--ngram-buckets', '1000'
+        '--epochs', '1', '--optimizer', 'sgd', '--ngram-buckets', '1000',
+        '--max-vocab-size', '1000'
     ])
 
 
