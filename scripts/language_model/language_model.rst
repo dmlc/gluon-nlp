@@ -119,31 +119,31 @@ The dataset used for training the models is wikitext-2.
 
 .. code-block:: console
 
-   $ python cache_language_model.py --gpus 0 --save awd_lstm_lm_1150
+   $ python cache_language_model.py --gpus 0 --model_name awd_lstm_lm_1150
 
 [2] cache_awd_lstm_lm_600_wikitext-2 (Val PPL 64.51 Test PPL 62.19)
 
 .. code-block:: console
 
-   $ python cache_language_model.py --gpus 0 --save awd_lstm_lm_600
+   $ python cache_language_model.py --gpus 0 --model_name awd_lstm_lm_600
 
 [3] cache_standard_lstm_lm_1500_wikitext-2 (Val PPL 71.92 Test PPL 68.71)
 
 .. code-block:: console
 
-   $ python cache_language_model.py --gpus 0 --save standard_lstm_lm_1500
+   $ python cache_language_model.py --gpus 0 --model_name standard_lstm_lm_1500
 
 [4] cache_standard_lstm_lm_650_wikitext-2 (Val PPL 69.57 Test PPL 66.52)
 
 .. code-block:: console
 
-   $ python cache_language_model.py --gpus 0 --save standard_lstm_lm_650
+   $ python cache_language_model.py --gpus 0 --model_name standard_lstm_lm_650
 
 [5] cache_standard_lstm_lm_200_wikitext-2 (Val PPL 77.51 Test PPL 73.74)
 
 .. code-block:: console
 
-   $ python cache_language_model.py --gpus 0 --save standard_lstm_lm_200
+   $ python cache_language_model.py --gpus 0 --model_name standard_lstm_lm_200
 
 Large Scale Word Language Model
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
