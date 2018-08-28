@@ -19,12 +19,11 @@ def install_dep(env_name) {
 }
 
 def run_test(env_name, folders, nproc, serial, capture_opt) {
-  code = sh script:"""#!/bin/bash
+  sh script:"""#!/bin/bash
   conda activate ./conda/${env_name}
   printenv
   py.test -v ${capture_opt} -n ${nproc} -m "${serial}" --durations=50 --cov=./ ${folders}
-  """, returnStatus:true
-  return code
+  """
 }
 
 def report_cov(name, flag) {
@@ -63,20 +62,16 @@ stage("Unit Test") {
           checkout scm
           prepare_clean_env('py2')
           install_dep('py2')
-          code = 0
-          code += run_test('py2', 'tests/unittest', '4', 'not serial',
-                   env.BRANCH_NAME.startsWith('PR-')?'':'--capture=no')
-          code += run_test('py2', 'tests/unittest', '0', 'serial',
-                   env.BRANCH_NAME.startsWith('PR-')?'':'--capture=no')
+          run_test('py2', 'tests/unittest', '4', 'not serial',
+           env.BRANCH_NAME.startsWith('PR-')?'':'--capture=no')
+          run_test('py2', 'tests/unittest', '0', 'serial',
+           env.BRANCH_NAME.startsWith('PR-')?'':'--capture=no')
           report_cov(env.BRANCH_NAME+'-py2', 'unittests')
-          code += run_test('py2', 'scripts', '4', 'not serial',
-                   env.BRANCH_NAME.startsWith('PR-')?'':'--capture=no')
-          code += run_test('py2', 'scripts', '0', 'serial',
-                   env.BRANCH_NAME.startsWith('PR-')?'':'--capture=no')
+          run_test('py2', 'scripts', '4', 'not serial',
+           env.BRANCH_NAME.startsWith('PR-')?'':'--capture=no')
+          run_test('py2', 'scripts', '0', 'serial',
+           env.BRANCH_NAME.startsWith('PR-')?'':'--capture=no')
           report_cov(env.BRANCH_NAME+'-py2', 'integration')
-          if (code != 0) {
-            error('Test failed')
-          }
         }
       }
     }
@@ -88,20 +83,16 @@ stage("Unit Test") {
           checkout scm
           prepare_clean_env('py3')
           install_dep('py3')
-          code = 0
-          code += run_test('py3', 'tests/unittest', '4', 'not serial',
-                   env.BRANCH_NAME.startsWith('PR-')?'':'--capture=no')
-          code += run_test('py3', 'tests/unittest', '0', 'serial',
-                   env.BRANCH_NAME.startsWith('PR-')?'':'--capture=no')
+          run_test('py3', 'tests/unittest', '4', 'not serial',
+           env.BRANCH_NAME.startsWith('PR-')?'':'--capture=no')
+          run_test('py3', 'tests/unittest', '0', 'serial',
+           env.BRANCH_NAME.startsWith('PR-')?'':'--capture=no')
           report_cov(env.BRANCH_NAME+'-py3', 'unittests')
-          code += run_test('py3', 'scripts', '4', 'not serial',
-                   env.BRANCH_NAME.startsWith('PR-')?'':'--capture=no')
-          code += run_test('py3', 'scripts', '0', 'serial',
-                   env.BRANCH_NAME.startsWith('PR-')?'':'--capture=no')
+          run_test('py3', 'scripts', '4', 'not serial',
+           env.BRANCH_NAME.startsWith('PR-')?'':'--capture=no')
+          run_test('py3', 'scripts', '0', 'serial',
+           env.BRANCH_NAME.startsWith('PR-')?'':'--capture=no')
           report_cov(env.BRANCH_NAME+'-py3', 'integration')
-          if (code != 0) {
-            error('Test failed')
-          }
         }
       }
     }
