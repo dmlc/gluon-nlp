@@ -42,9 +42,21 @@ except ImportError:
         # pylint: disable=unused-argument
         return identity
 
-    def numba_types(*args, **kwargs):
-        # pylint: disable=unused-argument
-        return None
+    class NumbaTypes(object):
+        """Shim for numba.types"""
+        class NumbaType(object):
+            """Shim for numba.types.type"""
+            def __getitem__(self, x):
+                # pylint: disable=unused-argument
+                pass
 
+            def __call__(self, *args, **kwargs):
+                # pylint: disable=unused-argument
+                pass
+
+        def __getattr__(self, attr):
+            return self.NumbaType()
+
+    numba_types = NumbaTypes()
     numba_njit = identity
     numba_prange = range

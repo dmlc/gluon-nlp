@@ -28,6 +28,15 @@ def test_toy():
 
 
 @pytest.mark.serial
+def test_embedding():
+    process = subprocess.check_call([
+        'python', './scripts/word_embeddings/train_fasttext.py', '--gpu', '0',
+        '--epochs', '1', '--optimizer', 'sgd', '--ngram-buckets', '1000',
+        '--max-vocab-size', '1000'
+    ])
+
+
+@pytest.mark.serial
 def test_sentiment_analysis():
     process = subprocess.check_call(['python', './scripts/sentiment_analysis/sentiment_analysis.py',
                                      '--gpu', '0', '--batch_size', '16', '--bucket_type', 'fixed',

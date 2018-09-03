@@ -167,6 +167,8 @@ def test_verb130():
     _assert_similarity_dataset(data)
 
 
+@pytest.mark.skipif(datetime.date.today() < datetime.date(2018, 9, 10),
+                    reason='Disabled for 1 weeks due to server downtime.')
 @flaky(max_runs=2, min_passes=1)
 @pytest.mark.serial
 def test_rare_words():
@@ -176,8 +178,6 @@ def test_rare_words():
     _assert_similarity_dataset(data)
 
 
-@pytest.mark.skipif(datetime.date.today() < datetime.date(2018, 8, 16),
-                    reason='Disabled for 1 weeks due to server downtime.')
 @flaky(max_runs=2, min_passes=1)
 @pytest.mark.serial
 def test_simlex999():
