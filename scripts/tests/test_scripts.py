@@ -37,6 +37,14 @@ def test_embedding():
 
 
 @pytest.mark.serial
+def test_embedding_evaluate_pretrained():
+    process = subprocess.check_call([
+        'python', './scripts/word_embeddings/evaluate_pretrained.py',
+        '--embedding-name', 'fasttext', '--embedding-source', 'wiki.simple'
+    ])
+
+
+@pytest.mark.serial
 def test_sentiment_analysis():
     process = subprocess.check_call(['python', './scripts/sentiment_analysis/sentiment_analysis.py',
                                      '--gpu', '0', '--batch_size', '16', '--bucket_type', 'fixed',
