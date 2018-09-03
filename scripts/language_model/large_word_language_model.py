@@ -83,7 +83,7 @@ parser.add_argument('--gpus', type=str,
                     help='list of gpus to run, e.g. 0 or 0,2,5. empty means using cpu.')
 parser.add_argument('--log-interval', type=int, default=1000,
                     help='report interval')
-parser.add_argument('--seed', type=int, default=1,
+parser.add_argument('--seed', type=int, default=0,
                     help='random seed')
 parser.add_argument('--lr', type=float, default=0.2,
                     help='initial learning rate')

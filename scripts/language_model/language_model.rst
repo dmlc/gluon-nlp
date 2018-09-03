@@ -179,18 +179,18 @@ The dataset used for training the models is Google's 1 billion words dataset.
 +-----------------+------------------------------------------------------------------------------------------------------------------------------+
 | Graident clip   | 10.0                                                                                                                         |
 +-----------------+------------------------------------------------------------------------------------------------------------------------------+
-| Test perplexity | 43.72                                                                                                                        |
+| Test perplexity | 43.62                                                                                                                        |
 +-----------------+------------------------------------------------------------------------------------------------------------------------------+
-| Num epochs      | 42                                                                                                                           |
+| Num epochs      | 50                                                                                                                           |
 +-----------------+------------------------------------------------------------------------------------------------------------------------------+
 | Training logs   | `log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/language_model/big_rnn_lm_2048_512_gbw.log>`__              |
 +-----------------+------------------------------------------------------------------------------------------------------------------------------+
 | Evaluation logs | `log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/language_model/big_rnn_lm_2048_512_gbw-eval.log>`__         |
 +-----------------+------------------------------------------------------------------------------------------------------------------------------+
 
-[1] LSTM-2048-512 (Test PPL 43.72, based on `commit <https://github.com/eric-haibin-lin/gluon-nlp/tree/b3cfcc427fbceea2ce3c5fae63c61b93910326dc>`__)
+[1] LSTM-2048-512 (Test PPL 43.62)
 
 .. code-block:: console
 
-   $ python large_word_language_model.py --gpus 0,1,2,3 --epochs=42 --clip=10
-   $ python large_word_language_model.py --gpus 4 --eval-only --batch-size=1 --log-interval=999999
+   $ python large_word_language_model.py --gpus 0,1,2,3 --clip=10
+   $ python large_word_language_model.py --gpus 4 --eval-only --batch-size=1
