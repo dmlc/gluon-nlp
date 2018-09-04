@@ -190,42 +190,42 @@ if __name__ == '__main__':
     # Load pre-trained embeddings
     if not args_.embedding_path:
         if args_.embedding_name.lower() == 'fasttext':
-            token_embedding = nlp.embedding.create(
+            token_embedding_ = nlp.embedding.create(
                 args_.embedding_name,
                 source=args_.embedding_source,
                 load_ngrams=args_.fasttext_load_ngrams,
                 allow_extend=True,
                 unknown_autoextend=True)
         else:
-            token_embedding = nlp.embedding.create(
+            token_embedding_ = nlp.embedding.create(
                 args_.embedding_name, source=args_.embedding_source)
         name = '-' + args_.embedding_name + '-' + args_.embedding_source
     else:
-        token_embedding = load_embedding_from_path(args_)
+        token_embedding_ = load_embedding_from_path(args_)
         name = ''
 
-    enforce_max_size(token_embedding, args_.max_vocab_size)
-    known_tokens = set(token_embedding.idx_to_token)
+    enforce_max_size(token_embedding_, args_.max_vocab_size)
+    known_tokens = set(token_embedding_.idx_to_token)
     # Auto-extend token_embedding with unknown extra eval tokens
-    if token_embedding.unknown_lookup is not None:
+    if token_embedding_.unknown_lookup is not None:
         eval_tokens = evaluation.get_tokens_in_evaluation_datasets(args_)
-        token_embedding[[
+        # pylint: disable=pointless-statement
+        token_embedding_[[
             t for t in eval_tokens - known_tokens
-            if t in token_embedding.unknown_lookup
+            if t in token_embedding_.unknown_lookup
         ]]
 
-        if len(token_embedding.idx_to_token) > args_.max_vocab_size:
-            logging.warning(
-                'Computing embeddings for OOV words that occur '
-                'in the evaluation dataset lead to having '
-                'more words than --max-vocab-size. '
-                'Have {} words (--max-vocab-size {})'.format(
-                    len(token_embedding.idx_to_token),
-                    args_.max_vocab_size))
+        if len(token_embedding_.idx_to_token) > args_.max_vocab_size:
+            logging.warning('Computing embeddings for OOV words that occur '
+                            'in the evaluation dataset lead to having '
+                            'more words than --max-vocab-size. '
+                            'Have %s words (--max-vocab-size %s)',
+                            len(token_embedding_.idx_to_token),
+                            args_.max_vocab_size)
 
     similarity_results = evaluation.evaluate_similarity(
-        args_, token_embedding, ctx, logfile=os.path.join(
+        args_, token_embedding_, ctx, logfile=os.path.join(
             args_.logdir, 'similarity{}.tsv'.format(name)))
     analogy_results = evaluation.evaluate_analogy(
-        args_, token_embedding, ctx, logfile=os.path.join(
+        args_, token_embedding_, ctx, logfile=os.path.join(
             args_.logdir, 'analogy{}.tsv'.format(name)))
