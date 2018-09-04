@@ -56,6 +56,11 @@ def get_args():
                              'Pass --list-embedding-sources to get a list of '
                              'valid sources for a given --embedding-name.'))
     group.add_argument(
+        '--fasttext-load-ngrams',
+        action='store_true',
+        help=('Specify load_ngrams=True '
+              'when loading pretrained fastText embedding.'))
+    group.add_argument(
         '--max-vocab-size', type=int, default=None,
         help=('Only retain the X first tokens from the pre-trained embedding. '
               'The tokens are ordererd by decreasing frequency.'
@@ -132,28 +137,45 @@ def load_embedding_from_path(args):
                 nlp.model.train.FasttextEmbeddingModel.load_fasttext_format(
                     args.embedding_path)
 
-        # Add OOV words if the token_embedding can impute them
-        token_set = set()
-        token_set.update(
-            filter(lambda x: x in model,
-                   evaluation.get_tokens_in_evaluation_datasets(args)))
+        embedding = nlp.embedding.TokenEmbedding(
+            unknown_token=None, unknown_lookup=model, allow_extend=True,
+            unknown_autoextend=True)
 
         if args.analogy_datasets:
-            token_set.update(model.token_to_idx.keys())
+            # Pre-compute all words in vocabulary in case of analogy evaluation
+            idx_to_token = [
+                model.token_to_idx[idx]
+                for idx in range(len(model.token_to_idx))
+            ]
+            if args.max_vocab_size:
+                idx_to_token = idx_to_token[:args.max_vocab_size]
+        else:
+            idx_to_token = [
+                t for t in evaluation.get_tokens_in_evaluation_datasets(args)
+                if t in model.token_to_idx
+            ]
+            if args.max_vocab_size:
+                assert len(idx_to_token) < args.max_vocab_size, \
+                    'max_vocab_size unsupported for bin model without analogy evaluation.'
 
-        # OOV words will be imputed and added to the
-        # token_embedding.idx_to_token etc.
         with utils.print_time('compute vectors from subwords '
-                              'for {} words.'.format(len(token_set))):
-            embedding = nlp.embedding.TokenEmbedding(unknown_token=None,
-                                                     allow_extend=True)
-            idx_to_tokens = [t for t in token_set if t in model]
-            embedding[idx_to_tokens] = model[idx_to_tokens]
+                              'for {} words.'.format(len(idx_to_token))):
+            embedding[idx_to_token] = model[idx_to_token]
 
     else:
         embedding = nlp.embedding.TokenEmbedding.from_file(args.embedding_path)
 
     return embedding
+
+
+def enforce_max_size(token_embedding, size):
+    if size and len(token_embedding.idx_to_token) > size:
+        token_embedding._idx_to_token = token_embedding._idx_to_token[:size]
+        token_embedding._idx_to_vec = token_embedding._idx_to_vec[:size]
+        token_embedding._token_to_idx = {
+            token: idx
+            for idx, token in enumerate(token_embedding._idx_to_token)
+        }
 
 
 if __name__ == '__main__':
@@ -167,31 +189,43 @@ if __name__ == '__main__':
 
     # Load pre-trained embeddings
     if not args_.embedding_path:
-        print('Loading embedding ', args_.embedding_name, ' from ',
-              args_.embedding_source)
-        token_embedding = nlp.embedding.create(args_.embedding_name,
-                                               source=args_.embedding_source)
+        if args_.embedding_name.lower() == 'fasttext':
+            token_embedding_ = nlp.embedding.create(
+                args_.embedding_name,
+                source=args_.embedding_source,
+                load_ngrams=args_.fasttext_load_ngrams,
+                allow_extend=True,
+                unknown_autoextend=True)
+        else:
+            token_embedding_ = nlp.embedding.create(
+                args_.embedding_name, source=args_.embedding_source)
         name = '-' + args_.embedding_name + '-' + args_.embedding_source
     else:
-        token_embedding = load_embedding_from_path(args_)
+        token_embedding_ = load_embedding_from_path(args_)
         name = ''
 
-    if args_.max_vocab_size:
-        if args_.embedding_path and '.bin' in args_.embedding_path:
-            raise NotImplementedError(
-                'Not implemented for binary fastText model.')
+    enforce_max_size(token_embedding_, args_.max_vocab_size)
+    known_tokens = set(token_embedding_.idx_to_token)
+    # Auto-extend token_embedding with unknown extra eval tokens
+    if token_embedding_.unknown_lookup is not None:
+        eval_tokens = evaluation.get_tokens_in_evaluation_datasets(args_)
+        # pylint: disable=pointless-statement
+        token_embedding_[[
+            t for t in eval_tokens - known_tokens
+            if t in token_embedding_.unknown_lookup
+        ]]
 
-        size = min(len(token_embedding._idx_to_token), args_.max_vocab_size)
-        token_embedding._idx_to_token = token_embedding._idx_to_token[:size]
-        token_embedding._idx_to_vec = token_embedding._idx_to_vec[:size]
-        token_embedding._token_to_idx = {
-            token: idx
-            for idx, token in enumerate(token_embedding._idx_to_token)
-        }
+        if len(token_embedding_.idx_to_token) > args_.max_vocab_size:
+            logging.warning('Computing embeddings for OOV words that occur '
+                            'in the evaluation dataset lead to having '
+                            'more words than --max-vocab-size. '
+                            'Have %s words (--max-vocab-size %s)',
+                            len(token_embedding_.idx_to_token),
+                            args_.max_vocab_size)
 
     similarity_results = evaluation.evaluate_similarity(
-        args_, token_embedding, ctx, logfile=os.path.join(
+        args_, token_embedding_, ctx, logfile=os.path.join(
             args_.logdir, 'similarity{}.tsv'.format(name)))
     analogy_results = evaluation.evaluate_analogy(
-        args_, token_embedding, ctx, logfile=os.path.join(
+        args_, token_embedding_, ctx, logfile=os.path.join(
             args_.logdir, 'analogy{}.tsv'.format(name)))
