@@ -9,16 +9,17 @@ import gluonnlp as nlp
 import logging
 import argparse
 
-parser = argparse.ArgumentParser(description='')
-parser.add_argument('--hidden_units', type=int, default=300, help='hidden units in bilstm')
+parser = argparse.ArgumentParser()
+parser.add_argument('--embedding_dim', type=int, default=100, help='glove embedding dim')
+parser.add_argument('--logging_path', default="./log/log_glove_100.txt", help='logging file path')
+parser.add_argument('--model_path', default='./model/glove_100.model', help='saving model in model_path')
+parser.add_argument('--hidden', type=int, default=300, help='hidden units in bilstm')
 parser.add_argument('--lstm_dropout', type=float, default=0.5, help='dropout applied to lstm layers ')
 parser.add_argument('--learning_rate', type=float, default=0.001, help='initial learning rate')
 parser.add_argument('--epochs', type=int, default=50, help='training epochs')
 parser.add_argument('--seq_len', type=int, default=500, help='max length of sequences')
 parser.add_argument('--batch_size', type=int, default=100, help='batch size')
 parser.add_argument('--dropout', type=float, default=0.3, help='dropout applied to fully connected layers')
-parser.add_argument('--logging_path', default="./log/log_glove_300.txt", help='logging file path')
-parser.add_argument('--model_path', default='./model/glove_300.model', help='saving model in model_path')
 args = parser.parse_args()
 print(args)
 
@@ -80,23 +81,16 @@ def data_process():
     return all_data, fullText
 all_data, fullText = data_process()
 
-
 # add external glove word embedding
-
 counter = nlp.data.count_tokens(fullText)
 print(len(counter))
 
-# 已下载glove到本地时可用，运行速度快
-my_vocab = text.vocab.Vocabulary(counter)  # idx-word
-my_embedding = text.embedding.CustomEmbedding(pretrained_file_path='./glove/glove_300d.txt',vocabulary=my_vocab)
-inputdim, outputemb = my_embedding.idx_to_vec.shape
-print(inputdim,outputemb)
-
-# 执行程序时下载glove,速度较慢
-# my_vocab = nlp.Vocab(counter)
-# my_embedding = nlp.embedding.create('glove', source='glove.6B.100d')
-# my_vocab.set_embedding(my_embedding)
-# inputdim, outputemb = my_vocab.embedding.idx_to_vec.shape  # (18199,50)
+print('---glove embedding----')
+my_vocab = nlp.Vocab(counter)
+my_embedding = nlp.embedding.create('glove', source='glove.6B.'+ str(args.embedding_dim) + 'd')
+my_vocab.set_embedding(my_embedding)
+inputdim, outputemb = my_vocab.embedding.idx_to_vec.shape
+print(inputdim,outputemb)  # (18199,emb_dim)
 
 # word to idx
 dataset = []
@@ -114,9 +108,6 @@ for i,(words, label) in enumerate(all_data):
     tag.append(label)
 dataset = np.array(dataset)
 tag = np.array(tag)
-
-# print(dataset.shape)  # 2000,500
-# print(tag.shape)
 
 # dataset
 train_data = gluon.data.ArrayDataset(dataset[:1000], tag[:1000])
@@ -158,11 +149,11 @@ def train(hidden, lstm_dropout, learning_rate, epochs):
         net.add(gluon.nn.Embedding(inputdim, outputemb))
         net.add(gluon.nn.Dropout(args.dropout))
         net.add(gluon.rnn.LSTM(hidden_size=hidden//2, num_layers=1, layout='NTC', bidirectional=True, dropout=lstm_dropout))
-        net.add(gluon.nn.Dense(3, flatten=False)) # activation=None,linear
+        net.add(gluon.nn.Dense(3, flatten=False))
     logger.info(net)
 
-    net[0].weight.set_data(my_embedding.idx_to_vec)
     net.collect_params().initialize(mx.init.Normal(sigma=0.1))
+    net[0].weight.set_data(my_vocab.embedding.idx_to_vec)
 
     softmax_cross_entropy = mx.gluon.loss.SoftmaxCrossEntropyLoss(from_logits=False)
 
@@ -173,7 +164,7 @@ def train(hidden, lstm_dropout, learning_rate, epochs):
         train_acc = 0.
         for i, (data, label) in enumerate(train_iter):
             with autograd.record():
-                output = net(data)  # batch_size，500，3
+                output = net(data)
                 output = output.reshape((-1, 3))
                 label = label.reshape((-1, 1))
                 loss = softmax_cross_entropy(output, label)
@@ -231,11 +222,9 @@ def test(model_path, hidden, lstm_dropout):
         net2.add(gluon.nn.Dropout(args.dropout))
         net2.add(gluon.rnn.LSTM(hidden_size=hidden//2, num_layers=1,layout='NTC',bidirectional=True, dropout=lstm_dropout))
         net2.add(gluon.nn.Dense(3,flatten=False))
-
     logger.info(net2)
 
-    # model_path = './model/glove_300_model_params'
-    net2.load_params(model_path, mx.cpu())
+    net2.load_params(args.model_path, mx.cpu())
 
     # precision= correct/extract, recall = correct/standard, f1 = 2*p*r/(p+r)
     precision, recall, f1, correct, extract, standard = evaluate(test_iter, net2)
@@ -246,5 +235,3 @@ def test(model_path, hidden, lstm_dropout):
 if __name__=='__main__':
     model_path = train(args.hidden, args.lstm_dropout, args.learning_rate, args.epochs)
     test(model_path,args.hidden,args.lstm_dropout)
-
-
