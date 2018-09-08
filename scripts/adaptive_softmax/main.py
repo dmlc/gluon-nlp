@@ -1,3 +1,22 @@
+# coding: utf-8
+
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+
 import numpy as np
 import mxnet as mx
 import argparse, math
@@ -98,6 +117,21 @@ def detach(hidden):
     return hidden
 
 def eval(data_source, target_source):
+    """
+    Calculate the test loss
+
+    Parameters
+    ----------
+    data_source: NDArray
+        This is the input data for test. The input tensor is of shape `(num_samples of test data set, batch_size, bptt)`.
+    target_source: NDArray
+        This is the input label for test. The input tensor is of shape `(num_samples of test data set, batch_size, bptt)`.
+
+    Returns
+    ----------
+    test_L: numpy
+        The output is the loss.
+    """
     total_L = 0.0
     ntotal = 0
     hidden = model.begin_state(func=mx.nd.zeros, batch_size=batch_size, ctx=context)
@@ -114,9 +148,14 @@ def eval(data_source, target_source):
             L = nnloss
         total_L += mx.nd.sum(L).asscalar()
         ntotal += L.size
-    return total_L / ntotal
+        test_L = total_L / ntotal
+    return test_L
 
 def train():
+    """
+    Train the language model
+    """
+
     for epoch in range(epochs):
         start_time = time.time()
         total_L = 0.0
@@ -156,7 +195,6 @@ def train():
             epoch, time.time()-start_time, test_L, np.exp(test_L)))
 
 train()
-
 
 
 
