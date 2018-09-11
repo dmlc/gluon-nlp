@@ -37,3 +37,7 @@ and following preprocessing pipeline is done:
 
 If we turn on  ``--full``, the testing is performed on newstest2014 (http://statmt.org/wmt14/test-full.tgz). Then, we can
 obtain BLEU=27.05 with ``--bleu 13a``, BLEU=27.81 with ``--bleu intl``, and BLEU=28.80 with ``--bleu tweaked``
+
+The pre-trained model can be downloaded from http://apache-mxnet.s3-accelerate.dualstack.amazonaws.com/gluon/models/transformer_en_de_512_WMT2014-14bd361b.zip.
+
+For the users from China, it might be faster with this link instead: https://apache-mxnet.s3.cn-north-1.amazonaws.com.cn/gluon/models/transformer_en_de_512_WMT2014-14bd361b.zip.
