@@ -159,12 +159,3 @@ def load_translation_data(dataset, src_lang='en', tgt_lang='de'):
 
 def get_data_lengths(dataset):
     return list(dataset.transform(lambda srg, tgt: (len(srg), len(tgt))))
-
-# def write_evaluation_sentences(val_tgt_sentences, test_tgt_sentences):
-#     with io.open(os.path.join(hparams.save_dir, 'val_gt.txt'), 'w', encoding='utf-8') as of:
-#         for ele in val_tgt_sentences:
-#             of.write(' '.join(ele) + '\n')
-
-#     with io.open(os.path.join(hparams.save_dir, 'test_gt.txt'), 'w', encoding='utf-8') as of:
-#         for ele in test_tgt_sentences:
-#             of.write(' '.join(ele) + '\n')

@@ -94,16 +94,7 @@ def translate(translator, src_seq, src_vocab, tgt_vocab, detokenizer, ctx):
     for ind, sentence in enumerate(translation_out):
         real_translation_out[ind] = detokenizer(nmt.bleu._bpe_to_words(sentence),
                                                 return_str=True)
-    return real_translation_out
-
-# def write_sentences(sentences, file_path):
-#     with io.open(file_path, 'w', encoding='utf-8') as of:
-#         for sent in sentences:
-#             if isinstance(sent, (list, tuple)):
-#                 of.write(' '.join(sent) + '\n')
-#             else:
-#                 of.write(sent + '\n')
-                
+    return real_translation_out              
                 
 def train_one_epoch(epoch_id, model, train_data_loader, trainer, label_smoothing, loss_function, grad_interval, average_param_dict, update_average_param_dict, step_num, ctx):
     log_avg_loss = 0
