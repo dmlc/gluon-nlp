@@ -195,8 +195,3 @@ def train():
             epoch, time.time()-start_time, test_L, np.exp(test_L)))
 
 train()
-
-
-
-
-
