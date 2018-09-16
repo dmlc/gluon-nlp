@@ -30,7 +30,7 @@ class LanguageModel(gluon.Block):
                  journal={arXiv preprint arXiv:1609.04309},
                  year={2016}
         }
-    
+
     Parameters:
     ----------
     vocab_size: int
@@ -42,14 +42,14 @@ class LanguageModel(gluon.Block):
     num_layers: int
        the number of hidden layers.
     dropout: float
-       the chance of one connection to be ignored. 
+       the chance of one connection to be ignored.
     adaptive_softmax: bool
        If it is "True", the model uses adaptive softmax and the function "forward" will be called.
        If it is "False", the model uses regular full softmax and the the function "log_prob" will be called.
     ctx:
        Calculation is based on mx.gpu(0) or mx.cpu(0)
     cutoff: list or np.array
-       Build clusters for adaptive softmax.       
+       Build clusters for adaptive softmax.
     """
     def __init__(self, vocab_size, num_embed, num_hidden, num_layers, dropout=0.0,
             adaptive_softmax=True, ctx=mx.gpu(0), cutoff=[2000], **kwargs):
