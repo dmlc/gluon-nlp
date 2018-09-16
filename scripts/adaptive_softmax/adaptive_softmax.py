@@ -23,7 +23,7 @@ from mxnet import gluon
 from mxnet.gluon import nn, rnn
 
 class Adaptivesoftmax(gluon.Block):
-    """ 
+    """
     Implementation of the adaptive softmax proposed in the following work:
         @article{grave2016efficient,
                  title={Efficient softmax approximation for GPUs},
@@ -31,13 +31,13 @@ class Adaptivesoftmax(gluon.Block):
                  journal={arXiv preprint arXiv:1609.04309},
                  year={2016}
         }
-    
+
     Parameters:
     ----------
     input_size: int
        the input size for adaptive softmax function, which is defined as the output size of hidden layers (num_hidden).
     cutoff: list or np.array
-       build clusters for adaptive softmax.       
+       build clusters for adaptive softmax.
     """
     def __init__(self, input_size, cutoff, reduce_factor=4):
         super(Adaptivesoftmax, self).__init__()
@@ -63,14 +63,14 @@ class Adaptivesoftmax(gluon.Block):
             self.tail.add(seq)
         
     def set_target(self, target):
-        """ 
+        """
         Generate id array to assgin the sample to the specific clulster it belongs to. As this part is requires no
         gradient update, the target is transformed into numpy for calculation.
 
         Parameters:
         ----------
         target: NDArray
-           the label for training and its shape is `(batch_size * bptt, 1)`. 
+           the label for training and its shape is `(batch_size * bptt, 1)`.
 
         Returns
         ----------
@@ -93,7 +93,7 @@ class Adaptivesoftmax(gluon.Block):
                 self.id.append(None)
                 
     def remap_target(self, target):
-        """ 
+        """
         Map the target according to the different clusters they belong to.
         new_target[0] refers to the 'head'
         new_target[1], .... refer to the 'tail'
@@ -102,7 +102,7 @@ class Adaptivesoftmax(gluon.Block):
         Parameters:
         ----------
         target: NDArray
-           the label for training and its shape is `(batch_size * bptt, 1)`. 
+           the label for training and its shape is `(batch_size * bptt, 1)`.
 
         Returns
         ----------
@@ -129,7 +129,7 @@ class Adaptivesoftmax(gluon.Block):
         
                        
     def forward(self, input, target):
-        """ 
+        """
         If adaptive softmax is true, this function will be called.
 
         Parameters:
@@ -137,7 +137,7 @@ class Adaptivesoftmax(gluon.Block):
         input: NDArray
            the output from the hidden layers and its shape is `(batch_size * bptt, num_hidden)`.
         target: NDArray
-           the label for training and its shape is `(batch_size * bptt, 1)`. 
+           the label for training and its shape is `(batch_size * bptt, 1)`.
 
         Returns
         ----------
@@ -166,8 +166,8 @@ class Adaptivesoftmax(gluon.Block):
         
         return nnloss     
     
-    def log_prob(self, input): 
-        """ 
+    def log_prob(self, input):
+        """
         If adaptive softmax is false, this function will be called.
 
         Parameters:
@@ -180,7 +180,7 @@ class Adaptivesoftmax(gluon.Block):
         prob: NDArray
             The array contains the probability for the final output pontential word.
             Its shape is `(batch_size * bptt, vocab_size + 1)`.
-        """ 
+        """
         head_out = self.head(input)
         target_size = head_out.shape[0]
         prob = mx.nd.zeros((target_size, self.cutoff[-1]))
