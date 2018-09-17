@@ -73,6 +73,8 @@ WORD2VEC_NPZ_SHA1 = {
 
 FAST_TEXT_NPZ_SHA1 = {
     'crawl-300d-2M': ('crawl-300d-2M.npz', '9dd611a1fe280c63050cd546d3595400fc0eede4'),
+    'crawl-300d-2M-subword': ('crawl-300d-2M-subword-927782c8e.npz',
+                              '927782c8ec8c2c1deb6a8a550217478e183ca25a'),
     'wiki.aa': ('wiki.aa.npz', '48f163b80eb37f1806142169d3d4c05cf75b7339'),
     'wiki.ab': ('wiki.ab.npz', '860ceff119dd27e5b701b605879037c1310cbc3e'),
     'wiki.ace': ('wiki.ace.npz', '62938287464040491719f56a6f521f8f808beee8'),
@@ -561,6 +563,8 @@ FAST_TEXT_NPZ_SHA1 = {
 
 
 FAST_TEXT_BIN_SHA1 = {
+    'crawl-300d-2M-subword': ('crawl-300d-2M-subword-e6b07293f.bin',
+                              'e6b07293f7b0095e3c72c2a12bc09464b69444b0'),
     'cc.af.300': ('cc.af.300-33115ff8.bin', '33115ff8e4c8f439757c819399177f1f58f07f12'),
     'cc.als.300': ('cc.als.300-d6579933.bin', 'd65799331a03895d68a3fbe7611b181d7e7cc916'),
     'cc.am.300': ('cc.am.300-999b3e95.bin', '999b3e95a2c490d7fcab2a6e08074746303d3c17'),
