@@ -67,9 +67,7 @@ def test_big_text_models(wikitext2_val_and_counter):
         output.wait_to_read()
 
 @pytest.mark.serial
-def test_text_models(wikitext2_val_and_counter):
-    val, val_freq = wikitext2_val_and_counter
-    vocab = nlp.Vocab(val_freq)
+def test_text_models():
     text_models = ['standard_lstm_lm_200', 'standard_lstm_lm_650', 'standard_lstm_lm_1500', 'awd_lstm_lm_1150', 'awd_lstm_lm_600']
     pretrained_to_test = {'standard_lstm_lm_1500': 'wikitext-2',
                           'standard_lstm_lm_650': 'wikitext-2',
@@ -80,7 +78,7 @@ def test_text_models(wikitext2_val_and_counter):
     for model_name in text_models:
         eprint('testing forward for %s' % model_name)
         pretrained_dataset = pretrained_to_test.get(model_name)
-        model, _ = nlp.model.get_model(model_name, vocab=vocab, dataset_name=pretrained_dataset,
+        model, _ = nlp.model.get_model(model_name, dataset_name=pretrained_dataset,
                                        pretrained=pretrained_dataset is not None,
                                        root='tests/data/model/')
 
@@ -89,6 +87,8 @@ def test_text_models(wikitext2_val_and_counter):
             model.collect_params().initialize()
         output, state = model(mx.nd.arange(330).reshape(33, 10))
         output.wait_to_read()
+        del model
+        mx.nd.waitall()
 
 @pytest.mark.serial
 def test_cache_models():
@@ -112,11 +112,11 @@ def test_cache_models():
 
 @pytest.mark.serial
 def test_get_cache_model_noncache_models():
-    language_models_params = {'awd_lstm_lm_1150': 'awd_lstm_lm_1150_wikitext-2-45d6df33.params',
-                              'awd_lstm_lm_600': 'awd_lstm_lm_600_wikitext-2-7894a046.params',
-                              'standard_lstm_lm_200': 'standard_lstm_lm_200_wikitext-2-700b532d.params',
-                              'standard_lstm_lm_650': 'standard_lstm_lm_650_wikitext-2-14041667.params',
-                              'standard_lstm_lm_1500': 'standard_lstm_lm_1500_wikitext-2-d572ce71.params'}
+    language_models_params = {'awd_lstm_lm_1150': 'awd_lstm_lm_1150_wikitext-2-f9562ed0.params',
+                              'awd_lstm_lm_600': 'awd_lstm_lm_600_wikitext-2-e952becc.params',
+                              'standard_lstm_lm_200': 'standard_lstm_lm_200_wikitext-2-b233c700.params',
+                              'standard_lstm_lm_650': 'standard_lstm_lm_650_wikitext-2-631f3904.params',
+                              'standard_lstm_lm_1500': 'standard_lstm_lm_1500_wikitext-2-a4163513.params'}
     datasets = ['wikitext-2']
     for name in language_models_params.keys():
         for dataset_name in datasets:

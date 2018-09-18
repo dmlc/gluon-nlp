@@ -109,9 +109,12 @@ val_dataset, test_dataset = \
                         skip_empty=False, bos=None, eos='<eos>')
      for segment in ['val', 'test']]
 
-batchify = nlp.data.batchify.CorpusBatchify(vocab, 1)
-val_data = batchify(val_dataset)
-test_data = batchify(test_dataset)
+val_batch_size = 1
+val_batchify = nlp.data.batchify.CorpusBatchify(vocab, val_batch_size)
+val_data = val_batchify(val_dataset)
+test_batch_size = 1
+test_batchify = nlp.data.batchify.CorpusBatchify(vocab, test_batch_size)
+test_data = test_batchify(test_dataset)
 
 ###############################################################################
 # Training
@@ -202,8 +205,8 @@ def evaluate(data_source, batch_size, ctx=None):
 
 if __name__ == '__main__':
     start_pipeline_time = time.time()
-    final_val_L = evaluate(val_data, 1, context[0])
-    final_test_L = evaluate(test_data, 1, context[0])
-    print('Best validation loss %.2f, val ppl %.2f'%(final_val_L, math.exp(final_val_L)))
-    print('Best test loss %.2f, test ppl %.2f'%(final_test_L, math.exp(final_test_L)))
-    print('Total time cost %.2fs'%(time.time()-start_pipeline_time))
+    final_val_L = evaluate(val_data, val_batch_size, context[0])
+    final_test_L = evaluate(test_data, test_batch_size, context[0])
+    print('Best validation loss %.2f, val ppl %.2f' % (final_val_L, math.exp(final_val_L)))
+    print('Best test loss %.2f, test ppl %.2f' % (final_test_L, math.exp(final_test_L)))
+    print('Total time cost %.2fs' % (time.time()-start_pipeline_time))
