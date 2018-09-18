@@ -351,7 +351,7 @@ def train():
     t = 0
     avg_trigger = 0
     n = 5
-    logs = []
+    valid_losses = []
     for epoch in range(args.epochs):
         total_L = 0.0
         start_epoch_time = time.time()
@@ -427,7 +427,7 @@ def train():
             trainer.learning_rate))
 
         if args.ntasgd and avg_trigger == 0:
-            if t > n and val_L > min(logs[-n:]):
+            if t > n and val_L > min(valid_losses[-n:]):
                 if param_dict_avg is None:
                     param_dict_avg = {k.split(model._prefix)[1]: v.data(context[0]).copy()
                                       for k, v in parameters.items()}
@@ -438,7 +438,7 @@ def train():
                 avg_trigger = epoch * (len(train_data) // args.bptt) + len(train_data) // args.bptt
                 print('Switching to NTASGD and avg_trigger is : %d' % avg_trigger)
                 ntasgd = True
-            logs.append(val_L)
+            valid_losses.append(val_L)
             t += 1
 
         if val_L < best_val:
