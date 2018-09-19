@@ -1,4 +1,15 @@
 # coding:utf-8
+'''
+params to reproduce the results in log files:
+glove-50: embedding_dim=50, logging_path="./log/log_glove_50.txt",model_path='./model/glove_50.model',hidden=100,lstm_dropout=0.1,
+          learning_rate=0.001,epochs=50,seq_len=500,batch_size=100,dropout=0.3
+glove-100: embedding_dim=50, logging_path="./log/log_glove_50.txt",model_path='./model/glove_50.model',hidden=100,lstm_dropout=0.1,
+          learning_rate=0.001,epochs=100,seq_len=500,batch_size=100,dropout=0.3
+glove-200: embedding_dim=50, logging_path="./log/log_glove_50.txt",model_path='./model/glove_50.model',hidden=150,lstm_dropout=0.25,
+          learning_rate=0.001,epochs=100,seq_len=500,batch_size=100,dropout=0.3
+glove-300: embedding_dim=50, logging_path="./log/log_glove_50.txt",model_path='./model/glove_50.model',hidden=150,lstm_dropout=0.1,
+          learning_rate=0.001,epochs=50,seq_len=500,batch_size=100,dropout=0.3      
+'''
 import os, io, sys, re
 from collections import Counter
 import mxnet as mx
