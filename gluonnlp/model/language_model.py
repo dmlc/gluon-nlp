@@ -417,12 +417,12 @@ def standard_lstm_lm_1500(dataset_name=None, vocab=None, pretrained=False, ctx=c
 
 model_store._model_sha1.update(
     {name: checksum for checksum, name in [
-        ('d572ce7190e128b94aed403ad89a610aebe8a74a', 'standard_lstm_lm_1500_wikitext-2'),
-        ('140416672f27691173523a7535b13cb3adf050a1', 'standard_lstm_lm_650_wikitext-2'),
-        ('700b532dc96a29e39f45cb7dd632ce44e377a752', 'standard_lstm_lm_200_wikitext-2'),
-        ('45d6df33f35715fb760ec8d18ed567016a897df7', 'awd_lstm_lm_1150_wikitext-2'),
-        ('7894a046f8286db0d5d2ed672b60f4f52b4bc3aa', 'awd_lstm_lm_600_wikitext-2'),
-        ('6bb3e991eb4439fabfe26c129da2fe15a324e918', 'big_rnn_lm_2048_512_gbw'),
+        ('a416351377d837ef12d17aae27739393f59f0b82', 'standard_lstm_lm_1500_wikitext-2'),
+        ('631f39040cd65b49f5c8828a0aba65606d73a9cb', 'standard_lstm_lm_650_wikitext-2'),
+        ('b233c700e80fb0846c17fe14846cb7e08db3fd51', 'standard_lstm_lm_200_wikitext-2'),
+        ('f9562ed05d9bcc7e1f5b7f3c81a1988019878038', 'awd_lstm_lm_1150_wikitext-2'),
+        ('e952becc7580a0b5a6030aab09d0644e9a13ce18', 'awd_lstm_lm_600_wikitext-2'),
+        ('6bb3e991eb4439fabfe26c129da2fe15a324e918', 'big_rnn_lm_2048_512_gbw')
     ]})
 
 class BigRNN(Block):
