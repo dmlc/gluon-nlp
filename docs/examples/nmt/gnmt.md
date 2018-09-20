@@ -17,7 +17,10 @@ import numpy as np
 import mxnet as mx
 from mxnet import gluon
 import gluonnlp as nlp
-import scripts.nmt as nmt
+
+from os import sys, path
+sys.path.append(path.dirname(path.dirname(path.abspath(os.getcwd()))) + '/scripts')
+import nmt
 ```
 
 ## Hyper-parameters
