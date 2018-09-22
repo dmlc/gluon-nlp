@@ -10,3 +10,4 @@ Here are several end-to-end examples of using GluonNLP Toolkit for modeling task
    language_model/language_model.ipynb
    sentiment_analysis/sentiment_analysis.ipynb
    nmt/gnmt.ipynb
+   self_attentive_sentence_embedding/self_attentive_sentence_embedding.ipynb
