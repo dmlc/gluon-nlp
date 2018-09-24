@@ -10,7 +10,7 @@ In this notebook, we will show how to train Transformer introduced in [1] and ev
 
 ### Load MXNet and GluonNLP
 
-```{.python .input  n=1}
+```{.python .input}
 import warnings
 warnings.filterwarnings('ignore')
 
@@ -23,7 +23,7 @@ import gluonnlp as nlp
 
 ### Set Environment
 
-```{.python .input  n=2}
+```{.python .input}
 np.random.seed(100)
 random.seed(100)
 mx.random.seed(10000)
@@ -38,7 +38,7 @@ In this subsection, we first load the SOTA Transformer model in GluonNLP model z
 
 Next, we load the pretrained SOTA Transformer using the model API in GluonNLP. In this way, we can easily get access to the SOTA machine translation model and use it in your own application.
 
-```{.python .input  n=3}
+```{.python .input}
 import nmt
 
 wmt_model_name = 'transformer_en_de_512'
@@ -57,7 +57,7 @@ The Transformer model architecture is shown as below:
 
 <div style="width: 500px;">![transformer](transformer.png)</div>
 
-```{.python .input  n=4}
+```{.python .input}
 print(wmt_transformer_model)
 ```
 
@@ -75,7 +75,7 @@ for the future use. The processing steps include:
 
 Let's first look at the WMT 2014 corpus.
 
-```{.python .input  n=5}
+```{.python .input}
 import hyperparameters as hparams
 
 wmt_data_test = nlp.data.WMT2014BPE('newstest2014',
@@ -87,7 +87,7 @@ print('Source language %s, Target language %s' % (hparams.src_lang, hparams.tgt_
 wmt_data_test[0]
 ```
 
-```{.python .input  n=6}
+```{.python .input}
 wmt_test_text = nlp.data.WMT2014('newstest2014', 
                                  src_lang=hparams.src_lang, 
                                  tgt_lang=hparams.tgt_lang,
@@ -97,18 +97,18 @@ wmt_test_text[0]
 
 We then generate the target gold translations.
 
-```{.python .input  n=7}
+```{.python .input}
 wmt_test_tgt_sentences = list(wmt_test_text.transform(lambda src, tgt: tgt))
 wmt_test_tgt_sentences[0]
 ```
 
-```{.python .input  n=8}
+```{.python .input}
 import dataprocessor
 
 print(dataprocessor.TrainValDataTransform.__doc__)
 ```
 
-```{.python .input  n=9}
+```{.python .input}
 wmt_transform_fn = dataprocessor.TrainValDataTransform(wmt_src_vocab, wmt_tgt_vocab, -1, -1)
 wmt_dataset_processed = wmt_data_test.transform(wmt_transform_fn, lazy=False)
 print(*wmt_dataset_processed[0], sep='\n')
@@ -116,14 +116,14 @@ print(*wmt_dataset_processed[0], sep='\n')
 
 ### Create Sampler and DataLoader for TOY Dataset
 
-```{.python .input  n=10}
+```{.python .input}
 wmt_data_test_with_len = gluon.data.SimpleDataset([(ele[0], ele[1], len(
     ele[0]), len(ele[1]), i) for i, ele in enumerate(wmt_dataset_processed)])
 ```
 
 Now, we have obtained data_train, data_val, and data_test. The next step is to construct sampler and DataLoader. The first step is to construct batchify function, which pads and stacks sequences to form mini-batch.
 
-```{.python .input  n=11}
+```{.python .input}
 wmt_test_batchify_fn = nlp.data.batchify.Tuple(
     nlp.data.batchify.Pad(),
     nlp.data.batchify.Pad(),
@@ -134,11 +134,11 @@ wmt_test_batchify_fn = nlp.data.batchify.Tuple(
 
 We can then construct bucketing samplers, which generate batches by grouping sequences with similar lengths.
 
-```{.python .input  n=12}
+```{.python .input}
 wmt_bucket_scheme = nlp.data.ExpWidthBucket(bucket_len_step=1.2)
 ```
 
-```{.python .input  n=13}
+```{.python .input}
 wmt_test_batch_sampler = nlp.data.FixedBucketSampler(
     lengths=wmt_dataset_processed.transform(lambda src, tgt: len(tgt)),
     use_average_length=True,
@@ -149,7 +149,7 @@ print(wmt_test_batch_sampler.stats())
 
 Given the samplers, we can create DataLoader, which is iterable.
 
-```{.python .input  n=14}
+```{.python .input}
 wmt_test_data_loader = gluon.data.DataLoader(
     wmt_data_test_with_len,
     batch_sampler=wmt_test_batch_sampler,
@@ -165,7 +165,7 @@ Next, we generate the SOTA results on the WMT test dataset. As we can see from t
 
 We first define the `BeamSearchTranslator` to generate the actual translations.
 
-```{.python .input  n=15}
+```{.python .input}
 wmt_translator = nmt.translation.BeamSearchTranslator(
     model=wmt_transformer_model,
     beam_size=hparams.beam_size, 
@@ -175,7 +175,7 @@ wmt_translator = nmt.translation.BeamSearchTranslator(
 
 Then we caculate the `loss` as well as the `bleu` score on the WMT 2014 English-German test dataset. Note that the following evalution process will take ~13 mins to complete.
 
-```{.python .input  n=16}
+```{.python .input}
 import time
 import utils
 
@@ -205,7 +205,7 @@ print('WMT14 EN-DE SOTA model test loss: %.2f; test bleu score: %.2f; time cost 
       %(wmt_test_loss, wmt_test_bleu_score * 100, (time.time() - eval_start_time)))
 ```
 
-```{.python .input  n=17}
+```{.python .input}
 print('Sample translations:')
 num_pairs = 3
 
@@ -223,7 +223,7 @@ for i in range(num_pairs):
 
 We herein show the actual translation example (EN-DE) when given a source language using the SOTA Transformer model.
 
-```{.python .input  n=18}
+```{.python .input}
 import utils
 
 print('Translate the following English sentence into German:')
@@ -251,7 +251,7 @@ In this subsection, we will go though the whole process about loading translatio
 
 Note that we use demo mode (`TOY` dataset) by default, since loading the whole WMT 2014 English-German dataset `WMT2014BPE` for the later training will be slow (~1 day). But if you really want to train to have the SOTA result, please set `demo = False`. In order to make the data processing blocks execute in a more efficient way, we package them in the `load_translation_data` (`transform` etc.) function used as below. The function also returns the gold target sentences as well as the vocabularies.
 
-```{.python .input  n=19}
+```{.python .input}
 demo = True
 if demo:
     dataset = 'TOY'
@@ -281,7 +281,7 @@ Now, we have obtained `data_train`, `data_val`, and `data_test`. The next step
 is to construct sampler and DataLoader. The first step is to construct batchify
 function, which pads and stacks sequences to form mini-batch.
 
-```{.python .input  n=20}
+```{.python .input}
 train_batchify_fn = nlp.data.batchify.Tuple(
     nlp.data.batchify.Pad(), 
     nlp.data.batchify.Pad(),
@@ -301,7 +301,7 @@ target_test_lengths = list(map(lambda x: x[-1], data_test_lengths))
 We can then construct bucketing samplers, which generate batches by grouping
 sequences with similar lengths.
 
-```{.python .input  n=21}
+```{.python .input}
 bucket_scheme = nlp.data.ExpWidthBucket(bucket_len_step=1.2)
 train_batch_sampler = nlp.data.FixedBucketSampler(lengths=data_train_lengths,
                                              batch_size=hparams.batch_size,
@@ -338,7 +338,7 @@ print(test_batch_sampler.stats())
 
 Given the samplers, we can create DataLoader, which is iterable. Note that the data loader of validation and test dataset share the same batchifying function `test_batchify_fn`.
 
-```{.python .input  n=22}
+```{.python .input}
 train_data_loader = nlp.data.ShardedDataLoader(data_train,
                                       batch_sampler=train_batch_sampler,
                                       batchify_fn=train_batchify_fn,
@@ -363,7 +363,7 @@ can be easily obtained by calling `get_transformer_encoder_decoder` function. Th
 use the encoder and decoder in `NMTModel` to construct the Transformer model.
 `model.hybridize` allows computation to be done using symbolic backend. We also use `label_smoothing`.
 
-```{.python .input  n=23}
+```{.python .input}
 encoder, decoder = nmt.transformer.get_transformer_encoder_decoder(units=hparams.num_units,
                                                    hidden_size=hparams.hidden_size,
                                                    dropout=hparams.dropout,
@@ -394,7 +394,7 @@ detokenizer = nlp.data.SacreMosesDetokenizer()
 
 Here, we build the translator using the beam search
 
-```{.python .input  n=24}
+```{.python .input}
 translator = nmt.translation.BeamSearchTranslator(model=model, 
                                                   beam_size=hparams.beam_size,
                                                   scorer=nlp.model.BeamSearchScorer(alpha=hparams.lp_alpha, 
@@ -409,7 +409,7 @@ Before conducting training, we need to create trainer for updating the
 parameter. In the following example, we create a trainer that uses ADAM
 optimzier.
 
-```{.python .input  n=25}
+```{.python .input}
 trainer = gluon.Trainer(model.collect_params(), hparams.optimizer,
                         {'learning_rate': hparams.lr, 'beta2': 0.98, 'epsilon': 1e-9})
 print('Use learning_rate=%.2f' 
@@ -418,7 +418,7 @@ print('Use learning_rate=%.2f'
 
 We can then write the training loop. During the training, we perform the evaluation on validation and testing dataset every epoch, and record the parameters that give the hightest BLEU score on validation dataset. Before performing forward and backward, we first use `as_in_context` function to copy the mini-batch to GPU. The statement `with mx.autograd.record()` will locate Gluon backend to compute the gradients for the part inside the block. For ease of observing the convergence of the update of the `Loss` in a quick fashion, we set the `epochs = 3`. Notice that, in order to obtain the best BLEU score, we will need more epochs and large warmup steps following the original paper as you can find the SOTA results in the first subsection. Besides, we use Averaging SGD [2] to update the parameters, since it is more robust for the machine translation task.
 
-```{.python .input  n=26}
+```{.python .input}
 best_valid_loss = float('Inf')
 step_num = 0
 #We use warmup steps as introduced in [1].

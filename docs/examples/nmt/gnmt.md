@@ -6,7 +6,7 @@ create sampler and DataLoader, 3) build model, and 4) write training epochs.
 
 ## Load MXNET and Gluon
 
-```{.python .input  n=1}
+```{.python .input}
 import warnings
 warnings.filterwarnings('ignore')
 
@@ -25,7 +25,7 @@ import nmt
 
 ## Hyper-parameters
 
-```{.python .input  n=2}
+```{.python .input}
 np.random.seed(100)
 random.seed(100)
 mx.random.seed(10000)
@@ -68,7 +68,7 @@ sequences, 2) split the string input to a list of tokens, 3) map the
 string token into its integer index in the vocabulary, and 4) append end-of-sentence (EOS) token to source
 sentence and add BOS and EOS tokens to target sentence.
 
-```{.python .input  n=3}
+```{.python .input}
 def cache_dataset(dataset, prefix):
     """Cache the processed npy dataset  the dataset into a npz
 
@@ -224,7 +224,7 @@ Now, we have obtained `data_train`, `data_val`, and `data_test`. The next step
 is to construct sampler and DataLoader. The first step is to construct batchify
 function, which pads and stacks sequences to form mini-batch.
 
-```{.python .input  n=4}
+```{.python .input}
 train_batchify_fn = nlp.data.batchify.Tuple(nlp.data.batchify.Pad(),
                                             nlp.data.batchify.Pad(),
                                             nlp.data.batchify.Stack(dtype='float32'),
@@ -239,7 +239,7 @@ test_batchify_fn = nlp.data.batchify.Tuple(nlp.data.batchify.Pad(),
 We can then construct bucketing samplers, which generate batches by grouping
 sequences with similar lengths. Here, the bucketing scheme is empirically determined.
 
-```{.python .input  n=5}
+```{.python .input}
 bucket_scheme = nlp.data.ExpWidthBucket(bucket_len_step=1.2)
 train_batch_sampler = nlp.data.FixedBucketSampler(lengths=data_train_lengths,
                                                   batch_size=batch_size,
@@ -261,7 +261,7 @@ logging.info('Test Batch Sampler:\n{}'.format(test_batch_sampler.stats()))
 
 Given the samplers, we can create DataLoader, which is iterable.
 
-```{.python .input  n=6}
+```{.python .input}
 train_data_loader = gluon.data.DataLoader(data_train,
                                           batch_sampler=train_batch_sampler,
                                           batchify_fn=train_batchify_fn,
@@ -283,7 +283,7 @@ can be easily constructed by calling `get_gnmt_encoder_decoder` function. Then, 
 feed the encoder and decoder to `NMTModel` to construct the GNMT model.
 `model.hybridize` allows computation to be done using the symbolic backend.
 
-```{.python .input  n=7}
+```{.python .input}
 encoder, decoder = nmt.gnmt.get_gnmt_encoder_decoder(hidden_size=num_hidden,
                                                      dropout=dropout,
                                                      num_layers=num_layers,
@@ -302,7 +302,7 @@ loss_function.hybridize(static_alloc=static_alloc)
 
 We also build the beam search translator.
 
-```{.python .input  n=8}
+```{.python .input}
 translator = nmt.translation.BeamSearchTranslator(model=model, beam_size=beam_size,
                                                   scorer=nlp.model.BeamSearchScorer(alpha=lp_alpha,
                                                                                     K=lp_k),
@@ -313,7 +313,7 @@ logging.info('Use beam_size={}, alpha={}, K={}'.format(beam_size, lp_alpha, lp_k
 We define evaluation function as follows. The `evaluate` function use beam
 search translator to generate outputs for the validation and testing datasets.
 
-```{.python .input  n=9}
+```{.python .input}
 def evaluate(data_loader):
     """Evaluate given the data loader
 
@@ -372,7 +372,7 @@ Before entering the training stage, we need to create trainer for updating the
 parameters. In the following example, we create a trainer that uses ADAM
 optimzier.
 
-```{.python .input  n=10}
+```{.python .input}
 trainer = gluon.Trainer(model.collect_params(), 'adam', {'learning_rate': lr})
 ```
 
@@ -382,7 +382,7 @@ performing forward and backward, we first use `as_in_context` function to copy
 the mini-batch to GPU. The statement `with mx.autograd.record()` tells Gluon
 backend to compute the gradients for the part inside the block.
 
-```{.python .input  n=11}
+```{.python .input}
 best_valid_bleu = 0.0
 for epoch_id in range(epochs):
     log_avg_loss = 0
