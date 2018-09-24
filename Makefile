@@ -44,6 +44,14 @@ docs: release
 		echo "processing" $$BASENAME ; \
 		sed -i "s/$$IPYNB_BASENAME/$$BASENAME/g" $$TARGET_HTML; \
 	done;
+	for f in $(shell find scripts -type f -name '*.rst' -print) ; do \
+		DIR=`dirname $$f` ; \
+		BASENAME=`basename $$f` ; \
+		HTML_BASENAME=`echo $$BASENAME | sed 's/rst/html/'` ; \
+		TARGET_HTML="docs/_build/html/$$DIR/$$HTML_BASENAME" ; \
+		echo "processing" $$BASENAME ; \
+		sed -i "s/docs\/scripts/scripts/g" $$TARGET_HTML; \
+	done;
 
 clean:
 	git clean -f -d -x --exclude="$(ROOTDIR)/tests/externaldata/*" --exclude=conda
