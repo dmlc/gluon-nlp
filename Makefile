@@ -34,6 +34,16 @@ lint:
 
 docs: release
 	make -C docs html SPHINXOPTS=-W
+	for f in $(shell find docs/examples -type f -name '*.md' -print) ; do \
+		FILE=`echo $$f | sed 's/docs\///g'` ; \
+		DIR=`dirname $$FILE` ; \
+		BASENAME=`basename $$FILE` ; \
+		HTML_BASENAME=`echo $$BASENAME | sed 's/md/html/'` ; \
+		IPYNB_BASENAME=`echo $$BASENAME | sed 's/md/ipynb/'` ; \
+		TARGET_HTML="docs/_build/html/$$DIR/$$HTML_BASENAME" ; \
+		echo "processing" $$BASENAME ; \
+		sed -i "s/$$IPYNB_BASENAME/$$BASENAME/g" $$TARGET_HTML; \
+	done;
 
 clean:
 	git clean -f -d -x --exclude="$(ROOTDIR)/tests/externaldata/*" --exclude=conda
