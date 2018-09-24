@@ -28,6 +28,9 @@ def normalize_answer(s):
 
 
 def f1_score(prediction, ground_truth):
+    r"""
+        Caculate the f1 score.
+    """
     prediction_tokens = normalize_answer(prediction).split()
     ground_truth_tokens = normalize_answer(ground_truth).split()
     common = Counter(prediction_tokens) & Counter(ground_truth_tokens)
@@ -41,6 +44,9 @@ def f1_score(prediction, ground_truth):
 
 
 def exact_match_score(prediction, ground_truth):
+    r"""
+        Caculate the em score.
+    """
     return (normalize_answer(prediction) == normalize_answer(ground_truth))
 
 
@@ -53,6 +59,9 @@ def metric_max_over_ground_truths(metric_fn, prediction, ground_truths):
 
 
 def evaluate(dataset, predictions):
+    r"""
+        Main function.
+    """
     f1 = exact_match = total = 0
     for article in dataset:
         for paragraph in article['paragraphs']:
@@ -76,7 +85,10 @@ def evaluate(dataset, predictions):
     return {'exact_match': exact_match, 'f1': f1}
 
 
-if __name__ == '__main__':
+def main():
+    r"""
+    Main function.
+    """
     expected_version = '1.1'
     parser = argparse.ArgumentParser(
         description='Evaluation for SQuAD ' + expected_version)
@@ -93,3 +105,7 @@ if __name__ == '__main__':
     with open(args.prediction_file) as prediction_file:
         predictions = json.load(prediction_file)
     print(json.dumps(evaluate(dataset, predictions)))
+
+
+if __name__ == '__main__':
+    main()

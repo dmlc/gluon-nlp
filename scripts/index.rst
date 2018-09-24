@@ -12,3 +12,5 @@ Scripts
 .. include:: nmt/machine_translation.rst
 
 .. include:: classification/document_classification_fasttext.rst
+
+.. include:: question_answering/question_answering.rst

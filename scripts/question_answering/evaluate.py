@@ -1,24 +1,28 @@
 """
 In the evaluate function, we use the offical evaluate function as core function.
 
-offical evaluate.py file can be find in the SQuAD dataset offcial web. 
+offical evaluate.py file can be find in the SQuAD dataset offcial web.
 """
 import json
 
 from mxnet import autograd, nd
 from tqdm import tqdm
 
-from config import (CTX, DATA_PATH, EVAL_BATCH_SIZE, MAX_ANSWER_LENS,
-                    RAW_DEV_FILE, RAW_TRAIN_FILE)
+try:
+    from config import (CTX, DATA_PATH, EVAL_BATCH_SIZE, MAX_ANSWER_LENS,
+                        RAW_DEV_FILE, RAW_TRAIN_FILE)
+except ImportError:
+    from .config import (CTX, DATA_PATH, EVAL_BATCH_SIZE, MAX_ANSWER_LENS,
+                         RAW_DEV_FILE, RAW_TRAIN_FILE)
 from data_loader import DataLoader
 from offical_evaluate import evaluate as offical_eval
 
 ctx = CTX[0]
 ANSWER_MASK_MATRIX = nd.zeros(
     shape=(1, 1000, 1000), ctx=ctx)
-for i in range(MAX_ANSWER_LENS):
+for idx in range(MAX_ANSWER_LENS):
     ANSWER_MASK_MATRIX += nd.eye(
-        N=1000, M=1000, k=i, ctx=ctx)
+        N=1000, M=1000, k=idx, ctx=ctx)
 
 
 def evaluate(model, dataset_type='train', ema=None):
@@ -47,7 +51,7 @@ def evaluate(model, dataset_type='train', ema=None):
     total_answers = {}
 
     for batch_data in tqdm(data_loader.next_batch()):
-        id = [x[0] for x in batch_data]
+        ids = [x[0] for x in batch_data]
         context = nd.array([x[1] for x in batch_data], ctx=ctx)
         context_mask = context > 0
         query = nd.array([x[2] for x in batch_data], ctx=ctx)
@@ -63,9 +67,8 @@ def evaluate(model, dataset_type='train', ema=None):
         end_hat = end_hat.softmax(axis=1)
 
         answer_span_pair = matrix_answer_select(begin_hat, end_hat)
-        for i in range(len(id)):
-            total_answers[id[i]] = format_answer(
-                answer_span_pair[i], raw_context[i], spans[i])
+        for i, a, r, s in zip(ids, answer_span_pair, raw_context, spans):
+            total_answers[i] = format_answer(a, r, s)
     model.load_parameters('tmp', ctx=CTX)
     autograd.set_training(True)
     if dataset_type == 'train':
@@ -85,9 +88,9 @@ def evaluate(model, dataset_type='train', ema=None):
 def matrix_answer_select(begin_hat, end_hat):
     r"""Select the begin and end position of answer span.
 
-        At inference time, the predicted span (s, e) is chosen such that 
+        At inference time, the predicted span (s, e) is chosen such that
         begin_hat[s] * end_hat[e] is maximized and s ≤ e.
-        
+
     Parameters
     ----------
     begin_hat : NDArray
@@ -103,10 +106,8 @@ def matrix_answer_select(begin_hat, end_hat):
 
     result = nd.batch_dot(begin_hat, end_hat) * ANSWER_MASK_MATRIX.slice(
         begin=(0, 0, 0), end=(1, begin_hat.shape[1], begin_hat.shape[1]))
-    yp1 = nd.argmax(nd.max(result, axis=2), axis=1,
-                    keepdims=True).astype('int32')
-    yp2 = nd.argmax(nd.max(result, axis=1), axis=1,
-                    keepdims=True).astype('int32')
+    yp1 = result.max(axis=2).argmax(axis=1, keepdims=True).astype('int32')
+    yp2 = result.max(axis=1).argmax(axis=1, keepdims=True).astype('int32')
     return nd.concat(yp1, yp2, dim=-1)
 
 
@@ -114,7 +115,3 @@ def format_answer(answer_span_pair, context, sp):
     begin = int(answer_span_pair[0].asscalar())
     end = int(answer_span_pair[1].asscalar())
     return context[sp[begin][0]:sp[end][1]]
-
-
-if __name__ == "__main__":
-    pass

@@ -1,25 +1,40 @@
+r"""
+This file contains the train code.
+"""
 import json
 import time
 
 import mxnet as mx
-from mxnet import autograd, gluon, nd
+from mxnet import (autograd, gluon, nd)
 from tqdm import tqdm
 
 from data_loader import DataLoader
 from evaluate import evaluate
 
 try:
-    from config import *
+    from config import (EPOCHS, SAVE_MODEL_PREFIX_NAME, SAVE_TRAINER_PREFIX_NAME,
+                        LAST_GLOBAL_STEP, TRAIN_FLAG, EVALUATE_INTERVAL, BETA2,
+                        WORD_EMB_FILE_NAME, NEED_LOAD_TRAINED_MODEL, TRAIN_BATCH_SIZE,
+                        ACCUM_AVG_TRAIN_CROSS_ENTROPY, BATCH_TRAIN_CROSS_ENTROPY,
+                        CTX, WEIGHT_DECAY, CLIP_GRADIENT, TARGET_TRAINER_FILE_NAME, BETA1,
+                        INIT_LEARNING_RATE, EXPONENTIAL_MOVING_AVERAGE_DECAY, EPSILON,
+                        TARGET_MODEL_FILE_NAME)
 except ImportError:
-    from .config import *
+    from .config import (EPOCHS, SAVE_MODEL_PREFIX_NAME, SAVE_TRAINER_PREFIX_NAME,
+                         LAST_GLOBAL_STEP, TRAIN_FLAG, EVALUATE_INTERVAL, BETA2,
+                         WORD_EMB_FILE_NAME, NEED_LOAD_TRAINED_MODEL, TRAIN_BATCH_SIZE,
+                         ACCUM_AVG_TRAIN_CROSS_ENTROPY, BATCH_TRAIN_CROSS_ENTROPY,
+                         CTX, WEIGHT_DECAY, CLIP_GRADIENT, TARGET_TRAINER_FILE_NAME, BETA1,
+                         INIT_LEARNING_RATE, EXPONENTIAL_MOVING_AVERAGE_DECAY, EPSILON,
+                         TARGET_MODEL_FILE_NAME)
 try:
     from model import MySoftmaxCrossEntropy, QANet
 except ImportError:
     from .model import MySoftmaxCrossEntropy, QANet
 try:
-    from util import ExponentialMovingAverage, load_emb_mat, warm_up_lr, zero_grad
+    from util import ExponentialMovingAverage, load_emb_mat, warm_up_lr
 except ImportError:
-    from .util import ExponentialMovingAverage, load_emb_mat, warm_up_lr, zero_grad
+    from .util import ExponentialMovingAverage, load_emb_mat, warm_up_lr
 
 
 mx.random.seed(37)
@@ -31,6 +46,9 @@ global_step = LAST_GLOBAL_STEP
 
 
 def train(model, data_loader, trainer, loss_function, ema=None):
+    r"""
+    Train and save.
+    """
     for e in tqdm(range(EPOCHS)):
         print('Begin %d/%d epoch...' % (e + 1, EPOCHS))
         train_one_epoch(model, data_loader, trainer, loss_function, ema)
@@ -40,13 +58,18 @@ def train(model, data_loader, trainer, loss_function, ema=None):
                               time.asctime(time.localtime(time.time())))
         trainer.save_states(SAVE_TRAINER_PREFIX_NAME +
                             time.asctime(time.localtime(time.time())))
-        with open(ACCUM_AVG_TRAIN_CROSS_ENTROPY + time.asctime(time.localtime(time.time())), 'w') as f:
+        with open(ACCUM_AVG_TRAIN_CROSS_ENTROPY +
+                  time.asctime(time.localtime(time.time())), 'w') as f:
             f.write(json.dumps(accum_avg_train_ce))
-        with open(BATCH_TRAIN_CROSS_ENTROPY + time.asctime(time.localtime(time.time())), 'w') as f:
+        with open(BATCH_TRAIN_CROSS_ENTROPY +
+                  time.asctime(time.localtime(time.time())), 'w') as f:
             f.write(json.dumps(batch_train_ce))
 
 
 def train_one_epoch(model, data_loader, trainer, loss_function, ema=None):
+    r"""
+    One train loop.
+    """
     total_batchs = data_loader.total_batchs
     total_loss = 0
     step = 0
@@ -55,14 +78,13 @@ def train_one_epoch(model, data_loader, trainer, loss_function, ema=None):
         step += 1
         global_step += 1
         # add evaluate per EVALUATE_INTERVAL batchs
-        if(global_step % EVALUATE_INTERVAL == 0):
+        if global_step % EVALUATE_INTERVAL == 0:
             print('global_step == %d' % (global_step))
             print('evaluating dev dataset...')
             f1_score, em_score = evaluate(model, dataset_type='dev', ema=ema)
             print('dev f1:' + str(f1_score) + 'em:' + str(em_score))
             dev_f1.append([global_step, f1_score])
             dev_em.append([global_step, em_score])
-
 
         context = nd.array([x[0] for x in batch_data])
         query = nd.array([x[1] for x in batch_data])
@@ -116,22 +138,24 @@ def train_one_epoch(model, data_loader, trainer, loss_function, ema=None):
         )
 
         with autograd.record():
-            different_ctx_loss = [loss_function(*model(c, q, cc, qc, cm, qm, b, e)) for c, q, cc, qc, cm, qm, b, e in zip(
-                context, query, context_char, query_char, c_mask, q_mask, begin, end)]
+            different_ctx_loss = [loss_function(*model(c, q, cc, qc, cm, qm, b, e))
+                                  for c, q, cc, qc, cm, qm, b, e in
+                                  zip(context, query, context_char, query_char,
+                                      c_mask, q_mask, begin, end)]
 
             for loss in different_ctx_loss:
                 loss.backward()
         if global_step == 1:
             # TODO: multi-GPU
             for name, param in model.collect_params().items():
-                ema.register(name, param.data(CTX[0]))
+                ema.add(name, param.data(CTX[0]))
         trainer.set_learning_rate(warm_up_lr(global_step))
         trainer.allreduce_grads()
         reset_embedding_grad(model)
         tmp = []
         for name, paramater in model.collect_params().items():
             grad = paramater.grad(context[0].context)
-            if name == "qanet0_embedding0_weight":
+            if name == 'qanet0_embedding0_weight':
                 grad[0:2] += WEIGHT_DECAY * \
                     paramater.data(context[0].context)[0:2]
             else:
@@ -155,11 +179,14 @@ def train_one_epoch(model, data_loader, trainer, loss_function, ema=None):
         batch_train_ce.append([global_step, batch_loss])
         accum_avg_train_ce.append([global_step, total_loss / step])
 
-        print("batch %d/%d, total_loss %.2f, batch_loss %.2f" %
+        print('batch %d/%d, total_loss %.2f, batch_loss %.2f' %
               (step, total_batchs, total_loss / step, batch_loss), end='\r', flush=True)
 
 
 def initial_model_parameters(model):
+    r"""
+    Initial the word embedding layer.
+    """
     model.collect_params().initialize(ctx=CTX)
     # initial embedding parameters with glove
     word_embedding = nd.array(load_emb_mat(WORD_EMB_FILE_NAME))
@@ -168,11 +195,17 @@ def initial_model_parameters(model):
 
 
 def reset_embedding_grad(model):
+    r"""
+    Reset the grad about word embedding layer.
+    """
     for ctx in CTX:
         model.word_emb[0].weight.grad(ctx=ctx)[2:] = 0
 
 
 def main():
+    r"""
+    Main function.
+    """
     model = QANet()
     # initial parameters
     print('Initial paramters...')
@@ -183,7 +216,7 @@ def main():
         # TODO: confirm in multi-gpu
         initial_model_parameters(model)
     print(model)
-    if TRAIN_FLAG == True:
+    if TRAIN_FLAG is True:
         loss_function = MySoftmaxCrossEntropy()
 
         ema = ExponentialMovingAverage(decay=EXPONENTIAL_MOVING_AVERAGE_DECAY)
@@ -218,5 +251,5 @@ def main():
         print('The dev dataset F1 is:%s, and EM is: %s' % (f1_score, em_score))
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

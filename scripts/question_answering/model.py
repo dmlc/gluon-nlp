@@ -1,15 +1,31 @@
+r"""
+This file contains QANet model and all used layers.
+"""
 import math
 
 import mxnet as mx
-from gluonnlp.model import (ConvolutionalEncoder, DotProductAttentionCell,
-                            Highway, MultiHeadAttentionCell)
 from mxnet import gluon, nd
 from mxnet.initializer import MSRAPrelu, Normal, Uniform, Xavier
+from gluonnlp.model import (DotProductAttentionCell, Highway,
+                            MultiHeadAttentionCell)
+
 
 try:
-    from config import *
+    from config import (LAYERS_DROPOUT, EMB_ENCODER_CONV_CHANNELS, NUM_HIGHWAY_LAYERS,
+                        CORPUS_WORDS, CORPUS_CHARACTERS, DIM_WORD_EMBED, WORD_EMBEDDING_DROPOUT,
+                        DIM_CHAR_EMBED, CHAR_EMBEDDING_DROPOUT, MODEL_ENCODER_CONV_KERNEL_SIZE,
+                        EMB_ENCODER_CONV_KERNEL_SIZE, EMB_ENCODER_NUM_BLOCK,
+                        EMB_ENCODER_NUM_HEAD, MODEL_ENCODER_CONV_CHANNELS, MAX_CHARACTER_PER_WORD,
+                        MODEL_ENCODER_NUM_BLOCK, EMB_ENCODER_NUM_CONV_LAYERS,
+                        p_L, MODEL_ENCODER_NUM_CONV_LAYERS, MODEL_ENCODER_NUM_HEAD)
 except ImportError:
-    from .config import *
+    from .config import (LAYERS_DROPOUT, EMB_ENCODER_CONV_CHANNELS, NUM_HIGHWAY_LAYERS,
+                         CORPUS_WORDS, CORPUS_CHARACTERS, DIM_WORD_EMBED, WORD_EMBEDDING_DROPOUT,
+                         DIM_CHAR_EMBED, CHAR_EMBEDDING_DROPOUT, MODEL_ENCODER_CONV_KERNEL_SIZE,
+                         EMB_ENCODER_CONV_KERNEL_SIZE, EMB_ENCODER_NUM_BLOCK,
+                         EMB_ENCODER_NUM_HEAD, MODEL_ENCODER_CONV_CHANNELS, MAX_CHARACTER_PER_WORD,
+                         MODEL_ENCODER_NUM_BLOCK, EMB_ENCODER_NUM_CONV_LAYERS,
+                         p_L, MODEL_ENCODER_NUM_CONV_LAYERS, MODEL_ENCODER_NUM_HEAD)
 try:
     from util import mask_logits
 except ImportError:
@@ -19,7 +35,8 @@ except ImportError:
 class MySoftmaxCrossEntropy(gluon.loss.Loss):
     r"""Caluate the sum of softmax cross entropy.
 
-    Reference: http://mxnet.incubator.apache.org/api/python/gluon/loss.html#mxnet.gluon.loss.SoftmaxCrossEntropyLoss
+    Reference:
+    http://mxnet.incubator.apache.org/api/python/gluon/loss.html#mxnet.gluon.loss.SoftmaxCrossEntropyLoss
 
     Parameters
     ----------
@@ -28,7 +45,8 @@ class MySoftmaxCrossEntropy(gluon.loss.Loss):
     sparse_label : bool, default True
         Whether label is an integer array instead of probalbility distribution.
     from_logits : bool, default False
-        Whether input is a log probability (usually from log_softmax) instead of unnormalized numbers.
+        Whether input is a log probability (usually from log_softmax) instead of
+        unnormalized numbers.
     weight : float or None
         Global scalar weight for loss.
     batch_axis : int, default 0
@@ -39,12 +57,11 @@ class MySoftmaxCrossEntropy(gluon.loss.Loss):
                  **kwargs):
         super(MySoftmaxCrossEntropy, self).__init__(
             weight, batch_axis, **kwargs)
-        self.softmaxCE = gluon.loss.SoftmaxCrossEntropyLoss(axis=axis,
-                                                            sparse_label=sparse_label,
-                                                            from_logits=from_logits,
-                                                            weight=weight,
-                                                            batch_axis=batch_axis
-                                                            )
+        self.loss = gluon.loss.SoftmaxCrossEntropyLoss(axis=axis,
+                                                       sparse_label=sparse_label,
+                                                       from_logits=from_logits,
+                                                       weight=weight,
+                                                       batch_axis=batch_axis)
 
     def forward(self, predict_begin, predict_end, label_begin, label_end):
         r"""Implement forward computation.
@@ -52,7 +69,7 @@ class MySoftmaxCrossEntropy(gluon.loss.Loss):
         Parameters
         -----------
         predict_begin : NDArray
-            Predicted probability distribution of answer begin position, 
+            Predicted probability distribution of answer begin position,
             input tensor with shape `(batch_size, sequence_length)`
         predict_end : NDArray
             Predicted probability distribution of answer end position,
@@ -69,7 +86,10 @@ class MySoftmaxCrossEntropy(gluon.loss.Loss):
         out: NDArray
             output tensor with shape `(batch_size, )`
         """
-        return self.softmaxCE(predict_begin, label_begin) + self.softmaxCE(predict_end, label_end)
+        return self.loss(predict_begin, label_begin) + self.loss(predict_end, label_end)
+
+    def hybrid_forward(self, F):
+        pass
 
 
 class QANet(gluon.HybridBlock):
@@ -147,10 +167,6 @@ class QANet(gluon.HybridBlock):
             )
 
         with self.name_scope():
-            r"""
-            The encoder layer is a stack of the following basic building block:
-            [convolution-layer × # + self-attention-layer + feed-forward-layer]
-            """
             self.emb_encoder = Encoder(
                 kernel_size=EMB_ENCODER_CONV_KERNEL_SIZE,
                 num_filters=EMB_ENCODER_CONV_CHANNELS,
@@ -196,7 +212,8 @@ class QANet(gluon.HybridBlock):
                 bias_initializer=Uniform(1.0/MODEL_ENCODER_CONV_CHANNELS)
             )
 
-    def hybrid_forward(self, F, context, query, context_char, query_char, context_mask, query_mask, y_begin, y_end):
+    def hybrid_forward(self, F, context, query, context_char, query_char,
+                       context_mask, query_mask, y_begin, y_end):
         r"""Implement forward computation.
 
         Parameters
@@ -230,15 +247,15 @@ class QANet(gluon.HybridBlock):
         context_max_len = int(context_mask.sum(axis=1).max().asscalar())
         query_max_len = int(query_mask.sum(axis=1).max().asscalar())
 
-        context = nd.slice(context, begin=(0, 0), end=(batch, context_max_len))
-        query = nd.slice(query, begin=(0, 0), end=(batch, query_max_len))
-        context_mask = nd.slice(context_mask, begin=(
+        context = F.slice(context, begin=(0, 0), end=(batch, context_max_len))
+        query = F.slice(query, begin=(0, 0), end=(batch, query_max_len))
+        context_mask = F.slice(context_mask, begin=(
             0, 0), end=(batch, context_max_len))
-        query_mask = nd.slice(query_mask, begin=(0, 0),
-                              end=(batch, query_max_len))
-        context_char = nd.slice(context_char, begin=(0, 0, 0), end=(
+        query_mask = F.slice(query_mask, begin=(0, 0),
+                             end=(batch, query_max_len))
+        context_char = F.slice(context_char, begin=(0, 0, 0), end=(
             batch, context_max_len, MAX_CHARACTER_PER_WORD))
-        query_char = nd.slice(query_char, begin=(0, 0, 0), end=(
+        query_char = F.slice(query_char, begin=(0, 0, 0), end=(
             batch, query_max_len, MAX_CHARACTER_PER_WORD))
 
         # embedding layer
@@ -294,10 +311,6 @@ class QANet(gluon.HybridBlock):
         M = self.dropout(M)
 
         # model encoder layer
-        """
-            We share weights between each of the 3
-            repetitions of the model encoder.
-        """
         M_0 = self.model_encoder(M, context_mask)
         M_1 = self.model_encoder(M_0, context_mask)
         M_2 = self.model_encoder(M_1, context_mask)
@@ -312,7 +325,12 @@ class QANet(gluon.HybridBlock):
 
 
 class Encoder(gluon.HybridBlock):
-    def __init__(self, kernel_size, num_filters, conv_layers=2, num_heads=8, num_blocks=1, **kwargs):
+    r"""
+    Stacked block of Embedding encoder or Model encoder.
+    """
+
+    def __init__(self, kernel_size, num_filters, conv_layers=2, num_heads=8,
+                 num_blocks=1, **kwargs):
         super(Encoder, self).__init__(**kwargs)
         self.dropout = gluon.nn.Dropout(LAYERS_DROPOUT)
         total_layers = float((conv_layers + 2) * num_blocks)
@@ -334,9 +352,23 @@ class Encoder(gluon.HybridBlock):
                 sub_layer_idx += (conv_layers + 2)
 
     def hybrid_forward(self, F, x, mask):
+        r"""Implement forward computation.
+
+        Parameters
+        -----------
+        x : NDArray
+            input tensor with shape `(batch_size, sequence_length, features)`
+        mask : NDArray
+            input tensor with shape `(batch_size, sequence_length)`
+
+        Returns, NDArray
+        --------
+            output tensor with shape `(batch_size, sequence_length, features)`
+        """
         for encoder in self.stack_encoders:
             x = encoder(x, mask)
-            x = self.dropout(x)
+            # x = self.dropout(x)
+            x = F.Dropout(x, p=LAYERS_DROPOUT)
         return x
 
 
@@ -381,7 +413,7 @@ class OneEncoderBlock(gluon.HybridBlock):
                         )
                     )
                     one_conv_module.add(
-                        stochastic_dropout_layer(
+                        StochasticDropoutLayer(
                             dropout=(sub_layer_idx / total_layers) * (1 - p_L)
                         )
                     )
@@ -391,7 +423,7 @@ class OneEncoderBlock(gluon.HybridBlock):
         with self.name_scope():
             self.dropout = gluon.nn.Dropout(LAYERS_DROPOUT)
             self.attention = SelfAttention(num_heads=num_heads)
-            self.attention_dropout = stochastic_dropout_layer(
+            self.attention_dropout = StochasticDropoutLayer(
                 (sub_layer_idx / total_layers) * (1 - p_L))
             sub_layer_idx += 1
             self.attention_layer_norm = gluon.nn.LayerNorm(epsilon=1e-06)
@@ -422,7 +454,7 @@ class OneEncoderBlock(gluon.HybridBlock):
                 )
             )
             self.positionwise_ffn.add(
-                stochastic_dropout_layer(
+                StochasticDropoutLayer(
                     dropout=(sub_layer_idx / total_layers) * (1 - p_L)
                 )
             )
@@ -450,27 +482,36 @@ class OneEncoderBlock(gluon.HybridBlock):
             x = conv(x) + residual
         residual = x
         x = self.attention_layer_norm(x)
-        x = self.dropout(x)
+        # x = self.dropout(x)
+        x = F.Dropout(x, p=LAYERS_DROPOUT)
         x = self.attention(x, mask)
         x = self.attention_dropout(x) + residual
         return x + self.positionwise_ffn(x)
 
 
-class stochastic_dropout_layer(gluon.HybridBlock):
+class StochasticDropoutLayer(gluon.HybridBlock):
+    r"""
+    Stochastic dropout a layer.
+    """
+
     def __init__(self, dropout, **kwargs):
-        super(stochastic_dropout_layer, self).__init__(**kwargs)
+        super(StochasticDropoutLayer, self).__init__(**kwargs)
         self.dropout = dropout
         with self.name_scope():
             self.dropout_fn = gluon.nn.Dropout(dropout)
 
     def hybrid_forward(self, F, inputs):
-        if nd.random.uniform().asscalar() < self.dropout:
-            return 0
+        if F.random.uniform().asscalar() < self.dropout:
+            return F.zeros()
         else:
             return self.dropout_fn(inputs)
 
 
 class SelfAttention(gluon.HybridBlock):
+    r"""
+    Implementation of self-attention with gluonnlp.model.MultiHeadAttentionCell
+    """
+
     def __init__(self, num_heads, **kwargs):
         super(SelfAttention, self).__init__(**kwargs)
         with self.name_scope():
@@ -489,11 +530,29 @@ class SelfAttention(gluon.HybridBlock):
             )
 
     def hybrid_forward(self, F, x, mask):
-        mask = nd.batch_dot(mask.expand_dims(axis=2), mask.expand_dims(axis=1))
+        r"""Implement forward computation.
+
+        Parameters
+        -----------
+        x : NDArray
+            input tensor with shape `(batch_size, sequence_length, hidden_size)`
+        mask : NDArray
+            input tensor with shape `(batch_size, sequence_length)`
+
+        Returns
+        --------
+        x : NDArray
+            output tensor with shape `(batch_size, sequence_length, hidden_size)`
+        """
+        mask = F.batch_dot(mask.expand_dims(axis=2), mask.expand_dims(axis=1))
+        # TODO return weights
         return self.attention(x, x, mask=mask)[0]
 
 
 class PositionEncoder(gluon.HybridBlock):
+    r"""
+    An implementation of position encoder.
+    """
 
     def __init__(self, **kwargs):
         super(PositionEncoder, self).__init__(**kwargs)
@@ -501,6 +560,18 @@ class PositionEncoder(gluon.HybridBlock):
             pass
 
     def hybrid_forward(self, F, x, min_timescale=1.0, max_timescale=1e4):
+        r"""Implement forward computation.
+
+        Parameters
+        -----------
+        x : NDArray
+            input tensor with shape `(batch_size, sequence_length, hidden_size)`
+
+        Returns
+        --------
+         : NDArray
+            output tensor with shape `(batch_size, sequence_length, hidden_size)`
+        """
         length = x.shape[1]
         channels = x.shape[2]
         position = nd.array(range(length))
@@ -509,14 +580,18 @@ class PositionEncoder(gluon.HybridBlock):
             math.log(float(max_timescale) / float(min_timescale)) / (num_timescales - 1))
         inv_timescales = min_timescale * \
             nd.exp(nd.array(range(num_timescales)) * -log_timescale_increment)
-        scaled_time = nd.expand_dims(
-            position, 1) * nd.expand_dims(inv_timescales, 0)
-        signal = nd.concat(nd.sin(scaled_time), nd.cos(scaled_time), dim=1)
-        signal = nd.reshape(signal, (1, length, channels))
+        scaled_time = F.expand_dims(
+            position, 1) * F.expand_dims(inv_timescales, 0)
+        signal = F.concat(F.sin(scaled_time), F.cos(scaled_time), dim=1)
+        signal = F.reshape(signal, (1, length, channels))
         return x + signal.as_in_context(x.context)
 
 
 class DepthwiseConv(gluon.HybridBlock):
+    r"""
+    An implementation of depthwise-convolution net.
+    """
+
     def __init__(self, kernel_size, num_filters, input_channels, **kwargs):
         super(DepthwiseConv, self).__init__(**kwargs)
         with self.name_scope():
@@ -538,14 +613,27 @@ class DepthwiseConv(gluon.HybridBlock):
             )
 
     def hybrid_forward(self, F, inputs):
-        x = inputs.transpose(axes=(0, 2, 1))
-        depthwise_conv = self.depthwise_conv(x)
+        r"""Implement forward computation.
+
+        Parameters
+        -----------
+        inputs : NDArray
+            input tensor with shape `(batch_size, sequence_length, hidden_size)`
+
+        Returns
+        --------
+        x : NDArray
+            output tensor with shape `(batch_size, sequence_length, new_hidden_size)`
+        """
+        tmp = F.transpose(inputs, axes=(0, 2, 1))
+        depthwise_conv = self.depthwise_conv(tmp)
         outputs = self.pointwise_conv(depthwise_conv)
-        return outputs.transpose(axes=(0, 2, 1))
+        return F.transpose(outputs, axes=(0, 2, 1))
 
 
 class CoAttention(gluon.HybridBlock):
-    r"""Co-attention module.
+    r"""
+    An implementation of co-attention block.
     """
 
     def __init__(self, **kwargs):
@@ -568,7 +656,8 @@ class CoAttention(gluon.HybridBlock):
             self.bias = self.params.get(
                 'coattention_bias', shape=(1,), init=mx.init.Zero())
 
-    def hybrid_forward(self, F, context, query, context_mask, query_mask, context_max_len, query_max_len, w4mlu, bias):
+    def hybrid_forward(self, F, context, query, context_mask, query_mask,
+                       context_max_len, query_max_len, w4mlu, bias):
         """Implement forward computation.
 
         Parameters
@@ -589,28 +678,30 @@ class CoAttention(gluon.HybridBlock):
         return : NDArray
             output tensor with shape `(batch_size, context_sequence_length, 4*hidden_size)`
         """
-        context_mask = nd.expand_dims(context_mask, axis=-1)
-        query_mask = nd.expand_dims(query_mask, axis=1)
+        context_mask = F.expand_dims(context_mask, axis=-1)
+        query_mask = F.expand_dims(query_mask, axis=1)
 
         similarity = self._calculate_trilinear_similarity(
             context, query, context_max_len, query_max_len, w4mlu, bias)
 
-        similarity_dash = nd.softmax(mask_logits(similarity, query_mask))
-        similarity_dash_trans = nd.transpose(nd.softmax(
+        similarity_dash = F.softmax(mask_logits(similarity, query_mask))
+        similarity_dash_trans = F.transpose(F.softmax(
             mask_logits(similarity, context_mask), axis=1), axes=(0, 2, 1))
-        c2q = nd.batch_dot(similarity_dash, query)
-        q2c = nd.batch_dot(nd.batch_dot(
+        c2q = F.batch_dot(similarity_dash, query)
+        q2c = F.batch_dot(F.batch_dot(
             similarity_dash, similarity_dash_trans), context)
-        return nd.concat(context, c2q, context * c2q, context * q2c, dim=-1)
+        return F.concat(context, c2q, context * c2q, context * q2c, dim=-1)
 
-    def _calculate_trilinear_similarity(self, context, query, context_max_len, query_max_len, w4mlu, bias):
+    def _calculate_trilinear_similarity(self, context, query, context_max_len, query_max_len,
+                                        w4mlu, bias):
         """Implement the computation of trilinear similarity function.
 
             refer https://github.com/NLPLearn/QANet/blob/master/layers.py#L505
 
             The similarity function is:
                     f(w, q) = W[w, q, w * q]
-            where w and q represent the word in context and query respectively, and * operator means hadamard product.
+            where w and q represent the word in context and query respectively,
+            and * operator means hadamard product.
 
         Parameters
         -----------

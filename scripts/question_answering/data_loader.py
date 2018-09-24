@@ -1,3 +1,6 @@
+r"""
+This file contains the class of data loader.
+"""
 import json
 import random
 
@@ -8,7 +11,10 @@ except ImportError:
 
 
 class DataLoader(object):
-    def __init__(self, batch_size=32, shuffle=True, **kwargs):
+    r"""
+    An implementation of SQuAD data loader.
+    """
+    def __init__(self, batch_size=32, **kwargs):
         self.batch_size = batch_size
         self.data_path = DATA_PATH
 
@@ -24,12 +30,22 @@ class DataLoader(object):
         self.total_batchs = self.num_instance // self.batch_size
 
     def random_next_batch(self):
+        r"""
+        return: List
+        --------
+            Batchify the dataset in an ordered way.
+        """
         i = 0
         while i * self.batch_size < self.num_instance:
             yield self._format_data(random.sample(self.data, self.batch_size))
             i += 1
 
     def next_batch(self):
+        r"""
+        return: List
+        --------
+            Batchify the dataset in random way.
+        """
         i = 0
         while i * self.batch_size < self.num_instance:
             yield self._format_data(self.data[i * self.batch_size: (i + 1) * self.batch_size])
@@ -47,7 +63,3 @@ class DataLoader(object):
         with open(self.data_path + self.data_file, 'r') as f:
             line = f.readline()
         return json.loads(line)
-
-
-if __name__ == "__main__":
-    pass

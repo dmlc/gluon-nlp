@@ -1,3 +1,6 @@
+r"""
+This file contains all hyperparameters.
+"""
 import mxnet as mx
 
 DATA_PATH = '../data/'

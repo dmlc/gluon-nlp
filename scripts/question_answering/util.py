@@ -1,7 +1,9 @@
+r"""
+This file contains some useful function and class.
+"""
+
 import json
 import math
-
-import numpy as np
 
 try:
     from config import DATA_PATH, INIT_LEARNING_RATE, WARM_UP_STEPS
@@ -62,6 +64,9 @@ def warm_up_lr(step):
 
 
 def zero_grad(params):
+    r"""
+    Set the grad to zero.
+    """
     for _, paramter in params.items():
         paramter.zero_grad()
 
@@ -76,12 +81,13 @@ class ExponentialMovingAverage():
     decay : float, default 0.9999
         The axis to sum over when computing softmax and entropy.
     """
+
     def __init__(self, decay=0.9999, **kwargs):
         super(ExponentialMovingAverage, self).__init__(**kwargs)
         self.decay = decay
         self.shadow = {}
 
-    def register(self, name, parameters):
+    def add(self, name, parameters):
         r"""Update the shadow variable.
 
         Parameters
@@ -127,7 +133,3 @@ class ExponentialMovingAverage():
             the value of shadow variable.
         """
         return self.shadow[name]
-
-
-if __name__ == "__main__":
-    pass
