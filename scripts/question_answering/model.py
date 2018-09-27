@@ -502,7 +502,7 @@ class StochasticDropoutLayer(gluon.HybridBlock):
 
     def hybrid_forward(self, F, inputs):
         if F.random.uniform().asscalar() < self.dropout:
-            return F.zeros()
+            return F.zeros(shape=(1,))
         else:
             return self.dropout_fn(inputs)
 
