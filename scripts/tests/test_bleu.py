@@ -119,10 +119,10 @@ def test_detok_bleu():
     path = os.path.dirname(os.path.realpath(__file__))
     ref_path = os.path.join(path, 'test_references.txt')
     trans_path = os.path.join(path, 'test_translations.txt')
-    with open(trans_path) as f:
+    with open(trans_path, encoding='utf-8') as f:
         translations = f.readlines()
 
-    with open(ref_path) as f:
+    with open(ref_path, encoding='utf-8') as f:
         references = f.readlines()
     ret_bleu, _, _, _, _ = compute_bleu([references], translations, tokenized=False)
     mose_ret = subprocess.check_output('perl %s/multi-bleu-detok.perl %s < %s'
