@@ -97,44 +97,36 @@ def train_one_epoch(model, data_loader, trainer, loss_function, ema=None):
         batch_sizes = context.shape[0]
         context = gluon.utils.split_and_load(
             data=context,
-            ctx_list=CTX,
-            # even_split=False
+            ctx_list=CTX
         )
         c_mask = gluon.utils.split_and_load(
             data=c_mask,
-            ctx_list=CTX,
-            # even_split=False
+            ctx_list=CTX
         )
 
         query = gluon.utils.split_and_load(
             data=query,
-            ctx_list=CTX,
-            # even_split=False
+            ctx_list=CTX
         )
         q_mask = gluon.utils.split_and_load(
             data=q_mask,
-            ctx_list=CTX,
-            # even_split=False
+            ctx_list=CTX
         )
         context_char = gluon.utils.split_and_load(
             data=context_char,
-            ctx_list=CTX,
-            # even_split=False
+            ctx_list=CTX
         )
         query_char = gluon.utils.split_and_load(
             data=query_char,
-            ctx_list=CTX,
-            # even_split=False
+            ctx_list=CTX
         )
         begin = gluon.utils.split_and_load(
             data=begin,
-            ctx_list=CTX,
-            # even_split=False
+            ctx_list=CTX
         )
         end = gluon.utils.split_and_load(
             data=end,
-            ctx_list=CTX,
-            # even_split=False
+            ctx_list=CTX
         )
 
         with autograd.record():
@@ -146,7 +138,6 @@ def train_one_epoch(model, data_loader, trainer, loss_function, ema=None):
             for loss in different_ctx_loss:
                 loss.backward()
         if global_step == 1:
-            # TODO: multi-GPU
             for name, param in model.collect_params().items():
                 ema.add(name, param.data(CTX[0]))
         trainer.set_learning_rate(warm_up_lr(global_step))
@@ -164,12 +155,9 @@ def train_one_epoch(model, data_loader, trainer, loss_function, ema=None):
         gluon.utils.clip_global_norm(tmp, CLIP_GRADIENT)
         reset_embedding_grad(model)
         trainer.update(batch_sizes, ignore_stale_grad=True)
-        # zero_grad(model.collect_params())
-        # trainer.step(TRAIN_BATCH_SIZE, ignore_stale_grad=True)
         for name, param in model.collect_params().items():
             ema(name, param.data(CTX[0]))
 
-        # nd.waitall()
         batch_loss = .0
         for loss in different_ctx_loss:
             batch_loss += loss.mean().asscalar()
@@ -181,6 +169,7 @@ def train_one_epoch(model, data_loader, trainer, loss_function, ema=None):
 
         print('batch %d/%d, total_loss %.2f, batch_loss %.2f' %
               (step, total_batchs, total_loss / step, batch_loss), end='\r', flush=True)
+        nd.waitall()
 
 
 def initial_model_parameters(model):
@@ -213,25 +202,22 @@ def main():
         model.load_parameters(TARGET_MODEL_FILE_NAME, ctx=CTX)
     else:
         print('Initial model parameters...')
-        # TODO: confirm in multi-gpu
         initial_model_parameters(model)
     print(model)
     if TRAIN_FLAG is True:
         loss_function = MySoftmaxCrossEntropy()
 
         ema = ExponentialMovingAverage(decay=EXPONENTIAL_MOVING_AVERAGE_DECAY)
-        # ema = None
+
         # initial trainer
         trainer = gluon.Trainer(
             model.collect_params(),
             'adam',
             {
-                # 'wd': WEIGHT_DECAY,
                 'learning_rate': INIT_LEARNING_RATE,
                 'beta1': BETA1,
                 'beta2': BETA2,
-                'epsilon': EPSILON,
-                # 'clip_gradient': CLIP_GRADIENT
+                'epsilon': EPSILON
             }
         )
 

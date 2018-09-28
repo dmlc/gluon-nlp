@@ -367,7 +367,6 @@ class Encoder(gluon.HybridBlock):
         """
         for encoder in self.stack_encoders:
             x = encoder(x, mask)
-            # x = self.dropout(x)
             x = F.Dropout(x, p=LAYERS_DROPOUT)
         return x
 
@@ -482,7 +481,6 @@ class OneEncoderBlock(gluon.HybridBlock):
             x = conv(x) + residual
         residual = x
         x = self.attention_layer_norm(x)
-        # x = self.dropout(x)
         x = F.Dropout(x, p=LAYERS_DROPOUT)
         x = self.attention(x, mask)
         x = self.attention_dropout(x) + residual
@@ -545,7 +543,6 @@ class SelfAttention(gluon.HybridBlock):
             output tensor with shape `(batch_size, sequence_length, hidden_size)`
         """
         mask = F.batch_dot(mask.expand_dims(axis=2), mask.expand_dims(axis=1))
-        # TODO return weights
         return self.attention(x, x, mask=mask)[0]
 
 
