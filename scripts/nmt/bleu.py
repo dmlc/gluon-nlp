@@ -96,7 +96,7 @@ def _tokenize_mteval_13a(segment):
     norm = norm.replace('&lt;', '<')
     norm = norm.replace('&gt;', '>')
 
-    norm = ' {} '.format(norm)
+    norm = u' {} '.format(norm)
     norm = re.sub(r'([\{-\~\[-\` -\&\(-\+\:-\@\/])', ' \\1 ', norm)
     norm = re.sub(r'([^0-9])([\.,])', '\\1 \\2 ', norm)
     norm = re.sub(r'([\.,])([^0-9])', ' \\1 \\2', norm)
@@ -204,8 +204,8 @@ def compute_bleu(reference_corpus_list, translation_corpus, tokenized=True,
             'references and translation should have format of list of list(list(str)) ' \
             'and list(list(str)), respectively, when toknized is True.'
     else:
-        assert isinstance(reference_corpus_list[0][0], str) and \
-               isinstance(translation_corpus[0], str), \
+        assert isinstance(reference_corpus_list[0][0], six.string_types) and \
+               isinstance(translation_corpus[0], six.string_types), \
             'references and translation should have format of list(list(str)) ' \
             'and list(str), respectively, when toknized is False.'
     for references, translation in zip(zip(*reference_corpus_list), translation_corpus):
@@ -219,8 +219,8 @@ def compute_bleu(reference_corpus_list, translation_corpus, tokenized=True,
             references = [_split_compound_word(reference) for reference in references]
             translation = _split_compound_word(translation)
         if lower_case:
-            references = [list(map(str.lower, reference)) for reference in references]
-            translation = list(map(str.lower, translation))
+            references = [[w.lower() for w in reference] for reference in references]
+            translation = [w.lower() for w in translation]
         trans_len = len(translation)
         trans_length += trans_len
         ref_length += _closest_ref_length(references, trans_len)

@@ -87,3 +87,12 @@ def test_transformer():
                                      '1', '--num_buckets', '5', '--bleu', 'tweaked', '--num_units',
                                      '32', '--hidden_size', '64', '--num_layers', '2',
                                      '--num_heads', '4', '--test_batch_size', '128'])
+    process = subprocess.check_call(['python', './scripts/nmt/train_transformer.py',
+                                     '--dataset', 'TOY', '--src_lang', 'en', '--tgt_lang', 'de',
+                                     '--batch_size', '128', '--optimizer', 'adam',
+                                     '--num_accumulated', '1', '--lr', '1.0',
+                                     '--warmup_steps', '2000', '--save_dir', 'test',
+                                     '--epochs', '1', '--gpus', '0', '--scaled', '--average_start',
+                                     '1', '--num_buckets', '5', '--bleu', '13a', '--num_units',
+                                     '32', '--hidden_size', '64', '--num_layers', '2',
+                                     '--num_heads', '4', '--test_batch_size', '128'])
