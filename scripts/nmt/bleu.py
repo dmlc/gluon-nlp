@@ -96,7 +96,7 @@ def _tokenize_mteval_13a(segment):
     norm = norm.replace('&lt;', '<')
     norm = norm.replace('&gt;', '>')
 
-    norm = ' {} '.format(norm)
+    norm = u' {} '.format(norm)
     norm = re.sub(r'([\{-\~\[-\` -\&\(-\+\:-\@\/])', ' \\1 ', norm)
     norm = re.sub(r'([^0-9])([\.,])', '\\1 \\2 ', norm)
     norm = re.sub(r'([\.,])([^0-9])', ' \\1 \\2', norm)
