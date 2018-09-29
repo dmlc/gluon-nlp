@@ -20,7 +20,7 @@
 import numpy as np
 import mxnet as mx
 from mxnet import gluon
-from mxnet.gluon import nn, rnn
+from mxnet.gluon import nn
 
 class Adaptivesoftmax(gluon.Block):
     """
@@ -167,7 +167,8 @@ class Adaptivesoftmax(gluon.Block):
                 id_select = np.array(self.id[i])
                 output_tail = self.tail[i](inputs[id_select])
                 nnloss = nnloss + \
-                         mx.nd.sum(loss(output_tail, mx.nd.array(self.target[i+1]).as_in_context(context)))
+                         mx.nd.sum(loss(output_tail, \
+                         mx.nd.array(self.target[i+1]).as_in_context(context)))
 
         nnloss = nnloss / (len(target))
 
