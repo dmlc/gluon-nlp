@@ -19,19 +19,17 @@
 
 import time
 import pickle
-import argparse, math
+import argparse
+import math
 import numpy as np
 import mxnet as mx
-from mxnet.gluon import nn, rnn
 from mxnet import gluon, autograd
-
 from model import LanguageModel
-from adaptive_softmax import *
 
 
 parser = argparse.ArgumentParser(description='Benchmark for Adaptive Softmax')
 parser.add_argument('--adaptive_softmax', type=bool, default=True,
-                   help=('Whether use Adaptive Softmax or not, False for common full softmax'))
+                    help=('Whether use Adaptive Softmax or not, False for common full softmax'))
 parser.add_argument('--train_file_path', type=str,
                     default='./data/text8.train.pkl')
 parser.add_argument('--test_file_path', type=str,
@@ -81,14 +79,14 @@ train_file_path = args.train_file_path
 test_file_path = args.test_file_path
 
 with open(train_file_path, 'rb') as f:
-    data = pickle.load(f)
+    data_train = pickle.load(f)
 
-inputs = data['input']
-label = data['label']
+inputs = data_train['input']
+label = data_train['label']
 inputs = mx.nd.array(inputs)
 label = mx.nd.array(label)
 
-vocab = len(data['worddic'])
+vocab = len(data_train['worddic'])
 
 with open(test_file_path, 'rb') as f:
     data_test = pickle.load(f)
@@ -100,7 +98,7 @@ label_test = mx.nd.array(label_test)
 
 ntokens = vocab
 
-model = LanguageModel(vocab_size=ntokens, num_embed=emsize, num_hidden=nhid, num_layers=nlayers, 
+model = LanguageModel(vocab_size=ntokens, num_embed=emsize, num_hidden=nhid, num_layers=nlayers,
                       dropout=dropout, adaptive_softmax=adaptive_softmax, cutoff=cutoff)
 model.initialize(mx.init.Xavier(), ctx=context)
 trainer = gluon.Trainer(model.collect_params(), 'AdaGrad',
@@ -121,10 +119,10 @@ def evaluation(data_source, target_source):
     Parameters
     ----------
     data_source: NDArray
-        This is the input data for test. The input tensor is of shape 
+        This is the input data for test. The input tensor is of shape
         `(num_samples of test data set, batch_size, bptt)`.
     target_source: NDArray
-        This is the input label for test. The input tensor is of shape 
+        This is the input label for test. The input tensor is of shape
         `(num_samples of test data set, batch_size, bptt)`.
 
     Returns
