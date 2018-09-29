@@ -117,6 +117,9 @@ trainer = gluon.Trainer(model.collect_params(), 'AdaGrad',
                          'wd': wd})
 
 def detach(hidden):
+    """
+    The parameters here is the same as the general case.
+    """
     if isinstance(hidden, (tuple, list)):
         hidden = [i.detach() for i in hidden]
     else:
@@ -203,3 +206,4 @@ def train():
             epoch, time.time()-start_time, test_L, np.exp(test_L)))
 
 train()
+
