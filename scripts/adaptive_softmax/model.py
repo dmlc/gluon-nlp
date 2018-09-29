@@ -56,6 +56,7 @@ class LanguageModel(gluon.Block):
     def __init__(self, vocab_size, num_embed, num_hidden, num_layers, dropout=0.0,
                  adaptive_softmax=True, ctx=mx.gpu(0), cutoff=[2000], **kwargs):
         super(LanguageModel, self).__init__(**kwargs)
+        self.ctx = ctx
 
         with self.name_scope():
             self.drop = nn.Dropout(dropout)
@@ -75,7 +76,7 @@ class LanguageModel(gluon.Block):
         self.num_layers = num_layers
         self.num_hidden = num_hidden
 
-    def forward(self, inputs, hidden, target=None, training=True):
+    def forward(self, inputs, hidden, target=None):
         embed = self.encoder(inputs)
         embed = self.drop(embed)
 
