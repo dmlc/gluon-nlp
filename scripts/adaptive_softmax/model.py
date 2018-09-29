@@ -146,5 +146,7 @@ class LanguageModel(gluon.Block):
     def begin_state(self, *args, **kwargs):
     """Initialization of rnn.
 
+    The meaning of this part is the same as general cases.
+
     """
         return self.rnn.begin_state(*args, **kwargs)
