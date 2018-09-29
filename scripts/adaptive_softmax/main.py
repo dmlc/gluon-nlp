@@ -1,3 +1,14 @@
+"""
+We implement the adaptive softmax proposed in the following work:
+@article{grave2016efficient,
+         title={Efficient softmax approximation for GPUs},
+         author={Grave, Edouard and Joulin, Armand and Ciss{\'e},
+                 Moustapha and Grangier, David and J{\'e}gou, Herv{\'e}},
+         journal={arXiv preprint arXiv:1609.04309},
+         year={2016}
+}
+"""
+
 # coding: utf-8
 
 # Licensed to the Apache Software Foundation (ASF) under one
