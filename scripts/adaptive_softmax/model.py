@@ -26,7 +26,7 @@ class LanguageModel(gluon.Block):
     We implement the adaptive softmax proposed in the following work:
         @article{grave2016efficient,
                  title={Efficient softmax approximation for GPUs},
-                 author={Grave, Edouard and Joulin, Armand and Ciss{\'e}, 
+                 author={Grave, Edouard and Joulin, Armand and Ciss{\'e},
                          Moustapha and Grangier, David and J{\'e}gou, Herv{\'e}},
                  journal={arXiv preprint arXiv:1609.04309},
                  year={2016}
@@ -46,7 +46,8 @@ class LanguageModel(gluon.Block):
        the chance of one connection to be ignored.
     adaptive_softmax: bool
        If it is "True", the model uses adaptive softmax and the function "forward" will be called.
-       If it is "False", the model uses regular full softmax and the the function "log_prob" will be called.
+       If it is "False", the model uses regular full softmax and the the function "log_prob" will
+       be called.
     ctx:
        Calculation is based on mx.gpu(0) or mx.cpu(0)
     cutoff: list or np.array
@@ -55,7 +56,7 @@ class LanguageModel(gluon.Block):
     def __init__(self, vocab_size, num_embed, num_hidden, num_layers, dropout=0.0,
                  adaptive_softmax=True, ctx=mx.gpu(0), cutoff=[2000], **kwargs):
         super(LanguageModel, self).__init__(**kwargs)
-        
+
         with self.name_scope():
             self.drop = nn.Dropout(dropout)
             self.encoder = nn.Embedding(vocab_size, num_embed,
@@ -84,16 +85,17 @@ class LanguageModel(gluon.Block):
         if self.adaptive_softmax:
             self.linear.set_target(target)
             nnloss = self.linear(output.reshape((output.shape[0] * output.shape[1],
-                                 output.shape[2])), target)
+                                                 output.shape[2])), target)
 
         if not self.adaptive_softmax:
-            output = self.linear(output.reshape((output.shape[0] * output.shape[1], output.shape[2])))
+            output = self.linear(output.reshape((output.shape[0] * output.shape[1],
+                                                 output.shape[2])))
             loss = gluon.loss.SoftmaxCrossEntropyLoss()
             nnloss = mx.nd.sum(loss(output, target))
             nnloss = nnloss / (len(target))
 
         return nnloss, hidden
-         
+
     def log_prob(self, inputs, hidden):
         embed = self.encoder(inputs)
         output, hidden = self.rnn(embed, hidden)
