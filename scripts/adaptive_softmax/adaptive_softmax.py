@@ -28,8 +28,8 @@ We implement the adaptive softmax proposed in the following work:
 # specific language governing permissions and limitations
 # under the License.
 
-import mxnet as mx
 import numpy as np
+import mxnet as mx
 from mxnet import gluon
 from mxnet.gluon import nn
 
