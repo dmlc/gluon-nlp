@@ -81,24 +81,24 @@ class LanguageModel(gluon.Block):
         self.num_hidden = num_hidden
 
     def forward(self, inputs, hidden, target=None):
-    """Conduct 'forward' for NN
+        """Conduct 'forward' for NN
 
-    Parameters:
-    ----------
-    inputs: NDArray
-       The inputs from the samples.
-    hidden: int
-       The hidden layer for rnn.
-    target: NDArray
-       The target label.
+        Parameters:
+        ----------
+        inputs: NDArray
+           The inputs from the samples.
+        hidden: int
+           The hidden layer for rnn.
+        target: NDArray
+           The target label.
 
-    Returns
-    ----------
-    nnloss: NDArray
-        The output is the loss.
-    hidden: NDArray
-        The hidden state for rnn.
-    """
+        Returns
+        ----------
+        nnloss: NDArray
+            The output is the loss.
+        hidden: NDArray
+            The hidden state for rnn.
+        """
         embed = self.encoder(inputs)
         embed = self.drop(embed)
 
@@ -120,22 +120,22 @@ class LanguageModel(gluon.Block):
         return nnloss, hidden
 
     def log_prob(self, inputs, hidden):
-    """Calculate the log probability of the'prediction
+        """Calculate the log probability of the'prediction
 
-    Parameters:
-    ----------
-    inputs: NDArray
-       The inputs from the samples.
-    hidden: int
-       The hidden layer for rnn.
+        Parameters:
+        ----------
+        inputs: NDArray
+           The inputs from the samples.
+        hidden: int
+           The hidden layer for rnn.
 
-    Returns
-    ----------
-    prob: NDArray
-        It contains the probability for each word.
-    hidden: NDArray
-        The hidden state for rnn.
-    """
+        Returns
+        ----------
+        prob: NDArray
+            It contains the probability for each word.
+        hidden: NDArray
+            The hidden state for rnn.
+        """
         embed = self.encoder(inputs)
         output, hidden = self.rnn(embed, hidden)
         prob = self.linear.log_prob(output.reshape((output.shape[0] * output.shape[1],
@@ -144,10 +144,10 @@ class LanguageModel(gluon.Block):
         return prob, hidden
 
     def begin_state(self, *args, **kwargs):
-    """The initialization of the state of rnn
+        """The initialization of the state of rnn
 
-    Parameters:
-    ----------
-        The parameters here are the same as general case.
-    """
+        Parameters:
+        ----------
+            The parameters here are the same as general case.
+        """
         return self.rnn.begin_state(*args, **kwargs)
