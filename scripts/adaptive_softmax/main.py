@@ -29,8 +29,8 @@ We implement the adaptive softmax proposed in the following work:
 # under the License.
 
 import time
-import pickle
 import argparse
+import pickle
 import math
 import numpy as np
 import mxnet as mx
