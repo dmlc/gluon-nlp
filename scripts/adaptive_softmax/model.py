@@ -1,3 +1,14 @@
+"""
+We implement the adaptive softmax proposed in the following work:
+@article{grave2016efficient,
+         title={Efficient softmax approximation for GPUs},
+         author={Grave, Edouard and Joulin, Armand and Ciss{\'e},
+                 Moustapha and Grangier, David and J{\'e}gou, Herv{\'e}},
+         journal={arXiv preprint arXiv:1609.04309},
+         year={2016}
+}
+"""
+
 # coding: utf-8
 
 # Licensed to the Apache Software Foundation (ASF) under one
@@ -23,14 +34,6 @@ from adaptive_softmax import *
 
 class LanguageModel(gluon.Block):
     """LanguageModel for adaptive softmax and regular full softmax.
-    We implement the adaptive softmax proposed in the following work:
-        @article{grave2016efficient,
-                 title={Efficient softmax approximation for GPUs},
-                 author={Grave, Edouard and Joulin, Armand and Ciss{\'e},
-                         Moustapha and Grangier, David and J{\'e}gou, Herv{\'e}},
-                 journal={arXiv preprint arXiv:1609.04309},
-                 year={2016}
-        }
 
     Parameters:
     ----------
@@ -53,8 +56,8 @@ class LanguageModel(gluon.Block):
     cutoff: list or np.array
        Build clusters for adaptive softmax.
     """
-    def __init__(self, vocab_size, num_embed, num_hidden, num_layers, dropout=0.0,
-                 adaptive_softmax=True, ctx=mx.gpu(0), cutoff=[2000], **kwargs):
+    def __init__(self, vocab_size, num_embed, num_hidden, num_layers, cutoff,
+                 dropout=0.0, adaptive_softmax=True, ctx=mx.gpu(0), **kwargs):
         super(LanguageModel, self).__init__(**kwargs)
         self.ctx = ctx
 
