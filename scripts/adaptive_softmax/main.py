@@ -17,14 +17,13 @@
 # specific language governing permissions and limitations
 # under the License.
 
-import numpy as np
-import mxnet as mx
-import argparse, math
-from mxnet.gluon import nn, rnn
-from mxnet import gluon, autograd
-import os
 import time
 import pickle
+import argparse, math
+import numpy as np
+import mxnet as mx
+from mxnet.gluon import nn, rnn
+from mxnet import gluon, autograd
 
 from model import LanguageModel
 from adaptive_softmax import *
@@ -32,8 +31,7 @@ from adaptive_softmax import *
 
 parser = argparse.ArgumentParser(description='Benchmark for Adaptive Softmax')
 parser.add_argument('--adaptive_softmax', type=bool, default=True,
-        help=('Whether use Adaptive Softmax or not , '
-            'False for common full softmax'))
+                   help=('Whether use Adaptive Softmax or not, False for common full softmax'))
 parser.add_argument('--train_file_path', type=str,
                     default='./data/text8.train.pkl')
 parser.add_argument('--test_file_path', type=str,
@@ -54,7 +52,7 @@ parser.add_argument('--nlayers', type=int, default=1,
 parser.add_argument('--log_interval', type=int, default=200,
                     help=('report interval'))
 
-parser.add_argument('--cutoff', type=str, default="2000 10000")
+parser.add_argument('--cutoff', type=str, default='2000 10000')
 
 args = parser.parse_args()
 
@@ -85,9 +83,9 @@ test_file_path = args.test_file_path
 with open(train_file_path, 'rb') as f:
     data = pickle.load(f)
 
-input = data['input']
+inputs = data['input']
 label = data['label']
-input = mx.nd.array(input)
+inputs = mx.nd.array(inputs)
 label = mx.nd.array(label)
 
 vocab = len(data['worddic'])
@@ -102,8 +100,8 @@ label_test = mx.nd.array(label_test)
 
 ntokens = vocab
 
-model = LanguageModel(vocab_size=ntokens, num_embed=emsize, num_hidden=nhid, num_layers=nlayers, dropout=dropout,
-                       adaptive_softmax=adaptive_softmax, cutoff=cutoff)
+model = LanguageModel(vocab_size=ntokens, num_embed=emsize, num_hidden=nhid, num_layers=nlayers, 
+                      dropout=dropout, adaptive_softmax=adaptive_softmax, cutoff=cutoff)
 model.initialize(mx.init.Xavier(), ctx=context)
 trainer = gluon.Trainer(model.collect_params(), 'AdaGrad',
                         {'learning_rate': lr,
@@ -116,16 +114,18 @@ def detach(hidden):
         hidden = hidden.detach()
     return hidden
 
-def eval(data_source, target_source):
+def evaluation(data_source, target_source):
     """
     Calculate the test loss
 
     Parameters
     ----------
     data_source: NDArray
-        This is the input data for test. The input tensor is of shape `(num_samples of test data set, batch_size, bptt)`.
+        This is the input data for test. The input tensor is of shape 
+        `(num_samples of test data set, batch_size, bptt)`.
     target_source: NDArray
-        This is the input label for test. The input tensor is of shape `(num_samples of test data set, batch_size, bptt)`.
+        This is the input label for test. The input tensor is of shape 
+        `(num_samples of test data set, batch_size, bptt)`.
 
     Returns
     ----------
@@ -161,12 +161,11 @@ def train():
         total_L = 0.0
         hidden = model.begin_state(func=mx.nd.zeros, batch_size=batch_size, ctx=context)
         i = 0
-        
-        
+
         lr_i = lr / (1 + lrd * epoch)
         trainer.set_learning_rate(lr_i)
-        
-        for (data, target) in zip(input, label):
+
+        for (data, target) in zip(inputs, label):
             data = data.as_in_context(context).T
             target = target.as_in_context(context).T.reshape((-1, 1))
             hidden = detach(hidden)
@@ -174,22 +173,22 @@ def train():
                 nnloss, hidden = model(data, hidden, target)
                 L = nnloss
                 L.backward()
-            
+
             grads = [p.grad(context) for p in model.collect_params().values()]
             gluon.utils.clip_global_norm(grads, clip)
 
             trainer.step(1, ignore_stale_grad=True)
             total_L += L.asscalar()
-            
-            
-            i+=1
+
+
+            i += 1
             if i % log_interval == 0 and i > 0:
                 cur_L = total_L / log_interval
                 print('[Epoch %d Batch %d] loss %.2f, ppl %.2f'%(
                     epoch, i, cur_L, math.exp(cur_L)))
                 total_L = 0.0
-        
-        test_L = eval(input_test, label_test)
+
+        test_L = evaluation(input_test, label_test)
 
         print('[Epoch %d] time cost %.2fs, test loss %.2f, test ppl %.2f'%(
             epoch, time.time()-start_time, test_L, np.exp(test_L)))
