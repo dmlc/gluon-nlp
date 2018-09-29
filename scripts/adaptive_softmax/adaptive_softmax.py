@@ -27,7 +27,7 @@ class Adaptivesoftmax(gluon.Block):
     Implementation of the adaptive softmax proposed in the following work:
         @article{grave2016efficient,
                  title={Efficient softmax approximation for GPUs},
-                 author={Grave, Edouard and Joulin, Armand and Ciss{\'e}, 
+                 author={Grave, Edouard and Joulin, Armand and Ciss{\'e},
                          Moustapha and Grangier, David and J{\'e}gou, Herv{\'e}},
                  journal={arXiv preprint arXiv:1609.04309},
                  year={2016}
@@ -36,7 +36,7 @@ class Adaptivesoftmax(gluon.Block):
     Parameters:
     ----------
     input_size: int
-       the input size for adaptive softmax function, which is defined as the output size of 
+       the input size for adaptive softmax function, which is defined as the output size of
        hidden layers (num_hidden).
     cutoff: list or np.array
        build clusters for adaptive softmax.
@@ -53,7 +53,7 @@ class Adaptivesoftmax(gluon.Block):
 
         for i in range(len(cutoff) - 1):
             if reduce_factor == 1:
-                seq = nn.Dense(units=(cutoff[i + 1] - cutoff[i]), in_units=input_size, 
+                seq = nn.Dense(units=(cutoff[i + 1] - cutoff[i]), in_units=input_size,
                                flatten=False)
 
             else:
@@ -67,8 +67,8 @@ class Adaptivesoftmax(gluon.Block):
 
     def set_target(self, target):
         """
-        Generate id array to assgin the sample to the specific clulster it belongs to. 
-        As this part is requires no gradient update, the target is transformed into 
+        Generate id array to assgin the sample to the specific clulster it belongs to.
+        As this part is requires no gradient update, the target is transformed into
         numpy for calculation.
 
         Parameters:
@@ -101,7 +101,7 @@ class Adaptivesoftmax(gluon.Block):
         Map the target according to the different clusters they belong to.
         new_target[0] refers to the 'head'
         new_target[1], .... refer to the 'tail'
-        As this part requires no gradient update, the target is transformed into numpy 
+        As this part requires no gradient update, the target is transformed into numpy
         for calculation.
 
         Parameters:
@@ -133,7 +133,7 @@ class Adaptivesoftmax(gluon.Block):
         return new_target
 
 
-    def forward(self, input, target):
+    def forward(self, inputs, target):
         """
         If adaptive softmax is true, this function will be called.
 
@@ -149,31 +149,31 @@ class Adaptivesoftmax(gluon.Block):
         nnloss: NDArray
             The output is the loss.
         """
-        output_head = self.head(input)
+        output_head = self.head(inputs)
         nnloss = 0
         self.target = target
-        context = input.context
+        context = inputs.context
 
         if self.target is not None:
             self.set_target(self.target)
             self.target = self.remap_target(self.target)
 
         loss = gluon.loss.SoftmaxCrossEntropyLoss()
-        nnloss = nnloss + mx.nd.sum(loss(output_head,
-                mx.nd.array(self.target[0]).as_in_context(context)))
+        nnloss = nnloss + \
+                 mx.nd.sum(loss(output_head, mx.nd.array(self.target[0]).as_in_context(context)))
 
         for i in range(len(self.id)):
             if self.id[i] is not None:
                 id_select = np.array(self.id[i])
-                output_tail = self.tail[i](input[id_select])
-                nnloss = nnloss + mx.nd.sum(loss(output_tail,
-                         mx.nd.array(self.target[i+1]).as_in_context(context)))
+                output_tail = self.tail[i](inputs[id_select])
+                nnloss = nnloss + \
+                         mx.nd.sum(loss(output_tail, mx.nd.array(self.target[i+1]).as_in_context(context)))
 
         nnloss = nnloss / (len(target))
 
         return nnloss
 
-    def log_prob(self, input):
+    def log_prob(self, inputs):
         """
         If adaptive softmax is false, this function will be called.
 
@@ -188,7 +188,7 @@ class Adaptivesoftmax(gluon.Block):
             The array contains the probability for the final output pontential word.
             Its shape is `(batch_size * bptt, vocab_size + 1)`.
         """
-        head_out = self.head(input)
+        head_out = self.head(inputs)
         target_size = head_out.shape[0]
         prob = mx.nd.zeros((target_size, self.cutoff[-1]))
 
@@ -198,12 +198,12 @@ class Adaptivesoftmax(gluon.Block):
         for i in range(len(self.tail)):
             split = lsm_head[:, self.cutoff[0] + i]
             split = split.expand_dims(1)
-            tail_out = self.tail[i](input)
+            tail_out = self.tail[i](inputs)
             if i == 10:
                 print(tail_out[0])
                 print('tail loss:', mx.nd.log_softmax(tail_out, axis=1)[-1][3395])
-            lsm_tail = mx.nd.log_softmax(tail_out, axis=1) + split.broadcast_to((tail_out.shape[0],
-                       tail_out.shape[1]))
+            lsm_tail = mx.nd.log_softmax(tail_out, axis=1) + \
+                       split.broadcast_to((tail_out.shape[0], tail_out.shape[1]))
             prob[:, self.cutoff[i] : self.cutoff[i + 1]] = lsm_tail
 
         return prob
