@@ -28,9 +28,10 @@ We implement the adaptive softmax proposed in the following work:
 # specific language governing permissions and limitations
 # under the License.
 
+from mxnet import gluon
 from mxnet.gluon import nn, rnn
 import mxnet as mx
-from adaptive_softmax import *
+from adaptive_softmax import Adaptivesoftmax
 
 class LanguageModel(gluon.Block):
     """LanguageModel for adaptive softmax and regular full softmax.
