@@ -19,13 +19,19 @@
 """DataLoader. An extension of Gluon data loader that allows multi-shard sampling."""
 __all__ = ['ShardedDataLoader']
 
+import sys
 from mxnet import context
-from mxnet.gluon.data.dataloader import DataLoader, _MultiWorkerIter, _as_in_context
+from mxnet.gluon.data.dataloader import DataLoader
+from mxnet.gluon.data.dataloader import _MultiWorkerIter, _as_in_context, _recursive_fork_recordio
 
 
 def worker_loop(dataset, key_queue, data_queue, batchify_fn):
     """Worker loop for multiprocessing DataLoader."""
-    dataset._fork()
+    # re-fork a new recordio handler in new process if applicable
+    limit = sys.getrecursionlimit()
+    max_recursion_depth = min(limit - 5, max(10, limit // 2))
+    _recursive_fork_recordio(dataset, 0, max_recursion_depth)
+
     while True:
         idx, samples = key_queue.get()
         if idx is None:
