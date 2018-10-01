@@ -1,8 +1,8 @@
 def prepare_clean_env(env_name) {
   sh """#!/bin/bash
   printenv
-  git clean -f -d -x --exclude='tests/externaldata/*' --exclude='tests/data/*' --exclude=conda
-  conda env update --prune -f env/${env_name}.yml -p conda/${env_name}
+  git clean -ff -d -x --exclude='tests/externaldata/*' --exclude='tests/data/*' --exclude=conda
+  conda env update --prune -p conda/${env_name} -f env/${env_name}.yml
   conda activate ./conda/${env_name}
   conda list
   make clean
