@@ -1,4 +1,3 @@
-name: gluon_nlp_py2
 channels:
   - conda-forge
 dependencies:
@@ -11,5 +10,6 @@ dependencies:
   - flaky
   - pytest-cov
   - pytest-xdist
+  - pip=9.0.3
   - pip:
-    - mxnet-cu80>=1.3.0b20180817
+    - mxnet-cu80>=1.3.0
