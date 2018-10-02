@@ -22,7 +22,21 @@ __all__ = ['ShardedDataLoader']
 import sys
 from mxnet import context
 from mxnet.gluon.data.dataloader import DataLoader
-from mxnet.gluon.data.dataloader import _MultiWorkerIter, _as_in_context, _recursive_fork_recordio
+from mxnet.gluon.data.dataloader import _MultiWorkerIter, _as_in_context
+from mxnet.recordio import MXRecordIO
+
+def _recursive_fork_recordio(obj, depth, max_depth=1000):
+    """Recursively find instance of MXRecordIO and reset file handler.
+    This is required for MXRecordIO which holds a C pointer to a opened file after fork.
+    """
+    if depth >= max_depth:
+        return
+    if isinstance(obj, MXRecordIO):
+        obj.close()
+        obj.open()  # re-obtain file hanlder in new process
+    elif (hasattr(obj, '__dict__')):
+        for _, v in obj.__dict__.items():
+            _recursive_fork_recordio(v, depth + 1, max_depth)
 
 
 def worker_loop(dataset, key_queue, data_queue, batchify_fn):
