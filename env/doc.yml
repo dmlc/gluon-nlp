@@ -12,8 +12,8 @@ dependencies:
   - spacy
   - nltk
   - pandoc=1.19.2
-  - pip=10.0.1
+  - pip=9.0.3
+  - notedown
   - pip:
     - mxnet-cu80>=1.3.0
-    - notedown
     - sacremoses
