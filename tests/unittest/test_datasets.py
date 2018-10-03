@@ -102,6 +102,7 @@ def test_imdb():
         assert isinstance(data, _str_types)
         assert score == 0
 
+@pytest.mark.serial
 def test_mr():
     all = nlp.data.MR(
         root=os.path.join('tests', 'data', 'mr'), segment='all')
@@ -109,6 +110,8 @@ def test_mr():
     for i, (data, label) in enumerate(all):
         assert isinstance(data, _str_types)
         assert label <= 1
+        
+@pytest.mark.serial
 def test_sst_1():
     train = nlp.data.SST_1(
         root=os.path.join('tests', 'data', 'sst-1'), segment='train')
@@ -122,6 +125,8 @@ def test_sst_1():
     for i, (data, label) in enumerate(test):
         assert isinstance(data, _str_types)
         assert label <= 4
+        
+@pytest.mark.serial
 def test_sst_2():
     train = nlp.data.SST_2(
         root=os.path.join('tests', 'data', 'sst-2'), segment='train')
@@ -135,6 +140,8 @@ def test_sst_2():
     for i, (data, label) in enumerate(test):
         assert isinstance(data, _str_types)
         assert label <= 1  
+        
+@pytest.mark.serial
 def test_subj():
     all = nlp.data.SUBJ(
         root=os.path.join('tests', 'data', 'mr'), segment='all')
@@ -142,6 +149,8 @@ def test_subj():
     for i, (data, label) in enumerate(all):
         assert isinstance(data, _str_types)
         assert label <= 1
+
+@pytest.mark.serial
 def test_trec():
     train = nlp.data.TREC(
         root=os.path.join('tests', 'data', 'trec'), segment='train')
