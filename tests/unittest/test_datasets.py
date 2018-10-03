@@ -106,7 +106,7 @@ def test_mr():
     all = nlp.data.MR(
         root=os.path.join('tests', 'data', 'mr'), segment='all')
     assert len(all) == 10000, len(all)
-     for i, (data, label) in enumerate(all):
+    for i, (data, label) in enumerate(all):
         assert isinstance(data, _str_types)
         assert label <= 1
 def test_sst_1():
@@ -116,10 +116,10 @@ def test_sst_1():
         root=os.path.join('tests', 'data', 'sst-1'), segment='test')
     assert len(train) == 237107, len(train)
     assert len(test) == 2125, len(test)
-     for i, (data, label) in enumerate(train):
+    for i, (data, label) in enumerate(train):
         assert isinstance(data, _str_types)
         assert label <= 4
-     for i, (data, label) in enumerate(test):
+    for i, (data, label) in enumerate(test):
         assert isinstance(data, _str_types)
         assert label <= 4
 def test_sst_2():
@@ -129,17 +129,17 @@ def test_sst_2():
         root=os.path.join('tests', 'data', 'sst-2'), segment='test')
     assert len(train) == 118038, len(train)
     assert len(test) == 1745, len(test)
-     for i, (data, label) in enumerate(train):
+    for i, (data, label) in enumerate(train):
         assert isinstance(data, _str_types)
         assert label <= 1
-     for i, (data, label) in enumerate(test):
+    for i, (data, label) in enumerate(test):
         assert isinstance(data, _str_types)
         assert label <= 1  
 def test_subj():
     all = nlp.data.SUBJ(
         root=os.path.join('tests', 'data', 'mr'), segment='all')
     assert len(all) == 10000, len(all)
-     for i, (data, label) in enumerate(all):
+    for i, (data, label) in enumerate(all):
         assert isinstance(data, _str_types)
         assert label <= 1
 def test_trec():
@@ -149,10 +149,10 @@ def test_trec():
         root=os.path.join('tests', 'data', 'trec'), segment='test')
     assert len(train) == 11452, len(train)
     assert len(test) == 500, len(test)
-     for i, (data, label) in enumerate(train):
+    for i, (data, label) in enumerate(train):
         assert isinstance(data, _str_types)
         assert label <= 5
-     for i, (data, label) in enumerate(test):
+    for i, (data, label) in enumerate(test):
         assert isinstance(data, _str_types)
         assert label <= 5  
 
