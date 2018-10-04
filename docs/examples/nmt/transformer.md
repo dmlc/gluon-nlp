@@ -114,7 +114,7 @@ wmt_dataset_processed = wmt_data_test.transform(wmt_transform_fn, lazy=False)
 print(*wmt_dataset_processed[0], sep='\n')
 ```
 
-### Create Sampler and DataLoader for TOY Dataset
+### Create Sampler and DataLoader for WMT 2014 Dataset
 
 ```{.python .input}
 wmt_data_test_with_len = gluon.data.SimpleDataset([(ele[0], ele[1], len(
