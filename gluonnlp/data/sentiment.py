@@ -91,9 +91,9 @@ class MR(SimpleDataset):
         Path to temp folder for storing data.
         MXNET_HOME defaults to '~/.mxnet'.
     """
-    def __init__(self, segment='train', root=os.path.join(_get_home_dir(), 'datasets', 'mr')):
-        self._data_file = {'all': ('MR.tar.gz',
-                                   'efadad45a46d280f4bd9084a386b71eaec16d0a8')}
+    def __init__(self, segment='all', root=os.path.join(_get_home_dir(), 'datasets', 'mr')):
+        self._data_file = {'all': ('all.json',
+                                   '7606efec578d9613f5c38bf2cef8d3e4e6575b2c')}
         root = os.path.expanduser(root)
         if not os.path.isdir(root):
             os.makedirs(root)
@@ -103,18 +103,16 @@ class MR(SimpleDataset):
         super(MR, self).__init__(self._read_data())
 
     def _get_data(self):
-        data_file_name, data_hash = self._data_file['all']
+        data_file_name, data_hash = self._data_file[self._segment]
         root = self._root
         path = os.path.join(root, data_file_name)
         if not os.path.exists(path) or not check_sha1(path, data_hash):
             fname = download(_get_repo_file_url('gluon/dataset/mr', data_file_name),
                              path=root, sha1_hash=data_hash)
-            with tarfile.open(fname, 'r') as f:
-                f.extractall(root)
 
     def _read_data(self):
-        with open(os.path.join(self._root, self._segment + '_data.pkl'), 'rb') as f:
-            samples = pickle.load(f)
+        with open(os.path.join(self._root, self._segment+'.json')) as f:
+            samples = json.load(f)
         return samples
 
 class TREC(SimpleDataset):
@@ -132,8 +130,10 @@ class TREC(SimpleDataset):
         MXNET_HOME defaults to '~/.mxnet'.
     """
     def __init__(self, segment='train', root=os.path.join(_get_home_dir(), 'datasets', 'trec')):
-        self._data_file = {'all': ('TREC.tar.gz',
-                                   'd3b6a01aa9ea8794631b1c2cc494ce3c3536e2b7')}
+        self._data_file = {'train': ('train.json',
+                                     'f764e8e052239c66e96e15133c8fc4028df34a84'),
+                     'test': ('test.json',
+                                     'df8c6ffb90831e553617dbaab7119e0526b98f35')}
         root = os.path.expanduser(root)
         if not os.path.isdir(root):
             os.makedirs(root)
@@ -143,18 +143,16 @@ class TREC(SimpleDataset):
         super(TREC, self).__init__(self._read_data())
 
     def _get_data(self):
-        data_file_name, data_hash = self._data_file['all']
+        data_file_name, data_hash = self._data_file[self._segment]
         root = self._root
         path = os.path.join(root, data_file_name)
         if not os.path.exists(path) or not check_sha1(path, data_hash):
             fname = download(_get_repo_file_url('gluon/dataset/trec', data_file_name),
                              path=root, sha1_hash=data_hash)
-            with tarfile.open(fname, 'r') as f:
-                f.extractall(root)
 
     def _read_data(self):
-        with open(os.path.join(self._root, self._segment + '_data.pkl'), 'rb') as f:
-            samples = pickle.load(f)
+        with open(os.path.join(self._root, self._segment+'.json')) as f:
+            samples = json.load(f)
         return samples
 
 class SUBJ(SimpleDataset):
@@ -168,9 +166,9 @@ class SUBJ(SimpleDataset):
         Path to temp folder for storing data.
         MXNET_HOME defaults to '~/.mxnet'.
     """
-    def __init__(self, segment='train', root=os.path.join(_get_home_dir(), 'datasets', 'subj')):
-        self._data_file = {'all': ('Subj.tar.gz',
-                                   '1b7886f337717779a2a9809763b0c2da9698d5f6')}
+    def __init__(self, segment='all', root=os.path.join(_get_home_dir(), 'datasets', 'subj')):
+        self._data_file = {'all': ('all.json',
+                                   '9e7bd1daa359c24abe1fac767d0e0af7bc114045')}
         root = os.path.expanduser(root)
         if not os.path.isdir(root):
             os.makedirs(root)
@@ -180,22 +178,22 @@ class SUBJ(SimpleDataset):
         super(SUBJ, self).__init__(self._read_data())
 
     def _get_data(self):
-        data_file_name, data_hash = self._data_file['all']
+        data_file_name, data_hash = self._data_file[self._segment]
         root = self._root
         path = os.path.join(root, data_file_name)
         if not os.path.exists(path) or not check_sha1(path, data_hash):
             fname = download(_get_repo_file_url('gluon/dataset/subj', data_file_name),
                              path=root, sha1_hash=data_hash)
-            with tarfile.open(fname, 'r') as f:
-                f.extractall(root)
 
     def _read_data(self):
-        with open(os.path.join(self._root, self._segment + '_data.pkl'), 'rb') as f:
-            samples = pickle.load(f)
+        with open(os.path.join(self._root, self._segment+'.json')) as f:
+            samples = json.load(f)
         return samples
 
 class SST_1(SimpleDataset):
     """Stanford Sentiment Treebank—an extension of MR.
+    but with train/dev/test splits provided and ﬁne-grained
+    labels (very positive, positive, neutral, negative, very negative)
 
     From
     http://nlp.stanford.edu/sentiment/
@@ -209,8 +207,10 @@ class SST_1(SimpleDataset):
         MXNET_HOME defaults to '~/.mxnet'.
     """
     def __init__(self, segment='train', root=os.path.join(_get_home_dir(), 'datasets', 'sst-1')):
-        self._data_file = {'all': ('SST-1.tar.gz',
-                                   '68a6f45ff891af973bd2182f598cd8d23a5c35f4')}
+        self._data_file = {'train': ('train.json',
+                                     'c369d7b1e46134e87e18eb5a1cadf0f2bfcd1787'),
+                     'test': ('test.json',
+                                    'a6999ca5f3d51b61f63ee2ede03ff72e699ac20e')}
         root = os.path.expanduser(root)
         if not os.path.isdir(root):
             os.makedirs(root)
@@ -220,24 +220,21 @@ class SST_1(SimpleDataset):
         super(SST_1, self).__init__(self._read_data())
 
     def _get_data(self):
-        data_file_name, data_hash = self._data_file['all']
+        data_file_name, data_hash = self._data_file[self._segment]
         root = self._root
         path = os.path.join(root, data_file_name)
         if not os.path.exists(path) or not check_sha1(path, data_hash):
             fname = download(_get_repo_file_url('gluon/dataset/sst-1', data_file_name),
                              path=root, sha1_hash=data_hash)
-            with tarfile.open(fname, 'r') as f:
-                f.extractall(root)
 
     def _read_data(self):
-        with open(os.path.join(self._root, self._segment + '_data.pkl'), 'rb') as f:
-            samples = pickle.load(f)
+        with open(os.path.join(self._root, self._segment+'.json')) as f:
+            samples = json.load(f)
         return samples
 
 class SST_2(SimpleDataset):
     """Stanford Sentiment Treebank—an extension of MR.
-
-    Same as SST-1, but with neutral reviews removed and binary labels(positive, negative).
+    Same as SST-1, but with neutral reviews removed and binary labels(positive, negativee).
 
     From
     http://nlp.stanford.edu/sentiment/
@@ -251,8 +248,10 @@ class SST_2(SimpleDataset):
         MXNET_HOME defaults to '~/.mxnet'.
     """
     def __init__(self, segment='train', root=os.path.join(_get_home_dir(), 'datasets', 'sst-2')):
-        self._data_file = {'all': ('SST-2.tar.gz',
-                                   '8716e310d09658328701f76e5703c1a57df49a64')}
+        self._data_file = {'train': ('train.json',
+                                     '12f4fb2661ad8e39daa45a3369bedb0cd49ad1f4'),
+                     'test': ('test.json',
+                                    '34dfb27ef788599a0c424d05a97c1c4389f68c85')}
         root = os.path.expanduser(root)
         if not os.path.isdir(root):
             os.makedirs(root)
@@ -262,16 +261,14 @@ class SST_2(SimpleDataset):
         super(SST_2, self).__init__(self._read_data())
 
     def _get_data(self):
-        data_file_name, data_hash = self._data_file['all']
+        data_file_name, data_hash = self._data_file[self._segment]
         root = self._root
         path = os.path.join(root, data_file_name)
         if not os.path.exists(path) or not check_sha1(path, data_hash):
             fname = download(_get_repo_file_url('gluon/dataset/sst-2', data_file_name),
                              path=root, sha1_hash=data_hash)
-            with tarfile.open(fname, 'r') as f:
-                f.extractall(root)
 
     def _read_data(self):
-        with open(os.path.join(self._root, self._segment + '_data.pkl'), 'rb') as f:
-            samples = pickle.load(f)
+        with open(os.path.join(self._root, self._segment+'.json')) as f:
+            samples = json.load(f)
         return samples
