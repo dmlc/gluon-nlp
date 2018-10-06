@@ -25,8 +25,6 @@ __all__ = ['IMDB', 'MR', 'TREC', 'SUBJ', 'SST_1', 'SST_2']
 
 import json
 import os
-import pickle
-import tarfile
 
 from mxnet.gluon.data import SimpleDataset
 from mxnet.gluon.utils import download, check_sha1, _get_repo_file_url
@@ -107,7 +105,7 @@ class MR(SimpleDataset):
         root = self._root
         path = os.path.join(root, data_file_name)
         if not os.path.exists(path) or not check_sha1(path, data_hash):
-            fname = download(_get_repo_file_url('gluon/dataset/mr', data_file_name),
+            download(_get_repo_file_url('gluon/dataset/mr', data_file_name),
                              path=root, sha1_hash=data_hash)
 
     def _read_data(self):
@@ -132,7 +130,7 @@ class TREC(SimpleDataset):
     def __init__(self, segment='train', root=os.path.join(_get_home_dir(), 'datasets', 'trec')):
         self._data_file = {'train': ('train.json',
                                      'f764e8e052239c66e96e15133c8fc4028df34a84'),
-                     'test': ('test.json',
+                           'test': ('test.json',
                                      'df8c6ffb90831e553617dbaab7119e0526b98f35')}
         root = os.path.expanduser(root)
         if not os.path.isdir(root):
@@ -147,7 +145,7 @@ class TREC(SimpleDataset):
         root = self._root
         path = os.path.join(root, data_file_name)
         if not os.path.exists(path) or not check_sha1(path, data_hash):
-            fname = download(_get_repo_file_url('gluon/dataset/trec', data_file_name),
+            download(_get_repo_file_url('gluon/dataset/trec', data_file_name),
                              path=root, sha1_hash=data_hash)
 
     def _read_data(self):
@@ -182,7 +180,7 @@ class SUBJ(SimpleDataset):
         root = self._root
         path = os.path.join(root, data_file_name)
         if not os.path.exists(path) or not check_sha1(path, data_hash):
-            fname = download(_get_repo_file_url('gluon/dataset/subj', data_file_name),
+            download(_get_repo_file_url('gluon/dataset/subj', data_file_name),
                              path=root, sha1_hash=data_hash)
 
     def _read_data(self):
@@ -209,7 +207,7 @@ class SST_1(SimpleDataset):
     def __init__(self, segment='train', root=os.path.join(_get_home_dir(), 'datasets', 'sst-1')):
         self._data_file = {'train': ('train.json',
                                      'c369d7b1e46134e87e18eb5a1cadf0f2bfcd1787'),
-                     'test': ('test.json',
+                           'test': ('test.json',
                                     'a6999ca5f3d51b61f63ee2ede03ff72e699ac20e')}
         root = os.path.expanduser(root)
         if not os.path.isdir(root):
@@ -224,7 +222,7 @@ class SST_1(SimpleDataset):
         root = self._root
         path = os.path.join(root, data_file_name)
         if not os.path.exists(path) or not check_sha1(path, data_hash):
-            fname = download(_get_repo_file_url('gluon/dataset/sst-1', data_file_name),
+            download(_get_repo_file_url('gluon/dataset/sst-1', data_file_name),
                              path=root, sha1_hash=data_hash)
 
     def _read_data(self):
@@ -250,7 +248,7 @@ class SST_2(SimpleDataset):
     def __init__(self, segment='train', root=os.path.join(_get_home_dir(), 'datasets', 'sst-2')):
         self._data_file = {'train': ('train.json',
                                      '12f4fb2661ad8e39daa45a3369bedb0cd49ad1f4'),
-                     'test': ('test.json',
+                           'test': ('test.json',
                                     '34dfb27ef788599a0c424d05a97c1c4389f68c85')}
         root = os.path.expanduser(root)
         if not os.path.isdir(root):
@@ -265,7 +263,7 @@ class SST_2(SimpleDataset):
         root = self._root
         path = os.path.join(root, data_file_name)
         if not os.path.exists(path) or not check_sha1(path, data_hash):
-            fname = download(_get_repo_file_url('gluon/dataset/sst-2', data_file_name),
+            download(_get_repo_file_url('gluon/dataset/sst-2', data_file_name),
                              path=root, sha1_hash=data_hash)
 
     def _read_data(self):
