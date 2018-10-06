@@ -106,7 +106,7 @@ class MR(SimpleDataset):
         path = os.path.join(root, data_file_name)
         if not os.path.exists(path) or not check_sha1(path, data_hash):
             download(_get_repo_file_url('gluon/dataset/mr', data_file_name),
-                             path=root, sha1_hash=data_hash)
+                     path=root, sha1_hash=data_hash)
 
     def _read_data(self):
         with open(os.path.join(self._root, self._segment+'.json')) as f:
@@ -131,7 +131,7 @@ class TREC(SimpleDataset):
         self._data_file = {'train': ('train.json',
                                      'f764e8e052239c66e96e15133c8fc4028df34a84'),
                            'test': ('test.json',
-                                     'df8c6ffb90831e553617dbaab7119e0526b98f35')}
+                                    'df8c6ffb90831e553617dbaab7119e0526b98f35')}
         root = os.path.expanduser(root)
         if not os.path.isdir(root):
             os.makedirs(root)
@@ -146,7 +146,7 @@ class TREC(SimpleDataset):
         path = os.path.join(root, data_file_name)
         if not os.path.exists(path) or not check_sha1(path, data_hash):
             download(_get_repo_file_url('gluon/dataset/trec', data_file_name),
-                             path=root, sha1_hash=data_hash)
+                     path=root, sha1_hash=data_hash)
 
     def _read_data(self):
         with open(os.path.join(self._root, self._segment+'.json')) as f:
@@ -181,7 +181,7 @@ class SUBJ(SimpleDataset):
         path = os.path.join(root, data_file_name)
         if not os.path.exists(path) or not check_sha1(path, data_hash):
             download(_get_repo_file_url('gluon/dataset/subj', data_file_name),
-                             path=root, sha1_hash=data_hash)
+                     path=root, sha1_hash=data_hash)
 
     def _read_data(self):
         with open(os.path.join(self._root, self._segment+'.json')) as f:
@@ -223,7 +223,7 @@ class SST_1(SimpleDataset):
         path = os.path.join(root, data_file_name)
         if not os.path.exists(path) or not check_sha1(path, data_hash):
             download(_get_repo_file_url('gluon/dataset/sst-1', data_file_name),
-                             path=root, sha1_hash=data_hash)
+                     path=root, sha1_hash=data_hash)
 
     def _read_data(self):
         with open(os.path.join(self._root, self._segment+'.json')) as f:
@@ -264,7 +264,7 @@ class SST_2(SimpleDataset):
         path = os.path.join(root, data_file_name)
         if not os.path.exists(path) or not check_sha1(path, data_hash):
             download(_get_repo_file_url('gluon/dataset/sst-2', data_file_name),
-                             path=root, sha1_hash=data_hash)
+                     path=root, sha1_hash=data_hash)
 
     def _read_data(self):
         with open(os.path.join(self._root, self._segment+'.json')) as f:
