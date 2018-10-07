@@ -57,7 +57,7 @@ GluonNLP is a community that believes in sharing.
 For questions, comments, and bug reports, `Github issues <https://github.com/dmlc/gluon-nlp/issues>`__ is the best way to reach us.
 
 We now have a new Slack channel `here <https://apache-mxnet.slack.com/messages/CCCDM10V9>`__.
-(`register <https://join.slack.com/t/apache-mxnet/shared_invite/enQtNDIzNjY0NjQ2NjYyLTI1ZGNiOGEwOTZkMzMyOTg2ZjNkOWQyNjA5NGRhOTI5NDY4MDY0NmE1MDc2NjEzYWQ1MDZhNzU2NjE5YTMyYTA>`__).
+(`register <https://join.slack.com/t/apache-mxnet/shared_invite/enQtNDQyMjAxMjQzMTI3LTkzMzY3ZmRlNzNjNGQxODg0N2Y5NmExMjEwOTZlYmIwYTU2ZTY4ZjNlMmEzOWY5MGQ5N2QxYjhlZTFhZTVmYTc>`__).
 
 How to Contribute
 =================
