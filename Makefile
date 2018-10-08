@@ -44,17 +44,17 @@ docs: release
 		echo "processing" $$BASENAME ; \
 		sed -i "s/$$IPYNB_BASENAME/$$BASENAME/g" $$TARGET_HTML; \
 	done;
-	for f in $(shell find scripts -type f -name '*.rst' -print) ; do \
+	for f in $(shell find docs/model_zoo -type f -name '*.rst' -print) ; do \
 		DIR=`dirname $$f` ; \
 		BASENAME=`basename $$f` ; \
 		HTML_BASENAME=`echo $$BASENAME | sed 's/rst/html/'` ; \
 		TARGET_HTML="docs/_build/html/$$DIR/$$HTML_BASENAME" ; \
 		echo "processing" $$BASENAME ; \
-		sed -i "s/docs\/scripts/scripts/g" $$TARGET_HTML; \
+		sed -i "s/docs\/model_zoo/scripts/g" $$TARGET_HTML; \
 	done;
 
 clean:
-	git clean -ff -d -x --exclude="$(ROOTDIR)tests/externaldata/*" --exclude="$(ROOTDIR)/tests/data/*" --exclude=conda
+	git clean -ff -d -x --exclude="$(ROOTDIR)/tests/externaldata/*" --exclude="$(ROOTDIR)/tests/data/*" --exclude="$(ROOTDIR)/conda"
 
 clean_doc:
 	make -C docs clean

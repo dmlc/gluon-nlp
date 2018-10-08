@@ -1,5 +1,10 @@
-Document Classification
------------------------
+Text Classification
+-------------------
+
+:download:`[Download] </model_zoo/text_classification.zip>`
+
+Fast-text Word N-gram
++++++++++++++++++++++
 
 Use the following command to train the FastText classification model on the Yelp review dataset.
 The model we have implemented is a slight variant of :
@@ -15,10 +20,10 @@ The datasets used in this script can be obtained with
 
 .. code-block:: console
 
-   $ python train_classification_fasttext.py --input yelp_review_polarity.train \
-						--output yelp_review_polarity.gluon \
-						 --validation dbpedia.test \
-						 --ngrams 1 --epochs 25 --lr 0.1 --emsize 100 --gpu 0
+   $ python fasttext_word_ngram.py --input yelp_review_polarity.train \
+                                   --output yelp_review_polarity.gluon \
+                                   --validation dbpedia.test \
+                                   --ngrams 1 --epochs 25 --lr 0.1 --emsize 100 --gpu 0
 
 
 It gets validation accuracy score of 93.96%. Yelp review is a binary classification dataset. (It has 2 classes)
@@ -31,10 +36,10 @@ Use the following commands to train a Classification model on the dbpedia datase
 
 .. code-block:: console
 
-   $ python train_classification_fasttext.py --input dbpedia.train \
-                                                --output yelp_review_polarity.gluon \
-                                                 --validation dbpedia.test \
-                                                 --ngrams 1 --epochs 25 --lr 0.1 --emsize 100 --gpu 0
+   $ python fasttext_word_ngram.py --input dbpedia.train \
+                                   --output yelp_review_polarity.gluon \
+                                   --validation dbpedia.test \
+                                   --ngrams 1 --epochs 25 --lr 0.1 --emsize 100 --gpu 0
 
 It gives validation accuracy of 98%. Try tweaking --ngrams to 2 or 3 for improved accuracy numbers.
 Training logs : `log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/classification/fasttext-dbpedia.log>`__
@@ -44,10 +49,10 @@ Use the following command to train a Classification model on the ag_news dataset
 
 .. code-block:: console
 
-   $ python train_classification_fasttext.py --input ag_news.train \
-                                                --output ag_news.gluon \
-                                                 --validation ag_news.test \
-                                                 --ngrams 1 --epochs 25 --lr 0.1 --emsize 100 --gpu 0
+   $ python fasttext_word_ngram.py --input ag_news.train \
+                                   --output ag_news.gluon \
+                                   --validation ag_news.test \
+                                   --ngrams 1 --epochs 25 --lr 0.1 --emsize 100 --gpu 0
 
 It gives a validation accuracy of 91%
 Training logs : `log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/classification/fasttext-ag-news.log>`__
@@ -64,5 +69,4 @@ Use the following linux utility for achieving the same:
 
 .. code-block:: console
 
-	cat <input.txt> | sed -e "s/\([.\!?,'/()]\)/ \1 /g" | tr "[:upper:]" "[:lower:]" > input.preprocessed.txt
-
+   $ cat <input.txt> | sed -e "s/\([.\!?,'/()]\)/ \1 /g" | tr "[:upper:]" "[:lower:]" > input.preprocessed.txt

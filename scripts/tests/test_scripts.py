@@ -3,7 +3,7 @@ import subprocess
 import pytest
 import time
 
-from ..nmt.dataset import TOY
+from ..machine_translation.dataset import TOY
 
 
 def test_toy():
@@ -33,8 +33,8 @@ def test_toy():
 def test_embedding():
     process = subprocess.check_call([
         'python', './scripts/word_embeddings/train_fasttext.py', '--gpu', '0',
-        '--epochs', '1', '--optimizer', 'sgd', '--ngram-buckets', '1000',
-        '--max-vocab-size', '1000'
+        '--epochs', '1', '--optimizer', 'sgd', '--ngram-buckets', '100',
+        '--max-vocab-size', '100', '--batch-size', '64'
     ])
     time.sleep(5)
 
@@ -49,15 +49,15 @@ def test_embedding_evaluate_pretrained():
 
 
 @pytest.mark.serial
-def test_sentiment_analysis():
-    process = subprocess.check_call(['python', './scripts/sentiment_analysis/sentiment_analysis.py',
-                                     '--gpu', '0', '--batch_size', '16', '--bucket_type', 'fixed',
+def test_sentiment_analysis_finetune():
+    process = subprocess.check_call(['python', './scripts/sentiment_analysis/finetune_lm.py',
+                                     '--gpu', '0', '--batch_size', '32', '--bucket_type', 'fixed',
                                      '--epochs', '1', '--dropout', '0', '--no_pretrained',
                                      '--lr', '0.005', '--valid_ratio', '0.1',
                                      '--save-prefix', 'imdb_lstm_200'])
     time.sleep(5)
-    process = subprocess.check_call(['python', './scripts/sentiment_analysis/sentiment_analysis.py',
-                                     '--gpu', '0', '--batch_size', '16', '--bucket_type', 'fixed',
+    process = subprocess.check_call(['python', './scripts/sentiment_analysis/finetune_lm.py',
+                                     '--gpu', '0', '--batch_size', '32', '--bucket_type', 'fixed',
                                      '--epochs', '1', '--dropout', '0',
                                      '--lr', '0.005', '--valid_ratio', '0.1',
                                      '--save-prefix', 'imdb_lstm_200'])
@@ -65,20 +65,20 @@ def test_sentiment_analysis():
 
 
 def test_sampling():
-    process = subprocess.check_call(['python', './scripts/sequence_sampling/sequence_sampling.py',
-                                     '--use-beam-search', '--bos', 'I love it', '--beam_size', '5',
-                                     '--print_num', '5'])
+    process = subprocess.check_call(['python', './scripts/text_generation/sequence_sampling.py',
+                                     '--use-beam-search', '--bos', 'I love it', '--beam_size', '2',
+                                     '--print_num', '1'])
     time.sleep(5)
-    process = subprocess.check_call(['python', './scripts/sequence_sampling/sequence_sampling.py',
-                                     '--use-sampling', '--bos', 'I love it', '--beam_size', '5',
-                                     '--print_num', '5', '--temperature', '1.0'])
+    process = subprocess.check_call(['python', './scripts/text_generation/sequence_sampling.py',
+                                     '--use-sampling', '--bos', 'I love it', '--beam_size', '2',
+                                     '--print_num', '1', '--temperature', '1.0'])
     time.sleep(5)
 
 
 @pytest.mark.serial
 def test_gnmt():
-    process = subprocess.check_call(['python', './scripts/nmt/train_gnmt.py', '--dataset', 'TOY',
-                                     '--src_lang', 'en', '--tgt_lang', 'de', '--batch_size', '3',
+    process = subprocess.check_call(['python', './scripts/machine_translation/train_gnmt.py', '--dataset', 'TOY',
+                                     '--src_lang', 'en', '--tgt_lang', 'de', '--batch_size', '32',
                                      '--optimizer', 'adam', '--lr', '0.0025', '--save_dir', 'test',
                                      '--epochs', '1', '--gpu', '0', '--num_buckets', '5',
                                      '--num_hidden', '64', '--num_layers', '2'])
@@ -87,22 +87,22 @@ def test_gnmt():
 
 @pytest.mark.serial
 def test_transformer():
-    process = subprocess.check_call(['python', './scripts/nmt/train_transformer.py',
+    process = subprocess.check_call(['python', './scripts/machine_translation/train_transformer.py',
                                      '--dataset', 'TOY', '--src_lang', 'en', '--tgt_lang', 'de',
-                                     '--batch_size', '128', '--optimizer', 'adam',
+                                     '--batch_size', '32', '--optimizer', 'adam',
                                      '--num_accumulated', '1', '--lr', '1.0',
                                      '--warmup_steps', '2000', '--save_dir', 'test',
                                      '--epochs', '1', '--gpus', '0', '--scaled', '--average_start',
                                      '1', '--num_buckets', '5', '--bleu', 'tweaked', '--num_units',
                                      '32', '--hidden_size', '64', '--num_layers', '2',
-                                     '--num_heads', '4', '--test_batch_size', '128'])
-    process = subprocess.check_call(['python', './scripts/nmt/train_transformer.py',
+                                     '--num_heads', '4', '--test_batch_size', '32'])
+    process = subprocess.check_call(['python', './scripts/machine_translation/train_transformer.py',
                                      '--dataset', 'TOY', '--src_lang', 'en', '--tgt_lang', 'de',
-                                     '--batch_size', '128', '--optimizer', 'adam',
+                                     '--batch_size', '32', '--optimizer', 'adam',
                                      '--num_accumulated', '1', '--lr', '1.0',
                                      '--warmup_steps', '2000', '--save_dir', 'test',
                                      '--epochs', '1', '--gpus', '0', '--scaled', '--average_start',
                                      '1', '--num_buckets', '5', '--bleu', '13a', '--num_units',
                                      '32', '--hidden_size', '64', '--num_layers', '2',
-                                     '--num_heads', '4', '--test_batch_size', '128'])
+                                     '--num_heads', '4', '--test_batch_size', '32'])
     time.sleep(5)

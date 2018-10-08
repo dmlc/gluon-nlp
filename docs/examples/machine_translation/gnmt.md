@@ -1,4 +1,4 @@
-# Google NMT on IWSLT 2015 English-Vietnamese Translation
+# Google Neural Machine Translation
 
 In this notebook, we are going to train Google NMT on IWSLT 2015 English-Vietnamese
 Dataset. The building prcoess includes four steps: 1) load and process dataset, 2)
@@ -45,7 +45,7 @@ dropout = 0.2
 # parameters for training
 batch_size, test_batch_size = 128, 32
 num_buckets = 5
-epochs = 2
+epochs = 1
 clip = 5
 lr = 0.001
 lr_update_factor = 0.5
@@ -447,6 +447,6 @@ for epoch_id in range(epochs):
 ```
 
 ## Summary
-In this notebook, we have shown how to train a GNMT model on IWSLT 2015 English-Vietnamese using Gluon NLP toolkit. 
-The complete training script can be found [here](https://github.com/dmlc/gluon-nlp/blob/master/scripts/nmt/train_gnmt.py). 
+In this notebook, we have shown how to train a GNMT model on IWSLT 2015 English-Vietnamese using Gluon NLP toolkit.
+The complete training script can be found [here](https://github.com/dmlc/gluon-nlp/blob/master/scripts/nmt/train_gnmt.py).
 The command to reproduce the result can be seen in the [nmt scripts page](http://gluon-nlp.mxnet.io/scripts/index.html#machine-translation).

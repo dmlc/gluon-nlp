@@ -1,4 +1,4 @@
-# Sentiment Analysis (SA) with pre-trained Language Model (LM)
+# Sentiment Analysis
 
 Now that we've covered some advanced topics, let's go back and show how these techniques can help us even when addressing the comparatively simple problem of classification. In particular, we'll look at the classic problem of sentiment analysis: taking an input consisting of a string of text and classifying its sentiment as positive of negative.
 
@@ -85,7 +85,7 @@ Our model is based on a standard LSTM model. We use a hidden size of 200. We use
 dropout = 0
 language_model_name = 'standard_lstm_lm_200'
 pretrained = True
-learning_rate, batch_size = 0.005, 16
+learning_rate, batch_size = 0.005, 32
 bucket_num, bucket_ratio = 10, 0.2
 epochs = 1
 grad_clip = None

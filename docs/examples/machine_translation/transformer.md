@@ -1,8 +1,8 @@
-# Transformer based Machine Translation Using GluonNLP
+# Machine Translation with Transformer
 
-In this notebook, we will show how to train Transformer introduced in [1] and evaluate the pretrained model using GluonNLP. The model is both more accurate and lighter to train than previous seq2seq models. We will together go through: 
+In this notebook, we will show how to train Transformer introduced in [1] and evaluate the pretrained model using GluonNLP. The model is both more accurate and lighter to train than previous seq2seq models. We will together go through:
 
-1) Use the state-of-the-art pretrained Transformer model: we will evaluate the pretrained SOTA Transformer model and translate a few sentences ourselves with the `BeamSearchTranslator` using the SOTA model; 
+1) Use the state-of-the-art pretrained Transformer model: we will evaluate the pretrained SOTA Transformer model and translate a few sentences ourselves with the `BeamSearchTranslator` using the SOTA model;
 
 2) Train the Transformer yourself: including loading and processing dataset, define the Transformer model, write train script and evaluate the trained model. Note that in order to obtain the state-of-the-art results on WMT 2014 English-German dataset, it will take around 1 day to have the model. In order to let you run through the Transformer quickly, we suggest you to start with the `TOY` dataset sampled from the WMT dataset (by default in this notebook).
 
@@ -44,9 +44,9 @@ import nmt
 wmt_model_name = 'transformer_en_de_512'
 
 wmt_transformer_model, wmt_src_vocab, wmt_tgt_vocab = \
-    nmt.transformer.get_model(wmt_model_name, 
-                              dataset_name='WMT2014', 
-                              pretrained=True, 
+    nmt.transformer.get_model(wmt_model_name,
+                              dataset_name='WMT2014',
+                              pretrained=True,
                               ctx=ctx)
 
 print(wmt_src_vocab)
@@ -66,9 +66,9 @@ print(wmt_transformer_model)
 We then load the WMT 2014 English-German test dataset for evaluation purpose.
 
 The following shows how to process the dataset and cache the processed dataset
-for the future use. The processing steps include: 
+for the future use. The processing steps include:
 
-* 1) clip the source and target sequences 
+* 1) clip the source and target sequences
 * 2) split the string input to a list of tokens
 * 3) map the string token into its index in the vocabulary
 * 4) append EOS token to source sentence and add BOS and EOS tokens to target sentence.
@@ -88,8 +88,8 @@ wmt_data_test[0]
 ```
 
 ```{.python .input}
-wmt_test_text = nlp.data.WMT2014('newstest2014', 
-                                 src_lang=hparams.src_lang, 
+wmt_test_text = nlp.data.WMT2014('newstest2014',
+                                 src_lang=hparams.src_lang,
                                  tgt_lang=hparams.tgt_lang,
                                  full=False)
 wmt_test_text[0]
@@ -168,7 +168,7 @@ We first define the `BeamSearchTranslator` to generate the actual translations.
 ```{.python .input}
 wmt_translator = nmt.translation.BeamSearchTranslator(
     model=wmt_transformer_model,
-    beam_size=hparams.beam_size, 
+    beam_size=hparams.beam_size,
     scorer=nlp.model.BeamSearchScorer(alpha=hparams.lp_alpha, K=hparams.lp_k),
     max_length=200)
 ```
@@ -194,9 +194,9 @@ wmt_test_loss, wmt_test_translation_out = utils.evaluate(wmt_transformer_model,
                                                          wmt_detokenizer,
                                                          ctx)
 
-wmt_test_bleu_score, _, _, _, _ = nmt.bleu.compute_bleu([wmt_test_tgt_sentences], 
+wmt_test_bleu_score, _, _, _, _ = nmt.bleu.compute_bleu([wmt_test_tgt_sentences],
                                                         wmt_test_translation_out,
-                                                        tokenized=False, 
+                                                        tokenized=False,
                                                         tokenizer=hparams.bleu,
                                                         split_compound_word=False,
                                                         bpe=False)
@@ -231,11 +231,11 @@ print('Translate the following English sentence into German:')
 sample_src_seq = 'We love each other'
 
 print('[\'' + sample_src_seq + '\']')
-    
-sample_tgt_seq = utils.translate(wmt_translator, 
-                                 sample_src_seq, 
-                                 wmt_src_vocab, 
-                                 wmt_tgt_vocab, 
+
+sample_tgt_seq = utils.translate(wmt_translator,
+                                 sample_src_seq,
+                                 wmt_src_vocab,
+                                 wmt_tgt_vocab,
                                  wmt_detokenizer,
                                  ctx)
 
@@ -260,10 +260,10 @@ else:
 
 data_train, data_val, data_test, val_tgt_sentences, test_tgt_sentences, src_vocab, tgt_vocab = \
     dataprocessor.load_translation_data(
-        dataset=dataset, 
-        src_lang=hparams.src_lang, 
+        dataset=dataset,
+        src_lang=hparams.src_lang,
         tgt_lang=hparams.tgt_lang)
-    
+
 data_train_lengths = dataprocessor.get_data_lengths(data_train)
 data_val_lengths = dataprocessor.get_data_lengths(data_val)
 data_test_lengths = dataprocessor.get_data_lengths(data_test)
@@ -283,14 +283,14 @@ function, which pads and stacks sequences to form mini-batch.
 
 ```{.python .input}
 train_batchify_fn = nlp.data.batchify.Tuple(
-    nlp.data.batchify.Pad(), 
     nlp.data.batchify.Pad(),
-    nlp.data.batchify.Stack(dtype='float32'), 
+    nlp.data.batchify.Pad(),
+    nlp.data.batchify.Stack(dtype='float32'),
     nlp.data.batchify.Stack(dtype='float32'))
 test_batchify_fn = nlp.data.batchify.Tuple(
-    nlp.data.batchify.Pad(), 
     nlp.data.batchify.Pad(),
-    nlp.data.batchify.Stack(dtype='float32'), 
+    nlp.data.batchify.Pad(),
+    nlp.data.batchify.Stack(dtype='float32'),
     nlp.data.batchify.Stack(dtype='float32'),
     nlp.data.batchify.Stack())
 
@@ -395,9 +395,9 @@ detokenizer = nlp.data.SacreMosesDetokenizer()
 Here, we build the translator using the beam search
 
 ```{.python .input}
-translator = nmt.translation.BeamSearchTranslator(model=model, 
+translator = nmt.translation.BeamSearchTranslator(model=model,
                                                   beam_size=hparams.beam_size,
-                                                  scorer=nlp.model.BeamSearchScorer(alpha=hparams.lp_alpha, 
+                                                  scorer=nlp.model.BeamSearchScorer(alpha=hparams.lp_alpha,
                                                                                     K=hparams.lp_k),
                                                   max_length=200)
 print('Use beam_size=%d, alpha=%.2f, K=%d' % (hparams.beam_size, hparams.lp_alpha, hparams.lp_k))
@@ -412,7 +412,7 @@ optimzier.
 ```{.python .input}
 trainer = gluon.Trainer(model.collect_params(), hparams.optimizer,
                         {'learning_rate': hparams.lr, 'beta2': 0.98, 'epsilon': 1e-9})
-print('Use learning_rate=%.2f' 
+print('Use learning_rate=%.2f'
       % (trainer.learning_rate))
 ```
 
@@ -433,22 +433,22 @@ average_param_dict = {k: mx.nd.array([0]) for k, v in
 update_average_param_dict = True
 model.collect_params().zero_grad()
 for epoch_id in range(hparams.epochs):
-    utils.train_one_epoch(epoch_id, model, train_data_loader, trainer, 
-                          label_smoothing, loss_function, grad_interval, 
-                          average_param_dict, update_average_param_dict, 
+    utils.train_one_epoch(epoch_id, model, train_data_loader, trainer,
+                          label_smoothing, loss_function, grad_interval,
+                          average_param_dict, update_average_param_dict,
                           step_num, ctx)
     mx.nd.waitall()
-    # We define evaluation function as follows. The `evaluate` function use beam search translator 
+    # We define evaluation function as follows. The `evaluate` function use beam search translator
     # to generate outputs for the validation and testing datasets.
     valid_loss, _ = utils.evaluate(model, val_data_loader,
-                                   test_loss_function, translator, 
+                                   test_loss_function, translator,
                                    tgt_vocab, detokenizer, ctx)
-    print('Epoch %d, valid Loss=%.4f, valid ppl=%.4f' 
+    print('Epoch %d, valid Loss=%.4f, valid ppl=%.4f'
           % (epoch_id, valid_loss, np.exp(valid_loss)))
     test_loss, _ = utils.evaluate(model, test_data_loader,
                                   test_loss_function, translator,
                                   tgt_vocab, detokenizer, ctx)
-    print('Epoch %d, test Loss=%.4f, test ppl=%.4f' 
+    print('Epoch %d, test Loss=%.4f, test ppl=%.4f'
           % (epoch_id, test_loss, np.exp(test_loss)))
     if valid_loss < best_valid_loss:
         best_valid_loss = valid_loss
@@ -461,15 +461,15 @@ if hparams.average_start > 0:
         v.set_data(average_param_dict[k])
 else:
     model.load_parameters('{}.{}'.format(hparams.save_dir, 'valid_best.params'), ctx)
-valid_loss, _ = utils.evaluate(model, val_data_loader, 
-                               test_loss_function, translator, 
+valid_loss, _ = utils.evaluate(model, val_data_loader,
+                               test_loss_function, translator,
                                tgt_vocab, detokenizer, ctx)
-print('Best model valid Loss=%.4f, valid ppl=%.4f' 
+print('Best model valid Loss=%.4f, valid ppl=%.4f'
       % (valid_loss, np.exp(valid_loss)))
-test_loss, _ = utils.evaluate(model, test_data_loader, 
-                              test_loss_function, translator, 
+test_loss, _ = utils.evaluate(model, test_data_loader,
+                              test_loss_function, translator,
                               tgt_vocab, detokenizer, ctx)
-print('Best model test Loss=%.4f, test ppl=%.4f' 
+print('Best model test Loss=%.4f, test ppl=%.4f'
       % (test_loss, np.exp(test_loss)))
 ```
 

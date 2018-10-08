@@ -1,8 +1,12 @@
-Sequence Sampling
------------------
-:download:`[Download] </scripts/sequence_sampling.zip>`
+Text Generation
+---------------
 
-This script can be used to generate sentences using beam search from a pre-trained language model.
+:download:`[Download] </model_zoo/text_generation.zip>`
+
+Through Sampling a Language Model
++++++++++++++++++++++++++++++++++
+
+This script can be used to generate sentences using beam search or a sequence sampler, to sample from a pre-trained language model.
 
 Beam Search Generator
 ~~~~~~~~~~~~~~~~~~~~~
@@ -11,7 +15,7 @@ Use the following command to decode using beam search.
 
 .. code-block:: console
 
-   $ python sequence_sampling.py --use-beam-search --bos I love it --beam_size 5 --print_num 5
+   $ python text_generation.py --use-beam-search --bos I love it --beam_size 5 --print_num 5
 
 Output is
 
@@ -29,7 +33,7 @@ You can also try a larger beam size, such as 15.
 
 .. code-block:: console
 
-   $ python sequence_sampling.py --use-beam-search --bos I love it --beam_size 15 --print_num 15
+   $ python text_generation.py --use-beam-search --bos I love it --beam_size 15 --print_num 15
 
 Output is
 
@@ -60,7 +64,7 @@ Use the following command to decode to sample from the multinomial distribution,
 
 .. code-block:: console
 
-   $ python sequence_sampling.py --use-sampling --bos I love it --beam_size 5 --print_num 5 --temperature 1.0
+   $ python text_generation.py --use-sampling --bos I love it --beam_size 5 --print_num 5 --temperature 1.0
 
 Output is
 
@@ -78,7 +82,7 @@ You can also try a lower temperature such as 0.95, which results in sharper dist
 
 .. code-block:: console
 
-   $ python sequence_sampling.py --use-sampling --bos I love it --beam_size 5 --print_num 5 --temperature 0.95
+   $ python text_generation.py --use-sampling --bos I love it --beam_size 5 --print_num 5 --temperature 0.95
 
 Output is
 

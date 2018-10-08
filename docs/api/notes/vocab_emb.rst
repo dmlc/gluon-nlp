@@ -1,5 +1,5 @@
-Vocabulary and Embedding
-------------------------
+Vocabulary and Embedding API
+----------------------------
 
 All the code demonstrated in this document assumes that the following
 modules or packages are imported.
