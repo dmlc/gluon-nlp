@@ -17,8 +17,7 @@
 # specific language governing permissions and limitations
 # under the License.
 """Encoder and decoder usded in sequence-to-sequence learning."""
-__all__ = ['TransformerEncoder', 'TransformerDecoder',
-           'get_transformer_encoder_decoder', 'get_model']
+__all__ = ['TransformerEncoder', 'TransformerDecoder', 'get_transformer_encoder_decoder', 'get_model']
 
 import os
 import warnings
@@ -26,18 +25,19 @@ import warnings
 import math
 import numpy as np
 import mxnet as mx
-from mxnet import cpu, gluon
+import gluonnlp as nlp
+from mxnet import cpu
 from mxnet.gluon import nn
 from mxnet.gluon.block import HybridBlock
 try:
     from encoder_decoder import Seq2SeqEncoder, Seq2SeqDecoder, _get_attention_cell
 except ImportError:
     from .encoder_decoder import Seq2SeqEncoder, Seq2SeqDecoder, _get_attention_cell
-import gluonnlp as nlp
-try:
-    from translation import NMTModel
-except ImportError:
-    from .translation import NMTModel
+
+from mxnet.gluon.model_zoo.model_store import get_model_file
+from gluonnlp.data.utils import _load_pretrained_vocab
+from mxnet.gluon.model_zoo import model_store
+from .translation import NMTModel
 
 
 def _position_encoding_init(max_length, dim):
@@ -855,27 +855,27 @@ def get_transformer_encoder_decoder(num_layers=2,
                                  prefix=prefix + 'dec_', params=params)
     return encoder, decoder
 
-
 def register_vocab(dataset, sha1):
     if dataset not in nlp.data.utils._vocab_sha1:
         nlp.data.utils._vocab_sha1[dataset] = sha1
-
 
 def _load_vocab(dataset_name, vocab, root):
     if dataset_name:
         if vocab is not None:
             warnings.warn('Both dataset_name and vocab are specified. Loading vocab for dataset. '
                           'Input "vocab" argument will be ignored.')
-        vocab = nlp.data.utils._load_pretrained_vocab(dataset_name, root)
+        vocab = _load_pretrained_vocab(dataset_name, root)
     else:
         assert vocab is not None, 'Must specify vocab if not loading from predefined datasets.'
     return vocab
 
 
 def _load_pretrained_params(net, model_name, dataset_name, root, ctx):
-    model_file = gluon.model_zoo.model_store.get_model_file('_'.join([model_name, dataset_name]),
-                                                            root=root)
-    net.load_params(model_file, ctx=ctx)
+    model_file = get_model_file('_'.join([model_name, dataset_name]), root=root)
+    temp_params = mx.nd.load(model_file)
+    new_temp_params = {'transformer_' + k if 'src_embed' not in k else k: v for k, v in temp_params.items()}
+    mx.nd.save('_'.join(['temporal', model_name, dataset_name]), new_temp_params)
+    net.load_params('_'.join(['temporal', model_name, dataset_name]), ctx=ctx)
 
 
 def _get_transformer_model(model_cls, model_name, dataset_name, src_vocab, tgt_vocab,
@@ -891,14 +891,15 @@ def _get_transformer_model(model_cls, model_name, dataset_name, src_vocab, tgt_v
     kwargs['embed_size'] = embed_size
     kwargs['tie_weights'] = tie_weights
     kwargs['embed_initializer'] = embed_initializer
+    kwargs['prefix'] = ''
     net = model_cls(**kwargs)
     if pretrained:
         _load_pretrained_params(net, model_name, dataset_name, root, ctx)
     return net, src_vocab, tgt_vocab
 
 
-def transformer_en_de_512(dataset_name=None, src_vocab=None, tgt_vocab=None, pretrained=False,
-                          ctx=cpu(), root=os.path.join('~', '.mxnet', 'models'), **kwargs):
+def transformer_en_de_512(dataset_name=None, src_vocab=None, tgt_vocab=None, pretrained=False, ctx=cpu(),
+                     root=os.path.join('~', '.mxnet', 'models'), **kwargs):
     r"""Transformer pretrained model.
 
     Embedding size is 400, and hidden layer size is 1150.
@@ -944,13 +945,12 @@ def transformer_en_de_512(dataset_name=None, src_vocab=None, tgt_vocab=None, pre
                                                        max_tgt_length=549,
                                                        scaled=predefined_args['scaled'])
     return _get_transformer_model(NMTModel, 'transformer_en_de_512', dataset_name,
-                                  src_vocab, tgt_vocab, encoder, decoder, pretrained,
+                                  src_vocab, tgt_vocab, encoder, decoder,
                                   predefined_args['share_embed'], predefined_args['embed_size'],
                                   predefined_args['tie_weights'],
-                                  predefined_args['embed_initializer'], ctx, root)
+                                  predefined_args['embed_initializer'], pretrained, ctx, root)
 
-
-gluon.model_zoo.model_store._model_sha1.update(
+model_store._model_sha1.update(
     {name: checksum for checksum, name in [
         ('14bd361b593bd1570106d74f29f9507f4f772bfe', 'transformer_en_de_512_WMT2014'),
     ]})

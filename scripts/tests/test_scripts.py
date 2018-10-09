@@ -1,6 +1,7 @@
 import subprocess
 
 import pytest
+import time
 
 from ..nmt.dataset import TOY
 
@@ -25,6 +26,7 @@ def test_toy():
         lhs = train_en_de[i]
         rhs = train_de_en[i]
         assert lhs[0] == rhs[1] and rhs[0] == lhs[1]
+    time.sleep(5)
 
 
 @pytest.mark.serial
@@ -34,6 +36,7 @@ def test_embedding():
         '--epochs', '1', '--optimizer', 'sgd', '--ngram-buckets', '1000',
         '--max-vocab-size', '1000'
     ])
+    time.sleep(5)
 
 
 @pytest.mark.serial
@@ -42,6 +45,7 @@ def test_embedding_evaluate_pretrained():
         'python', './scripts/word_embeddings/evaluate_pretrained.py',
         '--embedding-name', 'fasttext', '--embedding-source', 'wiki.simple'
     ])
+    time.sleep(5)
 
 
 @pytest.mark.serial
@@ -51,20 +55,24 @@ def test_sentiment_analysis():
                                      '--epochs', '1', '--dropout', '0', '--no_pretrained',
                                      '--lr', '0.005', '--valid_ratio', '0.1',
                                      '--save-prefix', 'imdb_lstm_200'])
+    time.sleep(5)
     process = subprocess.check_call(['python', './scripts/sentiment_analysis/sentiment_analysis.py',
                                      '--gpu', '0', '--batch_size', '16', '--bucket_type', 'fixed',
                                      '--epochs', '1', '--dropout', '0',
                                      '--lr', '0.005', '--valid_ratio', '0.1',
                                      '--save-prefix', 'imdb_lstm_200'])
+    time.sleep(5)
 
 
 def test_sampling():
     process = subprocess.check_call(['python', './scripts/sequence_sampling/sequence_sampling.py',
                                      '--use-beam-search', '--bos', 'I love it', '--beam_size', '5',
                                      '--print_num', '5'])
+    time.sleep(5)
     process = subprocess.check_call(['python', './scripts/sequence_sampling/sequence_sampling.py',
                                      '--use-sampling', '--bos', 'I love it', '--beam_size', '5',
                                      '--print_num', '5', '--temperature', '1.0'])
+    time.sleep(5)
 
 
 @pytest.mark.serial
@@ -74,6 +82,7 @@ def test_gnmt():
                                      '--optimizer', 'adam', '--lr', '0.0025', '--save_dir', 'test',
                                      '--epochs', '1', '--gpu', '0', '--num_buckets', '5',
                                      '--num_hidden', '64', '--num_layers', '2'])
+    time.sleep(5)
 
 
 @pytest.mark.serial
@@ -96,3 +105,4 @@ def test_transformer():
                                      '1', '--num_buckets', '5', '--bleu', '13a', '--num_units',
                                      '32', '--hidden_size', '64', '--num_layers', '2',
                                      '--num_heads', '4', '--test_batch_size', '128'])
+    time.sleep(5)

@@ -16,9 +16,21 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-"""Constants used in the NMT examples."""
-import os
 
-__all__ = ['CACHE_PATH']
+# pylint: disable=wildcard-import
+"""NMT example."""
 
-CACHE_PATH = os.path.realpath(os.path.join(os.path.realpath(__file__), '..', 'cached'))
+from . import _constants, bleu, dataset, encoder_decoder, loss, transformer, gnmt, translation, utils
+
+from ._constants import *
+from .bleu import *
+from .dataset import *
+from .encoder_decoder import *
+from .loss import *
+from .transformer import *
+from .gnmt import *
+from .translation import *
+from .utils import *
+
+__all__ = _constants.__all__ + bleu.__all__ + dataset.__all__ + encoder_decoder.__all__ + loss.__all__ \
+          + transformer.__all__ + gnmt.__all__ + translation.__all__ + utils.__all__
