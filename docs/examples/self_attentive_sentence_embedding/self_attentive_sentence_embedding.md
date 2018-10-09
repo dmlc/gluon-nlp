@@ -197,11 +197,10 @@ train_dataloader, valid_dataloader = get_dataloader()
 ## Model Structure
 
 In the original paper, the representation of the sentence is: firstly, the sentence is disassembled into a list corresponding to the word, then the words are unrolled in order, and the word vector of each word is calculated as the input of each step of the [bidirectional LSTM neural network layer](https://www.bioinf.jku.at/publications/older/2604.pdf)[3]. Taking the output of each step of the bidirectional LSTM network layer, a matrix H is obtained. Suppose the hidden_dim of the bidirectional LSTM is `u`, the word length of the sentence is `n`, then the dimension of the last H is `n-by-2u`.  For example, the sentence "this movie is amazing" would be represented as:
-![](../images/Bi-LSTM-Rep.png)
+![](Bi-LSTM-Rep.png)
 
 Attention is like when we are looking at things, we always give different importance to things in the scope of the perspective. For example, when we are communicating with people, our eyes will always pay more attention to the face of the communicator, not to the edge of other perspectives. So when we want to express the sentence, we can pay different attention to the output H of the bidirectional LSTM layer.
-![](../images/attention-nlp.png)
-
+![](attention-nlp.png)
 $$
 A = Softmax(W_{s2}tanh(W_{s1}H^T)) 
 $$
@@ -320,11 +319,11 @@ The resulting `M` is a matrix, and the way to classify this matrix is `flatten`,
 
 ```
 vocab_len = len(vocab)
-emsize = 300    # word embedding size
-nhide = 300    # lstm hidden_dim
+emsize = 300   # word embedding size
+nhidden = 300    # lstm hidden_dim
 nlayers = 2     # lstm layers
-att_unit = 350     # the hidden_units of attenion layer
-att_hops = 2    # the channels of attention
+natt_unit = 300     # the hidden_units of attenion layer
+natt_hops = 2    # the channels of attention
 nfc = 512
 nclass = 5
 
@@ -335,8 +334,8 @@ prune_q = None
 
 ctx = try_gpu()
 
-model = SelfAttentiveBiLSTM(vocab_len, emsize, nhide, nlayers, 
-                            att_unit, att_hops, nfc, nclass,
+model = SelfAttentiveBiLSTM(vocab_len, emsize, nhidden, nlayers, 
+                            natt_unit, natt_hops, nfc, nclass,
                             drop_prob, pool_way, prune_p, prune_q)
 
 model.initialize(init=init.Xavier(), ctx=ctx)
@@ -357,66 +356,39 @@ It can be seen from the above formula that if the value of each row of A is more
 
 
 ```
-def evaluate(data_iter_valid, model, loss, ctx, penal_coeff=0.0, class_weight=None, loss_name='wsce'):
-    valid_loss = 0.
+def calculate_loss(x, y, model, loss, class_weight, penal_coeff):
+    pred, att = model(x)
+    if loss_name == 'sce':
+        l = loss(pred, y)
+    elif loss_name == 'wsce':
+        l = loss(pred, y, class_weight, class_weight.shape[0])
+
+    # penalty
+    diversity_penalty = nd.batch_dot(att, nd.transpose(att, axes=(0, 2, 1))
+                        ) - nd.eye(att.shape[1], ctx=att.context)
+    l = l + penal_coeff * diversity_penalty.norm(axis=(1, 2))
+    
+    return pred, l
+```
+
+
+```
+def one_epoch(data_iter, model, loss, trainer, ctx, is_train, epoch, 
+              penal_coeff=0.0, clip=None, class_weight=None, loss_name='wsce'):
+    
+    loss_val = 0.
     total_pred = []
     total_true = []
     n_batch = 0
-    for batch_x, batch_y in data_iter_valid:
+
+    for batch_x, batch_y in data_iter:
         batch_x = batch_x.as_in_context(ctx)
         batch_y = batch_y.as_in_context(ctx)
-        batch_pred, att = model(batch_x)
-        if loss_name == 'sce':
-            l = loss(batch_pred, batch_y)
-        elif loss_name == 'wsce':
-            l = loss(batch_pred, batch_y, class_weight, class_weight.shape[0])
-        
-        # penalty
-        diversity_penalty = nd.batch_dot(att, nd.transpose(att, axes=(0, 2, 1))
-                            ) - nd.eye(att.shape[1], ctx=att.context)
-        l = l + penal_coeff * diversity_penalty.norm(axis=(1, 2))
-        total_pred.extend(np.argmax(nd.softmax(batch_pred, axis=1).asnumpy(), axis=1).tolist())
-        total_true.extend(np.reshape(batch_y.asnumpy(), (-1,)).tolist())
-        n_batch += 1
-        valid_loss += l.mean().asscalar()
 
-    F1_valid = f1_score(np.array(total_true), np.array(total_pred), average='weighted')
-    acc_valid = accuracy_score(np.array(total_true), np.array(total_pred))
-    valid_loss /= n_batch
-
-    return F1_valid, acc_valid, valid_loss
-```
-
-
-```
-
-def train(data_iter_train, data_iter_valid, model, loss, trainer, 
-          ctx, num_epochs, penal_coeff=0.0, clip=None,
-          class_weight=None, loss_name='wsce'):
-    
-    print('Train on ', ctx)
-    for epoch in range(1, num_epochs + 1):
-        start = time.time()
-        train_loss = 0.
-        total_pred = []
-        total_true = []
-        n_batch = 0
-
-        for batch_x, batch_y in data_iter_train:
-            batch_x = batch_x.as_in_context(ctx)
-            batch_y = batch_y.as_in_context(ctx)
+        if is_train:             
             with autograd.record():
-                batch_pred, att = model(batch_x)
-                if loss_name == 'sce':
-                    l = loss(batch_pred, batch_y)
-                elif loss_name == 'wsce':
-                    l = loss(batch_pred, batch_y, class_weight, class_weight.shape[0])
+                batch_pred, l = calculate_loss(batch_x, batch_y, model, loss, class_weight, penal_coeff)
 
-                # penalty
-                diversity_penalty = nd.batch_dot(att, nd.transpose(att, axes=(0, 2, 1))
-                                   ) - nd.eye(att.shape[1], ctx=ctx)
-                l = l + penal_coeff * diversity_penalty.norm(axis=(1, 2))
-            
             # backward calculate
             l.backward()
 
@@ -435,39 +407,62 @@ def train(data_iter_train, data_iter_valid, model, loss, trainer,
 
             # update parmas
             trainer.step(batch_x.shape[0])
-            
-            # keep result for metric
-            batch_pred = np.argmax(nd.softmax(batch_pred, axis=1).asnumpy(), axis=1)
-            batch_true = np.reshape(batch_y.asnumpy(), (-1, ))
-            total_pred.extend(batch_pred.tolist())
-            total_true.extend(batch_true.tolist())
-            batch_train_loss = l.mean().asscalar()
 
-            n_batch += 1
-            train_loss += batch_train_loss
+        else:
+            batch_pred, l = calculate_loss(batch_x, batch_y, model, loss, class_weight, penal_coeff)
 
-            if n_batch % 400 == 0:
-                print('epoch %d, batch %d, batch_train_loss %.4f, batch_train_acc %.3f' %
-                      (epoch, n_batch, batch_train_loss, accuracy_score(batch_true, batch_pred)))
+        # keep result for metric
+        batch_pred = nd.argmax(nd.softmax(batch_pred, axis=1), axis=1).asnumpy()
+        batch_true = np.reshape(batch_y.asnumpy(), (-1, ))
+        total_pred.extend(batch_pred.tolist())
+        total_true.extend(batch_true.tolist())
+
+        batch_loss = l.mean().asscalar()
+
+        n_batch += 1
+        loss_val += batch_loss
         
-        # metric
-        F1_train = f1_score(np.array(total_true), np.array(total_pred), average='weighted')
-        acc_train = accuracy_score(np.array(total_true), np.array(total_pred))
-        train_loss /= n_batch
-        
-        # evaluate on valid_data
-        F1_valid, acc_valid, valid_loss = evaluate(data_iter_valid, model, loss, ctx,
-                                                   penal_coeff, class_weight, loss_name)
+        # check the result of traing phase
+        if is_train and n_batch % 400 == 0:
+            print('epoch %d, batch %d, batch_train_loss %.4f, batch_train_acc %.3f' %
+                  (epoch, n_batch, batch_loss, accuracy_score(batch_true, batch_pred)))
 
+    # metric
+    F1 = f1_score(np.array(total_true), np.array(total_pred), average='weighted')
+    acc = accuracy_score(np.array(total_true), np.array(total_pred))
+    loss_val /= n_batch
+
+    if is_train:
         print('epoch %d, learning_rate %.5f \n\t train_loss %.4f, acc_train %.3f, F1_train %.3f, ' %
-              (epoch, trainer.learning_rate, train_loss, acc_train, F1_train))
-        print('\t valid_loss %.4f, acc_valid %.3f, F1_valid %.3f, '
-              '\ntime %.1f sec' % (valid_loss, acc_valid, F1_valid, time.time() - start))
-        print('='*50)
-
+              (epoch, trainer.learning_rate, loss_val, acc, F1))
         # declay lr
         if epoch % 2 == 0:
             trainer.set_learning_rate(trainer.learning_rate * 0.9)
+    else:
+        print('\t valid_loss %.4f, acc_valid %.3f, F1_valid %.3f, ' % (loss_val, acc, F1))
+        
+```
+
+
+```
+def train_valid(data_iter_train, data_iter_valid, model, loss, trainer, ctx, nepochs, 
+                penal_coeff=0.0, clip=None, class_weight=None, loss_name='wsce'):
+    
+    for epoch in range(1, nepochs+1):
+        start = time.time()
+        # train
+        is_train = True
+        one_epoch(data_iter_train, model, loss, trainer, ctx, is_train,
+                  epoch, penal_coeff, clip, class_weight, loss_name)
+        
+        # valid
+        is_train = False
+        one_epoch(data_iter_valid, model, loss, trainer, ctx, is_train,
+                  epoch, penal_coeff, clip, class_weight, loss_name)
+        end = time.time()
+        print('time %.2f sec' % (end-start))
+        print("*"*100)
+    
 ```
 
 ## Train
@@ -495,9 +490,9 @@ elif loss_name == 'wsce':
 
 
 ```
-train(train_dataloader, valid_dataloader, model, loss, 
-      trainer, ctx, nepochs, penal_coeff=penal_coeff, 
-      clip=clip, class_weight=class_weight, loss_name=loss_name)
+# train and valid
+train_valid(train_dataloader, valid_dataloader, model, loss, trainer, ctx, nepochs,
+            penal_coeff=penal_coeff, clip=clip, class_weight=class_weight, loss_name=loss_name)
 ```
 
 ## Predict
