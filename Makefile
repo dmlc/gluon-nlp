@@ -54,7 +54,9 @@ docs: release
 	done;
 
 clean:
-	git clean -f -d -x --exclude="$(ROOTDIR)/tests/externaldata/*" --exclude=conda
+	git clean -ff -d -x --exclude="$(ROOTDIR)tests/externaldata/*" --exclude="$(ROOTDIR)/tests/data/*" --exclude=conda
+
+clean_doc:
 	make -C docs clean
 
 compile_notebooks:

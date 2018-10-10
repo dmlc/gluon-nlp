@@ -9,6 +9,7 @@ dependencies:
   - pytest
   - flaky
   - pytest-cov
+  - mock
   - pytest-xdist
   - pip=9.0.3
   - pip:
