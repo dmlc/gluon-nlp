@@ -486,3 +486,10 @@ def _test_gbw_stream():
     assert counter['.'] == 29969612
     vocab = gbw.vocab
     assert len(vocab) == 793471
+
+@pytest.mark.serial
+def test_list_dataset():
+    for num_worker in range(0, 3):
+        data = nlp.data.ShardedDataLoader([([1,2], 0), ([3, 4], 1)], batch_size=1, num_workers=num_worker)
+        for d, l in data:
+            pass
