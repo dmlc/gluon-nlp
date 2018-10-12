@@ -16,4 +16,5 @@ dependencies:
   - notedown
   - pip:
     - mxnet-cu80>=1.3.0
+    - notedown
     - sacremoses
