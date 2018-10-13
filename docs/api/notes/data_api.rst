@@ -1,5 +1,5 @@
-Data API — A Sentiment Analysis Example
----------------------------------------
+Data Loading API
+----------------
 
 In this tutorial, we show how to load and process the sentiment dataset to form batches that can be processed efficiently.
 We use `IMDB <http://ai.stanford.edu/~amaas/data/sentiment/>`_

@@ -7,7 +7,7 @@ Word Language Model
 Reference: Merity, S., et al. "`Regularizing and optimizing LSTM language models <https://openreview.net/pdf?id=SyyGPP0TZ>`_". ICLR 2018
 
 
-:download:`[Download] </scripts/language_model.zip>`
+:download:`[Download] </model_zoo/language_model.zip>`
 
 The key features used to reproduce the results for pre-trained models are listed in the following tables.
 
@@ -81,9 +81,6 @@ Cache Language Model
 ~~~~~~~~~~~~~~~~~~~~~
 
 Reference: Grave, E., et al. "`Improving neural language models with a continuous cache <https://openreview.net/pdf?id=B184E5qee>`_". ICLR 2017
-
-
-:download:`[Download] </scripts/language_model.zip>`
 
 The key features used to reproduce the results based on the corresponding pre-trained models are listed in the following tables.
 

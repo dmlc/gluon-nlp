@@ -1,7 +1,7 @@
 Machine Translation
 -------------------
 
-:download:`[Download] </scripts/nmt.zip>`
+:download:`[Download] </model_zoo/machine_translation.zip>`
 
 Use the following command to train the GNMT model on the IWSLT2015 dataset.
 

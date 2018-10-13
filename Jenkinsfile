@@ -14,7 +14,7 @@ stage("Unit Test") {
       withCredentials([string(credentialsId: 'GluonNLPCodeCov', variable: 'CODECOV_TOKEN')]) {
         ws('workspace/gluon-nlp-py2') {
           checkout scm
-          sh("ci/step_unit_test.sh py2 ${env.BRANCH_NAME} ${capture_flag}")
+          sh("ci/step_unit_test.sh py2 ${env.BRANCH_NAME} 0 ${capture_flag}")
         }
       }
     }
@@ -24,7 +24,7 @@ stage("Unit Test") {
       withCredentials([string(credentialsId: 'GluonNLPCodeCov', variable: 'CODECOV_TOKEN')]) {
         ws('workspace/gluon-nlp-py3') {
           checkout scm
-          sh("ci/step_unit_test.sh py3 ${env.BRANCH_NAME} ${capture_flag}")
+          sh("ci/step_unit_test.sh py3 ${env.BRANCH_NAME} 1 ${capture_flag}")
         }
       }
     }

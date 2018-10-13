@@ -1,5 +1,5 @@
-Sentence Generation from Language Model
----------------------------------------
+Text Sequence Generation API
+----------------------------
 
 In this tutorial, we show how to load a pre-trained language model on wikitext-2 in GluonNLP Toolkit
 model zoo and use beam search sampler and sequence sampler to generate sentences.
