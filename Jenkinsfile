@@ -33,9 +33,7 @@ stage("Unit Test") {
     node {
       ws('workspace/gluon-nlp-docs') {
         checkout scm
-        retry(3) {
-          sh("ci/step_documentation.sh")
-        }
+        sh("ci/step_documentation.sh")
         if (env.BRANCH_NAME.startsWith("PR-")) {
           bucket = 'gluon-nlp-staging'
           path = env.BRANCH_NAME+'/'+env.BUILD_NUMBER

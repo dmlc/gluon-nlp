@@ -1,8 +1,9 @@
 Data Loading API
 ----------------
 
-In this tutorial, we show how to load and process the sentiment dataset to form batches that can be processed efficiently.
-We use `IMDB <http://ai.stanford.edu/~amaas/data/sentiment/>`_
+In this tutorial, we show how to load and process the sentiment dataset to form batches that can be processed efficiently,
+using classes from :mod:`gluonnlp.data.sampler` and :mod:`gluonnlp.data.batchify`.
+We use :class:`~gluonnlp.data.IMDB`
 dataset as an example, where the dataset has 50,000 movie reviews, labeled as positive or negative. The dataset
 is splitted into training/testing dataset, each consisting of 25,000 reviews.
 
@@ -44,9 +45,9 @@ Let us see a quick example.
     Bromwell High. I expect that many adults of my age think that Bromwell High is far fetched.
     What a pity that it isn\'t!', 9]
 
-In the above example, we load ``train_dataset`` and ``test_dataset``, which are both SimpleDataset objects.
+In the above example, we load ``train_dataset`` and ``test_dataset``, which are both :class:`~mxnet.gluon.data.SimpleDataset` objects.
 
-``SimpleDataset``: wrapper for lists and arrays. Each entry in the train_dataset is a [string, score] pair,
+:class:`~mxnet.gluon.data.SimpleDataset`: wrapper for lists and arrays. Each entry in the train_dataset is a [string, score] pair,
 where the score falls into [1, 2, ..., 10]. Thus in the given example, 9 indicates a positive feedback on the movie.
 
 
@@ -54,7 +55,8 @@ Data Processing
 ~~~~~~~~~~~~~~~
 
 The next step is to preprocess the data so that it can be used to train the model. The following code
-shows how to tokenize the string and then clip the resultant list of tokens.
+shows how to tokenize the string with :class:`~gluonnlp.data.SpacyTokenizer` and then :class:`clip <gluonnlp.data.ClipSequence>`
+the list of output tokens by length.
 
 .. code:: python
 
@@ -116,8 +118,8 @@ Now, we are ready to preprocess the whole dataset. The following code shows how 
 
     Done! Tokenizing Time=12.99s, #Sentences=25000
 
-Then, we are going to construct a vocabulary for the training dataset. The vocabulary will be used
-to convert the tokens to numerical indices, which facilitates the creation of word embedding matrices.
+Then, we are going to construct a :class:`vocabulary <gluonnlp.Vocab>` for the training dataset. The :class:`vocabulary <gluonnlp.Vocab>`
+will be used to convert the tokens to numerical indices, which facilitates the creation of word embedding matrices.
 
 .. code:: python
 
@@ -150,17 +152,18 @@ to convert the tokens to numerical indices, which facilitates the creation of wo
 Bucketing and Dataloader
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-The next step is to construct a dataloader for training. As the sequences have variable lengths, we need to pad the
-sequences so that they have the same lengths in the minibatch, which allows the fast tensor manipulation in GPU.
+The next step is to construct a :class:`dataloader <mxnet.gluon.data.DataLoader>` for training.
+As the sequences have variable lengths, we need to pad the sequences so that they have the same
+lengths in the minibatch, which allows the fast tensor manipulation in GPU.
 
 .. code:: python
 
    >>> batchify_fn = nlp.data.batchify.Tuple(nlp.data.batchify.Pad(axis=0),
    >>>                                       nlp.data.batchify.Stack())
 
-``Tuple`` wraps multiple batchify functions and applies each input function on each input field, respectively. In this
-case, we are applying ``Pad`` on the sequence and ``Stack`` on the labels. Given the batchify function, we can construct
-the dataloaders for both training samples and testing samples.
+:class:`~gluonnlp.data.batchify.Tuple` wraps multiple batchify functions and applies each input function on each input field,
+respectively. In this case, we are applying :class:`~gluonnlp.data.batchify.Pad` on the sequence and :class:`~gluonnlp.data.batchify.Stack`
+on the labels. Given the batchify function, we can construct the dataloaders for both training samples and testing samples.
 
 .. code:: python
 
@@ -172,7 +175,7 @@ the dataloaders for both training samples and testing samples.
    >>>                                         shuffle=False,
    >>>                                         batchify_fn=batchify_fn)
 
-As ``Dataloader`` is iterable, we can iterate over the dataset easily using the following code:
+As :class:`~mxnet.gluon.data.DataLoader` is iterable, we can iterate over the dataset easily using the following code:
 
 .. code:: python
 
@@ -205,10 +208,12 @@ constructing a sampler using bucketing, which defines how the samples in a datas
      cnt=[981, 1958, 5686, 4614, 2813, 2000, 1411, 1129, 844, 3564]
      batch_size=[16, 16, 16, 16, 16, 16, 16, 16, 16, 16]
 
-In this example, we use a ``FixedBucketSampler``, which assigns each data sample to a fixed bucket based on its length.
+In this example, we use a :class:`~gluonnlp.data.sampler.FixedBucketSampler`, which assigns each data sample to a
+fixed bucket based on its length.
+
 The bucket keys are either given or generated from the input sequence lengths. We construct 10 buckets, where `cnt`
-shows the number of samples belonging to each bucket. A graphic illustration of using ``FixedBucketSampler`` can be
-seen as follows:
+shows the number of samples belonging to each bucket. A graphic illustration of using :class:`~gluonnlp.data.sampler.FixedBucketSampler`
+can be seen as follows:
 
 .. image:: ./images/fixed_bucket_strategy_ratio0.0.png
    :height: 200px
@@ -256,8 +261,8 @@ Now, we can create dataloader using bucketing sampler for both training set.
    >>>                                          batch_sampler=batch_sampler,
    >>>                                          batchify_fn=batchify_fn)
 
-In our sampler API, we also provide another sampler called ``SortedBucketSampler``, which results in the following
-padding pattern:
+In our sampler API, we also provide another sampler called :class:`~gluonnlp.data.sampler.SortedBucketSampler`,
+which results in the following padding pattern:
 
 .. image:: ./images/sorted_bucket_strategy.png
    :height: 200px
@@ -265,8 +270,8 @@ padding pattern:
    :alt: alternate text
    :align: center
 
-With this strategy, we partition data to a number of buckets with size `batch_size * mult`, where `mult` is a multiplier 
-to determine the bucket size. Each bucket contains `batch_size * mult` elements. The samples inside each bucket are sorted 
+With this strategy, we partition data to a number of buckets with size `batch_size * mult`, where `mult` is a multiplier
+to determine the bucket size. Each bucket contains `batch_size * mult` elements. The samples inside each bucket are sorted
 based on sort_key and then batched.
 
 .. code:: python
@@ -282,5 +287,4 @@ More details about the training using pre-trained language model and bucketing c
    :maxdepth: 1
 
    ../../examples/sentiment_analysis/sentiment_analysis.ipynb
-
 
