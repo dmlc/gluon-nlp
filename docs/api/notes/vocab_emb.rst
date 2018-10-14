@@ -1,6 +1,10 @@
 Vocabulary and Embedding API
 ----------------------------
 
+This note illustrates how to write simple code to create index for tokens to form a
+:class:`vocabulary <gluonnlp.Vocab>`, and utilize pre-trained :mod:`word-embeddings
+<gluonnlp.embedding>`.
+
 All the code demonstrated in this document assumes that the following
 modules or packages are imported.
 
@@ -10,11 +14,11 @@ modules or packages are imported.
     >>> import gluonnlp as nlp
 
 
-Indexing words and using pre-trained word embeddings in ``gluon``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Indexing words and using pre-trained word embeddings
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 As a common use case, let us index words, attach pre-trained word
-embeddings for them, and use such embeddings in ``gluon`` in just a few
+embeddings for them, and use such embeddings in :mod:`mxnet.gluon` in just a few
 lines of code.
 
 To begin with, suppose that we have a simple text data set in the string
@@ -25,17 +29,17 @@ format. We can count word frequency in the data set.
     >>> text_data = ['hello', 'world', 'hello', 'nice', 'world', 'hi', 'world']
     >>> counter = nlp.data.count_tokens(text_data)
 
-The obtained ``counter`` has key-value pairs whose keys are words and
+The obtained :class:`~gluonnlp.data.Counter` has key-value pairs whose keys are words and
 values are word frequencies. This allows us to filter out infrequent
-words. Suppose that we want to build indices for all the keys in ``counter``.
-We need a Vocab instance with ``counter`` as its argument.
+words. Suppose that we want to build indices for all the keys in :class:`~gluonnlp.data.Counter`.
+We need a :class:`~gluonnlp.Vocab` instance with :class:`~gluonnlp.data.Counter` as its argument.
 
 .. code:: python
 
     >>> my_vocab = nlp.Vocab(counter)
 
 To attach word embeddings to indexed words in ``my_vocab``, let us go on
-to create a fastText word embedding instance by specifying the embedding
+to create a :class:`fastText word embedding <gluonnlp.embedding.FastText>` instance by specifying the embedding
 name ``fasttext`` and the pre-trained file name ``wiki.simple``.
 
 .. code:: python
@@ -51,7 +55,7 @@ Next, we can attach word embedding ``fasttext`` to indexed words
 
     >>> my_vocab.set_embedding(fasttext)
 
-Now we are ready to access the fastText word embedding vectors for
+Now we are ready to access the :class:`fastText word embedding <gluonnlp.embedding.FastText>` vectors for
 indexed words, such as 'hello' and 'world'.
 
 .. code:: python
@@ -66,8 +70,8 @@ indexed words, such as 'hello' and 'world'.
        -3.73499990e-01   5.67310005e-02   5.60180008e-01   2.90190000e-02]]
     <NDArray 2x300 @cpu(0)>
 
-To demonstrate how to use pre-trained word embeddings in the ``gluon``
-package, let us first obtain indices of the words ‘hello’ and ‘world’.
+To demonstrate how to use pre-trained word embeddings with :mod:`mxnet.gluon` models,
+let us first obtain indices of the words ‘hello’ and ‘world’.
 
 .. code:: python
 
@@ -76,7 +80,7 @@ package, let us first obtain indices of the words ‘hello’ and ‘world’.
 
 We can obtain the vector representation for the words ‘hello’ and
 ‘world’ by specifying their indices (5 and 4) and the weight matrix
-``my_vocab.embedding.idx_to_vec`` in ``mxnet.gluon.nn.Embedding``.
+``my_vocab.embedding.idx_to_vec`` in :class:`mxnet.gluon.nn.Embedding`.
 
 .. code:: python
 

@@ -1,8 +1,8 @@
 Text Sequence Generation API
 ----------------------------
 
-In this tutorial, we show how to load a pre-trained language model on wikitext-2 in GluonNLP Toolkit
-model zoo and use beam search sampler and sequence sampler to generate sentences.
+In this tutorial, we show how to load a pre-trained language model on :class:`~gluonnlp.data.WikiText2` in GluonNLP Toolkit
+model zoo and use :class:`~gluonnlp.model.BeamSearchSampler` and :class:`~gluonnlp.model.SequenceSampler` to generate sentences.
 
 Load Pre-trained Language Model
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -13,7 +13,7 @@ Load Pre-trained Language Model
     >>> import gluonnlp as nlp
     >>> ctx = mx.cpu()
 
-To load the pre-trained model, GluonNLP API provides a convenient way as shown in the following codes:
+To load the pre-trained model, GluonNLP API provides :meth:`a convenient way <gluonnlp.model.get_model>` as shown in the following codes:
 
 .. code:: python
 
@@ -25,25 +25,24 @@ To load the pre-trained model, GluonNLP API provides a convenient way as shown i
 
 Sampling a Sequence
 ~~~~~~~~~~~~~~~~~~~
-Generating sequences from the language model is about generating sequences that are likely to occur according to the language model. Language model predicts the likelihood of a word occurring at a particular time step, given the context from prior time steps. Given that at each time step, the possible output is any word from the vocabulary whose size is V, the number of all possible outcomes for a sequence of length T is thus V^T. While finding the absolute optimal outcome quickly becomes intractable as time step increases, there are still many ways to sample reasonably good sequences. GluonNLP provides two such samples: ``SequenceSampler`` and ``BeamSearchSampler``.
+Generating sequences from the language model is about generating sequences that are likely to occur according to the language model. Language model predicts the likelihood of a word occurring at a particular time step, given the context from prior time steps. Given that at each time step, the possible output is any word from the vocabulary whose size is V, the number of all possible outcomes for a sequence of length T is thus V^T. While finding the absolute optimal outcome quickly becomes intractable as time step increases, there are still many ways to sample reasonably good sequences. GluonNLP provides two such samples: :class:`~gluonnlp.model.SequenceSampler` and :class:`~gluonnlp.model.BeamSearchSampler`.
 
 Beam Search Sampler
 +++++++++++++++++++
 
 Now we need to define a scorer function, which is used to evaluate the scores of all the candidates. This can be achieved
-by using ``BeamSearchScorer``.
+by using :class:`~gluonnlp.model.BeamSearchScorer`.
 
 .. code:: python
 
    >>> scorer = nlp.model.BeamSearchScorer(alpha=0, K=5, from_logits=False)
 
-The ``BeamSearchScorer`` is a simple ``HybridBlock`` that implements the scoring function with
+The :class:`~gluonnlp.model.BeamSearchScorer` is a simple :class:`~mxnet.gluon.HybridBlock` that implements the scoring function with
 length penalty in Google NMT paper.
 ``alpha`` and ``K`` correspond to the :math:\alpha parameter and K parameter of the length penalty term, respectively.
-See the `source code <http://gluon-nlp.mxnet.io/_modules/gluonnlp/model/sequence_sampler.html#BeamSearchScorer>`__ to
-get a sense of how to implement your own.
+See the :class:`source code <gluonnlp.model.BeamSearchScorer>` to get a sense of how to implement your own.
 
-The next step is to define a beam search sampler. Before setting up a sampler, we need to construct a decoder function.
+The next step is to define a :class:`~gluonnlp.model.BeamSearchSampler`. Before setting up a sampler, we need to construct a decoder function.
 
 .. code:: python
 
@@ -58,8 +57,8 @@ The next step is to define a beam search sampler. Before setting up a sampler, w
     >>> decoder = LMDecoder(lm_model)
 
 Given a scorer and decoder, we are ready to create a sampler. We use the symbol '.' to indicate the end of a sentence (EOS).
-We can use ``vocab`` to get the index of the EOS, and then feed the index to the sampler. The following code shows how
-to construct a beam search sampler. We create a sampler with 4 beams and a maximum sample length of 20.
+We can use :class:`~gluonnlp.Vocab` to get the index of the EOS, and then feed the index to the sampler. The following code shows how
+to construct a :class:`~gluonnlp.model.BeamSearchSampler`. We create a sampler with 4 beams and a maximum sample length of 20.
 
 .. code:: python
 
@@ -70,10 +69,10 @@ to construct a beam search sampler. We create a sampler with 4 beams and a maxim
     >>>                                       scorer=scorer,
     >>>                                       max_length=20)
 
-Generate Sequences w/ Beam Search
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Generate Sequences with Beam Search
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Next, we are going to generate sentences starting with "I love it" using beam search first. We feed ['I', 'Love'] to the
+Next, we are going to generate sentences starting with "I love it" using beam search first. We feed `['I', 'Love']` to the
 language model to get the initial states and set the initial input to be the word 'it'. We will then print the top-3 generations.
 
 .. code:: python
@@ -107,7 +106,7 @@ Sequence Sampler
 
 The previous generation results may look a bit boring. Now, let's use sequence sampler to get some more exciting results.
 
-``SequenceSampler`` simply samples from the contextual multinomial distribution produced by the language model at each time step. Since we may want to control how "sharp" the distribution is to tradeoff diversity with correctness, we can use the ``temperature`` option in ``SequenceSampler``, which controls the temperature of the softmax function.
+:class:`~gluonnlp.model.SequenceSampler` simply samples from the contextual multinomial distribution produced by the language model at each time step. Since we may want to control how "sharp" the distribution is to tradeoff diversity with correctness, we can use the ``temperature`` option in :class:`~gluonnlp.model.SequenceSampler`, which controls the temperature of the softmax function.
 
 .. code:: python
 
@@ -118,10 +117,10 @@ The previous generation results may look a bit boring. Now, let's use sequence s
      >>>                                     temperature=0.97)
 
 
-Generate Sequences w/ Sequence Sampler
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Generate Sequences with Sequence Sampler
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Now, use the sequence sampler created to sample sequences based on the same inputs used previously.
+Now, use the :class:`~gluonnlp.model.SequenceSampler` created to sample sequences based on the same inputs used previously.
 
 .. code:: python
 

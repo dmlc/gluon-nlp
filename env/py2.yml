@@ -13,4 +13,4 @@ dependencies:
   - pytest-xdist
   - pip=9.0.3
   - pip:
-    - mxnet-cu80>=1.3.0
+    - mxnet-cu90>=1.3.0
