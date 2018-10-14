@@ -9,12 +9,13 @@ stage("Sanity Check") {
 
 stage("Unit Test") {
   capture_flag = env.BRANCH_NAME.startsWith('PR-')?'':'--capture=no'
+  cov_flag = env.BRANCH_NAME.startsWith('PR-')?('PR'+env.CHANGE_ID):env.BRANCH_NAME
   parallel 'Python 2': {
     node {
       withCredentials([string(credentialsId: 'GluonNLPCodeCov', variable: 'CODECOV_TOKEN')]) {
         ws('workspace/gluon-nlp-py2') {
           checkout scm
-          sh("ci/step_unit_test.sh py2 ${env.BRANCH_NAME} 0 ${capture_flag}")
+          sh("ci/step_unit_test.sh py2 ${cov_flag} ${capture_flag}")
         }
       }
     }
@@ -24,7 +25,7 @@ stage("Unit Test") {
       withCredentials([string(credentialsId: 'GluonNLPCodeCov', variable: 'CODECOV_TOKEN')]) {
         ws('workspace/gluon-nlp-py3') {
           checkout scm
-          sh("ci/step_unit_test.sh py3 ${env.BRANCH_NAME} 1 ${capture_flag}")
+          sh("ci/step_unit_test.sh py3 ${cov_flag} ${capture_flag}")
         }
       }
     }
