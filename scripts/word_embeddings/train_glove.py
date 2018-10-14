@@ -79,7 +79,7 @@ def parse_args():
     group.add_argument(
         '--batch-size',
         type=int,
-        default=4096,
+        default=65536,
         help='Batch size for training.')
     group.add_argument('--epochs', type=int, default=5, help='Epoch limit')
     group.add_argument(
@@ -113,6 +113,7 @@ def parse_args():
         help='Initial AdaGrad state value.')
     group.add_argument('--lr', type=float, default=0.1, help='Learning rate')
     group.add_argument('--seed', type=int, default=1, help='Random seed')
+    group.add_argument('--dropout', type=float, default=0.15)
 
     # Logging
     group = parser.add_argument_group('Logging arguments')
@@ -189,6 +190,7 @@ class GloVe(nlp.model.train.EmbeddingModel, mx.gluon.HybridBlock):
                  output_dim,
                  x_max,
                  alpha,
+                 dropout=0,
                  weight_initializer=None,
                  bias_initializer=mx.initializer.Zero(),
                  sparse_grad=True,
@@ -205,6 +207,7 @@ class GloVe(nlp.model.train.EmbeddingModel, mx.gluon.HybridBlock):
 
         self._x_max = x_max
         self._alpha = alpha
+        self._dropout = dropout
 
         with self.name_scope():
             self.source_embedding = mx.gluon.nn.Embedding(
@@ -254,10 +257,15 @@ class GloVe(nlp.model.train.EmbeddingModel, mx.gluon.HybridBlock):
         emb_in = self.source_embedding(row)
         emb_out = self.context_embedding(col)
 
+        if self._dropout:
+            emb_in = F.Dropout(emb_in, p=self._dropout)
+            emb_out = F.Dropout(emb_out, p=self._dropout)
+
+        bias_in = self.source_bias(row).squeeze()
+        bias_out = self.context_bias(col).squeeze()
         dot = F.batch_dot(emb_in.expand_dims(1),
                           emb_out.expand_dims(2)).squeeze()
-        tmp = dot + self.source_bias(row).squeeze() + \
-            self.context_bias(col).squeeze() - F.log(counts).squeeze()
+        tmp = dot + bias_in + bias_out - F.log(counts).squeeze()
         weight = F.clip(
             ((counts / self._x_max)**self._alpha), a_min=0, a_max=1).squeeze()
         loss = weight * F.square(tmp)
@@ -306,6 +314,7 @@ def train(args):
     model = GloVe(
         token_to_idx=vocab.token_to_idx,
         output_dim=args.emsize,
+        dropout=args.dropout,
         x_max=args.x_max,
         alpha=args.alpha,
         weight_initializer=mx.init.Uniform(scale=1 / args.emsize))
