@@ -18,13 +18,19 @@
 # under the License.
 
 # pylint: disable=wildcard-import
-"""Corpora."""
+"""NMT example."""
 
-from . import (google_billion_word, large_text_compression_benchmark, wikitext)
+from . import _constants, bleu, dataset, encoder_decoder, loss, transformer, gnmt, translation, utils
 
-from .google_billion_word import *
-from .large_text_compression_benchmark import *
-from .wikitext import *
+from ._constants import *
+from .bleu import *
+from .dataset import *
+from .encoder_decoder import *
+from .loss import *
+from .transformer import *
+from .gnmt import *
+from .translation import *
+from .utils import *
 
-__all__ = (google_billion_word.__all__ +
-           large_text_compression_benchmark.__all__ + wikitext.__all__)
+__all__ = _constants.__all__ + bleu.__all__ + dataset.__all__ + encoder_decoder.__all__ + loss.__all__ \
+          + transformer.__all__ + gnmt.__all__ + translation.__all__ + utils.__all__

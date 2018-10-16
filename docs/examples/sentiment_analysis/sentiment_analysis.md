@@ -1,4 +1,4 @@
-# Sentiment Analysis (SA) with pre-trained Language Model (LM)
+# Sentiment Analysis
 
 Now that we've covered some advanced topics, let's go back and show how these techniques can help us even when addressing the comparatively simple problem of classification. In particular, we'll look at the classic problem of sentiment analysis: taking an input consisting of a string of text and classifying its sentiment as positive of negative.
 
@@ -9,7 +9,7 @@ With GluonNLP, we can quickly prototype the model and it's easy to customize. Th
 
 ## Load mxnet and gluonnlp
 
-```{.python .input  n=1}
+```{.python .input}
 import warnings
 warnings.filterwarnings('ignore')
 
@@ -38,7 +38,7 @@ Specifically, our model represents input words by their embeddings. Following th
 
 Thus, given an input sequence, the memory cells in the LSTM layer will produce a representation sequence. This representation sequence is then averaged over all timesteps resulting in a fixed-length sentence representation $h$. Finally, we apply a sigmoid output layer on top of $h$. We’re using the sigmoid  because we’re trying to predict if this text has positive or negative sentiment, and a sigmoid activation function squashes the output values to the range [0,1], allowing us to interpret this output as a probability.
 
-```{.python .input  n=11}
+```{.python .input}
 class MeanPoolingLayer(gluon.HybridBlock):
     """A block for mean pooling of encoder features"""
     def __init__(self, prefix=None, params=None):
@@ -81,18 +81,18 @@ class SentimentNet(gluon.HybridBlock):
 
 Our model is based on a standard LSTM model. We use a hidden size of 200. We use bucketing for speeding up the processing of variable-length sequences.
 
-```{.python .input  n=2}
+```{.python .input}
 dropout = 0
 language_model_name = 'standard_lstm_lm_200'
 pretrained = True
-learning_rate, batch_size = 0.005, 16
+learning_rate, batch_size = 0.005, 32
 bucket_num, bucket_ratio = 10, 0.2
 epochs = 1
 grad_clip = None
 log_interval = 100
 ```
 
-```{.python .input  n=3}
+```{.python .input}
 context = mx.gpu(0)
 ```
 

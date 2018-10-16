@@ -26,6 +26,8 @@ from collections import Counter
 import six
 LIST_TYPES = (list, tuple)
 
+__all__ = ['compute_bleu']
+
 
 def _ngrams(segment, n):
     """Extracts n-grams from an input segment.

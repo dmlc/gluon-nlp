@@ -16,7 +16,25 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-"""Constants used in the NMT examples."""
-import os
 
-CACHE_PATH = os.path.realpath(os.path.join(os.path.realpath(__file__), '..', 'cached'))
+from __future__ import print_function
+
+import itertools
+
+import gluonnlp as nlp
+
+
+def test_text8():
+    data = nlp.data.Text8()
+    freq = nlp.data.utils.Counter(itertools.chain.from_iterable(data))
+    assert len(freq) == 253854
+    assert sum(c for c in freq.values()) == 17005207
+    assert freq['english'] == 11868
+
+
+def test_fil9():
+    data = nlp.data.Fil9()
+    freq = nlp.data.utils.Counter(itertools.chain.from_iterable(data))
+    assert len(freq) == 833184
+    assert sum(c for c in freq.values()) == 124301826
+    assert freq['english'] == 56767

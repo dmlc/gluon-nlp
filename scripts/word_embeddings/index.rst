@@ -1,6 +1,6 @@
-Word Embedding Toolkit
-----------------------
-:download:`[Download] </scripts/word_embeddings.zip>`
+Word Embedding
+--------------
+:download:`[Download] </model_zoo/word_embeddings.zip>`
 
 Gluon NLP makes it easy to evaluate and train word embeddings. This folder
 includes examples to evaluate the pre-trained embeddings included in the Gluon

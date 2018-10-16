@@ -22,6 +22,8 @@ import os
 import logging
 import inspect
 
+__all__ = ['logging_config']
+
 
 def logging_config(folder=None, name=None,
                    level=logging.DEBUG,

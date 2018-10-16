@@ -16,15 +16,9 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+"""Constants used in the NMT examples."""
+import os
 
-# pylint: disable=wildcard-import
-"""Corpora."""
+__all__ = ['CACHE_PATH']
 
-from . import (google_billion_word, large_text_compression_benchmark, wikitext)
-
-from .google_billion_word import *
-from .large_text_compression_benchmark import *
-from .wikitext import *
-
-__all__ = (google_billion_word.__all__ +
-           large_text_compression_benchmark.__all__ + wikitext.__all__)
+CACHE_PATH = os.path.realpath(os.path.join(os.path.realpath(__file__), '..', 'cached'))

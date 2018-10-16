@@ -17,17 +17,27 @@
 # specific language governing permissions and limitations
 # under the License.
 """Encoder and decoder usded in sequence-to-sequence learning."""
-__all__ = ['TransformerEncoder', 'TransformerDecoder', 'get_transformer_encoder_decoder']
+__all__ = ['TransformerEncoder', 'TransformerDecoder', 'get_transformer_encoder_decoder', 'get_model']
+
+import os
+import warnings
 
 import math
 import numpy as np
 import mxnet as mx
+import gluonnlp as nlp
+from mxnet import cpu
 from mxnet.gluon import nn
 from mxnet.gluon.block import HybridBlock
 try:
     from encoder_decoder import Seq2SeqEncoder, Seq2SeqDecoder, _get_attention_cell
 except ImportError:
     from .encoder_decoder import Seq2SeqEncoder, Seq2SeqDecoder, _get_attention_cell
+
+from mxnet.gluon.model_zoo.model_store import get_model_file
+from gluonnlp.data.utils import _load_pretrained_vocab
+from mxnet.gluon.model_zoo import model_store
+from .translation import NMTModel
 
 
 def _position_encoding_init(max_length, dim):
@@ -844,3 +854,137 @@ def get_transformer_encoder_decoder(num_layers=2,
                                  bias_initializer=bias_initializer,
                                  prefix=prefix + 'dec_', params=params)
     return encoder, decoder
+
+def register_vocab(dataset, sha1):
+    if dataset not in nlp.data.utils._vocab_sha1:
+        nlp.data.utils._vocab_sha1[dataset] = sha1
+
+def _load_vocab(dataset_name, vocab, root):
+    if dataset_name:
+        if vocab is not None:
+            warnings.warn('Both dataset_name and vocab are specified. Loading vocab for dataset. '
+                          'Input "vocab" argument will be ignored.')
+        vocab = _load_pretrained_vocab(dataset_name, root)
+    else:
+        assert vocab is not None, 'Must specify vocab if not loading from predefined datasets.'
+    return vocab
+
+
+def _load_pretrained_params(net, model_name, dataset_name, root, ctx):
+    model_file = get_model_file('_'.join([model_name, dataset_name]), root=root)
+    temp_params = mx.nd.load(model_file)
+    new_temp_params = {'transformer_' + k if 'src_embed' not in k else k: v for k, v in temp_params.items()}
+    mx.nd.save('_'.join(['temporal', model_name, dataset_name]), new_temp_params)
+    net.load_params('_'.join(['temporal', model_name, dataset_name]), ctx=ctx)
+
+
+def _get_transformer_model(model_cls, model_name, dataset_name, src_vocab, tgt_vocab,
+                           encoder, decoder, share_embed, embed_size, tie_weights,
+                           embed_initializer, pretrained, ctx, root, **kwargs):
+    src_vocab = _load_vocab(dataset_name + '_src', src_vocab, root)
+    tgt_vocab = _load_vocab(dataset_name + '_tgt', tgt_vocab, root)
+    kwargs['encoder'] = encoder
+    kwargs['decoder'] = decoder
+    kwargs['src_vocab'] = src_vocab
+    kwargs['tgt_vocab'] = tgt_vocab
+    kwargs['share_embed'] = share_embed
+    kwargs['embed_size'] = embed_size
+    kwargs['tie_weights'] = tie_weights
+    kwargs['embed_initializer'] = embed_initializer
+    kwargs['prefix'] = ''
+    net = model_cls(**kwargs)
+    if pretrained:
+        _load_pretrained_params(net, model_name, dataset_name, root, ctx)
+    return net, src_vocab, tgt_vocab
+
+
+def transformer_en_de_512(dataset_name=None, src_vocab=None, tgt_vocab=None, pretrained=False, ctx=cpu(),
+                     root=os.path.join('~', '.mxnet', 'models'), **kwargs):
+    r"""Transformer pretrained model.
+
+    Embedding size is 400, and hidden layer size is 1150.
+
+    Parameters
+    ----------
+    dataset_name : str or None, default None
+    src_vocab : gluonnlp.Vocab or None, default None
+    tgt_vocab : gluonnlp.Vocab or None, default None
+    pretrained : bool, default False
+        Whether to load the pretrained weights for model.
+    ctx : Context, default CPU
+        The context in which to load the pretrained weights.
+    root : str, default '~/.mxnet/models'
+        Location for keeping the model parameters.
+
+    Returns
+    -------
+    gluon.Block, gluonnlp.Vocab, gluonnlp.Vocab
+    """
+    predefined_args = {'num_units': 512,
+                       'hidden_size': 2048,
+                       'dropout': 0.1,
+                       'epsilon': 0.1,
+                       'num_layers': 6,
+                       'num_heads': 8,
+                       'scaled': True,
+                       'share_embed': True,
+                       'embed_size': 512,
+                       'tie_weights': True,
+                       'embed_initializer': None}
+    mutable_args = frozenset(['num_units', 'hidden_size', 'dropout', 'epsilon', 'num_layers',
+                              'num_heads', 'scaled'])
+    assert all((k not in kwargs or k in mutable_args) for k in predefined_args), \
+           'Cannot override predefined model settings.'
+    predefined_args.update(kwargs)
+    encoder, decoder = get_transformer_encoder_decoder(units=predefined_args['num_units'],
+                                                       hidden_size=predefined_args['hidden_size'],
+                                                       dropout=predefined_args['dropout'],
+                                                       num_layers=predefined_args['num_layers'],
+                                                       num_heads=predefined_args['num_heads'],
+                                                       max_src_length=530,
+                                                       max_tgt_length=549,
+                                                       scaled=predefined_args['scaled'])
+    return _get_transformer_model(NMTModel, 'transformer_en_de_512', dataset_name,
+                                  src_vocab, tgt_vocab, encoder, decoder,
+                                  predefined_args['share_embed'], predefined_args['embed_size'],
+                                  predefined_args['tie_weights'],
+                                  predefined_args['embed_initializer'], pretrained, ctx, root)
+
+model_store._model_sha1.update(
+    {name: checksum for checksum, name in [
+        ('14bd361b593bd1570106d74f29f9507f4f772bfe', 'transformer_en_de_512_WMT2014'),
+    ]})
+
+
+def get_model(name, dataset_name='WMT2014', **kwargs):
+    """Returns a pre-defined model by name.
+
+    Parameters
+    ----------
+    name : str
+        Name of the model.
+    dataset_name : str or None
+    src_vocab : gluonnlp.Vocab or None, default None
+    tgt_vocab : gluonnlp.Vocab or None, default None
+    pretrained : bool, default False
+        Whether to load the pretrained weights for model.
+    ctx : Context, default CPU
+        The context in which to load the pretrained weights.
+    root : str, default '~/.mxnet/models'
+        Location for keeping the model parameters.
+
+    Returns
+    -------
+    Block
+        The model.
+    """
+    register_vocab('WMT2014_src', '230ebb817b1d86950d71e2e765f192a4e4f34415')
+    register_vocab('WMT2014_tgt', '230ebb817b1d86950d71e2e765f192a4e4f34415')
+    models = {'transformer_en_de_512': transformer_en_de_512}
+    name = name.lower()
+    if name not in models:
+        raise ValueError(
+            'Model %s is not supported. Available options are\n\t%s'%(
+                name, '\n\t'.join(sorted(models.keys()))))
+    kwargs['dataset_name'] = dataset_name
+    return models[name](**kwargs)

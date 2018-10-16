@@ -1,4 +1,4 @@
-# Using Pre-trained Word Embeddings
+# Pre-trained Word Embeddings
 
 In this notebook, we'll demonstrate how to use pre-trained word embeddings.
 To see why word embeddings are useful, it's worth comparing them to the alternative.

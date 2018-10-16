@@ -28,7 +28,7 @@ import subprocess
 import codecs
 import numpy as np
 from numpy.testing import assert_allclose
-from ..nmt.bleu import compute_bleu, _bpe_to_words, _split_compound_word
+from ..machine_translation.bleu import compute_bleu, _bpe_to_words, _split_compound_word
 
 
 actions = ['deletion', 'replacement', 'add']
