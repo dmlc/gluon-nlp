@@ -1,8 +1,9 @@
 import numpy as np
+import os
 import mxnet as mx
 from gluonnlp.data import FixedBucketSampler, ShardedDataLoader
 from mxnet import gluon
-from mxnet.test_utils import download
+from mxnet.gluon.utils import download
 import pytest
 
 
@@ -23,10 +24,12 @@ def test_sharded_data_loader():
     for num_workers in [0, 1, 2, 3, 4]:
         if num_workers == 2:
             # test record file
-            url_format = 'https://apache-mxnet.s3-accelerate.amazonaws.com/gluon/dataset/{}'
-            filename = 'not_hotdog_validation-c0201740.rec'
-            download(url_format.format(filename))
-            rec_dataset = gluon.data.RecordFileDataset(filename)
+            url_format = 'https://apache-mxnet.s3-accelerate.amazonaws.com/gluon/dataset/pikachu/{}'
+            filename = 'val.rec'
+            idx_filename = 'val.idx'
+            download(url_format.format(filename), path=os.path.join('tests', 'data', filename))
+            download(url_format.format(idx_filename), path=os.path.join('tests', 'data', idx_filename))
+            rec_dataset = gluon.data.RecordFileDataset(os.path.join('tests', 'data', filename))
             loader = ShardedDataLoader(rec_dataset, batch_sampler=batch_sampler, num_workers=num_workers)
         else:
             loader = ShardedDataLoader(dataset, batch_sampler=batch_sampler, num_workers=num_workers)
