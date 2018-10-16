@@ -2,6 +2,7 @@ import numpy as np
 import mxnet as mx
 from gluonnlp.data import FixedBucketSampler, ShardedDataLoader
 from mxnet import gluon
+from mxnet.test_utils import download
 import pytest
 
 
@@ -20,7 +21,15 @@ def test_sharded_data_loader():
                                        shuffle=False,
                                        num_shards=num_shards)
     for num_workers in [0, 1, 2, 3, 4]:
-        loader = ShardedDataLoader(dataset, batch_sampler=batch_sampler, num_workers=num_workers)
+        if num_workers == 2:
+            # test record file
+            url_format = 'https://apache-mxnet.s3-accelerate.amazonaws.com/gluon/dataset/{}'
+            filename = 'not_hotdog_validation-c0201740.rec'
+            download(url_format.format(filename))
+            rec_dataset = gluon.data.RecordFileDataset(filename)
+            loader = ShardedDataLoader(rec_dataset, batch_sampler=batch_sampler, num_workers=num_workers)
+        else:
+            loader = ShardedDataLoader(dataset, batch_sampler=batch_sampler, num_workers=num_workers)
         for i, seqs in enumerate(loader):
             assert len(seqs) == num_shards
             for j in range(num_shards):
