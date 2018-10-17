@@ -112,6 +112,7 @@ Contents
    examples/sentiment_analysis/sentiment_analysis.ipynb
    examples/machine_translation/gnmt.ipynb
    examples/machine_translation/transformer.ipynb
+   examples/sentence_embedding/self_attentive_sentence_embedding.ipynb
 
 
 .. toctree::
