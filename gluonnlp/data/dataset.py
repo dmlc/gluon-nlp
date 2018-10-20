@@ -46,11 +46,8 @@ class ConcatDataset(Dataset):
 
     def __getitem__(self, i):
         dataset_id = bisect.bisect_right(self.cum_sizes, i)
-        if dataset_id == 0:
-            sample_id = i
-        else:
-            sample_id = i - self.cum_sizes[dataset_id - 1]
-        return self.datasets[dataset_id][sample_id]
+        sample_id = i - self.cum_sizes[dataset_id - 1]
+        return self.datasets[dataset_id - 1][sample_id]
 
     def __len__(self):
         return self.cum_sizes[-1]
