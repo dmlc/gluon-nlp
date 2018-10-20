@@ -42,7 +42,7 @@ class ConcatDataset(Dataset):
     """
     def __init__(self, datasets):
         self.datasets = datasets
-        self.cum_sizes = np.cumsum([len(d) for d in datasets])
+        self.cum_sizes = np.cumsum([0] + [len(d) for d in datasets])
 
     def __getitem__(self, i):
         dataset_id = bisect.bisect_right(self.cum_sizes, i)
