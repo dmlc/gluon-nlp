@@ -563,6 +563,8 @@ FAST_TEXT_NPZ_SHA1 = {
 
 
 FAST_TEXT_BIN_SHA1 = {
+    'wiki-news-300d-1M-subword': ('wiki-news-300d-1M-subword-c8853bda.bin',
+                                  'c8853bdae00318097b6337c4631d342879d6b18c'),
     'crawl-300d-2M-subword': ('crawl-300d-2M-subword-e6b07293f.bin',
                               'e6b07293f7b0095e3c72c2a12bc09464b69444b0'),
     'cc.af.300': ('cc.af.300-33115ff8.bin', '33115ff8e4c8f439757c819399177f1f58f07f12'),
