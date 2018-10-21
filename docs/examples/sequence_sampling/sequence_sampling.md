@@ -6,7 +6,7 @@ This tutorial demonstrates how to sample sequences using a pre-trained language 
 - with beam search sampler, and
 - with sequence sampler
 
-Let's use `V` to denote the vocabulary size, and `T` to denote the sequence length. Given a language model, we can sample sequences according to the probability that they would occur according to our model. At each time step, a language model predicts the likelihood of each word occuring, given the context from prior time steps. The outputs at any time step can be any word from the vocabulary whose size is V and thus the number of all possible outcomes for a sequence of length T is thus V^T. 
+Let's use `V` to denote the vocabulary size, and `T` to denote the sequence length. Given a language model, we can sample sequences according to the probability that they would occur according to our model. At each time step, a language model predicts the likelihood of each word occuring, given the context from prior time steps. The outputs at any time step can be any word from the vocabulary whose size is `V` and thus the number of all possible outcomes for a sequence of length `T` is thus `V^T`. 
 
 While sometimes we might want to sample sentences according to their probability of occuring, at other times we want to find the sentences that *are most likely to occur*. This is especially true in the case of language translation where we don't just want to see *a* translation. We want the *best* translation. While finding the optimal outcome quickly becomes intractable as time step increases, there are still many ways to sample reasonably good sequences. GluonNLP provides two samplers for generating from a language model: `BeamSearchSampler` and `SequenceSampler`.
 
@@ -68,8 +68,6 @@ decoder = LMDecoder(lm_model)
 #### Beam Search Sampler
 
 Given a scorer and decoder, we are ready to create a sampler. We use symbol `.` to indicate the end of sentence (EOS). We can use vocab to get the index of the EOS, and then feed the index to the sampler. The following codes shows how to construct a beam search sampler. We will create a sampler with 4 beams and a maximum sample length of 20.
-
-
 
 
 ```python
@@ -143,8 +141,6 @@ seq_sampler = nlp.model.SequenceSampler(beam_size=5,
 
 #### Generate Sequences with Sequence Sampler
 Now, use the sequence sampler created to sample sequences based on the same inputs used previously.
-
-
 
 
 ```python
