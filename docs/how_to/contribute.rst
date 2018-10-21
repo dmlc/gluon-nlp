@@ -69,6 +69,8 @@ good quality writing.
 
 See `existing examples <https://github.com/dmlc/gluon-nlp/tree/master/docs/examples>`__.
 
+We suggest you start the example with `Jupyter notebook <http://jupyter.org/>`_. When the content is ready, use `notedown <https://github.com/aaren/notedown#conversion-to-markdown>`_ to convert the `.ipynb` file to `.md` file for submission.
+
 Contribute new API
 ------------------
 
