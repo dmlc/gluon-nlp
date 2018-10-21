@@ -32,6 +32,7 @@ import pytest
 
 import gluonnlp as nlp
 from gluonnlp.base import _str_types
+from mxnet.gluon.data import SimpleDataset
 
 ###############################################################################
 # Registry
@@ -486,3 +487,15 @@ def _test_gbw_stream():
     assert counter['.'] == 29969612
     vocab = gbw.vocab
     assert len(vocab) == 793471
+
+
+def test_concatenation():
+    datasets = [
+            SimpleDataset([1,2,3,4]),
+            SimpleDataset([5,6]),
+            SimpleDataset([8,0,9]),
+            ]
+    dataset = nlp.data.ConcatDataset(datasets)
+    assert len(dataset) == 9
+    assert dataset[0] == 1
+    assert dataset[5] == 6

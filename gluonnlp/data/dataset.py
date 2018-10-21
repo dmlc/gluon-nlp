@@ -20,14 +20,37 @@
 # pylint: disable=undefined-all-variable
 """NLP Toolkit Dataset API. It allows easy and customizable loading of corpora and dataset files.
 Files can be loaded into formats that are immediately ready for training and evaluation."""
-__all__ = ['TextLineDataset', 'CorpusDataset']
+__all__ = ['TextLineDataset', 'CorpusDataset', 'ConcatDataset']
 
 import io
 import os
+import bisect
+import numpy as np
 
-from mxnet.gluon.data import SimpleDataset
+from mxnet.gluon.data import SimpleDataset, Dataset
 
 from .utils import concat_sequence, line_splitter, whitespace_splitter
+
+
+class ConcatDataset(Dataset):
+    """Dataset that concatenates a list of datasets.
+
+    Parameters
+    ----------
+    datasets : list
+        List of datasets.
+    """
+    def __init__(self, datasets):
+        self.datasets = datasets
+        self.cum_sizes = np.cumsum([0] + [len(d) for d in datasets])
+
+    def __getitem__(self, i):
+        dataset_id = bisect.bisect_right(self.cum_sizes, i)
+        sample_id = i - self.cum_sizes[dataset_id - 1]
+        return self.datasets[dataset_id - 1][sample_id]
+
+    def __len__(self):
+        return self.cum_sizes[-1]
 
 
 class TextLineDataset(SimpleDataset):
