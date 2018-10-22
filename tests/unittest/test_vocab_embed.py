@@ -462,14 +462,14 @@ def test_token_embedding_from_file(tmpdir, allow_extend):
 
 
 def test_embedding_get_and_pretrain_file_names():
-    assert len(nlp.embedding.list_sources(embedding_name='fasttext')) == 485
+    assert len(nlp.embedding.list_sources(embedding_name='fasttext')) == 486
     assert len(nlp.embedding.list_sources(embedding_name='glove')) == 10
     assert len(nlp.embedding.list_sources(embedding_name='word2vec')) == 3
 
     reg = nlp.embedding.list_sources(embedding_name=None)
 
     assert len(reg['glove']) == 10
-    assert len(reg['fasttext']) == 485
+    assert len(reg['fasttext']) == 486
     assert len(reg['word2vec']) == 3
 
     with pytest.raises(KeyError):
