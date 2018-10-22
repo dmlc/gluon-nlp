@@ -6,7 +6,7 @@ from mxnet import gluon
 from mxnet.gluon.utils import download
 import pytest
 
-
+@pytest.mark.serial
 def test_sharded_data_loader():
     X = np.random.uniform(size=(100, 20))
     Y = np.random.uniform(size=(100,))
