@@ -12,8 +12,8 @@ length. Given a language model, we can sample sequences according to the
 probability that they would occur according to our model. At each time step, a
 language model predicts the likelihood of each word occuring, given the context
 from prior time steps. The outputs at any time step can be any word from the
-vocabulary whose size is `V` and thus the number of all possible outcomes for a
-sequence of length `T` is thus `V^T`. 
+vocabulary whose size is V and thus the number of all possible outcomes for a
+sequence of length T is thus V^T. 
 
 While sometimes we might want to sample
 sentences according to their probability of occuring, at other times we want to
@@ -28,7 +28,7 @@ from a language model: `BeamSearchSampler` and `SequenceSampler`.
 First, let's load a pretrained language model,
 from which we will sample sequences from.
 
-```python
+```{.python .input}
 import mxnet as mx
 import gluonnlp as nlp
 ctx = mx.cpu()
@@ -68,10 +68,11 @@ as scorer, which implements the scoring function with length penalty in Google
 NMT paper. 
 ```
 scores = (log_probs + scores) / length_penalty
-length_penalty = (K + length)^alpha / (K + 1)^alpha
+length_penalty =
+(K + length)^alpha / (K + 1)^alpha
 ```
 
-```python
+```{.python .input}
 scorer = nlp.model.BeamSearchScorer(alpha=0, K=5, from_logits=False)
 ```
 
@@ -79,7 +80,7 @@ scorer = nlp.model.BeamSearchScorer(alpha=0, K=5, from_logits=False)
 Next, we define the decoder based on the pretrained
 language model.
 
-```python
+```{.python .input}
 class LMDecoder(object):
     def __init__(self, model):
         self._model = model
@@ -99,7 +100,7 @@ EOS, and then feed the index to the sampler. The following codes shows how to
 construct a beam search sampler. We will create a sampler with 4 beams and a
 maximum sample length of 20.
 
-```python
+```{.python .input}
 eos_id = vocab['.']
 beam_sampler = nlp.model.BeamSearchSampler(beam_size=5,
                                            decoder=decoder,
@@ -115,7 +116,7 @@ search first. We feed ['I', 'Love'] to the language model to get the initial
 states and set the initial input to be the word 'it'. We will then print the
 top-3 generations.
 
-```python
+```{.python .input}
 bos = 'I love it'.split()
 bos_ids = [vocab[ele] for ele in bos]
 begin_states = lm_model.begin_state(batch_size=1, ctx=ctx)
@@ -125,7 +126,7 @@ if len(bos_ids) > 1:
 inputs = mx.nd.full(shape=(1,), ctx=ctx, val=bos_ids[-1])
 ```
 
-```python
+```{.python .input}
 def generate_sequences(sampler, inputs, begin_states, num_print_outcomes):
     samples, scores, valid_lengths = sampler(inputs, begin_states)
     samples = samples[0].asnumpy()
@@ -139,7 +140,7 @@ def generate_sequences(sampler, inputs, begin_states, num_print_outcomes):
         print([' '.join(sentence), scores[i]])
 ```
 
-```python
+```{.python .input}
 generate_sequences(beam_sampler, inputs, begin_states, 5)
 ```
 
@@ -159,7 +160,7 @@ For each input same, sequence sampler can sample
 multiple **independent** sequences at once. The number of independent sequences
 to sample can be specified through the argument `beam_size`.
 
-```python
+```{.python .input}
 seq_sampler = nlp.model.SequenceSampler(beam_size=5,
                                         decoder=decoder,
                                         eos_id=eos_id,
@@ -171,7 +172,7 @@ seq_sampler = nlp.model.SequenceSampler(beam_size=5,
 Now, use the sequence sampler
 created to sample sequences based on the same inputs used previously.
 
-```python
+```{.python .input}
 generate_sequences(seq_sampler, inputs, begin_states, 5)
 ```
 
