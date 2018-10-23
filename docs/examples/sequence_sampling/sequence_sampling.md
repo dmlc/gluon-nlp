@@ -68,8 +68,7 @@ as scorer, which implements the scoring function with length penalty in Google
 NMT paper. 
 ```
 scores = (log_probs + scores) / length_penalty
-length_penalty =
-(K + length)^alpha / (K + 1)^alpha
+length_penalty = (K + length)^alpha / (K + 1)^alpha
 ```
 
 ```{.python .input}
