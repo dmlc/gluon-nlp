@@ -22,7 +22,7 @@ def test_sharded_data_loader():
                                        shuffle=False,
                                        num_shards=num_shards)
     for num_workers in [0, 1, 2, 3, 4]:
-        if num_workers == 2:
+        if num_workers == 5:
             # test record file
             url_format = 'https://apache-mxnet.s3-accelerate.amazonaws.com/gluon/dataset/pikachu/{}'
             filename = 'val.rec'
