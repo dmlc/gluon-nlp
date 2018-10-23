@@ -64,12 +64,8 @@ length.
 #### Scorer Function
 
 In this tutorial, we will use the `BeamSearchScorer` the
-as scorer, which implements the scoring function with length penalty in Google
-NMT paper. 
-```
-scores = (log_probs + scores) / length_penalty
-length_penalty = (K + length)^alpha / (K + 1)^alpha
-```
+as scorer, which implements the scoring function with length penalty in
+[Google NMT](https://arxiv.org/pdf/1609.08144.pdf) paper:
 
 ```{.python .input}
 scorer = nlp.model.BeamSearchScorer(alpha=0, K=5, from_logits=False)
