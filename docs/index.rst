@@ -113,6 +113,7 @@ Contents
    examples/machine_translation/gnmt.ipynb
    examples/machine_translation/transformer.ipynb
    examples/sentence_embedding/self_attentive_sentence_embedding.ipynb
+   examples/sequence_sampling/sequence_sampling.ipynb
 
 
 .. toctree::
@@ -122,7 +123,6 @@ Contents
    api/index
    api/notes/data_api.rst
    api/notes/vocab_emb.rst
-   api/notes/sequence_sampling.rst
 
 
 .. toctree::
