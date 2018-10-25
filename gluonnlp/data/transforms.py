@@ -475,6 +475,12 @@ class SacreMosesDetokenizer(object):
                               'To install sacremoses, use pip install -U sacremoses'
                               ' Now try NLTKMosesDetokenizer using NLTK ...')
             try:
+                from nltk.data import find
+                from nltk import download
+                try:
+                    find('perluniprops')
+                except LookupError:
+                    download('perluniprops')
                 from nltk.tokenize.moses import MosesDetokenizer
                 self._detokenizer = MosesDetokenizer()
             except ImportError:
