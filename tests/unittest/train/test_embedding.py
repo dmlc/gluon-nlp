@@ -17,11 +17,13 @@
 # specific language governing permissions and limitations
 # under the License.
 
-import pytest
-import numpy as np
-import mxnet as mx
-
 import os
+
+import mxnet as mx
+import numpy as np
+import pytest
+from numpy.testing import assert_allclose
+
 import gluonnlp as nlp
 
 
@@ -35,30 +37,32 @@ def hybridize(request):
     return request.param
 
 
-@pytest.mark.parametrize('wordsmask', [True, False])
-def test_simple_embedding(sparse_grad, hybridize, wordsmask):
+def test_csr_embedding(sparse_grad, hybridize):
     token_to_idx = dict(hello=0, world=1)
-    embedding = nlp.model.train.SimpleEmbeddingModel(token_to_idx, 30,
-                                                     sparse_grad=sparse_grad)
+    embedding = nlp.model.train.CSREmbeddingModel(
+        token_to_idx, 30, sparse_grad=sparse_grad)
     embedding.initialize()
     if hybridize:
         embedding.hybridize()
 
-    # Without mask
-    words = mx.nd.arange(2)
-    with mx.autograd.record():
-        loss = embedding(words, wordsmask=mx.nd.ones_like(words)
-                         if wordsmask else None)
-    loss.backward()
-    loss.asnumpy()
+    one_word_per_row = mx.nd.sparse.csr_matrix(
+        ([1.0, 1.0], ([0, 1], [0, 1])),
+        shape=(2, len(token_to_idx)),
+        dtype=np.float32)
+    two_words_per_row = mx.nd.sparse.csr_matrix(
+        ([1.0, 1.0], ([0, 0], [0, 1])),
+        shape=(1, len(token_to_idx)),
+        dtype=np.float32)
+    emb = embedding(one_word_per_row)
+    emb2 = embedding(two_words_per_row)
+    assert_allclose(emb.sum(axis=0, keepdims=True).asnumpy(), emb2.asnumpy())
 
 
-@pytest.mark.parametrize('wordsmask', [True, False])
-@pytest.mark.parametrize('subwordsmask', [True, False])
-def test_fasttext_embedding(sparse_grad, hybridize, wordsmask, subwordsmask):
+def test_fasttext_embedding(sparse_grad, hybridize):
     token_to_idx = dict(hello=0, world=1)
+    num_subwords = 100
     subwords = nlp.vocab.create_subword_function(
-        'NGramHashes', ngrams=[3, 4, 5, 6], num_subwords=1000)
+        'NGramHashes', ngrams=[3, 4, 5, 6], num_subwords=num_subwords)
     embedding = nlp.model.train.FasttextEmbeddingModel(
         token_to_idx, subwords, 30, sparse_grad=sparse_grad)
     embedding.initialize()
@@ -67,24 +71,15 @@ def test_fasttext_embedding(sparse_grad, hybridize, wordsmask, subwordsmask):
 
     words = mx.nd.arange(2).reshape((1, -1))
     subwords = words.reshape((1, -1, 1))
-    with mx.autograd.record():
-        loss = embedding(words, subwords, wordsmask=mx.nd.ones_like(words)
-                         if wordsmask else None,
-                         subwordsmask=mx.nd.ones_like(subwords)
-                         if subwordsmask else None).sum()
-    loss.backward()
-    loss.asnumpy()
 
-    # With word deduplication
-    subwords = mx.nd.arange(1).reshape((1, 1))
-    with mx.autograd.record():
-        loss = embedding(
-            words, subwords, wordsmask=mx.nd.ones_like(words)
-            if wordsmask else None, subwordsmask=mx.nd.ones_like(subwords)
-            if subwordsmask else None,
-            words_to_unique_subwords_indices=mx.nd.arange(2)).sum()
-    loss.backward()
-    loss.asnumpy()
+    word_and_subwords = mx.nd.sparse.csr_matrix(
+        ([0.5, 0.5], ([0, 0], [0, 100])),
+        shape=(1, len(token_to_idx) + num_subwords),
+        dtype=np.float32)
+    emb = embedding(word_and_subwords)
+    emb2 = embedding.weight.data()[word_and_subwords.indices].mean(
+        axis=0, keepdims=True)
+    assert_allclose(emb.asnumpy(), emb2.asnumpy())
 
 
 def test_fasttext_embedding_load_binary_compare_vec():
@@ -97,6 +92,8 @@ def test_fasttext_embedding_load_binary_compare_vec():
         os.path.join(str(test_dir), 'test_embedding', 'lorem_ipsum.bin'))
     idx_to_vec = model[token_embedding_vec.idx_to_token]
     assert np.all(
-        np.isclose(a=token_embedding_vec.idx_to_vec.asnumpy(),
-                   b=idx_to_vec.asnumpy(), atol=0.001))
+        np.isclose(
+            a=token_embedding_vec.idx_to_vec.asnumpy(),
+            b=idx_to_vec.asnumpy(),
+            atol=0.001))
     assert all(token in model for token in token_embedding_vec.idx_to_token)

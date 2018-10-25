@@ -29,51 +29,54 @@ import gluonnlp as nlp
 
 @pytest.mark.parametrize('reduce_window_size_randomly', [True, False])
 @pytest.mark.parametrize('shuffle', [True, False])
-def test_center_context_batchify_dataset(reduce_window_size_randomly, shuffle):
-    data = nlp.data.Text8(segment='train')[:3]
-    counter = nlp.data.count_tokens(itertools.chain.from_iterable(data))
-    vocab = nlp.Vocab(counter)
-    data = [vocab[sentence] for sentence in data]
-
-    idx_to_pdiscard = [0] * len(vocab)
+@pytest.mark.parametrize('cbow', [True, False])
+@pytest.mark.parametrize('stream', [True, False])
+def test_center_context_batchify_stream(reduce_window_size_randomly, shuffle,
+                                        cbow, stream):
+    dataset = [np.arange(100).tolist()] * 3
     batchify = nlp.data.batchify.EmbeddingCenterContextBatchify(
         batch_size=8,
         window_size=5,
         reduce_window_size_randomly=reduce_window_size_randomly,
-        shuffle=shuffle)
+        shuffle=shuffle,
+        cbow=cbow)
+    if stream:
+        stream = nlp.data.SimpleDataStream([dataset, dataset])
+        batches = list(
+            itertools.chain.from_iterable(stream.transform(batchify)))
+    else:
+        samples = batchify(dataset)
+        batches = list(samples)
+    if cbow:
+        assert len(batches) == 37 if not stream else 74
+    elif not reduce_window_size_randomly:
+        assert len(batches) == 363 if not stream else 726
+    else:
+        pass
 
-    batches = list(batchify(data))
-    assert len(batches) == 3750  # given fixed batch_size == 8
 
-
-@pytest.mark.parametrize('reduce_window_size_randomly', [True, False])
-@pytest.mark.parametrize('shuffle', [True, False])
-def test_center_context_batchify_stream(reduce_window_size_randomly, shuffle):
-    data = nlp.data.Text8(segment='train')[:3]
-    counter = nlp.data.count_tokens(itertools.chain.from_iterable(data))
-    vocab = nlp.Vocab(counter)
-    data = [vocab[sentence] for sentence in data]
-
-    idx_to_pdiscard = [0] * len(vocab)
+@pytest.mark.parametrize('cbow', [True, False])
+def test_center_context_batchify(cbow):
+    dataset = [np.arange(100).tolist()]
     batchify = nlp.data.batchify.EmbeddingCenterContextBatchify(
-        batch_size=8,
-        window_size=5,
-        reduce_window_size_randomly=reduce_window_size_randomly,
-        shuffle=shuffle)
-
-    stream = nlp.data.SimpleDataStream([data, data])
-    batches = list(itertools.chain.from_iterable(stream.transform(batchify)))
-    assert len(batches) == 7500
-
-
-def test_center_context_batchify_artificial():
-    dataset = [np.arange(1000).tolist()]
-    batchify = nlp.data.batchify.EmbeddingCenterContextBatchify(
-        batch_size=2, window_size=1)
+        batch_size=3, window_size=1, cbow=cbow)
     samples = batchify(dataset)
 
-    center, context, mask = next(iter(samples))
+    center, context = next(iter(samples))
+    (contexts_data, contexts_row, contexts_col) = context
 
-    assert center.asnumpy().tolist() == [[0], [1]]
-    assert context.asnumpy().tolist() == [[1, 0], [0, 2]]
-    assert mask.asnumpy().tolist() == [[1, 0], [1, 1]]
+    assert center.dtype == np.int64
+    assert contexts_data.dtype == np.float32
+    assert contexts_row.dtype == np.int64
+    assert contexts_col.dtype == np.int64
+
+    if cbow:
+        assert center.asnumpy().tolist() == [0, 1, 2]
+        assert contexts_data.asnumpy().tolist() == [1, 0.5, 0.5, 0.5, 0.5]
+        assert contexts_row.asnumpy().tolist() == [0, 1, 1, 2, 2]
+        assert contexts_col.asnumpy().tolist() == [1, 0, 2, 1, 3]
+    else:
+        assert center.asnumpy().tolist() == [0, 1, 1]
+        assert contexts_data.asnumpy().tolist() == [1, 1, 1]
+        assert contexts_row.asnumpy().tolist() == [0, 1, 2]
+        assert contexts_col.asnumpy().tolist() == [1, 0, 2]

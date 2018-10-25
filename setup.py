@@ -57,7 +57,7 @@ setup(
             'nltk==3.2.5',
             'sacremoses',
             'scipy',
-            'numba',
+            'numba>=0.40.1',
             'jieba',
         ],
         'dev': [
