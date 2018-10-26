@@ -542,9 +542,6 @@ def train():
                 trainer.set_learning_rate(new_lr)
             src_wc, tgt_wc, bs = np.sum([(shard[2].sum(), shard[3].sum(), shard[0].shape[0])
                                          for shard in seqs], axis=0)
-            src_wc = src_wc.asscalar()
-            tgt_wc = tgt_wc.asscalar()
-            loss_denom += tgt_wc - bs
             seqs = [[seq.as_in_context(context) for seq in shard]
                     for context, shard in zip(ctx, seqs)]
             Ls = []
@@ -576,6 +573,9 @@ def train():
                     alpha = 1. / max(1, step_num - average_start)
                     for name, average_param in average_param_dict.items():
                         average_param[:] += alpha * (param_dict[name].data(ctx[0]) - average_param)
+            src_wc = src_wc.asscalar()
+            tgt_wc = tgt_wc.asscalar()
+            loss_denom += tgt_wc - bs
             step_loss += sum([L.asscalar() for L in Ls])
             if batch_id % grad_interval == grad_interval - 1 or\
                     batch_id == len(train_data_loader) - 1:
