@@ -59,6 +59,7 @@ from utils import logging_config
 from bleu import _bpe_to_words, compute_bleu
 import _constants as _C
 from dataset import TOY
+from utils import Parallel
 
 np.random.seed(100)
 random.seed(100)
@@ -114,6 +115,8 @@ parser.add_argument('--magnitude', type=float, default=3.0,
 parser.add_argument('--average_checkpoint', action='store_true',
                     help='Turn on to perform final testing based on '
                          'the average of last few checkpoints')
+parser.add_argument('--parallel', action='store_true',
+                    help='Train model with multiple threads in parallel')
 parser.add_argument('--num_averages', type=int, default=5,
                     help='Perform final testing based on the '
                          'average of last num_averages checkpoints. '
@@ -322,6 +325,7 @@ data_test = SimpleDataset([(ele[0], ele[1], len(ele[0]), len(ele[1]), i)
 
 ctx = [mx.cpu()] if args.gpus is None or args.gpus == '' else \
     [mx.gpu(int(x)) for x in args.gpus.split(',')]
+num_ctxs = len(ctx)
 
 if args.src_max_len <= 0 or args.tgt_max_len <= 0:
     max_len = np.max(
@@ -430,6 +434,17 @@ def write_sentences(sentences, file_path):
             else:
                 of.write(sent + '\n')
 
+def run(sequence):
+     with mx.autograd.record():
+         src_seq, tgt_seq, src_valid_length, tgt_valid_length = sequence
+         out, _ = model(src_seq, tgt_seq[:, :-1],
+                        src_valid_length, tgt_valid_length - 1)
+         smoothed_label = label_smoothing(tgt_seq[:, 1:])
+         ls = loss_function(out, smoothed_label, tgt_valid_length - 1).sum()
+     rescaled_ls = (ls * (tgt_seq.shape[1] - 1)) / args.batch_size / 100.0
+     mx.autograd.backward(ls)
+     return rescaled_ls
+
 
 def train():
     """Training function."""
@@ -509,6 +524,9 @@ def train():
     average_start = (len(train_data_loader) // grad_interval) * (args.epochs - args.average_start)
     average_param_dict = None
     model.collect_params().zero_grad()
+    if args.parallel:
+        parallel = Parallel(num_ctxs, run)
+
     for epoch_id in range(args.epochs):
         log_avg_loss = 0
         log_wc = 0
@@ -530,15 +548,22 @@ def train():
             seqs = [[seq.as_in_context(context) for seq in shard]
                     for context, shard in zip(ctx, seqs)]
             Ls = []
-            with mx.autograd.record():
-                for src_seq, tgt_seq, src_valid_length, tgt_valid_length in seqs:
-                    out, _ = model(src_seq, tgt_seq[:, :-1],
-                                   src_valid_length, tgt_valid_length - 1)
-                    smoothed_label = label_smoothing(tgt_seq[:, 1:])
-                    ls = loss_function(out, smoothed_label, tgt_valid_length - 1).sum()
-                    Ls.append((ls * (tgt_seq.shape[1] - 1)) / args.batch_size / 100.0)
-            for L in Ls:
-                L.backward()
+            first_batch = epoch_id == 0 and batch_id == 0
+            if args.parallel and not first_batch:
+                for seq in seqs:
+                    parallel.put(seq)
+                Ls = [parallel.get() for _ in range(len(ctx))]
+            else:
+                # serial forward for the first batch
+                with mx.autograd.record():
+                    for src_seq, tgt_seq, src_valid_length, tgt_valid_length in seqs:
+                        out, _ = model(src_seq, tgt_seq[:, :-1],
+                                       src_valid_length, tgt_valid_length - 1)
+                        smoothed_label = label_smoothing(tgt_seq[:, 1:])
+                        ls = loss_function(out, smoothed_label, tgt_valid_length - 1).sum()
+                        Ls.append((ls * (tgt_seq.shape[1] - 1)) / args.batch_size / 100.0)
+                for L in Ls:
+                    L.backward()
             if batch_id % grad_interval == grad_interval - 1 or\
                     batch_id == len(train_data_loader) - 1:
                 if average_param_dict is None:
