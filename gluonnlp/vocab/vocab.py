@@ -428,8 +428,8 @@ class Vocab(object):
         vocab_dict['eos_token'] = self._eos_token
         return json.dumps(vocab_dict)
 
-    @staticmethod
-    def from_json(json_str):
+    @classmethod
+    def from_json(cls, json_str):
         """Deserialize Vocab object from json string.
 
         Parameters
@@ -445,7 +445,7 @@ class Vocab(object):
         vocab_dict = json.loads(json_str)
 
         unknown_token = vocab_dict.get('unknown_token')
-        vocab = Vocab(unknown_token=unknown_token)
+        vocab = cls(unknown_token=unknown_token)
         vocab._idx_to_token = vocab_dict.get('idx_to_token')
         vocab._token_to_idx = vocab_dict.get('token_to_idx')
         if unknown_token:
