@@ -92,4 +92,3 @@ acc:
 ...
 
 [1] Kim, Y. (2014). Convolutional neural networks for sentence classification. arXiv preprint arXiv:1408.5882.
-=======
