@@ -50,10 +50,10 @@ These models can constructed by passing ``pretrained=True``:
 """
 
 
-from . import (attention_cell, beam_search, block, convolutional_encoder,
+from . import (attention_cell, sequence_sampler, block, convolutional_encoder,
                highway, language_model, parameter, sampled_block, train, utils)
 from .attention_cell import *
-from .beam_search import *
+from .sequence_sampler import *
 from .block import *
 from .convolutional_encoder import *
 from .highway import *
@@ -62,7 +62,7 @@ from .parameter import *
 from .sampled_block import *
 from .utils import *
 
-__all__ = language_model.__all__ + beam_search.__all__ + attention_cell.__all__ + \
+__all__ = language_model.__all__ + sequence_sampler.__all__ + attention_cell.__all__ + \
           utils.__all__ + parameter.__all__ + block.__all__ + highway.__all__ + \
           convolutional_encoder.__all__ + sampled_block.__all__ + ['get_model'] + ['train']
 
@@ -75,7 +75,7 @@ def get_model(name, dataset_name='wikitext-2', **kwargs):
     name : str
         Name of the model.
     dataset_name : str or None, default 'wikitext-2'.
-        The dataset name on which the pretrained model is trained.
+        The dataset name on which the pre-trained model is trained.
         Options are 'wikitext-2'. If specified, then the returned vocabulary is extracted from
         the training set of the dataset.
         If None, then vocab is required, for specifying embedding weight size, and is directly
@@ -84,9 +84,9 @@ def get_model(name, dataset_name='wikitext-2', **kwargs):
         Vocabulary object to be used with the language model.
         Required when dataset_name is not specified.
     pretrained : bool, default False
-        Whether to load the pretrained weights for model.
+        Whether to load the pre-trained weights for model.
     ctx : Context, default CPU
-        The context in which to load the pretrained weights.
+        The context in which to load the pre-trained weights.
     root : str, default '~/.mxnet/models'
         Location for keeping the model parameters.
 

@@ -20,17 +20,17 @@
 from __future__ import print_function
 
 import sys
-import pytest
-from gluonnlp.data.transforms import *
+import warnings
 import numpy as np
 from numpy.testing import assert_allclose
+import pytest
 import mxnet as mx
-import warnings
+from gluonnlp.data import transforms as t
 
 
 def test_clip_sequence():
     for length in [10, 200]:
-        clip_seq = ClipSequence(length=length)
+        clip_seq = t.ClipSequence(length=length)
         for seq_length in [1, 20, 500]:
             dat_npy = np.random.uniform(0, 1, (seq_length,))
             ret1 = clip_seq(dat_npy.tolist())
@@ -56,7 +56,7 @@ def test_pad_sequence():
     for clip in [False, True]:
         for length in [5, 20]:
             for pad_val in [-1.0, 0.0, 1.0]:
-                pad_seq = PadSequence(length=length, clip=clip, pad_val=pad_val)
+                pad_seq = t.PadSequence(length=length, clip=clip, pad_val=pad_val)
                 for seq_length in range(1, 100, 10):
                     for additional_shape in [(), (5,), (4, 3)]:
                         dat_npy = np.random.uniform(0, 1, (seq_length,) + additional_shape)
@@ -73,7 +73,7 @@ def test_pad_sequence():
 @pytest.mark.skipif(sys.version_info < (3,0),
                     reason="requires python3 or higher")
 def test_moses_tokenizer():
-    tokenizer = SacreMosesTokenizer()
+    tokenizer = t.SacreMosesTokenizer()
     text = u"Introducing Gluon: An Easy-to-Use Programming Interface for Flexible Deep Learning."
     try:
         ret = tokenizer(text)
@@ -85,7 +85,7 @@ def test_moses_tokenizer():
 
 
 def test_spacy_tokenizer():
-    tokenizer = SpacyTokenizer()
+    tokenizer = t.SpacyTokenizer()
     text = u"Introducing Gluon: An Easy-to-Use Programming Interface for Flexible Deep Learning."
     try:
         ret = tokenizer(text)
@@ -99,7 +99,7 @@ def test_spacy_tokenizer():
 @pytest.mark.skipif(sys.version_info < (3,0),
                     reason="requires python3 or higher")
 def test_moses_detokenizer():
-    detokenizer = SacreMosesDetokenizer()
+    detokenizer = t.SacreMosesDetokenizer()
     text = ['Introducing', 'Gluon', ':', 'An', 'Easy-to-Use', 'Programming',
             'Interface', 'for', 'Flexible', 'Deep', 'Learning', '.']
     try:

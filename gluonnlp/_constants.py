@@ -73,6 +73,8 @@ WORD2VEC_NPZ_SHA1 = {
 
 FAST_TEXT_NPZ_SHA1 = {
     'crawl-300d-2M': ('crawl-300d-2M.npz', '9dd611a1fe280c63050cd546d3595400fc0eede4'),
+    'crawl-300d-2M-subword': ('crawl-300d-2M-subword-927782c8e.npz',
+                              '927782c8ec8c2c1deb6a8a550217478e183ca25a'),
     'wiki.aa': ('wiki.aa.npz', '48f163b80eb37f1806142169d3d4c05cf75b7339'),
     'wiki.ab': ('wiki.ab.npz', '860ceff119dd27e5b701b605879037c1310cbc3e'),
     'wiki.ace': ('wiki.ace.npz', '62938287464040491719f56a6f521f8f808beee8'),
@@ -435,6 +437,7 @@ FAST_TEXT_NPZ_SHA1 = {
     'cc.dv.300': ('cc.dv.300-d37b74b2.npz', 'd37b74b2247761723126b92183857f5e32a4f17c'),
     'cc.el.300': ('cc.el.300-888b3ecf.npz', '888b3ecfc9f3e16349d15cc85b5453a90f524529'),
     'cc.eml.300': ('cc.eml.300-01926a33.npz', '01926a335cb7055270066d07a9d050a786398adf'),
+    'cc.en.300': ('cc.en.300-79da8fea.npz', '79da8fea1408d642ce43a5fdf40c3c803a49db2c'),
     'cc.eo.300': ('cc.eo.300-02accc23.npz', '02accc23007b196a0bab9be70dcfe911fb8fa87c'),
     'cc.es.300': ('cc.es.300-a0063528.npz', 'a00635289e65081d50fc46bb39203e48115b5d20'),
     'cc.et.300': ('cc.et.300-2916e309.npz', '2916e309a61ba0b83761ed9b4f75d959ad59247f'),
@@ -561,6 +564,10 @@ FAST_TEXT_NPZ_SHA1 = {
 
 
 FAST_TEXT_BIN_SHA1 = {
+    'wiki-news-300d-1M-subword': ('wiki-news-300d-1M-subword-c8853bda.bin',
+                                  'c8853bdae00318097b6337c4631d342879d6b18c'),
+    'crawl-300d-2M-subword': ('crawl-300d-2M-subword-e6b07293f.bin',
+                              'e6b07293f7b0095e3c72c2a12bc09464b69444b0'),
     'cc.af.300': ('cc.af.300-33115ff8.bin', '33115ff8e4c8f439757c819399177f1f58f07f12'),
     'cc.als.300': ('cc.als.300-d6579933.bin', 'd65799331a03895d68a3fbe7611b181d7e7cc916'),
     'cc.am.300': ('cc.am.300-999b3e95.bin', '999b3e95a2c490d7fcab2a6e08074746303d3c17'),
@@ -596,6 +603,7 @@ FAST_TEXT_BIN_SHA1 = {
     'cc.dv.300': ('cc.dv.300-4ffe23d6.bin', '4ffe23d6bd18a1ba6273601e543932abf69d4651'),
     'cc.el.300': ('cc.el.300-7a89986b.bin', '7a89986b681f178b92f3af015aaa4900ba6dd6a6'),
     'cc.eml.300': ('cc.eml.300-8a6221bf.bin', '8a6221bfd1d98e1d14c89db54436d17f505b065d'),
+    'cc.en.300': ('cc.en.300-53588c22.bin', '53588c22cac7f8bf504169f671206b60da21d9b2'),
     'cc.eo.300': ('cc.eo.300-5d9aeebb.bin', '5d9aeebb2c19807839ef68b5c5f7897d1e8ddd3a'),
     'cc.es.300': ('cc.es.300-e9f8c041.bin', 'e9f8c04142005cadae449f016e1bebf7ae254307'),
     'cc.et.300': ('cc.et.300-3f4391ed.bin', '3f4391edec8cf6aafcf9857bf465439f00b84a1a'),

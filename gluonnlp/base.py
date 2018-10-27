@@ -20,7 +20,7 @@
 # pylint: disable=abstract-method
 """Helper functions."""
 
-__all__ = ['_str_types', 'numba_njit', 'numba_prange']
+__all__ = ['_str_types', 'numba_njit', 'numba_prange', 'numba_jitclass', 'numba_types']
 
 try:
     _str_types = (str, unicode)
@@ -28,12 +28,35 @@ except NameError:  # Python 3
     _str_types = (str, )
 
 try:
-    from numba import njit, prange
+    from numba import njit, prange, jitclass, types
     numba_njit = njit(nogil=True)
     numba_prange = prange
+    numba_jitclass = jitclass
+    numba_types = types
 except ImportError:
     # Define numba shims
-    def numba_njit(func):
-        return func
+    def identity(f):
+        return f
 
+    def numba_jitclass(spec):
+        # pylint: disable=unused-argument
+        return identity
+
+    class NumbaTypes(object):
+        """Shim for numba.types"""
+        class NumbaType(object):
+            """Shim for numba.types.type"""
+            def __getitem__(self, x):
+                # pylint: disable=unused-argument
+                pass
+
+            def __call__(self, *args, **kwargs):
+                # pylint: disable=unused-argument
+                pass
+
+        def __getattr__(self, attr):
+            return self.NumbaType()
+
+    numba_types = NumbaTypes()
+    numba_njit = identity
     numba_prange = range

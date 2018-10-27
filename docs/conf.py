@@ -49,8 +49,8 @@ source_parsers = {
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.autosummary',
-    'sphinx.ext.intersphinx',
     'sphinx.ext.viewcode',
+    'sphinx.ext.intersphinx',
     'sphinx.ext.napoleon',
     'sphinx.ext.mathjax',
     'sphinx_gallery.gen_gallery',
@@ -66,6 +66,16 @@ nbsphinx_kernel_name = 'python3'
 nbsphinx_allow_errors = True
 nbsphinx_timeout = 1200
 html_sourcelink_suffix = ''
+
+html_context = {
+    'display_github': True,
+    'github_user': 'dmlc',
+    'github_repo': 'gluon-nlp',
+    'github_version': 'master',
+    'conf_py_path': '/docs/',
+    'last_updated': False,
+    'commit': True
+}
 
 nbsphinx_prolog = """
 {% set paths = env.docname.split('/') %}

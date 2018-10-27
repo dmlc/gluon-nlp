@@ -18,6 +18,8 @@
 # under the License.
 """conftest.py contains configuration for pytest.
 
+Configuration file for tests in tests/ and scripts/ folders.
+
 Note that fixtures of higher-scoped fixtures (such as ``session``) are
 instantiated before lower-scoped fixtures (such as ``function``).
 
@@ -27,8 +29,8 @@ import logging
 import os
 import random
 
-import mxnet as mx
 import numpy as np
+import mxnet as mx
 import pytest
 
 

@@ -17,16 +17,18 @@
 # specific language governing permissions and limitations
 # under the License.
 import os
+import pytest
 
 from mxnet.gluon.data import DataLoader, SimpleDataset
 
 from gluonnlp.data import SQuAD
-from scripts.question_answering.data_processing import SQuADTransform, VocabProvider
+from ..question_answering.data_processing import SQuADTransform, VocabProvider
 
 question_max_length = 30
 context_max_length = 256
 
 
+@pytest.mark.serial
 def test_transform_to_nd_array():
     dataset = SQuAD(segment='dev', root='tests/data/squad')
     vocab_provider = VocabProvider(dataset)
@@ -38,6 +40,7 @@ def test_transform_to_nd_array():
     assert len(transformed_record) == 7
 
 
+@pytest.mark.serial
 def test_data_loader_able_to_read():
     dataset = SQuAD(segment='dev', root='tests/data/squad')
     vocab_provider = VocabProvider(dataset)
@@ -59,6 +62,7 @@ def test_data_loader_able_to_read():
         assert answers is not None
 
 
+@pytest.mark.serial
 def test_load_vocabs():
     dataset = SQuAD(segment='dev', root='tests/data/squad')
     vocab_provider = VocabProvider(dataset)

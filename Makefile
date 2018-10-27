@@ -16,6 +16,7 @@
 # under the License.
 
 ROOTDIR = $(CURDIR)
+MD2IPYNB = $(ROOTDIR)/docs/md2ipynb.py
 
 flake8:
 	flake8 . --exclude conda --count --select=E901,E999,F821,F822,F823 --show-source --statistics
@@ -33,19 +34,46 @@ lint:
 
 docs: release
 	make -C docs html SPHINXOPTS=-W
+	for f in $(shell find docs/examples -type f -name '*.md' -print) ; do \
+		FILE=`echo $$f | sed 's/docs\///g'` ; \
+		DIR=`dirname $$FILE` ; \
+		BASENAME=`basename $$FILE` ; \
+		HTML_BASENAME=`echo $$BASENAME | sed 's/md/html/'` ; \
+		IPYNB_BASENAME=`echo $$BASENAME | sed 's/md/ipynb/'` ; \
+		TARGET_HTML="docs/_build/html/$$DIR/$$HTML_BASENAME" ; \
+		echo "processing" $$BASENAME ; \
+		sed -i "s/$$IPYNB_BASENAME/$$BASENAME/g" $$TARGET_HTML; \
+	done;
+	for f in $(shell find docs/model_zoo -type f -name '*.rst' -print) ; do \
+		DIR=`dirname $$f` ; \
+		BASENAME=`basename $$f` ; \
+		HTML_BASENAME=`echo $$BASENAME | sed 's/rst/html/'` ; \
+		TARGET_HTML="docs/_build/html/$$DIR/$$HTML_BASENAME" ; \
+		echo "processing" $$BASENAME ; \
+		sed -i "s/docs\/model_zoo/scripts/g" $$TARGET_HTML; \
+	done;
 
 clean:
-	git clean -f -d -x --exclude="$(ROOTDIR)/tests/externaldata/*" --exclude=conda
+	git clean -ff -d -x --exclude="$(ROOTDIR)/tests/externaldata/*" --exclude="$(ROOTDIR)/tests/data/*" --exclude="$(ROOTDIR)/conda"
+
+clean_doc:
 	make -C docs clean
 
 compile_notebooks:
-	find docs/examples/* -type f -name '*.md' | xargs -n 1 -I{} python docs/md2ipynb.py {}
+	for f in $(shell find docs/examples -type f -name '*.md' -print) ; do \
+		DIR=`dirname $$f` ; \
+		BASENAME=`basename $$f` ; \
+		echo $$DIR $$BASENAME ; \
+		cd $$DIR ; \
+		python $(MD2IPYNB) $$BASENAME ; \
+		cd - ; \
+	done;
 
 dist_scripts:
-	find scripts/* -type d -prune | grep -v 'tests\|__pycache__' | xargs -n 1 -I{} zip -r {}.zip {}
+	find scripts/* -type d -prune | grep -v 'tests\|__pycache__' | xargs -t -n 1 -I{} zip -r {}.zip {}
 
 dist_notebooks: compile_notebooks
-	find docs/examples/* -type d -prune | grep -v 'tests\|__pycache__' | xargs -n 1 -I{} zip -r {}.zip {} -x "*.md"
+	find docs/examples/* -type d -prune | grep -v 'tests\|__pycache__' | xargs -t -n 1 -I{} zip -r {}.zip {} -x "*.md"
 
 test:
 	py.test -v --capture=no --durations=0  tests/unittest scripts

@@ -20,14 +20,32 @@
 __all__ = ['ShardedDataLoader']
 
 import sys
-import multiprocessing
-import multiprocessing.queues
-from mxnet.gluon.data.dataloader import Queue, SimpleQueue, DataLoader, _MultiWorkerIter
+from mxnet import context
+from mxnet.gluon.data.dataloader import DataLoader
+from mxnet.gluon.data.dataloader import _MultiWorkerIter, _as_in_context
+from mxnet.recordio import MXRecordIO
+
+def _recursive_fork_recordio(obj, depth, max_depth=1000):
+    """Recursively find instance of MXRecordIO and reset file handler.
+    This is required for MXRecordIO which holds a C pointer to a opened file after fork.
+    """
+    if depth >= max_depth:
+        return
+    if isinstance(obj, MXRecordIO):
+        obj.close()
+        obj.open()  # re-obtain file hanlder in new process
+    elif (hasattr(obj, '__dict__')):
+        for _, v in obj.__dict__.items():
+            _recursive_fork_recordio(v, depth + 1, max_depth)
 
 
 def worker_loop(dataset, key_queue, data_queue, batchify_fn):
     """Worker loop for multiprocessing DataLoader."""
-    dataset._fork()
+    # re-fork a new recordio handler in new process if applicable
+    limit = sys.getrecursionlimit()
+    max_recursion_depth = min(limit - 5, max(10, limit // 2))
+    _recursive_fork_recordio(dataset, 0, max_recursion_depth)
+
     while True:
         idx, samples = key_queue.get()
         if idx is None:
@@ -37,36 +55,6 @@ def worker_loop(dataset, key_queue, data_queue, batchify_fn):
         else:
             batch = batchify_fn([dataset[i] for i in samples])
         data_queue.put((idx, batch))
-
-
-class _ShardedMultiWorkerIter(_MultiWorkerIter):
-    """Interal multi-worker iterator for ShardedDataLoader."""
-    def __init__(self, num_workers, dataset, batchify_fn, batch_sampler):
-        assert num_workers > 0, '_MultiWorkerIter is not for {} workers'.format(num_workers)
-        self._num_workers = num_workers
-        self._dataset = dataset
-        self._batchify_fn = batchify_fn
-        self._batch_sampler = batch_sampler
-        self._key_queue = Queue()
-        self._data_queue = Queue() if sys.version_info[0] <= 2 else SimpleQueue()
-        self._data_buffer = {}
-        self._rcvd_idx = 0
-        self._sent_idx = 0
-        self._iter = iter(self._batch_sampler)
-        self._shutdown = False
-
-        workers = []
-        for _ in range(self._num_workers):
-            worker = multiprocessing.Process(
-                target=worker_loop,
-                args=(self._dataset, self._key_queue, self._data_queue, self._batchify_fn))
-            worker.daemon = True
-            worker.start()
-            workers.append(worker)
-
-        # pre-fetch
-        for _ in range(2 * self._num_workers):
-            self._push_next()
 
 
 class ShardedDataLoader(DataLoader):
@@ -110,26 +98,41 @@ class ShardedDataLoader(DataLoader):
     num_workers : int, default 0
         The number of multiprocessing workers to use for data preprocessing.
         `num_workers > 0` is not supported on Windows yet.
+    pin_memory : boolean, default False
+        If ``True``, the dataloader will copy NDArrays into pinned memory
+        before returning them. Copying from CPU pinned memory to GPU is faster
+        than from normal CPU memory.
     """
 
     def __init__(self, dataset, batch_size=None, shuffle=False, sampler=None,
-                 last_batch=None, batch_sampler=None, batchify_fn=None, num_workers=0):
+                 last_batch=None, batch_sampler=None, batchify_fn=None,
+                 num_workers=0, pin_memory=False):
         super(ShardedDataLoader, self).__init__(dataset, batch_size=batch_size, shuffle=shuffle,
                                                 sampler=sampler, last_batch=last_batch,
                                                 batch_sampler=batch_sampler,
                                                 batchify_fn=batchify_fn,
-                                                num_workers=num_workers)
+                                                num_workers=num_workers,
+                                                pin_memory=pin_memory)
 
 
     def __iter__(self):
         if self._num_workers == 0:
-            generator = lambda: [(yield self._batchify_fn([self._dataset[idx] for idx in batch]))
-                                 if not isinstance(batch[0], (list, tuple)) else
-                                 (yield [self._batchify_fn([self._dataset[idx] for idx in shard])
-                                         for shard in batch])
-                                 for batch in self._batch_sampler]
-            return generator()
+            def _same_process_iter():
+                for batch in self._batch_sampler:
+                    if isinstance(batch[0], (list, tuple)):
+                        rets = [self._batchify_fn([self._dataset[idx] for idx in shard])
+                                for shard in batch]
+                        if self._pin_memory:
+                            rets = [_as_in_context(ret, context.cpu_pinned()) for ret in rets]
+                        yield rets
+                    else:
+                        ret = self._batchify_fn([self._dataset[idx] for idx in batch])
+                        if self._pin_memory:
+                            ret = _as_in_context(ret, context.cpu_pinned())
+                        yield ret
+            return _same_process_iter()
 
         # multi-worker
-        return _ShardedMultiWorkerIter(self._num_workers, self._dataset,
-                                       self._batchify_fn, self._batch_sampler)
+        return _MultiWorkerIter(self._num_workers, self._dataset,
+                                self._batchify_fn, self._batch_sampler,
+                                self._pin_memory, worker_loop)

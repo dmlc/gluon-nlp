@@ -62,8 +62,6 @@ class ConvolutionalEncoder(gluon.HybridBlock):
         on PTB dataset with Char-small model setting.
     conv_layer_activation: str, default 'tanh'
         Activation function to be used after convolutional layer.
-        If you don't specify anything, no activation is applied
-        (ie. "linear" activation: `a(x) = x`).
         We set the default according to the original work's experiments
         on PTB dataset with Char-small model setting.
     num_highway: int, default '1'
@@ -114,7 +112,8 @@ class ConvolutionalEncoder(gluon.HybridBlock):
                                       kernel_size=ngram_size,
                                       use_bias=True))
                     seq.add(gluon.nn.HybridLambda(lambda F, x: F.max(x, axis=2)))
-                    seq.add(nn.Activation(conv_layer_activation))
+                    if conv_layer_activation is not None:
+                        seq.add(nn.Activation(conv_layer_activation))
                     self._convs.add(seq)
                     maxpool_output_size += num_filter
 

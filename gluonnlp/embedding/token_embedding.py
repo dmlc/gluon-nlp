@@ -925,7 +925,14 @@ class FastText(TokenEmbedding):
         self._check_source(self.source_file_hash, source)
 
         if load_ngrams:
-            self._check_source(self.source_bin_file_hash, source)
+            try:
+                self._check_source(self.source_bin_file_hash, source)
+            except KeyError:
+                raise KeyError(
+                    'No ngrams are available for {}. '
+                    'Ngram features were published for the following embeddings: {}'.
+                    format(source, ', '.join(self.source_bin_file_hash.keys())))
+
             pretrained_bin_file_path = FastText._get_file_path(self.source_bin_file_hash,
                                                                embedding_root, source)
             unknown_lookup = FasttextEmbeddingModel.load_fasttext_format(

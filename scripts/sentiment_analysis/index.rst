@@ -23,6 +23,7 @@ Use the following command to run with pre-trained model (`log <https://github.co
 
    $ python finetune_lm.py --gpu 0 --batch_size 16 --bucket_type fixed --epochs 3 --dropout 0 --lr 0.005 --valid_ratio 0.1 --save-prefix imdb_lstm_200  # Test Accuracy 86.46
 
+
 textCNN Model
 Through textCNN Model
 +++++++++++++++++++++++++++++++++++++++
@@ -91,3 +92,4 @@ acc:
 ...
 
 [1] Kim, Y. (2014). Convolutional neural networks for sentence classification. arXiv preprint arXiv:1408.5882.
+=======

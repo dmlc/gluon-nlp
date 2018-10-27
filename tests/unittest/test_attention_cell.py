@@ -1,7 +1,7 @@
 import numpy as np
-from gluonnlp.model.attention_cell import *
-import mxnet as mx
 from numpy.testing import assert_allclose
+import mxnet as mx
+from gluonnlp.model import attention_cell as ac
 
 
 def check_attention_cell_basic(attention_cell, q_channel, k_channel, v_channel,
@@ -55,9 +55,9 @@ def check_attention_cell_basic(attention_cell, q_channel, k_channel, v_channel,
 def test_mlp_attention():
     for k_channel, q_channel in [(1, 4), (4, 1), (3, 4), (4, 3), (4, 4)]:
         for use_mask in [True, False]:
-            cell = MLPAttentionCell(units=32)
+            cell = ac.MLPAttentionCell(units=32)
             check_attention_cell_basic(cell, q_channel, k_channel, 5, use_mask)
-            cell = MLPAttentionCell(units=16, normalized=True)
+            cell = ac.MLPAttentionCell(units=16, normalized=True)
             check_attention_cell_basic(cell, q_channel, k_channel, 5, use_mask)
 
 
@@ -66,16 +66,16 @@ def test_dot_product_attention():
         for use_mask in [True, False]:
             for scaled in [True, False]:
                 for normalized in [True, False]:
-                    cell = DotProductAttentionCell(scaled=scaled, normalized=normalized)
+                    cell = ac.DotProductAttentionCell(scaled=scaled, normalized=normalized)
                     check_attention_cell_basic(cell, q_channel, k_channel, 5, use_mask)
 
     for k_channel, q_channel in [(1, 2), (2, 1), (2, 4)]:
         for use_mask in [True, False]:
             for scaled in [True, False]:
                 for normalized in [True, False]:
-                    cell = DotProductAttentionCell(units=8, scaled=scaled, normalized=normalized)
+                    cell = ac.DotProductAttentionCell(units=8, scaled=scaled, normalized=normalized)
                     check_attention_cell_basic(cell, q_channel, k_channel, 5, use_mask)
-                    cell = DotProductAttentionCell(units=k_channel, luong_style=True,
+                    cell = ac.DotProductAttentionCell(units=k_channel, luong_style=True,
                                                    scaled=scaled, normalized=normalized)
                     check_attention_cell_basic(cell, q_channel, k_channel, 5, use_mask)
 
@@ -86,8 +86,8 @@ def test_multihead_attention():
         for use_mask in [True, False]:
             for scaled in [True, False]:
                 for normalized in [True, False]:
-                    cell = MultiHeadAttentionCell(
-                        base_cell=DotProductAttentionCell(scaled=scaled, normalized=normalized),
+                    cell = ac.MultiHeadAttentionCell(
+                        base_cell=ac.DotProductAttentionCell(scaled=scaled, normalized=normalized),
                         query_units=query_units,
                         key_units=key_units,
                         value_units=value_units,

@@ -23,7 +23,7 @@ from mxnet import init, nd, autograd
 from mxnet.gluon import nn, Block, contrib, rnn
 
 from ..utils import _get_rnn_layer, apply_weight_drop
-from ..sampled_block import ISLogits, SparseISLogits
+from ..sampled_block import ISDense, SparseISDense
 
 class AWDRNN(Block):
     """AWD language model by salesforce.
@@ -344,8 +344,11 @@ class BigRNN(Block):
 
     def _get_embedding(self):
         prefix = 'embedding0_'
-        block = nn.Sequential() if self._sparse_weight else nn.HybridSequential()
-        with block.name_scope():
+        if self._sparse_weight:
+            embedding = nn.Sequential(prefix=prefix)
+        else:
+            embedding = nn.HybridSequential(prefix=prefix)
+        with embedding.name_scope():
             if self._sparse_weight:
                 # sparse embedding has both sparse weight and sparse grad
                 embed = contrib.nn.SparseEmbedding(self._vocab_size, self._embed_size,
@@ -353,10 +356,10 @@ class BigRNN(Block):
             else:
                 embed = nn.Embedding(self._vocab_size, self._embed_size, prefix=prefix,
                                      sparse_grad=self._sparse_grad)
-            block.add(embed)
+            embedding.add(embed)
             if self._embed_dropout:
-                block.add(nn.Dropout(self._embed_dropout))
-        return block
+                embedding.add(nn.Dropout(self._embed_dropout))
+        return embedding
 
     def _get_encoder(self):
         block = rnn.HybridSequentialRNNCell()
@@ -370,14 +373,14 @@ class BigRNN(Block):
     def _get_decoder(self):
         prefix = 'decoder0_'
         if self._sparse_weight:
-            # sparse IS logits has both sparse weight and sparse grad
-            block = SparseISLogits(self._vocab_size, self._num_sampled,
-                                   self._projection_size, remove_accidental_hits=True,
-                                   prefix=prefix)
+            # sparse IS Dense has both sparse weight and sparse grad
+            block = SparseISDense(self._vocab_size, self._num_sampled,
+                                  self._projection_size, remove_accidental_hits=True,
+                                  prefix=prefix)
         else:
-            block = ISLogits(self._vocab_size, self._num_sampled,
-                             self._projection_size, remove_accidental_hits=True,
-                             prefix=prefix, sparse_grad=self._sparse_grad)
+            block = ISDense(self._vocab_size, self._num_sampled,
+                            self._projection_size, remove_accidental_hits=True,
+                            prefix=prefix, sparse_grad=self._sparse_grad)
         return block
 
     def begin_state(self, **kwargs):
@@ -397,8 +400,8 @@ class BigRNN(Block):
             and `(batch_size, num_projection)`
         sampled_values : list
             a list of three tensors for `sampled_classes` with shape `(num_samples,)`,
-            `expected_count_true` with shape `(sequence_length, batch_size)`, and
-            `expected_count_sampled` with shape `(num_samples,)`.
+            `expected_count_sampled` with shape `(num_samples,)`, and
+            `expected_count_true` with shape `(sequence_length, batch_size)`.
 
         Returns
         --------
@@ -414,13 +417,11 @@ class BigRNN(Block):
             when `layout` is "TNC".
         """
         encoded = self.embedding(inputs)
-        sampled_classes, exp_cnt_true, exp_cnt_sampled = sampled_values
         length = inputs.shape[0]
         batch_size = inputs.shape[1]
         encoded, out_states = self.encoder.unroll(length, encoded, begin_state,
                                                   layout='TNC', merge_outputs=True)
-        out, new_target = self.decoder(encoded, sampled_classes, exp_cnt_sampled,
-                                       exp_cnt_true, label)
+        out, new_target = self.decoder(encoded, sampled_values, label)
         out = out.reshape((length, batch_size, -1))
         new_target = new_target.reshape((length, batch_size))
         return out, out_states, new_target

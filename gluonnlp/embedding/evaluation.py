@@ -20,8 +20,8 @@
 """Models for intrinsic and extrinsic word embedding evaluation"""
 
 import mxnet as mx
-from mxnet import nd, registry
-from mxnet.gluon import HybridBlock, Block
+from mxnet import registry
+from mxnet.gluon import HybridBlock
 
 __all__ = [
     'register', 'create', 'list_evaluation_functions',
@@ -241,16 +241,19 @@ class ThreeCosMul(WordEmbeddingAnalogyFunction):
         Embedding matrix.
     k : int, default 1
         Number of analogies to predict per input triple.
+    exclude_question_words : bool, default True
+        Exclude the 3 question words from being a valid answer.
     eps : float, optional, default=1e-10
         A small constant for numerical stability.
 
     """
 
-    def __init__(self, idx_to_vec, k=1, eps=1E-10, **kwargs):
+    def __init__(self, idx_to_vec, k=1, eps=1E-10, exclude_question_words=True, **kwargs):
         super(ThreeCosMul, self).__init__(**kwargs)
 
         self.k = k
         self.eps = eps
+        self._exclude_question_words = exclude_question_words
 
         self._vocab_size, self._embed_size = idx_to_vec.shape
 
@@ -259,7 +262,23 @@ class ThreeCosMul(WordEmbeddingAnalogyFunction):
             self.weight = self.params.get_constant('weight', idx_to_vec)
 
     def hybrid_forward(self, F, words1, words2, words3, weight):  # pylint: disable=arguments-differ
-        """Implement forward computation."""
+        """Compute ThreeCosMul for given question words.
+
+        Parameters
+        ----------
+        words1 : Symbol or NDArray
+            Question words at first posiiton. Shape (batch_size, )
+        words2 : Symbol or NDArray
+            Question words at second posiiton. Shape (batch_size, )
+        words3 : Symbol or NDArray
+            Question words at third posiiton. Shape (batch_size, )
+
+        Returns
+        -------
+        Symbol or NDArray
+            Predicted answer words. Shape (batch_size, k).
+
+        """
         words123 = F.concat(words1, words2, words3, dim=0)
         embeddings_words123 = F.Embedding(words123, weight,
                                           input_dim=self._vocab_size,
@@ -273,8 +292,13 @@ class ThreeCosMul(WordEmbeddingAnalogyFunction):
         sim_w1w4, sim_w2w4, sim_w3w4 = F.split(similarities, num_outputs=3,
                                                axis=0)
 
-        pred_idxs = F.topk((sim_w2w4 * sim_w3w4) / (sim_w1w4 + self.eps),
-                           k=self.k)
+        sim = (sim_w2w4 * sim_w3w4) / (sim_w1w4 + self.eps)
+
+        if self._exclude_question_words:
+            for words in [words1, words2, words3]:
+                sim = sim * F.one_hot(words, self.weight.shape[0], 0, 1)
+
+        pred_idxs = F.topk(sim, k=self.k)
         return pred_idxs
 
 
@@ -301,19 +325,27 @@ class ThreeCosAdd(WordEmbeddingAnalogyFunction):
         Normalize all word embeddings before computing the analogy.
     k : int, default 1
         Number of analogies to predict per input triple.
+    exclude_question_words : bool, default True
+        Exclude the 3 question words from being a valid answer.
     eps : float, optional, default=1e-10
         A small constant for numerical stability.
 
 
     """
 
-    def __init__(self, idx_to_vec, normalize=True, k=1, eps=1E-10, **kwargs):
+    def __init__(self,
+                 idx_to_vec,
+                 normalize=True,
+                 k=1,
+                 eps=1E-10,
+                 exclude_question_words=True,
+                 **kwargs):
         super(ThreeCosAdd, self).__init__(**kwargs)
 
         self.k = k
         self.eps = eps
         self.normalize = normalize
-
+        self._exclude_question_words = exclude_question_words
         self._vocab_size, self._embed_size = idx_to_vec.shape
 
         if self.normalize:
@@ -323,7 +355,23 @@ class ThreeCosAdd(WordEmbeddingAnalogyFunction):
             self.weight = self.params.get_constant('weight', idx_to_vec)
 
     def hybrid_forward(self, F, words1, words2, words3, weight):  # pylint: disable=arguments-differ
-        """Implement forward computation."""
+        """Compute ThreeCosAdd for given question words.
+
+        Parameters
+        ----------
+        words1 : Symbol or NDArray
+            Question words at first posiiton. Shape (batch_size, )
+        words2 : Symbol or NDArray
+            Question words at second posiiton. Shape (batch_size, )
+        words3 : Symbol or NDArray
+            Question words at third posiiton. Shape (batch_size, )
+
+        Returns
+        -------
+        Symbol or NDArray
+            Predicted answer words. Shape (batch_size, k).
+
+        """
         words123 = F.concat(words1, words2, words3, dim=0)
         embeddings_words123 = F.Embedding(words123, weight,
                                           input_dim=self._vocab_size,
@@ -334,15 +382,20 @@ class ThreeCosAdd(WordEmbeddingAnalogyFunction):
                 num_hidden=self._vocab_size, flatten=False)
             sim_w1w4, sim_w2w4, sim_w3w4 = F.split(similarities, num_outputs=3,
                                                    axis=0)
-            pred_idxs = F.topk(sim_w3w4 - sim_w1w4 + sim_w2w4, k=self.k)
+            pred = sim_w3w4 - sim_w1w4 + sim_w2w4
         else:
             embeddings_word1, embeddings_word2, embeddings_word3 = F.split(
                 embeddings_words123, num_outputs=3, axis=0)
             vector = (embeddings_word3 - embeddings_word1 + embeddings_word2)
-            unnormalized_similarities = F.FullyConnected(
+            pred = F.FullyConnected(
                 vector, weight, no_bias=True, num_hidden=self._vocab_size,
                 flatten=False)
-            pred_idxs = F.topk(unnormalized_similarities, k=self.k)
+
+        if self._exclude_question_words:
+            for words in [words1, words2, words3]:
+                pred = pred * F.one_hot(words, self.weight.shape[0], 0, 1)
+
+        pred_idxs = F.topk(pred, k=self.k)
         return pred_idxs
 
 
@@ -405,7 +458,7 @@ class WordEmbeddingSimilarity(HybridBlock):
         return similarity
 
 
-class WordEmbeddingAnalogy(Block):
+class WordEmbeddingAnalogy(HybridBlock):
     """Word embeddings analogy task evaluator.
 
     Parameters
@@ -416,7 +469,7 @@ class WordEmbeddingAnalogy(Block):
         Name of a registered WordEmbeddingAnalogyFunction.
     k : int, default 1
         Number of analogies to predict per input triple.
-    exclude_question_words : bool (True)
+    exclude_question_words : bool, default True
         Exclude the 3 question words from being a valid answer.
 
     """
@@ -429,43 +482,34 @@ class WordEmbeddingAnalogy(Block):
         self.k = k
         self.exclude_question_words = exclude_question_words
 
-        self._internal_k = self.k + 3 * self.exclude_question_words
-
         with self.name_scope():
-            self.analogy = create(kind='analogy', name=analogy_function,
-                                  idx_to_vec=idx_to_vec, k=self._internal_k)
+            self.analogy = create(
+                kind='analogy',
+                name=analogy_function,
+                idx_to_vec=idx_to_vec,
+                k=self.k,
+                exclude_question_words=exclude_question_words)
 
         if not isinstance(self.analogy, WordEmbeddingAnalogyFunction):
             raise RuntimeError(
                 '{} is not a WordEmbeddingAnalogyFunction'.format(
                     self.analogy.__class__.__name__))
 
-    def forward(self, words1, words2, words3):  # pylint: disable=arguments-differ
-        """Implement forward computation.
+    def hybrid_forward(self, F, words1, words2, words3):  # pylint: disable=arguments-differ, unused-argument
+        """Compute analogies for given question words.
 
         Parameters
         ----------
-        words1 : NDArray
-            Word indices.
-        words2 : NDArray
-            Word indices.
-        words3 : NDArray
-            Word indices.
+        words1 : Symbol or NDArray
+            Word indices of first question words. Shape (batch_size, ).
+        words2 : Symbol or NDArray
+            Word indices of second question words. Shape (batch_size, ).
+        words3 : Symbol or NDArray
+            Word indices of third question words. Shape (batch_size, ).
 
         Returns
         -------
-        predicted_indices : NDArray
-            Predicted indices of shape (batch_size, k)
+        predicted_indices : Symbol or NDArray
+            Indices of predicted analogies of shape (batch_size, k)
         """
-        pred_idxs = self.analogy(words1, words2, words3)
-
-        if self.exclude_question_words:
-            orig_context = pred_idxs.context
-            pred_idxs = pred_idxs.asnumpy().tolist()
-            pred_idxs = [[
-                idx for idx in row if idx != w1 and idx != w2 and idx != w3
-            ] for row, w1, w2, w3 in zip(pred_idxs, words1, words2, words3)]
-            pred_idxs = [p[:self.k] for p in pred_idxs]
-            pred_idxs = nd.array(pred_idxs, ctx=orig_context)
-
-        return pred_idxs
+        return self.analogy(words1, words2, words3)

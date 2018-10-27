@@ -1,7 +1,7 @@
 gluonnlp.data
 =============
 
-Gluon NLP Toolkit provides tools for building efficient data pipelines for NLP tasks.
+GluonNLP Toolkit provides tools for building efficient data pipelines for NLP tasks.
 
 .. currentmodule:: gluonnlp.data
 
@@ -121,7 +121,6 @@ load custom datasets.
 
     TextLineDataset
     CorpusDataset
-    LanguageModelDataset
 
 DataStreams
 -----------
@@ -134,8 +133,8 @@ stream large custom data.
 
     DataStream
     SimpleDataStream
-    CorpusStream
-    LanguageModelStream
+    DatasetStream
+    SimpleDatasetStream
     PrefetchingStream
 
 Transforms

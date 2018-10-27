@@ -83,7 +83,7 @@ parser.add_argument('--gpus', type=str,
                     help='list of gpus to run, e.g. 0 or 0,2,5. empty means using cpu.')
 parser.add_argument('--log-interval', type=int, default=1000,
                     help='report interval')
-parser.add_argument('--seed', type=int, default=1,
+parser.add_argument('--seed', type=int, default=0,
                     help='random seed')
 parser.add_argument('--lr', type=float, default=0.2,
                     help='initial learning rate')
@@ -110,22 +110,27 @@ if args.test_mode:
 print(args)
 mx.random.seed(args.seed)
 np.random.seed(args.seed)
-os.environ['MXNET_GPU_MEM_POOL_TYPE'] = 'Round'
 
 context = [mx.cpu()] if args.gpus is None or args.gpus == '' else \
           [mx.gpu(int(x)) for x in args.gpus.split(',')]
+
+os.environ['MXNET_GPU_MEM_POOL_TYPE'] = 'Round'
+os.environ['MXNET_CPU_PARALLEL_RAND_COPY'] = str(len(context))
+os.environ['MXNET_CPU_WORKER_NTHREADS'] = str(len(context))
 
 ###############################################################################
 # Data stream
 ###############################################################################
 train_data_stream, test_data_stream = \
-    [nlp.data.GBWStream(segment=segment, skip_empty=True, bos='<bos>', eos='<eos>')
+    [nlp.data.GBWStream(segment=segment, skip_empty=True, bos=None, eos='<eos>')
      for segment in segments]
 vocab = train_data_stream.vocab
 ntokens = len(vocab)
 
+# Sampler for generating negative classes during training with importance sampling
 sampler = LogUniformSampler(ntokens, args.k)
 
+# Given a list of (array, context) pairs, load array[i] on context[i]
 def _load(xs):
     ret = []
     for x, ctx in zip(xs, context):
@@ -135,7 +140,13 @@ def _load(xs):
             ret.append(x.as_in_context(ctx))
     return ret
 
-def _split_and_sample(x, y, m):
+# Transformation for a data batch for training.
+# First, load the data, target and mask to target contexts.
+# Second, the LSTM-2048-512 model performs importance sampling for decoding
+# during training, we need to sample negative candidate classes by invoking the
+# log uniform sampler.
+def _split_and_sample(x, y):
+    m = x != vocab[vocab.padding_token]  # mask padding
     num_ctx = len(context)
     if num_ctx > 1:
         xs = gluon.utils.split_data(x, num_ctx, batch_axis=1, even_split=True)
@@ -151,11 +162,13 @@ def _split_and_sample(x, y, m):
     return xs, ys, ms, ss
 
 train_batch_size = args.batch_size * len(context)
-train_data = train_data_stream.bptt_batchify(vocab, args.bptt, train_batch_size)
+train_batchify = nlp.data.batchify.StreamBPTTBatchify(vocab, args.bptt, train_batch_size)
+train_data = train_batchify(train_data_stream)
 train_data = train_data.transform(_split_and_sample)
 
 test_batch_size = args.batch_size
-test_data = test_data_stream.bptt_batchify(vocab, args.bptt, test_batch_size)
+test_batchify = nlp.data.batchify.StreamBPTTBatchify(vocab, args.bptt, test_batch_size)
+test_data = test_batchify(test_data_stream)
 test_data = nlp.data.PrefetchingStream(test_data)
 
 ###############################################################################
@@ -251,6 +264,7 @@ def train():
                 total_L = 0.0
                 start_log_interval_time = time.time()
                 sys.stdout.flush()
+
         end_epoch_time = time.time()
         print('Epoch %d took %.2f seconds.'%(epoch, end_epoch_time - start_epoch_time))
         mx.nd.waitall()
@@ -286,10 +300,11 @@ def test(data_stream, batch_size, ctx=None):
     ntotal = 0
     nbatch = 0
     hidden = eval_model.begin_state(batch_size=batch_size, func=mx.nd.zeros, ctx=ctx)
-    for data, target, mask in data_stream:
+    start_time = time.time()
+    for data, target in data_stream:
         data = data.as_in_context(ctx)
         target = target.as_in_context(ctx)
-        mask = mask.as_in_context(ctx)
+        mask = data != vocab[vocab.padding_token]
         output, hidden = eval_model(data, hidden)
         hidden = detach(hidden)
         output = output.reshape((-3, -1))
@@ -297,14 +312,18 @@ def test(data_stream, batch_size, ctx=None):
         total_L += L.mean()
         ntotal += mask.mean()
         nbatch += 1
-        avg = (total_L / ntotal).asscalar()
+        avg = total_L / ntotal
         if nbatch % args.log_interval == 0:
-            print('Evaluation batch %d: test loss %.2f, test ppl %.2f'
-                  %(nbatch, avg, math.exp(avg)))
+            avg_scalar = float(avg.asscalar())
+            ppl = math.exp(avg_scalar)
+            throughput = batch_size*args.log_interval/(time.time()-start_time)
+            print('Evaluation batch %d: test loss %.2f, test ppl %.2f, '
+                  'throughput = %.2f samples/s'%(nbatch, avg_scalar, ppl, throughput))
+            start_time = time.time()
         if max_nbatch_eval and nbatch > max_nbatch_eval:
             print('Quit evaluation early at batch %d'%nbatch)
             break
-    return avg
+    return float(avg.asscalar())
 
 def evaluate():
     """ Evaluate loop for the trained model """
