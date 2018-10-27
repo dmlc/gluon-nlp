@@ -124,7 +124,7 @@ language = None
 
 # The name of an image file (relative to this directory) to place at the top
 # of the sidebar.
-html_logo = '_static/gluon_white.png'
+html_logo = '_static/gluon_black.png'
 
 # The name of an image file (relative to this directory) to use as a favicon of
 # the docs.  This file should be a Windows icon file (.ico) being 16x16 or 32x32
@@ -165,14 +165,38 @@ todo_include_todos = False
 # -- Options for HTML output ----------------------------------------------
 
 # The theme is set by the make target
-html_theme = os.environ.get('GLUONNLP_THEME', 'rtd')
+# html_theme = os.environ.get('GLUONNLP_THEME', 'rtd')
 
-on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
+# on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
 # only import rtd theme and set it if want to build docs locally
-if not on_rtd and html_theme == 'rtd':
-    import sphinx_rtd_theme
-    html_theme = 'sphinx_rtd_theme'
-    html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
+
+# if not on_rtd and html_theme == 'rtd':
+#     import sphinx_rtd_theme
+#     html_theme = 'sphinx_rtd_theme'
+#     html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
+
+html_theme = 'mxtheme'
+html_theme_path = ['mxtheme']
+html_theme_options = {
+    'primary_color': 'blue',
+    'accent_color': 'deep_orange',
+    'header_links' : [
+        ('Install', '#installation', False, ''),
+        ('API', 'api/index', False, ''),
+        ('Community', 'community/index', False, ''),
+        ('Contribute', 'community/contribute', False, ''),
+        ('GitHub', 'https://github.com/apache/incubator-mxnet/', True, ''),
+    ],
+
+    # custom layout
+    'fixed_drawer' : True,
+    'fixed_header' : False,
+    'header_waterfall' : True,
+    'header_scroll': True,
+
+    # Render footer (Default: True)
+    'show_footer': False
+}
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,

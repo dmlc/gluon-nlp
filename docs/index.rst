@@ -26,13 +26,6 @@ The toolkit supports the following NLP tasks:
 5. :doc:`model_zoo/sentiment_analysis/index`
 6. :doc:`model_zoo/text_generation/index`
 
-.. note::
-
-   We can be found on `Github <https://github.com/dmlc/gluon-nlp>`_. This project is at an early stage
-   and is under active development, so please expect frequent updates.
-   Check out our `contribution guide <http://gluon-nlp.mxnet.io/how_to/contribute.html>`_
-   to see how you can help.
-
 
 .. hint::
 
@@ -48,7 +41,7 @@ command installs a nightly built CPU version of MXNet.
 
 .. code-block:: console
 
-   pip install --upgrade mxnet==1.3.0
+   pip install --upgrade mxnet>=1.3.0
 
 .. note::
 
@@ -85,49 +78,11 @@ computes the cosine similarity between two words.
 
   <p></p>
 
-
-Contents
---------
-
-
 .. toctree::
-   :maxdepth: 1
-   :caption: Model Zoo
+   :hidden:
+   :maxdepth: 2
 
-   model_zoo/word_embeddings/index
-   model_zoo/language_model/index
-   model_zoo/machine_translation/index
-   model_zoo/text_classification/index
-   model_zoo/sentiment_analysis/index
-   model_zoo/text_generation/index
-
-
-.. toctree::
-   :maxdepth: 1
-   :caption: Tutorials
-
-   examples/word_embedding/word_embedding.ipynb
-   examples/word_embedding/word_embedding_training.ipynb
-   examples/language_model/language_model.ipynb
-   examples/sentiment_analysis/sentiment_analysis.ipynb
-   examples/machine_translation/gnmt.ipynb
-   examples/machine_translation/transformer.ipynb
-   examples/sentence_embedding/self_attentive_sentence_embedding.ipynb
-   examples/sequence_sampling/sequence_sampling.ipynb
-   examples/elmo/elmo_sentence_representation.ipynb
-
-
-.. toctree::
-   :maxdepth: 1
-   :caption: API
-
+   model_zoo/index
+   examples/index
    api/index
-   api/notes/data_api.rst
-   api/notes/vocab_emb.rst
-
-
-.. toctree::
-   :maxdepth: 1
-   :caption: Community
-
-   how_to/contribute
+   community/index

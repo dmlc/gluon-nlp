@@ -22,3 +22,4 @@ dependencies:
     - seaborn
     - sentencepiece
     - jieba
+    - https://github.com/szha/mx-theme/tarball/card

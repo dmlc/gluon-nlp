@@ -524,19 +524,6 @@ sns.heatmap(np.squeeze(att.asnumpy(), 0), cmap=cmap, annot=True,
 plt.show()
 ```
 
-## Save Model
-
-
-```
-model_dir = '../models'
-if not os.path.exists(model_dir):
-    os.makedirs(model_dir)
-model_path = os.path.join(model_dir, 'self_att_bilstm_model')
-model.export(model_path)
-print('the structure and params of model have saved in：', model_path)
-
-```
-
 ## Conclusion
 Word embedding can effectively represent the semantic similarity between words, which brings many breakthroughs for complex natural language processing tasks. The attention mechanism can intuitively grasp the important semantic features in the sentence. The LSTM captures the word order relationship between words in a sentence. Through word embedding, LSTM and attention mechanisms work together to effectively represent the semantics of a sentence and apply it to many practical tasks.
 
