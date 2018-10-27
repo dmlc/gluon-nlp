@@ -161,9 +161,11 @@ class CSREmbeddingModel(EmbeddingModel, HybridBlock):
         row = np.arange(len(tokens))
         col = np.array([self._token_to_idx[t] for t in tokens])
         x = nd.sparse.csr_matrix(
-            (np.ones(len(row)), (row, col)), shape=(len(tokens),
-                                                    self.weight.shape[0]),
-            dtype=self.dtype, ctx=self.weight.list_ctx()[0])
+            (np.ones(len(row)), (row, col)),
+            dtype=self._kwargs['dtype'],
+            ctx=self.weight.list_ctx()[0],
+            shape=(len(tokens), self.weight.shape[0]),
+        )
         vecs = self(x)
 
         if squeeze:

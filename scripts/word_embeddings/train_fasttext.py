@@ -37,28 +37,24 @@ Word2Vec embedding model was introduced by
 
 """
 import argparse
-import itertools
 import logging
-import math
 import os
 import random
 import sys
 import time
-import warnings
 
 import mxnet as mx
 import numpy as np
 
 import gluonnlp as nlp
-from gluonnlp.base import numba_jitclass, numba_types
 import evaluation
-from data import WikiDumpStream
 from utils import get_context, print_time
+from model import SG, CBOW
+from data import transform_data, text8, wiki
 
 os.environ['MXNET_GPU_MEM_POOL_TYPE'] = 'Round'
 
 
-# * Utils
 def parse_args():
     """Parse command line arguments."""
     parser = argparse.ArgumentParser(
@@ -80,16 +76,12 @@ def parse_args():
     group.add_argument('--batch-size', type=int, default=1024,
                        help='Batch size for training.')
     group.add_argument('--epochs', type=int, default=5, help='Epoch limit')
-    group.add_argument('--gpu', type=int, nargs='+',
-                       help=('Number (index) of GPU to run on, e.g. 0. '
-                             'If not specified, uses CPU.'))
+    group.add_argument(
+        '--gpu', type=int, nargs='+',
+        help=('Number (index) of GPU to run on, e.g. 0. '
+              'If not specified, uses CPU.'))
     group.add_argument('--no-hybridize', action='store_true',
                        help='Disable hybridization of gluon HybridBlocks.')
-    group.add_argument(
-        '--no-static-alloc', action='store_true',
-        help='Disable static memory allocation for HybridBlocks.')
-    group.add_argument('--no-sparse-grad', action='store_true',
-                       help='Disable sparse gradient support.')
 
     # Model
     group = parser.add_argument_group('Model arguments')
@@ -104,15 +96,16 @@ def parse_args():
                        help='SkipGram or CBOW.')
     group.add_argument('--window', type=int, default=5,
                        help='Context window size.')
-    group.add_argument('--negative', type=int, default=5,
-                       help='Number of negative samples '
-                       'per source-context word pair.')
+    group.add_argument(
+        '--negative', type=int, default=5, help='Number of negative samples '
+        'per source-context word pair.')
     group.add_argument('--frequent-token-subsampling', type=float,
                        default=1E-4,
                        help='Frequent token subsampling constant.')
-    group.add_argument('--max-vocab-size', type=int,
-                       help='Limit the number of words considered. '
-                       'OOV words will be ignored.')
+    group.add_argument(
+        '--max-vocab-size', type=int,
+        help='Limit the number of words considered. '
+        'OOV words will be ignored.')
 
     # Optimization options
     group = parser.add_argument_group('Optimization arguments')
@@ -125,9 +118,10 @@ def parse_args():
     group.add_argument('--logdir', type=str, default='logs',
                        help='Directory to store logs.')
     group.add_argument('--log-interval', type=int, default=100)
-    group.add_argument('--eval-interval', type=int,
-                       help='Evaluate every --eval-interval iterations '
-                       'in addition to at the end of every epoch.')
+    group.add_argument(
+        '--eval-interval', type=int,
+        help='Evaluate every --eval-interval iterations '
+        'in addition to at the end of every epoch.')
     group.add_argument('--no-eval-analogy', action='store_true',
                        help='Don\'t evaluate on the analogy task.')
 
@@ -144,347 +138,37 @@ def parse_args():
     return args
 
 
-def get_train_data(args):
-    """Helper function to get training data."""
-
-    def text8():
-        """Text8 dataset helper."""
-        data = nlp.data.Text8(segment='train')
-        counter = nlp.data.count_tokens(itertools.chain.from_iterable(data))
-        vocab = nlp.Vocab(counter, unknown_token=None, padding_token=None,
-                          bos_token=None, eos_token=None, min_freq=5,
-                          max_size=args.max_vocab_size)
-        idx_to_counts = [counter[w] for w in vocab.idx_to_token]
-        data = nlp.data.SimpleDataStream([data])
-        return data, vocab, idx_to_counts
-
-    def wiki():
-        """Wikipedia dump helper."""
-        data = WikiDumpStream(
-            root=os.path.expanduser(args.wiki_root),
-            language=args.wiki_language, date=args.wiki_date)
-        vocab = data.vocab
-        if args.max_vocab_size:
-            for token in vocab.idx_to_token[args.max_vocab_size:]:
-                vocab.token_to_idx.pop(token)
-            vocab.idx_to_token = vocab.idx_to_token[:args.max_vocab_size]
-        idx_to_counts = data.idx_to_counts
-        return data, vocab, idx_to_counts
-
-    with print_time('load training data'):
-        f_data = text8 if args.data == 'text8' else wiki
-        data, vocab, idx_to_counts = f_data()
-
-    # Apply transforms
-    def code(shard):
-        return [[vocab[token] for token in sentence if token in vocab]
-                for sentence in shard]
-
-    data = data.transform(code)
-
-    context = get_context(args)
-    negatives_sampler = {
-        ctx: nlp.data.UnigramCandidateSampler(
-            weights=mx.nd.array(idx_to_counts, ctx=ctx)**0.75)
-        for ctx in context}
-
-    sum_counts = float(sum(idx_to_counts))
-    idx_to_pdiscard = [
-        1 - math.sqrt(args.frequent_token_subsampling / (count / sum_counts))
-        for count in idx_to_counts]
-
-    def subsample(shard):
-        return [[
-            t for t, r in zip(sentence,
-                              np.random.uniform(0, 1, size=len(sentence)))
-            if r > idx_to_pdiscard[t]] for sentence in shard]
-
-    data = data.transform(subsample)
-
-    if args.ngram_buckets:
-        with print_time('prepare subwords'):
-            subword_function = nlp.vocab.create_subword_function(
-                'NGramHashes', ngrams=args.ngrams,
-                num_subwords=args.ngram_buckets)
-
-            # Store subword indices for all words in vocabulary
-            idx_to_subwordidxs = list(subword_function(vocab.idx_to_token))
-            subword_lookup = SubwordLookup(len(vocab))
-            for i, subwords in enumerate(idx_to_subwordidxs):
-                subword_lookup.set(i, np.array(subwords, dtype=np.int64))
-            max_subwordidxs_len = max(len(s) for s in idx_to_subwordidxs)
-            if max_subwordidxs_len > 500:
-                warnings.warn(
-                    'The word with largest number of subwords '
-                    'has {} subwords, suggesting there are '
-                    'some noisy words in your vocabulary. '
-                    'You should filter out very long words '
-                    'to avoid memory issues.'.format(max_subwordidxs_len))
-
-        return (data, negatives_sampler, vocab, subword_function,
-                subword_lookup, sum_counts)
-    else:
-        return data, negatives_sampler, vocab, sum_counts
-
-
-@numba_jitclass([('idx_to_subwordidxs',
-                  numba_types.List(numba_types.int_[::1])),
-                 ('offset', numba_types.int_)])
-class SubwordLookup(object):
-    """Just-in-time compiled helper class for fast subword lookup.
-
-    Parameters
-    ----------
-    num_words : int
-         Number of tokens for which to hold subword arrays.
-
-    """
-
-    def __init__(self, num_words):
-        self.idx_to_subwordidxs = [
-            np.arange(1).astype(np.int64) for _ in range(num_words)]
-        self.offset = num_words
-
-    def set(self, i, subwords):
-        """Set the subword array of the i-th token."""
-        self.idx_to_subwordidxs[i] = subwords
-
-    def skipgram(self, indices):
-        """Get a sparse COO array of words and subwords."""
-        row = []
-        col = []
-        data = []
-        for i, idx in enumerate(indices):
-            row.append(i)
-            col.append(idx)
-            data.append(1 / (1 + len(self.idx_to_subwordidxs[idx])))
-            for subword in self.idx_to_subwordidxs[idx]:
-                row.append(i)
-                col.append(subword + self.offset)
-                data.append(1 / (1 + len(self.idx_to_subwordidxs[idx])))
-        return np.array(data), np.array(row), np.array(col)
-
-    def cbow(self, context_row, context_col):
-        """Get a sparse COO array of words and subwords."""
-        row = []
-        col = []
-        data = []
-
-        num_rows = np.max(context_row) + 1
-        row_to_numwords = np.zeros(num_rows)
-
-        for i, idx in enumerate(context_col):
-            row_ = context_row[i]
-            row_to_numwords[row_] += 1
-
-            row.append(row_)
-            col.append(idx)
-            data.append(1 / (1 + len(self.idx_to_subwordidxs[idx])))
-            for subword in self.idx_to_subwordidxs[idx]:
-                row.append(row_)
-                col.append(subword + self.offset)
-                data.append(1 / (1 + len(self.idx_to_subwordidxs[idx])))
-
-        # Normalize by number of words
-        for i, row_ in enumerate(row):
-            assert 0 <= row_ <= num_rows
-            data[i] /= row_to_numwords[row_]
-
-        return np.array(data), np.array(row), np.array(col)
-
-
-# * Training code
-class Net(mx.gluon.HybridBlock):
-    """Base class for SkipGram and CBOW networks"""
-
-    # pylint: disable=abstract-method
-    def __init__(self, output_dim, vocab, negatives, subword_function=None,
-                 sparse_grad=True, dtype='float32'):
-        super().__init__()
-
-        self._emsize = output_dim
-        self._negatives = negatives
-        self._dtype = dtype
-
-        with self.name_scope():
-            if subword_function is not None:
-                self.embedding = nlp.model.train.FasttextEmbeddingModel(
-                    token_to_idx=vocab.token_to_idx,
-                    subword_function=subword_function, output_dim=output_dim,
-                    weight_initializer=mx.init.Uniform(scale=1 / output_dim),
-                    sparse_grad=sparse_grad)
-            else:
-                self.embedding = nlp.model.train.CSREmbeddingModel(
-                    token_to_idx=vocab.token_to_idx, output_dim=output_dim,
-                    weight_initializer=mx.init.Uniform(scale=1 / output_dim),
-                    sparse_grad=sparse_grad)
-            self.embedding_out = mx.gluon.nn.Embedding(
-                len(vocab.token_to_idx), output_dim=output_dim,
-                weight_initializer=mx.init.Zero(), sparse_grad=sparse_grad,
-                dtype=dtype)
-
-    def __getitem__(self, tokens):
-        return self.embedding[tokens]
-
-
-class SG(Net):
-    """SkipGram network"""
-
-    # pylint: disable=arguments-differ
-    def hybrid_forward(self, F, center, context, negatives, mask):
-        """SkipGram forward pass.
-
-        Parameters
-        ----------
-        center : mxnet.nd.NDArray or mxnet.sym.Symbol
-            Sparse CSR array of word / subword indices of shape (batch_size,
-            len(vocab) + num_subwords). Embedding for center words are computed
-            via F.sparse.dot between the CSR center array and the weight
-            matrix.
-        context : mxnet.nd.NDArray or mxnet.sym.Symbol
-            Dense array of context words of shape (batch_size, ).
-        negatives : mxnet.nd.NDArray or mxnet.sym.Symbol
-            Dense array of negative words of shape (batch_size * negatives, ).
-        mask : mxnet.nd.NDArray or mxnet.sym.Symbol
-            Dense array containing mask for negatives of shape (batch_size *
-            negatives, ).
-
-        """
-        emb_center = self.embedding(center).expand_dims(1)
-        emb_context = self.embedding_out(context).expand_dims(2)
-        pred_pos = F.batch_dot(emb_center, emb_context).squeeze()
-        loss_pos = (F.relu(pred_pos) - pred_pos + F.Activation(
-            -F.abs(pred_pos), act_type='softrelu')) / (mask.sum(axis=1) + 1)
-
-        emb_negatives = self.embedding_out(negatives).reshape(
-            (-1, self._negatives, self._emsize)).swapaxes(1, 2)
-        pred_neg = F.batch_dot(emb_center, emb_negatives).squeeze()
-        mask = mask.reshape((-1, self._negatives))
-        loss_neg = (F.relu(pred_neg) + F.Activation(
-            -F.abs(pred_neg), act_type='softrelu')) * mask
-        loss_neg = loss_neg.sum(axis=1) / (mask.sum(axis=1) + 1)
-
-        return loss_pos + loss_neg
-
-
-class CBOW(Net):
-    """CBOW network"""
-
-    # pylint: disable=arguments-differ
-    def hybrid_forward(self, F, center, context, negatives, mask):
-        """CBOW forward pass.
-
-        Parameters
-        ----------
-        center : mxnet.nd.NDArray or mxnet.sym.Symbol
-            Dense array of center words of shape (batch_size, ).
-        context : mxnet.nd.NDArray or mxnet.sym.Symbol
-            Sparse CSR array of word / subword indices of shape (batch_size,
-            len(vocab) + num_subwords). Embedding for context words are
-            computed via F.sparse.dot between the CSR center array and the
-            weight matrix.
-        negatives : mxnet.nd.NDArray or mxnet.sym.Symbol
-            Dense array of negative words of shape (batch_size * negatives, ).
-        mask : mxnet.nd.NDArray or mxnet.sym.Symbol
-            Dense array containing mask for negatives of shape (batch_size *
-            negatives, ).
-
-        """
-        emb_context = self.embedding(context).expand_dims(1)
-        emb_center = self.embedding_out(center).expand_dims(2)
-        pred_pos = F.batch_dot(emb_context, emb_center).squeeze()
-        loss_pos = (F.relu(pred_pos) - pred_pos + F.Activation(
-            -F.abs(pred_pos), act_type='softrelu')) / (mask.sum(axis=1) + 1)
-
-        emb_negatives = self.embedding_out(negatives).reshape(
-            (-1, self._negatives, self._emsize)).swapaxes(1, 2)
-        pred_neg = F.batch_dot(emb_context, emb_negatives).squeeze()
-        mask = mask.reshape((-1, self._negatives))
-        loss_neg = (F.relu(pred_neg) + F.Activation(
-            -F.abs(pred_neg), act_type='softrelu')) * mask
-        loss_neg = loss_neg.sum(axis=1) / (mask.sum(axis=1) + 1)
-
-        return loss_pos + loss_neg
-
-
 def train(args):
     """Training helper."""
-    if args.ngram_buckets:
-        data, negatives_sampler, vocab, subword_function, \
-            subword_lookup, num_tokens = get_train_data(args)
-    else:
-        data, negatives_sampler, vocab, num_tokens = get_train_data(args)
-        subword_function = None
-
-    if args.model.lower() == 'cbow':
-        embedding = CBOW(args.emsize, vocab, args.negative, subword_function)
-    elif args.model.lower() == 'skipgram':
-        embedding = SG(args.emsize, vocab, args.negative, subword_function)
-    else:
+    if not args.model.lower() in ['cbow', 'skipgram']:
         logging.error('Unsupported model %s.', args.model)
         sys.exit(1)
 
+    if args.data.lower() == 'text8':
+        data, vocab, idx_to_counts = text8(max_vocab_size=args.max_vocab_size)
+    elif args.data.lower() == 'wiki':
+        data, vocab, idx_to_counts = wiki(args.wiki_root, args.wiki_date,
+                                          args.wiki_language,
+                                          args.max_vocab_size)
+    batches, subword_function = transform_data(
+        data, vocab, idx_to_counts,
+        args.model.lower() == 'cbow', args.ngram_buckets, args.ngrams,
+        args.batch_size, args.window, args.frequent_token_subsampling)
+    num_tokens = float(sum(idx_to_counts))
+
+    model = CBOW if args.model.lower() == 'cbow' else SG
+    embedding = model(token_to_idx=vocab.token_to_idx, output_dim=args.emsize,
+                      batch_size=args.batch_size, num_negatives=args.negative,
+                      negatives_weights=mx.nd.array(idx_to_counts),
+                      subword_function=subword_function)
     context = get_context(args)
     embedding.initialize(ctx=context)
     if not args.no_hybridize:
-        embedding.hybridize(static_alloc=not args.no_static_alloc)
+        embedding.hybridize(static_alloc=True, static_shape=True)
 
     optimizer_kwargs = dict(learning_rate=args.lr)
     trainer = mx.gluon.Trainer(embedding.collect_params(), args.optimizer,
                                optimizer_kwargs)
-
-    def construct_batch(data, ctx):
-        """Create a batch for Skipgram training objective."""
-        centers_cpu, contexts_cpu = data
-        (contexts_data_cpu, contexts_row_cpu, contexts_col_cpu) = contexts_cpu
-
-        negatives_shape = (len(centers_cpu), args.negative)
-        negatives = negatives_sampler[ctx](negatives_shape).astype(np.int64)
-
-        # Remove accidental hits
-        centers = centers_cpu.as_in_context(ctx)
-        contexts_col = contexts_col_cpu.as_in_context(ctx)
-        negatives_mask = (negatives != centers.expand_dims(1))
-        if args.model.lower() != 'cbow':
-            negatives_mask = mx.nd.stack(
-                negatives_mask, (negatives != contexts_col.expand_dims(1)))
-            negatives_mask = negatives_mask.min(axis=0)
-        negatives_mask = negatives_mask.astype(np.float32)
-
-        if args.ngram_buckets and args.model.lower() == 'cbow':
-            data, row, col = subword_lookup.cbow(contexts_row_cpu.asnumpy(),
-                                                 contexts_col_cpu.asnumpy())
-            contexts = mx.nd.sparse.csr_matrix(
-                (data, (row, col)), dtype=np.float32, ctx=ctx,
-                shape=(len(centers), embedding.embedding.weight.shape[0]))
-        elif args.model.lower() == 'cbow':
-            contexts = mx.nd.sparse.csr_matrix(
-                (contexts_data_cpu, (contexts_row_cpu, contexts_col_cpu)),
-                shape=(len(centers), embedding.embedding.weight.shape[0]),
-                dtype=np.float32, ctx=ctx)
-        elif args.ngram_buckets and args.model.lower() == 'skipgram':
-            contexts = contexts_col
-            data, row, col = subword_lookup.skipgram(centers_cpu.asnumpy())
-            centers = mx.nd.sparse.csr_matrix(
-                (data, (row, col)), dtype=np.float32, ctx=ctx,
-                shape=(len(centers), embedding.embedding.weight.shape[0]))
-        elif args.model.lower() == 'skipgram':
-            contexts = contexts_col
-            centers = mx.nd.sparse.csr_matrix(
-                (mx.nd.ones(centers.shape, ctx=ctx), centers,
-                 mx.nd.arange(len(centers) + 1, ctx=ctx)),
-                shape=(len(centers), embedding.embedding.weight.shape[0]),
-                dtype=np.float32, ctx=ctx)
-        else:
-            logging.error('Unsupported model %s.', args.model)
-            sys.exit(1)
-
-        return centers, contexts, negatives, negatives_mask
-
-    batchify = nlp.data.batchify.EmbeddingCenterContextBatchify(
-        batch_size=args.batch_size, window_size=args.window,
-        cbow=args.model.lower() == 'cbow')
-    data = data.transform(batchify)
 
     num_update = 0
     for epoch in range(args.epochs):
@@ -493,11 +177,9 @@ def train(args):
         log_start_time = time.time()
         log_avg_loss = 0
 
-        samples = itertools.chain.from_iterable(data)
-
-        for i, sample in enumerate(samples):
+        for i, batch in enumerate(batches):
             ctx = context[i % len(context)]
-            batch = construct_batch(sample, ctx)
+            batch = [array.as_in_context(ctx) for array in batch]
             with mx.autograd.record():
                 loss = embedding(*batch)
             loss.backward()
