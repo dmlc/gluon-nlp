@@ -28,8 +28,6 @@ Through textCNN Model
 +++++++++++++++++++++++++++++++++++++++
 
 
-:download:`[Download] </scripts/sentiment_analysis.zip>`
-
 This script can be used to train a sentiment analysis model.
 The convolutional models is loaded from Gluon NLP Toolkit model zoo. It also showcases how to use different 
 bucketing strategies to speed up training.
