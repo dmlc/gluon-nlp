@@ -1,10 +1,12 @@
-#!/usr/bin/env python
-# nlidataset.py
-# Copyright 2018 Mengxiao Lin <linmx0130@gmail.com>
-# 
+"""
+nlidataset.py
 
-import mxnet.gluon.data as gdata
+Part of NLI script in gluon-nlp.
+Copyright 2018 Mengxiao Lin <linmx0130@gmail.com>
+"""
+
 import json
+import mxnet.gluon.data as gdata
 
 class NLIDataItem:
     """
@@ -17,14 +19,18 @@ class NLIDataItem:
 
     def __init__(self):
         pass
-        
-    def parse_tab_line(self, line:str):
+    def parse_tab_line(self, line: str):
+        """
+        Parse the tab format of NLI datasets.
+        """
         fields = line.strip().split("\t")
         self.gold_label = fields[0]
         self.sentence1 = fields[5]
         self.sentence2 = fields[6]
-    
-    def parse_json_line(self, line:str):
+    def parse_json_line(self, line: str):
+        """
+        Parse JSON format of NLI datasets.
+        """
         data_item = json.loads(line)
         self.gold_label = data_item['gold_label']
         self.sentence1 = data_item['sentence1']
@@ -33,6 +39,7 @@ class NLIDataItem:
 
 class NLIDataset(gdata.SimpleDataset):
     """
+    Dataset for NLI.
     """
     def __init__(self, filename, parse_type="tab"):
         """
@@ -46,18 +53,17 @@ class NLIDataset(gdata.SimpleDataset):
         super(NLIDataset, self).__init__(data)
 
     def _read_data(self, filename):
-        with open(filename) as f:
-            raw_data = f.readlines()
+        with open(filename) as handler:
+            raw_data = handler.readlines()
         data = []
         if self.parse_type == "tab":
-            for l in raw_data[1:]:
+            for line in raw_data[1:]:
                 item = NLIDataItem()
-                item.parse_tab_line(l)
+                item.parse_tab_line(line)
                 data.append(item)
         if self.parse_type == "json":
-            for l in raw_data[1:]:
+            for line in raw_data[1:]:
                 item = NLIDataItem()
-                item.parse_json_line(l)
+                item.parse_json_line(line)
                 data.append(item)
         return data
-    
