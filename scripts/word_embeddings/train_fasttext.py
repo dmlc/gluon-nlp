@@ -80,6 +80,8 @@ def parse_args():
         '--gpu', type=int, nargs='+',
         help=('Number (index) of GPU to run on, e.g. 0. '
               'If not specified, uses CPU.'))
+    group.add_argument('--no-prefetch-batch', action='store_true',
+                       help='Disable multi-threaded nogil batch prefetching.')
     group.add_argument('--no-hybridize', action='store_true',
                        help='Disable hybridization of gluon HybridBlocks.')
 
@@ -171,9 +173,12 @@ def train(args):
                                optimizer_kwargs)
 
     try:
-        from executors import LazyThreadPoolExecutor
-        num_cpu = len(os.sched_getaffinity(0))
-        ex = LazyThreadPoolExecutor(num_cpu)
+        if args.no_prefetch_batch:
+            batches = data.transform(batchify_fn)
+        else:
+            from executors import LazyThreadPoolExecutor
+            num_cpu = len(os.sched_getaffinity(0))
+            ex = LazyThreadPoolExecutor(num_cpu)
     except ImportError:
         # Py2 - no async prefetching is supported
         logging.warning(
@@ -185,7 +190,7 @@ def train(args):
     for epoch in range(args.epochs):
         try:
             batches = ex.map(batchify_fn, data)
-        except NameError:  # Py 2
+        except NameError:  # Py 2 or prefetching disabled
             pass
 
         # Logging variables

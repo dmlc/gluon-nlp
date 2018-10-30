@@ -35,7 +35,7 @@ import numpy as np
 import gluonnlp as nlp
 from gluonnlp import Vocab
 from gluonnlp.data import SimpleDatasetStream, CorpusDataset
-from gluonnlp.base import numba_jitclass, numba_types
+from gluonnlp.base import numba_njit
 
 from utils import print_time
 
@@ -205,9 +205,20 @@ def transform_data(data, vocab, idx_to_counts, cbow, ngram_buckets, ngrams,
 
             # Store subword indices for all words in vocabulary
             idx_to_subwordidxs = list(subword_function(vocab.idx_to_token))
-            subword_lookup = SubwordLookup(len(vocab))
-            for i, subwords in enumerate(idx_to_subwordidxs):
-                subword_lookup.set(i, np.array(subwords, dtype=np.int64))
+            subwordidxs = np.concatenate(idx_to_subwordidxs)
+            subwordidxsptr = np.cumsum([
+                len(subwordidxs) for subwordidxs in idx_to_subwordidxs])
+            subwordidxsptr = np.concatenate([
+                np.zeros(1, dtype=np.int64), subwordidxsptr])
+            import functools
+            if cbow:
+                subword_lookup = functools.partial(
+                    cbow_lookup, subwordidxs=subwordidxs,
+                    subwordidxsptr=subwordidxsptr, offset=len(vocab))
+            else:
+                subword_lookup = functools.partial(
+                    skipgram_lookup, subwordidxs=subwordidxs,
+                    subwordidxsptr=subwordidxsptr, offset=len(vocab))
             max_subwordidxs_len = max(len(s) for s in idx_to_subwordidxs)
             if max_subwordidxs_len > 500:
                 warnings.warn(
@@ -222,11 +233,11 @@ def transform_data(data, vocab, idx_to_counts, cbow, ngram_buckets, ngrams,
     def cbow_fasttext_batch(centers, contexts):
         """Create a batch for CBOW training objective with subwords."""
         _, contexts_row, contexts_col = contexts
-        data, row, col = subword_lookup.cbow(contexts_row.asnumpy(),
-                                             contexts_col.asnumpy())
+        data, row, col = subword_lookup(contexts_row.asnumpy(),
+                                        contexts_col.asnumpy())
         contexts = mx.nd.sparse.csr_matrix(
             (data, (row, col)), dtype=np.float32,
-            shape=(len(centers), len(vocab) + len(subword_function)))
+            shape=(len(centers), len(vocab) + ngram_buckets))
         return centers, contexts
 
     def cbow_batch(centers, contexts):
@@ -241,10 +252,10 @@ def transform_data(data, vocab, idx_to_counts, cbow, ngram_buckets, ngrams,
         """Create a batch for SG training objective with subwords."""
         _, _, contexts_col = contexts
         contexts = contexts_col
-        data, row, col = subword_lookup.skipgram(centers.asnumpy())
+        data, row, col = subword_lookup(centers.asnumpy())
         centers_csr = mx.nd.sparse.csr_matrix(
             (data, (row, col)), dtype=np.float32,
-            shape=(len(centers), len(vocab) + len(subword_function)))
+            shape=(len(centers), len(vocab) + ngram_buckets))
         return centers_csr, contexts, centers
 
     def sg_batch(centers, contexts):
@@ -277,117 +288,106 @@ class UnchainStream(nlp.data.DataStream):
         return iter(itertools.chain.from_iterable(self._stream))
 
 
-@numba_jitclass([('idx_to_subwordidxs',
-                  numba_types.List(numba_types.int_[::1])),
-                 ('offset', numba_types.int_)])
-class SubwordLookup(object):
-    """Just-in-time compiled helper class for fast subword lookup.
+@numba_njit
+def skipgram_lookup(indices, subwordidxs, subwordidxsptr, offset=0):
+    """Get a sparse COO array of words and subwords for SkipGram.
 
     Parameters
     ----------
-    num_words : int
-         Number of tokens for which to hold subword arrays.
+    indices : numpy.ndarray of dtype int64
+        Array containing numbers in [0, vocabulary_size). The element at
+        position idx is taken to be the word that occurs at row idx in the
+        SkipGram batch.
+
+    Returns
+    -------
+    numpy.ndarray of dtype float32
+        Array containing weights such that for each row, all weights sum to
+        1. In particular, all elements in a row have weight 1 /
+        num_elements_in_the_row
+    numpy.ndarray of dtype int64
+        This array is the row array of a sparse array of COO format.
+    numpy.ndarray of dtype int64
+        This array is the col array of a sparse array of COO format.
 
     """
+    row = []
+    col = []
+    data = []
+    for i, idx in enumerate(indices):
+        start = subwordidxsptr[idx]
+        end = subwordidxsptr[idx + 1]
 
-    def __init__(self, num_words):
-        self.idx_to_subwordidxs = [
-            np.arange(1).astype(np.int64) for _ in range(num_words)]
-        self.offset = num_words
-
-    def set(self, i, subwords):
-        """Set the subword array of the i-th token."""
-        self.idx_to_subwordidxs[i] = subwords
-
-    def skipgram(self, indices):
-        """Get a sparse COO array of words and subwords for SkipGram.
-
-        Parameters
-        ----------
-        indices : numpy.ndarray of dtype int64
-            Array containing numbers in [0, vocabulary_size). The element at
-            position idx is taken to be the word that occurs at row idx in the
-            SkipGram batch.
-
-        Returns
-        -------
-        numpy.ndarray of dtype float32
-            Array containing weights such that for each row, all weights sum to
-            1. In particular, all elements in a row have weight 1 /
-            num_elements_in_the_row
-        numpy.ndarray of dtype int64
-            This array is the row array of a sparse array of COO format.
-        numpy.ndarray of dtype int64
-            This array is the col array of a sparse array of COO format.
-
-        """
-        row = []
-        col = []
-        data = []
-        for i, idx in enumerate(indices):
+        row.append(i)
+        col.append(idx)
+        data.append(1 / (1 + end - start))
+        for subword in subwordidxs[start:end]:
             row.append(i)
-            col.append(idx)
-            data.append(1 / (1 + len(self.idx_to_subwordidxs[idx])))
-            for subword in self.idx_to_subwordidxs[idx]:
-                row.append(i)
-                col.append(subword + self.offset)
-                data.append(1 / (1 + len(self.idx_to_subwordidxs[idx])))
-        return (np.array(data, np.float32), np.array(row, dtype=np.int64),
-                np.array(col, dtype=np.int64))
+            col.append(subword + offset)
+            data.append(1 / (1 + end - start))
 
-    def cbow(self, context_row, context_col):
-        """Get a sparse COO array of words and subwords for CBOW.
+    return (np.array(data, np.float32), np.array(row, dtype=np.int64),
+            np.array(col, dtype=np.int64))
 
-        Parameters
-        ----------
-        context_row : numpy.ndarray of dtype int64
-            Array of same length as context_col containing numbers in [0,
-            batch_size). For each idx, context_row[idx] specifies the row that
-            context_col[idx] occurs in a sparse matrix.
-        context_col : numpy.ndarray of dtype int64
-            Array of same length as context_row containing numbers in [0,
-            vocabulary_size). For each idx, context_col[idx] is one of the
-            context words in the context_row[idx] row of the batch.
 
-        Returns
-        -------
-        numpy.ndarray of dtype float32
-            Array containing weights summing to 1. The weights are chosen such
-            that the sum of weights for all subwords and word units of a given
-            context word is equal to 1 / number_of_context_words_in_the_row.
-            This array is the data array of a sparse array of COO format.
-        numpy.ndarray of dtype int64
-            This array is the row array of a sparse array of COO format.
-        numpy.ndarray of dtype int64
-            This array is the col array of a sparse array of COO format.
+@numba_njit
+def cbow_lookup(context_row, context_col, subwordidxs, subwordidxsptr,
+                offset=0):
+    """Get a sparse COO array of words and subwords for CBOW.
 
-        """
-        row = []
-        col = []
-        data = []
+    Parameters
+    ----------
+    context_row : numpy.ndarray of dtype int64
+        Array of same length as context_col containing numbers in [0,
+        batch_size). For each idx, context_row[idx] specifies the row that
+        context_col[idx] occurs in a sparse matrix.
+    context_col : numpy.ndarray of dtype int64
+        Array of same length as context_row containing numbers in [0,
+        vocabulary_size). For each idx, context_col[idx] is one of the
+        context words in the context_row[idx] row of the batch.
 
-        num_rows = np.max(context_row) + 1
-        row_to_numwords = np.zeros(num_rows)
+    Returns
+    -------
+    numpy.ndarray of dtype float32
+        Array containing weights summing to 1. The weights are chosen such
+        that the sum of weights for all subwords and word units of a given
+        context word is equal to 1 / number_of_context_words_in_the_row.
+        This array is the data array of a sparse array of COO format.
+    numpy.ndarray of dtype int64
+        This array is the row array of a sparse array of COO format.
+    numpy.ndarray of dtype int64
+        This array is the col array of a sparse array of COO format.
 
-        for i, idx in enumerate(context_col):
-            row_ = context_row[i]
-            row_to_numwords[row_] += 1
+    """
+    row = []
+    col = []
+    data = []
 
+    num_rows = np.max(context_row) + 1
+    row_to_numwords = np.zeros(num_rows)
+
+    for i, idx in enumerate(context_col):
+        start = subwordidxsptr[idx]
+        end = subwordidxsptr[idx + 1]
+
+        row_ = context_row[i]
+        row_to_numwords[row_] += 1
+
+        row.append(row_)
+        col.append(idx)
+        data.append(1 / (1 + end - start))
+        for subword in subwordidxs[start:end]:
             row.append(row_)
-            col.append(idx)
-            data.append(1 / (1 + len(self.idx_to_subwordidxs[idx])))
-            for subword in self.idx_to_subwordidxs[idx]:
-                row.append(row_)
-                col.append(subword + self.offset)
-                data.append(1 / (1 + len(self.idx_to_subwordidxs[idx])))
+            col.append(subword + offset)
+            data.append(1 / (1 + end - start))
 
-        # Normalize by number of words
-        for i, row_ in enumerate(row):
-            assert 0 <= row_ <= num_rows
-            data[i] /= row_to_numwords[row_]
+    # Normalize by number of words
+    for i, row_ in enumerate(row):
+        assert 0 <= row_ <= num_rows
+        data[i] /= row_to_numwords[row_]
 
-        return (np.array(data, np.float32), np.array(row, dtype=np.int64),
-                np.array(col, dtype=np.int64))
+    return (np.array(data, np.float32), np.array(row, dtype=np.int64),
+            np.array(col, dtype=np.int64))
 
 
 class WikiDumpStream(SimpleDatasetStream):
