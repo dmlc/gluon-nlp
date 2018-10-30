@@ -32,11 +32,6 @@ def sparse_grad(request):
     return request.param
 
 
-@pytest.fixture(params=[True, False])
-def hybridize(request):
-    return request.param
-
-
 def test_csr_embedding(sparse_grad, hybridize):
     token_to_idx = dict(hello=0, world=1)
     embedding = nlp.model.train.CSREmbeddingModel(token_to_idx, 30,
