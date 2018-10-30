@@ -259,16 +259,14 @@ def transform_data(data, vocab, idx_to_counts, cbow, ngram_buckets, ngrams,
     data = UnchainStream(data)
     if cbow:
         if ngram_buckets:
-            data = data.transform(cbow_fasttext_batch)
+            return data, cbow_fasttext_batch, subword_function
         else:
-            data = data.transform(cbow_batch)
+            return data, cbow_batch, subword_function
     else:
         if ngram_buckets:
-            data = data.transform(sg_fasttext_batch)
+            return data, sg_fasttext_batch, subword_function
         else:
-            data = data.transform(sg_batch)
-
-    return data, subword_function
+            return data, sg_batch, subword_function
 
 
 class UnchainStream(nlp.data.DataStream):

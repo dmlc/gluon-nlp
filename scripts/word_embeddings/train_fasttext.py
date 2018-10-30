@@ -150,7 +150,7 @@ def train(args):
         data, vocab, idx_to_counts = wiki(args.wiki_root, args.wiki_date,
                                           args.wiki_language,
                                           args.max_vocab_size)
-    batches, subword_function = transform_data(
+    data, batchify_fn, subword_function = transform_data(
         data, vocab, idx_to_counts,
         args.model.lower() == 'cbow', args.ngram_buckets, args.ngrams,
         args.batch_size, args.window, args.frequent_token_subsampling)
@@ -170,8 +170,24 @@ def train(args):
     trainer = mx.gluon.Trainer(embedding.collect_params(), args.optimizer,
                                optimizer_kwargs)
 
+    try:
+        from executors import LazyThreadPoolExecutor
+        num_cpu = len(os.sched_getaffinity(0))
+        ex = LazyThreadPoolExecutor(num_cpu)
+    except ImportError:
+        # Py2 - no async prefetching is supported
+        logging.warning(
+            'Asynchronous batch prefetching is not supported on Python 2. '
+            'Consider upgrading to Python 3 for improved performance.')
+        batches = data.transform(batchify_fn)
+
     num_update = 0
     for epoch in range(args.epochs):
+        try:
+            batches = ex.map(batchify_fn, data)
+        except NameError:  # Py 2
+            pass
+
         # Logging variables
         log_wc = 0
         log_start_time = time.time()
