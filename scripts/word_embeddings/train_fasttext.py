@@ -52,8 +52,6 @@ from utils import get_context, print_time
 from model import SG, CBOW
 from data import transform_data, text8, wiki
 
-os.environ['MXNET_GPU_MEM_POOL_TYPE'] = 'Round'
-
 
 def parse_args():
     """Parse command line arguments."""
