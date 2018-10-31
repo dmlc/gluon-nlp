@@ -21,11 +21,6 @@
 import os
 import logging
 import inspect
-import threading
-try:
-    import Queue as queue
-except ImportError:
-    import queue
 
 __all__ = ['logging_config']
 
@@ -74,67 +69,3 @@ def logging_config(folder=None, name=None,
         logconsole.setFormatter(formatter)
         logging.root.addHandler(logconsole)
     return folder
-
-
-class Parallel:
-    """ Class for parallel processing with multiple Python threads.
-
-    net = Net()
-    loss = Loss()
-
-    def body(data):
-        x, y = data
-        out = net(x)
-        ls = loss(out, y)
-        ls.backward()
-        return ls
-
-    ctx = [mx.gpu(0), mx.gpu(1)]
-    parallel = Parallel(len(ctx), body)
-
-    for batch in batches:
-        for data in split_and_load(batch, ctx):
-            parallel.put(data)
-        trainer.step()
-        losses = [parallel.get() for _ in ctx]
-
-    """
-
-    class _StopSignal:
-        """ Internal class to signal stop. """
-        def __init__(self, msg):
-            self._msg = msg
-
-    def __init__(self, num_workers, body):
-        self._in_queue = queue.Queue(-1)
-        self._out_queue = queue.Queue(-1)
-        self._num_workers = num_workers
-        self._threads = []
-        self._body = body
-
-        def _worker(in_queue, out_queue, body_func):
-            while True:
-                data = in_queue.get()
-                if isinstance(data, self._StopSignal):
-                    return
-                out = body_func(data)
-                out_queue.put(out)
-
-        arg = (self._in_queue, self._out_queue, self._body)
-        for _ in range(num_workers):
-            thread = threading.Thread(target=_worker, args=arg)
-            self._threads.append(thread)
-            thread.start()
-
-    def put(self, data):
-        self._in_queue.put(data)
-
-    def get(self):
-        return self._out_queue.get()
-
-    def __del__(self):
-        for thread in self._threads:
-            if thread.is_alive():
-                self._in_queue.put(self._StopSignal("stop"))
-        for thread in self._threads:
-            thread.join(10)

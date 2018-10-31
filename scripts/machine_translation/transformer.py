@@ -38,6 +38,7 @@ try:
     from translation import NMTModel
 except ImportError:
     from .translation import NMTModel
+from gluonnlp.utils.parallel import Parallelizable
 
 
 def _position_encoding_init(max_length, dim):
@@ -988,3 +989,28 @@ def get_model(name, dataset_name='WMT2014', **kwargs):
                 name, '\n\t'.join(sorted(models.keys()))))
     kwargs['dataset_name'] = dataset_name
     return models[name](**kwargs)
+
+class ParallelTransformer(Parallelizable):
+    """ Data parallel transformer. """
+    def __init__(self, model, label_smoothing, loss_function):
+        self._model = model
+        self._label_smoothing = label_smoothing
+        self._loss = loss_function
+
+    def forward(self, src_seq, tgt_seq, src_valid_length, tgt_valid_length, batch_size):
+        with mx.autograd.record():
+            out, _ = self._model(src_seq, tgt_seq[:, :-1],
+                                 src_valid_length, tgt_valid_length - 1)
+            smoothed_label = self._label_smoothing(tgt_seq[:, 1:])
+            ls = self._loss(out, smoothed_label, tgt_valid_length - 1).sum()
+        rescaled_ls = (ls * (tgt_seq.shape[1] - 1)) / batch_size / 100.0
+        return ls, rescaled_ls
+
+    def backward(self, loss):
+        loss.backward()
+
+    def forward_backward(self, x):
+        sequence, batch_size = x
+        ls, rescaled_ls = self.forward(*sequence, batch_size)
+        self.backward(ls)
+        return rescaled_ls

@@ -17,22 +17,10 @@
 # specific language governing permissions and limitations
 # under the License.
 
-# pylint: disable=wildcard-import
-"""NLP toolkit."""
+# pylint: disable=wildcard-import, arguments-differ
+r"""Module for utility functions.
+"""
 
-from . import loss
-from . import data
-from . import embedding
-from . import model
-from . import utils
-from .vocab import *
+from . import parallel
 
-__version__ = '0.4.1'
-
-__all__ = ['data',
-           'model',
-           'embedding',
-           'Vocab',
-           'loss',
-           'initializer',
-           'utils']
+__all__ = ['parallel']

@@ -53,13 +53,13 @@ from gluonnlp.data import ConstWidthBucket, LinearWidthBucket, ExpWidthBucket,\
     FixedBucketSampler, IWSLT2015, WMT2016, WMT2016BPE, WMT2014, WMT2014BPE
 from gluonnlp.model import BeamSearchScorer
 from translation import NMTModel, BeamSearchTranslator
-from transformer import get_transformer_encoder_decoder
+from transformer import get_transformer_encoder_decoder, ParallelTransformer
 from loss import SoftmaxCEMaskedLoss, LabelSmoothing
 from utils import logging_config
 from bleu import _bpe_to_words, compute_bleu
 import _constants as _C
 from dataset import TOY
-from utils import Parallel
+from gluonnlp.utils.parallel import Parallel
 
 np.random.seed(100)
 random.seed(100)
@@ -372,6 +372,7 @@ test_loss_function = SoftmaxCEMaskedLoss()
 test_loss_function.hybridize(static_alloc=static_alloc)
 
 detokenizer = SacreMosesDetokenizer()
+parallel_model = ParallelTransformer(model, label_smoothing, loss_function)
 
 
 def evaluate(data_loader, context=ctx[0]):
@@ -524,9 +525,9 @@ def train():
     average_start = (len(train_data_loader) // grad_interval) * (args.epochs - args.average_start)
     average_param_dict = None
     model.collect_params().zero_grad()
+    initialized = False
     if args.parallel:
-        parallel = Parallel(num_ctxs, run)
-
+        parallel = Parallel(num_ctxs, parallel_model)
     for epoch_id in range(args.epochs):
         log_avg_loss = 0
         log_wc = 0
@@ -545,13 +546,12 @@ def train():
             seqs = [[seq.as_in_context(context) for seq in shard]
                     for context, shard in zip(ctx, seqs)]
             Ls = []
-            first_batch = epoch_id == 0 and batch_id == 0
-            if args.parallel and not first_batch:
+            if args.parallel and initialized:
                 for seq in seqs:
-                    parallel.put(seq)
+                    parallel.put((seq, args.batch_size))
                 Ls = [parallel.get() for _ in range(len(ctx))]
             else:
-                # serial forward for the first batch
+                # serial forward to initialize the block
                 with mx.autograd.record():
                     for src_seq, tgt_seq, src_valid_length, tgt_valid_length in seqs:
                         out, _ = model(src_seq, tgt_seq[:, :-1],
@@ -561,6 +561,7 @@ def train():
                         Ls.append((ls * (tgt_seq.shape[1] - 1)) / args.batch_size / 100.0)
                 for L in Ls:
                     L.backward()
+                initialized = True
             if batch_id % grad_interval == grad_interval - 1 or\
                     batch_id == len(train_data_loader) - 1:
                 if average_param_dict is None:
