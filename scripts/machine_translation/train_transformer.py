@@ -115,8 +115,6 @@ parser.add_argument('--magnitude', type=float, default=3.0,
 parser.add_argument('--average_checkpoint', action='store_true',
                     help='Turn on to perform final testing based on '
                          'the average of last few checkpoints')
-parser.add_argument('--parallel', action='store_true',
-                    help='Train model with multiple threads in parallel')
 parser.add_argument('--num_averages', type=int, default=5,
                     help='Perform final testing based on the '
                          'average of last num_averages checkpoints. '
@@ -435,18 +433,6 @@ def write_sentences(sentences, file_path):
             else:
                 of.write(sent + '\n')
 
-def run(sequence):
-     with mx.autograd.record():
-         src_seq, tgt_seq, src_valid_length, tgt_valid_length = sequence
-         out, _ = model(src_seq, tgt_seq[:, :-1],
-                        src_valid_length, tgt_valid_length - 1)
-         smoothed_label = label_smoothing(tgt_seq[:, 1:])
-         ls = loss_function(out, smoothed_label, tgt_valid_length - 1).sum()
-     rescaled_ls = (ls * (tgt_seq.shape[1] - 1)) / args.batch_size / 100.0
-     mx.autograd.backward(ls)
-     return rescaled_ls
-
-
 def train():
     """Training function."""
     trainer = gluon.Trainer(model.collect_params(), args.optimizer,
@@ -526,8 +512,7 @@ def train():
     average_param_dict = None
     model.collect_params().zero_grad()
     initialized = False
-    if args.parallel:
-        parallel = Parallel(num_ctxs, parallel_model)
+    parallel = Parallel(num_ctxs, parallel_model)
     for epoch_id in range(args.epochs):
         log_avg_loss = 0
         log_wc = 0
@@ -546,21 +531,14 @@ def train():
             seqs = [[seq.as_in_context(context) for seq in shard]
                     for context, shard in zip(ctx, seqs)]
             Ls = []
-            if args.parallel and initialized:
+            if initialized:
                 for seq in seqs:
                     parallel.put((seq, args.batch_size))
                 Ls = [parallel.get() for _ in range(len(ctx))]
             else:
                 # serial forward to initialize the block
-                with mx.autograd.record():
-                    for src_seq, tgt_seq, src_valid_length, tgt_valid_length in seqs:
-                        out, _ = model(src_seq, tgt_seq[:, :-1],
-                                       src_valid_length, tgt_valid_length - 1)
-                        smoothed_label = label_smoothing(tgt_seq[:, 1:])
-                        ls = loss_function(out, smoothed_label, tgt_valid_length - 1).sum()
-                        Ls.append((ls * (tgt_seq.shape[1] - 1)) / args.batch_size / 100.0)
-                for L in Ls:
-                    L.backward()
+                for seq in seqs:
+                    Ls.append(parallel_model.forward_backward((seq, args.batch_size)))
                 initialized = True
             if batch_id % grad_interval == grad_interval - 1 or\
                     batch_id == len(train_data_loader) - 1:
