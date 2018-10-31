@@ -27,11 +27,14 @@ class Network(gluon.Block):
         self.word_embed_size = word_embed_size
         self.hidden_size = hidden_size
         with self.name_scope():
-            self.lin_proj = gluon.nn.Dense(hidden_size, in_units=word_embed_size, activation="relu")
+            self.lin_proj = gluon.nn.Dense(hidden_size, in_units=word_embed_size, activation='relu')
             self.intra_atten = IntraSentenceAtten(hidden_size, hidden_size)
             self.model = DecomposableAtten(hidden_size*2, hidden_size, 3)
 
     def forward(self, *args):
+        """
+        Model forward definition
+        """
         sentence1 = args[0]
         sentence2 = args[1]
         batch_size1, length1, dimension1 = sentence1.shape
@@ -57,23 +60,23 @@ def parse_args():
     """
     parser = argparse.ArgumentParser()
     parser.add_argument('--data_root',
-                        help="root of data file", default="./data")
+                        help='root of data file', default='./data')
     parser.add_argument('--train_set',
-                        help="training set file", default="snli_1.0/snli_1.0_train.txt")
+                        help='training set file', default='snli_1.0/snli_1.0_train.txt')
     parser.add_argument('--dev_set',
-                        help="development set file", default="snli_1.0/snli_1.0_dev.txt")
+                        help='development set file', default='snli_1.0/snli_1.0_dev.txt')
     parser.add_argument('--batch_size',
-                        help="batch_size", default=32, type=int)
+                        help='batch size', default=32, type=int)
     parser.add_argument('--print_period',
-                        help="the interval of two print", default=20, type=int)
+                        help='the interval of two print', default=20, type=int)
     parser.add_argument('--checkpoints',
-                        help="path to save checkpoints", default="checkpoints")
+                        help='path to save checkpoints', default='checkpoints')
     parser.add_argument('--model',
-                        help="model file to test, only for test mode", default=None)
+                        help='model file to test, only for test mode', default=None)
     parser.add_argument('--mode',
-                        help="train or test", default="train")
+                        help='train or test', default='train')
     parser.add_argument('--lr',
-                        help="learning rate", default=0.025, type=float)
+                        help='learning rate', default=0.025, type=float)
     parser.add_argument('--weight_decay',
                         help='weight decay', default=0.0001, type=float)
     parser.add_argument('--maximum_iter',
@@ -110,7 +113,7 @@ def train_network(model, train_set, embedding, ctx, args):
     emb_layer.weight.set_data(embedding.idx_to_vec)
     padder = nlp.data.batchify.Pad()
     model.save_parameters(
-        os.path.join(args.checkpoints, "epoch-0.gluonmodel"))
+        os.path.join(args.checkpoints, 'epoch-0.gluonmodel'))
     for epoch in range(1, args.maximum_iter + 1):
         access_key = list(range(len(train_set)))
         np.random.shuffle(access_key)
@@ -144,13 +147,13 @@ def train_network(model, train_set, embedding, ctx, args):
             if counter == 0:
                 acc_loss /= print_period
                 acc_acc /= print_period
-                print("Epoch ", epoch, "Loss=", acc_loss.asscalar(), "Acc=", acc_acc.asscalar())
+                print('Epoch ', epoch, 'Loss=', acc_loss.asscalar(), 'Acc=', acc_acc.asscalar())
                 counter = print_period
                 acc_loss = nd.array([0.], ctx=ctx)
                 acc_acc = nd.array([0.], ctx=ctx)
-        checkpoints_path = os.path.join(args.checkpoints, "epoch-%d.gluonmodel" % epoch)
+        checkpoints_path = os.path.join(args.checkpoints, 'epoch-%d.gluonmodel' % epoch)
         model.save_parameters(checkpoints_path)
-        print("Epoch ", epoch, " saved to ", checkpoints_path)
+        print('Epoch ', epoch, ' saved to ', checkpoints_path)
 
 def test_network(model, test_set, embedding, ctx):
     """
@@ -183,7 +186,7 @@ def test_network(model, test_set, embedding, ctx):
         acc += cur_acc
         counter += 1
     acc = acc / counter
-    print("Acc=", acc.asscalar())
+    print('Acc=', acc.asscalar())
 
 def prepare_dataset(args, dataset):
     """
@@ -197,14 +200,14 @@ def prepare_dataset(args, dataset):
             clean_train_set.append(item)
     return clean_train_set
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     ARGS = parse_args()
     GLOVE = nlp.embedding.create(ARGS.embedding, source=ARGS.embedding_source)
-    if ARGS.mode == "train":
+    if ARGS.mode == 'train':
         TRAIN_SET = prepare_dataset(ARGS, 'train_set')
         NET = Network(ARGS.embedding_size, 200)
         train_network(NET, TRAIN_SET, GLOVE, mx.gpu(), ARGS)
-    elif ARGS.mode == "test":
+    elif ARGS.mode == 'test':
         TEST_SET = prepare_dataset(ARGS, 'dev_set')
         NET = Network(ARGS.embedding_size, 200)
         CTX = mx.gpu()

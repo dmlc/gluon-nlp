@@ -60,6 +60,9 @@ class DecomposableAtten(gluon.Block):
         self.inp_size = inp_size
 
     def forward(self, *args):
+        """
+        Forward of Decomposable Attention layer
+        """
         a, b = args[0], args[1]
         batch_size1, length1, hidden_size1 = a.shape
         batch_size2, length2, hidden_size2 = b.shape

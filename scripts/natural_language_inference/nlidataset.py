@@ -23,7 +23,7 @@ class NLIDataItem:
         """
         Parse the tab format of NLI datasets.
         """
-        fields = line.strip().split("\t")
+        fields = line.strip().split('\t')
         self.gold_label = fields[0]
         self.sentence1 = fields[5]
         self.sentence2 = fields[6]
@@ -41,14 +41,14 @@ class NLIDataset(gdata.SimpleDataset):
     """
     Dataset for NLI.
     """
-    def __init__(self, filename, parse_type="tab"):
+    def __init__(self, filename, parse_type='tab'):
         """
         Arguments:
             filename: the input filename
-            parse_type: "tab" or "json"
+            parse_type: 'tab' or 'json'
         """
         self.parse_type = parse_type
-        assert parse_type in ["tab", "json"]
+        assert parse_type in ['tab', 'json']
         data = self._read_data(filename)
         super(NLIDataset, self).__init__(data)
 
@@ -56,12 +56,12 @@ class NLIDataset(gdata.SimpleDataset):
         with open(filename) as handler:
             raw_data = handler.readlines()
         data = []
-        if self.parse_type == "tab":
+        if self.parse_type == 'tab':
             for line in raw_data[1:]:
                 item = NLIDataItem()
                 item.parse_tab_line(line)
                 data.append(item)
-        if self.parse_type == "json":
+        if self.parse_type == 'json':
             for line in raw_data[1:]:
                 item = NLIDataItem()
                 item.parse_json_line(line)
