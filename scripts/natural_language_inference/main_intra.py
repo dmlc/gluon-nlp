@@ -14,7 +14,7 @@ import mxnet as mx
 from mxnet import gluon, autograd, nd
 from decomposable_atten import DecomposableAtten, IntraSentenceAtten
 from nlidataset import NLIDataset
-from utils import fetch_embedding_of_sentence, pad_sentences
+from utils import tokenize_and_index
 
 LABEL_TO_IDX = {'neutral': 0, 'contradiction': 1, 'entailment': 2}
 
@@ -104,7 +104,11 @@ def train_network(model, train_set, embedding, ctx, args):
     print_period = args.print_period
     if not os.path.exists(args.checkpoints):
         os.mkdir(args.checkpoints)
-
+    emb_layer = mx.gluon.nn.Embedding(len(embedding.idx_to_token),
+                                      embedding.idx_to_vec[0].size)
+    emb_layer.initialize()
+    emb_layer.weight.set_data(embedding.idx_to_vec)
+    padder = nlp.data.batchify.Pad()
     model.save_parameters(
         os.path.join(args.checkpoints, "epoch-0.gluonmodel"))
     for epoch in range(1, args.maximum_iter + 1):
@@ -120,13 +124,12 @@ def train_network(model, train_set, embedding, ctx, args):
             label = []
             for i in range(batch_size):
                 item = train_set[access_key[idx + i]]
-                sen1.append(fetch_embedding_of_sentence(item.sentence1, embedding))
-                sen2.append(fetch_embedding_of_sentence(item.sentence2, embedding))
+                sen1.append(tokenize_and_index(item.sentence1, embedding))
+                sen2.append(tokenize_and_index(item.sentence2, embedding))
                 label.append(LABEL_TO_IDX[item.gold_label])
             idx += batch_size
-
-            sen1 = pad_sentences(sen1).as_in_context(ctx)
-            sen2 = pad_sentences(sen2).as_in_context(ctx)
+            sen1 = emb_layer(padder(sen1)).as_in_context(ctx)
+            sen2 = emb_layer(padder(sen2)).as_in_context(ctx)
             label = nd.array(label, dtype=int).as_in_context(ctx)
             with autograd.record():
                 yhat = model(sen1, sen2)
@@ -155,18 +158,23 @@ def test_network(model, test_set, embedding, ctx):
     """
     acc = nd.array([0.], ctx=ctx)
     counter = 0
+    emb_layer = mx.gluon.nn.Embedding(len(embedding.idx_to_token),
+                                      embedding.idx_to_vec[0].size)
+    emb_layer.initialize()
+    emb_layer.weight.set_data(embedding.idx_to_vec)
+    padder = nlp.data.batchify.Pad()
     for item in test_set:
         sen1 = []
         sen2 = []
         label = []
-        feature1 = fetch_embedding_of_sentence(item.sentence1, embedding)
+        feature1 = tokenize_and_index(item.sentence1, embedding)
         sen1.append(feature1)
-        feature2 = fetch_embedding_of_sentence(item.sentence2, embedding)
+        feature2 = tokenize_and_index(item.sentence2, embedding)
         sen2.append(feature2)
         label.append(LABEL_TO_IDX[item.gold_label])
 
-        sen1 = pad_sentences(sen1).as_in_context(ctx)
-        sen2 = pad_sentences(sen2).as_in_context(ctx)
+        sen1 = emb_layer(padder(sen1)).as_in_context(ctx)
+        sen2 = emb_layer(padder(sen2)).as_in_context(ctx)
         label = nd.array(label, dtype=int).as_in_context(ctx)
         with autograd.predict_mode():
             yhat = model(sen1, sen2)

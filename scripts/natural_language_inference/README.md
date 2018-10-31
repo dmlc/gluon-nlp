@@ -3,6 +3,11 @@ Natural language inference models in Gluon.
 
 The model is following [A Decomposable Attention Model for Natural Language Inference](https://arxiv.org/abs/1606.01933).
 
+However, some hyperparameters are different:
+1. Xavier initializer is utilized instead of Gaussian initializer. The model with later one does not converge.
+2. Dropout layers are removed.
+3. Learning rate is smaller.
+
 ## Usage
 Put SNLI dataset into `data/`, then train the model with
 
