@@ -86,11 +86,19 @@ class Parallel:
         net = ParallelNet()
         ctx = [mx.gpu(0), mx.gpu(1)]
         parallel = Parallel(len(ctx), net)
+        initialized = False
 
         for batch in batches:
-            for data in gluon.utils.split_and_load(batch, ctx):
-                parallel.put(data)
-            losses = [parallel.get() for _ in ctx]
+            if not initialized:
+                # The first batch cannot be forwarded in parallel
+                losses = []
+                for x in gluon.utils.split_and_load(batch, ctx):
+                    losses.append(parallel.forward_backward(x))
+                initialized = True
+            else:
+                for x in gluon.utils.split_and_load(batch, ctx):
+                    parallel.put(x)
+                losses = [parallel.get() for _ in ctx]
             trainer.step()
 
     Parameters
