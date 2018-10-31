@@ -237,12 +237,18 @@ class GloVe(nlp.model.train.EmbeddingModel, mx.gluon.HybridBlock):
 
         Parameters
         ----------
-        row : mx.nd.NDArray
-            Array of token indices for source words
-        row : mx.nd.NDArray
-            Array of token indices for context words
-        counts : mx.nd.NDArray
-            Their co-occurrence counts.
+        row : mxnet.nd.NDArray or mxnet.sym.Symbol
+            Array of token indices for source words. Shape (batch_size, ).
+        row : mxnet.nd.NDArray or mxnet.sym.Symbol
+            Array of token indices for context words. Shape (batch_size, ).
+        counts : mxnet.nd.NDArray or mxnet.sym.Symbol
+            Their co-occurrence counts. Shape (batch_size, ).
+
+        Returns
+        -------
+        mxnet.nd.NDArray or mxnet.sym.Symbol
+            Loss. Shape (batch_size, ).
+
         """
 
         emb_in = self.source_embedding(row)

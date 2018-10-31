@@ -59,15 +59,16 @@ std::ostream &operator<<(std::ostream &in,
   return in << static_cast<int>(context_weight);
 }
 
+// Arguments specified via command line options. See ParseArgs for documentation.
 struct Arguments {
   unsigned int num_threads = 1;
-  unsigned int windowSize = 5;
-  bool noSymmetric = false;
+  unsigned int window_size = 5;
+  bool no_symmetric = false;
   bool subsample = false;
   ContextWeight context_weight;
 };
 
-auto parseArgs(int argc, char **argv) {
+auto ParseArgs(int argc, char **argv) {
   // Performance optimizations for writing to stdout
   std::ios::sync_with_stdio(false);
 
@@ -79,9 +80,9 @@ auto parseArgs(int argc, char **argv) {
   app.add_option("-o,--output", output,
                  "Output file name. Co-occurence matrix is saved as "
                  "scipy.sparse compatible CSR matrix in a numpy .npz archive");
-  app.add_option("-w,--window-size", args.windowSize,
+  app.add_option("-w,--window-size", args.window_size,
                  "Window size in which to count co-occurences.");
-  app.add_flag("--no-symmetric", args.noSymmetric,
+  app.add_flag("--no-symmetric", args.no_symmetric,
                "If not specified, a symmetric context window is used.");
   app.add_flag("--subsample", args.subsample,
                "Apply subsampling during co-occurence matrix construction as "
@@ -178,7 +179,7 @@ private:
 };
 
 // * Input
-auto readVocab() {
+auto ReadVocab() {
   std::string word;
   std::string count;
   int rank{0};
@@ -194,11 +195,11 @@ auto readVocab() {
 std::mutex paths_m;
 std::mutex matrices_m;
 
-void readMatrix(std::queue<fs::path> &paths, queue<Matrix> &matrices,
+void ReadMatrix(std::queue<fs::path> &paths, queue<Matrix> &matrices,
                 const Vocab &vocab, const Arguments &args, uint32_t seed) {
   assert(seed > 0);
   std::string line;
-  CircularBuffer<uint32_t> history(args.windowSize);
+  CircularBuffer<uint32_t> history(args.window_size);
   std::unique_ptr<Matrix> m = std::make_unique<Matrix>();
 
   // Prepare subsampling
@@ -255,7 +256,7 @@ void readMatrix(std::queue<fs::path> &paths, queue<Matrix> &matrices,
             uint64_t key; // We merge 32 bit row and col indices to a single 64
                           // bit key
             // For symmetric contexts, only store one direction.
-            if (!args.noSymmetric) {
+            if (!args.no_symmetric) {
               if (word_rank <= context_word_rank) {
                 key = (uint64_t)word_rank << 32 | context_word_rank;
               } else {
@@ -268,7 +269,7 @@ void readMatrix(std::queue<fs::path> &paths, queue<Matrix> &matrices,
             if (args.context_weight == ContextWeight::Harmonic) {
               (*m)[key] += 1.0f / static_cast<count_type>(distance);
             } else if (args.context_weight == ContextWeight::DistanceOverSize) {
-              (*m)[key] += (args.windowSize - distance - 1) / args.windowSize;
+              (*m)[key] += (args.window_size - distance - 1) / args.window_size;
             } else {
               (*m)[key]++;
             }
@@ -286,7 +287,7 @@ void readMatrix(std::queue<fs::path> &paths, queue<Matrix> &matrices,
   }
 }
 
-std::unique_ptr<Matrix> combineMatrices(queue<Matrix> &matrices,
+std::unique_ptr<Matrix> CombineMatrices(queue<Matrix> &matrices,
                                         int num_threads) {
   std::unique_ptr<Matrix> m1 = matrices.pop();
   for (int i = 1; i < num_threads; i++) {
@@ -305,24 +306,24 @@ std::unique_ptr<Matrix> combineMatrices(queue<Matrix> &matrices,
   return m1;
 }
 
-auto computeCooccurrenceMatrix(Vocab &vocab, std::queue<fs::path> &paths,
+auto ComputeCooccurrenceMatrix(Vocab &vocab, std::queue<fs::path> &paths,
                                const Arguments &args) {
   std::vector<std::thread> threads;
   queue<Matrix> matrices;
   for (unsigned int i = 0; i < args.num_threads; i++) {
     threads.push_back(std::thread([&paths, &matrices, &vocab, &args, i]() {
-      readMatrix(std::ref(paths), std::ref(matrices), std::ref(vocab),
+      ReadMatrix(std::ref(paths), std::ref(matrices), std::ref(vocab),
                  std::ref(args), i + 1);
     }));
   }
-  std::unique_ptr<Matrix> m = combineMatrices(matrices, args.num_threads);
+  std::unique_ptr<Matrix> m = CombineMatrices(matrices, args.num_threads);
   for (unsigned int i = 0; i < args.num_threads; i++) {
     threads[i].join();
   }
   return m;
 }
 
-auto toCOO(const Vocab &vocab, std::unique_ptr<Matrix> m) {
+auto ToCOO(const Vocab &vocab, std::unique_ptr<Matrix> m) {
   size_t num_tokens = vocab.size();
   size_t nnz = m->size();
   std::cout << "Got " << nnz
@@ -343,7 +344,7 @@ auto toCOO(const Vocab &vocab, std::unique_ptr<Matrix> m) {
 }
 
 // * Output
-void writeNumpy(const std::string output, const std::vector<uint32_t> &row,
+void WriteNumpy(const std::string output, const std::vector<uint32_t> &row,
                 const std::vector<uint32_t> &col,
                 const std::vector<count_type> &data, const bool symmetric,
                 const uint32_t num_tokens) {
@@ -359,10 +360,10 @@ void writeNumpy(const std::string output, const std::vector<uint32_t> &row,
 
 // * Main
 int main(int argc, char **argv) {
-  auto [paths, output, args] = parseArgs(argc, argv);
-  auto vocab = readVocab();
-  auto cooccurenceMatrix = computeCooccurrenceMatrix(vocab, paths, args);
-  auto [row, col, data] = toCOO(vocab, std::move(cooccurenceMatrix));
-  writeNumpy(output, row, col, data, !args.noSymmetric, vocab.size());
+  auto [paths, output, args] = ParseArgs(argc, argv);
+  auto vocab = ReadVocab();
+  auto cooccurenceMatrix = ComputeCooccurrenceMatrix(vocab, paths, args);
+  auto [row, col, data] = ToCOO(vocab, std::move(cooccurenceMatrix));
+  WriteNumpy(output, row, col, data, !args.no_symmetric, vocab.size());
   return 0;
 }

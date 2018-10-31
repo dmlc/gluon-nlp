@@ -44,7 +44,7 @@ using Vocab = spp::sparse_hash_map<std::string, uint32_t>;
 std::mutex paths_m;
 std::mutex vocabs_m;
 
-void readVocab(std::queue<fs::path> &paths, queue<Vocab> &vocabs) {
+void ReadVocab(std::queue<fs::path> &paths, queue<Vocab> &vocabs) {
   std::unique_ptr<Vocab> vocab = std::make_unique<Vocab>();
   std::string word;
   fs::path path;
@@ -73,9 +73,9 @@ void readVocab(std::queue<fs::path> &paths, queue<Vocab> &vocabs) {
   }
 }
 
-std::unique_ptr<Vocab> combineVocabs(queue<Vocab> &vocabs, int numThreads) {
+std::unique_ptr<Vocab> CombineVocabs(queue<Vocab> &vocabs, int num_threads) {
   std::unique_ptr<Vocab> vocab1 = vocabs.pop();
-  for (int i = 1; i < numThreads; i++) {
+  for (int i = 1; i < num_threads; i++) {
     std::unique_ptr<Vocab> vocab2 = vocabs.pop();
     if (vocab1->size() < vocab2->size()) {
       for (const auto &e : *vocab1) {
@@ -102,9 +102,9 @@ int main(int argc, char **argv) {
   app.add_option("-c,--minCount", minCount,
                  "Minimum number of occurences required for a word to be "
                  "included in the vocabulary.");
-  unsigned int numThreads = 1;
+  unsigned int num_threads = 1;
   app.add_option(
-         "-j,--numThreads", numThreads,
+         "-j,--num_threads", num_threads,
          "Number of threads to use. Each thread constructs an "
          "independent vocabulary which are finally merged. Only appropriate "
          "when multiple, sufficiently large input files are specified.")
@@ -117,12 +117,12 @@ int main(int argc, char **argv) {
   }
   std::vector<std::thread> threads;
   queue<Vocab> vocabs;
-  for (unsigned int i = 0; i < numThreads; i++) {
+  for (unsigned int i = 0; i < num_threads; i++) {
     threads.push_back(std::thread(
-        [&paths, &vocabs]() { readVocab(std::ref(paths), std::ref(vocabs)); }));
+        [&paths, &vocabs]() { ReadVocab(std::ref(paths), std::ref(vocabs)); }));
   }
-  std::unique_ptr<Vocab> vocab = combineVocabs(vocabs, numThreads);
-  for (unsigned int i = 0; i < numThreads; i++) {
+  std::unique_ptr<Vocab> vocab = CombineVocabs(vocabs, num_threads);
+  for (unsigned int i = 0; i < num_threads; i++) {
     threads[i].join();
   }
 
@@ -130,13 +130,13 @@ int main(int argc, char **argv) {
   typedef std::function<bool(std::pair<std::string, int>,
                              std::pair<std::string, int>)>
       Comparator;
-  Comparator compFunctor = [](std::pair<std::string, int> elem1,
+  Comparator CompFunctor = [](std::pair<std::string, int> elem1,
                               std::pair<std::string, int> elem2) {
     return (elem1.second > elem2.second) ||
            (elem1.second == elem2.second && elem1.first < elem2.first);
   };
   std::set<std::pair<std::string, uint32_t>, Comparator> sorted_vocab(
-      vocab->begin(), vocab->end(), compFunctor);
+      vocab->begin(), vocab->end(), CompFunctor);
   vocab.reset(); // Release ownership
 
   // Output
