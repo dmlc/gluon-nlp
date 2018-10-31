@@ -1,6 +1,6 @@
 # Word Embeddings Training and Evaluation
 
-```python
+```{.python .input}
 import warnings
 warnings.filterwarnings('ignore')
 
@@ -15,8 +15,8 @@ import gluonnlp as nlp
 import numpy as np
 from scipy import stats
 
-# context = mx.cpu()  # Enable this to run on CPU
-context = mx.gpu(0)  # Enable this to run on GPU
+context = mx.cpu()  # Enable this to run on CPU
+# context = mx.gpu(0)  # Enable this to run on GPU
 ```
 
 ### Data
@@ -25,63 +25,143 @@ Benchmark](http://mattmahoney.net/dc/textdata.html) which includes the first
 100
 MB of cleaned text from the English Wikipedia.
 
-```python
-dataset = nlp.data.Text8()
-print('# sentences:', len(dataset))
-for sentence in dataset[:3]:
+```{.python .input}
+text8 = nlp.data.Text8()
+print('# sentences:', len(text8))
+for sentence in text8[:3]:
     print('# tokens:', len(sentence), sentence[:5])
 ```
 
-We pass the dataset to the `prepare_batches` function from the `utils.py` of
-this notebook.
+Given the tokenized data, we first count all tokens and then construct a
+vocabulary of all tokens that occur at least 5 times in the dataset. The
+vocabulary contains a one-to-one mapping between tokens and integers (also
+called indices or short idx).
 
-The following actions are taken:
-- subsampling
-- negative
-samples
-- subwords in CSR
+We further store the frequency count of each
+token in the vocabulary as we will require this information later on for
+sampling random negative (or noise) words. Finally we replace all tokens with
+their integer representation based on the vocabulary.
 
-Some words such as "the", "a", and "in" are very
-frequent.
-One important trick applied when training word embeddings is to
-subsample the dataset
-according to the token frequencies. [1] proposes to
-discard individual
-occurences of words from the dataset with probability
-$$P(w_i) = 1 - \sqrt{\frac{t}{f(w_i)}}$$
+```{.python .input}
+counter = nlp.data.count_tokens(itertools.chain.from_iterable(text8))
+vocab = nlp.Vocab(counter, unknown_token=None, padding_token=None,
+                  bos_token=None, eos_token=None, min_freq=5)
+idx_to_counts = [counter[w] for w in vocab.idx_to_token]
 
-where $f(w_i)$ is the frequency with
-which a word is
-observed in a dataset and $t$ is a subsampling constant
-typically chosen around
-$10^{-5}$.
+def code(sentence):
+    return [vocab[token] for token in sentence if token in vocab]
 
-[1] Mikolov, Tomas, et al. “Distributed
-representations of words and phrases and their compositionality.” Advances in
-neural information processing systems. 2013.
+text8 = text8.transform(code, lazy=False)
 
-```python
-import utils
-(batches, vocab, subword_function) = utils.prepare_batches(dataset, ngrams=[3,4,5,6],
-                                                           num_subwords=10000, num_negatives=5, batch_size=16384, window=5)
+print('# sentences:', len(text8))
+for sentence in text8[:3]:
+    print('# tokens:', len(sentence), sentence[:5])
 ```
 
-## Training word embeddings with subword information
+Next we need to transform the coded Text8 dataset into batches useful for
+training an embedding model.
+In this tutorial we train with the SkipGram
+objective made popular by [1].
 
-`gluonnlp` provides the
-concept of a SubwordFunction which maps words to a list of indices representing
-their subword.
-Possible SubwordFunctions include mapping a word to the sequence
-of it's characters/bytes or hashes of all its ngrams.
+For SkipGram, we sample pairs of co-occurring
+words from the corpus.
+Two words are said to co-occur if they occurr with
+distance less then a specified *window* size.
+The *window* size is usually
+chosen around 5.
 
-FastText models use a
-hash function to map each ngram of a word to a number in range `[0,
-num_subwords)`. We include the same hash function.
+For obtaining the samples from the corpus, we can shuffle the
+sentences and the proceed linearly through each sentence, considering each word
+as well as all the words in it's window. In this case, we call the current word
+in focus the center word, and the words in it's window the context words.
+GluonNLP contains `gluonnlp.data.EmbeddingCenterContextBatchify` batchify
+transformation, that takes a corpus, such as the coded Text8 we have here, and
+returns a `DataStream` of batches of center and context words.
 
-### Concept of a
-SubwordFunction
 
-```python
+
+To obtain good
+results, each sentence is further subsampled, meaning that words are deleted
+with a probability proportional to their frequency.
+[1] proposes to discard
+individual occurences of words from the dataset with probability
+
+$$P(w_i) = 1 -
+\sqrt{\frac{t}{f(w_i)}}$$
+
+where $f(w_i)$ is the frequency with which a word is
+observed in a dataset and $t$ is a subsampling constant typically chosen around
+$10^{-5}$.
+[1] has also shown that the final performance is improved if the
+window size is chosen  uniformly random for each center words out of the range
+[1, *window*].
+
+For this notebook, we are interested in training a fastText
+embedding model [2]. A fastText model not only associates a embedding vector to
+each token in the vocabulary, but also to a pre-specified number of subwords.
+Commonly 2 million subword vectors are obtained and each subword vector is
+associated with zero, one or multiple character-ngrams. The mapping between
+character-ngrams and subwords is based on a hash function.
+The *final* embedding
+vector of a token is the mean of the vectors associated with the token and all
+character-ngrams occuring in the string representation of the token. Thereby a
+fastText embedding model can compute meaningful embedding vectors for tokens
+that were not seen during training.
+
+For this notebook, we have prepared a
+helper function `transform_data` which builds a series of transformations of the
+`text8` `Dataset` created above, applying "tricks" mentioned before. It returns
+a `DataStream` over batches as well as a batchify_fn function that applied to a
+batch looks up and includes the fastText subwords associated with the center
+words and finally the subword function that can be used to obtain the subwords
+of a given string representation of a token. We will take a closer look at the
+subword function shortly.
+
+Note that the number of subwords is potentially
+different for every word. Therefore the batchify_fn represents a word with its
+subwords as a row in a compressed sparse row (CSR) matrix. Take a look at
+https://mxnet.incubator.apache.org/tutorials/sparse/csr.html if you are not
+familia with CSR.  Separating the batchify_fn from the previous word-pair
+sampling is useful, as it allows to parallelize the CSR matrix construction over
+multiple CPU cores for separate batches.
+
+You can find it in `data.py` in the
+archive that can be downloaded via the Download button at the top of this page.
+- [1] Mikolov, Tomas, et al. “Distributed representations of words and phrases
+and their compositionality.”
+   Advances in neural information processing
+systems. 2013.
+- [2] Bojanowski et al., "Enriching Word Vectors with Subword
+Information" Transactions of the Association for Computational Linguistics 2017
+
+```{.python .input}
+from data import transform_data
+
+batch_size=4096
+text8 = nlp.data.SimpleDataStream([text8])  # input is a stream of datasets, here just 1. Allows scaling to larger corpora that don't fit in memory
+data, batchify_fn, subword_function = transform_data(
+    text8, vocab, idx_to_counts, cbow=False, ngrams=[3,4,5,6], ngram_buckets=10000, batch_size=batch_size, window_size=5)
+```
+
+```{.python .input}
+batches = data.transform(batchify_fn)
+```
+
+## Subwords
+
+`gluonnlp` provides the concept of a SubwordFunction which maps
+words to a list of indices representing their subword.
+Possible SubwordFunctions
+include mapping a word to the sequence of it's characters/bytes or hashes of all
+its ngrams.
+
+FastText models use a hash function to map each ngram of a word to
+a number in range `[0, num_subwords)`. We include the same hash function.
+Above
+transform_data has also returned a `subword_function` object. Let's try it with
+a few words:
+
+```{.python .input}
 idx_to_subwordidxs = subword_function(vocab.idx_to_token)
 for word, subwords in zip(vocab.idx_to_token[:3], idx_to_subwordidxs[:3]):
     print('<'+word+'>', subwords, sep = '\t')
@@ -89,51 +169,52 @@ for word, subwords in zip(vocab.idx_to_token[:3], idx_to_subwordidxs[:3]):
 
 ### Model
 
-`gluonnlp` provides model definitions for popular embedding models as
-Gluon Blocks.
-Here we show how to train them with the Skip-Gram objective, a
-simple and popular embedding training objective  introduced
-by "Mikolov et al.,
-Efficient estimation of word representations in vector space. ICLR Workshop ,
-2013."
+Here we define a SkipGram model for training fastText embeddings.
+For
+Skip-Gram, the model consists of two independent embedding networks.
+One for the
+center words, and one for the context words.
+For center words, subwords are
+taken into account while for context words only the token itself is taken into
+account.
 
-The Skip-Gram objective trains word vectors such that the word vector of
-a word
-at some position in a sentence can best predict the surrounding words. We
-call
-these words *center* and *context* words.
+GluonNLP provides a `nlp.model.train.FasttextEmbeddingModel` Block
+which defines the fastText style embedding with subword support.
+It can be used
+for training, but also supports loading models trained with the original C++
+fastText library from `.bin` files.
+After training, vectors for arbitrary words
+can be looked up via `embedding[['a', 'list', 'of', 'potentially', 'unknown',
+'words']]` where `embedding` is a `nlp.model.train.FasttextEmbeddingModel`.
 
-Here we define a Skip-Gram model
-for training fastText (Bojanowski et al., Enriching Word Vectors with Subword
-Information)
-embeddings. For Skip-Gram, the model consists of a fastText style
-embedding with subword support which is used to embed
-the center words and their
-subword units as well as a standard embedding matrix used to embed the context
-words and
-negative samples.
-After training, only the fastText style embedding
-with subword support is used.
+In
+the `model.py` script we provide a definition for the fastText model for the
+SkipGram objective.
+The model definition is a Gluon HybridBlock, meaning that
+the complete forward / backward pass are compiled and executed directly in the
+MXNet backend. Not only does the Block include the `FasttextEmbeddingModel` for
+the center words and a simple embedding matrix for the context words, but it
+also takes care of sampling a specified number of noise words for each center-
+context pair. These noise words are called negatives, as the resulting center-
+negative pair is unlikely to occur in the dataset. The model then must learn
+which word-pairs are negatives and which ones are real. Thereby it obtains
+meaningful word and subword vectors for all considered tokens. The negatives are
+sampled from the smoothed unigram frequency distribution.
 
-GluonNLP provides a
-`nlp.model.train.FasttextEmbeddingModel` Block which defines the fastText style
-embedding with subword support.
-It can be used for training, but also supports
-loading models trained with the original C++ fastText library from `.bin` files.
-After training, vectors for arbitrary words can be looked up via
-`embedding[['a', 'list', 'of', 'potentially', 'unknown', 'words']]` where
-`embedding` is a `nlp.model.train.FasttextEmbeddingModel`.
+Let's instantiate and
+initialize the model. We also create a trainer object for updating the
+parameters with AdaGrad.
+Finally we print a summary of the model.
 
-```python
-from utils import SkipGramNet
-print(SkipGramNet.hybrid_forward.__doc__)
-```
+```{.python .input}
+from model import SG as SkipGramNet
 
-```python
 emsize = 300
 num_negatives = 5
 
-embedding = SkipGramNet(emsize,  vocab, num_negatives, subword_function)
+negatives_weights = mx.nd.array(idx_to_counts)
+embedding = SkipGramNet(
+    vocab.token_to_idx, emsize, batch_size, negatives_weights, subword_function, num_negatives=5, smoothing=0.75)
 embedding.initialize(ctx=context)
 embedding.hybridize()
 trainer = mx.gluon.Trainer(embedding.collect_params(), 'adagrad', dict(learning_rate=0.05))
@@ -141,10 +222,16 @@ trainer = mx.gluon.Trainer(embedding.collect_params(), 'adagrad', dict(learning_
 print(embedding)
 ```
 
+Let's take a look at the documentation of the forward pass.
+
+```{.python .input}
+print(SkipGramNet.hybrid_forward.__doc__)
+```
+
 Before we start training, let's examine the quality of our randomly initialized
 embeddings:
 
-```python
+```{.python .input}
 def norm_vecs_by_row(x):
     return x / (mx.nd.sum(x * x, axis=1) + 1e-10).sqrt().reshape((-1, 1))
 
@@ -162,7 +249,7 @@ def get_k_closest_tokens(vocab, embedding, k, word):
     print('closest tokens to "%s": %s' % (word, ", ".join(result)))
 ```
 
-```python
+```{.python .input}
 example_token = "vector"
 get_k_closest_tokens(vocab, embedding, 10, example_token)
 ```
@@ -172,18 +259,16 @@ We can see that in the randomly initialized fastText model the closest tokens to
 
 ### Training
 
-We train the model with negative sampling. That means, that for
-every center-context word pair that occurs in our corpus, `num_negatives` random
-words are sampled. The model is trained to distinguish for every center word if
-a given other word is really co-occuring in the corpus or a random negative
-sample.
-Here we initialize `negatives_sampler` that allows us to sample
-negatives based on the unigram token frequency.
+Thanks to the Gluon data pipeline and the HybridBlock handling all
+complexity, our training code is very simple.
+We iterate over all batches, move
+them to the appropriate context (GPU), do forward, backward and parameter update
+and finally include some helpful print statements for following the training
+process.
 
-We can use `EmbeddingCenterContextBatchify` to transform a corpus into batches
-of center and context words.
+```{.python .input}
+log_interval = 50
 
-```python
 def train_embedding(num_epochs):
     for epoch in range(1, num_epochs + 1):
         start_time = time.time()
@@ -192,20 +277,15 @@ def train_embedding(num_epochs):
         
         print('Beginnign epoch %d and resampling data.' % epoch)
         for i, batch in enumerate(batches):
-            center, word_context, negatives, mask = batch
-            center = center.as_in_context(context)
-            word_context = word_context.as_in_context(context)
-            negatives = negatives.as_in_context(context)
-            mask = mask.as_in_context(context)
-            
+            batch = [array.as_in_context(context) for array in batch]
             with mx.autograd.record():
-                l = embedding(center, word_context, negatives, mask)
+                l = embedding(*batch)
             l.backward()
             trainer.step(1)
             
             train_l_sum += l.sum()
             num_samples += l.shape[0]
-            if i % 50 == 0:
+            if i % log_interval == 0:
                 mx.nd.waitall()
                 wps = num_samples / (time.time() - start_time)
                 print('epoch %d, time %.2fs, iteration %d, throughput=%.2fK wps'
@@ -218,7 +298,7 @@ def train_embedding(num_epochs):
         print("")
 ```
 
-```python
+```{.python .input}
 train_embedding(num_epochs=1)
 ```
 
@@ -248,7 +328,7 @@ observed during training.
 We first compute a list of tokens in our evaluation
 dataset and then create a embedding matrix for them based on the fastText model.
 
-```python
+```{.python .input}
 rw = nlp.data.RareWords()
 rw_tokens  = list(set(itertools.chain.from_iterable((d[0], d[1]) for d in rw)))
 
@@ -261,7 +341,7 @@ for i in range(5):
 print('The imputed TokenEmbedding has shape', token_embedding.idx_to_vec.shape)
 ```
 
-```python
+```{.python .input}
 evaluator = nlp.embedding.evaluation.WordEmbeddingSimilarity(
     idx_to_vec=rw_matrix,
     similarity_function="CosineSimilarity")
@@ -269,7 +349,7 @@ evaluator.initialize(ctx=context)
 evaluator.hybridize()
 ```
 
-```python
+```{.python .input}
 words1, words2, scores = zip(*([token_embedding.token_to_idx[d[0]],
                                 token_embedding.token_to_idx[d[1]],
                                 d[2]] for d in rw))
@@ -277,7 +357,7 @@ words1 = mx.nd.array(words1, ctx=context)
 words2 = mx.nd.array(words2, ctx=context)
 ```
 
-```python
+```{.python .input}
 pred_similarity = evaluator(words1, words2)
 sr = stats.spearmanr(pred_similarity.asnumpy(), np.array(scores))
 print('Spearman rank correlation on {} pairs of {}: {}'.format(
@@ -289,4 +369,6 @@ print('Spearman rank correlation on {} pairs of {}: {}'.format(
 For further information and examples on training and
 evaluating word embeddings with GluonNLP take a look at the Word Embedding
 section on the Scripts / Model Zoo page. There you will find more thorough
-evaluation techniques and other embedding models.
+evaluation techniques and other embedding models. In fact, the `data.py` and
+`model.py` files used in this example are the same as the ones used in the
+script.
