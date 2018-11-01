@@ -58,8 +58,8 @@ class Net(mx.gluon.HybridBlock):
     # pylint: disable=abstract-method
     def __init__(self, token_to_idx, output_dim, batch_size, negatives_weights,
                  subword_function=None, num_negatives=5, smoothing=0.75,
-                 sparse_grad=True, dtype='float32'):
-        super().__init__()
+                 sparse_grad=True, dtype='float32', **kwargs):
+        super(Net, self).__init__(**kwargs)
 
         self._kwargs = dict(
             input_dim=len(token_to_idx), output_dim=output_dim, dtype=dtype,

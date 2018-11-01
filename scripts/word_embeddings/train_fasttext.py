@@ -177,7 +177,7 @@ def train(args):
             from executors import LazyThreadPoolExecutor
             num_cpu = len(os.sched_getaffinity(0))
             ex = LazyThreadPoolExecutor(num_cpu)
-    except ImportError:
+    except (ImportError, SyntaxError, AttributeError):
         # Py2 - no async prefetching is supported
         logging.warning(
             'Asynchronous batch prefetching is not supported on Python 2. '
