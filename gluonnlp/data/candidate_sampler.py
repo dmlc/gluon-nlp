@@ -53,7 +53,6 @@ class UnigramCandidateSampler(mx.gluon.HybridBlock):
         super(UnigramCandidateSampler, self).__init__()
         self._shape = shape
         self._dtype = dtype
-        self._context = weights.context
         self.N = weights.size
 
         if (np.dtype(dtype) == np.float32 and weights.size > 2**24) or \
@@ -123,10 +122,10 @@ class UnigramCandidateSampler(mx.gluon.HybridBlock):
         """
         flat_shape = functools.reduce(operator.mul, self._shape)
         idx = F.random.uniform(low=0, high=self.N, shape=flat_shape,
-                               ctx=self._context, dtype='float64').floor()
+                               dtype='float64').floor()
         prob = F.gather_nd(prob, idx.reshape((1, -1)))
         alias = F.gather_nd(alias, idx.reshape((1, -1)))
-        where = F.random.uniform(shape=flat_shape, ctx=self._context,
+        where = F.random.uniform(shape=flat_shape,
                                  dtype='float64') < prob
         hit = idx * where
         alt = alias * (1 - where)
