@@ -15,8 +15,8 @@ import gluonnlp as nlp
 import numpy as np
 from scipy import stats
 
-context = mx.cpu()  # Enable this to run on CPU
-# context = mx.gpu(0)  # Enable this to run on GPU
+# context = mx.cpu()  # Enable this to run on CPU
+context = mx.gpu(0)  # Enable this to run on GPU
 ```
 
 ### Data
@@ -332,26 +332,26 @@ dataset and then create a embedding matrix for them based on the fastText model.
 rw = nlp.data.RareWords()
 rw_tokens  = list(set(itertools.chain.from_iterable((d[0], d[1]) for d in rw)))
 
-rw_matrix = nlp.embedding.TokenEmbedding(unknown_token=None, allow_extend=True)
-rw_matrix[rw_tokens]= embedding[rw_tokens]
+rw_token_embedding = nlp.embedding.TokenEmbedding(unknown_token=None, allow_extend=True)
+rw_token_embedding[rw_tokens]= embedding[rw_tokens]
 
 print('There are', len(rw_tokens), 'unique tokens in the RareWords dataset. Examples are:')
 for i in range(5):
     print('\t', rw[i])
-print('The imputed TokenEmbedding has shape', token_embedding.idx_to_vec.shape)
+print('The imputed TokenEmbedding has shape', rw_token_embedding.idx_to_vec.shape)
 ```
 
 ```{.python .input}
 evaluator = nlp.embedding.evaluation.WordEmbeddingSimilarity(
-    idx_to_vec=rw_matrix,
+    idx_to_vec=rw_token_embedding.idx_to_vec,
     similarity_function="CosineSimilarity")
 evaluator.initialize(ctx=context)
 evaluator.hybridize()
 ```
 
 ```{.python .input}
-words1, words2, scores = zip(*([token_embedding.token_to_idx[d[0]],
-                                token_embedding.token_to_idx[d[1]],
+words1, words2, scores = zip(*([rw_token_embedding.token_to_idx[d[0]],
+                                rw_token_embedding.token_to_idx[d[1]],
                                 d[2]] for d in rw))
 words1 = mx.nd.array(words1, ctx=context)
 words2 = mx.nd.array(words2, ctx=context)
