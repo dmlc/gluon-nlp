@@ -80,8 +80,8 @@ class EmbeddingCenterContextBatchify(object):
                  reduce_window_size_randomly=True,
                  shuffle=True,
                  cbow=False,
-                 dtype=np.float32,
-                 index_dtype=np.int64):
+                 dtype='float32',
+                 index_dtype='int64'):
         self._batch_size = batch_size
         self._window_size = window_size
         self._reduce_window_size_randomly = reduce_window_size_randomly
