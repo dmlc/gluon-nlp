@@ -49,6 +49,31 @@ def _position_encoding_init(max_length, dim):
     position_enc[:, 1::2] = np.cos(position_enc[:, 1::2])  # dim 2i+1
     return position_enc
 
+class GELU(HybridBlock):
+    r"""Gaussian Error Linear Unit.
+    This is a smoother version of the RELU.
+        https://arxiv.org/abs/1606.08415
+
+    Parameters
+    ----------
+    Inputs:
+        - **data**: input tensor with arbitrary shape.
+    Outputs:
+        - **out**: output tensor with the same shape as `data`.
+    """
+    def __init__(self, **kwargs):
+        super(GELU, self).__init__(**kwargs)
+
+    def hybrid_forward(self, F, x):
+        return 0.5 * x * (1 + F.tanh(math.sqrt(2 / math.pi) * (x + 0.044715 * F.pow(x, 3))))
+
+def _get_activation(act):
+    """ Get activation block based on the name. """
+    assert isinstance(act, str)
+    if act.lower() == 'gelu':
+        return GELU()
+    else:
+        return gluon.nn.Activation(act)
 
 class PositionwiseFFN(HybridBlock):
     """Structure of the Positionwise Feed-Forward Neural Network.
@@ -83,10 +108,10 @@ class PositionwiseFFN(HybridBlock):
         self._use_residual = use_residual
         with self.name_scope():
             self.ffn_1 = nn.Dense(units=hidden_size, flatten=False,
-                                  activation=activation,
                                   weight_initializer=weight_initializer,
                                   bias_initializer=bias_initializer,
                                   prefix='ffn_1_')
+            self.activation = _get_activation(activation) if activation else None
             self.ffn_2 = nn.Dense(units=units, flatten=False,
                                   weight_initializer=weight_initializer,
                                   bias_initializer=bias_initializer,
@@ -109,6 +134,8 @@ class PositionwiseFFN(HybridBlock):
             Shape (batch_size, length, C_out)
         """
         outputs = self.ffn_1(inputs)
+        if self.activation:
+            outputs = self.activation(outputs)
         outputs = self.ffn_2(outputs)
         outputs = self.dropout_layer(outputs)
         if self._use_residual:
@@ -142,6 +169,8 @@ class TransformerEncoderCell(HybridBlock):
         transformation of the inputs.
     bias_initializer : str or Initializer
         Initializer for the bias vector.
+    ffn_activation: str, default 'relu'
+        Activation function applied on the feed-forward layer.
     prefix : str, default 'rnn_'
         Prefix for name of `Block`s
         (and name of weight if params is `None`).
@@ -153,7 +182,7 @@ class TransformerEncoderCell(HybridBlock):
                  hidden_size=512, num_heads=4, scaled=True,
                  dropout=0.0, use_residual=True, output_attention=False,
                  weight_initializer=None, bias_initializer='zeros',
-                 prefix=None, params=None):
+                 ffn_activation='relu', prefix=None, params=None):
         super(TransformerEncoderCell, self).__init__(prefix=prefix, params=params)
         self._units = units
         self._num_heads = num_heads
@@ -174,7 +203,8 @@ class TransformerEncoderCell(HybridBlock):
             self.ffn = PositionwiseFFN(hidden_size=hidden_size, units=units,
                                        use_residual=use_residual, dropout=dropout,
                                        weight_initializer=weight_initializer,
-                                       bias_initializer=bias_initializer)
+                                       bias_initializer=bias_initializer,
+                                       activation=ffn_activation)
             self.layer_norm = nn.LayerNorm()
 
     def hybrid_forward(self, F, inputs, mask=None):  # pylint: disable=arguments-differ
@@ -235,6 +265,8 @@ class TransformerDecoderCell(HybridBlock):
         transformation of the inputs.
     bias_initializer : str or Initializer
         Initializer for the bias vector.
+    ffn_activation: str, default 'relu'
+        Activation function applied on the feed-forward layer.
     prefix : str, default 'rnn_'
         Prefix for name of `Block`s
         (and name of weight if params is `None`).
@@ -246,7 +278,7 @@ class TransformerDecoderCell(HybridBlock):
                  hidden_size=512, num_heads=4, scaled=True,
                  dropout=0.0, use_residual=True, output_attention=False,
                  weight_initializer=None, bias_initializer='zeros',
-                 prefix=None, params=None):
+                 ffn_activation='relu', prefix=None, params=None):
         super(TransformerDecoderCell, self).__init__(prefix=prefix, params=params)
         self._units = units
         self._num_heads = num_heads
@@ -281,7 +313,8 @@ class TransformerDecoderCell(HybridBlock):
                                        use_residual=use_residual,
                                        dropout=dropout,
                                        weight_initializer=weight_initializer,
-                                       bias_initializer=bias_initializer)
+                                       bias_initializer=bias_initializer,
+                                       activation=ffn_activation)
 
             self.layer_norm_in = nn.LayerNorm()
             self.layer_norm_inter = nn.LayerNorm()
@@ -360,6 +393,8 @@ class TransformerEncoder(HybridBlock, Seq2SeqEncoder):
         transformation of the inputs.
     bias_initializer : str or Initializer
         Initializer for the bias vector.
+    ffn_activation: str, default 'relu'
+        Activation function applied on the feed-forward layer.
     prefix : str, default 'rnn_'
         Prefix for name of `Block`s
         (and name of weight if params is `None`).
@@ -372,6 +407,7 @@ class TransformerEncoder(HybridBlock, Seq2SeqEncoder):
                  num_heads=4, scaled=True, dropout=0.0,
                  use_residual=True, output_attention=False,
                  weight_initializer=None, bias_initializer='zeros',
+                 ffn_activation='relu',
                  prefix=None, params=None):
         super(TransformerEncoder, self).__init__(prefix=prefix, params=params)
         assert units % num_heads == 0,\
@@ -407,6 +443,7 @@ class TransformerEncoder(HybridBlock, Seq2SeqEncoder):
                         use_residual=use_residual,
                         scaled=scaled,
                         output_attention=output_attention,
+                        ffn_activation=ffn_activation,
                         prefix='transformer%d_' % i))
 
     def __call__(self, inputs, states=None, valid_length=None): #pylint: disable=arguments-differ
@@ -551,6 +588,8 @@ class TransformerDecoder(HybridBlock, Seq2SeqDecoder):
         transformation of the inputs.
     bias_initializer : str or Initializer
         Initializer for the bias vector.
+    ffn_activation: str, default 'relu'
+        Activation function applied on the feed-forward layer.
     prefix : str, default 'rnn_'
         Prefix for name of `Block`s
         (and name of weight if params is `None`).
@@ -563,6 +602,7 @@ class TransformerDecoder(HybridBlock, Seq2SeqDecoder):
                  num_heads=4, scaled=True, dropout=0.0,
                  use_residual=True, output_attention=False,
                  weight_initializer=None, bias_initializer='zeros',
+                 ffn_activation='relu',
                  prefix=None, params=None):
         super(TransformerDecoder, self).__init__(prefix=prefix, params=params)
         assert units % num_heads == 0, 'In TransformerDecoder, the units should be divided ' \
@@ -597,6 +637,7 @@ class TransformerDecoder(HybridBlock, Seq2SeqDecoder):
                         scaled=scaled,
                         use_residual=use_residual,
                         output_attention=output_attention,
+                        ffn_activation=ffn_activation,
                         prefix='transformer%d_' % i))
 
     def init_state_from_encoder(self, encoder_outputs, encoder_valid_length=None):
@@ -804,6 +845,7 @@ def get_transformer_encoder_decoder(num_layers=2,
                                     units=512, hidden_size=2048, dropout=0.0, use_residual=True,
                                     max_src_length=50, max_tgt_length=50,
                                     weight_initializer=None, bias_initializer='zeros',
+                                    ffn_activation='relu',
                                     prefix='transformer_', params=None):
     """Build a pair of Parallel GNMT encoder/decoder
 
@@ -820,6 +862,8 @@ def get_transformer_encoder_decoder(num_layers=2,
     max_tgt_length : int
     weight_initializer : mx.init.Initializer or None
     bias_initializer : mx.init.Initializer or None
+    ffn_activation: str, default 'relu'
+        Activation function applied on the feed-forward layer.
     prefix : str, default 'transformer_'
         Prefix for name of `Block`s.
     params : Parameter or None
@@ -841,6 +885,7 @@ def get_transformer_encoder_decoder(num_layers=2,
                                  use_residual=use_residual,
                                  weight_initializer=weight_initializer,
                                  bias_initializer=bias_initializer,
+                                 ffn_activation=ffn_activation,
                                  prefix=prefix + 'enc_', params=params)
     decoder = TransformerDecoder(num_layers=num_layers,
                                  num_heads=num_heads,
@@ -852,6 +897,7 @@ def get_transformer_encoder_decoder(num_layers=2,
                                  use_residual=use_residual,
                                  weight_initializer=weight_initializer,
                                  bias_initializer=bias_initializer,
+                                 ffn_activation=ffn_activation,
                                  prefix=prefix + 'dec_', params=params)
     return encoder, decoder
 
