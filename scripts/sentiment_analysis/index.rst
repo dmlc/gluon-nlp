@@ -37,13 +37,13 @@ epoch:
 +----------------+--------+---------+---------+--------+--------+
 |                | MR     | SST-1   | SST-2   | Subj   | TREC   |
 +================+========+=========+=========+========+========+
-| rand           |   60   |   10    |   20    |   40   |   40   |
+| rand           |   60   |   40    |   40    |   40   |   40   |
 +----------------+--------+---------+---------+--------+--------+
-| static         |   60   |   10    |   20    |   40   |   40   |
+| static         |   60   |   40    |   40    |   40   |   40   |
 +----------------+--------+---------+---------+--------+--------+
-| non-static     |   60   |   10    |   20    |   40   |   40   |
+| non-static     |   60   |   40    |   40    |   40   |   40   |
 +----------------+--------+---------+---------+--------+--------+
-| multichannel   |   60   |   10    |   20    |   40   |   40   |
+| multichannel   |   60   |   40    |   40    |   40   |   40   |
 +----------------+--------+---------+---------+--------+--------+
 
 
@@ -68,26 +68,74 @@ acc:
 +----------------+----------+-----------+-----------+----------+----------+
 |                |   MR     |   SST-1   |   SST-2   |   Subj   |   TREC   |
 +================+==========+===========+===========+==========+==========+
-| rand           | 0.7786   | 0.5468    | 0.9358    | 0.9002   | 0.9840   |
+| rand           | 0.7683   | 0.5412    | 0.9358    | 0.8984   | 0.9780   |
 +----------------+----------+-----------+-----------+----------+----------+
-| static         | 0.7928   | 0.5558    | 0.9479    | 0.9194   | 0.9840   |
+| static         | 0.7927   | 0.5421    | 0.9450    | 0.9226   | 0.9840   |
 +----------------+----------+-----------+-----------+----------+----------+
-| non-static     | 0.7960   | 0.5544    | 0.9404    | 0.9213   | 0.9780   |
+| non-static     | 0.7960   | 0.5534    | 0.9387    | 0.9206   | 0.9800   |
 +----------------+----------+-----------+-----------+----------+----------+
-| multichannel   | 0.7999   | 0.5619    | 0.9318    | 0.9259   | 0.9880   |
+| multichannel   | 0.7999   | 0.5581    | 0.9393    | 0.9249   | 0.9900   |
 +----------------+----------+-----------+-----------+----------+----------+
 
 [1]:
 
 .. code-block:: console
 
-   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 20 --dropout 0.5 --lr 0.005 --valid_ratio 0.1 --save-prefix sa_cnn_300 --model_mode multichannel --data_name MR
+   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 60 --dropout 0.5 --lr 0.0001 --model_mode rand --data_name MR
 
 [2]:
 
 .. code-block:: console
 
-   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 20 --dropout 0.5 --lr 0.005 --valid_ratio 0.1 --save-prefix sa_cnn_300 --model_mode multichannel --data_name MR
+   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 60 --dropout 0.5 --lr 0.0001 --model_mode static --data_name MR
+
+...
+
+[3]:
+
+.. code-block:: console
+
+   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 60 --dropout 0.5 --lr 0.0001 --model_mode non-static --data_name MR
+
+...
+
+[4]:
+
+.. code-block:: console
+
+   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 60 --dropout 0.5 --lr 0.0001 --model_mode multichannel --data_name MR
+
+...
+
+[5]:
+
+.. code-block:: console
+
+   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 40 --dropout 0.5 --lr 0.0001 --model_mode rand --data_name SST-1
+
+...
+
+[6]:
+
+.. code-block:: console
+
+   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 40 --dropout 0.5 --lr 0.0001 --model_mode static --data_name SST-1
+
+...
+
+[7]:
+
+.. code-block:: console
+
+   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 40 --dropout 0.5 --lr 0.0001 --model_mode non-static --data_name SST-1
+
+...
+
+[8]:
+
+.. code-block:: console
+
+   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 40 --dropout 0.5 --lr 0.0001 --model_mode multichannel --data_name SST-1
 
 ...
 
