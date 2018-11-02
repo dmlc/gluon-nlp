@@ -18,24 +18,16 @@
 # under the License.
 """Candidate samplers"""
 
-__all__ = ['CandidateSampler', 'UnigramCandidateSampler']
+__all__ = ['UnigramCandidateSampler']
+
+import functools
+import operator
 
 import mxnet as mx
+import numpy as np
 
 
-class CandidateSampler(object):
-    """Abstract Candidate Sampler
-
-    After initializing one of the concrete candidate sample implementations,
-    generate samples by calling the resulting object.
-
-    """
-
-    def __call__(self):
-        raise NotImplementedError
-
-
-class UnigramCandidateSampler(CandidateSampler):
+class UnigramCandidateSampler(mx.gluon.HybridBlock):
     """Unigram Candidate Sampler
 
     Draw random samples from a unigram distribution with specified weights
@@ -46,22 +38,38 @@ class UnigramCandidateSampler(CandidateSampler):
     weights : mx.nd.NDArray
         Unnormalized class probabilities. Samples are drawn and returned on the
         same context as weights.context.
+    shape : int or tuple of int
+        Shape of data to be sampled.
+        TODO: Specifying the shape is only a workaround until random_like
+        operators are available in mxnet
+    dtype : str or np.dtype, default 'float32'
+        Data type of the candidates. Make sure that the dtype precision is
+        large enough to represent the size of your weights array precisely. For
+        example, float32 can not distinguish 2**24 from 2**24 + 1.
 
     """
 
-    def __init__(self, weights):
-        self._context = weights.context
+    def __init__(self, weights, shape, dtype='float32'):
+        super(UnigramCandidateSampler, self).__init__()
+        self._shape = shape
+        self._dtype = dtype
         self.N = weights.size
+
+        if (np.dtype(dtype) == np.float32 and weights.size > 2**24) or \
+           (np.dtype(dtype) == np.float16 and weights.size > 2**11):
+            s = 'dtype={dtype} can not represent all weights'
+            raise ValueError(s.format(dtype=dtype))
+
         total_weights = weights.sum()
-        self.prob = (weights * self.N / total_weights).asnumpy().tolist()
-        self.alias = [0] * self.N
+        prob = (weights * self.N / total_weights).asnumpy().tolist()
+        alias = [0] * self.N
 
         # sort the data into the outcomes with probabilities
         # that are high and low than 1/N.
         low = []
         high = []
         for i in range(self.N):
-            if self.prob[i] < 1.0:
+            if prob[i] < 1.0:
                 low.append(i)
             else:
                 high.append(i)
@@ -71,43 +79,56 @@ class UnigramCandidateSampler(CandidateSampler):
             l = low.pop()
             h = high.pop()
 
-            self.alias[l] = h
-            self.prob[h] = self.prob[h] - (1.0 - self.prob[l])
+            alias[l] = h
+            prob[h] = prob[h] - (1.0 - prob[l])
 
-            if self.prob[h] < 1.0:
+            if prob[h] < 1.0:
                 low.append(h)
             else:
                 high.append(h)
 
         for i in low + high:
-            self.prob[i] = 1
-            self.alias[i] = i
+            prob[i] = 1
+            alias[i] = i
 
-        # convert to ndarrays
-        self.prob = mx.nd.array(self.prob, ctx=self._context)
-        self.alias = mx.nd.array(self.alias, ctx=self._context)
+        # store
+        prob = mx.nd.array(prob, dtype='float64')
+        alias = mx.nd.array(alias, dtype='float64')
+        self.prob = self.params.get_constant('prob', prob)
+        self.alias = self.params.get_constant('alias', alias)
 
-    def __call__(self, shape):
+    def __repr__(self):
+        s = '{block_name}({len_weights}, {dtype})'
+        return s.format(block_name=self.__class__.__name__, len_weights=self.N,
+                        dtype=self._dtype)
+
+    def hybrid_forward(self, F, candidates_like, prob, alias):
+        # pylint: disable=unused-argument
         """Draw samples from uniform distribution and return sampled candidates.
 
         Parameters
         ----------
-        shape: int or list/tuple of int
-            Shape of samples to return.
+        candidates_like: mxnet.nd.NDArray or mxnet.sym.Symbol
+            This input specifies the shape of the to be sampled candidates. #
+            TODO shape selection is not yet supported. Shape must be specified
+            in the constructor.
 
         Returns
         -------
-        samples: NDArray
-            The sampled candidate classes.
+        samples: mxnet.nd.NDArray or mxnet.sym.Symbol
+            The sampled candidates of shape candidates_like.shape. Candidates
+            are sampled based on the weights specified on creation of the
+            UnigramCandidateSampler.
         """
-        idx = mx.nd.random.uniform(low=0, high=self.N, shape=shape,
-                                   ctx=self._context,
-                                   dtype='float64').floor().astype('float32')
-        prob = self.prob[idx]
-        alias = self.alias[idx]
-        where = mx.nd.random.uniform(shape=shape, ctx=self._context) < prob
+        flat_shape = functools.reduce(operator.mul, self._shape)
+        idx = F.random.uniform(low=0, high=self.N, shape=flat_shape,
+                               dtype='float64').floor()
+        prob = F.gather_nd(prob, idx.reshape((1, -1)))
+        alias = F.gather_nd(alias, idx.reshape((1, -1)))
+        where = F.random.uniform(shape=flat_shape,
+                                 dtype='float64') < prob
         hit = idx * where
         alt = alias * (1 - where)
-        candidates = hit + alt
+        candidates = (hit + alt).reshape(self._shape)
 
-        return candidates
+        return candidates.astype(self._dtype)
