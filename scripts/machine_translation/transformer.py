@@ -1003,14 +1003,14 @@ class ParallelTransformer(Parallelizable):
                                  src_valid_length, tgt_valid_length - 1)
             smoothed_label = self._label_smoothing(tgt_seq[:, 1:])
             ls = self._loss(out, smoothed_label, tgt_valid_length - 1).sum()
-        rescaled_ls = (ls * (tgt_seq.shape[1] - 1)) / batch_size / 100.0
-        return ls, rescaled_ls
+            ls = (ls * (tgt_seq.shape[1] - 1)) / batch_size / 100.0
+        return ls
 
     def backward(self, loss):
         loss.backward()
 
     def forward_backward(self, x):
         sequence, batch_size = x
-        ls, rescaled_ls = self.forward(*sequence, batch_size)
+        ls = self.forward(*sequence, batch_size)
         self.backward(ls)
-        return rescaled_ls
+        return ls
