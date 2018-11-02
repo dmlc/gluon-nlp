@@ -19,7 +19,7 @@ from scipy import stats
 context = mx.gpu(0)  # Enable this to run on GPU
 ```
 
-### Data
+## Data
 Here we use the Text8 corpus from the [Large Text Compression
 Benchmark](http://mattmahoney.net/dc/textdata.html) which includes the first
 100
@@ -140,7 +140,7 @@ from data import transform_data
 batch_size=4096
 text8 = nlp.data.SimpleDataStream([text8])  # input is a stream of datasets, here just 1. Allows scaling to larger corpora that don't fit in memory
 data, batchify_fn, subword_function = transform_data(
-    text8, vocab, idx_to_counts, cbow=False, ngrams=[3,4,5,6], ngram_buckets=10000, batch_size=batch_size, window_size=5)
+    text8, vocab, idx_to_counts, cbow=False, ngrams=[3,4,5,6], ngram_buckets=100000, batch_size=batch_size, window_size=5)
 ```
 
 ```{.python .input}
@@ -167,7 +167,7 @@ for word, subwords in zip(vocab.idx_to_token[:3], idx_to_subwordidxs[:3]):
     print('<'+word+'>', subwords, sep = '\t')
 ```
 
-### Model
+## Model
 
 Here we define a SkipGram model for training fastText embeddings.
 For
@@ -257,7 +257,7 @@ get_k_closest_tokens(vocab, embedding, 10, example_token)
 We can see that in the randomly initialized fastText model the closest tokens to
 "vector" are based on overlapping ngrams.
 
-### Training
+## Training
 
 Thanks to the Gluon data pipeline and the HybridBlock handling all
 complexity, our training code is very simple.
@@ -267,13 +267,13 @@ and finally include some helpful print statements for following the training
 process.
 
 ```{.python .input}
-log_interval = 50
+log_interval = 500
 
 def train_embedding(num_epochs):
     for epoch in range(1, num_epochs + 1):
         start_time = time.time()
-        train_l_sum = 0
-        num_samples = 0
+        l_avg = 0
+        log_wc = 0
         
         print('Beginnign epoch %d and resampling data.' % epoch)
         for i, batch in enumerate(batches):
@@ -283,17 +283,18 @@ def train_embedding(num_epochs):
             l.backward()
             trainer.step(1)
             
-            train_l_sum += l.sum()
-            num_samples += l.shape[0]
+            l_avg += l.mean()
+            log_wc += l.shape[0]
             if i % log_interval == 0:
                 mx.nd.waitall()
-                wps = num_samples / (time.time() - start_time)
-                print('epoch %d, time %.2fs, iteration %d, throughput=%.2fK wps'
-                      % (epoch, time.time() - start_time, i, wps / 1000))
+                wps = log_wc / (time.time() - start_time)
+                l_avg = l_avg.asscalar() / log_interval
+                print('epoch %d, iteration %d, loss %.2f, throughput=%.2fK wps'
+                      % (epoch, i, l_avg, wps / 1000))
+                start_time = time.time()
+                log_wc = 0
+                l_avg = 0
 
-        print('epoch %d, time %.2fs, train loss %.2f'
-              % (epoch, time.time() - start_time,
-                 train_l_sum.asscalar() / num_samples))
         get_k_closest_tokens(vocab, embedding, 10, example_token)
         print("")
 ```
@@ -302,7 +303,7 @@ def train_embedding(num_epochs):
 train_embedding(num_epochs=1)
 ```
 
-### Word Similarity and Relatedness Task
+## Word Similarity and Relatedness Task
 
 Word embeddings should capture the
 relationsship between words in natural language.
@@ -318,7 +319,7 @@ evaluation-datasets). We use several of them in the evaluation example below.
 We first show a few samples from the WordSim353 dataset, to get an overall
 feeling of the Dataset structur
 
-### Evaluation
+## Evaluation
 
 Thanks to the subword support of the `FasttextEmbeddingModel` we
 can evaluate on all words in the evaluation dataset,
@@ -364,7 +365,7 @@ print('Spearman rank correlation on {} pairs of {}: {}'.format(
     len(words1), rw.__class__.__name__, sr.correlation.round(3)))
 ```
 
-# Further information
+## Further information
 
 For further information and examples on training and
 evaluating word embeddings with GluonNLP take a look at the Word Embedding
