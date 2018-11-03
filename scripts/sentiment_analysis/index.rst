@@ -89,7 +89,6 @@ test accuracy:
 
    $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 60 --dropout 0.5 --lr 0.0001 --model_mode static --data_name MR
 
-...
 
 [3]:
 
@@ -97,7 +96,6 @@ test accuracy:
 
    $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 60 --dropout 0.5 --lr 0.0001 --model_mode non-static --data_name MR
 
-...
 
 [4]:
 
@@ -105,15 +103,11 @@ test accuracy:
 
    $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 60 --dropout 0.5 --lr 0.0001 --model_mode multichannel --data_name MR
 
-...
-
 [5]:
 
 .. code-block:: console
 
    $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 40 --dropout 0.5 --lr 0.0001 --model_mode rand --data_name SST-1
-
-...
 
 [6]:
 
@@ -121,15 +115,11 @@ test accuracy:
 
    $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 40 --dropout 0.5 --lr 0.0001 --model_mode static --data_name SST-1
 
-...
-
 [7]:
 
 .. code-block:: console
 
    $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 40 --dropout 0.5 --lr 0.0001 --model_mode non-static --data_name SST-1
-
-...
 
 [8]:
 
@@ -137,15 +127,11 @@ test accuracy:
 
    $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 40 --dropout 0.5 --lr 0.0001 --model_mode multichannel --data_name SST-1
 
-...
-
 [9]:
 
 .. code-block:: console
 
    $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 40 --dropout 0.5 --lr 0.0001 --model_mode rand --data_name SST-2
-
-...
 
 [10]:
 
@@ -153,23 +139,17 @@ test accuracy:
 
    $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 40 --dropout 0.5 --lr 0.0001 --model_mode static --data_name SST-2
 
-...
-
 [11]:
 
 .. code-block:: console
 
    $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 40 --dropout 0.5 --lr 0.0001 --model_mode non-static --data_name SST-2
 
-...
-
 [12]:
 
 .. code-block:: console
 
    $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 40 --dropout 0.5 --lr 0.0001 --model_mode multichannel --data_name SST-2
-
-...
 
 [13]:
 
@@ -183,23 +163,17 @@ test accuracy:
 
    $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 40 --dropout 0.5 --lr 0.0001 --model_mode static --data_name Subj
 
-...
-
 [15]:
 
 .. code-block:: console
 
    $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 40 --dropout 0.5 --lr 0.0001 --model_mode non-static --data_name Subj
 
-...
-
 [16]:
 
 .. code-block:: console
 
    $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 40 --dropout 0.5 --lr 0.0001 --model_mode multichannel --data_name Subj
-
-...
 
 [17]:
 
@@ -213,15 +187,11 @@ test accuracy:
 
    $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 40 --dropout 0.5 --lr 0.0001 --model_mode static --data_name TREC
 
-...
-
 [19]:
 
 .. code-block:: console
 
    $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 40 --dropout 0.5 --lr 0.0001 --model_mode non-static --data_name TREC
-
-...
 
 [20]:
 
