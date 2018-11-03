@@ -199,4 +199,3 @@ test accuracy:
 
    $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 40 --dropout 0.5 --lr 0.0001 --model_mode multichannel --data_name TREC
 
-...
