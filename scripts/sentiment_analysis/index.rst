@@ -28,9 +28,9 @@ Through textCNN Model
 +++++++++++++++++++++++++++++++++++++++
 
 
-This script can be used to train a sentiment analysis model.
-The convolutional models is loaded from Gluon NLP Toolkit model zoo. It also showcases how to use different 
-bucketing strategies to speed up training.
+This script can be used to train a sentiment analysis model with convolutional neural networks, i.e., textCNN:
+
+Kim, Y. (2014). Convolutional neural networks for sentence classification. arXiv preprint arXiv:1408.5882.
 
 epoch:
 
@@ -63,7 +63,7 @@ log:
 +----------------+----------------------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------+
 
 
-acc:
+test accuracy:
 
 +----------------+----------+-----------+-----------+----------+----------+
 |                |   MR     |   SST-1   |   SST-2   |   Subj   |   TREC   |
@@ -139,4 +139,94 @@ acc:
 
 ...
 
-[1] Kim, Y. (2014). Convolutional neural networks for sentence classification. arXiv preprint arXiv:1408.5882.
+[9]:
+
+.. code-block:: console
+
+   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 40 --dropout 0.5 --lr 0.0001 --model_mode rand --data_name SST-2
+
+...
+
+[10]:
+
+.. code-block:: console
+
+   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 40 --dropout 0.5 --lr 0.0001 --model_mode static --data_name SST-2
+
+...
+
+[11]:
+
+.. code-block:: console
+
+   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 40 --dropout 0.5 --lr 0.0001 --model_mode non-static --data_name SST-2
+
+...
+
+[12]:
+
+.. code-block:: console
+
+   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 40 --dropout 0.5 --lr 0.0001 --model_mode multichannel --data_name SST-2
+
+...
+
+[13]:
+
+.. code-block:: console
+
+   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 40 --dropout 0.5 --lr 0.0001 --model_mode rand --data_name Subj
+
+[14]:
+
+.. code-block:: console
+
+   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 40 --dropout 0.5 --lr 0.0001 --model_mode static --data_name Subj
+
+...
+
+[15]:
+
+.. code-block:: console
+
+   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 40 --dropout 0.5 --lr 0.0001 --model_mode non-static --data_name Subj
+
+...
+
+[16]:
+
+.. code-block:: console
+
+   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 40 --dropout 0.5 --lr 0.0001 --model_mode multichannel --data_name Subj
+
+...
+
+[17]:
+
+.. code-block:: console
+
+   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 40 --dropout 0.5 --lr 0.0001 --model_mode rand --data_name TREC
+
+[18]:
+
+.. code-block:: console
+
+   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 40 --dropout 0.5 --lr 0.0001 --model_mode static --data_name TREC
+
+...
+
+[19]:
+
+.. code-block:: console
+
+   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 40 --dropout 0.5 --lr 0.0001 --model_mode non-static --data_name TREC
+
+...
+
+[20]:
+
+.. code-block:: console
+
+   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 40 --dropout 0.5 --lr 0.0001 --model_mode multichannel --data_name TREC
+
+...
