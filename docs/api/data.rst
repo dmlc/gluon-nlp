@@ -72,7 +72,7 @@ Sentiment Analysis: SST
     
 Sentiment Analysis: Subj
 ~~~~~~~~~~~~~~~~~~~~~~~~
-Subj is a Subjectivity data set for sentiment analysis.
+`Subj <https://www.cs.cornell.edu/people/pabo/movie-review-data/>`_ is a Subjectivity data set for sentiment analysis.
     Sentences labeled with respect to their subjectivity status (subjective or objective).
 
 .. autosummary::
