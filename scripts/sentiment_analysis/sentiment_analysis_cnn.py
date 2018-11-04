@@ -36,20 +36,21 @@ import mxnet as mx
 from mxnet import nd, gluon, autograd
 from mxnet.gluon.data import DataLoader
 
-import process
-import textCNN
+import .process
+import .textCNN
 
 
 np.random.seed(3435)
 random.seed(3435)
 mx.random.seed(3435)
 
-parser = argparse.ArgumentParser(description='Sentiment analysis with the textCNN model on various datasets.')
+parser = argparse.ArgumentParser(description='Sentiment analysis with the textCNN model on\
+                                 various datasets.')
 parser.add_argument('--data_name', choices=['MR', 'SST-1', 'SST-2', 'Subj', 'TREC'], default='MR',
                     help='name of the data set')
 parser.add_argument('--model_mode', choices=['rand', 'static', 'non-static', 'multichannel'],
-                    default='multichannel', help='Variants of the textCNN model (see the paper: Convolutional\
-                    Neural Networks for Sentence Classification).')
+                    default='multichannel', help='Variants of the textCNN model (see the paper:\
+                    Convolutional Neural Networks for Sentence Classification).')
 parser.add_argument('--lr', type=float, default=2.5E-3,
                     help='initial learning rate')
 parser.add_argument('--epochs', type=int, default=20,
