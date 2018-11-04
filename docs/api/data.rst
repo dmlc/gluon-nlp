@@ -50,7 +50,7 @@ It provides a set of 25,000 highly polar movie reviews for training, 25,000 for 
 
 Sentiment Analysis: MR
 ~~~~~~~~~~~~~~~~~~~~~~~~
-`MR <https://www.cs.cornell.edu/people/pabo/movie-review-data/>`_ is a data set of movie reviews for sentiment analysis. Available are collections of movie-review documents labeled with respect to their overall sentiment polarity (positive or negative).
+`MR <https://www.cs.cornell.edu/people/pabo/movie-review-data/>`_ is a movie-review data set of 10,662 sentences labeled with respect to their overall sentiment polarity (positive or negative).
 
 .. autosummary::
     :nosignatures:
@@ -59,12 +59,13 @@ Sentiment Analysis: MR
     
 Sentiment Analysis: SST
 ~~~~~~~~~~~~~~~~~~~~~~~~
-`SST <http://nlp.stanford.edu/sentiment/>`_ is an extension of the MR data set. However, train/dev/test splits are provided and labels are fine-grained (very positive, positive, neutral, negative, very negative).
+`SST <http://nlp.stanford.edu/sentiment/>`_ is an extension of the MR data set. However, train/dev/test splits are provided and labels are fine-grained (very positive, positive, neutral, negative, very negative).The training/test data sets have 237107, 2210 sentences respectively. Note that some papers remove neutral sentences and consider binary sentiment polarity only.
 
 .. autosummary::
     :nosignatures:
 
-    SST
+    SST-1
+    SST-2
     
 Sentiment Analysis: Subj
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -77,7 +78,7 @@ Sentiment Analysis: Subj
     
 Sentiment Analysis: TREC
 ~~~~~~~~~~~~~~~~~~~~~~~~
-`TREC <http://cogcomp.cs.illinois.edu/Data/QA/QC/>`_ is a question data set for sentiment analysis.
+`TREC <http://cogcomp.org/page/resource_view/49/>`_ is a movie-review data set of 10,000 sentences labeled with respect to their subjectivity status (subjective or objective).
 
 .. autosummary::
     :nosignatures:
