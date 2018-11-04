@@ -50,9 +50,7 @@ It provides a set of 25,000 highly polar movie reviews for training, 25,000 for 
 
 Sentiment Analysis: MR
 ~~~~~~~~~~~~~~~~~~~~~~~~
-`MR <https://www.cs.cornell.edu/people/pabo/movie-review-data/>`_ is a data set of movie reviews for sentiment analysis.
-    Available are collections of movie-review documents labeled with respect to their overall sentiment polarity (positive 
-    or negative).
+`MR <https://www.cs.cornell.edu/people/pabo/movie-review-data/>`_ is a data set of movie reviews for sentiment analysis. Available are collections of movie-review documents labeled with respect to their overall sentiment polarity (positive or negative).
 
 .. autosummary::
     :nosignatures:
@@ -61,9 +59,7 @@ Sentiment Analysis: MR
     
 Sentiment Analysis: SST
 ~~~~~~~~~~~~~~~~~~~~~~~~
-`SST <http://nlp.stanford.edu/sentiment/>`_ is an extension of the MR data set.
-    However, train/dev/test splits are provided and labels are fine-grained
-    (very positive, positive, neutral, negative, very negative).
+`SST <http://nlp.stanford.edu/sentiment/>`_ is an extension of the MR data set. However, train/dev/test splits are provided and labels are fine-grained (very positive, positive, neutral, negative, very negative).
 
 .. autosummary::
     :nosignatures:
@@ -72,8 +68,7 @@ Sentiment Analysis: SST
     
 Sentiment Analysis: Subj
 ~~~~~~~~~~~~~~~~~~~~~~~~
-`Subj <https://www.cs.cornell.edu/people/pabo/movie-review-data/>`_ is a Subjectivity data set for sentiment analysis.
-    Sentences labeled with respect to their subjectivity status (subjective or objective).
+`Subj <https://www.cs.cornell.edu/people/pabo/movie-review-data/>`_ is a Subjectivity data set for sentiment analysis. Sentences labeled with respect to their subjectivity status (subjective or objective).
 
 .. autosummary::
     :nosignatures:
