@@ -36,7 +36,7 @@ import mxnet as mx
 from mxnet import nd, gluon, autograd
 from mxnet.gluon.data import DataLoader
 
-import process
+import process_data
 import textCNN
 
 
