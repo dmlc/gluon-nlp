@@ -77,10 +77,10 @@ else:
 
 if args.data_name == 'MR' or args.data_name == 'Subj':
     vocab, max_len, output_size, train_dataset, train_data_lengths \
-    = process.load_dataset(args.data_name)
+    = process_data.load_dataset(args.data_name)
 else:
     vocab, max_len, output_size, train_dataset, train_data_lengths, \
-    test_dataset, test_data_lengths = process.load_dataset(args.data_name)
+    test_dataset, test_data_lengths = process_data.load_dataset(args.data_name)
 
 model = textCNN.model(args.dropout, vocab, args.model_mode, output_size)
 print(model)
