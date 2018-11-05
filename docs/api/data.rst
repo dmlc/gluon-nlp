@@ -49,7 +49,7 @@ It provides a set of 25,000 highly polar movie reviews for training, 25,000 for 
     IMDB
 
 Sentiment Analysis: MR
-~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~
 `MR <https://www.cs.cornell.edu/people/pabo/movie-review-data/>`_ is a movie-review data set of 10,662 sentences labeled with respect to their overall sentiment polarity (positive or negative).
 
 .. autosummary::
@@ -58,14 +58,14 @@ Sentiment Analysis: MR
     MR
     
 Sentiment Analysis: SST-1
-~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~
 `SST-1 <http://nlp.stanford.edu/sentiment/>`_ is an extension of the MR data set. However, training/test splits are provided and labels are fine-grained (very positive, positive, neutral, negative, very negative). The training and test data sets have 237,107 and 2,210 sentences respectively.
  .. autosummary::
     :nosignatures:
      SST-1
 
 Sentiment Analysis: SST-2
-~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~
 Same with SST-1, but neutral sentences are removed and only binary sentiment polarity are considered: very positive is considered as positive, and very negative is considered as negative.
 
  .. autosummary::
