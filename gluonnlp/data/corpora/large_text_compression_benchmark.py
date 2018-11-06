@@ -94,7 +94,7 @@ class Text8(_LargeTextCompressionBenchmark):
 
     """
 
-    archive_file = ('text8.zip', '6c70299b93b7e1f927b42cd8f6ac1a31547c7a2e')
+    archive_file = ('text8-6c70299b.zip', '6c70299b93b7e1f927b42cd8f6ac1a31547c7a2e')
     data_file = {
         'train': ('text8', '0dc3edebc970dcc96137e7deda4d9995af9d93de')
     }

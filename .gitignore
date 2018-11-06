@@ -119,3 +119,6 @@ docs/examples/*.zip
 docs/examples/*/*.ipynb
 
 conda
+
+# vscode
+.vscode
