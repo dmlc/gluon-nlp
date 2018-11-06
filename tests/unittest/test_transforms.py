@@ -126,6 +126,7 @@ def test_sentencepiece_tokenizer():
         warnings.warn("Sentencepiece not installed, skip test_sentencepiece_tokenizer().")
         return
     assert isinstance(ret, list)
+    assert all(t in tokenizer.tokens for t in ret)
     assert len(ret) > 0
     assert text == detext
 
@@ -145,4 +146,5 @@ def test_sentencepiece_tokenizer_subword_regularization():
         return
     assert text == detext
     assert any(reg_ret[i] != reg_ret[0] for i in range(len(reg_ret)))
+    assert all(t in tokenizer.tokens for ret in reg_ret for t in ret)
     assert all(detokenizer(reg_ret[i]) == detext for i in range(len(reg_ret)))
