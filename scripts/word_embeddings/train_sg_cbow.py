@@ -18,22 +18,17 @@
 # under the License.
 
 # pylint: disable=global-variable-undefined,wrong-import-position
-"""Fasttext embedding model
-===========================
+"""SkipGram and CBOW embedding models
+=====================================
 
-This example shows how to train a FastText embedding model on Text8 with the
-Gluon NLP Toolkit.
+This example shows how to train SkipGram (SG) and Continuous Bag of Words
+(CBOW) embedding models with the Gluon NLP Toolkit. Including fastText style
+subword information is supported.
 
-The FastText embedding model was introduced by
-
-- Bojanowski, P., Grave, E., Joulin, A., & Mikolov, T. (2017). Enriching word
-  vectors with subword information. TACL, 5(), 135–146.
-
-When setting --ngram-buckets to 0, a Word2Vec embedding model is trained. The
-Word2Vec embedding model was introduced by
-
-- Tomas Mikolov, Kai Chen, Greg Corrado, and Jeffrey Dean. Efficient estimation
-  of word representations in vector space. ICLR Workshop , 2013
+The SG and CBOW models were introduced by "Mikolov et al. Efficient estimation
+of word representations in vector space. ICLR Workshop, 2013". The fastText
+model was introduced by "Bojanowski et al. Enriching word vectors with subword
+information. TACL 2017"
 
 """
 import argparse

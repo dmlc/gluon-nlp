@@ -35,7 +35,7 @@ def test_toy():
 @pytest.mark.gpu
 def test_embedding():
     process = subprocess.check_call([
-        'python', './scripts/word_embeddings/train_fasttext.py', '--gpu', '0',
+        'python', './scripts/word_embeddings/train_sg_cbow.py', '--gpu', '0',
         '--epochs', '1', '--optimizer', 'sgd', '--ngram-buckets', '100',
         '--max-vocab-size', '100', '--batch-size', '64'
     ])
