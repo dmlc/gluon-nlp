@@ -57,23 +57,23 @@ Sentiment Analysis: MR
 
     MR
     
-Sentiment Analysis: SST-1
+Sentiment Analysis: SST_1
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 `SST-1 <http://nlp.stanford.edu/sentiment/>`_ is an extension of the MR data set. However, training/test splits are provided and labels are fine-grained (very positive, positive, neutral, negative, very negative). The training and test data sets have 237,107 and 2,210 sentences respectively.
 
 .. autosummary::
     :nosignatures:
     
-    SST-1
+    SST_1
 
-Sentiment Analysis: SST-2
+Sentiment Analysis: SST_2
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 Same with SST-1, but neutral sentences are removed and only binary sentiment polarity are considered: very positive is considered as positive, and very negative is considered as negative.
 
 .. autosummary::
     :nosignatures:
     
-    SST-2
+    SST_2
     
 Sentiment Analysis: Subj
 ~~~~~~~~~~~~~~~~~~~~~~~~
