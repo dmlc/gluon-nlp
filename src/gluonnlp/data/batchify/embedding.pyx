@@ -20,23 +20,12 @@
 
 __all__ = ['EmbeddingCenterContextBatchify']
 
-import logging
 import random
 
 from mxnet import nd
 import numpy as np
 
 from ..stream import DataStream
-
-try:
-    from numba import njit, prange
-    numba_njit = njit(nogil=True)
-except ImportError:
-    # Define numba shims
-    prange = range
-
-    def numba_njit(func):
-        return func
 
 
 class EmbeddingCenterContextBatchify(object):
@@ -137,12 +126,6 @@ class _EmbeddingCenterContextBatchify(DataStream):
         self._index_dtype = index_dtype
 
     def __iter__(self):
-        if prange is range:
-            logging.warning(
-                'EmbeddingCenterContextBatchify supports just in time compilation '
-                'with numba, but numba is not installed. '
-                'Consider "pip install numba" for significant speed-ups.')
-
         coded = [c for c in self._coded if len(c) > 1]
         if self._shuffle:
             random.shuffle(coded)
@@ -167,7 +150,6 @@ class _EmbeddingCenterContextBatchify(DataStream):
             yield nd.array(center, dtype=self._index_dtype), context_coo
 
 
-@numba_njit
 def _get_sentence_start_end(sentence_boundaries, sentence_pointer):
     end = sentence_boundaries[sentence_pointer]
     if sentence_pointer == 0:
@@ -177,7 +159,6 @@ def _get_sentence_start_end(sentence_boundaries, sentence_pointer):
     return start, end
 
 
-@numba_njit
 def _context_generator(sentences, sentence_boundaries, window, batch_size,
                        random_window_size, cbow, seed):
     num_rows = batch_size
@@ -240,7 +221,6 @@ def _context_generator(sentences, sentence_boundaries, window, batch_size,
             break
 
 
-@numba_njit
 def _get_context(center_index, sentences, sentence_boundaries, window_size,
                  random_window_size, seed):
     """Compute the context with respect to a center word in a sentence.

@@ -6,6 +6,9 @@ __pycache__/
 # C extensions
 *.so
 
+# Cython .c files
+gluonnlp/*.cpp
+
 # Distribution / packaging
 .Python
 env/

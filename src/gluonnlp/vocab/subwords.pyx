@@ -25,18 +25,16 @@ import sys
 import numpy as np
 from mxnet import registry
 
-from ..base import numba_njit
-
 __all__ = [
     'SubwordFunction', 'ByteSubwords', 'NGramHashes',
     'register_subword_function', 'create_subword_function',
-    'list_subword_functions'
-]
+    'list_subword_functions']
 
 
 def register_subword_function(subword_cls):
     """Registers a new subword function."""
-    register_text_embedding = registry.get_register_func(SubwordFunction, 'subword function')
+    register_text_embedding = registry.get_register_func(
+        SubwordFunction, 'subword function')
     return register_text_embedding(subword_cls)
 
 
@@ -126,8 +124,7 @@ class ByteSubwords(SubwordFunction):
         else:
             return [
                 list((ord(c) for c in word.encode(self.encoding)))
-                for word in words
-            ]
+                for word in words]
 
     def __len__(self):
         return 256
@@ -168,39 +165,16 @@ class ByteSubwords(SubwordFunction):
         return subwords
 
 
-@numba_njit
-def _byte_to_int(b):
-    return b
-
-
-if sys.version_info[0] == 2:
-    # Python 2 requires an extra `ord()` when operating on memoryview outside of numba
-
-    try:
-        import numba
-        if numba.config.DISABLE_JIT:
-            # JIT disabled is equivalent to numba not being present
-            raise ImportError
-    except ImportError:
-
-        # pylint: disable=function-redefined
-        @numba_njit
-        def _byte_to_int(b):
-            return ord(b)
-
-
-@numba_njit
 def _fasttext_ngram_hashes(word, ns, bucket_size):
     hashes = []
     max_n = np.max(ns)
     for i in range(len(word)):  # pylint: disable=consider-using-enumerate
-        if (_byte_to_int(word[i]) & 0xC0) == 0x80:
+        if (word[i] & 0xC0) == 0x80:
             # Byte is continuation byte
             continue
         n = 0
         for j in range(i, len(word)):
-            if (j + 1 < len(word)
-                    and _byte_to_int(word[j + 1]) & 0xC0) == 0x80:
+            if (j + 1 < len(word) and word[j + 1] & 0xC0) == 0x80:
                 # Next byte is continuation byte
                 continue
             n += 1
@@ -214,12 +188,11 @@ def _fasttext_ngram_hashes(word, ns, bucket_size):
     return hashes
 
 
-@numba_njit
 def _fasttext_hash(ngram):
     h = np.uint32(2166136261)
     for c in ngram:
         # Extra np.uint32 casts due to https://github.com/numba/numba/issues/3112
-        h = np.uint32(h ^ np.uint32(np.int8(_byte_to_int(c))))
+        h = np.uint32(h ^ np.uint32(np.int8(c)))
         h = np.uint32(h * np.uint32(16777619))
     return h
 

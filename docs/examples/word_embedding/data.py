@@ -35,9 +35,17 @@ import numpy as np
 import gluonnlp as nlp
 from gluonnlp import Vocab
 from gluonnlp.data import SimpleDatasetStream, CorpusDataset
-from gluonnlp.base import numba_njit
 
 from utils import print_time
+
+try:
+    from numba import njit
+    numba_njit = njit(nogil=True)
+except ImportError:
+    # Define numba shims
+    def numba_njit(f):
+        return f
+
 
 
 def text8(min_freq=5, max_vocab_size=None):
