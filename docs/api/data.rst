@@ -75,14 +75,14 @@ Same with SST-1, but neutral sentences are removed and only binary sentiment pol
     
     SST_2
     
-Sentiment Analysis: Subj
+Sentiment Analysis: SUBJ
 ~~~~~~~~~~~~~~~~~~~~~~~~
-`Subj <https://www.cs.cornell.edu/people/pabo/movie-review-data/>`_ is a Subjectivity data set for sentiment analysis. Sentences labeled with respect to their subjectivity status (subjective or objective).
+`SUBJ <https://www.cs.cornell.edu/people/pabo/movie-review-data/>`_ is a Subjectivity data set for sentiment analysis. Sentences labeled with respect to their subjectivity status (subjective or objective).
 
 .. autosummary::
     :nosignatures:
 
-    Subj
+    SUBJ
     
 Sentiment Analysis: TREC
 ~~~~~~~~~~~~~~~~~~~~~~~~
