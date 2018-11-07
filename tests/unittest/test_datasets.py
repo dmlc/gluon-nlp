@@ -106,7 +106,7 @@ def test_imdb():
 @pytest.mark.serial
 def test_mr():
     all = nlp.data.MR(
-        root=os.path.join('tests', 'data', 'mr'), segment='all')
+        root=os.path.join('tests', 'data', 'mr'))
     assert len(all) == 10662, len(all)
     for i, (data, label) in enumerate(all):
         assert isinstance(data, _str_types)
@@ -145,7 +145,7 @@ def test_sst_2():
 @pytest.mark.serial
 def test_subj():
     all = nlp.data.SUBJ(
-        root=os.path.join('tests', 'data', 'mr'), segment='all')
+        root=os.path.join('tests', 'data', 'mr'))
     assert len(all) == 10000, len(all)
     for i, (data, label) in enumerate(all):
         assert isinstance(data, _str_types)

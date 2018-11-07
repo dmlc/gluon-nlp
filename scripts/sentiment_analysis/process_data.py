@@ -29,7 +29,7 @@ from mxnet import nd, gluon
 
 def _load_file(data_name):
     if data_name == 'MR':
-        train_dataset = nlp.data.MR(root='data/mr', segment='all')
+        train_dataset = nlp.data.MR(root='data/mr')
         output_size = 2
         return train_dataset, output_size
     elif data_name == 'SST-1':
@@ -43,7 +43,7 @@ def _load_file(data_name):
         output_size = 2
         return train_dataset, test_dataset, output_size
     elif data_name == 'Subj':
-        train_dataset = nlp.data.SUBJ(root='data/Subj', segment='all')
+        train_dataset = nlp.data.SUBJ(root='data/Subj')
         output_size = 2
         return train_dataset, output_size
     else:
