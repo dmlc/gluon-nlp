@@ -171,6 +171,11 @@ class TransformerEncoderCell(HybridBlock):
         Initializer for the bias vector.
     ffn_activation: str, default 'relu'
         Activation function applied on the feed-forward layer.
+    attention_use_bias : bool
+        Apply bias term to the linear projections of key, value, query in the attention cell.
+        Default is False.
+    attention_proj_use_bias : bool
+        Apply bias term to the linear projection of the output of attention cell. Default is False.
     prefix : str, default 'rnn_'
         Prefix for name of `Block`s
         (and name of weight if params is `None`).
@@ -182,7 +187,8 @@ class TransformerEncoderCell(HybridBlock):
                  hidden_size=512, num_heads=4, scaled=True,
                  dropout=0.0, use_residual=True, output_attention=False,
                  weight_initializer=None, bias_initializer='zeros',
-                 ffn_activation='relu', prefix=None, params=None):
+                 ffn_activation='relu', attention_use_bias=False,
+                 attention_proj_use_bias=False, prefix=None, params=None):
         super(TransformerEncoderCell, self).__init__(prefix=prefix, params=params)
         self._units = units
         self._num_heads = num_heads
@@ -195,8 +201,10 @@ class TransformerEncoderCell(HybridBlock):
                                                       units=units,
                                                       num_heads=num_heads,
                                                       scaled=scaled,
-                                                      dropout=dropout)
-            self.proj = nn.Dense(units=units, flatten=False, use_bias=False,
+                                                      dropout=dropout,
+                                                      use_bias=attention_use_bias)
+            self.proj = nn.Dense(units=units, flatten=False,
+                                 use_bias=attention_proj_use_bias,
                                  weight_initializer=weight_initializer,
                                  bias_initializer=bias_initializer,
                                  prefix='proj_')
@@ -395,6 +403,10 @@ class TransformerEncoder(HybridBlock, Seq2SeqEncoder):
         Initializer for the bias vector.
     ffn_activation: str, default 'relu'
         Activation function applied on the feed-forward layer.
+    attention_use_bias : bool
+        Apply bias term when projecting key, value, query in the attention cell. Default is False.
+    attention_proj_use_bias : bool
+        Apply bias term to the linear projection of the output of attention cell. Default is False.
     prefix : str, default 'rnn_'
         Prefix for name of `Block`s
         (and name of weight if params is `None`).
@@ -407,7 +419,8 @@ class TransformerEncoder(HybridBlock, Seq2SeqEncoder):
                  num_heads=4, scaled=True, dropout=0.0,
                  use_residual=True, output_attention=False,
                  weight_initializer=None, bias_initializer='zeros',
-                 ffn_activation='relu',
+                 ffn_activation='relu', attention_use_bias=False,
+                 attention_proj_use_bias=False,
                  prefix=None, params=None):
         super(TransformerEncoder, self).__init__(prefix=prefix, params=params)
         assert units % num_heads == 0,\
@@ -444,6 +457,8 @@ class TransformerEncoder(HybridBlock, Seq2SeqEncoder):
                         scaled=scaled,
                         output_attention=output_attention,
                         ffn_activation=ffn_activation,
+                        attention_use_bias=attention_use_bias,
+                        attention_proj_use_bias=attention_proj_use_bias,
                         prefix='transformer%d_' % i))
 
     def __call__(self, inputs, states=None, valid_length=None): #pylint: disable=arguments-differ
