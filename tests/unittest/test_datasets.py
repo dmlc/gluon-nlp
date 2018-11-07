@@ -103,6 +103,68 @@ def test_imdb():
         assert isinstance(data, _str_types)
         assert score == 0
 
+@pytest.mark.serial
+def test_mr():
+    all = nlp.data.MR(
+        root=os.path.join('tests', 'data', 'mr'), segment='all')
+    assert len(all) == 10662, len(all)
+    for i, (data, label) in enumerate(all):
+        assert isinstance(data, _str_types)
+        assert label <= 1
+        
+@pytest.mark.serial
+def test_sst_1():
+    train = nlp.data.SST_1(
+        root=os.path.join('tests', 'data', 'sst-1'), segment='train')
+    test = nlp.data.SST_1(
+        root=os.path.join('tests', 'data', 'sst-1'), segment='test')
+    assert len(train) == 237107, len(train)
+    assert len(test) == 2125, len(test)
+    for i, (data, label) in enumerate(train):
+        assert isinstance(data, _str_types)
+        assert label <= 4
+    for i, (data, label) in enumerate(test):
+        assert isinstance(data, _str_types)
+        assert label <= 4
+        
+@pytest.mark.serial
+def test_sst_2():
+    train = nlp.data.SST_2(
+        root=os.path.join('tests', 'data', 'sst-2'), segment='train')
+    test = nlp.data.SST_2(
+        root=os.path.join('tests', 'data', 'sst-2'), segment='test')
+    assert len(train) == 118038, len(train)
+    assert len(test) == 1745, len(test)
+    for i, (data, label) in enumerate(train):
+        assert isinstance(data, _str_types)
+        assert label <= 1
+    for i, (data, label) in enumerate(test):
+        assert isinstance(data, _str_types)
+        assert label <= 1  
+        
+@pytest.mark.serial
+def test_subj():
+    all = nlp.data.SUBJ(
+        root=os.path.join('tests', 'data', 'mr'), segment='all')
+    assert len(all) == 10000, len(all)
+    for i, (data, label) in enumerate(all):
+        assert isinstance(data, _str_types)
+        assert label <= 1
+
+@pytest.mark.serial
+def test_trec():
+    train = nlp.data.TREC(
+        root=os.path.join('tests', 'data', 'trec'), segment='train')
+    test = nlp.data.TREC(
+        root=os.path.join('tests', 'data', 'trec'), segment='test')
+    assert len(train) == 11452, len(train)
+    assert len(test) == 500, len(test)
+    for i, (data, label) in enumerate(train):
+        assert isinstance(data, _str_types)
+        assert label <= 5
+    for i, (data, label) in enumerate(test):
+        assert isinstance(data, _str_types)
+        assert label <= 5  
 
 ###############################################################################
 # Word similarity and relatedness datasets

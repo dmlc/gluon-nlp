@@ -48,6 +48,51 @@ It provides a set of 25,000 highly polar movie reviews for training, 25,000 for 
 
     IMDB
 
+Sentiment Analysis: MR
+~~~~~~~~~~~~~~~~~~~~~~
+`MR <https://www.cs.cornell.edu/people/pabo/movie-review-data/>`_ is a movie-review data set of 10,662 sentences labeled with respect to their overall sentiment polarity (positive or negative).
+
+.. autosummary::
+    :nosignatures:
+
+    MR
+    
+Sentiment Analysis: SST_1
+~~~~~~~~~~~~~~~~~~~~~~~~~
+`SST-1 <http://nlp.stanford.edu/sentiment/>`_ is an extension of the MR data set. However, training/test splits are provided and labels are fine-grained (very positive, positive, neutral, negative, very negative). The training and test data sets have 237,107 and 2,210 sentences respectively.
+
+.. autosummary::
+    :nosignatures:
+    
+    SST_1
+
+Sentiment Analysis: SST_2
+~~~~~~~~~~~~~~~~~~~~~~~~~
+Same with SST-1, but neutral sentences are removed and only binary sentiment polarity are considered: very positive is considered as positive, and very negative is considered as negative.
+
+.. autosummary::
+    :nosignatures:
+    
+    SST_2
+    
+Sentiment Analysis: SUBJ
+~~~~~~~~~~~~~~~~~~~~~~~~
+`SUBJ <https://www.cs.cornell.edu/people/pabo/movie-review-data/>`_ is a Subjectivity data set for sentiment analysis. Sentences labeled with respect to their subjectivity status (subjective or objective).
+
+.. autosummary::
+    :nosignatures:
+
+    SUBJ
+    
+Sentiment Analysis: TREC
+~~~~~~~~~~~~~~~~~~~~~~~~
+`TREC <http://cogcomp.org/page/resource_view/49/>`_ is a movie-review data set of 10,000 sentences labeled with respect to their subjectivity status (subjective or objective).
+
+.. autosummary::
+    :nosignatures:
+
+    TREC
+    
 Word Embedding Evaluation Datasets
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 There are a number of commonly used datasets for intrinsic evaluation for word embeddings.
