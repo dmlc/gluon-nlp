@@ -2,6 +2,7 @@ channels:
   - conda-forge
 dependencies:
   - python=3.6
+  - pip=18.1
   - ipython
   - ipykernel
   - sphinx=1.7.7
@@ -12,7 +13,6 @@ dependencies:
   - spacy
   - nltk
   - pandoc=1.19.2
-  - pip=9.0.3
   - notedown
   - numba>=v0.40.0
   - pip:
