@@ -27,16 +27,16 @@ class Tarjan:
         vertices: set of dependents
         SCCs: list of sets of strongly connected components. Non-singleton sets are cycles.
     """
-
-    # =============================================================
     def __init__(self, prediction, tokens):
         """
-          Inputs:
-            prediction: a predicted dependency tree where
-              prediction[dep_idx] = head_idx
-            tokens: the tokens we care about (i.e. exclude _GO, _EOS, and _PAD)
-        """
 
+        Parameters
+        ----------
+        prediction : numpy.ndarray
+            a predicted dependency tree where prediction[dep_idx] = head_idx
+        tokens : numpy.ndarray
+            the tokens we care about (i.e. exclude _GO, _EOS, and _PAD)
+        """
         self._edges = defaultdict(set)
         self._vertices = set((0,))
         for dep, head in enumerate(prediction[tokens]):

@@ -29,36 +29,39 @@ class _Config(Savable):
                  dropout_mlp=0.33, learning_rate=2e-3, decay=.75, decay_steps=5000, beta_1=.9, beta_2=.9, epsilon=1e-12,
                  num_buckets_train=40,
                  num_buckets_valid=10, num_buckets_test=10, train_iters=50000, train_batch_size=5000, debug=False):
-        """
-        Internal structure for hyper parameters, intended for pickle serialization.
-        :param train_file:
-        :param dev_file:
-        :param test_file:
-        :param save_dir:
-        :param pretrained_embeddings_file:
-        :param min_occur_count:
-        :param lstm_layers:
-        :param word_dims:
-        :param tag_dims:
-        :param dropout_emb:
-        :param lstm_hiddens:
-        :param dropout_lstm_input:
-        :param dropout_lstm_hidden:
-        :param mlp_arc_size:
-        :param mlp_rel_size:
-        :param dropout_mlp:
-        :param learning_rate:
-        :param decay:
-        :param decay_steps:
-        :param beta_1:
-        :param beta_2:
-        :param epsilon:
-        :param num_buckets_train:
-        :param num_buckets_valid:
-        :param num_buckets_test:
-        :param train_iters:
-        :param train_batch_size:
-        :param debug:
+        """Internal structure for hyper parameters, intended for pickle serialization.
+            May be replaced by a dict, but this class provides intuitive properties and saving/loading mechanism
+
+        Parameters
+        ----------
+        train_file
+        dev_file
+        test_file
+        save_dir
+        pretrained_embeddings_file
+        min_occur_count
+        lstm_layers
+        word_dims
+        tag_dims
+        dropout_emb
+        lstm_hiddens
+        dropout_lstm_input
+        dropout_lstm_hidden
+        mlp_arc_size
+        mlp_rel_size
+        dropout_mlp
+        learning_rate
+        decay
+        decay_steps
+        beta_1
+        beta_2
+        epsilon
+        num_buckets_train
+        num_buckets_valid
+        num_buckets_test
+        train_iters
+        train_batch_size
+        debug
         """
         self.pretrained_embeddings_file = pretrained_embeddings_file
         self.train_file = train_file

@@ -33,11 +33,11 @@ from gluonnlp.model.biaffine.parser.evaluate import evaluate_official_script
 
 
 class DepParser(object):
-    def __init__(self):
-        """
-        User interfaces for biaffine dependency parser. It wraps a biaffine model inside, provides training,
+    """User interfaces for biaffine dependency parser. It wraps a biaffine model inside, provides training,
         evaluating and parsing
-        """
+    """
+
+    def __init__(self):
         super().__init__()
         self._parser = None
         self._vocab = None
@@ -49,40 +49,77 @@ class DepParser(object):
               num_buckets_train=40,
               num_buckets_valid=10, num_buckets_test=10, train_iters=50000, train_batch_size=5000,
               test_batch_size=5000, validate_every=100, save_after=5000, debug=False):
-        """
-        Train a deep biaffine dependency parser
-        :param train_file: training set
-        :param dev_file: dev set
-        :param test_file: test set
-        :param save_dir: a directory for saving model and related data
-        :param pretrained_embeddings_file: pre-trained embeddings file, plain text format
-        :param min_occur_count: threshold of rare word, which will be replaced with UNK,
-        :param lstm_layers: layers of lstm
-        :param word_dims: dimension of word embedding
-        :param tag_dims: dimension of tag embedding
-        :param dropout_emb: word dropout
-        :param lstm_hiddens: size of lstm hidden states
-        :param dropout_lstm_input: dropout on x in variational RNN
-        :param dropout_lstm_hidden: dropout on h in variational RNN
-        :param mlp_arc_size: output size of MLP for arc feature extraction
-        :param mlp_rel_size: output size of MLP for rel feature extraction
-        :param dropout_mlp: dropout on the output of LSTM
-        :param learning_rate: learning rate
-        :param decay: see ExponentialScheduler
-        :param decay_steps: see ExponentialScheduler
-        :param beta_1: see ExponentialScheduler
-        :param beta_2: see ExponentialScheduler
-        :param epsilon: see ExponentialScheduler
-        :param num_buckets_train: number of buckets for training
-        :param num_buckets_valid: number of buckets for dev
-        :param num_buckets_test: number of buckets for testing
-        :param train_iters: training iterations
-        :param train_batch_size: training batch size
-        :param test_batch_size: test batch size
-        :param validate_every: validate on dev set every such number of batches
-        :param save_after: skip model saving in early epochs
-        :param debug: debug mode
-        :return: self
+        """Train a deep biaffine dependency parser
+
+        Parameters
+        ----------
+        train_file : str
+            path to training set
+        dev_file : str
+            path to dev set
+        test_file : str
+            path to test set
+        save_dir : str
+            a directory for saving model and related meta-data
+        pretrained_embeddings_file : str
+            pre-trained embeddings file, plain text format
+        min_occur_count : int
+            threshold of rare words, which will be replaced with UNKs,
+        lstm_layers : int
+            layers of lstm
+        word_dims : int
+            dimension of word embedding
+        tag_dims : int
+            dimension of tag embedding
+        dropout_emb : float
+            word dropout
+        lstm_hiddens : int
+            size of lstm hidden states
+        dropout_lstm_input : int
+            dropout on x in variational RNN
+        dropout_lstm_hidden : int
+            dropout on h in variational RNN
+        mlp_arc_size : int
+            output size of MLP for arc feature extraction
+        mlp_rel_size : int
+            output size of MLP for rel feature extraction
+        dropout_mlp : float
+            dropout on the output of LSTM
+        learning_rate : float
+            learning rate
+        decay : float
+            see ExponentialScheduler
+        decay_steps : int
+            see ExponentialScheduler
+        beta_1 : float
+            see ExponentialScheduler
+        beta_2 : float
+            see ExponentialScheduler
+        epsilon : float
+            see ExponentialScheduler
+        num_buckets_train : int
+            number of buckets for training data set
+        num_buckets_valid : int
+            number of buckets for dev data set
+        num_buckets_test : int
+            number of buckets for testing data set
+        train_iters : int
+            training iterations
+        train_batch_size : int
+            training batch size
+        test_batch_size : int
+            test batch size
+        validate_every : int
+            validate on dev set every such number of batches
+        save_after : int
+            skip saving model in early epochs
+        debug : bool
+            debug mode
+
+        Returns
+        -------
+        DepParser
+            parser itself
         """
         logger = init_logger(save_dir)
         config = _Config(train_file, dev_file, test_file, save_dir, pretrained_embeddings_file, min_occur_count,
@@ -163,10 +200,17 @@ class DepParser(object):
         return self
 
     def load(self, path):
-        """
-        Load from disk
-        :param path: path to the directory which typically contains a config.pkl file and a model.bin file
-        :return: self
+        """Load from disk
+
+        Parameters
+        ----------
+        path : str
+            path to the directory which typically contains a config.pkl file and a model.bin file
+
+        Returns
+        -------
+        DepParser
+            parser itself
         """
         config = _Config.load(os.path.join(path, 'config.pkl'))
         self._vocab = vocab = ParserVocabulary.load(config.save_vocab_path)
@@ -180,14 +224,25 @@ class DepParser(object):
         return self
 
     def evaluate(self, test_file, save_dir=None, logger=None, num_buckets_test=10, test_batch_size=5000):
-        """
-        Run evaluation on test set
-        :param test_file: path to test set
-        :param save_dir: where to store intermediate results and log
-        :param logger: logger for printing results
-        :param num_buckets_test: number of clusters for sentences from test set
-        :param test_batch_size: batch size of test set
-        :return: UAS, LAS
+        """Run evaluation on test set
+
+        Parameters
+        ----------
+        test_file : str
+            path to test set
+        save_dir : str
+            where to store intermediate results and log
+        logger : logging.logger
+            logger for printing results
+        num_buckets_test : int
+            number of clusters for sentences from test set
+        test_batch_size : int
+            batch size of test set
+
+        Returns
+        -------
+        tuple
+            UAS, LAS
         """
         parser = self._parser
         vocab = self._vocab
@@ -201,10 +256,17 @@ class DepParser(object):
         return UAS, LAS
 
     def parse(self, sentence):
-        """
-        Parse raw sentence into ConllSentence
-        :param sentence: a list of (word, tag) tuples
-        :return: ConllSentence object
+        """Parse raw sentence into ConllSentence
+
+        Parameters
+        ----------
+        sentence : list
+            a list of (word, tag) tuples
+
+        Returns
+        -------
+        ConllSentence
+            ConllSentence object
         """
         words = np.zeros((len(sentence) + 1, 1), np.int32)
         tags = np.zeros((len(sentence) + 1, 1), np.int32)

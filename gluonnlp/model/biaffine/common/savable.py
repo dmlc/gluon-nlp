@@ -20,26 +20,37 @@ import pickle
 
 
 class Savable(object):
+    """
+    A super class for save/load operations.
+    """
+
     def __init__(self):
-        """
-        A super class for save/load operations.
-        """
         super().__init__()
 
     def save(self, path):
-        """
-        Save to path
-        :param path:
+        """Save to path
+
+        Parameters
+        ----------
+        path : str
+            file path
         """
         with open(path, 'wb') as f:
             pickle.dump(self, f)
 
     @staticmethod
     def load(path):
-        """
-        Load from path
-        :param path:
-        :return:
+        """Load from path
+
+        Parameters
+        ----------
+        path : str
+            file path
+
+        Returns
+        -------
+        Savable
+            An object
         """
         with open(path, 'rb') as f:
             return pickle.load(f)

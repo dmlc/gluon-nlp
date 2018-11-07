@@ -41,22 +41,36 @@ class BiaffineParser(nn.Block):
                  dropout_mlp,
                  debug=False
                  ):
-        """
-        A MXNet replicate of biaffine parser, see following paper
+        """A MXNet replicate of biaffine parser, see following paper
         Dozat, T., & Manning, C. D. (2016). Deep biaffine attention for neural dependency parsing. arXiv:1611.01734.
         It's a re-implementation of DyNet version https://github.com/jcyk/Dynet-Biaffine-dependency-parser
-        :param vocab: ParserVocabulary built from a data set
-        :param word_dims: word vector dimension
-        :param tag_dims: tag vector dimension
-        :param dropout_dim: keep rate of word dropout (drop out entire embedding)
-        :param lstm_layers: number of lstm layers
-        :param lstm_hiddens: size of lstm hidden states
-        :param dropout_lstm_input: dropout on x in variational RNN
-        :param dropout_lstm_hidden: dropout on h in variational RNN
-        :param mlp_arc_size: output size of MLP for arc feature extraction
-        :param mlp_rel_size: output size of MLP for rel feature extraction
-        :param dropout_mlp: dropout on the output of LSTM
-        :param debug: debug mode
+
+        Parameters
+        ----------
+        vocab : ParserVocabulary
+            built from a data set
+        word_dims : int
+            word vector dimension
+        tag_dims : int
+            tag vector dimension
+        dropout_dim : int
+            keep rate of word dropout (drop out entire embedding)
+        lstm_layers : int
+            number of lstm layers
+        lstm_hiddens : int
+            size of lstm hidden states
+        dropout_lstm_input : float
+            dropout on x in variational RNN
+        dropout_lstm_hidden : float
+            dropout on h in variational RNN
+        mlp_arc_size : int
+            output size of MLP for arc feature extraction
+        mlp_rel_size : int
+            output size of MLP for rel feature extraction
+        dropout_mlp : int
+            dropout on the output of LSTM
+        debug : bool
+            debug mode
         """
         super(BiaffineParser, self).__init__()
 
@@ -104,11 +118,19 @@ class BiaffineParser(nn.Block):
         self.initialize()
 
         def _emb_mask_generator(seq_len, batch_size):
-            """
-            word and tag dropout (drop whole word and tag)
-            :param seq_len: length of sequence
-            :param batch_size: batch size
-            :return: dropout mask for word and tag
+            """word and tag dropout (drop whole word and tag)
+
+            Parameters
+            ----------
+            seq_len : int
+                length of sequence
+            batch_size : int
+                batch size
+
+            Returns
+            -------
+            np.ndarray
+                dropout mask for word and tag
             """
             wm, tm = nd.zeros((seq_len, batch_size, 1)), nd.zeros((seq_len, batch_size, 1))
             for i in range(seq_len):
@@ -126,44 +148,78 @@ class BiaffineParser(nn.Block):
         self.generate_emb_mask = _emb_mask_generator
 
     def parameter_from_numpy(self, name, array):
-        """
-        Create parameter with its value initialized according to a numpy tensor
-        :param name: parameter name
-        :param array: initiation value
-        :return: parameter
+        """ Create parameter with its value initialized according to a numpy tensor
+
+        Parameters
+        ----------
+        name : str
+            parameter name
+        array : np.ndarray
+            initiation value
+
+        Returns
+        -------
+        mxnet.gluon.parameter
+            a parameter object
         """
         p = self.params.get(name, shape=array.shape, init=mx.init.Constant(array))
         return p
 
     def parameter_init(self, name, shape, init):
-        """
-        Create parameter given name, shape and initiator
-        :param name: parameter name
-        :param shape: parameter shape
-        :param init: initiator
-        :return: parameter
+        """Create parameter given name, shape and initiator
+
+        Parameters
+        ----------
+        name : str
+            parameter name
+        shape : tuple
+            parameter shape
+        init : mxnet.initializer
+            an initializer
+
+        Returns
+        -------
+        mxnet.gluon.parameter
+            a parameter object
         """
         p = self.params.get(name, shape=shape, init=init)
         return p
 
     def forward(self, word_inputs, tag_inputs, arc_targets=None, rel_targets=None):
-        """
-        Run decoding
-        :param word_inputs: seq_len x batch_size
-        :param tag_inputs: seq_len x batch_size
-        :param arc_targets: seq_len x batch_size
-        :param rel_targets: seq_len x batch_size
-        :return: (arc_accuracy, rel_accuracy, overall_accuracy, loss) when training, else if given gold target
+        """Run decoding
+
+        Parameters
+        ----------
+        word_inputs : mxnet.ndarray.NDArray
+            word indices of seq_len x batch_size
+        tag_inputs : mxnet.ndarray.NDArray
+            tag indices of seq_len x batch_size
+        arc_targets : mxnet.ndarray.NDArray
+            gold arc indices of seq_len x batch_size
+        rel_targets : mxnet.ndarray.NDArray
+            gold rel indices of seq_len x batch_size
+        Returns
+        -------
+        tuple
+            (arc_accuracy, rel_accuracy, overall_accuracy, loss) when training, else if given gold target
         then return arc_accuracy, rel_accuracy, overall_accuracy, outputs, otherwise return outputs, where outputs is a
         list of (arcs, rels).
         """
         is_train = autograd.is_training()
 
         def flatten_numpy(ndarray):
-            """
-            Flatten nd-array to 1-d column vector
-            :param ndarray:
-            :return:
+            """Flatten nd-array to 1-d column vector
+
+            Parameters
+            ----------
+            ndarray : numpy.ndarray
+                input tensor
+
+            Returns
+            -------
+            numpy.ndarray
+                A column vector
+
             """
             return np.reshape(ndarray, (-1,), 'F')
 
@@ -280,9 +336,12 @@ class BiaffineParser(nn.Block):
         return outputs
 
     def save_parameters(self, filename):
-        """
-        Save model
-        :param filename: path to model file
+        """Save model
+
+        Parameters
+        ----------
+        filename : str
+            path to model file
         """
         params = self._collect_params_with_prefix()
         if self.pret_word_embs:  # don't save word embeddings inside model
@@ -291,15 +350,21 @@ class BiaffineParser(nn.Block):
         ndarray.save(filename, arg_dict)
 
     def save(self, save_path):
-        """
-        Save model
-        :param save_path: path to model file
+        """Save model
+
+        Parameters
+        ----------
+        filename : str
+            path to model file
         """
         self.save_parameters(save_path)
 
     def load(self, load_path):
-        """
-        Load model
-        :param save_path: path to model file
+        """Load model
+
+        Parameters
+        ----------
+        load_path : str
+            path to model file
         """
         self.load_parameters(load_path, allow_missing=True)

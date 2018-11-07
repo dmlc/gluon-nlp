@@ -27,18 +27,33 @@ from .savable import Savable
 class ConllWord(object):
     def __init__(self, id, form, lemma=None, cpos=None, pos=None, feats=None, head=None, relation=None, phead=None,
                  pdeprel=None):
-        """
-        CoNLL format template, see http://anthology.aclweb.org/W/W06/W06-2920.pdf
-        :param id: Token counter, starting at 1 for each new sentence.
-        :param form: Word form or punctuation symbol.
-        :param lemma: Lemma or stem (depending on the particular treebank) of word form, or an underscore if not available.
-        :param cpos: Coarse-grained part-of-speech tag, where the tagset depends on the treebank.
-        :param pos: Fine-grained part-of-speech tag, where the tagset depends on the treebank.
-        :param feats: Unordered set of syntactic and/or morphological features (depending on the particular treebank), or an underscore if not available.
-        :param head: Head of the current token, which is either a value of ID, or zero (’0’) if the token links to the virtual root node of the sentence.
-        :param relation: Dependency relation to the HEAD.
-        :param phead: Projective head of current token, which is either a value of ID or zero (’0’), or an underscore if not available.
-        :param pdeprel: Dependency relation to the PHEAD, or an underscore if not available.
+        """CoNLL format template, see http://anthology.aclweb.org/W/W06/W06-2920.pdf
+
+        Parameters
+        ----------
+        id : int
+            Token counter, starting at 1 for each new sentence.
+        form : str
+            Word form or punctuation symbol.
+        lemma : str
+            Lemma or stem (depending on the particular treebank) of word form, or an underscore if not available.
+        cpos : str
+            Coarse-grained part-of-speech tag, where the tagset depends on the treebank.
+        pos : str
+            Fine-grained part-of-speech tag, where the tagset depends on the treebank.
+        feats : str
+            Unordered set of syntactic and/or morphological features (depending on the particular treebank),
+            or an underscore if not available.
+        head : int
+            Head of the current token, which is either a value of ID,
+            or zero (’0’) if the token links to the virtual root node of the sentence.
+        relation : str
+            Dependency relation to the HEAD.
+        phead : int
+            Projective head of current token, which is either a value of ID or zero (’0’),
+            or an underscore if not available.
+        pdeprel : str
+            Dependency relation to the PHEAD, or an underscore if not available.
         """
         self.id = id
         self.form = form
@@ -46,7 +61,6 @@ class ConllWord(object):
         self.pos = pos
         self.head = head
         self.relation = relation
-
         self.lemma = lemma
         self.feats = feats
         self.phead = phead
@@ -59,7 +73,14 @@ class ConllWord(object):
 
 
 class ConllSentence(object):
-    def __init__(self, words: list):
+    def __init__(self, words):
+        """A list of ConllWord
+
+        Parameters
+        ----------
+        words : ConllWord
+            words of a sentence
+        """
         super().__init__()
         self.words = words
 
@@ -77,19 +98,22 @@ class ConllSentence(object):
 
 
 class ParserVocabulary(Savable):
-    """
-    Vocabulary, holds word, tag and relation along with their id
-    Adopted from https://github.com/jcyk/Dynet-Biaffine-dependency-parser with some modifications
-    """
     PAD, ROOT, UNK = 0, 1, 2
     """Padding, Root, Unknown"""
 
     def __init__(self, input_file, pret_file=None, min_occur_count=2):
-        """
-        Load from conll file
-        :param input_file: conll file
-        :param pret_file: word vector file
-        :param min_occur_count: threshold of word frequency
+        """Vocabulary, holds word, tag and relation along with their id.
+            Load from conll file
+            Adopted from https://github.com/jcyk/Dynet-Biaffine-dependency-parser with some modifications
+
+        Parameters
+        ----------
+        input_file : str
+            conll file
+        pret_file : str
+            word vector file (plain text)
+        min_occur_count : int
+            threshold of word frequency, those words with smaller frequency will be replaced by UNK
         """
         super().__init__()
         word_counter = Counter()
@@ -134,17 +158,23 @@ class ParserVocabulary(Savable):
         # print("Vocab info: #words %d, #tags %d #rels %d" % (self.vocab_size, self.tag_size, self.rel_size))
 
     def log_info(self, logger):
-        """
-        Print statistical information via the provided logger
-        :param logger: logger created using logging.getLogger()
+        """Print statistical information via the provided logger
+
+        Parameters
+        ----------
+        logger : logging.Logger
+            logger created using logging.getLogger()
         """
         logger.info('#words in training set: %d' % self._words_in_train_data)
         logger.info("Vocab info: #words %d, #tags %d #rels %d" % (self.vocab_size, self.tag_size, self.rel_size))
 
     def _add_pret_words(self, pret_file):
-        """
-        Read pre-trained embedding file for extending vocabulary
-        :param pret_file: path to pre-trained embedding file
+        """Read pre-trained embedding file for extending vocabulary
+
+        Parameters
+        ----------
+        pret_file : str
+            path to pre-trained embedding file
         """
         words_in_train_data = set(self._id2word)
         with open(pret_file) as f:
@@ -157,17 +187,26 @@ class ParserVocabulary(Savable):
                         # print 'Total words:', len(self._id2word)
 
     def has_pret_embs(self):
-        """
-        Whether this vocabulary contains words from pre-trained embeddings
-        :return:
+        """Check whether this vocabulary contains words from pre-trained embeddings
+
+        Returns
+        -------
+        bool
+            Whether this vocabulary contains words from pre-trained embeddings
         """
         return self._pret_file is not None
 
     def get_pret_embs(self, word_dims=None):
-        """
-        Read pre-trained embedding file
-        :param word_dims: vector size. Use `None` for auto-infer
-        :return: T x C numpy NDArray
+        """Read pre-trained embedding file
+
+        Parameters
+        ----------
+        word_dims : int or None
+            vector size. Use `None` for auto-infer
+        Returns
+        -------
+        numpy.ndarray
+            T x C numpy NDArray
         """
         assert (self._pret_file is not None), "No pretrained file provided."
         embs = [[]] * len(self._id2word)
@@ -196,68 +235,116 @@ class ParserVocabulary(Savable):
         return pret_embs / np.std(pret_embs) if train else pret_embs
 
     def get_word_embs(self, word_dims):
-        """
-        Get randomly initialized embeddings when pre-trained embeddings are used, otherwise zero vectors
-        :param word_dims: word vector size
-        :return: T x C numpy NDArray
+        """Get randomly initialized embeddings when pre-trained embeddings are used, otherwise zero vectors
+
+        Parameters
+        ----------
+        word_dims : int
+            word vector size
+        Returns
+        -------
+        numpy.ndarray
+            T x C numpy NDArray
         """
         if self._pret_file is not None:
             return np.random.randn(self.words_in_train, word_dims).astype(np.float32)
         return np.zeros((self.words_in_train, word_dims), dtype=np.float32)
 
     def get_tag_embs(self, tag_dims):
-        """
-        Randomly initialize embeddings for tag
-        :param tag_dims: tag vector size
-        :return: numpy NDArray
+        """Randomly initialize embeddings for tag
+
+        Parameters
+        ----------
+        tag_dims : int
+            tag vector size
+
+        Returns
+        -------
+        numpy.ndarray
+            random embeddings
         """
         return np.random.randn(self.tag_size, tag_dims).astype(np.float32)
 
     def word2id(self, xs):
-        """
-        Map word(s) to its id(s)
-        :param xs: word or a list of words
-        :return: id or a list of ids
+        """Map word(s) to its id(s)
+
+        Parameters
+        ----------
+        xs : str or list
+            word or a list of words
+
+        Returns
+        -------
+        int or list
+            id or a list of ids
         """
         if isinstance(xs, list):
             return [self._word2id.get(x, self.UNK) for x in xs]
         return self._word2id.get(xs, self.UNK)
 
     def id2word(self, xs):
-        """
-        Map id(s) to word(s)
-        :param xs: id or a list of ids
-        :return: word or a list of words
+        """Map id(s) to word(s)
+
+        Parameters
+        ----------
+        xs : int
+            id or a list of ids
+
+        Returns
+        -------
+        str or list
+            word or a list of words
         """
         if isinstance(xs, list):
             return [self._id2word[x] for x in xs]
         return self._id2word[xs]
 
     def rel2id(self, xs):
-        """
-        Map relation(s) to id(s)
-        :param xs: relation
-        :return: id
+        """Map relation(s) to id(s)
+
+        Parameters
+        ----------
+        xs : str or list
+            relation
+
+        Returns
+        -------
+        int or list
+            id(s) of relation
         """
         if isinstance(xs, list):
             return [self._rel2id[x] for x in xs]
         return self._rel2id[xs]
 
     def id2rel(self, xs):
-        """
-        Map id(s) to relation(s)
-        :param xs:  id
-        :return: relation
+        """Map id(s) to relation(s)
+
+        Parameters
+        ----------
+        xs : int
+            id or a list of ids
+
+        Returns
+        -------
+        str or list
+            relation or a list of relations
         """
         if isinstance(xs, list):
             return [self._id2rel[x] for x in xs]
         return self._id2rel[xs]
 
     def tag2id(self, xs):
-        """
-        Map tag(s) to id(s)
-        :param xs: tag
-        :return: id
+        """Map tag(s) to id(s)
+
+        Parameters
+        ----------
+        xs : str or list
+            tag or tags
+
+        Returns
+        -------
+        int or list
+            id(s) of tag(s)
         """
         if isinstance(xs, list):
             return [self._tag2id.get(x, self.UNK) for x in xs]
@@ -266,8 +353,11 @@ class ParserVocabulary(Savable):
     @property
     def words_in_train(self):
         """
-        #words in training set
-        :return:
+        get #words in training set
+        Returns
+        -------
+        int
+            #words in training set
         """
         return self._words_in_train_data
 
@@ -291,11 +381,16 @@ class DataLoader(object):
     """
 
     def __init__(self, input_file, n_bkts, vocab):
-        """
-        Begin loading
-        :param input_file: CoNLL file
-        :param n_bkts: number of buckets
-        :param vocab: vocabulary object
+        """Create a data loader for a data set
+
+        Parameters
+        ----------
+        input_file : str
+            path to CoNLL file
+        n_bkts : int
+            number of buckets
+        vocab : ParserVocabulary
+            vocabulary object
         """
         self.vocab = vocab
         sents = []
@@ -348,17 +443,29 @@ class DataLoader(object):
 
     @property
     def idx_sequence(self):
-        """
-        Indices of sentences when enumerating data set from batches
-        :return:
+        """Indices of sentences when enumerating data set from batches.
+        Useful when retrieving the correct order of sentences
+
+        Returns
+        -------
+        list
+            List of ids ranging from 0 to #sent -1
         """
         return [x[1] for x in sorted(zip(self._record, list(range(len(self._record)))))]
 
     def get_batches(self, batch_size, shuffle=True):
-        """
-        Get batch iterator
-        :param batch_size: size of one batch
-        :param shuffle: shuffle batches. Don't set to True when evaluating on dev or test set.
+        """Get batch iterator
+
+        Parameters
+        ----------
+        batch_size : int
+            size of one batch
+        shuffle : bool
+            whether to shuffle batches. Don't set to True when evaluating on dev or test set.
+        Returns
+        -------
+        tuple
+            word_inputs, tag_inputs, arc_targets, rel_targets
         """
         batches = []
         for bkt_idx, bucket in enumerate(self._buckets):

@@ -27,16 +27,29 @@ from gluonnlp.model.biaffine.common.data import DataLoader
 
 def evaluate_official_script(parser, vocab, num_buckets_test, test_batch_size, test_file, output_file,
                              debug=False):
-    """
-    Evaluate parser on a data set
-    :param parser: biaffine parser
-    :param vocab: vocabulary built from data set
-    :param num_buckets_test: size of buckets (cluster sentences into this number of clusters)
-    :param test_batch_size: batch size
-    :param test_file: gold test file
-    :param output_file: output result to this file
-    :param debug: only evaluate first 1000 sentences for debugging
-    :return: UAS, LAS, speed
+    """Evaluate parser on a data set
+
+    Parameters
+    ----------
+    parser : BiaffineParser
+        biaffine parser
+    vocab : ParserVocabulary
+        vocabulary built from data set
+    num_buckets_test : int
+        size of buckets (cluster sentences into this number of clusters)
+    test_batch_size : int
+        batch size
+    test_file : str
+        gold test file
+    output_file : str
+        output result to this file
+    debug : bool
+        only evaluate first 1000 sentences for debugging
+
+    Returns
+    -------
+    tuple
+        UAS, LAS, speed
     """
     if output_file is None:
         output_file = tempfile.NamedTemporaryFile().name

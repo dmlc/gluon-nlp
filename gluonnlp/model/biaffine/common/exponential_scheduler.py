@@ -22,14 +22,23 @@ from mxnet.lr_scheduler import LRScheduler
 class ExponentialScheduler(LRScheduler):
     def __init__(self, base_lr=0.01, decay_rate=0.5, decay_every=1, warmup_steps=0, warmup_begin_lr=0,
                  warmup_mode='linear'):
-        """
-        A simple learning rate decay scheduler
-        :param base_lr: the initial learning rate.
-        :param decay_rate: how much does the learning rate decreases to in every decay
-        :param decay_every: how often does the decay occurs
-        :param warmup_steps: not used
-        :param warmup_begin_lr: not used
-        :param warmup_mode: not used
+        """A simple learning rate decay scheduler
+            lr = base_lr * decay_rate ^ (num_update / decay_every)
+
+        Parameters
+        ----------
+        base_lr : float
+            the initial learning rate.
+        decay_rate : float
+            what percentage does the learning rate decreases to in every decay compared to last one
+        decay_every : float
+            how often does the decay occurs
+        warmup_steps : int
+            not used
+        warmup_begin_lr : int
+            not used
+        warmup_mode : int
+            not used
         """
         super().__init__(base_lr, warmup_steps, warmup_begin_lr, warmup_mode)
         self.decay_rate = decay_rate

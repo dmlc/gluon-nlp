@@ -345,7 +345,6 @@ def arc_argmax(parse_probs, length, tokens_to_keep, ensure_tree=True):
             parse_preds[new_root] = 0
         # remove cycles
         tarjan = Tarjan(parse_preds, tokens)
-        cycles = tarjan.SCCs
         for SCC in tarjan.SCCs:
             if len(SCC) > 1:
                 dependents = set()

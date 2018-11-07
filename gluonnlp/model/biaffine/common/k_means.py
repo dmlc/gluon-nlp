@@ -25,10 +25,14 @@ class KMeans(object):
     """
 
     def __init__(self, k, len_cntr):
-        """
-        Do clustering
-        :param k: k cluster
-        :param len_cntr: length counter
+        """Do clustering
+
+        Parameters
+        ----------
+        k : int
+            number of clusters
+        len_cntr : Counter
+            length counter
         """
         # Error checking
         if len(len_cntr) < k:
@@ -105,7 +109,6 @@ class KMeans(object):
         """
         one iteration of k-means
         """
-
         for split_idx in range(len(self._splits)):
             split = self._splits[split_idx]
             len_idx = self._split2len_idx[split]
@@ -145,7 +148,6 @@ class KMeans(object):
         """
         Index every sentence into a cluster
         """
-
         self._len2split_idx = {}
         last_split = -1
         for split_idx, split in enumerate(self._splits):
@@ -163,16 +165,22 @@ class KMeans(object):
 
     @property
     def splits(self):
-        """
-        Get clusters
-        :return: (bucket, length) mapping
+        """Get clusters
+
+        Returns
+        -------
+        tuple
+            (bucket, length) mapping
         """
         return self._splits
 
     @property
     def len2split_idx(self):
-        """
-        Get length to bucket mapping
-        :return: (length, bucket) mapping
+        """Get length to bucket mapping
+
+        Returns
+        -------
+        tuple
+             (length, bucket) mapping
         """
         return self._len2split_idx
