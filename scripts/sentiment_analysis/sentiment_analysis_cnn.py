@@ -37,7 +37,7 @@ from mxnet import nd, gluon, autograd
 from mxnet.gluon.data import DataLoader
 
 import process_data
-import textCNN
+import text_cnn
 
 
 np.random.seed(3435)
@@ -82,7 +82,7 @@ else:
     vocab, max_len, output_size, train_dataset, train_data_lengths, \
     test_dataset, test_data_lengths = process_data.load_dataset(args.data_name)
 
-model = textCNN.model(args.dropout, vocab, args.model_mode, output_size)
+model = text_cnn.model(args.dropout, vocab, args.model_mode, output_size)
 print(model)
 
 loss = gluon.loss.SoftmaxCrossEntropyLoss()
@@ -114,7 +114,7 @@ def evaluate(net, dataloader):
 def train(net, train_data, test_data):
     """Train textCNN model for sentiment analysis."""
     start_pipeline_time = time.time()
-    net, trainer = textCNN.init(net, vocab, args.model_mode, context, args.lr)
+    net, trainer = text_cnn.init(net, vocab, args.model_mode, context, args.lr)
     random.shuffle(train_data)
     sp = int(len(train_data)*0.9)
     train_dataloader = DataLoader(dataset=train_data[:sp],
