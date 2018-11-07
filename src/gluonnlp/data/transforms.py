@@ -687,9 +687,12 @@ class _SentencepieceProcessor(object):
         self._processor = sentencepiece.SentencePieceProcessor()
         self._processor.Load(path)
 
+    def __len__(self):
+        return len(self._processor)
+
     @property
     def tokens(self):
-        return [self._processor.id_to_piece(i) for i in range(len(self._processor))]
+        return [self._processor.id_to_piece(i) for i in range(len(self))]
 
 class SentencepieceTokenizer(_SentencepieceProcessor):
     r"""Apply the Sentencepiece Tokenizer, which supports subword tokenization such as BPE.
