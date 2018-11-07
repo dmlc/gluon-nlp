@@ -75,6 +75,7 @@ class IMDB(SimpleDataset):
             samples = json.load(f)
         return samples
 
+
 class MR(SimpleDataset):
     """Movie reviews for sentiment analysis.
 
@@ -83,25 +84,22 @@ class MR(SimpleDataset):
 
     Parameters
     ----------
-    segment : str, default 'train'
-        Dataset segment. Options are 'train' and 'test'.
     root : str, default '$MXNET_HOME/datasets/mr'
         Path to temp folder for storing data.
         MXNET_HOME defaults to '~/.mxnet'.
     """
-    def __init__(self, segment='all', root=os.path.join(_get_home_dir(), 'datasets', 'mr')):
+    def __init__(self, root=os.path.join(_get_home_dir(), 'datasets', 'mr')):
         self._data_file = {'all': ('all.json',
                                    '7606efec578d9613f5c38bf2cef8d3e4e6575b2c')}
         root = os.path.expanduser(root)
         if not os.path.isdir(root):
             os.makedirs(root)
         self._root = root
-        self._segment = segment
         self._get_data()
         super(MR, self).__init__(self._read_data())
 
     def _get_data(self):
-        data_file_name, data_hash = self._data_file[self._segment]
+        data_file_name, data_hash = self._data_file['all']
         root = self._root
         path = os.path.join(root, data_file_name)
         if not os.path.exists(path) or not check_sha1(path, data_hash):
@@ -109,9 +107,10 @@ class MR(SimpleDataset):
                      path=root, sha1_hash=data_hash)
 
     def _read_data(self):
-        with open(os.path.join(self._root, self._segment+'.json')) as f:
+        with open(os.path.join(self._root, 'all.json')) as f:
             samples = json.load(f)
         return samples
+
 
 class TREC(SimpleDataset):
     """Question dataset for sentiment analysis.
@@ -153,30 +152,28 @@ class TREC(SimpleDataset):
             samples = json.load(f)
         return samples
 
+
 class SUBJ(SimpleDataset):
     """Subjectivity dataset for sentiment analysis.
 
     Parameters
     ----------
-    segment : str, default 'train'
-        Dataset segment. Options are 'train' and 'test'.
     root : str, default '$MXNET_HOME/datasets/subj'
         Path to temp folder for storing data.
         MXNET_HOME defaults to '~/.mxnet'.
     """
-    def __init__(self, segment='all', root=os.path.join(_get_home_dir(), 'datasets', 'subj')):
+    def __init__(self, root=os.path.join(_get_home_dir(), 'datasets', 'subj')):
         self._data_file = {'all': ('all.json',
                                    '9e7bd1daa359c24abe1fac767d0e0af7bc114045')}
         root = os.path.expanduser(root)
         if not os.path.isdir(root):
             os.makedirs(root)
         self._root = root
-        self._segment = segment
         self._get_data()
         super(SUBJ, self).__init__(self._read_data())
 
     def _get_data(self):
-        data_file_name, data_hash = self._data_file[self._segment]
+        data_file_name, data_hash = self._data_file['all']
         root = self._root
         path = os.path.join(root, data_file_name)
         if not os.path.exists(path) or not check_sha1(path, data_hash):
@@ -184,9 +181,10 @@ class SUBJ(SimpleDataset):
                      path=root, sha1_hash=data_hash)
 
     def _read_data(self):
-        with open(os.path.join(self._root, self._segment+'.json')) as f:
+        with open(os.path.join(self._root, 'all.json')) as f:
             samples = json.load(f)
         return samples
+
 
 class SST_1(SimpleDataset):
     """Stanford Sentiment Treebank: an extension of the MR data set.
@@ -229,6 +227,7 @@ class SST_1(SimpleDataset):
         with open(os.path.join(self._root, self._segment+'.json')) as f:
             samples = json.load(f)
         return samples
+
 
 class SST_2(SimpleDataset):
     """Stanford Sentiment Treebank: an extension of the MR data set.
