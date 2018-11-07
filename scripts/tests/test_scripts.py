@@ -63,6 +63,13 @@ def test_sentiment_analysis_finetune():
                                      '--save-prefix', 'imdb_lstm_200'])
     time.sleep(5)
 
+@pytest.mark.serial
+def test_sentiment_analysis_textcnn():
+    process = subprocess.check_call(['python', './scripts/sentiment_analysis/sentiment_analysis_cnn.py',
+                                     '--gpu', '0', '--batch_size', '50', '--epochs', '1',
+                                     '--dropout', '0.5', '--lr', '0.0001', '--model_mode', 'rand',
+                                     '--data_name', 'MR', '--save-prefix', 'sa-model'])
+    time.sleep(5)
 
 def test_sampling():
     process = subprocess.check_call(['python', './scripts/text_generation/sequence_sampling.py',
