@@ -16,7 +16,9 @@ extensions = [
     Extension("gluonnlp.data.batchify.embedding",
               ["src/gluonnlp/data/batchify/embedding.pyx"]),
     Extension("gluonnlp.vocab.subwords", ["src/gluonnlp/vocab/subwords.pyx"])]
-ext_modules = Cython.Build.cythonize(extensions, language_level='3str')
+ext_modules = Cython.Build.cythonize(
+    extensions, language_level='3str', compiler_directives={
+        'binding': True, 'linetrace': True})
 
 
 def read(*names, **kwargs):

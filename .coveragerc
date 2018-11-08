@@ -1,5 +1,6 @@
 # .coveragerc to control coverage.py
 [run]
+plugins = Cython.Coverage
 omit =
     tests/*
     conda/*
