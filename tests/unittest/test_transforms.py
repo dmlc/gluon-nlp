@@ -19,12 +19,14 @@
 
 from __future__ import print_function
 
+import os
 import sys
 import warnings
 import numpy as np
 from numpy.testing import assert_allclose
 import pytest
 import mxnet as mx
+from mxnet.gluon.utils import download
 from gluonnlp.data import transforms as t
 
 
@@ -109,3 +111,40 @@ def test_moses_detokenizer():
         return
     assert isinstance(ret, list)
     assert len(ret) > 0
+
+def test_sentencepiece_tokenizer():
+    url_format = 'https://apache-mxnet.s3-accelerate.amazonaws.com/gluon/dataset/vocab/{}'
+    filename = 'test-0690baed.bpe'
+    download(url_format.format(filename), path=os.path.join('tests', 'data', filename))
+    tokenizer = t.SentencepieceTokenizer(os.path.join('tests', 'data', filename))
+    detokenizer = t.SentencepieceDetokenizer(os.path.join('tests', 'data', filename))
+    text = "Introducing Gluon: An Easy-to-Use Programming Interface for Flexible Deep Learning."
+    try:
+        ret = tokenizer(text)
+        detext = detokenizer(ret)
+    except ImportError:
+        warnings.warn("Sentencepiece not installed, skip test_sentencepiece_tokenizer().")
+        return
+    assert isinstance(ret, list)
+    assert all(t in tokenizer.tokens for t in ret)
+    assert len(ret) > 0
+    assert text == detext
+
+def test_sentencepiece_tokenizer_subword_regularization():
+    url_format = 'https://apache-mxnet.s3-accelerate.amazonaws.com/gluon/dataset/vocab/{}'
+    filename = 'test-31c8ed7b.uni'
+    download(url_format.format(filename), path=os.path.join('tests', 'data', filename))
+    tokenizer = t.SentencepieceTokenizer(os.path.join('tests', 'data', filename),
+                                         -1, 0.1)
+    detokenizer = t.SentencepieceDetokenizer(os.path.join('tests', 'data', filename))
+    text = "Introducing Gluon: An Easy-to-Use Programming Interface for Flexible Deep Learning."
+    try:
+        reg_ret = [tokenizer(text) for _ in range(10)]
+        detext = detokenizer(reg_ret[0])
+    except ImportError:
+        warnings.warn("Sentencepiece not installed, skip test_sentencepiece_tokenizer().")
+        return
+    assert text == detext
+    assert any(reg_ret[i] != reg_ret[0] for i in range(len(reg_ret)))
+    assert all(t in tokenizer.tokens for ret in reg_ret for t in ret)
+    assert all(detokenizer(reg_ret[i]) == detext for i in range(len(reg_ret)))

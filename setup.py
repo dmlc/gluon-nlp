@@ -60,6 +60,7 @@ setup(
             'scipy',
             'numba>=0.40.1',
             'jieba',
+            'sentencepiece',
         ],
         'dev': [
             'pytest',
