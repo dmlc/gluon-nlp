@@ -1,9 +1,9 @@
 """Extensions to NLP Toolkit Data Stream API."""
 
-import mxnet as mx
 import numpy as np
 
 from gluonnlp.data import DataStream
+import mxnet as mx
 
 
 class BucketingStream(DataStream):

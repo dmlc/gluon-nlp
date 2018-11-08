@@ -28,11 +28,11 @@ import sys
 import logging
 import json
 
-import mxnet as mx
 import numpy as np
 from scipy import stats
 
 import gluonnlp as nlp
+import mxnet as mx
 
 
 def add_parameters(parser):

@@ -20,10 +20,10 @@
 # pylint: disable=
 """Word embedding models."""
 
-import mxnet as mx
 import numpy as np
 
 import gluonnlp as nlp
+import mxnet as mx
 
 
 class Net(mx.gluon.HybridBlock):

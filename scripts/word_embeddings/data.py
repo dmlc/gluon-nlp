@@ -31,12 +31,12 @@ import json
 import os
 import itertools
 
-import mxnet as mx
 import numpy as np
 
 import gluonnlp as nlp
 from gluonnlp import Vocab
 from gluonnlp.data import CorpusDataset, SimpleDatasetStream
+import mxnet as mx
 
 from utils import print_time
 
