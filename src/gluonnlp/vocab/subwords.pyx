@@ -25,6 +25,11 @@ import sys
 import numpy as np
 from mxnet import registry
 
+cimport cython
+from libc.stdint cimport int8_t, int64_t, uint32_t, uint64_t
+from libcpp cimport bool
+from libcpp.vector cimport vector
+
 __all__ = [
     'SubwordFunction', 'ByteSubwords', 'NGramHashes',
     'register_subword_function', 'create_subword_function',
@@ -165,35 +170,55 @@ class ByteSubwords(SubwordFunction):
         return subwords
 
 
-def _fasttext_ngram_hashes(word, ns, bucket_size):
-    hashes = []
-    max_n = np.max(ns)
-    for i in range(len(word)):  # pylint: disable=consider-using-enumerate
+cdef vector[uint32_t] _fasttext_ngram_hashes(const unsigned char[:] word, const int64_t[:] ns, const int64_t bucket_size) nogil:
+    cdef vector[uint32_t] hashes
+    cdef int64_t max_n
+    cdef int64_t n
+    cdef const unsigned char[:] ngram
+    cdef uint32_t h
+    cdef uint64_t i
+    cdef uint64_t j
+    cdef bool n_in_ns
+
+    max_n = ns[0]
+    for i in range(ns.shape[0]):
+        if ns[i] > max_n:
+            max_n = ns[i]
+
+    for i in range(word.shape[0]):
         if (word[i] & 0xC0) == 0x80:
             # Byte is continuation byte
             continue
         n = 0
-        for j in range(i, len(word)):
-            if (j + 1 < len(word) and word[j + 1] & 0xC0) == 0x80:
+        for j in range(i, word.shape[0]):
+            if (j + 1) < word.shape[0] and (word[j + 1] & 0xC0) == 0x80:
                 # Next byte is continuation byte
                 continue
             n += 1
-            if (np.sum(n == ns)  # n in ns
-                    and not (n == 1 and (i == 0 or j == len(word)))):
+
+            n_in_ns = False
+            for k in range(ns.shape[0]):
+                if n == ns[k]:
+                    n_in_ns = True
+                    break
+
+            if n_in_ns and not (n == 1 and (i == 0 or j == word.shape[0])):
                 ngram = word[i:j + 1]
                 h = _fasttext_hash(ngram)
-                hashes.append(h % bucket_size)
+                hashes.push_back(h % bucket_size)
             if n >= max_n:
                 break
     return hashes
 
 
-def _fasttext_hash(ngram):
-    h = np.uint32(2166136261)
-    for c in ngram:
-        # Extra np.uint32 casts due to https://github.com/numba/numba/issues/3112
-        h = np.uint32(h ^ np.uint32(np.int8(c)))
-        h = np.uint32(h * np.uint32(16777619))
+cdef uint32_t _fasttext_hash(const unsigned char[:] ngram) nogil:
+    cdef uint32_t h
+    cdef uint32_t c
+    h = 2166136261
+    for i in range(ngram.shape[0]):
+        c = ngram[i]
+        h = h ^ <uint32_t>(<int8_t>c)
+        h = h * <uint32_t>16777619
     return h
 
 
@@ -217,8 +242,8 @@ class NGramHashes(SubwordFunction):
 
     def __init__(self, num_subwords, ngrams=(3, 4, 5, 6), special_tokens=None):
         self.num_subwords = num_subwords
-        self.ngrams = ngrams
-        self._ngrams = np.asarray(ngrams)
+        self.ngrams = np.asarray(ngrams, dtype=np.int64)
+        self._ngrams = np.asarray(ngrams, dtype=np.int64)
 
         assert not isinstance(special_tokens, str)
         if special_tokens is None:
@@ -231,14 +256,14 @@ class NGramHashes(SubwordFunction):
 
     @staticmethod
     def fasttext_hash_asbytes(ngram, encoding='utf-8'):
-        ngram_enc = bytearray(ngram.encode(encoding))
+        ngram_enc = ngram.encode(encoding)
         _fasttext_hash(ngram_enc)
 
     def _word_to_hashes(self, word):
         if word not in self.special_tokens:
-            word_enc = bytearray((u'<' + word + u'>').encode('utf-8'))
+            word_enc = (u'<' + word + u'>').encode('utf-8')
             hashes = _fasttext_ngram_hashes(
-                memoryview(word_enc), ns=self._ngrams,
+                word_enc, ns=self._ngrams,
                 bucket_size=self.num_subwords)
         else:
             hashes = []
