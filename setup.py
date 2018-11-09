@@ -10,7 +10,8 @@ from setuptools import Extension, find_packages, setup
 
 Extension = functools.partial(
     Extension, include_dirs=[np.get_include()], define_macros=[
-        ("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION")], language='c++')
+        ("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION")], language='c++',
+    extra_compile_args=["-std=c++14"])
 
 extensions = [
     Extension("gluonnlp.data.batchify.embedding",
