@@ -138,7 +138,7 @@ def wiki(wiki_root, wiki_date, wiki_language, max_vocab_size=None):
 
 def transform_data(data, vocab, idx_to_counts, cbow, ngram_buckets, ngrams,
                    batch_size, window_size, frequent_token_subsampling=1E-4,
-                   dtype='float32', index_dtype='int64'):
+                   dtype='int64', weight_dtype='float32', index_dtype='int64'):
     """Transform a DataStream of coded DataSets to a DataStream of batches.
 
     Parameters
@@ -174,9 +174,11 @@ def transform_data(data, vocab, idx_to_counts, cbow, ngram_buckets, ngrams,
         Hyperparameter for subsampling. See idx_to_counts above for more
         information.
     dtype : str or np.dtype, default 'float32'
-        Data type of data array.
+        Data type of data arrays.
+    weight_dtype : str or np.dtype, default 'int64'
+        Data type of COO data array.
     index_dtype : str or np.dtype, default 'int64'
-        Data type of index arrays.
+        Data type of index array.
 
     Returns
     -------
@@ -210,7 +212,7 @@ def transform_data(data, vocab, idx_to_counts, cbow, ngram_buckets, ngrams,
 
     batchify = nlp.data.batchify.EmbeddingCenterContextBatchify(
         batch_size=batch_size, window_size=window_size, cbow=cbow, dtype=dtype,
-        index_dtype=index_dtype)
+        weight_dtype=weight_dtype, index_dtype=index_dtype)
     data = data.transform(batchify)
 
     if ngram_buckets:
@@ -248,39 +250,38 @@ def transform_data(data, vocab, idx_to_counts, cbow, ngram_buckets, ngrams,
     def cbow_fasttext_batch(centers, contexts):
         """Create a batch for CBOW training objective with subwords."""
         _, contexts_row, contexts_col = contexts
-        data, row, col = subword_lookup(contexts_row.asnumpy(),
-                                        contexts_col.asnumpy())
+        data, row, col = subword_lookup(contexts_row, contexts_col)
         contexts = mx.nd.sparse.csr_matrix(
-            (data, (row, col)),
-            shape=(len(centers), len(vocab) + ngram_buckets), dtype=dtype)
-        return centers, contexts
+            (data, (row, col)), dtype=weight_dtype,
+            shape=(len(centers), len(vocab) + ngram_buckets))
+        return mx.nd.array(centers, dtype=dtype), contexts
 
     def cbow_batch(centers, contexts):
         """Create a batch for CBOW training objective."""
         contexts_data, contexts_row, contexts_col = contexts
         contexts = mx.nd.sparse.csr_matrix(
-            (contexts_data, (contexts_row, contexts_col)), dtype=np.float32,
+            (contexts_data, (contexts_row, contexts_col)), dtype=weight_dtype,
             shape=(len(centers), len(vocab)))
-        return centers, contexts
+        return mx.nd.array(centers, dtype=dtype), contexts
 
     def sg_fasttext_batch(centers, contexts):
         """Create a batch for SG training objective with subwords."""
         _, _, contexts_col = contexts
-        contexts = contexts_col
-        data, row, col = subword_lookup(centers.asnumpy())
+        contexts = mx.nd.array(contexts_col, dtype=dtype)
+        data, row, col = subword_lookup(centers)
         centers_csr = mx.nd.sparse.csr_matrix(
-            (data, (row, col)), dtype=dtype,
+            (data, (row, col)), dtype=weight_dtype,
             shape=(len(centers), len(vocab) + ngram_buckets))
-        return centers_csr, contexts, centers
+        return centers_csr, contexts, mx.nd.array(centers, dtype=dtype)
 
     def sg_batch(centers, contexts):
         """Create a batch for SG training objective."""
-        _, _, contexts = contexts
+        contexts = mx.nd.array(contexts[2], dtype=dtype)
         indptr = mx.nd.arange(len(centers) + 1)
         centers_csr = mx.nd.sparse.csr_matrix(
-            (mx.nd.ones(centers.shape), centers, indptr), dtype=np.float32,
+            (mx.nd.ones(centers.shape), centers, indptr), dtype=weight_dtype,
             shape=(len(centers), len(vocab)))
-        return centers_csr, contexts, centers
+        return centers_csr, contexts, mx.nd.array(centers, dtype=dtype)
 
     data = UnchainStream(data)
     if cbow:

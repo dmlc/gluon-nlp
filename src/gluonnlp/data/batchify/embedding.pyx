@@ -26,7 +26,9 @@ from mxnet import nd
 import numpy as np
 
 from ..stream import DataStream
+from ...base import _str_types
 
+cimport numpy as cnp
 from libc.math cimport floor
 from libc.stdint cimport int8_t, int64_t, uint32_t, uint64_t
 from libcpp.algorithm cimport binary_search
@@ -74,21 +76,28 @@ class EmbeddingCenterContextBatchify(object):
        is a separate row for each context. The context_data array always
        contains weights for the context words equal to 1 over the number of
        context words in the given row of the context array.
-    dtype : numpy.dtype, default numpy.float32
-        Data type for data elements.
+    dtype : numpy.int64 or numpy.dtype('O')
+        Data type representing the objects from which to select center and
+        context elements. Can be either a int64 or object dtype. Defines the
+        data type of the returned center and context_col arrays.
+    weight_dtype : numpy.dtype, default numpy.float32
+        Data type used to represent elements in the returned data array of the
+        sparse COO representation of the context matrix.
     index_dtype : numpy.dtype, default numpy.int64
-
+        Data type used to represent elements in the returned row array of the
+        sparse COO representation of the context matrix.
     """
 
     def __init__(self, batch_size, window_size=5,
                  reduce_window_size_randomly=True, shuffle=True, cbow=False,
-                 dtype='float32', index_dtype='int64'):
+                 dtype='int64', weight_dtype='float32', index_dtype='int64'):
         self._batch_size = batch_size
         self._window_size = window_size
         self._reduce_window_size_randomly = reduce_window_size_randomly
         self._shuffle = shuffle
         self._cbow = cbow
         self._dtype = dtype
+        self._weight_dtype = weight_dtype
         self._index_dtype = index_dtype
 
     def __call__(self, corpus):
@@ -96,71 +105,73 @@ class EmbeddingCenterContextBatchify(object):
 
         Parameters
         ----------
-        corpus : list of lists of int
-            List of coded sentences. A coded sentence itself is a list of token
-            indices. Context samples do not cross sentence boundaries.
+        corpus : list of lists of dtype or list of np.ndarray
+            List of sentences. Context samples do not cross sentence boundaries.
 
          Returns
          -------
          DataStream
              Each element of the DataStream is a tuple of 2 elements (center,
-             context). center is a NDArray of shape (batch_size, ). context is
-             a tuple of 3 NDArrays, representing a sparse COO array (data, row,
-             col). The center and context arrays contain the center and
-             correpsonding context works respectively. A sparse representation
-             is used for context as the number of context words for one center
-             word varies based on the randomly chosen context window size and
-             sentence boundaries.
+             context). center is a numpy.ndarray of shape (batch_size, ).
+             context is a tuple of 3 numpy.ndarray, representing a sparse COO
+             array (data, row, col). The center and context arrays contain the
+             center and correpsonding context works respectively. A sparse
+             representation is used for context as the number of context words
+             for one center word varies based on the randomly chosen context
+             window size and sentence boundaries. Also see documentation of
+             dtype, weight_dtype, index_dtype.
 
         """
-        return _EmbeddingCenterContextBatchify(
+        return _CenterContextIterable(
             corpus, self._batch_size, self._window_size,
             self._reduce_window_size_randomly, self._shuffle, cbow=self._cbow,
-            dtype=self._dtype, index_dtype=self._index_dtype)
+            dtype=self._dtype, weight_dtype=self._weight_dtype, index_dtype=self._index_dtype)
 
 
-class _EmbeddingCenterContextBatchify(DataStream):
-    def __init__(self, coded, batch_size, window_size,
+class _CenterContextIterable(DataStream):
+    def __init__(self, sentences, batch_size, window_size,
                  reduce_window_size_randomly, shuffle, cbow, dtype,
-                 index_dtype):
-        self._coded = coded
+                 weight_dtype, index_dtype):
+        self._sentences = sentences
         self._batch_size = batch_size
         self._window_size = window_size
         self._reduce_window_size_randomly = reduce_window_size_randomly
         self._shuffle = shuffle
         self._cbow = cbow
-        self._dtype = dtype
-        self._index_dtype = index_dtype
+        self._dtype = np.dtype(dtype)
+        self._weight_dtype = np.dtype(weight_dtype)
+        self._index_dtype = np.dtype(index_dtype)
 
     def __iter__(self):
-        coded = [c for c in self._coded if len(c) > 1]
+        sentences = [c for c in self._sentences if len(c) > 1]
         if self._shuffle:
-            random.shuffle(coded)
+            random.shuffle(sentences)
 
         # Represent variable length data as continous data and pointer arrays
-        sentence_boundaries = np.cumsum([len(c) for c in coded], dtype=np.int64)
-        coded = np.concatenate(coded)
+        if np.dtype(self._dtype) not in [np.int64, np.dtype('O')]:
+            raise ValueError('Invalid dtype.')
+        sentence_boundaries = np.cumsum([len(c) for c in sentences], dtype=np.int64)
+        sentences = np.concatenate([np.asarray(a, dtype=self._dtype) for a in sentences])
 
-        iterator = _CenterContextIterator(coded, sentence_boundaries, self._window_size,
-                                         self._batch_size, random_window_size=self._reduce_window_size_randomly,
-                                         cbow=self._cbow, seed=random.getrandbits(32))
-        for (center, context_data, context_row,
-             context_col) in iterator:
-
-            context_data = nd.array(context_data, dtype=self._dtype)
-            context_row = nd.array(context_row, dtype=self._index_dtype)
-            context_col = nd.array(context_col, dtype=self._index_dtype)
-            context_coo = (context_data, context_row, context_col)
-            yield nd.array(center, dtype=self._index_dtype), context_coo
+        iterator = _CenterContextIterator(sentences, sentence_boundaries, self._window_size,
+                                          self._batch_size, random_window_size=self._reduce_window_size_randomly,
+                                          cbow=self._cbow, seed=random.getrandbits(32),
+                                          dtype=self._dtype, weight_dtype=self._weight_dtype,
+                                          index_dtype=self._index_dtype)
+        return iterator
 
 
 cdef class _CenterContextIterator:
-    cdef int64_t[:] sentences  # TODO memory view of python objects
+    cdef cnp.ndarray sentences_  # Used if dtype is object
+    cdef int64_t[:] sentences
     cdef int64_t[:] sentence_boundaries
     cdef int64_t window
     cdef int64_t batch_size
     cdef bool random_window_size
     cdef bool cbow
+    cdef cnp.dtype dtype
+    cdef cnp.dtype weight_dtype
+    cdef cnp.dtype index_dtype
 
     cdef mt19937 gen
     cdef uniform_int_distribution[int64_t] dist
@@ -170,13 +181,22 @@ cdef class _CenterContextIterator:
     cdef int64_t num_context_skip
 
     def __init__(self, sentences, sentence_boundaries, window, batch_size,
-                 random_window_size, cbow, seed):
-        self.sentences = sentences
-        self.sentence_boundaries = sentence_boundaries
+                 random_window_size, cbow, seed, dtype, weight_dtype, index_dtype):
+        sentences = np.asarray(sentences)
+        if dtype == np.dtype('O'):
+            self.sentences_ = sentences
+            self.sentences = np.arange(len(sentences), dtype=np.int64)
+        else:
+            self.sentences = sentences
+
+        self.sentence_boundaries = np.asarray(sentence_boundaries)
         self.window = window
         self.batch_size = batch_size
         self.random_window_size = random_window_size
         self.cbow = cbow
+        self.dtype = dtype
+        self.weight_dtype = weight_dtype
+        self.index_dtype = index_dtype
 
         self.gen = mt19937(seed)
         self.dist = uniform_int_distribution[int64_t](1, window)
@@ -189,9 +209,13 @@ cdef class _CenterContextIterator:
 
     def __next__(self):
         cdef vector[int64_t] center_batch
-        cdef vector[double] context_data
+        cdef vector[float] context_data
         cdef vector[int64_t] context_row
         cdef vector[int64_t] context_col
+        cdef cnp.ndarray center_batch_
+        cdef cnp.ndarray context_data_
+        cdef cnp.ndarray context_row_
+        cdef cnp.ndarray context_col_
 
         cdef int64_t i = 0
         cdef int64_t center = 0
@@ -241,7 +265,16 @@ cdef class _CenterContextIterator:
                     break
 
         if len(center_batch) == self.batch_size:
-            return center_batch, context_data, context_row, context_col
+            context_data_ = np.asarray(context_data, dtype=self.weight_dtype)
+            context_row_ = np.asarray(context_row, dtype=self.index_dtype)
+            if self.dtype == np.dtype('O'):
+                # Map int64_t to object
+                center_batch_ = self.sentences_[np.asarray(center_batch)]
+                context_col_ = self.sentences_[np.asarray(context_col)]
+            else:
+                center_batch_ = np.asarray(center_batch, dtype=self.dtype)
+                context_col_ = np.asarray(context_col, dtype=self.dtype)
+            return center_batch_, (context_data_, context_row_, context_col_)
         else:
             assert self.word_pointer >= self.sentence_boundaries[-1]
             raise StopIteration
