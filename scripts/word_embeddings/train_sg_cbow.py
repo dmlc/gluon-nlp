@@ -45,7 +45,7 @@ import gluonnlp as nlp
 import evaluation
 from utils import get_context, print_time
 from model import SG, CBOW
-from data import transform_data, text8, wiki
+from data import transform_data_word2vec, transform_data_fasttext, text8, wiki
 
 
 def parse_args():
@@ -145,10 +145,19 @@ def train(args):
         data, vocab, idx_to_counts = wiki(args.wiki_root, args.wiki_date,
                                           args.wiki_language,
                                           args.max_vocab_size)
-    data, batchify_fn, subword_function = transform_data(
-        data, vocab, idx_to_counts,
-        args.model.lower() == 'cbow', args.ngram_buckets, args.ngrams,
-        args.batch_size, args.window, args.frequent_token_subsampling)
+
+    if args.ngram_buckets > 0:
+        data, batchify_fn, subword_function = transform_data_fasttext(
+            data, vocab, idx_to_counts,
+            args.model.lower() == 'cbow', args.ngram_buckets, args.ngrams,
+            args.batch_size, args.window, args.frequent_token_subsampling)
+    else:
+        subword_function = None
+        data, batchify_fn = transform_data_word2vec(
+            data, vocab, idx_to_counts,
+            args.model.lower() == 'cbow', args.ngram_buckets, args.ngrams,
+            args.batch_size, args.window, args.frequent_token_subsampling)
+
     num_tokens = float(sum(idx_to_counts))
 
     model = CBOW if args.model.lower() == 'cbow' else SG
