@@ -202,8 +202,8 @@ def transform_data(data, vocab, idx_to_counts, cbow, ngram_buckets, ngrams,
     data = data.transform(subsample)
 
     batchify = nlp.data.batchify.EmbeddingCenterContextBatchify(
-        batch_size=batch_size, window_size=window_size, cbow=cbow, dtype=dtype,
-        index_dtype=index_dtype)
+        batch_size=batch_size, window_size=window_size, cbow=cbow,
+        weight_dtype=dtype, index_dtype=index_dtype)
     data = data.transform(batchify)
 
     if ngram_buckets:
@@ -241,8 +241,8 @@ def transform_data(data, vocab, idx_to_counts, cbow, ngram_buckets, ngrams,
     def cbow_fasttext_batch(centers, contexts):
         """Create a batch for CBOW training objective with subwords."""
         _, contexts_row, contexts_col = contexts
-        data, row, col = subword_lookup(contexts_row.asnumpy(),
-                                        contexts_col.asnumpy())
+        data, row, col = subword_lookup(contexts_row, contexts_col)
+        centers = mx.nd.array(centers, dtype=index_dtype)
         contexts = mx.nd.sparse.csr_matrix(
             (data, (row, col)),
             shape=(len(centers), len(vocab) + ngram_buckets), dtype=dtype)
@@ -251,16 +251,17 @@ def transform_data(data, vocab, idx_to_counts, cbow, ngram_buckets, ngrams,
     def cbow_batch(centers, contexts):
         """Create a batch for CBOW training objective."""
         contexts_data, contexts_row, contexts_col = contexts
+        centers = mx.nd.array(centers, dtype=index_dtype)
         contexts = mx.nd.sparse.csr_matrix(
-            (contexts_data, (contexts_row, contexts_col)), dtype=np.float32,
-            shape=(len(centers), len(vocab)))
+            (contexts_data, (contexts_row, contexts_col)),
+            shape=(len(centers), len(vocab)), dtype=dtype)
         return centers, contexts
 
     def sg_fasttext_batch(centers, contexts):
         """Create a batch for SG training objective with subwords."""
-        _, _, contexts_col = contexts
-        contexts = contexts_col
-        data, row, col = subword_lookup(centers.asnumpy())
+        contexts = mx.nd.array(contexts[2], dtype=index_dtype)
+        data, row, col = subword_lookup(centers)
+        centers = mx.nd.array(centers, dtype=index_dtype)
         centers_csr = mx.nd.sparse.csr_matrix(
             (data, (row, col)), dtype=dtype,
             shape=(len(centers), len(vocab) + ngram_buckets))
@@ -268,10 +269,11 @@ def transform_data(data, vocab, idx_to_counts, cbow, ngram_buckets, ngrams,
 
     def sg_batch(centers, contexts):
         """Create a batch for SG training objective."""
-        _, _, contexts = contexts
+        contexts = mx.nd.array(contexts[2], dtype=index_dtype)
         indptr = mx.nd.arange(len(centers) + 1)
+        centers = mx.nd.array(centers, dtype=index_dtype)
         centers_csr = mx.nd.sparse.csr_matrix(
-            (mx.nd.ones(centers.shape), centers, indptr), dtype=np.float32,
+            (mx.nd.ones(centers.shape), centers, indptr), dtype=dtype,
             shape=(len(centers), len(vocab)))
         return centers_csr, contexts, centers
 
