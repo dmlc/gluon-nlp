@@ -75,6 +75,8 @@ def parse_args():
               'If not specified, uses CPU.'))
     group.add_argument('--no-prefetch-batch', action='store_true',
                        help='Disable multi-threaded nogil batch prefetching.')
+    group.add_argument('--num-prefetch-epoch', type=int, default=3,
+                       help='Start data pipeline for next N epochs when beginning current epoch.')
     group.add_argument('--no-hybridize', action='store_true',
                        help='Disable hybridization of gluon HybridBlocks.')
 
@@ -176,7 +178,7 @@ def train(args):
 
     try:
         if args.no_prefetch_batch:
-            batches = data.transform(batchify_fn)
+            data = data.transform(batchify_fn)
         else:
             from executors import LazyThreadPoolExecutor
             num_cpu = len(os.sched_getaffinity(0))
@@ -186,14 +188,20 @@ def train(args):
         logging.warning(
             'Asynchronous batch prefetching is not supported on Python 2. '
             'Consider upgrading to Python 3 for improved performance.')
-        batches = data.transform(batchify_fn)
+        data = data.transform(batchify_fn)
 
     num_update = 0
+    prefetched_iters = []
+    for _ in range(min(args.num_prefetch_epoch, args.epochs)):
+        prefetched_iters.append(iter(data))
     for epoch in range(args.epochs):
+        if epoch + len(prefetched_iters) < args.epochs:
+            prefetched_iters.append(iter(data))
+        data_iter = prefetched_iters.pop(0)
         try:
-            batches = ex.map(batchify_fn, data)
-        except NameError:  # Py 2 or prefetching disabled
-            pass
+            batches = ex.map(batchify_fn, data_iter)
+        except NameError:  # Py 2 or batch prefetching disabled
+            batches = data_iter
 
         # Logging variables
         log_wc = 0
