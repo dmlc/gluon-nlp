@@ -70,10 +70,12 @@ compile_notebooks:
 	done;
 
 dist_scripts:
-	find scripts/* -type d -prune | grep -v 'tests\|__pycache__' | xargs -t -n 1 -I{} zip -r {}.zip {}
+	cd scripts && \
+	find * -type d -prune | grep -v 'tests\|__pycache__' | xargs -t -n 1 -I{} zip -r {}.zip {}
 
 dist_notebooks: compile_notebooks
-	find docs/examples/* -type d -prune | grep -v 'tests\|__pycache__' | xargs -t -n 1 -I{} zip -r {}.zip {} -x "*.md"
+	cd docs/examples && \
+	find * -type d -prune | grep -v 'tests\|__pycache__' | xargs -t -n 1 -I{} zip -r {}.zip {} -x "*.md"
 
 test:
 	py.test -v --capture=no --durations=0  tests/unittest scripts
