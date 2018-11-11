@@ -79,17 +79,25 @@ def cache_dataset(dataset, prefix):
     """
     if not os.path.exists(nmt._constants.CACHE_PATH):
         os.makedirs(nmt._constants.CACHE_PATH)
-    src_data = np.array([ele[0] for ele in dataset])
-    tgt_data = np.array([ele[1] for ele in dataset])
-    np.savez(os.path.join(nmt._constants.CACHE_PATH, prefix + '.npz'), src_data=src_data, tgt_data=tgt_data)
+    src_data = np.concatenate([e[0] for e in dataset])
+    tgt_data = np.concatenate([e[1] for e in dataset])
+    src_cumlen = np.cumsum([0]+[len(e[0]) for e in dataset])
+    tgt_cumlen = np.cumsum([0]+[len(e[1]) for e in dataset])
+    np.savez(os.path.join(nmt._constants.CACHE_PATH, prefix + '.npz'),
+             src_data=src_data, tgt_data=tgt_data,
+             src_cumlen=src_cumlen, tgt_cumlen=tgt_cumlen)
 
 
 def load_cached_dataset(prefix):
     cached_file_path = os.path.join(nmt._constants.CACHE_PATH, prefix + '.npz')
     if os.path.exists(cached_file_path):
         print('Load cached data from {}'.format(cached_file_path))
-        dat = np.load(cached_file_path)
-        return gluon.data.ArrayDataset(np.array(dat['src_data']), np.array(dat['tgt_data']))
+        npz_data = np.load(cached_file_path)
+        src_data, tgt_data, src_cumlen, tgt_cumlen = [npz_data[n] for n in
+                ['src_data', 'tgt_data', 'src_cumlen', 'tgt_cumlen']]
+        src_data = np.array([src_data[low:high] for low, high in zip(src_cumlen[:-1], src_cumlen[1:])])
+        tgt_data = np.array([tgt_data[low:high] for low, high in zip(tgt_cumlen[:-1], tgt_cumlen[1:])])
+        return gluon.data.ArrayDataset(np.array(src_data), np.array(tgt_data))
     else:
         return None
 

@@ -29,7 +29,7 @@ import nmt
 import hyperparameters as hparams
 
 def cache_dataset(dataset, prefix):
-    """Cache the processed npy dataset  the dataset into a npz
+    """Cache the processed npy dataset the dataset into a npz
 
     Parameters
     ----------
@@ -38,17 +38,25 @@ def cache_dataset(dataset, prefix):
     """
     if not os.path.exists(nmt._constants.CACHE_PATH):
         os.makedirs(nmt._constants.CACHE_PATH)
-    src_data = np.array([ele[0] for ele in dataset])
-    tgt_data = np.array([ele[1] for ele in dataset])
-    np.savez(os.path.join(nmt._constants.CACHE_PATH, prefix + '.npz'), src_data=src_data, tgt_data=tgt_data)
+    src_data = np.concatenate([e[0] for e in dataset])
+    tgt_data = np.concatenate([e[1] for e in dataset])
+    src_cumlen = np.cumsum([0]+[len(e[0]) for e in dataset])
+    tgt_cumlen = np.cumsum([0]+[len(e[1]) for e in dataset])
+    np.savez(os.path.join(nmt._constants.CACHE_PATH, prefix + '.npz'),
+             src_data=src_data, tgt_data=tgt_data,
+             src_cumlen=src_cumlen, tgt_cumlen=tgt_cumlen)
 
 
 def load_cached_dataset(prefix):
     cached_file_path = os.path.join(nmt._constants.CACHE_PATH, prefix + '.npz')
     if os.path.exists(cached_file_path):
         print('Loading dataset...')
-        dat = np.load(cached_file_path)
-        return gluon.data.ArrayDataset(np.array(dat['src_data']), np.array(dat['tgt_data']))
+        npz_data = np.load(cached_file_path)
+        src_data, tgt_data, src_cumlen, tgt_cumlen = [npz_data[n] for n in
+                ['src_data', 'tgt_data', 'src_cumlen', 'tgt_cumlen']]
+        src_data = np.array([src_data[low:high] for low, high in zip(src_cumlen[:-1], src_cumlen[1:])])
+        tgt_data = np.array([tgt_data[low:high] for low, high in zip(tgt_cumlen[:-1], tgt_cumlen[1:])])
+        return gluon.data.ArrayDataset(np.array(src_data), np.array(tgt_data))
     else:
         return None
 
@@ -67,18 +75,18 @@ class TrainValDataTransform(object):
     tgt_max_len : int
     """
 
-    def __init__(self, src_vocab, tgt_vocab, src_max_len, tgt_max_len):
+    def __init__(self, src_vocab, tgt_vocab, src_max_len=None, tgt_max_len=None):
         self._src_vocab = src_vocab
         self._tgt_vocab = tgt_vocab
         self._src_max_len = src_max_len
         self._tgt_max_len = tgt_max_len
 
     def __call__(self, src, tgt):
-        if self._src_max_len > 0:
+        if self._src_max_len:
             src_sentence = self._src_vocab[src.split()[:self._src_max_len]]
         else:
             src_sentence = self._src_vocab[src.split()]
-        if self._tgt_max_len > 0:
+        if self._tgt_max_len:
             tgt_sentence = self._tgt_vocab[tgt.split()[:self._tgt_max_len]]
         else:
             tgt_sentence = self._tgt_vocab[tgt.split()]
@@ -118,7 +126,7 @@ def load_translation_data(dataset, src_lang='en', tgt_lang='de'):
                                                         hparams.src_max_len, hparams.tgt_max_len)
         data_train = nlp.data.WMT2014BPE('train', src_lang=src_lang, tgt_lang=tgt_lang)
         data_val = nlp.data.WMT2014BPE('newstest2013', src_lang=src_lang, tgt_lang=tgt_lang)
-        data_test = nlp.data.WMT2014BPE('newstest2014', src_lang=src_lang, tgt_lang=tgt_lang, 
+        data_test = nlp.data.WMT2014BPE('newstest2014', src_lang=src_lang, tgt_lang=tgt_lang,
                                full=False)
     elif dataset == 'TOY':
         common_prefix = 'TOY_{}_{}_{}_{}'.format(src_lang, tgt_lang,

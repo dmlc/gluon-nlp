@@ -71,8 +71,7 @@ def _bucket_stats(bucket_sample_ids, seq_lengths):
 
 
 class BucketScheme(object):
-    r"""Base class for generating bucket keys.
-    """
+    r"""Base class for generating bucket keys."""
     def __call__(self, max_lengths, min_lengths, num_buckets):
         """Generate bucket keys based on the lengths of sequences and number of buckets.
 
@@ -94,8 +93,7 @@ class BucketScheme(object):
 
 
 class ConstWidthBucket(BucketScheme):
-    r""" Buckets with constant width.
-    """
+    r"""Buckets with constant width."""
     def __call__(self, max_lengths, min_lengths, num_buckets):
         r"""This generate bucket keys given that all the buckets have the same width.
 
@@ -172,7 +170,7 @@ class LinearWidthBucket(BucketScheme):
 
 class ExpWidthBucket(BucketScheme):
     r""" Buckets with exponentially increasing width:
-    :math:`w_i = bucket_len_step * w_{i-1}` for all :math:`i \geq 2`.
+    :math:`w_i = bucket\_len\_step * w_{i-1}` for all :math:`i \geq 2`.
 
     Parameters
     ----------
