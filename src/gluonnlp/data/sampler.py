@@ -293,23 +293,11 @@ class FixedBucketSampler(Sampler):
         ExpWidthBucket: the width of ith bucket follows :math:`w_i = bucket_len_step * w_{i-1}`
     Examples
     --------
-    >>> from gluonnlp.data import FixedBucketSampler
-    >>> import numpy as np
     >>> lengths = [np.random.randint(1, 100) for _ in range(1000)]
-    >>> sampler = FixedBucketSampler(lengths, 8)
+    >>> sampler = gluonnlp.data.FixedBucketSampler(lengths, 8, ratio=0.5)
     >>> print(sampler.stats())
     FixedBucketSampler:
-      sample_num=1000, batch_num=128
-      key=[9, 19, 29, 39, 49, 59, 69, 79, 89, 99]
-      cnt=[95, 103, 91, 97, 86, 79, 102, 100, 128, 119]
-      batch_size=[8, 8, 8, 8, 8, 8, 8, 8, 8, 8]
-    >>> sampler = FixedBucketSampler(lengths, 8, ratio=0.5)
-    >>> print(sampler.stats())
-    FixedBucketSampler:
-      sample_num=1000, batch_num=104
-      key=[9, 19, 29, 39, 49, 59, 69, 79, 89, 99]
-      cnt=[95, 103, 91, 97, 86, 79, 102, 100, 128, 119]
-      batch_size=[44, 20, 13, 10, 8, 8, 8, 8, 8, 8]
+    -etc-
     """
     def __init__(self, lengths, batch_size, num_buckets=10, bucket_keys=None,
                  ratio=0, shuffle=False, use_average_length=False, num_shards=0,
@@ -471,15 +459,13 @@ class SortedBucketSampler(Sampler):
 
     Examples
     --------
-    >>> from gluonnlp.data import SortedBucketSampler
-    >>> import numpy as np
     >>> lengths = [np.random.randint(1, 1000) for _ in range(1000)]
-    >>> sampler = SortedBucketSampler(lengths, 16)
+    >>> sampler = gluonnlp.data.SortedBucketSampler(lengths, 16)
     >>> # The sequence lengths within the batch will be sorted
     >>> for i, indices in enumerate(sampler):
     ...     if i == 0:
     ...         print([lengths[ele] for ele in indices])
-    [999, 999, 999, 997, 997, 996, 995, 993, 991, 991, 989, 989, 987, 987, 986, 985]
+    [-etc-]
     """
     def __init__(self, sort_keys, batch_size, mult=100, reverse=True, shuffle=False):
         assert len(sort_keys) > 0

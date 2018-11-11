@@ -9,7 +9,7 @@ Fast-text Word N-gram
 Use the following command to train the FastText classification model on the Yelp review dataset.
 The model we have implemented is a slight variant of :
 
-- Joulin, Armand, et al. "`Bag of tricks for efficient text classification <https://arxiv.org/pdf/1607.01759.pdf>`__"
+- Joulin, Armand, et al. "`Bag of tricks for efficient text classification <https://arxiv.org/abs/1607.01759>`__"
 
 We have added dropout to the final layer, and the optimizer is changed from 'sgd' to 'adam'
 These are made for demo purposes and we can get very good numbers with original settings too,

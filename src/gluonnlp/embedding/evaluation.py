@@ -74,20 +74,21 @@ def register(class_):
     Examples
     --------
     >>> @gluonnlp.embedding.evaluation.register
-    ... class MySimilarityFunction(WordEmbeddingSimilarityFunction):
+    ... class MySimilarityFunction(gluonnlp.embedding.evaluation.WordEmbeddingSimilarityFunction):
     ...     def __init__(self, eps=1e-10):
     ...         pass
-    >>> similarity_function = gluonnlp.embedding.create('MySimilarityFunction')
+    >>> similarity_function = gluonnlp.embedding.evaluation.create('similarity',
+    ...                                                            'MySimilarityFunction')
     >>> print(type(similarity_function))
-    <class '__main__.MySimilarityFunction'>
+    <class 'MySimilarityFunction'>
 
     >>> @gluonnlp.embedding.evaluation.register
-    ... class MyAnalogyFunction(WordEmbeddingAnalogyFunction):
-    ...     def __init__(self, idx_to_vec, k=1, eps=1E-10):
+    ... class MyAnalogyFunction(gluonnlp.embedding.evaluation.WordEmbeddingAnalogyFunction):
+    ...     def __init__(self, k=1, eps=1E-10):
     ...         pass
-    >>> analogy_function = gluonnlp.embedding.create('MyAnalogyFunction')
+    >>> analogy_function = gluonnlp.embedding.evaluation.create('analogy', 'MyAnalogyFunction')
     >>> print(type(analogy_function))
-    <class '__main__.MyAnalogyFunction'>
+    <class 'MyAnalogyFunction'>
 
     """
 
