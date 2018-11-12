@@ -103,19 +103,27 @@ class _LazyTransformDataStream(DataStream):
 
     def __iter__(self):
         stream_iter = iter(self._stream)
-        try:
-            item = next(stream_iter)
-        except StopIteration:
-            return
-        istuple = isinstance(item, tuple)
-        if istuple:
-            yield self._fn(*item)
-            for item in stream_iter:
+
+        # Yield must be hidden in closure so that __iter__ is called before
+        # __next__ is called. This is important, as calling iter(self._stream)
+        # may trigger multi-threaded or multi-processing prefetching of the
+        # stream.
+        def _closure():
+            try:
+                item = next(stream_iter)
+            except StopIteration:
+                return
+            istuple = isinstance(item, tuple)
+            if istuple:
                 yield self._fn(*item)
-        else:
-            yield self._fn(item)
-            for item in stream_iter:
+                for item in stream_iter:
+                    yield self._fn(*item)
+            else:
                 yield self._fn(item)
+                for item in stream_iter:
+                    yield self._fn(item)
+
+        return _closure()
 
 
 class DatasetStream(DataStream):
