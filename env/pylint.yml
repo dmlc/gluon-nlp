@@ -6,5 +6,7 @@ dependencies:
   - pylint=1.9.2
   - sphinx=1.7.7
   - flake8
+  - cython>=0.29
+  - numpy
   - pip:
     - pylint-quotes

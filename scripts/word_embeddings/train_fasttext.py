@@ -43,10 +43,11 @@ import random
 import sys
 import time
 
-import mxnet as mx
 import numpy as np
 
 import gluonnlp as nlp
+import mxnet as mx
+
 import evaluation
 from utils import get_context, print_time
 from model import SG, CBOW

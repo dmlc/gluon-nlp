@@ -20,7 +20,9 @@
 # pylint: disable=
 """Word embedding training datasets."""
 
-__all__ = ['WikiDumpStream']
+__all__ = [
+    'WikiDumpStream', 'text8', 'wiki', 'transform_data', 'skipgram_lookup',
+    'cbow_lookup']
 
 import math
 import warnings
@@ -29,15 +31,22 @@ import json
 import os
 import itertools
 
-import mxnet as mx
 import numpy as np
 
 import gluonnlp as nlp
 from gluonnlp import Vocab
-from gluonnlp.data import SimpleDatasetStream, CorpusDataset
-from gluonnlp.base import numba_njit
+from gluonnlp.data import CorpusDataset, SimpleDatasetStream
+import mxnet as mx
 
 from utils import print_time
+
+try:
+    from numba import njit
+    numba_njit = njit(nogil=True)
+except ImportError:
+    # Define numba shims
+    def numba_njit(f):
+        return f
 
 
 def text8(min_freq=5, max_vocab_size=None):
@@ -128,7 +137,8 @@ def wiki(wiki_root, wiki_date, wiki_language, max_vocab_size=None):
 
 
 def transform_data(data, vocab, idx_to_counts, cbow, ngram_buckets, ngrams,
-                   batch_size, window_size, frequent_token_subsampling=1E-4):
+                   batch_size, window_size, frequent_token_subsampling=1E-4,
+                   dtype='int64', weight_dtype='float32', index_dtype='int64'):
     """Transform a DataStream of coded DataSets to a DataStream of batches.
 
     Parameters
@@ -163,6 +173,12 @@ def transform_data(data, vocab, idx_to_counts, cbow, ngram_buckets, ngrams,
     frequent_token_subsampling : float
         Hyperparameter for subsampling. See idx_to_counts above for more
         information.
+    dtype : str or np.dtype, default 'float32'
+        Data type of data arrays.
+    weight_dtype : str or np.dtype, default 'int64'
+        Data type of COO data array.
+    index_dtype : str or np.dtype, default 'int64'
+        Data type of index array.
 
     Returns
     -------
@@ -195,7 +211,8 @@ def transform_data(data, vocab, idx_to_counts, cbow, ngram_buckets, ngrams,
     data = data.transform(subsample)
 
     batchify = nlp.data.batchify.EmbeddingCenterContextBatchify(
-        batch_size=batch_size, window_size=window_size, cbow=cbow)
+        batch_size=batch_size, window_size=window_size, cbow=cbow, dtype=dtype,
+        weight_dtype=weight_dtype, index_dtype=index_dtype)
     data = data.transform(batchify)
 
     if ngram_buckets:
@@ -233,39 +250,38 @@ def transform_data(data, vocab, idx_to_counts, cbow, ngram_buckets, ngrams,
     def cbow_fasttext_batch(centers, contexts):
         """Create a batch for CBOW training objective with subwords."""
         _, contexts_row, contexts_col = contexts
-        data, row, col = subword_lookup(contexts_row.asnumpy(),
-                                        contexts_col.asnumpy())
+        data, row, col = subword_lookup(contexts_row, contexts_col)
         contexts = mx.nd.sparse.csr_matrix(
-            (data, (row, col)), dtype=np.float32,
+            (data, (row, col)), dtype=weight_dtype,
             shape=(len(centers), len(vocab) + ngram_buckets))
-        return centers, contexts
+        return mx.nd.array(centers, dtype=dtype), contexts
 
     def cbow_batch(centers, contexts):
         """Create a batch for CBOW training objective."""
         contexts_data, contexts_row, contexts_col = contexts
         contexts = mx.nd.sparse.csr_matrix(
-            (contexts_data, (contexts_row, contexts_col)), dtype=np.float32,
+            (contexts_data, (contexts_row, contexts_col)), dtype=weight_dtype,
             shape=(len(centers), len(vocab)))
-        return centers, contexts
+        return mx.nd.array(centers, dtype=dtype), contexts
 
     def sg_fasttext_batch(centers, contexts):
         """Create a batch for SG training objective with subwords."""
         _, _, contexts_col = contexts
-        contexts = contexts_col
-        data, row, col = subword_lookup(centers.asnumpy())
+        contexts = mx.nd.array(contexts_col, dtype=dtype)
+        data, row, col = subword_lookup(centers)
         centers_csr = mx.nd.sparse.csr_matrix(
-            (data, (row, col)), dtype=np.float32,
+            (data, (row, col)), dtype=weight_dtype,
             shape=(len(centers), len(vocab) + ngram_buckets))
-        return centers_csr, contexts, centers
+        return centers_csr, contexts, mx.nd.array(centers, dtype=dtype)
 
     def sg_batch(centers, contexts):
         """Create a batch for SG training objective."""
-        _, _, contexts = contexts
+        contexts = mx.nd.array(contexts[2], dtype=dtype)
         indptr = mx.nd.arange(len(centers) + 1)
         centers_csr = mx.nd.sparse.csr_matrix(
-            (mx.nd.ones(centers.shape), centers, indptr), dtype=np.float32,
+            (mx.nd.ones(centers.shape), centers, indptr), dtype=weight_dtype,
             shape=(len(centers), len(vocab)))
-        return centers_csr, contexts, centers
+        return centers_csr, contexts, mx.nd.array(centers, dtype=dtype)
 
     data = UnchainStream(data)
     if cbow:
@@ -294,10 +310,23 @@ def skipgram_lookup(indices, subwordidxs, subwordidxsptr, offset=0):
 
     Parameters
     ----------
-    indices : numpy.ndarray of dtype int64
+    indices : numpy.ndarray
         Array containing numbers in [0, vocabulary_size). The element at
         position idx is taken to be the word that occurs at row idx in the
         SkipGram batch.
+    offset : int
+        Offset to add to each subword index.
+    subwordidxs : numpy.ndarray
+        Array containing concatenation of all subwords of all tokens in the
+        vocabulary, in order of their occurrence in the vocabulary.
+        For example np.concatenate(idx_to_subwordidxs)
+    subwordidxsptr
+        Array containing pointers into subwordidxs array such that
+        subwordidxs[subwordidxsptr[i]:subwordidxsptr[i+1]] returns all subwords
+        of of token i. For example subwordidxsptr = np.cumsum([
+        len(subwordidxs) for subwordidxs in idx_to_subwordidxs])
+    offset : int, default 0
+        Offset to add to each subword index.
 
     Returns
     -------
@@ -326,7 +355,7 @@ def skipgram_lookup(indices, subwordidxs, subwordidxsptr, offset=0):
             col.append(subword + offset)
             data.append(1 / (1 + end - start))
 
-    return (np.array(data, np.float32), np.array(row, dtype=np.int64),
+    return (np.array(data, dtype=np.float32), np.array(row, dtype=np.int64),
             np.array(col, dtype=np.int64))
 
 
@@ -345,6 +374,17 @@ def cbow_lookup(context_row, context_col, subwordidxs, subwordidxsptr,
         Array of same length as context_row containing numbers in [0,
         vocabulary_size). For each idx, context_col[idx] is one of the
         context words in the context_row[idx] row of the batch.
+    subwordidxs : numpy.ndarray
+        Array containing concatenation of all subwords of all tokens in the
+        vocabulary, in order of their occurrence in the vocabulary.
+        For example np.concatenate(idx_to_subwordidxs)
+    subwordidxsptr
+        Array containing pointers into subwordidxs array such that
+        subwordidxs[subwordidxsptr[i]:subwordidxsptr[i+1]] returns all subwords
+        of of token i. For example subwordidxsptr = np.cumsum([
+        len(subwordidxs) for subwordidxs in idx_to_subwordidxs])
+    offset : int, default 0
+        Offset to add to each subword index.
 
     Returns
     -------
@@ -357,6 +397,9 @@ def cbow_lookup(context_row, context_col, subwordidxs, subwordidxsptr,
         This array is the row array of a sparse array of COO format.
     numpy.ndarray of dtype int64
         This array is the col array of a sparse array of COO format.
+        Array containing weights such that for each row, all weights sum to
+        1. In particular, all elements in a row have weight 1 /
+        num_elements_in_the_row
 
     """
     row = []
@@ -386,7 +429,7 @@ def cbow_lookup(context_row, context_col, subwordidxs, subwordidxsptr,
         assert 0 <= row_ <= num_rows
         data[i] /= row_to_numwords[row_]
 
-    return (np.array(data, np.float32), np.array(row, dtype=np.int64),
+    return (np.array(data, dtype=np.float32), np.array(row, dtype=np.int64),
             np.array(col, dtype=np.int64))
 
 
@@ -403,12 +446,14 @@ class WikiDumpStream(SimpleDatasetStream):
     path : str
         Path to a folder storing the dataset and preprocessed vocabulary.
     skip_empty : bool, default True
-        Whether to skip the empty samples produced from sample_splitters. If False, `bos` and `eos`
-        will be added in empty samples.
+        Whether to skip the empty samples produced from sample_splitters. If
+        False, `bos` and `eos` will be added in empty samples.
     bos : str or None, default None
-        The token to add at the begining of each sentence. If None, nothing is added.
+        The token to add at the begining of each sentence. If None, nothing is
+        added.
     eos : str or None, default None
-        The token to add at the end of each sentence. If None, nothing is added.
+        The token to add at the end of each sentence. If None, nothing is
+        added.
 
     Attributes
     ----------

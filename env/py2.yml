@@ -12,6 +12,8 @@ dependencies:
   - pytest-cov=2.6.0
   - mock
   - pytest-xdist
+  - numpy
+  - cython>=0.29
   - pip:
     - mxnet-cu90>=1.3.0
     - sentencepiece

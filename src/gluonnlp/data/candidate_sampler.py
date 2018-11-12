@@ -23,8 +23,9 @@ __all__ = ['UnigramCandidateSampler']
 import functools
 import operator
 
-import mxnet as mx
 import numpy as np
+
+import mxnet as mx
 
 
 class UnigramCandidateSampler(mx.gluon.HybridBlock):

@@ -228,3 +228,11 @@ sphinx_gallery_conf = {
 # Napoleon settings
 napoleon_use_ivar = True
 
+
+# Cython support https://opendreamkit.org/2017/06/09/CythonSphinx/
+def isfunction(obj):
+    return hasattr(type(obj), "__code__")
+
+
+import inspect
+inspect.isfunction = isfunction
