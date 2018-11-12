@@ -117,12 +117,18 @@ class _LazyTransformDataStream(DataStream):
             istuple = isinstance(item, tuple)
             if istuple:
                 yield self._fn(*item)
-                for item in stream_iter:
-                    yield self._fn(*item)
+                while True:
+                    try:
+                        yield self._fn(*next(stream_iter))
+                    except StopIteration:
+                        return
             else:
                 yield self._fn(item)
-                for item in stream_iter:
-                    yield self._fn(item)
+                while True:
+                    try:
+                        yield self._fn(next(stream_iter))
+                    except StopIteration:
+                        return
 
         return _closure()
 
