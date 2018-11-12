@@ -221,7 +221,11 @@ class _Prefetcher(object):
         """Method representing the process’s activity."""
         random.seed(self.seed)
         np.random.seed(self.np_seed)
-        mx.random.seed(self.mx_seed)
+        if not isinstance(self, multiprocessing.Process):
+            # Calling mxnet methods in a subprocess will raise an exception if
+            # mxnet is built with GPU support
+            # https://github.com/apache/incubator-mxnet/issues/4659
+            mx.random.seed(self.mx_seed)
 
         try:
             stream_iter = iter(self.stream)
