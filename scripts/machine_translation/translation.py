@@ -115,7 +115,7 @@ class NMTModel(Block):
             # Construct tgt proj
         if tie_weights:
             self.tgt_proj = nn.Dense(units=len(tgt_vocab), flatten=False,
-                                     params=self.tgt_embed.params, prefix='tgt_proj_')
+                                     params=self.tgt_embed[0].params, prefix='tgt_proj_')
         else:
             if tgt_proj is None:
                 with self.name_scope():
