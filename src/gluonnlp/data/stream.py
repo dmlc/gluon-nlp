@@ -262,7 +262,7 @@ class _Prefetcher(object):
             return next_item
         else:
             self._controlq.put(None)
-            if next_error[0] is StopIteration:
+            if isinstance(next_error[0], StopIteration):
                 raise StopIteration
             else:
                 return self._reraise(*next_error)
