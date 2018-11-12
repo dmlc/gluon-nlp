@@ -93,3 +93,28 @@ def test_prefetch_stream(num_prefetch, worker_type):
         for x in corpus:
             y = next(prefetch_corpus_iter)
             assert all([sx == sy for sx, sy in zip(x, y)])
+
+
+class EagerIterWorksException(Exception):
+    pass
+
+
+@pytest.mark.parametrize('transform', [True, False])
+def test_eager_iter_lazytransform(transform, stream_identity_wrappers):
+    """Test that calling iter(stream.transform(fn)) eagerly calls iter(stream).
+
+    If this test fails, PrefetchingStream(stream.transform(fn)) will not do any
+    prefetching until next(iter(stream.transform(fn))) is called.
+
+    """
+
+    class ExceptionStream(nlp.data.DataStream):
+        def __iter__(self):
+            raise EagerIterWorksException
+
+    stream = stream_identity_wrappers(ExceptionStream())
+    if transform:
+        stream = stream.transform(lambda x: x)
+
+    with pytest.raises(EagerIterWorksException):
+        iter(stream)
