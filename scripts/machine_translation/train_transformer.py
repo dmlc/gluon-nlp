@@ -52,8 +52,9 @@ from gluonnlp.data import ShardedDataLoader
 from gluonnlp.data import ConstWidthBucket, LinearWidthBucket, ExpWidthBucket,\
     FixedBucketSampler, IWSLT2015, WMT2016, WMT2016BPE, WMT2014, WMT2014BPE
 from gluonnlp.model import BeamSearchScorer
-from translation import NMTModel, BeamSearchTranslator
-from transformer import get_transformer_encoder_decoder
+from gluonnlp.model.translation import NMTModel
+from translation import BeamSearchTranslator
+from gluonnlp.model.transformer import get_transformer_encoder_decoder
 from loss import SoftmaxCEMaskedLoss, LabelSmoothing
 from utils import logging_config
 from bleu import _bpe_to_words, compute_bleu
