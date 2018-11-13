@@ -23,6 +23,16 @@ Language Modeling
     get_model
     BigRNN
 
+Machine Translation
+-----------------
+
+.. autosummary::
+    :nosignatures:
+
+    TransformerEncoder
+    TransformerEncoderCell
+    PositionwiseFFN
+
 Convolutional Encoder
 ----------------------
 
@@ -69,6 +79,7 @@ Other Modeling Utilities
     WeightDropParameter
     apply_weight_drop
     L2Normalization
+    GELU
     ISDense
     NCEDense
     SparseISDense

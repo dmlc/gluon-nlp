@@ -17,7 +17,7 @@
 # specific language governing permissions and limitations
 # under the License.
 """Encoder and decoder usded in sequence-to-sequence learning."""
-__all__ = ['TransformerEncoder']
+__all__ = ['TransformerEncoder', 'GELU', 'PositionwiseFFN', 'TransformerEncoderCell']
 
 import os
 import warnings
@@ -73,13 +73,6 @@ class GELU(HybridBlock):
             # approximate GELU if erf is not supported
             return 0.5 * x * (1 + F.tanh(math.sqrt(2 / math.pi) * (x + 0.044715 * (x ** 3))))
 
-def _get_activation(act):
-    """ Get activation block based on the name. """
-    assert isinstance(act, str)
-    if act.lower() == 'gelu':
-        return GELU()
-    else:
-        return gluon.nn.Activation(act)
 
 class PositionwiseFFN(HybridBlock):
     """Structure of the Positionwise Feed-Forward Neural Network.
@@ -119,13 +112,23 @@ class PositionwiseFFN(HybridBlock):
                                   weight_initializer=weight_initializer,
                                   bias_initializer=bias_initializer,
                                   prefix='ffn_1_')
-            self.activation = _get_activation(activation) if activation else None
+            self.activation = self._get_activation(activation) if activation else None
             self.ffn_2 = nn.Dense(units=units, flatten=False,
                                   weight_initializer=weight_initializer,
                                   bias_initializer=bias_initializer,
                                   prefix='ffn_2_')
             self.dropout_layer = nn.Dropout(dropout)
             self.layer_norm = nn.LayerNorm(epsilon=layer_norm_eps)
+
+    def _get_activation(self, act):
+        """ Get activation block based on the name. """
+        if isinstance(act, str):
+            if act.lower() == 'gelu':
+                return GELU()
+            else:
+                return gluon.nn.Activation(act)
+        assert isinstance(act, Block)
+        return act
 
     def hybrid_forward(self, F, inputs):  # pylint: disable=arguments-differ
         # pylint: disable=unused-argument
@@ -429,6 +432,9 @@ class TransformerEncoder(HybridBlock, Seq2SeqEncoder):
         Epsilon for the layer norm block.
     positional_weight_initializer : str or Initializer.
         Initializer for the positional encoding embedding if positional_weight is 'learned'.
+    apply_layernorm_before_dropout: bool, default False
+        Before passing embeddings to attention cells, whether to perform `layernorm -> dropout` or
+        `dropout -> layernorm`. Set to True for pre-trained BERT models.
     prefix : str, default 'rnn_'
         Prefix for name of `Block`s
         (and name of weight if params is `None`).
@@ -445,6 +451,7 @@ class TransformerEncoder(HybridBlock, Seq2SeqEncoder):
                  attention_proj_use_bias=False,
                  positional_weight='sinusoidal', layer_norm_eps=1e-5,
                  positional_weight_initializer=None,
+                 apply_layernorm_before_dropout=True,
                  prefix=None, params=None):
         super(TransformerEncoder, self).__init__(prefix=prefix, params=params)
         assert units % num_heads == 0,\
@@ -460,6 +467,7 @@ class TransformerEncoder(HybridBlock, Seq2SeqEncoder):
         self._dropout = dropout
         self._use_residual = use_residual
         self._scaled = scaled
+        self._apply_layernorm_before_dropout = apply_layernorm_before_dropout
         with self.name_scope():
             self.dropout_layer = nn.Dropout(dropout)
             self.layer_norm = nn.LayerNorm(epsilon=layer_norm_eps)
@@ -589,9 +597,12 @@ class TransformerEncoder(HybridBlock, Seq2SeqEncoder):
             inputs = F.broadcast_add(inputs, F.expand_dims(F.Embedding(steps, position_weight,
                                                                        self._max_length,
                                                                        self._units), axis=0))
-        # TODO order switched
-        inputs = self.layer_norm(inputs)
-        inputs = self.dropout_layer(inputs)
+        if self._apply_layernorm_before_dropout:
+            inputs = self.layer_norm(inputs)
+            inputs = self.dropout_layer(inputs)
+        else:
+            inputs = self.dropout_layer(inputs)
+            inputs = self.layer_norm(inputs)
         outputs = inputs
         if valid_length is not None:
             mask = states[-2]

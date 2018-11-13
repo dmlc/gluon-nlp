@@ -116,7 +116,7 @@ encoder = get_transformer_encoder(units=args.num_units,
                                   max_tgt_length=512,#max(max_len, 512),
                                   scaled=args.scaled)
 
-from bert_dataset import tokenizer
+from dataset import tokenizer
 vocab = tokenizer.vocab
 model = BERTModel(encoder=encoder, vocab_size=len(vocab), token_type_vocab_size=2,
                   units=args.num_units, embed_size=args.num_units,
@@ -154,6 +154,7 @@ for name in tf_params:
     if name not in loaded:
         print('not loading', name)
 
+
 loss_function = gluon.loss.SoftmaxCELoss()
 loss_function.hybridize(static_alloc=static_alloc)
 
@@ -175,11 +176,13 @@ def evaluate():
         The translation output
     """
     step_loss = 0
-    from bert_dataset import input_ids_nd_dev, input_mask_nd_dev, segment_ids_nd_dev, label_ids_nd_dev
-    bert_data_dev = ArrayDataset(input_ids_nd_dev, input_mask_nd_dev, segment_ids_nd_dev, label_ids_nd_dev)
+    #from dataset import input_ids_nd_dev, input_mask_nd_dev, segment_ids_nd_dev, label_ids_nd_dev
+    #bert_data_dev = ArrayDataset(input_ids_nd_dev, input_mask_nd_dev, segment_ids_nd_dev, label_ids_nd_dev)
+    from dataset import data_mx_dev
+    bert_dataloader_dev = mx.gluon.data.DataLoader(data_mx_dev, batch_size=test_batch_size, shuffle=False)
     metric_dev.reset()
     log_start_time = time.time()
-    bert_dataloader_dev = mx.gluon.data.DataLoader(bert_data_dev, batch_size=test_batch_size)
+    #bert_dataloader_dev = mx.gluon.data.DataLoader(bert_data_dev, batch_size=test_batch_size)
 
     for batch_id, seqs in enumerate(bert_dataloader_dev):
         Ls = []
@@ -199,10 +202,12 @@ def train():
     trainer = gluon.Trainer(model.collect_params(), args.optimizer,
                             {'learning_rate': args.lr, 'epsilon': 1e-9})
 
-    from bert_dataset import input_ids_nd, input_mask_nd, segment_ids_nd, label_ids_nd
-    bert_data = ArrayDataset(input_ids_nd, input_mask_nd, segment_ids_nd, label_ids_nd)
+    #from dataset import input_ids_nd, input_mask_nd, segment_ids_nd, label_ids_nd
+    #bert_data = ArrayDataset(input_ids_nd, input_mask_nd, segment_ids_nd, label_ids_nd)
 
-    num_train_examples = len(bert_data)
+    from dataset import data_mx
+    bert_dataloader = mx.gluon.data.DataLoader(data_mx, batch_size=batch_size, shuffle=False, last_batch='discard')
+    num_train_examples = len(data_mx)
     print('num samples = ', num_train_examples)
     num_train_steps = int(
         num_train_examples / batch_size * args.epochs)
@@ -215,8 +220,6 @@ def train():
         log_avg_loss = 0
         step_loss = 0
         log_start_time = time.time()
-        from bert_dataset import data_mx
-        bert_dataloader = mx.gluon.data.DataLoader(data_mx, batch_size=batch_size, shuffle=False, last_batch='discard')
 
         for batch_id, seqs in enumerate(bert_dataloader):
             step_num += 1
@@ -238,8 +241,8 @@ def train():
 
                 #import pdb; pdb.set_trace()
                 input_ids_nd0, input_mask_nd0, segment_ids_nd0, label_ids_nd0 = seqs
-                print(input_ids_nd0.sum().asscalar(),input_mask_nd0.sum().asscalar(),
-                      segment_ids_nd0.sum().asscalar(), label_ids_nd0.sum().asscalar()) 
+                #print(input_ids_nd0.sum().asscalar(),input_mask_nd0.sum().asscalar(),
+                #      segment_ids_nd0.sum().asscalar(), label_ids_nd0.sum().asscalar())
 
                 out  = model(input_ids_nd0.reshape((batch_size, -1)).as_in_context(mx.gpu()),
                              segment_ids_nd0.reshape((batch_size, -1)).as_in_context(mx.gpu()),

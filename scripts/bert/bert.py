@@ -239,6 +239,7 @@ def get_transformer_encoder(num_layers=12,
                                  attention_use_bias=attention_use_bias,
                                  attention_proj_use_bias=attention_proj_use_bias,
                                  layer_norm_eps=layer_norm_eps,
+                                 apply_layernorm_before_dropout=True,
                                  prefix=prefix + 'enc_', params=params)
     return encoder
 
