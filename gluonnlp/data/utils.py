@@ -23,7 +23,7 @@ from __future__ import print_function
 
 __all__ = [
     'Counter', 'count_tokens', 'concat_sequence', 'slice_sequence', 'train_valid_split',
-    'line_splitter', 'whitespace_splitter'
+    'line_splitter', 'whitespace_splitter', 'Splitter'
 ]
 
 import os
@@ -351,7 +351,7 @@ def line_splitter(s):
     return s.splitlines()
 
 def whitespace_splitter(s):
-    """Split a string at whitespace.
+    """Split a string at whitespace (space, tab, newline, return, formfeed).
 
     Parameters
     ----------
@@ -364,3 +364,29 @@ def whitespace_splitter(s):
         List of strings. Obtained by calling s.split().
     """
     return s.split()
+
+class Splitter(object):
+    """Split a string based on a separator.
+
+    Parameters
+    ----------
+    separator : str
+        The separator based on which string is split.
+    """
+    def __init__(self, separator=None):
+        self._separator = separator
+
+    def __call__(self, s):
+        """Split a string based on the separator.
+
+        Parameters
+        ----------
+        s : str
+            The string to be split
+
+        Returns
+        --------
+        List[str]
+            List of strings. Obtained by calling s.split(separator).
+        """
+        return s.split(self._separator)

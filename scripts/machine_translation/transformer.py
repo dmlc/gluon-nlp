@@ -29,16 +29,12 @@ import mxnet as mx
 from mxnet import cpu, gluon
 from mxnet.gluon import nn
 from mxnet.gluon.block import HybridBlock
-try:
-    from encoder_decoder import Seq2SeqEncoder, Seq2SeqDecoder, _get_attention_cell
-except ImportError:
-    from .encoder_decoder import Seq2SeqEncoder, Seq2SeqDecoder, _get_attention_cell
+from gluonnlp.model.seq2seq_encoder_decoder import Seq2SeqEncoder, Seq2SeqDecoder, _get_attention_cell
 import gluonnlp as nlp
 try:
     from translation import NMTModel
 except ImportError:
     from .translation import NMTModel
-
 
 def _position_encoding_init(max_length, dim):
     """ Init the sinusoid position encoding table """
@@ -63,9 +59,20 @@ class GELU(HybridBlock):
     """
     def __init__(self, **kwargs):
         super(GELU, self).__init__(**kwargs)
+        self._support_erf = False
+        try:
+            f = mx.nd.erf
+            self._support_erf = True
+        except AttributeError:
+            raise UserWarning("`erf` operator support is not found. "
+                              "Please consider upgrading to mxnet >= 1.4")
 
     def hybrid_forward(self, F, x):
-        return 0.5 * x * (1 + F.tanh(math.sqrt(2 / math.pi) * (x + 0.044715 * F.pow(x, 3))))
+        if self._support_erf:
+            return x * 0.5 * (1.0 + F.erf(x / math.sqrt(2.0)))
+        else:
+            # approximate GELU if erf is not supported
+            return 0.5 * x * (1 + F.tanh(math.sqrt(2 / math.pi) * (x + 0.044715 * (x ** 3))))
 
 def _get_activation(act):
     """ Get activation block based on the name. """
@@ -92,6 +99,8 @@ class PositionwiseFFN(HybridBlock):
         Initializer for the bias vector.
     activation : str, default 'relu'
         Activation function
+    layer_norm_eps : float, default 1e-5.
+        Epsilon for the layer norm block.
     prefix : str, default 'rnn_'
         Prefix for name of `Block`s
         (and name of weight if params is `None`).
@@ -101,7 +110,7 @@ class PositionwiseFFN(HybridBlock):
     """
     def __init__(self, units=512, hidden_size=2048, dropout=0.0, use_residual=True,
                  weight_initializer=None, bias_initializer='zeros', activation='relu',
-                 prefix=None, params=None):
+                 layer_norm_eps=1e-5, prefix=None, params=None):
         super(PositionwiseFFN, self).__init__(prefix=prefix, params=params)
         self._hidden_size = hidden_size
         self._units = units
@@ -117,7 +126,7 @@ class PositionwiseFFN(HybridBlock):
                                   bias_initializer=bias_initializer,
                                   prefix='ffn_2_')
             self.dropout_layer = nn.Dropout(dropout)
-            self.layer_norm = nn.LayerNorm()
+            self.layer_norm = nn.LayerNorm(epsilon=layer_norm_eps)
 
     def hybrid_forward(self, F, inputs):  # pylint: disable=arguments-differ
         # pylint: disable=unused-argument
@@ -176,6 +185,8 @@ class TransformerEncoderCell(HybridBlock):
         Default is False.
     attention_proj_use_bias : bool
         Apply bias term to the linear projection of the output of attention cell. Default is False.
+    layer_norm_eps : float, default 1e-5.
+        Epsilon for the layer norm block.
     prefix : str, default 'rnn_'
         Prefix for name of `Block`s
         (and name of weight if params is `None`).
@@ -188,7 +199,8 @@ class TransformerEncoderCell(HybridBlock):
                  dropout=0.0, use_residual=True, output_attention=False,
                  weight_initializer=None, bias_initializer='zeros',
                  ffn_activation='relu', attention_use_bias=False,
-                 attention_proj_use_bias=False, prefix=None, params=None):
+                 attention_proj_use_bias=False, layer_norm_eps=1e-5,
+                 prefix=None, params=None):
         super(TransformerEncoderCell, self).__init__(prefix=prefix, params=params)
         self._units = units
         self._num_heads = num_heads
@@ -213,7 +225,7 @@ class TransformerEncoderCell(HybridBlock):
                                        weight_initializer=weight_initializer,
                                        bias_initializer=bias_initializer,
                                        activation=ffn_activation)
-            self.layer_norm = nn.LayerNorm()
+            self.layer_norm = nn.LayerNorm(epsilon=layer_norm_eps)
 
     def hybrid_forward(self, F, inputs, mask=None):  # pylint: disable=arguments-differ
         # pylint: disable=unused-argument
@@ -275,6 +287,8 @@ class TransformerDecoderCell(HybridBlock):
         Initializer for the bias vector.
     ffn_activation: str, default 'relu'
         Activation function applied on the feed-forward layer.
+    layer_norm_eps : float, default 1e-5.
+        Epsilon for the layer norm blocks.
     prefix : str, default 'rnn_'
         Prefix for name of `Block`s
         (and name of weight if params is `None`).
@@ -286,7 +300,7 @@ class TransformerDecoderCell(HybridBlock):
                  hidden_size=512, num_heads=4, scaled=True,
                  dropout=0.0, use_residual=True, output_attention=False,
                  weight_initializer=None, bias_initializer='zeros',
-                 ffn_activation='relu', prefix=None, params=None):
+                 ffn_activation='relu', layer_norm_eps=1e-5, prefix=None, params=None):
         super(TransformerDecoderCell, self).__init__(prefix=prefix, params=params)
         self._units = units
         self._num_heads = num_heads
@@ -324,8 +338,8 @@ class TransformerDecoderCell(HybridBlock):
                                        bias_initializer=bias_initializer,
                                        activation=ffn_activation)
 
-            self.layer_norm_in = nn.LayerNorm()
-            self.layer_norm_inter = nn.LayerNorm()
+            self.layer_norm_in = nn.LayerNorm(epsilon=layer_norm_eps)
+            self.layer_norm_inter = nn.LayerNorm(epsilon=layer_norm_eps)
 
     def hybrid_forward(self, F, inputs, mem_value, mask=None, mem_mask=None):  #pylint: disable=unused-argument
         #  pylint: disable=arguments-differ
@@ -382,7 +396,9 @@ class TransformerEncoder(HybridBlock, Seq2SeqEncoder):
         Arguments of the attention cell.
         Can be 'multi_head', 'scaled_luong', 'scaled_dot', 'dot', 'cosine', 'normed_mlp', 'mlp'
     num_layers : int
+        Number of attention layers.
     units : int
+        Number of units for the output.
     hidden_size : int
         number of units in the hidden layer of position-wise feed-forward networks
     max_length : int
@@ -393,6 +409,9 @@ class TransformerEncoder(HybridBlock, Seq2SeqEncoder):
         Whether to scale the softmax input by the sqrt of the input dimension
         in multi-head attention
     dropout : float
+        Dropout probability of the attention probabilities.
+    positional_weight: str, default 'sinusoidal'
+        Type of positional embedding. Can be 'sinusoidal', 'learned'.
     use_residual : bool
     output_attention: bool
         Whether to output the attention weights
@@ -407,6 +426,10 @@ class TransformerEncoder(HybridBlock, Seq2SeqEncoder):
         Apply bias term when projecting key, value, query in the attention cell. Default is False.
     attention_proj_use_bias : bool
         Apply bias term to the linear projection of the output of attention cell. Default is False.
+    layer_norm_eps : float, default 1e-5.
+        Epsilon for the layer norm block.
+    positional_weight_initializer : str or Initializer.
+        Initializer for the positional encoding embedding if positional_weight is 'learned'.
     prefix : str, default 'rnn_'
         Prefix for name of `Block`s
         (and name of weight if params is `None`).
@@ -421,6 +444,8 @@ class TransformerEncoder(HybridBlock, Seq2SeqEncoder):
                  weight_initializer=None, bias_initializer='zeros',
                  ffn_activation='relu', attention_use_bias=False,
                  attention_proj_use_bias=False,
+                 positional_weight='sinusoidal', layer_norm_eps=1e-5,
+                 positional_weight_initializer=None,
                  prefix=None, params=None):
         super(TransformerEncoder, self).__init__(prefix=prefix, params=params)
         assert units % num_heads == 0,\
@@ -438,10 +463,9 @@ class TransformerEncoder(HybridBlock, Seq2SeqEncoder):
         self._scaled = scaled
         with self.name_scope():
             self.dropout_layer = nn.Dropout(dropout)
-            self.layer_norm = nn.LayerNorm()
-            self.position_weight = self.params.get_constant('const',
-                                                            _position_encoding_init(max_length,
-                                                                                    units))
+            self.layer_norm = nn.LayerNorm(epsilon=layer_norm_eps)
+            self.position_weight = self._get_positional(positional_weight, max_length, units,
+                                                        positional_weight_initializer)
             self.transformer_cells = nn.HybridSequential()
             for i in range(num_layers):
                 self.transformer_cells.add(
@@ -460,6 +484,17 @@ class TransformerEncoder(HybridBlock, Seq2SeqEncoder):
                         attention_use_bias=attention_use_bias,
                         attention_proj_use_bias=attention_proj_use_bias,
                         prefix='transformer%d_' % i))
+
+    def _get_positional(self, weight_type, max_length, units, initializer):
+        if weight_type == 'sinusoidal':
+            encoding = _position_encoding_init(max_length, units)
+            position_weight = self.params.get_constant('const', encoding)
+        elif weight_type == 'learned':
+            position_weight = self.params.get('position_weight', shape=(max_length, units),
+                                              init=initializer)
+        else:
+            raise ValueError("Unexpected value for argument position_weight: %s"%(position_weight))
+        return position_weight
 
     def __call__(self, inputs, states=None, valid_length=None): #pylint: disable=arguments-differ
         """Encoder the inputs given the states and valid sequence length.
@@ -516,7 +551,6 @@ class TransformerEncoder(HybridBlock, Seq2SeqEncoder):
                 states = [mask]
             else:
                 states.append(mask)
-        inputs = inputs * math.sqrt(inputs.shape[-1])
         steps = mx.nd.arange(length, ctx=inputs.context)
         if states is None:
             states = [steps]
@@ -556,8 +590,9 @@ class TransformerEncoder(HybridBlock, Seq2SeqEncoder):
             inputs = F.broadcast_add(inputs, F.expand_dims(F.Embedding(steps, position_weight,
                                                                        self._max_length,
                                                                        self._units), axis=0))
-        inputs = self.dropout_layer(inputs)
+        # TODO order switched
         inputs = self.layer_norm(inputs)
+        inputs = self.dropout_layer(inputs)
         outputs = inputs
         if valid_length is not None:
             mask = states[-2]
@@ -605,6 +640,8 @@ class TransformerDecoder(HybridBlock, Seq2SeqDecoder):
         Initializer for the bias vector.
     ffn_activation: str, default 'relu'
         Activation function applied on the feed-forward layer.
+    layer_norm_eps : float, default 1e-5.
+        Epsilon for the layer norm block.
     prefix : str, default 'rnn_'
         Prefix for name of `Block`s
         (and name of weight if params is `None`).
@@ -617,7 +654,7 @@ class TransformerDecoder(HybridBlock, Seq2SeqDecoder):
                  num_heads=4, scaled=True, dropout=0.0,
                  use_residual=True, output_attention=False,
                  weight_initializer=None, bias_initializer='zeros',
-                 ffn_activation='relu',
+                 ffn_activation='relu', layer_norm_eps=1e-5,
                  prefix=None, params=None):
         super(TransformerDecoder, self).__init__(prefix=prefix, params=params)
         assert units % num_heads == 0, 'In TransformerDecoder, the units should be divided ' \
@@ -634,7 +671,7 @@ class TransformerDecoder(HybridBlock, Seq2SeqDecoder):
         self._scaled = scaled
         with self.name_scope():
             self.dropout_layer = nn.Dropout(dropout)
-            self.layer_norm = nn.LayerNorm()
+            self.layer_norm = nn.LayerNorm(epsilon=layer_norm_eps)
             self.position_weight = self.params.get_constant('const',
                                                             _position_encoding_init(max_length,
                                                                                     units))

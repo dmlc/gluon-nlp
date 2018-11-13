@@ -499,3 +499,12 @@ def test_concatenation():
     assert len(dataset) == 9
     assert dataset[0] == 1
     assert dataset[5] == 6
+
+def test_tsv():
+    num_discard = 1
+    dataset = nlp.data.TSVDataset('/home/ubuntu/bert/glue_data/MRPC/train.tsv',
+                                  num_discard_samples=num_discard)
+    num_samples = 3669 - num_discard
+    idx = random.randint(0, num_samples - 1)
+    assert len(dataset) == num_samples
+    assert len(dataset[0]) == 5

@@ -49,7 +49,7 @@ class NMTModel(Block):
         Dropout rate of the embedding weights. It is used to generate the source and target
         embeddings if src_embed and tgt_embed are None.
     embed_initializer : Initializer, default mx.init.Uniform(0.1)
-        Initializer of the embedding weights. It is used to generate ghe source and target
+        Initializer of the embedding weights. It is used to generate the source and target
         embeddings if src_embed and tgt_embed are None.
     src_embed : Block or None, default None
         The source embedding. If set to None, src_embed will be constructed using embed_size and
