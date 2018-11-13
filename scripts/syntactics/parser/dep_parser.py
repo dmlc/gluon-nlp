@@ -24,12 +24,12 @@ import mxnet as mx
 import numpy as np
 from mxnet import gluon, autograd
 
-from gluonnlp.model.biaffine.common.config import _Config
-from gluonnlp.model.biaffine.common.data import ParserVocabulary, DataLoader, ConllWord, ConllSentence
-from gluonnlp.model.biaffine.common.exponential_scheduler import ExponentialScheduler
-from gluonnlp.model.biaffine.common.utils import init_logger, mxnet_prefer_gpu, Progbar
-from gluonnlp.model.biaffine.parser.biaffine_parser import BiaffineParser
-from gluonnlp.model.biaffine.parser.evaluate import evaluate_official_script
+from scripts.syntactics.common.config import _Config
+from scripts.syntactics.common.data import ParserVocabulary, DataLoader, ConllWord, ConllSentence
+from scripts.syntactics.common.exponential_scheduler import ExponentialScheduler
+from scripts.syntactics.common.utils import init_logger, mxnet_prefer_gpu, Progbar
+from scripts.syntactics.parser.biaffine_parser import BiaffineParser
+from scripts.syntactics.parser.evaluate import evaluate_official_script
 
 
 class DepParser(object):

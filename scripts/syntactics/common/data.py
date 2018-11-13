@@ -20,7 +20,7 @@
 from collections import Counter
 import numpy as np
 
-from gluonnlp.model.biaffine.common.k_means import KMeans
+from scripts.syntactics.common.k_means import KMeans
 from .savable import Savable
 
 

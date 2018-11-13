@@ -19,7 +19,7 @@
 import os
 import pickle
 
-from gluonnlp.model.biaffine.common.savable import Savable
+from scripts.syntactics.common.savable import Savable
 
 
 class _Config(Savable):

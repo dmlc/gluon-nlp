@@ -23,7 +23,7 @@ from mxnet import nd, ndarray, autograd
 from mxnet.gluon import nn
 from mxnet.gluon.loss import SoftmaxCrossEntropyLoss
 
-from gluonnlp.model.biaffine.common.utils import orthonormal_VanillaLSTMBuilder, bilinear, reshape_fortran, arc_argmax, \
+from scripts.syntactics.common.utils import orthonormal_VanillaLSTMBuilder, bilinear, reshape_fortran, arc_argmax, \
     rel_argmax, leaky_relu, biLSTM, orthonormal_initializer
 
 
