@@ -1,57 +1,56 @@
-# coding: utf-8
-
-# Licensed to the Apache Software Foundation (ASF) under one
-# or more contributor license agreements.  See the NOTICE file
-# distributed with this work for additional information
-# regarding copyright ownership.  The ASF licenses this file
-# to you under the Apache License, Version 2.0 (the
-# "License"); you may not use this file except in compliance
-# with the License.  You may obtain a copy of the License at
+# coding=utf-8
+# Copyright 2018 The Google AI Language Team Authors and DMLC.
 #
-#   http://www.apache.org/licenses/LICENSE-2.0
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# Unless required by applicable law or agreed to in writing,
-# software distributed under the License is distributed on an
-# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-# KIND, either express or implied.  See the License for the
-# specific language governing permissions and limitations
-# under the License.
-# pylint:disable=redefined-outer-name,logging-format-interpolation
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """BERT datasets."""
 
-__all__ = ['MrpcProcessor', 'input_ids_nd', 'input_mask_nd', 'segment_ids_nd', 'label_ids_nd']
+__all__ = ['MRPCDataset']
 
 import os
-from gluonnlp.data.translation import _TranslationDataset, _get_pair_key, _get_home_dir
+from gluonnlp.data import TSVDataset
 from gluonnlp.data.registry import register
 import gluonnlp
 
-# TODO train, dev segment
-class MRPCDataset:
-    def __init__(self, path):
-        self._path = path
+@register(segment=['train', 'dev', 'test'])
+class MRPCDataset(TSVDataset):
+    """A Small Translation Dataset for Testing Scripts.
 
-#class MrpcProcessor(DataProcessor):
-class MrpcProcessor():
-  """Processor for the MRPC data set (GLUE version)."""
+    Parameters
+    ----------
+    segment : str or list of str, default 'train'
+        Dataset segment. Options are 'train', 'val', 'test' or their combinations.
+    src_lang : str, default 'en'
+        The source language. Option for source and target languages are 'en' <-> 'de'
+    tgt_lang : str, default 'de'
+        The target language. Option for source and target languages are 'en' <-> 'de'
+    root : str, default '$GLUE_DIR/MRPC'
+        Path to temp folder for storing data.
+    """
+    def __init__(self, segment='train',
+                 root=os.path.join(os.environ['GLUE_DIR'], 'MRPC')):
+        self._supported_segments = ['train', 'dev', 'test']
+        assert segment in self._supported_segments, "Unsupported segment: %s"%segment
+        path = os.path.join(root, '%s.tsv'%segment)
+        super(MRPCDataset, self).__init__(path, num_discard_samples=1)
 
-  def get_train_examples2(self, data_dir):
-    """See base class."""
-    return gluonnlp.data.TSVDataset(os.path.join(data_dir, 'MRPC', "train.tsv"), field_separator=gluonnlp.data.utils.Splitter('\t'), num_discard_samples=1)
-  def get_dev_examples2(self, data_dir):
-    """See base class."""
-    return gluonnlp.data.TSVDataset(os.path.join(data_dir, 'MRPC', "dev.tsv"), field_separator=gluonnlp.data.utils.Splitter('\t'), num_discard_samples=1)
-  def get_dev_examples(self, data_dir):
-    """See base class."""
-    lines = gluonnlp.data.TSVDataset(os.path.join(data_dir, 'MRPC', "dev.tsv"), field_separator=gluonnlp.data.utils.Splitter('\t'))
-    return self._create_examples(lines, 'dev')
+    @staticmethod
+    def get_labels():
+        return ["0", "1"]
 
-  def get_labels(self):
-    """See base class."""
-    return ["0", "1"]
+    #def transform():p
+
 def _truncate_seq_pair(tokens_a, tokens_b, max_length):
   """Truncates a sequence pair in place to the maximum length."""
-
   # This is a simple heuristic which will always truncate the longer sequence
   # one token at a time. This makes more sense than truncating an equal percent
   # of tokens from each, since if one sequence is very short then each token
@@ -70,8 +69,7 @@ import mxnet as mx
 import numpy as np
 
 
-processor = MrpcProcessor()
-label_list = processor.get_labels()
+label_list = MRPCDataset.get_labels()
 import tokenization
 VOCAB_FILE = '/home/ubuntu/bert/uncased_L-12_H-768_A-12/vocab.txt'
 do_lower_case=True
@@ -79,13 +77,9 @@ tokenizer = tokenization.FullTokenizer(
     vocab_file=VOCAB_FILE, do_lower_case=do_lower_case)
 
 print(tokenizer)
-import os
-DATA_DIR = os.environ['GLUE_DIR']
-#'/home/ubuntu/bert/glue_data/MRPC'
-#train_examples = processor.get_train_examples(DATA_DIR)
-#dev_examples = processor.get_dev_examples(DATA_DIR)
 MAX_SEQ_LENGTH = 128
-class MPRCTransform:
+
+class MPRCTransform(object):
     def __init__(self, tokenizer, labels, max_seq_length, has_text_b=True):
         self.tokenizer = tokenizer
         self.max_seq_length = max_seq_length
@@ -172,21 +166,10 @@ class MPRCTransform:
                np.array(segment_ids, dtype='int32'), np.array([label_id], dtype='int32')
 
 trans = MPRCTransform(tokenizer, label_list, MAX_SEQ_LENGTH)
-train_examples2 = processor.get_train_examples2(DATA_DIR)
+train_examples2 = MRPCDataset('train')
 train_examples2 = train_examples2.transform(trans)
 data_mx = train_examples2
 
-dev_examples2 = processor.get_dev_examples2(DATA_DIR)
+dev_examples2 = MRPCDataset('dev')
 dev_examples2 = dev_examples2.transform(trans)
 data_mx_dev = dev_examples2
-
-#i=0
-#for a in train_examples2:
-#    b = input_ids_nd[i], input_mask_nd[i], segment_ids_nd[i], label_ids_nd[i]
-#    assert np.all(a[0] == b[0].asnumpy()), (a[0], b[0])
-#    assert np.all(a[1] == b[1].asnumpy()), (a[1], b[1])
-#    assert np.all(a[2] == b[2].asnumpy()), (a[2], b[2])
-#    assert np.all(a[3] == b[3].asnumpy()), (a[3], b[3])
-#    i+=1
-#print('passed ', i)
-

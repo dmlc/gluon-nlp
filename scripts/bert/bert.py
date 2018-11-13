@@ -111,8 +111,54 @@ class BERTModel(Block):
         assert isinstance(pooler, Block)
         return pooler
 
+    def forward(self, inputs, token_types, valid_length=None): #pylint: disable=arguments-differ
+        """Generate the representation given the inputs.
 
-    def forward(self, inputs, token_types, valid_length=None):  #pylint: disable=arguments-differ
+        This is used in training or fine-tuning a BERT model.
+
+        Parameters
+        ----------
+        inputs : NDArray
+        token_types : NDArray
+        valid_length : NDArray or None
+
+        Returns
+        -------
+        outputs : NDArray
+            Shape (batch_size, sequence_length, C_out)
+        additional_outputs : list
+            Additional outputs of the encoder, e.g, the attention weights
+        """
+        return self.get_sequence_output(inputs, token_types, valid_length)
+
+    def get_sequence_output(self, inputs, token_types, valid_length=None):
+        #pylint: disable=arguments-differ
+        """Generate the representation given the inputs.
+
+        This is used in training or fine-tuning a BERT model.
+
+        Parameters
+        ----------
+        inputs : NDArray
+        token_types : NDArray
+        valid_length : NDArray or None
+
+        Returns
+        -------
+        outputs : NDArray
+            Shape (batch_size, sequence_length, C_out)
+        additional_outputs : list
+            Additional outputs of the encoder, e.g, the attention weights
+        """
+        # embedding
+        word_embedding = self.word_embed(inputs)
+        type_embedding = self.token_type_embed(token_types)
+        embedding = word_embedding + type_embedding
+        # encoding
+        outputs, additional_outputs = self.encoder(embedding, None, valid_length)
+        return outputs, additional_outputs
+
+    def get_pooled_output(self, inputs, token_types, valid_length=None): #pylint: disable=arguments-differ
         """Generate the representation given the inputs.
 
         This is used in training or fine-tuning a BERT model.
@@ -130,12 +176,7 @@ class BERTModel(Block):
         additional_outputs : list
             Additional outputs of the encoder, e.g, the attention weights
         """
-        # embedding
-        word_embedding = self.word_embed(inputs)
-        type_embedding = self.token_type_embed(token_types)
-        embedding = word_embedding + type_embedding
-        # encoding
-        outputs, additional_outputs = self.encoder(embedding, None, valid_length)
+        outputs, additional_outputs = self.get_sequence_output(inputs, token_types, valid_length)
         # pooling
         outputs = outputs.slice(begin=(None, 0, None), end=(None, 1, None)).squeeze()
         outputs = self.pooler(outputs)
@@ -282,7 +323,7 @@ class BERTClassifier(Block):
         outputs : NDArray
             Shape (batch_size, num_classes)
         """
-        out, _ = self.bert(inputs, token_types, valid_length)
+        out, _ = self.bert.get_pooled_output(inputs, token_types, valid_length)
         #print('pooled out', out.asnumpy().mean())
         #out_np = out.asnumpy()
         #import numpy as np
