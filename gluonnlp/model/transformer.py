@@ -17,8 +17,7 @@
 # specific language governing permissions and limitations
 # under the License.
 """Encoder and decoder usded in sequence-to-sequence learning."""
-__all__ = ['TransformerEncoder', 'TransformerDecoder',
-           'get_transformer_encoder_decoder', 'get_model']
+__all__ = ['TransformerEncoder']
 
 import os
 import warnings
@@ -29,7 +28,7 @@ import mxnet as mx
 from mxnet import cpu, gluon
 from mxnet.gluon import nn
 from mxnet.gluon.block import HybridBlock
-from gluonnlp.model.seq2seq_encoder_decoder import Seq2SeqEncoder, Seq2SeqDecoder, _get_attention_cell
+from .seq2seq_encoder_decoder import Seq2SeqEncoder, Seq2SeqDecoder, _get_attention_cell
 import gluonnlp as nlp
 try:
     from translation import NMTModel
