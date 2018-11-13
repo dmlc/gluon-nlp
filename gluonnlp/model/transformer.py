@@ -287,10 +287,6 @@ class TransformerDecoderCell(HybridBlock):
         transformation of the inputs.
     bias_initializer : str or Initializer
         Initializer for the bias vector.
-    ffn_activation: str, default 'relu'
-        Activation function applied on the feed-forward layer.
-    layer_norm_eps : float, default 1e-5.
-        Epsilon for the layer norm blocks.
     prefix : str, default 'rnn_'
         Prefix for name of `Block`s
         (and name of weight if params is `None`).
@@ -302,7 +298,7 @@ class TransformerDecoderCell(HybridBlock):
                  hidden_size=512, num_heads=4, scaled=True,
                  dropout=0.0, use_residual=True, output_attention=False,
                  weight_initializer=None, bias_initializer='zeros',
-                 ffn_activation='relu', layer_norm_eps=1e-5, prefix=None, params=None):
+                 prefix=None, params=None):
         super(TransformerDecoderCell, self).__init__(prefix=prefix, params=params)
         self._units = units
         self._num_heads = num_heads
@@ -337,11 +333,10 @@ class TransformerDecoderCell(HybridBlock):
                                        use_residual=use_residual,
                                        dropout=dropout,
                                        weight_initializer=weight_initializer,
-                                       bias_initializer=bias_initializer,
-                                       activation=ffn_activation)
+                                       bias_initializer=bias_initializer)
 
-            self.layer_norm_in = nn.LayerNorm(epsilon=layer_norm_eps)
-            self.layer_norm_inter = nn.LayerNorm(epsilon=layer_norm_eps)
+            self.layer_norm_in = nn.LayerNorm()
+            self.layer_norm_inter = nn.LayerNorm()
 
     def hybrid_forward(self, F, inputs, mem_value, mask=None, mem_mask=None):  #pylint: disable=unused-argument
         #  pylint: disable=arguments-differ
@@ -648,10 +643,6 @@ class TransformerDecoder(HybridBlock, Seq2SeqDecoder):
         transformation of the inputs.
     bias_initializer : str or Initializer
         Initializer for the bias vector.
-    ffn_activation: str, default 'relu'
-        Activation function applied on the feed-forward layer.
-    layer_norm_eps : float, default 1e-5.
-        Epsilon for the layer norm block.
     prefix : str, default 'rnn_'
         Prefix for name of `Block`s
         (and name of weight if params is `None`).
@@ -664,7 +655,6 @@ class TransformerDecoder(HybridBlock, Seq2SeqDecoder):
                  num_heads=4, scaled=True, dropout=0.0,
                  use_residual=True, output_attention=False,
                  weight_initializer=None, bias_initializer='zeros',
-                 ffn_activation='relu', layer_norm_eps=1e-5,
                  prefix=None, params=None):
         super(TransformerDecoder, self).__init__(prefix=prefix, params=params)
         assert units % num_heads == 0, 'In TransformerDecoder, the units should be divided ' \
@@ -681,7 +671,7 @@ class TransformerDecoder(HybridBlock, Seq2SeqDecoder):
         self._scaled = scaled
         with self.name_scope():
             self.dropout_layer = nn.Dropout(dropout)
-            self.layer_norm = nn.LayerNorm(epsilon=layer_norm_eps)
+            self.layer_norm = nn.LayerNorm()
             self.position_weight = self.params.get_constant('const',
                                                             _position_encoding_init(max_length,
                                                                                     units))
@@ -699,7 +689,6 @@ class TransformerDecoder(HybridBlock, Seq2SeqDecoder):
                         scaled=scaled,
                         use_residual=use_residual,
                         output_attention=output_attention,
-                        ffn_activation=ffn_activation,
                         prefix='transformer%d_' % i))
 
     def init_state_from_encoder(self, encoder_outputs, encoder_valid_length=None):
@@ -907,7 +896,6 @@ def get_transformer_encoder_decoder(num_layers=2,
                                     units=512, hidden_size=2048, dropout=0.0, use_residual=True,
                                     max_src_length=50, max_tgt_length=50,
                                     weight_initializer=None, bias_initializer='zeros',
-                                    ffn_activation='relu',
                                     prefix='transformer_', params=None):
     """Build a pair of Parallel GNMT encoder/decoder
 
@@ -947,7 +935,6 @@ def get_transformer_encoder_decoder(num_layers=2,
                                  use_residual=use_residual,
                                  weight_initializer=weight_initializer,
                                  bias_initializer=bias_initializer,
-                                 ffn_activation=ffn_activation,
                                  prefix=prefix + 'enc_', params=params)
     decoder = TransformerDecoder(num_layers=num_layers,
                                  num_heads=num_heads,
@@ -959,7 +946,6 @@ def get_transformer_encoder_decoder(num_layers=2,
                                  use_residual=use_residual,
                                  weight_initializer=weight_initializer,
                                  bias_initializer=bias_initializer,
-                                 ffn_activation=ffn_activation,
                                  prefix=prefix + 'dec_', params=params)
     return encoder, decoder
 
