@@ -14,12 +14,15 @@
 # limitations under the License.
 """BERT datasets."""
 
-__all__ = ['MRPCDataset']
+__all__ = ['MRPCDataset', 'SentenceClassificationTrans']
 
 import os
 from gluonnlp.data import TSVDataset
 from gluonnlp.data.registry import register
 import gluonnlp
+import mxnet as mx
+import numpy as np
+import tokenization
 
 @register(segment=['train', 'dev', 'test'])
 class MRPCDataset(TSVDataset):
@@ -41,13 +44,14 @@ class MRPCDataset(TSVDataset):
         self._supported_segments = ['train', 'dev', 'test']
         assert segment in self._supported_segments, "Unsupported segment: %s"%segment
         path = os.path.join(root, '%s.tsv'%segment)
-        super(MRPCDataset, self).__init__(path, num_discard_samples=1)
+        A_IDX, B_IDX, LABEL_IDX = 3, 4, 0
+        fields = [A_IDX, B_IDX, LABEL_IDX]
+        super(MRPCDataset, self).__init__(path, num_discard_samples=1, field_indices=fields)
 
     @staticmethod
     def get_labels():
+        """ Get classification label ids of the dataset. """
         return ["0", "1"]
-
-    #def transform():p
 
 def _truncate_seq_pair(tokens_a, tokens_b, max_length):
   """Truncates a sequence pair in place to the maximum length."""
@@ -64,52 +68,57 @@ def _truncate_seq_pair(tokens_a, tokens_b, max_length):
     else:
       tokens_b.pop()
 
+class SentenceClassificationTrans(object):
+    """Dataset Transformation for BERT-style Sentence Classification.
 
-import mxnet as mx
-import numpy as np
-
-
-label_list = MRPCDataset.get_labels()
-import tokenization
-VOCAB_FILE = '/home/ubuntu/bert/uncased_L-12_H-768_A-12/vocab.txt'
-do_lower_case=True
-tokenizer = tokenization.FullTokenizer(
-    vocab_file=VOCAB_FILE, do_lower_case=do_lower_case)
-
-print(tokenizer)
-MAX_SEQ_LENGTH = 128
-
-class MPRCTransform(object):
-    def __init__(self, tokenizer, labels, max_seq_length, has_text_b=True):
-        self.tokenizer = tokenizer
-        self.max_seq_length = max_seq_length
+    Parameters
+    ----------
+    tokenizer : BasicTokenizer or FullTokensize.
+        Tokenizer for the sentences.
+    labels : list of int.
+        List of all label ids for the classification task.
+    max_seq_length : int.
+        Maximum sequence length of the sentences.
+    pad : bool, default True
+        Whether to pad the sentences to maximum length.
+    pair : bool, default True
+        Whether to transform sentences or sentence pairs.
+    """
+    def __init__(self, tokenizer, labels, max_seq_length, pad=True, pair=True):
+        self._tokenizer = tokenizer
+        self._max_seq_length = max_seq_length
+        self._pad = pad
         self._label_map = {}
         for (i, label) in enumerate(labels):
           self._label_map[label] = i
-        self._has_next_b = has_text_b
+        self._pair = pair
 
     def __call__(self, line):
-        assert self._has_next_b
-        text_a = tokenization.convert_to_unicode(line[3])
-        text_b = tokenization.convert_to_unicode(line[4])
-        label = tokenization.convert_to_unicode(line[0])
+        # convert to unicode
+        text_a = line[0]
+        label = line[-1]
+        text_a = tokenization.convert_to_unicode(text_a)
+        label = tokenization.convert_to_unicode(label)
+        if self._pair:
+            assert len(line) == 3
+            text_b = line[1]
+            text_b = tokenization.convert_to_unicode(text_b)
 
-        tokens_a = self.tokenizer.tokenize(text_a)
+        tokens_a = self._tokenizer.tokenize(text_a)
         tokens_b = None
 
-        # TODO check text_b
-        if self._has_next_b:
-           tokens_b = tokenizer.tokenize(text_b)
+        if self._pair:
+           tokens_b = self._tokenizer.tokenize(text_b)
 
         if tokens_b:
             # Modifies `tokens_a` and `tokens_b` in place so that the total
             # length is less than the specified length.
             # Account for [CLS], [SEP], [SEP] with "- 3"
-            _truncate_seq_pair(tokens_a, tokens_b, self.max_seq_length - 3)
+            _truncate_seq_pair(tokens_a, tokens_b, self._max_seq_length - 3)
         else:
             # Account for [CLS] and [SEP] with "- 2"
-            if len(tokens_a) > self.max_seq_length - 2:
-              tokens_a = tokens_a[0:(self.max_seq_length - 2)]
+            if len(tokens_a) > self._max_seq_length - 2:
+              tokens_a = tokens_a[0:(self._max_seq_length - 2)]
 
         # The convention in BERT is:
         # (a) For sequence pairs:
@@ -134,42 +143,29 @@ class MPRCTransform(object):
         tokens.append("[CLS]")
         segment_ids.append(0)
         for token in tokens_a:
-          tokens.append(token)
-          segment_ids.append(0)
+            tokens.append(token)
+            segment_ids.append(0)
         tokens.append("[SEP]")
         segment_ids.append(0)
 
         if tokens_b:
-          for token in tokens_b:
-            tokens.append(token)
+            for token in tokens_b:
+                tokens.append(token)
+                segment_ids.append(1)
+            tokens.append("[SEP]")
             segment_ids.append(1)
-          tokens.append("[SEP]")
-          segment_ids.append(1)
 
-        input_ids = tokenizer.convert_tokens_to_ids(tokens)
+        input_ids = self._tokenizer.convert_tokens_to_ids(tokens)
         label_id = self._label_map[label]
 
-        # The mask has 1 for real tokens and 0 for padding tokens. Only real
-        # tokens are attended to.
-        input_mask = [1] * len(input_ids)
+        # The valid length of sentences. Only real  tokens are attended to.
+        valid_length = len(input_ids)
 
-        # Zero-pad up to the sequence length.
-        while len(input_ids) < self.max_seq_length:
-          input_ids.append(0)
-          input_mask.append(0)
-          segment_ids.append(0)
+        if self._pad:
+            # Zero-pad up to the sequence length.
+            padding_length = self._max_seq_length - valid_length
+            input_ids.extend([0] * padding_length)
+            segment_ids.extend([0] * padding_length)
 
-        assert len(input_ids) == self.max_seq_length
-        assert len(input_mask) == self.max_seq_length
-        assert len(segment_ids) == self.max_seq_length
-        return np.array(input_ids, dtype='int32'), np.array(input_mask, dtype='int32'),\
+        return np.array(input_ids, dtype='int32'), np.array([valid_length], dtype='int32'),\
                np.array(segment_ids, dtype='int32'), np.array([label_id], dtype='int32')
-
-trans = MPRCTransform(tokenizer, label_list, MAX_SEQ_LENGTH)
-train_examples2 = MRPCDataset('train')
-train_examples2 = train_examples2.transform(trans)
-data_mx = train_examples2
-
-dev_examples2 = MRPCDataset('dev')
-dev_examples2 = dev_examples2.transform(trans)
-data_mx_dev = dev_examples2

@@ -94,15 +94,18 @@ class TSVDataset(SimpleDataset):
         File encoding format.
     sample_splitter : function, default str.splitlines
         A function that splits the dataset string into samples.
-    field_separator: function or None, default Splitter('\t')
+    field_separator : function or None, default Splitter('\t')
         A function that splits each sample string into list of text fields.
         If None, raw samples are returned according to `sample_splitter`.
     num_discard_samples : int, default 0
         Number of samples discarded at the head of the first file.
+    field_indices : list of int, default None
+        If set, for each sample, only fields with provided indices are selected as the output.
+        Otherwise all fields are returned.
     """
     def __init__(self, filename, encoding='utf8',
                  sample_splitter=line_splitter, field_separator=Splitter('\t'),
-                 num_discard_samples=0):
+                 num_discard_samples=0, field_indices=None):
         assert sample_splitter, 'sample_splitter must be specified.'
 
         if not isinstance(filename, (tuple, list)):
@@ -113,12 +116,18 @@ class TSVDataset(SimpleDataset):
         self._sample_splitter = sample_splitter
         self._field_separator = field_separator
         self._num_discard_samples = num_discard_samples
+        self._field_indices = field_indices
         super(TSVDataset, self).__init__(self._read())
 
     def _discard(self, s):
         discard = self._num_discard_samples > 0
         self._num_discard_samples -= 1
         return discard
+
+    def _field_selector(self, fields):
+        if not self._field_indices:
+            return fields
+        return [fields[i] for i in self._field_indices]
 
     def _read(self):
         all_samples = []
@@ -127,7 +136,7 @@ class TSVDataset(SimpleDataset):
                 content = fin.read()
             samples = (s for s in self._sample_splitter(content) if not self._discard(s))
             if self._field_separator:
-                samples = [self._field_separator(s) for s in samples]
+                samples = [self._field_selector(self._field_separator(s)) for s in samples]
             all_samples += samples
         return all_samples
 

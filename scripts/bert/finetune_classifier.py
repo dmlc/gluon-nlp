@@ -47,15 +47,10 @@ import mxnet as mx
 from mxnet import gluon
 from mxnet.gluon.data import ArrayDataset, SimpleDataset
 from mxnet.gluon.data import DataLoader
-import gluonnlp.data.batchify as btf
-from gluonnlp.data import SacreMosesDetokenizer
-from gluonnlp.data import ShardedDataLoader
-from gluonnlp.data import ConstWidthBucket, LinearWidthBucket, ExpWidthBucket,\
-    FixedBucketSampler
-from gluonnlp.model.translation import NMTModel
 from bert import BERTModel, get_transformer_encoder, BERTClassifier
 from utils import logging_config
 import tokenization
+from dataset import MRPCDataset, SentenceClassificationTrans
 
 np.random.seed(100)
 random.seed(100)
@@ -63,7 +58,8 @@ mx.random.seed(10000)
 
 parser = argparse.ArgumentParser(description='Neural Machine Translation Example.'
                                              'We train the Transformer Model')
-parser.add_argument('--dataset', type=str, default='WMT2016BPE', help='Dataset to use.')
+parser.add_argument('--vocab_file', type=str, required=True,
+                    help='Path to the vocabulary file. e.g. $BERT_BASE_DIR/vocab.txt')
 parser.add_argument('--epochs', type=int, default=3, help='number of epochs')
 parser.add_argument('--num_units', type=int, default=768, help='Dimension of the embedding '
                                                                'vectors and states.')
@@ -79,27 +75,17 @@ parser.add_argument('--scaled', action='store_true', help='Turn on to use scale 
 parser.add_argument('--batch_size', type=int, default=32,
                     help='Batch size. Number of examples per gpu in a minibatch')
 parser.add_argument('--test_batch_size', type=int, default=8, help='Test batch size')
-parser.add_argument('--num_buckets', type=int, default=10, help='Bucket number')
-parser.add_argument('--bucket_scheme', type=str, default='constant',
-                    help='Strategy for generating bucket keys. It supports: '
-                         '"constant": all the buckets have the same width; '
-                         '"linear": the width of bucket increases linearly; '
-                         '"exp": the width of bucket increases exponentially')
-parser.add_argument('--bucket_ratio', type=float, default=0.0, help='Ratio for increasing the '
-                                                                    'throughput of the bucketing')
-parser.add_argument('--max_len', type=int, default=-1, help='Maximum length of the source '
-                                                                'sentence, -1 means no clipping')
+parser.add_argument('--max_len', type=int, default=128, help='Maximum length of the sentence pairs')
 parser.add_argument('--optimizer', type=str, default='adam', help='optimization algorithm')
 parser.add_argument('--lr', type=float, default=5e-5, help='Initial learning rate')
 parser.add_argument('--warmup_ratio', type=float, default=0.1,
                     help='ratio of warmup steps used in NOAM\'s stepsize schedule')
-parser.add_argument('--log_interval', type=int, default=100, metavar='N',
-                    help='report interval')
-parser.add_argument('--save_dir', type=str, default='transformer_out',
+parser.add_argument('--log_interval', type=int, default=10, help='report interval')
+parser.add_argument('--output_dir', type=str, default='classifier_out',
                     help='directory path to save the final model and training log')
 parser.add_argument('--gpu', action='store_true', help='whether to use gpu for finetuning')
 args = parser.parse_args()
-logging_config(args.save_dir)
+logging_config(args.output_dir)
 logging.info(args)
 batch_size = args.batch_size
 test_batch_size = args.test_batch_size
@@ -112,11 +98,17 @@ encoder = get_transformer_encoder(units=args.num_units,
                                   dropout=args.dropout,
                                   num_layers=args.num_layers,
                                   num_heads=args.num_heads,
-                                  max_src_length=512,#max(max_len, 512),
-                                  max_tgt_length=512,#max(max_len, 512),
+                                  max_src_length=512,
+                                  max_tgt_length=512,
                                   scaled=args.scaled)
 
-from dataset import tokenizer
+import tokenization
+do_lower_case=True
+tokenizer = tokenization.FullTokenizer(
+    vocab_file=args.vocab_file, do_lower_case=do_lower_case)
+
+print(tokenizer)
+MAX_SEQ_LENGTH = 128
 vocab = tokenizer.vocab
 model = BERTModel(encoder=encoder, vocab_size=len(vocab), token_type_vocab_size=2,
                   units=args.num_units, embed_size=args.num_units,
@@ -154,12 +146,20 @@ for name in tf_params:
     if name not in loaded:
         print('not loading', name)
 
-
 loss_function = gluon.loss.SoftmaxCELoss()
 loss_function.hybridize(static_alloc=static_alloc)
 
 metric = mx.metric.Accuracy()
 metric_dev = mx.metric.Accuracy()
+
+trans = SentenceClassificationTrans(tokenizer, MRPCDataset.get_labels(), args.max_len)
+train_examples2 = MRPCDataset('train')
+train_examples2 = train_examples2.transform(trans)
+data_mx = train_examples2
+
+dev_examples2 = MRPCDataset('dev')
+dev_examples2 = dev_examples2.transform(trans)
+data_mx_dev = dev_examples2
 
 def evaluate():
     """Evaluate given the data loader
@@ -176,20 +176,16 @@ def evaluate():
         The translation output
     """
     step_loss = 0
-    #from dataset import input_ids_nd_dev, input_mask_nd_dev, segment_ids_nd_dev, label_ids_nd_dev
-    #bert_data_dev = ArrayDataset(input_ids_nd_dev, input_mask_nd_dev, segment_ids_nd_dev, label_ids_nd_dev)
-    from dataset import data_mx_dev
     bert_dataloader_dev = mx.gluon.data.DataLoader(data_mx_dev, batch_size=test_batch_size, shuffle=False)
     metric_dev.reset()
     log_start_time = time.time()
-    #bert_dataloader_dev = mx.gluon.data.DataLoader(bert_data_dev, batch_size=test_batch_size)
 
     for batch_id, seqs in enumerate(bert_dataloader_dev):
         Ls = []
-        input_ids_nd0, input_mask_nd0, segment_ids_nd0, label_ids_nd0 = seqs
+        input_ids_nd0, input_len0, segment_ids_nd0, label_ids_nd0 = seqs
         out  = model(input_ids_nd0.reshape((test_batch_size, -1)).as_in_context(mx.gpu()),
                      segment_ids_nd0.reshape((test_batch_size, -1)).as_in_context(mx.gpu()),
-                     input_mask_nd0.sum(axis=1).astype('float32').as_in_context(mx.gpu()))
+                     input_len0.squeeze().astype('float32').as_in_context(mx.gpu()))
         ls = loss_function(out, label_ids_nd0.as_in_context(mx.gpu())).mean()
         Ls.append(ls)
         step_loss += sum([L.asscalar() for L in Ls])
@@ -202,10 +198,6 @@ def train():
     trainer = gluon.Trainer(model.collect_params(), args.optimizer,
                             {'learning_rate': args.lr, 'epsilon': 1e-9})
 
-    #from dataset import input_ids_nd, input_mask_nd, segment_ids_nd, label_ids_nd
-    #bert_data = ArrayDataset(input_ids_nd, input_mask_nd, segment_ids_nd, label_ids_nd)
-
-    from dataset import data_mx
     bert_dataloader = mx.gluon.data.DataLoader(data_mx, batch_size=batch_size, shuffle=False, last_batch='discard')
     num_train_examples = len(data_mx)
     print('num samples = ', num_train_examples)
@@ -228,29 +220,17 @@ def train():
             else:
                 new_lr = args.lr - (step_num - num_warmup_steps) * args.lr / (num_train_steps - num_warmup_steps)
             trainer.set_learning_rate(new_lr)
-            #src_wc, tgt_wc, bs = np.sum([(shard[2].sum(), shard[3].sum(), shard[0].shape[0])
-            #                             for shard in seqs], axis=0)
-            #src_wc = src_wc.asscalar()
-            #tgt_wc = tgt_wc.asscalar()
-            #loss_denom += tgt_wc - bs
-            #seqs = [[seq.as_in_context(context) for seq in shard]
-            #        for context, shard in zip(ctx, seqs)]
             Ls = []
             #with mx.autograd.pause():
             with mx.autograd.record():
-
-                #import pdb; pdb.set_trace()
                 input_ids_nd0, input_mask_nd0, segment_ids_nd0, label_ids_nd0 = seqs
                 #print(input_ids_nd0.sum().asscalar(),input_mask_nd0.sum().asscalar(),
                 #      segment_ids_nd0.sum().asscalar(), label_ids_nd0.sum().asscalar())
-
                 out  = model(input_ids_nd0.reshape((batch_size, -1)).as_in_context(mx.gpu()),
                              segment_ids_nd0.reshape((batch_size, -1)).as_in_context(mx.gpu()),
-                             input_mask_nd0.sum(axis=1).astype('float32').as_in_context(mx.gpu()))
-
-                #params = model._collect_params_with_prefix()
+                             input_mask_nd0.squeeze().astype('float32').as_in_context(mx.gpu()))
                 ls = loss_function(out, label_ids_nd0.as_in_context(mx.gpu())).mean()
-                Ls.append(ls)#(ls * (tgt_seq.shape[1] - 1)) / args.batch_size / 100.0)
+                Ls.append(ls)
             #if batch_id == 0:
             #    mx.nd.waitall()
             #    exit()
@@ -267,19 +247,14 @@ def train():
             trainer.step(1)
             step_loss += sum([L.asscalar() for L in Ls])
             metric.update([label_ids_nd0], [out])
-            #log_wc += src_wc + tgt_wc
-            #if (batch_id + 1) % (args.log_interval * grad_interval) == 0:
             if (batch_id + 1) % (args.log_interval) == 0:
-                #wps = log_wc / (time.time() - log_start_time)
                 logging.info('[Epoch {} Batch {}/{}] loss={:.4f}, lr={:.7f}, acc={:.3f}'
                              .format(epoch_id, batch_id + 1, len(bert_dataloader),
                                      step_loss / args.log_interval,
                                      trainer.learning_rate, metric.get()[1]))
                 log_start_time = time.time()
                 log_avg_loss = 0
-                log_wc = 0
                 step_loss = 0
-
         mx.nd.waitall()
         evaluate()
 
