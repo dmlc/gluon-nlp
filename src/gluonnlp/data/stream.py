@@ -227,12 +227,15 @@ class _Prefetcher(object):
             # https://github.com/apache/incubator-mxnet/issues/4659
             mx.random.seed(self.mx_seed)
 
+        # Startup - Master waits for this
         try:
             stream_iter = iter(self.stream)
             self._errorq.put(None)
         except Exception as e:  # pylint: disable=broad-except
             tb = traceback.format_exc()
             self._errorq.put((e, tb))
+
+        # Async work
         while True:
             try:  # Check control queue
                 c = self._controlq.get(False)
@@ -244,23 +247,23 @@ class _Prefetcher(object):
                 pass
             except RuntimeError as e:
                 tb = traceback.format_exc()
-                self._dataq.put(None)
                 self._errorq.put((e, tb))
+                self._dataq.put(None)
 
             try:
                 data = next(stream_iter)
-                self._dataq.put(data)
-                self._errorq.put(None)
+                error = None
             except Exception as e:  # pylint: disable=broad-except
                 tb = traceback.format_exc()
-                self._dataq.put(None)
-                self._errorq.put((e, tb))
+                error = (e, tb)
+                data = None
+            finally:
+                self._errorq.put(error)
+                self._dataq.put(data)
 
     def __next__(self):
         next_item = self._dataq.get()
-        # Whenever there is a data elment, there must be an error or None in
-        # the error queue
-        next_error = self._errorq.get(block=False)
+        next_error = self._errorq.get()
 
         if next_error is None:
             return next_item
@@ -292,7 +295,7 @@ class _ProcessPrefetcher(_Prefetcher, multiprocessing.Process):
         super(_ProcessPrefetcher, self).__init__(*args, **kwargs)
         self._dataq = multiprocessing.Queue(self.num_prefetch)
         self._controlq = multiprocessing.Queue()
-        self._errorq = multiprocessing.Queue()
+        self._errorq = multiprocessing.Queue(self.num_prefetch)
         self.daemon = True
         self.start()
         self._check_start()
@@ -305,7 +308,7 @@ class _ThreadPrefetcher(_Prefetcher, threading.Thread):
         super(_ThreadPrefetcher, self).__init__(*args, **kwargs)
         self._dataq = queue.Queue(self.num_prefetch)
         self._controlq = queue.Queue()
-        self._errorq = queue.Queue()
+        self._errorq = queue.Queue(self.num_prefetch)
         self.daemon = True
         self.start()
         self._check_start()
