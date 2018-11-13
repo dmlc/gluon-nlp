@@ -51,13 +51,10 @@ import gluonnlp.data.batchify as btf
 from gluonnlp.data import SacreMosesDetokenizer
 from gluonnlp.data import ShardedDataLoader
 from gluonnlp.data import ConstWidthBucket, LinearWidthBucket, ExpWidthBucket,\
-    FixedBucketSampler, IWSLT2015, WMT2016, WMT2016BPE, WMT2014, WMT2014BPE
-from gluonnlp.model import BeamSearchScorer
-from translation import NMTModel, BeamSearchTranslator
+    FixedBucketSampler
+from gluonnlp.model.translation import NMTModel
 from bert import BERTModel, get_transformer_encoder, BERTClassifier
-from loss import SoftmaxCEMaskedLoss, LabelSmoothing
 from utils import logging_config
-import _constants as _C
 import tokenization
 
 np.random.seed(100)

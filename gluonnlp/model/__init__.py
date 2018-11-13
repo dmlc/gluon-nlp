@@ -57,6 +57,7 @@ from .sequence_sampler import *
 from .block import *
 from .convolutional_encoder import *
 from .seq2seq_encoder_decoder import *
+from .translation import *
 from .transformer import *
 from .highway import *
 from .language_model import *
