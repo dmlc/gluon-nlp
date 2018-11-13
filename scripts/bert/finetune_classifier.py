@@ -47,9 +47,10 @@ import mxnet as mx
 from mxnet import gluon
 from mxnet.gluon.data import ArrayDataset, SimpleDataset
 from mxnet.gluon.data import DataLoader
-from bert import BERTModel, get_transformer_encoder, BERTClassifier
+from gluonnlp.model.bert import BERTModel, get_transformer_encoder
+from bert import BERTClassifier
 from utils import logging_config
-import tokenization
+from tokenization import FullTokenizer
 from dataset import MRPCDataset, SentenceClassificationTrans
 
 np.random.seed(100)
@@ -61,8 +62,8 @@ parser = argparse.ArgumentParser(description='Neural Machine Translation Example
 parser.add_argument('--vocab_file', type=str, required=True,
                     help='Path to the vocabulary file. e.g. $BERT_BASE_DIR/vocab.txt')
 parser.add_argument('--epochs', type=int, default=3, help='number of epochs')
-parser.add_argument('--num_units', type=int, default=768, help='Dimension of the embedding '
-                                                               'vectors and states.')
+parser.add_argument('--num_units', type=int, default=768,
+                    help='Dimension of the embedding vectors and states.')
 parser.add_argument('--hidden_size', type=int, default=3072,
                     help='Dimension of the hidden state in position-wise feed-forward networks.')
 parser.add_argument('--dropout', type=float, default=0.1,
@@ -102,15 +103,10 @@ encoder = get_transformer_encoder(units=args.num_units,
                                   max_tgt_length=512,
                                   scaled=args.scaled)
 
-import tokenization
 do_lower_case=True
-tokenizer = tokenization.FullTokenizer(
-    vocab_file=args.vocab_file, do_lower_case=do_lower_case)
+tokenizer = FullTokenizer(vocab_file=args.vocab_file, do_lower_case=do_lower_case)
 
-print(tokenizer)
-MAX_SEQ_LENGTH = 128
-vocab = tokenizer.vocab
-model = BERTModel(encoder=encoder, vocab_size=len(vocab), token_type_vocab_size=2,
+model = BERTModel(encoder=encoder, vocab_size=len(tokenizer.vocab), token_type_vocab_size=2,
                   units=args.num_units, embed_size=args.num_units,
                   embed_initializer=None, prefix='transformer_')
 
@@ -119,15 +115,13 @@ model = BERTClassifier(model)
 
 model.initialize(init=mx.init.Normal(0.02), ctx=ctx)
 static_alloc = True
-#model.hybridize(static_alloc=static_alloc)
+model.hybridize(static_alloc=static_alloc)
 logging.info(model)
 
 ones = mx.nd.ones((1, 128), ctx=mx.gpu())
 out = model(ones, ones, mx.nd.ones((1,), ctx=mx.gpu()))
 params = model.bert._collect_params_with_prefix()
 import pickle
-#import pdb; pdb.set_trace()
-#print(sorted(params.keys()))
 with open('/home/ubuntu/bert/bert.pickle.mx', 'rb') as f:
     tf_params = pickle.load(f)
 loaded = {}
@@ -150,16 +144,10 @@ loss_function = gluon.loss.SoftmaxCELoss()
 loss_function.hybridize(static_alloc=static_alloc)
 
 metric = mx.metric.Accuracy()
-metric_dev = mx.metric.Accuracy()
 
 trans = SentenceClassificationTrans(tokenizer, MRPCDataset.get_labels(), args.max_len)
-train_examples2 = MRPCDataset('train')
-train_examples2 = train_examples2.transform(trans)
-data_mx = train_examples2
-
-dev_examples2 = MRPCDataset('dev')
-dev_examples2 = dev_examples2.transform(trans)
-data_mx_dev = dev_examples2
+data_train = MRPCDataset('train').transform(trans)
+data_dev = MRPCDataset('dev').transform(trans)
 
 def evaluate():
     """Evaluate given the data loader
@@ -176,8 +164,8 @@ def evaluate():
         The translation output
     """
     step_loss = 0
-    bert_dataloader_dev = mx.gluon.data.DataLoader(data_mx_dev, batch_size=test_batch_size, shuffle=False)
-    metric_dev.reset()
+    bert_dataloader_dev = mx.gluon.data.DataLoader(data_dev, batch_size=test_batch_size, shuffle=False)
+    metric.reset()
     log_start_time = time.time()
 
     for batch_id, seqs in enumerate(bert_dataloader_dev):
@@ -189,8 +177,8 @@ def evaluate():
         ls = loss_function(out, label_ids_nd0.as_in_context(mx.gpu())).mean()
         Ls.append(ls)
         step_loss += sum([L.asscalar() for L in Ls])
-        metric_dev.update([label_ids_nd0], [out])
-    print('validation', metric_dev.get())
+        metric.update([label_ids_nd0], [out])
+    print('validation', metric.get())
 
 
 def train():
@@ -198,17 +186,19 @@ def train():
     trainer = gluon.Trainer(model.collect_params(), args.optimizer,
                             {'learning_rate': args.lr, 'epsilon': 1e-9})
 
-    bert_dataloader = mx.gluon.data.DataLoader(data_mx, batch_size=batch_size, shuffle=False, last_batch='discard')
-    num_train_examples = len(data_mx)
+    bert_dataloader = mx.gluon.data.DataLoader(data_train, batch_size=batch_size,
+                                               shuffle=True, last_batch='discard')
+                                               #shuffle=True, last_batch='discard')
+    num_train_examples = len(data_train)
     print('num samples = ', num_train_examples)
     num_train_steps = int(
         num_train_examples / batch_size * args.epochs)
     warmup_ratio = args.warmup_ratio
     num_warmup_steps = int(num_train_steps * warmup_ratio)
     step_num = 0
-    metric.reset()
 
     for epoch_id in range(args.epochs):
+        metric.reset()
         log_avg_loss = 0
         step_loss = 0
         log_start_time = time.time()

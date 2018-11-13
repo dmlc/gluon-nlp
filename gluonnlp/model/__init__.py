@@ -59,6 +59,7 @@ from .convolutional_encoder import *
 from .seq2seq_encoder_decoder import *
 from .translation import *
 from .transformer import *
+from .bert import *
 from .highway import *
 from .language_model import *
 from .parameter import *
@@ -68,7 +69,8 @@ from .utils import *
 __all__ = language_model.__all__ + sequence_sampler.__all__ + attention_cell.__all__ + \
           utils.__all__ + parameter.__all__ + block.__all__ + highway.__all__ + \
           convolutional_encoder.__all__ + seq2seq_encoder_decoder.__all__ + \
-          transformer.__all__ + sampled_block.__all__ + ['get_model'] + ['train']
+          transformer.__all__ + bert.__all__ + sampled_block.__all__ + \
+          ['get_model'] + ['train']
 
 
 def get_model(name, dataset_name='wikitext-2', **kwargs):
