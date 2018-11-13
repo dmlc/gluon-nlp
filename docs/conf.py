@@ -243,6 +243,10 @@ def setup(app):
     app.add_transform(AutoStructify)
     app.add_javascript('google_analytics.js')
     app.add_javascript('copybutton.js')
+    app.add_stylesheet('gluonnlp.css')
+
+    import mxtheme
+    app.add_directive('card', mxtheme.CardDirective)
 
 
 sphinx_gallery_conf = {
@@ -266,4 +270,4 @@ napoleon_use_ivar = True
 import multiprocessing
 linkcheck_ignore = [r'http[s]://apache-mxnet.s3.*']
 linkcheck_retries = 3
-linkcheck_workers = multiprocessing.cpu_count() / 2
+linkcheck_workers = int(multiprocessing.cpu_count() / 2)

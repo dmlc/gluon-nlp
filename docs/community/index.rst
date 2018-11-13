@@ -1,23 +1,43 @@
 Community
 =========
 
-Welcome to GluonNLP community. We strive to foster a collaborative and welcoming community. We
-expect all members to follow the `code of conduct <https://www.apache.org/foundation/policies/conduct>`__.
+.. container:: gluonnlp-cards
 
-Discuss Forum
--------------
+   .. card::
+      :title: Community
+      :is_head: true
+      :link: https://www.apache.org/foundation/policies/conduct
 
-For general discussions, sharing usage experiences, and asking questions on Gluon and GluonNLP, find us on our `forum <https://discuss.mxnet.io/c/gluon>`__.
+      Welcome to GluonNLP community. We strive to foster a collaborative and welcoming community. We
+      expect all members to follow the `code of conduct <https://www.apache.org/foundation/policies/conduct>`__.
 
-中文用户讨论和提问，请访问我们的 `中文论坛 <https://discuss.gluon.ai/c/gluon-nlp>`__ 。
+   .. card::
+      :title: Github Issues
+      :link: https://github.com/dmlc/gluon-nlp/issues
 
-Feature requests and bug reports
---------------------------------
+      Feature requests, bug reports, design and roadmap discussion.
 
-We use the Github issue tracker for feature requests, bug reports, and design and roadmap discussion.
 
-Contribute
-----------
+   .. card::
+      :title: Github Projects
+      :link: https://github.com/dmlc/gluon-nlp/projects
+
+      Active roadmaps, and current and past projects.
+
+
+   .. card::
+      :title: Discuss Forum
+      :link: https://discuss.mxnet.io/c/gluon
+
+      General discussions, usage experiences, and questions.
+
+
+   .. card::
+      :title: 中文论坛
+      :link: https://discuss.gluon.ai/c/gluon-nlp
+
+      中文用户使用讨论，提问与心得分享
+
 
 Interested in contributing to GluonNLP? Check our contribution guide:
 

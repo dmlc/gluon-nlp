@@ -1,5 +1,12 @@
-GluonNLP: a Deep Learning Toolkit for Natural Language Processing (NLP)
-=======================================================================
+.. card::
+   :title: Welcome
+   :is_head: true
+   :link: #get-started
+
+   GluonNLP is a Deep Learning Toolkit for Natural Language Processing (NLP).
+
+GluonNLP
+========
 
 GluonNLP provides implementations of the state-of-the-art (SOTA) deep learning
 models in NLP, and build blocks for text data pipelines and models.
@@ -9,7 +16,8 @@ research ideas and products based on these models. This toolkit offers four main
 1. Training scripts to reproduce SOTA results reported in research papers.
 2. Pre-trained models for common NLP tasks.
 3. Carefully designed APIs that greatly reduce the implementation complexity.
-4. Community support.
+4. Tutorials to help get started on new NLP tasks.
+5. Community support.
 
 
 This toolkit assumes that users have basic knowledge about deep learning and
@@ -31,9 +39,30 @@ The toolkit supports the following NLP tasks:
 
    You can find our the doc for our master development branch `here <http://gluon-nlp.mxnet.io/master/index.html>`_.
 
+Get Started
+-----------
+
+A Quick Example
+~~~~~~~~~~~~~~~
+
+Here is a quick example that downloads and creates a word embedding model and then
+computes the cosine similarity between two words.
+
+(You can click the go button on the right bottom corner to run this example.)
+
+.. raw:: html
+
+  <iframe height="400px" width="100%"
+  src="https://repl.it/@szha/gluon-nlp?lite=true" scrolling="no"
+  frameborder="no" allowtransparency="true" allowfullscreen="true"
+  sandbox="allow-forms allow-pointer-lock allow-popups allow-same-origin
+  allow-scripts allow-modals"></iframe>
+
+  <p></p>
+
 
 Installation
-------------
+~~~~~~~~~~~~
 
 GluonNLP relies on the recent version of MXNet. The easiest way to install MXNet
 is through `pip <https://pip.pypa.io/en/stable/installing/>`_. The following
@@ -58,25 +87,6 @@ Then install the GluonNLP toolkit by
 .. code-block:: console
 
    pip install gluonnlp
-
-
-A Quick Example
----------------
-
-Here is a quick example that downloads and creates a word embedding model and then
-computes the cosine similarity between two words.
-
-(You can click the go button on the right bottom corner to run this example.)
-
-.. raw:: html
-
-  <iframe height="400px" width="100%"
-  src="https://repl.it/@szha/gluon-nlp?lite=true" scrolling="no"
-  frameborder="no" allowtransparency="true" allowfullscreen="true"
-  sandbox="allow-forms allow-pointer-lock allow-popups allow-same-origin
-  allow-scripts allow-modals"></iframe>
-
-  <p></p>
 
 .. toctree::
    :hidden:
