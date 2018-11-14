@@ -18,7 +18,8 @@
 # under the License.
 """BERT models."""
 
-__all__ = ['BERTModel', 'BERTEncoder', 'BERTEncoderCell', 'BERTPositionwiseFFN']
+__all__ = ['BERTModel', 'BERTEncoder', 'BERTEncoderCell', 'BERTPositionwiseFFN',
+           'BERTLayerNorm']
 
 import warnings
 import numpy as np
@@ -30,6 +31,32 @@ from .transformer import BasePositionwiseFFN, BaseTransformerEncoderCell, BaseTr
 ###############################################################################
 #                              COMPONENTS                                     #
 ###############################################################################
+
+class BERTLayerNorm(HybridBlock):
+    """ BERT style Layer Normalization.
+
+    Epsilon is added inside the square root.
+    """
+    def __init__(self, epsilon=1e-12, in_channels=0, prefix=None, params=None):
+        super(BERTLayerNorm, self).__init__(prefix=prefix, params=params)
+        self.gamma = self.params.get('gamma', shape=(in_channels,),
+                                     allow_deferred_init=True)
+        self.beta = self.params.get('beta', shape=(in_channels,),
+                                    allow_deferred_init=True)
+        self._eps = epsilon
+        assert in_channels == 768
+
+    def hybrid_forward(self, F, x, gamma, beta):
+        u = F.mean(x, -1, keepdims=True)
+        s = F.mean(F.broadcast_sub(x, u) ** 2, -1, keepdims=True) + self._eps
+        x = F.broadcast_div(F.broadcast_sub(x, u), s.sqrt())
+        return F.broadcast_add(F.broadcast_mul(gamma, x), beta)
+
+    def __repr__(self):
+        s = '{name}('
+        in_channels = self.gamma.shape[0]
+        s += 'in_channels={0}, epsilon={1})'.format(in_channels, self._eps)
+        return s.format(name=self.__class__.__name__)
 
 class BERTPositionwiseFFN(BasePositionwiseFFN):
     """Structure of the Positionwise Feed-Forward Neural Network for

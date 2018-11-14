@@ -31,7 +31,7 @@ from mxnet.gluon import nn
 from mxnet.gluon.block import HybridBlock
 from mxnet.gluon.model_zoo import model_store
 from .seq2seq_encoder_decoder import Seq2SeqEncoder, Seq2SeqDecoder, _get_attention_cell
-from .block import GELU, BERTLayerNorm
+from .block import GELU
 from .translation import NMTModel
 from .utils import _load_vocab, _load_pretrained_params
 from gluonnlp.data.utils import _vocab_sha1
@@ -51,6 +51,7 @@ def _position_encoding_init(max_length, dim):
     return position_enc
 
 def _get_layer_norm(use_bert, units):
+    from .bert import BERTLayerNorm
     layer_norm = BERTLayerNorm if use_bert else nn.LayerNorm
     return layer_norm(in_channels=units)
 
@@ -212,6 +213,7 @@ class BaseTransformerEncoderCell(HybridBlock):
 
     def _get_positionwise_ffn(self, use_bert, units, hidden_size, dropout, use_residual,
                               weight_initializer, bias_initializer):
+        from .bert import BERTPositionwiseFFN
         positionwise_ffn = BERTPositionwiseFFN if use_bert else PositionwiseFFN
         return positionwise_ffn(units=units, hidden_size=hidden_size, dropout=dropout,
                                 use_residual=use_residual, weight_initializer=weight_initializer,
@@ -349,6 +351,7 @@ class BaseTransformerEncoder(HybridBlock, Seq2SeqEncoder):
     def _get_encoder_cell(self, use_bert, units, hidden_size, num_heads, attention_cell,
                           weight_initializer, bias_initializer, dropout, use_residual,
                           scaled, output_attention, i):
+        from .bert import BERTEncoderCell
         cell = BERTEncoderCell if use_bert else TransformerEncoderCell
         return cell(units=units, hidden_size=hidden_size,
                     num_heads=num_heads, attention_cell=attention_cell,

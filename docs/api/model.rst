@@ -40,6 +40,8 @@ Bidirectional Encoder Representations from Transformers
 .. autosummary::
     :nosignatures:
 
+    BERTModel
+    BERTLayerNorm
     BERTEncoder
     BERTEncoderCell
     BERTPositionwiseFFN
