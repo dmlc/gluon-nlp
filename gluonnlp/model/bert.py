@@ -16,21 +16,162 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-"""Machine translation models and translators."""
+"""BERT models."""
 
-
-__all__ = ['BERTModel']
+__all__ = ['BERTModel', 'BERTEncoder', 'BERTEncoderCell', 'BERTPositionwiseFFN']
 
 import warnings
 import numpy as np
 from mxnet.gluon import Block, HybridBlock
 from mxnet.gluon import nn
 import mxnet as mx
-from . import TransformerEncoder
+from .transformer import BasePositionwiseFFN, BaseTransformerEncoderCell, BaseTransformerEncoder
 
+class BERTPositionwiseFFN(BasePositionwiseFFN):
+    """Structure of the Positionwise Feed-Forward Neural Network for
+    BERT.
+
+    Different from the original positionwise feed forward network
+    for transformer, `BERTPositionwiseFFN` uses `GELU` for activation
+    and `BERTLayerNorm` for layer normalization.
+
+    Parameters
+    ----------
+    units : int
+        Number of units for the output
+    hidden_size : int
+        Number of units in the hidden layer of position-wise feed-forward networks
+    dropout : float
+        Dropout probability for the output
+    use_residual : bool
+        Add residual connection between the input and the output
+    weight_initializer : str or Initializer
+        Initializer for the input weights matrix, used for the linear
+        transformation of the inputs.
+    bias_initializer : str or Initializer
+        Initializer for the bias vector.
+    prefix : str, default None
+        Prefix for name of `Block`s (and name of weight if params is `None`).
+    params : Parameter or None
+        Container for weight sharing between cells. Created if `None`.
+    """
+    def __init__(self, units=512, hidden_size=2048, dropout=0.0, use_residual=True,
+                 weight_initializer=None, bias_initializer='zeros',
+                 prefix=None, params=None):
+        super(BERTPositionwiseFFN, self).__init__(units=units, hidden_size=hidden_size,
+              dropout=dropout, use_residual=use_residual, weight_initializer=weight_initializer,
+              bias_initializer=bias_initializer, prefix=prefix, params=params,
+              # extra configurations for the BERT-style positionwise feed forward layer
+              activation='gelu', use_bert_layer_norm=True)
+
+class BERTEncoder(BaseTransformerEncoder):
+    """Structure of the BERT Encoder.
+
+    Different from the original encoder for transformer,
+    `BERTEncoder` uses learnable positional embedding, `BERTPositionwiseFFN`
+    and `BERTLayerNorm`.
+
+    Parameters
+    ----------
+    attention_cell : AttentionCell or str, default 'multi_head'
+        Arguments of the attention cell.
+        Can be 'multi_head', 'scaled_luong', 'scaled_dot', 'dot', 'cosine', 'normed_mlp', 'mlp'
+    num_layers : int
+        Number of attention layers.
+    units : int
+        Number of units for the output.
+    hidden_size : int
+        number of units in the hidden layer of position-wise feed-forward networks
+    max_length : int
+        Maximum length of the input sequence
+    num_heads : int
+        Number of heads in multi-head attention
+    scaled : bool
+        Whether to scale the softmax input by the sqrt of the input dimension
+        in multi-head attention
+    dropout : float
+        Dropout probability of the attention probabilities.
+    use_residual : bool
+    output_attention: bool
+        Whether to output the attention weights
+    weight_initializer : str or Initializer
+        Initializer for the input weights matrix, used for the linear
+        transformation of the inputs.
+    bias_initializer : str or Initializer
+        Initializer for the bias vector.
+    prefix : str, default None.
+        Prefix for name of `Block`s. (and name of weight if params is `None`).
+    params : Parameter or None
+        Container for weight sharing between cells. Created if `None`.
+    """
+    def __init__(self, attention_cell='multi_head', num_layers=2,
+                 units=512, hidden_size=2048, max_length=50,
+                 num_heads=4, scaled=True, dropout=0.0,
+                 use_residual=True, output_attention=False,
+                 weight_initializer=None, bias_initializer='zeros',
+                 prefix=None, params=None):
+        super(BERTEncoder, self).__init__(attention_cell=attention_cell,
+            num_layers=num_layers, units=units, hidden_size=hidden_size, max_length=max_length,
+            num_heads=num_heads, scaled=scaled, dropout=dropout, use_residual=use_residual,
+            output_attention=output_attention, weight_initializer=weight_initializer,
+            bias_initializer=bias_initializer, prefix=prefix, params=params,
+            # extra configurations for the BERT-style transformer
+            positional_weight='learned', use_bert_encoder=True,
+            use_layer_norm_before_dropout=False, scale_embed=False)
+
+
+class BERTEncoderCell(BaseTransformerEncoderCell):
+    """Structure of the Transformer Encoder Cell for BERT.
+
+    Different from the original encoder cell for transformer,
+    `BERTEncoderCell` adds bias terms for attention and the projection
+    on attention output. It also uses `BERTPositionwiseFFN` and
+    `BERTLayerNorm`.
+
+    Parameters
+    ----------
+    attention_cell : AttentionCell or str, default 'multi_head'
+        Arguments of the attention cell.
+        Can be 'multi_head', 'scaled_luong', 'scaled_dot', 'dot', 'cosine', 'normed_mlp', 'mlp'
+    units : int
+        Number of units for the output
+    hidden_size : int
+        number of units in the hidden layer of position-wise feed-forward networks
+    num_heads : int
+        Number of heads in multi-head attention
+    scaled : bool
+        Whether to scale the softmax input by the sqrt of the input dimension
+        in multi-head attention
+    dropout : float
+    use_residual : bool
+    output_attention: bool
+        Whether to output the attention weights
+    weight_initializer : str or Initializer
+        Initializer for the input weights matrix, used for the linear
+        transformation of the inputs.
+    bias_initializer : str or Initializer
+        Initializer for the bias vector.
+    prefix : str, default None
+        Prefix for name of `Block`s. (and name of weight if params is `None`).
+    params : Parameter or None
+        Container for weight sharing between cells. Created if `None`.
+    """
+    def __init__(self, attention_cell='multi_head', units=128,
+                 hidden_size=512, num_heads=4, scaled=True,
+                 dropout=0.0, use_residual=True, output_attention=False,
+                 weight_initializer=None, bias_initializer='zeros',
+                 prefix=None, params=None):
+        super(BERTEncoderCell, self).__init__(attention_cell=attention_cell,
+            units=units, hidden_size=hidden_size, num_heads=num_heads, scaled=scaled,
+            dropout=dropout, use_residual=use_residual, output_attention=output_attention,
+            weight_initializer=weight_initializer, bias_initializer=bias_initializer,
+            prefix=prefix, params=params,
+            # extra configurations for the BERT-style transformer encoder cell
+            attention_use_bias=True, attention_proj_use_bias=True,
+            use_bert_layer_norm=True, use_bert_ffn=True)
 
 class BERTModel(Block):
-    """Model for Bidirectional Encoder Representations from Transformers.
+    """Model for BERT (Bidirectional Encoder Representations from Transformers).
 
     Parameters
     ----------
@@ -182,16 +323,20 @@ class BERTModel(Block):
         outputs = self.pooler(outputs)
         return outputs, additional_outputs
 
-def get_transformer_encoder(num_layers=12,
-                            num_heads=12, scaled=True,
-                            units=768, hidden_size=3072, dropout=0.0, 
-                            positional_weight='learned', use_residual=True,
-                            max_src_length=50, max_tgt_length=50,
-                            ffn_activation='gelu', attention_use_bias=True,
-                            attention_proj_use_bias=True,
-                            weight_initializer=None, bias_initializer='zeros',
-                            layer_norm_eps=1e-12,
-                            prefix='transformer_', params=None):
+###############################################################################
+#                                GET_MODEL                                    #
+###############################################################################
+
+def get_bert_encoder(num_layers=12,
+                     num_heads=12, scaled=True,
+                     units=768, hidden_size=3072, dropout=0.0,
+                     positional_weight='learned', use_residual=True,
+                     max_src_length=50, max_tgt_length=50,
+                     ffn_activation='gelu', attention_use_bias=True,
+                     attention_proj_use_bias=True,
+                     weight_initializer=None, bias_initializer='zeros',
+                     layer_norm_eps=1e-12,
+                     prefix='transformer_', params=None):
     """Build transformer encoder for BERT
 
     Parameters
@@ -222,21 +367,15 @@ def get_transformer_encoder(num_layers=12,
     -------
     encoder : TransformerEncoder
     """
-    encoder = TransformerEncoder(num_layers=num_layers,
-                                 num_heads=num_heads,
-                                 max_length=max_src_length,
-                                 units=units,
-                                 hidden_size=hidden_size,
-                                 dropout=dropout,
-                                 scaled=scaled,
-                                 positional_weight=positional_weight,
-                                 use_residual=use_residual,
-                                 weight_initializer=weight_initializer,
-                                 bias_initializer=bias_initializer,
-                                 ffn_activation=ffn_activation,
-                                 attention_use_bias=attention_use_bias,
-                                 attention_proj_use_bias=attention_proj_use_bias,
-                                 layer_norm_eps=layer_norm_eps,
-                                 apply_layernorm_before_dropout=True,
-                                 prefix=prefix + 'enc_', params=params)
+    encoder = BERTEncoder(num_layers=num_layers,
+                          num_heads=num_heads,
+                          max_length=max_src_length,
+                          units=units,
+                          hidden_size=hidden_size,
+                          dropout=dropout,
+                          scaled=scaled,
+                          use_residual=use_residual,
+                          weight_initializer=weight_initializer,
+                          bias_initializer=bias_initializer,
+                          prefix=prefix + 'enc_', params=params)
     return encoder
