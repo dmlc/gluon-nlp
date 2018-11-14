@@ -102,6 +102,18 @@ class TSVDataset(SimpleDataset):
     field_indices : list of int, default None
         If set, for each sample, only fields with provided indices are selected as the output.
         Otherwise all fields are returned.
+
+    Example::
+
+        # assume `test.tsv` contains the following content:
+        # Id\tFirstName\tLastName
+        # a\tJiheng\tJiang
+        # b\tLaoban\tZha
+        # discard the first line and select the 0th and 2nd fields
+        dataset = data.TSVDataset('test.tsv', num_discard_samples=1,
+                                  field_indices=[0, 2])
+        assert dataset[0] == [u'a', u'Jiang']
+        assert dataset[1] == [u'b', u'Zha']
     """
     def __init__(self, filename, encoding='utf8',
                  sample_splitter=line_splitter, field_separator=Splitter('\t'),

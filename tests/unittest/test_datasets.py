@@ -23,6 +23,7 @@ import datetime
 import itertools
 import json
 import os
+import io
 import random
 
 from flaky import flaky
@@ -501,10 +502,19 @@ def test_concatenation():
     assert dataset[5] == 6
 
 def test_tsv():
+    data =  "a,b,c\n"
+    data += "d,e,f\n"
+    data += "g,h,i\n"
+    with io.open('test_tsv.tsv', 'wb') as fout:
+        fout.write(data)
     num_discard = 1
-    dataset = nlp.data.TSVDataset('/home/ubuntu/bert/glue_data/MRPC/train.tsv',
-                                  num_discard_samples=num_discard)
-    num_samples = 3669 - num_discard
+    field_separator = nlp.data.utils.Splitter(',')
+    field_indices = [0,2]
+    dataset = nlp.data.TSVDataset('test_tsv.tsv', num_discard_samples=num_discard,
+                                  field_separator=field_separator,
+                                  field_indices=field_indices)
+    num_samples = 3 - num_discard
     idx = random.randint(0, num_samples - 1)
     assert len(dataset) == num_samples
-    assert len(dataset[0]) == 5
+    assert len(dataset[0]) == 2
+    assert dataset[1] == [u'g', u'i']

@@ -32,6 +32,17 @@ Machine Translation
     TransformerEncoder
     TransformerEncoderCell
     PositionwiseFFN
+    transformer_en_de_512
+
+Bidirectional Encoder Representations from Transformers
+-----------------
+
+.. autosummary::
+    :nosignatures:
+
+    BERTEncoder
+    BERTEncoderCell
+    BERTPositionwiseFFN
 
 Convolutional Encoder
 ----------------------

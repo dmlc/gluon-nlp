@@ -121,6 +121,7 @@ load custom datasets.
 
     TextLineDataset
     CorpusDataset
+    TSVDataset
 
 DataStreams
 -----------

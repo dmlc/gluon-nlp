@@ -47,7 +47,7 @@ import mxnet as mx
 from mxnet import gluon
 from mxnet.gluon.data import ArrayDataset, SimpleDataset
 from mxnet.gluon.data import DataLoader
-from gluonnlp.model.bert import BERTModel, get_transformer_encoder
+from gluonnlp.model.bert import BERTModel, get_bert_encoder
 from bert import BERTClassifier
 from utils import logging_config
 from tokenization import FullTokenizer
@@ -94,14 +94,14 @@ test_batch_size = args.test_batch_size
 
 ctx = [mx.cpu()] if args.gpu is None or args.gpu == '' else [mx.gpu()]
 
-encoder = get_transformer_encoder(units=args.num_units,
-                                  hidden_size=args.hidden_size,
-                                  dropout=args.dropout,
-                                  num_layers=args.num_layers,
-                                  num_heads=args.num_heads,
-                                  max_src_length=512,
-                                  max_tgt_length=512,
-                                  scaled=args.scaled)
+encoder = get_bert_encoder(units=args.num_units,
+                           hidden_size=args.hidden_size,
+                           dropout=args.dropout,
+                           num_layers=args.num_layers,
+                           num_heads=args.num_heads,
+                           max_src_length=512,
+                           max_tgt_length=512,
+                           scaled=args.scaled)
 
 do_lower_case=True
 tokenizer = FullTokenizer(vocab_file=args.vocab_file, do_lower_case=do_lower_case)
