@@ -79,12 +79,12 @@ wmt_data_test = nlp.data.WMT2014BPE('newstest2014',
                                     src_lang=hparams.src_lang,
                                     tgt_lang=hparams.tgt_lang)
 print('Source language %s, Target language %s' % (hparams.src_lang, hparams.tgt_lang))
-print('Sample: "{}"'.format(wmt_data_test[0]))
+print('Sample BPE tokens: "{}"'.format(wmt_data_test[0]))
 
 wmt_test_text = nlp.data.WMT2014('newstest2014',
                                  src_lang=hparams.src_lang,
                                  tgt_lang=hparams.tgt_lang)
-print('Sample text: "{}"'.format(wmt_test_text[0]))
+print('Sample raw text: "{}"'.format(wmt_test_text[0]))
 
 wmt_test_tgt_sentences = wmt_test_text.transform(lambda src, tgt: tgt)
 print('Sample target sentence: "{}"'.format(wmt_test_tgt_sentences[0]))
@@ -135,7 +135,7 @@ in GluonNLP, we use the built-in batchify functions.
 * [Stack](../../api/data.batchify.rst#gluonnlp.data.batchify.Stack) simply stacks all elements in a batch, and requires all elements to be of the same length.
 
 
-We can then construct bucketing samplers, which generate batches by grouping sequences with similar lengths. Here, we use [FixedBucketSampler](../../api/data.rst#gluonnlp.data.FixedBucketSampler) with [ExpWidthBucket](../../api/data.rst#gluonnlp.data.ExpWidthBucket). With this setting, the sampler would select buckets following an approximately exponentially increasing interval of maximum bucket lengths.
+We can then construct bucketing samplers, which generate batches by grouping sequences with similar lengths. Here, we use [FixedBucketSampler](../../api/data.rst#gluonnlp.data.FixedBucketSampler) with [ExpWidthBucket](../../api/data.rst#gluonnlp.data.ExpWidthBucket). FixedBucketSampler aims to assign each data sample to a fixed bucket based on its length. With this setting, the sampler would select buckets following an approximately exponentially increasing interval of maximum bucket lengths.
 
 ```{.python .input}
 wmt_bucket_scheme = nlp.data.ExpWidthBucket(bucket_len_step=1.2)
@@ -239,8 +239,6 @@ sample_tgt_seq = utils.translate(wmt_translator,
 print('The German translation is:')
 print(sample_tgt_seq)
 ```
-
-## Next
 
 If you'd like to train your own transformer models, you may find the training scripts in our
 [model zoo](../../model_zoo/machine_translation/index.rst).
