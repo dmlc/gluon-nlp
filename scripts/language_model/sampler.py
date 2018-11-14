@@ -18,10 +18,10 @@
 
 import math
 import numpy as np
-from mxnet import ndarray
-from gluonnlp.data import CandidateSampler
+from mxnet import ndarray, gluon
 
-class LogUniformSampler(CandidateSampler):
+
+class LogUniformSampler(gluon.block.Block):
     """Draw random samples from an approximately log-uniform or Zipfian distribution.
 
     This operation randomly samples *num_sampled* candidates the range of integers [0, range_max).
@@ -48,7 +48,8 @@ class LogUniformSampler(CandidateSampler):
     dtype: str or np.dtype
         The dtype for outputs
     """
-    def __init__(self, range_max, num_sampled, dtype=None):
+    def __init__(self, range_max, num_sampled, dtype=None, **kwargs):
+        super(LogUniformSampler, self).__init__(**kwargs)
         self._num_sampled = num_sampled
         self._log_range = math.log(range_max + 1)
         self._dtype = np.float32 if dtype is None else dtype
@@ -57,7 +58,7 @@ class LogUniformSampler(CandidateSampler):
     def _prob_helper(self, num_tries, prob):
         return (num_tries.astype('float64') * (-prob).log1p()).expm1() * -1
 
-    def __call__(self, true_classes):
+    def forward(self, true_classes):
         """Draw samples from log uniform distribution and returns sampled candidates,
         expected count for true classes and sampled classes.
 

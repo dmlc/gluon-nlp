@@ -75,7 +75,7 @@ We suggest you start the example with `Jupyter notebook <http://jupyter.org/>`_.
 
 - install `notedown <https://github.com/aaren/notedown#conversion-to-markdown>`_, run
 
-- *notedown input.ipynb --to markdown > output.md*
+- `notedown input.ipynb --to markdown > output.md`
 
 and submit the `.md` file for submission.
 

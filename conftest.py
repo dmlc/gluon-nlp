@@ -34,6 +34,7 @@ import mxnet as mx
 import pytest
 
 
+# * Random seed setup
 def pytest_configure():
     """Pytest configuration hook to help reproduce test segfaults
 
@@ -180,3 +181,9 @@ def function_scope_seed(request):
         logging.info(seed_message)
 
     np.random.set_state(post_test_state)
+
+
+# * Shared test fixtures
+@pytest.fixture(params=[True, False])
+def hybridize(request):
+    return request.param
