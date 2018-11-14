@@ -47,8 +47,8 @@ wmt_transformer_model, wmt_src_vocab, wmt_tgt_vocab = \
                               pretrained=True,
                               ctx=ctx)
 
-print(wmt_src_vocab)
-print(wmt_tgt_vocab)
+# we are using mixed vocab of EN-DE, so the source and target langauge vocab are the same
+print(len(wmt_src_vocab), len(wmt_tgt_vocab))
 ```
 
 The Transformer model architecture is shown as below:
@@ -95,6 +95,7 @@ import dataprocessor
 
 print(dataprocessor.TrainValDataTransform.__doc__)
 
+# wmt_transform_fn includes the four preprocessing steps mentioned above.
 wmt_transform_fn = dataprocessor.TrainValDataTransform(wmt_src_vocab, wmt_tgt_vocab)
 wmt_dataset_processed = wmt_data_test.transform(wmt_transform_fn, lazy=False)
 print(*wmt_dataset_processed[0], sep='\n')
@@ -125,13 +126,22 @@ wmt_test_batchify_fn = nlp.data.batchify.Tuple(
     nlp.data.batchify.Stack())
 ```
 
+In GluonNLP, all dataset items are tuples. In the preprocessed `wmt_data_test_with_len`, it includes
+`(src, tgt, len(src), len(tgt), idx)` elements. In order to express how we'd like to batchify them
+in GluonNLP, we use the built-in batchify functions.
+
+* [Tuple](../../api/data.batchify.rst#gluonnlp.data.batchify.Tuple) is the GluonNLP way of applying different batchify functions to each element of a dataset item. In this case, we are applying `Pad` to `src` and `tgt`, `Stack` to `len(src)` and `len(tgt)` with conversion to float32, and simple `Stack` to `idx` without type conversion.
+* [Pad](../../api/data.batchify.rst#gluonnlp.data.batchify.Pad) takes the elements from all dataset items in a batch, and pad them according to the item of maximum length to form a padded matrix/tensor.
+* [Stack](../../api/data.batchify.rst#gluonnlp.data.batchify.Stack) simply stacks all elements in a batch, and requires all elements to be of the same length.
+
+
 We can then construct bucketing samplers, which generate batches by grouping sequences with similar lengths. Here, we use [FixedBucketSampler](../../api/data.rst#gluonnlp.data.FixedBucketSampler) with [ExpWidthBucket](../../api/data.rst#gluonnlp.data.ExpWidthBucket). With this setting, the sampler would select buckets following an approximately exponentially increasing interval of maximum bucket lengths.
 
 ```{.python .input}
 wmt_bucket_scheme = nlp.data.ExpWidthBucket(bucket_len_step=1.2)
 wmt_test_batch_sampler = nlp.data.FixedBucketSampler(
     lengths=wmt_data_test_with_len.transform(lambda src, tgt, src_len, tgt_len, idx: tgt_len), # target length
-    use_average_length=True,
+    use_average_length=True, # control the element lengths (i.e. number of tokens) to be about the same
     bucket_scheme=wmt_bucket_scheme,
     batch_size=256)
 print(wmt_test_batch_sampler.stats())
