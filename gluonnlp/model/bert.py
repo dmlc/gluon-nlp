@@ -27,6 +27,10 @@ from mxnet.gluon import nn
 import mxnet as mx
 from .transformer import BasePositionwiseFFN, BaseTransformerEncoderCell, BaseTransformerEncoder
 
+###############################################################################
+#                              COMPONENTS                                     #
+###############################################################################
+
 class BERTPositionwiseFFN(BasePositionwiseFFN):
     """Structure of the Positionwise Feed-Forward Neural Network for
     BERT.
@@ -169,6 +173,10 @@ class BERTEncoderCell(BaseTransformerEncoderCell):
             # extra configurations for the BERT-style transformer encoder cell
             attention_use_bias=True, attention_proj_use_bias=True,
             use_bert_layer_norm=True, use_bert_ffn=True)
+
+###############################################################################
+#                          FULL MODEL (WIP)                                   #
+###############################################################################
 
 class BERTModel(Block):
     """Model for BERT (Bidirectional Encoder Representations from Transformers).
@@ -324,7 +332,7 @@ class BERTModel(Block):
         return outputs, additional_outputs
 
 ###############################################################################
-#                                GET_MODEL                                    #
+#                          GET_MODEL (WIP)                                    #
 ###############################################################################
 
 def get_bert_encoder(num_layers=12,

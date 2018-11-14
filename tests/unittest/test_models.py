@@ -67,7 +67,29 @@ def test_big_text_models(wikitext2_val_and_counter):
         output.wait_to_read()
 
 @pytest.mark.serial
-def test_text_models():
+def test_transformer_models():
+    models = ['transformer_en_de_512']
+    pretrained_to_test = {'transformer_en_de_512': 'WMT2014'}
+    src = mx.nd.ones((2, 10))
+    tgt = mx.nd.ones((2, 8))
+    valid_len = mx.nd.ones((2,))
+    for model_name in models:
+        eprint('testing forward for %s' % model_name)
+        pretrained_dataset = pretrained_to_test.get(model_name)
+        model, _, _ = nlp.model.get_model(model_name, dataset_name=pretrained_dataset,
+                                          pretrained=pretrained_dataset is not None,
+                                          root='tests/data/model/')
+
+        print(model)
+        if not pretrained_dataset:
+            model.initialize()
+        output, state = model(src, tgt, src_valid_length=valid_len, tgt_valid_length=valid_len)
+        output.wait_to_read()
+        del model
+        mx.nd.waitall()
+
+@pytest.mark.serial
+def test_language_models():
     text_models = ['standard_lstm_lm_200', 'standard_lstm_lm_650', 'standard_lstm_lm_1500', 'awd_lstm_lm_1150', 'awd_lstm_lm_600']
     pretrained_to_test = {'standard_lstm_lm_1500': 'wikitext-2',
                           'standard_lstm_lm_650': 'wikitext-2',

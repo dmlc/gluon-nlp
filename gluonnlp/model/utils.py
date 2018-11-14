@@ -25,7 +25,9 @@ import re
 import warnings
 
 from mxnet.gluon import Block, contrib, rnn
+from mxnet.gluon.model_zoo import model_store
 from .parameter import WeightDropParameter
+from gluonnlp.data.utils import _load_pretrained_vocab
 
 # pylint: disable=too-many-nested-blocks
 def apply_weight_drop(block, local_param_regex, rate, axes=(),
@@ -207,3 +209,19 @@ def _get_rnn_layer(mode, num_layers, input_size, hidden_size, dropout, weight_dr
         apply_weight_drop(block, '.*h2h_weight', rate=weight_dropout)
 
     return block
+
+
+def _load_vocab(dataset_name, vocab, root):
+    if dataset_name:
+        if vocab is not None:
+            warnings.warn('Both dataset_name and vocab are specified. Loading vocab for dataset. '
+                          'Input "vocab" argument will be ignored.')
+        vocab = _load_pretrained_vocab(dataset_name, root)
+    else:
+        assert vocab is not None, 'Must specify vocab if not loading from predefined datasets.'
+    return vocab
+
+def _load_pretrained_params(net, model_name, dataset_name, root, ctx):
+    path = '_'.join([model_name, dataset_name])
+    model_file = model_store.get_model_file(path, root=root)
+    net.load_parameters(model_file, ctx=ctx)

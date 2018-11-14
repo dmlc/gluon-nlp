@@ -98,15 +98,15 @@ def get_model(name, dataset_name='wikitext-2', **kwargs):
 
     Returns
     -------
-    Block
-        The model.
+    gluon.Block, gluonnlp.Vocab, (optional) gluonnlp.Vocab
     """
     models = {'standard_lstm_lm_200': standard_lstm_lm_200,
               'standard_lstm_lm_650': standard_lstm_lm_650,
               'standard_lstm_lm_1500': standard_lstm_lm_1500,
               'awd_lstm_lm_1150': awd_lstm_lm_1150,
               'awd_lstm_lm_600': awd_lstm_lm_600,
-              'big_rnn_lm_2048_512': big_rnn_lm_2048_512}
+              'big_rnn_lm_2048_512': big_rnn_lm_2048_512,
+              'transformer_en_de_512': transformer_en_de_512}
     name = name.lower()
     if name not in models:
         raise ValueError(

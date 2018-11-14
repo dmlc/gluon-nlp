@@ -135,6 +135,7 @@ for name in params:
             print("cannot initialize %s from bert checkpoint"%(name))
         else:
             print("cannot initialize ", name, params[name].shape, tf_params[name].shape)
+
 print('num_loaded = ', len(loaded), ' total = ', len(tf_params))
 for name in tf_params:
     if name not in loaded:
@@ -188,7 +189,6 @@ def train():
 
     bert_dataloader = mx.gluon.data.DataLoader(data_train, batch_size=batch_size,
                                                shuffle=True, last_batch='discard')
-                                               #shuffle=True, last_batch='discard')
     num_train_examples = len(data_train)
     print('num samples = ', num_train_examples)
     num_train_steps = int(

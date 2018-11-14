@@ -211,8 +211,11 @@ def _slice_pad_length(num_items, length, overlap=0):
         return 0
 
 
-_vocab_sha1 = {'wikitext-2': 'be36dc5238c2e7d69720881647ab72eb506d0131',
-               'gbw': 'ebb1a287ca14d8fa6f167c3a779e5e7ed63ac69f'}
+_vocab_sha1 = {'wikitext-2' : 'be36dc5238c2e7d69720881647ab72eb506d0131',
+               'gbw'        : 'ebb1a287ca14d8fa6f167c3a779e5e7ed63ac69f',
+               'WMT2014_src': '230ebb817b1d86950d71e2e765f192a4e4f34415',
+               'WMT2014_tgt': '230ebb817b1d86950d71e2e765f192a4e4f34415'}
+
 _url_format = '{repo_url}gluon/dataset/vocab/{file_name}.zip'
 
 

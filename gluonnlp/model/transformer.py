@@ -28,12 +28,13 @@ import numpy as np
 import mxnet as mx
 from mxnet import cpu, gluon
 from mxnet.gluon import nn
-from mxnet.gluon.model_zoo import model_store
 from mxnet.gluon.block import HybridBlock
+from mxnet.gluon.model_zoo import model_store
 from .seq2seq_encoder_decoder import Seq2SeqEncoder, Seq2SeqDecoder, _get_attention_cell
 from .block import GELU, BERTLayerNorm
 from .translation import NMTModel
-import gluonnlp as nlp
+from .utils import _load_vocab, _load_pretrained_params
+from gluonnlp.data.utils import _vocab_sha1
 
 
 ###############################################################################
@@ -74,7 +75,7 @@ class BasePositionwiseFFN(HybridBlock):
     use_bert_layer_norm : bool, default False.
         Whether to use the BERT-stype layer norm implemented in Tensorflow, where
         epsilon is added inside the square root. Set to True for pre-trained BERT model.
-    prefix : str, default 'rnn_'
+    prefix : str, default None
         Prefix for name of `Block`s
         (and name of weight if params is `None`).
     params : Parameter or None
@@ -510,7 +511,7 @@ class PositionwiseFFN(BasePositionwiseFFN):
         super(PositionwiseFFN, self).__init__(units=units, hidden_size=hidden_size,
               dropout=dropout, use_residual=use_residual, weight_initializer=weight_initializer,
               bias_initializer=bias_initializer, prefix=prefix, params=params,
-              # extra configurations for the BERT-style positionwise feed forward layer
+              # extra configurations for the original positionwise feed forward layer
               activation='relu', use_bert_layer_norm=False)
 
 class TransformerEncoderCell(BaseTransformerEncoderCell):
@@ -554,7 +555,7 @@ class TransformerEncoderCell(BaseTransformerEncoderCell):
             dropout=dropout, use_residual=use_residual, output_attention=output_attention,
             weight_initializer=weight_initializer, bias_initializer=bias_initializer,
             prefix=prefix, params=params,
-            # extra configurations for the BERT-style transformer encoder cell
+            # extra configurations for the original transformer encoder cell
             attention_use_bias=False, attention_proj_use_bias=False,
             use_bert_layer_norm=False, use_bert_ffn=False)
 
@@ -1011,39 +1012,15 @@ class TransformerDecoder(HybridBlock, Seq2SeqDecoder):
         return outputs, step_additional_outputs
 
 
+
 ###############################################################################
-#                           MODEL REGISTRATION                                #
+#                                  MODEL API                                  #
 ###############################################################################
-
-def register_vocab(dataset, sha1):
-    if dataset not in nlp.data.utils._vocab_sha1:
-        nlp.data.utils._vocab_sha1[dataset] = sha1
-
-
-def _load_vocab(dataset_name, vocab, root):
-    if dataset_name:
-        if vocab is not None:
-            warnings.warn('Both dataset_name and vocab are specified. Loading vocab for dataset. '
-                          'Input "vocab" argument will be ignored.')
-        vocab = nlp.data.utils._load_pretrained_vocab(dataset_name, root)
-    else:
-        assert vocab is not None, 'Must specify vocab if not loading from predefined datasets.'
-    return vocab
-
-def _load_pretrained_params(net, model_name, dataset_name, root, ctx):
-    path = '_'.join([model_name, dataset_name])
-    model_file = model_store.get_model_file(path, root=root)
-    net.load_params(model_file, ctx=ctx)
 
 model_store._model_sha1.update(
     {name: checksum for checksum, name in [
         ('14bd361b593bd1570106d74f29f9507f4f772bfe', 'transformer_en_de_512_WMT2014'),
     ]})
-
-
-###############################################################################
-#                                  MODEL API                                  #
-###############################################################################
 
 def get_transformer_encoder_decoder(num_layers=2,
                                     num_heads=8, scaled=True,
@@ -1103,8 +1080,8 @@ def get_transformer_encoder_decoder(num_layers=2,
 
 
 def _get_transformer_model(model_cls, model_name, dataset_name, src_vocab, tgt_vocab,
-                           encoder, decoder, share_embed, embed_size, tie_weights,
-                           embed_initializer, pretrained, ctx, root, **kwargs):
+                           encoder, decoder, pretrained, share_embed, embed_size, tie_weights,
+                           embed_initializer, ctx, root, **kwargs):
     src_vocab = _load_vocab(dataset_name + '_src', src_vocab, root)
     tgt_vocab = _load_vocab(dataset_name + '_tgt', tgt_vocab, root)
     kwargs['encoder'] = encoder
@@ -1115,7 +1092,8 @@ def _get_transformer_model(model_cls, model_name, dataset_name, src_vocab, tgt_v
     kwargs['embed_size'] = embed_size
     kwargs['tie_weights'] = tie_weights
     kwargs['embed_initializer'] = embed_initializer
-    net = model_cls(**kwargs)
+    # XXX the existing model is trained with prefix 'transformer_'
+    net = model_cls(prefix='transformer_', **kwargs)
     if pretrained:
         _load_pretrained_params(net, model_name, dataset_name, root, ctx)
     return net, src_vocab, tgt_vocab
@@ -1172,36 +1150,3 @@ def transformer_en_de_512(dataset_name=None, src_vocab=None, tgt_vocab=None, pre
                                   predefined_args['share_embed'], predefined_args['embed_size'],
                                   predefined_args['tie_weights'],
                                   predefined_args['embed_initializer'], ctx, root)
-
-def get_model(name, dataset_name='WMT2014', **kwargs):
-    """Returns a pre-defined model by name.
-
-    Parameters
-    ----------
-    name : str
-        Name of the model.
-    dataset_name : str or None
-    src_vocab : gluonnlp.Vocab or None, default None
-    tgt_vocab : gluonnlp.Vocab or None, default None
-    pretrained : bool, default False
-        Whether to load the pretrained weights for model.
-    ctx : Context, default CPU
-        The context in which to load the pretrained weights.
-    root : str, default '~/.mxnet/models'
-        Location for keeping the model parameters.
-
-    Returns
-    -------
-    Block
-        The model.
-    """
-    register_vocab('WMT2014_src', '230ebb817b1d86950d71e2e765f192a4e4f34415')
-    register_vocab('WMT2014_tgt', '230ebb817b1d86950d71e2e765f192a4e4f34415')
-    models = {'transformer_en_de_512': transformer_en_de_512}
-    name = name.lower()
-    if name not in models:
-        raise ValueError(
-            'Model %s is not supported. Available options are\n\t%s'%(
-                name, '\n\t'.join(sorted(models.keys()))))
-    kwargs['dataset_name'] = dataset_name
-    return models[name](**kwargs)

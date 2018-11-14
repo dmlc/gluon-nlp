@@ -30,7 +30,7 @@ from mxnet import nd, cpu, autograd
 from mxnet.gluon.model_zoo import model_store
 
 from gluonnlp.model import train
-from gluonnlp.data.utils import _load_pretrained_vocab
+from .utils import _load_vocab, _load_pretrained_params
 
 
 class AWDRNN(train.AWDRNN):
@@ -168,21 +168,6 @@ class StandardRNN(train.StandardRNN):
             encoded = nd.Dropout(encoded, p=self._dropout, axes=(0,))
         out = self.decoder(encoded)
         return out, state
-
-def _load_vocab(dataset_name, vocab, root):
-    if dataset_name:
-        if vocab is not None:
-            warnings.warn('Both dataset_name and vocab are specified. Loading vocab for dataset. '
-                          'Input "vocab" argument will be ignored.')
-        vocab = _load_pretrained_vocab(dataset_name, root)
-    else:
-        assert vocab is not None, 'Must specify vocab if not loading from predefined datasets.'
-    return vocab
-
-
-def _load_pretrained_params(net, model_name, dataset_name, root, ctx):
-    model_file = get_model_file('_'.join([model_name, dataset_name]), root=root)
-    net.load_parameters(model_file, ctx=ctx)
 
 
 def _get_rnn_model(model_cls, model_name, dataset_name, vocab, pretrained, ctx, root, **kwargs):
