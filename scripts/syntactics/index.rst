@@ -1,8 +1,6 @@
 Deep Biaffine Dependency Parser
 ---------------------------------
 
-:download:`[Download] <http://file.hankcs.com/model/biaffine.tar.gz>`
-
 This package is an implementation of `Deep Biaffine Attention for Neural Dependency Parsing <https://arxiv.org/pdf/1611.01734.pdf>`_ proposed by Dozat and Manning (2016), with SOTA accuracy.
 
 Train
