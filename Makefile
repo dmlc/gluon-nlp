@@ -75,7 +75,7 @@ dist_scripts:
 
 dist_notebooks: compile_notebooks
 	cd docs/examples && \
-	find * -type d -prune | grep -v 'tests\|__pycache__' | xargs -t -n 1 -I{} zip -r {}.zip {} -x "*.md"
+	find * -type d -prune | grep -v 'tests\|__pycache__' | xargs -t -n 1 -I{} zip -r {}.zip {} -x "*.md" -x "__pycache__" -x "*.pyc" -x "*.txt" -x "*.log" -x "*.params" -x "*.npz" -x "*.json"
 
 test:
 	py.test -v --capture=no --durations=0  tests/unittest scripts

@@ -44,21 +44,15 @@ import math
 import numpy as np
 import mxnet as mx
 from mxnet import gluon
-from mxnet.gluon.data import ArrayDataset, SimpleDataset
-from mxnet.gluon.data import DataLoader
+import gluonnlp as nlp
 import gluonnlp.data.batchify as btf
-from gluonnlp.data import SacreMosesDetokenizer
-from gluonnlp.data import ShardedDataLoader
-from gluonnlp.data import ConstWidthBucket, LinearWidthBucket, ExpWidthBucket,\
-    FixedBucketSampler, IWSLT2015, WMT2016, WMT2016BPE, WMT2014, WMT2014BPE
-from gluonnlp.model import BeamSearchScorer
+
 from translation import NMTModel, BeamSearchTranslator
 from transformer import get_transformer_encoder_decoder
 from loss import SoftmaxCEMaskedLoss, LabelSmoothing
 from utils import logging_config
 from bleu import _bpe_to_words, compute_bleu
-import _constants as _C
-from dataset import TOY
+import dataprocessor
 
 np.random.seed(100)
 random.seed(100)
@@ -144,167 +138,11 @@ logging_config(args.save_dir)
 logging.info(args)
 
 
-def cache_dataset(dataset, prefix):
-    """Cache the processed npy dataset  the dataset into a npz
-
-    Parameters
-    ----------
-    dataset : SimpleDataset
-    file_path : str
-    """
-    if not os.path.exists(_C.CACHE_PATH):
-        os.makedirs(_C.CACHE_PATH)
-    src_data = np.array([ele[0] for ele in dataset])
-    tgt_data = np.array([ele[1] for ele in dataset])
-    np.savez(os.path.join(_C.CACHE_PATH, prefix + '.npz'), src_data=src_data, tgt_data=tgt_data)
-
-
-def load_cached_dataset(prefix):
-    cached_file_path = os.path.join(_C.CACHE_PATH, prefix + '.npz')
-    if os.path.exists(cached_file_path):
-        print('Load cached data from {}'.format(cached_file_path))
-        dat = np.load(cached_file_path, encoding='latin1')
-        return ArrayDataset(np.array(dat['src_data']), np.array(dat['tgt_data']))
-    else:
-        return None
-
-
-class TrainValDataTransform(object):
-    """Transform the machine translation dataset.
-
-    Clip source and the target sentences to the maximum length. For the source sentence, append the
-    EOS. For the target sentence, append BOS and EOS.
-
-    Parameters
-    ----------
-    src_vocab : Vocab
-    tgt_vocab : Vocab
-    src_max_len : int
-    tgt_max_len : int
-    """
-
-    def __init__(self, src_vocab, tgt_vocab, src_max_len, tgt_max_len):
-        self._src_vocab = src_vocab
-        self._tgt_vocab = tgt_vocab
-        self._src_max_len = src_max_len
-        self._tgt_max_len = tgt_max_len
-
-    def __call__(self, src, tgt):
-        if self._src_max_len > 0:
-            src_sentence = self._src_vocab[src.split()[:self._src_max_len]]
-        else:
-            src_sentence = self._src_vocab[src.split()]
-        if self._tgt_max_len > 0:
-            tgt_sentence = self._tgt_vocab[tgt.split()[:self._tgt_max_len]]
-        else:
-            tgt_sentence = self._tgt_vocab[tgt.split()]
-        src_sentence.append(self._src_vocab[self._src_vocab.eos_token])
-        tgt_sentence.insert(0, self._tgt_vocab[self._tgt_vocab.bos_token])
-        tgt_sentence.append(self._tgt_vocab[self._tgt_vocab.eos_token])
-        src_npy = np.array(src_sentence, dtype=np.int32)
-        tgt_npy = np.array(tgt_sentence, dtype=np.int32)
-        return src_npy, tgt_npy
-
-
-def process_dataset(dataset, src_vocab, tgt_vocab, src_max_len=-1, tgt_max_len=-1):
-    start = time.time()
-    dataset_processed = dataset.transform(TrainValDataTransform(src_vocab, tgt_vocab,
-                                                                src_max_len,
-                                                                tgt_max_len), lazy=False)
-    end = time.time()
-    print('Processing Time spent: {}'.format(end - start))
-    return dataset_processed
-
-
-def load_translation_data(dataset, src_lang='en', tgt_lang='vi'):
-    """Load translation dataset
-
-    Parameters
-    ----------
-    dataset : str
-    src_lang : str, default 'en'
-    tgt_lang : str, default 'vi'
-
-    Returns
-    -------
-
-    """
-    if dataset == 'IWSLT2015':
-        common_prefix = 'IWSLT2015_{}_{}_{}_{}'.format(src_lang, tgt_lang,
-                                                       args.src_max_len, args.tgt_max_len)
-        data_train = IWSLT2015('train', src_lang=src_lang, tgt_lang=tgt_lang)
-        data_val = IWSLT2015('val', src_lang=src_lang, tgt_lang=tgt_lang)
-        data_test = IWSLT2015('test', src_lang=src_lang, tgt_lang=tgt_lang)
-    elif dataset == 'WMT2016BPE':
-        common_prefix = 'WMT2016BPE_{}_{}_{}_{}'.format(src_lang, tgt_lang,
-                                                        args.src_max_len, args.tgt_max_len)
-        data_train = WMT2016BPE('train', src_lang=src_lang, tgt_lang=tgt_lang)
-        data_val = WMT2016BPE('newstest2013', src_lang=src_lang, tgt_lang=tgt_lang)
-        data_test = WMT2016BPE('newstest2014', src_lang=src_lang, tgt_lang=tgt_lang)
-    elif dataset == 'WMT2014BPE':
-        common_prefix = 'WMT2014BPE_{}_{}_{}_{}'.format(src_lang, tgt_lang,
-                                                        args.src_max_len, args.tgt_max_len)
-        data_train = WMT2014BPE('train', src_lang=src_lang, tgt_lang=tgt_lang)
-        data_val = WMT2014BPE('newstest2013', src_lang=src_lang, tgt_lang=tgt_lang)
-        data_test = WMT2014BPE('newstest2014', src_lang=src_lang, tgt_lang=tgt_lang,
-                               full=args.full)
-    elif dataset == 'TOY':
-        common_prefix = 'TOY_{}_{}_{}_{}'.format(src_lang, tgt_lang,
-                                                 args.src_max_len, args.tgt_max_len)
-        data_train = TOY('train', src_lang=src_lang, tgt_lang=tgt_lang)
-        data_val = TOY('val', src_lang=src_lang, tgt_lang=tgt_lang)
-        data_test = TOY('test', src_lang=src_lang, tgt_lang=tgt_lang)
-    else:
-        raise NotImplementedError
-    src_vocab, tgt_vocab = data_train.src_vocab, data_train.tgt_vocab
-    data_train_processed = load_cached_dataset(common_prefix + '_train')
-    if not data_train_processed:
-        data_train_processed = process_dataset(data_train, src_vocab, tgt_vocab,
-                                               args.src_max_len, args.tgt_max_len)
-        cache_dataset(data_train_processed, common_prefix + '_train')
-    data_val_processed = load_cached_dataset(common_prefix + '_val')
-    if not data_val_processed:
-        data_val_processed = process_dataset(data_val, src_vocab, tgt_vocab)
-        cache_dataset(data_val_processed, common_prefix + '_val')
-    data_test_processed = load_cached_dataset(common_prefix + '_' + str(args.full) + '_test')
-    if not data_test_processed:
-        data_test_processed = process_dataset(data_test, src_vocab, tgt_vocab)
-        cache_dataset(data_test_processed, common_prefix + '_' + str(args.full) + '_test')
-    if args.bleu == 'tweaked':
-        fetch_tgt_sentence = lambda src, tgt: tgt.split()
-        val_tgt_sentences = list(data_val.transform(fetch_tgt_sentence))
-        test_tgt_sentences = list(data_test.transform(fetch_tgt_sentence))
-    elif args.bleu == '13a' or args.bleu == 'intl':
-        fetch_tgt_sentence = lambda src, tgt: tgt
-        if dataset == 'WMT2016BPE':
-            val_text = WMT2016('newstest2013', src_lang=src_lang, tgt_lang=tgt_lang)
-            test_text = WMT2016('newstest2014', src_lang=src_lang, tgt_lang=tgt_lang)
-        elif dataset == 'WMT2014BPE':
-            val_text = WMT2014('newstest2013', src_lang=src_lang, tgt_lang=tgt_lang)
-            test_text = WMT2014('newstest2014', src_lang=src_lang, tgt_lang=tgt_lang,
-                                full=args.full)
-        elif dataset == 'IWSLT2015' or dataset == 'TOY':
-            val_text = data_val
-            test_text = data_test
-        else:
-            raise NotImplementedError
-        val_tgt_sentences = list(val_text.transform(fetch_tgt_sentence))
-        test_tgt_sentences = list(test_text.transform(fetch_tgt_sentence))
-    else:
-        raise NotImplementedError
-    return data_train_processed, data_val_processed, data_test_processed, \
-           val_tgt_sentences, test_tgt_sentences, src_vocab, tgt_vocab
-
-
-def get_data_lengths(dataset):
-    return list(dataset.transform(lambda srg, tgt: (len(srg), len(tgt))))
-
-
 data_train, data_val, data_test, val_tgt_sentences, test_tgt_sentences, src_vocab, tgt_vocab \
-    = load_translation_data(dataset=args.dataset, src_lang=args.src_lang, tgt_lang=args.tgt_lang)
-data_train_lengths = get_data_lengths(data_train)
-data_val_lengths = get_data_lengths(data_val)
-data_test_lengths = get_data_lengths(data_test)
+    = dataprocessor.load_translation_data(dataset=args.dataset, args=args)
+data_train_lengths = dataprocessor.get_data_lengths(data_train)
+data_val_lengths = dataprocessor.get_data_lengths(data_val)
+data_test_lengths = dataprocessor.get_data_lengths(data_test)
 
 with io.open(os.path.join(args.save_dir, 'val_gt.txt'), 'w', encoding='utf-8') as of:
     for ele in val_tgt_sentences:
@@ -315,10 +153,10 @@ with io.open(os.path.join(args.save_dir, 'test_gt.txt'), 'w', encoding='utf-8') 
         of.write(' '.join(ele) + '\n')
 
 data_train = data_train.transform(lambda src, tgt: (src, tgt, len(src), len(tgt)), lazy=False)
-data_val = SimpleDataset([(ele[0], ele[1], len(ele[0]), len(ele[1]), i)
-                          for i, ele in enumerate(data_val)])
-data_test = SimpleDataset([(ele[0], ele[1], len(ele[0]), len(ele[1]), i)
-                           for i, ele in enumerate(data_test)])
+data_val = gluon.data.SimpleDataset([(ele[0], ele[1], len(ele[0]), len(ele[1]), i)
+                                     for i, ele in enumerate(data_val)])
+data_test = gluon.data.SimpleDataset([(ele[0], ele[1], len(ele[0]), len(ele[1]), i)
+                                      for i, ele in enumerate(data_test)])
 
 ctx = [mx.cpu()] if args.gpus is None or args.gpus == '' else \
     [mx.gpu(int(x)) for x in args.gpus.split(',')]
@@ -353,8 +191,8 @@ model.hybridize(static_alloc=static_alloc)
 logging.info(model)
 
 translator = BeamSearchTranslator(model=model, beam_size=args.beam_size,
-                                  scorer=BeamSearchScorer(alpha=args.lp_alpha,
-                                                          K=args.lp_k),
+                                  scorer=nlp.model.BeamSearchScorer(alpha=args.lp_alpha,
+                                                                    K=args.lp_k),
                                   max_length=200)
 logging.info('Use beam_size={}, alpha={}, K={}'.format(args.beam_size, args.lp_alpha, args.lp_k))
 
@@ -367,7 +205,7 @@ loss_function.hybridize(static_alloc=static_alloc)
 test_loss_function = SoftmaxCEMaskedLoss()
 test_loss_function.hybridize(static_alloc=static_alloc)
 
-detokenizer = SacreMosesDetokenizer()
+detokenizer = nlp.data.SacreMosesDetokenizer()
 
 
 def evaluate(data_loader, context=ctx[0]):
@@ -444,51 +282,51 @@ def train():
     target_val_lengths = list(map(lambda x: x[-1], data_val_lengths))
     target_test_lengths = list(map(lambda x: x[-1], data_test_lengths))
     if args.bucket_scheme == 'constant':
-        bucket_scheme = ConstWidthBucket()
+        bucket_scheme = nlp.data.ConstWidthBucket()
     elif args.bucket_scheme == 'linear':
-        bucket_scheme = LinearWidthBucket()
+        bucket_scheme = nlp.data.LinearWidthBucket()
     elif args.bucket_scheme == 'exp':
-        bucket_scheme = ExpWidthBucket(bucket_len_step=1.2)
+        bucket_scheme = nlp.data.ExpWidthBucket(bucket_len_step=1.2)
     else:
         raise NotImplementedError
-    train_batch_sampler = FixedBucketSampler(lengths=data_train_lengths,
-                                             batch_size=args.batch_size,
-                                             num_buckets=args.num_buckets,
-                                             ratio=args.bucket_ratio,
-                                             shuffle=True,
-                                             use_average_length=True,
-                                             num_shards=len(ctx),
-                                             bucket_scheme=bucket_scheme)
+    train_batch_sampler = nlp.data.FixedBucketSampler(lengths=data_train_lengths,
+                                                      batch_size=args.batch_size,
+                                                      num_buckets=args.num_buckets,
+                                                      ratio=args.bucket_ratio,
+                                                      shuffle=True,
+                                                      use_average_length=True,
+                                                      num_shards=len(ctx),
+                                                      bucket_scheme=bucket_scheme)
     logging.info('Train Batch Sampler:\n{}'.format(train_batch_sampler.stats()))
-    train_data_loader = ShardedDataLoader(data_train,
-                                          batch_sampler=train_batch_sampler,
-                                          batchify_fn=train_batchify_fn,
-                                          num_workers=8)
+    train_data_loader = nlp.data.ShardedDataLoader(data_train,
+                                                   batch_sampler=train_batch_sampler,
+                                                   batchify_fn=train_batchify_fn,
+                                                   num_workers=8)
 
-    val_batch_sampler = FixedBucketSampler(lengths=target_val_lengths,
-                                           batch_size=args.test_batch_size,
-                                           num_buckets=args.num_buckets,
-                                           ratio=args.bucket_ratio,
-                                           shuffle=False,
-                                           use_average_length=True,
-                                           bucket_scheme=bucket_scheme)
+    val_batch_sampler = nlp.data.FixedBucketSampler(lengths=target_val_lengths,
+                                                    batch_size=args.test_batch_size,
+                                                    num_buckets=args.num_buckets,
+                                                    ratio=args.bucket_ratio,
+                                                    shuffle=False,
+                                                    use_average_length=True,
+                                                    bucket_scheme=bucket_scheme)
     logging.info('Valid Batch Sampler:\n{}'.format(val_batch_sampler.stats()))
-    val_data_loader = DataLoader(data_val,
-                                 batch_sampler=val_batch_sampler,
-                                 batchify_fn=test_batchify_fn,
-                                 num_workers=8)
-    test_batch_sampler = FixedBucketSampler(lengths=target_test_lengths,
-                                            batch_size=args.test_batch_size,
-                                            num_buckets=args.num_buckets,
-                                            ratio=args.bucket_ratio,
-                                            shuffle=False,
-                                            use_average_length=True,
-                                            bucket_scheme=bucket_scheme)
+    val_data_loader = gluon.data.DataLoader(data_val,
+                                            batch_sampler=val_batch_sampler,
+                                            batchify_fn=test_batchify_fn,
+                                            num_workers=8)
+    test_batch_sampler = nlp.data.FixedBucketSampler(lengths=target_test_lengths,
+                                                     batch_size=args.test_batch_size,
+                                                     num_buckets=args.num_buckets,
+                                                     ratio=args.bucket_ratio,
+                                                     shuffle=False,
+                                                     use_average_length=True,
+                                                     bucket_scheme=bucket_scheme)
     logging.info('Test Batch Sampler:\n{}'.format(test_batch_sampler.stats()))
-    test_data_loader = DataLoader(data_test,
-                                  batch_sampler=test_batch_sampler,
-                                  batchify_fn=test_batchify_fn,
-                                  num_workers=8)
+    test_data_loader = gluon.data.DataLoader(data_test,
+                                             batch_sampler=test_batch_sampler,
+                                             batchify_fn=test_batchify_fn,
+                                             num_workers=8)
 
     if args.bleu == 'tweaked':
         bpe = bool(args.dataset != 'IWSLT2015' and args.dataset != 'TOY')
