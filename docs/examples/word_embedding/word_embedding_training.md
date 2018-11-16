@@ -314,8 +314,7 @@ relatedness of the pair.
 
 `gluonnlp` includes a number of common datasets for
 the Word Similarity and Relatedness Task. The included datasets are listed in
-the [API documentation](http://gluon-nlp.mxnet.io/api/data.html#word-embedding-
-evaluation-datasets). We use several of them in the evaluation example below.
+the [API documentation](http://gluon-nlp.mxnet.io/api/data.html#word-embedding-evaluation-datasets). We use several of them in the evaluation example below.
 We first show a few samples from the WordSim353 dataset, to get an overall
 feeling of the Dataset structur
 

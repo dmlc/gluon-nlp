@@ -125,7 +125,7 @@ class WordSim353(WordSimilarityEvaluationDataset):
     - Finkelstein, L., Gabrilovich, E., Matias, Y., Rivlin, E., Solan, Z.,
       Wolfman, G., & Ruppin, E. (2002). Placing search in context: the concept
       revisited. ACM} Trans. Inf. Syst., 20(1), 116–131.
-      http://dx.doi.org/10.1145/503104.503110
+      https://dl.acm.org/citation.cfm?id=372094
     - Agirre, E., Alfonseca, E., Hall, K. B., Kravalova, J., Pasca, M., & Soroa, A.
       (2009). A study on similarity and relatedness using distributional and
       wordnet-based approaches. In , Human Language Technologies: Conference of the
@@ -198,7 +198,7 @@ class MEN(WordSimilarityEvaluationDataset):
     """MEN dataset for word-similarity and relatedness.
 
     The dataset was collected by Bruni et al.
-    (http://clic.cimec.unitn.it/~elia.bruni/MEN.html).
+    (https://staff.fnwi.uva.nl/e.bruni/MEN).
 
     - Bruni, E., Boleda, G., Baroni, M., & Nam-Khanh Tran (2012). Distributional
       semantics in technicolor. In , The 50th Annual Meeting of the Association for
@@ -217,7 +217,7 @@ class MEN(WordSimilarityEvaluationDataset):
         Dataset segment. Options are 'train', 'dev', 'test'.
 
     """
-    _url = 'http://clic.cimec.unitn.it/~elia.bruni/resources/MEN.tar.gz'
+    _url = 'https://staff.fnwi.uva.nl/e.bruni/resources/MEN.tar.gz'
     _namespace = 'gluon/dataset/men'
     _archive_file = ('MEN.tar.gz', '3c4af1b7009c1ad75e03562f7f7bc5f51ff3a31a')
     _checksums = {
@@ -343,7 +343,7 @@ class SimLex999(WordSimilarityEvaluationDataset):
 
     - Hill, F., Reichart, R., & Korhonen, A. (2015). Simlex-999: evaluating
       semantic models with (genuine) similarity estimation. Computational
-      Linguistics, 41(4), 665–695. http://dx.doi.org/10.1162/COLI_a_00237
+      Linguistics, 41(4), 665–695. https://arxiv.org/abs/1408.3456
 
     License: Unspecified
 
@@ -414,7 +414,7 @@ class SimVerb3500(WordSimilarityEvaluationDataset):
 
     - Hill, F., Reichart, R., & Korhonen, A. (2015). Simlex-999: evaluating
       semantic models with (genuine) similarity estimation. Computational
-      Linguistics, 41(4), 665–695. http://dx.doi.org/10.1162/COLI_a_00237
+      Linguistics, 41(4), 665–695. https://arxiv.org/abs/1408.3456
 
     License: Unspecified
 
@@ -492,7 +492,7 @@ class SemEval17Task2(WordSimilarityEvaluationDataset):
     - Finkelstein, L., Gabrilovich, E., Matias, Y., Rivlin, E., Solan, Z.,
       Wolfman, G., & Ruppin, E. (2002). Placing search in context: the concept
       revisited. ACM} Trans. Inf. Syst., 20(1), 116–131.
-      http://dx.doi.org/10.1145/503104.503110
+      https://dl.acm.org/citation.cfm?id=372094
     - Agirre, E., Alfonseca, E., Hall, K. B., Kravalova, J., Pasca, M., & Soroa, A.
       (2009). A study on similarity and relatedness using distributional and
       wordnet-based approaches. In , Human Language Technologies: Conference of the

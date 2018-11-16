@@ -55,12 +55,12 @@ def register(class_=None, **kwargs):
     Examples
     --------
     >>> @gluonnlp.data.register(segment=['train', 'test', 'dev'])
-    ... class MyDataset(Dataset):
+    ... class MyDataset(gluon.data.Dataset):
     ...     def __init__(self, segment='train'):
     ...         pass
-    >>> my_dataset = gluonnlp.embedding.create('MyDataset')
+    >>> my_dataset = gluonnlp.data.create('MyDataset')
     >>> print(type(my_dataset))
-    <class '__main__.MyDataset'>
+    <class 'MyDataset'>
 
     """
 

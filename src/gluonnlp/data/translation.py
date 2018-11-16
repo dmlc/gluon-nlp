@@ -199,6 +199,8 @@ class IWSLT2015(_TranslationDataset):
 class WMT2014(_TranslationDataset):
     """Translation Corpus of the WMT2014 Evaluation Campaign.
 
+    http://www.statmt.org/wmt14/translation-task.html
+
     Parameters
     ----------
     segment : str or list of str, default 'train'
@@ -209,8 +211,8 @@ class WMT2014(_TranslationDataset):
     tgt_lang : str, default 'de'
         The target language. Option for source and target languages are 'en' <-> 'de'
     full : bool, default False
-        In default, we use the test dataset in http://statmt.org/wmt14/test-filtered.tgz.
-        When full is True, we use the test dataset in http://statmt.org/wmt14/test-full.tgz
+        By default, we use the "filtered test sets" while if full is True, we use the "cleaned test
+        sets".
     root : str, default '$MXNET_HOME/datasets/wmt2014'
         Path to temp folder for storing data.
         MXNET_HOME defaults to '~/.mxnet'.

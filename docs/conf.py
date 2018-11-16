@@ -49,6 +49,7 @@ source_parsers = {
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.autosummary',
+    'sphinx.ext.doctest',
     'sphinx.ext.viewcode',
     'sphinx.ext.intersphinx',
     'sphinx.ext.napoleon',
@@ -58,6 +59,15 @@ extensions = [
     'IPython.sphinxext.ipython_console_highlighting',
     'IPython.sphinxext.ipython_directive',
 ]
+
+doctest_global_setup = '''
+import gluonnlp
+import mxnet as mx
+from mxnet import gluon
+import numpy as np
+import doctest
+doctest.ELLIPSIS_MARKER = '-etc-'
+'''
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']

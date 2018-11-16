@@ -33,7 +33,7 @@ lint:
 	make restruc
 
 docs: release
-	make -C docs html SPHINXOPTS=-W
+	make -C docs linkcheck doctest html SPHINXOPTS=-W
 	for f in $(shell find docs/examples -type f -name '*.md' -print) ; do \
 		FILE=`echo $$f | sed 's/docs\///g'` ; \
 		DIR=`dirname $$FILE` ; \
