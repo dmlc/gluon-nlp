@@ -85,7 +85,8 @@ class BiDAFEmbedding(HybridBlock):
         self._word_embedding.weight.set_data(self._word_vocab.embedding.idx_to_vec)
         self._word_embedding.collect_params().setattr('grad_req', grad_req)
 
-    def hybrid_forward(self, F, w, c, *args):  # pylint: disable=arguments-differ
+    def hybrid_forward(self, F, w, c, *args):
+        # pylint: disable=arguments-differ,unused-argument,missing-docstring
         word_embedded = self._word_embedding(w)
         char_level_data = self._char_dense_embedding(c)
         char_level_data = self._dropout(char_level_data)
@@ -146,7 +147,8 @@ class BiDAFModelingLayer(HybridBlock):
             self._modeling_layer = LSTM(hidden_size=input_dim, num_layers=nlayers, dropout=dropout,
                                         bidirectional=biflag, input_size=input_size)
 
-    def hybrid_forward(self, F, x, *args):  # pylint: disable=arguments-differ
+    def hybrid_forward(self, F, x, *args):
+        # pylint: disable=arguments-differ,unused-argument,missing-docstring
         out = self._modeling_layer(x)
         return out
 
@@ -201,7 +203,8 @@ class BiDAFOutputLayer(HybridBlock):
             self._end_index_model = nn.Dense(units=1, in_units=2 * span_start_input_dim,
                                              flatten=False)
 
-    def hybrid_forward(self, F, x, m, mask, *args):  # pylint: disable=arguments-differ
+    def hybrid_forward(self, F, x, m, mask, *args):
+        # pylint: disable=arguments-differ,unused-argument,missing-docstring
         # setting batch size as the first dimension
         x = F.transpose(x, axes=(1, 0, 2))
 
@@ -284,7 +287,8 @@ class BiDAFModel(HybridBlock):
         super(BiDAFModel, self).initialize(init, ctx, verbose, force_reinit)
         self.ctx_embedding.init_embeddings('null' if not self._options.train_unk_token else 'write')
 
-    def hybrid_forward(self, F, qw, cw, qc, cc, *args):  # pylint: disable=arguments-differ
+    def hybrid_forward(self, F, qw, cw, qc, cc, *args):
+        # pylint: disable=arguments-differ,unused-argument,missing-docstring
         ctx_embedding_output = self.ctx_embedding(cw, cc)
         q_embedding_output = self.ctx_embedding(qw, qc)
 

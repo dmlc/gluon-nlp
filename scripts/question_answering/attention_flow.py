@@ -58,7 +58,7 @@ class AttentionFlow(gluon.HybridBlock):
         self._embedding_size = embedding_size
 
     def hybrid_forward(self, F, matrix_1, matrix_2):
-        # pylint: disable=arguments-differ
+        # pylint: disable=arguments-differ,unused-argument,missing-docstring
         tiled_matrix_1 = matrix_1.expand_dims(2).broadcast_to(shape=(self._batch_size,
                                                                      self._passage_length,
                                                                      self._question_length,
