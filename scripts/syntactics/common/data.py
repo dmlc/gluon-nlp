@@ -18,9 +18,11 @@
 # under the License.
 
 from collections import Counter
-import numpy as np
 
+import gluonnlp
+import numpy as np
 from scripts.syntactics.common.k_means import KMeans
+
 from .savable import Savable
 
 
@@ -101,7 +103,7 @@ class ParserVocabulary(Savable):
     PAD, ROOT, UNK = 0, 1, 2
     """Padding, Root, Unknown"""
 
-    def __init__(self, input_file, pret_file=None, min_occur_count=2):
+    def __init__(self, input_file, pret_embeddings=None, min_occur_count=2):
         """Vocabulary, holds word, tag and relation along with their id.
             Load from conll file
             Adopted from https://github.com/jcyk/Dynet-Biaffine-dependency-parser with some modifications
@@ -110,8 +112,8 @@ class ParserVocabulary(Savable):
         ----------
         input_file : str
             conll file
-        pret_file : str
-            word vector file (plain text)
+        pret_embeddings : tuple
+            (embedding_name, source), used for gluonnlp.embedding.create(embedding_name, source)
         min_occur_count : int
             threshold of word frequency, those words with smaller frequency will be replaced by UNK
         """
@@ -144,11 +146,11 @@ class ParserVocabulary(Savable):
             if count > min_occur_count:
                 self._id2word.append(word)
 
-        self._pret_file = pret_file
+        self._pret_embeddings = pret_embeddings
         self._words_in_train_data = len(self._id2word)
         # print('#words in training set:', self._words_in_train_data)
-        if pret_file:
-            self._add_pret_words(pret_file)
+        if pret_embeddings:
+            self._add_pret_words(pret_embeddings)
         self._id2tag += list(tag_set)
         self._id2rel += list(rel_set)
 
@@ -168,23 +170,20 @@ class ParserVocabulary(Savable):
         logger.info('#words in training set: %d' % self._words_in_train_data)
         logger.info("Vocab info: #words %d, #tags %d #rels %d" % (self.vocab_size, self.tag_size, self.rel_size))
 
-    def _add_pret_words(self, pret_file):
+    def _add_pret_words(self, pret_embeddings):
         """Read pre-trained embedding file for extending vocabulary
 
         Parameters
         ----------
-        pret_file : str
-            path to pre-trained embedding file
+        pret_embeddings : tuple
+            (embedding_name, source), used for gluonnlp.embedding.create(embedding_name, source)
         """
         words_in_train_data = set(self._id2word)
-        with open(pret_file) as f:
-            for line in f:
-                line = line.strip().split()
-                if line:
-                    word = line[0]
-                    if word not in words_in_train_data:
-                        self._id2word.append(word)
-                        # print 'Total words:', len(self._id2word)
+        pret_embeddings = gluonnlp.embedding.create(pret_embeddings[0], source=pret_embeddings[1])
+
+        for idx, token in enumerate(pret_embeddings.idx_to_token):
+            if token not in words_in_train_data:
+                self._id2word.append(token)
 
     def has_pret_embs(self):
         """Check whether this vocabulary contains words from pre-trained embeddings
@@ -194,7 +193,7 @@ class ParserVocabulary(Savable):
         bool
             Whether this vocabulary contains words from pre-trained embeddings
         """
-        return self._pret_file is not None
+        return self._pret_embeddings is not None
 
     def get_pret_embs(self, word_dims=None):
         """Read pre-trained embedding file
@@ -208,31 +207,18 @@ class ParserVocabulary(Savable):
         numpy.ndarray
             T x C numpy NDArray
         """
-        assert (self._pret_file is not None), "No pretrained file provided."
-        embs = [[]] * len(self._id2word)
-        train = True
-        try:
-            with open(self._pret_file) as f:
-                dim = None
-                for line in f:
-                    line = line.strip().split()
-                    if len(line) > 2:
-                        if dim is None:
-                            dim = len(line)
-                        else:
-                            if len(line) != dim:
-                                continue
-                        word, data = line[0], line[1:]
-                        embs[self._word2id[word]] = data
-        except FileNotFoundError:
-            train = False
+        assert (self._pret_embeddings is not None), "No pretrained file provided."
+        pret_embeddings = gluonnlp.embedding.create(self._pret_embeddings[0], source=self._pret_embeddings[1])
+        embs = [None] * len(self._id2word)
+        for idx, vec in enumerate(pret_embeddings.idx_to_vec):
+            embs[idx] = vec.asnumpy()
         if word_dims is None:
-            word_dims = len(data)
+            word_dims = len(pret_embeddings.idx_to_vec[0])
         for idx, emb in enumerate(embs):
-            if not emb:
+            if emb is None:
                 embs[idx] = np.zeros(word_dims)
         pret_embs = np.array(embs, dtype=np.float32)
-        return pret_embs / np.std(pret_embs) if train else pret_embs
+        return pret_embs / np.std(pret_embs)
 
     def get_word_embs(self, word_dims):
         """Get randomly initialized embeddings when pre-trained embeddings are used, otherwise zero vectors
@@ -246,7 +232,7 @@ class ParserVocabulary(Savable):
         numpy.ndarray
             T x C numpy NDArray
         """
-        if self._pret_file is not None:
+        if self._pret_embeddings is not None:
             return np.random.randn(self.words_in_train, word_dims).astype(np.float32)
         return np.zeros((self.words_in_train, word_dims), dtype=np.float32)
 

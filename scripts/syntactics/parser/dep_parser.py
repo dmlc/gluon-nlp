@@ -23,7 +23,6 @@ import os
 import mxnet as mx
 import numpy as np
 from mxnet import gluon, autograd
-
 from scripts.syntactics.common.config import _Config
 from scripts.syntactics.common.data import ParserVocabulary, DataLoader, ConllWord, ConllSentence
 from scripts.syntactics.common.exponential_scheduler import ExponentialScheduler
@@ -42,7 +41,7 @@ class DepParser(object):
         self._parser = None
         self._vocab = None
 
-    def train(self, train_file, dev_file, test_file, save_dir, pretrained_embeddings_file=None, min_occur_count=2,
+    def train(self, train_file, dev_file, test_file, save_dir, pretrained_embeddings=None, min_occur_count=2,
               lstm_layers=3, word_dims=100, tag_dims=100, dropout_emb=0.33, lstm_hiddens=400,
               dropout_lstm_input=0.33, dropout_lstm_hidden=0.33, mlp_arc_size=500, mlp_rel_size=100,
               dropout_mlp=0.33, learning_rate=2e-3, decay=.75, decay_steps=5000, beta_1=.9, beta_2=.9, epsilon=1e-12,
@@ -61,8 +60,8 @@ class DepParser(object):
             path to test set
         save_dir : str
             a directory for saving model and related meta-data
-        pretrained_embeddings_file : str
-            pre-trained embeddings file, plain text format
+        pretrained_embeddings : tuple
+            (embedding_name, source), used for gluonnlp.embedding.create(embedding_name, source)
         min_occur_count : int
             threshold of rare words, which will be replaced with UNKs,
         lstm_layers : int
@@ -122,7 +121,7 @@ class DepParser(object):
             parser itself
         """
         logger = init_logger(save_dir)
-        config = _Config(train_file, dev_file, test_file, save_dir, pretrained_embeddings_file, min_occur_count,
+        config = _Config(train_file, dev_file, test_file, save_dir, pretrained_embeddings, min_occur_count,
                          lstm_layers, word_dims, tag_dims, dropout_emb, lstm_hiddens, dropout_lstm_input,
                          dropout_lstm_hidden, mlp_arc_size, mlp_rel_size, dropout_mlp, learning_rate, decay,
                          decay_steps,
@@ -130,7 +129,7 @@ class DepParser(object):
                          train_batch_size, debug)
         config.save()
         self._vocab = vocab = ParserVocabulary(train_file,
-                                               pretrained_embeddings_file,
+                                               pretrained_embeddings,
                                                min_occur_count)
         vocab.save(config.save_vocab_path)
         vocab.log_info(logger)
@@ -297,7 +296,7 @@ if __name__ == '__main__':
     parser.train(train_file='tests/data/biaffine/ptb/train.conllx',
                  dev_file='tests/data/biaffine/ptb/dev.conllx',
                  test_file='tests/data/biaffine/ptb/test.conllx', save_dir='tests/data/biaffine/model',
-                 pretrained_embeddings_file='tests/data/biaffine/embedding/glove.6B.100d.txt')
+                 pretrained_embeddings=('glove', 'glove.6B.100d'))
     parser.load('tests/data/biaffine/model')
     # parser.evaluate(test_file='tests/data/biaffine/ptb/test-debug.conllx', save_dir='tests/data/biaffine/model',
     #                 num_buckets_test=4)

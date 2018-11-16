@@ -2,7 +2,7 @@ Dependency Parsing
 ---------------------------------
 
 Deep Biaffine Dependency Parser
-^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 This package contains an implementation of `Deep Biaffine Attention for Neural Dependency Parsing <https://arxiv.org/pdf/1611.01734.pdf>`_ proposed by Dozat and Manning (2016), with SOTA accuracy.
 
 Train
@@ -10,15 +10,12 @@ Train
 
 As the Penn Treebank dataset (PTB) is proprietary, we are unable to distribute it.
 If you have a legal copy, please place it in ``tests/data/biaffine/ptb``, use this `pre-processing script <https://github.com/hankcs/TreebankPreprocessing>`_ to convert it into conllx format.
-Then download `glove embeddings <http://nlp.stanford.edu/data/glove.6B.zip>`_ into ``tests/data/biaffine/embedding`` and unzip it.
 The tree view of data folder should be as follows.
 
 .. code-block:: console
 
 	$ tree tests/data/biaffine
 	tests/data/biaffine
-	├── embedding
-	│   └── glove.6B.100d.txt
 	└── ptb
 		├── dev.conllx
 		├── test.conllx
@@ -32,11 +29,11 @@ Then Run the following code to train the biaffine model.
     parser.train(train_file='tests/data/biaffine/ptb/train.conllx',
                  dev_file='tests/data/biaffine/ptb/dev.conllx',
                  test_file='tests/data/biaffine/ptb/test.conllx', save_dir='tests/data/biaffine/model',
-                 pretrained_embeddings_file='tests/data/biaffine/embedding/glove.6B.100d.txt')
+                 pretrained_embeddings=('glove', 'glove.6B.100d'))
     parser.evaluate(test_file='tests/data/biaffine/ptb/test.conllx', save_dir='tests/data/biaffine/model')
 
 
-The expected UAS should be around ``96%``. The trained model will be saved in following folder.
+The expected UAS should be around ``96%`` (see `training log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/syntactics/biaffine-ptb-train.log>`_ and `evaluation log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/syntactics/biaffine-ptb-test.log>`_). The trained model will be saved in following folder.
 
 .. code-block:: console
 
