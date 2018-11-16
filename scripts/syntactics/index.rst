@@ -1,10 +1,12 @@
-Deep Biaffine Dependency Parser
+Dependency Parsing
 ---------------------------------
 
-This package is an implementation of `Deep Biaffine Attention for Neural Dependency Parsing <https://arxiv.org/pdf/1611.01734.pdf>`_ proposed by Dozat and Manning (2016), with SOTA accuracy.
+Deep Biaffine Dependency Parser
+^^^^^^^^^^^^^
+This package contains an implementation of `Deep Biaffine Attention for Neural Dependency Parsing <https://arxiv.org/pdf/1611.01734.pdf>`_ proposed by Dozat and Manning (2016), with SOTA accuracy.
 
 Train
-^^^^^^^^^^^^^
+""""""""""
 
 As the Penn Treebank dataset (PTB) is proprietary, we are unable to distribute it.
 If you have a legal copy, please place it in ``tests/data/biaffine/ptb``, use this `pre-processing script <https://github.com/hankcs/TreebankPreprocessing>`_ to convert it into conllx format.
@@ -51,7 +53,7 @@ Users need to keep embeddings at the same place after training.
 A good practice is to place embeddings in the model folder and distribute them together.
 
 Decode
-^^^^^^^^^^^^^
+""""""""""
 
 Once we trained a model or downloaded a pre-trained one, we can load it and decode raw sentences.
 
