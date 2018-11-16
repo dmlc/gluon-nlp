@@ -64,7 +64,7 @@ class BidirectionalAttentionFlow(gluon.HybridBlock):
 
     def hybrid_forward(self, F, passage_question_similarity,
                        encoded_passage, encoded_question, question_mask, passage_mask):
-        # pylint: disable=arguments-differ
+        # pylint: disable=arguments-differ,unused-argument,missing-docstring
         # Shape: (batch_size, passage_length, question_length)
         passage_question_similarity_shape = (self._batch_size, self._passage_length,
                                              self._question_length)
