@@ -1,6 +1,8 @@
 Dependency Parsing
 ---------------------------------
 
+:download:`[Download] </model_zoo/syntactics.zip>`
+
 Deep Biaffine Dependency Parser
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 This package contains an implementation of `Deep Biaffine Attention for Neural Dependency Parsing <https://arxiv.org/pdf/1611.01734.pdf>`_ proposed by Dozat and Manning (2016), with SOTA accuracy.
