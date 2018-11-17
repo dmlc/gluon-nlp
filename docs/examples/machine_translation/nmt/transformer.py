@@ -952,7 +952,7 @@ def transformer_en_de_512(dataset_name=None, src_vocab=None, tgt_vocab=None, pre
 
 model_store._model_sha1.update(
     {name: checksum for checksum, name in [
-        ('14bd361b593bd1570106d74f29f9507f4f772bfe', 'transformer_en_de_512_WMT2014'),
+        ('b989448f52745cb769c1c62a8b5e3aba8622d268', 'transformer_en_de_512_WMT2014'),
     ]})
 
 
