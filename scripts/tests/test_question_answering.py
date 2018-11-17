@@ -23,7 +23,7 @@ from mxnet import init, nd, autograd, gluon
 from mxnet.gluon import Trainer, nn
 from mxnet.gluon.data import DataLoader, SimpleDataset
 from mxnet.gluon.loss import SoftmaxCrossEntropyLoss
-from types import SimpleNamespace
+from argparse import Namespace
 
 import gluonnlp as nlp
 from gluonnlp.data import SQuAD
@@ -399,7 +399,7 @@ def test_polyak_averaging():
 
 
 def get_args(batch_size_arg):
-    options = SimpleNamespace()
+    options = Namespace()
     options.gpu = None
     options.ctx_embedding_num_layers = 2
     options.embedding_size = 100
