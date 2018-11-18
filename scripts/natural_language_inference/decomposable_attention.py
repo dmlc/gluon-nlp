@@ -18,13 +18,13 @@ class IntraSentenceAttention(gluon.Block):
         self.max_length = max_length
         self.hidden_size = hidden_size
         with self.name_scope():
+            # F_intra in the paper
             self.intra_attn_emb = nn.Sequential()
             self.intra_attn_emb.add(nn.Dense(hidden_size, in_units=inp_size, activation='relu'))
             self.intra_attn_emb.add(nn.Dense(hidden_size, in_units=hidden_size, activation='relu'))
             self.intra_attn_emb.add(nn.Dense(hidden_size, in_units=hidden_size))
 
-    def forward(self, *args):
-        feature_a = args[0]
+    def forward(self, feature_a):
         batch_size, length, inp_size = feature_a.shape
         tilde_a = self.intra_attn_emb(
             feature_a.reshape(batch_size * length, inp_size)).reshape(
@@ -59,11 +59,10 @@ class DecomposableAttention(gluon.Block):
         self.hidden_size = hidden_size
         self.inp_size = inp_size
 
-    def forward(self, *args):
+    def forward(self, a, b):
         """
         Forward of Decomposable Attentiontion layer
         """
-        a, b = args[0], args[1]
         batch_size1, length1, hidden_size1 = a.shape
         batch_size2, length2, hidden_size2 = b.shape
         assert batch_size1 == batch_size2

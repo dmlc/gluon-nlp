@@ -31,12 +31,10 @@ class Network(gluon.Block):
             self.intra_atten = IntraSentenceAttention(hidden_size, hidden_size)
             self.model = DecomposableAttention(hidden_size*2, hidden_size, 3)
 
-    def forward(self, *args):
+    def forward(self, sentence1, sentence2):
         """
         Model forward definition
         """
-        sentence1 = args[0]
-        sentence2 = args[1]
         batch_size1, length1, dimension1 = sentence1.shape
         batch_size2, length2, dimension2 = sentence2.shape
         assert batch_size1 == batch_size2
