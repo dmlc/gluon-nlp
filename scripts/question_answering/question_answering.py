@@ -244,7 +244,7 @@ class BiDAFModel(HybridBlock):
     }
     """
     def __init__(self, word_vocab, char_vocab, options, prefix=None, params=None):
-        super().__init__(prefix=prefix, params=params)
+        super(BiDAFModel, self).__init__(prefix=prefix, params=params)
         self._options = options
 
         with self.name_scope():
