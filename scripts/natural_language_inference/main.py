@@ -12,7 +12,7 @@ import numpy as np
 import gluonnlp as nlp
 import mxnet as mx
 from mxnet import gluon, autograd, nd
-from decomposable_atten import DecomposableAtten, IntraSentenceAtten
+from decomposable_attention import DecomposableAttention, IntraSentenceAttention
 from nlidataset import NLIDataset
 from utils import tokenize_and_index
 
@@ -28,8 +28,8 @@ class Network(gluon.Block):
         self.hidden_size = hidden_size
         with self.name_scope():
             self.lin_proj = gluon.nn.Dense(hidden_size, in_units=word_embed_size, activation='relu')
-            self.intra_atten = IntraSentenceAtten(hidden_size, hidden_size)
-            self.model = DecomposableAtten(hidden_size*2, hidden_size, 3)
+            self.intra_atten = IntraSentenceAttention(hidden_size, hidden_size)
+            self.model = DecomposableAttention(hidden_size*2, hidden_size, 3)
 
     def forward(self, *args):
         """
