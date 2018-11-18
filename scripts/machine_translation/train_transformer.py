@@ -605,9 +605,14 @@ def train():
             for k, v in model._collect_params_with_prefix().items():
                 for c in ctx:
                     v.data(c)[:] += alpha * (params[k].as_in_context(c) - v.data(c))
+        save_path = os.path.join(args.save_dir,
+                                 'average_checkpoint_{}.params'.format(args.num_averages))
+        model.save_parameters(save_path)
     elif args.average_start > 0:
         for k, v in model.collect_params().items():
             v.set_data(average_param_dict[k])
+        save_path = os.path.join(args.save_dir, 'average.params')
+        model.save_parameters(save_path)
     else:
         model.load_parameters(os.path.join(args.save_dir, 'valid_best.params'), ctx)
     valid_loss, valid_translation_out = evaluate(val_data_loader, ctx[0])
