@@ -16,26 +16,33 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-"""Candidate samplers"""
+"""Word Embeddings Training Utilities
+=====================================
 
-__all__ = ['remove_accidental_hits']
+"""
+
+import logging
+import time
+from contextlib import contextmanager
 
 import mxnet as mx
-import numpy as np
 
 
-def remove_accidental_hits(candidates, true_samples):
-    """Compute a candidates_mask surpressing accidental hits.
+def get_context(args):
+    if args.gpu is None or args.gpu == '':
+        context = [mx.cpu()]
+    elif isinstance(args.gpu, int):
+        context = [mx.gpu(args.gpu)]
+    else:
+        context = [mx.gpu(int(i)) for i in args.gpu]
+    return context
 
-    Accidental hits are candidates that occur in the same batch dimension of
-    true_samples.
 
-    """
-    candidates_np = candidates.asnumpy()
-    true_samples_np = true_samples.asnumpy()
-
-    candidates_mask = np.ones(candidates.shape, dtype=np.bool_)
-    for j in range(true_samples.shape[1]):
-        candidates_mask &= ~(candidates_np == true_samples_np[:, j:j + 1])
-
-    return candidates, mx.nd.array(candidates_mask, ctx=candidates.context)
+@contextmanager
+def print_time(task):
+    start_time = time.time()
+    logging.info('Starting to %s', task)
+    yield
+    logging.info('Finished to {} in {:.2f} seconds'.format(
+        task,
+        time.time() - start_time))

@@ -56,9 +56,9 @@ def register(embedding_cls):
     ... class MyTextEmbed(gluonnlp.embedding.TokenEmbedding):
     ...     def __init__(self, source='my_pretrain_file'):
     ...         pass
-    >>> embed = gluonnlp.embedding.create('MyTokenEmbed')
+    >>> embed = gluonnlp.embedding.create('MyTextEmbed')
     >>> print(type(embed))
-    <class '__main__.MyTokenEmbed'>
+    <class 'MyTextEmbed'>
     """
 
     register_text_embedding = registry.get_register_func(TokenEmbedding, 'token embedding')
@@ -698,7 +698,7 @@ class TokenEmbedding(object):
         TokenEmbedding is serialized by converting the list of tokens, the
         array of word embeddings and other metadata to numpy arrays, saving all
         in a single (optionally compressed) Zipfile. See
-        https://docs.scipy.org/doc/numpy/neps/npy-format.html for more
+        https://docs.scipy.org/doc/numpy-1.14.2/neps/npy-format.html for more
         information on the format.
 
 
@@ -742,7 +742,7 @@ class TokenEmbedding(object):
         TokenEmbedding is serialized by converting the list of tokens, the
         array of word embeddings and other metadata to numpy arrays, saving all
         in a single (optionally compressed) Zipfile. See
-        https://docs.scipy.org/doc/numpy/neps/npy-format.html for more
+        https://docs.scipy.org/doc/numpy-1.14.2/neps/npy-format.html for more
         information on the format.
 
 

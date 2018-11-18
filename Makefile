@@ -22,7 +22,7 @@ flake8:
 	flake8 . --exclude conda --count --select=E901,E999,F821,F822,F823 --show-source --statistics
 
 pylint:
-	pylint --rcfile=$(ROOTDIR)/.pylintrc gluonnlp scripts/*/*.py
+	pylint --rcfile=$(ROOTDIR)/.pylintrc src/gluonnlp scripts/*/*.py
 
 restruc:
 	python setup.py check --restructuredtext --strict
@@ -33,7 +33,7 @@ lint:
 	make restruc
 
 docs: release
-	make -C docs html SPHINXOPTS=-W
+	make -C docs doctest html SPHINXOPTS=-W
 	for f in $(shell find docs/examples -type f -name '*.md' -print) ; do \
 		FILE=`echo $$f | sed 's/docs\///g'` ; \
 		DIR=`dirname $$FILE` ; \
@@ -54,7 +54,7 @@ docs: release
 	done;
 
 clean:
-	git clean -ff -d -x --exclude="$(ROOTDIR)/tests/externaldata/*" --exclude="$(ROOTDIR)/tests/data/*" --exclude="$(ROOTDIR)/conda"
+	git clean -ff -d -x --exclude="$(ROOTDIR)/tests/externaldata/*" --exclude="$(ROOTDIR)/tests/data/*" --exclude="$(ROOTDIR)/conda/"
 
 clean_doc:
 	make -C docs clean

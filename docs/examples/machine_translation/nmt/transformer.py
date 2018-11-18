@@ -872,10 +872,7 @@ def _load_vocab(dataset_name, vocab, root):
 
 def _load_pretrained_params(net, model_name, dataset_name, root, ctx):
     model_file = get_model_file('_'.join([model_name, dataset_name]), root=root)
-    temp_params = mx.nd.load(model_file)
-    new_temp_params = {'transformer_' + k if 'src_embed' not in k else k: v for k, v in temp_params.items()}
-    mx.nd.save('_'.join(['temporal', model_name, dataset_name]), new_temp_params)
-    net.load_params('_'.join(['temporal', model_name, dataset_name]), ctx=ctx)
+    net.load_parameters(model_file, ctx=ctx)
 
 
 def _get_transformer_model(model_cls, model_name, dataset_name, src_vocab, tgt_vocab,
@@ -952,7 +949,7 @@ def transformer_en_de_512(dataset_name=None, src_vocab=None, tgt_vocab=None, pre
 
 model_store._model_sha1.update(
     {name: checksum for checksum, name in [
-        ('14bd361b593bd1570106d74f29f9507f4f772bfe', 'transformer_en_de_512_WMT2014'),
+        ('e25287c5a924b7025e08d626f02626d5fa3af2d1', 'transformer_en_de_512_WMT2014'),
     ]})
 
 

@@ -345,8 +345,8 @@ encoder, decoder = get_transformer_encoder_decoder(units=args.num_units,
                                                    max_tgt_length=max(tgt_max_len, 500),
                                                    scaled=args.scaled)
 model = NMTModel(src_vocab=src_vocab, tgt_vocab=tgt_vocab, encoder=encoder, decoder=decoder,
-                 share_embed=True, embed_size=args.num_units, tie_weights=True,
-                 embed_initializer=None, prefix='transformer_')
+                 share_embed=args.dataset != 'TOY', embed_size=args.num_units,
+                 tie_weights=args.dataset != 'TOY', embed_initializer=None, prefix='transformer_')
 model.initialize(init=mx.init.Xavier(magnitude=args.magnitude), ctx=ctx)
 static_alloc = True
 model.hybridize(static_alloc=static_alloc)
@@ -605,9 +605,14 @@ def train():
             for k, v in model._collect_params_with_prefix().items():
                 for c in ctx:
                     v.data(c)[:] += alpha * (params[k].as_in_context(c) - v.data(c))
+        save_path = os.path.join(args.save_dir,
+                                 'average_checkpoint_{}.params'.format(args.num_averages))
+        model.save_parameters(save_path)
     elif args.average_start > 0:
         for k, v in model.collect_params().items():
             v.set_data(average_param_dict[k])
+        save_path = os.path.join(args.save_dir, 'average.params')
+        model.save_parameters(save_path)
     else:
         model.load_parameters(os.path.join(args.save_dir, 'valid_best.params'), ctx)
     valid_loss, valid_translation_out = evaluate(val_data_loader, ctx[0])

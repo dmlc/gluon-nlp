@@ -26,7 +26,7 @@ Word Embeddings
     :nosignatures:
 
     EmbeddingModel
-    SimpleEmbeddingModel
+    CSREmbeddingModel
     FasttextEmbeddingModel
 
 

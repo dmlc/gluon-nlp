@@ -25,7 +25,7 @@ from __future__ import print_function
 
 __all__ = ['ClipSequence', 'PadSequence', 'SacreMosesTokenizer', 'NLTKMosesTokenizer',
            'SpacyTokenizer', 'SacreMosesDetokenizer', 'NLTKMosesDetokenizer', 'JiebaTokenizer',
-           'NLTKStanfordSegmenter']
+           'NLTKStanfordSegmenter', 'SentencepieceTokenizer', 'SentencepieceDetokenizer']
 
 import os
 import warnings
@@ -46,20 +46,20 @@ class ClipSequence(object):
 
     Examples
     --------
-    >>> from mxnet.gluon.data import SimpleDataset
-    >>> datasets = SimpleDataset([[1, 3, 5, 7], [1, 2, 3], [1, 2, 3, 4, 5, 6, 7, 8]])
-    >>> list(datasets.transform(ClipSequence(4)))
+    >>> datasets = gluon.data.SimpleDataset([[1, 3, 5, 7], [1, 2, 3], [1, 2, 3, 4, 5, 6, 7, 8]])
+    >>> list(datasets.transform(gluonnlp.data.ClipSequence(4)))
     [[1, 3, 5, 7], [1, 2, 3], [1, 2, 3, 4]]
-    >>> datasets = SimpleDataset([np.array([[1, 3], [5, 7], [7, 5], [3, 1]]),
-    ...                           np.array([[1, 2], [3, 4], [5, 6], [6, 5], [4, 3], [2, 1]]),
-    ...                           np.array([[2, 4], [4, 2]])])
-    >>> list(datasets.transform(ClipSequence(3)))
+    >>> datasets = gluon.data.SimpleDataset([np.array([[1, 3], [5, 7], [7, 5], [3, 1]]),
+    ...                                      np.array([[1, 2], [3, 4], [5, 6],
+    ...                                                [6, 5], [4, 3], [2, 1]]),
+    ...                                      np.array([[2, 4], [4, 2]])])
+    >>> list(datasets.transform(gluonnlp.data.ClipSequence(3)))
     [array([[1, 3],
-            [5, 7],
-            [7, 5]]), array([[1, 2],
-            [3, 4],
-            [5, 6]]), array([[2, 4],
-            [4, 2]])]
+           [5, 7],
+           [7, 5]]), array([[1, 2],
+           [3, 4],
+           [5, 6]]), array([[2, 4],
+           [4, 2]])]
     """
     def __init__(self, length):
         self._length = length
@@ -84,13 +84,12 @@ class PadSequence(object):
 
     Examples
     --------
-    >>> from mxnet.gluon.data import SimpleDataset
-    >>> datasets = SimpleDataset([[1, 3, 5, 7], [1, 2, 3], [1, 2, 3, 4, 5, 6, 7, 8]])
-    >>> list(datasets.transform(PadSequence(6)))
+    >>> datasets = gluon.data.SimpleDataset([[1, 3, 5, 7], [1, 2, 3], [1, 2, 3, 4, 5, 6, 7, 8]])
+    >>> list(datasets.transform(gluonnlp.data.PadSequence(6)))
     [[1, 3, 5, 7, 0, 0], [1, 2, 3, 0, 0, 0], [1, 2, 3, 4, 5, 6]]
-    >>> list(datasets.transform(PadSequence(6, clip=False)))
+    >>> list(datasets.transform(gluonnlp.data.PadSequence(6, clip=False)))
     [[1, 3, 5, 7, 0, 0], [1, 2, 3, 0, 0, 0], [1, 2, 3, 4, 5, 6, 7, 8]]
-    >>> list(datasets.transform(PadSequence(6, pad_val=-1, clip=False)))
+    >>> list(datasets.transform(gluonnlp.data.PadSequence(6, pad_val=-1, clip=False)))
     [[1, 3, 5, 7, -1, -1], [1, 2, 3, -1, -1, -1], [1, 2, 3, 4, 5, 6, 7, 8]]
     """
     def __init__(self, length, pad_val=0, clip=True):
@@ -137,43 +136,21 @@ class PadSequence(object):
 
 
 class NLTKMosesTokenizer(object):
-    r"""Apply the Moses Tokenizer implemented in NLTK.
+    """Apply the Moses Tokenizer implemented in NLTK.
 
-    Users of this class are required to `install NLTK <https://www.nltk.org/install.html>`_
-    and install relevant NLTK packages, such as:
-
-    .. code:: python
-
-        python -m nltk.downloader perluniprops nonbreaking_prefixes
+    Users of this class are required to install `NLTK <https://www.nltk.org/install.html>`_
+    and install relevant NLTK packages, such as
+    :samp:`python -m nltk.downloader perluniprops nonbreaking_prefixes`.
 
     Examples
     --------
-    >>> tokenizer = NLTKMosesTokenizer()
+    >>> tokenizer = gluonnlp.data.NLTKMosesTokenizer()
     >>> tokenizer("Gluon NLP toolkit provides a suite of text processing tools.")
-    ['Gluon',
-     'NLP',
-     'toolkit',
-     'provides',
-     'a',
-     'suite',
-     'of',
-     'text',
-     'processing',
-     'tools',
-     '.']
+    ['Gluon', 'NLP', 'toolkit', 'provides', 'a', 'suite', 'of', 'text', 'processing', 'tools', '.']
     >>> tokenizer("Das Gluon NLP-Toolkit stellt eine Reihe von Textverarbeitungstools "
     ...           "zur Verfügung.")
-    ['Das',
-     'Gluon',
-     'NLP-Toolkit',
-     'stellt',
-     'eine',
-     'Reihe',
-     'von',
-     'Textverarbeitungstools',
-     'zur',
-     'Verfügung',
-     '.']
+    ['Das', 'Gluon', 'NLP-Toolkit', 'stellt', 'eine', 'Reihe', 'von', 'Textverarbeitungstools', \
+'zur', 'Verf\xfcgung', '.']
     """
     def __init__(self):
         try:
@@ -217,43 +194,21 @@ class NLTKMosesTokenizer(object):
 
 
 class SacreMosesTokenizer(object):
-    r"""Apply the Moses Tokenizer implemented in sacremoses.
+    """Apply the Moses Tokenizer implemented in sacremoses.
 
-    Users of this class are required to `install sacremoses
-    <https://github.com/alvations/sacremoses>`_. For example, one can use:
-
-    .. code:: python
-
-        pip install -U sacremoses
+    Users of this class are required to install
+    `sacremoses <https://github.com/alvations/sacremoses>`_.
+    For example, one can use :samp:`pip install sacremoses`.
 
     Examples
     --------
-    >>> tokenizer = SacreMosesTokenizer()
+    >>> tokenizer = gluonnlp.data.SacreMosesTokenizer()
     >>> tokenizer("Gluon NLP toolkit provides a suite of text processing tools.")
-    ['Gluon',
-     'NLP',
-     'toolkit',
-     'provides',
-     'a',
-     'suite',
-     'of',
-     'text',
-     'processing',
-     'tools',
-     '.']
+    ['Gluon', 'NLP', 'toolkit', 'provides', 'a', 'suite', 'of', 'text', 'processing', 'tools', '.']
     >>> tokenizer("Das Gluon NLP-Toolkit stellt eine Reihe von Textverarbeitungstools "
     ...           "zur Verfügung.")
-    ['Das',
-     'Gluon',
-     'NLP-Toolkit',
-     'stellt',
-     'eine',
-     'Reihe',
-     'von',
-     'Textverarbeitungstools',
-     'zur',
-     'Verfügung',
-     '.']
+    ['Das', 'Gluon', 'NLP-Toolkit', 'stellt', 'eine', 'Reihe', 'von', 'Textverarbeitungstools', \
+'zur', 'Verf\xfcgung', '.']
     """
     def __init__(self):
         try:
@@ -297,14 +252,10 @@ class SacreMosesTokenizer(object):
 
 
 class SpacyTokenizer(object):
-    r"""Apply the Spacy Tokenizer.
+    """Apply the Spacy Tokenizer.
 
-    Users of this class are required to `install spaCy <https://spacy.io/usage/>`_ and download
-    corresponding NLP models, such as:
-
-    .. code:: python
-
-        python -m spacy download en
+    Users of this class are required to install `spaCy <https://spacy.io/usage/>`_
+    and download corresponding NLP models, such as :samp:`python -m spacy download en`.
 
     Only spacy>=2.0.0 is supported.
 
@@ -316,33 +267,14 @@ class SpacyTokenizer(object):
 
     Examples
     --------
-    >>> tokenizer = SpacyTokenizer()
+    >>> tokenizer = gluonnlp.data.SpacyTokenizer()
     >>> tokenizer(u"Gluon NLP toolkit provides a suite of text processing tools.")
-    ['Gluon',
-     'NLP',
-     'toolkit',
-     'provides',
-     'a',
-     'suite',
-     'of',
-     'text',
-     'processing',
-     'tools',
-     '.']
-    >>> tokenizer = SpacyTokenizer('de')
+    ['Gluon', 'NLP', 'toolkit', 'provides', 'a', 'suite', 'of', 'text', 'processing', 'tools', '.']
+    >>> tokenizer = gluonnlp.data.SpacyTokenizer('de')
     >>> tokenizer(u"Das Gluon NLP-Toolkit stellt eine Reihe von Textverarbeitungstools"
     ...            " zur Verfügung.")
-    ['Das',
-     'Gluon',
-     'NLP-Toolkit',
-     'stellt',
-     'eine',
-     'Reihe',
-     'von',
-     'Textverarbeitungstools',
-     'zur',
-     'Verfügung',
-     '.']
+    ['Das', 'Gluon', 'NLP-Toolkit', 'stellt', 'eine', 'Reihe', 'von', 'Textverarbeitungstools', \
+'zur', 'Verf\xfcgung', '.']
     """
     def __init__(self, lang='en'):
         try:
@@ -382,21 +314,17 @@ class NLTKMosesDetokenizer(object):
     r"""Apply the Moses Detokenizer implemented in NLTK.
 
     Users of this class are required to `install NLTK <https://www.nltk.org/install.html>`_
-    and install relevant NLTK packages, such as:
-
-    .. code:: python
-
-        python -m nltk.downloader perluniprops nonbreaking_prefixes
+    and install relevant NLTK packages, such as
+    :samp:`python -m nltk.downloader perluniprops nonbreaking_prefixes`
 
     Examples
     --------
-    >>> detokenizer = NLTKMosesDetokenizer()
-    >>> detokenizer(['Gluon', 'NLP', 'toolkit', 'provides', 'a', 'suite', \
-     'of', 'text', 'processing', 'tools', '.'], return_str=True)
-    "Gluon NLP toolkit provides a suite of text processing tools."
-
-    >>> detokenizer(['Das', 'Gluon','NLP-Toolkit','stellt','eine','Reihe','von', \
-     'Textverarbeitungstools','zur','Verfügung','.'], return_str=True)
+    >>> detokenizer = gluonnlp.data.NLTKMosesDetokenizer()
+    >>> detokenizer(['Gluon', 'NLP', 'toolkit', 'provides', 'a', 'suite', 'of',
+    ...              'text', 'processing', 'tools', '.'], return_str=True)
+    'Gluon NLP toolkit provides a suite of text processing tools.'
+    >>> detokenizer(['Das', 'Gluon','NLP-Toolkit','stellt','eine','Reihe','von',
+    ...              'Textverarbeitungstools','zur','Verfügung','.'], return_str=True)
     'Das Gluon NLP-Toolkit stellt eine Reihe von Textverarbeitungstools zur Verfügung.'
     """
     def __init__(self):
@@ -444,21 +372,17 @@ class SacreMosesDetokenizer(object):
     r"""Apply the Moses Detokenizer implemented in sacremoses.
 
     Users of this class are required to `install sacremoses
-    <https://github.com/alvations/sacremoses>`_. For example, one can use:
-
-    .. code:: python
-
-        pip install -U sacremoses
+    <https://github.com/alvations/sacremoses>`_. For example, one can use
+    :samp:`pip install sacremoses`.
 
     Examples
     --------
-    >>> detokenizer = SacreMosesDetokenizer()
-    >>> detokenizer(['Gluon', 'NLP', 'toolkit', 'provides', 'a', 'suite', \
-     'of', 'text', 'processing', 'tools', '.'], return_str=True)
-    "Gluon NLP toolkit provides a suite of text processing tools."
-
-    >>> detokenizer(['Das', 'Gluon','NLP-Toolkit','stellt','eine','Reihe','von', \
-     'Textverarbeitungstools','zur','Verfügung','.'], return_str=True)
+    >>> detokenizer = gluonnlp.data.SacreMosesDetokenizer()
+    >>> detokenizer(['Gluon', 'NLP', 'toolkit', 'provides', 'a', 'suite', 'of',
+    ...              'text', 'processing', 'tools', '.'], return_str=True)
+    'Gluon NLP toolkit provides a suite of text processing tools.'
+    >>> detokenizer(['Das', 'Gluon','NLP-Toolkit','stellt','eine','Reihe','von',
+    ...              'Textverarbeitungstools','zur','Verfügung','.'], return_str=True)
     'Das Gluon NLP-Toolkit stellt eine Reihe von Textverarbeitungstools zur Verfügung.'
     """
     def __init__(self):
@@ -475,6 +399,11 @@ class SacreMosesDetokenizer(object):
                               'To install sacremoses, use pip install -U sacremoses'
                               ' Now try NLTKMosesDetokenizer using NLTK ...')
             try:
+                import nltk
+                try:
+                    nltk.data.find('perluniprops')
+                except LookupError:
+                    nltk.download('perluniprops')
                 from nltk.tokenize.moses import MosesDetokenizer
                 self._detokenizer = MosesDetokenizer()
             except ImportError:
@@ -514,24 +443,11 @@ class JiebaTokenizer(object):
 
     Examples
     --------
-    >>> tokenizer = JiebaTokenizer()
+    >>> tokenizer = gluonnlp.data.JiebaTokenizer()
     >>> tokenizer(u"我来到北京清华大学")
-    ['我',
-     '来到',
-     '北京',
-     '清华大学']
+    ['我', '来到', '北京', '清华大学']
     >>> tokenizer(u"小明硕士毕业于中国科学院计算所，后在日本京都大学深造")
-    ['小明',
-     '硕士',
-     '毕业',
-     '于',
-     '中国科学院',
-     '计算所',
-     '，',
-     '后',
-     '在',
-     '日本京都大学',
-     '深造']
+    ['小明', '硕士', '毕业', '于', '中国科学院', '计算所', '，', '后', '在', '日本京都大学', '深造']
 
     """
     def __init__(self):
@@ -581,26 +497,11 @@ class NLTKStanfordSegmenter(object):
 
     Examples
     --------
-    >>> tokenizer = NLTKStanfordSegmenter()
+    >>> tokenizer = gluonnlp.data.NLTKStanfordSegmenter() #doctest:+SKIP
     >>> tokenizer(u"我来到北京清华大学")
-    ['我',
-     '来到',
-     '北京',
-     '清华大学']
+    ['我', '来到', '北京', '清华大学']
     >>> tokenizer(u"小明硕士毕业于中国科学院计算所，后在日本京都大学深造")
-    ['小明',
-     '硕士',
-     '毕业',
-     '于',
-     '中国',
-     '科学院',
-     '计算所',
-     '，',
-     '后',
-     '在',
-     '日本'
-     '京都大学',
-     '深造']
+    ['小明', '硕士', '毕业', '于', '中国科学院', '计算所', '，', '后', '在', '日本京都大学', '深造']
 
     """
     def __init__(self, segmenter_root=os.path.join(_get_home_dir(), 'stanford-segmenter'),
@@ -668,3 +569,121 @@ class NLTKStanfordSegmenter(object):
             List of tokens
         """
         return [tok for tok in self._tokenizer.segment(sample).strip().split()]
+
+
+class _SentencepieceProcessor(object):
+    def __init__(self, path):
+        try:
+            import sentencepiece
+        except ImportError:
+            raise ImportError('sentencepiece is not installed. You must install sentencepiece '
+                              'in order to use the Sentencepiece tokenizer and detokenizer. '
+                              'You can refer to the official installation guide '
+                              'in https://github.com/google/sentencepiece#installation')
+        self._processor = sentencepiece.SentencePieceProcessor()
+        self._processor.Load(path)
+
+    def __len__(self):
+        return len(self._processor)
+
+    @property
+    def tokens(self):
+        return [self._processor.id_to_piece(i) for i in range(len(self))]
+
+class SentencepieceTokenizer(_SentencepieceProcessor):
+    r"""Apply the Sentencepiece Tokenizer, which supports subword tokenization such as BPE.
+
+    Users of this class are required to `install sentencepiece
+    <https://github.com/google/sentencepiece>`_. For example, one can use
+    :samp:`pip install sentencepiece`
+
+
+    Parameters
+    ----------
+    path : str
+        Path to the pre-trained subword tokenization model.
+    num_best : int, default 0
+        A scalar for sampling subwords. If num_best = {0,1}, no sampling is performed.
+        If num_best > 1, then samples from the num_best results.
+        If num_best < 0, then assume that num_best is infinite and
+        samples from the all hypothesis (lattice) using forward-filtering-and-backward-sampling
+        algorithm.
+    alpha : float
+        A scalar for a smoothing parameter. Inverse temparature for probablity rescaling.
+
+    Examples
+    --------
+    >>> url = 'http://repo.mxnet.io/gluon/dataset/vocab/test-0690baed.bpe'
+    >>> f = gluon.utils.download(url, overwrite=True)
+    -etc-
+    >>> tokenizer = gluonnlp.data.SentencepieceTokenizer(f)
+    >>> detokenizer = gluonnlp.data.SentencepieceDetokenizer(f)
+    >>> sentence = 'This is a very awesome, life-changing sentence.'
+    >>> tokenizer(sentence)
+    ['▁This', '▁is', '▁a', '▁very', '▁awesome', ',', '▁life', '-', 'ch', 'anging', '▁sentence', '.']
+    >>> detokenizer(tokenizer(sentence))
+    'This is a very awesome, life-changing sentence.'
+
+    """
+    def __init__(self, path, num_best=0, alpha=1.0):
+        super(SentencepieceTokenizer, self).__init__(path)
+        self._nbest = num_best
+        self._alpha = alpha
+
+    def __call__(self, sample):
+        """
+
+        Parameters
+        ----------
+        sample: str
+            The string to tokenize.
+
+        Returns
+        -------
+        ret : list of strs
+            List of tokens
+        """
+        return self._processor.SampleEncodeAsPieces(sample, self._nbest, self._alpha)
+
+
+class SentencepieceDetokenizer(_SentencepieceProcessor):
+    r"""Apply the Sentencepiece detokenizer, which supports recombining subwords such as BPE.
+
+    Users of this class are required to `install sentencepiece
+    <https://github.com/google/sentencepiece>`_. For example, one can use
+    :samp:`pip install sentencepiece`
+
+
+    Parameters
+    ----------
+    path : str
+        Path to the pre-trained subword tokenization model.
+
+    Examples
+    --------
+    >>> url = 'http://repo.mxnet.io/gluon/dataset/vocab/test-0690baed.bpe'
+    >>> f = gluon.utils.download(url, overwrite=True)
+    -etc-
+    >>> tokenizer = gluonnlp.data.SentencepieceTokenizer(f)
+    >>> detokenizer = gluonnlp.data.SentencepieceDetokenizer(f)
+    >>> sentence = 'This is a very awesome, life-changing sentence.'
+    >>> tokenizer(sentence)
+    ['▁This', '▁is', '▁a', '▁very', '▁awesome', ',', '▁life', '-', 'ch', 'anging', '▁sentence', '.']
+    >>> detokenizer(tokenizer(sentence))
+    'This is a very awesome, life-changing sentence.'
+
+    """
+    def __call__(self, sample):
+        """
+
+        Parameters
+        ----------
+        sample: list(str)
+            The sentence to detokenize
+
+        Returns
+        -------
+        ret : str
+            Detokenized text
+        """
+        return self._processor.DecodePieces(sample)

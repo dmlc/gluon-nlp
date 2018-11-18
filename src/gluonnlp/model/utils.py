@@ -30,7 +30,7 @@ from .parameter import WeightDropParameter
 # pylint: disable=too-many-nested-blocks
 def apply_weight_drop(block, local_param_regex, rate, axes=(),
                       weight_dropout_mode='training'):
-    r"""Apply weight drop to the parameter of a block.
+    """Apply weight drop to the parameter of a block.
 
     Parameters
     ----------
@@ -47,43 +47,36 @@ def apply_weight_drop(block, local_param_regex, rate, axes=(),
 
     Examples
     --------
-    >>> import mxnet as mx
-    >>> from mxnet import gluon
-    >>> import gluonnlp as nlp
     >>> net = gluon.rnn.LSTM(10, num_layers=2, bidirectional=True)
-    >>> nlp.model.apply_weight_drop(net, r'.*h2h_weight\Z', 0.5)
+    >>> gluonnlp.model.apply_weight_drop(net, r'.*h2h_weight', 0.5)
     >>> net.collect_params()
     lstm0_ (
       Parameter lstm0_l0_i2h_weight (shape=(40, 0), dtype=<class 'numpy.float32'>)
-      WeightDropParameter lstm0_l0_h2h_weight
-        (shape=(40, 10), dtype=<class 'numpy.float32'>, rate=0.5, mode=training)
+      WeightDropParameter lstm0_l0_h2h_weight (shape=(40, 10), dtype=<class 'numpy.float32'>, \
+rate=0.5, mode=training)
       Parameter lstm0_l0_i2h_bias (shape=(40,), dtype=<class 'numpy.float32'>)
       Parameter lstm0_l0_h2h_bias (shape=(40,), dtype=<class 'numpy.float32'>)
       Parameter lstm0_r0_i2h_weight (shape=(40, 0), dtype=<class 'numpy.float32'>)
-      WeightDropParameter lstm0_r0_h2h_weight
-        (shape=(40, 10), dtype=<class 'numpy.float32'>, rate=0.5, mode=training)
+      WeightDropParameter lstm0_r0_h2h_weight (shape=(40, 10), dtype=<class 'numpy.float32'>, \
+rate=0.5, mode=training)
       Parameter lstm0_r0_i2h_bias (shape=(40,), dtype=<class 'numpy.float32'>)
       Parameter lstm0_r0_h2h_bias (shape=(40,), dtype=<class 'numpy.float32'>)
       Parameter lstm0_l1_i2h_weight (shape=(40, 20), dtype=<class 'numpy.float32'>)
-      WeightDropParameter lstm0_l1_h2h_weight
-        (shape=(40, 10), dtype=<class 'numpy.float32'>, rate=0.5, mode=training)
+      WeightDropParameter lstm0_l1_h2h_weight (shape=(40, 10), dtype=<class 'numpy.float32'>, \
+rate=0.5, mode=training)
       Parameter lstm0_l1_i2h_bias (shape=(40,), dtype=<class 'numpy.float32'>)
       Parameter lstm0_l1_h2h_bias (shape=(40,), dtype=<class 'numpy.float32'>)
       Parameter lstm0_r1_i2h_weight (shape=(40, 20), dtype=<class 'numpy.float32'>)
-      WeightDropParameter lstm0_r1_h2h_weight
-        (shape=(40, 10), dtype=<class 'numpy.float32'>, rate=0.5, mode=training)
+      WeightDropParameter lstm0_r1_h2h_weight (shape=(40, 10), dtype=<class 'numpy.float32'>, \
+rate=0.5, mode=training)
       Parameter lstm0_r1_i2h_bias (shape=(40,), dtype=<class 'numpy.float32'>)
       Parameter lstm0_r1_h2h_bias (shape=(40,), dtype=<class 'numpy.float32'>)
     )
+    >>> ones = mx.nd.ones((3, 4, 5))
     >>> net.initialize()
     >>> with mx.autograd.train_mode():
-    ...     print(net(mx.nd.ones((3, 4, 5))).max())
-    [0.00488924]
-    <NDArray 1 @cpu(0)>
-    >>> with mx.autograd.train_mode():
-    ...     print(net(mx.nd.ones((3, 4, 5))).max())
-    [0.00475577]
-    <NDArray 1 @cpu(0)>
+    ...     net(ones).max().asscalar() != net(ones).max().asscalar()
+    True
     """
     if not rate:
         return
