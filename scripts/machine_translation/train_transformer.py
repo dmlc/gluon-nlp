@@ -138,10 +138,7 @@ logging.info(args)
 
 
 data_train, data_val, data_test, val_tgt_sentences, test_tgt_sentences, src_vocab, tgt_vocab \
-    = dataprocessor.load_translation_data(dataset=args.dataset, args=args)
-data_train_lengths = dataprocessor.get_data_lengths(data_train)
-data_val_lengths = dataprocessor.get_data_lengths(data_val)
-data_test_lengths = dataprocessor.get_data_lengths(data_test)
+    = dataprocessor.load_translation_data(dataset=args.dataset, bleu=args.bleu, args=args)
 
 with io.open(os.path.join(args.save_dir, 'val_gt.txt'), 'w', encoding='utf-8') as of:
     for ele in val_tgt_sentences:
@@ -159,6 +156,10 @@ data_test = gluon.data.SimpleDataset([(ele[0], ele[1], len(ele[0]), len(ele[1]),
 
 ctx = [mx.cpu()] if args.gpus is None or args.gpus == '' else \
     [mx.gpu(int(x)) for x in args.gpus.split(',')]
+
+data_train_lengths, data_val_lengths, data_test_lengths = [dataprocessor.get_data_lengths(x)
+                                                           for x in
+                                                           [data_train, data_val, data_test]]
 
 if args.src_max_len <= 0 or args.tgt_max_len <= 0:
     max_len = np.max(
@@ -274,9 +275,7 @@ def train():
                             {'learning_rate': args.lr, 'beta2': 0.98, 'epsilon': 1e-9})
 
     train_data_loader, val_data_loader, test_data_loader \
-        = dataprocessor.make_dataloader(data_train, data_val, data_test,
-                                        data_train_lengths, data_val_lengths,
-                                        data_test_lengths, args,
+        = dataprocessor.make_dataloader(data_train, data_val, data_test, args,
                                         use_average_length=True, num_shards=len(ctx))
 
     if args.bleu == 'tweaked':

@@ -111,7 +111,7 @@ def process_dataset(dataset, src_vocab, tgt_vocab, src_max_len=-1, tgt_max_len=-
     return dataset_processed
 
 
-def load_translation_data(dataset, args):
+def load_translation_data(dataset, bleu, args):
     """Load translation dataset
 
     Parameters
@@ -165,11 +165,11 @@ def load_translation_data(dataset, args):
     if not data_test_processed:
         data_test_processed = process_dataset(data_test, src_vocab, tgt_vocab)
         _cache_dataset(data_test_processed, common_prefix + '_' + str(False) + '_test')
-    if args.bleu == 'tweaked':
+    if bleu == 'tweaked':
         fetch_tgt_sentence = lambda src, tgt: tgt.split()
         val_tgt_sentences = list(data_val.transform(fetch_tgt_sentence))
         test_tgt_sentences = list(data_test.transform(fetch_tgt_sentence))
-    elif args.bleu == '13a' or args.bleu == 'intl':
+    elif bleu == '13a' or bleu == 'intl':
         fetch_tgt_sentence = lambda src, tgt: tgt
         if dataset == 'WMT2016BPE':
             val_text = nlp.data.WMT2016('newstest2013', src_lang=src_lang, tgt_lang=tgt_lang)
@@ -192,12 +192,16 @@ def load_translation_data(dataset, args):
 
 
 def get_data_lengths(dataset):
-    return list(dataset.transform(lambda srg, tgt: (len(srg), len(tgt))))
+    get_lengths = lambda *args: (args[2], args[3])
+    return list(dataset.transform(get_lengths))
 
 
-def make_dataloader(data_train, data_val, data_test,
-                    data_train_lengths, data_val_lengths, data_test_lengths, args,
+def make_dataloader(data_train, data_val, data_test, args,
                     use_average_length=False, num_shards=0, num_workers=8):
+    """Create data loaders for training/validation/test."""
+    data_train_lengths = get_data_lengths(data_train)
+    data_val_lengths = get_data_lengths(data_val)
+    data_test_lengths = get_data_lengths(data_test)
     train_batchify_fn = btf.Tuple(btf.Pad(), btf.Pad(),
                                   btf.Stack(dtype='float32'), btf.Stack(dtype='float32'))
     test_batchify_fn = btf.Tuple(btf.Pad(), btf.Pad(),
@@ -221,7 +225,7 @@ def make_dataloader(data_train, data_val, data_test,
                                                       use_average_length=use_average_length,
                                                       num_shards=num_shards,
                                                       bucket_scheme=bucket_scheme)
-    logging.info('Train Batch Sampler:\n{}'.format(train_batch_sampler.stats()))
+    logging.info('Train Batch Sampler:\n%s', train_batch_sampler.stats())
     train_data_loader = nlp.data.ShardedDataLoader(data_train,
                                                    batch_sampler=train_batch_sampler,
                                                    batchify_fn=train_batchify_fn,
@@ -234,7 +238,7 @@ def make_dataloader(data_train, data_val, data_test,
                                                     shuffle=False,
                                                     use_average_length=use_average_length,
                                                     bucket_scheme=bucket_scheme)
-    logging.info('Valid Batch Sampler:\n{}'.format(val_batch_sampler.stats()))
+    logging.info('Valid Batch Sampler:\n%s', val_batch_sampler.stats())
     val_data_loader = gluon.data.DataLoader(data_val,
                                             batch_sampler=val_batch_sampler,
                                             batchify_fn=test_batchify_fn,
@@ -246,7 +250,7 @@ def make_dataloader(data_train, data_val, data_test,
                                                      shuffle=False,
                                                      use_average_length=use_average_length,
                                                      bucket_scheme=bucket_scheme)
-    logging.info('Test Batch Sampler:\n{}'.format(test_batch_sampler.stats()))
+    logging.info('Test Batch Sampler:\n%s', test_batch_sampler.stats())
     test_data_loader = gluon.data.DataLoader(data_test,
                                              batch_sampler=test_batch_sampler,
                                              batchify_fn=test_batchify_fn,
