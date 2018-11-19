@@ -129,14 +129,14 @@ def evaluate():
 
     for batch_id, seqs in enumerate(bert_dataloader_dev):
         Ls = []
-        input_ids_nd0, input_len0, segment_ids_nd0, label_ids_nd0 = seqs
-        out  = model(input_ids_nd0.reshape((test_batch_size, -1)).as_in_context(mx.gpu()),
-                     segment_ids_nd0.reshape((test_batch_size, -1)).as_in_context(mx.gpu()),
+        input_ids, input_len0, segment_ids, label = seqs
+        out  = model(input_ids.reshape((test_batch_size, -1)).as_in_context(mx.gpu()),
+                     segment_ids.reshape((test_batch_size, -1)).as_in_context(mx.gpu()),
                      input_len0.squeeze().astype('float32').as_in_context(mx.gpu()))
-        ls = loss_function(out, label_ids_nd0.as_in_context(mx.gpu())).mean()
+        ls = loss_function(out, label.as_in_context(mx.gpu())).mean()
         Ls.append(ls)
         step_loss += sum([L.asscalar() for L in Ls])
-        metric.update([label_ids_nd0], [out])
+        metric.update([label], [out])
     print('validation', metric.get())
 
 
@@ -147,9 +147,7 @@ def train():
 
     bert_dataloader = mx.gluon.data.DataLoader(data_train, batch_size=batch_size,
                                                shuffle=True, last_batch='discard')
-                                               #shuffle=False, last_batch='discard')
     num_train_examples = len(data_train)
-    print('num samples = ', num_train_examples)
     num_train_steps = int(
         num_train_examples / batch_size * args.epochs)
     warmup_ratio = args.warmup_ratio
@@ -167,22 +165,17 @@ def train():
             if step_num < num_warmup_steps:
                 new_lr = args.lr * step_num / num_warmup_steps
             else:
-                new_lr = args.lr - (step_num - num_warmup_steps) * args.lr / (num_train_steps - num_warmup_steps)
+                offset = (step_num - num_warmup_steps) * args.lr / (num_train_steps - num_warmup_steps)
+                new_lr = args.lr - offset
             trainer.set_learning_rate(new_lr)
             Ls = []
-            #with mx.autograd.pause():
             with mx.autograd.record():
-                input_ids_nd0, input_mask_nd0, segment_ids_nd0, label_ids_nd0 = seqs
-                #print(input_ids_nd0.sum().asscalar(),input_mask_nd0.sum().asscalar(),
-                #      segment_ids_nd0.sum().asscalar(), label_ids_nd0.sum().asscalar())
-                out  = model(input_ids_nd0.reshape((batch_size, -1)).as_in_context(mx.gpu()),
-                             segment_ids_nd0.reshape((batch_size, -1)).as_in_context(mx.gpu()),
-                             input_mask_nd0.squeeze().astype('float32').as_in_context(mx.gpu()))
-                ls = loss_function(out, label_ids_nd0.as_in_context(mx.gpu())).mean()
+                input_ids, input_mask, segment_ids, label = seqs
+                out  = model(input_ids.reshape((batch_size, -1)).as_in_context(mx.gpu()),
+                             segment_ids.reshape((batch_size, -1)).as_in_context(mx.gpu()),
+                             input_mask.squeeze().astype('float32').as_in_context(mx.gpu()))
+                ls = loss_function(out, label.as_in_context(mx.gpu())).mean()
                 Ls.append(ls)
-            #if batch_id == 0:
-            #    mx.nd.waitall()
-            #    exit()
             for L in Ls:
                 L.backward()
             parameters = model.collect_params()
@@ -195,7 +188,7 @@ def train():
             gluon.utils.clip_global_norm(grads, 1)
             trainer.step(1)
             step_loss += sum([L.asscalar() for L in Ls])
-            metric.update([label_ids_nd0], [out])
+            metric.update([label], [out])
             if (batch_id + 1) % (args.log_interval) == 0:
                 logging.info('[Epoch {} Batch {}/{}] loss={:.4f}, lr={:.7f}, acc={:.3f}'
                              .format(epoch_id, batch_id + 1, len(bert_dataloader),

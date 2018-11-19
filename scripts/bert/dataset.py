@@ -71,7 +71,7 @@ class SentenceClassificationTrans(object):
 
     Parameters
     ----------
-    tokenizer : BasicTokenizer or FullTokensize.
+    tokenizer : BasicTokenizer or FullTokensizer.
         Tokenizer for the sentences.
     labels : list of int.
         List of all label ids for the classification task.
@@ -92,6 +92,57 @@ class SentenceClassificationTrans(object):
         self._pair = pair
 
     def __call__(self, line):
+        """Perform transformation for sequence pairs or single sequences.
+
+        The transformation is processed in the following steps:
+        - tokenize the input sequences
+        - insert [CLS], [SEP] as necessary
+        - generate type ids to indicate whether a token belongs to the first
+          sequence or the second sequence.
+        - generate valid length
+
+        For sequence pairs, the input is a tuple of 3 strings:
+        text_a, text_b and label.
+
+        Inputs:
+            text_a: 'is this jacksonville ?'
+            text_b: 'no it is not'
+            label: '0'
+        Tokenization:
+            text_a: 'is this jack ##son ##ville ?'
+            text_b: 'no it is not .'
+        Processed:
+            tokens:  '[CLS] is this jack ##son ##ville ? [SEP] no it is not . [SEP]'
+            type_ids: 0     0  0    0    0     0       0 0     1  1  1  1   1 1
+            valid_length: 14
+            label: 0
+
+        For single sequences, the input is a tuple of 2 strings: text_a and label.
+        Inputs:
+            text_a: 'the dog is hairy .'
+            label: '1'
+        Tokenization:
+            text_a: 'the dog is hairy .'
+        Processed:
+            text_a:  '[CLS] the dog is hairy . [SEP]'
+            type_ids: 0     0   0   0  0     0 0
+            valid_length: 7
+            label: 1
+
+        Parameters
+        ----------
+        line: tuple of str
+            Input strings. For sequence pairs, the input is a tuple of 3 strings:
+            (text_a, text_b, label). For single sequences, the input is a tuple
+            of 2 strings: (text_a, label).
+
+        Returns
+        -------
+        np.array: input token ids in 'int32'
+        np.array: valid length in 'int32'
+        np.array: input token type ids in 'int32'
+        np.array: label id in 'int32'
+        """
         # convert to unicode
         text_a = line[0]
         label = line[-1]
@@ -118,21 +169,12 @@ class SentenceClassificationTrans(object):
             if len(tokens_a) > self._max_seq_length - 2:
               tokens_a = tokens_a[0:(self._max_seq_length - 2)]
 
-        # The convention in BERT is:
-        # (a) For sequence pairs:
-        #  tokens:   [CLS] is this jack ##son ##ville ? [SEP] no it is not . [SEP]
-        #  type_ids: 0     0  0    0    0     0       0 0     1  1  1  1   1 1
-        # (b) For single sequences:
-        #  tokens:   [CLS] the dog is hairy . [SEP]
-        #  type_ids: 0     0   0   0  0     0 0
-        #
-        # Where "type_ids" are used to indicate whether this is the first
-        # sequence or the second sequence. The embedding vectors for `type=0` and
-        # `type=1` were learned during pre-training and are added to the wordpiece
-        # embedding vector (and position vector). This is not *strictly* necessary
-        # since the [SEP] token unambiguously separates the sequences, but it makes
+        # The embedding vectors for `type=0` and `type=1` were learned during
+        # pre-training and are added to the wordpiece embedding vector
+        # (and position vector). This is not *strictly* necessary since
+        # the [SEP] token unambiguously separates the sequences, but it makes
         # it easier for the model to learn the concept of sequences.
-        #
+
         # For classification tasks, the first vector (corresponding to [CLS]) is
         # used as as the "sentence vector". Note that this only makes sense because
         # the entire model is fine-tuned.

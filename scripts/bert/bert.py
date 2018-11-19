@@ -60,8 +60,8 @@ class BERTClassifier(Block):
         inputs : NDArray, shape (batch_size, seq_length)
             Input words for the sequences.
         token_types : NDArray, shape (batch_size, seq_length)
-            Input token types for the sequences. If the inputs contain two sequences,
-            then the token type of the first sequence differs from that of the second one.
+            Token types for the sequences, used to indicate whether the word belongs to the
+            first sentence or the second one.
         valid_length : NDArray or None, shape (batch_size)
             Valid length of the sequence. This is used to mask the padded tokens.
 
