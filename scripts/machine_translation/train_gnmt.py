@@ -45,7 +45,6 @@ import numpy as np
 import mxnet as mx
 from mxnet import gluon
 import gluonnlp as nlp
-import gluonnlp.data.batchify as btf
 
 from gnmt import get_gnmt_encoder_decoder
 from translation import NMTModel, BeamSearchTranslator
@@ -107,10 +106,7 @@ logging_config(args.save_dir)
 
 
 data_train, data_val, data_test, val_tgt_sentences, test_tgt_sentences, src_vocab, tgt_vocab\
-    = dataprocessor.load_translation_data(dataset=args.dataset, args=args)
-data_train_lengths = dataprocessor.get_data_lengths(data_train)
-data_val_lengths = dataprocessor.get_data_lengths(data_val)
-data_test_lengths = dataprocessor.get_data_lengths(data_test)
+    = dataprocessor.load_translation_data(dataset=args.dataset, bleu='tweaked', args=args)
 
 with io.open(os.path.join(args.save_dir, 'val_gt.txt'), 'w', encoding='utf-8') as of:
     for ele in val_tgt_sentences:
@@ -211,9 +207,7 @@ def train():
     trainer = gluon.Trainer(model.collect_params(), args.optimizer, {'learning_rate': args.lr})
 
     train_data_loader, val_data_loader, test_data_loader \
-        = dataprocessor.make_dataloader(data_train, data_val, data_test,
-                                        data_train_lengths, data_val_lengths,
-                                        data_test_lengths, args)
+        = dataprocessor.make_dataloader(data_train, data_val, data_test, args)
 
     best_valid_bleu = 0.0
     for epoch_id in range(args.epochs):
