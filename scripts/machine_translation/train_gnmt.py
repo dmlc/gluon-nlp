@@ -210,51 +210,11 @@ def train():
     """Training function."""
     trainer = gluon.Trainer(model.collect_params(), args.optimizer, {'learning_rate': args.lr})
 
-    train_batchify_fn = btf.Tuple(btf.Pad(), btf.Pad(),
-                                  btf.Stack(dtype='float32'), btf.Stack(dtype='float32'))
-    test_batchify_fn = btf.Tuple(btf.Pad(), btf.Pad(),
-                                 btf.Stack(dtype='float32'), btf.Stack(dtype='float32'),
-                                 btf.Stack())
-    if args.bucket_scheme == 'constant':
-        bucket_scheme = nlp.data.ConstWidthBucket()
-    elif args.bucket_scheme == 'linear':
-        bucket_scheme = nlp.data.LinearWidthBucket()
-    elif args.bucket_scheme == 'exp':
-        bucket_scheme = nlp.data.ExpWidthBucket(bucket_len_step=1.2)
-    else:
-        raise NotImplementedError
-    train_batch_sampler = nlp.data.FixedBucketSampler(lengths=data_train_lengths,
-                                                      batch_size=args.batch_size,
-                                                      num_buckets=args.num_buckets,
-                                                      ratio=args.bucket_ratio,
-                                                      shuffle=True,
-                                                      bucket_scheme=bucket_scheme)
-    logging.info('Train Batch Sampler:\n{}'.format(train_batch_sampler.stats()))
-    train_data_loader = gluon.data.DataLoader(data_train,
-                                              batch_sampler=train_batch_sampler,
-                                              batchify_fn=train_batchify_fn,
-                                              num_workers=8)
+    train_data_loader, val_data_loader, test_data_loader \
+        = dataprocessor.make_dataloader(data_train, data_val, data_test,
+                                        data_train_lengths, data_val_lengths,
+                                        data_test_lengths, args)
 
-    val_batch_sampler = nlp.data.FixedBucketSampler(lengths=data_val_lengths,
-                                                    batch_size=args.test_batch_size,
-                                                    num_buckets=args.num_buckets,
-                                                    ratio=args.bucket_ratio,
-                                                    shuffle=False)
-    logging.info('Valid Batch Sampler:\n{}'.format(val_batch_sampler.stats()))
-    val_data_loader = gluon.data.DataLoader(data_val,
-                                            batch_sampler=val_batch_sampler,
-                                            batchify_fn=test_batchify_fn,
-                                            num_workers=8)
-    test_batch_sampler = nlp.data.FixedBucketSampler(lengths=data_test_lengths,
-                                                     batch_size=args.test_batch_size,
-                                                     num_buckets=args.num_buckets,
-                                                     ratio=args.bucket_ratio,
-                                                     shuffle=False)
-    logging.info('Test Batch Sampler:\n{}'.format(test_batch_sampler.stats()))
-    test_data_loader = gluon.data.DataLoader(data_test,
-                                             batch_sampler=test_batch_sampler,
-                                             batchify_fn=test_batchify_fn,
-                                             num_workers=8)
     best_valid_bleu = 0.0
     for epoch_id in range(args.epochs):
         log_avg_loss = 0
