@@ -114,6 +114,7 @@ Contents
    examples/machine_translation/transformer.ipynb
    examples/sentence_embedding/self_attentive_sentence_embedding.ipynb
    examples/sequence_sampling/sequence_sampling.ipynb
+   examples/elmo/elmo_sentence_representation.ipynb
 
 
 .. toctree::

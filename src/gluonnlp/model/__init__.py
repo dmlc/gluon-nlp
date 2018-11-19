@@ -51,7 +51,8 @@ These models can constructed by passing ``pretrained=True``:
 
 
 from . import (attention_cell, sequence_sampler, block, convolutional_encoder,
-               highway, language_model, parameter, sampled_block, train, utils)
+               highway, language_model, parameter, sampled_block, train, utils, bilm_encoder,
+               lstmpcellwithclip, elmo)
 from .attention_cell import *
 from .sequence_sampler import *
 from .block import *
@@ -61,10 +62,14 @@ from .language_model import *
 from .parameter import *
 from .sampled_block import *
 from .utils import *
+from .bilm_encoder import BiLMEncoder
+from .lstmpcellwithclip import LSTMPCellWithClip
+from .elmo import ELMoBiLM, ELMoCharacterEncoder, ELMoCharacterVocab
 
 __all__ = language_model.__all__ + sequence_sampler.__all__ + attention_cell.__all__ + \
           utils.__all__ + parameter.__all__ + block.__all__ + highway.__all__ + \
-          convolutional_encoder.__all__ + sampled_block.__all__ + ['get_model'] + ['train']
+          convolutional_encoder.__all__ + sampled_block.__all__ + ['get_model'] + ['train'] + \
+          bilm_encoder.__all__ + lstmpcellwithclip.__all__ + elmo.__all__
 
 
 def get_model(name, dataset_name='wikitext-2', **kwargs):

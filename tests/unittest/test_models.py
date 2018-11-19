@@ -313,3 +313,16 @@ def test_weight_drop():
         y.backward()
         for name, param in shared_net.collect_params().items():
             assert not mx.test_utils.almost_equal(grads[name].asnumpy(), param.grad().asnumpy())
+
+
+# def test_bidirectional_models():
+#     val = nlp.data.WikiText2(segment='val', root='tests/data/wikitext-2')
+#     val_freq = get_frequencies(val)
+#     vocab = nlp.Vocab(val_freq)
+#     text_models = ['bi_lstm_proj_clip_lm_1500', 'bi_lstm_proj_clip_lm_650', 'bi_lstm_proj_clip_lm_200']
+#     pretrained_to_test = {'bi_lstm_proj_clip_lm_1500': 'wikitext-2', 'bi_lstm_proj_clip_lm_650': 'wikitext-2', 'bi_lstm_proj_clip_lm_200': 'wikitext-2'}
+#     # TODO: add test
+#     print(len(vocab))
+#     print(len(text_models))
+#     print(len(pretrained_to_test))
+# >>>>>>> Add elmo bilm, encoder, lstmpcellwithclip

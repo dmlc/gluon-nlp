@@ -275,13 +275,11 @@ class StandardRNN(Block):
         out = self.decoder(encoded)
         return out, state, encoded_raw, encoded_dropped
 
+
 class BigRNN(Block):
     """Big language model with LSTMP and importance sampling.
-
     Reference: https://github.com/rafaljozefowicz/lm
-
     License: MIT
-
     Parameters
     ----------
     vocab_size : int
@@ -305,7 +303,6 @@ class BigRNN(Block):
     sparse_grad : bool
         Whether to use RowSparseNDArray for the gradients w.r.t.
         weights of input and output embeddings.
-
     .. note: If `sparse_grad` is set to True, the gradient w.r.t input and output
              embeddings will be sparse. Only a subset of optimizers support
              sparse gradients, including SGD, AdaGrad and Adam.
@@ -313,7 +310,6 @@ class BigRNN(Block):
              which may perform differently from standard updates.
              For more details, please check the Optimization API at:
              https://mxnet.incubator.apache.org/api/python/optimization/optimization.html
-
     .. note: If `sparse_weight` is set to True, the parameters in the embedding block and
              decoder block will be stored in row_sparse format, which helps reduce memory
              consumption and communication overhead during multi-GPU training. However,
@@ -388,7 +384,6 @@ class BigRNN(Block):
 
     def forward(self, inputs, label, begin_state, sampled_values): # pylint: disable=arguments-differ
         """Defines the forward computation.
-
         Parameters
         -----------
         inputs : NDArray
@@ -402,7 +397,6 @@ class BigRNN(Block):
             a list of three tensors for `sampled_classes` with shape `(num_samples,)`,
             `expected_count_sampled` with shape `(num_samples,)`, and
             `expected_count_true` with shape `(sequence_length, batch_size)`.
-
         Returns
         --------
         out : NDArray

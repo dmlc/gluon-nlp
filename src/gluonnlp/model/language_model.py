@@ -17,7 +17,7 @@
 # specific language governing permissions and limitations
 # under the License.
 """Language models."""
-__all__ = ['AWDRNN', 'StandardRNN', 'BigRNN', 'awd_lstm_lm_1150', 'awd_lstm_lm_600',
+__all__ = ['AWDRNN', 'StandardRNN', 'awd_lstm_lm_1150', 'awd_lstm_lm_600',
            'standard_lstm_lm_200', 'standard_lstm_lm_650', 'standard_lstm_lm_1500',
            'big_rnn_lm_2048_512']
 
@@ -109,12 +109,13 @@ class AWDRNN(train.AWDRNN):
         return out, out_states
 
 class StandardRNN(train.StandardRNN):
-    """Standard RNN language model.
+    """Bidirectional language model by Allen Institute for Artificial Intelligence
+    and University of Washington.
 
     Parameters
     ----------
     mode : str
-        The type of RNN to use. Options are 'lstm', 'gru', 'rnn_tanh', 'rnn_relu'.
+        The type of RNN to use. Options are 'lstmpc', 'lstm', 'gru', 'rnn_tanh', 'rnn_relu'.
     vocab_size : int
         Size of the input vocabulary.
     embed_size : int
@@ -123,10 +124,18 @@ class StandardRNN(train.StandardRNN):
         Number of hidden units for RNN.
     num_layers : int
         Number of RNN layers.
+    dropout_e : float
+        Dropout rate to use on the embedding layer.
     dropout : float
         Dropout rate to use for encoder output.
-    tie_weights : bool, default False
-        Whether to tie the weight matrices of output dense layer and input embedding layer.
+    skip_connection : bool
+        Whether to add skip connections (add RNN cell input to output)
+    proj_size : int
+        The projection size of each LSTMPCellWithClip cell
+    proj_clip : float
+        Clip projection between [-projclip, projclip] in LSTMPCellWithClip cell
+    cell_clip : float
+        Clip cell state between [-cellclip, projclip] in LSTMPCellWithClip cell
     """
     def __init__(self, mode, vocab_size, embed_size, hidden_size,
                  num_layers, dropout, tie_weights, **kwargs):
@@ -168,6 +177,7 @@ class StandardRNN(train.StandardRNN):
             encoded = nd.Dropout(encoded, p=self._dropout, axes=(0,))
         out = self.decoder(encoded)
         return out, state
+
 
 def _load_vocab(dataset_name, vocab, root):
     if dataset_name:
