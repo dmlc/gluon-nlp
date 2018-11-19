@@ -100,6 +100,7 @@ Contents
    model_zoo/text_classification/index
    model_zoo/sentiment_analysis/index
    model_zoo/text_generation/index
+   model_zoo/question_answering/index
 
 
 .. toctree::
