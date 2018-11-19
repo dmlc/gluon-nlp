@@ -81,7 +81,6 @@ logging.info(args)
 batch_size = args.batch_size
 test_batch_size = args.test_batch_size
 
-
 ctx = [mx.cpu()] if args.gpu is None or args.gpu == '' else [mx.gpu()]
 
 do_lower_case=True

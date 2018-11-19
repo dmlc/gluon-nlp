@@ -131,7 +131,7 @@ class TSVDataset(SimpleDataset):
         self._field_indices = field_indices
         super(TSVDataset, self).__init__(self._read())
 
-    def _discard(self, s):
+    def _should_discard(self):
         discard = self._num_discard_samples > 0
         self._num_discard_samples -= 1
         return discard
@@ -146,7 +146,7 @@ class TSVDataset(SimpleDataset):
         for filename in self._filenames:
             with io.open(filename, 'r', encoding=self._encoding) as fin:
                 content = fin.read()
-            samples = (s for s in self._sample_splitter(content) if not self._discard(s))
+            samples = (s for s in self._sample_splitter(content) if not self._should_discard())
             if self._field_separator:
                 samples = [self._field_selector(self._field_separator(s)) for s in samples]
             all_samples += samples
