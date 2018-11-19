@@ -47,41 +47,32 @@ import mxnet as mx
 from mxnet import gluon
 from mxnet.gluon.data import ArrayDataset, SimpleDataset
 from mxnet.gluon.data import DataLoader
-from gluonnlp.model.bert import BERTModel, get_bert_encoder
+from gluonnlp.model import bert_12_768_12
 from bert import BERTClassifier
 from utils import logging_config
 from tokenization import FullTokenizer
 from dataset import MRPCDataset, SentenceClassificationTrans
 
-np.random.seed(100)
-random.seed(100)
-mx.random.seed(10000)
+np.random.seed(0)
+random.seed(0)
+mx.random.seed(0)
 
 parser = argparse.ArgumentParser(description='Neural Machine Translation Example.'
                                              'We train the Transformer Model')
 parser.add_argument('--vocab_file', type=str, required=True,
                     help='Path to the vocabulary file. e.g. $BERT_BASE_DIR/vocab.txt')
 parser.add_argument('--epochs', type=int, default=3, help='number of epochs')
-parser.add_argument('--num_units', type=int, default=768,
-                    help='Dimension of the embedding vectors and states.')
-parser.add_argument('--hidden_size', type=int, default=3072,
-                    help='Dimension of the hidden state in position-wise feed-forward networks.')
 parser.add_argument('--dropout', type=float, default=0.1,
                     help='dropout applied to layers (0 = no dropout)')
-parser.add_argument('--num_layers', type=int, default=12,
-                    help='number of layers in the encoder and decoder')
-parser.add_argument('--num_heads', type=int, default=12,
-                    help='number of heads in multi-head attention')
-parser.add_argument('--scaled', action='store_true', help='Turn on to use scale in attention')
 parser.add_argument('--batch_size', type=int, default=32,
                     help='Batch size. Number of examples per gpu in a minibatch')
 parser.add_argument('--test_batch_size', type=int, default=8, help='Test batch size')
-parser.add_argument('--max_len', type=int, default=128, help='Maximum length of the sentence pairs')
 parser.add_argument('--optimizer', type=str, default='adam', help='optimization algorithm')
 parser.add_argument('--lr', type=float, default=5e-5, help='Initial learning rate')
 parser.add_argument('--warmup_ratio', type=float, default=0.1,
                     help='ratio of warmup steps used in NOAM\'s stepsize schedule')
 parser.add_argument('--log_interval', type=int, default=10, help='report interval')
+parser.add_argument('--max_len', type=int, default=128, help='Maximum length of the sentence pairs')
 parser.add_argument('--output_dir', type=str, default='classifier_out',
                     help='directory path to save the final model and training log')
 parser.add_argument('--gpu', action='store_true', help='whether to use gpu for finetuning')
@@ -94,52 +85,20 @@ test_batch_size = args.test_batch_size
 
 ctx = [mx.cpu()] if args.gpu is None or args.gpu == '' else [mx.gpu()]
 
-encoder = get_bert_encoder(units=args.num_units,
-                           hidden_size=args.hidden_size,
-                           dropout=args.dropout,
-                           num_layers=args.num_layers,
-                           num_heads=args.num_heads,
-                           max_src_length=512,
-                           max_tgt_length=512,
-                           scaled=args.scaled)
-
 do_lower_case=True
 tokenizer = FullTokenizer(vocab_file=args.vocab_file, do_lower_case=do_lower_case)
 
-model = BERTModel(encoder=encoder, vocab_size=len(tokenizer.vocab), token_type_vocab_size=2,
-                  units=args.num_units, embed_size=args.num_units,
-                  embed_initializer=None, prefix='transformer_')
+bert, vocabulary = bert_12_768_12(dataset_name='book_corpus_wiki_en_uncased',
+                                  pretrained=True, ctx=mx.cpu(), use_pooler=True,
+                                  use_decoder=False, use_classifier=False,
+                                  root='/home/ubuntu/gluon-nlp/tests/data/model/')
+bert.collect_params().reset_ctx(ctx)
 
-# TODO dropout for classifier
-model = BERTClassifier(model)
-
+model = BERTClassifier(bert, dropout=0.1)
 model.initialize(init=mx.init.Normal(0.02), ctx=ctx)
 static_alloc = True
 model.hybridize(static_alloc=static_alloc)
 logging.info(model)
-
-ones = mx.nd.ones((1, 128), ctx=mx.gpu())
-out = model(ones, ones, mx.nd.ones((1,), ctx=mx.gpu()))
-params = model.bert._collect_params_with_prefix()
-import pickle
-with open('/home/ubuntu/bert/bert.pickle.mx', 'rb') as f:
-    tf_params = pickle.load(f)
-loaded = {}
-for name in params:
-    try:
-        arr = mx.nd.array(tf_params[name])
-        params[name].set_data(arr)
-        loaded[name] = 0
-    except:
-        if name not in tf_params:
-            print("cannot initialize %s from bert checkpoint"%(name))
-        else:
-            print("cannot initialize ", name, params[name].shape, tf_params[name].shape)
-
-print('num_loaded = ', len(loaded), ' total = ', len(tf_params))
-for name in tf_params:
-    if name not in loaded:
-        print('not loading', name)
 
 loss_function = gluon.loss.SoftmaxCELoss()
 loss_function.hybridize(static_alloc=static_alloc)
@@ -189,6 +148,7 @@ def train():
 
     bert_dataloader = mx.gluon.data.DataLoader(data_train, batch_size=batch_size,
                                                shuffle=True, last_batch='discard')
+                                               #shuffle=False, last_batch='discard')
     num_train_examples = len(data_train)
     print('num samples = ', num_train_examples)
     num_train_steps = int(

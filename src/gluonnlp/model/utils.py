@@ -221,7 +221,7 @@ def _load_vocab(dataset_name, vocab, root):
         assert vocab is not None, 'Must specify vocab if not loading from predefined datasets.'
     return vocab
 
-def _load_pretrained_params(net, model_name, dataset_name, root, ctx):
+def _load_pretrained_params(net, model_name, dataset_name, root, ctx, ignore_extra=False):
     path = '_'.join([model_name, dataset_name])
     model_file = model_store.get_model_file(path, root=root)
-    net.load_parameters(model_file, ctx=ctx)
+    net.load_parameters(model_file, ctx=ctx, ignore_extra=ignore_extra)

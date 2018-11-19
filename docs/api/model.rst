@@ -29,6 +29,7 @@ Machine Translation
 .. autosummary::
     :nosignatures:
 
+    Seq2SeqEncoder
     TransformerEncoder
     TransformerEncoderCell
     PositionwiseFFN

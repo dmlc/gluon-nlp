@@ -22,6 +22,8 @@ import collections
 import unicodedata
 import six
 import io
+import json
+import gluonnlp
 
 
 def convert_to_unicode(text):
@@ -117,6 +119,22 @@ class FullTokenizer(object):
 
   def convert_tokens_to_ids(self, tokens):
     return convert_tokens_to_ids(self.vocab, tokens)
+
+  def convert_vocab(self):
+    idx_to_token = [None] * len(self.vocab)
+    for word in self.vocab:
+        idx = int(self.vocab[word])
+        idx_to_token[idx] = word
+    vocab_dict = {}
+    vocab_dict['idx_to_token'] = idx_to_token
+    vocab_dict['token_to_idx'] = dict(self.vocab)
+    vocab_dict['reserved_tokens'] = None
+    vocab_dict['unknown_token'] = None
+    vocab_dict['padding_token'] = None
+    vocab_dict['bos_token'] = None
+    vocab_dict['eos_token'] = None
+    json_str = json.dumps(vocab_dict)
+    return gluonnlp.Vocab.from_json(json_str)
 
 
 class BasicTokenizer(object):

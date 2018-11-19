@@ -211,10 +211,13 @@ def _slice_pad_length(num_items, length, overlap=0):
         return 0
 
 
-_vocab_sha1 = {'wikitext-2' : 'be36dc5238c2e7d69720881647ab72eb506d0131',
-               'gbw'        : 'ebb1a287ca14d8fa6f167c3a779e5e7ed63ac69f',
-               'WMT2014_src': '230ebb817b1d86950d71e2e765f192a4e4f34415',
-               'WMT2014_tgt': '230ebb817b1d86950d71e2e765f192a4e4f34415'}
+_vocab_sha1 = {'wikitext-2'                 : 'be36dc5238c2e7d69720881647ab72eb506d0131',
+               'gbw'                        : 'ebb1a287ca14d8fa6f167c3a779e5e7ed63ac69f',
+               'WMT2014_src'                : '230ebb817b1d86950d71e2e765f192a4e4f34415',
+               'WMT2014_tgt'                : '230ebb817b1d86950d71e2e765f192a4e4f34415',
+               'book_corpus_wiki_en_cased'  : '8b0b2a6ba1578914ff39ec66fa32dc337587e412',
+               'book_corpus_wiki_en_uncased': '0ff03c2f957b0f0013195b777ce344fef2e6faa4',
+               'wiki_multilingual'          : '085697804ccf4ef489877d0587d30e6532ae5291'}
 
 _url_format = '{repo_url}gluon/dataset/vocab/{file_name}.zip'
 

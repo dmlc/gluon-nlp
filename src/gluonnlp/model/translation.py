@@ -112,7 +112,7 @@ class NMTModel(Block):
                             nn.Embedding(input_dim=len(tgt_vocab), output_dim=embed_size,
                                          weight_initializer=embed_initializer))
                         self.tgt_embed.add(nn.Dropout(rate=embed_dropout))
-            # Construct tgt proj
+        # Construct tgt proj
         if tie_weights:
             self.tgt_proj = nn.Dense(units=len(tgt_vocab), flatten=False,
                                      params=self.tgt_embed.params, prefix='tgt_proj_')

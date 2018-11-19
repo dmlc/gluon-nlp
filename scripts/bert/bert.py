@@ -66,9 +66,10 @@ class BERTClassifier(Block):
         outputs : NDArray
             Shape (batch_size, num_classes)
         """
-        out, _ = self.bert.get_pooled_output(inputs, token_types, valid_length)
-        #print('pooled out', out.asnumpy().mean())
-        #out_np = out.asnumpy()
+        seq_out, pooler_out  = self.bert(inputs, token_types, valid_length)
+        #print('pooled out nd', pooler_out)
+        #print('pooled out', pooler_out.asnumpy().mean())
+        #out_np = pooler_out.asnumpy()
         #import numpy as np
         #np.save('/tmp/mx.out', out_np)
-        return self.classifier(out)
+        return self.classifier(pooler_out)
