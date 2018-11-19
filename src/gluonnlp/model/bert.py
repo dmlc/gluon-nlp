@@ -37,9 +37,14 @@ from .utils import _load_vocab, _load_pretrained_params
 ###############################################################################
 
 class BERTLayerNorm(HybridBlock):
-    """ BERT style Layer Normalization.
+    """BERT style Layer Normalization.
 
     Epsilon is added inside the square root.
+
+    Inputs:
+        - **data**: input tensor with arbitrary shape.
+    Outputs:
+        - **out**: output tensor with the same shape as `data`.
     """
     def __init__(self, epsilon=1e-12, in_channels=0, prefix=None, params=None):
         super(BERTLayerNorm, self).__init__(prefix=prefix, params=params)
@@ -88,6 +93,12 @@ class BERTPositionwiseFFN(BasePositionwiseFFN):
         Prefix for name of `Block`s (and name of weight if params is `None`).
     params : Parameter or None
         Container for weight sharing between cells. Created if `None`.
+
+    Inputs:
+        - **inputs** : input sequence of shape (batch_size, length, C_in).
+
+    Outputs:
+        - **outputs** : output encoding of shape (batch_size, length, C_out).
     """
     def __init__(self, units=512, hidden_size=2048, dropout=0.0, use_residual=True,
                  weight_initializer=None, bias_initializer='zeros',
@@ -137,6 +148,18 @@ class BERTEncoder(BaseTransformerEncoder):
         Prefix for name of `Block`s. (and name of weight if params is `None`).
     params : Parameter or None
         Container for weight sharing between cells. Created if `None`.
+
+    Inputs:
+        - **inputs** : input sequence of shape (batch_size, length, C_in)
+        - **states** : list of tensors for initial states and masks.
+        - **valid_length** : valid lengths of each sequence. Usually used when part of sequence
+            has been padded. Shape is (batch_size, )
+
+    Outputs:
+        - **outputs** : the output of the encoder. Shape is (batch_size, length, C_out)
+        - **additional_outputs** : list of tensors.
+            Either be an empty list or contains the attention weights in this step.
+            The attention weights will have shape (batch_size, num_heads, length, mem_length)
     """
     def __init__(self, attention_cell='multi_head', num_layers=2,
                  units=512, hidden_size=2048, max_length=50,
@@ -189,6 +212,15 @@ class BERTEncoderCell(BaseTransformerEncoderCell):
         Prefix for name of `Block`s. (and name of weight if params is `None`).
     params : Parameter or None
         Container for weight sharing between cells. Created if `None`.
+
+    Inputs:
+        - **inputs** : input sequence. Shape (batch_size, length, C_in)
+        - **mask** : mask for inputs. Shape (batch_size, length, length)
+
+    Outputs:
+        - **outputs**: output tensor of the transformer encoder cell.
+            Shape (batch_size, length, C_out)
+        - **additional_outputs**: the additional output of all the transformer encoder cell.
     """
     def __init__(self, attention_cell='multi_head', units=128,
                  hidden_size=512, num_heads=4, scaled=True,
@@ -219,7 +251,7 @@ class BERTModel(Block):
         The size of the vocabulary.
     token_type_vocab_size : int or None, default None
         The vocabulary size of token types.
-    units: int or None, default None
+    units : int or None, default None
         Number of units for the final pooler layer.
     embed_size : int or None, default None
         Size of the embedding vectors. It is used to generate the word and token type
@@ -239,7 +271,7 @@ class BERTModel(Block):
     use_pooler : bool, default True
         Whether to include the pooler which converts the encoded sequence tensor of shape
         (batch_size, seq_length, units) to a tensor of shape (batch_size, units)
-        for for segment level classification task.
+        for segment level classification task.
     use_decoder : bool, default True
         Whether to include the decoder for masked language model prediction.
     use_classifier : bool, default True
@@ -248,6 +280,24 @@ class BERTModel(Block):
         See document of `mx.gluon.Block`.
     params : ParameterDict or None
         See document of `mx.gluon.Block`.
+
+    Inputs:
+        - **inputs**: input sequence tensor of shape (batch_size, seq_length)
+        - **token_types**: input token type tensor of shape (batch_size, seq_length).
+            If the inputs contain two sequences, then the token type of the first
+            sequence differs from that of the second one.
+        - **valid_length**: tensor for valid length of shape (batch_size)
+
+    Outputs:
+        - **sequence_outputs**: output tensor of sequence encodings.
+            Shape (batch_size, seq_length, units).
+        - **pooled_output**: output tensor of pooled representation of the first tokens.
+            Returned only if use_pooler is True. Shape (batch_size, units)
+        - **classifier_output**: output tensor of next sentence classification prediction.
+            Returned only if use_classifier is True. Shape (batch_size)
+        - **decode_output**: output tensor of sequence decoding for masked language model
+            prediction. Returned only if use_decoder True.
+            Shape (batch_size, seq_length, vocab_size)
     """
     def __init__(self, encoder, vocab_size=None, token_type_vocab_size=None, units=None,
                  embed_size=None, embed_dropout=0.0, embed_initializer=None,
@@ -268,12 +318,14 @@ class BERTModel(Block):
         if self._use_pooler:
             # Construct pooler
             self.pooler = self._get_pooler(units, 'pooler_')
+            if self._use_classifier:
+                # Construct classifier for next sentence predicition
+                self.classifier = self._get_classifier('cls_')
+        else:
+            assert not use_classifier, "Cannot use classifier if use_pooler is False"
         if self._use_decoder:
             # Construct decoder for masked language model
             self.decoder = self._get_decoder(units, vocab_size, self.word_embed, 'decoder_')
-        if self._use_classifier:
-            # Construct classifier for next sentence predicition
-            self.classifier = self._get_classifier('cls_')
 
     def _get_classifier(self, prefix):
         """ Construct a decoder for the masked language model task """
@@ -322,19 +374,6 @@ class BERTModel(Block):
         """Generate the representation given the inputs.
 
         This is used in training or fine-tuning a BERT model.
-
-        Parameters
-        ----------
-        inputs : NDArray
-        token_types : NDArray
-        valid_length : NDArray or None
-
-        Returns
-        -------
-        outputs : NDArray
-            Shape (batch_size, sequence_length, C_out)
-        additional_outputs : list
-            Additional outputs of the encoder, e.g, the attention weights
         """
         outputs = []
         seq_out, states = self._encode_sequence(inputs, token_types, valid_length)
@@ -355,19 +394,6 @@ class BERTModel(Block):
         """Generate the representation given the input sequences.
 
         This is used for pre-training or fine-tuning a BERT model.
-
-        Parameters
-        ----------
-        inputs : NDArray
-        token_types : NDArray
-        valid_length : NDArray or None
-
-        Returns
-        -------
-        outputs : NDArray
-            Shape (batch_size, sequence_length, C_out)
-        additional_outputs : list
-            Additional outputs of the encoder, e.g, the attention weights
         """
         # embedding
         word_embedding = self.word_embed(inputs)
@@ -381,19 +407,6 @@ class BERTModel(Block):
         """Generate the representation given the inputs.
 
         This is used for pre-training or fine-tuning a BERT model.
-
-        Parameters
-        ----------
-        inputs : NDArray
-        token_types : NDArray
-        valid_length : NDArray or None
-
-        Returns
-        -------
-        outputs : NDArray
-            Shape (batch_size, C_out)
-        additional_outputs : list
-            Additional outputs of the encoder, e.g, the attention weights
         """
         outputs = sequence.slice(begin=(None, 0, None), end=(None, 1, None)).squeeze(axis=1)
         return self.pooler(outputs)
@@ -402,18 +415,6 @@ class BERTModel(Block):
         """Generate unormalized prediction for the masked language model task.
 
         This is only used for pre-training the BERT model.
-
-        Parameters
-        ----------
-        # TODO add shape
-        inputs : NDArray
-        token_types : NDArray
-        valid_length : NDArray or None
-
-        Returns
-        -------
-        outputs : NDArray
-            Shape (?)
         """
         if valid_length is None:
             last_step = sequence.slice(begin=(None, -1, None), end=(None, None, None))

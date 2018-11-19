@@ -16,10 +16,10 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-"""Machine translation models and translators."""
+"""BERT models."""
 
 
-__all__ = []
+__all__ = ['BERTClassifier']
 
 import warnings
 import numpy as np
@@ -28,7 +28,7 @@ from mxnet.gluon import nn
 import mxnet as mx
 
 class BERTClassifier(Block):
-    """ Model for sentence classification task with BERT.
+    """Model for sentence (pair) classification task with BERT.
 
     Parameters
     ----------
@@ -57,9 +57,13 @@ class BERTClassifier(Block):
 
         Parameters
         ----------
-        inputs : NDArray
-        token_types : NDArray
-        valid_length : NDArray or None
+        inputs : NDArray, shape (batch_size, seq_length)
+            Input words for the sequences.
+        token_types : NDArray, shape (batch_size, seq_length)
+            Input token types for the sequences. If the inputs contain two sequences,
+            then the token type of the first sequence differs from that of the second one.
+        valid_length : NDArray or None, shape (batch_size)
+            Valid length of the sequence. This is used to mask the padded tokens.
 
         Returns
         -------
@@ -67,9 +71,4 @@ class BERTClassifier(Block):
             Shape (batch_size, num_classes)
         """
         seq_out, pooler_out  = self.bert(inputs, token_types, valid_length)
-        #print('pooled out nd', pooler_out)
-        #print('pooled out', pooler_out.asnumpy().mean())
-        #out_np = pooler_out.asnumpy()
-        #import numpy as np
-        #np.save('/tmp/mx.out', out_np)
         return self.classifier(pooler_out)

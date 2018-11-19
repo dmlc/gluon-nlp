@@ -26,18 +26,16 @@ import tokenization
 
 @register(segment=['train', 'dev', 'test'])
 class MRPCDataset(TSVDataset):
-    """A Small Translation Dataset for Testing Scripts.
+    """The Microsoft Research Paraphrase Corpus dataset.
 
     Parameters
     ----------
     segment : str or list of str, default 'train'
         Dataset segment. Options are 'train', 'val', 'test' or their combinations.
-    src_lang : str, default 'en'
-        The source language. Option for source and target languages are 'en' <-> 'de'
-    tgt_lang : str, default 'de'
-        The target language. Option for source and target languages are 'en' <-> 'de'
     root : str, default '$GLUE_DIR/MRPC'
-        Path to temp folder for storing data.
+        Path to the folder which stores the MRPC dataset.
+        The datset can be downloaded by the following script:
+        https://gist.github.com/W4ngatang/60c2bdb54d156a41194446737ce03e2e
     """
     def __init__(self, segment='train',
                  root=os.path.join(os.environ['GLUE_DIR'], 'MRPC')):
@@ -50,7 +48,7 @@ class MRPCDataset(TSVDataset):
 
     @staticmethod
     def get_labels():
-        """ Get classification label ids of the dataset. """
+        """Get classification label ids of the dataset."""
         return ["0", "1"]
 
 def _truncate_seq_pair(tokens_a, tokens_b, max_length):

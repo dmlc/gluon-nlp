@@ -82,6 +82,12 @@ class BasePositionwiseFFN(HybridBlock):
     params : Parameter or None
         Container for weight sharing between cells.
         Created if `None`.
+
+    Inputs:
+        - **inputs** : input sequence of shape (batch_size, length, C_in).
+
+    Outputs:
+        - **outputs** : output encoding of shape (batch_size, length, C_out).
     """
     def __init__(self, units=512, hidden_size=2048, dropout=0.0, use_residual=True,
                  weight_initializer=None, bias_initializer='zeros', activation='relu',
@@ -488,6 +494,8 @@ class PositionwiseFFN(BasePositionwiseFFN):
     """Structure of the Positionwise Feed-Forward Neural Network for
     Transformer.
 
+    Computes the positionwise encoding of the inputs.
+
     Parameters
     ----------
     units : int
@@ -507,6 +515,12 @@ class PositionwiseFFN(BasePositionwiseFFN):
         Prefix for name of `Block`s (and name of weight if params is `None`).
     params : Parameter or None
         Container for weight sharing between cells. Created if `None`.
+
+    Inputs:
+        - **inputs** : input sequence of shape (batch_size, length, C_in).
+
+    Outputs:
+        - **outputs** : output encoding of shape (batch_size, length, C_out).
     """
     def __init__(self, units=512, hidden_size=2048, dropout=0.0, use_residual=True,
                  weight_initializer=None, bias_initializer='zeros',
@@ -547,6 +561,15 @@ class TransformerEncoderCell(BaseTransformerEncoderCell):
         Prefix for name of `Block`s. (and name of weight if params is `None`).
     params : Parameter or None
         Container for weight sharing between cells. Created if `None`.
+
+    Inputs:
+        - **inputs** : input sequence. Shape (batch_size, length, C_in)
+        - **mask** : mask for inputs. Shape (batch_size, length, length)
+
+    Outputs:
+        - **outputs**: output tensor of the transformer encoder cell.
+            Shape (batch_size, length, C_out)
+        - **additional_outputs**: the additional output of all the transformer encoder cell.
     """
     def __init__(self, attention_cell='multi_head', units=128,
                  hidden_size=512, num_heads=4, scaled=True,
@@ -597,6 +620,19 @@ class TransformerEncoder(BaseTransformerEncoder):
         Prefix for name of `Block`s. (and name of weight if params is `None`).
     params : Parameter or None
         Container for weight sharing between cells. Created if `None`.
+
+    Inputs:
+        - **inputs** : input sequence of shape (batch_size, length, C_in)
+        - **states** : list of tensors for initial states and masks.
+        - **valid_length** : valid lengths of each sequence. Usually used when part of sequence
+            has been padded. Shape is (batch_size, )
+
+    Outputs:
+        - **outputs** : the output of the encoder. Shape is (batch_size, length, C_out)
+        - **additional_outputs** : list of tensors.
+            Either be an empty list or contains the attention weights in this step.
+            The attention weights will have shape (batch_size, length, mem_length) or
+            (batch_size, num_heads, length, mem_length)
     """
     def __init__(self, attention_cell='multi_head', num_layers=2,
                  units=512, hidden_size=2048, max_length=50,
@@ -626,6 +662,7 @@ class TransformerDecoderCell(HybridBlock):
         Arguments of the attention cell.
         Can be 'multi_head', 'scaled_luong', 'scaled_dot', 'dot', 'cosine', 'normed_mlp', 'mlp'
     units : int
+        Number of units for the output
     hidden_size : int
         number of units in the hidden layer of position-wise feed-forward networks
     num_heads : int

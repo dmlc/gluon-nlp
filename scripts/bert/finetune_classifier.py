@@ -1,17 +1,16 @@
 """
-Bidirectional Encoder Representations from Transformers.
+Sentence Pair Classification with Bidirectional Encoder Representations from Transformers
 
-=================================
+=========================================================================================
 
-This example shows how to implement the Transformer model with Gluon NLP Toolkit.
+This example shows how to implement finetune a model with pre-trained BERT parameters for
+sentence pair classification, with Gluon NLP Toolkit.
 
-@inproceedings{vaswani2017attention,
-  title={Attention is all you need},
-  author={Vaswani, Ashish and Shazeer, Noam and Parmar, Niki and Uszkoreit, Jakob and Jones,
-          Llion and Gomez, Aidan N and Kaiser, Lukasz and Polosukhin, Illia},
-  booktitle={Advances in Neural Information Processing Systems},
-  pages={6000--6010},
-  year={2017}
+@article{devlin2018bert,
+  title={BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding},
+  author={Devlin, Jacob and Chang, Ming-Wei and Lee, Kenton and Toutanova, Kristina},
+  journal={arXiv preprint arXiv:1810.04805},
+  year={2018}
 }
 """
 
