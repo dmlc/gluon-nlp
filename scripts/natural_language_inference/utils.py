@@ -7,7 +7,6 @@ Copyright 2018 Mengxiao Lin <linmx0130@gmail.com>
 
 import gluonnlp as nlp
 import nltk
-nltk.download('punkt')
 
 def tokenize_and_index(sentence: str, embedding: nlp.embedding.TokenEmbedding):
     """
