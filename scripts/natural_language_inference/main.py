@@ -1,7 +1,7 @@
 # pylint: disable=E1101,R0914
 """
-main_infra.py
-Main of NLI script in gluon-nlp. Infra-sentence attention model.
+main.py
+Main of NLI script in gluon-nlp. Intra-sentence attention model.
 
 Copyright 2018 Mengxiao Lin <linmx0130@gmail.com>
 """
@@ -18,17 +18,19 @@ from utils import tokenize_and_index
 
 LABEL_TO_IDX = {'neutral': 0, 'contradiction': 1, 'entailment': 2}
 
-class Network(gluon.HybridBlock):
+class NLIModel(gluon.HybridBlock):
     """
-    Network of Infra-attention NLI.
+    A Decomposable Attention Model for Natural Language Inference
+    using intra-sentence attention.
+    Arxiv paper: https://arxiv.org/pdf/1606.01933.pdf
     """
     def __init__(self, word_embed_size, hidden_size, **kwargs):
-        super(Network, self).__init__(**kwargs)
+        super(NLIModel, self).__init__(**kwargs)
         self.word_embed_size = word_embed_size
         self.hidden_size = hidden_size
         with self.name_scope():
             self.lin_proj = gluon.nn.Dense(hidden_size, in_units=word_embed_size, activation='relu', flatten=False)
-            self.intra_atten = IntraSentenceAttention(hidden_size, hidden_size)
+            self.intra_attention = IntraSentenceAttention(hidden_size, hidden_size)
             self.model = DecomposableAttention(hidden_size*2, hidden_size, 3)
 
     def hybrid_forward(self, F, sentence1, sentence2):
@@ -36,9 +38,9 @@ class Network(gluon.HybridBlock):
         Model forward definition
         """
         feature1 = self.lin_proj(sentence1)
-        feature1 = F.concat(feature1, self.intra_atten(feature1), dim=-1)
+        feature1 = F.concat(feature1, self.intra_attention(feature1), dim=-1)
         feature2 = self.lin_proj(sentence2)
-        feature2 = F.concat(feature2, self.intra_atten(feature2), dim=-1)
+        feature2 = F.concat(feature2, self.intra_attention(feature2), dim=-1)
         pred = self.model(feature1, feature2)
         return pred
 
@@ -194,11 +196,11 @@ if __name__ == '__main__':
     GLOVE = nlp.embedding.create(ARGS.embedding, source=ARGS.embedding_source)
     if ARGS.mode == 'train':
         TRAIN_SET = prepare_dataset(ARGS, 'train_set')
-        NET = Network(ARGS.embedding_size, 200)
+        NET = NLIModel(ARGS.embedding_size, 200)
         train_network(NET, TRAIN_SET, GLOVE, mx.gpu(), ARGS)
     elif ARGS.mode == 'test':
         TEST_SET = prepare_dataset(ARGS, 'dev_set')
-        NET = Network(ARGS.embedding_size, 200)
+        NET = NLIModel(ARGS.embedding_size, 200)
         CTX = mx.gpu()
         NET.load_parameters(ARGS.model, ctx=CTX)
         test_network(NET, TEST_SET, GLOVE, CTX)
