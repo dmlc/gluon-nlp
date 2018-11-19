@@ -88,9 +88,9 @@ def _build_vocab(data_name, train_dataset, test_dataset):
     all_token.extend(line)
     vocab = nlp.Vocab(nlp.data.count_tokens(all_token))
     vocab.set_embedding(nlp.embedding.create('Word2Vec', source='GoogleNews-vectors-negative300'))
-    for line in vocab.embedding._idx_to_token:
-        if (vocab.embedding[line] == nd.zeros(300)).sum() == 300:
-            vocab.embedding[line] = nd.random.normal(-1.0, 1.0, 300)
+    for word in vocab.embedding._idx_to_token:
+        if (vocab.embedding[word] == nd.zeros(300)).sum() == 300:
+            vocab.embedding[word] = nd.random.normal(-1.0, 1.0, 300)
     vocab.embedding['<unk>'] = nd.zeros(300)
     vocab.embedding['<pad>'] = nd.zeros(300)
     vocab.embedding['<bos>'] = nd.zeros(300)

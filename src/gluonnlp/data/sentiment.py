@@ -32,8 +32,48 @@ from mxnet.gluon.utils import download, check_sha1, _get_repo_file_url
 from .registry import register
 from .utils import _get_home_dir
 
+
+class SentimentDataset(SimpleDataset):
+    """Base class for sentiment analysis data sets.
+
+    Parameters
+    ----------
+    segment : str
+        Dataset segment.
+    root : str
+        Path to temp folder for storing data.
+    """
+    def __init__(self, segment, root):
+        root = os.path.expanduser(root)
+        if not os.path.isdir(root):
+            os.makedirs(root)
+        self._root = root
+        self._segment = segment
+        self._get_data()
+        super(SentimentDataset, self).__init__(self._read_data())
+
+    def _get_data(self):
+        data_file_name, data_hash = self._data_file()[self._segment]
+        root = self._root
+        path = os.path.join(root, data_file_name)
+        if not os.path.exists(path) or not check_sha1(path, data_hash):
+            download(_get_repo_file_url(self._repo_dir(), data_file_name),
+                     path=root, sha1_hash=data_hash)
+
+    def _read_data(self):
+        with open(os.path.join(self._root, self._segment + '.json')) as f:
+            samples = json.load(f)
+        return samples
+
+    def _data_file(self):
+        raise NotImplementedError
+
+    def _repo_dir(self):
+        raise NotImplementedError
+
+
 @register(segment=['train', 'test', 'unsup'])
-class IMDB(SimpleDataset):
+class IMDB(SentimentDataset):
     """IMDB reviews for sentiment analysis.
 
     From
@@ -48,35 +88,18 @@ class IMDB(SimpleDataset):
         MXNET_HOME defaults to '~/.mxnet'.
     """
     def __init__(self, segment='train', root=os.path.join(_get_home_dir(), 'datasets', 'imdb')):
-        self._data_file = {'train': ('train.json',
-                                     '516a0ba06bca4e32ee11da2e129f4f871dff85dc'),
-                           'test': ('test.json',
-                                    '7d59bd8899841afdc1c75242815260467495b64a'),
-                           'unsup': ('unsup.json',
-                                     'f908a632b7e7d7ecf113f74c968ef03fadfc3c6c')}
-        root = os.path.expanduser(root)
-        if not os.path.isdir(root):
-            os.makedirs(root)
-        self._root = root
-        self._segment = segment
-        self._get_data()
-        super(IMDB, self).__init__(self._read_data())
+        super(IMDB, self).__init__(segment, root)
 
-    def _get_data(self):
-        data_file_name, data_hash = self._data_file[self._segment]
-        root = self._root
-        path = os.path.join(root, data_file_name)
-        if not os.path.exists(path) or not check_sha1(path, data_hash):
-            download(_get_repo_file_url('gluon/dataset/imdb', data_file_name),
-                     path=root, sha1_hash=data_hash)
+    def _data_file(self):
+        return {'train': ('train.json', '516a0ba06bca4e32ee11da2e129f4f871dff85dc'),
+                'test': ('test.json', '7d59bd8899841afdc1c75242815260467495b64a'),
+                'unsup': ('unsup.json', 'f908a632b7e7d7ecf113f74c968ef03fadfc3c6c')}
 
-    def _read_data(self):
-        with open(os.path.join(self._root, self._segment + '.json')) as f:
-            samples = json.load(f)
-        return samples
+    def _repo_dir(self):
+        return 'gluon/dataset/imdb'
 
 
-class MR(SimpleDataset):
+class MR(SentimentDataset):
     """Movie reviews for sentiment analysis.
 
     From
@@ -89,30 +112,17 @@ class MR(SimpleDataset):
         MXNET_HOME defaults to '~/.mxnet'.
     """
     def __init__(self, root=os.path.join(_get_home_dir(), 'datasets', 'mr')):
-        self._data_file = {'all': ('all.json',
-                                   '7606efec578d9613f5c38bf2cef8d3e4e6575b2c')}
-        root = os.path.expanduser(root)
-        if not os.path.isdir(root):
-            os.makedirs(root)
-        self._root = root
-        self._get_data()
-        super(MR, self).__init__(self._read_data())
+        super(MR, self).__init__('all', root)
 
-    def _get_data(self):
-        data_file_name, data_hash = self._data_file['all']
-        root = self._root
-        path = os.path.join(root, data_file_name)
-        if not os.path.exists(path) or not check_sha1(path, data_hash):
-            download(_get_repo_file_url('gluon/dataset/mr', data_file_name),
-                     path=root, sha1_hash=data_hash)
+    def _data_file(self):
+        return {'all': ('all.json', '7606efec578d9613f5c38bf2cef8d3e4e6575b2c')}
 
-    def _read_data(self):
-        with open(os.path.join(self._root, 'all.json')) as f:
-            samples = json.load(f)
-        return samples
+    def _repo_dir(self):
+        return 'gluon/dataset/mr'
 
 
-class TREC(SimpleDataset):
+@register(segment=['train', 'test'])
+class TREC(SentimentDataset):
     """Question dataset for sentiment analysis.
 
     From
@@ -127,33 +137,17 @@ class TREC(SimpleDataset):
         MXNET_HOME defaults to '~/.mxnet'.
     """
     def __init__(self, segment='train', root=os.path.join(_get_home_dir(), 'datasets', 'trec')):
-        self._data_file = {'train': ('train.json',
-                                     'f764e8e052239c66e96e15133c8fc4028df34a84'),
-                           'test': ('test.json',
-                                    'df8c6ffb90831e553617dbaab7119e0526b98f35')}
-        root = os.path.expanduser(root)
-        if not os.path.isdir(root):
-            os.makedirs(root)
-        self._root = root
-        self._segment = segment
-        self._get_data()
-        super(TREC, self).__init__(self._read_data())
+        super(TREC, self).__init__(segment, root)
 
-    def _get_data(self):
-        data_file_name, data_hash = self._data_file[self._segment]
-        root = self._root
-        path = os.path.join(root, data_file_name)
-        if not os.path.exists(path) or not check_sha1(path, data_hash):
-            download(_get_repo_file_url('gluon/dataset/trec', data_file_name),
-                     path=root, sha1_hash=data_hash)
+    def _data_file(self):
+        return {'train': ('train.json', 'f764e8e052239c66e96e15133c8fc4028df34a84'),
+                'test': ('test.json', 'df8c6ffb90831e553617dbaab7119e0526b98f35')}
 
-    def _read_data(self):
-        with open(os.path.join(self._root, self._segment+'.json')) as f:
-            samples = json.load(f)
-        return samples
+    def _repo_dir(self):
+        return 'gluon/dataset/trec'
 
 
-class SUBJ(SimpleDataset):
+class SUBJ(SentimentDataset):
     """Subjectivity dataset for sentiment analysis.
 
     Parameters
@@ -163,30 +157,17 @@ class SUBJ(SimpleDataset):
         MXNET_HOME defaults to '~/.mxnet'.
     """
     def __init__(self, root=os.path.join(_get_home_dir(), 'datasets', 'subj')):
-        self._data_file = {'all': ('all.json',
-                                   '9e7bd1daa359c24abe1fac767d0e0af7bc114045')}
-        root = os.path.expanduser(root)
-        if not os.path.isdir(root):
-            os.makedirs(root)
-        self._root = root
-        self._get_data()
-        super(SUBJ, self).__init__(self._read_data())
+        super(SUBJ, self).__init__('all', root)
 
-    def _get_data(self):
-        data_file_name, data_hash = self._data_file['all']
-        root = self._root
-        path = os.path.join(root, data_file_name)
-        if not os.path.exists(path) or not check_sha1(path, data_hash):
-            download(_get_repo_file_url('gluon/dataset/subj', data_file_name),
-                     path=root, sha1_hash=data_hash)
+    def _data_file(self):
+        return {'all': ('all.json', '9e7bd1daa359c24abe1fac767d0e0af7bc114045')}
 
-    def _read_data(self):
-        with open(os.path.join(self._root, 'all.json')) as f:
-            samples = json.load(f)
-        return samples
+    def _repo_dir(self):
+        return 'gluon/dataset/subj'
 
 
-class SST_1(SimpleDataset):
+@register(segment=['train', 'test'])
+class SST_1(SentimentDataset):
     """Stanford Sentiment Treebank: an extension of the MR data set.
     However, train/dev/test splits are provided and labels are fine-grained
     (very positive, positive, neutral, negative, very negative).
@@ -203,33 +184,18 @@ class SST_1(SimpleDataset):
         MXNET_HOME defaults to '~/.mxnet'.
     """
     def __init__(self, segment='train', root=os.path.join(_get_home_dir(), 'datasets', 'sst-1')):
-        self._data_file = {'train': ('train.json',
-                                     'c369d7b1e46134e87e18eb5a1cadf0f2bfcd1787'),
-                           'test': ('test.json',
-                                    'a6999ca5f3d51b61f63ee2ede03ff72e699ac20e')}
-        root = os.path.expanduser(root)
-        if not os.path.isdir(root):
-            os.makedirs(root)
-        self._root = root
-        self._segment = segment
-        self._get_data()
-        super(SST_1, self).__init__(self._read_data())
+        super(SST_1, self).__init__(segment, root)
 
-    def _get_data(self):
-        data_file_name, data_hash = self._data_file[self._segment]
-        root = self._root
-        path = os.path.join(root, data_file_name)
-        if not os.path.exists(path) or not check_sha1(path, data_hash):
-            download(_get_repo_file_url('gluon/dataset/sst-1', data_file_name),
-                     path=root, sha1_hash=data_hash)
+    def _data_file(self):
+        return {'train': ('train.json', 'c369d7b1e46134e87e18eb5a1cadf0f2bfcd1787'),
+                'test': ('test.json', 'a6999ca5f3d51b61f63ee2ede03ff72e699ac20e')}
 
-    def _read_data(self):
-        with open(os.path.join(self._root, self._segment+'.json')) as f:
-            samples = json.load(f)
-        return samples
+    def _repo_dir(self):
+        return 'gluon/dataset/sst-1'
 
 
-class SST_2(SimpleDataset):
+@register(segment=['train', 'test'])
+class SST_2(SentimentDataset):
     """Stanford Sentiment Treebank: an extension of the MR data set.
     Same as the SST-1 data set except that neutral reviews are removed
     and labels are binary (positive, negative).
@@ -246,27 +212,11 @@ class SST_2(SimpleDataset):
         MXNET_HOME defaults to '~/.mxnet'.
     """
     def __init__(self, segment='train', root=os.path.join(_get_home_dir(), 'datasets', 'sst-2')):
-        self._data_file = {'train': ('train.json',
-                                     '12f4fb2661ad8e39daa45a3369bedb0cd49ad1f4'),
-                           'test': ('test.json',
-                                    '34dfb27ef788599a0c424d05a97c1c4389f68c85')}
-        root = os.path.expanduser(root)
-        if not os.path.isdir(root):
-            os.makedirs(root)
-        self._root = root
-        self._segment = segment
-        self._get_data()
-        super(SST_2, self).__init__(self._read_data())
+        super(SST_2, self).__init__(segment, root)
 
-    def _get_data(self):
-        data_file_name, data_hash = self._data_file[self._segment]
-        root = self._root
-        path = os.path.join(root, data_file_name)
-        if not os.path.exists(path) or not check_sha1(path, data_hash):
-            download(_get_repo_file_url('gluon/dataset/sst-2', data_file_name),
-                     path=root, sha1_hash=data_hash)
+    def _data_file(self):
+        return {'train': ('train.json', '12f4fb2661ad8e39daa45a3369bedb0cd49ad1f4'),
+                'test': ('test.json', '34dfb27ef788599a0c424d05a97c1c4389f68c85')}
 
-    def _read_data(self):
-        with open(os.path.join(self._root, self._segment+'.json')) as f:
-            samples = json.load(f)
-        return samples
+    def _repo_dir(self):
+        return 'gluon/dataset/sst-2'
