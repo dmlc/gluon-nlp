@@ -27,8 +27,8 @@ class IntraSentenceAttention(gluon.HybridBlock):
     def hybrid_forward(self, F, feature_a):
         # batch_size, length, inp_size = feature_a.shape
         tilde_a = self.intra_attn_emb(feature_a)
-        e_matrix = F.linalg.gemm2(A=tilde_a, B=tilde_a.transpose([0, 2, 1]))
-        alpha = F.linalg.gemm2(e_matrix.softmax(), tilde_a)
+        e_matrix = F.batch_dot(tilde_a, tilde_a, transpose_b=True)
+        alpha = F.batch_dot(e_matrix.softmax(), tilde_a)
         return alpha
 
 class DecomposableAttention(gluon.HybridBlock):
@@ -68,11 +68,11 @@ class DecomposableAttention(gluon.HybridBlock):
         tilde_b = self.f(b)  # shape = [B, L2, H]
         # attention
         # e.shape = [B, L1, L2]
-        e = F.linalg.gemm2(A=tilde_a, B=tilde_b.transpose([0, 2, 1]))
+        e = F.batch_dot(tilde_a, tilde_b, transpose_b=True)
         # beta: b align to a, [B, L1, H]
-        beta = F.linalg.gemm2(e.softmax(), tilde_b)
+        beta = F.batch_dot(e.softmax(), tilde_b)
         # alpha: a align to b, [B, L2, H]
-        alpha = F.linalg.gemm2(e.transpose([0, 2, 1]).softmax(), tilde_a)
+        alpha = F.batch_dot(e.transpose([0, 2, 1]).softmax(), tilde_a)
         # compare
         feature1 = self.g(F.concat(tilde_a, beta, dim=2))
         feature2 = self.g(F.concat(tilde_b, alpha, dim=2))
