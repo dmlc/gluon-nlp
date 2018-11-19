@@ -20,8 +20,6 @@
 from __future__ import print_function
 
 import datetime
-import itertools
-import json
 import os
 import random
 
