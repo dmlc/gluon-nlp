@@ -18,7 +18,7 @@ from utils import tokenize_and_index
 
 LABEL_TO_IDX = {'neutral': 0, 'contradiction': 1, 'entailment': 2}
 
-class Network(gluon.Block):
+class Network(gluon.HybridBlock):
     """
     Network of Infra-attention NLI.
     """
@@ -27,28 +27,18 @@ class Network(gluon.Block):
         self.word_embed_size = word_embed_size
         self.hidden_size = hidden_size
         with self.name_scope():
-            self.lin_proj = gluon.nn.Dense(hidden_size, in_units=word_embed_size, activation='relu')
+            self.lin_proj = gluon.nn.Dense(hidden_size, in_units=word_embed_size, activation='relu', flatten=False)
             self.intra_atten = IntraSentenceAttention(hidden_size, hidden_size)
             self.model = DecomposableAttention(hidden_size*2, hidden_size, 3)
 
-    def forward(self, sentence1, sentence2):
+    def hybrid_forward(self, F, sentence1, sentence2):
         """
         Model forward definition
         """
-        batch_size1, length1, dimension1 = sentence1.shape
-        batch_size2, length2, dimension2 = sentence2.shape
-        assert batch_size1 == batch_size2
-        assert dimension1 == dimension2
-        batch_size = batch_size1
-        dimension = dimension1
-        feature1 = self.lin_proj(
-            sentence1.reshape(batch_size * length1, dimension)
-            ).reshape(batch_size, length1, self.hidden_size)
-        feature1 = mx.nd.concat(feature1, self.intra_atten(feature1), dim=-1)
-        feature2 = self.lin_proj(
-            sentence2.reshape(batch_size * length2, dimension)
-            ).reshape(batch_size, length2, self.hidden_size)
-        feature2 = mx.nd.concat(feature2, self.intra_atten(feature2), dim=-1)
+        feature1 = self.lin_proj(sentence1)
+        feature1 = F.concat(feature1, self.intra_atten(feature1), dim=-1)
+        feature2 = self.lin_proj(sentence2)
+        feature2 = F.concat(feature2, self.intra_atten(feature2), dim=-1)
         pred = self.model(feature1, feature2)
         return pred
 
@@ -96,6 +86,7 @@ def train_network(model, train_set, embedding, ctx, args):
     """
     Train the network.
     """
+    model.hybridize()
     model.collect_params().initialize(
         mx.init.Xavier(), force_reinit=True, ctx=ctx)
     celoss = gluon.loss.SoftmaxCrossEntropyLoss()

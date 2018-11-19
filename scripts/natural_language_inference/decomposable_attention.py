@@ -6,10 +6,10 @@ Part of NLI script of gluon-nlp. Implementation of Decomposable Attentiontion.
 Copyright 2018 Mengxiao Lin <linmx0130@gmail.com>.
 """
 
-from mxnet import nd, gluon
+from mxnet import gluon
 from mxnet.gluon import nn
 
-class IntraSentenceAttention(gluon.Block):
+class IntraSentenceAttention(gluon.HybridBlock):
     """
     Intra Sentence Attentiontion block.
     """
@@ -19,21 +19,19 @@ class IntraSentenceAttention(gluon.Block):
         self.hidden_size = hidden_size
         with self.name_scope():
             # F_intra in the paper
-            self.intra_attn_emb = nn.Sequential()
-            self.intra_attn_emb.add(nn.Dense(hidden_size, in_units=inp_size, activation='relu'))
-            self.intra_attn_emb.add(nn.Dense(hidden_size, in_units=hidden_size, activation='relu'))
-            self.intra_attn_emb.add(nn.Dense(hidden_size, in_units=hidden_size))
+            self.intra_attn_emb = nn.HybridSequential()
+            self.intra_attn_emb.add(nn.Dense(hidden_size, in_units=inp_size, activation='relu', flatten=False))
+            self.intra_attn_emb.add(nn.Dense(hidden_size, in_units=hidden_size, activation='relu', flatten=False))
+            self.intra_attn_emb.add(nn.Dense(hidden_size, in_units=hidden_size, flatten=False))
 
-    def forward(self, feature_a):
-        batch_size, length, inp_size = feature_a.shape
-        tilde_a = self.intra_attn_emb(
-            feature_a.reshape(batch_size * length, inp_size)).reshape(
-                batch_size, length, self.hidden_size)
-        e_matrix = nd.linalg.gemm2(A=tilde_a, B=tilde_a.transpose([0, 2, 1]))
-        alpha = nd.linalg.gemm2(nd.softmax(e_matrix), tilde_a)
+    def hybrid_forward(self, F, feature_a):
+        # batch_size, length, inp_size = feature_a.shape
+        tilde_a = self.intra_attn_emb(feature_a)
+        e_matrix = F.linalg.gemm2(A=tilde_a, B=tilde_a.transpose([0, 2, 1]))
+        alpha = F.linalg.gemm2(e_matrix.softmax(), tilde_a)
         return alpha
 
-class DecomposableAttention(gluon.Block):
+class DecomposableAttention(gluon.HybridBlock):
     """
     Decomposable Attentiontion block.
     """
@@ -41,17 +39,17 @@ class DecomposableAttention(gluon.Block):
         super(DecomposableAttention, self).__init__(**kwargs)
         with self.name_scope():
             # attention function
-            self.f = nn.Sequential()
-            self.f.add(nn.Dense(hidden_size, in_units=inp_size, activation='relu'))
-            self.f.add(nn.Dense(hidden_size, in_units=hidden_size, activation='relu'))
-            self.f.add(nn.Dense(hidden_size, in_units=hidden_size))
+            self.f = nn.HybridSequential()
+            self.f.add(nn.Dense(hidden_size, in_units=inp_size, activation='relu', flatten=False))
+            self.f.add(nn.Dense(hidden_size, in_units=hidden_size, activation='relu', flatten=False))
+            self.f.add(nn.Dense(hidden_size, in_units=hidden_size, flatten=False))
             # compare function
-            self.g = nn.Sequential()
-            self.g.add(nn.Dense(hidden_size, in_units=hidden_size * 2, activation='relu'))
-            self.g.add(nn.Dense(hidden_size, in_units=hidden_size, activation='relu'))
-            self.g.add(nn.Dense(hidden_size, in_units=hidden_size))
+            self.g = nn.HybridSequential()
+            self.g.add(nn.Dense(hidden_size, in_units=hidden_size * 2, activation='relu', flatten=False))
+            self.g.add(nn.Dense(hidden_size, in_units=hidden_size, activation='relu', flatten=False))
+            self.g.add(nn.Dense(hidden_size, in_units=hidden_size, flatten=False))
             # predictor
-            self.h = nn.Sequential()
+            self.h = nn.HybridSequential()
             self.h.add(nn.Dense(hidden_size, in_units=hidden_size * 2, activation='relu'))
             self.h.add(nn.Dense(hidden_size, in_units=hidden_size, activation='relu'))
             self.h.add(nn.Dense(num_class, in_units=hidden_size))
@@ -59,41 +57,26 @@ class DecomposableAttention(gluon.Block):
         self.hidden_size = hidden_size
         self.inp_size = inp_size
 
-    def forward(self, a, b):
+    def hybrid_forward(self, F, a, b):
         """
         Forward of Decomposable Attentiontion layer
         """
-        batch_size1, length1, hidden_size1 = a.shape
-        batch_size2, length2, hidden_size2 = b.shape
-        assert batch_size1 == batch_size2
-        assert hidden_size1 == hidden_size2
-        assert hidden_size1 == self.inp_size
-        hidden_size = hidden_size1
-        batch_size = batch_size1
+        # a.shape = [B, L1, H]
+        # b.shape = [B, L2, H]
         # extract features
-        tilde_a = self.f(
-            a.reshape(batch_size * length1, hidden_size)).reshape(
-                batch_size, length1, self.hidden_size)  # shape = [B, L1, H]
-        tilde_b = self.f(
-            b.reshape(batch_size * length2, hidden_size)).reshape(
-                batch_size, length2, self.hidden_size)  # shape = [B, L2, H]
+        tilde_a = self.f(a)  # shape = [B, L1, H]
+        tilde_b = self.f(b)  # shape = [B, L2, H]
         # attention
-        # e shape = [B, L1 , L2]
-        e = nd.linalg.gemm2(A=tilde_a, B=tilde_b.transpose([0, 2, 1]))
+        # e.shape = [B, L1, L2]
+        e = F.linalg.gemm2(A=tilde_a, B=tilde_b.transpose([0, 2, 1]))
         # beta: b align to a, [B, L1, H]
-        beta = nd.linalg.gemm2(nd.softmax(e), tilde_b)
+        beta = F.linalg.gemm2(e.softmax(), tilde_b)
         # alpha: a align to b, [B, L2, H]
-        alpha = nd.linalg.gemm2(
-            nd.softmax(e.transpose([0, 2, 1])),
-            tilde_a)
+        alpha = F.linalg.gemm2(e.transpose([0, 2, 1]).softmax(), tilde_a)
         # compare
-        feature1 = self.g(nd.concat(tilde_a, beta, dim=2).reshape(
-            batch_size * length1, self.hidden_size * 2)).reshape(
-                batch_size, length1, self.hidden_size)
-        feature2 = self.g(nd.concat(tilde_b, alpha, dim=2).reshape(
-            batch_size * length2, self.hidden_size * 2)).reshape(
-                batch_size, length2, self.hidden_size)
+        feature1 = self.g(F.concat(tilde_a, beta, dim=2))
+        feature2 = self.g(F.concat(tilde_b, alpha, dim=2))
         feature1 = feature1.mean(axis=1)
         feature2 = feature2.mean(axis=1)
-        yhat = self.h(nd.concat(feature1, feature2, dim=1))
+        yhat = self.h(F.concat(feature1, feature2, dim=1))
         return yhat
