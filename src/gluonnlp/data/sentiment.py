@@ -99,6 +99,7 @@ class IMDB(SentimentDataset):
         return 'gluon/dataset/imdb'
 
 
+@register()
 class MR(SentimentDataset):
     """Movie reviews for sentiment analysis.
 
@@ -147,6 +148,7 @@ class TREC(SentimentDataset):
         return 'gluon/dataset/trec'
 
 
+@register()
 class SUBJ(SentimentDataset):
     """Subjectivity dataset for sentiment analysis.
 
