@@ -110,31 +110,34 @@ class Stack(object):
     >>> a = [1, 2, 3, 4]
     >>> b = [4, 5, 6, 8]
     >>> c = [8, 9, 1, 2]
-    >>> batchify.Stack()([a, b, c])
-    [[1. 2. 3. 4.]
-     [4. 5. 6. 8.]
-     [8. 9. 1. 2.]]
-    <NDArray 3x4 @cpu(0)>
+    >>> gluonnlp.data.batchify.Stack()([a, b, c])
+    <BLANKLINE>
+    [[1 2 3 4]
+     [4 5 6 8]
+     [8 9 1 2]]
+    <NDArray 3x4 @cpu_shared(0)>
     >>> # Stack multiple numpy.ndarrays
-    >>> import numpy as np
     >>> a = np.array([[1, 2, 3, 4], [5, 6, 7, 8]])
     >>> b = np.array([[5, 6, 7, 8], [1, 2, 3, 4]])
-    >>> batchify.Stack()([a, b])
-    [[[1. 2. 3. 4.]
-      [5. 6. 7. 8.]]
-     [[5. 6. 7. 8.]
-      [1. 2. 3. 4.]]]
-    <NDArray 2x2x4 @cpu(0)>
+    >>> gluonnlp.data.batchify.Stack()([a, b])
+    <BLANKLINE>
+    [[[1 2 3 4]
+      [5 6 7 8]]
+    <BLANKLINE>
+     [[5 6 7 8]
+      [1 2 3 4]]]
+    <NDArray 2x2x4 @cpu_shared(0)>
     >>> # Stack multiple NDArrays
-    >>> import mxnet as mx
     >>> a = mx.nd.array([[1, 2, 3, 4], [5, 6, 7, 8]])
     >>> b = mx.nd.array([[5, 6, 7, 8], [1, 2, 3, 4]])
-    >>> batchify.Stack()([a, b])
+    >>> gluonnlp.data.batchify.Stack()([a, b])
+    <BLANKLINE>
     [[[1. 2. 3. 4.]
       [5. 6. 7. 8.]]
+    <BLANKLINE>
      [[5. 6. 7. 8.]
       [1. 2. 3. 4.]]]
-    <NDArray 2x2x4 @cpu(0)>
+    <NDArray 2x2x4 @cpu_shared(0)>
     """
     def __init__(self, dtype=None):
         self._dtype = dtype
@@ -173,39 +176,42 @@ class Pad(object):
 
     Examples
     --------
-    >>> from gluonnlp.data import batchify
     >>> # Inputs are multiple lists
     >>> a = [1, 2, 3, 4]
     >>> b = [4, 5, 6]
     >>> c = [8, 2]
-    >>> batchify.Pad()([a, b, c])
-    [[ 1  2  3  4]
-     [ 4  5  6  0]
-     [ 8  2  0  0]]
-    <NDArray 3x4 @cpu(0)>
+    >>> gluonnlp.data.batchify.Pad()([a, b, c])
+    <BLANKLINE>
+    [[1. 2. 3. 4.]
+     [4. 5. 6. 0.]
+     [8. 2. 0. 0.]]
+    <NDArray 3x4 @cpu_shared(0)>
     >>> # Also output the lengths
     >>> a = [1, 2, 3, 4]
     >>> b = [4, 5, 6]
     >>> c = [8, 2]
-    >>> batchify.Pad(ret_length=True)([a, b, c])
-    (
-     [[1 2 3 4]
-      [4 5 6 0]
-      [8 2 0 0]]
-     <NDArray 3x4 @cpu(0)>,
-     [4 3 2]
-     <NDArray 3 @cpu(0)>)
+    >>> batch, length = gluonnlp.data.batchify.Pad(ret_length=True)([a, b, c])
+    >>> batch
+    <BLANKLINE>
+    [[1. 2. 3. 4.]
+     [4. 5. 6. 0.]
+     [8. 2. 0. 0.]]
+    <NDArray 3x4 @cpu_shared(0)>
+    >>> length
+    <BLANKLINE>
+    [4 3 2]
+    <NDArray 3 @cpu_shared(0)>
     >>> # Inputs are multiple ndarrays
-    >>> import numpy as np
     >>> a = np.array([[1, 2, 3, 4], [5, 6, 7, 8]])
     >>> b = np.array([[5, 8], [1, 2]])
-    >>> batchify.Pad(axis=1, pad_val=-1)([a, b])
+    >>> gluonnlp.data.batchify.Pad(axis=1, pad_val=-1)([a, b])
+    <BLANKLINE>
     [[[ 1  2  3  4]
       [ 5  6  7  8]]
+    <BLANKLINE>
      [[ 5  8 -1 -1]
       [ 1  2 -1 -1]]]
-    <NDArray 2x2x4 @cpu(0)>
-
+    <NDArray 2x2x4 @cpu_shared(0)>
     """
     def __init__(self, axis=0, pad_val=0, ret_length=False, dtype=None):
         self._axis = axis
@@ -280,41 +286,20 @@ class Tuple(object):
 
     Examples
     --------
-    >>> from gluonnlp.data import batchify
     >>> a = ([1, 2, 3, 4], 0)
     >>> b = ([5, 7], 1)
     >>> c = ([1, 2, 3, 4, 5, 6, 7], 0)
-    >>> batchify.Tuple(batchify.Pad(), batchify.Stack())([a, b])
-    (
-     [[1 2 3 4]
-      [5 7 0 0]]
-     <NDArray 2x4 @cpu(0)>,
-     [0. 1.]
-     <NDArray 2 @cpu(0)>)
-    >>> # Input can also be a list
-    >>> batchify.Tuple([batchify.Pad(), batchify.Stack()])([a, b])
-    (
-     [[1 2 3 4]
-      [5 7 0 0]]
-     <NDArray 2x4 @cpu(0)>,
-     [0. 1.]
-     <NDArray 2 @cpu(0)>)
-    >>> # Another example
-    >>> a = ([1, 2, 3, 4], [5, 6], 1)
-    >>> b = ([1, 2], [3, 4, 5, 6], 0)
-    >>> c = ([1], [2, 3, 4, 5, 6], 0)
-    >>> batchify.Tuple(batchify.Pad(), batchify.Pad(), batchify.Stack())([a, b, c])
-    (
-     [[1 2 3 4]
-      [1 2 0 0]
-      [1 0 0 0]]
-     <NDArray 3x4 @cpu(0)>,
-     [[5 6 0 0 0]
-      [3 4 5 6 0]
-      [2 3 4 5 6]]
-     <NDArray 3x5 @cpu(0)>,
-     [1. 0. 0.]
-     <NDArray 3 @cpu(0)>)
+    >>> f1, f2 = gluonnlp.data.batchify.Tuple(gluonnlp.data.batchify.Pad(),
+    ...                                       gluonnlp.data.batchify.Stack())([a, b])
+    >>> f1
+    <BLANKLINE>
+    [[1. 2. 3. 4.]
+     [5. 7. 0. 0.]]
+    <NDArray 2x4 @cpu_shared(0)>
+    >>> f2
+    <BLANKLINE>
+    [0 1]
+    <NDArray 2 @cpu_shared(0)>
 
     """
     def __init__(self, fn, *args):

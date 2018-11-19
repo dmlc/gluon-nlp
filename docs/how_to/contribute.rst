@@ -12,7 +12,7 @@ There are lots of opportunities for you to become our `contributors <https://git
 - Write new `scripts <https://github.com/dmlc/gluon-nlp/tree/master/scripts>`__ to reproduce
   state-of-the-art results.
 - Write new `examples <https://github.com/dmlc/gluon-nlp/tree/master/docs/examples>`__.
-- Write new `public datasets <https://github.com/dmlc/gluon-nlp/tree/master/gluonnlp/data>`__
+- Write new `public datasets <https://github.com/dmlc/gluon-nlp/tree/master/src/gluonnlp/data>`__
   (license permitting).
 - Most importantly, if you have an idea of how to contribute, then do it!
 
@@ -46,13 +46,13 @@ Make changes
 Our package uses continuous integration and code coverage tools for verifying pull requests. Before
 submitting, contributor should perform the following checks:
 
-- `Lint (code style) check <https://github.com/dmlc/gluon-nlp/blob/master/Jenkinsfile#L6-L11>`__.
-- `Py2 <https://github.com/dmlc/gluon-nlp/blob/master/Jenkinsfile#L23-L31>`__ and `Py3 <https://github.com/dmlc/gluon-nlp/blob/master/Jenkinsfile#L42-L50>`__ tests.
+- `Lint (code style) check <https://github.com/dmlc/gluon-nlp/blob/master/Jenkinsfile#L5>`__.
+- `Py2 <https://github.com/dmlc/gluon-nlp/blob/master/Jenkinsfile#L18>`__ and `Py3 <https://github.com/dmlc/gluon-nlp/blob/master/Jenkinsfile#L28>`__ tests.
 
 Contribute Scripts
 ------------------
 
-The `scripts <http://gluon-nlp.mxnet.io/master/scripts/index.html>`__ in GluonNLP are typically
+The `scripts <https://github.com/dmlc/gluon-nlp/tree/master/scripts>`__ in GluonNLP are typically
 for reproducing state-of-the-art (SOTA) results, or for a simple and interesting application.
 They are intended for practitioners who are familiar with the libraries to tweak and hack. For SOTA
 scripts, we usually request training scripts to be uploaded `here <https://github.com/dmlc/web-data/tree/master/gluonnlp/logs>`__, and then linked to in the example documentation.
@@ -62,7 +62,7 @@ See `existing examples <https://github.com/dmlc/gluon-nlp/tree/master/scripts>`_
 Contribute Examples
 -------------------
 
-Our `examples <http://gluon-nlp.mxnet.io/master/examples/index.html>`__ are intended for people who
+Our `examples <https://github.com/dmlc/gluon-nlp/tree/master/docs/examples>`__ are intended for people who
 are interested in NLP and want to get better familiarized on different parts in NLP. In order for
 people to easily understand the content, the code needs to be clean and readable, accompanied by
 good quality writing.
@@ -73,7 +73,7 @@ We suggest you start the example with `Jupyter notebook <http://jupyter.org/>`_.
 
 - clear the output cells in the jupyter notebook,
 
-- install `notedown <https://github.com/aaren/notedown#conversion-to-markdown>`_, run
+- install `notedown <https://github.com/aaren/notedown>`_, run
 
 - `notedown input.ipynb --to markdown > output.md`
 

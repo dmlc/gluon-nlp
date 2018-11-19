@@ -58,7 +58,7 @@ class Counter(collections.Counter): # pylint: disable=abstract-method
 
         Examples
         --------
-        >>> a = Counter({'a': 10, 'b': 1, 'c': 1})
+        >>> a = gluonnlp.data.Counter({'a': 10, 'b': 1, 'c': 1})
         >>> a.discard(3, '<unk>')
         Counter({'a': 10, '<unk>': 2})
         """
@@ -113,10 +113,11 @@ def count_tokens(tokens, to_lower=False, counter=None):
 
     Examples
     --------
-    >>> source_str = ' Life is great ! \\n life is good . \\n'
+    >>> import re
+    >>> source_str = ' Life is great ! \n life is good . \n'
     >>> source_str_tokens = filter(None, re.split(' |\n', source_str))
-    >>> count_tokens(source_str_tokens)
-    Counter({'!': 1, '.': 1, 'good': 1, 'great': 1, 'is': 2, 'life': 2})
+    >>> gluonnlp.data.count_tokens(source_str_tokens)
+    Counter({'is': 2, 'Life': 1, 'great': 1, '!': 1, 'life': 1, 'good': 1, '.': 1})
 
     """
     if to_lower:

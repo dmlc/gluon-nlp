@@ -95,20 +95,16 @@ class Vocab(object):
     Examples
     --------
 
-    >>> text_data = " hello world \\\\n hello nice world \\\\n hi world \\\\n"
+    >>> text_data = ['hello', 'world', 'hello', 'nice', 'world', 'hi', 'world']
     >>> counter = gluonnlp.data.count_tokens(text_data)
     >>> my_vocab = gluonnlp.Vocab(counter)
-    >>> fasttext = gluonnlp.embedding.create('fasttext', source='wiki.simple.vec')
+    >>> fasttext = gluonnlp.embedding.create('fasttext', source='wiki.simple')
     >>> my_vocab.set_embedding(fasttext)
-    >>> my_vocab.embedding[['hello', 'world']]
-    [[  3.95669997e-01   2.14540005e-01  -3.53889987e-02  -2.42990002e-01
-        ...
-       -7.54180014e-01  -3.14429998e-01   2.40180008e-02  -7.61009976e-02]
-     [  1.04440004e-01  -1.08580001e-01   2.72119999e-01   1.32990003e-01
-        ...
-       -3.73499990e-01   5.67310005e-02   5.60180008e-01   2.90190000e-02]]
-    <NDArray 2x300 @cpu(0)>
-
+    >>> my_vocab.embedding[['hello', 'world']][:, :5]
+    <BLANKLINE>
+    [[ 0.39567   0.21454  -0.035389 -0.24299  -0.095645]
+     [ 0.10444  -0.10858   0.27212   0.13299  -0.33165 ]]
+    <NDArray 2x5 @cpu(0)>
     >>> my_vocab[['hello', 'world']]
     [5, 4]
 
@@ -116,26 +112,18 @@ class Vocab(object):
     >>> layer = gluon.nn.Embedding(input_dim, output_dim)
     >>> layer.initialize()
     >>> layer.weight.set_data(my_vocab.embedding.idx_to_vec)
-    >>> layer(nd.array([5, 4]))
-    [[  3.95669997e-01   2.14540005e-01  -3.53889987e-02  -2.42990002e-01
-        ...
-       -7.54180014e-01  -3.14429998e-01   2.40180008e-02  -7.61009976e-02]
-     [  1.04440004e-01  -1.08580001e-01   2.72119999e-01   1.32990003e-01
-        ...
-       -3.73499990e-01   5.67310005e-02   5.60180008e-01   2.90190000e-02]]
-    <NDArray 2x300 @cpu(0)>
-
-    >>> glove = gluonnlp.embedding.create('glove', source='glove.6B.50d.txt')
+    >>> layer(mx.nd.array([5, 4]))[:, :5]
+    <BLANKLINE>
+    [[ 0.39567   0.21454  -0.035389 -0.24299  -0.095645]
+     [ 0.10444  -0.10858   0.27212   0.13299  -0.33165 ]]
+    <NDArray 2x5 @cpu(0)>
+    >>> glove = gluonnlp.embedding.create('glove', source='glove.6B.50d')
     >>> my_vocab.set_embedding(glove)
-    >>> my_vocab.embedding[['hello', 'world']]
-    [[  -0.38497001  0.80092001
-        ...
-        0.048833    0.67203999]
-     [  -0.41486001  0.71847999
-        ...
-       -0.37639001 -0.67541999]]
-    <NDArray 2x50 @cpu(0)>
-
+    >>> my_vocab.embedding[['hello', 'world']][:, :5]
+    <BLANKLINE>
+    [[-0.38497   0.80092   0.064106 -0.28355  -0.026759]
+     [-0.41486   0.71848  -0.3045    0.87445   0.22441 ]]
+    <NDArray 2x5 @cpu(0)>
     """
 
     def __init__(self, counter=None, max_size=None, min_freq=1, unknown_token=C.UNK_TOKEN,
