@@ -148,10 +148,13 @@ class Progbar(object):
 
 
 def mxnet_prefer_gpu():
-    '''
-    If gpu available return gpu, else cpu
-    :return:
-    '''
+    """If gpu available return gpu, else cpu
+
+    Returns
+    -------
+    context : Context
+        The preferable GPU context.
+    """
     if 'cuda' not in os.environ['PATH']:
         return mx.cpu()
     gpu = int(os.environ.get('MXNET_GPU', default=0))
@@ -159,11 +162,19 @@ def mxnet_prefer_gpu():
 
 
 def init_logger(root_dir, name="train.log"):
-    """
-    Initialize a logger
-    :param root_dir: directory for saving log
-    :param name: logger name
-    :return: a logger
+    """Initialize a logger
+
+    Parameters
+    ----------
+    root_dir : str
+        directory for saving log
+    name : str
+        name of logger
+
+    Returns
+    -------
+    logger : logging.Logger
+        a logger
     """
     os.makedirs(root_dir, exist_ok=True)
     log_formatter = logging.Formatter("%(message)s")
@@ -179,15 +190,28 @@ def init_logger(root_dir, name="train.log"):
 
 
 def orthonormal_VanillaLSTMBuilder(lstm_layers, input_dims, lstm_hiddens, dropout_x=0., dropout_h=0., debug=False):
-    """
-    Build a standard LSTM cell, with variational dropout, with weights initialized to be orthonormal (https://arxiv.org/abs/1312.6120)
-    :param lstm_layers: only support one layer
-    :param input_dims: word vector dimensions
-    :param lstm_hiddens: hidden size
-    :param dropout_x: dropout on inputs, not used in this implementation, see `biLSTM` below
-    :param dropout_h: dropout on hidden states
-    :param debug: set to True to skip orthonormal initialization
-    :return:
+    """Build a standard LSTM cell, with variational dropout,
+    with weights initialized to be orthonormal (https://arxiv.org/abs/1312.6120)
+
+    Parameters
+    ----------
+    lstm_layers : int
+        Currently only support one layer
+    input_dims : int
+        word vector dimensions
+    lstm_hiddens : int
+        hidden size
+    dropout_x : float
+        dropout on inputs, not used in this implementation, see `biLSTM` below
+    dropout_h : float
+        dropout on hidden states
+    debug : bool
+        set to True to skip orthonormal initialization
+
+    Returns
+    -------
+    lstm_cell : VariationalDropoutCell
+        A LSTM cell
     """
     assert lstm_layers == 1, 'only accept one layer lstm'
     W = orthonormal_initializer(lstm_hiddens, lstm_hiddens + input_dims, debug)
@@ -203,11 +227,25 @@ def orthonormal_VanillaLSTMBuilder(lstm_layers, input_dims, lstm_hiddens, dropou
 
 
 def biLSTM(f_lstm, b_lstm, inputs, batch_size=None, dropout_x=0., dropout_h=0.):
-    """
-    Feature extraction through BiLSTM
-    :param inputs: # seq_len x batch_size
-    :param batch_size:
-    :return: Outputs of BiLSTM layers, seq_len x 2 hidden_dims x batch_size
+    """Feature extraction through BiLSTM
+
+    Parameters
+    ----------
+    f_lstm : VariationalDropoutCell
+        Forward cell
+    b_lstm : VariationalDropoutCell
+        Backward cell
+    inputs : NDArray
+        seq_len x batch_size
+    dropout_x : float
+        Variational dropout on inputs
+    dropout_h :
+        Not used
+
+    Returns
+    -------
+    outputs : NDArray
+        Outputs of BiLSTM layers, seq_len x 2 hidden_dims x batch_size
     """
     for f, b in zip(f_lstm, b_lstm):
         inputs = nd.Dropout(inputs, dropout_x, axes=[0])  # important for variational dropout
@@ -219,28 +257,49 @@ def biLSTM(f_lstm, b_lstm, inputs, batch_size=None, dropout_x=0., dropout_h=0.):
 
 
 def leaky_relu(x):
-    """
-    slope=0.1 leaky ReLu
-    :param x: NDArray
-    :return: NDArray
+    """slope=0.1 leaky ReLu
+
+    Parameters
+    ----------
+    x : NDArray
+        Input
+
+    Returns
+    -------
+    y : NDArray
+        y = x > 0 ? x : 0.1 * x
     """
     return nd.LeakyReLU(x, slope=.1)
 
 
 def bilinear(x, W, y, input_size, seq_len, batch_size, num_outputs=1, bias_x=False, bias_y=False):
-    """
-    Do xWy
+    """Do xWy
 
-    :param x: (input_size x seq_len) x batch_size
-    :param W: (num_outputs x ny) x nx
-    :param y: (input_size x seq_len) x batch_size
-    :param input_size: input dimension
-    :param seq_len: sequence length
-    :param batch_size: batch size
-    :param num_outputs: number of outputs
-    :param bias_x: whether concat bias vector to input x
-    :param bias_y: whether concat bias vector to input y
-    :return: [seq_len_y x seq_len_x if output_size == 1 else seq_len_y x num_outputs x seq_len_x] x batch_size
+    Parameters
+    ----------
+    x : NDArray
+        (input_size x seq_len) x batch_size
+    W : NDArray
+        (num_outputs x ny) x nx
+    y : NDArray
+        (input_size x seq_len) x batch_size
+    input_size : int
+        input dimension
+    seq_len : int
+        sequence length
+    batch_size : int
+        batch size
+    num_outputs : int
+        number of outputs
+    bias_x : bool
+        whether concat bias vector to input x
+    bias_y : bool
+        whether concat bias vector to input y
+
+    Returns
+    -------
+    output : NDArray
+        [seq_len_y x seq_len_x if output_size == 1 else seq_len_y x num_outputs x seq_len_x] x batch_size
     """
     if bias_x:
         x = nd.concat(x, nd.ones((1, seq_len, batch_size)), dim=0)
@@ -262,12 +321,18 @@ def bilinear(x, W, y, input_size, seq_len, batch_size, num_outputs=1, bias_x=Fal
 
 
 def orthonormal_initializer(output_size, input_size, debug=False):
-    """
-    adopted from Timothy Dozat https://github.com/tdozat/Parser/blob/master/lib/linalg.py
-    :param output_size:
-    :param input_size:
-    :param debug: True for a random matrix
-    :return: input_size x output_size numpy NDArray
+    """adopted from Timothy Dozat https://github.com/tdozat/Parser/blob/master/lib/linalg.py
+
+    Parameters
+    ----------
+    output_size : int
+    input_size : int
+    debug : bool
+        Whether to skip this initializer
+    Returns
+    -------
+    Q : np.ndarray
+        The orthonormal weight matrix of input_size x output_size
     """
     print((output_size, input_size))
     if debug:
@@ -300,15 +365,23 @@ def orthonormal_initializer(output_size, input_size, debug=False):
 
 
 def arc_argmax(parse_probs, length, tokens_to_keep, ensure_tree=True):
-    """
-    MST
-    adopted from Timothy Dozat https://github.com/tdozat/Parser/blob/master/lib/models/nn.py
+    """MST
+    Adopted from Timothy Dozat https://github.com/tdozat/Parser/blob/master/lib/models/nn.py
 
-    :param parse_probs: seq_len x seq_len, the probability of arcs
-    :param length: true sentence length
-    :param tokens_to_keep: seq_len, legal tokens
-    :param ensure_tree:
-    :return: seq_len, prediction of arc
+    Parameters
+    ----------
+    parse_probs : NDArray
+        seq_len x seq_len, the probability of arcs
+    length : NDArray
+        real sentence length
+    tokens_to_keep : NDArray
+        mask matrix
+    ensure_tree :
+        whether to ensure tree structure of output (apply MST)
+    Returns
+    -------
+    parse_preds : np.ndarray
+        prediction of arc parsing with size of (seq_len,)
     """
     if ensure_tree:
         I = np.eye(len(tokens_to_keep))
@@ -383,13 +456,20 @@ def arc_argmax(parse_probs, length, tokens_to_keep, ensure_tree=True):
 
 
 def rel_argmax(rel_probs, length, ensure_tree=True):
-    """
-    adopted from Timothy Dozat https://github.com/tdozat/Parser/blob/master/lib/models/nn.py
+    """Fix the relation prediction by heuristic rules
 
-    :param rel_probs: seq_len x #rel
-    :param length: sequence length, a scalar
-    :param ensure_tree: constraint result to be a tree
-    :return: seq_len x 1 tensor
+    Parameters
+    ----------
+    rel_probs : NDArray
+        seq_len x rel_size
+    length :
+        real sentence length
+    ensure_tree :
+        whether to apply rules
+    Returns
+    -------
+    rel_preds : np.ndarray
+        prediction of relations of size (seq_len,)
     """
     if ensure_tree:
         rel_probs[:, ParserVocabulary.PAD] = 0
@@ -415,10 +495,18 @@ def rel_argmax(rel_probs, length, ensure_tree=True):
 
 
 def reshape_fortran(tensor, shape):
-    """
-    The missing Fortran reshape for mx.NDArray
-    :param tensor: source tensor
-    :param shape: desired shape
-    :return: reordered result
+    """The missing Fortran reshape for mx.NDArray
+
+    Parameters
+    ----------
+    tensor : NDArray
+        source tensor
+    shape : NDArray
+        desired shape
+
+    Returns
+    -------
+    output : NDArray
+        reordered result
     """
     return tensor.T.reshape(tuple(reversed(shape))).T
