@@ -50,16 +50,10 @@ computes the cosine similarity between two words.
 
 (You can click the go button on the right bottom corner to run this example.)
 
-.. raw:: html
+.. container:: demo
+   :name: frontpage-demo
 
-  <iframe height="400px" width="100%"
-  src="https://repl.it/@szha/gluon-nlp?lite=true" scrolling="no"
-  frameborder="no" allowtransparency="true" allowfullscreen="true"
-  sandbox="allow-forms allow-pointer-lock allow-popups allow-same-origin
-  allow-scripts allow-modals"></iframe>
-
-  <p></p>
-
+   `Word Embedding <https://repl.it/@szha/gluon-nlp>`_
 
 Installation
 ~~~~~~~~~~~~

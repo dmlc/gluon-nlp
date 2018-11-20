@@ -1,7 +1,7 @@
 Community
 =========
 
-.. container:: gluonnlp-cards
+.. container:: cards
 
    .. card::
       :title: Community

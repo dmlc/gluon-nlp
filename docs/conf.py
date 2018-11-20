@@ -129,7 +129,7 @@ html_logo = '_static/gluon_black.png'
 # The name of an image file (relative to this directory) to use as a favicon of
 # the docs.  This file should be a Windows icon file (.ico) being 16x16 or 32x32
 # pixels large.
-html_favicon = '_static/gluon_s2.png'
+html_favicon = '_static/gluon.ico'
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
@@ -190,7 +190,7 @@ html_theme_options = {
 
     # custom layout
     'fixed_drawer' : True,
-    'fixed_header' : False,
+    'fixed_header' : True,
     'header_waterfall' : True,
     'header_scroll': True,
 
@@ -207,16 +207,16 @@ html_static_path = ['_static']
 htmlhelp_basename = project + 'doc'
 
 # -- Options for LaTeX output ---------------------------------------------
-latex_elements = {
-}
+# latex_elements = {
+# }
 
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
-latex_documents = [
-  (master_doc, '%s.tex' % project, project,
-   author, 'manual'),
-]
+# latex_documents = [
+#   (master_doc, '%s.tex' % project, project,
+#    author, 'manual'),
+# ]
 
 intersphinx_mapping = {
     'python': ('https://docs.python.org/{.major}'.format(sys.version_info), None),
@@ -230,23 +230,23 @@ intersphinx_mapping = {
 
 from sphinx_gallery.sorting import ExplicitOrder
 
-examples_dirs = []
-gallery_dirs = []
+# examples_dirs = []
+# gallery_dirs = []
 
-subsection_order = ExplicitOrder([])
+# subsection_order = ExplicitOrder([])
 
 def setup(app):
+    import mxtheme
+    app.add_directive('card', mxtheme.CardDirective)
+
     app.add_config_value('recommonmark_config', {
         'url_resolver': lambda url: github_doc_root + url,
         'auto_doc_ref': True
             }, True)
     app.add_transform(AutoStructify)
-    app.add_javascript('google_analytics.js')
     app.add_javascript('copybutton.js')
-    app.add_stylesheet('gluonnlp.css')
-
-    import mxtheme
-    app.add_directive('card', mxtheme.CardDirective)
+    app.add_javascript('google_analytics.js')
+    app.add_javascript('demo.js')
 
 
 sphinx_gallery_conf = {
@@ -255,9 +255,9 @@ sphinx_gallery_conf = {
 'reference_url': {
     'gluonnlp': None,
     'numpy': 'http://docs.scipy.org/doc/numpy-1.9.1'},
-    'examples_dirs': examples_dirs,
-    'gallery_dirs': gallery_dirs,
-    'subsection_order': subsection_order,
+    'examples_dirs': [],
+    'gallery_dirs': [],
+    'subsection_order': ExplicitOrder([]),
     'find_mayavi_figures': False,
     'filename_pattern': '.py',
     'expected_failing_examples': []
