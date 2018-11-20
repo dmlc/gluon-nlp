@@ -123,8 +123,6 @@ class StandardRNN(train.StandardRNN):
         Number of hidden units for RNN.
     num_layers : int
         Number of RNN layers.
-    dropout_e : float
-        Dropout rate to use on the embedding layer.
     dropout : float
         Dropout rate to use for encoder output.
     tie_weights : bool, default False
