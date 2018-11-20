@@ -35,10 +35,12 @@ def test_elmo_bilm_encoder():
                                     proj_size=10,
                                     cell_clip=1,
                                     proj_clip=1)
+    print(encoder)
     encoder.initialize()
     inputs = mx.random.uniform(shape=(20, 5, 10))
     mask = mx.nd.ones(shape=(5, 20))
     states = encoder.begin_state(mx.nd.zeros, batch_size=5)
+    print('testing forward for %s' % 'elmo bilm')
     outputs, out_states = encoder(inputs, states, mask)
     assert outputs.shape == (1, 20, 5, 20), outputs.shape
     assert len(out_states) == 2, len(out_states)
@@ -55,8 +57,10 @@ def test_elmo_char_encoder():
                                                   num_highway=2,
                                                   conv_layer_activation='relu',
                                                   max_chars_per_token=50)
+    print(char_encoder)
     char_encoder.initialize()
     inputs = mx.nd.ones(shape=(2, 5, 50))
+    print('testing forward for %s' % 'elmo_char_encoder')
     mask, output = char_encoder(inputs)
     assert mask.shape == (2, 7), mask.shape
     assert output.shape == (2, 7, 1), output.shape
@@ -81,6 +85,7 @@ def test_elmo_model():
     model.initialize()
     inputs = mx.nd.ones(shape=(5, 20, 50))
     begin_state = model.begin_state(mx.nd.zeros, batch_size=5)
+    print('testing forward for %s' % 'elmo model')
     outputs, state, mask = model(inputs, begin_state)
     assert len(outputs) == 3, len(outputs)
     assert outputs[0].shape == (5, 22, 256), outputs[0].shape

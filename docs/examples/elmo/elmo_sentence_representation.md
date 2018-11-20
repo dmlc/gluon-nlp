@@ -10,11 +10,16 @@ We will focus on showing how to
 
 ### Load MXNet and GluonNLP
 
-```{.python .input}
+```{.python .input  n=1}
+import warnings
+warnings.filterwarnings('ignore')
+
 import mxnet as mx
 from mxnet import gluon
 import gluonnlp as nlp
 import numpy as np
+import os
+import json
 ```
 
 ### Preprocess Data
@@ -34,7 +39,7 @@ def _load_sentences_embeddings(sentences_json_file):
         sentences = json.load(fin)
     return sentences
 
-sentences_json_file = 'sentences.json'
+sentences_json_file = os.path.join(os.path.dirname(os.path.abspath('elmo_sentence_representation.md')), 'sentences.json')
 sentences = _load_sentences_embeddings(sentences_json_file)
 ```
 
@@ -177,6 +182,58 @@ hidden_state = elmo_bilm.begin_state(mx.nd.zeros, batch_size=batch_size)
 ## Generate Sentence Representation
 
 ```{.python .input}
+def detach(hidden):
+    """Transfer hidden states into new states, to detach them from the history.
+    Parameters
+    ----------
+    hidden : NDArray
+        The hidden states
+    Returns
+    ----------
+    hidden: NDArray
+        The detached hidden states
+    """
+    if isinstance(hidden, (tuple, list)):
+        hidden = [detach(h) for h in hidden]
+    else:
+        hidden = hidden.detach()
+    return hidden
+
+def remove_sentence_boundaries(inputs, mask):
+    """
+    Remove begin/end of sentence embeddings from the batch of sentences.
+    Given a batch of sentences with size ``(batch_size, timesteps, embedding_size)``
+    this returns a tensor of shape ``(batch_size, timesteps - 2, embedding_size)`` after removing
+    the beginning and end sentence markers.
+    Returns both the new tensor and updated mask.
+    
+    Parameters
+    ----------
+    inputs : ``NDArray``
+        with shape ``(batch_size, timesteps, embedding_size)``
+    mask : ``NDArray``
+        with shape ``(batch_size, timesteps)``
+    Returns
+    -------
+    inputs_without_boundary_tokens : ``NDArray``
+        with shape ``(batch_size, timesteps - 2, embedding_size)``
+    new_mask : ``NDArray``
+        The new mask with shape ``(batch_size, timesteps - 2)``.
+    """
+    sequence_lengths = mask.sum(axis=1).asnumpy()
+    inputs_shape = list(inputs.shape)
+    new_shape = list(inputs_shape)
+    new_shape[1] = inputs_shape[1] - 2
+    inputs_without_boundary_tokens = mx.nd.zeros(shape=new_shape)
+    new_mask = mx.nd.zeros(shape=(new_shape[0], new_shape[1]))
+    for i, j in enumerate(sequence_lengths):
+        if j > 2:
+            inputs_without_boundary_tokens[i, :int((j - 2)), :] = inputs[i, 1:int((j - 1)), :]
+            new_mask[i, :int((j - 2))] = 1
+
+    return inputs_without_boundary_tokens, new_mask
+
+
 for i, batch in enumerate(sample_data_loader):
     print('batch id %d' % i)
     output, hidden_state, mask = elmo_bilm(batch[0], hidden_state)
@@ -185,7 +242,7 @@ for i, batch in enumerate(sample_data_loader):
         output[2],
         mask
     )
-    # check the mask lengths
+    # generate the mask lengths
     lengths = mask.asnumpy().sum(axis=1)
     for k in range(3):
         print('k %d' % k)
@@ -193,6 +250,10 @@ for i, batch in enumerate(sample_data_loader):
 ```
 
 ## Conclusion
+
+In this section, we show that how to generate ELMo representation for sentences including 
+* 1) how to process, transform data, and create the dataloader for the samples; 
+* 2) how to use the pretrained ELMo model to generate the sentence representation.
 
 
 ## Reference
