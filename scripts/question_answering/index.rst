@@ -1,6 +1,8 @@
 Question Answer
 -------------------
 
+:download:`[Download] </model_zoo/question_answering.zip>`
+
 QANet Model
 ~~~~~~~~~~~~~~~~~~~~
 
