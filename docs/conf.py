@@ -268,6 +268,6 @@ napoleon_use_ivar = True
 
 # linkcheck settings
 import multiprocessing
-linkcheck_ignore = [r'http[s]://apache-mxnet.s3.*']
+linkcheck_ignore = [r'http[s]://apache-mxnet.s3*']
 linkcheck_retries = 3
 linkcheck_workers = int(multiprocessing.cpu_count() / 2)

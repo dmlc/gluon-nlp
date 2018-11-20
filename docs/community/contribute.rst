@@ -78,7 +78,7 @@ converted into `Jupyter notebooks <http://jupyter.org/>`_.
 We suggest you start the example with `Jupyter notebook <http://jupyter.org/>`_. When the content is ready, please:
 
 - Clear the output cells in the jupyter notebook,
-- `Install notedown <https://github.com/aaren/notedown#conversion-to-markdown>`_.
+- `Install notedown <https://github.com/aaren/notedown>`_.
 - Run `notedown input.ipynb --to markdown > output.md`
 - Submit the `.md` file for review.
 
