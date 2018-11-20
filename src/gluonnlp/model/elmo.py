@@ -132,12 +132,12 @@ class ELMoCharacterEncoder(gluon.Block):
     filters: List[List]
         The first elements in the list are:
         ngram_filter_sizes:
-            The size of each convolutional layer,
-            and len(ngram_filter_sizes) equals to the number of convolutional layers.
+        The size of each convolutional layer,
+        and len(ngram_filter_sizes) equals to the number of convolutional layers.
         The second elements in the list are:
         num_filters:
-            The output dimension for each convolutional layer according to the filter sizes,
-            which are the number of the filters learned by the layers.
+        The output dimension for each convolutional layer according to the filter sizes,
+        which are the number of the filters learned by the layers.
     char_embed_size : int
         The input dimension to the encoder.
         We set the default according to the original work's experiments
@@ -260,12 +260,12 @@ class ELMoBiLM(gluon.Block):
     filters: List[List[int,int]]
         The first elements in the list are:
         ngram_filter_sizes:
-            The size of each convolutional layer,
-            and len(ngram_filter_sizes) equals to the number of convolutional layers.
+        The size of each convolutional layer,
+        and len(ngram_filter_sizes) equals to the number of convolutional layers.
         The second elements in the list are:
         num_filters:
-            The output dimension for each convolutional layer according to the filter sizes,
-            which are the number of the filters learned by the layers.
+        The output dimension for each convolutional layer according to the filter sizes,
+        which are the number of the filters learned by the layers.
     char_embed_size : int
         The input dimension to the encoder.
         We set the default according to the original work's experiments
