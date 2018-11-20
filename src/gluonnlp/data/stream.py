@@ -21,15 +21,14 @@
 """NLP Toolkit Data Stream API. It allows easy and customizable streaming of
 corpora and dataset files. Files can be streamed into formats that are
 ready for training and evaluation."""
-__all__ = [
-    'DataStream', 'SimpleDataStream', 'DatasetStream', 'SimpleDatasetStream',
-    'PrefetchingStream'
-]
+
+from __future__ import print_function
 
 import glob
 import multiprocessing
 import os
 import random
+import sys
 import threading
 import traceback
 
@@ -42,6 +41,10 @@ try:
     import Queue as queue
 except ImportError:
     import queue
+
+__all__ = [
+    'DataStream', 'SimpleDataStream', 'DatasetStream', 'SimpleDatasetStream',
+    'PrefetchingStream']
 
 
 class DataStream(object):
@@ -208,6 +211,8 @@ class _Prefetcher(object):
     _controlq = None  # Control queue to instruct thread / process shutdown
     _errorq = None  # Error queue to transmit exceptions from worker to master
 
+    _checked_start = False  # True once startup has been checkd by _check_start
+
     def __init__(self, stream, num_prefetch, seed, np_seed, mx_seed):
         super(_Prefetcher, self).__init__()
         self.stream = stream
@@ -275,11 +280,13 @@ class _Prefetcher(object):
                 return self._reraise(*next_error)
 
     def _reraise(self, e, tb):
-        print('Reraising exception from Prefetcher')
-        print(tb)
+        print('Reraising exception from Prefetcher', file=sys.stderr)
+        print(tb, file=sys.stderr)
         raise e
 
     def _check_start(self):
+        assert not self._checked_start
+        self._checked_start = True
         next_error = self._errorq.get(block=True)
         if next_error is not None:
             self._reraise(*next_error)
