@@ -1,9 +1,14 @@
 window.onload = function() {
-    var demo = '<iframe src="https://repl.it/@szha/gluon-nlp?lite=true"' +
-               'height="400px" width="100%" scrolling="no"' +
-               'frameborder="no" allowtransparency="true" allowfullscreen="true"' +
-               'sandbox="allow-forms allow-pointer-lock allow-popups allow-same-origin' +
-               'allow-scripts allow-modals"></iframe>';
-    var demo_div = document.getElementById("frontpage-demo");
-    demo_div.innerHTML = demo;
+  var demo = document.createElement("IFRAME");
+  demo.src = "https://repl.it/@szha/gluon-nlp?lite=true";
+  demo.height = "400px";
+  demo.width = "100%";
+  demo.scrolling = "no";
+  demo.frameborder = "no";
+  demo.allowtransparency = true;
+  demo.allowfullscreen = true;
+  demo.seamless = true;
+  demo.sandbox = "allow-forms allow-pointer-lock allow-popups allow-same-origin allow-scripts allow-modals";
+  demo_div = document.getElementById("frontpage-demo");
+  demo_div.replaceChild(demo, demo_div.childNodes[0]);
 }; // load demo last

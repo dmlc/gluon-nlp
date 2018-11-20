@@ -3,7 +3,9 @@
    :is_head: true
    :link: #get-started
 
-   GluonNLP is a Deep Learning Toolkit for Natural Language Processing (NLP).
+   GluonNLP is a Deep Learning Toolkit for Natural Language Processing (NLP),
+   designed for fast-prototyping in research and application.
+   Click here for a quick example.
 
 GluonNLP
 ========
@@ -48,7 +50,7 @@ A Quick Example
 Here is a quick example that downloads and creates a word embedding model and then
 computes the cosine similarity between two words.
 
-(You can click the go button on the right bottom corner to run this example.)
+(You can click the play button below to run this example.)
 
 .. container:: demo
    :name: frontpage-demo
@@ -60,7 +62,7 @@ Installation
 
 GluonNLP relies on the recent version of MXNet. The easiest way to install MXNet
 is through `pip <https://pip.pypa.io/en/stable/installing/>`_. The following
-command installs a nightly built CPU version of MXNet.
+command installs the latest version of MXNet.
 
 .. code-block:: console
 
@@ -76,11 +78,12 @@ command installs a nightly built CPU version of MXNet.
    <http://gluon-crash-course.mxnet.io/use_aws.html>`_.
 
 
-Then install the GluonNLP toolkit by
+After installing MXNet, you can install the GluonNLP toolkit by
 
 .. code-block:: console
 
    pip install gluonnlp
+
 
 .. toctree::
    :hidden:

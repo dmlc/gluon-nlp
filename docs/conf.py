@@ -181,7 +181,7 @@ html_theme_options = {
     'primary_color': 'blue',
     'accent_color': 'deep_orange',
     'header_links' : [
-        ('Install', '#installation', False, ''),
+        ('Install', 'install', False, ''),
         ('API', 'api/index', False, ''),
         ('Community', 'community/index', False, ''),
         ('Contribute', 'community/contribute', False, ''),
