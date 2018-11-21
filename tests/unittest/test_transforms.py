@@ -112,6 +112,7 @@ def test_moses_detokenizer():
     assert isinstance(ret, list)
     assert len(ret) > 0
 
+@pytest.mark.remote_required
 def test_sentencepiece_tokenizer():
     url_format = 'https://apache-mxnet.s3-accelerate.amazonaws.com/gluon/dataset/vocab/{}'
     filename = 'test-0690baed.bpe'
@@ -130,6 +131,7 @@ def test_sentencepiece_tokenizer():
     assert len(ret) > 0
     assert text == detext
 
+@pytest.mark.remote_required
 def test_sentencepiece_tokenizer_subword_regularization():
     url_format = 'https://apache-mxnet.s3-accelerate.amazonaws.com/gluon/dataset/vocab/{}'
     filename = 'test-31c8ed7b.uni'

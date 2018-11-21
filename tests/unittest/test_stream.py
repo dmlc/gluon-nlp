@@ -25,6 +25,7 @@ import pytest
 import gluonnlp as nlp
 
 @pytest.mark.serial
+@pytest.mark.remote_required
 def test_corpus_stream(
         stream_identity_wrappers,
         wikitext2_simpledatasetstream_skipempty_flatten_and_counter):
@@ -43,6 +44,7 @@ def test_corpus_stream(
 
 
 @pytest.mark.serial
+@pytest.mark.remote_required
 def test_lazy_stream(stream_identity_wrappers):
     EOS = nlp._constants.EOS_TOKEN
     path = os.path.join('tests', 'data', 'wikitext-2')
@@ -75,6 +77,7 @@ def test_lazy_stream(stream_identity_wrappers):
 @pytest.mark.parametrize('num_prefetch', [0, 1, 10])
 @pytest.mark.parametrize('worker_type', ['thread', 'process'])
 @pytest.mark.serial
+@pytest.mark.remote_required
 def test_prefetch_stream(num_prefetch, worker_type):
     EOS = nlp._constants.EOS_TOKEN
     path = os.path.join('tests', 'data', 'wikitext-2')
