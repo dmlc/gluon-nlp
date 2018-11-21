@@ -185,7 +185,7 @@ html_theme_options = {
         ('API', 'api/index', False, ''),
         ('Community', 'community/index', False, ''),
         ('Contribute', 'community/contribute', False, ''),
-        ('GitHub', 'https://github.com/apache/incubator-mxnet/', True, ''),
+        ('GitHub', 'https://github.com/dmlc/gluon-nlp/', True, ''),
     ],
 
     # custom layout

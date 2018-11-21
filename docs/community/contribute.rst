@@ -18,9 +18,6 @@ There are lots of opportunities for you to become our `contributors <https://git
 
 For a list of open starter tasks, check `good first issues <https://github.com/dmlc/gluon-nlp/labels/good%20first%20issue>`__.
 
-How-to
-++++++
-
 - `Make changes <#make-changes>`__
 
 - `Contribute to model zoo <#contribute-to-model-zoo>`__
