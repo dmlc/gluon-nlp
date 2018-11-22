@@ -23,9 +23,9 @@ __all__ = ['BiLMEncoder']
 from mxnet import gluon
 from mxnet.gluon import rnn
 try:
-    from .utils import _get_rnn_cell_clip_residual
+    from .utils import _get_rnn_cell
 except ImportError:
-    from utils import _get_rnn_cell_clip_residual
+    from utils import _get_rnn_cell
 
 
 class BiLMEncoder(gluon.HybridBlock):
@@ -81,19 +81,23 @@ class BiLMEncoder(gluon.HybridBlock):
             self.forward_layers = rnn.HybridSequentialRNNCell()
             with self.forward_layers.name_scope():
                 for layer_index in range(self._num_layers):
-                    forward_layer = _get_rnn_cell_clip_residual(mode=self._mode,
-                                                                num_layers=1,
-                                                                input_size=lstm_input_size,
-                                                                hidden_size=self._hidden_size,
-                                                                dropout=0
-                                                                if layer_index == num_layers - 1
-                                                                else self._dropout,
-                                                                skip_connection=False
-                                                                if layer_index == 0
-                                                                else self._skip_connection,
-                                                                proj_size=self._proj_size,
-                                                                cell_clip=self._cell_clip,
-                                                                proj_clip=self._proj_clip)
+                    forward_layer = _get_rnn_cell(mode=self._mode,
+                                                  num_layers=1,
+                                                  input_size=lstm_input_size,
+                                                  hidden_size=self._hidden_size,
+                                                  dropout=0
+                                                  if layer_index == num_layers - 1
+                                                  else self._dropout,
+                                                  weight_dropout=0,
+                                                  var_drop_in=0,
+                                                  var_drop_state=0,
+                                                  var_drop_out=0,
+                                                  skip_connection=False
+                                                  if layer_index == 0
+                                                  else self._skip_connection,
+                                                  proj_size=self._proj_size,
+                                                  cell_clip=self._cell_clip,
+                                                  proj_clip=self._proj_clip)
 
                     self.forward_layers.add(forward_layer)
                     lstm_input_size = self._proj_size
@@ -102,20 +106,23 @@ class BiLMEncoder(gluon.HybridBlock):
             self.backward_layers = rnn.HybridSequentialRNNCell()
             with self.backward_layers.name_scope():
                 for layer_index in range(self._num_layers):
-                    backward_layer = _get_rnn_cell_clip_residual(mode=self._mode,
-                                                                 num_layers=1,
-                                                                 input_size=lstm_input_size,
-                                                                 hidden_size=self._hidden_size,
-                                                                 dropout=0
-                                                                 if layer_index == num_layers - 1
-                                                                 else self._dropout,
-                                                                 skip_connection=False
-                                                                 if layer_index == 0
-                                                                 else self._skip_connection,
-                                                                 proj_size=self._proj_size,
-                                                                 cell_clip=self._cell_clip,
-                                                                 proj_clip=self._proj_clip)
-
+                    backward_layer = _get_rnn_cell(mode=self._mode,
+                                                   num_layers=1,
+                                                   input_size=lstm_input_size,
+                                                   hidden_size=self._hidden_size,
+                                                   dropout=0
+                                                   if layer_index == num_layers - 1
+                                                   else self._dropout,
+                                                   weight_dropout=0,
+                                                   var_drop_in=0,
+                                                   var_drop_state=0,
+                                                   var_drop_out=0,
+                                                   skip_connection=False
+                                                   if layer_index == 0
+                                                   else self._skip_connection,
+                                                   proj_size=self._proj_size,
+                                                   cell_clip=self._cell_clip,
+                                                   proj_clip=self._proj_clip)
                     self.backward_layers.add(backward_layer)
                     lstm_input_size = self._proj_size
 

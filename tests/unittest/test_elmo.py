@@ -42,6 +42,7 @@ def test_elmo_bilm_encoder():
     states = encoder.begin_state(mx.nd.zeros, batch_size=5)
     print('testing forward for %s' % 'elmo bilm')
     outputs, out_states = encoder(inputs, states, mask)
+
     assert outputs.shape == (1, 20, 5, 20), outputs.shape
     assert len(out_states) == 2, len(out_states)
     assert out_states[0][0][0].shape == (5, 10), out_states[0][0][0].shape
@@ -101,10 +102,10 @@ def test_get_elmo_models():
 
     for model_name, dataset in zip(model_names, datasets):
         print('testing forward for %s on dataset %s' % (model_name, dataset))
-        model = nlp.model.elmo.get_model(model_name,
-                                         dataset_name=dataset,
-                                         pretrained=dataset is not None,
-                                         root='tests/data/model/')
+        model = nlp.model.get_model(model_name,
+                                    dataset_name=dataset,
+                                    pretrained=dataset is not None,
+                                    root='tests/data/model/')
 
         print(model)
         if not dataset:

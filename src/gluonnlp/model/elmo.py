@@ -19,7 +19,8 @@
 
 """ELMo."""
 __all__ = ['ELMoBiLM', 'ELMoCharacterEncoder', 'ELMoCharacterVocab',
-           'get_model']
+           'elmo_2x1024_128_2048cnn_1xhighway', 'elmo_2x2048_256_2048cnn_1xhighway',
+           'elmo_2x4096_512_2048cnn_2xhighway']
 
 import os
 import numpy
@@ -78,6 +79,24 @@ class ELMoCharacterVocab:
 
     The vocab aims to map individual tokens to sequences of character ids, compatible with ELMo.
     To be consistent with previously trained models, we include it here.
+
+    Specifically, char ids 0-255 come from utf-8 encoding bytes.
+    Above 256 are reserved for special tokens.
+
+    Parameters
+    ----------
+    max_word_length: 50
+        The maximum number of character a word contains is 50 in ELMo.
+    beginning_of_sentence_character: 256
+        The index of beginning of the sentence character is 256 in ELMo.
+    end_of_sentence_character: 257
+        The index of end of the sentence character is 257 in ELMo.
+    beginning_of_word_character : 258
+        The index of beginning of the sentence character is 258 in ELMo.
+    end_of_word_character: 259
+        The index of end of the sentence character is 259 in ELMo.
+    padding_character: 260
+        The index of padding character is 260 in ELMo.
     """
     max_word_length = 50
 
@@ -140,8 +159,6 @@ class ELMoCharacterEncoder(gluon.Block):
         which are the number of the filters learned by the layers.
     char_embed_size : int
         The input dimension to the encoder.
-        We set the default according to the original work's experiments
-        on PTB dataset with Char-small model setting.
     num_highway: int
         The number of layers of the Highway layer.
     conv_layer_activation: str
@@ -268,8 +285,6 @@ class ELMoBiLM(gluon.Block):
         which are the number of the filters learned by the layers.
     char_embed_size : int
         The input dimension to the encoder.
-        We set the default according to the original work's experiments
-        on PTB dataset with Char-small model setting.
     num_highway: int
         The number of layers of the Highway layer.
     conv_layer_activation: str
@@ -366,8 +381,6 @@ class ELMoBiLM(gluon.Block):
 
         Returns
         -------
-        Dict with keys:
-
         output: List[NDArray]
             A list of activations at each layer of the network, each of shape
             ``(batch_size, sequence_length + 2, embedding_size)``
@@ -547,41 +560,3 @@ def elmo_2x4096_512_2048cnn_2xhighway(dataset_name=None, pretrained=False, ctx=c
     predefined_args.update(kwargs)
     return _get_elmo_model(ELMoBiLM, 'elmo_2x4096_512_2048cnn_2xhighway', dataset_name, pretrained,
                            ctx, root, **predefined_args)
-
-
-def get_model(name, dataset_name='gbw', **kwargs):
-    """Returns a pre-defined ELMo model by name.
-
-    Parameters
-    ----------
-    name : str
-        Name of the model.
-    dataset_name : str, default 'gbw'.
-        The dataset name on which the pre-trained model is trained.
-        Options are 'gbw' and '5bw'.
-        'gbw' represents 1 Billion Word Language Model Benchmark
-        http://www.statmt.org/lm-benchmark/;
-        '5bw' represents a dataset of 5.5B tokens consisting of
-        Wikipedia (1.9B) and all of the monolingual news crawl data from WMT 2008-2012 (3.6B)
-    pretrained : bool, default False
-        Whether to load the pre-trained weights for model.
-    ctx : Context, default CPU
-        The context in which to load the pre-trained weights.
-    root : str, default '~/.mxnet/models'
-        Location for keeping the model parameters.
-
-    Returns
-    -------
-    gluon.Block
-        The model.
-    """
-    models = {'elmo_2x1024_128_2048cnn_1xhighway': elmo_2x1024_128_2048cnn_1xhighway,
-              'elmo_2x2048_256_2048cnn_1xhighway': elmo_2x2048_256_2048cnn_1xhighway,
-              'elmo_2x4096_512_2048cnn_2xhighway': elmo_2x4096_512_2048cnn_2xhighway}
-    name = name.lower()
-    if name not in models:
-        raise ValueError(
-            'Model %s is not supported. Available options are\n\t%s'%(
-                name, '\n\t'.join(sorted(models.keys()))))
-    kwargs['dataset_name'] = dataset_name
-    return models[name](**kwargs)

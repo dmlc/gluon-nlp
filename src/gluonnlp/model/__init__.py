@@ -47,6 +47,25 @@ These models can constructed by passing ``pretrained=True``:
                                             pretrained=True)
 
 .. _AWD: https://arxiv.org/abs/1404.5997
+
+
+-  `ELMo`_
+
+You can construct a predefined ELMo model structure:
+
+.. code-block:: python
+
+    import gluonnlp as nlp
+    elmo = nlp.model.elmo_2x1024_128_2048cnn_1xhighway(dataset_name='gbw')
+
+You can also get a ELMo model with pretrained parameters:
+
+.. code-block:: python
+
+    import gluonnlp as nlp
+    elmo = nlp.model.elmo_2x1024_128_2048cnn_1xhighway(dataset_name='gbw', pretrained=True)
+
+.. _ELMo: https://arxiv.org/pdf/1802.05365.pdf
 """
 
 
@@ -64,7 +83,7 @@ from .sampled_block import *
 from .utils import *
 from .bilm_encoder import BiLMEncoder
 from .lstmpcellwithclip import LSTMPCellWithClip
-from .elmo import ELMoBiLM, ELMoCharacterEncoder, ELMoCharacterVocab
+from .elmo import *
 
 __all__ = language_model.__all__ + sequence_sampler.__all__ + attention_cell.__all__ + \
           utils.__all__ + parameter.__all__ + block.__all__ + highway.__all__ + \
@@ -81,13 +100,20 @@ def get_model(name, dataset_name='wikitext-2', **kwargs):
         Name of the model.
     dataset_name : str or None, default 'wikitext-2'.
         The dataset name on which the pre-trained model is trained.
-        Options are 'wikitext-2'. If specified, then the returned vocabulary is extracted from
+        For language model, options are 'wikitext-2'.
+        For ELMo, Options are 'gbw' and '5bw'.
+        'gbw' represents 1 Billion Word Language Model Benchmark
+        http://www.statmt.org/lm-benchmark/;
+        '5bw' represents a dataset of 5.5B tokens consisting of
+        Wikipedia (1.9B) and all of the monolingual news crawl data from WMT 2008-2012 (3.6B).
+        If specified, then the returned vocabulary is extracted from
         the training set of the dataset.
         If None, then vocab is required, for specifying embedding weight size, and is directly
         returned.
     vocab : gluonnlp.Vocab or None, default None
         Vocabulary object to be used with the language model.
         Required when dataset_name is not specified.
+        None Vocabulary object is required with the ELMo model.
     pretrained : bool, default False
         Whether to load the pre-trained weights for model.
     ctx : Context, default CPU
@@ -105,7 +131,10 @@ def get_model(name, dataset_name='wikitext-2', **kwargs):
               'standard_lstm_lm_1500': standard_lstm_lm_1500,
               'awd_lstm_lm_1150': awd_lstm_lm_1150,
               'awd_lstm_lm_600': awd_lstm_lm_600,
-              'big_rnn_lm_2048_512': big_rnn_lm_2048_512}
+              'big_rnn_lm_2048_512': big_rnn_lm_2048_512,
+              'elmo_2x1024_128_2048cnn_1xhighway': elmo_2x1024_128_2048cnn_1xhighway,
+              'elmo_2x2048_256_2048cnn_1xhighway': elmo_2x2048_256_2048cnn_1xhighway,
+              'elmo_2x4096_512_2048cnn_2xhighway': elmo_2x4096_512_2048cnn_2xhighway}
     name = name.lower()
     if name not in models:
         raise ValueError(

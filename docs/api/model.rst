@@ -41,7 +41,7 @@ ELMo
 
     ELMoBiLM
     ELMoCharacterEncoder
-    get_model
+    ELMoCharacterVocab
 
 Highway Network
 -----------------

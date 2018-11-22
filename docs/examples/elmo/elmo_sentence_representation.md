@@ -171,7 +171,7 @@ sample_data_loader = gluon.data.DataLoader(sample_dataset,
 ## Load Pretrained ELMo Model
 
 ```{.python .input}
-elmo_bilm = nlp.model.elmo.get_model('elmo_2x1024_128_2048cnn_1xhighway',
+elmo_bilm = nlp.model.get_model('elmo_2x1024_128_2048cnn_1xhighway',
                                  dataset_name='gbw',
                                  pretrained=True,
                                  ctx=mx.cpu())
