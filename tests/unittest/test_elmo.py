@@ -95,6 +95,7 @@ def test_elmo_model():
 
 
 @pytest.mark.serial
+@pytest.mark.remote_required
 def test_get_elmo_models():
     model_names = ['elmo_2x1024_128_2048cnn_1xhighway', 'elmo_2x2048_256_2048cnn_1xhighway',
                    'elmo_2x4096_512_2048cnn_2xhighway', 'elmo_2x4096_512_2048cnn_2xhighway']
