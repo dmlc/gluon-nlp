@@ -10,5 +10,8 @@ window.onload = function() {
   demo.seamless = true;
   demo.sandbox = "allow-forms allow-pointer-lock allow-popups allow-same-origin allow-scripts allow-modals";
   demo_div = document.getElementById("frontpage-demo");
-  demo_div.replaceChild(demo, demo_div.childNodes[0]);
+  while (demo_div.firstChild) {
+    demo_div.removeChild(demo_div.firstChild);
+  }
+  demo_div.appendChild(demo);
 }; // load demo last

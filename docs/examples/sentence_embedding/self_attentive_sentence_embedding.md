@@ -9,7 +9,7 @@ The above method solves the problem of sentence meaning in a certain extent in m
 
 Based on the above mentioned method, Zhouhan Lin, Minwei Feng et al. published a paper [A Structured Self-attentive Sentence Embedding](https://arxiv.org/pdf/1703.03130.pdf)[1] in 2017, proposed a method based on self-attention structure for sentence embedding and applied to user's reviews classification, textual entailment and other tasks. In the end, good results were obtained.
 
-In this note, we will use [GluonNLP](https://gluon-nlp.mxnet.io/index.html) to reproduce the model structure in A Structured Self-attentive Sentence Embedding and apply it to [Yelp Data's review star rating data set](https://www.yelp.com/dataset/challenge) for classification.
+In this tutorial, we will use [GluonNLP](https://gluon-nlp.mxnet.io/index.html) to reproduce the model structure in "A Structured Self-attentive Sentence Embedding" and apply it to [Yelp Data's review star rating data set](https://www.yelp.com/dataset/challenge) for classification.
 
 ## Import Related Packages
 

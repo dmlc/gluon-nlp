@@ -30,7 +30,9 @@ Language Processing (NLP) research.
 News
 ====
 
-- GluonNLP was featured in **KDD 2018 London, Apache MXNet Gluon tutorial**! Check out **https://kdd18.mxnet.io**.
+- GluonNLP is featured in:
+  - **AWS re:invent 2018 in Las Vegas, 2018-11-28**! Checkout `details <https://www.portal.reinvent.awsevents.com/connect/sessionDetail.ww?SESSION_ID=88736>`_.
+  - **KDD 2018 London, 2018-08-21, Apache MXNet Gluon tutorial**! Check out **https://kdd18.mxnet.io**.
 
 Installation
 ============

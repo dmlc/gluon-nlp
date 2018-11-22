@@ -1,6 +1,6 @@
 # LSTM-based Language Models
 
-A statistical model is simple a probability distribution over sequences of words or characters [1].
+A statistical language model is simply a probability distribution over sequences of words or characters [1].
 In this tutorial, we'll restrict our attention to word-based language models.
 Given a reliable language model we can answer questions like *which among the following strings are we more likely to encounter?*
 
