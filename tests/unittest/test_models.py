@@ -49,6 +49,7 @@ def _test_pretrained_big_text_models():
         output.wait_to_read()
 
 @pytest.mark.serial
+@pytest.mark.remote_required
 def test_big_text_models(wikitext2_val_and_counter):
     # use a small vocabulary for testing
     val, val_freq = wikitext2_val_and_counter
@@ -67,6 +68,7 @@ def test_big_text_models(wikitext2_val_and_counter):
         output.wait_to_read()
 
 @pytest.mark.serial
+@pytest.mark.remote_required
 def test_text_models():
     text_models = ['standard_lstm_lm_200', 'standard_lstm_lm_650', 'standard_lstm_lm_1500', 'awd_lstm_lm_1150', 'awd_lstm_lm_600']
     pretrained_to_test = {'standard_lstm_lm_1500': 'wikitext-2',
@@ -91,6 +93,7 @@ def test_text_models():
         mx.nd.waitall()
 
 @pytest.mark.serial
+@pytest.mark.remote_required
 def test_cache_models():
     cache_language_models = ['awd_lstm_lm_1150', 'awd_lstm_lm_600', 'standard_lstm_lm_200',
                    'standard_lstm_lm_650', 'standard_lstm_lm_1500']
@@ -111,6 +114,7 @@ def test_cache_models():
 
 
 @pytest.mark.serial
+@pytest.mark.remote_required
 def test_get_cache_model_noncache_models():
     language_models_params = {'awd_lstm_lm_1150': 'awd_lstm_lm_1150_wikitext-2-f9562ed0.params',
                               'awd_lstm_lm_600': 'awd_lstm_lm_600_wikitext-2-e952becc.params',
@@ -146,6 +150,7 @@ def test_get_cache_model_noncache_models():
 
 
 @pytest.mark.serial
+@pytest.mark.remote_required
 def test_save_load_cache_models():
     cache_language_models = ['awd_lstm_lm_1150', 'awd_lstm_lm_600', 'standard_lstm_lm_200',
                    'standard_lstm_lm_650', 'standard_lstm_lm_1500']

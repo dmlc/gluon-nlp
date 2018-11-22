@@ -6,6 +6,7 @@ import time
 from ..machine_translation.dataset import TOY
 
 
+@pytest.mark.remote_required
 def test_toy():
     # Test toy dataset
     train_en_de = TOY(segment='train', root='tests/data/translation_test')
@@ -30,6 +31,8 @@ def test_toy():
 
 
 @pytest.mark.serial
+@pytest.mark.remote_required
+@pytest.mark.gpu
 def test_embedding():
     process = subprocess.check_call([
         'python', './scripts/word_embeddings/train_fasttext.py', '--gpu', '0',
@@ -40,6 +43,7 @@ def test_embedding():
 
 
 @pytest.mark.serial
+@pytest.mark.remote_required
 def test_embedding_evaluate_pretrained():
     process = subprocess.check_call([
         'python', './scripts/word_embeddings/evaluate_pretrained.py',
@@ -49,6 +53,8 @@ def test_embedding_evaluate_pretrained():
 
 
 @pytest.mark.serial
+@pytest.mark.remote_required
+@pytest.mark.gpu
 def test_sentiment_analysis_finetune():
     process = subprocess.check_call(['python', './scripts/sentiment_analysis/finetune_lm.py',
                                      '--gpu', '0', '--batch_size', '32', '--bucket_type', 'fixed',
@@ -64,6 +70,8 @@ def test_sentiment_analysis_finetune():
     time.sleep(5)
 
 @pytest.mark.serial
+@pytest.mark.remote_required
+@pytest.mark.gpu
 def test_sentiment_analysis_textcnn():
     process = subprocess.check_call(['python', './scripts/sentiment_analysis/sentiment_analysis_cnn.py',
                                      '--gpu', '0', '--batch_size', '50', '--epochs', '1',
@@ -71,6 +79,7 @@ def test_sentiment_analysis_textcnn():
                                      '--data_name', 'MR', '--save-prefix', 'sa-model'])
     time.sleep(5)
 
+@pytest.mark.remote_required
 def test_sampling():
     process = subprocess.check_call(['python', './scripts/text_generation/sequence_sampling.py',
                                      '--use-beam-search', '--bos', 'I love it', '--beam_size', '2',
@@ -83,6 +92,8 @@ def test_sampling():
 
 
 @pytest.mark.serial
+@pytest.mark.remote_required
+@pytest.mark.gpu
 def test_gnmt():
     process = subprocess.check_call(['python', './scripts/machine_translation/train_gnmt.py', '--dataset', 'TOY',
                                      '--src_lang', 'en', '--tgt_lang', 'de', '--batch_size', '32',
@@ -93,6 +104,8 @@ def test_gnmt():
 
 
 @pytest.mark.serial
+@pytest.mark.remote_required
+@pytest.mark.gpu
 def test_transformer():
     process = subprocess.check_call(['python', './scripts/machine_translation/train_transformer.py',
                                      '--dataset', 'TOY', '--src_lang', 'en', '--tgt_lang', 'de',

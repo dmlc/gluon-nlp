@@ -29,6 +29,7 @@ context_max_length = 256
 
 
 @pytest.mark.serial
+@pytest.mark.remote_required
 def test_transform_to_nd_array():
     dataset = SQuAD(segment='dev', root='tests/data/squad')
     vocab_provider = VocabProvider(dataset)
@@ -41,6 +42,7 @@ def test_transform_to_nd_array():
 
 
 @pytest.mark.serial
+@pytest.mark.remote_required
 def test_data_loader_able_to_read():
     dataset = SQuAD(segment='dev', root='tests/data/squad')
     vocab_provider = VocabProvider(dataset)
@@ -63,6 +65,7 @@ def test_data_loader_able_to_read():
 
 
 @pytest.mark.serial
+@pytest.mark.remote_required
 def test_load_vocabs():
     dataset = SQuAD(segment='dev', root='tests/data/squad')
     vocab_provider = VocabProvider(dataset)
