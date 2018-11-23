@@ -75,6 +75,12 @@ def text8(min_freq=5, max_vocab_size=None):
                           bos_token=None, eos_token=None, min_freq=min_freq,
                           max_size=max_vocab_size)
         idx_to_counts = [counter[w] for w in vocab.idx_to_token]
+
+    def code(sentence):
+        return [vocab[token] for token in sentence if token in vocab]
+
+    with print_time('code data'):
+        data = data.transform(code, lazy=False)
     data = nlp.data.SimpleDataStream([data])
     return data, vocab, idx_to_counts
 
@@ -115,6 +121,12 @@ def wiki(wiki_root, wiki_date, wiki_language, max_vocab_size=None):
             vocab.token_to_idx.pop(token)
         vocab.idx_to_token = vocab.idx_to_token[:max_vocab_size]
     idx_to_counts = data.idx_to_counts
+
+    def code(shard):
+        return [[vocab[token] for token in sentence if token in vocab]
+                for sentence in shard]
+
+    data = data.transform(code)
     return data, vocab, idx_to_counts
 
 
@@ -179,12 +191,6 @@ def transform_data_fasttext(data, vocab, idx_to_counts, cbow, ngram_buckets,
     if ngram_buckets <= 0:
         raise ValueError('Invalid ngram_buckets. Use Word2Vec training '
                          'pipeline if not interested in ngrams.')
-
-    def code(shard):
-        return [[vocab[token] for token in sentence if token in vocab]
-                for sentence in shard]
-
-    data = data.transform(code)
 
     sum_counts = float(sum(idx_to_counts))
     idx_to_pdiscard = [
@@ -282,12 +288,6 @@ def transform_data_word2vec(data, vocab, idx_to_counts, cbow, batch_size,
     gluonnlp.data.DataStream
         Stream over batches.
     """
-
-    def code(shard):
-        return [[vocab[token] for token in sentence if token in vocab]
-                for sentence in shard]
-
-    data = data.transform(code)
 
     sum_counts = float(sum(idx_to_counts))
     idx_to_pdiscard = [
