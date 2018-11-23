@@ -64,71 +64,54 @@ def parse_args():
     # Data options
     group = parser.add_argument_group('Data arguments')
     group.add_argument(
-        'cooccurrences',
-        type=str,
+        'cooccurrences', type=str,
         help='Path to cooccurrences.npz containing a sparse (COO) '
         'representation of the co-occurrence matrix in numpy archive format. '
         'Output of ./cooccur')
-    group.add_argument(
-        'vocab',
-        type=str,
-        help='Vocabulary indices. Output of vocab_count tool.')
+    group.add_argument('vocab', type=str,
+                       help='Vocabulary indices. Output of vocab_count tool.')
 
     # Computation options
     group = parser.add_argument_group('Computation arguments')
-    group.add_argument(
-        '--batch-size',
-        type=int,
-        default=65536,
-        help='Batch size for training.')
+    group.add_argument('--batch-size', type=int, default=65536,
+                       help='Batch size for training.')
     group.add_argument('--epochs', type=int, default=5, help='Epoch limit')
     group.add_argument(
-        '--gpu',
-        type=int,
-        nargs='+',
+        '--gpu', type=int, nargs='+',
         help='Number (index) of GPU to run on, e.g. 0. '
         'If not specified, uses CPU.')
+    group.add_argument('--no-hybridize', action='store_true',
+                       help='Disable hybridization of gluon HybridBlocks.')
     group.add_argument(
-        '--no-hybridize',
-        action='store_true',
-        help='Disable hybridization of gluon HybridBlocks.')
-    group.add_argument(
-        '--no-static-alloc',
-        action='store_true',
+        '--no-static-alloc', action='store_true',
         help='Disable static memory allocation for HybridBlocks.')
 
     # Model
     group = parser.add_argument_group('Model arguments')
-    group.add_argument(
-        '--emsize', type=int, default=300, help='Size of embedding vectors.')
+    group.add_argument('--emsize', type=int, default=300,
+                       help='Size of embedding vectors.')
     group.add_argument('--x-max', type=int, default=100)
     group.add_argument('--alpha', type=float, default=0.75)
 
     # Optimization options
     group = parser.add_argument_group('Optimization arguments')
-    group.add_argument(
-        '--adagrad-eps',
-        type=float,
-        default=1,
-        help='Initial AdaGrad state value.')
+    group.add_argument('--adagrad-eps', type=float, default=1,
+                       help='Initial AdaGrad state value.')
     group.add_argument('--lr', type=float, default=0.1, help='Learning rate')
     group.add_argument('--seed', type=int, default=1, help='Random seed')
     group.add_argument('--dropout', type=float, default=0.15)
 
     # Logging
     group = parser.add_argument_group('Logging arguments')
-    group.add_argument(
-        '--logdir', type=str, default='logs', help='Directory to store logs.')
+    group.add_argument('--logdir', type=str, default='logs',
+                       help='Directory to store logs.')
     group.add_argument('--log-interval', type=int, default=100)
     group.add_argument(
-        '--eval-interval',
-        type=int,
+        '--eval-interval', type=int,
         help='Evaluate every --eval-interval iterations '
         'in addition to at the end of every epoch.')
-    group.add_argument(
-        '--no-eval-analogy',
-        action='store_true',
-        help='Don\'t evaluate on the analogy task.')
+    group.add_argument('--no-eval-analogy', action='store_true',
+                       help='Don\'t evaluate on the analogy task.')
 
     # Evaluation options
     evaluation.add_parameters(parser)
@@ -150,13 +133,8 @@ def get_train_data(args):
         for line in f:
             token, count = line.split('\t')
             counter[token] = int(count)
-    vocab = nlp.Vocab(
-        counter,
-        unknown_token=None,
-        padding_token=None,
-        bos_token=None,
-        eos_token=None,
-        min_freq=1)
+    vocab = nlp.Vocab(counter, unknown_token=None, padding_token=None,
+                      bos_token=None, eos_token=None, min_freq=1)
 
     npz = np.load(args.cooccurrences)
     row, col, counts = npz['row'], npz['col'], npz['data']
@@ -185,17 +163,11 @@ def get_train_data(args):
 # * Gluon Block definition
 class GloVe(nlp.model.train.EmbeddingModel, mx.gluon.HybridBlock):
     """GloVe EmbeddingModel"""
-    def __init__(self,
-                 token_to_idx,
-                 output_dim,
-                 x_max,
-                 alpha,
-                 dropout=0,
+
+    def __init__(self, token_to_idx, output_dim, x_max, alpha, dropout=0,
                  weight_initializer=None,
-                 bias_initializer=mx.initializer.Zero(),
-                 sparse_grad=True,
-                 dtype='float32',
-                 **kwargs):
+                 bias_initializer=mx.initializer.Zero(), sparse_grad=True,
+                 dtype='float32', **kwargs):
         assert isinstance(token_to_idx, dict)
 
         super(GloVe, self).__init__(**kwargs)
@@ -211,29 +183,19 @@ class GloVe(nlp.model.train.EmbeddingModel, mx.gluon.HybridBlock):
 
         with self.name_scope():
             self.source_embedding = mx.gluon.nn.Embedding(
-                len(token_to_idx),
-                output_dim,
-                weight_initializer=weight_initializer,
-                sparse_grad=sparse_grad,
+                len(token_to_idx), output_dim,
+                weight_initializer=weight_initializer, sparse_grad=sparse_grad,
                 dtype=dtype)
             self.context_embedding = mx.gluon.nn.Embedding(
-                len(token_to_idx),
-                output_dim,
-                weight_initializer=weight_initializer,
-                sparse_grad=sparse_grad,
+                len(token_to_idx), output_dim,
+                weight_initializer=weight_initializer, sparse_grad=sparse_grad,
                 dtype=dtype)
             self.source_bias = mx.gluon.nn.Embedding(
-                len(token_to_idx),
-                1,
-                weight_initializer=bias_initializer,
-                sparse_grad=sparse_grad,
-                dtype=dtype)
+                len(token_to_idx), 1, weight_initializer=bias_initializer,
+                sparse_grad=sparse_grad, dtype=dtype)
             self.context_bias = mx.gluon.nn.Embedding(
-                len(token_to_idx),
-                1,
-                weight_initializer=bias_initializer,
-                sparse_grad=sparse_grad,
-                dtype=dtype)
+                len(token_to_idx), 1, weight_initializer=bias_initializer,
+                sparse_grad=sparse_grad, dtype=dtype)
 
     def hybrid_forward(self, F, row, col, counts):
         """Compute embedding of words in batch.
@@ -266,8 +228,8 @@ class GloVe(nlp.model.train.EmbeddingModel, mx.gluon.HybridBlock):
         dot = F.batch_dot(emb_in.expand_dims(1),
                           emb_out.expand_dims(2)).squeeze()
         tmp = dot + bias_in + bias_out - F.log(counts).squeeze()
-        weight = F.clip(
-            ((counts / self._x_max)**self._alpha), a_min=0, a_max=1).squeeze()
+        weight = F.clip(((counts / self._x_max)**self._alpha), a_min=0,
+                        a_max=1).squeeze()
         loss = weight * F.square(tmp)
         return loss
 
@@ -295,9 +257,8 @@ class GloVe(nlp.model.train.EmbeddingModel, mx.gluon.HybridBlock):
             tokens = [tokens]
             squeeze = True
 
-        indices = mx.nd.array(
-            [self.token_to_idx[t] for t in tokens],
-            ctx=self.source_embedding.weight.list_ctx()[0])
+        indices = mx.nd.array([self.token_to_idx[t] for t in tokens],
+                              ctx=self.source_embedding.weight.list_ctx()[0])
         vecs = self.source_embedding(indices) + self.context_embedding(indices)
 
         if squeeze:
@@ -311,13 +272,9 @@ class GloVe(nlp.model.train.EmbeddingModel, mx.gluon.HybridBlock):
 def train(args):
     """Training helper."""
     vocab, row, col, counts = get_train_data(args)
-    model = GloVe(
-        token_to_idx=vocab.token_to_idx,
-        output_dim=args.emsize,
-        dropout=args.dropout,
-        x_max=args.x_max,
-        alpha=args.alpha,
-        weight_initializer=mx.init.Uniform(scale=1 / args.emsize))
+    model = GloVe(token_to_idx=vocab.token_to_idx, output_dim=args.emsize,
+                  dropout=args.dropout, x_max=args.x_max, alpha=args.alpha,
+                  weight_initializer=mx.init.Uniform(scale=1 / args.emsize))
     context = get_context(args)
     model.initialize(ctx=context)
     if not args.no_hybridize:
@@ -332,7 +289,7 @@ def train(args):
         index_dtype = 'int64'
         logging.info('Co-occurrence matrix is large. '
                      'Using int64 to represent sample indices.')
-    indices = mx.nd.arange(counts.shape[0], dtype=index_dtype)
+        indices = mx.nd.arange(counts.shape[0], dtype=index_dtype)
     for epoch in range(args.epochs):
         # Logging variables
         log_wc = 0
@@ -350,7 +307,7 @@ def train(args):
             batch_counts = counts[batch_indices].as_in_context(ctx)
             with mx.autograd.record():
                 loss = model(batch_row, batch_col, batch_counts)
-            loss.backward()
+                loss.backward()
 
             if len(context) == 1 or (i + 1) % len(context) == 0:
                 trainer.step(batch_size=1)
@@ -368,10 +325,8 @@ def train(args):
                                  wps / 1000, log_wc / 1000))
                 log_dict = dict(
                     global_step=epoch * len(indices) + i * args.batch_size,
-                    epoch=epoch,
-                    batch=i + 1,
-                    loss=log_avg_loss,
-                    wps=wps / 1000, )
+                    epoch=epoch, batch=i + 1, loss=log_avg_loss,
+                    wps=wps / 1000)
                 log(args, log_dict)
 
                 log_start_time = time.time()
@@ -388,12 +343,8 @@ def train(args):
     with print_time('mx.nd.waitall()'):
         mx.nd.waitall()
     with print_time('evaluate'):
-        evaluate(
-            args,
-            model,
-            vocab,
-            num_batches * args.epochs,
-            eval_analogy=not args.no_eval_analogy)
+        evaluate(args, model, vocab, num_batches * args.epochs,
+                 eval_analogy=not args.no_eval_analogy)
 
     # Save params
     with print_time('save parameters'):
@@ -419,23 +370,18 @@ def evaluate(args, model, vocab, global_step, eval_analogy=False):
     context = get_context(args)
     mx.nd.waitall()
 
-    token_embedding = nlp.embedding.TokenEmbedding(
-        unknown_token=None, allow_extend=True)
+    token_embedding = nlp.embedding.TokenEmbedding(unknown_token=None,
+                                                   allow_extend=True)
     token_embedding[eval_tokens] = model[eval_tokens]
 
     results = evaluation.evaluate_similarity(
-        args,
-        token_embedding,
-        context[0],
-        logfile=os.path.join(args.logdir, 'similarity.tsv'),
-        global_step=global_step)
+        args, token_embedding, context[0], logfile=os.path.join(
+            args.logdir, 'similarity.tsv'), global_step=global_step)
     if eval_analogy:
         assert not args.no_eval_analogy
         results += evaluation.evaluate_analogy(
-            args,
-            token_embedding,
-            context[0],
-            logfile=os.path.join(args.logdir, 'analogy.tsv'))
+            args, token_embedding, context[0], logfile=os.path.join(
+                args.logdir, 'analogy.tsv'))
 
     return results
 
