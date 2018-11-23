@@ -6,8 +6,37 @@ Part of NLI script of gluon-nlp. Implementation of Decomposable Attentiontion.
 Copyright 2018 Mengxiao Lin <linmx0130@gmail.com>.
 """
 
+import mxnet as mx
 from mxnet import gluon
 from mxnet.gluon import nn
+
+
+class NLIModel(gluon.HybridBlock):
+    """
+    A Decomposable Attention Model for Natural Language Inference
+    using intra-sentence attention.
+    Arxiv paper: https://arxiv.org/pdf/1606.01933.pdf
+    """
+    def __init__(self, vocab_size, word_embed_size, hidden_size, **kwargs):
+        super(NLIModel, self).__init__(**kwargs)
+        self.word_embed_size = word_embed_size
+        self.hidden_size = hidden_size
+        with self.name_scope():
+            self.word_emb = mx.gluon.nn.Embedding(vocab_size, word_embed_size)
+            self.lin_proj = gluon.nn.Dense(hidden_size, in_units=word_embed_size, activation='relu', flatten=False)
+            self.intra_attention = IntraSentenceAttention(hidden_size, hidden_size)
+            self.model = DecomposableAttention(hidden_size*2, hidden_size, 3)
+
+    def hybrid_forward(self, F, sentence1, sentence2):
+        """
+        Model forward definition
+        """
+        feature1 = self.lin_proj(self.word_emb(sentence1))
+        feature1 = F.concat(feature1, self.intra_attention(feature1), dim=-1)
+        feature2 = self.lin_proj(self.word_emb(sentence2))
+        feature2 = F.concat(feature2, self.intra_attention(feature2), dim=-1)
+        pred = self.model(feature1, feature2)
+        return pred
 
 class IntraSentenceAttention(gluon.HybridBlock):
     """

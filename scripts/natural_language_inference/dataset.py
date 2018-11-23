@@ -6,17 +6,18 @@ Copyright 2018 Mengxiao Lin <linmx0130@gmail.com>
 """
 
 import os
+import logging
 from mxnet import gluon
 import gluonnlp as nlp
 import gluonnlp.data.batchify as btf
 
+logger = logging.getLogger('nli')
 tokenizer = nlp.data.NLTKMosesTokenizer()
-
 LABEL_TO_IDX = {'neutral': 0, 'contradiction': 1, 'entailment': 2}
 
 def read_dataset(args, dataset):
     path = os.path.join(args.data_root, vars(args)[dataset])
-    print('reading data from {}'.format(path))
+    logger.info('reading data from {}'.format(path))
     examples = [line.strip().split('\t') for line in open(path)]
     if args.max_num_examples > 0:
         examples = examples[:args.max_num_examples]
@@ -25,7 +26,7 @@ def read_dataset(args, dataset):
         (e[5], e[6], LABEL_TO_IDX[e[0]])
         for e in examples if e[0] in LABEL_TO_IDX])
     # Tokenization
-    print('tokenizing data')
+    logger.info('tokenizing data')
     dataset = dataset.transform(lambda s1, s2, label: (tokenizer(s1), tokenizer(s2), label),
                                 lazy=False)
     return dataset
