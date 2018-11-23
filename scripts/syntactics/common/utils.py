@@ -155,10 +155,10 @@ def mxnet_prefer_gpu():
     context : Context
         The preferable GPU context.
     """
-    if 'cuda' not in os.environ['PATH']:
-        return mx.cpu()
     gpu = int(os.environ.get('MXNET_GPU', default=0))
-    return mx.gpu(gpu)
+    if gpu in mx.test_utils.list_gpus():
+        return mx.gpu(gpu)
+    return mx.cpu()
 
 
 def init_logger(root_dir, name="train.log"):
