@@ -247,14 +247,12 @@ class BiaffineParser(nn.Block):
 
         top_recur = biLSTM(self.f_lstm, self.b_lstm, emb_inputs, batch_size,
                            dropout_x=self.dropout_lstm_input if is_train else 0)
-        if is_train:
-            top_recur = nd.Dropout(data=top_recur, axes=[0], p=self.dropout_mlp)
+        top_recur = nd.Dropout(data=top_recur, axes=[0], p=self.dropout_mlp)
 
         W_dep, b_dep = self.mlp_dep_W.data(), self.mlp_dep_b.data()
         W_head, b_head = self.mlp_head_W.data(), self.mlp_head_b.data()
         dep, head = leaky_relu(nd.dot(top_recur, W_dep.T) + b_dep), leaky_relu(nd.dot(top_recur, W_head.T) + b_head)
-        if is_train:
-            dep, head = nd.Dropout(data=dep, axes=[0], p=self.dropout_mlp), nd.Dropout(data=head, axes=[0],
+        dep, head = nd.Dropout(data=dep, axes=[0], p=self.dropout_mlp), nd.Dropout(data=head, axes=[0],
                                                                                        p=self.dropout_mlp)
         dep, head = nd.transpose(dep, axes=[2, 0, 1]), nd.transpose(head, axes=[2, 0, 1])
         dep_arc, dep_rel = dep[:self.mlp_arc_size], dep[self.mlp_arc_size:]
