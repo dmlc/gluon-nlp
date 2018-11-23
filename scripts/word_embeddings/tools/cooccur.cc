@@ -29,16 +29,15 @@
 #include <set>
 #include <sstream>
 #include <stdexcept>
+#include <thread>
 #include <vector>
 
-#include "CLI/CLI.hpp"      // command line parser
-#include "cnpy.h"           // numpy
-#include "range/v3/all.hpp" // Ranges TS https://github.com/ericniebler/range-v3/
-#include "sparsepp/spp.h"   // fast sparse hash map
+#include "CLI/CLI.hpp"    // command line parser
+#include "cnpy.h"         // numpy
+#include "sparsepp/spp.h" // fast sparse hash map
 
 #include "utils.h"
 
-namespace rsv = ranges::view;
 namespace fs = std::filesystem;
 using Vocab = spp::sparse_hash_map<std::string, std::pair<uint32_t, uint32_t>>;
 using count_type = float;
@@ -59,7 +58,8 @@ std::ostream &operator<<(std::ostream &in,
   return in << static_cast<int>(context_weight);
 }
 
-// Arguments specified via command line options. See ParseArgs for documentation.
+// Arguments specified via command line options. See ParseArgs for
+// documentation.
 struct Arguments {
   unsigned int num_threads = 1;
   unsigned int window_size = 5;
@@ -113,71 +113,6 @@ auto ParseArgs(int argc, char **argv) {
   return std::make_tuple(paths, output, args);
 }
 
-// * Utils
-template <class T>
-class CircularBuffer : public ranges::view_facade<CircularBuffer<T>> {
-public:
-  CircularBuffer(size_t capacity) : _capacity(capacity) {
-    _data.reserve(capacity);
-  }
-
-  size_t capacity() const { return _capacity; }
-
-  size_t size() const { return _data.size(); }
-
-  void push_back(T item) {
-    if (size() < capacity()) {
-      _data.push_back(item);
-    } else {
-      _data.at(_pointer) = item;
-      _pointer = (_pointer + 1) % _capacity;
-    }
-  }
-
-  void clear() {
-    _data.clear();
-    _pointer = 0;
-  }
-
-private:
-  const size_t _capacity;
-  std::vector<T> _data;
-  size_t _pointer = 0;
-
-  // Ranges TS based iterator over circular buffer
-  friend ranges::range_access;
-  struct cursor {
-    cursor() = default;
-    cursor(size_t pointer, size_t counter, const CircularBuffer *parent)
-        : pointer(pointer), counter(counter), parent(parent) {}
-
-    T read() const { return parent->_data.at(pointer); }
-    bool equal(const cursor &other) const { return counter == other.counter; }
-    void next() {
-      // LIFO
-      if (pointer == 0) {
-        pointer = parent->size() - 1;
-      } else {
-        pointer -= 1;
-      }
-      counter++;
-    }
-
-    size_t pointer;
-    size_t counter;
-    const CircularBuffer *parent;
-  };
-  cursor begin_cursor() const {
-    if (size() == 0)
-      return cursor(_pointer, 0, this);
-    else if (_pointer == 0)
-      return cursor(size() - 1, 0, this);
-    else
-      return cursor(_pointer - 1, 0, this);
-  }
-  cursor end_cursor() const { return cursor(_pointer, size(), this); }
-};
-
 // * Input
 auto ReadVocab() {
   std::string word;
@@ -199,7 +134,7 @@ void ReadMatrix(std::queue<fs::path> &paths, queue<Matrix> &matrices,
                 const Vocab &vocab, const Arguments &args, uint32_t seed) {
   assert(seed > 0);
   std::string line;
-  CircularBuffer<uint32_t> history(args.window_size);
+  std::deque<uint32_t> history;
   std::unique_ptr<Matrix> m = std::make_unique<Matrix>();
 
   // Prepare subsampling
@@ -208,10 +143,14 @@ void ReadMatrix(std::queue<fs::path> &paths, queue<Matrix> &matrices,
   std::uniform_real_distribution<float> uniform_dist(0, 1);
   std::vector<double> idx_to_pdiscard;
   if (args.subsample) {
-    auto counts = vocab | rsv::values | rsv::values;
-    double sum_counts = std::accumulate(counts.begin(), counts.end(), 0);
+    double sum_counts = std::accumulate(vocab.begin(), vocab.end(), 0,
+                                        [](const auto &sum, const auto &e) {
+                                          const auto count = e.second.second;
+                                          return sum + count;
+                                        });
     double t = 1E-4;
-    for (const double count : vocab | rsv::values | rsv::values) {
+    for (const auto &e : vocab) {
+      const auto count = e.second.second;
       idx_to_pdiscard.push_back(1 - std::sqrt(t / (count / sum_counts)));
     }
   }
@@ -233,9 +172,9 @@ void ReadMatrix(std::queue<fs::path> &paths, queue<Matrix> &matrices,
     }
     while (std::getline(in, line)) {
       history.clear(); // Discard context from other lines
-
-      auto words = line | rsv::split((int (*)(int)) & std::isspace);
-      for (auto word : words) {
+      std::stringstream stream(line);
+      std::string word;
+      while (stream >> word) {
         // TODO We must construct an extra std::string for every word due to
         // missing support for heterogenous lookup in unordered map. Once
         // https://wg21.link/P0919 is merged construct a string_view instead.
@@ -250,20 +189,23 @@ void ReadMatrix(std::queue<fs::path> &paths, queue<Matrix> &matrices,
             continue;
           }
 
-          for (const auto &[distance, context_word_rank] :
-               rsv::zip(rsv::iota(1, static_cast<int>(history.size()) + 1),
-                        history)) {
+          for (unsigned int distance = 1; distance <= history.size();
+               distance++) {
+            const auto &context_word_rank = history[distance - 1];
             uint64_t key; // We merge 32 bit row and col indices to a single 64
                           // bit key
             // For symmetric contexts, only store one direction.
             if (!args.no_symmetric) {
               if (word_rank <= context_word_rank) {
-                key = (uint64_t)word_rank << 32 | context_word_rank;
+                key = (static_cast<uint64_t>(word_rank) << 32) |
+                      context_word_rank;
               } else {
-                key = word_rank | (uint64_t)context_word_rank << 32;
+                key = word_rank |
+                      (static_cast<uint64_t>(context_word_rank) << 32);
               }
             } else {
-              key = (uint64_t)word_rank << 32 | context_word_rank;
+              key =
+                  (static_cast<uint64_t>(word_rank) << 32) | context_word_rank;
             }
 
             if (args.context_weight == ContextWeight::Harmonic) {
@@ -276,6 +218,9 @@ void ReadMatrix(std::queue<fs::path> &paths, queue<Matrix> &matrices,
           }
 
           // Update circular history buffer
+          if (history.size() == args.window_size) {
+            history.pop_front();
+          }
           history.push_back(word_rank);
         }
       }
