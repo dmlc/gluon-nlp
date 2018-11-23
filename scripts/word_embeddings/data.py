@@ -21,7 +21,7 @@
 """Word embedding training datasets."""
 
 __all__ = [
-    'WikiDumpStream', 'text8', 'wiki', 'transform_data_fasttext',
+    'WikiDumpStream', 'preprocess_dataset', 'wiki', 'transform_data_fasttext',
     'transform_data_word2vec', 'skipgram_lookup', 'cbow_lookup',
     'skipgram_fasttext_batch', 'cbow_fasttext_batch', 'skipgram_batch',
     'cbow_batch']
@@ -44,18 +44,18 @@ from gluonnlp.data import CorpusDataset, SimpleDatasetStream
 from utils import print_time
 
 
-def text8(min_freq=5, max_vocab_size=None, toy=False):
-    """Text8 dataset helper.
+def preprocess_dataset(data, min_freq=5, max_vocab_size=None):
+    """Dataset preprocessing helper.
 
     Parameters
     ----------
+    data : mx.data.Dataset
+        Input Dataset. For example gluonnlp.data.Text8 or gluonnlp.data.Fil9
     min_freq : int, default 5
         Minimum token frequency for a token to be included in the vocabulary
         and returned DataStream.
     max_vocab_size : int, optional
         Specifies a maximum size for the vocabulary.
-    toy : bool
-        Toy mode. If True, only return first 20000 words.
 
     Returns
     -------
@@ -70,10 +70,7 @@ def text8(min_freq=5, max_vocab_size=None, toy=False):
         dataset.
 
     """
-    with print_time('read data'):
-        data = nlp.data.Text8(segment='train')
-        if toy:
-            data = mx.gluon.data.SimpleDataset(data[:2])
+    with print_time('count and construct vocabulary'):
         counter = nlp.data.count_tokens(itertools.chain.from_iterable(data))
         vocab = nlp.Vocab(counter, unknown_token=None, padding_token=None,
                           bos_token=None, eos_token=None, min_freq=min_freq,

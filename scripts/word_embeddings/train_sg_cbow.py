@@ -45,7 +45,7 @@ import gluonnlp as nlp
 import evaluation
 from utils import get_context, print_time
 from model import SG, CBOW
-from data import transform_data_word2vec, transform_data_fasttext, text8, wiki
+from data import transform_data_word2vec, transform_data_fasttext, preprocess_dataset, wiki
 
 
 def parse_args():
@@ -142,10 +142,17 @@ def train(args):
         sys.exit(1)
 
     if args.data.lower() == 'toy':
-        data, vocab, idx_to_counts = text8(max_vocab_size=args.max_vocab_size,
-                                           toy=True)
+        data = mx.gluon.data.SimpleDataset(nlp.data.Text8(segment='train')[:2])
+        data, vocab, idx_to_counts = preprocess_dataset(
+            data, max_vocab_size=args.max_vocab_size)
     elif args.data.lower() == 'text8':
-        data, vocab, idx_to_counts = text8(max_vocab_size=args.max_vocab_size)
+        data = nlp.data.Text8(segment='train')
+        data, vocab, idx_to_counts = preprocess_dataset(
+            data, max_vocab_size=args.max_vocab_size)
+    elif args.data.lower() == 'fil9':
+        data = nlp.data.Fil9(max_sentence_length=10000)
+        data, vocab, idx_to_counts = preprocess_dataset(
+            data, max_vocab_size=args.max_vocab_size)
     elif args.data.lower() == 'wiki':
         data, vocab, idx_to_counts = wiki(args.wiki_root, args.wiki_date,
                                           args.wiki_language,
