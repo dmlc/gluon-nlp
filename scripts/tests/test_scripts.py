@@ -33,19 +33,26 @@ def test_toy():
 @pytest.mark.serial
 @pytest.mark.remote_required
 @pytest.mark.gpu
-def test_embedding():
-    process = subprocess.check_call([
+@pytest.mark.parametrize('model', ['skipgram', 'cbow'])
+@pytest.mark.parametrize('fasttext', [True, False])
+def test_skipgram_cbow(model, fasttext):
+    cmd = [
         'python', './scripts/word_embeddings/train_sg_cbow.py', '--gpu', '0',
-        '--epochs', '1', '--optimizer', 'sgd', '--ngram-buckets', '100',
-        '--max-vocab-size', '100', '--batch-size', '64'
-    ])
+        '--epochs', '2', '--optimizer', 'sgd', '--model', model,
+        '--data', 'toy', '--batch-size', '64'
+    ]
+    if fasttext:
+        cmd += ['--ngram-buckets', '1000']
+    else:
+        cmd += ['--ngram-buckets', '0']
+    subprocess.check_call(cmd)
     time.sleep(5)
 
 
 @pytest.mark.serial
 @pytest.mark.remote_required
 def test_embedding_evaluate_pretrained():
-    process = subprocess.check_call([
+    subprocess.check_call([
         'python', './scripts/word_embeddings/evaluate_pretrained.py',
         '--embedding-name', 'fasttext', '--embedding-source', 'wiki.simple'
     ])

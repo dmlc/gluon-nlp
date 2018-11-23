@@ -141,7 +141,10 @@ def train(args):
         logging.error('Unsupported model %s.', args.model)
         sys.exit(1)
 
-    if args.data.lower() == 'text8':
+    if args.data.lower() == 'toy':
+        data, vocab, idx_to_counts = text8(max_vocab_size=args.max_vocab_size,
+                                           toy=True)
+    elif args.data.lower() == 'text8':
         data, vocab, idx_to_counts = text8(max_vocab_size=args.max_vocab_size)
     elif args.data.lower() == 'wiki':
         data, vocab, idx_to_counts = wiki(args.wiki_root, args.wiki_date,
@@ -150,15 +153,16 @@ def train(args):
 
     if args.ngram_buckets > 0:
         data, batchify_fn, subword_function = transform_data_fasttext(
-            data, vocab, idx_to_counts,
-            args.model.lower() == 'cbow', args.ngram_buckets, args.ngrams,
-            args.batch_size, args.window, args.frequent_token_subsampling)
+            data, vocab, idx_to_counts, cbow=args.model.lower() == 'cbow',
+            ngram_buckets=args.ngram_buckets, ngrams=args.ngrams,
+            batch_size=args.batch_size, window_size=args.window,
+            frequent_token_subsampling=args.frequent_token_subsampling)
     else:
         subword_function = None
         data, batchify_fn = transform_data_word2vec(
-            data, vocab, idx_to_counts,
-            args.model.lower() == 'cbow', args.ngram_buckets, args.ngrams,
-            args.batch_size, args.window, args.frequent_token_subsampling)
+            data, vocab, idx_to_counts, cbow=args.model.lower() == 'cbow',
+            batch_size=args.batch_size, window_size=args.window,
+            frequent_token_subsampling=args.frequent_token_subsampling)
 
     num_tokens = float(sum(idx_to_counts))
 
