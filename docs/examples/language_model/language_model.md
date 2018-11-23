@@ -1,6 +1,6 @@
-# Language Modeling
+# LSTM-based Language Models
 
-A statistical model is simple a probability distribution over sequences of words or characters [1].
+A statistical language model is simply a probability distribution over sequences of words or characters [1].
 In this tutorial, we'll restrict our attention to word-based language models.
 Given a reliable language model we can answer questions like *which among the following strings are we more likely to encounter?*
 
@@ -226,7 +226,7 @@ def train(model, train_data, val_data, test_data, epochs, lr):
 train(model, train_data, val_data, test_data, epochs, lr)
 ```
 
-## Use your own dataset
+#### Use your own dataset
 
 When we train a language model, we fit to the statistics of a given dataset.
 While many papers focus on a few standard datasets, such as WikiText or the Penn Tree Bank, that's just to provide a standard benchmark for the purpose of comparing models against each other.

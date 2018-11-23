@@ -3,8 +3,8 @@ Text Generation
 
 :download:`[Download] </model_zoo/text_generation.zip>`
 
-Through Sampling a Language Model
-+++++++++++++++++++++++++++++++++
+Sampling a Language Model
++++++++++++++++++++++++++
 
 This script can be used to generate sentences using beam search or a sequence sampler, to sample from a pre-trained language model.
 

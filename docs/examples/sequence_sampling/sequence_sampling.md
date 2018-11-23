@@ -1,4 +1,4 @@
-# Sequence Sampling
+# Sequence Generation with Sampling and Beam Search
 
 This tutorial demonstrates how to sample sequences using a
 pre-trained language model in the following two ways:
@@ -13,7 +13,7 @@ probability that they would occur according to our model. At each time step, a
 language model predicts the likelihood of each word occuring, given the context
 from prior time steps. The outputs at any time step can be any word from the
 vocabulary whose size is V and thus the number of all possible outcomes for a
-sequence of length T is thus V^T. 
+sequence of length T is thus V^T.
 
 While sometimes we might want to sample
 sentences according to their probability of occuring, at other times we want to

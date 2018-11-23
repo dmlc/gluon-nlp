@@ -20,8 +20,6 @@
 from __future__ import print_function
 
 import datetime
-import itertools
-import json
 import os
 import random
 
@@ -80,6 +78,7 @@ def test_dataset_registry():
 # Sentiment analysis
 ###############################################################################
 @pytest.mark.serial
+@pytest.mark.remote_required
 def test_imdb():
     train = nlp.data.IMDB(
         root=os.path.join('tests', 'data', 'imdb'), segment='train')
@@ -103,6 +102,73 @@ def test_imdb():
         assert isinstance(data, _str_types)
         assert score == 0
 
+@pytest.mark.serial
+@pytest.mark.remote_required
+def test_mr():
+    all = nlp.data.MR(
+        root=os.path.join('tests', 'data', 'mr'))
+    assert len(all) == 10662, len(all)
+    for i, (data, label) in enumerate(all):
+        assert isinstance(data, _str_types)
+        assert label <= 1
+
+@pytest.mark.serial
+@pytest.mark.remote_required
+def test_sst_1():
+    train = nlp.data.SST_1(
+        root=os.path.join('tests', 'data', 'sst-1'), segment='train')
+    test = nlp.data.SST_1(
+        root=os.path.join('tests', 'data', 'sst-1'), segment='test')
+    assert len(train) == 237107, len(train)
+    assert len(test) == 2125, len(test)
+    for i, (data, label) in enumerate(train):
+        assert isinstance(data, _str_types)
+        assert label <= 4
+    for i, (data, label) in enumerate(test):
+        assert isinstance(data, _str_types)
+        assert label <= 4
+
+@pytest.mark.serial
+@pytest.mark.remote_required
+def test_sst_2():
+    train = nlp.data.SST_2(
+        root=os.path.join('tests', 'data', 'sst-2'), segment='train')
+    test = nlp.data.SST_2(
+        root=os.path.join('tests', 'data', 'sst-2'), segment='test')
+    assert len(train) == 118038, len(train)
+    assert len(test) == 1745, len(test)
+    for i, (data, label) in enumerate(train):
+        assert isinstance(data, _str_types)
+        assert label <= 1
+    for i, (data, label) in enumerate(test):
+        assert isinstance(data, _str_types)
+        assert label <= 1
+
+@pytest.mark.serial
+@pytest.mark.remote_required
+def test_subj():
+    all = nlp.data.SUBJ(
+        root=os.path.join('tests', 'data', 'mr'))
+    assert len(all) == 10000, len(all)
+    for i, (data, label) in enumerate(all):
+        assert isinstance(data, _str_types)
+        assert label <= 1
+
+@pytest.mark.serial
+@pytest.mark.remote_required
+def test_trec():
+    train = nlp.data.TREC(
+        root=os.path.join('tests', 'data', 'trec'), segment='train')
+    test = nlp.data.TREC(
+        root=os.path.join('tests', 'data', 'trec'), segment='test')
+    assert len(train) == 11452, len(train)
+    assert len(test) == 500, len(test)
+    for i, (data, label) in enumerate(train):
+        assert isinstance(data, _str_types)
+        assert label <= 5
+    for i, (data, label) in enumerate(test):
+        assert isinstance(data, _str_types)
+        assert label <= 5
 
 ###############################################################################
 # Word similarity and relatedness datasets
@@ -121,6 +187,7 @@ def _assert_similarity_dataset(data):
 @pytest.mark.parametrize('segment,length', [('all', 352), ('relatedness', 252),
                                             ('similarity', 203)])
 @pytest.mark.serial
+@pytest.mark.remote_required
 def test_wordsim353(segment, length):
     # 'all' has length 352 as the original dataset contains the 'money/cash'
     # pair twice with different similarity ratings, which was fixed by the
@@ -133,6 +200,7 @@ def test_wordsim353(segment, length):
 
 
 @pytest.mark.serial
+@pytest.mark.remote_required
 def test_men():
     for segment, length in [("full", 3000), ("dev", 2000), ("test", 1000)]:
         data = nlp.data.MEN(
@@ -143,6 +211,7 @@ def test_men():
 
 @flaky(max_runs=2, min_passes=1)
 @pytest.mark.serial
+@pytest.mark.remote_required
 def test_radinsky_mturk():
     data = nlp.data.RadinskyMTurk(
         root=os.path.join('tests', 'externaldata', 'radinsky'))
@@ -152,6 +221,7 @@ def test_radinsky_mturk():
 
 @flaky(max_runs=2, min_passes=1)
 @pytest.mark.serial
+@pytest.mark.remote_required
 def test_verb143():
     data = nlp.data.BakerVerb143(
         root=os.path.join('tests', 'externaldata', 'verb143'))
@@ -172,6 +242,7 @@ def test_verb130():
                     reason='Disabled for 1 weeks due to server downtime.')
 @flaky(max_runs=2, min_passes=1)
 @pytest.mark.serial
+@pytest.mark.remote_required
 def test_rare_words():
     data = nlp.data.RareWords(
         root=os.path.join('tests', 'externaldata', 'rarewords'))
@@ -181,6 +252,7 @@ def test_rare_words():
 
 @flaky(max_runs=2, min_passes=1)
 @pytest.mark.serial
+@pytest.mark.remote_required
 def test_simlex999():
     data = nlp.data.SimLex999(
         root=os.path.join('tests', 'externaldata', 'simlex999'))
@@ -190,6 +262,7 @@ def test_simlex999():
 
 @flaky(max_runs=2, min_passes=1)
 @pytest.mark.serial
+@pytest.mark.remote_required
 def test_simverb3500():
     data = nlp.data.SimVerb3500(
         root=os.path.join('tests', 'externaldata', 'simverb3500'))
@@ -199,6 +272,7 @@ def test_simverb3500():
 
 @flaky(max_runs=2, min_passes=1)
 @pytest.mark.serial
+@pytest.mark.remote_required
 def test_semeval17task2():
     for segment, length in [("trial", 18), ("test", 500)]:
         data = nlp.data.SemEval17Task2(
@@ -213,6 +287,7 @@ def test_semeval17task2():
 ###############################################################################
 @flaky(max_runs=2, min_passes=1)
 @pytest.mark.serial
+@pytest.mark.remote_required
 def test_googleanalogy():
     data = nlp.data.GoogleAnalogyTestSet(
         root=os.path.join('tests', 'externaldata', 'google_analogy'))
@@ -222,6 +297,7 @@ def test_googleanalogy():
 
 @flaky(max_runs=2, min_passes=1)
 @pytest.mark.serial
+@pytest.mark.remote_required
 def test_bigger_analogy():
     data = nlp.data.BiggerAnalogyTestSet(
         root=os.path.join('tests', 'externaldata', 'bigger_analogy'))
@@ -234,6 +310,7 @@ def test_bigger_analogy():
 ###############################################################################
 @flaky(max_runs=2, min_passes=1)
 @pytest.mark.serial
+@pytest.mark.remote_required
 def test_conll2000():
     train = nlp.data.CoNLL2000(segment='train', root=os.path.join(
         'tests', 'externaldata', 'conll2000'))
@@ -255,6 +332,7 @@ def test_conll2000():
 
 @flaky(max_runs=2, min_passes=1)
 @pytest.mark.serial
+@pytest.mark.remote_required
 def test_conll2001():
     for part in range(1, 4):
         train = nlp.data.CoNLL2001(part, segment='train', root=os.path.join(
@@ -282,6 +360,7 @@ def test_conll2001():
     ('testb', 5195),
 ])
 @pytest.mark.serial
+@pytest.mark.remote_required
 def test_conll2002_ned(segment, length):
     dataset = nlp.data.CoNLL2002('ned', segment=segment, root=os.path.join(
         'tests', 'externaldata', 'conll2002'))
@@ -299,6 +378,7 @@ def test_conll2002_ned(segment, length):
     ('testb', 1517),
 ])
 @pytest.mark.serial
+@pytest.mark.remote_required
 def test_conll2002_esp(segment, length):
     dataset = nlp.data.CoNLL2002('esp', segment=segment, root=os.path.join(
         'tests', 'externaldata', 'conll2002'))
@@ -317,6 +397,7 @@ def test_conll2002_esp(segment, length):
     ('test', 1671),
 ])
 @pytest.mark.serial
+@pytest.mark.remote_required
 def test_conll2004(segment, length):
     dataset = nlp.data.CoNLL2004(segment=segment, root=os.path.join(
         'tests', 'externaldata', 'conll2004'))
@@ -330,6 +411,7 @@ def test_conll2004(segment, length):
 
 @flaky(max_runs=2, min_passes=1)
 @pytest.mark.serial
+@pytest.mark.remote_required
 def test_ud21():
     test_langs = list(nlp._constants.UD21_DATA_FILE_SHA1.items())
     random.shuffle(test_langs)
@@ -352,6 +434,7 @@ def test_ud21():
 # Translation
 ###############################################################################
 @pytest.mark.serial
+@pytest.mark.remote_required
 def test_iwlst2015():
     # Test en to vi
     train_en_vi = nlp.data.IWSLT2015(segment='train', root='tests/data/iwlst2015')
@@ -377,6 +460,7 @@ def test_iwlst2015():
 
 
 @pytest.mark.serial
+@pytest.mark.remote_required
 def test_wmt2016():
     train = nlp.data.WMT2016(segment='train', src_lang='en', tgt_lang='de',
                              root='tests/data/wmt2016')
@@ -391,6 +475,7 @@ def test_wmt2016():
 
 
 @pytest.mark.serial
+@pytest.mark.remote_required
 def test_wmt2016bpe():
     train = nlp.data.WMT2016BPE(segment='train', src_lang='en', tgt_lang='de',
                                 root='tests/data/wmt2016bpe')
@@ -408,6 +493,7 @@ def test_wmt2016bpe():
 
 
 @pytest.mark.serial
+@pytest.mark.remote_required
 def test_wmt2014():
     train = nlp.data.WMT2014(segment='train', src_lang='en', tgt_lang='de',
                              root='tests/data/wmt2014')
@@ -430,6 +516,7 @@ def test_wmt2014():
 
 
 @pytest.mark.serial
+@pytest.mark.remote_required
 def test_wmt2014bpe():
     train = nlp.data.WMT2014BPE(segment='train', src_lang='en', tgt_lang='de',
                                 root='tests/data/wmt2014bpe')
@@ -457,6 +544,7 @@ def test_wmt2014bpe():
 # Question answering
 ###############################################################################
 @pytest.mark.serial
+@pytest.mark.remote_required
 def test_load_dev_squad():
     # number of records in dataset is equal to number of different questions
     train_dataset = nlp.data.SQuAD(segment='train', root='tests/data/squad')
