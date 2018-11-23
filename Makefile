@@ -32,6 +32,9 @@ lint:
 	make pylint
 	make restruc
 
+dev_docs:
+	make -C docs html
+
 docs: release
 	make -C docs doctest html SPHINXOPTS=-W
 	for f in $(shell find docs/examples -type f -name '*.md' -print) ; do \
