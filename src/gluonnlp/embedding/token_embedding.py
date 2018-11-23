@@ -126,7 +126,8 @@ def list_sources(embedding_name=None):
 
     text_embedding_reg = registry.get_registry(TokenEmbedding)
 
-    if embedding_name:
+    if embedding_name is not None:
+        embedding_name = embedding_name.lower()
         if embedding_name not in text_embedding_reg:
             raise KeyError('Cannot find `embedding_name` {}. Use '
                            '`list_sources(embedding_name=None).keys()` to get all the valid'
