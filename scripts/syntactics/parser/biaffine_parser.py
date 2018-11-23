@@ -25,6 +25,7 @@ from mxnet.gluon.loss import SoftmaxCrossEntropyLoss
 
 from scripts.syntactics.common.utils import orthonormal_VanillaLSTMBuilder, bilinear, reshape_fortran, arc_argmax, \
     rel_argmax, leaky_relu, biLSTM, orthonormal_initializer
+from gluonnlp.model import apply_weight_drop
 
 
 class BiaffineParser(nn.Block):
@@ -76,6 +77,7 @@ class BiaffineParser(nn.Block):
 
         def embedding_from_numpy(_we, trainable=True):
             word_embs = nn.Embedding(_we.shape[0], _we.shape[1], weight_initializer=mx.init.Constant(_we))
+            apply_weight_drop(word_embs, 'weight', dropout_dim, axes=(1,))
             if not trainable:
                 word_embs.collect_params().setattr('grad_req', 'null')
             return word_embs
@@ -116,36 +118,6 @@ class BiaffineParser(nn.Block):
         self.softmax_loss = SoftmaxCrossEntropyLoss(axis=0, batch_axis=-1)
 
         self.initialize()
-
-        def _emb_mask_generator(seq_len, batch_size):
-            """word and tag dropout (drop whole word and tag)
-
-            Parameters
-            ----------
-            seq_len : int
-                length of sequence
-            batch_size : int
-                batch size
-
-            Returns
-            -------
-            np.ndarray
-                dropout mask for word and tag
-            """
-            wm, tm = nd.zeros((seq_len, batch_size, 1)), nd.zeros((seq_len, batch_size, 1))
-            for i in range(seq_len):
-                word_mask = np.random.binomial(1, 1. - dropout_dim, batch_size).astype(np.float32)
-                tag_mask = np.random.binomial(1, 1. - dropout_dim, batch_size).astype(np.float32)
-                scale = 3. / (2. * word_mask + tag_mask + 1e-12)
-                word_mask *= scale
-                tag_mask *= scale
-                word_mask = nd.array(word_mask)
-                tag_mask = nd.array(tag_mask)
-                wm[i, :, 0] = word_mask
-                tm[i, :, 0] = tag_mask
-            return wm, tm
-
-        self.generate_emb_mask = _emb_mask_generator
 
     def parameter_from_numpy(self, name, array):
         """ Create parameter with its value initialized according to a numpy tensor
@@ -239,11 +211,7 @@ class BiaffineParser(nn.Block):
         tag_embs = self.tag_embs(nd.array(tag_inputs))
 
         # Dropout
-        if is_train:
-            wm, tm = self.generate_emb_mask(seq_len, batch_size)
-            emb_inputs = nd.concat(nd.multiply(wm, word_embs), nd.multiply(tm, tag_embs), dim=2)
-        else:
-            emb_inputs = nd.concat(word_embs, tag_embs, dim=2)  # seq_len x batch_size
+        emb_inputs = nd.concat(word_embs, tag_embs, dim=2)  # seq_len x batch_size
 
         top_recur = biLSTM(self.f_lstm, self.b_lstm, emb_inputs, batch_size,
                            dropout_x=self.dropout_lstm_input if is_train else 0)
