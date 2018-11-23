@@ -1,7 +1,8 @@
+import os
 import subprocess
+import time
 
 import pytest
-import time
 
 from ..machine_translation.dataset import TOY
 
@@ -51,11 +52,37 @@ def test_skipgram_cbow(model, fasttext):
 
 @pytest.mark.serial
 @pytest.mark.remote_required
-def test_embedding_evaluate_pretrained():
-    subprocess.check_call([
+@pytest.mark.parametrize('fasttextloadngrams', [True, False])
+def test_embedding_evaluate_pretrained(fasttextloadngrams):
+    cmd = [
         'python', './scripts/word_embeddings/evaluate_pretrained.py',
         '--embedding-name', 'fasttext', '--embedding-source', 'wiki.simple'
-    ])
+    ]
+    if fasttextloadngrams:
+        cmd.append('--fasttext-load-ngrams')
+
+    subprocess.check_call(cmd)
+    time.sleep(5)
+
+
+@pytest.mark.serial
+@pytest.mark.remote_required
+@pytest.mark.parametrize('evaluatanalogies', [True, False])
+@pytest.mark.parametrize('maxvocabsize', [None, 16])
+def test_embedding_evaluate_from_path(evaluatanalogies, maxvocabsize):
+    path = os.path.dirname(os.path.abspath(os.path.expanduser(__file__)))
+    path = os.path.join(
+        path, '../../tests/unittest/train/test_embedding/lorem_ipsum.bin')
+    cmd = [
+        'python', './scripts/word_embeddings/evaluate_pretrained.py',
+        '--embedding-path', path]
+    if evaluatanalogies:
+        cmd += ['--analogy-datasets', 'GoogleAnalogyTestSet']
+    else:
+        cmd += ['--analogy-datasets']
+    if maxvocabsize is not None:
+        cmd += ['--max-vocab-size', str(maxvocabsize)]
+    subprocess.check_call(cmd)
     time.sleep(5)
 
 
