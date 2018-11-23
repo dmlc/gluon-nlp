@@ -212,6 +212,7 @@ class DepParser(object):
             parser itself
         """
         config = _Config.load(os.path.join(path, 'config.pkl'))
+        config.save_dir = path  # redirect root path to what user specified
         self._vocab = vocab = ParserVocabulary.load(config.save_vocab_path)
         with mx.Context(mxnet_prefer_gpu()):
             self._parser = BiaffineParser(vocab, config.word_dims, config.tag_dims, config.dropout_emb,
