@@ -2,7 +2,7 @@
 
 In this notebook, we will use GluonNLP to show how to generate ELMo sentence representation proposed in [1].
 
-We will focus on showing how to 
+We will focus on showing how to
 * 1) process data, transform data and create the data loader;
 * 2) load the pretrained ELMo model, and generate the sentence representation for the input data.
 
@@ -111,7 +111,7 @@ class SampleDataset(gluon.data.SimpleDataset):
         if eos:
             tokens.append(eos)
         return tokens
-    
+
 sample_dataset = SampleDataset(sentences, flatten=False)
 ```
 
@@ -144,7 +144,7 @@ class DataListTransform(object):
 
         # +1 one for masking
         return [c + 1 for c in char_ids]
-    
+
 sample_dataset = sample_dataset.transform(DataListTransform(), lazy=False)
 sample_dataset = gluon.data.SimpleDataset([(ele, len(ele), i)
                       for i, ele in enumerate(sample_dataset)])
@@ -206,7 +206,7 @@ def remove_sentence_boundaries(inputs, mask):
     this returns a tensor of shape ``(batch_size, timesteps - 2, embedding_size)`` after removing
     the beginning and end sentence markers.
     Returns both the new tensor and updated mask.
-    
+
     Parameters
     ----------
     inputs : ``NDArray``
@@ -251,8 +251,8 @@ for i, batch in enumerate(sample_data_loader):
 
 ## Conclusion
 
-In this section, we show that how to generate ELMo representation for sentences including 
-* 1) how to process, transform data, and create the dataloader for the samples; 
+In this section, we show that how to generate ELMo representation for sentences including
+* 1) how to process, transform data, and create the dataloader for the samples;
 * 2) how to use the pretrained ELMo model to generate the sentence representation.
 
 

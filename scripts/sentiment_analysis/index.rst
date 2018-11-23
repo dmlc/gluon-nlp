@@ -1,11 +1,10 @@
-
 Sentiment Analysis
 ------------------
 
 :download:`[Download] </model_zoo/sentiment_analysis.zip>`
 
 Through Fine-tuning Word Language Model
-+++++++++++++++++++++++++++++++++++++++
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This script can be used to train a sentiment analysis model from scratch, or fine-tune a pre-trained language model.
 The pre-trained language models are loaded from Gluon NLP Toolkit model zoo. It also showcases how to use different
@@ -24,8 +23,8 @@ Use the following command to run with pre-trained model (`log <https://github.co
    $ python finetune_lm.py --gpu 0 --batch_size 16 --bucket_type fixed --epochs 3 --dropout 0 --lr 0.005 --valid_ratio 0.1 --save-prefix imdb_lstm_200  # Test Accuracy 86.46
 
 
-Through textCNN Model
-+++++++++++++++++++++++++++++++++++++++
+TextCNN
+~~~~~~~
 
 
 This script can be used to train a sentiment analysis model with convolutional neural networks, i.e., textCNN:

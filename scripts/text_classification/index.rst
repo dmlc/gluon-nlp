@@ -4,7 +4,7 @@ Text Classification
 :download:`[Download] </model_zoo/text_classification.zip>`
 
 Fast-text Word N-gram
-+++++++++++++++++++++
+~~~~~~~~~~~~~~~~~~~~~
 
 Use the following command to train the FastText classification model on the Yelp review dataset.
 The model we have implemented is a slight variant of :

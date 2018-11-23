@@ -1,13 +1,13 @@
 Language Model
--------------------
+--------------
+
+:download:`[Download] </model_zoo/language_model.zip>`
 
 Word Language Model
 ~~~~~~~~~~~~~~~~~~~~
 
 Reference: Merity, S., et al. "`Regularizing and optimizing LSTM language models <https://openreview.net/pdf?id=SyyGPP0TZ>`_". ICLR 2018
 
-
-:download:`[Download] </model_zoo/language_model.zip>`
 
 The key features used to reproduce the results for pre-trained models are listed in the following tables.
 

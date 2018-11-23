@@ -1,6 +1,6 @@
 # Machine Translation with Transformer
 
-In this notebook, we will show how to use Transformer introduced in [1] in GluonNLP and evaluate the pretrained model using GluonNLP. Transformer model is shown to be more accurate and easier to parallelize than previous seq2seq-based models such as Google Neural Machine Translation. We will use the state-of-the-art pretrained Transformer model, evaluate the pretrained Transformer model on newstest2014 and translate a few sentences ourselves with the `BeamSearchTranslator`;
+In this notebook, we will show how to use Transformer introduced in [1] and evaluate the pretrained model with GluonNLP. Transformer model is shown to be more accurate and easier to parallelize than previous seq2seq-based models such as Google Neural Machine Translation. We will use the state-of-the-art pretrained Transformer model, evaluate the pretrained Transformer model on newstest2014 and translate a few sentences ourselves with the `BeamSearchTranslator`;
 
 ## Preparation
 
@@ -67,8 +67,8 @@ for the future use. The processing steps include:
 3) map the string token into its index in the vocabulary
 4) append EOS token to source sentence and add BOS and EOS tokens to target sentence.
 
-Let's first look at the WMT 2014 corpus. GluonNLP provides [WMT2014BPE](../../api/data.rst#gluonnlp.data.WMT2014BPE)
-and [WMT2014](../../api/data.rst#gluonnlp.data.WMT2014) classes. The former contains BPE-tokenized dataset, while
+Let's first look at the WMT 2014 corpus. GluonNLP provides [WMT2014BPE](../../api/modules/data.rst#gluonnlp.data.WMT2014BPE)
+and [WMT2014](../../api/modules/data.rst#gluonnlp.data.WMT2014) classes. The former contains BPE-tokenized dataset, while
 the later contains the raw text. Here, we use the former for scoring, and the later for
 demonstrating actual translation.
 
@@ -130,12 +130,12 @@ In GluonNLP, all dataset items are tuples. In the preprocessed `wmt_data_test_wi
 `(src, tgt, len(src), len(tgt), idx)` elements. In order to express how we'd like to batchify them
 in GluonNLP, we use the built-in batchify functions.
 
-* [Tuple](../../api/data.batchify.rst#gluonnlp.data.batchify.Tuple) is the GluonNLP way of applying different batchify functions to each element of a dataset item. In this case, we are applying `Pad` to `src` and `tgt`, `Stack` to `len(src)` and `len(tgt)` with conversion to float32, and simple `Stack` to `idx` without type conversion.
-* [Pad](../../api/data.batchify.rst#gluonnlp.data.batchify.Pad) takes the elements from all dataset items in a batch, and pad them according to the item of maximum length to form a padded matrix/tensor.
-* [Stack](../../api/data.batchify.rst#gluonnlp.data.batchify.Stack) simply stacks all elements in a batch, and requires all elements to be of the same length.
+* [Tuple](../../api/modules/data.batchify.rst#gluonnlp.data.batchify.Tuple) is the GluonNLP way of applying different batchify functions to each element of a dataset item. In this case, we are applying `Pad` to `src` and `tgt`, `Stack` to `len(src)` and `len(tgt)` with conversion to float32, and simple `Stack` to `idx` without type conversion.
+* [Pad](../../api/modules/data.batchify.rst#gluonnlp.data.batchify.Pad) takes the elements from all dataset items in a batch, and pad them according to the item of maximum length to form a padded matrix/tensor.
+* [Stack](../../api/modules/data.batchify.rst#gluonnlp.data.batchify.Stack) simply stacks all elements in a batch, and requires all elements to be of the same length.
 
 
-We can then construct bucketing samplers, which generate batches by grouping sequences with similar lengths. Here, we use [FixedBucketSampler](../../api/data.rst#gluonnlp.data.FixedBucketSampler) with [ExpWidthBucket](../../api/data.rst#gluonnlp.data.ExpWidthBucket). FixedBucketSampler aims to assign each data sample to a fixed bucket based on its length. With this setting, the sampler would select buckets following an approximately exponentially increasing interval of maximum bucket lengths.
+We can then construct bucketing samplers, which generate batches by grouping sequences with similar lengths. Here, we use [FixedBucketSampler](../../api/modules/data.rst#gluonnlp.data.FixedBucketSampler) with [ExpWidthBucket](../../api/modules/data.rst#gluonnlp.data.ExpWidthBucket). FixedBucketSampler aims to assign each data sample to a fixed bucket based on its length. With this setting, the sampler would select buckets following an approximately exponentially increasing interval of maximum bucket lengths.
 
 ```{.python .input}
 wmt_bucket_scheme = nlp.data.ExpWidthBucket(bucket_len_step=1.2)
