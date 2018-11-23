@@ -24,6 +24,7 @@ Pre-trained Embeddings
     TokenEmbedding
     GloVe
     FastText
+    Word2Vec
 
 
 Intrinsic evaluation

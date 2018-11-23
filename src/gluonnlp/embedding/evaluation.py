@@ -26,9 +26,8 @@ from mxnet.gluon import HybridBlock
 __all__ = [
     'register', 'create', 'list_evaluation_functions',
     'WordEmbeddingSimilarityFunction', 'WordEmbeddingAnalogyFunction',
-    'CosineSimilarity', 'ThreeCosMul', 'WordEmbeddingSimilarity',
-    'WordEmbeddingAnalogy'
-]
+    'CosineSimilarity', 'ThreeCosMul', 'ThreeCosAdd',
+    'WordEmbeddingSimilarity', 'WordEmbeddingAnalogy']
 
 
 class _WordEmbeddingEvaluationFunction(HybridBlock):  # pylint: disable=abstract-method
@@ -113,8 +112,9 @@ def create(kind, name, **kwargs):
 
     Parameters
     ----------
-    kind : ['similarity', 'analogy', None]
-        Return only valid names for similarity, analogy or both kinds of functions.
+    kind : ['similarity', 'analogy']
+        Return only valid names for similarity, analogy or both kinds of
+        functions.
     name : str
         The evaluation function name (case-insensitive).
 
@@ -128,10 +128,11 @@ def create(kind, name, **kwargs):
         An instance of the specified evaluation function.
 
     """
-    if not kind in _REGSITRY_KIND_CLASS_MAP.keys():
-        raise KeyError('Cannot find `kind` {}. Use '
-                       '`list_sources(kind=None).keys()` to get all the valid'
-                       'kinds of evaluation functions.'.format(kind))
+    if kind not in _REGSITRY_KIND_CLASS_MAP.keys():
+        raise KeyError(
+            'Cannot find `kind` {}. Use '
+            '`list_evaluation_functions(kind=None).keys()` to get'
+            'all the valid kinds of evaluation functions.'.format(kind))
 
     create_ = registry.get_create_func(
         _REGSITRY_KIND_CLASS_MAP[kind],
@@ -165,8 +166,8 @@ def list_evaluation_functions(kind=None):
         if kind not in _REGSITRY_KIND_CLASS_MAP.keys():
             raise KeyError(
                 'Cannot find `kind` {}. Use '
-                '`list_sources(kind=None).keys()` to get all the valid'
-                'kinds of evaluation functions.'.format(kind))
+                '`list_evaluation_functions(kind=None).keys()` to get all the'
+                'valid kinds of evaluation functions.'.format(kind))
 
         reg = registry.get_registry(_REGSITRY_KIND_CLASS_MAP[kind])
         return list(reg.keys())
@@ -313,6 +314,7 @@ class ThreeCosAdd(WordEmbeddingAnalogyFunction):
         \\arg\\max_{b^* ∈ V}[\\cos(b^∗, b - a + a^*)]
 
     See the following paper for more details:
+
     - Levy, O., & Goldberg, Y. (2014). Linguistic regularities in sparse and
       explicit word representations. In R. Morante, & W. Yih, Proceedings of the
       Eighteenth Conference on Computational Natural Language Learning, CoNLL 2014,
