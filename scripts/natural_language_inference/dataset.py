@@ -12,22 +12,19 @@ import gluonnlp as nlp
 import gluonnlp.data.batchify as btf
 
 logger = logging.getLogger('nli')
-tokenizer = nlp.data.NLTKMosesTokenizer()
 LABEL_TO_IDX = {'neutral': 0, 'contradiction': 1, 'entailment': 2}
 
 def read_dataset(args, dataset):
-    path = os.path.join(args.data_root, vars(args)[dataset])
+    path = os.path.join(vars(args)[dataset])
     logger.info('reading data from {}'.format(path))
     examples = [line.strip().split('\t') for line in open(path)]
     if args.max_num_examples > 0:
         examples = examples[:args.max_num_examples]
-    # Parse
-    dataset = gluon.data.SimpleDataset([
-        (e[5], e[6], LABEL_TO_IDX[e[0]])
-        for e in examples if e[0] in LABEL_TO_IDX])
-    # Tokenization
-    logger.info('tokenizing data')
-    dataset = dataset.transform(lambda s1, s2, label: (tokenizer(s1), tokenizer(s2), label),
+    # NOTE: assume data has been tokenized
+    dataset = gluon.data.SimpleDataset([(e[0], e[1], LABEL_TO_IDX[e[2]]) for e in examples])
+    dataset = dataset.transform(lambda s1, s2, label: (
+                                ['NULL'] + s1.lower().split(),
+                                ['NULL'] + s2.lower().split(), label),
                                 lazy=False)
     return dataset
 
