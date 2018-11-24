@@ -39,6 +39,12 @@ Model Zoo
 
       Generating language from models.
 
+   .. card::
+      :title: Syntactics
+      :link: syntactics/index.html
+
+      Syntactics dependency parsing.
+
 .. toctree::
    :hidden:
    :maxdepth: 1
@@ -49,3 +55,4 @@ Model Zoo
    text_classification/index
    sentiment_analysis/index
    text_generation/index
+   syntactics/index
