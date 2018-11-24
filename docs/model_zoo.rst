@@ -34,6 +34,12 @@ Model Zoo
       Classifying polarity of emotions and opinions.
 
    .. card::
+      :title: Syntactics
+      :link: syntactics/index.html
+
+      Syntactics dependency parsing.
+
+   .. card::
       :title: Text Generation
       :link: model_zoo/text_generation/index.html
 
