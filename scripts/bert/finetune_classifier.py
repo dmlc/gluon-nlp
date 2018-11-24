@@ -110,7 +110,7 @@ def evaluate():
         Ls.append(ls)
         step_loss += sum([L.asscalar() for L in Ls])
         metric.update([label], [out])
-    logging.info('validation accuracy: %s',metric.get()[1])
+    logging.info('validation accuracy: %s', metric.get()[1])
 
 
 def train():
