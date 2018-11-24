@@ -109,7 +109,6 @@ def test_bidaf_embedding():
 
     embedding = BiDAFEmbedding(word_vocab=word_vocab,
                                char_vocab=char_vocab,
-                               batch_size=batch_size,
                                max_seq_len=question_max_length)
     embedding.initialize(init.Xavier(magnitude=2.24), ctx=mx.cpu_pinned())
     embedding.hybridize(static_alloc=True)
@@ -139,15 +138,11 @@ def test_attention_layer():
     matrix_attention = AttentionFlow(LinearSimilarity(array_1_dim=6 * embedding_size,
                                                       array_2_dim=1,
                                                       combination='x,y,x*y'),
-                                     batch_size,
                                      context_max_length,
-                                     question_max_length,
-                                     2 * embedding_size)
+                                     question_max_length)
 
-    layer = BidirectionalAttentionFlow(batch_size,
-                                       context_max_length,
-                                       question_max_length,
-                                       2 * embedding_size)
+    layer = BidirectionalAttentionFlow(context_max_length,
+                                       question_max_length)
 
     matrix_attention.initialize()
     layer.initialize()
@@ -162,26 +157,6 @@ def test_attention_layer():
     assert output.shape == (batch_size, context_max_length, 8 * embedding_size)
 
 
-def test_modeling_layer():
-    # The modeling layer receive input in a shape of batch_size x T x 8d
-    # T is the sequence length of context which is context_max_length
-    # d is the size of embedding, which is embedding_size
-    fake_data = nd.random.uniform(shape=(batch_size, context_max_length, 8 * embedding_size))
-    # We assume that attention is already return data in TNC format
-    attention_output = nd.transpose(fake_data, axes=(1, 0, 2))
-
-    layer = BiDAFModelingLayer(batch_size)
-    layer.initialize()
-    layer.hybridize(static_alloc=True)
-
-    with autograd.record():
-        output = layer(attention_output)
-
-    output.backward()
-    # According to the paper, the output should be 2d x T
-    assert output.shape == (context_max_length, batch_size, 2 * embedding_size)
-
-
 def test_output_layer():
     # The output layer receive 2 inputs: the output of Modeling layer (context_max_length,
     # batch_size, 2 * embedding_size) and the output of Attention flow layer
@@ -193,7 +168,7 @@ def test_output_layer():
     attention_output = nd.random.uniform(shape=(context_max_length, batch_size, 8 * embedding_size))
     ctx_mask = nd.ones(shape=(batch_size, context_max_length))
 
-    layer = BiDAFOutputLayer(batch_size)
+    layer = BiDAFOutputLayer()
     # The model doesn't need to know the hidden states, so I don't hold variables for the states
     layer.initialize()
     layer.hybridize(static_alloc=True)

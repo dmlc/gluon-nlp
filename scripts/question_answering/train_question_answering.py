@@ -151,8 +151,8 @@ def get_vocabs(vocab_provider, options):
 
     Parameters
     ----------
-    dataset : `SQuAD`
-        SQuAD dataset to build vocab from
+    vocab_provider : `VocabProvider`
+        VocabProvider
     options : `Namespace`
         Vocab building arguments
 
@@ -317,7 +317,7 @@ def run_training(net, dataloader, ctx, options):
                         print('Results decreased for {} times'.format(early_stop_tries))
                     else:
                         print('Results decreased for {} times. Stop training. '
-                              'Best results are stored at {} params file. F1={}, EM={}' \
+                              'Best results are stored at {} params file. F1={}, EM={}'
                               .format(options.early_stop + 1, max_iteration,
                                       max_dev_f1, max_dev_exact))
                         break
@@ -392,7 +392,7 @@ def get_gradients(model, ctx, options):
 
     Returns
     -------
-    gradients : list
+    gradients : List
         List of gradients
     """
     gradients = []
@@ -448,7 +448,7 @@ def execute_trainer_step(net, trainer, ctx, options):
         Network to train
     trainer : `Trainer`
         Trainer
-    ctx: list
+    ctx: `List[Context]`
         Context list
     options: `SimpleNamespace`
         Training options
@@ -492,12 +492,18 @@ def save_model_parameters(params, epoch, options):
         Number of epoch
     options : `Namespace`
         Saving arguments
+
+    Returns
+    -------
+    save_path : `str`
+        Save path
     """
     if not os.path.exists(options.save_dir):
         os.mkdir(options.save_dir)
 
     save_path = os.path.join(options.save_dir, 'epoch{:d}.params'.format(epoch))
     params.save(save_path)
+    return save_path
 
 
 def save_trainer_parameters(trainer, epoch, options):
@@ -620,7 +626,7 @@ def run_evaluate_mode(options, existing_net=None, existing_ema=None):
     ----------
     existing_net : `Block`
         Trained existing network
-    existing_net : `PolyakAveraging`
+    existing_ema : `PolyakAveraging`
         Averaged parameters of the network
     options : `Namespace`
         Model evaluation arguments
@@ -651,13 +657,14 @@ def run_evaluate_mode(options, existing_net=None, existing_ema=None):
     net = BiDAFModel(word_vocab, char_vocab, options, prefix='bidaf')
 
     if existing_ema is not None:
-        save_model_parameters(existing_ema.get_params(), options.epochs, options)
+        params_path = save_model_parameters(existing_ema.get_params(), options.epochs, options)
 
     elif existing_net is not None:
-        save_model_parameters(existing_net.collect_params(), options.epochs, options)
+        params_path = save_model_parameters(existing_net.collect_params(), options.epochs, options)
 
-    params_path = os.path.join(options.save_dir,
-                               'epoch{:d}.params'.format(int(options.epochs) - 1))
+    else:
+        params_path = os.path.join(options.save_dir,
+                                   'epoch{:d}.params'.format(int(options.epochs) - 1))
 
     net.collect_params().load(params_path, ctx=ctx)
     net.hybridize(static_alloc=True)
@@ -667,7 +674,8 @@ def run_evaluate_mode(options, existing_net=None, existing_ema=None):
 def get_args():
     """Get console arguments
     """
-    parser = argparse.ArgumentParser(description='Question Answering example using BiDAF & SQuAD')
+    parser = argparse.ArgumentParser(description='Question Answering example using BiDAF & SQuAD',
+                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--preprocess', default=False, action='store_true',
                         help='Preprocess dataset')
     parser.add_argument('--train', default=False, action='store_true',

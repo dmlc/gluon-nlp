@@ -19,7 +19,7 @@
 
 """BiDAF model blocks"""
 
-__all__ = ['BiDAFEmbedding', 'BiDAFModelingLayer', 'BiDAFOutputLayer', 'BiDAFModel']
+__all__ = ['BiDAFEmbedding', 'BiDAFOutputLayer', 'BiDAFModel']
 
 from mxnet import initializer
 from mxnet.gluon import HybridBlock
@@ -40,13 +40,12 @@ class BiDAFEmbedding(HybridBlock):
     1. Matrix of words: batch_size x words_per_question/context
     2. Tensor of characters: batch_size x words_per_question/context x chars_per_word
     """
-    def __init__(self, batch_size, word_vocab, char_vocab, max_seq_len,
+    def __init__(self, word_vocab, char_vocab, max_seq_len,
                  contextual_embedding_nlayers=2, highway_nlayers=2, embedding_size=100,
                  dropout=0.2, prefix=None, params=None):
         super(BiDAFEmbedding, self).__init__(prefix=prefix, params=params)
 
         self._word_vocab = word_vocab
-        self._batch_size = batch_size
         self._max_seq_len = max_seq_len
         self._embedding_size = embedding_size
 
@@ -85,8 +84,8 @@ class BiDAFEmbedding(HybridBlock):
         self._word_embedding.weight.set_data(self._word_vocab.embedding.idx_to_vec)
         self._word_embedding.collect_params().setattr('grad_req', grad_req)
 
-    def hybrid_forward(self, F, w, c, *args):
-        # pylint: disable=arguments-differ,unused-argument,missing-docstring
+    def hybrid_forward(self, F, w, c):
+        # pylint: disable=arguments-differ,missing-docstring
         word_embedded = self._word_embedding(w)
         char_level_data = self._char_dense_embedding(c)
         char_level_data = self._dropout(char_level_data)
@@ -111,46 +110,6 @@ class BiDAFEmbedding(HybridBlock):
         # Transpose to TNC - default for LSTM
         ce_output = self._contextual_embedding(highway_output)
         return ce_output
-
-
-class BiDAFModelingLayer(HybridBlock):
-    """BiDAFModelingLayer implements modeling layer of BiDAF paper. It is used to scan over context
-    produced by Attentional Flow Layer via 2 layer bi-LSTM.
-
-    The input data for the forward should be of dimension 8 * hidden_size (default hidden_size
-    is 100).
-
-    Parameters
-    ----------
-
-    input_dim : `int`, default 100
-        The number of features in the hidden state h of LSTM
-    nlayers : `int`, default 2
-        Number of recurrent layers.
-    biflag: `bool`, default True
-        If `True`, becomes a bidirectional RNN.
-    dropout: `float`, default 0
-        If non-zero, introduces a dropout layer on the outputs of each
-        RNN layer except the last layer.
-    prefix : `str` or None
-        Prefix of this `Block`.
-    params : `ParameterDict` or `None`
-        Shared Parameters for this `Block`.
-    """
-    def __init__(self, batch_size, input_dim=100, nlayers=2, biflag=True,
-                 dropout=0.2, input_size=800, prefix=None, params=None):
-        super(BiDAFModelingLayer, self).__init__(prefix=prefix, params=params)
-
-        self._batch_size = batch_size
-
-        with self.name_scope():
-            self._modeling_layer = LSTM(hidden_size=input_dim, num_layers=nlayers, dropout=dropout,
-                                        bidirectional=biflag, input_size=input_size)
-
-    def hybrid_forward(self, F, x, *args):
-        # pylint: disable=arguments-differ,unused-argument,missing-docstring
-        out = self._modeling_layer(x)
-        return out
 
 
 class BiDAFOutputLayer(HybridBlock):
@@ -183,11 +142,9 @@ class BiDAFOutputLayer(HybridBlock):
     params : `ParameterDict` or `None`
         Shared Parameters for this `Block`.
     """
-    def __init__(self, batch_size, span_start_input_dim=100, nlayers=1, biflag=True,
+    def __init__(self, span_start_input_dim=100, nlayers=1, biflag=True,
                  dropout=0.2, prefix=None, params=None):
         super(BiDAFOutputLayer, self).__init__(prefix=prefix, params=params)
-
-        self._batch_size = batch_size
 
         with self.name_scope():
             self._dropout = nn.Dropout(rate=dropout)
@@ -203,8 +160,8 @@ class BiDAFOutputLayer(HybridBlock):
             self._end_index_model = nn.Dense(units=1, in_units=2 * span_start_input_dim,
                                              flatten=False)
 
-    def hybrid_forward(self, F, x, m, mask, *args):
-        # pylint: disable=arguments-differ,unused-argument,missing-docstring
+    def hybrid_forward(self, F, x, m, mask):
+        # pylint: disable=arguments-differ,missing-docstring
         # setting batch size as the first dimension
         x = F.transpose(x, axes=(1, 0, 2))
 
@@ -248,8 +205,7 @@ class BiDAFModel(HybridBlock):
         self._options = options
 
         with self.name_scope():
-            self.ctx_embedding = BiDAFEmbedding(options.batch_size,
-                                                word_vocab,
+            self.ctx_embedding = BiDAFEmbedding(word_vocab,
                                                 char_vocab,
                                                 options.ctx_max_len,
                                                 options.ctx_embedding_num_layers,
@@ -263,22 +219,19 @@ class BiDAFModel(HybridBlock):
                                                         combination='x,y,x*y')
 
             self.matrix_attention = AttentionFlow(self.similarity_function,
-                                                  options.batch_size,
                                                   options.ctx_max_len,
-                                                  options.q_max_len,
-                                                  2 * options.embedding_size)
+                                                  options.q_max_len)
 
             # we multiple embedding_size by 2 because we use bidirectional embedding
-            self.attention_layer = BidirectionalAttentionFlow(options.batch_size,
-                                                              options.ctx_max_len,
-                                                              options.q_max_len,
-                                                              2 * options.embedding_size)
-            self.modeling_layer = BiDAFModelingLayer(options.batch_size,
-                                                     input_dim=options.embedding_size,
-                                                     nlayers=options.modeling_num_layers,
-                                                     dropout=options.dropout)
-            self.output_layer = BiDAFOutputLayer(options.batch_size,
-                                                 span_start_input_dim=options.embedding_size,
+            self.attention_layer = BidirectionalAttentionFlow(options.ctx_max_len,
+                                                              options.q_max_len)
+
+            self.modeling_layer = LSTM(hidden_size=options.embedding_size,
+                                       num_layers=options.modeling_num_layers,
+                                       dropout=0.0, bidirectional=True,
+                                       input_size=8 * options.embedding_size)
+
+            self.output_layer = BiDAFOutputLayer(span_start_input_dim=options.embedding_size,
                                                  nlayers=options.output_num_layers,
                                                  dropout=options.dropout)
 
@@ -287,8 +240,8 @@ class BiDAFModel(HybridBlock):
         super(BiDAFModel, self).initialize(init, ctx, verbose, force_reinit)
         self.ctx_embedding.init_embeddings('null' if not self._options.train_unk_token else 'write')
 
-    def hybrid_forward(self, F, qw, cw, qc, cc, *args):
-        # pylint: disable=arguments-differ,unused-argument,missing-docstring
+    def hybrid_forward(self, F, qw, cw, qc, cc):
+        # pylint: disable=arguments-differ,missing-docstring
         ctx_embedding_output = self.ctx_embedding(cw, cc)
         q_embedding_output = self.ctx_embedding(qw, qc)
 
@@ -304,7 +257,7 @@ class BiDAFModel(HybridBlock):
                                                             q_embedding_output)
 
         passage_question_similarity = passage_question_similarity.reshape(
-            shape=(self._options.batch_size,
+            shape=(0,
                    self._options.ctx_max_len,
                    self._options.q_max_len))
 

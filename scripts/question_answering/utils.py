@@ -235,83 +235,30 @@ def _last_dimension_applicator(F,
                                function_to_apply,
                                tensor,
                                mask,
-                               tensor_shape,
-                               mask_shape,
                                **kwargs):
     """
     Takes a tensor with 3 or more dimensions and applies a function over the last dimension.  We
-    assume the tensor has shape ``(batch_size, ..., sequence_length)`` and that the mask (if given)
-    has shape ``(batch_size, sequence_length)``.  We first unsqueeze and expand the mask so that it
-    has the same shape as the tensor, then flatten them both to be 2D, pass them through
+    assume the tensor has shape ``(batch_size, ..., sequence_length)`` and that the mask
+    is of same shape . We flatten both tensor and mask to be 2D, pass them through
     the function and put the tensor back in its original shape.
     """
-    reshaped_tensor = tensor.reshape(shape=(-1, tensor_shape[-1]))
+    reshaped_tensor = tensor.reshape(shape=(-3, -1))
 
     if mask is not None:
-        shape_difference = len(tensor_shape) - len(mask_shape)
-        for _ in range(0, shape_difference):
-            mask = mask.expand_dims(1)
-        mask = mask.broadcast_to(shape=tensor_shape)
-        mask = mask.reshape(shape=(-1, mask_shape[-1]))
+        mask = mask.reshape(shape=(-3, -1))
+
     reshaped_result = function_to_apply(F, reshaped_tensor, mask, **kwargs)
-    return reshaped_result.reshape(shape=tensor_shape)
+    return F.reshape_like(lhs=reshaped_result, rhs=tensor)
 
 
-def last_dim_softmax(F, tensor, mask, tensor_shape, mask_shape, epsilon):
+def last_dim_softmax(F, tensor, mask, epsilon):
     """
     Takes a tensor with 3 or more dimensions and does a masked softmax over the last dimension.  We
     assume the tensor has shape ``(batch_size, ..., sequence_length)`` and that the mask (if given)
     has shape ``(batch_size, sequence_length)``.
     """
-    return _last_dimension_applicator(F, masked_softmax, tensor, mask, tensor_shape, mask_shape,
+    return _last_dimension_applicator(F, masked_softmax, tensor, mask,
                                       epsilon=epsilon)
-
-
-def last_dim_log_softmax(F, tensor, mask, tensor_shape, mask_shape):
-    """
-    Takes a tensor with 3 or more dimensions and does a masked log softmax over the last dimension.
-    We assume the tensor has shape ``(batch_size, ..., sequence_length)`` and that the mask
-    (if given) has shape ``(batch_size, sequence_length)``.
-    """
-    return _last_dimension_applicator(F, masked_log_softmax, tensor, mask, tensor_shape, mask_shape)
-
-
-def weighted_sum(F, matrix, attention, matrix_shape, attention_shape):
-    """
-    Takes a matrix of vectors and a set of weights over the rows in the matrix (which we call an
-    "attention" vector), and returns a weighted sum of the rows in the matrix.  This is the typical
-    computation performed after an attention mechanism.
-
-    Note that while we call this a "matrix" of vectors and an attention "vector", we also handle
-    higher-order tensors.  We always sum over the second-to-last dimension of the "matrix", and we
-    assume that all dimensions in the "matrix" prior to the last dimension are matched in the
-    "vector".  Non-matched dimensions in the "vector" must be `directly after the batch dimension`.
-
-    For example, say I have a "matrix" with dimensions ``(batch_size, num_queries, num_words,
-    embedding_dim)``.  The attention "vector" then must have at least those dimensions, and could
-    have more. Both:
-
-        - ``(batch_size, num_queries, num_words)`` (distribution over words for each query)
-        - ``(batch_size, num_documents, num_queries, num_words)`` (distribution over words in a
-          query for each document)
-
-    are valid input "vectors", producing tensors of shape:
-    ``(batch_size, num_queries, embedding_dim)`` and
-    ``(batch_size, num_documents, num_queries, embedding_dim)`` respectively.
-    """
-
-    if len(attention_shape) == 2 and len(matrix_shape) == 3:
-        return F.squeeze(F.batch_dot(attention.expand_dims(1), matrix), axis=1)
-    if len(attention_shape) == 3 and len(matrix_shape) == 3:
-        return F.batch_dot(attention, matrix)
-    if len(matrix_shape) - 1 < len(attention_shape):
-        expanded_size = list(matrix_shape)
-        for i in range(len(attention_shape) - len(matrix_shape) + 1):
-            matrix = matrix.expand_dims(1)
-            expanded_size.insert(i + 1, attention.shape[i + 1])
-        matrix = matrix.broadcast_to(*expanded_size)
-    intermediate = attention.expand_dims(-1).broadcast_to(matrix_shape) * matrix
-    return intermediate.sum(axis=-2)
 
 
 def replace_masked_values(F, tensor, mask, replace_with):

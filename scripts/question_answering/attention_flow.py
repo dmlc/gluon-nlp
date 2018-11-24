@@ -47,24 +47,20 @@ class AttentionFlow(gluon.HybridBlock):
     similarity_function: ``SimilarityFunction``, optional (default=``DotProductSimilarity``)
         The similarity function to use when computing the attention.
     """
-    def __init__(self, similarity_function, batch_size, passage_length,
-                 question_length, embedding_size, **kwargs):
+    def __init__(self, similarity_function, passage_length,
+                 question_length, **kwargs):
         super(AttentionFlow, self).__init__(**kwargs)
 
         self._similarity_function = similarity_function or DotProductSimilarity()
-        self._batch_size = batch_size
         self._passage_length = passage_length
         self._question_length = question_length
-        self._embedding_size = embedding_size
 
     def hybrid_forward(self, F, matrix_1, matrix_2):
         # pylint: disable=arguments-differ,unused-argument,missing-docstring
-        tiled_matrix_1 = matrix_1.expand_dims(2).broadcast_to(shape=(self._batch_size,
-                                                                     self._passage_length,
-                                                                     self._question_length,
-                                                                     self._embedding_size))
-        tiled_matrix_2 = matrix_2.expand_dims(1).broadcast_to(shape=(self._batch_size,
-                                                                     self._passage_length,
-                                                                     self._question_length,
-                                                                     self._embedding_size))
+        tiled_matrix_1 = F.broadcast_axis(matrix_1.expand_dims(2), axis=2,
+                                          size=self._question_length)
+
+        tiled_matrix_2 = F.broadcast_axis(matrix_2.expand_dims(1), axis=1,
+                                          size=self._passage_length)
+
         return self._similarity_function(tiled_matrix_1, tiled_matrix_2)

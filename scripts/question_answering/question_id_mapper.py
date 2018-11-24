@@ -25,6 +25,13 @@ class QuestionIdMapper:
 
     """
     def __init__(self, dataset):
+        """Create instance of `QuestionIdMapper`
+
+        Parameters
+        ----------
+        dataset: `SQuAD`
+            SQuAD dataset
+        """
         self._question_id_to_context = {item[1]: item[3] for item in dataset}
         self._question_id_to_idx = {item[1]: item[0] for item in dataset}
         self._idx_to_question_id = {v: k for k, v in self._question_id_to_idx.items()}

@@ -48,7 +48,10 @@ class SQuADTransform(object):
         self._context_max_length = context_max_length
         self._max_chars_per_word = max_chars_per_word
 
-        self._padder = Pad()
+        self._word_padding_token = self._word_vocab[self._word_vocab.padding_token]
+        self._char_padding_token = self._char_vocab[self._char_vocab.padding_token]
+
+        self._padder = Pad(pad_val=self._char_padding_token)
 
     def __call__(self, record_index, question_id, question, context, answer_list,
                  answer_start_list):
@@ -91,14 +94,18 @@ class SQuADTransform(object):
         context_chars = [self._char_vocab[[character.lower() for character in word]]
                          for word in context_tokens[:self._context_max_length]]
 
-        question_words_nd = self._pad_to_max_word_length(question_words, self._question_max_length)
+        question_words_nd = self._pad_to_max_word_length(question_words, self._question_max_length,
+                                                         self._word_padding_token)
         question_chars_nd = self._padder(question_chars)
         question_chars_nd = self._pad_to_max_char_length(question_chars_nd,
-                                                         self._question_max_length)
+                                                         self._question_max_length,
+                                                         self._char_padding_token)
 
-        context_words_nd = self._pad_to_max_word_length(context_words, self._context_max_length)
+        context_words_nd = self._pad_to_max_word_length(context_words, self._context_max_length,
+                                                        self._word_padding_token)
         context_chars_nd = self._padder(context_chars)
-        context_chars_nd = self._pad_to_max_char_length(context_chars_nd, self._context_max_length)
+        context_chars_nd = self._pad_to_max_char_length(context_chars_nd, self._context_max_length,
+                                                        self._char_padding_token)
 
         answer_spans = SQuADTransform._get_answer_spans(context, context_tokens, answer_list,
                                                         answer_start_list)
@@ -185,7 +192,7 @@ class SQuADTransform(object):
 
         return char_indices_per_token
 
-    def _pad_to_max_char_length(self, item, max_item_length):
+    def _pad_to_max_char_length(self, item, max_item_length, pad_value):
         """Pads all tokens to maximum size
 
         Parameters
@@ -194,6 +201,9 @@ class SQuADTransform(object):
             Matrix of indices
         max_item_length: int
             Maximum length of a token
+        pad_value: int
+            Value for padding
+
 
         Returns
         -------
@@ -206,7 +216,7 @@ class SQuADTransform(object):
                              mode='constant',
                              pad_width=[0, 0, 0, 0, 0, max_item_length - item.shape[0],
                                         0, self._max_chars_per_word - item.shape[1]],
-                             constant_value=0)
+                             constant_value=pad_value)
 
         # reshape back to original dimensions with the last dimension of max_item_length
         # We also convert to float32 because it will be necessary later for processing
@@ -215,7 +225,7 @@ class SQuADTransform(object):
         return data_reshaped_back
 
     @staticmethod
-    def _pad_to_max_word_length(item, max_length):
+    def _pad_to_max_word_length(item, max_length, pad_value):
         """Pads sentences to maximum length
 
         Parameters
@@ -224,6 +234,8 @@ class SQuADTransform(object):
             Vector of words
         max_length: int
             Maximum length of question/context
+        pad_value: int
+            Value for padding
 
         Returns
         -------
@@ -236,7 +248,7 @@ class SQuADTransform(object):
         data_padded = nd.pad(data_expanded,
                              mode='constant',
                              pad_width=[0, 0, 0, 0, 0, 0, 0, max_length - data_nd.shape[0]],
-                             constant_value=0)
+                             constant_value=pad_value)
         # reshape back to original dimensions with the last dimension of max_length
         # We also convert to float32 because it will be necessary later for processing
         data_reshaped_back = data_padded.reshape(max_length).astype(np.float32)
