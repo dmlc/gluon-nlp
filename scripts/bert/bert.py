@@ -30,6 +30,10 @@ import mxnet as mx
 class BERTClassifier(Block):
     """Model for sentence (pair) classification task with BERT.
 
+    The model feeds token ids and token type ids into BERT to get the
+    pooled BERT sequence representation, then apply a Dense layer for
+    classification.
+
     Parameters
     ----------
     bert: BERTModel

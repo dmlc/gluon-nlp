@@ -432,10 +432,10 @@ class BERTModel(Block):
 
 model_store._model_sha1.update(
     {name: checksum for checksum, name in [
-        ('696c3e4a64dfdcff19448ecd2b99653aa853a02a', 'bert_12_768_12_book_corpus_wiki_en_cased'),
-        ('87bd92964bfea789df81f0e4cdedac1c65bc1163', 'bert_12_768_12_book_corpus_wiki_en_uncased'),
-        ('4f5371248cfcbebeac63dae5b8d0dd78662b67b2', 'bert_12_768_12_wiki_multilingual'),
-        ('8867b471465e39f47e4dfaa926d1bfb98a130ee4', 'bert_24_1024_16_book_corpus_wiki_en_uncased')
+        ('5656dac6965b5054147b0375337d5a6a7a2ff832', 'bert_12_768_12_book_corpus_wiki_en_cased'),
+        ('75cc780f085e8007b3bf6769c6348bb1ff9a3074', 'bert_12_768_12_book_corpus_wiki_en_uncased'),
+        ('237f39851b24f0b56d70aa20efd50095e3926e26', 'bert_12_768_12_wiki_multilingual'),
+        ('24551e1446180e045019a87fc4ffbf714d99c0b5', 'bert_24_1024_16_book_corpus_wiki_en_uncased')
     ]})
 
 bert_12_768_12_hparams = {
@@ -581,7 +581,6 @@ def _bert_model(model_name=None, dataset_name=None, vocab=None, pretrained=True,
     # vocab
     vocab = _load_vocab(dataset_name, vocab, root)
     # BERT
-    print('use_pooler=', use_pooler)
     net = BERTModel(encoder, len(vocab),
                     token_type_vocab_size=predefined_args['token_type_vocab_size'],
                     units=predefined_args['units'],

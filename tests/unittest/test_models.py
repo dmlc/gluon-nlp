@@ -95,7 +95,7 @@ def test_pretrained_bert_models():
     vocab_size = {'book_corpus_wiki_en_cased': 28996,
                   'book_corpus_wiki_en_uncased': 30522,
                   'wiki_multilingual': 105879}
-    special_tokens = ['[UNK]', '[SEP]', '[CLS]', '[MASK]']
+    special_tokens = ['[UNK]', '[PAD]', '[SEP]', '[CLS]', '[MASK]']
     ones = mx.nd.ones((2, 10))
     valid_length = mx.nd.ones((2,))
     for model_name in models:
@@ -108,12 +108,16 @@ def test_pretrained_bert_models():
             assert len(vocab) == vocab_size[dataset]
             for token in special_tokens:
                 assert token in vocab, "Token %s not found in the vocab"%token
+            assert vocab['RandomWordByHaibin'] == 0
+            assert vocab.padding_token == '[PAD]'
+            assert vocab.unknown_token == '[UNK]'
+            assert vocab.bos_token is None
+            assert vocab.eos_token is None
             output = model(ones, ones, valid_length)
             output[0].wait_to_read()
             del model
             mx.nd.waitall()
 
-#test_pretrained_bert_models()
 
 @pytest.mark.serial
 def test_language_models():

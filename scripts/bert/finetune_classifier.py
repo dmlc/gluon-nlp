@@ -48,21 +48,17 @@ from mxnet.gluon.data import ArrayDataset, SimpleDataset
 from mxnet.gluon.data import DataLoader
 from gluonnlp.model import bert_12_768_12
 from bert import BERTClassifier
-from utils import logging_config
 from tokenization import FullTokenizer
 from dataset import MRPCDataset, SentenceClassificationTrans
 
 np.random.seed(0)
 random.seed(0)
 mx.random.seed(0)
+logging.getLogger().setLevel(logging.DEBUG)
 
 parser = argparse.ArgumentParser(description='Neural Machine Translation Example.'
                                              'We train the Transformer Model')
-parser.add_argument('--vocab_file', type=str, required=True,
-                    help='Path to the vocabulary file. e.g. $BERT_BASE_DIR/vocab.txt')
 parser.add_argument('--epochs', type=int, default=3, help='number of epochs')
-parser.add_argument('--dropout', type=float, default=0.1,
-                    help='dropout applied to layers (0 = no dropout)')
 parser.add_argument('--batch_size', type=int, default=32,
                     help='Batch size. Number of examples per gpu in a minibatch')
 parser.add_argument('--test_batch_size', type=int, default=8, help='Test batch size')
@@ -72,34 +68,30 @@ parser.add_argument('--warmup_ratio', type=float, default=0.1,
                     help='ratio of warmup steps used in NOAM\'s stepsize schedule')
 parser.add_argument('--log_interval', type=int, default=10, help='report interval')
 parser.add_argument('--max_len', type=int, default=128, help='Maximum length of the sentence pairs')
-parser.add_argument('--output_dir', type=str, default='classifier_out',
-                    help='directory path to save the final model and training log')
 parser.add_argument('--gpu', action='store_true', help='whether to use gpu for finetuning')
 args = parser.parse_args()
-logging_config(args.output_dir)
 logging.info(args)
 batch_size = args.batch_size
 test_batch_size = args.test_batch_size
 
-ctx = [mx.cpu()] if args.gpu is None or args.gpu == '' else [mx.gpu()]
+ctx = mx.cpu() if args.gpu is None or args.gpu == '' else mx.gpu()
 
 do_lower_case=True
-tokenizer = FullTokenizer(vocab_file=args.vocab_file, do_lower_case=do_lower_case)
 
 bert, vocabulary = bert_12_768_12(dataset_name='book_corpus_wiki_en_uncased',
-                                  pretrained=True, ctx=mx.cpu(), use_pooler=True,
+                                  pretrained=True, ctx=ctx, use_pooler=True,
                                   use_decoder=False, use_classifier=False,
                                   root='/home/ubuntu/gluon-nlp/tests/data/model/')
-bert.collect_params().reset_ctx(ctx)
+
+tokenizer = FullTokenizer(vocabulary, do_lower_case=do_lower_case)
 
 model = BERTClassifier(bert, dropout=0.1)
-model.initialize(init=mx.init.Normal(0.02), ctx=ctx)
-static_alloc = True
-model.hybridize(static_alloc=static_alloc)
+model.classifier.initialize(init=mx.init.Normal(0.02), ctx=ctx)
+model.hybridize(static_alloc=True)
 logging.info(model)
 
 loss_function = gluon.loss.SoftmaxCELoss()
-loss_function.hybridize(static_alloc=static_alloc)
+loss_function.hybridize(static_alloc=True)
 
 metric = mx.metric.Accuracy()
 
@@ -107,36 +99,26 @@ trans = SentenceClassificationTrans(tokenizer, MRPCDataset.get_labels(), args.ma
 data_train = MRPCDataset('train').transform(trans)
 data_dev = MRPCDataset('dev').transform(trans)
 
+bert_dataloader = mx.gluon.data.DataLoader(data_train, batch_size=batch_size,
+                                           shuffle=True, last_batch='rollover')
+bert_dataloader_dev = mx.gluon.data.DataLoader(data_dev, batch_size=test_batch_size,
+                                               shuffle=False)
+
 def evaluate():
-    """Evaluate given the data loader
-
-    Parameters
-    ----------
-    data_loader : DataLoader
-
-    Returns
-    -------
-    avg_loss : float
-        Average loss
-    real_translation_out : list of list of str
-        The translation output
+    """Evaluate the model on validation dataset.
     """
     step_loss = 0
-    bert_dataloader_dev = mx.gluon.data.DataLoader(data_dev, batch_size=test_batch_size, shuffle=False)
     metric.reset()
-    log_start_time = time.time()
-
     for batch_id, seqs in enumerate(bert_dataloader_dev):
         Ls = []
-        input_ids, input_len0, segment_ids, label = seqs
-        out  = model(input_ids.reshape((test_batch_size, -1)).as_in_context(mx.gpu()),
-                     segment_ids.reshape((test_batch_size, -1)).as_in_context(mx.gpu()),
-                     input_len0.squeeze().astype('float32').as_in_context(mx.gpu()))
+        input_ids, valid_len, type_ids, label = seqs
+        out  = model(input_ids.as_in_context(mx.gpu()), type_ids.as_in_context(mx.gpu()),
+                     valid_len.astype('float32').as_in_context(mx.gpu()))
         ls = loss_function(out, label.as_in_context(mx.gpu())).mean()
         Ls.append(ls)
         step_loss += sum([L.asscalar() for L in Ls])
         metric.update([label], [out])
-    print('validation', metric.get())
+    logging.info('validation: %s'%(str(metric.get())))
 
 
 def train():
@@ -144,20 +126,24 @@ def train():
     trainer = gluon.Trainer(model.collect_params(), args.optimizer,
                             {'learning_rate': args.lr, 'epsilon': 1e-9})
 
-    bert_dataloader = mx.gluon.data.DataLoader(data_train, batch_size=batch_size,
-                                               shuffle=True, last_batch='discard')
     num_train_examples = len(data_train)
-    num_train_steps = int(
-        num_train_examples / batch_size * args.epochs)
+    num_train_steps = int(num_train_examples / batch_size * args.epochs)
     warmup_ratio = args.warmup_ratio
     num_warmup_steps = int(num_train_steps * warmup_ratio)
     step_num = 0
+    differentiable_params = []
+
+    # Do not apply weight decay on LayerNorm and bias terms
+    for k, v in model.collect_params('.*beta|.*gamma|.*bias').items():
+        v.wd_mult = 0.0
+
+    for p in model.collect_params().values():
+        if p.grad_req != 'null':
+            differentiable_params.append(p)
 
     for epoch_id in range(args.epochs):
         metric.reset()
-        log_avg_loss = 0
         step_loss = 0
-        log_start_time = time.time()
 
         for batch_id, seqs in enumerate(bert_dataloader):
             step_num += 1
@@ -167,34 +153,22 @@ def train():
                 offset = (step_num - num_warmup_steps) * args.lr / (num_train_steps - num_warmup_steps)
                 new_lr = args.lr - offset
             trainer.set_learning_rate(new_lr)
-            Ls = []
             with mx.autograd.record():
-                input_ids, input_mask, segment_ids, label = seqs
-                out  = model(input_ids.reshape((batch_size, -1)).as_in_context(mx.gpu()),
-                             segment_ids.reshape((batch_size, -1)).as_in_context(mx.gpu()),
-                             input_mask.squeeze().astype('float32').as_in_context(mx.gpu()))
+                input_ids, valid_length, type_ids, label = seqs
+                out  = model(input_ids.as_in_context(mx.gpu()), type_ids.as_in_context(mx.gpu()),
+                             valid_length.astype('float32').as_in_context(mx.gpu()))
                 ls = loss_function(out, label.as_in_context(mx.gpu())).mean()
-                Ls.append(ls)
-            for L in Ls:
-                L.backward()
-            parameters = model.collect_params()
-            differentiable_params = []
-            for p in parameters.values():
-                if p.grad_req != 'null':
-                    differentiable_params.append(p)
-
+            ls.backward()
             grads = [p.grad(c) for p in differentiable_params for c in [mx.gpu()]]
             gluon.utils.clip_global_norm(grads, 1)
             trainer.step(1)
-            step_loss += sum([L.asscalar() for L in Ls])
+            step_loss += ls.asscalar()
             metric.update([label], [out])
             if (batch_id + 1) % (args.log_interval) == 0:
                 logging.info('[Epoch {} Batch {}/{}] loss={:.4f}, lr={:.7f}, acc={:.3f}'
                              .format(epoch_id, batch_id + 1, len(bert_dataloader),
                                      step_loss / args.log_interval,
                                      trainer.learning_rate, metric.get()[1]))
-                log_start_time = time.time()
-                log_avg_loss = 0
                 step_loss = 0
         mx.nd.waitall()
         evaluate()

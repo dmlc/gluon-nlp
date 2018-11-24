@@ -138,10 +138,10 @@ class SentenceClassificationTrans(object):
 
         Returns
         -------
-        np.array: input token ids in 'int32'
-        np.array: valid length in 'int32'
-        np.array: input token type ids in 'int32'
-        np.array: label id in 'int32'
+        np.array: input token ids in 'int32', shape (batch_size, seq_length)
+        np.array: valid length in 'int32', shape (batch_size,)
+        np.array: input token type ids in 'int32', shape (batch_size, seq_length)
+        np.array: label id in 'int32', shape (batch_size, 1)
         """
         # convert to unicode
         text_a = line[0]
@@ -207,5 +207,5 @@ class SentenceClassificationTrans(object):
             input_ids.extend([0] * padding_length)
             segment_ids.extend([0] * padding_length)
 
-        return np.array(input_ids, dtype='int32'), np.array([valid_length], dtype='int32'),\
+        return np.array(input_ids, dtype='int32'), np.array(valid_length, dtype='int32'),\
                np.array(segment_ids, dtype='int32'), np.array([label_id], dtype='int32')
