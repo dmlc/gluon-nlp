@@ -19,6 +19,7 @@
 """Data preprocessing for transformer."""
 
 import os
+import io
 import time
 import logging
 import numpy as np
@@ -256,3 +257,12 @@ def make_dataloader(data_train, data_val, data_test, args,
                                              batchify_fn=test_batchify_fn,
                                              num_workers=num_workers)
     return train_data_loader, val_data_loader, test_data_loader
+
+
+def write_sentences(sentences, file_path):
+    with io.open(file_path, 'w', encoding='utf-8') as of:
+        for sent in sentences:
+            if isinstance(sent, (list, tuple)):
+                of.write(' '.join(sent) + '\n')
+            else:
+                of.write(sent + '\n')
