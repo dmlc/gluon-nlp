@@ -113,7 +113,7 @@ class NMTModel(Block):
         # Construct tgt proj
         if tie_weights:
             self.tgt_proj = nn.Dense(units=len(tgt_vocab), flatten=False,
-                                     params=self.tgt_embed.params, prefix='tgt_proj_')
+                                     params=self.tgt_embed[0].params, prefix='tgt_proj_')
             assert list(self.tgt_proj.params.values())[0] \
                    == list(self.tgt_embed[0].params.values())[0], \
                 'The weights of target word embedding are not tied with' \

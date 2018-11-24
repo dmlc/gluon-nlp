@@ -817,6 +817,8 @@ class TransformerDecoder(HybridBlock, Seq2SeqDecoder):
         transformation of the inputs.
     bias_initializer : str or Initializer
         Initializer for the bias vector.
+    scale_embed : bool, default True
+        Scale the input embeddings by sqrt(embed_size).
     prefix : str, default 'rnn_'
         Prefix for name of `Block`s
         (and name of weight if params is `None`).
@@ -829,7 +831,7 @@ class TransformerDecoder(HybridBlock, Seq2SeqDecoder):
                  num_heads=4, scaled=True, dropout=0.0,
                  use_residual=True, output_attention=False,
                  weight_initializer=None, bias_initializer='zeros',
-                 prefix=None, params=None):
+                 scale_embed=True, prefix=None, params=None):
         super(TransformerDecoder, self).__init__(prefix=prefix, params=params)
         assert units % num_heads == 0, 'In TransformerDecoder, the units should be divided ' \
                                        'exactly by the number of heads. Received units={}, ' \
@@ -843,6 +845,7 @@ class TransformerDecoder(HybridBlock, Seq2SeqDecoder):
         self._use_residual = use_residual
         self._output_attention = output_attention
         self._scaled = scaled
+        self._scale_embed = scale_embed
         with self.name_scope():
             self.dropout_layer = nn.Dropout(dropout)
             self.layer_norm = nn.LayerNorm()
@@ -1003,7 +1006,8 @@ class TransformerDecoder(HybridBlock, Seq2SeqDecoder):
                                         axis=0, size=step_input.shape[0])
         steps = mx.nd.arange(step_input.shape[1], ctx=step_input.context)
         states.append(steps)
-        scaled_step_input = step_input * math.sqrt(step_input.shape[-1])
+        if self._scale_embed:
+            scaled_step_input = step_input * math.sqrt(step_input.shape[-1])
         # pylint: disable=too-many-function-args
         step_output, step_additional_outputs = \
             super(TransformerDecoder, self).forward(scaled_step_input, states, mask)
