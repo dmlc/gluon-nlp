@@ -34,16 +34,16 @@ Model Zoo
       Classifying polarity of emotions and opinions.
 
    .. card::
-      :title: Text Generation
-      :link: text_generation/index.html
-
-      Generating language from models.
-
-   .. card::
       :title: Syntactics
       :link: syntactics/index.html
 
       Syntactics dependency parsing.
+
+   .. card::
+      :title: Text Generation
+      :link: text_generation/index.html
+
+      Generating language from models.
 
 .. toctree::
    :hidden:
