@@ -21,13 +21,9 @@
 
 __all__ = ['BeamSearchTranslator']
 
-import warnings
 import numpy as np
-from mxnet.gluon import Block
-from mxnet.gluon import nn
 import mxnet as mx
 from gluonnlp.model import BeamSearchScorer, BeamSearchSampler
-from gluonnlp.model.translation import NMTModel
 
 class BeamSearchTranslator(object):
     """Beam Search Translator

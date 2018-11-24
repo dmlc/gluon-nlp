@@ -1004,6 +1004,7 @@ class TransformerDecoder(HybridBlock, Seq2SeqDecoder):
         steps = mx.nd.arange(step_input.shape[1], ctx=step_input.context)
         states.append(steps)
         scaled_step_input = step_input * math.sqrt(step_input.shape[-1])
+        # pylint: disable=too-many-function-args
         step_output, step_additional_outputs = \
             super(TransformerDecoder, self).forward(scaled_step_input, states, mask)
         states = states[:-1]

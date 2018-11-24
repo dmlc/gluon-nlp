@@ -108,11 +108,11 @@ class GELU(HybridBlock):
         super(GELU, self).__init__(**kwargs)
         self._support_erf = False
         try:
-            f = ndarray.erf
+            ndarray.erf
             self._support_erf = True
         except AttributeError:
-            warnings.warn("`erf` operator support is not found. "
-                          "Please consider upgrading to mxnet >= 1.4")
+            warnings.warn('`erf` operator support is not found. '
+                          'Please consider upgrading to mxnet >= 1.4')
 
     def hybrid_forward(self, F, x):
         if self._support_erf:

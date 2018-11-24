@@ -26,8 +26,8 @@ import warnings
 
 from mxnet.gluon import Block, contrib, rnn
 from mxnet.gluon.model_zoo import model_store
-from .parameter import WeightDropParameter
 from gluonnlp.data.utils import _load_pretrained_vocab
+from .parameter import WeightDropParameter
 from .lstmpcellwithclip import LSTMPCellWithClip
 
 # pylint: disable=too-many-nested-blocks

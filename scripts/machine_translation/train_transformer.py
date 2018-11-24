@@ -47,8 +47,8 @@ from mxnet import gluon
 import gluonnlp as nlp
 
 from gluonnlp.model.translation import NMTModel
-from translation import BeamSearchTranslator
 from gluonnlp.model.transformer import get_transformer_encoder_decoder
+from translation import BeamSearchTranslator
 from loss import SoftmaxCEMaskedLoss, LabelSmoothing
 from utils import logging_config
 from bleu import _bpe_to_words, compute_bleu

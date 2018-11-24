@@ -71,15 +71,11 @@ lr = args.lr
 
 ctx = mx.cpu() if args.gpu is None or args.gpu == '' else mx.gpu()
 
-# TODO lowercase?
-do_lower_case = True
-
 bert, vocabulary = bert_12_768_12(dataset_name='book_corpus_wiki_en_uncased',
                                   pretrained=True, ctx=ctx, use_pooler=True,
                                   use_decoder=False, use_classifier=False,
                                   root='/home/ubuntu/gluon-nlp/tests/data/model/')
-
-tokenizer = FullTokenizer(vocabulary, do_lower_case=do_lower_case)
+tokenizer = FullTokenizer(vocabulary, do_lower_case=True)
 
 model = BERTClassifier(bert, dropout=0.1)
 model.classifier.initialize(init=mx.init.Normal(0.02), ctx=ctx)
@@ -114,7 +110,7 @@ def evaluate():
         Ls.append(ls)
         step_loss += sum([L.asscalar() for L in Ls])
         metric.update([label], [out])
-    logging.info('validation accuracy: %s'%(metric.get()[1]))
+    logging.info('validation accuracy: %s',metric.get()[1])
 
 
 def train():

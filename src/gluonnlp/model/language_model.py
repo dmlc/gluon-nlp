@@ -22,9 +22,7 @@ __all__ = ['AWDRNN', 'StandardRNN', 'BigRNN', 'awd_lstm_lm_1150', 'awd_lstm_lm_6
            'big_rnn_lm_2048_512']
 
 import os
-import warnings
 
-from mxnet.gluon.model_zoo.model_store import get_model_file
 from mxnet.gluon import Block, nn, rnn, contrib
 from mxnet import nd, cpu, autograd
 from mxnet.gluon.model_zoo import model_store
