@@ -39,7 +39,7 @@ Word Embedding Training
 Besides loading pre-trained embeddings, the Gluon NLP toolkit also makes it easy
 to train embeddings.
 
-The following code block shows how to use Gluon NLP to train fastText or Word2Vec
+The following code block shows how to use Gluon NLP to train a SkipGram or CBOW
 models. The script and parts of the Gluon NLP library support just-in-time
 compilation with `numba <http://numba.pydata.org/>`_, which is enabled
 automatically when numba is installed on the system. Please `pip
@@ -48,59 +48,56 @@ by Python.
 
 .. code-block:: console
 
-   $ python train_fasttext.py
+   $ python train_sg_cbow.py --model skipgram --ngram-buckts 0  # Word2Vec Skipgram
+   $ python train_sg_cbow.py --model skipgram --ngram-buckts 2000000  # fastText Skipgram
+   $ python train_sg_cbow.py --model cbow --ngram-buckts 0  # Word2Vec CBOW
+   $ python train_sg_cbow.py --model cbow --ngram-buckts 2000000  # fastText CBOW
 
+Word2Vec models were introduced by Mikolov et al., "Efficient estimation of word
+representations in vector space" ICLR Workshop 2013. FastText models were
+introudced by Bojanowski et al., "Enriching word vectors with subword
+information" TACL 2017.
 
-Word2Vec models were introduced by
-
-- Tomas Mikolov, Kai Chen, Greg Corrado, and Jeffrey Dean. Efficient estimation
-  of word representations in vector space. ICLR Workshop , 2013.
-
-FastText models were introudced by
-
-- Bojanowski, P., Grave, E., Joulin, A., & Mikolov, T. (2017). Enriching word
-  vectors with subword information. TACL, 5(), 135–146.
-
-We report the results obtained by running the :code:`train_fasttext.py` script with
-default parameters. You can reproduce these results with runningand `python
-train_fasttext.py --gpu 0` respectively. For comparison we also report the
-results obtained by training FastText with the `facebookresearch/fastText
-implementation <https://github.com/facebookresearch/fastText>`_. All results are
-obtained by training 5 epochs on the `Text8
-<http://mattmahoney.net/dc/textdata.html>`_ dataset.
+We report the results obtained by running the :code:`python3
+train_sg_cbow.py --batch-size 4096 --epochs 5 --data fil9 --model skipgram`
+script.For comparison we also report the results obtained by training FastText
+with the `facebookresearch/fastText implementation
+<https://github.com/facebookresearch/fastText>`_. All results are obtained by
+training 5 epochs on the `Fil9 <http://mattmahoney.net/dc/textdata.html>`_
+dataset.
 
 ======================================  ===========================  ===================
-Similarity Dataset                        facebookresearch/fasttext    train_fasttext.py
+Similarity Dataset                        facebookresearch/fastText    train_sg_cbow.py
 ======================================  ===========================  ===================
-WordSim353-similarity                                     0.670                0.685
-WordSim353-relatedness                                    0.557                0.592
-MEN (test set)                                            0.665                0.629
-RadinskyMTurk                                             0.640                0.609
-RareWords                                                 0.400                0.429
-SimLex999                                                 0.300                0.323
-SimVerb3500                                               0.170                0.191
-SemEval17Task2 (test set)                                 0.540                0.566
-BakerVerb143                                              0.390                0.363
-YangPowersVerb130                                         0.424                0.366
+WordSim353-similarity                                     0.752                0.734
+WordSim353-relatedness                                    0.612                0.608
+MEN (test set)                                            0.736                0.700
+RadinskyMTurk                                             0.687                0.655
+RareWords                                                 0.420                0.457
+SimLex999                                                 0.320                0.346
+SimVerb3500                                               0.190                0.235
+SemEval17Task2 (test set)                                 0.541                0.542
+BakerVerb143                                              0.406                0.383
+YangPowersVerb130                                         0.489                0.466
 ======================================  ===========================  ===================
 
 ===========================================  ===========================  ===================
-Google Analogy Dataset                        facebookresearch/fasttext    train_fasttext.py
+Google Analogy Dataset                        facebookresearch/fastText    train_sg_cbow.py
 ===========================================  ===========================  ===================
-capital-common-countries                              0.581                0.470
-capital-world                                         0.176                0.148
-currency                                              0.046                0.043
-city-in-state                                         0.100                0.076
-family                                                0.375                0.342
-gram1-adjective-to-adverb                             0.695                0.663
-gram2-opposite                                        0.539                0.700
-gram3-comparative                                     0.523                0.740
-gram4-superlative                                     0.523                0.535
-gram5-present-participle                              0.480                0.399
-gram6-nationality-adjective                           0.830                0.830
-gram7-past-tense                                      0.269                0.200
-gram8-plural                                          0.703                0.860
-gram9-plural-verbs                                    0.575                0.800
+capital-common-countries                              0.796                0.581
+capital-world                                         0.442                0.334
+currency                                              0.068                0.074
+city-in-state                                         0.198                0.076
+family                                                0.498                0.593
+gram1-adjective-to-adverb                             0.377                0.688
+gram2-opposite                                        0.343                0.693
+gram3-comparative                                     0.646                0.868
+gram4-superlative                                     0.510                0.757
+gram5-present-participle                              0.445                0.792
+gram6-nationality-adjective                           0.828                0.840
+gram7-past-tense                                      0.385                0.380
+gram8-plural                                          0.706                0.810
+gram9-plural-verbs                                    0.501                0.813
 ===========================================  ===========================  ===================
 
 Loading of fastText models with subword information

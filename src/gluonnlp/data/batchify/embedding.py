@@ -23,9 +23,9 @@ __all__ = ['EmbeddingCenterContextBatchify']
 import logging
 import random
 
-from mxnet import nd
 import numpy as np
 
+from ...base import _str_types
 from ..stream import DataStream
 
 try:
@@ -68,26 +68,21 @@ class EmbeddingCenterContextBatchify(object):
        is a separate row for each context. The context_data array always
        contains weights for the context words equal to 1 over the number of
        context words in the given row of the context array.
-    dtype : numpy.dtype, default numpy.float32
-        Data type for data elements.
+    weight_dtype : numpy.dtype, default numpy.float32
+        Data type for data array of sparse COO context representation.
     index_dtype : numpy.dtype, default numpy.int64
 
     """
 
-    def __init__(self,
-                 batch_size,
-                 window_size=5,
-                 reduce_window_size_randomly=True,
-                 shuffle=True,
-                 cbow=False,
-                 dtype='float32',
-                 index_dtype='int64'):
+    def __init__(self, batch_size, window_size=5,
+                 reduce_window_size_randomly=True, shuffle=True, cbow=False,
+                 weight_dtype='float32', index_dtype='int64'):
         self._batch_size = batch_size
         self._window_size = window_size
         self._reduce_window_size_randomly = reduce_window_size_randomly
         self._shuffle = shuffle
         self._cbow = cbow
-        self._dtype = dtype
+        self._weight_dtype = weight_dtype
         self._index_dtype = index_dtype
 
     def __call__(self, corpus):
@@ -95,45 +90,42 @@ class EmbeddingCenterContextBatchify(object):
 
         Parameters
         ----------
-        corpus : list of lists of int
-            List of coded sentences. A coded sentence itself is a list of token
-            indices. Context samples do not cross sentence boundaries.
+        corpus : list of sentences
+            List of sentences. Any list containing for example integers or
+            strings can be a sentence. Context samples do not cross sentence
+            boundaries.
 
          Returns
          -------
          DataStream
              Each element of the DataStream is a tuple of 2 elements (center,
-             context). center is a NDArray of shape (batch_size, ). context is
-             a tuple of 3 NDArrays, representing a sparse COO array (data, row,
-             col). The center and context arrays contain the center and
-             correpsonding context works respectively. A sparse representation
-             is used for context as the number of context words for one center
-             word varies based on the randomly chosen context window size and
-             sentence boundaries.
+             context). center is a numpy.ndarray of shape (batch_size, ).
+             context is a tuple of 3 numpy.ndarray, representing a sparse COO
+             array (data, row, col). The center and context arrays contain the
+             center and correpsonding context words respectively. A sparse
+             representation is used for context as the number of context words
+             for one center word varies based on the randomly chosen context
+             window size and sentence boundaries. The returned center and col
+             arrays are of the same dtype as the sentence elements.
 
         """
         return _EmbeddingCenterContextBatchify(
-            corpus,
-            self._batch_size,
-            self._window_size,
-            self._reduce_window_size_randomly,
-            self._shuffle,
-            cbow=self._cbow,
-            dtype=self._dtype,
-            index_dtype=self._index_dtype)
+            corpus, self._batch_size, self._window_size,
+            self._reduce_window_size_randomly, self._shuffle, cbow=self._cbow,
+            weight_dtype=self._weight_dtype, index_dtype=self._index_dtype)
 
 
 class _EmbeddingCenterContextBatchify(DataStream):
-    def __init__(self, coded, batch_size, window_size,
-                 reduce_window_size_randomly, shuffle, cbow, dtype,
+    def __init__(self, sentences, batch_size, window_size,
+                 reduce_window_size_randomly, shuffle, cbow, weight_dtype,
                  index_dtype):
-        self._coded = coded
+        self._sentences = sentences
         self._batch_size = batch_size
         self._window_size = window_size
         self._reduce_window_size_randomly = reduce_window_size_randomly
         self._shuffle = shuffle
         self._cbow = cbow
-        self._dtype = dtype
+        self._weight_dtype = weight_dtype
         self._index_dtype = index_dtype
 
     def __iter__(self):
@@ -143,17 +135,20 @@ class _EmbeddingCenterContextBatchify(DataStream):
                 'with numba, but numba is not installed. '
                 'Consider "pip install numba" for significant speed-ups.')
 
-        coded = [c for c in self._coded if len(c) > 1]
-        if self._shuffle:
-            random.shuffle(coded)
+        if isinstance(self._sentences[0][0], _str_types):
+            sentences = [np.asarray(s, dtype='O') for s in self._sentences]
+        else:
+            sentences = [np.asarray(s) for s in self._sentences]
 
-        sentence_boundaries = np.cumsum([len(c) for c in coded])
-        coded = np.concatenate(coded)  # numpy array for numba
+        if self._shuffle:
+            random.shuffle(sentences)
+
+        sentence_boundaries = np.cumsum([len(c) for c in sentences])
+        sentences = np.concatenate(sentences)
 
         it = iter(
             _context_generator(
-                coded, sentence_boundaries, self._window_size,
-                self._batch_size,
+                sentence_boundaries, self._window_size, self._batch_size,
                 random_window_size=self._reduce_window_size_randomly,
                 cbow=self._cbow, seed=random.getrandbits(32)))
 
@@ -161,14 +156,11 @@ class _EmbeddingCenterContextBatchify(DataStream):
             while True:
                 try:
                     (center, context_data, context_row, context_col) = next(it)
-                    context_data = nd.array(context_data, dtype=self._dtype)
-                    context_row = nd.array(context_row,
-                                           dtype=self._index_dtype)
-                    context_col = nd.array(context_col,
-                                           dtype=self._index_dtype)
+                    context_data = np.asarray(context_data, dtype=self._weight_dtype)
+                    context_row = np.asarray(context_row, dtype=self._index_dtype)
+                    context_col = sentences[context_col]
                     context_coo = (context_data, context_row, context_col)
-                    yield nd.array(center,
-                                   dtype=self._index_dtype), context_coo
+                    yield sentences[center], context_coo
                 except StopIteration:
                     return
 
@@ -186,7 +178,7 @@ def _get_sentence_start_end(sentence_boundaries, sentence_pointer):
 
 
 @numba_njit
-def _context_generator(sentences, sentence_boundaries, window, batch_size,
+def _context_generator(sentence_boundaries, window, batch_size,
                        random_window_size, cbow, seed):
     num_rows = batch_size
     word_pointer = 0
@@ -203,10 +195,12 @@ def _context_generator(sentences, sentence_boundaries, window, batch_size,
                 # There is no data left
                 break
 
-            center = sentences[word_pointer]
-            contexts = _get_context(word_pointer, sentences,
-                                    sentence_boundaries, window,
+            contexts = _get_context(word_pointer, sentence_boundaries, window,
                                     random_window_size, seed)
+            if contexts is None:
+                word_pointer += 1
+                continue
+            center = word_pointer
             for j, context in enumerate(contexts):
                 if num_context_skip > j:
                     # In SkipGram mode, there may be some leftover contexts
@@ -249,32 +243,32 @@ def _context_generator(sentences, sentence_boundaries, window, batch_size,
 
 
 @numba_njit
-def _get_context(center_index, sentences, sentence_boundaries, window_size,
+def _get_context(center_idx, sentence_boundaries, window_size,
                  random_window_size, seed):
     """Compute the context with respect to a center word in a sentence.
 
-    Takes an numpy array of flattened sentences and their boundaries.
+    Takes an numpy array of sentences boundaries.
 
     """
-    random.seed(seed + center_index)
+    random.seed(seed + center_idx)
 
-    sentence_index = np.searchsorted(sentence_boundaries, center_index)
+    sentence_index = np.searchsorted(sentence_boundaries, center_idx)
     sentence_start, sentence_end = _get_sentence_start_end(
         sentence_boundaries, sentence_index)
 
     if random_window_size:
         window_size = random.randint(1, window_size)
-    start_idx = max(sentence_start, center_index - window_size)
-    end_idx = min(sentence_end, center_index + window_size + 1)
+    start_idx = max(sentence_start, center_idx - window_size)
+    end_idx = min(sentence_end, center_idx + window_size + 1)
 
-    if start_idx != center_index and center_index + 1 != end_idx:
-        context = np.concatenate((sentences[start_idx:center_index],
-                                  sentences[center_index + 1:end_idx]))
-    elif start_idx != center_index:
-        context = sentences[start_idx:center_index]
-    elif center_index + 1 != end_idx:
-        context = sentences[center_index + 1:end_idx]
+    if start_idx != center_idx and center_idx + 1 != end_idx:
+        context = np.concatenate((np.arange(start_idx, center_idx),
+                                  np.arange(center_idx + 1, end_idx)))
+    elif start_idx != center_idx:
+        context = np.arange(start_idx, center_idx)
+    elif center_idx + 1 != end_idx:
+        context = np.arange(center_idx + 1, end_idx)
     else:
-        raise RuntimeError('Too short sentence passed to _one_center_context')
+        context = None
 
     return context

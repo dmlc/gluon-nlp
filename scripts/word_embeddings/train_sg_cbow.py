@@ -18,22 +18,17 @@
 # under the License.
 
 # pylint: disable=global-variable-undefined,wrong-import-position
-"""Fasttext embedding model
-===========================
+"""SkipGram and CBOW embedding models
+=====================================
 
-This example shows how to train a FastText embedding model on Text8 with the
-Gluon NLP Toolkit.
+This example shows how to train SkipGram (SG) and Continuous Bag of Words
+(CBOW) embedding models with the Gluon NLP Toolkit. Including fastText style
+subword information is supported.
 
-The FastText embedding model was introduced by
-
-- Bojanowski, P., Grave, E., Joulin, A., & Mikolov, T. (2017). Enriching word
-  vectors with subword information. TACL, 5(), 135–146.
-
-When setting --ngram-buckets to 0, a Word2Vec embedding model is trained. The
-Word2Vec embedding model was introduced by
-
-- Tomas Mikolov, Kai Chen, Greg Corrado, and Jeffrey Dean. Efficient estimation
-  of word representations in vector space. ICLR Workshop , 2013
+The SG and CBOW models were introduced by "Mikolov et al. Efficient estimation
+of word representations in vector space. ICLR Workshop, 2013". The fastText
+model was introduced by "Bojanowski et al. Enriching word vectors with subword
+information. TACL 2017"
 
 """
 import argparse
@@ -50,7 +45,7 @@ import gluonnlp as nlp
 import evaluation
 from utils import get_context, print_time
 from model import SG, CBOW
-from data import transform_data, text8, wiki
+from data import transform_data_word2vec, transform_data_fasttext, preprocess_dataset, wiki
 
 
 def parse_args():
@@ -80,6 +75,8 @@ def parse_args():
               'If not specified, uses CPU.'))
     group.add_argument('--no-prefetch-batch', action='store_true',
                        help='Disable multi-threaded nogil batch prefetching.')
+    group.add_argument('--num-prefetch-epoch', type=int, default=3,
+                       help='Start data pipeline for next N epochs when beginning current epoch.')
     group.add_argument('--no-hybridize', action='store_true',
                        help='Disable hybridization of gluon HybridBlocks.')
 
@@ -144,16 +141,36 @@ def train(args):
         logging.error('Unsupported model %s.', args.model)
         sys.exit(1)
 
-    if args.data.lower() == 'text8':
-        data, vocab, idx_to_counts = text8(max_vocab_size=args.max_vocab_size)
+    if args.data.lower() == 'toy':
+        data = mx.gluon.data.SimpleDataset(nlp.data.Text8(segment='train')[:2])
+        data, vocab, idx_to_counts = preprocess_dataset(
+            data, max_vocab_size=args.max_vocab_size)
+    elif args.data.lower() == 'text8':
+        data = nlp.data.Text8(segment='train')
+        data, vocab, idx_to_counts = preprocess_dataset(
+            data, max_vocab_size=args.max_vocab_size)
+    elif args.data.lower() == 'fil9':
+        data = nlp.data.Fil9(max_sentence_length=10000)
+        data, vocab, idx_to_counts = preprocess_dataset(
+            data, max_vocab_size=args.max_vocab_size)
     elif args.data.lower() == 'wiki':
         data, vocab, idx_to_counts = wiki(args.wiki_root, args.wiki_date,
                                           args.wiki_language,
                                           args.max_vocab_size)
-    data, batchify_fn, subword_function = transform_data(
-        data, vocab, idx_to_counts,
-        args.model.lower() == 'cbow', args.ngram_buckets, args.ngrams,
-        args.batch_size, args.window, args.frequent_token_subsampling)
+
+    if args.ngram_buckets > 0:
+        data, batchify_fn, subword_function = transform_data_fasttext(
+            data, vocab, idx_to_counts, cbow=args.model.lower() == 'cbow',
+            ngram_buckets=args.ngram_buckets, ngrams=args.ngrams,
+            batch_size=args.batch_size, window_size=args.window,
+            frequent_token_subsampling=args.frequent_token_subsampling)
+    else:
+        subword_function = None
+        data, batchify_fn = transform_data_word2vec(
+            data, vocab, idx_to_counts, cbow=args.model.lower() == 'cbow',
+            batch_size=args.batch_size, window_size=args.window,
+            frequent_token_subsampling=args.frequent_token_subsampling)
+
     num_tokens = float(sum(idx_to_counts))
 
     model = CBOW if args.model.lower() == 'cbow' else SG
@@ -172,7 +189,7 @@ def train(args):
 
     try:
         if args.no_prefetch_batch:
-            batches = data.transform(batchify_fn)
+            data = data.transform(batchify_fn)
         else:
             from executors import LazyThreadPoolExecutor
             num_cpu = len(os.sched_getaffinity(0))
@@ -182,14 +199,20 @@ def train(args):
         logging.warning(
             'Asynchronous batch prefetching is not supported on Python 2. '
             'Consider upgrading to Python 3 for improved performance.')
-        batches = data.transform(batchify_fn)
+        data = data.transform(batchify_fn)
 
     num_update = 0
+    prefetched_iters = []
+    for _ in range(min(args.num_prefetch_epoch, args.epochs)):
+        prefetched_iters.append(iter(data))
     for epoch in range(args.epochs):
+        if epoch + len(prefetched_iters) < args.epochs:
+            prefetched_iters.append(iter(data))
+        data_iter = prefetched_iters.pop(0)
         try:
-            batches = ex.map(batchify_fn, data)
-        except NameError:  # Py 2 or prefetching disabled
-            pass
+            batches = ex.map(batchify_fn, data_iter)
+        except NameError:  # Py 2 or batch prefetching disabled
+            batches = data_iter
 
         # Logging variables
         log_wc = 0
