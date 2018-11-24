@@ -142,7 +142,7 @@ def load_translation_data(dataset, bleu, args):
         data_train = nlp.data.WMT2014BPE('train', src_lang=src_lang, tgt_lang=tgt_lang)
         data_val = nlp.data.WMT2014BPE('newstest2013', src_lang=src_lang, tgt_lang=tgt_lang)
         data_test = nlp.data.WMT2014BPE('newstest2014', src_lang=src_lang, tgt_lang=tgt_lang,
-                                        full=False)
+                                        full=args.full)
     elif dataset == 'TOY':
         common_prefix = 'TOY_{}_{}_{}_{}'.format(src_lang, tgt_lang,
                                                  args.src_max_len, args.tgt_max_len)
