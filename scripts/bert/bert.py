@@ -72,8 +72,4 @@ class BERTClassifier(Block):
             Shape (batch_size, num_classes)
         """
         _, pooler_out = self.bert(inputs, token_types, valid_length)
-        #out_np = pooler_out.asnumpy()#.mean()
-        #print('pooled out', out_np.mean())
-        #import numpy as np
-        #np.save('/tmp/mx.out', out_np)
         return self.classifier(pooler_out)

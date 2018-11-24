@@ -106,7 +106,7 @@ def test_pretrained_bert_models():
         for dataset in pretrained_datasets:
             model, vocab = nlp.model.get_model(model_name, dataset_name=dataset,
                                                pretrained=True,
-                                               root='/home/ubuntu/gluon-nlp/tests/data/model/')
+                                               root='tests/data/model/')
             assert len(vocab) == vocab_size[dataset]
             for token in special_tokens:
                 assert token in vocab, "Token %s not found in the vocab"%token

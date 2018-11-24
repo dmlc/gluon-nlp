@@ -73,8 +73,7 @@ ctx = mx.cpu() if args.gpu is None or args.gpu == '' else mx.gpu()
 
 bert, vocabulary = bert_12_768_12(dataset_name='book_corpus_wiki_en_uncased',
                                   pretrained=True, ctx=ctx, use_pooler=True,
-                                  use_decoder=False, use_classifier=False,
-                                  root='/home/ubuntu/gluon-nlp/tests/data/model/')
+                                  use_decoder=False, use_classifier=False)
 tokenizer = FullTokenizer(vocabulary, do_lower_case=True)
 
 model = BERTClassifier(bert, dropout=0.1)
