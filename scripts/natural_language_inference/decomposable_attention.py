@@ -17,23 +17,24 @@ class NLIModel(gluon.HybridBlock):
     using intra-sentence attention.
     Arxiv paper: https://arxiv.org/pdf/1606.01933.pdf
     """
-    def __init__(self, vocab_size, word_embed_size, hidden_size, **kwargs):
+    def __init__(self, vocab_size, word_embed_size, hidden_size, dropout=0., **kwargs):
         super(NLIModel, self).__init__(**kwargs)
         self.word_embed_size = word_embed_size
         self.hidden_size = hidden_size
         with self.name_scope():
-            self.word_emb = mx.gluon.nn.Embedding(vocab_size, word_embed_size)
-            self.lin_proj = gluon.nn.Dense(hidden_size, in_units=word_embed_size, activation='relu', flatten=False)
-            self.intra_attention = IntraSentenceAttention(hidden_size, hidden_size)
-            self.model = DecomposableAttention(hidden_size*2, hidden_size, 3)
+            self.dropout_layer = nn.Dropout(dropout)
+            self.word_emb = nn.Embedding(vocab_size, word_embed_size)
+            self.lin_proj = nn.Dense(hidden_size, in_units=word_embed_size, activation='relu', flatten=False)
+            self.intra_attention = IntraSentenceAttention(hidden_size, hidden_size, dropout)
+            self.model = DecomposableAttention(hidden_size*2, hidden_size, 3, dropout)
 
     def hybrid_forward(self, F, sentence1, sentence2):
         """
         Model forward definition
         """
-        feature1 = self.lin_proj(self.word_emb(sentence1))
+        feature1 = self.lin_proj(self.dropout_layer(self.word_emb(sentence1)))
         feature1 = F.concat(feature1, self.intra_attention(feature1), dim=-1)
-        feature2 = self.lin_proj(self.word_emb(sentence2))
+        feature2 = self.lin_proj(self.dropout_layer(self.word_emb(sentence2)))
         feature2 = F.concat(feature2, self.intra_attention(feature2), dim=-1)
         pred = self.model(feature1, feature2)
         return pred
@@ -42,14 +43,16 @@ class IntraSentenceAttention(gluon.HybridBlock):
     """
     Intra Sentence Attentiontion block.
     """
-    def __init__(self, inp_size: int, hidden_size: int, max_length=10, **kwargs):
+    def __init__(self, inp_size: int, hidden_size: int, dropout=0., **kwargs):
         super(IntraSentenceAttention, self).__init__(**kwargs)
-        self.max_length = max_length
         self.hidden_size = hidden_size
         with self.name_scope():
+            self.dropout_layer = nn.Dropout(dropout)
             # F_intra in the paper
             self.intra_attn_emb = nn.HybridSequential()
+            self.intra_attn_emb.add(self.dropout_layer)
             self.intra_attn_emb.add(nn.Dense(hidden_size, in_units=inp_size, activation='relu', flatten=False))
+            self.intra_attn_emb.add(self.dropout_layer)
             self.intra_attn_emb.add(nn.Dense(hidden_size, in_units=hidden_size, activation='relu', flatten=False))
             self.intra_attn_emb.add(nn.Dense(hidden_size, in_units=hidden_size, flatten=False))
 
@@ -64,22 +67,29 @@ class DecomposableAttention(gluon.HybridBlock):
     """
     Decomposable Attentiontion block.
     """
-    def __init__(self, inp_size: int, hidden_size: int, num_class: int, **kwargs):
+    def __init__(self, inp_size: int, hidden_size: int, num_class: int, dropout=0., **kwargs):
         super(DecomposableAttention, self).__init__(**kwargs)
         with self.name_scope():
+            self.dropout_layer = nn.Dropout(dropout)
             # attention function
             self.f = nn.HybridSequential()
+            self.f.add(self.dropout_layer)
             self.f.add(nn.Dense(hidden_size, in_units=inp_size, activation='relu', flatten=False))
+            self.f.add(self.dropout_layer)
             self.f.add(nn.Dense(hidden_size, in_units=hidden_size, activation='relu', flatten=False))
             self.f.add(nn.Dense(hidden_size, in_units=hidden_size, flatten=False))
             # compare function
             self.g = nn.HybridSequential()
+            self.g.add(self.dropout_layer)
             self.g.add(nn.Dense(hidden_size, in_units=hidden_size * 2, activation='relu', flatten=False))
+            self.g.add(self.dropout_layer)
             self.g.add(nn.Dense(hidden_size, in_units=hidden_size, activation='relu', flatten=False))
             self.g.add(nn.Dense(hidden_size, in_units=hidden_size, flatten=False))
             # predictor
             self.h = nn.HybridSequential()
+            self.h.add(self.dropout_layer)
             self.h.add(nn.Dense(hidden_size, in_units=hidden_size * 2, activation='relu'))
+            self.h.add(self.dropout_layer)
             self.h.add(nn.Dense(hidden_size, in_units=hidden_size, activation='relu'))
             self.h.add(nn.Dense(num_class, in_units=hidden_size))
         # extract features

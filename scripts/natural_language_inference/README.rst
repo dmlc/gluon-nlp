@@ -7,7 +7,7 @@ Download the SNLI dataset:
 
     $ mkdir data
     $ curl https://nlp.stanford.edu/projects/snli/snli_1.0.zip -o data/snli_1.0.zip
-    $ unzip data/snli_1.0.zip
+    $ unzip data/snli_1.0.zip -d data
 
 
 

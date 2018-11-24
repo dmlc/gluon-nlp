@@ -25,8 +25,8 @@ logger = logging.getLogger('nli')
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--cpu', action='store_true',
-                        help='use CPU')
+    parser.add_argument('--gpu-id', type=int, default=0,
+                        help='GPU id (-1 means CPU)')
     parser.add_argument('--train-file',
                         help='training set file', default='snli_1.0/snli_1.0_train.txt')
     parser.add_argument('--test-file',
@@ -62,6 +62,8 @@ def parse_args():
                         help='directory to load model')
     parser.add_argument('--seed', type=int, default=0,
                         help='random seed')
+    parser.add_argument('--dropout', type=float, default=0.,
+                        help='dropout rate')
 
     return parser.parse_args()
 
@@ -142,10 +144,10 @@ def test_model(model, data_loader, loss_func, ctx):
 def main(args):
     json.dump(vars(args), open(os.path.join(args.output_dir, 'config.json'), 'w'))
 
-    if args.cpu:
+    if args.gpu_id == -1:
         ctx = mx.cpu()
     else:
-        ctx = mx.gpu()
+        ctx = mx.gpu(args.gpu_id)
 
     mx.random.seed(args.seed, ctx=ctx)
 
@@ -166,7 +168,7 @@ def main(args):
         train_data_loader = prepare_data_loader(args, train_dataset, vocab)
         val_data_loader = prepare_data_loader(args, val_dataset, vocab, test=True)
 
-        model = NLIModel(len(vocab), args.embedding_size, args.hidden_size)
+        model = NLIModel(len(vocab), args.embedding_size, args.hidden_size, args.dropout)
         train_model(model, train_data_loader, val_data_loader, vocab.embedding, ctx, args)
     elif args.mode == 'test':
         model_args = argparse.Namespace(**json.load(open(os.path.join(args.model_dir, 'config.json'))))
