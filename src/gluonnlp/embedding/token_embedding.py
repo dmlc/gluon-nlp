@@ -126,7 +126,8 @@ def list_sources(embedding_name=None):
 
     text_embedding_reg = registry.get_registry(TokenEmbedding)
 
-    if embedding_name:
+    if embedding_name is not None:
+        embedding_name = embedding_name.lower()
         if embedding_name not in text_embedding_reg:
             raise KeyError('Cannot find `embedding_name` {}. Use '
                            '`list_sources(embedding_name=None).keys()` to get all the valid'
@@ -798,16 +799,20 @@ class GloVe(TokenEmbedding):
     Jeffrey Pennington, Richard Socher, and Christopher D. Manning.
     https://nlp.stanford.edu/pubs/glove.pdf
 
-    Website:
-
-    https://nlp.stanford.edu/projects/glove/
+    Website: https://nlp.stanford.edu/projects/glove/
 
     To get the updated URLs to the externally hosted pre-trained token embedding
     files, visit https://nlp.stanford.edu/projects/glove/
 
-    License for pre-trained embedding:
+    License for pre-trained embedding: https://opendatacommons.org/licenses/pddl/
 
-    https://opendatacommons.org/licenses/pddl/
+    Available sources
+
+    .. runblock:: pycon
+
+        >>> import warnings; warnings.filterwarnings('ignore');
+        >>> import gluonnlp as nlp
+        >>> nlp.embedding.list_sources('GloVe')
 
     Parameters
     ----------
@@ -872,16 +877,21 @@ class FastText(TokenEmbedding):
     Alexis Conneau, Guillaume Lample, Marc'Aurelio Ranzato, Ludovic Denoyer, and Herve Jegou.
     https://arxiv.org/abs/1710.04087
 
-    Website:
-
-    https://fasttext.cc/
+    Website: https://fasttext.cc/
 
     To get the updated URLs to the externally hosted pre-trained token embedding files, visit
     https://github.com/facebookresearch/fastText/blob/master/pretrained-vectors.md
 
-    License for pre-trained embedding:
+    License for pre-trained embedding: https://creativecommons.org/licenses/by-sa/3.0/
 
-    https://creativecommons.org/licenses/by-sa/3.0/
+    Available sources
+
+    .. runblock:: pycon
+
+        >>> import warnings; warnings.filterwarnings('ignore');
+        >>> import gluonnlp as nlp
+        >>> nlp.embedding.list_sources('FastText')
+
 
     Parameters
     ----------
@@ -970,13 +980,17 @@ class Word2Vec(TokenEmbedding):
     in Continuous Space Word Representations. In Proceedings of NAACL HLT,
     2013.
 
-    Website:
+    Website: https://code.google.com/archive/p/word2vec/
 
-    https://code.google.com/archive/p/word2vec/
+    License for pre-trained embedding: Unspecified
 
-    License for pre-trained embedding:
+    Available sources
 
-    Unspecified
+    .. runblock:: pycon
+
+        >>> import warnings; warnings.filterwarnings('ignore');
+        >>> import gluonnlp as nlp
+        >>> nlp.embedding.list_sources('Word2Vec')
 
     Parameters
     ----------

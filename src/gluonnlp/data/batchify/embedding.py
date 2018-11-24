@@ -150,21 +150,29 @@ class _EmbeddingCenterContextBatchify(DataStream):
         sentence_boundaries = np.cumsum([len(c) for c in coded])
         coded = np.concatenate(coded)  # numpy array for numba
 
-        for (center, context_data, context_row,
-             context_col) in _context_generator(
-                 coded,
-                 sentence_boundaries,
-                 self._window_size,
-                 self._batch_size,
-                 random_window_size=self._reduce_window_size_randomly,
-                 cbow=self._cbow,
-                 seed=random.getrandbits(32)):
+        it = iter(
+            _context_generator(
+                coded, sentence_boundaries, self._window_size,
+                self._batch_size,
+                random_window_size=self._reduce_window_size_randomly,
+                cbow=self._cbow, seed=random.getrandbits(32)))
 
-            context_data = nd.array(context_data, dtype=self._dtype)
-            context_row = nd.array(context_row, dtype=self._index_dtype)
-            context_col = nd.array(context_col, dtype=self._index_dtype)
-            context_coo = (context_data, context_row, context_col)
-            yield nd.array(center, dtype=self._index_dtype), context_coo
+        def _closure():
+            while True:
+                try:
+                    (center, context_data, context_row, context_col) = next(it)
+                    context_data = nd.array(context_data, dtype=self._dtype)
+                    context_row = nd.array(context_row,
+                                           dtype=self._index_dtype)
+                    context_col = nd.array(context_col,
+                                           dtype=self._index_dtype)
+                    context_coo = (context_data, context_row, context_col)
+                    yield nd.array(center,
+                                   dtype=self._index_dtype), context_coo
+                except StopIteration:
+                    return
+
+        return _closure()
 
 
 @numba_njit

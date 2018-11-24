@@ -3,6 +3,9 @@ Machine Translation
 
 :download:`[Download] </model_zoo/machine_translation.zip>`
 
+Google Neural Machine Translation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 Use the following command to train the GNMT model on the IWSLT2015 dataset.
 
 .. code-block:: console
@@ -12,6 +15,9 @@ Use the following command to train the GNMT model on the IWSLT2015 dataset.
                    --num_hidden 512 --save_dir gnmt_en_vi_l2_h512_beam10 --epochs 12 --gpu 0
 
 It gets test BLEU score equals to 26.20.
+
+Transformers
+~~~~~~~~~~~~
 
 Use the following commands to train the Transformer model on the WMT14 dataset for English to German translation.
 

@@ -1,4 +1,4 @@
-# Sentiment Analysis
+# Sentiment Analysis by Fine-tuning Word Language Model
 
 Now that we've covered some advanced topics, let's go back and show how these techniques can help us even when addressing the comparatively simple problem of classification. In particular, we'll look at the classic problem of sentiment analysis: taking an input consisting of a string of text and classifying its sentiment as positive of negative.
 

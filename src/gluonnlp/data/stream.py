@@ -21,16 +21,16 @@
 """NLP Toolkit Data Stream API. It allows easy and customizable streaming of
 corpora and dataset files. Files can be streamed into formats that are
 ready for training and evaluation."""
-__all__ = [
-    'DataStream', 'SimpleDataStream', 'DatasetStream', 'SimpleDatasetStream',
-    'PrefetchingStream'
-]
+
+from __future__ import print_function
 
 import glob
 import multiprocessing
 import os
 import random
+import sys
 import threading
+import traceback
 
 import numpy as np
 
@@ -41,6 +41,10 @@ try:
     import Queue as queue
 except ImportError:
     import queue
+
+__all__ = [
+    'DataStream', 'SimpleDataStream', 'DatasetStream', 'SimpleDatasetStream',
+    'PrefetchingStream']
 
 
 class DataStream(object):
@@ -116,12 +120,18 @@ class _LazyTransformDataStream(DataStream):
             istuple = isinstance(item, tuple)
             if istuple:
                 yield self._fn(*item)
-                for item in stream_iter:
-                    yield self._fn(*item)
+                while True:
+                    try:
+                        yield self._fn(*next(stream_iter))
+                    except StopIteration:
+                        return
             else:
                 yield self._fn(item)
-                for item in stream_iter:
-                    yield self._fn(item)
+                while True:
+                    try:
+                        yield self._fn(next(stream_iter))
+                    except StopIteration:
+                        return
 
         return _closure()
 
@@ -197,8 +207,11 @@ class SimpleDatasetStream(DatasetStream):
 
 class _Prefetcher(object):
     """Internal shared prefetcher logic."""
-    data_queue = None
-    control_queue = None
+    _dataq = None  # Data queue transmits prefetched elements
+    _controlq = None  # Control queue to instruct thread / process shutdown
+    _errorq = None  # Error queue to transmit exceptions from worker to master
+
+    _checked_start = False  # True once startup has been checkd by _check_start
 
     def __init__(self, stream, num_prefetch, seed, np_seed, mx_seed):
         super(_Prefetcher, self).__init__()
@@ -213,35 +226,73 @@ class _Prefetcher(object):
         """Method representing the process’s activity."""
         random.seed(self.seed)
         np.random.seed(self.np_seed)
-        mx.random.seed(self.mx_seed)
+        if not isinstance(self, multiprocessing.Process):
+            # Calling mxnet methods in a subprocess will raise an exception if
+            # mxnet is built with GPU support
+            # https://github.com/apache/incubator-mxnet/issues/4659
+            mx.random.seed(self.mx_seed)
 
-        stream_iter = iter(self.stream)
+        # Startup - Master waits for this
+        try:
+            stream_iter = iter(self.stream)
+            self._errorq.put(None)
+        except Exception as e:  # pylint: disable=broad-except
+            tb = traceback.format_exc()
+            self._errorq.put((e, tb))
+
+        # Async work
         while True:
             try:  # Check control queue
-                c = self.control_queue.get(False)
+                c = self._controlq.get(False)
                 if c is None:
                     break
+                else:
+                    raise RuntimeError('Got unexpected control code {}'.format(repr(c)))
             except queue.Empty:
                 pass
+            except RuntimeError as e:
+                tb = traceback.format_exc()
+                self._errorq.put((e, tb))
+                self._dataq.put(None)
 
             try:
                 data = next(stream_iter)
-                self.data_queue.put(data)
-            except StopIteration:
-                self.data_queue.put(None)
+                error = None
+            except Exception as e:  # pylint: disable=broad-except
+                tb = traceback.format_exc()
+                error = (e, tb)
+                data = None
+            finally:
+                self._errorq.put(error)
+                self._dataq.put(data)
 
     def __next__(self):
-        next_item = self.data_queue.get()
-        if next_item is None:
-            self.control_queue.put(None)
-            raise StopIteration
-        return next_item
+        next_item = self._dataq.get()
+        next_error = self._errorq.get()
+
+        if next_error is None:
+            return next_item
+        else:
+            self._controlq.put(None)
+            if isinstance(next_error[0], StopIteration):
+                raise StopIteration
+            else:
+                return self._reraise(*next_error)
+
+    def _reraise(self, e, tb):
+        print('Reraising exception from Prefetcher', file=sys.stderr)
+        print(tb, file=sys.stderr)
+        raise e
+
+    def _check_start(self):
+        assert not self._checked_start
+        self._checked_start = True
+        next_error = self._errorq.get(block=True)
+        if next_error is not None:
+            self._reraise(*next_error)
 
     def next(self):
         return self.__next__()
-
-    def __iter__(self):
-        return self
 
 
 class _ProcessPrefetcher(_Prefetcher, multiprocessing.Process):
@@ -249,10 +300,12 @@ class _ProcessPrefetcher(_Prefetcher, multiprocessing.Process):
 
     def __init__(self, *args, **kwargs):
         super(_ProcessPrefetcher, self).__init__(*args, **kwargs)
-        self.data_queue = multiprocessing.Queue(self.num_prefetch)
-        self.control_queue = multiprocessing.Queue()
+        self._dataq = multiprocessing.Queue(self.num_prefetch)
+        self._controlq = multiprocessing.Queue()
+        self._errorq = multiprocessing.Queue(self.num_prefetch)
         self.daemon = True
         self.start()
+        self._check_start()
 
 
 class _ThreadPrefetcher(_Prefetcher, threading.Thread):
@@ -260,10 +313,12 @@ class _ThreadPrefetcher(_Prefetcher, threading.Thread):
 
     def __init__(self, *args, **kwargs):
         super(_ThreadPrefetcher, self).__init__(*args, **kwargs)
-        self.data_queue = queue.Queue(self.num_prefetch)
-        self.control_queue = queue.Queue()
+        self._dataq = queue.Queue(self.num_prefetch)
+        self._controlq = queue.Queue()
+        self._errorq = queue.Queue(self.num_prefetch)
         self.daemon = True
         self.start()
+        self._check_start()
 
 
 class PrefetchingStream(DataStream):

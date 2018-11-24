@@ -1,4 +1,3 @@
-
 # A Structured Self-attentive Sentence Embedding
 
 After word embedding is applied to the representation of words, natural language processing(NLP) has been effectively improved in many ways. Along with the widespread use of word embedding, many techniques have been developed to express the semantics of sentences by words, such as:
@@ -6,14 +5,11 @@ After word embedding is applied to the representation of words, natural language
 2. Convolution(CNN) and maximum pooling(MaxPooling) on the matrix of all the word vectors of the sentence, using the final result to represent the semantics of the sentence.
 3. Unroll the sentence according to the time step of the word, input the vector representation of each word into a recurrent neural network(RNN), and use the output of the last time step of the RNN as the semantic representation of the sentence.
 
-
 The above method solves the problem of sentence meaning in a certain extent in many aspects. When concating is used in method one, if the word of the sentence is too long and the vector dimension of the word is slightly larger, then the vector dimension of the sentence will be particularly large, and the internal interaction between the words of the sentence is not taken into account. The use of weighted averaging is not accurate and does not adequately express the impact of each word on sentence semantics. Many useful word meanings may be lost in Method2. The third method selects the output of the last step. If the sentence is too long, the output of the last step does not accurately express the semantics of the sentence.
-
 
 Based on the above mentioned method, Zhouhan Lin, Minwei Feng et al. published a paper [A Structured Self-attentive Sentence Embedding](https://arxiv.org/pdf/1703.03130.pdf)[1] in 2017, proposed a method based on self-attention structure for sentence embedding and applied to user's reviews classification, textual entailment and other tasks. In the end, good results were obtained.
 
-
-In this note, we will use [GluonNLP](https://gluon-nlp.mxnet.io/index.html) to reproduce the model structure in A Structured Self-attentive Sentence Embedding and apply it to [Yelp Data's review star rating data set](https://www.yelp.com/dataset/challenge) for classification.
+In this tutorial, we will use [GluonNLP](https://gluon-nlp.mxnet.io/index.html) to reproduce the model structure in "A Structured Self-attentive Sentence Embedding" and apply it to [Yelp Data's review star rating data set](https://www.yelp.com/dataset/challenge) for classification.
 
 ## Import Related Packages
 
@@ -25,7 +21,7 @@ import zipfile
 import time
 import itertools
 
-import numpy as np 
+import numpy as np
 import mxnet as mx
 import multiprocessing as mp
 import gluonnlp as nlp
@@ -40,10 +36,7 @@ from sklearn.metrics import accuracy_score, f1_score
 # fixed random number seed
 np.random.seed(2018)
 mx.random.seed(2018)
-```
 
-
-```
 def try_gpu():
     """If GPU is available, return mx.gpu(0); else return mx.cpu()."""
     try:
@@ -97,10 +90,10 @@ tokenizer = nlp.data.SpacyTokenizer('en')
 length_clip = nlp.data.ClipSequence(100)
 
 def preprocess(x):
-    
+
     # convert the number of stars 1, 2, 3, 4, 5 to zero-based index, 0, 1, 2, 3, 4
     data, label = x[0], x[1]-1
-    
+
     # clip the length of review words
     data = length_clip(tokenizer(data))
     return data, label
@@ -110,13 +103,13 @@ def get_length(x):
 
 def preprocess_dataset(dataset):
     start = time.time()
-    
+
     with mp.Pool() as pool:
         # Each sample is processed in an asynchronous manner.
         dataset = gluon.data.SimpleDataset(pool.map(preprocess, dataset))
         lengths = gluon.data.SimpleDataset(pool.map(get_length, dataset))
     end = time.time()
-    
+
     print('Done! Tokenizing Time={:.2f}s, #Sentences={}'.format(end - start, len(dataset)))
     return dataset, lengths
 
@@ -132,7 +125,7 @@ train_seqs = [sample[0] for sample in train_dataset]
 counter = nlp.data.count_tokens(list(itertools.chain.from_iterable(train_seqs)))
 
 vocab = nlp.Vocab(counter, max_size=10000)
- 
+
 # load pre-trained embedding,Glove
 embedding_weights = nlp.embedding.GloVe(source='glove.6B.300d')
 vocab.set_embedding(embedding_weights)
@@ -145,7 +138,7 @@ def token_to_idx(x):
 with mp.Pool() as pool:
     train_dataset = pool.map(token_to_idx, train_dataset)
     valid_dataset = pool.map(token_to_idx, valid_dataset)
-    
+
 ```
 
 ## Bucketing and DataLoader
@@ -167,9 +160,9 @@ def get_dataloader():
     batchify_fn = nlp.data.batchify.Tuple(
         nlp.data.batchify.Pad(axis=0),
         nlp.data.batchify.Stack())
-    
-    # n this example, we use a FixedBucketSampler, 
-    # which assigns each data sample to a fixed bucket based on its length. 
+
+    # n this example, we use a FixedBucketSampler,
+    # which assigns each data sample to a fixed bucket based on its length.
     batch_sampler = nlp.data.sampler.FixedBucketSampler(
         train_data_lengths,
         batch_size=batch_size,
@@ -177,7 +170,7 @@ def get_dataloader():
         ratio=bucket_ratio,
         shuffle=True)
     print(batch_sampler.stats())
-    
+
     # train_dataloader
     train_dataloader = gluon.data.DataLoader(
         dataset=train_dataset,
@@ -202,7 +195,7 @@ In the original paper, the representation of the sentence is: firstly, the sente
 Attention is like when we are looking at things, we always give different importance to things in the scope of the perspective. For example, when we are communicating with people, our eyes will always pay more attention to the face of the communicator, not to the edge of other perspectives. So when we want to express the sentence, we can pay different attention to the output H of the bidirectional LSTM layer.
 ![](attention-nlp.png)
 $$
-A = Softmax(W_{s2}tanh(W_{s1}H^T)) 
+A = Softmax(W_{s2}tanh(W_{s1}H^T))
 $$
 
 Here, W<sub>s1</sub> is a weight matrix with the shape: d<sub>a</sub>-by-2u, where d<sub>a</sub> is a hyperparameter.
@@ -243,7 +236,7 @@ When the number of samples for labels are very unbalanced, applying different we
 
 
 ```
-   
+
 class WeightedSoftmaxCE(nn.HybridBlock):
     def __init__(self, sparse_label=True, from_logits=False,  **kwargs):
         super(WeightedSoftmaxCE, self).__init__(**kwargs)
@@ -263,7 +256,7 @@ class WeightedSoftmaxCE(nn.HybridBlock):
 
         # return F.mean(loss, axis=0, exclude=True)
         return loss
-    
+
 ```
 
 
@@ -334,7 +327,7 @@ prune_q = None
 
 ctx = try_gpu()
 
-model = SelfAttentiveBiLSTM(vocab_len, emsize, nhidden, nlayers, 
+model = SelfAttentiveBiLSTM(vocab_len, emsize, nhidden, nlayers,
                             natt_unit, natt_hops, nfc, nclass,
                             drop_prob, pool_way, prune_p, prune_q)
 
@@ -367,15 +360,15 @@ def calculate_loss(x, y, model, loss, class_weight, penal_coeff):
     diversity_penalty = nd.batch_dot(att, nd.transpose(att, axes=(0, 2, 1))
                         ) - nd.eye(att.shape[1], ctx=att.context)
     l = l + penal_coeff * diversity_penalty.norm(axis=(1, 2))
-    
+
     return pred, l
 ```
 
 
 ```
-def one_epoch(data_iter, model, loss, trainer, ctx, is_train, epoch, 
+def one_epoch(data_iter, model, loss, trainer, ctx, is_train, epoch,
               penal_coeff=0.0, clip=None, class_weight=None, loss_name='wsce'):
-    
+
     loss_val = 0.
     total_pred = []
     total_true = []
@@ -385,7 +378,7 @@ def one_epoch(data_iter, model, loss, trainer, ctx, is_train, epoch,
         batch_x = batch_x.as_in_context(ctx)
         batch_y = batch_y.as_in_context(ctx)
 
-        if is_train:             
+        if is_train:
             with autograd.record():
                 batch_pred, l = calculate_loss(batch_x, batch_y, model, loss, class_weight, penal_coeff)
 
@@ -421,7 +414,7 @@ def one_epoch(data_iter, model, loss, trainer, ctx, is_train, epoch,
 
         n_batch += 1
         loss_val += batch_loss
-        
+
         # check the result of traing phase
         if is_train and n_batch % 400 == 0:
             print('epoch %d, batch %d, batch_train_loss %.4f, batch_train_acc %.3f' %
@@ -440,21 +433,21 @@ def one_epoch(data_iter, model, loss, trainer, ctx, is_train, epoch,
             trainer.set_learning_rate(trainer.learning_rate * 0.9)
     else:
         print('\t valid_loss %.4f, acc_valid %.3f, F1_valid %.3f, ' % (loss_val, acc, F1))
-        
+
 ```
 
 
 ```
-def train_valid(data_iter_train, data_iter_valid, model, loss, trainer, ctx, nepochs, 
+def train_valid(data_iter_train, data_iter_valid, model, loss, trainer, ctx, nepochs,
                 penal_coeff=0.0, clip=None, class_weight=None, loss_name='wsce'):
-    
+
     for epoch in range(1, nepochs+1):
         start = time.time()
         # train
         is_train = True
         one_epoch(data_iter_train, model, loss, trainer, ctx, is_train,
                   epoch, penal_coeff, clip, class_weight, loss_name)
-        
+
         # valid
         is_train = False
         one_epoch(data_iter_valid, model, loss, trainer, ctx, is_train,
@@ -462,7 +455,7 @@ def train_valid(data_iter_train, data_iter_valid, model, loss, trainer, ctx, nep
         end = time.time()
         print('time %.2f sec' % (end-start))
         print("*"*100)
-    
+
 ```
 
 ## Train
@@ -522,19 +515,6 @@ cmap = sns.diverging_palette(220, 10, as_cmap=True)
 sns.heatmap(np.squeeze(att.asnumpy(), 0), cmap=cmap, annot=True,
             xticklabels=['This', 'movie', 'is', 'amazing'], yticklabels=['att0', 'att1'])
 plt.show()
-```
-
-## Save Model
-
-
-```
-model_dir = '../models'
-if not os.path.exists(model_dir):
-    os.makedirs(model_dir)
-model_path = os.path.join(model_dir, 'self_att_bilstm_model')
-model.export(model_path)
-print('the structure and params of model have saved in：', model_path)
-
 ```
 
 ## Conclusion

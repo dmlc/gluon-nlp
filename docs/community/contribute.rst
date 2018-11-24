@@ -11,21 +11,18 @@ There are lots of opportunities for you to become our `contributors <https://git
 - Contribute bug reports `GitHub issues <https://github.com/dmlc/gluon-nlp/issues>`__.
 - Write new `scripts <https://github.com/dmlc/gluon-nlp/tree/master/scripts>`__ to reproduce
   state-of-the-art results.
-- Write new `examples <https://github.com/dmlc/gluon-nlp/tree/master/docs/examples>`__.
+- Write new `tutorials <https://github.com/dmlc/gluon-nlp/tree/master/docs/examples>`__.
 - Write new `public datasets <https://github.com/dmlc/gluon-nlp/tree/master/src/gluonnlp/data>`__
   (license permitting).
 - Most importantly, if you have an idea of how to contribute, then do it!
 
 For a list of open starter tasks, check `good first issues <https://github.com/dmlc/gluon-nlp/labels/good%20first%20issue>`__.
 
-How-to
-++++++
-
 - `Make changes <#make-changes>`__
 
-- `Contribute scripts <#contribute-scripts>`__
+- `Contribute to model zoo <#contribute-to-model-zoo>`__
 
-- `Contribute examples <#contribute-examples>`__
+- `Contribute tutorials <#contribute-tutorials>`__
 
 - `Contribute new API <#contribute-new-api>`__
 
@@ -49,35 +46,51 @@ submitting, contributor should perform the following checks:
 - `Lint (code style) check <https://github.com/dmlc/gluon-nlp/blob/master/Jenkinsfile#L5>`__.
 - `Py2 <https://github.com/dmlc/gluon-nlp/blob/master/Jenkinsfile#L18>`__ and `Py3 <https://github.com/dmlc/gluon-nlp/blob/master/Jenkinsfile#L28>`__ tests.
 
-Contribute Scripts
-------------------
+Contribute to model zoo
+-----------------------
 
-The `scripts <https://github.com/dmlc/gluon-nlp/tree/master/scripts>`__ in GluonNLP are typically
-for reproducing state-of-the-art (SOTA) results, or for a simple and interesting application.
-They are intended for practitioners who are familiar with the libraries to tweak and hack. For SOTA
-scripts, we usually request training scripts to be uploaded `here <https://github.com/dmlc/web-data/tree/master/gluonnlp/logs>`__, and then linked to in the example documentation.
+The :doc:`model zoo <../model_zoo/index>` in GluonNLP provide
+training scripts for reproducing state-of-the-art (SOTA) results and for
+applying them in specific application.
+The scripts are intended for practitioners who are familiar with the libraries to tweak and hack.
+When contributing scripts, we request that you provide training logs. You can upload the logs `here <https://github.com/dmlc/web-data/tree/master/gluonnlp/logs>`__ through pull requests,
+and then link them in the accompanying documentation for the scripts.
 
 See `existing examples <https://github.com/dmlc/gluon-nlp/tree/master/scripts>`__.
 
-Contribute Examples
--------------------
+Contribute tutorials
+--------------------
 
-Our `examples <https://github.com/dmlc/gluon-nlp/tree/master/docs/examples>`__ are intended for people who
+Our :doc:`tutorials <../examples/index>` are intended for people who
 are interested in NLP and want to get better familiarized on different parts in NLP. In order for
 people to easily understand the content, the code needs to be clean and readable, accompanied by
-good quality writing.
+explanation with good writing.
 
-See `existing examples <https://github.com/dmlc/gluon-nlp/tree/master/docs/examples>`__.
+See `existing tutorials <https://github.com/dmlc/gluon-nlp/tree/master/docs/examples>`__.
 
-We suggest you start the example with `Jupyter notebook <http://jupyter.org/>`_. When the content is ready, please
+To make the review process easy, we adopt `notedown <https://github.com/aaren/notedown>`_ as the
+tutorial format. Notedown notebooks are regular markdown files with code blocks that can be
+converted into `Jupyter notebooks <http://jupyter.org/>`_.
 
-- clear the output cells in the jupyter notebook,
+We suggest you start the example with `Jupyter notebook <http://jupyter.org/>`_. When the content is ready, please:
 
-- install `notedown <https://github.com/aaren/notedown>`_, run
+- Clear the output cells in the jupyter notebook,
+- `Install notedown <https://github.com/aaren/notedown>`_.
+- Run `notedown input.ipynb --to markdown > output.md`
+- Submit the `.md` file for review.
 
-- `notedown input.ipynb --to markdown > output.md`
+Notebook Guidelines:
 
-and submit the `.md` file for submission.
+- Less is better. Only show the code that needs people's attention.
+- Have a block upfront about the key takeaway of the notebook.
+- Explain the motivation of the notebook to guide readers. Add figures if they help.
+- Try to have < 10 lines of code per block, < 100 lines of code per notebook.
+- Hide uninteresting complex functions in .py and import them.
+- Hide uninteresting model parameters. We can make some of them default parameters in model definition. Maybe out of 30 we just show 5 interesting ones and pass those to model constructor.
+- Only import module instead of classes and functions (i.e. from gluonnlp import model and use model.get_model, instead of from gluonnlp.model import get_model)
+- Make tutorials more engaging, interative, prepare practice questions for people to try it out. For example, for embedding evaluation, we can ask questions to the audience like what's the most similar word to xxx.
+- Make sure the notebook can be zoomed in and still render well. This helps accommodate different viewing devices.
+- For low level APIs such as BeamSearch and Scorer, explain the API with examples so ppl know how to play with it / hack it.
 
 Contribute new API
 ------------------
@@ -103,10 +116,10 @@ for others to join.
 Contribute Docs
 ---------------
 
-Documentation is no less important than code. Good documentation delivers the correct message clearly and concisely.
+Documentation is at least as important as code. Good documentation delivers the correct message clearly and concisely.
 If you see any issue in the existing documentation, a patch to fix is most welcome! To locate the
-code responsible for the doc, you may use "View page source" in the top right corner, or the
-"[source]" links after each API. Also, `git grep` works nicely if there's unique string.
+code responsible for the doc, you may use "Edit on Github" in the top right corner, or the
+"[source]" links after each API. Also, `git grep` works nicely for searching for a specific string.
 
 Git Workflow Howtos
 -------------------

@@ -52,6 +52,7 @@ docs: release
 		echo "processing" $$BASENAME ; \
 		sed -i "s/docs\/model_zoo/scripts/g" $$TARGET_HTML; \
 	done;
+	sed -i.bak 's/33\,150\,243/23\,141\,201/g' docs/_build/html/_static/material-design-lite-1.3.0/material.blue-deep_orange.min.css;
 
 clean:
 	git clean -ff -d -x --exclude="$(ROOTDIR)/tests/externaldata/*" --exclude="$(ROOTDIR)/tests/data/*" --exclude="$(ROOTDIR)/conda/"
@@ -70,10 +71,12 @@ compile_notebooks:
 	done;
 
 dist_scripts:
-	find scripts/* -type d -prune | grep -v 'tests\|__pycache__' | xargs -t -n 1 -I{} zip -r {}.zip {}
+	cd scripts && \
+	find * -type d -prune | grep -v 'tests\|__pycache__' | xargs -t -n 1 -I{} zip -r {}.zip {}
 
 dist_notebooks: compile_notebooks
-	find docs/examples/* -type d -prune | grep -v 'tests\|__pycache__' | xargs -t -n 1 -I{} zip -r {}.zip {} -x "*.md"
+	cd docs/examples && \
+	find * -type d -prune | grep -v 'tests\|__pycache__' | xargs -t -n 1 -I{} zip -r {}.zip {} -x "*.md" -x "__pycache__" -x "*.pyc" -x "*.txt" -x "*.log" -x "*.params" -x "*.npz" -x "*.json"
 
 test:
 	py.test -v --capture=no --durations=0  tests/unittest scripts
