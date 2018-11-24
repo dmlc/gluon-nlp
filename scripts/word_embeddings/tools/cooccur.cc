@@ -62,7 +62,7 @@ std::ostream &operator<<(std::ostream &in,
 // documentation.
 struct Arguments {
   unsigned int num_threads = 1;
-  unsigned int window_size = 5;
+  unsigned int window_size = 15;
   bool no_symmetric = false;
   bool subsample = false;
   ContextWeight context_weight;
