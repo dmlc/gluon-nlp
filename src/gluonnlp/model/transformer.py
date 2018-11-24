@@ -116,7 +116,7 @@ class BasePositionwiseFFN(HybridBlock):
                 return GELU()
             else:
                 return gluon.nn.Activation(act)
-        assert isinstance(act, Block)
+        assert isinstance(act, gluon.Block)
         return act
 
     def hybrid_forward(self, F, inputs):  # pylint: disable=arguments-differ
