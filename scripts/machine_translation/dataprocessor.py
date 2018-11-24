@@ -19,6 +19,7 @@
 """Data preprocessing for transformer."""
 
 import os
+import io
 import time
 import logging
 import numpy as np
@@ -142,7 +143,7 @@ def load_translation_data(dataset, bleu, args):
         data_train = nlp.data.WMT2014BPE('train', src_lang=src_lang, tgt_lang=tgt_lang)
         data_val = nlp.data.WMT2014BPE('newstest2013', src_lang=src_lang, tgt_lang=tgt_lang)
         data_test = nlp.data.WMT2014BPE('newstest2014', src_lang=src_lang, tgt_lang=tgt_lang,
-                                        full=False)
+                                        full=args.full)
     elif dataset == 'TOY':
         common_prefix = 'TOY_{}_{}_{}_{}'.format(src_lang, tgt_lang,
                                                  args.src_max_len, args.tgt_max_len)
@@ -256,3 +257,12 @@ def make_dataloader(data_train, data_val, data_test, args,
                                              batchify_fn=test_batchify_fn,
                                              num_workers=num_workers)
     return train_data_loader, val_data_loader, test_data_loader
+
+
+def write_sentences(sentences, file_path):
+    with io.open(file_path, 'w', encoding='utf-8') as of:
+        for sent in sentences:
+            if isinstance(sent, (list, tuple)):
+                of.write(' '.join(sent) + '\n')
+            else:
+                of.write(sent + '\n')
