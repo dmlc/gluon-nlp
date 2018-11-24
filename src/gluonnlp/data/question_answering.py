@@ -80,7 +80,7 @@ class SQuAD(ArrayDataset):
         self._segment = segment
         self._get_data()
 
-        super(SQuAD, self).__init__(self._read_data())
+        super(SQuAD, self).__init__(SQuAD._get_records(self._read_data()))
 
     def _get_data(self):
         """Load data from the file. Does nothing if data was loaded before
@@ -116,9 +116,9 @@ class SQuAD(ArrayDataset):
         _, data_file_name, _ = self._data_file[self._segment]
 
         with open(os.path.join(self._root, data_file_name)) as f:
-            samples = json.load(f)
+            json_data = json.load(f)
 
-        return SQuAD._get_records(samples)
+        return json_data
 
     @staticmethod
     def _get_records(json_dict):
