@@ -93,7 +93,7 @@ def convert_tokens_to_ids(vocab, tokens):
 
 
 def whitespace_tokenize(text):
-  """Runs basic whitespace cleaning and splitting on a peice of text."""
+  """Runs basic whitespace cleaning and splitting on a piece of text."""
   text = text.strip()
   if not text:
     return []
@@ -102,8 +102,15 @@ def whitespace_tokenize(text):
 
 
 class FullTokenizer(object):
-  """Runs end-to-end tokenziation."""
+  """Runs end-to-end tokenziation.
 
+  Parameters
+  ----------
+  vocab : Vocab
+      Vocabulary for the corpus.
+  do_lower_case : bool, default True
+      Convert tokens to lower cases.
+  """
   def __init__(self, vocab, do_lower_case=True):
     self.vocab = vocab
     self.basic_tokenizer = BasicTokenizer(do_lower_case=do_lower_case)
@@ -120,7 +127,7 @@ class FullTokenizer(object):
   def convert_tokens_to_ids(self, tokens):
     return convert_tokens_to_ids(self.vocab, tokens)
 
-  def convert_vocab(self):
+  def _convert_vocab(self):
     """GluonNLP specific code to convert the original vocabulary to nlp.vocab.Vocab."""
     token_to_idx = dict(self.vocab)
     num_tokens = len(token_to_idx)
