@@ -357,10 +357,12 @@ def train():
                                                    bpe=bpe)
         logging.info('[Epoch {}] test Loss={:.4f}, test ppl={:.4f}, test bleu={:.2f}'
                      .format(epoch_id, test_loss, np.exp(test_loss), test_bleu_score * 100))
-        write_sentences(valid_translation_out,
-                        os.path.join(args.save_dir, 'epoch{:d}_valid_out.txt').format(epoch_id))
-        write_sentences(test_translation_out,
-                        os.path.join(args.save_dir, 'epoch{:d}_test_out.txt').format(epoch_id))
+        dataprocessor.write_sentences(valid_translation_out,
+                                      os.path.join(args.save_dir,
+                                                   'epoch{:d}_valid_out.txt').format(epoch_id))
+        dataprocessor.write_sentences(test_translation_out,
+                                      os.path.join(args.save_dir,
+                                                   'epoch{:d}_test_out.txt').format(epoch_id))
         if valid_bleu_score > best_valid_bleu:
             best_valid_bleu = valid_bleu_score
             save_path = os.path.join(args.save_dir, 'valid_best.params')
@@ -400,10 +402,10 @@ def train():
                                                split_compound_word=split_compound_word)
     logging.info('Best model test Loss={:.4f}, test ppl={:.4f}, test bleu={:.2f}'
                  .format(test_loss, np.exp(test_loss), test_bleu_score * 100))
-    write_sentences(valid_translation_out,
-                    os.path.join(args.save_dir, 'best_valid_out.txt'))
-    write_sentences(test_translation_out,
-                    os.path.join(args.save_dir, 'best_test_out.txt'))
+    dataprocessor.write_sentences(valid_translation_out,
+                                  os.path.join(args.save_dir, 'best_valid_out.txt'))
+    dataprocessor.write_sentences(test_translation_out,
+                                  os.path.join(args.save_dir, 'best_test_out.txt'))
 
 
 if __name__ == '__main__':
