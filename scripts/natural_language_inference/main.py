@@ -27,33 +27,28 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--gpu-id', type=int, default=0,
                         help='GPU id (-1 means CPU)')
-    parser.add_argument('--train-file',
-                        help='training set file', default='snli_1.0/snli_1.0_train.txt')
-    parser.add_argument('--test-file',
-                        help='validation set file', default='snli_1.0/snli_1.0_dev.txt')
+    parser.add_argument('--train-file', default='snli_1.0/snli_1.0_train.txt',
+                        help='training set file')
+    parser.add_argument('--test-file', default='snli_1.0/snli_1.0_dev.txt',
+                        help='validation set file')
     parser.add_argument('--max-num-examples', type=int, default=-1,
                         help='maximum number of examples to load (for debugging)')
-    parser.add_argument('--batch-size',
-                        help='batch size', default=32, type=int)
-    parser.add_argument('--print-interval', default=20, type=int,
+    parser.add_argument('--batch-size', type=int, default=32,
+                        help='batch size')
+    parser.add_argument('--print-interval', type=int, default=20,
                         help='the interval of two print')
-    parser.add_argument('--model',
-                        help='model file to test, only for test mode', default=None)
-    parser.add_argument('--mode',
-                        help='train or test', default='train')
-    parser.add_argument('--lr',
-                        help='learning rate', default=0.025, type=float)
-    parser.add_argument('--epochs', type=int, default=30,
+    parser.add_argument('--mode', choices=['train', 'test'], default='train',
+                        help='train or test')
+    parser.add_argument('--lr', type=float, default=0.025,
+                        help='learning rate')
+    parser.add_argument('--epochs', type=int, default=300,
                         help='maximum number of epochs to train')
-    parser.add_argument('--embedding',
-                        help='word embedding type',
-                        default='glove')
-    parser.add_argument('--embedding_source',
-                        help='embedding file soure',
-                        default='glove.6B.300d')
-    parser.add_argument('--embedding_size',
-                        help='size of embedding. Change it when using new embedding file!',
-                        default=300, type=int)
+    parser.add_argument('--embedding', default='glove',
+                        help='word embedding type')
+    parser.add_argument('--embedding-source', default='glove.6B.300d',
+                        help='embedding file soure')
+    parser.add_argument('--embedding-size', type=int, default=300,
+                        help='size of pretrained word embedding')
     parser.add_argument('--hidden-size', type=int, default=200,
                         help='hidden layer size')
     parser.add_argument('--output-dir', default='./output',
@@ -64,19 +59,28 @@ def parse_args():
                         help='random seed')
     parser.add_argument('--dropout', type=float, default=0.,
                         help='dropout rate')
+    parser.add_argument('--weight-decay', type=float, default=0.,
+                        help='l2 regularization weight')
+    parser.add_argument('--intra-attention', action='store_true',
+                        help='use intra-sentence attention')
 
     return parser.parse_args()
 
 def train_model(model, train_data_loader, val_data_loader, embedding, ctx, args):
-    model.hybridize()
+    logger.info(vars(args))
 
     # Initialziation
-    model.collect_params().initialize(mx.init.Uniform(0.1), ctx=ctx)
+    model.hybridize()
+    model.collect_params().initialize(mx.init.Normal(0.01), ctx=ctx)
     model.word_emb.weight.set_data(embedding.idx_to_vec)
+    # Fix word embedding
+    model.word_emb.weight.grad_req = 'null'
 
     loss_func = gluon.loss.SoftmaxCrossEntropyLoss()
     trainer = gluon.Trainer(model.collect_params(), 'adagrad',
-                            {'learning_rate': args.lr})
+                            {'learning_rate': args.lr,
+                             'wd': args.weight_decay,
+                             'clip_gradient': 5})
 
     checkpoints_dir = os.path.join(args.output_dir, 'checkpoints')
     if not os.path.exists(checkpoints_dir):
@@ -168,14 +172,14 @@ def main(args):
         train_data_loader = prepare_data_loader(args, train_dataset, vocab)
         val_data_loader = prepare_data_loader(args, val_dataset, vocab, test=True)
 
-        model = NLIModel(len(vocab), args.embedding_size, args.hidden_size, args.dropout)
+        model = NLIModel(len(vocab), args.embedding_size, args.hidden_size, args.dropout, args.intra_attention)
         train_model(model, train_data_loader, val_data_loader, vocab.embedding, ctx, args)
     elif args.mode == 'test':
         model_args = argparse.Namespace(**json.load(open(os.path.join(args.model_dir, 'config.json'))))
         vocab = nlp.Vocab.from_json(open(os.path.join(args.model_dir, 'vocab.jsons')).read())
         val_dataset = read_dataset(args, 'test_file')
         val_data_loader = prepare_data_loader(args, val_dataset, vocab, test=True)
-        model = NLIModel(len(vocab), model_args.embedding_size, model_args.hidden_size)
+        model = NLIModel(len(vocab), model_args.embedding_size, model_args.hidden_size, 0., model_args.intra_attention)
         model.load_parameters(os.path.join(args.model_dir, 'checkpoints', 'valid_best.params'), ctx=ctx)
         loss_func = gluon.loss.SoftmaxCrossEntropyLoss()
         logger.info('Test on {}'.format(args.test_file))

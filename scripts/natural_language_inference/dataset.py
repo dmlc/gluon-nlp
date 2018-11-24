@@ -26,6 +26,7 @@ def read_dataset(args, dataset):
                                 ['NULL'] + s1.lower().split(),
                                 ['NULL'] + s2.lower().split(), label),
                                 lazy=False)
+    logger.info('read {} examples'.format(len(dataset)))
     return dataset
 
 def build_vocab(dataset):

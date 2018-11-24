@@ -17,25 +17,32 @@ class NLIModel(gluon.HybridBlock):
     using intra-sentence attention.
     Arxiv paper: https://arxiv.org/pdf/1606.01933.pdf
     """
-    def __init__(self, vocab_size, word_embed_size, hidden_size, dropout=0., **kwargs):
+    def __init__(self, vocab_size, word_embed_size, hidden_size, dropout=0., intra_attention=False, **kwargs):
         super(NLIModel, self).__init__(**kwargs)
         self.word_embed_size = word_embed_size
         self.hidden_size = hidden_size
+        self.use_intra_attention = intra_attention
         with self.name_scope():
             self.dropout_layer = nn.Dropout(dropout)
             self.word_emb = nn.Embedding(vocab_size, word_embed_size)
-            self.lin_proj = nn.Dense(hidden_size, in_units=word_embed_size, activation='relu', flatten=False)
-            self.intra_attention = IntraSentenceAttention(hidden_size, hidden_size, dropout)
-            self.model = DecomposableAttention(hidden_size*2, hidden_size, 3, dropout)
+            self.lin_proj = nn.Dense(hidden_size, in_units=word_embed_size, flatten=False, use_bias=False)
+            if self.use_intra_attention:
+                self.intra_attention = IntraSentenceAttention(hidden_size, hidden_size, dropout)
+                input_size = hidden_size * 2
+            else:
+                self.intra_attention = None
+                input_size = hidden_size
+            self.model = DecomposableAttention(input_size, hidden_size, 3, dropout)
 
     def hybrid_forward(self, F, sentence1, sentence2):
         """
         Model forward definition
         """
-        feature1 = self.lin_proj(self.dropout_layer(self.word_emb(sentence1)))
-        feature1 = F.concat(feature1, self.intra_attention(feature1), dim=-1)
-        feature2 = self.lin_proj(self.dropout_layer(self.word_emb(sentence2)))
-        feature2 = F.concat(feature2, self.intra_attention(feature2), dim=-1)
+        feature1 = self.lin_proj(self.word_emb(sentence1))
+        feature2 = self.lin_proj(self.word_emb(sentence2))
+        if self.use_intra_attention:
+            feature1 = F.concat(feature1, self.intra_attention(feature1), dim=-1)
+            feature2 = F.concat(feature2, self.intra_attention(feature2), dim=-1)
         pred = self.model(feature1, feature2)
         return pred
 
@@ -54,7 +61,6 @@ class IntraSentenceAttention(gluon.HybridBlock):
             self.intra_attn_emb.add(nn.Dense(hidden_size, in_units=inp_size, activation='relu', flatten=False))
             self.intra_attn_emb.add(self.dropout_layer)
             self.intra_attn_emb.add(nn.Dense(hidden_size, in_units=hidden_size, activation='relu', flatten=False))
-            self.intra_attn_emb.add(nn.Dense(hidden_size, in_units=hidden_size, flatten=False))
 
     def hybrid_forward(self, F, feature_a):
         # batch_size, length, inp_size = feature_a.shape
@@ -72,29 +78,23 @@ class DecomposableAttention(gluon.HybridBlock):
         with self.name_scope():
             self.dropout_layer = nn.Dropout(dropout)
             # attention function
-            self.f = nn.HybridSequential()
-            self.f.add(self.dropout_layer)
-            self.f.add(nn.Dense(hidden_size, in_units=inp_size, activation='relu', flatten=False))
-            self.f.add(self.dropout_layer)
-            self.f.add(nn.Dense(hidden_size, in_units=hidden_size, activation='relu', flatten=False))
-            self.f.add(nn.Dense(hidden_size, in_units=hidden_size, flatten=False))
+            self.f = self._ff_layer(in_units=inp_size, out_units=hidden_size, flatten=False)
             # compare function
-            self.g = nn.HybridSequential()
-            self.g.add(self.dropout_layer)
-            self.g.add(nn.Dense(hidden_size, in_units=hidden_size * 2, activation='relu', flatten=False))
-            self.g.add(self.dropout_layer)
-            self.g.add(nn.Dense(hidden_size, in_units=hidden_size, activation='relu', flatten=False))
-            self.g.add(nn.Dense(hidden_size, in_units=hidden_size, flatten=False))
+            self.g = self._ff_layer(in_units=hidden_size * 2, out_units=hidden_size, flatten=False)
             # predictor
-            self.h = nn.HybridSequential()
-            self.h.add(self.dropout_layer)
-            self.h.add(nn.Dense(hidden_size, in_units=hidden_size * 2, activation='relu'))
-            self.h.add(self.dropout_layer)
-            self.h.add(nn.Dense(hidden_size, in_units=hidden_size, activation='relu'))
+            self.h = self._ff_layer(in_units=hidden_size * 2, out_units=hidden_size, flatten=True)
             self.h.add(nn.Dense(num_class, in_units=hidden_size))
         # extract features
         self.hidden_size = hidden_size
         self.inp_size = inp_size
+
+    def _ff_layer(self, in_units, out_units, flatten=True):
+        m = nn.HybridSequential()
+        m.add(self.dropout_layer)
+        m.add(nn.Dense(out_units, in_units=in_units, activation='relu', flatten=flatten))
+        m.add(self.dropout_layer)
+        m.add(nn.Dense(out_units, in_units=out_units, activation='relu', flatten=flatten))
+        return m
 
     def hybrid_forward(self, F, a, b):
         """
@@ -115,7 +115,7 @@ class DecomposableAttention(gluon.HybridBlock):
         # compare
         feature1 = self.g(F.concat(tilde_a, beta, dim=2))
         feature2 = self.g(F.concat(tilde_b, alpha, dim=2))
-        feature1 = feature1.mean(axis=1)
-        feature2 = feature2.mean(axis=1)
+        feature1 = feature1.sum(axis=1)
+        feature2 = feature2.sum(axis=1)
         yhat = self.h(F.concat(feature1, feature2, dim=1))
         return yhat
