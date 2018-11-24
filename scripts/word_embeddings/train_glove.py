@@ -75,7 +75,7 @@ def parse_args():
     group = parser.add_argument_group('Computation arguments')
     group.add_argument('--batch-size', type=int, default=65536,
                        help='Batch size for training.')
-    group.add_argument('--epochs', type=int, default=5, help='Epoch limit')
+    group.add_argument('--epochs', type=int, default=50, help='Epoch limit')
     group.add_argument(
         '--gpu', type=int, nargs='+',
         help='Number (index) of GPU to run on, e.g. 0. '
@@ -289,7 +289,7 @@ def train(args):
         index_dtype = 'int64'
         logging.info('Co-occurrence matrix is large. '
                      'Using int64 to represent sample indices.')
-        indices = mx.nd.arange(counts.shape[0], dtype=index_dtype)
+    indices = mx.nd.arange(counts.shape[0], dtype=index_dtype)
     for epoch in range(args.epochs):
         # Logging variables
         log_wc = 0

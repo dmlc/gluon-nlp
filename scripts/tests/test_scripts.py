@@ -50,6 +50,17 @@ def test_skipgram_cbow(model, fasttext):
     time.sleep(5)
 
 
+def test_glove():
+    path = os.path.dirname(os.path.abspath(os.path.expanduser(__file__)))
+    vocab = os.path.join(path, 'word_embeddings/glove/vocab.txt')
+    cooccur = os.path.join(path, 'word_embeddings/glove/cooccurrences.npz')
+    cmd = [
+        'python', './scripts/word_embeddings/train_glove.py', cooccur, vocab,
+        '--batch-size', '2', '--epochs', '2']
+    subprocess.check_call(cmd)
+    time.sleep(5)
+
+
 @pytest.mark.serial
 @pytest.mark.remote_required
 @pytest.mark.parametrize('fasttextloadngrams', [True, False])
