@@ -21,9 +21,7 @@
 __all__ = ['BERTModel', 'BERTEncoder', 'BERTEncoderCell', 'BERTPositionwiseFFN',
            'BERTLayerNorm', 'bert_12_768_12', 'bert_24_1024_16']
 
-import warnings
 import os
-import numpy as np
 from mxnet.gluon import Block, HybridBlock
 from mxnet.gluon import nn
 from mxnet.gluon.model_zoo import model_store
@@ -54,7 +52,7 @@ class BERTLayerNorm(HybridBlock):
                                     allow_deferred_init=True)
         self._eps = epsilon
 
-    def hybrid_forward(self, F, x, gamma, beta):
+    def hybrid_forward(self, F, x, gamma, beta): # pylint: disable=arguments-differ
         u = F.mean(x, -1, keepdims=True)
         s = F.mean(F.broadcast_sub(x, u) ** 2, -1, keepdims=True) + self._eps
         x = F.broadcast_div(F.broadcast_sub(x, u), s.sqrt())
@@ -104,10 +102,13 @@ class BERTPositionwiseFFN(BasePositionwiseFFN):
                  weight_initializer=None, bias_initializer='zeros',
                  prefix=None, params=None):
         super(BERTPositionwiseFFN, self).__init__(units=units, hidden_size=hidden_size,
-              dropout=dropout, use_residual=use_residual, weight_initializer=weight_initializer,
-              bias_initializer=bias_initializer, prefix=prefix, params=params,
-              # extra configurations for the BERT-style positionwise feed forward layer
-              activation='gelu', use_bert_layer_norm=True)
+                                                  dropout=dropout, use_residual=use_residual,
+                                                  weight_initializer=weight_initializer,
+                                                  bias_initializer=bias_initializer,
+                                                  prefix=prefix, params=params,
+                                                  # extra configurations for BERT
+                                                  activation='gelu',
+                                                  use_bert_layer_norm=True)
 
 class BERTEncoder(BaseTransformerEncoder):
     """Structure of the BERT Encoder.
@@ -168,14 +169,19 @@ class BERTEncoder(BaseTransformerEncoder):
                  weight_initializer=None, bias_initializer='zeros',
                  prefix=None, params=None):
         super(BERTEncoder, self).__init__(attention_cell=attention_cell,
-            num_layers=num_layers, units=units, hidden_size=hidden_size, max_length=max_length,
-            num_heads=num_heads, scaled=scaled, dropout=dropout, use_residual=use_residual,
-            output_attention=output_attention, weight_initializer=weight_initializer,
-            bias_initializer=bias_initializer, prefix=prefix, params=params,
-            # extra configurations for the BERT-style transformer
-            positional_weight='learned', use_bert_encoder=True,
-            use_layer_norm_before_dropout=False, scale_embed=False)
-
+                                          num_layers=num_layers, units=units,
+                                          hidden_size=hidden_size, max_length=max_length,
+                                          num_heads=num_heads, scaled=scaled, dropout=dropout,
+                                          use_residual=use_residual,
+                                          output_attention=output_attention,
+                                          weight_initializer=weight_initializer,
+                                          bias_initializer=bias_initializer,
+                                          prefix=prefix, params=params,
+                                          # extra configurations for BERT
+                                          positional_weight='learned',
+                                          use_bert_encoder=True,
+                                          use_layer_norm_before_dropout=False,
+                                          scale_embed=False)
 
 class BERTEncoderCell(BaseTransformerEncoderCell):
     """Structure of the Transformer Encoder Cell for BERT.
@@ -228,13 +234,18 @@ class BERTEncoderCell(BaseTransformerEncoderCell):
                  weight_initializer=None, bias_initializer='zeros',
                  prefix=None, params=None):
         super(BERTEncoderCell, self).__init__(attention_cell=attention_cell,
-            units=units, hidden_size=hidden_size, num_heads=num_heads, scaled=scaled,
-            dropout=dropout, use_residual=use_residual, output_attention=output_attention,
-            weight_initializer=weight_initializer, bias_initializer=bias_initializer,
-            prefix=prefix, params=params,
-            # extra configurations for the BERT-style transformer encoder cell
-            attention_use_bias=True, attention_proj_use_bias=True,
-            use_bert_layer_norm=True, use_bert_ffn=True)
+                                              units=units, hidden_size=hidden_size,
+                                              num_heads=num_heads, scaled=scaled,
+                                              dropout=dropout, use_residual=use_residual,
+                                              output_attention=output_attention,
+                                              weight_initializer=weight_initializer,
+                                              bias_initializer=bias_initializer,
+                                              prefix=prefix, params=params,
+                                              # extra configurations for BERT
+                                              attention_use_bias=True,
+                                              attention_proj_use_bias=True,
+                                              use_bert_layer_norm=True,
+                                              use_bert_ffn=True)
 
 ###############################################################################
 #                                FULL MODEL                                   #
@@ -322,7 +333,7 @@ class BERTModel(Block):
                 # Construct classifier for next sentence predicition
                 self.classifier = self._get_classifier('cls_')
         else:
-            assert not use_classifier, "Cannot use classifier if use_pooler is False"
+            assert not use_classifier, 'Cannot use classifier if use_pooler is False'
         if self._use_decoder:
             # Construct decoder for masked language model
             self.decoder = self._get_decoder(units, vocab_size, self.word_embed, 'decoder_')
@@ -376,7 +387,7 @@ class BERTModel(Block):
         This is used in training or fine-tuning a BERT model.
         """
         outputs = []
-        seq_out, states = self._encode_sequence(inputs, token_types, valid_length)
+        seq_out, _ = self._encode_sequence(inputs, token_types, valid_length)
         outputs.append(seq_out)
         if self._use_pooler:
             pooled_out = self._apply_pooling(seq_out)
@@ -420,8 +431,10 @@ class BERTModel(Block):
             last_step = sequence.slice(begin=(None, -1, None), end=(None, None, None))
         else:
             batch_size = sequence.shape[0]
-            batch_idx = mx.nd.arange(0, batch_size, dtype=valid_length.dtype, ctx=valid_length.context).reshape((1,-1))
-            valid_length = (valid_length - 1).reshape((1,-1))
+            ctx = valid_length.context
+            dtype = valid_length.dtype
+            batch_idx = mx.nd.arange(0, batch_size, dtype=dtype, ctx=ctx).reshape((1, -1))
+            valid_length = (valid_length - 1).reshape((1, -1))
             last_step_idx = mx.nd.Concat(batch_idx, valid_length, dim=0)
             last_step = mx.nd.gather_nd(sequence, last_step_idx)
         return self.decoder(last_step)

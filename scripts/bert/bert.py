@@ -21,11 +21,8 @@
 
 __all__ = ['BERTClassifier']
 
-import warnings
-import numpy as np
-from mxnet.gluon import Block, HybridBlock
+from mxnet.gluon import Block
 from mxnet.gluon import nn
-import mxnet as mx
 
 class BERTClassifier(Block):
     """Model for sentence (pair) classification task with BERT.
@@ -56,7 +53,7 @@ class BERTClassifier(Block):
                 self.classifier.add(nn.Dropout(rate=dropout))
             self.classifier.add(nn.Dense(units=num_classes, flatten=False))
 
-    def forward(self, inputs, token_types, valid_length=None):
+    def forward(self, inputs, token_types, valid_length=None): # pylint: disable=arguments-differ
         """Generate the unnormalized score for the given the input sequences.
 
         Parameters
@@ -74,5 +71,9 @@ class BERTClassifier(Block):
         outputs : NDArray
             Shape (batch_size, num_classes)
         """
-        seq_out, pooler_out  = self.bert(inputs, token_types, valid_length)
+        _, pooler_out = self.bert(inputs, token_types, valid_length)
+        #out_np = pooler_out.asnumpy()#.mean()
+        #print('pooled out', out_np.mean())
+        #import numpy as np
+        #np.save('/tmp/mx.out', out_np)
         return self.classifier(pooler_out)

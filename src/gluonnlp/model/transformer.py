@@ -16,12 +16,12 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+# pylint: disable=too-many-lines
 """Encoder and decoder usded in sequence-to-sequence learning."""
 __all__ = ['TransformerEncoder', 'PositionwiseFFN', 'TransformerEncoderCell',
            'transformer_en_de_512']
 
 import os
-import warnings
 
 import math
 import numpy as np
@@ -34,7 +34,6 @@ from .seq2seq_encoder_decoder import Seq2SeqEncoder, Seq2SeqDecoder, _get_attent
 from .block import GELU
 from .translation import NMTModel
 from .utils import _load_vocab, _load_pretrained_params
-from gluonnlp.data.utils import _vocab_sha1
 
 
 ###############################################################################
@@ -214,7 +213,8 @@ class BaseTransformerEncoderCell(HybridBlock):
                                  bias_initializer=bias_initializer,
                                  prefix='proj_')
             self.ffn = self._get_positionwise_ffn(use_bert_ffn, units, hidden_size, dropout,
-                                             use_residual, weight_initializer, bias_initializer)
+                                                  use_residual, weight_initializer,
+                                                  bias_initializer)
             self.layer_norm = _get_layer_norm(use_bert_layer_norm, units)
 
     def _get_positionwise_ffn(self, use_bert, units, hidden_size, dropout, use_residual,
@@ -351,7 +351,7 @@ class BaseTransformerEncoder(HybridBlock, Seq2SeqEncoder):
             position_weight = self.params.get('position_weight', shape=(max_length, units),
                                               init=initializer)
         else:
-            raise ValueError("Unexpected value for argument position_weight: %s"%(position_weight))
+            raise ValueError('Unexpected value for argument position_weight: %s'%(position_weight))
         return position_weight
 
     def _get_encoder_cell(self, use_bert, units, hidden_size, num_heads, attention_cell,
@@ -526,10 +526,12 @@ class PositionwiseFFN(BasePositionwiseFFN):
                  weight_initializer=None, bias_initializer='zeros',
                  prefix=None, params=None):
         super(PositionwiseFFN, self).__init__(units=units, hidden_size=hidden_size,
-              dropout=dropout, use_residual=use_residual, weight_initializer=weight_initializer,
-              bias_initializer=bias_initializer, prefix=prefix, params=params,
-              # extra configurations for the original positionwise feed forward layer
-              activation='relu', use_bert_layer_norm=False)
+                                              dropout=dropout, use_residual=use_residual,
+                                              weight_initializer=weight_initializer,
+                                              bias_initializer=bias_initializer,
+                                              prefix=prefix, params=params,
+                                              # extra configurations for transformer
+                                              activation='relu', use_bert_layer_norm=False)
 
 class TransformerEncoderCell(BaseTransformerEncoderCell):
     """Structure of the Transformer Encoder Cell.
@@ -577,13 +579,18 @@ class TransformerEncoderCell(BaseTransformerEncoderCell):
                  weight_initializer=None, bias_initializer='zeros',
                  prefix=None, params=None):
         super(TransformerEncoderCell, self).__init__(attention_cell=attention_cell,
-            units=units, hidden_size=hidden_size, num_heads=num_heads, scaled=scaled,
-            dropout=dropout, use_residual=use_residual, output_attention=output_attention,
-            weight_initializer=weight_initializer, bias_initializer=bias_initializer,
-            prefix=prefix, params=params,
-            # extra configurations for the original transformer encoder cell
-            attention_use_bias=False, attention_proj_use_bias=False,
-            use_bert_layer_norm=False, use_bert_ffn=False)
+                                                     units=units, hidden_size=hidden_size,
+                                                     num_heads=num_heads, scaled=scaled,
+                                                     dropout=dropout, use_residual=use_residual,
+                                                     output_attention=output_attention,
+                                                     weight_initializer=weight_initializer,
+                                                     bias_initializer=bias_initializer,
+                                                     prefix=prefix, params=params,
+                                                     # extra configurations for transformer
+                                                     attention_use_bias=False,
+                                                     attention_proj_use_bias=False,
+                                                     use_bert_layer_norm=False,
+                                                     use_bert_ffn=False)
 
 class TransformerEncoder(BaseTransformerEncoder):
     """Structure of the Transformer Encoder.
@@ -641,13 +648,19 @@ class TransformerEncoder(BaseTransformerEncoder):
                  weight_initializer=None, bias_initializer='zeros',
                  prefix=None, params=None):
         super(TransformerEncoder, self).__init__(attention_cell=attention_cell,
-            num_layers=num_layers, units=units, hidden_size=hidden_size, max_length=max_length,
-            num_heads=num_heads, scaled=scaled, dropout=dropout, use_residual=use_residual,
-            output_attention=output_attention, weight_initializer=weight_initializer,
-            bias_initializer=bias_initializer, prefix=prefix, params=params,
-            # extra configurations for the original transformer
-            positional_weight='sinusoidal', use_bert_encoder=False,
-            use_layer_norm_before_dropout=True, scale_embed=True)
+                                                 num_layers=num_layers, units=units,
+                                                 hidden_size=hidden_size, max_length=max_length,
+                                                 num_heads=num_heads, scaled=scaled,
+                                                 dropout=dropout, use_residual=use_residual,
+                                                 output_attention=output_attention,
+                                                 weight_initializer=weight_initializer,
+                                                 bias_initializer=bias_initializer,
+                                                 prefix=prefix, params=params,
+                                                 # extra configurations for transformer
+                                                 positional_weight='sinusoidal',
+                                                 use_bert_encoder=False,
+                                                 use_layer_norm_before_dropout=True,
+                                                 scale_embed=True)
 
 ###############################################################################
 #                                DECODER                                      #

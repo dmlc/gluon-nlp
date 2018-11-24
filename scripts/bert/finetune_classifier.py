@@ -35,17 +35,11 @@ sentence pair classification, with Gluon NLP Toolkit.
 # pylint:disable=redefined-outer-name,logging-format-interpolation
 
 import argparse
-import time
 import random
-import os
-import io
 import logging
-import math
 import numpy as np
 import mxnet as mx
 from mxnet import gluon
-from mxnet.gluon.data import ArrayDataset, SimpleDataset
-from mxnet.gluon.data import DataLoader
 from gluonnlp.model import bert_12_768_12
 from bert import BERTClassifier
 from tokenization import FullTokenizer
@@ -73,10 +67,12 @@ args = parser.parse_args()
 logging.info(args)
 batch_size = args.batch_size
 test_batch_size = args.test_batch_size
+lr = args.lr
 
 ctx = mx.cpu() if args.gpu is None or args.gpu == '' else mx.gpu()
 
-do_lower_case=True
+# TODO lowercase?
+do_lower_case = True
 
 bert, vocabulary = bert_12_768_12(dataset_name='book_corpus_wiki_en_uncased',
                                   pretrained=True, ctx=ctx, use_pooler=True,
@@ -109,22 +105,22 @@ def evaluate():
     """
     step_loss = 0
     metric.reset()
-    for batch_id, seqs in enumerate(bert_dataloader_dev):
+    for _, seqs in enumerate(bert_dataloader_dev):
         Ls = []
         input_ids, valid_len, type_ids, label = seqs
-        out  = model(input_ids.as_in_context(mx.gpu()), type_ids.as_in_context(mx.gpu()),
-                     valid_len.astype('float32').as_in_context(mx.gpu()))
+        out = model(input_ids.as_in_context(mx.gpu()), type_ids.as_in_context(mx.gpu()),
+                    valid_len.astype('float32').as_in_context(mx.gpu()))
         ls = loss_function(out, label.as_in_context(mx.gpu())).mean()
         Ls.append(ls)
         step_loss += sum([L.asscalar() for L in Ls])
         metric.update([label], [out])
-    logging.info('validation: %s'%(str(metric.get())))
+    logging.info('validation accuracy: %s'%(metric.get()[1]))
 
 
 def train():
     """Training function."""
     trainer = gluon.Trainer(model.collect_params(), args.optimizer,
-                            {'learning_rate': args.lr, 'epsilon': 1e-9})
+                            {'learning_rate': lr, 'epsilon': 1e-9})
 
     num_train_examples = len(data_train)
     num_train_steps = int(num_train_examples / batch_size * args.epochs)
@@ -134,7 +130,7 @@ def train():
     differentiable_params = []
 
     # Do not apply weight decay on LayerNorm and bias terms
-    for k, v in model.collect_params('.*beta|.*gamma|.*bias').items():
+    for _, v in model.collect_params('.*beta|.*gamma|.*bias').items():
         v.wd_mult = 0.0
 
     for p in model.collect_params().values():
@@ -148,15 +144,15 @@ def train():
         for batch_id, seqs in enumerate(bert_dataloader):
             step_num += 1
             if step_num < num_warmup_steps:
-                new_lr = args.lr * step_num / num_warmup_steps
+                new_lr = lr * step_num / num_warmup_steps
             else:
-                offset = (step_num - num_warmup_steps) * args.lr / (num_train_steps - num_warmup_steps)
-                new_lr = args.lr - offset
+                offset = (step_num - num_warmup_steps) * lr / (num_train_steps - num_warmup_steps)
+                new_lr = lr - offset
             trainer.set_learning_rate(new_lr)
             with mx.autograd.record():
                 input_ids, valid_length, type_ids, label = seqs
-                out  = model(input_ids.as_in_context(mx.gpu()), type_ids.as_in_context(mx.gpu()),
-                             valid_length.astype('float32').as_in_context(mx.gpu()))
+                out = model(input_ids.as_in_context(mx.gpu()), type_ids.as_in_context(mx.gpu()),
+                            valid_length.astype('float32').as_in_context(mx.gpu()))
                 ls = loss_function(out, label.as_in_context(mx.gpu())).mean()
             ls.backward()
             grads = [p.grad(c) for p in differentiable_params for c in [mx.gpu()]]

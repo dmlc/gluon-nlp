@@ -17,12 +17,10 @@
 __all__ = ['MRPCDataset', 'SentenceClassificationTrans']
 
 import os
-from gluonnlp.data import TSVDataset
-from gluonnlp.data.registry import register
-import gluonnlp
-import mxnet as mx
 import numpy as np
 import tokenization
+from gluonnlp.data import TSVDataset
+from gluonnlp.data.registry import register
 
 @register(segment=['train', 'dev', 'test'])
 class MRPCDataset(TSVDataset):
@@ -40,7 +38,7 @@ class MRPCDataset(TSVDataset):
     def __init__(self, segment='train',
                  root=os.path.join(os.environ['GLUE_DIR'], 'MRPC')):
         self._supported_segments = ['train', 'dev', 'test']
-        assert segment in self._supported_segments, "Unsupported segment: %s"%segment
+        assert segment in self._supported_segments, 'Unsupported segment: %s'%segment
         path = os.path.join(root, '%s.tsv'%segment)
         A_IDX, B_IDX, LABEL_IDX = 3, 4, 0
         fields = [A_IDX, B_IDX, LABEL_IDX]
@@ -49,22 +47,22 @@ class MRPCDataset(TSVDataset):
     @staticmethod
     def get_labels():
         """Get classification label ids of the dataset."""
-        return ["0", "1"]
+        return ['0', '1']
 
 def _truncate_seq_pair(tokens_a, tokens_b, max_length):
-  """Truncates a sequence pair in place to the maximum length."""
-  # This is a simple heuristic which will always truncate the longer sequence
-  # one token at a time. This makes more sense than truncating an equal percent
-  # of tokens from each, since if one sequence is very short then each token
-  # that's truncated likely contains more information than a longer sequence.
-  while True:
-    total_length = len(tokens_a) + len(tokens_b)
-    if total_length <= max_length:
-      break
-    if len(tokens_a) > len(tokens_b):
-      tokens_a.pop()
-    else:
-      tokens_b.pop()
+    """Truncates a sequence pair in place to the maximum length."""
+    # This is a simple heuristic which will always truncate the longer sequence
+    # one token at a time. This makes more sense than truncating an equal percent
+    # of tokens from each, since if one sequence is very short then each token
+    # that's truncated likely contains more information than a longer sequence.
+    while True:
+        total_length = len(tokens_a) + len(tokens_b)
+        if total_length <= max_length:
+            break
+        if len(tokens_a) > len(tokens_b):
+            tokens_a.pop()
+        else:
+            tokens_b.pop()
 
 class SentenceClassificationTrans(object):
     """Dataset Transformation for BERT-style Sentence Classification.
@@ -88,7 +86,7 @@ class SentenceClassificationTrans(object):
         self._pad = pad
         self._label_map = {}
         for (i, label) in enumerate(labels):
-          self._label_map[label] = i
+            self._label_map[label] = i
         self._pair = pair
 
     def __call__(self, line):
@@ -157,7 +155,7 @@ class SentenceClassificationTrans(object):
         tokens_b = None
 
         if self._pair:
-           tokens_b = self._tokenizer.tokenize(text_b)
+            tokens_b = self._tokenizer.tokenize(text_b)
 
         if tokens_b:
             # Modifies `tokens_a` and `tokens_b` in place so that the total
@@ -167,7 +165,7 @@ class SentenceClassificationTrans(object):
         else:
             # Account for [CLS] and [SEP] with "- 2"
             if len(tokens_a) > self._max_seq_length - 2:
-              tokens_a = tokens_a[0:(self._max_seq_length - 2)]
+                tokens_a = tokens_a[0:(self._max_seq_length - 2)]
 
         # The embedding vectors for `type=0` and `type=1` were learned during
         # pre-training and are added to the wordpiece embedding vector
@@ -180,19 +178,19 @@ class SentenceClassificationTrans(object):
         # the entire model is fine-tuned.
         tokens = []
         segment_ids = []
-        tokens.append("[CLS]")
+        tokens.append('[CLS]')
         segment_ids.append(0)
         for token in tokens_a:
             tokens.append(token)
             segment_ids.append(0)
-        tokens.append("[SEP]")
+        tokens.append('[SEP]')
         segment_ids.append(0)
 
         if tokens_b:
             for token in tokens_b:
                 tokens.append(token)
                 segment_ids.append(1)
-            tokens.append("[SEP]")
+            tokens.append('[SEP]')
             segment_ids.append(1)
 
         input_ids = self._tokenizer.convert_tokens_to_ids(tokens)
