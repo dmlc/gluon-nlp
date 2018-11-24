@@ -1,16 +1,22 @@
-# Using ELMo to Generate Sentence Representation
+# Extract Sentence Features with Pre-trained ELMo
 
-In this notebook, we will use GluonNLP to show how to generate ELMo sentence representation proposed in [1].
+While word-embeddings have been shown to capture syntactic and semantic information of words and have become a standard component in many state-of-the-art NLP architectures, their context-free nature limits their ability to represent context-dependent information.
+Peters et. al. proposed a deep contextualized word representation method, called Embeddings from Language Models, or ELMo.
+This model is pre-trained with a self-supervising task called bidirectional language model, and they show that the representation from this model is powerful and improves the state-of-the-art on many tasks such as question-answering, natural language inference, semantic role labeling, coreference resolution, named-entity recognition, and sentiment analysis.
 
-We will focus on showing how to
-* 1) process data, transform data and create the data loader;
-* 2) load the pretrained ELMo model, and generate the sentence representation for the input data.
+In this notebook, we show how to use the model API in GluonNLP to automatically download pre-trained ELMo model, and generate sentence representation with this model.
+We will focus on:
+
+1) how to process and transform data to be used with pre-trained ELMo model, and
+2) how to load the pretrained ELMo model, and use it to extract representation from preprocessed data.
 
 ## Preparation
 
+We start with some usual preparation such as importing libraries and setting the environment.
+
 ### Load MXNet and GluonNLP
 
-```{.python .input  n=1}
+```{.python .input}
 import warnings
 warnings.filterwarnings('ignore')
 
@@ -22,98 +28,31 @@ import os
 import json
 ```
 
-### Preprocess Data
+## Preprocess Data
 
-```{.python .input}
-def _load_sentences_embeddings(sentences_json_file):
-    """
-    Load the test sentences and the expected LM embeddings.
+The goal of preprocessing the data is to numericalize the text using the preprocessing steps that are consistent with training ELMo model.
+The exact same vocabulary needs to be used so that the indices in model embedding matches the pre-trained model.
+We will proceed with the following steps:
 
-    These files loaded in this method were created with a batch-size of 3.
-    The 30 sentences in sentences.json are split into 3 files in which
-    the k-th sentence in each is from batch k.
-
-    This method returns a sentences.
-    """
-    with open(sentences_json_file) as fin:
-        sentences = json.load(fin)
-    return sentences
-
-sentences_json_file = os.path.join(os.path.dirname(os.path.abspath('elmo_sentence_representation.md')), 'sentences.json')
-sentences = _load_sentences_embeddings(sentences_json_file)
-```
+1) Load a custom dataset.
+2) Tokenize the dataset in the same way as training ELMo.
+3) Numericalize the tokens on both words and characters using the provided vocab.
 
 ### Create Dataset
 
-```{.python .input}
-class SampleDataset(gluon.data.SimpleDataset):
-    """Common text dataset that reads a whole corpus in List[String] based on provided sample splitter
-    and word tokenizer.
+TODO load dataset (holmes?)
 
-    Parameters
-    ----------
-    passages : list of str
-        Path to the list data.
-    encoding : str, default 'utf8'
-        File encoding format.
-    flatten : bool, default False
-        Whether to return all samples as flattened tokens. If True, each sample is a token.
-    skip_empty : bool, default True
-        Whether to skip the empty samples produced from sample_splitters. If False, `bos` and `eos`
-        will be added in empty samples.
-    sample_splitter : function, default str.splitlines
-        A function that splits the dataset string into samples.
-    tokenizer : function or None, default str.split
-        A function that splits each sample string into list of tokens. If None, raw samples are
-        returned according to `sample_splitter`.
-    bos : str or None, default None
-        The token to add at the begining of each sequence. If None, or if tokenizer is not
-        specified, then nothing is added.
-    eos : str or None, default None
-        The token to add at the end of each sequence. If None, or if tokenizer is not
-        specified, then nothing is added.
-    """
+### Transform Dataset
 
-    def __init__(self, passages, encoding='utf8', flatten=False, skip_empty=True,
-                 sample_splitter=nlp.data.line_splitter, tokenizer=nlp.data.whitespace_splitter,
-                 bos=None, eos=None):
+TODO explain the steps of transformation.
 
-        self._passages = passages
-        self._encoding = encoding
-        self._flatten = flatten
-        self._skip_empty = skip_empty
-        self._sample_splitter = sample_splitter
-        self._tokenizer = tokenizer
-        self._bos = bos
-        self._eos = eos
-        super(SampleDataset, self).__init__(self._read())
+#### Tokenization
 
-    def _read(self):
-        all_samples = []
-        for passage in self._passages:
-            samples = (s.strip() for s in passage)
-            if self._tokenizer:
-                samples = [
-                    self._corpus_dataset_process(self._tokenizer(s), self._bos, self._eos)
-                    for s in samples if s or not self._skip_empty
-                ]
-                if self._flatten:
-                    samples = nlp.data.concat_sequence(samples)
-            elif self._skip_empty:
-                samples = [s for s in samples if s]
+TODO explain what tokenization was done when pre-training ELMo.
 
-            all_samples += samples
-        return all_samples
+#### Using Vocab from Pre-trained ELMo
 
-    def _corpus_dataset_process(self, s, bos, eos):
-        tokens = [bos] if bos else []
-        tokens.extend(s)
-        if eos:
-            tokens.append(eos)
-        return tokens
-
-sample_dataset = SampleDataset(sentences, flatten=False)
-```
+TODO explain char-level, word-level vocabs, and conversion to NDArray.
 
 ```{.python .input}
 class DataListTransform(object):
@@ -150,7 +89,9 @@ sample_dataset = gluon.data.SimpleDataset([(ele, len(ele), i)
                       for i, ele in enumerate(sample_dataset)])
 ```
 
-### Create Dataloader
+#### Create Dataloader
+
+TODO create batches using dataloader. refer to API notes, sentiment analysis tutorial.
 
 ```{.python .input}
 import gluonnlp.data.batchify as btf
@@ -159,6 +100,7 @@ import gluonnlp.data.batchify as btf
 sample_dataset_batchify_fn = nlp.data.batchify.Tuple(btf.Pad(), btf.Stack(), btf.Stack())
 ```
 
+TODO remove interval sampler
 ```{.python .input}
 batch_size = 3
 sample_data_loader = gluon.data.DataLoader(sample_dataset,
@@ -170,35 +112,26 @@ sample_data_loader = gluon.data.DataLoader(sample_dataset,
 
 ## Load Pretrained ELMo Model
 
+TODO explain get_model in model API.
+
 ```{.python .input}
 elmo_bilm = nlp.model.get_model('elmo_2x1024_128_2048cnn_1xhighway',
                                  dataset_name='gbw',
                                  pretrained=True,
                                  ctx=mx.cpu())
 print(elmo_bilm)
-hidden_state = elmo_bilm.begin_state(mx.nd.zeros, batch_size=batch_size)
 ```
 
-## Generate Sentence Representation
+## Putting everything together
+
 
 ```{.python .input}
-def detach(hidden):
-    """Transfer hidden states into new states, to detach them from the history.
-    Parameters
-    ----------
-    hidden : NDArray
-        The hidden states
-    Returns
-    ----------
-    hidden: NDArray
-        The detached hidden states
-    """
-    if isinstance(hidden, (tuple, list)):
-        hidden = [detach(h) for h in hidden]
-    else:
-        hidden = hidden.detach()
-    return hidden
 
+hidden_state = elmo_bilm.begin_state(mx.nd.zeros, batch_size=batch_size)
+
+TODO explain removal of begin/end tokens
+TODO define a function that returns the feature from the batches in dataloader
+TODO print one output
 def remove_sentence_boundaries(inputs, mask):
     """
     Remove begin/end of sentence embeddings from the batch of sentences.
@@ -251,10 +184,9 @@ for i, batch in enumerate(sample_data_loader):
 
 ## Conclusion
 
-In this section, we show that how to generate ELMo representation for sentences including
-* 1) how to process, transform data, and create the dataloader for the samples;
-* 2) how to use the pretrained ELMo model to generate the sentence representation.
-
+In this tutorial, we show how to generate sentence representation from ELMo model.
+In GluonNLP, this can be done with just a few simple steps: reuse the data transformation from ELMo for preprocessing the data, automatically download the pre-trained model, and feed the transformed data into the model.
+To see how to plug in the pre-trained models in your own model architecture and use fine-tuning to improve downstream tasks, check our TODO link to sentiment analysis through finetuning notebook.
 
 ## Reference
 [1] Peters, Matthew E., et al. "Deep contextualized word representations." NAACL (2018).
