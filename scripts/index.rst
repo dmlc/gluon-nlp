@@ -34,6 +34,12 @@ Model Zoo
       Classifying polarity of emotions and opinions.
 
    .. card::
+      :title: Natural Language Inference
+      :link: natural_language_inference/index.html
+
+      Determine if the premise semantically entails the hypothesis.
+
+   .. card::
       :title: Text Generation
       :link: text_generation/index.html
 
@@ -48,4 +54,5 @@ Model Zoo
    machine_translation/index
    text_classification/index
    sentiment_analysis/index
+   natural_language_inference/index
    text_generation/index
