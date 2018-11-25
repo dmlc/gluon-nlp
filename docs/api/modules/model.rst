@@ -41,7 +41,6 @@ ELMo
 
     ELMoBiLM
     ELMoCharacterEncoder
-    ELMoCharacterVocab
 
 Highway Network
 -----------------

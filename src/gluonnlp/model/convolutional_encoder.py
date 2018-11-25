@@ -147,7 +147,7 @@ class ConvolutionalEncoder(gluon.HybridBlock):
         Returns
         ----------
         output: NDArray
-            The output of the encoder with shape `(batch_size, output_Size)`
+            The output of the encoder with shape `(batch_size, output_size)`
 
         """
         if mask is not None:

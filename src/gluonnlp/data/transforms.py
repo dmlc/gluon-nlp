@@ -200,6 +200,9 @@ class SacreMosesTokenizer(object):
     `sacremoses <https://github.com/alvations/sacremoses>`_.
     For example, one can use :samp:`pip install sacremoses`.
 
+    .. note::
+        sacremoses carries an LGPL 2.1+ license.
+
     Examples
     --------
     >>> tokenizer = gluonnlp.data.SacreMosesTokenizer()
@@ -374,6 +377,9 @@ class SacreMosesDetokenizer(object):
     Users of this class are required to `install sacremoses
     <https://github.com/alvations/sacremoses>`_. For example, one can use
     :samp:`pip install sacremoses`.
+
+    .. note::
+        sacremoses carries an LGPL 2.1+ license.
 
     Examples
     --------
