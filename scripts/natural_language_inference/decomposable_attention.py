@@ -1,12 +1,29 @@
-# pylint: disable=C0103,E1101,R0914
-"""
-decomposable_attention.py
+# coding: utf-8
 
-Part of NLI script of gluon-nlp. Implementation of Decomposable Attentiontion.
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+# pylint: disable=arguments-differ
+
+"""
+Implementation of the decomposable attentiontion model with intra sentence attention.
+
 Copyright 2018 Mengxiao Lin <linmx0130@gmail.com>.
 """
 
-import mxnet as mx
 from mxnet import gluon
 from mxnet.gluon import nn
 
@@ -17,7 +34,8 @@ class NLIModel(gluon.HybridBlock):
     using intra-sentence attention.
     Arxiv paper: https://arxiv.org/pdf/1606.01933.pdf
     """
-    def __init__(self, vocab_size, word_embed_size, hidden_size, dropout=0., intra_attention=False, **kwargs):
+    def __init__(self, vocab_size, word_embed_size, hidden_size,
+                 dropout=0., intra_attention=False, **kwargs):
         super(NLIModel, self).__init__(**kwargs)
         self.word_embed_size = word_embed_size
         self.hidden_size = hidden_size
@@ -25,7 +43,8 @@ class NLIModel(gluon.HybridBlock):
         with self.name_scope():
             self.dropout_layer = nn.Dropout(dropout)
             self.word_emb = nn.Embedding(vocab_size, word_embed_size)
-            self.lin_proj = nn.Dense(hidden_size, in_units=word_embed_size, flatten=False, use_bias=False)
+            self.lin_proj = nn.Dense(hidden_size, in_units=word_embed_size,
+                                     flatten=False, use_bias=False)
             if self.use_intra_attention:
                 self.intra_attention = IntraSentenceAttention(hidden_size, hidden_size, dropout)
                 input_size = hidden_size * 2
@@ -58,9 +77,11 @@ class IntraSentenceAttention(gluon.HybridBlock):
             # F_intra in the paper
             self.intra_attn_emb = nn.HybridSequential()
             self.intra_attn_emb.add(self.dropout_layer)
-            self.intra_attn_emb.add(nn.Dense(hidden_size, in_units=inp_size, activation='relu', flatten=False))
+            self.intra_attn_emb.add(nn.Dense(hidden_size, in_units=inp_size,
+                                             activation='relu', flatten=False))
             self.intra_attn_emb.add(self.dropout_layer)
-            self.intra_attn_emb.add(nn.Dense(hidden_size, in_units=hidden_size, activation='relu', flatten=False))
+            self.intra_attn_emb.add(nn.Dense(hidden_size, in_units=hidden_size,
+                                             activation='relu', flatten=False))
 
     def hybrid_forward(self, F, feature_a):
         # batch_size, length, inp_size = feature_a.shape
