@@ -46,8 +46,8 @@ import mxnet as mx
 from mxnet import gluon
 import gluonnlp as nlp
 
-from gnmt import get_gnmt_encoder_decoder
 from gluonnlp.model.translation import NMTModel
+from gnmt import get_gnmt_encoder_decoder
 from translation import BeamSearchTranslator
 from loss import SoftmaxCEMaskedLoss
 from utils import logging_config
