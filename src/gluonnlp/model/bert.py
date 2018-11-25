@@ -419,7 +419,7 @@ class BERTModel(Block):
 
         This is used for pre-training or fine-tuning a BERT model.
         """
-        outputs = sequence.slice(begin=(None, 0, None), end=(None, 1, None)).squeeze(axis=1)
+        outputs = sequence[:, 0, :]
         return self.pooler(outputs)
 
     def _decode(self, sequence, valid_length=None):
@@ -428,7 +428,7 @@ class BERTModel(Block):
         This is only used for pre-training the BERT model.
         """
         if valid_length is None:
-            last_step = sequence.slice(begin=(None, -1, None), end=(None, None, None))
+            last_step = sequence[:, -1, :]
         else:
             batch_size = sequence.shape[0]
             ctx = valid_length.context
