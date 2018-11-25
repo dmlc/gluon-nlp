@@ -108,14 +108,14 @@ character-ngrams occuring in the string representation of the token. Thereby a
 fastText embedding model can compute meaningful embedding vectors for tokens
 that were not seen during training.
 
-For this notebook, we have prepared a
-helper function `transform_data` which builds a series of transformations of the
-`text8` `Dataset` created above, applying "tricks" mentioned before. It returns
-a `DataStream` over batches as well as a batchify_fn function that applied to a
-batch looks up and includes the fastText subwords associated with the center
-words and finally the subword function that can be used to obtain the subwords
-of a given string representation of a token. We will take a closer look at the
-subword function shortly.
+For this notebook, we have prepared a helper function `transform_data_fasttext`
+which builds a series of transformations of the `text8` `Dataset` created above,
+applying "tricks" mentioned before. It returns a `DataStream` over batches as
+well as a batchify_fn function that applied to a batch looks up and includes the
+fastText subwords associated with the center words and finally the subword
+function that can be used to obtain the subwords of a given string
+representation of a token. We will take a closer look at the subword function
+shortly.
 
 Note that the number of subwords is potentially
 different for every word. Therefore the batchify_fn represents a word with its
@@ -135,12 +135,12 @@ systems. 2013.
 Information" Transactions of the Association for Computational Linguistics 2017
 
 ```{.python .input}
-from data import transform_data
+from data import transform_data_fasttext
 
 batch_size=4096
-text8 = nlp.data.SimpleDataStream([text8])  # input is a stream of datasets, here just 1. Allows scaling to larger corpora that don't fit in memory
-data, batchify_fn, subword_function = transform_data(
-    text8, vocab, idx_to_counts, cbow=False, ngrams=[3,4,5,6], ngram_buckets=100000, batch_size=batch_size, window_size=5)
+data = nlp.data.SimpleDataStream([text8])  # input is a stream of datasets, here just 1. Allows scaling to larger corpora that don't fit in memory
+data, batchify_fn, subword_function = transform_data_fasttext(
+    data, vocab, idx_to_counts, cbow=False, ngrams=[3,4,5,6], ngram_buckets=100000, batch_size=batch_size, window_size=5)
 ```
 
 ```{.python .input}
@@ -158,7 +158,7 @@ its ngrams.
 FastText models use a hash function to map each ngram of a word to
 a number in range `[0, num_subwords)`. We include the same hash function.
 Above
-transform_data has also returned a `subword_function` object. Let's try it with
+`transform_data_fasttext` has also returned a `subword_function` object. Let's try it with
 a few words:
 
 ```{.python .input}

@@ -34,6 +34,12 @@ Model Zoo
       Classifying polarity of emotions and opinions.
 
    .. card::
+      :title: Syntactics
+      :link: model_zoo/syntactics/index.html
+
+      Syntactics dependency parsing.
+
+   .. card::
       :title: Natural Language Inference
       :link: model_zoo/natural_language_inference/index.html
 
