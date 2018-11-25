@@ -861,7 +861,8 @@ def test_token_embedding_from_S3_fasttext_with_ngrams(load_ngrams):
             embed['$$$unknownword$$$']
 
 
-def test_token_embedding_unknown_lookup():
+@pytest.mark.parametrize('setinconstructor', [True, False])
+def test_token_embedding_unknown_lookup(setinconstructor):
     class NaiveLookup(object):
         dim = 300
 
@@ -871,22 +872,28 @@ def test_token_embedding_unknown_lookup():
             else:
                 return nd.zeros((len(tokens), self.dim))
 
-    token_embedding = nlp.embedding.token_embedding.TokenEmbedding(
-        unknown_lookup=NaiveLookup(), unknown_autoextend=False)
+    if setinconstructor:
+        TokEmb = functools.partial(
+            nlp.embedding.token_embedding.TokenEmbedding,
+            unknown_lookup=NaiveLookup())
+    else:
+        def TokEmb(*args, **kwargs):
+            token_embedding = nlp.embedding.token_embedding.TokenEmbedding(
+                *args, **kwargs)
+            token_embedding.unknown_lookup = NaiveLookup()
+            return token_embedding
+
+    token_embedding = TokEmb(unknown_autoextend=False)
     assert 'hello' not in token_embedding.token_to_idx
     assert np.all(np.isclose(0, token_embedding['hello'].asnumpy()))
     assert 'hello' not in token_embedding.token_to_idx
 
-    token_embedding = nlp.embedding.token_embedding.TokenEmbedding(
-        unknown_lookup=NaiveLookup(), unknown_autoextend=True,
-        allow_extend=True)
+    token_embedding = TokEmb(unknown_autoextend=True, allow_extend=True)
     assert 'hello' not in token_embedding.token_to_idx
     assert np.all(np.isclose(0, token_embedding['hello'].asnumpy()))
     assert 'hello' in token_embedding.token_to_idx
 
-    token_embedding = nlp.embedding.token_embedding.TokenEmbedding(
-        unknown_lookup=NaiveLookup(), unknown_autoextend=True,
-        allow_extend=False)
+    token_embedding = TokEmb(unknown_autoextend=True, allow_extend=False)
     assert 'hello' not in token_embedding.token_to_idx
     assert np.all(np.isclose(0, token_embedding['hello'].asnumpy()))
     assert 'hello' not in token_embedding.token_to_idx
