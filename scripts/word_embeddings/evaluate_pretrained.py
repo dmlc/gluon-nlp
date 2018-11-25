@@ -141,22 +141,14 @@ def load_embedding_from_path(args):
             unknown_token=None, unknown_lookup=model, allow_extend=True,
             unknown_autoextend=True)
 
-        if args.analogy_datasets:
-            # Pre-compute all words in vocabulary in case of analogy evaluation
-            idx_to_token = [
-                model.token_to_idx[idx]
-                for idx in range(len(model.token_to_idx))
-            ]
-            if args.max_vocab_size:
-                idx_to_token = idx_to_token[:args.max_vocab_size]
-        else:
-            idx_to_token = [
-                t for t in evaluation.get_tokens_in_evaluation_datasets(args)
-                if t in model.token_to_idx
-            ]
-            if args.max_vocab_size:
-                assert len(idx_to_token) < args.max_vocab_size, \
-                    'max_vocab_size unsupported for bin model without analogy evaluation.'
+        idx_to_token = sorted(model._token_to_idx, key=model._token_to_idx.get)
+        if not args.analogy_datasets:
+            # Prune tokens not used in evaluation datasets
+            eval_tokens_ = set(
+                evaluation.get_tokens_in_evaluation_datasets(args))
+            idx_to_token = [t for t in idx_to_token if t in eval_tokens_]
+        if args.max_vocab_size:
+            idx_to_token = idx_to_token[:args.max_vocab_size]
 
         with utils.print_time('compute vectors from subwords '
                               'for {} words.'.format(len(idx_to_token))):
@@ -215,7 +207,8 @@ if __name__ == '__main__':
             if t in token_embedding_.unknown_lookup
         ]]
 
-        if len(token_embedding_.idx_to_token) > args_.max_vocab_size:
+        if args_.max_vocab_size is not None and len(
+                token_embedding_.idx_to_token) > args_.max_vocab_size:
             logging.warning('Computing embeddings for OOV words that occur '
                             'in the evaluation dataset lead to having '
                             'more words than --max-vocab-size. '

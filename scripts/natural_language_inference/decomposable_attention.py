@@ -16,12 +16,11 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+# Copyright 2018 Mengxiao Lin <linmx0130@gmail.com>.
 # pylint: disable=arguments-differ
 
 """
 Implementation of the decomposable attentiontion model with intra sentence attention.
-
-Copyright 2018 Mengxiao Lin <linmx0130@gmail.com>.
 """
 
 from mxnet import gluon
@@ -69,7 +68,7 @@ class IntraSentenceAttention(gluon.HybridBlock):
     """
     Intra Sentence Attentiontion block.
     """
-    def __init__(self, inp_size: int, hidden_size: int, dropout=0., **kwargs):
+    def __init__(self, inp_size, hidden_size, dropout=0., **kwargs):
         super(IntraSentenceAttention, self).__init__(**kwargs)
         self.hidden_size = hidden_size
         with self.name_scope():
@@ -94,7 +93,7 @@ class DecomposableAttention(gluon.HybridBlock):
     """
     Decomposable Attentiontion block.
     """
-    def __init__(self, inp_size: int, hidden_size: int, num_class: int, dropout=0., **kwargs):
+    def __init__(self, inp_size, hidden_size, num_class, dropout=0., **kwargs):
         super(DecomposableAttention, self).__init__(**kwargs)
         with self.name_scope():
             self.dropout_layer = nn.Dropout(dropout)

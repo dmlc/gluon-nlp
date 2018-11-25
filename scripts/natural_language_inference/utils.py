@@ -16,11 +16,10 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+# Copyright 2018 Mengxiao Lin <linmx0130@gmail.com>.
 
 """
 Utility functions.
-
-Copyright 2018 Mengxiao Lin <linmx0130@gmail.com>
 """
 
 import logging

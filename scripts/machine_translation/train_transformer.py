@@ -38,7 +38,6 @@ import argparse
 import time
 import random
 import os
-import io
 import logging
 import math
 import numpy as np
@@ -140,13 +139,8 @@ logging.info(args)
 data_train, data_val, data_test, val_tgt_sentences, test_tgt_sentences, src_vocab, tgt_vocab \
     = dataprocessor.load_translation_data(dataset=args.dataset, bleu=args.bleu, args=args)
 
-with io.open(os.path.join(args.save_dir, 'val_gt.txt'), 'w', encoding='utf-8') as of:
-    for ele in val_tgt_sentences:
-        of.write(' '.join(ele) + '\n')
-
-with io.open(os.path.join(args.save_dir, 'test_gt.txt'), 'w', encoding='utf-8') as of:
-    for ele in test_tgt_sentences:
-        of.write(' '.join(ele) + '\n')
+dataprocessor.write_sentences(val_tgt_sentences, os.path.join(args.save_dir, 'val_gt.txt'))
+dataprocessor.write_sentences(test_tgt_sentences, os.path.join(args.save_dir, 'test_gt.txt'))
 
 data_train = data_train.transform(lambda src, tgt: (src, tgt, len(src), len(tgt)), lazy=False)
 data_val = gluon.data.SimpleDataset([(ele[0], ele[1], len(ele[0]), len(ele[1]), i)
@@ -260,15 +254,6 @@ def evaluate(data_loader, context=ctx[0]):
     return avg_loss, real_translation_out
 
 
-def write_sentences(sentences, file_path):
-    with io.open(file_path, 'w', encoding='utf-8') as of:
-        for sent in sentences:
-            if isinstance(sent, (list, tuple)):
-                of.write(' '.join(sent) + '\n')
-            else:
-                of.write(sent + '\n')
-
-
 def train():
     """Training function."""
     trainer = gluon.Trainer(model.collect_params(), args.optimizer,
@@ -372,10 +357,12 @@ def train():
                                                    bpe=bpe)
         logging.info('[Epoch {}] test Loss={:.4f}, test ppl={:.4f}, test bleu={:.2f}'
                      .format(epoch_id, test_loss, np.exp(test_loss), test_bleu_score * 100))
-        write_sentences(valid_translation_out,
-                        os.path.join(args.save_dir, 'epoch{:d}_valid_out.txt').format(epoch_id))
-        write_sentences(test_translation_out,
-                        os.path.join(args.save_dir, 'epoch{:d}_test_out.txt').format(epoch_id))
+        dataprocessor.write_sentences(valid_translation_out,
+                                      os.path.join(args.save_dir,
+                                                   'epoch{:d}_valid_out.txt').format(epoch_id))
+        dataprocessor.write_sentences(test_translation_out,
+                                      os.path.join(args.save_dir,
+                                                   'epoch{:d}_test_out.txt').format(epoch_id))
         if valid_bleu_score > best_valid_bleu:
             best_valid_bleu = valid_bleu_score
             save_path = os.path.join(args.save_dir, 'valid_best.params')
@@ -415,10 +402,10 @@ def train():
                                                split_compound_word=split_compound_word)
     logging.info('Best model test Loss={:.4f}, test ppl={:.4f}, test bleu={:.2f}'
                  .format(test_loss, np.exp(test_loss), test_bleu_score * 100))
-    write_sentences(valid_translation_out,
-                    os.path.join(args.save_dir, 'best_valid_out.txt'))
-    write_sentences(test_translation_out,
-                    os.path.join(args.save_dir, 'best_test_out.txt'))
+    dataprocessor.write_sentences(valid_translation_out,
+                                  os.path.join(args.save_dir, 'best_valid_out.txt'))
+    dataprocessor.write_sentences(test_translation_out,
+                                  os.path.join(args.save_dir, 'best_test_out.txt'))
 
 
 if __name__ == '__main__':
