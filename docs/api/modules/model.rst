@@ -26,7 +26,7 @@ Language Modeling
     BigRNN
 
 Machine Translation
------------------
+-------------------
 
 .. autosummary::
     :nosignatures:
@@ -38,7 +38,7 @@ Machine Translation
     transformer_en_de_512
 
 Bidirectional Encoder Representations from Transformers
------------------
+-------------------------------------------------------
 
 .. autosummary::
     :nosignatures:
