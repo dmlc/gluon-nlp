@@ -38,6 +38,19 @@ models that make use of subword information to word embeddings.
     NGramHashes
 
 
+ELMo Character-level Vocabulary
+-------------------------------
+
+In the original ELMo pre-trained models, the character-level vocabulary relies on UTF-8 encoding in a specific setting.
+We provide the following vocabulary class to keep consistent with ELMo pre-trained models.
+
+.. currentmodule:: gluonnlp
+.. autosummary::
+    :nosignatures:
+
+    ELMoCharVocab
+
+
 API Reference
 -------------
 
@@ -47,7 +60,7 @@ API Reference
     :special-members: __call__, __len__
 
 .. automodule:: gluonnlp.vocab
-    :exclude-members: Vocab
+    :exclude-members: Vocab, ELMoCharVocab
     :members:
     :imported-members:
     :special-members: __call__, __len__

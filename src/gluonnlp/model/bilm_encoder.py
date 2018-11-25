@@ -22,10 +22,7 @@ __all__ = ['BiLMEncoder']
 
 from mxnet import gluon
 from mxnet.gluon import rnn
-try:
-    from .utils import _get_rnn_cell
-except ImportError:
-    from utils import _get_rnn_cell
+from .utils import _get_rnn_cell
 
 
 class BiLMEncoder(gluon.HybridBlock):
@@ -181,20 +178,27 @@ class BiLMEncoder(gluon.HybridBlock):
             outputs_forward.append(output)
 
             if layer_index == 0:
-                layer_inputs = F.SequenceReverse(inputs,
+                layer_inputs = inputs
+            else:
+                layer_inputs = outputs_backward[layer_index-1]
+
+            if mask is not None:
+                layer_inputs = F.SequenceReverse(layer_inputs,
                                                  sequence_length=sequence_length,
                                                  use_sequence_length=True, axis=0)
             else:
-                layer_inputs = F.SequenceReverse(outputs_backward[layer_index-1],
-                                                 sequence_length=sequence_length,
-                                                 use_sequence_length=True, axis=0)
+                layer_inputs = F.SequenceReverse(layer_inputs, axis=0)
             output, states_backward[layer_index] = F.contrib.foreach(
                 self.backward_layers[layer_index],
                 layer_inputs,
                 states_backward[layer_index])
-            outputs_backward.append(F.SequenceReverse(output,
-                                                      sequence_length=sequence_length,
-                                                      use_sequence_length=True, axis=0))
+            if mask is not None:
+                backward_out = F.SequenceReverse(output,
+                                                 sequence_length=sequence_length,
+                                                 use_sequence_length=True, axis=0)
+            else:
+                backward_out = F.SequenceReverse(output, axis=0)
+            outputs_backward.append(backward_out)
         out = F.concat(*[F.stack(*outputs_forward, axis=0),
                          F.stack(*outputs_backward, axis=0)], dim=-1)
 

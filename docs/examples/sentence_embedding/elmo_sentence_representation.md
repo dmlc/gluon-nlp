@@ -19,13 +19,12 @@ We start with some usual preparation such as importing libraries and setting the
 ```{.python .input}
 import warnings
 warnings.filterwarnings('ignore')
+import numpy as np
+import io
 
 import mxnet as mx
 from mxnet import gluon
 import gluonnlp as nlp
-import numpy as np
-import os
-import json
 ```
 
 ## Preprocess Data
@@ -40,153 +39,118 @@ We will proceed with the following steps:
 
 ### Create Dataset
 
-TODO load dataset (holmes?)
+The first step is to create a dataset from existing data.
+Here, we use a paragraph from [1] as our dataset, using the built-in [TextLineDataset](../../api/modules/data.rst#gluonnlp.data.TextLineDataset) class.
+It's a dataset of 7 samples, each being a sentence.
+
+```{.python .input}
+elmo_intro = """
+Extensive experiments demonstrate that ELMo representations work extremely well in practice.
+We first show that they can be easily added to existing models for six diverse and challenging language understanding problems, including textual entailment, question answering and sentiment analysis.
+The addition of ELMo representations alone significantly improves the state of the art in every case, including up to 20% relative error reductions.
+For tasks where direct comparisons are possible, ELMo outperforms CoVe (McCann et al., 2017), which computes contextualized representations using a neural machine translation encoder.
+Finally, an analysis of both ELMo and CoVe reveals that deep representations outperform those derived from just the top layer of an LSTM.
+Our trained models and code are publicly available, and we expect that ELMo will provide similar gains for many other NLP problems.
+"""
+
+elmo_intro_file = 'elmo_intro.txt'
+with io.open(elmo_intro_file, 'w', encoding='utf8') as f:
+    f.write(elmo_intro)
+
+dataset = nlp.data.TextLineDataset(elmo_intro_file, 'utf8')
+print(len(dataset))
+print(dataset[2]) # print a sentence
+```
 
 ### Transform Dataset
 
-TODO explain the steps of transformation.
+Once we have the dataset that consists of sentences in raw text form, the next step is to transform
+the dataset in the same way that ELMo model was trained.
+In our case, transforming the dataset consists of tokenization and numericalization.
 
 #### Tokenization
 
-TODO explain what tokenization was done when pre-training ELMo.
+The ELMo pre-trained models are trained on Google 1-Billion Words dataset, which was tokenized with Moses Tokenizer.
+In GluonNLP, using either [NLTKMosesTokenizer](../../api/modules/data.rst#gluonnlp.data.NLTKMosesTokenizer) or [SacreMosesTokenizer](../../api/modules/data.rst#gluonnlp.data.SacreMosesTokenizer) should do the trick.
+
+```{.python .input}
+tokenizer = nlp.data.NLTKMosesTokenizer()
+dataset = dataset.transform(tokenizer)
+dataset = dataset.transform(lambda x: ['<bos>'] + x + ['<eos>'])
+print(dataset[2]) # print the same tokenized sentence
+```
+
 
 #### Using Vocab from Pre-trained ELMo
 
-TODO explain char-level, word-level vocabs, and conversion to NDArray.
+Numericalizing the dataset is as straightforward as using the ELMo-specific character-level
+vocabulary as transformation. For details on ELMo's vocabulary, see
+[ELMoCharVocab](../../api/modules/vocab.rst#gluonnlp.ELMoCharVocab).
 
 ```{.python .input}
-class DataListTransform(object):
-    """Transform the sample dataset.
-
-    Transform the sample dataset into char_ids and finally to a numpy array.
-    """
-
-    def __call__(self, sentence):
-        sentence_chars = [np.array(self._convert_word_to_char_ids(token)) for token in sentence]
-        sentence_chars_nd = np.stack(sentence_chars, axis=0)
-        return sentence_chars_nd
-
-    def _convert_word_to_char_ids(self, word):
-        if word == nlp.model.ELMoCharacterVocab.bos_token:
-            char_ids = nlp.model.ELMoCharacterVocab.beginning_of_sentence_characters
-        elif word == nlp.model.ELMoCharacterVocab.eos_token:
-            char_ids = nlp.model.ELMoCharacterVocab.end_of_sentence_characters
-        else:
-            word_encoded = word.encode('utf-8', 'ignore')[
-                           :(nlp.model.ELMoCharacterVocab.max_word_length - 2)]
-            char_ids = [nlp.model.ELMoCharacterVocab.padding_character] \
-                       * nlp.model.ELMoCharacterVocab.max_word_length
-            char_ids[0] = nlp.model.ELMoCharacterVocab.beginning_of_word_character
-            for k, chr_id in enumerate(word_encoded, start=1):
-                char_ids[k] = chr_id
-            char_ids[len(word_encoded) + 1] = nlp.model.ELMoCharacterVocab.end_of_word_character
-
-        # +1 one for masking
-        return [c + 1 for c in char_ids]
-
-sample_dataset = sample_dataset.transform(DataListTransform(), lazy=False)
-sample_dataset = gluon.data.SimpleDataset([(ele, len(ele), i)
-                      for i, ele in enumerate(sample_dataset)])
+vocab = nlp.ELMoCharVocab()
+dataset = dataset.transform(lambda x: (vocab[x], len(x)), lazy=False)
 ```
 
 #### Create Dataloader
 
-TODO create batches using dataloader. refer to API notes, sentiment analysis tutorial.
+Now that the dataset is ready, loading it with dataloader is straightforward.
+Here, we pad the first field to the maximum length, and stack the actual length numbers to form
+batches.
+The lengths will be used as mask.
+For more advanced usage examples of dataloader, check out the
+[Sentiment Analysis tutorial](../sentiment_analysis/sentiment_analysis.ipynb).
 
 ```{.python .input}
-import gluonnlp.data.batchify as btf
-
-#create batchify function
-sample_dataset_batchify_fn = nlp.data.batchify.Tuple(btf.Pad(), btf.Stack(), btf.Stack())
-```
-
-TODO remove interval sampler
-```{.python .input}
-batch_size = 3
-sample_data_loader = gluon.data.DataLoader(sample_dataset,
-                                           batch_size=batch_size,
-                                           sampler=mx.gluon.contrib.data.sampler.IntervalSampler(len(sample_dataset), interval=int(len(sample_dataset)/batch_size)),
-                                           batchify_fn=sample_dataset_batchify_fn,
-                                           num_workers=8)
+batch_size = 2
+dataset_batchify_fn = nlp.data.batchify.Tuple(nlp.data.batchify.Pad(),
+                                              nlp.data.batchify.Stack())
+data_loader = gluon.data.DataLoader(dataset,
+                                    batch_size=batch_size,
+                                    batchify_fn=dataset_batchify_fn)
 ```
 
 ## Load Pretrained ELMo Model
 
-TODO explain get_model in model API.
+Using the model API in GluonNLP, you can automatically download the pre-trained models simply by
+calling get_model. Available options are:
+
+1. elmo_2x1024_128_2048cnn_1xhighway
+2. elmo_2x2048_256_2048cnn_1xhighway
+3. elmo_2x4096_512_2048cnn_2xhighway
+
+Note that the second field in get_model's return value is ELMo's vocabulary.
+Since we already created an instance of it above, here we simply ignore this field.
 
 ```{.python .input}
-elmo_bilm = nlp.model.get_model('elmo_2x1024_128_2048cnn_1xhighway',
-                                 dataset_name='gbw',
-                                 pretrained=True,
-                                 ctx=mx.cpu())
+elmo_bilm, _ = nlp.model.get_model('elmo_2x1024_128_2048cnn_1xhighway',
+                                   dataset_name='gbw',
+                                   pretrained=True,
+                                   ctx=mx.cpu())
 print(elmo_bilm)
 ```
 
 ## Putting everything together
 
-
 ```{.python .input}
+def get_features(data, valid_lengths):
+    length = data.shape[1]
+    hidden_state = elmo_bilm.begin_state(mx.nd.zeros, batch_size=batch_size)
+    mask = mx.nd.arange(length).expand_dims(0).broadcast_axes(axis=(0,), size=(batch_size,))
+    mask = mask < valid_lengths.expand_dims(1).astype('float32')
+    output, hidden_state = elmo_bilm(data, hidden_state, mask)
+    return output
 
-hidden_state = elmo_bilm.begin_state(mx.nd.zeros, batch_size=batch_size)
-
-TODO explain removal of begin/end tokens
-TODO define a function that returns the feature from the batches in dataloader
-TODO print one output
-def remove_sentence_boundaries(inputs, mask):
-    """
-    Remove begin/end of sentence embeddings from the batch of sentences.
-    Given a batch of sentences with size ``(batch_size, timesteps, embedding_size)``
-    this returns a tensor of shape ``(batch_size, timesteps - 2, embedding_size)`` after removing
-    the beginning and end sentence markers.
-    Returns both the new tensor and updated mask.
-
-    Parameters
-    ----------
-    inputs : ``NDArray``
-        with shape ``(batch_size, timesteps, embedding_size)``
-    mask : ``NDArray``
-        with shape ``(batch_size, timesteps)``
-    Returns
-    -------
-    inputs_without_boundary_tokens : ``NDArray``
-        with shape ``(batch_size, timesteps - 2, embedding_size)``
-    new_mask : ``NDArray``
-        The new mask with shape ``(batch_size, timesteps - 2)``.
-    """
-    sequence_lengths = mask.sum(axis=1).asnumpy()
-    inputs_shape = list(inputs.shape)
-    new_shape = list(inputs_shape)
-    new_shape[1] = inputs_shape[1] - 2
-    inputs_without_boundary_tokens = mx.nd.zeros(shape=new_shape)
-    new_mask = mx.nd.zeros(shape=(new_shape[0], new_shape[1]))
-    for i, j in enumerate(sequence_lengths):
-        if j > 2:
-            inputs_without_boundary_tokens[i, :int((j - 2)), :] = inputs[i, 1:int((j - 1)), :]
-            new_mask[i, :int((j - 2))] = 1
-
-    return inputs_without_boundary_tokens, new_mask
-
-
-for i, batch in enumerate(sample_data_loader):
-    print('batch id %d' % i)
-    output, hidden_state, mask = elmo_bilm(batch[0], hidden_state)
-    hidden_state = detach(hidden_state)
-    top_layer_embeddings, mask = remove_sentence_boundaries(
-        output[2],
-        mask
-    )
-    # generate the mask lengths
-    lengths = mask.asnumpy().sum(axis=1)
-    for k in range(3):
-        print('k %d' % k)
-        print(top_layer_embeddings[k, :int(lengths[k]), :].asnumpy())
+batch = next(iter(data_loader))
+features = get_features(*batch)
+print([x.shape for x in features])
 ```
 
 ## Conclusion
 
 In this tutorial, we show how to generate sentence representation from ELMo model.
 In GluonNLP, this can be done with just a few simple steps: reuse the data transformation from ELMo for preprocessing the data, automatically download the pre-trained model, and feed the transformed data into the model.
-To see how to plug in the pre-trained models in your own model architecture and use fine-tuning to improve downstream tasks, check our TODO link to sentiment analysis through finetuning notebook.
+To see how to plug in the pre-trained models in your own model architecture and use fine-tuning to improve downstream tasks, check our [Sentiment Analysis tutorial](../sentiment_analysis/sentiment_analysis.ipynb).
 
 ## Reference
 [1] Peters, Matthew E., et al. "Deep contextualized word representations." NAACL (2018).

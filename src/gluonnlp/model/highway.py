@@ -107,12 +107,12 @@ class Highway(gluon.HybridBlock):
         Parameters
         ----------
         inputs: NDArray
-            The input tensor is of shape `(batch_size, input_size)`.
+            The input tensor is of shape `(..., input_size)`.
 
         Returns
         ----------
         outputs: NDArray
-            The output tensor is of the same shape with input tensor `(batch_size, input_size)`.
+            The output tensor is of the same shape with input tensor `(..., input_size)`.
         """
         current_input = inputs
         for layer in self.hnet:
