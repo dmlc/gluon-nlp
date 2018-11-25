@@ -1,7 +1,7 @@
 # Extract Sentence Features with Pre-trained ELMo
 
 While word-embeddings have been shown to capture syntactic and semantic information of words and have become a standard component in many state-of-the-art NLP architectures, their context-free nature limits their ability to represent context-dependent information.
-Peters et. al. proposed a deep contextualized word representation method, called Embeddings from Language Models, or ELMo.
+Peters et. al. proposed a deep contextualized word representation method, called Embeddings from Language Models, or ELMo [1].
 This model is pre-trained with a self-supervising task called bidirectional language model, and they show that the representation from this model is powerful and improves the state-of-the-art on many tasks such as question-answering, natural language inference, semantic role labeling, coreference resolution, named-entity recognition, and sentiment analysis.
 
 In this notebook, we show how to use the model API in GluonNLP to automatically download pre-trained ELMo model, and generate sentence representation with this model.
@@ -72,6 +72,7 @@ In our case, transforming the dataset consists of tokenization and numericalizat
 
 The ELMo pre-trained models are trained on Google 1-Billion Words dataset, which was tokenized with Moses Tokenizer.
 In GluonNLP, using either [NLTKMosesTokenizer](../../api/modules/data.rst#gluonnlp.data.NLTKMosesTokenizer) or [SacreMosesTokenizer](../../api/modules/data.rst#gluonnlp.data.SacreMosesTokenizer) should do the trick.
+Once tokenized, we can add markers for beginning and end of sentences.
 
 ```{.python .input}
 tokenizer = nlp.data.NLTKMosesTokenizer()
@@ -86,6 +87,7 @@ print(dataset[2]) # print the same tokenized sentence
 Numericalizing the dataset is as straightforward as using the ELMo-specific character-level
 vocabulary as transformation. For details on ELMo's vocabulary, see
 [ELMoCharVocab](../../api/modules/vocab.rst#gluonnlp.ELMoCharVocab).
+We also calculate the length of each sentence in preparation for batching.
 
 ```{.python .input}
 vocab = nlp.ELMoCharVocab()
@@ -132,6 +134,7 @@ print(elmo_bilm)
 
 ## Putting everything together
 
+Finally, now we feed the prepared data batch into the [ELMoBiLM](../../api/modules/model.rst#gluonnlp.model.ELMoBiLM) model.
 ```{.python .input}
 def get_features(data, valid_lengths):
     length = data.shape[1]
