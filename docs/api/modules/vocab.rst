@@ -44,7 +44,7 @@ ELMo Character-level Vocabulary
 In the original ELMo pre-trained models, the character-level vocabulary relies on UTF-8 encoding in a specific setting.
 We provide the following vocabulary class to keep consistent with ELMo pre-trained models.
 
-.. currentmodule:: gluonnlp
+.. currentmodule:: gluonnlp.vocab
 .. autosummary::
     :nosignatures:
 
@@ -60,7 +60,7 @@ API Reference
     :special-members: __call__, __len__
 
 .. automodule:: gluonnlp.vocab
-    :exclude-members: Vocab, ELMoCharVocab
+    :exclude-members: Vocab
     :members:
     :imported-members:
     :special-members: __call__, __len__

@@ -129,7 +129,7 @@ def test_get_elmo_models():
         mx.nd.waitall()
 
 def test_elmo_vocab():
-    vocab = nlp.ELMoCharVocab()
+    vocab = nlp.vocab.ELMoCharVocab()
     expected_bos_ids = [vocab.bow_id, vocab.bos_id, vocab.eow_id]+[vocab.pad_id]*(vocab.max_word_length-3)
     expected_eos_ids = [vocab.bow_id, vocab.eos_id, vocab.eow_id]+[vocab.pad_id]*(vocab.max_word_length-3)
     expected_hello_ids = [vocab.bow_id, 104, 101, 108, 108, 111, vocab.eow_id]+[vocab.pad_id]*(vocab.max_word_length-7)

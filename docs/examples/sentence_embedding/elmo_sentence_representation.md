@@ -86,11 +86,11 @@ print(dataset[2]) # print the same tokenized sentence
 
 Numericalizing the dataset is as straightforward as using the ELMo-specific character-level
 vocabulary as transformation. For details on ELMo's vocabulary, see
-[ELMoCharVocab](../../api/modules/vocab.rst#gluonnlp.ELMoCharVocab).
+[ELMoCharVocab](../../api/modules/vocab.rst#gluonnlp.vocab.ELMoCharVocab).
 We also calculate the length of each sentence in preparation for batching.
 
 ```{.python .input}
-vocab = nlp.ELMoCharVocab()
+vocab = nlp.vocab.ELMoCharVocab()
 dataset = dataset.transform(lambda x: (vocab[x], len(x)), lazy=False)
 ```
 
