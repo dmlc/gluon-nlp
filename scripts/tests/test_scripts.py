@@ -39,9 +39,8 @@ def test_toy():
 def test_skipgram_cbow(model, fasttext):
     cmd = [
         'python', './scripts/word_embeddings/train_sg_cbow.py', '--gpu', '0',
-        '--epochs', '2', '--optimizer', 'sgd', '--model', model,
-        '--data', 'toy', '--batch-size', '64'
-    ]
+        '--epochs', '2', '--model', model, '--data', 'toy', '--batch-size',
+        '64']
     if fasttext:
         cmd += ['--ngram-buckets', '1000']
     else:
