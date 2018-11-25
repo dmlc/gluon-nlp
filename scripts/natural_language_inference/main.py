@@ -16,6 +16,7 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+# Copyright 2018 Mengxiao Lin <linmx0130@gmail.com>.
 # pylint: disable=redefined-outer-name,logging-format-interpolation
 
 """
@@ -30,8 +31,6 @@ This script reproduces results in [Parikh et al., 2016]  with the Gluon NLP Tool
   journal={arXiv preprint arXiv:1606.01933},
   year={2016}
 }
-
-Copyright 2018 Mengxiao Lin <linmx0130@gmail.com>
 """
 
 import os
