@@ -594,7 +594,7 @@ def test_tsv():
     data += "d,e,f\n"
     data += "g,h,i\n"
     with io.open('test_tsv.tsv', 'w') as fout:
-        fout.write(data)
+        fout.write(str(data, 'utf-8'))
     num_discard = 1
     field_separator = nlp.data.utils.Splitter(',')
     field_indices = [0,2]
