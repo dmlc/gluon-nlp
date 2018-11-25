@@ -592,6 +592,9 @@ class TokenEmbedding(object):
                 'The length of `new_embedding` must be equal to the number ' \
                 'of tokens and the width of new_embedding must be equal ' \
                 'to the dimension of embedding of the glossary.'
+        else:
+            assert new_embedding.shape[0] == len(tokens), \
+                'The length of `new_embedding` must be equal to the number of tokens'
         return tokens
 
     def __setitem__(self, tokens, new_embedding):
