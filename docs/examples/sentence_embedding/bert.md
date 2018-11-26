@@ -2,7 +2,7 @@
 
 Pre-trained language
 representations have been shown to improve many downstream NLP tasks such as
-question-answering, and natural language inference. To apply pre-trained
+question answering, and natural language inference. To apply pre-trained
 representations to these tasks, there are two strategies: 1) **feature-based**
 approach, which uses the pre-trained representations as additional features to
 the downstream task. 2) **fine-tuning** based approach, which trains the
@@ -182,17 +182,19 @@ model with a few epochs. For demonstration, we use a fixed learning rate and
 skip validation steps.
 
 ```{.python .input}
-# create a dataloader with batch size 32
-bert_dataloader = mx.gluon.data.DataLoader(data_train, batch_size=32,
+batch_size = 32
+lr = 5e-6
+bert_dataloader = mx.gluon.data.DataLoader(data_train, batch_size=batch_size,
                                            shuffle=True, last_batch='rollover')
 
 trainer = gluon.Trainer(model.collect_params(), 'adam',
-                        {'learning_rate': 5e-6, 'epsilon': 1e-9})
+                        {'learning_rate': lr, 'epsilon': 1e-9})
 
 # collect all differentiable parameters
 # grad_req == 'null' indicates no gradients are calculated (e.g. constant parameters)
 # the gradients for these params are clipped later
 params = [p for p in model.collect_params().values() if p.grad_req != 'null']
+grad_clip = 1
 
 log_interval = 4
 num_epochs = 3
@@ -203,10 +205,10 @@ for epoch_id in range(num_epochs):
         with mx.autograd.record():
             
             # load data to GPU
-            token_ids = token_ids.as_in_context(mx.gpu())
-            valid_length = valid_length.as_in_context(mx.gpu())
-            segment_ids = segment_ids.as_in_context(mx.gpu())
-            label = label.as_in_context(mx.gpu())
+            token_ids = token_ids.as_in_context(ctx)
+            valid_length = valid_length.as_in_context(ctx)
+            segment_ids = segment_ids.as_in_context(ctx)
+            label = label.as_in_context(ctx)
             
             # forward computation
             out = model(token_ids, segment_ids, valid_length.astype('float32'))
@@ -216,8 +218,8 @@ for epoch_id in range(num_epochs):
         ls.backward()
         
         # gradient clipping
-        grads = [p.grad(c) for p in params for c in [mx.gpu()]]
-        gluon.utils.clip_global_norm(grads, 1)
+        grads = [p.grad(c) for p in params for c in [ctx]]
+        gluon.utils.clip_global_norm(grads, grad_clip)
         
         # parameter update
         trainer.step(1)
