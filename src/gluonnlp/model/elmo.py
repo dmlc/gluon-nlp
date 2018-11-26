@@ -18,153 +18,49 @@
 # under the License.
 
 """ELMo."""
-__all__ = ['ELMoBiLM', 'ELMoCharacterEncoder', 'ELMoCharacterVocab',
+__all__ = ['ELMoBiLM', 'ELMoCharacterEncoder',
            'elmo_2x1024_128_2048cnn_1xhighway', 'elmo_2x2048_256_2048cnn_1xhighway',
            'elmo_2x4096_512_2048cnn_2xhighway']
 
 import os
-import numpy
 import mxnet as mx
-
-from mxnet import gluon, nd, cpu
+from mxnet import gluon
 from mxnet.gluon.model_zoo import model_store
 from mxnet.gluon.model_zoo.model_store import get_model_file
-try:
-    from convolutional_encoder import ConvolutionalEncoder
-    from bilm_encoder import BiLMEncoder
-    from initializer.initializer import HighwayBias
-except ImportError:
-    from .convolutional_encoder import ConvolutionalEncoder
-    from .bilm_encoder import BiLMEncoder
-    from ..initializer.initializer import HighwayBias
 
-def _make_bos_eos(
-        character,
-        padding_character,
-        beginning_of_word_character,
-        end_of_word_character,
-        max_word_length):
-    char_ids = [padding_character] * max_word_length
-    char_ids[0] = beginning_of_word_character
-    char_ids[1] = character
-    char_ids[2] = end_of_word_character
-    return char_ids
+from .convolutional_encoder import ConvolutionalEncoder
+from .bilm_encoder import BiLMEncoder
+from ..initializer.initializer import HighwayBias
+from ..vocab.elmo import ELMoCharVocab
 
 
-def _add_sentence_boundary_token_ids(inputs, mask, sentence_begin_token, sentence_end_token):
-    sequence_lengths = mask.sum(axis=1).asnumpy()
-    inputs_shape = list(inputs.shape)
-    new_shape = list(inputs_shape)
-    new_shape[1] = inputs_shape[1] + 2
-    inputs_with_boundary_tokens = nd.zeros(new_shape)
-    if len(inputs_shape) == 2:
-        inputs_with_boundary_tokens[:, 1:-1] = inputs
-        inputs_with_boundary_tokens[:, 0] = sentence_begin_token
-        for i, j in enumerate(sequence_lengths):
-            inputs_with_boundary_tokens[i, j + 1] = sentence_end_token
-        new_mask = inputs_with_boundary_tokens != 0
-    elif len(inputs_shape) == 3:
-        inputs_with_boundary_tokens[:, 1:-1, :] = inputs
-        for i, j in enumerate(sequence_lengths):
-            inputs_with_boundary_tokens[i, 0, :] = sentence_begin_token
-            inputs_with_boundary_tokens[i, int(j + 1), :] = sentence_end_token
-        new_mask = (inputs_with_boundary_tokens > 0).sum(axis=-1) > 0
-    else:
-        raise NotImplementedError
-    return inputs_with_boundary_tokens, new_mask
-
-
-class ELMoCharacterVocab:
-    r"""ELMo special character vocabulary
-
-    The vocab aims to map individual tokens to sequences of character ids, compatible with ELMo.
-    To be consistent with previously trained models, we include it here.
-
-    Specifically, char ids 0-255 come from utf-8 encoding bytes.
-    Above 256 are reserved for special tokens.
-
-    Parameters
-    ----------
-    max_word_length: 50
-        The maximum number of character a word contains is 50 in ELMo.
-    beginning_of_sentence_character: 256
-        The index of beginning of the sentence character is 256 in ELMo.
-    end_of_sentence_character: 257
-        The index of end of the sentence character is 257 in ELMo.
-    beginning_of_word_character : 258
-        The index of beginning of the sentence character is 258 in ELMo.
-    end_of_word_character: 259
-        The index of end of the sentence character is 259 in ELMo.
-    padding_character: 260
-        The index of padding character is 260 in ELMo.
-    """
-    max_word_length = 50
-
-    # char ids 0-255 come from utf-8 encoding bytes
-    # bos
-    beginning_of_sentence_character = 256
-    # eos
-    end_of_sentence_character = 257
-    # begin of word
-    beginning_of_word_character = 258
-    # <end of word>
-    end_of_word_character = 259
-    # <padding>
-    padding_character = 260
-
-    beginning_of_sentence_characters = _make_bos_eos(
-        beginning_of_sentence_character,
-        padding_character,
-        beginning_of_word_character,
-        end_of_word_character,
-        max_word_length
-    )
-    end_of_sentence_characters = _make_bos_eos(
-        end_of_sentence_character,
-        padding_character,
-        beginning_of_word_character,
-        end_of_word_character,
-        max_word_length
-    )
-
-    bos_token = '<bos>'
-    eos_token = '<eos>'
-
-
-class ELMoCharacterEncoder(gluon.Block):
+class ELMoCharacterEncoder(gluon.HybridBlock):
     r"""ELMo character encoder
 
-    Compute context insensitive character based token representation using pretrained biLM.
+    Compute context-free character-based token representation with character-level convolution.
 
     This encoder has input character ids of shape
     (batch_size, sequence_length, max_character_per_word)
-    and returns (batch_size, sequence_length + 2, embedding_size).
-
-    We add special entries at the beginning and end of each sequence corresponding
-    to <bos> and <eos>, the beginning and end of sentence tokens.
+    and returns (batch_size, sequence_length, embedding_size).
 
     Parameters
     ----------
-    output_size: int
+    output_size : int
         The output dimension after conducting the convolutions and max pooling,
         and applying highways, as well as linear projection.
-    filters: List[List]
-        The first elements in the list are:
-        ngram_filter_sizes:
-        The size of each convolutional layer,
-        and len(ngram_filter_sizes) equals to the number of convolutional layers.
-        The second elements in the list are:
-        num_filters:
-        The output dimension for each convolutional layer according to the filter sizes,
-        which are the number of the filters learned by the layers.
+    filters : list of tuple
+        List of tuples representing the settings for convolution layers.
+        Each element is (ngram_filter_size, num_filters).
     char_embed_size : int
         The input dimension to the encoder.
-    num_highway: int
+    num_highway : int
         The number of layers of the Highway layer.
-    conv_layer_activation: str
+    conv_layer_activation : str
         Activation function to be used after convolutional layer.
-    max_chars_per_token: int
+    max_chars_per_token : int
         The maximum number of characters of a token.
+    char_vocab_size : int
+        Size of character-level vocabulary.
     """
     def __init__(self,
                  output_size,
@@ -172,22 +68,17 @@ class ELMoCharacterEncoder(gluon.Block):
                  char_embed_size,
                  num_highway,
                  conv_layer_activation,
-                 max_chars_per_token):
-        super(ELMoCharacterEncoder, self).__init__()
+                 max_chars_per_token,
+                 char_vocab_size,
+                 **kwargs):
+        super(ELMoCharacterEncoder, self).__init__(**kwargs)
 
         self._output_size = output_size
-        # Cache the arrays when using mask.
-        self._beginning_of_sentence_characters = mx.nd.array(
-            numpy.array(ELMoCharacterVocab.beginning_of_sentence_characters) + 1
-        )
-        self._end_of_sentence_characters = mx.nd.array(
-            numpy.array(ELMoCharacterVocab.end_of_sentence_characters) + 1
-        )
         self._char_embed_size = char_embed_size
         self._filters = filters
         ngram_filter_sizes = []
         num_filters = []
-        for _, (width, num) in enumerate(self._filters):
+        for width, num in filters:
             ngram_filter_sizes.append(width)
             num_filters.append(num)
         self._num_highway = num_highway
@@ -195,7 +86,7 @@ class ELMoCharacterEncoder(gluon.Block):
         self._max_chars_per_token = max_chars_per_token
 
         with self.name_scope():
-            self._char_embedding = gluon.nn.Embedding(ELMoCharacterVocab.padding_character+2,
+            self._char_embedding = gluon.nn.Embedding(char_vocab_size,
                                                       self._char_embed_size)
             self._convolutions = ConvolutionalEncoder(embed_size=self._char_embed_size,
                                                       num_filters=tuple(num_filters),
@@ -207,51 +98,39 @@ class ELMoCharacterEncoder(gluon.Block):
                                                           transform_gate_bias=1.0),
                                                       output_size=self._output_size)
 
-    def get_output_size(self):
-        return self._output_size
 
-    def forward(self, inputs):
+    def hybrid_forward(self, F, inputs):
         # pylint: disable=arguments-differ
         """
         Compute context insensitive token embeddings for ELMo representations.
 
         Parameters
         ----------
-        inputs: ``NDArray``
-            Shape ``(batch_size, sequence_length, max_character_per_token)``
+        inputs : NDArray
+            Shape (batch_size, sequence_length, max_character_per_token)
             of character ids representing the current batch.
 
         Returns
         -------
-        mask:  ``NDArray``
-            Shape ``(batch_size, sequence_length + 2)`` with sequence mask.
-        token_embedding: ``NDArray``
-            Shape ``(batch_size, sequence_length + 2, embedding_size)`` with context
+        token_embedding : NDArray
+            Shape (batch_size, sequence_length, embedding_size) with context
             insensitive token representations.
         """
-        mask = (inputs > 0).sum(axis=-1) > 0
-        character_ids_with_bos_eos, mask_with_bos_eos = _add_sentence_boundary_token_ids(
-            inputs,
-            mask,
-            self._beginning_of_sentence_characters,
-            self._end_of_sentence_characters
-        )
-
         # the character id embedding
         # (batch_size * sequence_length, max_chars_per_token, embed_dim)
-        character_embedding = self._char_embedding(character_ids_with_bos_eos.
-                                                   reshape(-1, self._max_chars_per_token))
+        character_embedding = self._char_embedding(inputs.reshape((-1, self._max_chars_per_token)))
 
-        character_embedding = nd.transpose(character_embedding, axes=(1, 0, 2))
+        character_embedding = F.transpose(character_embedding, axes=(1, 0, 2))
         token_embedding = self._convolutions(character_embedding)
 
-        # reshape to (batch_size, sequence_length, embedding_dim)
-        batch_size, sequence_length, _ = character_ids_with_bos_eos.shape
+        out_shape_ref = inputs.slice_axis(axis=-1, begin=0, end=1)
+        out_shape_ref = out_shape_ref.broadcast_axes(axis=(2,),
+                                                     size=(self._output_size))
 
-        return mask_with_bos_eos, token_embedding.reshape(batch_size, sequence_length, -1)
+        return token_embedding.reshape_like(out_shape_ref)
 
 
-class ELMoBiLM(gluon.Block):
+class ELMoBiLM(gluon.HybridBlock):
     r"""ELMo Bidirectional language model
 
     Run a pre-trained bidirectional language model, outputing the weighted
@@ -269,27 +148,24 @@ class ELMoBiLM(gluon.Block):
 
     Parameters
     ----------
-    model : str
-        The type of RNN cell to use. Option is 'lstmpc' due to the pretrained setting.
-    output_size: int
+    rnn_type : str
+        The type of RNN cell to use.
+        The option for pre-trained models is 'lstmpc'.
+    output_size : int
         The output dimension after conducting the convolutions and max pooling,
         and applying highways, as well as linear projection.
-    filters: List[List[int,int]]
-        The first elements in the list are:
-        ngram_filter_sizes:
-        The size of each convolutional layer,
-        and len(ngram_filter_sizes) equals to the number of convolutional layers.
-        The second elements in the list are:
-        num_filters:
-        The output dimension for each convolutional layer according to the filter sizes,
-        which are the number of the filters learned by the layers.
+    filters : list of tuple
+        List of tuples representing the settings for convolution layers.
+        Each element is (ngram_filter_size, num_filters).
     char_embed_size : int
         The input dimension to the encoder.
-    num_highway: int
+    char_vocab_size : int
+        Size of character-level vocabulary.
+    num_highway : int
         The number of layers of the Highway layer.
-    conv_layer_activation: str
+    conv_layer_activation : str
         Activation function to be used after convolutional layer.
-    max_chars_per_token: int
+    max_chars_per_token : int
         The maximum number of characters of a token.
     input_size : int
         The initial input size of in the RNN cell.
@@ -307,10 +183,11 @@ class ELMoBiLM(gluon.Block):
         Whether to add skip connections (add RNN cell input to output)
     """
     def __init__(self,
-                 model,
+                 rnn_type,
                  output_size,
                  filters,
                  char_embed_size,
+                 char_vocab_size,
                  num_highway,
                  conv_layer_activation,
                  max_chars_per_token,
@@ -320,13 +197,15 @@ class ELMoBiLM(gluon.Block):
                  num_layers,
                  cell_clip,
                  proj_clip,
-                 skip_connection=True):
-        super(ELMoBiLM, self).__init__()
+                 skip_connection=True,
+                 **kwargs):
+        super(ELMoBiLM, self).__init__(**kwargs)
 
-        self._model = model
+        self._rnn_type = rnn_type
         self._output_size = output_size
         self._filters = filters
         self._char_embed_size = char_embed_size
+        self._char_vocab_size = char_vocab_size
         self._num_highway = num_highway
         self._conv_layer_activation = conv_layer_activation
         self._max_chars_per_token = max_chars_per_token
@@ -347,8 +226,9 @@ class ELMoBiLM(gluon.Block):
                                                            self._char_embed_size,
                                                            self._num_highway,
                                                            self._conv_layer_activation,
-                                                           self._max_chars_per_token)
-            self._elmo_lstm = BiLMEncoder(mode=self._model,
+                                                           self._max_chars_per_token,
+                                                           self._char_vocab_size)
+            self._elmo_lstm = BiLMEncoder(mode=self._rnn_type,
                                           input_size=self._input_size,
                                           hidden_size=self._hidden_size,
                                           proj_size=self._proj_size,
@@ -356,60 +236,51 @@ class ELMoBiLM(gluon.Block):
                                           cell_clip=self._cell_clip,
                                           proj_clip=self._proj_clip)
 
-    def get_output_size(self):
-        return 2 * self._elmo_char_encoder.get_output_size()
-
     def begin_state(self, func, **kwargs):
         return self._elmo_lstm.begin_state(func, **kwargs)
 
-    def forward(self, inputs, states=None):
+    def hybrid_forward(self, F, inputs, states=None, mask=None):
         # pylint: disable=arguments-differ
         """
         Parameters
         ----------
-        inputs: ``NDArray``
-            Shape ``(batch_size, sequence_length, max_character_per_token)``
+        inputs : NDArray
+            Shape (batch_size, sequence_length, max_character_per_token)
             of character ids representing the current batch.
-        states : List[List[List[NDArray]]]
-            The states. including:
-            states[0] indicates the states used in forward layer,
-            Each layer has a list of two initial tensors with
+        states : (list of list of NDArray, list of list of NDArray)
+            The states. First tuple element is the forward layer states, while the second is
+            the states from backward layer. Each is a list of states for each layer.
+            The state of each layer has a list of two initial tensors with
             shape (batch_size, proj_size) and (batch_size, hidden_size).
-            states[1] indicates the states used in backward layer,
-            Each layer has a list of two initial tensors with
-            shape (batch_size, proj_size) and (batch_size, hidden_size).
+        mask :  NDArray
+            Shape (batch_size, sequence_length) with sequence mask.
 
         Returns
         -------
-        output: List[NDArray]
+        output : list of NDArray
             A list of activations at each layer of the network, each of shape
-            ``(batch_size, sequence_length + 2, embedding_size)``
-        states : List[List[List[NDArray]]]
-            The states. including:
-            states[0] indicates the output states from forward layer,
-            Each layer has a list of two initial tensors with
+            (batch_size, sequence_length, embedding_size)
+        states : (list of list of NDArray, list of list of NDArray)
+            The states. First tuple element is the forward layer states, while the second is
+            the states from backward layer. Each is a list of states for each layer.
+            The state of each layer has a list of two initial tensors with
             shape (batch_size, proj_size) and (batch_size, hidden_size).
-            states[1] indicates the output states from backward layer,
-            Each layer has a list of two initial tensors with
-            shape (batch_size, proj_size) and (batch_size, hidden_size).
-        mask:  ``NDArray``
-            Shape ``(batch_size, sequence_length + 2)`` with sequence mask.
         """
 
-        mask, type_representation = self._elmo_char_encoder(inputs)
+        type_representation = self._elmo_char_encoder(inputs)
         type_representation = type_representation.transpose(axes=(1, 0, 2))
         lstm_outputs, states = self._elmo_lstm(type_representation, states, mask)
         lstm_outputs = lstm_outputs.transpose(axes=(0, 2, 1, 3))
         type_representation = type_representation.transpose(axes=(1, 0, 2))
 
         # Prepare the output. The first layer is duplicated.
-        output = [
-            mx.nd.concat(*[type_representation, type_representation], dim=-1)
-            * mask.expand_dims(axis=-1)
-        ]
-        for layer_activations in mx.nd.split(lstm_outputs, lstm_outputs.shape[0], axis=0):
-            output.append(layer_activations.squeeze(axis=0))
-        return output, states, mask
+        output = F.concat(*[type_representation, type_representation], dim=-1)
+        if mask is not None:
+            output = output * mask.expand_dims(axis=-1)
+        output = [output]
+        output.extend([layer_activations.squeeze(axis=0) for layer_activations
+                       in F.split(lstm_outputs, self._num_layers, axis=0)])
+        return output, states
 
 
 model_store._model_sha1.update(
@@ -421,19 +292,19 @@ model_store._model_sha1.update(
     ]})
 
 
-def _load_pretrained_params(net, model_name, dataset_name, root, ctx):
-    model_file = get_model_file('_'.join([model_name, dataset_name]), root=root)
-    net.load_parameters(model_file, ctx=ctx)
-
 
 def _get_elmo_model(model_cls, model_name, dataset_name, pretrained, ctx, root, **kwargs):
+    vocab = ELMoCharVocab()
+    if 'char_vocab_size' not in kwargs:
+        kwargs['char_vocab_size'] = len(vocab)
     net = model_cls(**kwargs)
     if pretrained:
-        _load_pretrained_params(net, model_name, dataset_name, root, ctx)
-    return net
+        model_file = get_model_file('_'.join([model_name, dataset_name]), root=root)
+        net.load_parameters(model_file, ctx=ctx)
+    return net, vocab
 
 
-def elmo_2x1024_128_2048cnn_1xhighway(dataset_name=None, pretrained=False, ctx=cpu(),
+def elmo_2x1024_128_2048cnn_1xhighway(dataset_name=None, pretrained=False, ctx=mx.cpu(),
                                       root=os.path.join('~', '.mxnet', 'models'), **kwargs):
     r"""ELMo 2-layer BiLSTM with 1024 hidden units, 128 projection size, 1 highway layer.
 
@@ -454,7 +325,7 @@ def elmo_2x1024_128_2048cnn_1xhighway(dataset_name=None, pretrained=False, ctx=c
     gluon.Block
     """
 
-    predefined_args = {'model': 'lstmpc',
+    predefined_args = {'rnn_type': 'lstmpc',
                        'output_size': 128,
                        'filters': [[1, 32], [2, 32], [3, 64], [4, 128],
                                    [5, 256], [6, 512], [7, 1024]],
@@ -476,7 +347,7 @@ def elmo_2x1024_128_2048cnn_1xhighway(dataset_name=None, pretrained=False, ctx=c
                            ctx, root, **predefined_args)
 
 
-def elmo_2x2048_256_2048cnn_1xhighway(dataset_name=None, pretrained=False, ctx=cpu(),
+def elmo_2x2048_256_2048cnn_1xhighway(dataset_name=None, pretrained=False, ctx=mx.cpu(),
                                       root=os.path.join('~', '.mxnet', 'models'), **kwargs):
     r"""ELMo 2-layer BiLSTM with 2048 hidden units, 256 projection size, 1 highway layer.
 
@@ -497,7 +368,7 @@ def elmo_2x2048_256_2048cnn_1xhighway(dataset_name=None, pretrained=False, ctx=c
     gluon.Block
     """
 
-    predefined_args = {'model': 'lstmpc',
+    predefined_args = {'rnn_type': 'lstmpc',
                        'output_size': 256,
                        'filters': [[1, 32], [2, 32], [3, 64], [4, 128],
                                    [5, 256], [6, 512], [7, 1024]],
@@ -519,7 +390,7 @@ def elmo_2x2048_256_2048cnn_1xhighway(dataset_name=None, pretrained=False, ctx=c
                            ctx, root, **predefined_args)
 
 
-def elmo_2x4096_512_2048cnn_2xhighway(dataset_name=None, pretrained=False, ctx=cpu(),
+def elmo_2x4096_512_2048cnn_2xhighway(dataset_name=None, pretrained=False, ctx=mx.cpu(),
                                       root=os.path.join('~', '.mxnet', 'models'), **kwargs):
     r"""ELMo 2-layer BiLSTM with 4096 hidden units, 512 projection size, 2 highway layer.
 
@@ -540,7 +411,7 @@ def elmo_2x4096_512_2048cnn_2xhighway(dataset_name=None, pretrained=False, ctx=c
     gluon.Block
     """
 
-    predefined_args = {'model': 'lstmpc',
+    predefined_args = {'rnn_type': 'lstmpc',
                        'output_size': 512,
                        'filters': [[1, 32], [2, 32], [3, 64], [4, 128],
                                    [5, 256], [6, 512], [7, 1024]],

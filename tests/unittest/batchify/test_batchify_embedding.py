@@ -35,11 +35,9 @@ def test_center_context_batchify_stream(reduce_window_size_randomly, shuffle,
                                         cbow, stream):
     dataset = [np.arange(100).tolist()] * 3
     batchify = nlp.data.batchify.EmbeddingCenterContextBatchify(
-        batch_size=8,
-        window_size=5,
+        batch_size=8, window_size=5,
         reduce_window_size_randomly=reduce_window_size_randomly,
-        shuffle=shuffle,
-        cbow=cbow)
+        shuffle=shuffle, cbow=cbow)
     if stream:
         stream = nlp.data.SimpleDataStream([dataset, dataset])
         batches = list(
@@ -56,27 +54,32 @@ def test_center_context_batchify_stream(reduce_window_size_randomly, shuffle,
 
 
 @pytest.mark.parametrize('cbow', [True, False])
-def test_center_context_batchify(cbow):
-    dataset = [np.arange(100).tolist()]
-    batchify = nlp.data.batchify.EmbeddingCenterContextBatchify(
-        batch_size=3, window_size=1, cbow=cbow)
-    samples = batchify(dataset)
+@pytest.mark.parametrize('dtype', [np.float64, np.int64, np.dtype('O')])
+@pytest.mark.parametrize('weight_dtype', [np.float64, np.float32, np.float16])
+@pytest.mark.parametrize('index_dtype', [np.int64, np.int32])
+def test_center_context_batchify(cbow, dtype, weight_dtype, index_dtype):
+    dtype_fn = dtype if dtype is not np.dtype('O') else str
+    dataset = [[dtype_fn(i) for i in range(100)] * 2]
 
+    batchify = nlp.data.batchify.EmbeddingCenterContextBatchify(
+        batch_size=3, window_size=1, cbow=cbow, weight_dtype=weight_dtype,
+        index_dtype=index_dtype)
+    samples = batchify(dataset)
     center, context = next(iter(samples))
     (contexts_data, contexts_row, contexts_col) = context
 
-    assert center.dtype == np.int64
-    assert contexts_data.dtype == np.float32
-    assert contexts_row.dtype == np.int64
-    assert contexts_col.dtype == np.int64
+    assert center.dtype == dtype
+    assert contexts_data.dtype == weight_dtype
+    assert contexts_row.dtype == index_dtype
+    assert contexts_col.dtype == dtype
 
     if cbow:
-        assert center.asnumpy().tolist() == [0, 1, 2]
-        assert contexts_data.asnumpy().tolist() == [1, 0.5, 0.5, 0.5, 0.5]
-        assert contexts_row.asnumpy().tolist() == [0, 1, 1, 2, 2]
-        assert contexts_col.asnumpy().tolist() == [1, 0, 2, 1, 3]
+        assert center.tolist() == [dtype_fn(i) for i in [0, 1, 2]]
+        assert contexts_data.tolist() == [1, 0.5, 0.5, 0.5, 0.5]
+        assert contexts_row.tolist() == [0, 1, 1, 2, 2]
+        assert contexts_col.tolist() == [dtype_fn(i) for i in [1, 0, 2, 1, 3]]
     else:
-        assert center.asnumpy().tolist() == [0, 1, 1]
-        assert contexts_data.asnumpy().tolist() == [1, 1, 1]
-        assert contexts_row.asnumpy().tolist() == [0, 1, 2]
-        assert contexts_col.asnumpy().tolist() == [1, 0, 2]
+        assert center.tolist() == [dtype_fn(i) for i in [0, 1, 1]]
+        assert contexts_data.tolist() == [1, 1, 1]
+        assert contexts_row.tolist() == [0, 1, 2]
+        assert contexts_col.tolist() == [dtype_fn(i) for i in [1, 0, 2]]

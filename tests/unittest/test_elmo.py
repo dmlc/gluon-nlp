@@ -25,7 +25,8 @@ import gluonnlp as nlp
 import pytest
 
 
-def test_elmo_bilm_encoder():
+@pytest.mark.parametrize('has_mask', [False, True])
+def test_elmo_bilm_encoder(has_mask):
     encoder = nlp.model.BiLMEncoder(mode='lstmpc',
                                     num_layers=1,
                                     input_size=10,
@@ -38,10 +39,14 @@ def test_elmo_bilm_encoder():
     print(encoder)
     encoder.initialize()
     inputs = mx.random.uniform(shape=(20, 5, 10))
-    mask = mx.nd.ones(shape=(5, 20))
     states = encoder.begin_state(mx.nd.zeros, batch_size=5)
-    print('testing forward for %s' % 'elmo bilm')
-    outputs, out_states = encoder(inputs, states, mask)
+    if has_mask:
+        mask = mx.nd.ones(shape=(5, 20))
+        print('testing forward for elmo bilm with mask')
+        outputs, out_states = encoder(inputs, states, mask)
+    else:
+        print('testing forward for elmo bilm without mask')
+        outputs, out_states = encoder(inputs, states)
 
     assert outputs.shape == (1, 20, 5, 20), outputs.shape
     assert len(out_states) == 2, len(out_states)
@@ -51,47 +56,54 @@ def test_elmo_bilm_encoder():
     assert out_states[1][0][1].shape == (5, 30), out_states[0][1][1].shape
 
 
-def test_elmo_char_encoder():
+@pytest.mark.parametrize('hybridize', [False, True])
+def test_elmo_char_encoder(hybridize):
     char_encoder = nlp.model.ELMoCharacterEncoder(output_size=1,
                                                   char_embed_size=2,
                                                   filters=[[1, 2], [2, 1]],
                                                   num_highway=2,
                                                   conv_layer_activation='relu',
-                                                  max_chars_per_token=50)
+                                                  max_chars_per_token=50,
+                                                  char_vocab_size=262)
     print(char_encoder)
     char_encoder.initialize()
+    if hybridize:
+        char_encoder.hybridize()
     inputs = mx.nd.ones(shape=(2, 5, 50))
     print('testing forward for %s' % 'elmo_char_encoder')
-    mask, output = char_encoder(inputs)
-    assert mask.shape == (2, 7), mask.shape
-    assert output.shape == (2, 7, 1), output.shape
+    output = char_encoder(inputs)
+    assert output.shape == (2, 5, 1), output.shape
 
 
-def test_elmo_model():
-    model = nlp.model.ELMoBiLM(model='lstmpc',
-                     output_size=128,
-                     filters=[[1, 32], [2, 32], [3, 64], [4, 128], [5, 256], [6, 512], [7, 1024]],
-                     char_embed_size=16,
-                     num_highway=1,
-                     conv_layer_activation='relu',
-                     max_chars_per_token=50,
-                     input_size=128,
-                     hidden_size=1024,
-                     proj_size=128,
-                     num_layers=2,
-                     cell_clip=1,
-                     proj_clip=1,
-                     skip_connection=True)
+@pytest.mark.parametrize('hybridize', [False, True])
+def test_elmo_model(hybridize):
+    filters=[[1, 32], [2, 32], [3, 64], [4, 128], [5, 256], [6, 512], [7, 1024]]
+    model = nlp.model.ELMoBiLM(rnn_type='lstmpc',
+                               output_size=128,
+                               filters=filters,
+                               char_embed_size=16,
+                               char_vocab_size=262,
+                               num_highway=1,
+                               conv_layer_activation='relu',
+                               max_chars_per_token=50,
+                               input_size=128,
+                               hidden_size=1024,
+                               proj_size=128,
+                               num_layers=2,
+                               cell_clip=1,
+                               proj_clip=1,
+                               skip_connection=True)
     print(model)
     model.initialize()
+    if hybridize:
+        model.hybridize()
     inputs = mx.nd.ones(shape=(5, 20, 50))
     begin_state = model.begin_state(mx.nd.zeros, batch_size=5)
     print('testing forward for %s' % 'elmo model')
-    outputs, state, mask = model(inputs, begin_state)
+    outputs, state = model(inputs, begin_state)
     assert len(outputs) == 3, len(outputs)
-    assert outputs[0].shape == (5, 22, 256), outputs[0].shape
+    assert outputs[0].shape == (5, 20, 256), outputs[0].shape
     assert len(state) == 2, len(state)
-    assert mask.shape == (5, 22), mask.shape
 
 
 @pytest.mark.serial
@@ -103,15 +115,25 @@ def test_get_elmo_models():
 
     for model_name, dataset in zip(model_names, datasets):
         print('testing forward for %s on dataset %s' % (model_name, dataset))
-        model = nlp.model.get_model(model_name,
-                                    dataset_name=dataset,
-                                    pretrained=dataset is not None,
-                                    root='tests/data/model/')
+        model, _ = nlp.model.get_model(model_name,
+                                       dataset_name=dataset,
+                                       pretrained=dataset is not None,
+                                       root='tests/data/model/')
 
         print(model)
         if not dataset:
             model.collect_params().initialize()
         begin_state = model.begin_state(mx.nd.zeros, batch_size=20)
-        output, state, mask = model(mx.nd.arange(35000).reshape(20, 35, 50), begin_state)
+        output, state = model(mx.nd.arange(35000).reshape(20, 35, 50), begin_state)
         del model
         mx.nd.waitall()
+
+def test_elmo_vocab():
+    vocab = nlp.vocab.ELMoCharVocab()
+    expected_bos_ids = [vocab.bow_id, vocab.bos_id, vocab.eow_id]+[vocab.pad_id]*(vocab.max_word_length-3)
+    expected_eos_ids = [vocab.bow_id, vocab.eos_id, vocab.eow_id]+[vocab.pad_id]*(vocab.max_word_length-3)
+    expected_hello_ids = [vocab.bow_id, 104, 101, 108, 108, 111, vocab.eow_id]+[vocab.pad_id]*(vocab.max_word_length-7)
+    assert vocab['<bos>'] == expected_bos_ids
+    assert vocab['<eos>'] == expected_eos_ids
+    assert vocab['hello'] == expected_hello_ids
+    assert vocab[['<bos>', 'hello', '<eos>']] == [expected_bos_ids, expected_hello_ids, expected_eos_ids]

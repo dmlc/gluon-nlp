@@ -24,7 +24,8 @@ from . import loss
 from . import data
 from . import embedding
 from . import model
-from .vocab import *
+from . import vocab
+from .vocab import Vocab
 
 __version__ = '0.5.0'
 
@@ -32,5 +33,6 @@ __all__ = ['data',
            'model',
            'embedding',
            'Vocab',
+           'vocab',
            'loss',
            'initializer']

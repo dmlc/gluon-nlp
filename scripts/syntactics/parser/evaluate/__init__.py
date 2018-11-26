@@ -16,13 +16,4 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-
-# pylint: disable=wildcard-import
-"""Vocabulary."""
-
-from . import subwords, vocab
-from .subwords import *
-from .vocab import *
-from .elmo import *
-
-__all__ = vocab.__all__ + subwords.__all__ + elmo.__all__
+from .evaluate import evaluate_official_script

@@ -468,6 +468,21 @@ class TokenEmbedding(object):
         """
         return self._unknown_lookup
 
+    @unknown_lookup.setter
+    def unknown_lookup(self, unknown_lookup):
+        """Vector lookup for unknown tokens.
+
+        If not None, unknown_lookup[tokens] is called for any unknown tokens.
+        The result is cached if unknown_autoextend is True.
+
+        Parameters
+        ----------
+        unknown_lookup : Mapping[List[str], nd.NDarray]
+            Vector lookup mapping from tokens to vectors.
+
+        """
+        self._unknown_lookup = unknown_lookup
+
     @property
     def unknown_autoextend(self):
         """Autoextension behavior for unknown token lookup.
@@ -577,6 +592,9 @@ class TokenEmbedding(object):
                 'The length of `new_embedding` must be equal to the number ' \
                 'of tokens and the width of new_embedding must be equal ' \
                 'to the dimension of embedding of the glossary.'
+        else:
+            assert new_embedding.shape[0] == len(tokens), \
+                'The length of `new_embedding` must be equal to the number of tokens'
         return tokens
 
     def __setitem__(self, tokens, new_embedding):

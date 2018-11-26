@@ -16,13 +16,41 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+import pickle
 
-# pylint: disable=wildcard-import
-"""Vocabulary."""
 
-from . import subwords, vocab
-from .subwords import *
-from .vocab import *
-from .elmo import *
+class Savable(object):
+    """
+    A super class for save/load operations.
+    """
 
-__all__ = vocab.__all__ + subwords.__all__ + elmo.__all__
+    def __init__(self):
+        super().__init__()
+
+    def save(self, path):
+        """Save to path
+
+        Parameters
+        ----------
+        path : str
+            file path
+        """
+        with open(path, 'wb') as f:
+            pickle.dump(self, f)
+
+    @staticmethod
+    def load(path):
+        """Load from path
+
+        Parameters
+        ----------
+        path : str
+            file path
+
+        Returns
+        -------
+        Savable
+            An object
+        """
+        with open(path, 'rb') as f:
+            return pickle.load(f)
