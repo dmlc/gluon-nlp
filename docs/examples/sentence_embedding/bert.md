@@ -239,7 +239,7 @@ In this tutorial, we show how to fine-tune a sentence pair
 classification model with pre-trained BERT parameters. In GluonNLP, this can be
 done with just a few simple steps: apply BERT-style data transformation to
 preprocess the data, automatically download the pre-trained model, and feed the
-transformed data into the model. Please visit [here](../../scripts/bert/) to see
+transformed data into the model. Please visit [here](../../model_zoo/bert/index.rst) to see
 the complete fine-tuning scripts.
 
 ## References
