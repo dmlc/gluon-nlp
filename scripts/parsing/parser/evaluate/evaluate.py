@@ -22,7 +22,7 @@ import tempfile
 import time
 from functools import reduce
 
-from scripts.syntactics.common.data import DataLoader
+from scripts.parsing.common.data import DataLoader
 
 
 def evaluate_official_script(parser, vocab, num_buckets_test, test_batch_size, test_file, output_file,
