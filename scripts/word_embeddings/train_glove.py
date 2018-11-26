@@ -36,6 +36,7 @@ The GloVe model was introduced by
 """
 # * Imports
 import argparse
+import io
 import logging
 import os
 import random
@@ -73,9 +74,9 @@ def parse_args():
 
     # Computation options
     group = parser.add_argument_group('Computation arguments')
-    group.add_argument('--batch-size', type=int, default=65536,
+    group.add_argument('--batch-size', type=int, default=512,
                        help='Batch size for training.')
-    group.add_argument('--epochs', type=int, default=5, help='Epoch limit')
+    group.add_argument('--epochs', type=int, default=50, help='Epoch limit')
     group.add_argument(
         '--gpu', type=int, nargs='+',
         help='Number (index) of GPU to run on, e.g. 0. '
@@ -129,7 +130,7 @@ def parse_args():
 def get_train_data(args):
     """Helper function to get training data."""
     counter = dict()
-    with open(args.vocab, 'r', encoding='utf-8') as f:
+    with io.open(args.vocab, 'r', encoding='utf-8') as f:
         for line in f:
             token, count = line.split('\t')
             counter[token] = int(count)
@@ -282,14 +283,19 @@ def train(args):
 
     optimizer_kwargs = dict(learning_rate=args.lr, eps=args.adagrad_eps)
     params = list(model.collect_params().values())
-    trainer = mx.gluon.Trainer(params, 'groupadagrad', optimizer_kwargs)
+    try:
+        trainer = mx.gluon.Trainer(params, 'groupadagrad', optimizer_kwargs)
+    except ValueError:
+        logging.warning('MXNet <= v1.3 does not contain '
+                        'GroupAdaGrad support. Falling back to AdaGrad')
+        trainer = mx.gluon.Trainer(params, 'adagrad', optimizer_kwargs)
 
     index_dtype = 'int32'
     if counts.shape[0] >= np.iinfo(np.int32).max:
         index_dtype = 'int64'
         logging.info('Co-occurrence matrix is large. '
                      'Using int64 to represent sample indices.')
-        indices = mx.nd.arange(counts.shape[0], dtype=index_dtype)
+    indices = mx.nd.arange(counts.shape[0], dtype=index_dtype)
     for epoch in range(args.epochs):
         # Logging variables
         log_wc = 0
@@ -393,22 +399,21 @@ def log(args, kwargs):
 
     if 'log_created' not in globals():
         if os.path.exists(logfile):
-            logging.error(f'Logfile {logfile} already exists.')
+            logging.error('Logfile %s already exists.', logfile)
             sys.exit(1)
 
         global log_created
 
-        log_created = kwargs.keys()
-        header = '\t'.join((str(k) for k in kwargs.keys())) + '\n'
+        log_created = sorted(kwargs.keys())
+        header = '\t'.join((str(k) for k in log_created)) + '\n'
         with open(logfile, 'w') as f:
             f.write(header)
 
     # Log variables shouldn't change during training
-    assert log_created == kwargs.keys()
+    assert log_created == sorted(kwargs.keys())
 
     with open(logfile, 'a') as f:
-        # TODO order may be incorrect on Python before v3.6
-        f.write('\t'.join((str(v) for v in kwargs.values())) + '\n')
+        f.write('\t'.join((str(kwargs[k]) for k in log_created)) + '\n')
 
 
 # * Main
@@ -419,8 +424,9 @@ if __name__ == '__main__':
 
     if os.path.exists(args_.logdir):
         newlogdir = tempfile.mkdtemp(dir=args_.logdir)
-        logging.warning(f'{args_.logdir} exists. Using {newlogdir}')
+        logging.warning('%s exists. Using %s', args_.logdir, newlogdir)
         args_.logdir = newlogdir
-    os.makedirs(args_.logdir, exist_ok=True)
+    if not os.path.isdir(args_.logdir):
+        os.makedirs(args_.logdir)
 
     train(args_)

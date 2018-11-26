@@ -33,8 +33,8 @@ evaluation tasks are available `here
 <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/embedding_results/>`__.
 
 
-Word Embedding Training
-~~~~~~~~~~~~~~~~~~~~~~~
+Word Embedding Training (Skipgram and CBOW)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Besides loading pre-trained embeddings, the Gluon NLP toolkit also makes it easy
 to train embeddings.
@@ -110,3 +110,30 @@ of word vectors for words unknown during training (and not included in the text
 format). Besides training new fastText embeddings with Gluon NLP it is also
 possible to load the binary format into a Block provided by the Gluon NLP
 toolkit using `FasttextEmbeddingModel.load_fasttext_format`.
+
+
+Word Embedding Training (GloVe)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Gluon NLP also supports training GloVe models.
+
+.. code-block:: console
+
+   $ python train_glove.py tools/build/cooccurrences.npz tools/build/vocab.txt
+
+Where the `cooccurrences.npz` is a numpy archive containing the sparse word-word
+cooccurrence matrix and vocab.txt a textfile containing the words and their
+counts. They can be constructed from a text corpus using the included
+`vocab_count` and `cooccur` tools. They can be used as follows
+
+.. code-block:: console
+
+   $ mkdir tools/build; cd tools/build; cmake ..; make
+   $ ./vocab_count corpus-part1.txt corpus-part2.txt > vocab.txt
+   $ ./cooccur corpus-part1.txt corpus-part2.txt < vocab.txt
+
+Also see `./vocab_count --help` and `./cooccur --help` for configuration options
+such as min-count or window-size.
+
+GloVe models were introduced by Pennington et al., "Glove: global vectors for
+word representation", ACL 2014.

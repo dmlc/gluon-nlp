@@ -39,13 +39,23 @@ def test_toy():
 def test_skipgram_cbow(model, fasttext):
     cmd = [
         'python', './scripts/word_embeddings/train_sg_cbow.py', '--gpu', '0',
-        '--epochs', '2', '--optimizer', 'sgd', '--model', model,
-        '--data', 'toy', '--batch-size', '64'
-    ]
+        '--epochs', '2', '--model', model, '--data', 'toy', '--batch-size',
+        '64']
     if fasttext:
         cmd += ['--ngram-buckets', '1000']
     else:
         cmd += ['--ngram-buckets', '0']
+    subprocess.check_call(cmd)
+    time.sleep(5)
+
+
+def test_glove():
+    path = os.path.dirname(os.path.abspath(os.path.expanduser(__file__)))
+    vocab = os.path.join(path, 'word_embeddings/glove/vocab.txt')
+    cooccur = os.path.join(path, 'word_embeddings/glove/cooccurrences.npz')
+    cmd = [
+        'python', './scripts/word_embeddings/train_glove.py', cooccur, vocab,
+        '--batch-size', '2', '--epochs', '2']
     subprocess.check_call(cmd)
     time.sleep(5)
 

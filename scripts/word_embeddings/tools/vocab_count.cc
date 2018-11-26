@@ -98,7 +98,7 @@ int main(int argc, char **argv) {
   CLI::App app("Simple tool to extract unigram counts");
   std::vector<std::string> files;
   app.add_option("FILES", files, "File names")->check(CLI::ExistingPath);
-  unsigned int minCount = 5;
+  unsigned int minCount = 10;
   app.add_option("-c,--minCount", minCount,
                  "Minimum number of occurences required for a word to be "
                  "included in the vocabulary.");
