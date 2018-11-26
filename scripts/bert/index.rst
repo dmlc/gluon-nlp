@@ -3,8 +3,25 @@ Bidirectional Encoder Representations from Transformers
 
 :download:`[Download] </model_zoo/bert.zip>`
 
+Reference: Devlin, Jacob, et al. "`Bert: Pre-training of deep bidirectional transformers for language understanding. <https://arxiv.org/abs/1810.04805>`" arXiv preprint arXiv:1810.04805 (2018).
+
+The following pre-trained BERT models are available from the **gluonnlp.model.get_model** API:
+
++--------------------+---------------------------------+-------------------------------+--------------------+
+|                    | book_corpus_wiki_en_uncased     | book_corpus_wiki_en_cased     | wiki_multilingual  |
++====================+=================================+===============================+====================+
+| bert_12_768_12     | ✓                               | ✓                             | ✓                  |
++--------------------+---------------------------------+-------------------------------+--------------------+
+| bert_24_1024_16    | x                               | ✓                             | x                  |
++--------------------+---------------------------------+-------------------------------+--------------------+
+
+where *bert_12_768_12* refers to the BERT BASE model, and *bert_24_1024_16* refers to the BERT LARGE model.
+
 BERT for Sentence Pair Classification
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+GluonNLP provides the following example script to fine-tune sentence pair classification with pre-trained
+BERT model.
 
 Download the MRPC dataset:
 

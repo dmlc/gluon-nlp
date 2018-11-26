@@ -55,21 +55,10 @@ ctx = mx.gpu(0)
 
 ## Use the Pre-trained BERT model
 
-In GluonNLP v0.5, the following models are
-available:
+The list of pre-trained BERT model available in GluonNLP can be found
+[here](../../model_zoo/bert/index.rst).
 
-|model \ dataset    | book_corpus_wiki_en_uncased |
-book_corpus_wiki_en_cased | wiki_multilingual |
-|:---------------:|:---------------------------:|:-------------------------:|:-----------------:|
-| bert_12_768_12 |              ✓              |             ✓             |
-✓         |
-| bert_24_1024_16 |              x              |              ✓
-|         x         |
-
-where `bert_12_768_12` refers to the BERT BASE model, and
-`bert_24_1024_16` refers to the BERT LARGE model in [1].
-
-Next, we load the BERT
+In this tutorial, we will load the BERT
 BASE model trained on uncased book corpus and English Wikipedia dataset in
 GluonNLP model zoo.
 
