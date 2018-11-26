@@ -186,7 +186,7 @@ html_theme_options = {
         ('API', 'api/index', False, ''),
         ('Community', 'community/index', False, ''),
         ('Contribute', 'community/contribute', False, ''),
-        ('GitHub', 'https://github.com/dmlc/gluon-nlp/', True, ''),
+        ('GitHub', 'https://github.com/dmlc/gluon-nlp/', True, 'fab fa-github'),
     ],
 
     # custom layout
@@ -247,7 +247,6 @@ def setup(app):
     app.add_transform(AutoStructify)
     app.add_javascript('copybutton.js')
     app.add_javascript('google_analytics.js')
-    app.add_javascript('demo.js')
 
 
 sphinx_gallery_conf = {

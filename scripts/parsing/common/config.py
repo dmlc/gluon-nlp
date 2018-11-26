@@ -19,7 +19,7 @@
 import os
 import pickle
 
-from scripts.syntactics.common.savable import Savable
+from scripts.parsing.common.savable import Savable
 
 
 class _Config(Savable):

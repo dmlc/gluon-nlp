@@ -21,7 +21,7 @@ from collections import Counter
 
 import gluonnlp
 import numpy as np
-from scripts.syntactics.common.k_means import KMeans
+from scripts.parsing.common.k_means import KMeans
 
 from .savable import Savable
 
