@@ -21,6 +21,7 @@ from __future__ import print_function
 
 import datetime
 import os
+import io
 import random
 
 from flaky import flaky
@@ -587,3 +588,21 @@ def test_concatenation():
     assert len(dataset) == 9
     assert dataset[0] == 1
     assert dataset[5] == 6
+
+def test_tsv():
+    data =  "a,b,c\n"
+    data += "d,e,f\n"
+    data += "g,h,i\n"
+    with open('test_tsv.tsv', 'w') as fout:
+        fout.write(data)
+    num_discard = 1
+    field_separator = nlp.data.utils.Splitter(',')
+    field_indices = [0,2]
+    dataset = nlp.data.TSVDataset('test_tsv.tsv', num_discard_samples=num_discard,
+                                  field_separator=field_separator,
+                                  field_indices=field_indices)
+    num_samples = 3 - num_discard
+    idx = random.randint(0, num_samples - 1)
+    assert len(dataset) == num_samples
+    assert len(dataset[0]) == 2
+    assert dataset[1] == [u'g', u'i']

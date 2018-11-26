@@ -76,6 +76,10 @@ from .attention_cell import *
 from .sequence_sampler import *
 from .block import *
 from .convolutional_encoder import *
+from .seq2seq_encoder_decoder import *
+from .translation import *
+from .transformer import *
+from .bert import *
 from .highway import *
 from .language_model import *
 from .parameter import *
@@ -88,7 +92,8 @@ from .elmo import *
 __all__ = language_model.__all__ + sequence_sampler.__all__ + attention_cell.__all__ + \
           utils.__all__ + parameter.__all__ + block.__all__ + highway.__all__ + \
           convolutional_encoder.__all__ + sampled_block.__all__ + ['get_model'] + ['train'] + \
-          bilm_encoder.__all__ + lstmpcellwithclip.__all__ + elmo.__all__
+          bilm_encoder.__all__ + lstmpcellwithclip.__all__ + elmo.__all__ + \
+          seq2seq_encoder_decoder.__all__ + transformer.__all__ + bert.__all__
 
 
 def get_model(name, dataset_name='wikitext-2', **kwargs):
@@ -123,18 +128,20 @@ def get_model(name, dataset_name='wikitext-2', **kwargs):
 
     Returns
     -------
-    Block
-        The model.
+    gluon.Block, gluonnlp.Vocab, (optional) gluonnlp.Vocab
     """
-    models = {'standard_lstm_lm_200': standard_lstm_lm_200,
-              'standard_lstm_lm_650': standard_lstm_lm_650,
+    models = {'standard_lstm_lm_200' : standard_lstm_lm_200,
+              'standard_lstm_lm_650' : standard_lstm_lm_650,
               'standard_lstm_lm_1500': standard_lstm_lm_1500,
               'awd_lstm_lm_1150': awd_lstm_lm_1150,
               'awd_lstm_lm_600': awd_lstm_lm_600,
               'big_rnn_lm_2048_512': big_rnn_lm_2048_512,
               'elmo_2x1024_128_2048cnn_1xhighway': elmo_2x1024_128_2048cnn_1xhighway,
               'elmo_2x2048_256_2048cnn_1xhighway': elmo_2x2048_256_2048cnn_1xhighway,
-              'elmo_2x4096_512_2048cnn_2xhighway': elmo_2x4096_512_2048cnn_2xhighway}
+              'elmo_2x4096_512_2048cnn_2xhighway': elmo_2x4096_512_2048cnn_2xhighway,
+              'transformer_en_de_512': transformer_en_de_512,
+              'bert_12_768_12'       : bert_12_768_12,
+              'bert_24_1024_16'      : bert_24_1024_16}
     name = name.lower()
     if name not in models:
         raise ValueError(

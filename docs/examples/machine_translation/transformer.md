@@ -42,10 +42,10 @@ import nmt
 wmt_model_name = 'transformer_en_de_512'
 
 wmt_transformer_model, wmt_src_vocab, wmt_tgt_vocab = \
-    nmt.transformer.get_model(wmt_model_name,
-                              dataset_name='WMT2014',
-                              pretrained=True,
-                              ctx=ctx)
+    nlp.model.get_model(wmt_model_name,
+                        dataset_name='WMT2014',
+                        pretrained=True,
+                        ctx=ctx)
 
 # we are using mixed vocab of EN-DE, so the source and target langauge vocab are the same
 print(len(wmt_src_vocab), len(wmt_tgt_vocab))

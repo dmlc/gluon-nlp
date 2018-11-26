@@ -18,8 +18,10 @@
 # under the License.
 
 """Building blocks and utility for models."""
-__all__ = ['RNNCellLayer', 'L2Normalization']
+__all__ = ['RNNCellLayer', 'L2Normalization', 'GELU']
 
+import math
+import warnings
 from mxnet import ndarray
 from mxnet.gluon import Block, HybridBlock
 
@@ -89,3 +91,35 @@ class L2Normalization(HybridBlock):
     def hybrid_forward(self, F, x):  # pylint: disable=arguments-differ
         ret = F.broadcast_div(x, F.norm(x, axis=self._axis, keepdims=True) + self._eps)
         return ret
+
+class GELU(HybridBlock):
+    r"""Gaussian Error Linear Unit.
+    This is a smoother version of the RELU.
+    https://arxiv.org/abs/1606.08415
+
+    Parameters
+    ----------
+    Inputs:
+        - **data**: input tensor with arbitrary shape.
+    Outputs:
+        - **out**: output tensor with the same shape as `data`.
+    """
+    def __init__(self, **kwargs):
+        super(GELU, self).__init__(**kwargs)
+        self._support_erf = False
+        try:
+            self._support_erf = True if ndarray.erf else False
+        except AttributeError:
+            warnings.warn('`erf` operator support is not found. '
+                          'Please consider upgrading to mxnet >= 1.4')
+
+    def hybrid_forward(self, F, x):
+        if self._support_erf:
+            return x * 0.5 * (1.0 + F.erf(x / math.sqrt(2.0)))
+        else:
+            # approximate GELU if erf is not supported
+            return 0.5 * x * (1 + F.tanh(math.sqrt(2 / math.pi) * (x + 0.044715 * (x ** 3))))
+
+    def __repr__(self):
+        s = '{name}()'
+        return s.format(name=self.__class__.__name__)

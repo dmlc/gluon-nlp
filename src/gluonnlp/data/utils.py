@@ -23,7 +23,7 @@ from __future__ import print_function
 
 __all__ = [
     'Counter', 'count_tokens', 'concat_sequence', 'slice_sequence', 'train_valid_split',
-    'line_splitter', 'whitespace_splitter'
+    'line_splitter', 'whitespace_splitter', 'Splitter'
 ]
 
 import os
@@ -212,8 +212,14 @@ def _slice_pad_length(num_items, length, overlap=0):
         return 0
 
 
-_vocab_sha1 = {'wikitext-2': 'be36dc5238c2e7d69720881647ab72eb506d0131',
-               'gbw': 'ebb1a287ca14d8fa6f167c3a779e5e7ed63ac69f'}
+_vocab_sha1 = {'wikitext-2'                 : 'be36dc5238c2e7d69720881647ab72eb506d0131',
+               'gbw'                        : 'ebb1a287ca14d8fa6f167c3a779e5e7ed63ac69f',
+               'WMT2014_src'                : '230ebb817b1d86950d71e2e765f192a4e4f34415',
+               'WMT2014_tgt'                : '230ebb817b1d86950d71e2e765f192a4e4f34415',
+               'book_corpus_wiki_en_cased'  : '412a6bbeae603b9b9ba6505dd8b58a8594fe5c4c',
+               'book_corpus_wiki_en_uncased': 'c3e2bd000830b08b5535a75726af637f791d2bce',
+               'wiki_multilingual'          : '4cf30ef8fd0e0a6a4f9ef05b716b108f8b61c2d7'}
+
 _url_format = '{repo_url}gluon/dataset/vocab/{file_name}.zip'
 
 
@@ -352,7 +358,7 @@ def line_splitter(s):
     return s.splitlines()
 
 def whitespace_splitter(s):
-    """Split a string at whitespace.
+    """Split a string at whitespace (space, tab, newline, return, formfeed).
 
     Parameters
     ----------
@@ -365,3 +371,29 @@ def whitespace_splitter(s):
         List of strings. Obtained by calling s.split().
     """
     return s.split()
+
+class Splitter(object):
+    """Split a string based on a separator.
+
+    Parameters
+    ----------
+    separator : str
+        The separator based on which string is split.
+    """
+    def __init__(self, separator=None):
+        self._separator = separator
+
+    def __call__(self, s):
+        """Split a string based on the separator.
+
+        Parameters
+        ----------
+        s : str
+            The string to be split
+
+        Returns
+        --------
+        List[str]
+            List of strings. Obtained by calling s.split(separator).
+        """
+        return s.split(self._separator)

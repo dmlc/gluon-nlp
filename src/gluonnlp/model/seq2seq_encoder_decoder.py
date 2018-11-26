@@ -17,7 +17,7 @@
 # specific language governing permissions and limitations
 # under the License.
 """Encoder and decoder usded in sequence-to-sequence learning."""
-__all__ = ['Seq2SeqEncoder', 'Seq2SeqDecoder']
+__all__ = ['Seq2SeqEncoder']
 
 from functools import partial
 import mxnet as mx
@@ -25,24 +25,6 @@ from mxnet.gluon import rnn
 from mxnet.gluon.block import Block
 from gluonnlp.model import AttentionCell, MLPAttentionCell, DotProductAttentionCell, \
     MultiHeadAttentionCell
-
-
-def _list_bcast_where(F, mask, new_val_l, old_val_l):
-    """Broadcast where. Implements out[i] = new_val[i] * mask + old_val[i] * (1 - mask)
-
-    Parameters
-    ----------
-    F : symbol or ndarray
-    mask : Symbol or NDArray
-    new_val_l : list of Symbols or list of NDArrays
-    old_val_l : list of Symbols or list of NDArrays
-
-    Returns
-    -------
-    out_l : list of Symbols or list of NDArrays
-    """
-    return [F.broadcast_mul(new_val, mask) + F.broadcast_mul(old_val, 1 - mask)
-            for new_val, old_val in zip(new_val_l, old_val_l)]
 
 
 def _get_cell_type(cell_type):

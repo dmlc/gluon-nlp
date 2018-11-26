@@ -25,6 +25,30 @@ Language Modeling
     get_model
     BigRNN
 
+Machine Translation
+-------------------
+
+.. autosummary::
+    :nosignatures:
+
+    Seq2SeqEncoder
+    TransformerEncoder
+    TransformerEncoderCell
+    PositionwiseFFN
+    transformer_en_de_512
+
+Bidirectional Encoder Representations from Transformers
+-------------------------------------------------------
+
+.. autosummary::
+    :nosignatures:
+
+    BERTModel
+    BERTLayerNorm
+    BERTEncoder
+    BERTEncoderCell
+    BERTPositionwiseFFN
+
 Convolutional Encoder
 ----------------------
 
@@ -80,6 +104,7 @@ Other Modeling Utilities
     WeightDropParameter
     apply_weight_drop
     L2Normalization
+    GELU
     ISDense
     NCEDense
     SparseISDense

@@ -2,7 +2,8 @@ import numpy as np
 import mxnet as mx
 from mxnet.test_utils import assert_almost_equal
 from ..machine_translation.gnmt import *
-from ..machine_translation.transformer import *
+from gluonnlp.model.transformer import *
+from gluonnlp.model.transformer import TransformerDecoder
 
 
 def test_gnmt_encoder():

@@ -69,7 +69,61 @@ def test_big_text_models(wikitext2_val_and_counter):
 
 @pytest.mark.serial
 @pytest.mark.remote_required
-def test_text_models():
+def test_transformer_models():
+    models = ['transformer_en_de_512']
+    pretrained_to_test = {'transformer_en_de_512': 'WMT2014'}
+    src = mx.nd.ones((2, 10))
+    tgt = mx.nd.ones((2, 8))
+    valid_len = mx.nd.ones((2,))
+    for model_name in models:
+        eprint('testing forward for %s' % model_name)
+        pretrained_dataset = pretrained_to_test.get(model_name)
+        model, _, _ = nlp.model.get_model(model_name, dataset_name=pretrained_dataset,
+                                          pretrained=pretrained_dataset is not None,
+                                          root='tests/data/model/')
+
+        print(model)
+        if not pretrained_dataset:
+            model.initialize()
+        output, state = model(src, tgt, src_valid_length=valid_len, tgt_valid_length=valid_len)
+        output.wait_to_read()
+        del model
+        mx.nd.waitall()
+
+def test_pretrained_bert_models():
+    models = ['bert_12_768_12', 'bert_24_1024_16']
+    pretrained = {'bert_12_768_12': ['book_corpus_wiki_en_cased', 'book_corpus_wiki_en_uncased', 'wiki_multilingual'],
+                  'bert_24_1024_16': ['book_corpus_wiki_en_uncased']}
+    vocab_size = {'book_corpus_wiki_en_cased': 28996,
+                  'book_corpus_wiki_en_uncased': 30522,
+                  'wiki_multilingual': 105879}
+    special_tokens = ['[UNK]', '[PAD]', '[SEP]', '[CLS]', '[MASK]']
+    ones = mx.nd.ones((2, 10))
+    valid_length = mx.nd.ones((2,))
+    for model_name in models:
+        eprint('testing forward for %s' % model_name)
+        pretrained_datasets = pretrained.get(model_name)
+        for dataset in pretrained_datasets:
+            model, vocab = nlp.model.get_model(model_name, dataset_name=dataset,
+                                               pretrained=True,
+                                               root='tests/data/model/')
+            assert len(vocab) == vocab_size[dataset]
+            for token in special_tokens:
+                assert token in vocab, "Token %s not found in the vocab"%token
+            assert vocab['RandomWordByHaibin'] == 0
+            assert vocab.padding_token == '[PAD]'
+            assert vocab.unknown_token == '[UNK]'
+            assert vocab.bos_token is None
+            assert vocab.eos_token is None
+            output = model(ones, ones, valid_length)
+            output[0].wait_to_read()
+            del model
+            mx.nd.waitall()
+
+
+@pytest.mark.serial
+@pytest.mark.remote_required
+def test_language_models():
     text_models = ['standard_lstm_lm_200', 'standard_lstm_lm_650', 'standard_lstm_lm_1500', 'awd_lstm_lm_1150', 'awd_lstm_lm_600']
     pretrained_to_test = {'standard_lstm_lm_1500': 'wikitext-2',
                           'standard_lstm_lm_650': 'wikitext-2',
