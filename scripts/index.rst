@@ -39,6 +39,12 @@ Model Zoo
 
       Generating language from models.
 
+   .. card::
+      :title: BERT
+      :link: bert/index.html
+
+      Transfer pre-trained language representations to language understanding tasks.
+
 .. toctree::
    :hidden:
    :maxdepth: 1
@@ -49,3 +55,4 @@ Model Zoo
    text_classification/index
    sentiment_analysis/index
    text_generation/index
+   bert/index

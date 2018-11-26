@@ -43,7 +43,7 @@ from mxnet import gluon
 from gluonnlp.model import bert_12_768_12
 from bert import BERTClassifier
 from tokenization import FullTokenizer
-from dataset import MRPCDataset, SentenceClassificationTrans
+from dataset import MRPCDataset, ClassificationTransform
 
 np.random.seed(0)
 random.seed(0)
@@ -86,7 +86,7 @@ loss_function.hybridize(static_alloc=True)
 
 metric = mx.metric.Accuracy()
 
-trans = SentenceClassificationTrans(tokenizer, MRPCDataset.get_labels(), args.max_len)
+trans = ClassificationTransform(tokenizer, MRPCDataset.get_labels(), args.max_len)
 data_train = MRPCDataset('train').transform(trans)
 data_dev = MRPCDataset('dev').transform(trans)
 

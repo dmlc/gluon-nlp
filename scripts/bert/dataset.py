@@ -14,7 +14,7 @@
 # limitations under the License.
 """BERT datasets."""
 
-__all__ = ['MRPCDataset', 'SentenceClassificationTrans']
+__all__ = ['MRPCDataset', 'ClassificationTransform']
 
 import os
 import numpy as np
@@ -64,7 +64,7 @@ def _truncate_seq_pair(tokens_a, tokens_b, max_length):
         else:
             tokens_b.pop()
 
-class SentenceClassificationTrans(object):
+class ClassificationTransform(object):
     """Dataset Transformation for BERT-style Sentence Classification.
 
     Parameters
