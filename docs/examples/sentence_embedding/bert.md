@@ -19,6 +19,7 @@ of-the-art results.
 In this tutorial, we will focus on fine-tuning with the
 pre-trained BERT model to classify semantically equivalent sentence pairs.
 Specifically, we will:
+
 1. load the state-of-the-art pre-trained BERT model.
 2.
 process and transform sentence pair data to be used for fine-tuning.
@@ -168,11 +169,8 @@ all_labels = ["0", "1"]
 transform = dataset.ClassificationTransform(tokenizer, all_labels, max_len)
 data_train = data_train.transform(transform)
 
-# tokens
 print('token ids = \n%s'%data_train[sample_id][0])
-# valid length
 print('valid length = \n%s'%data_train[sample_id][1])
-# 1 means equivalent, 0 means not equivalent
 print('segment ids = \n%s'%data_train[sample_id][2])
 print('label = \n%s'%data_train[sample_id][3])
 ```
@@ -185,13 +183,16 @@ skip validation steps.
 
 ```{.python .input}
 # create a dataloader with batch size 32
-bert_dataloader = mx.gluon.data.DataLoader(data_train, batch_size=32, shuffle=True, last_batch='rollover')
+bert_dataloader = mx.gluon.data.DataLoader(data_train, batch_size=32,
+                                           shuffle=True, last_batch='rollover')
 
-trainer = gluon.Trainer(model.collect_params(), 'adam', {'learning_rate': 5e-6, 'epsilon': 1e-9})
-params = []
-for p in model.collect_params().values():
-    if p.grad_req != 'null':
-        params.append(p)
+trainer = gluon.Trainer(model.collect_params(), 'adam',
+                        {'learning_rate': 5e-6, 'epsilon': 1e-9})
+
+# collect all differentiable parameters
+# grad_req == 'null' indicates no gradients are calculated (e.g. constant parameters)
+# the gradients for these params are clipped later
+params = [p for p in model.collect_params().values() if p.grad_req != 'null']
 
 log_interval = 4
 num_epochs = 3
