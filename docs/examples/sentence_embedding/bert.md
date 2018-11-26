@@ -79,7 +79,7 @@ Let's first take a look at the BERT model
 architecture for sentence pair classification below:
 
 <div style="width:
-500px;">![bert](bert-sentence-pair.png)</div>
+500px;">![bert-sentence-pair](bert-sentence-pair.png)</div>
 
 where the model takes a pair of
 sequences and **pools** the representation of the first token in the sequence.
@@ -148,7 +148,7 @@ print(data_train[sample_id][2])
 
 To use the pre-trained BERT model, we need to preprocess the data in the same
 way it was trained. The following figure shows the input representation in BERT:
-<div style="width: 500px;">![bert](bert-embed.png)</div>
+<div style="width: 500px;">![bert-embed](bert-embed.png)</div>
 
 We will use
 `ClassificationTransform` to perform the following transformations:
