@@ -97,12 +97,20 @@ Sentence Embedding
       See how to use GluonNLP to build more advanced model structure for extracting sentence
       embeddings to predict Yelp review rating.
 
+   .. card::
+      :title: BERT: Bidirectional Encoder Representations from Transformers
+      :link: sentence_embedding/bert.html
+
+      See how to use GluonNLP to fine-tune a sentence pair classification model with
+      pre-trained BERT parameters.
+
 .. toctree::
    :hidden:
    :maxdepth: 1
 
    sentence_embedding/elmo_sentence_representation.ipynb
    sentence_embedding/self_attentive_sentence_embedding.ipynb
+   sentence_embedding/bert.ipynb
 
 
 Sentiment Analysis
