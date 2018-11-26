@@ -39,7 +39,7 @@ class MRPCDataset(TSVDataset):
         https://gist.github.com/W4ngatang/60c2bdb54d156a41194446737ce03e2e
     """
     def __init__(self, segment='train',
-                 root=os.path.join(os.environ['GLUE_DIR'], 'MRPC')):
+                 root=os.path.join(os.getenv('GLUE_DIR', 'glue_data'), 'MRPC')):
         self._supported_segments = ['train', 'dev', 'test']
         assert segment in self._supported_segments, 'Unsupported segment: %s'%segment
         path = os.path.join(root, '%s.tsv'%segment)
