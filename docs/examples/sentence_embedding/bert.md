@@ -3,10 +3,12 @@
 Pre-trained language
 representations have been shown to improve many downstream NLP tasks such as
 question answering, and natural language inference. To apply pre-trained
-representations to these tasks, there are two strategies: 1) **feature-based**
-approach, which uses the pre-trained representations as additional features to
-the downstream task. 2) **fine-tuning** based approach, which trains the
-downstream tasks by fine-tuning pre-trained parameters. 
+representations to these tasks, there are two strategies:
+
+1. **feature-based** approach, which uses the pre-trained representations as additional
+features to the downstream task.
+2. **fine-tuning** based approach, which trains the downstream tasks by
+fine-tuning pre-trained parameters.
 
 While feature-based
 approaches such as ELMo [3] (introduced in the previous tutorial) are effective
