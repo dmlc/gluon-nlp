@@ -135,7 +135,7 @@ Let's take a look at the 3rd example in the
 dataset:
 
 ```{.python .input}
-data_train = dataset.MRPCDataset('dev')
+data_train = dataset.MRPCDataset('dev', root='.')
 sample_id = 0
 # sentence a
 print(data_train[sample_id][0])
