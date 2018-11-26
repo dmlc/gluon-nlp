@@ -54,7 +54,20 @@ class NLIModel(gluon.HybridBlock):
 
     def hybrid_forward(self, F, sentence1, sentence2):
         """
-        Model forward definition
+        Predict the relation of two sentences.
+
+        Parameters
+        ----------
+        sentence1 : NDArray
+            Shape (batch_size, length)
+        sentence2 : NDArray
+            Shape (batch_size, length)
+
+        Returns
+        -------
+        pred : NDArray
+            Shape (batch_size, num_classes). num_classes == 3.
+
         """
         feature1 = self.lin_proj(self.word_emb(sentence1))
         feature2 = self.lin_proj(self.word_emb(sentence2))
@@ -83,7 +96,19 @@ class IntraSentenceAttention(gluon.HybridBlock):
                                              activation='relu', flatten=False))
 
     def hybrid_forward(self, F, feature_a):
-        # batch_size, length, inp_size = feature_a.shape
+        """
+        Compute intra-sentence attention given embedded words.
+
+        Parameters
+        ----------
+        feature_a : NDArray
+            Shape (batch_size, length, hidden_size)
+
+        Returns
+        -------
+        alpha : NDArray
+            Shape (batch_size, length, hidden_size)
+        """
         tilde_a = self.intra_attn_emb(feature_a)
         e_matrix = F.batch_dot(tilde_a, tilde_a, transpose_b=True)
         alpha = F.batch_dot(e_matrix.softmax(), tilde_a)
