@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.9..3.12)  # For OpenMP on OS X via 'brew install libomp' use CMake 3.12+
+cmake_minimum_required(VERSION 3.9..3.13)
 
 # * Set and configure build types
 if(NOT CMAKE_BUILD_TYPE)
@@ -37,14 +37,14 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
 add_subdirectory(extern/cnpy EXCLUDE_FROM_ALL)
 
 # ** vocab_count
-add_executable(vocab_count tools/vocab_count.cc)
+add_executable(vocab_count vocab_count.cc)
 target_include_directories(vocab_count PUBLIC extern/sparsepp)
 target_include_directories(vocab_count PUBLIC extern/CLI11/include)
 target_link_libraries(vocab_count PUBLIC stdc++fs)
 target_link_libraries(vocab_count PUBLIC pthread)
 
 # ** cooccur
-add_executable(cooccur tools/cooccur.cc)
+add_executable(cooccur cooccur.cc)
 target_link_libraries(cooccur PUBLIC pthread)
 target_include_directories(cooccur PUBLIC extern/sparsepp)
 target_include_directories(cooccur PUBLIC extern/xxHash)

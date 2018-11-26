@@ -184,8 +184,17 @@ def train(args):
         embedding.hybridize(static_alloc=True, static_shape=True)
 
     optimizer_kwargs = dict(learning_rate=args.lr)
-    trainer = mx.gluon.Trainer(embedding.collect_params(), args.optimizer,
-                               optimizer_kwargs)
+    try:
+        trainer = mx.gluon.Trainer(embedding.collect_params(), args.optimizer,
+                                   optimizer_kwargs)
+    except ValueError as e:
+        if args.optimizer == 'groupadagrad':
+            logging.warning('MXNet <= v1.3 does not contain '
+                            'GroupAdaGrad support. Falling back to AdaGrad')
+            trainer = mx.gluon.Trainer(embedding.collect_params(), 'adagrad',
+                                       optimizer_kwargs)
+        else:
+            raise e
 
     try:
         if args.no_prefetch_batch:
