@@ -18,7 +18,10 @@ __all__ = ['MRPCDataset', 'ClassificationTransform']
 
 import os
 import numpy as np
-import tokenization
+try:
+    from tokenization import convert_to_unicode
+except ImportError:
+    from .tokenization import convert_to_unicode
 from gluonnlp.data import TSVDataset
 from gluonnlp.data.registry import register
 
@@ -144,12 +147,12 @@ class ClassificationTransform(object):
         # convert to unicode
         text_a = line[0]
         label = line[-1]
-        text_a = tokenization.convert_to_unicode(text_a)
-        label = tokenization.convert_to_unicode(label)
+        text_a = convert_to_unicode(text_a)
+        label = convert_to_unicode(label)
         if self._pair:
             assert len(line) == 3
             text_b = line[1]
-            text_b = tokenization.convert_to_unicode(text_b)
+            text_b = convert_to_unicode(text_b)
 
         tokens_a = self._tokenizer.tokenize(text_a)
         tokens_b = None
