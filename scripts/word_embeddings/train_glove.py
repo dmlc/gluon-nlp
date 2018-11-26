@@ -74,7 +74,7 @@ def parse_args():
 
     # Computation options
     group = parser.add_argument_group('Computation arguments')
-    group.add_argument('--batch-size', type=int, default=65536,
+    group.add_argument('--batch-size', type=int, default=512,
                        help='Batch size for training.')
     group.add_argument('--epochs', type=int, default=50, help='Epoch limit')
     group.add_argument(
