@@ -50,16 +50,9 @@ class Parallelizable:
         initialized = False
 
         for batch in batches:
-            if not initialized:
-                # The first batch cannot be forwarded in parallel
-                losses = []
-                for x in gluon.utils.split_and_load(batch, ctx):
-                    losses.append(parallel.forward_backward(x))
-                initialized = True
-            else:
-                for x in gluon.utils.split_and_load(batch, ctx):
-                    parallel.put(x)
-                losses = [parallel.get() for _ in ctx]
+            for x in gluon.utils.split_and_load(batch, ctx):
+                parallel.put(x)
+            losses = [parallel.get() for _ in ctx]
             trainer.step()
     """
     def forward_backward(self, x):
@@ -86,19 +79,11 @@ class Parallel:
         net = ParallelNet()
         ctx = [mx.gpu(0), mx.gpu(1)]
         parallel = Parallel(len(ctx), net)
-        initialized = False
 
         for batch in batches:
-            if not initialized:
-                # The first batch cannot be forwarded in parallel
-                losses = []
-                for x in gluon.utils.split_and_load(batch, ctx):
-                    losses.append(parallel.forward_backward(x))
-                initialized = True
-            else:
-                for x in gluon.utils.split_and_load(batch, ctx):
-                    parallel.put(x)
-                losses = [parallel.get() for _ in ctx]
+            for x in gluon.utils.split_and_load(batch, ctx):
+                parallel.put(x)
+            losses = [parallel.get() for _ in ctx]
             trainer.step()
 
     Parameters
@@ -108,6 +93,10 @@ class Parallel:
     parallelizable :
         Parallelizable net whose `forward` and `backward` methods are invoked
         by multiple worker threads.
+    serial_init : bool, default True
+        Execute the first `num_workers` inputs in main thread, so that the `Block`
+        used in `parallizable` is initialized serially. Initialize a `Block` with
+        multiple threads may cause unexpected behavior.
     """
 
     class _StopSignal:
@@ -115,12 +104,14 @@ class Parallel:
         def __init__(self, msg):
             self._msg = msg
 
-    def __init__(self, num_workers, parallizable):
+    def __init__(self, num_workers, parallizable, serial_init=True):
         self._in_queue = queue.Queue(-1)
         self._out_queue = queue.Queue(-1)
         self._num_workers = num_workers
+        assert self._num_workers > 0, 'num_workers must be positive'
         self._threads = []
         self._parallizable = parallizable
+        self._num_serial = num_workers if serial_init else 0
 
         def _worker(in_queue, out_queue, parallel):
             while True:
@@ -139,7 +130,12 @@ class Parallel:
     def put(self, x):
         """ Assign input `x` to an available worker and invoke
         `parallizable.forward_backward` with x. """
-        self._in_queue.put(x)
+        if self._num_serial > 0:
+            self._num_serial -= 1
+            out = self._parallizable.forward_backward(x)
+            self._out_queue.put(out)
+        else:
+            self._in_queue.put(x)
 
     def get(self):
         """ Get an output of previous `parallizable.forward_backward` calls.

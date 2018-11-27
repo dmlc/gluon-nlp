@@ -286,7 +286,6 @@ def train():
     average_start = (len(train_data_loader) // grad_interval) * (args.epochs - args.average_start)
     average_param_dict = None
     model.collect_params().zero_grad()
-    initialized = False
     parallel = Parallel(num_ctxs, parallel_model)
     for epoch_id in range(args.epochs):
         log_avg_loss = 0
@@ -306,15 +305,9 @@ def train():
             seqs = [[seq.as_in_context(context) for seq in shard]
                     for context, shard in zip(ctx, seqs)]
             Ls = []
-            if initialized:
-                for seq in seqs:
-                    parallel.put((seq, args.batch_size))
-                Ls = [parallel.get() for _ in range(len(ctx))]
-            else:
-                # serial forward to initialize the block
-                for seq in seqs:
-                    Ls.append(parallel_model.forward_backward((seq, args.batch_size)))
-                initialized = True
+            for seq in seqs:
+                parallel.put((seq, args.batch_size))
+            Ls = [parallel.get() for _ in range(len(ctx))]
             src_wc = src_wc.asscalar()
             tgt_wc = tgt_wc.asscalar()
             loss_denom += tgt_wc - bs

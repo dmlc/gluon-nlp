@@ -1218,20 +1218,13 @@ class ParallelTransformer(Parallelizable):
         self._label_smoothing = label_smoothing
         self._loss = loss_function
 
-    def forward(self, src_seq, tgt_seq, src_valid_length, tgt_valid_length, batch_size):
+    def forward_backward(self, x):
+        (src_seq, tgt_seq, src_valid_length, tgt_valid_length), batch_size = x
         with mx.autograd.record():
             out, _ = self._model(src_seq, tgt_seq[:, :-1],
                                  src_valid_length, tgt_valid_length - 1)
             smoothed_label = self._label_smoothing(tgt_seq[:, 1:])
             ls = self._loss(out, smoothed_label, tgt_valid_length - 1).sum()
             ls = (ls * (tgt_seq.shape[1] - 1)) / batch_size / 100.0
-        return ls
-
-    def backward(self, loss):
-        loss.backward()
-
-    def forward_backward(self, x):
-        (src_seq, tgt_seq, src_valid_length, tgt_valid_length), batch_size = x
-        ls = self.forward(src_seq, tgt_seq, src_valid_length, tgt_valid_length, batch_size)
-        self.backward(ls)
+        ls.backward()
         return ls
