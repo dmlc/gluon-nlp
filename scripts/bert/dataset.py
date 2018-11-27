@@ -18,7 +18,10 @@ __all__ = ['MRPCDataset', 'ClassificationTransform']
 
 import os
 import numpy as np
-import tokenization
+try:
+    from tokenization import convert_to_unicode
+except ImportError:
+    from .tokenization import convert_to_unicode
 from gluonnlp.data import TSVDataset
 from gluonnlp.data.registry import register
 
@@ -36,7 +39,7 @@ class MRPCDataset(TSVDataset):
         https://gist.github.com/W4ngatang/60c2bdb54d156a41194446737ce03e2e
     """
     def __init__(self, segment='train',
-                 root=os.path.join(os.environ['GLUE_DIR'], 'MRPC')):
+                 root=os.path.join(os.getenv('GLUE_DIR', 'glue_data'), 'MRPC')):
         self._supported_segments = ['train', 'dev', 'test']
         assert segment in self._supported_segments, 'Unsupported segment: %s'%segment
         path = os.path.join(root, '%s.tsv'%segment)
@@ -144,12 +147,12 @@ class ClassificationTransform(object):
         # convert to unicode
         text_a = line[0]
         label = line[-1]
-        text_a = tokenization.convert_to_unicode(text_a)
-        label = tokenization.convert_to_unicode(label)
+        text_a = convert_to_unicode(text_a)
+        label = convert_to_unicode(label)
         if self._pair:
             assert len(line) == 3
             text_b = line[1]
-            text_b = tokenization.convert_to_unicode(text_b)
+            text_b = convert_to_unicode(text_b)
 
         tokens_a = self._tokenizer.tokenize(text_a)
         tokens_b = None
