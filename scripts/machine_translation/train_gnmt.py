@@ -73,7 +73,7 @@ parser.add_argument('--num_layers', type=int, default=2, help='number of layers 
                                                               ' and decoder, default is 2.')
 parser.add_argument('--num_bi_layers', type=int, default=1,
                     help='number of bidirectional layers in the encoder and decoder, default is 1.')
-parser.add_argument('--batch_size', type=int, default=16, help='Batch size, default is 128.')
+parser.add_argument('--batch_size', type=int, default=128, help='Batch size, default is 128.')
 parser.add_argument('--beam_size', type=int, default=4, help='Beam size, default is 4.')
 parser.add_argument('--lp_alpha', type=float, default=1.0,
                     help='Alpha used in calculating the length penalty, default is 1.0.')
@@ -121,18 +121,6 @@ data_val = gluon.data.SimpleDataset([(ele[0], ele[1], len(ele[0]), len(ele[1]), 
 data_test = gluon.data.SimpleDataset([(ele[0], ele[1], len(ele[0]), len(ele[1]), i)
                                       for i, ele in enumerate(data_test)])
 
-# if args.gpus is None:
-#     ctx = mx.cpu()
-#     context = [mx.cpu(0), mx.cpu(1)]
-#     print('Use CPU')
-# elif args.gpus == "0":
-#     ctx = mx.gpu(0)
-#     context = [ctx]
-# else:
-#     ctx = mx.gpu(0)
-#     context = [mx.gpu(int(x)) for x in arg    s.gpus.split(',')]
-
-
 context = [mx.cpu()] if args.gpus is None or args.gpus == '' else \
     [mx.gpu(int(x)) for x in args.gpus.split(',')]
 ctx = context[0]
@@ -146,10 +134,6 @@ encoder, decoder = get_gnmt_encoder_decoder(hidden_size=args.num_hidden,
 
 model = NMTModel(src_vocab=src_vocab, tgt_vocab=tgt_vocab, encoder=encoder, decoder=decoder,
                  embed_size=args.num_embedding, prefix='gnmt_')
-
-# save_path = os.path.join(args.save_dir, 'valid_best.params' )
-# logging.info('|-----load epoch parameters from {}'.format(save_path))
-# model.load_parameters(save_path, context)
 
 model.initialize(init=mx.init.Uniform(0.1), ctx=ctx)
 static_alloc = True
