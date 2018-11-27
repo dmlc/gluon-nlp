@@ -245,7 +245,6 @@ def setup(app):
         'auto_doc_ref': True
             }, True)
     app.add_transform(AutoStructify)
-    app.add_javascript('copybutton.js')
     app.add_javascript('google_analytics.js')
 
 
