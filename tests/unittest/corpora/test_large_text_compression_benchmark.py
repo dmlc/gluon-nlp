@@ -20,10 +20,12 @@
 from __future__ import print_function
 
 import itertools
+import pytest
 
 import gluonnlp as nlp
 
 
+@pytest.mark.remote_required
 def test_text8():
     data = nlp.data.Text8()
     freq = nlp.data.utils.Counter(itertools.chain.from_iterable(data))
@@ -32,6 +34,7 @@ def test_text8():
     assert freq['english'] == 11868
 
 
+@pytest.mark.remote_required
 def test_fil9():
     data = nlp.data.Fil9()
     freq = nlp.data.utils.Counter(itertools.chain.from_iterable(data))

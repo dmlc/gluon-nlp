@@ -21,11 +21,13 @@ from __future__ import print_function
 
 import json
 import os
+import pytest
 
 import gluonnlp as nlp
 import mxnet as mx
 
 
+@pytest.mark.remote_required
 def test_wikitext2():
     batch_size = 80
     seq_len = 35
@@ -97,6 +99,7 @@ def test_wikitext2():
     assert batched_data[:].shape == (26107, batch_size)
 
 
+@pytest.mark.remote_required
 def test_wikitext2_raw():
     train = nlp.data.WikiText2Raw(
         segment='train', root=os.path.join('tests', 'data', 'wikitext-2'))
@@ -116,6 +119,7 @@ def test_wikitext2_raw():
     assert test_freq['a'.encode('utf-8')[0]] == 81512
 
 
+@pytest.mark.remote_required
 def test_wikitext103_raw():
     train = nlp.data.WikiText103Raw(
         segment='train', root=os.path.join('tests', 'data', 'wikitext-103'))

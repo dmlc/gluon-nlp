@@ -26,7 +26,7 @@ def find_version(*file_paths):
 
 readme = io.open('README.rst', encoding='utf-8').read()
 
-VERSION = find_version('gluonnlp', '__init__.py')
+VERSION = find_version('src', 'gluonnlp', '__init__.py')
 
 requirements = [
     'numpy',
@@ -44,10 +44,11 @@ setup(
     license='Apache-2.0',
 
     # Package info
-    packages=find_packages(exclude=(
+    packages=find_packages(where="src", exclude=(
         'tests',
         'scripts',
     )),
+    package_dir={"": "src"},
     zip_safe=True,
     include_package_data=True,
     install_requires=requirements,
@@ -55,10 +56,10 @@ setup(
         'extras': [
             'spacy',
             'nltk==3.2.5',
-            'sacremoses',
             'scipy',
-            'numba',
+            'numba>=0.40.1',
             'jieba',
+            'sentencepiece',
         ],
         'dev': [
             'pytest',

@@ -119,3 +119,9 @@ docs/examples/*.zip
 docs/examples/*/*.ipynb
 
 conda
+
+# temp files
+*.swp
+
+# vscode
+.vscode

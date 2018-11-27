@@ -1,11 +1,13 @@
+import os
 import subprocess
+import time
 
 import pytest
-import time
 
 from ..machine_translation.dataset import TOY
 
 
+@pytest.mark.remote_required
 def test_toy():
     # Test toy dataset
     train_en_de = TOY(segment='train', root='tests/data/translation_test')
@@ -30,25 +32,73 @@ def test_toy():
 
 
 @pytest.mark.serial
-def test_embedding():
-    process = subprocess.check_call([
-        'python', './scripts/word_embeddings/train_fasttext.py', '--gpu', '0',
-        '--epochs', '1', '--optimizer', 'sgd', '--ngram-buckets', '100',
-        '--max-vocab-size', '100', '--batch-size', '64'
-    ])
+@pytest.mark.remote_required
+@pytest.mark.gpu
+@pytest.mark.parametrize('model', ['skipgram', 'cbow'])
+@pytest.mark.parametrize('fasttext', [True, False])
+def test_skipgram_cbow(model, fasttext):
+    cmd = [
+        'python', './scripts/word_embeddings/train_sg_cbow.py', '--gpu', '0',
+        '--epochs', '2', '--model', model, '--data', 'toy', '--batch-size',
+        '64']
+    if fasttext:
+        cmd += ['--ngram-buckets', '1000']
+    else:
+        cmd += ['--ngram-buckets', '0']
+    subprocess.check_call(cmd)
+    time.sleep(5)
+
+
+def test_glove():
+    path = os.path.dirname(os.path.abspath(os.path.expanduser(__file__)))
+    vocab = os.path.join(path, 'word_embeddings/glove/vocab.txt')
+    cooccur = os.path.join(path, 'word_embeddings/glove/cooccurrences.npz')
+    cmd = [
+        'python', './scripts/word_embeddings/train_glove.py', cooccur, vocab,
+        '--batch-size', '2', '--epochs', '2']
+    subprocess.check_call(cmd)
     time.sleep(5)
 
 
 @pytest.mark.serial
-def test_embedding_evaluate_pretrained():
-    process = subprocess.check_call([
+@pytest.mark.remote_required
+@pytest.mark.parametrize('fasttextloadngrams', [True, False])
+def test_embedding_evaluate_pretrained(fasttextloadngrams):
+    cmd = [
         'python', './scripts/word_embeddings/evaluate_pretrained.py',
         '--embedding-name', 'fasttext', '--embedding-source', 'wiki.simple'
-    ])
+    ]
+    if fasttextloadngrams:
+        cmd.append('--fasttext-load-ngrams')
+
+    subprocess.check_call(cmd)
     time.sleep(5)
 
 
 @pytest.mark.serial
+@pytest.mark.remote_required
+@pytest.mark.parametrize('evaluatanalogies', [True, False])
+@pytest.mark.parametrize('maxvocabsize', [None, 16])
+def test_embedding_evaluate_from_path(evaluatanalogies, maxvocabsize):
+    path = os.path.dirname(os.path.abspath(os.path.expanduser(__file__)))
+    path = os.path.join(
+        path, '../../tests/unittest/train/test_embedding/lorem_ipsum.bin')
+    cmd = [
+        'python', './scripts/word_embeddings/evaluate_pretrained.py',
+        '--embedding-path', path]
+    if evaluatanalogies:
+        cmd += ['--analogy-datasets', 'GoogleAnalogyTestSet']
+    else:
+        cmd += ['--analogy-datasets']
+    if maxvocabsize is not None:
+        cmd += ['--max-vocab-size', str(maxvocabsize)]
+    subprocess.check_call(cmd)
+    time.sleep(5)
+
+
+@pytest.mark.serial
+@pytest.mark.remote_required
+@pytest.mark.gpu
 def test_sentiment_analysis_finetune():
     process = subprocess.check_call(['python', './scripts/sentiment_analysis/finetune_lm.py',
                                      '--gpu', '0', '--batch_size', '32', '--bucket_type', 'fixed',
@@ -63,7 +113,17 @@ def test_sentiment_analysis_finetune():
                                      '--save-prefix', 'imdb_lstm_200'])
     time.sleep(5)
 
+@pytest.mark.serial
+@pytest.mark.remote_required
+@pytest.mark.gpu
+def test_sentiment_analysis_textcnn():
+    process = subprocess.check_call(['python', './scripts/sentiment_analysis/sentiment_analysis_cnn.py',
+                                     '--gpu', '0', '--batch_size', '50', '--epochs', '1',
+                                     '--dropout', '0.5', '--lr', '0.0001', '--model_mode', 'rand',
+                                     '--data_name', 'MR', '--save-prefix', 'sa-model'])
+    time.sleep(5)
 
+@pytest.mark.remote_required
 def test_sampling():
     process = subprocess.check_call(['python', './scripts/text_generation/sequence_sampling.py',
                                      '--use-beam-search', '--bos', 'I love it', '--beam_size', '2',
@@ -76,6 +136,8 @@ def test_sampling():
 
 
 @pytest.mark.serial
+@pytest.mark.remote_required
+@pytest.mark.gpu
 def test_gnmt():
     process = subprocess.check_call(['python', './scripts/machine_translation/train_gnmt.py', '--dataset', 'TOY',
                                      '--src_lang', 'en', '--tgt_lang', 'de', '--batch_size', '32',
@@ -86,6 +148,8 @@ def test_gnmt():
 
 
 @pytest.mark.serial
+@pytest.mark.remote_required
+@pytest.mark.gpu
 def test_transformer():
     process = subprocess.check_call(['python', './scripts/machine_translation/train_transformer.py',
                                      '--dataset', 'TOY', '--src_lang', 'en', '--tgt_lang', 'de',

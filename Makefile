@@ -22,7 +22,7 @@ flake8:
 	flake8 . --exclude conda --count --select=E901,E999,F821,F822,F823 --show-source --statistics
 
 pylint:
-	pylint --rcfile=$(ROOTDIR)/.pylintrc gluonnlp scripts/*/*.py
+	pylint --rcfile=$(ROOTDIR)/.pylintrc src/gluonnlp scripts/*/*.py
 
 restruc:
 	python setup.py check --restructuredtext --strict
@@ -33,7 +33,7 @@ lint:
 	make restruc
 
 docs: release
-	make -C docs html SPHINXOPTS=-W
+	make -C docs doctest html SPHINXOPTS=-W
 	for f in $(shell find docs/examples -type f -name '*.md' -print) ; do \
 		FILE=`echo $$f | sed 's/docs\///g'` ; \
 		DIR=`dirname $$FILE` ; \
@@ -52,9 +52,10 @@ docs: release
 		echo "processing" $$BASENAME ; \
 		sed -i "s/docs\/model_zoo/scripts/g" $$TARGET_HTML; \
 	done;
+	sed -i.bak 's/33\,150\,243/23\,141\,201/g' docs/_build/html/_static/material-design-lite-1.3.0/material.blue-deep_orange.min.css;
 
 clean:
-	git clean -ff -d -x --exclude="$(ROOTDIR)/tests/externaldata/*" --exclude="$(ROOTDIR)/tests/data/*" --exclude="$(ROOTDIR)/conda"
+	git clean -ff -d -x --exclude="$(ROOTDIR)/tests/externaldata/*" --exclude="$(ROOTDIR)/tests/data/*" --exclude="$(ROOTDIR)/conda/"
 
 clean_doc:
 	make -C docs clean
@@ -70,10 +71,12 @@ compile_notebooks:
 	done;
 
 dist_scripts:
-	find scripts/* -type d -prune | grep -v 'tests\|__pycache__' | xargs -t -n 1 -I{} zip -r {}.zip {}
+	cd scripts && \
+	find * -type d -prune | grep -v 'tests\|__pycache__' | xargs -t -n 1 -I{} zip -r {}.zip {}
 
 dist_notebooks: compile_notebooks
-	find docs/examples/* -type d -prune | grep -v 'tests\|__pycache__' | xargs -t -n 1 -I{} zip -r {}.zip {} -x "*.md"
+	cd docs/examples && \
+	find * -type d -prune | grep -v 'tests\|__pycache__' | xargs -t -n 1 -I{} zip -r {}.zip {} -x "*.md" -x "__pycache__" -x "*.pyc" -x "*.txt" -x "*.log" -x "*.params" -x "*.npz" -x "*.json"
 
 test:
 	py.test -v --capture=no --durations=0  tests/unittest scripts

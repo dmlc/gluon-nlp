@@ -22,11 +22,13 @@ from __future__ import print_function
 import itertools
 import json
 import os
+import pytest
 
 import gluonnlp as nlp
 import mxnet as mx
 
 
+@pytest.mark.remote_required
 def test_gbw():
     batch_size = 80
     seq_len = 35

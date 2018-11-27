@@ -39,6 +39,7 @@ def test_sharded_data_loader():
                                                       Y[(i*num_shards+j)*2-num_shards:
                                                         (i*num_shards+j+1)*2-num_shards])
 
+@pytest.mark.remote_required
 def test_sharded_data_loader_record_file():
     # test record file
     url_format = 'https://apache-mxnet.s3-accelerate.amazonaws.com/gluon/dataset/pikachu/{}'
