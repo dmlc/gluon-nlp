@@ -235,8 +235,6 @@ def train():
             grads = [p.grad(ctx) for p in model.collect_params().values()]
             gnorm = gluon.utils.clip_global_norm(grads, args.clip)
             trainer.step(1)
-            src_wc = src_valid_length.sum().asscalar()
-            tgt_wc = (tgt_valid_length - 1).sum().asscalar()
 
             # calculate the loss at all contexts
             step_loss = sum([L.asscalar() for L in LS])
