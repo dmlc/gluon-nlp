@@ -146,6 +146,6 @@ class Parallel(object):
     def __del__(self):
         for thread in self._threads:
             if thread.is_alive():
-                self._in_queue.put(self._StopSignal("stop"))
+                self._in_queue.put(self._StopSignal('stop'))
         for thread in self._threads:
             thread.join(10)
