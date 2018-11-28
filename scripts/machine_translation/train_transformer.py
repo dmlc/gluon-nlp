@@ -202,7 +202,8 @@ loss_function.hybridize(static_alloc=static_alloc)
 test_loss_function = SoftmaxCEMaskedLoss()
 test_loss_function.hybridize(static_alloc=static_alloc)
 
-parallel_model = ParallelTransformer(model, label_smoothing, loss_function)
+rescale_loss = 100
+parallel_model = ParallelTransformer(model, label_smoothing, loss_function, rescale_loss)
 detokenizer = nlp.data.SacreMosesDetokenizer()
 
 

@@ -1212,11 +1212,24 @@ def transformer_en_de_512(dataset_name=None, src_vocab=None, tgt_vocab=None, pre
 
 
 class ParallelTransformer(Parallelizable):
-    """ Data parallel transformer. """
-    def __init__(self, model, label_smoothing, loss_function):
+    """ Data parallel transformer.
+
+    Parameters
+    ----------
+    model : Block
+        The transformer model.
+    label_smoothing: Block
+        The block to perform label smoothing.
+    loss_function : Block
+        The loss function to optimizer.
+    rescale_loss : float
+        The scale to which the loss is rescaled to avoid gradient explosion.
+    """
+    def __init__(self, model, label_smoothing, loss_function, rescale_loss):
         self._model = model
         self._label_smoothing = label_smoothing
         self._loss = loss_function
+        self._rescale_loss = rescale_loss
 
     def forward_backward(self, x):
         (src_seq, tgt_seq, src_valid_length, tgt_valid_length), batch_size = x
@@ -1225,6 +1238,6 @@ class ParallelTransformer(Parallelizable):
                                  src_valid_length, tgt_valid_length - 1)
             smoothed_label = self._label_smoothing(tgt_seq[:, 1:])
             ls = self._loss(out, smoothed_label, tgt_valid_length - 1).sum()
-            ls = (ls * (tgt_seq.shape[1] - 1)) / batch_size / 100.0
+            ls = (ls * (tgt_seq.shape[1] - 1)) / batch_size / self._rescale_loss
         ls.backward()
         return ls
