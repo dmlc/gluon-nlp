@@ -59,51 +59,67 @@ mx.random.seed(10000)
 
 parser = argparse.ArgumentParser(description='Neural Machine Translation Example.'
                                              'We train the Google NMT model')
-parser.add_argument('--dataset', type=str, default='IWSLT2015', help='Dataset to use, default is IWSLT2015.')
-parser.add_argument('--src_lang', type=str, default='en', help='Source language, default is en.')
-parser.add_argument('--tgt_lang', type=str, default='vi', help='Target language, default is vi.')
-parser.add_argument('--epochs', type=int, default=40, help='upper epoch limit, , default is 40.')
-parser.add_argument('--num_hidden', type=int, default=128, help='Dimension of the rnn hidden states. default is 128.')
-parser.add_argument('--num_embedding', type=int, default=128, help='Dimension of the embedding, default is 128. '
-                                                                'vectors and states.')
-parser.add_argument('--attention_type', type=str, default='dot', help=' Attention type, default is dot.')
+parser.add_argument('--dataset', type=str, default='IWSLT2015', help='Dataset to use, '
+                                                                     'default is IWSLT2015.')
+parser.add_argument('--src_lang', type=str, default='en', help='Source language, '
+                                                               'default is en.')
+parser.add_argument('--tgt_lang', type=str, default='vi', help='Target language, '
+                                                               'default is vi.')
+parser.add_argument('--epochs', type=int, default=40, help='upper epoch limit, , '
+                                                           'default is 40.')
+parser.add_argument('--num_hidden', type=int, default=128,
+                    help='Dimension of the rnn hidden states. default is 128.')
+parser.add_argument('--num_embedding', type=int, default=128,
+                    help='Dimension of the embedding, default is 128. vectors and states.')
+parser.add_argument('--attention_type', type=str, default='scaled_luong',
+                    help=' Attention type, default \'is scaled_luong\'.')
 parser.add_argument('--dropout', type=float, default=0.2,
                     help='dropout applied to layers (0 = no dropout), default is 0.2.')
 parser.add_argument('--num_layers', type=int, default=2, help='number of layers in the encoder'
                                                               ' and decoder, default is 2.')
 parser.add_argument('--num_bi_layers', type=int, default=1,
-                    help='number of bidirectional layers in the encoder and decoder, default is 1.')
+                    help='number of bidirectional layers in the encoder and decoder, '
+                         'default is 1.')
 parser.add_argument('--batch_size', type=int, default=128, help='Batch size, default is 128.')
 parser.add_argument('--beam_size', type=int, default=4, help='Beam size, default is 4.')
 parser.add_argument('--lp_alpha', type=float, default=1.0,
                     help='Alpha used in calculating the length penalty, default is 1.0.')
-parser.add_argument('--lp_k', type=int, default=5, help='K used in calculating the length penalty, default is 5.')
-parser.add_argument('--test_batch_size', type=int, default=32, help='Test batch size, default is 32.')
-parser.add_argument('--num_buckets', type=int, default=5, help='Bucket number, default is 5.')
+parser.add_argument('--lp_k', type=int, default=5,
+                    help='K used in calculating the length penalty, default is 5.')
+parser.add_argument('--test_batch_size', type=int, default=32,
+                    help='Test batch size, default is 32.')
+parser.add_argument('--num_buckets', type=int, default=5,
+                    help='Bucket number, default is 5.')
 parser.add_argument('--bucket_scheme', type=str, default='constant',
                     help='Strategy for generating bucket keys. It supports: '
                          '"constant": all the buckets have the same width; '
                          '"linear": the width of bucket increases linearly; '
                          '"exp": the width of bucket increases exponentially'
                          'default is "constant".')
-parser.add_argument('--bucket_ratio', type=float, default=0.0, help='Ratio for increasing the '
-                                                                    'throughput of the bucketing'
-                                                                    'default is 0.0.')
+parser.add_argument('--bucket_ratio', type=float, default=0.0,
+                    help='Ratio for increasing the throughput of the bucketing '
+                         'default is 0.0.')
 parser.add_argument('--src_max_len', type=int, default=50, help='Maximum length of the source '
                                                                 'sentence, default is 50.')
 parser.add_argument('--tgt_max_len', type=int, default=50, help='Maximum length of the target '
                                                                 'sentence, default is 50.')
-parser.add_argument('--optimizer', type=str, default='adam', help='optimization algorithm, default is adam.')
-parser.add_argument('--lr', type=float, default=1E-3, help='Initial learning rate, default is 1E-3.')
+parser.add_argument('--optimizer', type=str, default='adam',
+                    help='optimization algorithm, default is adam.')
+parser.add_argument('--lr', type=float, default=1E-3,
+                    help='Initial learning rate, default is 1E-3.')
 parser.add_argument('--lr_update_factor', type=float, default=0.5,
                     help='Learning rate decay factor, default is 0.5.')
-parser.add_argument('--clip', type=float, default=5.0, help='gradient clipping, default is 5.0.')
+parser.add_argument('--clip', type=float, default=5.0,
+                    help='gradient clipping, default is 5.0.')
 parser.add_argument('--log_interval', type=int, default=100, metavar='N',
                     help='report interval, default is 100.')
 parser.add_argument('--save_dir', type=str, default='out_dir',
-                    help='directory path to save the final model and training log,, default is \'out_dir\'.')
+                    help='directory path to save the final model and training log, '
+                         'default is \'out_dir\'.')
 parser.add_argument('--gpus', type=str, default=None,
-                    help='id of the gpus to use, eg:0,1,2,3 means use 4 GPUs. Set it to empty means to use cpu.')
+                    help='id of the gpus to use, eg:0,1,2,3 means use 4 GPUs. '
+                         'Set it to empty means to use cpu.')
+
 args = parser.parse_args()
 print(args)
 logging_config(args.save_dir)
@@ -135,7 +151,7 @@ encoder, decoder = get_gnmt_encoder_decoder(hidden_size=args.num_hidden,
 model = NMTModel(src_vocab=src_vocab, tgt_vocab=tgt_vocab, encoder=encoder, decoder=decoder,
                  embed_size=args.num_embedding, prefix='gnmt_')
 
-model.initialize(init=mx.init.Uniform(0.1), ctx=ctx)
+model.initialize(init=mx.init.Uniform(0.1), ctx=context)
 static_alloc = True
 model.hybridize(static_alloc=static_alloc)
 logging.info(model)
@@ -153,11 +169,9 @@ loss_function.hybridize(static_alloc=static_alloc)
 
 def evaluate(data_loader):
     """Evaluate given the data loader
-
     Parameters
     ----------
     data_loader : DataLoader
-
     Returns
     -------
     avg_loss : float
@@ -207,15 +221,15 @@ def train():
     best_valid_bleu = 0.0
     for epoch_id in range(args.epochs):
         log_avg_loss = 0
-        log_avg_gnorm = 0
         log_wc = 0
+        loss_denom = 0
         log_start_time = time.time()
         for batch_id, seqs \
                 in enumerate(train_data_loader):
 
             src_wc, tgt_wc, bs = np.sum([(shard[2].sum(), shard[3].sum(), shard[0].shape[0])
                                          for shard in seqs], axis=0)
-
+            loss_denom += tgt_wc - bs
             seqs = [[seq.as_in_context(_context) for seq in shard]
                     for _context, shard in zip(context, seqs)]
             src_wc = src_wc.asscalar()
@@ -227,34 +241,30 @@ def train():
                     out, _ = model(src_seq, tgt_seq[:, :-1], src_valid_length, tgt_valid_length - 1)
                     loss = loss_function(out, tgt_seq[:, 1:], tgt_valid_length - 1).mean()
                     loss = loss * (tgt_seq.shape[1] - 1) / (tgt_valid_length - 1).mean()
+
                     LS.append(loss)
 
             for L in LS:
                 L.backward()
 
-            grads = [p.grad(ctx) for p in model.collect_params().values()]
-            gnorm = gluon.utils.clip_global_norm(grads, args.clip)
             trainer.step(1)
 
             # calculate the loss at all contexts
             step_loss = sum([L.asscalar() for L in LS])
             log_avg_loss += step_loss / len(context)
-
-            log_avg_gnorm += gnorm
             log_wc += src_wc + tgt_wc
             if (batch_id + 1) % args.log_interval == 0:
                 wps = log_wc / (time.time() - log_start_time)
-                logging.info('[Epoch {} Batch {}/{}] loss={:.4f}, ppl={:.4f}, gnorm={:.4f}, '
+                logging.info('[Epoch {} Batch {}/{}] loss={:.4f}, ppl={:.4f},  '
                              'throughput={:.2f}K wps, wc={:.2f}K'
                              .format(epoch_id, batch_id + 1, len(train_data_loader),
                                      log_avg_loss / args.log_interval,
                                      np.exp(log_avg_loss / args.log_interval),
-                                     log_avg_gnorm / args.log_interval,
                                      wps / 1000, log_wc / 1000))
                 log_start_time = time.time()
                 log_avg_loss = 0
-                log_avg_gnorm = 0
                 log_wc = 0
+
         valid_loss, valid_translation_out = evaluate(val_data_loader)
         valid_bleu_score, _, _, _, _ = compute_bleu([val_tgt_sentences], valid_translation_out)
         logging.info('[Epoch {}] valid Loss={:.4f}, valid ppl={:.4f}, valid bleu={:.2f}'
