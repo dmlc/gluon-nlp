@@ -30,7 +30,11 @@ tune BERT model for sentence classification.
 
 ## Preparation
 
-We start with some usual preparation such as importing libraries
+To run this tutorial locally, please [install gluonnlp](http://gluon-nlp.mxnet.io/#installation)
+and click the [download button](http://gluon-nlp.mxnet.io/examples/sentence_embedding/bert.html)
+at the top to get all related code.
+
+Then we start with some usual preparation such as importing libraries
 and setting the environment.
 
 ### Load MXNet and GluonNLP
@@ -230,8 +234,9 @@ In this tutorial, we show how to fine-tune a sentence pair
 classification model with pre-trained BERT parameters. In GluonNLP, this can be
 done with just a few simple steps: apply BERT-style data transformation to
 preprocess the data, automatically download the pre-trained model, and feed the
-transformed data into the model. Please visit [here](../../model_zoo/bert/index.rst) to see
-the complete fine-tuning scripts.
+transformed data into the model. For demonstration purpose, we skipped the warmup learning rate
+schedule and validation on dev dataset used in the original implementation. Please visit
+[here](../../model_zoo/bert/index.rst) for the complete fine-tuning scripts.
 
 ## References
 
