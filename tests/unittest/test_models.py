@@ -90,6 +90,8 @@ def test_transformer_models():
         del model
         mx.nd.waitall()
 
+@pytest.mark.serial
+@pytest.mark.remote_required
 def test_pretrained_bert_models():
     models = ['bert_12_768_12', 'bert_24_1024_16']
     pretrained = {'bert_12_768_12': ['book_corpus_wiki_en_cased', 'book_corpus_wiki_en_uncased', 'wiki_multilingual'],
@@ -120,6 +122,54 @@ def test_pretrained_bert_models():
             del model
             mx.nd.waitall()
 
+@pytest.mark.serial
+@pytest.mark.remote_required
+def test_bert_models():
+    models = ['bert_12_768_12', 'bert_24_1024_16']
+    units = [768, 1024]
+    dataset = 'book_corpus_wiki_en_uncased'
+    vocab_size = 30522
+    batch_size = 2
+    seq_len = 3
+    ones = mx.nd.ones((batch_size, seq_len))
+    valid_length = mx.nd.ones((batch_size, ))
+    kwargs = [{'use_pooler' : False, 'use_decoder' : False, 'use_classifier' : False},
+              {'use_pooler' : True, 'use_decoder' : False, 'use_classifier' : False},
+              {'use_pooler' : True, 'use_decoder' : True, 'use_classifier' : False},
+              {'use_pooler' : True, 'use_decoder' : True, 'use_classifier' : True}]
+    expected_shapes = [[(batch_size, seq_len, -1)],
+                       [(batch_size, seq_len, -1), (batch_size, -1)],
+                       [(batch_size, seq_len, -1), (batch_size, -1), (batch_size, vocab_size)],
+                       [(batch_size, seq_len, -1), (batch_size, -1), (batch_size, 2), (batch_size, vocab_size)]
+                      ]
+    def infer_shape(shapes, unit):
+        inferred_shapes = []
+        for shape in shapes:
+            inferred_shape = list(shape)
+            if inferred_shape[-1] == -1:
+                inferred_shape[-1] = unit
+            inferred_shapes.append(tuple(inferred_shape))
+        return inferred_shapes
+
+    def get_shapes(output):
+        if isinstance(output, (list, tuple)):
+            return [out.shape for out in output]
+        return [output.shape]
+
+    for model_name, unit in zip(models, units):
+        eprint('testing forward for %s' % model_name)
+        for kwarg, expected_shape in zip(kwargs, expected_shapes):
+            expected_shape = infer_shape(expected_shape, unit)
+            model, _ = nlp.model.get_model(model_name, dataset_name=dataset,
+                                           pretrained=False, root='tests/data/model/',
+                                           **kwarg)
+            model.initialize()
+            output = model(ones, ones, valid_length)
+            out_shapes = get_shapes(output)
+            assert out_shapes == expected_shape, (out_shapes, expected_shape)
+            output[0].wait_to_read()
+            del model
+            mx.nd.waitall()
 
 @pytest.mark.serial
 @pytest.mark.remote_required
