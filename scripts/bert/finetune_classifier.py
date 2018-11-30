@@ -47,7 +47,7 @@ from dataset import MRPCDataset, ClassificationTransform
 
 np.random.seed(0)
 random.seed(0)
-mx.random.seed(0)
+mx.random.seed(2)
 logging.getLogger().setLevel(logging.DEBUG)
 
 parser = argparse.ArgumentParser(description='Neural Machine Translation Example.'
@@ -78,8 +78,8 @@ tokenizer = FullTokenizer(vocabulary, do_lower_case=True)
 
 model = BERTClassifier(bert, dropout=0.1)
 model.classifier.initialize(init=mx.init.Normal(0.02), ctx=ctx)
-model.hybridize(static_alloc=True)
 logging.info(model)
+model.hybridize(static_alloc=True)
 
 loss_function = gluon.loss.SoftmaxCELoss()
 loss_function.hybridize(static_alloc=True)
