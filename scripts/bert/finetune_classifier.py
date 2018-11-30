@@ -69,7 +69,7 @@ batch_size = args.batch_size
 test_batch_size = args.test_batch_size
 lr = args.lr
 
-ctx = mx.cpu() if args.gpu is None or args.gpu == '' else mx.gpu()
+ctx = mx.cpu() if not args.gpu else mx.gpu()
 
 bert, vocabulary = bert_12_768_12(dataset_name='book_corpus_wiki_en_uncased',
                                   pretrained=True, ctx=ctx, use_pooler=True,
@@ -146,8 +146,8 @@ def train():
             trainer.set_learning_rate(new_lr)
             with mx.autograd.record():
                 input_ids, valid_length, type_ids, label = seqs
-                out = model(input_ids.as_in_context(mx.gpu()), type_ids.as_in_context(mx.gpu()),
-                            valid_length.astype('float32').as_in_context(mx.gpu()))
+                out = model(input_ids.as_in_context(ctx), type_ids.as_in_context(ctx),
+                            valid_length.astype('float32').as_in_context(ctx))
                 ls = loss_function(out, label.as_in_context(mx.gpu())).mean()
             ls.backward()
             grads = [p.grad(c) for p in differentiable_params for c in [mx.gpu()]]

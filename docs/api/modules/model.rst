@@ -48,6 +48,8 @@ Bidirectional Encoder Representations from Transformers
     BERTEncoder
     BERTEncoderCell
     BERTPositionwiseFFN
+    bert_12_768_12
+    bert_24_1024_16
 
 Convolutional Encoder
 ----------------------
