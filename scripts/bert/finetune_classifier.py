@@ -103,9 +103,9 @@ def evaluate():
     for _, seqs in enumerate(bert_dataloader_dev):
         Ls = []
         input_ids, valid_len, type_ids, label = seqs
-        out = model(input_ids.as_in_context(mx.gpu()), type_ids.as_in_context(mx.gpu()),
-                    valid_len.astype('float32').as_in_context(mx.gpu()))
-        ls = loss_function(out, label.as_in_context(mx.gpu())).mean()
+        out = model(input_ids.as_in_context(ctx), type_ids.as_in_context(ctx),
+                    valid_len.astype('float32').as_in_context(ctx))
+        ls = loss_function(out, label.as_in_context(ctx)).mean()
         Ls.append(ls)
         step_loss += sum([L.asscalar() for L in Ls])
         metric.update([label], [out])
@@ -148,9 +148,9 @@ def train():
                 input_ids, valid_length, type_ids, label = seqs
                 out = model(input_ids.as_in_context(ctx), type_ids.as_in_context(ctx),
                             valid_length.astype('float32').as_in_context(ctx))
-                ls = loss_function(out, label.as_in_context(mx.gpu())).mean()
+                ls = loss_function(out, label.as_in_context(ctx)).mean()
             ls.backward()
-            grads = [p.grad(c) for p in differentiable_params for c in [mx.gpu()]]
+            grads = [p.grad(ctx) for p in differentiable_params]
             gluon.utils.clip_global_norm(grads, 1)
             trainer.step(1)
             step_loss += ls.asscalar()
