@@ -3,7 +3,7 @@ Bidirectional Encoder Representations from Transformers
 
 :download:`[Download] </model_zoo/bert.zip>`
 
-Reference: Devlin, Jacob, et al. "`Bert: Pre-training of deep bidirectional transformers for language understanding. <https://arxiv.org/abs/1810.04805>`" arXiv preprint arXiv:1810.04805 (2018).
+Reference: Devlin, Jacob, et al. "`Bert: Pre-training of deep bidirectional transformers for language understanding. <https://arxiv.org/abs/1810.04805>`_" arXiv preprint arXiv:1810.04805 (2018).
 
 The following pre-trained BERT models are available from the **gluonnlp.model.get_model** API:
 
@@ -15,7 +15,7 @@ The following pre-trained BERT models are available from the **gluonnlp.model.ge
 | bert_24_1024_16    | x                               | ✓                             | x                  |
 +--------------------+---------------------------------+-------------------------------+--------------------+
 
-where *bert_12_768_12* refers to the BERT BASE model, and *bert_24_1024_16* refers to the BERT LARGE model.
+where **bert_12_768_12** refers to the BERT BASE model, and **bert_24_1024_16** refers to the BERT LARGE model.
 
 BERT for Sentence Pair Classification
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -27,7 +27,7 @@ Download the MRPC dataset:
 
  .. code-block:: console
 
-    $ curl https://tinyurl.com/yaznh3os -o download_glue_data.py
+    $ curl -L https://tinyurl.com/yaznh3os -o download_glue_data.py
     $ python3 download_glue_data.py --data_dir glue_data --tasks MRPC
 
 Use the following command to fine-tune the BERT model for classification on the MRPC dataset.
@@ -36,4 +36,4 @@ Use the following command to fine-tune the BERT model for classification on the 
 
    $ GLUE_DIR=glue_data MXNET_GPU_MEM_POOL_TYPE=Round python3 finetune_classifier.py --batch_size 32 --optimizer adam --epochs 3 --gpu
 
-It gets validation accuracy of 86%.
+It gets validation accuracy of 87.0%, whereas the the original Tensorflow implementation give evaluation results between 84% and 88%.
