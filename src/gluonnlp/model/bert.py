@@ -305,10 +305,10 @@ class BERTModel(Block):
         - **pooled_output**: output tensor of pooled representation of the first tokens.
             Returned only if use_pooler is True. Shape (batch_size, units)
         - **classifier_output**: output tensor of next sentence classification prediction.
-            Returned only if use_classifier is True. Shape (batch_size)
+            Returned only if use_classifier is True. Shape (batch_size, 2)
         - **decode_output**: output tensor of sequence decoding for masked language model
             prediction. Returned only if use_decoder True.
-            Shape (batch_size, seq_length, vocab_size)
+            Shape (batch_size, vocab_size)
     """
     def __init__(self, encoder, vocab_size=None, token_type_vocab_size=None, units=None,
                  embed_size=None, embed_dropout=0.0, embed_initializer=None,
@@ -521,7 +521,7 @@ def bert_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
 
     Returns
     -------
-    gluon.Block, gluonnlp.Vocab
+    BERTModel, gluonnlp.Vocab
     """
     return _bert_model(model_name='bert_12_768_12', vocab=vocab, dataset_name=dataset_name,
                        pretrained=pretrained, ctx=ctx, use_pooler=use_pooler,
@@ -559,7 +559,7 @@ def bert_24_1024_16(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu()
 
     Returns
     -------
-    gluon.Block, gluonnlp.Vocab
+    BERTModel, gluonnlp.Vocab
     """
     return _bert_model(model_name='bert_24_1024_16', vocab=vocab, dataset_name=dataset_name,
                        pretrained=pretrained, ctx=ctx, use_pooler=use_pooler,
@@ -573,7 +573,7 @@ def _bert_model(model_name=None, dataset_name=None, vocab=None, pretrained=True,
 
     Returns
     -------
-    gluon.Block, gluonnlp.Vocab
+    BERTModel, gluonnlp.Vocab
     """
     predefined_args = bert_hparams[model_name]
     mutable_args = ['use_residual', 'dropout', 'embed_dropout', 'word_embed']
