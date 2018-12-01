@@ -20,6 +20,7 @@
 import json
 import gluonnlp
 import hashlib
+from tensorflow.python import pywrap_tensorflow
 try:
     from tokenizer import load_vocab
 except ImportError:
@@ -83,3 +84,13 @@ def get_hash(filename):
                 break
             sha1.update(data)
     return sha1.hexdigest(), str(sha1.hexdigest())[:8]
+
+def read_tf_checkpoint(path):
+    """read tensorflow checkpoint"""
+    tensors = {}
+    reader = pywrap_tensorflow.NewCheckpointReader(path)
+    var_to_shape_map = reader.get_variable_to_shape_map()
+    for key in sorted(var_to_shape_map):
+        tensor = reader.get_tensor(key)
+        tensors[key] = tensor
+    return tensors
