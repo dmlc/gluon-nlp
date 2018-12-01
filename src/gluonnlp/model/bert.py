@@ -398,7 +398,7 @@ class BERTModel(Block):
         if self._use_decoder:
             decoder_out = self._decode(seq_out, valid_length)
             outputs.append(decoder_out)
-        return tuple(outputs) if len(outputs) > 1 else outputs
+        return tuple(outputs) if len(outputs) > 1 else outputs[0]
 
 
     def _encode_sequence(self, inputs, token_types, valid_length=None):
