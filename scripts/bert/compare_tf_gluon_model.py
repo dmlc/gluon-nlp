@@ -21,7 +21,7 @@ import os
 import sys
 import pickle
 
-sample_input_file = "/home/ubuntu/pytorch-pretrained-BERT/samples/input.txt"
+sample_input_file = "input.txt"
 tf_bert_dir = "/home/ubuntu/bert/"
 tf_model_dir = "/home/ubuntu/bert/uncased_L-12_H-768_A-12/"
 vocab_file = tf_model_dir + "vocab.txt"
@@ -120,7 +120,6 @@ bert, vocabulary = bert_12_768_12(dataset_name='book_corpus_wiki_en_uncased',
 tokenizer = FullTokenizer(vocabulary, do_lower_case=True)
 dataset = TSVDataset(sample_input_file, field_separator=nlp.data.Splitter(' ||| '))
 
-print(dataset[0])
 trans = BERTTransform(tokenizer, max_length)
 dataset = dataset.transform(trans)
 
