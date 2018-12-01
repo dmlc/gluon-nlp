@@ -18,8 +18,8 @@
 # under the License.
 """Utility functions for BERT."""
 import json
-import gluonnlp
 import hashlib
+import gluonnlp
 from tensorflow.python import pywrap_tensorflow
 try:
     from tokenizer import load_vocab
