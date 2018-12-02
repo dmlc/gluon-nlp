@@ -79,7 +79,7 @@ bptt = 35
 grad_clip = 0.25
 ```
 
-#### Load dataset, extract vocabulary, numericalize, and batchify for truncated BPTT (Back Propagation Through Time)
+#### Load dataset, extract vocabulary, numericalize, and batchify for truncated Back Propagation Through Time (BPTT)
 
 ```{.python .input}
 dataset_name = 'wikitext-2'
