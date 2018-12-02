@@ -47,7 +47,7 @@ from dataset import MRPCDataset, ClassificationTransform
 
 np.random.seed(0)
 random.seed(0)
-mx.random.seed(0)
+mx.random.seed(2)
 logging.getLogger().setLevel(logging.DEBUG)
 
 parser = argparse.ArgumentParser(description='Neural Machine Translation Example.'
@@ -69,17 +69,19 @@ batch_size = args.batch_size
 test_batch_size = args.test_batch_size
 lr = args.lr
 
-ctx = mx.cpu() if args.gpu is None or args.gpu == '' else mx.gpu()
+ctx = mx.cpu() if not args.gpu else mx.gpu()
 
-bert, vocabulary = bert_12_768_12(dataset_name='book_corpus_wiki_en_uncased',
+dataset = 'book_corpus_wiki_en_uncased'
+bert, vocabulary = bert_12_768_12(dataset_name=dataset,
                                   pretrained=True, ctx=ctx, use_pooler=True,
                                   use_decoder=False, use_classifier=False)
-tokenizer = FullTokenizer(vocabulary, do_lower_case=True)
+do_lower_case = 'uncased' in dataset
+tokenizer = FullTokenizer(vocabulary, do_lower_case=do_lower_case)
 
 model = BERTClassifier(bert, dropout=0.1)
 model.classifier.initialize(init=mx.init.Normal(0.02), ctx=ctx)
-model.hybridize(static_alloc=True)
 logging.info(model)
+model.hybridize(static_alloc=True)
 
 loss_function = gluon.loss.SoftmaxCELoss()
 loss_function.hybridize(static_alloc=True)
@@ -103,9 +105,9 @@ def evaluate():
     for _, seqs in enumerate(bert_dataloader_dev):
         Ls = []
         input_ids, valid_len, type_ids, label = seqs
-        out = model(input_ids.as_in_context(mx.gpu()), type_ids.as_in_context(mx.gpu()),
-                    valid_len.astype('float32').as_in_context(mx.gpu()))
-        ls = loss_function(out, label.as_in_context(mx.gpu())).mean()
+        out = model(input_ids.as_in_context(ctx), type_ids.as_in_context(ctx),
+                    valid_len.astype('float32').as_in_context(ctx))
+        ls = loss_function(out, label.as_in_context(ctx)).mean()
         Ls.append(ls)
         step_loss += sum([L.asscalar() for L in Ls])
         metric.update([label], [out])
@@ -146,11 +148,11 @@ def train():
             trainer.set_learning_rate(new_lr)
             with mx.autograd.record():
                 input_ids, valid_length, type_ids, label = seqs
-                out = model(input_ids.as_in_context(mx.gpu()), type_ids.as_in_context(mx.gpu()),
-                            valid_length.astype('float32').as_in_context(mx.gpu()))
-                ls = loss_function(out, label.as_in_context(mx.gpu())).mean()
+                out = model(input_ids.as_in_context(ctx), type_ids.as_in_context(ctx),
+                            valid_length.astype('float32').as_in_context(ctx))
+                ls = loss_function(out, label.as_in_context(ctx)).mean()
             ls.backward()
-            grads = [p.grad(c) for p in differentiable_params for c in [mx.gpu()]]
+            grads = [p.grad(ctx) for p in differentiable_params]
             gluon.utils.clip_global_norm(grads, 1)
             trainer.step(1)
             step_loss += ls.asscalar()
