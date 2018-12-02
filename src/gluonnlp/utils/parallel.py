@@ -116,7 +116,7 @@ class Parallel(object):
         def _worker(in_queue, out_queue, parallel):
             while True:
                 x = in_queue.get()
-                if isinstance(x, self._StopSignal):
+                if isinstance(x, Parallel._StopSignal):
                     return
                 out = parallel.forward_backward(x)
                 out_queue.put(out)
