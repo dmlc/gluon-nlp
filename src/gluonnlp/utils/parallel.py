@@ -35,7 +35,7 @@ class Parallelizable(object):
                 self._net = Model()
                 self._loss = gluon.loss.SoftmaxCrossEntropyLoss()
 
-            def forward_backward(x):
+            def forward_backward(self, x):
                 data, label = x
                 with mx.autograd.record():
                     out = self._net(data)
@@ -68,7 +68,7 @@ class Parallel(object):
                 self._net = Model()
                 self._loss = gluon.loss.SoftmaxCrossEntropyLoss()
 
-            def forward_backward(x):
+            def forward_backward(self, x):
                 data, label = x
                 mx.autograd.record():
                     out = self._net(data)

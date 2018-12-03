@@ -21,6 +21,6 @@
 r"""Module for utility functions.
 """
 
-from . import parallel
+from .parallel import *
 
-__all__ = ['parallel']
+__all__ = parallel.__all__
