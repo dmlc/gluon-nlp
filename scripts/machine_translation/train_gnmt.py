@@ -59,8 +59,8 @@ mx.random.seed(10000)
 
 parser = argparse.ArgumentParser(description='Neural Machine Translation Example.'
                                              'We train the Google NMT model')
-parser.add_argument('--dataset', type=str, default='IWSLT2015', help='Dataset to use, '
-                                                                     'default is IWSLT2015.')
+parser.add_argument('--dataset', type=str, default='IWSLT2015',
+                    help='Dataset to use, default is IWSLT2015.')
 parser.add_argument('--src_lang', type=str, default='en', help='Source language, '
                                                                'default is en.')
 parser.add_argument('--tgt_lang', type=str, default='vi', help='Target language, '
@@ -75,12 +75,13 @@ parser.add_argument('--attention_type', type=str, default='scaled_luong',
                     help=' Attention type, default \'is scaled_luong\'.')
 parser.add_argument('--dropout', type=float, default=0.2,
                     help='dropout applied to layers (0 = no dropout), default is 0.2.')
-parser.add_argument('--num_layers', type=int, default=2, help='number of layers in the encoder'
-                                                              ' and decoder, default is 2.')
+parser.add_argument('--num_layers', type=int, default=2,
+                    help='number of layers in the encoder and decoder, default is 2.')
 parser.add_argument('--num_bi_layers', type=int, default=1,
                     help='number of bidirectional layers in the encoder and decoder, '
                          'default is 1.')
-parser.add_argument('--batch_size', type=int, default=128, help='Batch size, default is 128.')
+parser.add_argument('--batch_size', type=int, default=128,
+                    help='Batch size, default is 128.')
 parser.add_argument('--beam_size', type=int, default=4, help='Beam size, default is 4.')
 parser.add_argument('--lp_alpha', type=float, default=1.0,
                     help='Alpha used in calculating the length penalty, default is 1.0.')
@@ -99,10 +100,10 @@ parser.add_argument('--bucket_scheme', type=str, default='constant',
 parser.add_argument('--bucket_ratio', type=float, default=0.0,
                     help='Ratio for increasing the throughput of the bucketing '
                          'default is 0.0.')
-parser.add_argument('--src_max_len', type=int, default=50, help='Maximum length of the source '
-                                                                'sentence, default is 50.')
-parser.add_argument('--tgt_max_len', type=int, default=50, help='Maximum length of the target '
-                                                                'sentence, default is 50.')
+parser.add_argument('--src_max_len', type=int, default=50,
+                    help='Maximum length of the source sentence, default is 50.')
+parser.add_argument('--tgt_max_len', type=int, default=50,
+                    help='Maximum length of the target sentence, default is 50.')
 parser.add_argument('--optimizer', type=str, default='adam',
                     help='optimization algorithm, default is adam.')
 parser.add_argument('--lr', type=float, default=1E-3,
@@ -223,36 +224,38 @@ def train():
         log_avg_loss = 0
         log_wc = 0
         loss_denom = 0
+        step_loss = 0
+
         log_start_time = time.time()
         for batch_id, seqs \
                 in enumerate(train_data_loader):
 
             src_wc, tgt_wc, bs = np.sum([(shard[2].sum(), shard[3].sum(), shard[0].shape[0])
                                          for shard in seqs], axis=0)
+            src_wc = src_wc.asscalar()
+            tgt_wc = tgt_wc.asscalar()
+
             loss_denom += tgt_wc - bs
             seqs = [[seq.as_in_context(_context) for seq in shard]
                     for _context, shard in zip(context, seqs)]
-            src_wc = src_wc.asscalar()
-            tgt_wc = tgt_wc.asscalar()
-            LS = []
 
+            LS = []
             with mx.autograd.record():
                 for src_seq, tgt_seq, src_valid_length, tgt_valid_length in seqs:
                     out, _ = model(src_seq, tgt_seq[:, :-1], src_valid_length, tgt_valid_length - 1)
-                    loss = loss_function(out, tgt_seq[:, 1:], tgt_valid_length - 1).mean()
-                    loss = loss * (tgt_seq.shape[1] - 1) / (tgt_valid_length - 1).mean()
 
-                    LS.append(loss)
-
+                    ls = loss_function(out, tgt_seq[:, 1:], tgt_valid_length - 1).sum()
+                    LS.append(ls * (tgt_seq.shape[1] - 1))
             for L in LS:
                 L.backward()
 
-            trainer.step(1)
-
-            # calculate the loss at all contexts
-            step_loss = sum([L.asscalar() for L in LS])
-            log_avg_loss += step_loss / len(context)
+            trainer.step(float(loss_denom))
             log_wc += src_wc + tgt_wc
+            step_loss += sum([L.asscalar() for L in LS])
+            log_avg_loss += step_loss / loss_denom
+            loss_denom = 0
+            step_loss = 0
+
             if (batch_id + 1) % args.log_interval == 0:
                 wps = log_wc / (time.time() - log_start_time)
                 logging.info('[Epoch {} Batch {}/{}] loss={:.4f}, ppl={:.4f},  '
