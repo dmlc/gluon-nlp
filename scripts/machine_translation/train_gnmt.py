@@ -217,7 +217,8 @@ def train():
     trainer = gluon.Trainer(model.collect_params(), args.optimizer, {'learning_rate': args.lr})
 
     train_data_loader, val_data_loader, test_data_loader \
-        = dataprocessor.make_dataloader(data_train, data_val, data_test, args, num_shards=len(context))
+        = dataprocessor.make_dataloader(data_train, data_val, data_test,
+                                        args, num_shards=len(context))
 
     best_valid_bleu = 0.0
     for epoch_id in range(args.epochs):
