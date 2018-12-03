@@ -5,7 +5,7 @@ Model Zoo
 
    .. card::
       :title: Word Embedding
-      :link: model_zoo/word_embedding/index.html
+      :link: model_zoo/word_embeddings/index.html
 
       Mapping words to vectors.
 
