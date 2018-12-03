@@ -65,6 +65,3 @@ def test_parallel():
     assert serial_loss == parallel_loss
     for para_grad, serial_grad in zip(parallel_grads_np, serial_grads_np):
         mx.test_utils.assert_almost_equal(para_grad, serial_grad)
-    print('done"')
-
-test_parallel()
