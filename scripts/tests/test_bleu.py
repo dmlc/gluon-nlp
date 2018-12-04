@@ -22,12 +22,13 @@ from __future__ import print_function
 
 import string
 import os
+import io
 import re
 import subprocess
 import codecs
 import numpy as np
 from numpy.testing import assert_allclose
-from ..nmt.bleu import compute_bleu, _bpe_to_words, _split_compound_word
+from ..machine_translation.bleu import compute_bleu, _bpe_to_words, _split_compound_word
 
 
 actions = ['deletion', 'replacement', 'add']
@@ -119,10 +120,10 @@ def test_detok_bleu():
     path = os.path.dirname(os.path.realpath(__file__))
     ref_path = os.path.join(path, 'test_references.txt')
     trans_path = os.path.join(path, 'test_translations.txt')
-    with open(trans_path) as f:
+    with io.open(trans_path, 'r', encoding='utf-8') as f:
         translations = f.readlines()
 
-    with open(ref_path) as f:
+    with io.open(ref_path, 'r', encoding='utf-8') as f:
         references = f.readlines()
     ret_bleu, _, _, _, _ = compute_bleu([references], translations, tokenized=False)
     mose_ret = subprocess.check_output('perl %s/multi-bleu-detok.perl %s < %s'

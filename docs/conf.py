@@ -49,13 +49,26 @@ source_parsers = {
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.autosummary',
-    'sphinx.ext.intersphinx',
+    'sphinx.ext.doctest',
     'sphinx.ext.viewcode',
+    'sphinx.ext.intersphinx',
     'sphinx.ext.napoleon',
     'sphinx.ext.mathjax',
     'sphinx_gallery.gen_gallery',
     'nbsphinx',
+    'IPython.sphinxext.ipython_console_highlighting',
+    'IPython.sphinxext.ipython_directive',
+    'sphinx_autorun',
 ]
+
+doctest_global_setup = '''
+import gluonnlp
+import mxnet as mx
+from mxnet import gluon
+import numpy as np
+import doctest
+doctest.ELLIPSIS_MARKER = '-etc-'
+'''
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -64,6 +77,16 @@ nbsphinx_kernel_name = 'python3'
 nbsphinx_allow_errors = True
 nbsphinx_timeout = 1200
 html_sourcelink_suffix = ''
+
+html_context = {
+    'display_github': True,
+    'github_user': 'dmlc',
+    'github_repo': 'gluon-nlp',
+    'github_version': 'master',
+    'conf_py_path': '/docs/',
+    'last_updated': False,
+    'commit': True
+}
 
 nbsphinx_prolog = """
 {% set paths = env.docname.split('/') %}
@@ -102,16 +125,16 @@ language = None
 
 # The name of an image file (relative to this directory) to place at the top
 # of the sidebar.
-html_logo = '_static/gluon_white.png'
+html_logo = '_static/gluon-logo.svg'
 
 # The name of an image file (relative to this directory) to use as a favicon of
 # the docs.  This file should be a Windows icon file (.ico) being 16x16 or 32x32
 # pixels large.
-html_favicon = '_static/gluon_s2.png'
+html_favicon = '_static/gluon.ico'
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
-exclude_patterns = ['_build', '**.ipynb_checkpoints']
+exclude_patterns = ['_build', '**.ipynb_checkpoints', 'examples/*/*/**.rst', 'model_zoo/*/*/**.rst']
 
 # The reST default role (used for this markup: `text`) to use for all
 # documents.
@@ -143,14 +166,38 @@ todo_include_todos = False
 # -- Options for HTML output ----------------------------------------------
 
 # The theme is set by the make target
-html_theme = os.environ.get('NNVM_THEME', 'rtd')
+# html_theme = os.environ.get('GLUONNLP_THEME', 'rtd')
 
-on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
+# on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
 # only import rtd theme and set it if want to build docs locally
-if not on_rtd and html_theme == 'rtd':
-    import sphinx_rtd_theme
-    html_theme = 'sphinx_rtd_theme'
-    html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
+
+# if not on_rtd and html_theme == 'rtd':
+#     import sphinx_rtd_theme
+#     html_theme = 'sphinx_rtd_theme'
+#     html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
+
+html_theme = 'mxtheme'
+html_theme_path = ['mxtheme']
+html_theme_options = {
+    'primary_color': 'blue',
+    'accent_color': 'deep_orange',
+    'header_links' : [
+        ('Install', 'install', False, ''),
+        ('API', 'api/index', False, ''),
+        ('Community', 'community/index', False, ''),
+        ('Contribute', 'community/contribute', False, ''),
+        ('GitHub', 'https://github.com/dmlc/gluon-nlp/', True, 'fab fa-github'),
+    ],
+
+    # custom layout
+    'fixed_drawer' : True,
+    'fixed_header' : True,
+    'header_waterfall' : True,
+    'header_scroll': True,
+
+    # Render footer (Default: True)
+    'show_footer': False
+}
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
@@ -161,29 +208,16 @@ html_static_path = ['_static']
 htmlhelp_basename = project + 'doc'
 
 # -- Options for LaTeX output ---------------------------------------------
-latex_elements = {
-}
+# latex_elements = {
+# }
 
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
-latex_documents = [
-  (master_doc, '%s.tex' % project, project,
-   author, 'manual'),
-]
-
-# hook for doxygen
-def run_doxygen(folder):
-    """Run the doxygen make command in the designated folder."""
-    try:
-        #retcode = subprocess.call("cd %s; make doc" % folder, shell=True)
-        retcode = subprocess.call("rm -rf _build/html/doxygen", shell=True)
-        retcode = subprocess.call("mkdir -p _build/html", shell=True)
-        retcode = subprocess.call("cp -rf doxygen/html _build/html/doxygen", shell=True)
-        if retcode < 0:
-            sys.stderr.write("doxygen terminated by signal %s" % (-retcode))
-    except OSError as e:
-        sys.stderr.write("doxygen execution failed: %s" % e)
+# latex_documents = [
+#   (master_doc, '%s.tex' % project, project,
+#    author, 'manual'),
+# ]
 
 intersphinx_mapping = {
     'python': ('https://docs.python.org/{.major}'.format(sys.version_info), None),
@@ -197,26 +231,21 @@ intersphinx_mapping = {
 
 from sphinx_gallery.sorting import ExplicitOrder
 
-examples_dirs = []
-gallery_dirs = []
+# examples_dirs = []
+# gallery_dirs = []
 
-subsection_order = ExplicitOrder([])
-
-def generate_doxygen_xml(app):
-    """Run the doxygen make commands if we're on the ReadTheDocs server"""
-    run_doxygen('..')
+# subsection_order = ExplicitOrder([])
 
 def setup(app):
-    # Add hook for building doxygen xml when needed
-    # no c++ API for now
-    app.connect("builder-inited", generate_doxygen_xml)
+    import mxtheme
+    app.add_directive('card', mxtheme.CardDirective)
+
     app.add_config_value('recommonmark_config', {
         'url_resolver': lambda url: github_doc_root + url,
         'auto_doc_ref': True
             }, True)
     app.add_transform(AutoStructify)
     app.add_javascript('google_analytics.js')
-    app.add_javascript('copybutton.js')
 
 
 sphinx_gallery_conf = {
@@ -225,9 +254,9 @@ sphinx_gallery_conf = {
 'reference_url': {
     'gluonnlp': None,
     'numpy': 'http://docs.scipy.org/doc/numpy-1.9.1'},
-    'examples_dirs': examples_dirs,
-    'gallery_dirs': gallery_dirs,
-    'subsection_order': subsection_order,
+    'examples_dirs': [],
+    'gallery_dirs': [],
+    'subsection_order': ExplicitOrder([]),
     'find_mayavi_figures': False,
     'filename_pattern': '.py',
     'expected_failing_examples': []
@@ -236,3 +265,8 @@ sphinx_gallery_conf = {
 # Napoleon settings
 napoleon_use_ivar = True
 
+# linkcheck settings
+import multiprocessing
+linkcheck_ignore = [r'http[s]://apache-mxnet.s3*']
+linkcheck_retries = 3
+linkcheck_workers = int(multiprocessing.cpu_count() / 2)

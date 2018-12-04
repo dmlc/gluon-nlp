@@ -1,0 +1,10 @@
+[submodule "scripts/word_embeddings/tools/extern/CLI11"]
+	path = scripts/word_embeddings/tools/extern/CLI11
+	url = https://github.com/CLIUtils/CLI11.git
+[submodule "scripts/word_embeddings/tools/extern/cnpy"]
+	path = scripts/word_embeddings/tools/extern/cnpy
+	url = https://github.com/leezu/cnpy
+	branch = libzip
+[submodule "scripts/word_embeddings/tools/extern/sparsepp"]
+	path = scripts/word_embeddings/tools/extern/sparsepp
+	url = https://github.com/greg7mdp/sparsepp.git

@@ -18,6 +18,8 @@
 # under the License.
 """conftest.py contains configuration for pytest.
 
+Configuration file for tests in tests/ and scripts/ folders.
+
 Note that fixtures of higher-scoped fixtures (such as ``session``) are
 instantiated before lower-scoped fixtures (such as ``function``).
 
@@ -27,11 +29,12 @@ import logging
 import os
 import random
 
-import mxnet as mx
 import numpy as np
+import mxnet as mx
 import pytest
 
 
+# * Random seed setup
 def pytest_configure():
     """Pytest configuration hook to help reproduce test segfaults
 
@@ -178,3 +181,9 @@ def function_scope_seed(request):
         logging.info(seed_message)
 
     np.random.set_state(post_test_state)
+
+
+# * Shared test fixtures
+@pytest.fixture(params=[True, False])
+def hybridize(request):
+    return request.param
