@@ -2,7 +2,7 @@
 
 A statistical language model is simply a probability distribution over sequences of words or characters [1].
 In this tutorial, we'll restrict our attention to word-based language models.
-Given a reliable language model we can answer questions like *which among the following strings are we more likely to encounter?*
+Given a reliable language model, we can answer questions like *which among the following strings are we more likely to encounter?*
 
 1. 'On Monday, Mr. Lamar’s “DAMN.” took home an even more elusive honor,
 one that may never have even seemed within reach: the Pulitzer Prize"
@@ -14,17 +14,22 @@ awarded a Pulitzer Prize, we wouldn't be shocked to see the first sentence in th
 By comparison, we can all agree that the second sentence, consisting of incoherent babble, is comparatively unlikely.
 A statistical language model can assign precise probabilities to each string of words.
 
-Given a large corpus of text, we can estimate (i.e., train) a language model $\hat{p}(x_1, ..., x_n)$.
+Given a large corpus of text, we can estimate (i.e. train) a language model $\hat{p}(x_1, ..., x_n)$.
 And given such a model, we can sample strings $\mathbf{x} \sim \hat{p}(x_1, ..., x_n)$, generating new strings according to their estimated probability.
-Among other useful applications, we can use language models to score candidate transcriptions from speech recognition models, given preference to sentences that seem more probable (at the expense of those deemed anomalous).
+Among other useful applications, we can use language models to score candidate transcriptions from speech recognition models, given a preference to sentences that seem more probable (at the expense of those deemed anomalous).
 
-These days recurrent neural networks (RNNs) are the preferred method for LM. In this notebook, we will go through an example of using GluonNLP to (i) implement a typical LSTM language model architecture, (ii) train the language model on a corpus of real data; and (iii) bring in your own dataset for training; and (iv) grab off-the-shelf pre-trained state-of-the-art languague models (i.e., AWD lanaguge model) using GluonNLP.
+These days recurrent neural networks (RNNs) are the preferred method for LM. In this notebook, we will go through an example of using GluonNLP to
+
+(i) implement a typical LSTM language model architecture
+(ii) train the language model on a corpus of real data
+(iii) bring in your own dataset for training
+(iv) grab off-the-shelf pre-trained state-of-the-art languague models (i.e., AWD language model) using GluonNLP.
 
 ## Language model definition - one sentence
 
 The standard approach to language modeling consists of training a model that given a trailing window of text, predicts the next word in the sequence.
-When we train the model we feed in the inputs $x1, x_2, ...$ and try at each time step to predict the corresponding next word $x_2, ..., x_{n+1}$.
-To generate text from a language model, we can iteratively predict the next word, and then feed this word as the input to the model at the subsequent time step.
+When we train the model we feed in the inputs $x_1, x_2, ...$ and try at each time step to predict the corresponding next word $x_2, ..., x_{n+1}$.
+To generate text from a language model, we can iteratively predict the next word, and then feed this word as an input to the model at the subsequent time step.
 
 <img src="https://gluon.mxnet.io/_images/recurrent-lm.png" style="width: 500px;"/>
 
@@ -74,7 +79,7 @@ bptt = 35
 grad_clip = 0.25
 ```
 
-#### Load dataset, extract vocabulary, numericalize, and batchify for truncated BPTT
+#### Load dataset, extract vocabulary, numericalize, and batchify for truncated Back Propagation Through Time (BPTT)
 
 ```{.python .input}
 dataset_name = 'wikitext-2'
@@ -230,7 +235,7 @@ train(model, train_data, val_data, test_data, epochs, lr)
 
 When we train a language model, we fit to the statistics of a given dataset.
 While many papers focus on a few standard datasets, such as WikiText or the Penn Tree Bank, that's just to provide a standard benchmark for the purpose of comparing models against each other.
-In general, for any given use case, you'll want to train your own language model using a dataset of your choosing.
+In general, for any given use case, you'll want to train your own language model using a dataset of your own choice.
 Here, for demonstration, we'll grab some `.txt` files corresponding to Sherlock Holmes novels.
 
 ```{.python .input}
@@ -291,7 +296,7 @@ train(
 
 ## Use pre-trained AWD LSTM language model
 
-AWD LSTM language model is the state-of-the-art RNN language model [1]. The main technique is to add weight-dropout on the recurrent hidden to hidden matrices to prevent the overfitting from occurring on the recurrent connections.
+AWD LSTM language model is the state-of-the-art RNN language model [1]. The main technique is to add weight-dropout on the recurrent hidden to hidden matrices to prevent overfitting on the recurrent connections.
 
 ### Load vocabulary and pre-trained model
 
@@ -318,7 +323,7 @@ print('Best test loss %.2f, test ppl %.2f' % (test_L, math.exp(test_L)))
 
 ## Use Cache LSTM language model
 
-Cache LSTM language model [2] adds a cache-like memory to neural network language models, e.g., AWD LSTM language model.
+Cache LSTM language model [2] adds a cache-like memory to neural network language models. E.g. AWD LSTM language model.
 It exploits the hidden outputs to define a probability distribution over the words in the cache.
 It generates the state-of-the-art results in inference time.
 
