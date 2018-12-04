@@ -1,0 +1,14 @@
+# .coveragerc to control coverage.py
+[run]
+omit =
+    tests/*
+    conda/*
+concurrency =
+    multiprocessing
+    thread
+
+[report]
+ignore_errors = True
+
+[html]
+directory = coverage_html_report

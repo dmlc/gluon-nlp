@@ -17,14 +17,13 @@
 # specific language governing permissions and limitations
 # under the License.
 
-import mxnet as mx
 from numpy.testing import assert_almost_equal
-
-from gluonnlp.model import Highway
+import mxnet as mx
+from gluonnlp import model
 
 
 def test_highway_forward_simple_input():
-    highway = Highway(input_size=2, num_layers=2)
+    highway = model.Highway(input_size=2, num_layers=2)
     print(highway)
     highway.initialize(init='One')
     highway.hnet[0].weight.data()[:] = 1
@@ -41,7 +40,7 @@ def test_highway_forward_simple_input():
 
 
 def test_highway_forward():
-    highway = Highway(input_size=2, num_layers=2)
+    highway = model.Highway(input_size=2, num_layers=2)
     print(highway)
     highway.initialize()
     inputs = mx.nd.ones((2, 3, 2))
@@ -51,7 +50,7 @@ def test_highway_forward():
 
 
 def test_highway_default_bias():
-    highway = Highway(input_size=4, num_layers=1)
+    highway = model.Highway(input_size=4, num_layers=1)
     print(highway)
     highway.initialize()
     assert_almost_equal(highway.hnet[0].bias.data().asnumpy(),

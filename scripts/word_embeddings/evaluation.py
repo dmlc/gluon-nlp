@@ -156,20 +156,28 @@ def evaluate_similarity(args, token_embedding, ctx, logfile=None,
                              and d[1] in token_embedding.token_to_idx]
             num_dropped = initial_length - len(dataset_coded)
 
-            words1, words2, scores = zip(*dataset_coded)
-            pred_similarity = evaluator(
-                mx.nd.array(words1, ctx=ctx), mx.nd.array(words2, ctx=ctx))
-            sr = stats.spearmanr(pred_similarity.asnumpy(), np.array(scores))
-            logging.info('Spearman rank correlation on %s %s with %s:\t%s',
-                         dataset.__class__.__name__, str(dataset_kwargs),
-                         similarity_function, sr.correlation)
+            # All words are unknown
+            if not len(dataset_coded):
+                correlation = 0
+            else:
+                words1, words2, scores = zip(*dataset_coded)
+                pred_similarity = evaluator(
+                    mx.nd.array(words1, ctx=ctx), mx.nd.array(words2, ctx=ctx))
+                sr = stats.spearmanr(pred_similarity.asnumpy(),
+                                     np.array(scores))
+                correlation = sr.correlation
+
+            logging.info(
+                'Spearman rank correlation on %s (%s pairs) %s with %s:\t%s',
+                dataset.__class__.__name__, len(dataset_coded),
+                str(dataset_kwargs), similarity_function, correlation)
 
             result = dict(
                 task='similarity',
                 dataset_name=dataset_name,
                 dataset_kwargs=dataset_kwargs,
                 similarity_function=similarity_function,
-                spearmanr=sr.correlation,
+                spearmanr=correlation,
                 num_dropped=num_dropped,
                 global_step=global_step,
             )
@@ -222,10 +230,10 @@ def evaluate_analogy(args, token_embedding, ctx, logfile=None, global_step=0):
                 pred_idxs = evaluator(words1, words2, words3)
                 acc.update(pred_idxs[:, 0], words4.astype(np.float32))
 
-            logging.info(
-                'Accuracy on %s %s with %s:\t%s', dataset.__class__.__name__,
-                str(dataset_kwargs), analogy_function,
-                acc.get()[1])
+            logging.info('Accuracy on %s (%s quadruples) %s with %s:\t%s',
+                         dataset.__class__.__name__, len(dataset_coded),
+                         str(dataset_kwargs), analogy_function,
+                         acc.get()[1])
 
             result = dict(
                 task='analogy',

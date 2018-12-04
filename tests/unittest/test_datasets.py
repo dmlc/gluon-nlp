@@ -20,10 +20,9 @@
 from __future__ import print_function
 
 import datetime
-import json
 import os
+import io
 import random
-import sys
 
 from flaky import flaky
 import mxnet as mx
@@ -31,16 +30,13 @@ import numpy as np
 import pytest
 
 import gluonnlp as nlp
-
-if sys.version_info[0] == 3:
-    _str_types = (str, )
-else:
-    _str_types = (str, unicode)
-
+from gluonnlp.base import _str_types
+from mxnet.gluon.data import SimpleDataset
 
 ###############################################################################
 # Registry
 ###############################################################################
+@pytest.mark.serial
 def test_dataset_registry():
     @nlp.data.register(segment=['train'])
     class MyDataset(mx.gluon.data.Dataset):
@@ -80,107 +76,10 @@ def test_dataset_registry():
 
 
 ###############################################################################
-# Language model
+# Sentiment analysis
 ###############################################################################
-def test_wikitext2():
-    train = nlp.data.WikiText2(
-        segment='train', root=os.path.join('tests', 'data', 'wikitext-2'))
-    val = nlp.data.WikiText2(
-        segment='val', root=os.path.join('tests', 'data', 'wikitext-2'))
-    test = nlp.data.WikiText2(
-        segment='test', root=os.path.join('tests', 'data', 'wikitext-2'))
-    train_freq, val_freq, test_freq = [nlp.data.utils.Counter(x) for x in [train[0], val[0], test[0]]]
-    assert len(train[0]) == 2075677, len(train[0])
-    assert len(train_freq) == 33278, len(train_freq)
-    assert len(val[0]) == 216347, len(val[0])
-    assert len(val_freq) == 13777, len(val_freq)
-    assert len(test[0]) == 244102, len(test[0])
-    assert len(test_freq) == 14143, len(test_freq)
-    assert test_freq['English'] == 32, test_freq['English']
-
-    vocab = nlp.Vocab(train_freq)
-    serialized_vocab = vocab.to_json()
-    assert len(serialized_vocab) == 962190, len(serialized_vocab)
-    assert json.loads(serialized_vocab)['idx_to_token'] == vocab._idx_to_token
-
-    train_data = train.bptt_batchify(vocab, 35, 80, last_batch='discard')
-    assert len(train_data) == 741, len(train_data)
-
-    for i, (data, target) in enumerate(train_data):
-        mx.test_utils.assert_almost_equal(data[1:].asnumpy(), target[:-1].asnumpy())
-        assert data.shape == target.shape == (35, 80)
-
-    train_data = train.bptt_batchify(vocab, 35, 80, last_batch='keep')
-    assert len(train_data) == 742, len(train_data)
-    assert train_data[-1][0].shape[0] < 35
-    for i, (data, target) in enumerate(train_data):
-        mx.test_utils.assert_almost_equal(data[1:].asnumpy(), target[:-1].asnumpy())
-        assert data.shape == target.shape
-
-    train_freq, val_freq, test_freq = [nlp.data.utils.Counter(x) for x in [train[0], val[0], test[0]]]
-    train = nlp.data.WikiText2(
-        segment='train',
-        skip_empty=False,
-        root=os.path.join('tests', 'data', 'wikitext-2'))
-    val = nlp.data.WikiText2(
-        segment='val',
-        skip_empty=False,
-        root=os.path.join('tests', 'data', 'wikitext-2'))
-    test = nlp.data.WikiText2(
-        segment='test',
-        skip_empty=False,
-        root=os.path.join('tests', 'data', 'wikitext-2'))
-    assert len(train[0]) == 2088628, len(train[0])
-    assert len(train_freq) == 33278, len(train_freq)
-    assert len(val[0]) == 217646, len(val[0])
-    assert len(val_freq) == 13777, len(val_freq)
-    assert len(test[0]) == 245569, len(test[0])
-    assert len(test_freq) == 14143, len(test_freq)
-    assert test_freq['English'] == 32, test_freq['English']
-    batched_data = train.batchify(vocab, 80)
-    assert batched_data.shape == (26107, 80)
-
-
-def test_wikitext2_raw():
-    train = nlp.data.WikiText2Raw(segment='train', root=os.path.join(
-        'tests', 'data', 'wikitext-2'))
-    val = nlp.data.WikiText2Raw(segment='val', root=os.path.join(
-        'tests', 'data', 'wikitext-2'))
-    test = nlp.data.WikiText2Raw(segment='test', root=os.path.join(
-        'tests', 'data', 'wikitext-2'))
-    train_freq, val_freq, test_freq = [
-        nlp.data.utils.Counter(x) for x in [train[0], val[0], test[0]]
-    ]
-    assert len(train[0]) == 10843541, len(train[0])
-    assert len(train_freq) == 192, len(train_freq)
-    assert len(val[0]) == 1136862, len(val[0])
-    assert len(val_freq) == 168, len(val_freq)
-    assert len(test[0]) == 1278983, len(test[0])
-    assert len(test_freq) == 177, len(test_freq)
-    assert test_freq['a'.encode('utf-8')[0]] == 81512, \
-        test_freq['a'.encode('utf-8')[0]]
-
-
-def test_wikitext103_raw():
-    train = nlp.data.WikiText103Raw(segment='train', root=os.path.join(
-        'tests', 'data', 'wikitext-103'))
-    val = nlp.data.WikiText103Raw(segment='val', root=os.path.join(
-        'tests', 'data', 'wikitext-103'))
-    test = nlp.data.WikiText103Raw(segment='test', root=os.path.join(
-        'tests', 'data', 'wikitext-103'))
-    train_freq, val_freq, test_freq = [
-        nlp.data.utils.Counter(x) for x in [train[0], val[0], test[0]]
-    ]
-    assert len(train[0]) == 535800393, len(train[0])
-    assert len(train_freq) == 203, len(train_freq)
-    assert len(val[0]) == 1136862, len(val[0])
-    assert len(val_freq) == 168, len(val_freq)
-    assert len(test[0]) == 1278983, len(test[0])
-    assert len(test_freq) == 177, len(test_freq)
-    assert test_freq['a'.encode('utf-8')[0]] == 81512, \
-        test_freq['a'.encode('utf-8')[0]]
-
-
+@pytest.mark.serial
+@pytest.mark.remote_required
 def test_imdb():
     train = nlp.data.IMDB(
         root=os.path.join('tests', 'data', 'imdb'), segment='train')
@@ -204,6 +103,73 @@ def test_imdb():
         assert isinstance(data, _str_types)
         assert score == 0
 
+@pytest.mark.serial
+@pytest.mark.remote_required
+def test_mr():
+    all = nlp.data.MR(
+        root=os.path.join('tests', 'data', 'mr'))
+    assert len(all) == 10662, len(all)
+    for i, (data, label) in enumerate(all):
+        assert isinstance(data, _str_types)
+        assert label <= 1
+
+@pytest.mark.serial
+@pytest.mark.remote_required
+def test_sst_1():
+    train = nlp.data.SST_1(
+        root=os.path.join('tests', 'data', 'sst-1'), segment='train')
+    test = nlp.data.SST_1(
+        root=os.path.join('tests', 'data', 'sst-1'), segment='test')
+    assert len(train) == 237107, len(train)
+    assert len(test) == 2125, len(test)
+    for i, (data, label) in enumerate(train):
+        assert isinstance(data, _str_types)
+        assert label <= 4
+    for i, (data, label) in enumerate(test):
+        assert isinstance(data, _str_types)
+        assert label <= 4
+
+@pytest.mark.serial
+@pytest.mark.remote_required
+def test_sst_2():
+    train = nlp.data.SST_2(
+        root=os.path.join('tests', 'data', 'sst-2'), segment='train')
+    test = nlp.data.SST_2(
+        root=os.path.join('tests', 'data', 'sst-2'), segment='test')
+    assert len(train) == 118038, len(train)
+    assert len(test) == 1745, len(test)
+    for i, (data, label) in enumerate(train):
+        assert isinstance(data, _str_types)
+        assert label <= 1
+    for i, (data, label) in enumerate(test):
+        assert isinstance(data, _str_types)
+        assert label <= 1
+
+@pytest.mark.serial
+@pytest.mark.remote_required
+def test_subj():
+    all = nlp.data.SUBJ(
+        root=os.path.join('tests', 'data', 'mr'))
+    assert len(all) == 10000, len(all)
+    for i, (data, label) in enumerate(all):
+        assert isinstance(data, _str_types)
+        assert label <= 1
+
+@pytest.mark.serial
+@pytest.mark.remote_required
+def test_trec():
+    train = nlp.data.TREC(
+        root=os.path.join('tests', 'data', 'trec'), segment='train')
+    test = nlp.data.TREC(
+        root=os.path.join('tests', 'data', 'trec'), segment='test')
+    assert len(train) == 11452, len(train)
+    assert len(test) == 500, len(test)
+    for i, (data, label) in enumerate(train):
+        assert isinstance(data, _str_types)
+        assert label <= 5
+    for i, (data, label) in enumerate(test):
+        assert isinstance(data, _str_types)
+        assert label <= 5
 
 ###############################################################################
 # Word similarity and relatedness datasets
@@ -219,15 +185,23 @@ def _assert_similarity_dataset(data):
 
 
 @flaky(max_runs=2, min_passes=1)
-def test_wordsim353():
-    for segment, length in (("all", 252 + 203), ("relatedness", 252),
-                            ("similarity", 203)):
-        data = nlp.data.WordSim353(segment=segment, root=os.path.join(
-            'tests', 'externaldata', 'wordsim353'))
-        assert len(data) == length, len(data)
-        _assert_similarity_dataset(data)
+@pytest.mark.parametrize('segment,length', [('all', 352), ('relatedness', 252),
+                                            ('similarity', 203)])
+@pytest.mark.serial
+@pytest.mark.remote_required
+def test_wordsim353(segment, length):
+    # 'all' has length 352 as the original dataset contains the 'money/cash'
+    # pair twice with different similarity ratings, which was fixed by the
+    # http://alfonseca.org/eng/research/wordsim353.html version of the dataset
+    # that we are using.
+    data = nlp.data.WordSim353(segment=segment, root=os.path.join(
+        'tests', 'externaldata', 'wordsim353'))
+    assert len(data) == length, len(data)
+    _assert_similarity_dataset(data)
 
 
+@pytest.mark.serial
+@pytest.mark.remote_required
 def test_men():
     for segment, length in [("full", 3000), ("dev", 2000), ("test", 1000)]:
         data = nlp.data.MEN(
@@ -237,6 +211,8 @@ def test_men():
 
 
 @flaky(max_runs=2, min_passes=1)
+@pytest.mark.serial
+@pytest.mark.remote_required
 def test_radinsky_mturk():
     data = nlp.data.RadinskyMTurk(
         root=os.path.join('tests', 'externaldata', 'radinsky'))
@@ -245,6 +221,8 @@ def test_radinsky_mturk():
 
 
 @flaky(max_runs=2, min_passes=1)
+@pytest.mark.serial
+@pytest.mark.remote_required
 def test_verb143():
     data = nlp.data.BakerVerb143(
         root=os.path.join('tests', 'externaldata', 'verb143'))
@@ -253,6 +231,7 @@ def test_verb143():
 
 
 @flaky(max_runs=2, min_passes=1)
+@pytest.mark.serial
 def test_verb130():
     data = nlp.data.YangPowersVerb130(
         root=os.path.join('tests', 'externaldata', 'verb130'))
@@ -260,9 +239,11 @@ def test_verb130():
     _assert_similarity_dataset(data)
 
 
+@pytest.mark.skipif(datetime.date.today() < datetime.date(2018, 9, 10),
+                    reason='Disabled for 1 weeks due to server downtime.')
 @flaky(max_runs=2, min_passes=1)
-@pytest.mark.skipif(datetime.date.today() < datetime.date(2018, 5, 7),
-                    reason='Disabled for 2 weeks due to server downtime.')
+@pytest.mark.serial
+@pytest.mark.remote_required
 def test_rare_words():
     data = nlp.data.RareWords(
         root=os.path.join('tests', 'externaldata', 'rarewords'))
@@ -271,6 +252,8 @@ def test_rare_words():
 
 
 @flaky(max_runs=2, min_passes=1)
+@pytest.mark.serial
+@pytest.mark.remote_required
 def test_simlex999():
     data = nlp.data.SimLex999(
         root=os.path.join('tests', 'externaldata', 'simlex999'))
@@ -279,6 +262,8 @@ def test_simlex999():
 
 
 @flaky(max_runs=2, min_passes=1)
+@pytest.mark.serial
+@pytest.mark.remote_required
 def test_simverb3500():
     data = nlp.data.SimVerb3500(
         root=os.path.join('tests', 'externaldata', 'simverb3500'))
@@ -287,6 +272,10 @@ def test_simverb3500():
 
 
 @flaky(max_runs=2, min_passes=1)
+@pytest.mark.serial
+@pytest.mark.remote_required
+@pytest.mark.skipif(datetime.date.today() < datetime.date(2018, 12, 10),
+                    reason='Disabled for 1 weeks due to server downtime.')
 def test_semeval17task2():
     for segment, length in [("trial", 18), ("test", 500)]:
         data = nlp.data.SemEval17Task2(
@@ -300,6 +289,8 @@ def test_semeval17task2():
 # Word analogy datasets
 ###############################################################################
 @flaky(max_runs=2, min_passes=1)
+@pytest.mark.serial
+@pytest.mark.remote_required
 def test_googleanalogy():
     data = nlp.data.GoogleAnalogyTestSet(
         root=os.path.join('tests', 'externaldata', 'google_analogy'))
@@ -308,6 +299,8 @@ def test_googleanalogy():
 
 
 @flaky(max_runs=2, min_passes=1)
+@pytest.mark.serial
+@pytest.mark.remote_required
 def test_bigger_analogy():
     data = nlp.data.BiggerAnalogyTestSet(
         root=os.path.join('tests', 'externaldata', 'bigger_analogy'))
@@ -319,6 +312,8 @@ def test_bigger_analogy():
 # CONLL
 ###############################################################################
 @flaky(max_runs=2, min_passes=1)
+@pytest.mark.serial
+@pytest.mark.remote_required
 def test_conll2000():
     train = nlp.data.CoNLL2000(segment='train', root=os.path.join(
         'tests', 'externaldata', 'conll2000'))
@@ -339,6 +334,8 @@ def test_conll2000():
 
 
 @flaky(max_runs=2, min_passes=1)
+@pytest.mark.serial
+@pytest.mark.remote_required
 def test_conll2001():
     for part in range(1, 4):
         train = nlp.data.CoNLL2001(part, segment='train', root=os.path.join(
@@ -365,6 +362,8 @@ def test_conll2001():
     ('testa', 2895),
     ('testb', 5195),
 ])
+@pytest.mark.serial
+@pytest.mark.remote_required
 def test_conll2002_ned(segment, length):
     dataset = nlp.data.CoNLL2002('ned', segment=segment, root=os.path.join(
         'tests', 'externaldata', 'conll2002'))
@@ -381,6 +380,8 @@ def test_conll2002_ned(segment, length):
     ('testa', 1915),
     ('testb', 1517),
 ])
+@pytest.mark.serial
+@pytest.mark.remote_required
 def test_conll2002_esp(segment, length):
     dataset = nlp.data.CoNLL2002('esp', segment=segment, root=os.path.join(
         'tests', 'externaldata', 'conll2002'))
@@ -390,12 +391,16 @@ def test_conll2002_esp(segment, length):
         assert all(isinstance(n, _str_types) for n in ner), ner
 
 
+@pytest.mark.skipif(datetime.date.today() < datetime.date(2018, 8, 16),
+                    reason='Disabled for 1 weeks due to server downtime.')
 @flaky(max_runs=2, min_passes=1)
 @pytest.mark.parametrize('segment,length', [
     ('train', 8936),
     ('dev', 2012),
     ('test', 1671),
 ])
+@pytest.mark.serial
+@pytest.mark.remote_required
 def test_conll2004(segment, length):
     dataset = nlp.data.CoNLL2004(segment=segment, root=os.path.join(
         'tests', 'externaldata', 'conll2004'))
@@ -408,6 +413,8 @@ def test_conll2004(segment, length):
 
 
 @flaky(max_runs=2, min_passes=1)
+@pytest.mark.serial
+@pytest.mark.remote_required
 def test_ud21():
     test_langs = list(nlp._constants.UD21_DATA_FILE_SHA1.items())
     random.shuffle(test_langs)
@@ -429,6 +436,8 @@ def test_ud21():
 ###############################################################################
 # Translation
 ###############################################################################
+@pytest.mark.serial
+@pytest.mark.remote_required
 def test_iwlst2015():
     # Test en to vi
     train_en_vi = nlp.data.IWSLT2015(segment='train', root='tests/data/iwlst2015')
@@ -453,6 +462,8 @@ def test_iwlst2015():
         assert lhs[0] == rhs[1] and rhs[0] == lhs[1]
 
 
+@pytest.mark.serial
+@pytest.mark.remote_required
 def test_wmt2016():
     train = nlp.data.WMT2016(segment='train', src_lang='en', tgt_lang='de',
                              root='tests/data/wmt2016')
@@ -466,6 +477,8 @@ def test_wmt2016():
     assert len(newstest_2012_2015) == 3003 + 3000 + 3003 + 2169
 
 
+@pytest.mark.serial
+@pytest.mark.remote_required
 def test_wmt2016bpe():
     train = nlp.data.WMT2016BPE(segment='train', src_lang='en', tgt_lang='de',
                                 root='tests/data/wmt2016bpe')
@@ -482,6 +495,8 @@ def test_wmt2016bpe():
     assert len(de_vocab) == 36548
 
 
+@pytest.mark.serial
+@pytest.mark.remote_required
 def test_wmt2014():
     train = nlp.data.WMT2014(segment='train', src_lang='en', tgt_lang='de',
                              root='tests/data/wmt2014')
@@ -503,6 +518,8 @@ def test_wmt2014():
     assert len(newstest_2014) == 3003
 
 
+@pytest.mark.serial
+@pytest.mark.remote_required
 def test_wmt2014bpe():
     train = nlp.data.WMT2014BPE(segment='train', src_lang='en', tgt_lang='de',
                                 root='tests/data/wmt2014bpe')
@@ -527,70 +544,10 @@ def test_wmt2014bpe():
     assert len(newstest_2014) == 3003
 
 ###############################################################################
-# Stream
-###############################################################################
-def test_corpus_stream():
-    EOS = nlp._constants.EOS_TOKEN
-    path = os.path.join('tests', 'data', 'wikitext-2')
-    token_path = os.path.join('tests', 'data', 'wikitext-2/*.tokens')
-    train = nlp.data.WikiText2(segment='train', root=path)
-    val = nlp.data.WikiText2(segment='val', root=path)
-    test = nlp.data.WikiText2(segment='test', root=path)
-    corpus = nlp.data.CorpusStream(token_path, flatten=True,
-                                   skip_empty=True, eos=EOS)
-    counter = nlp.data.Counter(corpus)
-    assert len(counter) == 33278, len(counter)
-    # examine aggregated vocab
-    vocab = nlp.vocab.Vocab(counter, bos_token=None, padding_token=None)
-    assert len(vocab) == 33278, len(vocab)
-    # examine aggregated stats
-    assert sum(counter.values()) == 2075677 + 216347 + 244102
-    counter = nlp.data.Counter(corpus)
-    assert len(counter) == 33278, len(counter)
-
-def test_lm_stream():
-    EOS = nlp._constants.EOS_TOKEN
-    path = os.path.join('tests', 'data', 'wikitext-2')
-    token_path = os.path.join('tests', 'data', 'wikitext-2/*.tokens')
-    train = nlp.data.WikiText2(segment='train', root=path)
-    val = nlp.data.WikiText2(segment='val', root=path)
-    test = nlp.data.WikiText2(segment='test', root=path)
-    lm_stream = nlp.data.LanguageModelStream(token_path, skip_empty=True, eos=EOS)
-    counter = nlp.data.Counter(lm_stream)
-    vocab = nlp.vocab.Vocab(counter, bos_token=None)
-    seq_len = 35
-    batch_size = 80
-    bptt_stream = lm_stream.bptt_batchify(vocab, seq_len, batch_size, last_batch='keep')
-    padding_idx = vocab[vocab.padding_token]
-    total_num_tokens = sum(counter.values())
-    num_tokens_per_batch = seq_len * batch_size
-    num_tokens = 0
-    for i, (data, target, mask) in enumerate(bptt_stream):
-        # count the valid tokens in the batch
-        num_valid_tokens = mask.sum().asscalar()
-        if num_valid_tokens == num_tokens_per_batch:
-            mx.test_utils.assert_almost_equal(data[1:].asnumpy(), target[:-1].asnumpy())
-            assert data.shape == target.shape == (seq_len, batch_size)
-        num_tokens += num_valid_tokens
-    num_batches = sum(1 for _ in bptt_stream)
-    # the last token doesn't appear in data
-    assert num_tokens >= total_num_tokens - batch_size, num_tokens
-    assert num_tokens < total_num_tokens, num_tokens
-
-def test_lazy_stream():
-    EOS = nlp._constants.EOS_TOKEN
-    path = os.path.join('tests', 'data', 'wikitext-2')
-    token_path = os.path.join('tests', 'data', 'wikitext-2/*test*.tokens')
-    test = nlp.data.WikiText2(segment='test', root=path)
-    corpus = nlp.data.CorpusStream(token_path, flatten=True,
-                                   skip_empty=True, eos=EOS, sampler='sequential')
-    transformed_corpus = nlp.data.SimpleDataStream(corpus).transform(lambda s: s.lower())
-    for x, y in zip(corpus, transformed_corpus):
-        assert y == x.lower()
-
-###############################################################################
 # Question answering
 ###############################################################################
+@pytest.mark.serial
+@pytest.mark.remote_required
 def test_load_dev_squad():
     # number of records in dataset is equal to number of different questions
     train_dataset = nlp.data.SQuAD(segment='train', root='tests/data/squad')
@@ -612,10 +569,42 @@ def test_counter():
 
 # this test is not tested on CI due to long running time
 def _test_gbw_stream():
-    gbw = nlp.data.GBWStream()
+    gbw = nlp.data.GBWStream(root=os.path.join('tests', 'data', 'gbw'))
     counter = nlp.data.Counter(gbw)
     counter.discard(3, '<unk>')
     # reference count obtained from:
     # https://github.com/rafaljozefowicz/lm/blob/master/1b_word_vocab.txt
     assert counter['the'] == 35936573
     assert counter['.'] == 29969612
+    vocab = gbw.vocab
+    assert len(vocab) == 793471
+
+
+def test_concatenation():
+    datasets = [
+            SimpleDataset([1,2,3,4]),
+            SimpleDataset([5,6]),
+            SimpleDataset([8,0,9]),
+            ]
+    dataset = nlp.data.ConcatDataset(datasets)
+    assert len(dataset) == 9
+    assert dataset[0] == 1
+    assert dataset[5] == 6
+
+def test_tsv():
+    data =  "a,b,c\n"
+    data += "d,e,f\n"
+    data += "g,h,i\n"
+    with open('test_tsv.tsv', 'w') as fout:
+        fout.write(data)
+    num_discard = 1
+    field_separator = nlp.data.utils.Splitter(',')
+    field_indices = [0,2]
+    dataset = nlp.data.TSVDataset('test_tsv.tsv', num_discard_samples=num_discard,
+                                  field_separator=field_separator,
+                                  field_indices=field_indices)
+    num_samples = 3 - num_discard
+    idx = random.randint(0, num_samples - 1)
+    assert len(dataset) == num_samples
+    assert len(dataset[0]) == 2
+    assert dataset[1] == [u'g', u'i']

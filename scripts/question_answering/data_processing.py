@@ -45,7 +45,7 @@ def preprocess_dataset(dataset, question_max_length, context_max_length):
     """
     vocab_provider = VocabProvider(dataset)
     transformer = SQuADTransform(vocab_provider, question_max_length, context_max_length)
-    processed_dataset = SimpleDataset(dataset.trasform(transformer, lazy=False))
+    processed_dataset = SimpleDataset(dataset.transform(transformer, lazy=False))
     return processed_dataset
 
 
