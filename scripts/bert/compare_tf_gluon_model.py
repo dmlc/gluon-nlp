@@ -127,7 +127,7 @@ for result in estimator.predict(input_fn, yield_single_examples=True):
     output_json['features'] = tensorflow_all_out_features
     tensorflow_all_out.append(output_json)
 
-tf_outputs = (tensorflow_all_out[0]['features'][0]['layers'][t]['values'] for t in layer_indexes)
+tf_outputs = [tensorflow_all_out[0]['features'][0]['layers'][t]['values'] for t in layer_indexes]
 
 ###############################################################################
 #                               Gluon MODEL                                   #

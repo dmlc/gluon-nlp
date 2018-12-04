@@ -157,7 +157,7 @@ generate valid length
 
 ```{.python .input}
 # use the vocabulary from pre-trained model for tokenization
-tokenizer = tokenization.FullTokenizer(vocabulary, do_lower_case=True)
+tokenizer = tokenizer.FullTokenizer(vocabulary, do_lower_case=True)
 # maximum sequence length
 max_len = 128
 all_labels = ["0", "1"]
