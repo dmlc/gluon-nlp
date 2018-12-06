@@ -38,7 +38,7 @@ def convert_to_unicode(text):
     elif six.PY2:
         if isinstance(text, str):
             return text.decode('utf-8', 'ignore')
-        elif isinstance(text, unicode): # noqa: F821
+        elif isinstance(text, unicode):  # noqa: F821
             return text
         else:
             raise ValueError('Unsupported string type: %s' % (type(text)))
@@ -60,7 +60,7 @@ def printable_text(text):
     elif six.PY2:
         if isinstance(text, str):
             return text
-        elif isinstance(text, unicode): # noqa: F821
+        elif isinstance(text, unicode):  # noqa: F821
             return text.encode('utf-8')
         else:
             raise ValueError('Unsupported string type: %s' % (type(text)))
@@ -110,6 +110,7 @@ class FullTokenizer(object):
     do_lower_case : bool, default True
         Convert tokens to lower cases.
     """
+
     def __init__(self, vocab, do_lower_case=True):
         self.vocab = vocab
         self.basic_tokenizer = BasicTokenizer(do_lower_case=do_lower_case)
@@ -244,12 +245,12 @@ class BasicTokenizer(object):
         for char in text:
             cp = ord(char)
             if self._is_chinese_char(cp):
-                output.append(" ")
+                output.append(' ')
                 output.append(char)
-                output.append(" ")
+                output.append(' ')
             else:
                 output.append(char)
-        return "".join(output)
+        return ''.join(output)
 
     def _is_chinese_char(self, cp):
         """Checks whether CP is the codepoint of a CJK character."""
@@ -261,14 +262,14 @@ class BasicTokenizer(object):
         # as is Japanese Hiragana and Katakana. Those alphabets are used to write
         # space-separated words, so they are not treated specially and handled
         # like the all of the other languages.
-        if ((cp >= 0x4E00 and cp <= 0x9FFF) or  #
-            (cp >= 0x3400 and cp <= 0x4DBF) or  #
-            (cp >= 0x20000 and cp <= 0x2A6DF) or  #
-            (cp >= 0x2A700 and cp <= 0x2B73F) or  #
-            (cp >= 0x2B740 and cp <= 0x2B81F) or  #
-            (cp >= 0x2B820 and cp <= 0x2CEAF) or
-            (cp >= 0xF900 and cp <= 0xFAFF) or  #
-            (cp >= 0x2F800 and cp <= 0x2FA1F)):  #
+        if ((cp >= 0x4E00 and cp <= 0x9FFF)
+                or (cp >= 0x3400 and cp <= 0x4DBF)
+                or (cp >= 0x20000 and cp <= 0x2A6DF)
+                or (cp >= 0x2A700 and cp <= 0x2B73F)
+                or (cp >= 0x2B740 and cp <= 0x2B81F)
+                or (cp >= 0x2B820 and cp <= 0x2CEAF)
+                or (cp >= 0xF900 and cp <= 0xFAFF)
+                or (cp >= 0x2F800 and cp <= 0x2FA1F)):
             return True
 
         return False
