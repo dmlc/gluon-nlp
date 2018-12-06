@@ -223,6 +223,7 @@ def train():
     best_valid_bleu = 0.0
     for epoch_id in range(args.epochs):
         log_avg_loss = 0
+        log_avg_gnorm = 0
         log_wc = 0
         loss_denom = 0
         step_loss = 0
@@ -237,6 +238,7 @@ def train():
             tgt_wc = tgt_wc.asscalar()
 
             loss_denom += tgt_wc - bs
+
             seqs = [[seq.as_in_context(_context) for seq in shard]
                     for _context, shard in zip(context, seqs)]
 
@@ -246,28 +248,35 @@ def train():
                     out, _ = model(src_seq, tgt_seq[:, :-1], src_valid_length, tgt_valid_length - 1)
 
                     ls = loss_function(out, tgt_seq[:, 1:], tgt_valid_length - 1).sum()
-                    LS.append(ls * (tgt_seq.shape[1] - 1))
+                    LS.append(ls * (tgt_seq.shape[1] - 1) / float(loss_denom))
             for L in LS:
                 L.backward()
 
-            trainer.step(float(loss_denom))
+            grads = [p.grad(c) for p in model.collect_params().values() for c in context]
+            gnorm = gluon.utils.clip_global_norm(grads, args.clip)
+            log_avg_gnorm += gnorm
+
+            trainer.step(1.0)
+
             log_wc += src_wc + tgt_wc
             step_loss += sum([L.asscalar() for L in LS])
-            log_avg_loss += step_loss / loss_denom
+            log_avg_loss += step_loss
             loss_denom = 0
             step_loss = 0
 
             if (batch_id + 1) % args.log_interval == 0:
                 wps = log_wc / (time.time() - log_start_time)
-                logging.info('[Epoch {} Batch {}/{}] loss={:.4f}, ppl={:.4f},  '
+                logging.info('[Epoch {} Batch {}/{}] loss={:.4f}, ppl={:.4f}, gnorm={:.4f} '
                              'throughput={:.2f}K wps, wc={:.2f}K'
                              .format(epoch_id, batch_id + 1, len(train_data_loader),
                                      log_avg_loss / args.log_interval,
                                      np.exp(log_avg_loss / args.log_interval),
+                                     log_avg_gnorm / args.log_interval,
                                      wps / 1000, log_wc / 1000))
                 log_start_time = time.time()
                 log_avg_loss = 0
                 log_wc = 0
+                log_avg_gnorm = 0
 
         valid_loss, valid_translation_out = evaluate(val_data_loader)
         valid_bleu_score, _, _, _, _ = compute_bleu([val_tgt_sentences], valid_translation_out)
