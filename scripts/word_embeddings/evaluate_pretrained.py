@@ -138,8 +138,7 @@ def load_embedding_from_path(args):
                     args.embedding_path)
 
         embedding = nlp.embedding.TokenEmbedding(
-            unknown_token=None, unknown_lookup=model, allow_extend=True,
-            unknown_autoextend=True)
+            unknown_token=None, unknown_lookup=model, allow_extend=True)
 
         idx_to_token = sorted(model._token_to_idx, key=model._token_to_idx.get)
         if not args.analogy_datasets:
@@ -150,9 +149,11 @@ def load_embedding_from_path(args):
         if args.max_vocab_size:
             idx_to_token = idx_to_token[:args.max_vocab_size]
 
-        with utils.print_time('compute vectors from subwords '
-                              'for {} words.'.format(len(idx_to_token))):
-            embedding[idx_to_token] = model[idx_to_token]
+        # If there are any remaining tokens we may precompute
+        if idx_to_token:
+            with utils.print_time('compute vectors from subwords '
+                                  'for {} words.'.format(len(idx_to_token))):
+                embedding[idx_to_token] = model[idx_to_token]
 
     else:
         embedding = nlp.embedding.TokenEmbedding.from_file(args.embedding_path)
@@ -186,8 +187,7 @@ if __name__ == '__main__':
                 args_.embedding_name,
                 source=args_.embedding_source,
                 load_ngrams=args_.fasttext_load_ngrams,
-                allow_extend=True,
-                unknown_autoextend=True)
+                allow_extend=True)
         else:
             token_embedding_ = nlp.embedding.create(
                 args_.embedding_name, source=args_.embedding_source)
@@ -198,14 +198,16 @@ if __name__ == '__main__':
 
     enforce_max_size(token_embedding_, args_.max_vocab_size)
     known_tokens = set(token_embedding_.idx_to_token)
-    # Auto-extend token_embedding with unknown extra eval tokens
+
+    # Extend token_embedding with unknown extra eval tokens
     if token_embedding_.unknown_lookup is not None:
         eval_tokens = evaluation.get_tokens_in_evaluation_datasets(args_)
-        # pylint: disable=pointless-statement
-        token_embedding_[[
+        tokens_to_extend = [
             t for t in eval_tokens - known_tokens
-            if t in token_embedding_.unknown_lookup
-        ]]
+            if t in token_embedding_.unknown_lookup]
+        if tokens_to_extend:
+            token_embedding_[tokens_to_extend] = \
+                token_embedding_.unknown_lookup[tokens_to_extend]
 
         if args_.max_vocab_size is not None and len(
                 token_embedding_.idx_to_token) > args_.max_vocab_size:
@@ -216,9 +218,11 @@ if __name__ == '__main__':
                             len(token_embedding_.idx_to_token),
                             args_.max_vocab_size)
 
-    similarity_results = evaluation.evaluate_similarity(
-        args_, token_embedding_, ctx, logfile=os.path.join(
-            args_.logdir, 'similarity{}.tsv'.format(name)))
-    analogy_results = evaluation.evaluate_analogy(
-        args_, token_embedding_, ctx, logfile=os.path.join(
-            args_.logdir, 'analogy{}.tsv'.format(name)))
+    if args_.similarity_datasets:
+        similarity_results = evaluation.evaluate_similarity(
+            args_, token_embedding_, ctx, logfile=os.path.join(
+                args_.logdir, 'similarity{}.tsv'.format(name)))
+    if args_.analogy_datasets:
+        analogy_results = evaluation.evaluate_analogy(
+            args_, token_embedding_, ctx, logfile=os.path.join(
+                args_.logdir, 'analogy{}.tsv'.format(name)))

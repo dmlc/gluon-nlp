@@ -864,8 +864,11 @@ def test_token_embedding_from_S3_fasttext_with_ngrams(load_ngrams):
 @pytest.mark.parametrize('setinconstructor', [True, False])
 @pytest.mark.parametrize('lookup', ['naive', 'incapable'])
 @pytest.mark.parametrize('initializetokenembedding', [True, False])
+@pytest.mark.parametrize('unknown_token', [True, False])
+@pytest.mark.parametrize('allow_extend', [True, False])
 def test_token_embedding_unknown_lookup(setinconstructor, lookup,
-                                        initializetokenembedding, tmpdir):
+                                        initializetokenembedding,
+                                        unknown_token, allow_extend, tmpdir):
     class NaiveLookup(object):
         dim = 5  # Must match _mk_my_pretrain_file
 
@@ -904,53 +907,47 @@ def test_token_embedding_unknown_lookup(setinconstructor, lookup,
     Lookup = NaiveLookup if lookup == "naive" else IncapableLookup
 
     if setinconstructor:
-        TokEmb = functools.partial(TokenEmbedding, unknown_lookup=Lookup())
+        TokEmb = functools.partial(
+            TokenEmbedding, unknown_lookup=Lookup(), allow_extend=allow_extend,
+            unknown_token='<unk>' if unknown_token else None)
     else:
 
         def TokEmb(*args, **kwargs):
-            token_embedding = TokenEmbedding(*args, **kwargs)
+            token_embedding = TokenEmbedding(
+                allow_extend=allow_extend,
+                unknown_token='<unk>' if unknown_token else None, *args,
+                **kwargs)
             token_embedding.unknown_lookup = Lookup()
             return token_embedding
 
+    token_embedding = TokEmb()
     if lookup == 'incapable' and not initializetokenembedding:
         with pytest.raises(KeyError):
-            TokEmb(unknown_autoextend=False)['hello']
+            token_embedding['hello']
+    elif lookup == 'incapable' and initializetokenembedding and not unknown_token:
         with pytest.raises(KeyError):
-            TokEmb(unknown_autoextend=True, allow_extend=True)['hello']
-        with pytest.raises(KeyError):
-            TokEmb(unknown_autoextend=True, allow_extend=False)['hello']
-    elif lookup == 'incapable' and initializetokenembedding:
-        token_embedding = TokEmb(unknown_autoextend=False)
-        assert 'hello' not in token_embedding.token_to_idx
-        assert np.all(np.isclose(0, token_embedding['hello'].asnumpy()))
-        assert 'hello' not in token_embedding.token_to_idx
-
-        token_embedding = TokEmb(unknown_autoextend=True, allow_extend=True)
-        assert 'hello' not in token_embedding.token_to_idx
-        assert np.all(np.isclose(0, token_embedding['hello'].asnumpy()))
-        assert 'hello' not in token_embedding.token_to_idx
-
-        token_embedding = TokEmb(unknown_autoextend=True, allow_extend=False)
+            token_embedding['hello']
+    elif lookup == 'incapable' and initializetokenembedding and unknown_token:
         assert 'hello' not in token_embedding.token_to_idx
         assert np.all(np.isclose(0, token_embedding['hello'].asnumpy()))
         assert 'hello' not in token_embedding.token_to_idx
     elif lookup != 'naive':
         raise RuntimeError('Invalid test parameterization.')
     else:
-        token_embedding = TokEmb(unknown_autoextend=False)
         assert 'hello' not in token_embedding.token_to_idx
         assert np.all(np.isclose(1, token_embedding['hello'].asnumpy()))
         assert 'hello' not in token_embedding.token_to_idx
 
-        token_embedding = TokEmb(unknown_autoextend=True, allow_extend=True)
-        assert 'hello' not in token_embedding.token_to_idx
-        assert np.all(np.isclose(1, token_embedding['hello'].asnumpy()))
-        assert 'hello' in token_embedding.token_to_idx
+        if allow_extend:
+            token_embedding['hello'] = token_embedding.unknown_lookup['hello']
+            assert 'hello' in token_embedding.token_to_idx
+            assert np.all(np.isclose(1, token_embedding['hello'].asnumpy()))
 
-        token_embedding = TokEmb(unknown_autoextend=True, allow_extend=False)
-        assert 'hello' not in token_embedding.token_to_idx
-        assert np.all(np.isclose(1, token_embedding['hello'].asnumpy()))
-        assert 'hello' not in token_embedding.token_to_idx
+            token_embedding[['hello2', 'world']] = \
+                token_embedding.unknown_lookup[['hello2', 'world']]
+            assert 'hello2' in token_embedding.token_to_idx
+            assert 'world' in token_embedding.token_to_idx
+            assert np.all(np.isclose(1, token_embedding['hello2'].asnumpy()))
 
 
 @pytest.mark.parametrize('initializeidxtovecbyextending', [True, False])
