@@ -42,7 +42,7 @@ from .utils import _load_vocab, _load_pretrained_params
 ###############################################################################
 
 def _position_encoding_init(max_length, dim):
-    """ Init the sinusoid position encoding table """
+    """Init the sinusoid position encoding table """
     position_enc = np.arange(max_length).reshape((-1, 1)) \
                    / (np.power(10000, (2. / dim) * np.arange(dim).reshape((1, -1))))
     # Apply the cosine to even columns and sin to odds.
@@ -110,7 +110,7 @@ class BasePositionwiseFFN(HybridBlock):
             self.layer_norm = _get_layer_norm(use_bert_layer_norm, units)
 
     def _get_activation(self, act):
-        """ Get activation block based on the name. """
+        """Get activation block based on the name. """
         if isinstance(act, str):
             if act.lower() == 'gelu':
                 return GELU()
@@ -1212,7 +1212,7 @@ def transformer_en_de_512(dataset_name=None, src_vocab=None, tgt_vocab=None, pre
 
 
 class ParallelTransformer(Parallelizable):
-    """ Data parallel transformer.
+    """Data parallel transformer.
 
     Parameters
     ----------
@@ -1232,6 +1232,7 @@ class ParallelTransformer(Parallelizable):
         self._rescale_loss = rescale_loss
 
     def forward_backward(self, x):
+        """Perform forward and backward computation for a batch of src seq and dst seq"""
         (src_seq, tgt_seq, src_valid_length, tgt_valid_length), batch_size = x
         with mx.autograd.record():
             out, _ = self._model(src_seq, tgt_seq[:, :-1],

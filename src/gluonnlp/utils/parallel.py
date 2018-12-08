@@ -26,7 +26,7 @@ except ImportError:
 __all__ = ['Parallelizable', 'Parallel']
 
 class Parallelizable(object):
-    """ Base class for parallelizable unit of work, which can be invoked by `Parallel`.
+    """Base class for parallelizable unit of work, which can be invoked by `Parallel`.
     The subclass must implement the `forward_backward` method, and be used
     together with `Parallel`. For example::
 
@@ -60,7 +60,7 @@ class Parallelizable(object):
         raise NotImplementedError()
 
 class Parallel(object):
-    """ Class for parallel processing with `Parallelizable`s. It invokes a
+    """Class for parallel processing with `Parallelizable`s. It invokes a
     `Parallelizable` with multiple Python threads. For example::
 
         class ParallelNet(Parallelizable):
@@ -100,7 +100,7 @@ class Parallel(object):
     """
 
     class _StopSignal(object):
-        """ Internal class to signal stop. """
+        """Internal class to signal stop. """
         def __init__(self, msg):
             self._msg = msg
 
@@ -128,7 +128,7 @@ class Parallel(object):
             thread.start()
 
     def put(self, x):
-        """ Assign input `x` to an available worker and invoke
+        """Assign input `x` to an available worker and invoke
         `parallizable.forward_backward` with x. """
         if self._num_serial > 0:
             self._num_serial -= 1
@@ -138,7 +138,7 @@ class Parallel(object):
             self._in_queue.put(x)
 
     def get(self):
-        """ Get an output of previous `parallizable.forward_backward` calls.
+        """Get an output of previous `parallizable.forward_backward` calls.
         This method blocks if none of previous `parallizable.forward_backward`
         calls have return any result. """
         return self._out_queue.get()

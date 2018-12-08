@@ -18,8 +18,7 @@
 # under the License.
 
 # pylint: disable=wildcard-import, arguments-differ
-r"""Module for utility functions.
-"""
+"""Module for utility functions."""
 
 from .parallel import *
 
