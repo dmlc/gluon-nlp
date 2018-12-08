@@ -554,16 +554,30 @@ class TokenEmbedding(object):
 
         if self.unknown_lookup is not None and (not self.allow_extend
                                                 or not self.unknown_autoextend):
-            vecs = [
-                self.idx_to_vec[self.token_to_idx[token]]
-                if token in self.token_to_idx else self.unknown_lookup[token]
-                for token in tokens
-            ]
-            vecs = nd.stack(*vecs, axis=0)
+            if self.idx_to_vec is None:
+                # May raise KeyError, but we cannot fallback to idx_to_vec's
+                # unknown vector, as idx_to_vec has not been initialized yet.
+                # Cannot initialize it, as we don't know the dimension.
+                vecs = self.unknown_lookup[tokens]
+            else:
+                vecs = [
+                    self.idx_to_vec[self.token_to_idx[token]] if
+                    (token in self.token_to_idx
+                     or token not in self.unknown_lookup) else
+                    self.unknown_lookup[token] for token in tokens]
+                vecs = nd.stack(*vecs, axis=0)
         else:
             if self.unknown_lookup is not None and self.allow_extend and self.unknown_autoextend:
-                new_tokens = [t for t in tokens if t not in self.token_to_idx]
-                self[new_tokens] = self.unknown_lookup[new_tokens]
+                new_tokens = [
+                    t for t in tokens
+                    if t not in self.token_to_idx and t in self.unknown_lookup]
+                if new_tokens:
+                    self[new_tokens] = self.unknown_lookup[new_tokens]
+                elif self.idx_to_vec is None:
+                    # Cannot fallback to idx_to_vec's unknown vector, as
+                    # idx_to_vec has not been initialized yet. Cannot
+                    # initialize it, as we don't know the dimension.
+                    raise KeyError
 
             indices = [self._token_to_idx[token] for token in tokens]
             vecs = nd.Embedding(

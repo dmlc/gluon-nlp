@@ -862,41 +862,95 @@ def test_token_embedding_from_S3_fasttext_with_ngrams(load_ngrams):
 
 
 @pytest.mark.parametrize('setinconstructor', [True, False])
-def test_token_embedding_unknown_lookup(setinconstructor):
+@pytest.mark.parametrize('lookup', ['naive', 'incapable'])
+@pytest.mark.parametrize('initializetokenembedding', [True, False])
+def test_token_embedding_unknown_lookup(setinconstructor, lookup,
+                                        initializetokenembedding, tmpdir):
     class NaiveLookup(object):
-        dim = 300
+        dim = 5  # Must match _mk_my_pretrain_file
+
+        def __contains__(self, token):
+            return True
 
         def __getitem__(self, tokens):
             if isinstance(tokens, _str_types):
-                return nd.zeros(self.dim)
+                return nd.ones(self.dim)
             else:
-                return nd.zeros((len(tokens), self.dim))
+                return nd.ones((len(tokens), self.dim))
+
+    class IncapableLookup(object):
+        def __contains__(self, token):
+            return False
+
+        def __getitem__(self, tokens):
+            raise KeyError
+
+    if initializetokenembedding:
+        # Load a TokenEmbedding with idx_to_vec already initialized
+        embed_root = str(tmpdir)
+        embed_name = 'my_embed'
+        elem_delim = '\t'
+        pretrain_file = 'my_pretrain_file.txt'
+        _mk_my_pretrain_file(
+            os.path.join(embed_root, embed_name), elem_delim, pretrain_file)
+        pretrain_file_path = os.path.join(embed_root, embed_name,
+                                          pretrain_file)
+        TokenEmbedding = functools.partial(
+            nlp.embedding.TokenEmbedding.from_file, pretrain_file_path,
+            elem_delim)
+    else:
+        TokenEmbedding = nlp.embedding.token_embedding.TokenEmbedding
+
+    Lookup = NaiveLookup if lookup == "naive" else IncapableLookup
 
     if setinconstructor:
-        TokEmb = functools.partial(
-            nlp.embedding.token_embedding.TokenEmbedding,
-            unknown_lookup=NaiveLookup())
+        TokEmb = functools.partial(TokenEmbedding, unknown_lookup=Lookup())
     else:
+
         def TokEmb(*args, **kwargs):
-            token_embedding = nlp.embedding.token_embedding.TokenEmbedding(
-                *args, **kwargs)
-            token_embedding.unknown_lookup = NaiveLookup()
+            token_embedding = TokenEmbedding(*args, **kwargs)
+            token_embedding.unknown_lookup = Lookup()
             return token_embedding
 
-    token_embedding = TokEmb(unknown_autoextend=False)
-    assert 'hello' not in token_embedding.token_to_idx
-    assert np.all(np.isclose(0, token_embedding['hello'].asnumpy()))
-    assert 'hello' not in token_embedding.token_to_idx
+    if lookup == 'incapable' and not initializetokenembedding:
+        with pytest.raises(KeyError):
+            TokEmb(unknown_autoextend=False)['hello']
+        with pytest.raises(KeyError):
+            TokEmb(unknown_autoextend=True, allow_extend=True)['hello']
+        with pytest.raises(KeyError):
+            TokEmb(unknown_autoextend=True, allow_extend=False)['hello']
+    elif lookup == 'incapable' and initializetokenembedding:
+        token_embedding = TokEmb(unknown_autoextend=False)
+        assert 'hello' not in token_embedding.token_to_idx
+        assert np.all(np.isclose(0, token_embedding['hello'].asnumpy()))
+        assert 'hello' not in token_embedding.token_to_idx
 
-    token_embedding = TokEmb(unknown_autoextend=True, allow_extend=True)
-    assert 'hello' not in token_embedding.token_to_idx
-    assert np.all(np.isclose(0, token_embedding['hello'].asnumpy()))
-    assert 'hello' in token_embedding.token_to_idx
+        token_embedding = TokEmb(unknown_autoextend=True, allow_extend=True)
+        assert 'hello' not in token_embedding.token_to_idx
+        assert np.all(np.isclose(0, token_embedding['hello'].asnumpy()))
+        assert 'hello' not in token_embedding.token_to_idx
 
-    token_embedding = TokEmb(unknown_autoextend=True, allow_extend=False)
-    assert 'hello' not in token_embedding.token_to_idx
-    assert np.all(np.isclose(0, token_embedding['hello'].asnumpy()))
-    assert 'hello' not in token_embedding.token_to_idx
+        token_embedding = TokEmb(unknown_autoextend=True, allow_extend=False)
+        assert 'hello' not in token_embedding.token_to_idx
+        assert np.all(np.isclose(0, token_embedding['hello'].asnumpy()))
+        assert 'hello' not in token_embedding.token_to_idx
+    elif lookup != 'naive':
+        raise RuntimeError('Invalid test parameterization.')
+    else:
+        token_embedding = TokEmb(unknown_autoextend=False)
+        assert 'hello' not in token_embedding.token_to_idx
+        assert np.all(np.isclose(1, token_embedding['hello'].asnumpy()))
+        assert 'hello' not in token_embedding.token_to_idx
+
+        token_embedding = TokEmb(unknown_autoextend=True, allow_extend=True)
+        assert 'hello' not in token_embedding.token_to_idx
+        assert np.all(np.isclose(1, token_embedding['hello'].asnumpy()))
+        assert 'hello' in token_embedding.token_to_idx
+
+        token_embedding = TokEmb(unknown_autoextend=True, allow_extend=False)
+        assert 'hello' not in token_embedding.token_to_idx
+        assert np.all(np.isclose(1, token_embedding['hello'].asnumpy()))
+        assert 'hello' not in token_embedding.token_to_idx
 
 
 @pytest.mark.parametrize('initializeidxtovecbyextending', [True, False])
