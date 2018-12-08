@@ -3,7 +3,7 @@ import numpy as np
 import mxnet as mx
 import gluonnlp as nlp
 
-@pytest.mark.skipif(len(test_utils.list_gpus()) < 2,
+@pytest.mark.skipif(len(mx.test_utils.list_gpus()) < 2,
                     reason="requires 2 gpus")
 @pytest.mark.gpu
 def test_parallel():
