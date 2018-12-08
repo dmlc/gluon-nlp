@@ -3,9 +3,6 @@ import numpy as np
 import mxnet as mx
 import gluonnlp as nlp
 
-@pytest.mark.skipif(len(mx.test_utils.list_gpus()) < 2,
-                    reason="requires 2 gpus")
-@pytest.mark.gpu
 def test_parallel():
     class ParallelNet(nlp.utils.Parallelizable):
         def __init__(self, net, loss):
@@ -22,7 +19,7 @@ def test_parallel():
     # model
     net = mx.gluon.nn.Dense(2)
     loss = mx.gluon.loss.SoftmaxCELoss()
-    ctxs = [mx.gpu(0), mx.gpu(1)]
+    ctxs = [mx.cpu(0), mx.cpu(1)]
     net.initialize(ctx=ctxs)
     params = net.collect_params()
 
