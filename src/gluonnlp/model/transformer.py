@@ -30,6 +30,7 @@ from mxnet import cpu, gluon
 from mxnet.gluon import nn
 from mxnet.gluon.block import HybridBlock
 from mxnet.gluon.model_zoo import model_store
+from gluonnlp.utils.parallel import Parallelizable
 from .seq2seq_encoder_decoder import Seq2SeqEncoder, Seq2SeqDecoder, _get_attention_cell
 from .block import GELU
 from .translation import NMTModel
@@ -41,7 +42,7 @@ from .utils import _load_vocab, _load_pretrained_params
 ###############################################################################
 
 def _position_encoding_init(max_length, dim):
-    """ Init the sinusoid position encoding table """
+    """Init the sinusoid position encoding table """
     position_enc = np.arange(max_length).reshape((-1, 1)) \
                    / (np.power(10000, (2. / dim) * np.arange(dim).reshape((1, -1))))
     # Apply the cosine to even columns and sin to odds.
@@ -109,7 +110,7 @@ class BasePositionwiseFFN(HybridBlock):
             self.layer_norm = _get_layer_norm(use_bert_layer_norm, units)
 
     def _get_activation(self, act):
-        """ Get activation block based on the name. """
+        """Get activation block based on the name. """
         if isinstance(act, str):
             if act.lower() == 'gelu':
                 return GELU()
@@ -1208,3 +1209,36 @@ def transformer_en_de_512(dataset_name=None, src_vocab=None, tgt_vocab=None, pre
                                   predefined_args['share_embed'], predefined_args['embed_size'],
                                   predefined_args['tie_weights'],
                                   predefined_args['embed_initializer'], pretrained, ctx, root)
+
+
+class ParallelTransformer(Parallelizable):
+    """Data parallel transformer.
+
+    Parameters
+    ----------
+    model : Block
+        The transformer model.
+    label_smoothing: Block
+        The block to perform label smoothing.
+    loss_function : Block
+        The loss function to optimizer.
+    rescale_loss : float
+        The scale to which the loss is rescaled to avoid gradient explosion.
+    """
+    def __init__(self, model, label_smoothing, loss_function, rescale_loss):
+        self._model = model
+        self._label_smoothing = label_smoothing
+        self._loss = loss_function
+        self._rescale_loss = rescale_loss
+
+    def forward_backward(self, x):
+        """Perform forward and backward computation for a batch of src seq and dst seq"""
+        (src_seq, tgt_seq, src_valid_length, tgt_valid_length), batch_size = x
+        with mx.autograd.record():
+            out, _ = self._model(src_seq, tgt_seq[:, :-1],
+                                 src_valid_length, tgt_valid_length - 1)
+            smoothed_label = self._label_smoothing(tgt_seq[:, 1:])
+            ls = self._loss(out, smoothed_label, tgt_valid_length - 1).sum()
+            ls = (ls * (tgt_seq.shape[1] - 1)) / batch_size / self._rescale_loss
+        ls.backward()
+        return ls
