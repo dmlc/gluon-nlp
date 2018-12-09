@@ -218,6 +218,8 @@ _vocab_sha1 = {'wikitext-2'                 : 'be36dc5238c2e7d69720881647ab72eb5
                'WMT2014_tgt'                : '230ebb817b1d86950d71e2e765f192a4e4f34415',
                'book_corpus_wiki_en_cased'  : '412a6bbeae603b9b9ba6505dd8b58a8594fe5c4c',
                'book_corpus_wiki_en_uncased': 'c3e2bd000830b08b5535a75726af637f791d2bce',
+               'wiki_multilingual_cased'    : '71bb9e248dc75dce9227d3c8c16fde3993588b9e',
+               'wiki_cn'                    : 'a1e06f8e39ae51ab8a92b8458e6a658b8b1f72bf',
                'wiki_multilingual'          : '4cf30ef8fd0e0a6a4f9ef05b716b108f8b61c2d7'}
 
 _url_format = '{repo_url}gluon/dataset/vocab/{file_name}.zip'
