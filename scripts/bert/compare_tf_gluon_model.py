@@ -71,7 +71,8 @@ import tokenization
 from extract_features import *
 
 # data
-layer_indexes = list(range(12))
+num_layers = int(args.gluon_model.split('_')[1])
+layer_indexes = list(range(num_layers))
 bert_config = modeling.BertConfig.from_json_file(bert_config_file)
 tokenizer = tokenization.FullTokenizer(vocab_file=vocab_file, do_lower_case=do_lower_case)
 examples = read_examples(input_file)
