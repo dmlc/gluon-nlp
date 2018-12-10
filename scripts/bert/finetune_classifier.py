@@ -42,7 +42,7 @@ import mxnet as mx
 from mxnet import gluon
 from gluonnlp.model import bert_12_768_12
 from bert import BERTClassifier
-from tokenization import FullTokenizer
+from tokenizer import FullTokenizer
 from dataset import MRPCDataset, ClassificationTransform
 
 np.random.seed(0)
@@ -50,8 +50,8 @@ random.seed(0)
 mx.random.seed(2)
 logging.getLogger().setLevel(logging.DEBUG)
 
-parser = argparse.ArgumentParser(description='Neural Machine Translation Example.'
-                                             'We train the Transformer Model')
+parser = argparse.ArgumentParser(description='BERT sentence pair classification example.'
+                                             'We fine-tune the BERT model on MRPC')
 parser.add_argument('--epochs', type=int, default=3, help='number of epochs')
 parser.add_argument('--batch_size', type=int, default=32,
                     help='Batch size. Number of examples per gpu in a minibatch')

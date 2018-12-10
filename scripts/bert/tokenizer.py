@@ -21,10 +21,7 @@ from __future__ import print_function
 import collections
 import unicodedata
 import io
-import json
 import six
-import gluonnlp
-
 
 def convert_to_unicode(text):
     """Converts `text` to Unicode (if it's not already), assuming utf-8 input."""
@@ -126,52 +123,6 @@ class FullTokenizer(object):
 
     def convert_tokens_to_ids(self, tokens):
         return convert_tokens_to_ids(self.vocab, tokens)
-
-    def _convert_vocab(self):
-        """GluonNLP specific code to convert the original vocabulary to nlp.vocab.Vocab."""
-        token_to_idx = dict(self.vocab)
-        num_tokens = len(token_to_idx)
-        idx_to_token = [None] * len(self.vocab)
-        for word in self.vocab:
-            idx = int(self.vocab[word])
-            idx_to_token[idx] = word
-
-        def swap(token, target_idx, token_to_idx, idx_to_token, swap_idx):
-            original_idx = token_to_idx[token]
-            original_token = idx_to_token[target_idx]
-            token_to_idx[token] = target_idx
-            token_to_idx[original_token] = original_idx
-            idx_to_token[target_idx] = token
-            idx_to_token[original_idx] = original_token
-            swap_idx.append((original_idx, target_idx))
-
-        reserved_tokens = ['[PAD]', '[CLS]', '[SEP]', '[MASK]']
-        unknown_token = '[UNK]'
-        padding_token = '[PAD]'
-        swap_idx = []
-        assert unknown_token in token_to_idx
-        assert padding_token in token_to_idx
-        swap(unknown_token, 0, token_to_idx, idx_to_token, swap_idx)
-        for i, token in enumerate(reserved_tokens):
-            swap(token, i + 1, token_to_idx, idx_to_token, swap_idx)
-
-        # sanity checks
-        assert len(token_to_idx) == num_tokens
-        assert len(idx_to_token) == num_tokens
-        assert None not in idx_to_token
-        assert len(set(idx_to_token)) == num_tokens
-
-        vocab_dict = {}
-        vocab_dict['idx_to_token'] = idx_to_token
-        vocab_dict['token_to_idx'] = token_to_idx
-        vocab_dict['reserved_tokens'] = reserved_tokens
-        vocab_dict['unknown_token'] = unknown_token
-        vocab_dict['padding_token'] = padding_token
-        vocab_dict['bos_token'] = None
-        vocab_dict['eos_token'] = None
-        json_str = json.dumps(vocab_dict)
-        converted_vocab = gluonnlp.Vocab.from_json(json_str)
-        return converted_vocab, swap_idx
 
 
 class BasicTokenizer(object):

@@ -157,11 +157,11 @@ generate valid length
 
 ```{.python .input}
 # use the vocabulary from pre-trained model for tokenization
-tokenizer = tokenization.FullTokenizer(vocabulary, do_lower_case=True)
+bert_tokenizer = tokenizer.FullTokenizer(vocabulary, do_lower_case=True)
 # maximum sequence length
 max_len = 128
 all_labels = ["0", "1"]
-transform = dataset.ClassificationTransform(tokenizer, all_labels, max_len)
+transform = dataset.ClassificationTransform(bert_tokenizer, all_labels, max_len)
 data_train = data_train.transform(transform)
 
 print('token ids = \n%s'%data_train[sample_id][0])

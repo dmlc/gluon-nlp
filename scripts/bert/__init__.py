@@ -19,4 +19,4 @@
 
 # pylint: disable=wildcard-import
 """BERT example."""
-from . import bert, dataset, tokenization
+from . import bert, dataset, tokenizer
