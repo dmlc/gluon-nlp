@@ -46,7 +46,8 @@ from mxnet import gluon
 import gluonnlp as nlp
 
 from gluonnlp.model.translation import NMTModel
-from gluonnlp.model.transformer import get_transformer_encoder_decoder
+from gluonnlp.model.transformer import get_transformer_encoder_decoder, ParallelTransformer
+from gluonnlp.utils.parallel import Parallel
 from translation import BeamSearchTranslator
 from loss import SoftmaxCEMaskedLoss, LabelSmoothing
 from utils import logging_config
@@ -151,6 +152,7 @@ data_test = gluon.data.SimpleDataset([(ele[0], ele[1], len(ele[0]), len(ele[1]),
 
 ctx = [mx.cpu()] if args.gpus is None or args.gpus == '' else \
     [mx.gpu(int(x)) for x in args.gpus.split(',')]
+num_ctxs = len(ctx)
 
 data_train_lengths, data_val_lengths, data_test_lengths = [dataprocessor.get_data_lengths(x)
                                                            for x in
@@ -200,6 +202,8 @@ loss_function.hybridize(static_alloc=static_alloc)
 test_loss_function = SoftmaxCEMaskedLoss()
 test_loss_function.hybridize(static_alloc=static_alloc)
 
+rescale_loss = 100
+parallel_model = ParallelTransformer(model, label_smoothing, loss_function, rescale_loss)
 detokenizer = nlp.data.SacreMosesDetokenizer()
 
 
@@ -283,6 +287,7 @@ def train():
     average_start = (len(train_data_loader) // grad_interval) * (args.epochs - args.average_start)
     average_param_dict = None
     model.collect_params().zero_grad()
+    parallel = Parallel(num_ctxs, parallel_model)
     for epoch_id in range(args.epochs):
         log_avg_loss = 0
         log_wc = 0
@@ -298,21 +303,15 @@ def train():
                 trainer.set_learning_rate(new_lr)
             src_wc, tgt_wc, bs = np.sum([(shard[2].sum(), shard[3].sum(), shard[0].shape[0])
                                          for shard in seqs], axis=0)
-            src_wc = src_wc.asscalar()
-            tgt_wc = tgt_wc.asscalar()
-            loss_denom += tgt_wc - bs
             seqs = [[seq.as_in_context(context) for seq in shard]
                     for context, shard in zip(ctx, seqs)]
             Ls = []
-            with mx.autograd.record():
-                for src_seq, tgt_seq, src_valid_length, tgt_valid_length in seqs:
-                    out, _ = model(src_seq, tgt_seq[:, :-1],
-                                   src_valid_length, tgt_valid_length - 1)
-                    smoothed_label = label_smoothing(tgt_seq[:, 1:])
-                    ls = loss_function(out, smoothed_label, tgt_valid_length - 1).sum()
-                    Ls.append((ls * (tgt_seq.shape[1] - 1)) / args.batch_size / 100.0)
-            for L in Ls:
-                L.backward()
+            for seq in seqs:
+                parallel.put((seq, args.batch_size))
+            Ls = [parallel.get() for _ in range(len(ctx))]
+            src_wc = src_wc.asscalar()
+            tgt_wc = tgt_wc.asscalar()
+            loss_denom += tgt_wc - bs
             if batch_id % grad_interval == grad_interval - 1 or\
                     batch_id == len(train_data_loader) - 1:
                 if average_param_dict is None:
