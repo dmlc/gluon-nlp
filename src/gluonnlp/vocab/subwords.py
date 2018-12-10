@@ -258,8 +258,8 @@ class NGramHashes(SubwordFunction):
 
     @staticmethod
     def fasttext_hash_asbytes(ngram, encoding='utf-8'):
-        ngram_enc = bytearray(ngram.encode(encoding))
-        _fasttext_hash(ngram_enc)
+        ngram_enc = memoryview(ngram.encode(encoding))
+        return _fasttext_hash(ngram_enc)
 
     def _word_to_hashes(self, word):
         if word not in self.special_tokens:
