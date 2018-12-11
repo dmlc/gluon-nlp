@@ -172,7 +172,10 @@ class TokenEmbedding(object):
         via token_embedding[tokens] = vecs. If False, only vectors for known
         tokens can be updated.
     unknown_lookup : object subscriptable with list of tokens returning nd.NDarray, default None
-        If not None, unknown_lookup[tokens] is called for any unknown tokens.
+        If not None, the TokenEmbedding obtains embeddings for unknown tokens
+        automatically from `unknown_lookup[unknown_tokens]`. For example, in a
+        FastText model, embeddings for unknown tokens can be computed from the
+        subword information.
 
     """
 
@@ -449,7 +452,8 @@ class TokenEmbedding(object):
     def unknown_lookup(self):
         """Vector lookup for unknown tokens.
 
-        If not None, unknown_lookup[tokens] is called for any unknown tokens.
+        If not None, unknown_lookup[tokens] is automatically called for any
+        unknown tokens.
 
         Returns
         -------
