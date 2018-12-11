@@ -19,8 +19,6 @@
 
 """Load various datasets."""
 
-from functools import partial
-import multiprocessing as mp
 import re
 import time
 
