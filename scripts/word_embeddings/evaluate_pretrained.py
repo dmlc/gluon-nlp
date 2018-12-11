@@ -131,7 +131,7 @@ def validate_args(args):
 
 def load_embedding_from_path(args):
     """Load a TokenEmbedding."""
-    if 'bin' in args.embedding_path:
+    if args.embedding_path.endswith('.bin'):
         with utils.print_time('load fastText model.'):
             model = \
                 nlp.model.train.FasttextEmbeddingModel.load_fasttext_format(
