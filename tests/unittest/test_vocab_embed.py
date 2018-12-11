@@ -762,6 +762,53 @@ def test_vocab_set_embedding_with_two_custom_embeddings(tmpdir, allow_extend):
                         )
 
 
+@pytest.mark.parametrize('allow_extend', [True, False])
+@pytest.mark.parametrize('unknown_token', [True, False])
+@pytest.mark.parametrize('vocab_unknown_token', [True, False])
+@pytest.mark.parametrize('initialize', [True, False])
+def test_vocab_set_embedding_with_subword_lookup_only_token_embedding(
+        allow_extend, unknown_token, vocab_unknown_token, initialize):
+    embsize = 5
+
+    class NaiveLookup(object):
+        def __contains__(self, token):
+            return True
+
+        def __getitem__(self, tokens):
+            if isinstance(tokens, _str_types):
+                return nd.ones(embsize)
+            else:
+                return nd.ones((len(tokens), embsize))
+
+    c = nlp.data.utils.Counter(['a', 'b', 'b', 'c', 'c', 'c', 'some_word$'])
+    v = nlp.Vocab(c, max_size=None, min_freq=1,
+                  unknown_token='<unk>' if vocab_unknown_token else None,
+                  padding_token='<pad>')
+
+    assert v.embedding is None
+
+    e = nlp.embedding.TokenEmbedding(
+        unknown_lookup=NaiveLookup(), allow_extend=allow_extend,
+        unknown_token='<unk>' if unknown_token else None)
+
+    if initialize and unknown_token:
+        e[e.unknown_token] = nd.zeros(embsize)
+    elif initialize and allow_extend:
+        e["hello"] = e.unknown_lookup["hello"]
+    else:  # Cannot initialize, even if initialize is True
+        with pytest.raises(AssertionError):
+            v.set_embedding(e)
+        return  # cannot test more
+
+    v.set_embedding(e)
+    assert v.embedding is not None
+    assert v.embedding.idx_to_vec is not None
+    assert v.embedding.idx_to_vec.shape == (len(v), embsize)
+
+    for t in c.keys():
+        assert np.all(np.isclose(1, v.embedding[t].asnumpy()))
+
+
 @pytest.mark.serial
 @pytest.mark.remote_required
 def test_download_embed():

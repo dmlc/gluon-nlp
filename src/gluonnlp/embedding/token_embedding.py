@@ -590,10 +590,14 @@ class TokenEmbedding(object):
             the glossary. If `tokens` is a singleton, it must be 1-D or 2-D. If `tokens` is a list
             of multiple strings, it must be 2-D.
         """
-        if self.allow_extend and self._idx_to_vec is None:
+        if not isinstance(tokens, (list, tuple)):
+            tokens = [tokens]
+        if ((self.allow_extend or all(t in self.token_to_idx for t in tokens))
+                and self._idx_to_vec is None):
             # Initialize self._idx_to_vec
             assert C.UNK_IDX == 0
-            self._idx_to_vec = self._init_unknown_vec(shape=(1, new_embedding.shape[-1]))
+            self._idx_to_vec = self._init_unknown_vec(
+                shape=(1, new_embedding.shape[-1]))
 
         tokens = self._check_vector_update(tokens, new_embedding)
 
