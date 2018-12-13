@@ -30,6 +30,10 @@ __all__ = ['ClipSequence', 'PadSequence', 'SacreMosesTokenizer', 'NLTKMosesToken
 import os
 import warnings
 
+import collections
+import unicodedata
+import six
+
 import numpy as np
 import mxnet as mx
 from mxnet.gluon.utils import download, check_sha1
