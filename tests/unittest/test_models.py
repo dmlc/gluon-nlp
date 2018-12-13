@@ -95,7 +95,7 @@ def test_transformer_models():
 def test_pretrained_bert_models():
     models = ['bert_12_768_12', 'bert_24_1024_16']
     pretrained = {'bert_12_768_12': ['book_corpus_wiki_en_cased', 'book_corpus_wiki_en_uncased', 'wiki_multilingual','wiki_multilingual_cased','wiki_cn'],
-                  'bert_24_1024_16': ['book_corpus_wiki_en_uncased']}
+                  'bert_24_1024_16': ['book_corpus_wiki_en_uncased','book_corpus_wiki_en_cased']}
     vocab_size = {'book_corpus_wiki_en_cased': 28996,
                   'book_corpus_wiki_en_uncased': 30522,
                   'wiki_multilingual_cased': 119547, 
