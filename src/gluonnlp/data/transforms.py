@@ -25,12 +25,12 @@ from __future__ import print_function
 
 __all__ = ['ClipSequence', 'PadSequence', 'SacreMosesTokenizer', 'NLTKMosesTokenizer',
            'SpacyTokenizer', 'SacreMosesDetokenizer', 'NLTKMosesDetokenizer', 'JiebaTokenizer',
-           'NLTKStanfordSegmenter', 'SentencepieceTokenizer', 'SentencepieceDetokenizer', 'BERTTokenizer']
+           'NLTKStanfordSegmenter', 'SentencepieceTokenizer',
+           'SentencepieceDetokenizer', 'BERTTokenizer']
 
 import os
 import warnings
 
-import collections
 import unicodedata
 import six
 
@@ -714,10 +714,10 @@ class BERTTokenizer(object):
 
     Examples
     --------
-    >>> vocabulary = gluonnlp.model.utils._load_vocab('wiki_multilingual_cased',vocab = None,root=os.path.join('~', '.mxnet', 'models'))
-    >>> tokenizer = gluonnlp.data.BERTTokenizer(vocab=vocabulary)
-    >>> tokenizer(u"gluonnlp: NLP made easy. gluonnlp: 使NLP变得简单")
-    ['g','##lu','##onn','##lp',':','nl','##p','made','easy','.','g','##lu','##onn','##lp',':','使','nl','##p','变','得','简','单','。']
+    >>> vocab = gluonnlp.model.utils._load_vocab('wiki_multilingual',None, './.mxnet')
+    >>> tokenizer = gluonnlp.data.BERTTokenizer(vocab=vocab)
+    >>> tokenizer(u"gluonnlp: 使NLP变得简单")
+    ['g','##lu','##onn','##lp',':','使','nl','##p','变','得','简','单','。']
 
     """
 
