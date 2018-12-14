@@ -718,6 +718,7 @@ class BERTTokenizer(object):
     >>> tokenizer = gluonnlp.data.BERTTokenizer(vocab=vocabulary)
     >>> tokenizer(u"gluonnlp: NLP made easy. gluonnlp: 使NLP变得简单")
     ['g','##lu','##onn','##lp',':','nl','##p','made','easy','.','g','##lu','##onn','##lp',':','使','nl','##p','变','得','简','单','。']
+
     """
 
     def __init__(self, vocab, do_lower_case=True, max_input_chars_per_word=200):
@@ -725,7 +726,7 @@ class BERTTokenizer(object):
         self.do_lower_case = do_lower_case
         self.max_input_chars_per_word = max_input_chars_per_word
 
-    def __call__(self,sample):
+    def __call__(self, sample):
         """
 
         Parameters
@@ -740,7 +741,7 @@ class BERTTokenizer(object):
         """
         return self._tokenizer(sample)
 
-    def _tokenizer(self,text):
+    def _tokenizer(self, text):
         split_tokens = []
         for token in self._BasicTokenizer(text):
             for sub_token in self._WordpieceTokenizer(token):
@@ -748,7 +749,7 @@ class BERTTokenizer(object):
 
         return split_tokens
 
-    def _BasicTokenizer(self,text):
+    def _BasicTokenizer(self, text):
         """Tokenizes a piece of text."""
         text = self._convert_to_unicode(text)
         text = self._clean_text(text)
@@ -771,7 +772,7 @@ class BERTTokenizer(object):
         output_tokens = self._whitespace_tokenize(' '.join(split_tokens))
         return output_tokens
 
-    def _WordpieceTokenizer(self,text):
+    def _WordpieceTokenizer(self, text):
         """Tokenizes a piece of text into its word pieces.
 
         This uses a greedy longest-match-first algorithm to perform tokenization
@@ -824,7 +825,7 @@ class BERTTokenizer(object):
                 output_tokens.extend(sub_tokens)
         return output_tokens
 
-    def convert_tokens_to_ids(self,tokens):
+    def convert_tokens_to_ids(self, tokens):
         """Converts a sequence of tokens into ids using the vocab."""
         ids = []
         for token in tokens:
@@ -910,7 +911,7 @@ class BERTTokenizer(object):
 
         return [''.join(x) for x in output]
 
-    def _whitespace_tokenize(self,text):
+    def _whitespace_tokenize(self, text):
         """Runs basic whitespace cleaning and splitting on a piece of text."""
         text = text.strip()
         if not text:
@@ -918,7 +919,7 @@ class BERTTokenizer(object):
         tokens = text.split()
         return tokens
 
-    def _convert_to_unicode(self,text):
+    def _convert_to_unicode(self, text):
         """Converts `text` to Unicode (if it's not already), assuming utf-8 input."""
         if six.PY3:
             if isinstance(text, str):
@@ -937,7 +938,7 @@ class BERTTokenizer(object):
         else:
             raise ValueError('Not running on Python2 or Python 3?')
 
-    def _is_whitespace(self,char):
+    def _is_whitespace(self, char):
         """Checks whether `chars` is a whitespace character."""
         # \t, \n, and \r are technically contorl characters but we treat them
         # as whitespace since they are generally considered as such.
@@ -948,7 +949,7 @@ class BERTTokenizer(object):
             return True
         return False
 
-    def _is_control(self,char):
+    def _is_control(self, char):
         """Checks whether `chars` is a control character."""
         # These are technically control characters but we count them as whitespace
         # characters.
@@ -959,7 +960,7 @@ class BERTTokenizer(object):
             return True
         return False
 
-    def _is_punctuation(self,char):
+    def _is_punctuation(self, char):
         """Checks whether `chars` is a punctuation character."""
         cp = ord(char)
         # We treat all non-letter/number ASCII as punctuation.

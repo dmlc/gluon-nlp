@@ -159,3 +159,4 @@ def test_berttokenizer():
     ret = tokenizer(text)
     assert isinstance(ret, list)
     assert len(ret) > 0
+    
