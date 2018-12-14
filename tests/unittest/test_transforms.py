@@ -28,6 +28,7 @@ import pytest
 import mxnet as mx
 from mxnet.gluon.utils import download
 from gluonnlp.data import transforms as t
+from gluonnlp.model.utils import _load_vocab
 
 
 def test_clip_sequence():
@@ -150,3 +151,11 @@ def test_sentencepiece_tokenizer_subword_regularization():
     assert any(reg_ret[i] != reg_ret[0] for i in range(len(reg_ret)))
     assert all(t in tokenizer.tokens for ret in reg_ret for t in ret)
     assert all(detokenizer(reg_ret[i]) == detext for i in range(len(reg_ret)))
+
+def test_berttokenizer():
+    text = "Introducing Gluon: An Easy-to-Use Programming Interface for Flexible Deep Learning. Gluon: 一个用于深度学习灵活而易于使用的编程接口。"
+    vocab = _load_vocab('wiki_multilingual_cased',vocab=None,root='tests/data/model/')
+    tokenizer = t.BERTTokenizer(vocab=vocab)
+    ret = tokenizer(text)
+    assert isinstance(ret, list)
+    assert len(ret) > 0

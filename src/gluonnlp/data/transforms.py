@@ -702,13 +702,42 @@ class SentencepieceDetokenizer(_SentencepieceProcessor):
 
 
 class BERTTokenizer(object):
-    def __init__(self, vocab, do_lower_case=True, unk_token='[UNK]', max_input_chars_per_word=100):
+    r"""End-to-end tokenziation for BERT pre-training models.
+
+    Parameters
+    ----------
+    vocab : gluonnlp.Vocab or None, default None
+        Vocabulary for the corpus.
+    do_lower_case : bool. default True
+        If model is uncased, then do_lower_case should be set to True
+    max_input_chars_per_word : int, default 200
+
+    Examples
+    --------
+    >>> vocabulary = gluonnlp.model.utils._load_vocab('wiki_multilingual_cased',vocab = None,root=os.path.join('~', '.mxnet', 'models'))
+    >>> tokenizer = gluonnlp.data.BERTTokenizer(vocab=vocabulary)
+    >>> tokenizer(u"gluonnlp: NLP made easy. gluonnlp: 使NLP变得简单")
+    ['g','##lu','##onn','##lp',':','nl','##p','made','easy','.','g','##lu','##onn','##lp',':','使','nl','##p','变','得','简','单','。']
+    """
+
+    def __init__(self, vocab, do_lower_case=True, max_input_chars_per_word=200):
         self.vocab = vocab
         self.do_lower_case = do_lower_case
-        self.unk_token = unk_token
         self.max_input_chars_per_word = max_input_chars_per_word
 
     def __call__(self,sample):
+        """
+
+        Parameters
+        ----------
+        sample: list(str)
+            The sentence to detokenize
+
+        Returns
+        -------
+        ret : str
+            Detokenized text
+        """
         return self._tokenizer(sample)
 
     def _tokenizer(self,text):
@@ -766,7 +795,7 @@ class BERTTokenizer(object):
         for token in self._whitespace_tokenize(text):
             chars = list(token)
             if len(chars) > self.max_input_chars_per_word:
-                output_tokens.append(self.unk_token)
+                output_tokens.append(self.vocab.unknown_token)
                 continue
 
             is_bad = False
@@ -790,7 +819,7 @@ class BERTTokenizer(object):
                 start = end
 
             if is_bad:
-                output_tokens.append(self.unk_token)
+                output_tokens.append(self.vocab.unknown_token)
             else:
                 output_tokens.extend(sub_tokens)
         return output_tokens
