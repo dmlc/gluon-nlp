@@ -3,6 +3,7 @@
 
 ## Checklist ##
 ### Essentials ###
+- [ ] PR's title starts with a category (e.g. [BUGFIX], [MODEL], [TUTORIAL], [FEATURE], [DOC], etc)
 - [ ] Changes are complete (i.e. I finished coding on this PR)
 - [ ] All changes have test coverage
 - [ ] Code is well-documented
