@@ -284,3 +284,5 @@ class CRF(gluon.nn.Block):
         score, tag_seq = self._viterbi_decode(feats)
 
         return score, tag_seq
+
+

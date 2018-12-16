@@ -23,3 +23,5 @@ python3 train_model.py --train "../data/eng_train.txt" \
 --ldr 0.05 \
 --op_name sgd \
 --lp "../data/eval_files/logs.log"
+
+
