@@ -214,7 +214,7 @@ def evaluate(data_loader):
     return avg_loss, real_translation_out
 
 
-def clip_global_norm(arrays, max_norm, context=[mx.cpu()]):
+def clip_global_norm(arrays, max_norm, context_len=len(context)):
     """Enable the clip_global_norm function at multi contexts.
        Reference to gluon.utils.clip_global_norm()
 
@@ -226,13 +226,13 @@ def clip_global_norm(arrays, max_norm, context=[mx.cpu()]):
         return array.norm().square()
 
     assert len(arrays) > 0
-    assert len(context) >= 1
+    assert context_len >= 1
 
     ctx = arrays[0].context
     arrays_at_all_context = arrays[0]
     # multi GPUs need to sum up each row(parameters at each context) first
-    if len(context > 1):
-        for i in range(len(context)):
+    if context_len > 1:
+        for i in range(context_len):
             arrays_at_all_context += arrays[i]
 
     total_norm = ndarray.add_n(*[_norm(arr).as_in_context(ctx) for arr in arrays_at_all_context])
@@ -288,7 +288,7 @@ def train():
                 L.backward()
 
             grads = [p.grad(c) for p in model.collect_params().values() for c in context]
-            gnorm = clip_global_norm(grads, args.clip, context=context)
+            gnorm = clip_global_norm(grads, args.clip, context_len=len(context))
             log_avg_gnorm += gnorm
 
             trainer.step(1.0)
