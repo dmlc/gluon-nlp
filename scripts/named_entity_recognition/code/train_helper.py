@@ -199,4 +199,3 @@ def evaluate(valid_dataloader, model, loss, ctx, word_vocab, char_vocab, label_v
 
     return valid_l, p, r, f1
 
-

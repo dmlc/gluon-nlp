@@ -285,4 +285,3 @@ class CRF(gluon.nn.Block):
 
         return score, tag_seq
 
-
