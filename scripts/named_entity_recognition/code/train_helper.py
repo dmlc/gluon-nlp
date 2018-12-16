@@ -198,4 +198,3 @@ def evaluate(valid_dataloader, model, loss, ctx, word_vocab, char_vocab, label_v
     acc, p, r, f1 = conll_evaluate(output_file, score_file)
 
     return valid_l, p, r, f1
-

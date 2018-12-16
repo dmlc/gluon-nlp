@@ -109,4 +109,3 @@ class CNN_BILSTM_CRF(nn.Block):
 
     def begin_state(self, *args, **kwargs):
         return self.bi_lstm_layer.begin_state(*args, **kwargs)
-

@@ -257,4 +257,3 @@ if __name__ == '__main__':
     print('train:', train_O_count, train_LOC_count, train_MISC_count, train_ORG_count, train_PER_count)
     print('valid:', valid_O_count, valid_LOC_count, valid_MISC_count, valid_ORG_count, valid_PER_count)
     print('test: ', test_O_count, test_LOC_count, test_MISC_count, test_ORG_count, test_PER_count)
-

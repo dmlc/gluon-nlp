@@ -334,4 +334,3 @@ sub startOfChunk {
 
    return($chunkStart);   
 }
-
