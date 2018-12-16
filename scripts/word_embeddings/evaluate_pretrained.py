@@ -30,6 +30,8 @@ import logging
 import os
 import sys
 
+import mxnet as mx
+
 import evaluation
 import gluonnlp as nlp
 import utils
