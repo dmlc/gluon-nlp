@@ -42,7 +42,7 @@ import os
 import logging
 import numpy as np
 import mxnet as mx
-from mxnet import gluon
+from mxnet import gluon, ndarray
 import gluonnlp as nlp
 
 from gluonnlp.model.translation import NMTModel
@@ -152,6 +152,7 @@ encoder, decoder = get_gnmt_encoder_decoder(hidden_size=args.num_hidden,
 model = NMTModel(src_vocab=src_vocab, tgt_vocab=tgt_vocab, encoder=encoder, decoder=decoder,
                  embed_size=args.num_embedding, prefix='gnmt_')
 
+
 model.initialize(init=mx.init.Uniform(0.1), ctx=context)
 static_alloc = True
 model.hybridize(static_alloc=static_alloc)
@@ -212,6 +213,39 @@ def evaluate(data_loader):
     return avg_loss, real_translation_out
 
 
+def clip_global_norm(arrays, max_norm, context=[mx.cpu()]):
+    """Enable the clip_global_norm function at multi contexts.
+       Reference to gluon.utils.clip_global_norm()
+
+    """
+    def _norm(array):
+        if array.stype == 'default':
+            x = array.reshape((-1,))
+            return ndarray.dot(x, x)
+        return array.norm().square()
+
+    assert len(arrays) > 0
+    assert len(context) >= 1
+
+    ctx = arrays[0].context
+    arrays_at_all_context = arrays[0]
+    # multi GPUs need to sum up each row(parameters at each context) first
+    if len(context > 1):
+        for i in range(len(context)):
+            arrays_at_all_context += arrays[i]
+
+    total_norm = ndarray.add_n(*[_norm(arr).as_in_context(ctx) for arr in arrays_at_all_context])
+    total_norm = ndarray.sqrt(total_norm).asscalar()
+    if not np.isfinite(total_norm):
+        warnings.warn(UserWarning('nan or inf is detected. Clipping results will be undefined.'),
+                      stacklevel=2)
+    scale = max_norm * len(context) / (total_norm + 1e-8)
+    if scale < 1.0:
+        for arr in arrays:
+            arr *= scale
+    return total_norm
+
+
 def train():
     """Training function."""
     trainer = gluon.Trainer(model.collect_params(), args.optimizer, {'learning_rate': args.lr})
@@ -253,7 +287,7 @@ def train():
                 L.backward()
 
             grads = [p.grad(c) for p in model.collect_params().values() for c in context]
-            gnorm = gluon.utils.clip_global_norm(grads, args.clip)
+            gnorm = clip_global_norm(grads, args.clip, context=context)
             log_avg_gnorm += gnorm
 
             trainer.step(1.0)
