@@ -19,9 +19,13 @@
 """DataLoader. An extension of Gluon data loader that allows multi-shard sampling."""
 __all__ = ['ShardedDataLoader']
 
+import io
 import pickle
+import multiprocessing
 from mxnet import context
 from mxnet.gluon.data.dataloader import ForkingPickler, _as_in_context
+from mxnet.gluon.data.dataloader import default_mp_batchify_fn, default_batchify_fn
+from mxnet.gluon.data import sampler as _sampler
 
 _worker_dataset = None
 def _worker_initializer(dataset):
@@ -39,9 +43,9 @@ def _worker_fn(samples, batchify_fn, dataset=None):
     # preserving dataset as global variable can save tons of overhead and is safe in new process
     global _worker_dataset
     if isinstance(samples[0], (list, tuple)):
-        batch = [batchify_fn([dataset[i] for i in shard]) for shard in samples]
+        batch = [batchify_fn([_worker_dataset[i] for i in shard]) for shard in samples]
     else:
-        batch = batchify_fn([dataset[i] for i in samples])
+        batch = batchify_fn([_worker_dataset[i] for i in samples])
     buf = io.BytesIO()
     ForkingPickler(buf, pickle.HIGHEST_PROTOCOL).dump(batch)
     return buf.getvalue()
