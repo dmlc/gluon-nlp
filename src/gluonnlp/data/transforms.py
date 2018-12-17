@@ -708,7 +708,7 @@ class BERTTokenizer(object):
     ----------
     vocab : gluonnlp.Vocab or None, default None
         Vocabulary for the corpus.
-    do_lower_case : bool. default True
+    do_lower_case : bool, default True
         If model is uncased, then do_lower_case should be set to True
     max_input_chars_per_word : int, default 200
 
