@@ -21,10 +21,7 @@ from __future__ import print_function
 import collections
 import unicodedata
 import io
-import json
 import six
-import gluonnlp
-
 
 def convert_to_unicode(text):
     """Converts `text` to Unicode (if it's not already), assuming utf-8 input."""
@@ -38,7 +35,7 @@ def convert_to_unicode(text):
     elif six.PY2:
         if isinstance(text, str):
             return text.decode('utf-8', 'ignore')
-        elif isinstance(text, unicode): # noqa: F821
+        elif isinstance(text, unicode):  # noqa: F821
             return text
         else:
             raise ValueError('Unsupported string type: %s' % (type(text)))
@@ -60,7 +57,7 @@ def printable_text(text):
     elif six.PY2:
         if isinstance(text, str):
             return text
-        elif isinstance(text, unicode): # noqa: F821
+        elif isinstance(text, unicode):  # noqa: F821
             return text.encode('utf-8')
         else:
             raise ValueError('Unsupported string type: %s' % (type(text)))
@@ -110,6 +107,7 @@ class FullTokenizer(object):
     do_lower_case : bool, default True
         Convert tokens to lower cases.
     """
+
     def __init__(self, vocab, do_lower_case=True):
         self.vocab = vocab
         self.basic_tokenizer = BasicTokenizer(do_lower_case=do_lower_case)
@@ -125,52 +123,6 @@ class FullTokenizer(object):
 
     def convert_tokens_to_ids(self, tokens):
         return convert_tokens_to_ids(self.vocab, tokens)
-
-    def _convert_vocab(self):
-        """GluonNLP specific code to convert the original vocabulary to nlp.vocab.Vocab."""
-        token_to_idx = dict(self.vocab)
-        num_tokens = len(token_to_idx)
-        idx_to_token = [None] * len(self.vocab)
-        for word in self.vocab:
-            idx = int(self.vocab[word])
-            idx_to_token[idx] = word
-
-        def swap(token, target_idx, token_to_idx, idx_to_token, swap_idx):
-            original_idx = token_to_idx[token]
-            original_token = idx_to_token[target_idx]
-            token_to_idx[token] = target_idx
-            token_to_idx[original_token] = original_idx
-            idx_to_token[target_idx] = token
-            idx_to_token[original_idx] = original_token
-            swap_idx.append((original_idx, target_idx))
-
-        reserved_tokens = ['[PAD]', '[CLS]', '[SEP]', '[MASK]']
-        unknown_token = '[UNK]'
-        padding_token = '[PAD]'
-        swap_idx = []
-        assert unknown_token in token_to_idx
-        assert padding_token in token_to_idx
-        swap(unknown_token, 0, token_to_idx, idx_to_token, swap_idx)
-        for i, token in enumerate(reserved_tokens):
-            swap(token, i + 1, token_to_idx, idx_to_token, swap_idx)
-
-        # sanity checks
-        assert len(token_to_idx) == num_tokens
-        assert len(idx_to_token) == num_tokens
-        assert None not in idx_to_token
-        assert len(set(idx_to_token)) == num_tokens
-
-        vocab_dict = {}
-        vocab_dict['idx_to_token'] = idx_to_token
-        vocab_dict['token_to_idx'] = token_to_idx
-        vocab_dict['reserved_tokens'] = reserved_tokens
-        vocab_dict['unknown_token'] = unknown_token
-        vocab_dict['padding_token'] = padding_token
-        vocab_dict['bos_token'] = None
-        vocab_dict['eos_token'] = None
-        json_str = json.dumps(vocab_dict)
-        converted_vocab = gluonnlp.Vocab.from_json(json_str)
-        return converted_vocab, swap_idx
 
 
 class BasicTokenizer(object):
@@ -188,6 +140,14 @@ class BasicTokenizer(object):
         """Tokenizes a piece of text."""
         text = convert_to_unicode(text)
         text = self._clean_text(text)
+
+        # This was added on November 1st, 2018 for the multilingual and Chinese
+        # models. This is also applied to the English models now, but it doesn't
+        # matter since the English models were not trained on any Chinese data
+        # and generally don't have any Chinese data in them (there are Chinese
+        # characters in the vocabulary because Wikipedia does have some Chinese
+        # words in the English Wikipedia.).
+        text = self._tokenize_chinese_chars(text)
         orig_tokens = whitespace_tokenize(text)
         split_tokens = []
         for token in orig_tokens:
@@ -229,6 +189,41 @@ class BasicTokenizer(object):
             i += 1
 
         return [''.join(x) for x in output]
+
+    def _tokenize_chinese_chars(self, text):
+        """Adds whitespace around any CJK character."""
+        output = []
+        for char in text:
+            cp = ord(char)
+            if self._is_chinese_char(cp):
+                output.append(' ')
+                output.append(char)
+                output.append(' ')
+            else:
+                output.append(char)
+        return ''.join(output)
+
+    def _is_chinese_char(self, cp):
+        """Checks whether CP is the codepoint of a CJK character."""
+        # This defines a "chinese character" as anything in the CJK Unicode block:
+        #   https://en.wikipedia.org/wiki/CJK_Unified_Ideographs_(Unicode_block)
+        #
+        # Note that the CJK Unicode block is NOT all Japanese and Korean characters,
+        # despite its name. The modern Korean Hangul alphabet is a different block,
+        # as is Japanese Hiragana and Katakana. Those alphabets are used to write
+        # space-separated words, so they are not treated specially and handled
+        # like the all of the other languages.
+        if ((cp >= 0x4E00 and cp <= 0x9FFF)
+                or (cp >= 0x3400 and cp <= 0x4DBF)
+                or (cp >= 0x20000 and cp <= 0x2A6DF)
+                or (cp >= 0x2A700 and cp <= 0x2B73F)
+                or (cp >= 0x2B740 and cp <= 0x2B81F)
+                or (cp >= 0x2B820 and cp <= 0x2CEAF)
+                or (cp >= 0xF900 and cp <= 0xFAFF)
+                or (cp >= 0x2F800 and cp <= 0x2FA1F)):
+            return True
+
+        return False
 
     def _clean_text(self, text):
         """Performs invalid character removal and whitespace cleanup on text."""
