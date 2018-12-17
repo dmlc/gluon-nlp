@@ -22,6 +22,7 @@ __all__ = ['ShardedDataLoader']
 import io
 import pickle
 import multiprocessing
+from multiprocessing.pool import ThreadPool
 from mxnet import context
 from mxnet.gluon.data.dataloader import ForkingPickler, _as_in_context
 from mxnet.gluon.data.dataloader import default_mp_batchify_fn, default_batchify_fn
