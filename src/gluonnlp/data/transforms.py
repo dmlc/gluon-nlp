@@ -711,10 +711,10 @@ class BasicTokenizer():
     --------
     >>> tokenizer = gluonnlp.data.BasicTokenizer(do_lower_case=True)
     >>> tokenizer(u" \tHeLLo!how  \n Are yoU?  ")
-    ["hello", "!", "how", "are", "you", "?"]
+    ['hello', '!', 'how', 'are', 'you', '?']
     >>> tokenizer = gluonnlp.data.BasicTokenizer(do_lower_case=False)
     >>> tokenizer(u" \tHeLLo!how  \n Are yoU?  ")
-    ["HeLLo", "!", "how", "Are", "yoU", "?"]
+    ['HeLLo', '!', 'how', 'Are', 'yoU', '?']
 
     """
 
@@ -894,7 +894,7 @@ class BERTTokenizer(object):
     --------
     >>> _,vocab = gluonnlp.model.bert_12_768_12(dataset_name='wiki_multilingual',pretrained=False)
     >>> tokenizer = gluonnlp.data.BERTTokenizer(vocab=vocab)
-    >>> tokenizer(u"gluonnlp: 使NLP变得简单")
+    >>> tokenizer(u"gluonnlp: 使NLP变得简单。")
     ['g','##lu','##onn','##lp',':','使','nl','##p','变','得','简','单','。']
 
     """
