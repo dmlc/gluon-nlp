@@ -27,6 +27,7 @@ __all__ = [
 ]
 
 import os
+import sys
 import collections
 import zipfile
 import tarfile
@@ -399,3 +400,23 @@ class Splitter(object):
             List of strings. Obtained by calling s.split(separator).
         """
         return s.split(self._separator)
+
+def _convert_to_unicode(text):
+    """Converts `text` to Unicode (if it's not already), assuming utf-8 input."""
+    python_version = sys.version_info[0]
+    if python_version == 3:
+        if isinstance(text, str):
+            return text
+        elif isinstance(text, bytes):
+            return text.decode('utf-8', 'ignore')
+        else:
+            raise ValueError('Unsupported string type: %s' % (type(text)))
+    elif python_version == 2:
+        if isinstance(text, str):
+            return text.decode('utf-8', 'ignore')
+        elif isinstance(text, unicode):  # noqa: F821
+            return text
+        else:
+            raise ValueError('Unsupported string type: %s' % (type(text)))
+    else:
+        raise ValueError('Not running on Python2 or Python 3?')

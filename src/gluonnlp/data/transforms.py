@@ -32,12 +32,11 @@ import os
 import warnings
 
 import unicodedata
-import six
 
 import numpy as np
 import mxnet as mx
 from mxnet.gluon.utils import download, check_sha1
-from .utils import _get_home_dir, _extract_archive
+from .utils import _get_home_dir, _extract_archive, _convert_to_unicode
 
 
 class ClipSequence(object):
@@ -699,32 +698,10 @@ class SentencepieceDetokenizer(_SentencepieceProcessor):
         return self._processor.DecodePieces(sample)
 
 
-
-
-class BERTTokenizer(object):
-    r"""End-to-end tokenziation for BERT pre-training models.
-
-    Parameters
-    ----------
-    vocab : gluonnlp.Vocab or None, default None
-        Vocabulary for the corpus.
-    do_lower_case : bool, default True
-        If model is uncased, then do_lower_case should be set to True
-    max_input_chars_per_word : int, default 200
-
-    Examples
-    --------
-    >>> _,vocab = gluonnlp.model.bert_12_768_12(dataset_name='wiki_multilingual',pretrained=False)
-    >>> tokenizer = gluonnlp.data.BERTTokenizer(vocab=vocab)
-    >>> tokenizer(u"gluonnlp: 使NLP变得简单")
-    ['g','##lu','##onn','##lp',':','使','nl','##p','变','得','简','单','。']
-
-    """
-
-    def __init__(self, vocab, do_lower_case=True, max_input_chars_per_word=200):
-        self.vocab = vocab
+class BasicTokenizer():
+    """Runs basic tokenization (punctuation splitting, lower casing, etc.)."""
+    def __init__(self,do_lower_case = True):
         self.do_lower_case = do_lower_case
-        self.max_input_chars_per_word = max_input_chars_per_word
 
     def __call__(self, sample):
         """
@@ -739,19 +716,11 @@ class BERTTokenizer(object):
         ret : str
             Detokenized text
         """
-        return self._tokenizer(sample)
+        return self._tokenize(sample)
 
-    def _tokenizer(self, text):
-        split_tokens = []
-        for token in self._BasicTokenizer(text):
-            for sub_token in self._WordpieceTokenizer(token):
-                split_tokens.append(sub_token)
-
-        return split_tokens
-
-    def _BasicTokenizer(self, text):
+    def _tokenize(self, text)
         """Tokenizes a piece of text."""
-        text = self._convert_to_unicode(text)
+        text = _convert_to_unicode(text)
         text = self._clean_text(text)
 
         # This was added on November 1st, 2018 for the multilingual and Chinese
@@ -772,66 +741,6 @@ class BERTTokenizer(object):
         output_tokens = self._whitespace_tokenize(' '.join(split_tokens))
         return output_tokens
 
-    def _WordpieceTokenizer(self, text):
-        """Tokenizes a piece of text into its word pieces.
-
-        This uses a greedy longest-match-first algorithm to perform tokenization
-        using the given vocabulary.
-
-        For example:
-          input = "unaffable"
-          output = ["un", "##aff", "##able"]
-
-        Args:
-          text: A single token or whitespace separated tokens. This should have
-            already been passed through `BasicTokenizer.
-
-        Returns:
-          A list of wordpiece tokens.
-        """
-
-        text = self._convert_to_unicode(text)
-
-        output_tokens = []
-        for token in self._whitespace_tokenize(text):
-            chars = list(token)
-            if len(chars) > self.max_input_chars_per_word:
-                output_tokens.append(self.vocab.unknown_token)
-                continue
-
-            is_bad = False
-            start = 0
-            sub_tokens = []
-            while start < len(chars):
-                end = len(chars)
-                cur_substr = None
-                while start < end:
-                    substr = ''.join(chars[start:end])
-                    if start > 0:
-                        substr = '##' + substr
-                    if substr in self.vocab:
-                        cur_substr = substr
-                        break
-                    end -= 1
-                if cur_substr is None:
-                    is_bad = True
-                    break
-                sub_tokens.append(cur_substr)
-                start = end
-
-            if is_bad:
-                output_tokens.append(self.vocab.unknown_token)
-            else:
-                output_tokens.extend(sub_tokens)
-        return output_tokens
-
-    def convert_tokens_to_ids(self, tokens):
-        """Converts a sequence of tokens into ids using the vocab."""
-        ids = []
-        for token in tokens:
-            ids.append(self.vocab[token])
-        return ids
-
     def _clean_text(self, text):
         """Performs invalid character removal and whitespace cleanup on text."""
         output = []
@@ -844,6 +753,17 @@ class BERTTokenizer(object):
             else:
                 output.append(char)
         return ''.join(output)
+
+    def _is_control(self, char):
+        """Checks whether `chars` is a control character."""
+        # These are technically control characters but we count them as whitespace
+        # characters.
+        if char in ['\t', '\n', '\r']:
+            return False
+        cat = unicodedata.category(char)
+        if cat.startswith('C'):
+            return True
+        return False
 
     def _tokenize_chinese_chars(self, text):
         """Adds whitespace around any CJK character."""
@@ -911,32 +831,23 @@ class BERTTokenizer(object):
 
         return [''.join(x) for x in output]
 
-    def _whitespace_tokenize(self, text):
-        """Runs basic whitespace cleaning and splitting on a piece of text."""
-        text = text.strip()
-        if not text:
-            return []
-        tokens = text.split()
-        return tokens
-
-    def _convert_to_unicode(self, text):
-        """Converts `text` to Unicode (if it's not already), assuming utf-8 input."""
-        if six.PY3:
-            if isinstance(text, str):
-                return text
-            elif isinstance(text, bytes):
-                return text.decode('utf-8', 'ignore')
-            else:
-                raise ValueError('Unsupported string type: %s' % (type(text)))
-        elif six.PY2:
-            if isinstance(text, str):
-                return text.decode('utf-8', 'ignore')
-            elif isinstance(text, unicode):  # noqa: F821
-                return text
-            else:
-                raise ValueError('Unsupported string type: %s' % (type(text)))
-        else:
-            raise ValueError('Not running on Python2 or Python 3?')
+    def _is_punctuation(self, char):
+            """Checks whether `chars` is a punctuation character."""
+            cp = ord(char)
+            # We treat all non-letter/number ASCII as punctuation.
+            # Characters such as "^", "$", and "`" are not in the Unicode
+            # Punctuation class but we treat them as punctuation anyways, for
+            # consistency.
+            group0 = cp >= 33 and cp <= 47
+            group1 = cp >= 58 and cp <= 64
+            group2 = cp >= 91 and cp <= 96
+            group3 = cp >= 123 and cp <= 126
+            if (group0 or group1 or group2 or group3):
+                return True
+            cat = unicodedata.category(char)
+            if cat.startswith('P'):
+                return True
+            return False
 
     def _is_whitespace(self, char):
         """Checks whether `chars` is a whitespace character."""
@@ -949,31 +860,117 @@ class BERTTokenizer(object):
             return True
         return False
 
-    def _is_control(self, char):
-        """Checks whether `chars` is a control character."""
-        # These are technically control characters but we count them as whitespace
-        # characters.
-        if char in ['\t', '\n', '\r']:
-            return False
-        cat = unicodedata.category(char)
-        if cat.startswith('C'):
-            return True
-        return False
 
-    def _is_punctuation(self, char):
-        """Checks whether `chars` is a punctuation character."""
-        cp = ord(char)
-        # We treat all non-letter/number ASCII as punctuation.
-        # Characters such as "^", "$", and "`" are not in the Unicode
-        # Punctuation class but we treat them as punctuation anyways, for
-        # consistency.
-        group0 = cp >= 33 and cp <= 47
-        group1 = cp >= 58 and cp <= 64
-        group2 = cp >= 91 and cp <= 96
-        group3 = cp >= 123 and cp <= 126
-        if (group0 or group1 or group2 or group3):
-            return True
-        cat = unicodedata.category(char)
-        if cat.startswith('P'):
-            return True
-        return False
+class BERTTokenizer(object):
+    r"""End-to-end tokenziation for BERT pre-training models.
+
+    Parameters
+    ----------
+    vocab : gluonnlp.Vocab or None, default None
+        Vocabulary for the corpus.
+    do_lower_case : bool, default True
+        If model is uncased, then do_lower_case should be set to True
+    max_input_chars_per_word : int, default 200
+
+    Examples
+    --------
+    >>> _,vocab = gluonnlp.model.bert_12_768_12(dataset_name='wiki_multilingual',pretrained=False)
+    >>> tokenizer = gluonnlp.data.BERTTokenizer(vocab=vocab)
+    >>> tokenizer(u"gluonnlp: 使NLP变得简单")
+    ['g','##lu','##onn','##lp',':','使','nl','##p','变','得','简','单','。']
+
+    """
+
+    def __init__(self, vocab, do_lower_case=True, max_input_chars_per_word=200):
+        self.vocab = vocab
+        self.max_input_chars_per_word = max_input_chars_per_word
+        self.basic_tokenizer = BasicTokenizer(do_lower_case=do_lower_case)
+
+    def __call__(self, sample):
+        """
+
+        Parameters
+        ----------
+        sample: list(str)
+            The sentence to detokenize
+
+        Returns
+        -------
+        ret : str
+            Detokenized text
+        """
+        return self._tokenizer(sample)
+
+    def _tokenizer(self, text):
+        split_tokens = []
+        for token in self._BasicTokenizer(text):
+            for sub_token in self._WordpieceTokenizer(token):
+                split_tokens.append(sub_token)
+
+        return split_tokens
+
+    def _WordpieceTokenizer(self, text):
+        """Tokenizes a piece of text into its word pieces.
+
+        This uses a greedy longest-match-first algorithm to perform tokenization
+        using the given vocabulary.
+
+        For example:
+          input = "unaffable"
+          output = ["un", "##aff", "##able"]
+
+        Args:
+          text: A single token or whitespace separated tokens. This should have
+            already been passed through `BasicTokenizer.
+
+        Returns:
+          A list of wordpiece tokens.
+        """
+
+        text = _convert_to_unicode(text)
+
+        output_tokens = []
+        for token in _whitespace_tokenize(text):
+            chars = list(token)
+            if len(chars) > self.max_input_chars_per_word:
+                output_tokens.append(self.vocab.unknown_token)
+                continue
+
+            is_bad = False
+            start = 0
+            sub_tokens = []
+            while start < len(chars):
+                end = len(chars)
+                cur_substr = None
+                while start < end:
+                    substr = ''.join(chars[start:end])
+                    if start > 0:
+                        substr = '##' + substr
+                    if substr in self.vocab:
+                        cur_substr = substr
+                        break
+                    end -= 1
+                if cur_substr is None:
+                    is_bad = True
+                    break
+                sub_tokens.append(cur_substr)
+                start = end
+
+            if is_bad:
+                output_tokens.append(self.vocab.unknown_token)
+            else:
+                output_tokens.extend(sub_tokens)
+        return output_tokens
+
+    def convert_tokens_to_ids(self, tokens):
+        """Converts a sequence of tokens into ids using the vocab."""
+        return self.vocab.to_indices(tokens)
+
+   
+def _whitespace_tokenize(text):
+    """Runs basic whitespace cleaning and splitting on a piece of text."""
+    text = text.strip()
+    if not text:
+        return []
+    tokens = text.split()
+    return tokens

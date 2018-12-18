@@ -29,6 +29,7 @@ import mxnet as mx
 from mxnet.gluon.utils import download
 from gluonnlp.data import transforms as t
 from gluonnlp.model.utils import _load_vocab
+from gluonnlp.vocab.vocab import Vocab
 
 
 def test_clip_sequence():
@@ -152,11 +153,61 @@ def test_sentencepiece_tokenizer_subword_regularization():
     assert all(t in tokenizer.tokens for ret in reg_ret for t in ret)
     assert all(detokenizer(reg_ret[i]) == detext for i in range(len(reg_ret)))
 
-def test_berttokenizer():
-    text = "Introducing Gluon: An Easy-to-Use Programming Interface for Flexible Deep Learning. Gluon: 一个用于深度学习灵活而易于使用的编程接口。"
-    vocab = _load_vocab('wiki_multilingual_cased',vocab=None,root='tests/data/model/')
-    tokenizer = t.BERTTokenizer(vocab=vocab)
-    ret = tokenizer(text)
-    assert isinstance(ret, list)
-    assert len(ret) > 0
+def test_basictokenizer():
+    tokenizer = t.BasicTokenizer(do_lower_case=True)
     
+    # test do_lower_case=True
+    assert tokenizer(u" \tHeLLo!how  \n Are yoU?  ") == ["hello", "!", "how", "are", "you", "?"]
+    assert tokenizer(u"H\u00E9llo") == ["hello"]
+
+    # test chinese
+    assert tokenizer(u"ah\u535A\u63A8zz") == [u"ah", u"\u535A", u"\u63A8", u"zz"]
+
+    # test is_whitespace
+    assert tokenizer._is_whitespace(u" ") == True
+    assert tokenizer._is_whitespace(u"\t") == True
+    assert tokenizer._is_whitespace(u"\r") == True
+    assert tokenizer._is_whitespace(u"\n") == True
+    assert tokenizer._is_whitespace(u"\u00A0") == True
+    assert tokenizer._is_whitespace(u"A") == False
+    assert tokenizer._is_whitespace(u"-") == False
+
+    # test is_control
+    assert tokenizer._is_control(u"\u0005") == True
+    assert tokenizer._is_control(u"A") == False
+    assert tokenizer._is_control(u" ") == False
+    assert tokenizer._is_control(u"\t") == False
+    assert tokenizer._is_control(u"\r") == False
+
+    # test is_punctuation
+    assert tokenizer._is_punctuation(u"-") == True
+    assert tokenizer._is_punctuation(u"$") == True
+    assert tokenizer._is_punctuation(u"`") == True
+    assert tokenizer._is_punctuation(u".") == True
+    assert tokenizer._is_punctuation(u"A") == False
+    assert tokenizer._is_punctuation(u" ") == False
+
+    # test do_lower_case=False
+    tokenizer = t.BasicTokenizer(do_lower_case=False)
+    assert tokenizer(u" \tHeLLo!how  \n Are yoU?  ") == ["HeLLo", "!", "how", "Are", "yoU", "?"]
+
+
+def test_berttokenizer():
+
+    # test WordpieceTokenizer
+    vocab_tokens = ["want", "##want", "##ed", "wa", "un", "runn","##ing"]
+    vocab = nlp.vocab.Vocab(nlp.data.count_tokens(vocab_tokens),reserved_tokens=["[CLS]", "[SEP]"],unknown_token="[UNK]",padding_token=None,bos_token=None,eos_token=None)
+    tokenizer = t.BERTTokenizer(vocab=vocab)
+
+    assert tokenizer._WordpieceTokenizer("") == []
+    assert tokenizer("unwanted running") == ["un", "##want", "##ed", "runn", "##ing"]
+    assert tokenizer("unwantedX running") == ["[UNK]", "runn", "##ing"]
+    
+    # test BERTTokenizer
+    vocab_tokens = ["[CLS]", "[SEP]", "want", "##want", "##ed", "wa", "un", "runn",
+        "##ing", ","]
+
+    vocab = nlp.vocab.Vocab(nlp.data.count_tokens(vocab_tokens),reserved_tokens=["[CLS]", "[SEP]"],unknown_token="[UNK]",padding_token=None,bos_token=None,eos_token=None)
+    tokenizer = t.BERTTokenizer(vocab=vocab)
+    tokens = tokenizer(u"UNwant\u00E9d,running")
+    assert tokens == ["un", "##want", "##ed", ",", "runn", "##ing"]
