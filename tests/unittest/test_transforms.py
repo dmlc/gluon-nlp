@@ -28,8 +28,9 @@ import pytest
 import mxnet as mx
 from mxnet.gluon.utils import download
 from gluonnlp.data import transforms as t
+from gluonnlp.data import count_tokens
 from gluonnlp.model.utils import _load_vocab
-from gluonnlp.vocab.vocab import Vocab
+from gluonnlp.vocab import Vocab
 
 
 def test_clip_sequence():
@@ -155,13 +156,15 @@ def test_sentencepiece_tokenizer_subword_regularization():
 
 def test_basictokenizer():
     tokenizer = t.BasicTokenizer(do_lower_case=True)
-    
+
     # test do_lower_case=True
-    assert tokenizer(u" \tHeLLo!how  \n Are yoU?  ") == ["hello", "!", "how", "are", "you", "?"]
+    assert tokenizer(u" \tHeLLo!how  \n Are yoU?  ") == [
+        "hello", "!", "how", "are", "you", "?"]
     assert tokenizer(u"H\u00E9llo") == ["hello"]
 
     # test chinese
-    assert tokenizer(u"ah\u535A\u63A8zz") == [u"ah", u"\u535A", u"\u63A8", u"zz"]
+    assert tokenizer(u"ah\u535A\u63A8zz") == [
+        u"ah", u"\u535A", u"\u63A8", u"zz"]
 
     # test is_whitespace
     assert tokenizer._is_whitespace(u" ") == True
@@ -189,25 +192,29 @@ def test_basictokenizer():
 
     # test do_lower_case=False
     tokenizer = t.BasicTokenizer(do_lower_case=False)
-    assert tokenizer(u" \tHeLLo!how  \n Are yoU?  ") == ["HeLLo", "!", "how", "Are", "yoU", "?"]
+    assert tokenizer(u" \tHeLLo!how  \n Are yoU?  ") == [
+        "HeLLo", "!", "how", "Are", "yoU", "?"]
 
 
 def test_berttokenizer():
 
     # test WordpieceTokenizer
-    vocab_tokens = ["want", "##want", "##ed", "wa", "un", "runn","##ing"]
-    vocab = nlp.vocab.Vocab(nlp.data.count_tokens(vocab_tokens),reserved_tokens=["[CLS]", "[SEP]"],unknown_token="[UNK]",padding_token=None,bos_token=None,eos_token=None)
+    vocab_tokens = ["want", "##want", "##ed", "wa", "un", "runn", "##ing"]
+    vocab = Vocab(count_tokens(vocab_tokens), reserved_tokens=[
+                  "[CLS]", "[SEP]"], unknown_token="[UNK]", padding_token=None, bos_token=None, eos_token=None)
     tokenizer = t.BERTTokenizer(vocab=vocab)
 
     assert tokenizer._WordpieceTokenizer("") == []
-    assert tokenizer("unwanted running") == ["un", "##want", "##ed", "runn", "##ing"]
+    assert tokenizer("unwanted running") == [
+        "un", "##want", "##ed", "runn", "##ing"]
     assert tokenizer("unwantedX running") == ["[UNK]", "runn", "##ing"]
-    
+
     # test BERTTokenizer
     vocab_tokens = ["[CLS]", "[SEP]", "want", "##want", "##ed", "wa", "un", "runn",
-        "##ing", ","]
+                    "##ing", ","]
 
-    vocab = nlp.vocab.Vocab(nlp.data.count_tokens(vocab_tokens),reserved_tokens=["[CLS]", "[SEP]"],unknown_token="[UNK]",padding_token=None,bos_token=None,eos_token=None)
+    vocab = Vocab(count_tokens(vocab_tokens), reserved_tokens=[
+                  "[CLS]", "[SEP]"], unknown_token="[UNK]", padding_token=None, bos_token=None, eos_token=None)
     tokenizer = t.BERTTokenizer(vocab=vocab)
     tokens = tokenizer(u"UNwant\u00E9d,running")
     assert tokens == ["un", "##want", "##ed", ",", "runn", "##ing"]

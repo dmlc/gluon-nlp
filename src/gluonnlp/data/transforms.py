@@ -26,7 +26,7 @@ from __future__ import print_function
 __all__ = ['ClipSequence', 'PadSequence', 'SacreMosesTokenizer', 'NLTKMosesTokenizer',
            'SpacyTokenizer', 'SacreMosesDetokenizer', 'NLTKMosesDetokenizer', 'JiebaTokenizer',
            'NLTKStanfordSegmenter', 'SentencepieceTokenizer',
-           'SentencepieceDetokenizer', 'BERTTokenizer']
+           'SentencepieceDetokenizer', 'BasicTokenizer', 'BERTTokenizer']
 
 import os
 import warnings
@@ -699,8 +699,26 @@ class SentencepieceDetokenizer(_SentencepieceProcessor):
 
 
 class BasicTokenizer():
-    """Runs basic tokenization (punctuation splitting, lower casing, etc.)."""
-    def __init__(self,do_lower_case = True):
+    r"""Runs basic tokenization (punctuation splitting, lower casing, etc.).
+
+    Parameters
+    ----------
+    do_lower_case : bool, default True
+        If model is uncased, then do_lower_case should be set to True
+    max_input_chars_per_word : int, default 200
+
+    Examples
+    --------
+    >>> tokenizer = gluonnlp.data.BasicTokenizer(do_lower_case=True)
+    >>> tokenizer(u" \tHeLLo!how  \n Are yoU?  ")
+    ["hello", "!", "how", "are", "you", "?"]
+    >>> tokenizer = gluonnlp.data.BasicTokenizer(do_lower_case=False)
+    >>> tokenizer(u" \tHeLLo!how  \n Are yoU?  ")
+    ["HeLLo", "!", "how", "Are", "yoU", "?"]
+
+    """
+
+    def __init__(self, do_lower_case=True):
         self.do_lower_case = do_lower_case
 
     def __call__(self, sample):
@@ -718,7 +736,7 @@ class BasicTokenizer():
         """
         return self._tokenize(sample)
 
-    def _tokenize(self, text)
+    def _tokenize(self, text):
         """Tokenizes a piece of text."""
         text = _convert_to_unicode(text)
         text = self._clean_text(text)
@@ -730,7 +748,7 @@ class BasicTokenizer():
         # characters in the vocabulary because Wikipedia does have some Chinese
         # words in the English Wikipedia.).
         text = self._tokenize_chinese_chars(text)
-        orig_tokens = self._whitespace_tokenize(text)
+        orig_tokens = _whitespace_tokenize(text)
         split_tokens = []
         for token in orig_tokens:
             if self.do_lower_case:
@@ -738,7 +756,7 @@ class BasicTokenizer():
                 token = self._run_strip_accents(token)
             split_tokens.extend(self._run_split_on_punc(token))
 
-        output_tokens = self._whitespace_tokenize(' '.join(split_tokens))
+        output_tokens = _whitespace_tokenize(' '.join(split_tokens))
         return output_tokens
 
     def _clean_text(self, text):
@@ -832,22 +850,22 @@ class BasicTokenizer():
         return [''.join(x) for x in output]
 
     def _is_punctuation(self, char):
-            """Checks whether `chars` is a punctuation character."""
-            cp = ord(char)
-            # We treat all non-letter/number ASCII as punctuation.
-            # Characters such as "^", "$", and "`" are not in the Unicode
-            # Punctuation class but we treat them as punctuation anyways, for
-            # consistency.
-            group0 = cp >= 33 and cp <= 47
-            group1 = cp >= 58 and cp <= 64
-            group2 = cp >= 91 and cp <= 96
-            group3 = cp >= 123 and cp <= 126
-            if (group0 or group1 or group2 or group3):
-                return True
-            cat = unicodedata.category(char)
-            if cat.startswith('P'):
-                return True
-            return False
+        """Checks whether `chars` is a punctuation character."""
+        cp = ord(char)
+        # We treat all non-letter/number ASCII as punctuation.
+        # Characters such as "^", "$", and "`" are not in the Unicode
+        # Punctuation class but we treat them as punctuation anyways, for
+        # consistency.
+        group0 = cp >= 33 and cp <= 47
+        group1 = cp >= 58 and cp <= 64
+        group2 = cp >= 91 and cp <= 96
+        group3 = cp >= 123 and cp <= 126
+        if (group0 or group1 or group2 or group3):
+            return True
+        cat = unicodedata.category(char)
+        if cat.startswith('P'):
+            return True
+        return False
 
     def _is_whitespace(self, char):
         """Checks whether `chars` is a whitespace character."""
@@ -862,7 +880,7 @@ class BasicTokenizer():
 
 
 class BERTTokenizer(object):
-    r"""End-to-end tokenziation for BERT pre-training models.
+    r"""End-to-end tokenziation for BERT models.
 
     Parameters
     ----------
@@ -903,7 +921,7 @@ class BERTTokenizer(object):
 
     def _tokenizer(self, text):
         split_tokens = []
-        for token in self._BasicTokenizer(text):
+        for token in self.basic_tokenizer(text):
             for sub_token in self._WordpieceTokenizer(token):
                 split_tokens.append(sub_token)
 
@@ -966,7 +984,7 @@ class BERTTokenizer(object):
         """Converts a sequence of tokens into ids using the vocab."""
         return self.vocab.to_indices(tokens)
 
-   
+
 def _whitespace_tokenize(text):
     """Runs basic whitespace cleaning and splitting on a piece of text."""
     text = text.strip()
