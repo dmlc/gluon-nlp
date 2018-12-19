@@ -102,7 +102,6 @@ class _MultiWorkerIter(object):
         batch = pickle.loads(ret.get()) if self._dataset is None else ret.get()
         if self._pin_memory:
             batch = _as_in_context(batch, context.cpu_pinned())
-        batch = batch[0] if len(batch) == 1 else batch
         self._rcvd_idx += 1
         return batch
 

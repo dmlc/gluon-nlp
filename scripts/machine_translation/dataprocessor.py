@@ -230,8 +230,7 @@ def make_dataloader(data_train, data_val, data_test, args,
     train_data_loader = nlp.data.ShardedDataLoader(data_train,
                                                    batch_sampler=train_batch_sampler,
                                                    batchify_fn=train_batchify_fn,
-                                                   num_workers=num_workers,
-                                                   thread_pool=True)
+                                                   num_workers=num_workers)
 
     val_batch_sampler = nlp.data.FixedBucketSampler(lengths=target_val_lengths,
                                                     batch_size=args.test_batch_size,
