@@ -113,6 +113,7 @@ def test_sentiment_analysis_finetune():
                                      '--save-prefix', 'imdb_lstm_200'])
     time.sleep(5)
 
+
 @pytest.mark.serial
 @pytest.mark.remote_required
 @pytest.mark.gpu
@@ -122,6 +123,7 @@ def test_sentiment_analysis_textcnn():
                                      '--dropout', '0.5', '--lr', '0.0001', '--model_mode', 'rand',
                                      '--data_name', 'MR', '--save-prefix', 'sa-model'])
     time.sleep(5)
+
 
 @pytest.mark.remote_required
 def test_sampling():
@@ -169,4 +171,35 @@ def test_transformer():
                                      '1', '--num_buckets', '5', '--bleu', '13a', '--num_units',
                                      '32', '--hidden_size', '64', '--num_layers', '2',
                                      '--num_heads', '4', '--test_batch_size', '32'])
+    time.sleep(5)
+
+
+@pytest.mark.serial
+@pytest.mark.remote_required
+@pytest.mark.gpu
+def test_ner_charcnn_bilstm_crf():
+    process = subprocess.check_call(['python', './scripts/named_entity_recognition/code/train_model.py',
+                                     '--train', './scripts/tests/ner/eng_train.txt',
+                                     '--valid', './scripts/tests/ner/eng_testa.txt',
+                                     '--test', './scripts/tests/ner/eng_testb.txt',
+                                     '--wvp', './scripts/tests/ner/word_vocab.pkl',
+                                     '--cvp', './scripts/tests/ner/char_vocab.pkl',
+                                     '--tvp', './scripts/tests/ner/tag_vocab.pkl',
+                                     '--embedding', 'glove', '--clpw', '12', '--nce', '30',
+                                     '--nwe', '100', '--nf', '30', '--ks', '3',
+                                     '--nhiddens', '256', '--nlayers', '1', '--nts', '128',
+                                     '--edp', '0.33', '--odp', '0.33', '--rdp', '0.33', '0.55',
+                                     '--nepochs', '1', '--lr', '0.01', '--bc', '16',
+                                     '--lds', '1', '--ldr', '0.05', '--op_name', 'sgd',
+                                     '--lp', './scripts/tests/ner/logs.log'])
+
+    # Delete some temporary files
+    for root, dirs, files in os.walk('./scripts/tests/ner'):
+        for f in files:
+            if f not in ['eng_testa.txt', 'eng_testb.txt', 'eng_train.txt']:
+                os.remove(os.path.join(root, f))
+    os.system('rm -r ./scripts/named_entity_recognition/data/eval_files')
+    os.system('rm -r ./scripts/named_entity_recognition/logs')
+    os.system('rm -r ./scripts/named_entity_recognition/models')
+
     time.sleep(5)

@@ -1,3 +1,5 @@
+# coding: utf-8
+
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -327,7 +329,7 @@ def main(args):
 
     # use pretrained embedding
     if embedding != 'random':
-        print('setting embedding for layer')
+        # print('setting embedding for layer')
         model.word_embedding_layer.weight.set_data(word_vocab.embedding.idx_to_vec)
         # fix or finetune
         # model.word_embedding_layer.collect_params().setattr('grad_req', 'null')

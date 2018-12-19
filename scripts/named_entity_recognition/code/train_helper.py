@@ -1,3 +1,5 @@
+# coding: utf-8
+
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -27,6 +29,8 @@ import numpy as np
 from mxboard import SummaryWriter
 from mxnet import autograd, gluon, nd
 
+ROOT = os.path.dirname(os.path.abspath(os.path.expanduser(__file__) + os.path.sep + '..'))
+
 
 def conll_evaluate(output_file, score_file):
     '''
@@ -42,8 +46,10 @@ def conll_evaluate(output_file, score_file):
         recall (float): recall
         f1 (float): F1 score
     '''
+    code_path = os.path.dirname(os.path.abspath(os.path.expanduser(__file__)))
+    eval_sh = code_path + os.path.sep + 'conll2003eval2.sh < % s > %s'
 
-    os.system("./conll2003eval2.sh < %s > %s" % (output_file, score_file))
+    os.system(eval_sh % (output_file, score_file))
     with open(score_file, 'r') as fin:
         fin.readline()
         line = fin.readline()
@@ -80,8 +86,9 @@ def clip_gradients(model, clip, ctx):
 def train(train_dataloader, valid_dataloader, test_dataloader, model, loss, trainer, ctx, nepochs, word_vocab,
           char_vocab, label_vocab, clip, init_lr, lr_decay_step, lr_decay_rate, logger):
 
+    logdir = ROOT + os.path.sep + 'logs'
+
     # prepare logdir for mxboard
-    logdir = '../logs'
     if not os.path.exists(logdir):
         os.mkdir(logdir)
     sw = SummaryWriter(logdir=logdir, flush_secs=5, verbose=False)
@@ -147,17 +154,17 @@ def train(train_dataloader, valid_dataloader, test_dataloader, model, loss, trai
             trainer.set_learning_rate(init_lr / (1.0+lr_decay_rate*epoch))
 
         # save params of per epoch
-        model_dir = '../models/cnn_bilstm_crf'
+        model_dir = ROOT + os.path.sep + 'models/cnn_bilstm_crf'
         if not os.path.exists(model_dir):
             os.makedirs(model_dir)
         model_params_path = os.path.join(model_dir, 'cnn_bilstm_crf_model_'+str(epoch)+'.params')
         model.save_parameters(model_params_path)
 
-    sw.export_scalars('../data/scalar_dict.json')
     sw.close()
 
 
 def evaluate(valid_dataloader, model, loss, ctx, word_vocab, char_vocab, label_vocab):
+    data_path = ROOT + os.path.sep + 'data'
     valid_l = 0.
     word_seq, true_tag_seq, pred_tag_seq, = [], [], []
 
@@ -185,7 +192,7 @@ def evaluate(valid_dataloader, model, loss, ctx, word_vocab, char_vocab, label_v
     true_tag_seq = label_vocab.to_tokens(true_tag_seq)
     pred_tag_seq = label_vocab.to_tokens(pred_tag_seq)
 
-    eval_dir = '../data/eval_files'
+    eval_dir = data_path + os.path.sep + 'eval_files'
     if not os.path.exists(eval_dir):
         os.makedirs(eval_dir)
     output_file = os.path.join(eval_dir, 'output_file_temp.txt')
