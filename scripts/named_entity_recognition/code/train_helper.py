@@ -134,8 +134,6 @@ def train(train_dataloader, valid_dataloader, test_dataloader, model, loss, trai
         model_params_path = os.path.join(model_dir, 'cnn_bilstm_crf_model_'+str(epoch)+'.params')
         model.save_parameters(model_params_path)
 
-    sw.close()
-
 
 def evaluate(valid_dataloader, model, loss, ctx, word_vocab, char_vocab, label_vocab):
     data_path = ROOT + os.path.sep + 'data'
