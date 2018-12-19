@@ -199,7 +199,6 @@ def test_ner_charcnn_bilstm_crf():
             if f not in ['eng_testa.txt', 'eng_testb.txt', 'eng_train.txt']:
                 os.remove(os.path.join(root, f))
     os.system('rm -r ./scripts/named_entity_recognition/data/eval_files')
-    os.system('rm -r ./scripts/named_entity_recognition/logs')
     os.system('rm -r ./scripts/named_entity_recognition/models')
 
     time.sleep(5)

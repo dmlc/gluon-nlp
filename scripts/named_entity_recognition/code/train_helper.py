@@ -25,8 +25,6 @@
 import os
 import logging
 import numpy as np
-
-from mxboard import SummaryWriter
 from mxnet import autograd, gluon, nd
 
 ROOT = os.path.dirname(os.path.abspath(os.path.expanduser(__file__) + os.path.sep + '..'))
@@ -86,13 +84,6 @@ def clip_gradients(model, clip, ctx):
 def train(train_dataloader, valid_dataloader, test_dataloader, model, loss, trainer, ctx, nepochs, word_vocab,
           char_vocab, label_vocab, clip, init_lr, lr_decay_step, lr_decay_rate, logger):
 
-    logdir = ROOT + os.path.sep + 'logs'
-
-    # prepare logdir for mxboard
-    if not os.path.exists(logdir):
-        os.mkdir(logdir)
-    sw = SummaryWriter(logdir=logdir, flush_secs=5, verbose=False)
-    global_step = 0
     best_f1_score, best_epoch = 0.0, 0
 
     for epoch in range(1, nepochs+1):
@@ -112,8 +103,6 @@ def train(train_dataloader, valid_dataloader, test_dataloader, model, loss, trai
 
             batch_l.backward()
             trainer.step(batch_x.shape[0])
-            sw.add_scalar(tag='cross_entroy', value=batch_l.mean().asscalar(), global_step=global_step)
-            global_step += 1
 
             # sampler for log
             if (nbatch + 1) % 300 == 0:
@@ -127,21 +116,6 @@ def train(train_dataloader, valid_dataloader, test_dataloader, model, loss, trai
         if test_F1 > best_f1_score:
             best_f1_score = test_F1
             best_epoch = epoch
-
-        # write metrics to the mxboard log
-        sw.add_scalar('Loss', {'valid_loss': valid_l}, epoch)
-        sw.add_scalar('Loss', {'test_loss': test_l}, epoch)
-
-        sw.add_scalar('Precision', {'valid_P': valid_P}, epoch)
-        sw.add_scalar('Precision', {'test_P': test_P}, epoch)
-
-        sw.add_scalar('Recall', {'valid_R': valid_R}, epoch)
-        sw.add_scalar('Recall', {'test_R': test_R}, epoch)
-
-        sw.add_scalar('F1', {'valid_F1': valid_F1}, epoch)
-        sw.add_scalar('F1', {'test_F1': test_F1}, epoch)
-
-        # sw.add_embedding('Char_Embedding', model.char_embedding_layer.weight.data().asnumpy())
 
         logger.info('epoch %d, learning_rate %.5f' % (epoch, trainer.learning_rate))
         logger.info('\t valid_loss %.4f, valid_p %.3f, valid_r %.3f, valid_f1 %.3f' %
