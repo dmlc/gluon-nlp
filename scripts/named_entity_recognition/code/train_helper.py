@@ -59,32 +59,11 @@ def conll_evaluate(output_file, score_file):
     return acc, precision, recall, f1
 
 
-def clip_gradients(model, clip, ctx):
-    '''clip the gradient of params
-
-    Args:
-        model (Block): model
-        clip (float): clip value
-        ctx (ctx): context
-    '''
-
-    clip_params = [p.data() for p in model.collect_params().values()]
-    if clip is not None:
-        norm = nd.array([0.0], ctx)
-        for param in clip_params:
-            if param.grad is not None:
-                norm += (param.grad ** 2).sum()
-        norm = norm.sqrt().asscalar()
-        if norm > clip:
-            for param in clip_params:
-                if param.grad is not None:
-                    param.grad[:] *= clip / norm
-
-
 def train(train_dataloader, valid_dataloader, test_dataloader, model, loss, trainer, ctx, nepochs, word_vocab,
           char_vocab, label_vocab, clip, init_lr, lr_decay_step, lr_decay_rate, logger):
 
     best_f1_score, best_epoch = 0.0, 0
+    parameters = model.collect_params().values()
 
     for epoch in range(1, nepochs+1):
 
@@ -99,7 +78,8 @@ def train(train_dataloader, valid_dataloader, test_dataloader, model, loss, trai
                 batch_l = loss(feats, batch_y)
 
             # clip gradient
-            clip_gradients(model, clip, ctx)
+            grads = [p.grad(ctx) for p in parameters]
+            gnorm = gluon.utils.clip_global_norm(grads, clip)
 
             batch_l.backward()
             trainer.step(batch_x.shape[0])
@@ -170,7 +150,7 @@ def evaluate(valid_dataloader, model, loss, ctx, word_vocab, char_vocab, label_v
     output_file = os.path.join(eval_dir, 'output_file_temp.txt')
     score_file = os.path.join(eval_dir, 'score_file_temp.txt')
 
-    with open(output_file, 'w', encoding='utf-8') as fw:
+    with open(output_file, 'w') as fw:
         for word, pos, true_tag, pred_tag in zip(word_seq, pos_seq, true_tag_seq, pred_tag_seq):
             fw.write(' '.join([word, pos, true_tag, pred_tag]) + '\n')
 

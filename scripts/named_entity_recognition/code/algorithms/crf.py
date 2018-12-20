@@ -152,13 +152,16 @@ class CRF(gluon.nn.Block):
         score = nd.zeros((batch_size,), ctx=self.ctx)
 
         # A matrix that retrieves the start tag of a batch of sentence symbol sequences. shape：(batch_size, 1)
-        temp = nd.array([self.tag2idx[START_TAG]] * batch_size,
-                        ctx=self.ctx).reshape((batch_size, 1))
+        # temp = nd.array([self.tag2idx[START_TAG]] * batch_size,
+        #                 ctx = self.ctx).reshape((batch_size, 1))
+
+        start_tag = nd.full((batch_size, 1), self.tag2idx[START_TAG], ctx=self.ctx)
         # concat, shape： (batch_size, seq_len+1)
-        tags = nd.concat(temp, tags, dim=1)
+        # tags = nd.concat(temp, tags, dim=1)
+        tags = nd.concat(start_tag, tags, dim=1)
 
         def update_score(data, states):
-            '''计算评分
+            '''calculate score
 
             Args:
                 data (NDArray): NDArray shape:(seq_len, batch_size, self.tagset_size)

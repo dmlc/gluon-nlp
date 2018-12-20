@@ -76,7 +76,7 @@ def get_data_from_txt(data_path):
         sentences_tags (list): list of list of tag
     '''
 
-    with open(data_path, 'r', encoding='utf-8') as fr:
+    with open(data_path, 'r') as fr:
 
         sentences, sentences_poses, sentences_syns, sentences_tags = [], [], [], []
         sentence, poses, syns, tags = [], [], [], []

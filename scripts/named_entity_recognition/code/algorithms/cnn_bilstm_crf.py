@@ -24,6 +24,7 @@
 
 
 import mxnet as mx
+import gluonnlp as nlp
 from mxnet import nd
 from mxnet.gluon import nn, rnn
 from .crf import CRF
@@ -35,15 +36,18 @@ class CNN_BILSTM_CRF(nn.Block):
                  tag2idx, **kwargs):
         super(CNN_BILSTM_CRF, self).__init__(**kwargs)
         with self.name_scope():
+            self.kernel_size = kernel_size
             self.char_embedding_layer = nn.Embedding(nchars, nchar_embed)
             self.word_embedding_layer = nn.Embedding(nwords, nword_embed)
 
-            # tanh activation or other?
-            self.char_conv_layer = nn.Conv1D(nfilters, kernel_size, padding=kernel_size-1)
-            self.global_max_layer = nn.GlobalMaxPool1D()
-            self.flatten_layer = nn.Flatten()
+            self.char_conv_encoder = nlp.model.ConvolutionalEncoder(embed_size=nchar_embed,
+                                                                    num_filters=nfilters,
+                                                                    ngram_filter_sizes=kernel_size,
+                                                                    conv_layer_activation=None,
+                                                                    num_highway=0)
 
-            self.bi_lstm_layer = rnn.LSTM(nhiddens, num_layers=nlayers, bidirectional=True, dropout=rnn_drop_prob[1])
+            self.bi_lstm_layer = rnn.LSTM(nhiddens, num_layers=nlayers,
+                                          bidirectional=True, dropout=rnn_drop_prob[1])
 
             self.tag_dense_layer = None
             if ntag_space:
@@ -70,11 +74,15 @@ class CNN_BILSTM_CRF(nn.Block):
         template = nd.zeros_like(char_embed)
 
         # first reshape to (batch_size*max_seq_len, char_len, nchar_embed)
-        # then transpose to (batch_size*max_seq_len, nchar_embed, char_len) ----- (N, C, W)
-        char_embed = nd.transpose(nd.reshape(char_embed, (-3, -2)), axes=(0, 2, 1))
-        char_embed = nd.squeeze(self.global_max_layer(self.char_conv_layer(char_embed)), axis=2)
+        char_embed = nd.reshape(char_embed, (-3, -2))
+        char_embed = nd.pad(char_embed, mode='constant', constant_value=0,
+                            pad_width=(0, 0, 0, self.kernel_size - 1, 0, 0))
+        char_embed = nd.transpose(char_embed, axes=(1, 0, 2))
+        # (batch_size*max_seq_len, nfilters)
+        char_embed = self.char_conv_encoder(char_embed)
         # (batch_size, max_seq_len, nfilters)
-        char_embed = nd.reshape_like(char_embed, template, lhs_begin=0, lhs_end=1, rhs_begin=0, rhs_end=2)
+        char_embed = nd.reshape_like(char_embed, template, lhs_begin=0,
+                                     lhs_end=1, rhs_begin=0, rhs_end=2)
 
         # apply dropout word on input
         word_embed = self.emb_dropout_layer(word_embed)
@@ -101,7 +109,8 @@ class CNN_BILSTM_CRF(nn.Block):
         return output, state, mask, length
 
     def forward(self, char_idx, word_idx, state, mask=None, length=None):
-        rnn_output, state, mask, length = self._get_rnn_output(char_idx, word_idx, state, mask, length)
+        rnn_output, state, mask, length = self._get_rnn_output(char_idx, word_idx,
+                                                               state, mask, length)
         feats = self.projection_layer(rnn_output)
 
         # crf is not hybrid
