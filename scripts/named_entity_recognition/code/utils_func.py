@@ -89,15 +89,12 @@ def get_data_from_txt(data_path):
                 syns.append(syntactic)
                 tags.append(entity_tag)
             else:
-                sentences.append(sentence.copy())
-                sentences_poses.append(poses.copy())
-                sentences_syns.append(syns.copy())
-                sentences_tags.append(tags.copy())
-                # clear
-                sentence.clear()
-                poses.clear()
-                syns.clear()
-                tags.clear()
+                sentences.append(sentence)
+                sentences_poses.append(poses)
+                sentences_syns.append(syns)
+                sentences_tags.append(tags)
+                # clear elements
+                sentence, poses, syns, tags = [], [], [], []
 
         return sentences, sentences_poses, sentences_syns, sentences_tags
 
