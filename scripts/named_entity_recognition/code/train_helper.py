@@ -78,8 +78,9 @@ def train(train_dataloader, valid_dataloader, test_dataloader, model, loss, trai
                 batch_l = loss(feats, batch_y)
 
             # clip gradient
-            grads = [p.grad(ctx) for p in parameters]
-            gnorm = gluon.utils.clip_global_norm(grads, clip)
+            if clip is not None:
+                grads = [p.grad(ctx) for p in parameters]
+                gnorm = gluon.utils.clip_global_norm(grads, clip)
 
             batch_l.backward()
             trainer.step(batch_x.shape[0])

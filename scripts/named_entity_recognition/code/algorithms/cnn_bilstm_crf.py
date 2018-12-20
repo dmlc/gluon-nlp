@@ -41,8 +41,8 @@ class CNN_BILSTM_CRF(nn.Block):
             self.word_embedding_layer = nn.Embedding(nwords, nword_embed)
 
             self.char_conv_encoder = nlp.model.ConvolutionalEncoder(embed_size=nchar_embed,
-                                                                    num_filters=nfilters,
-                                                                    ngram_filter_sizes=kernel_size,
+                                                                    num_filters=(nfilters,),
+                                                                    ngram_filter_sizes=(kernel_size,),
                                                                     conv_layer_activation=None,
                                                                     num_highway=0)
 
@@ -75,8 +75,7 @@ class CNN_BILSTM_CRF(nn.Block):
 
         # first reshape to (batch_size*max_seq_len, char_len, nchar_embed)
         char_embed = nd.reshape(char_embed, (-3, -2))
-        char_embed = nd.pad(char_embed, mode='constant', constant_value=0,
-                            pad_width=(0, 0, 0, self.kernel_size - 1, 0, 0))
+        # then transope to (char_len, batch_size*max_seq_len, nchar_embed)
         char_embed = nd.transpose(char_embed, axes=(1, 0, 2))
         # (batch_size*max_seq_len, nfilters)
         char_embed = self.char_conv_encoder(char_embed)
