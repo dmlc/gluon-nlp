@@ -410,7 +410,7 @@ if sys.version_info[0] == 3:
             return text.decode('utf-8', 'ignore')
         else:
             raise ValueError('Unsupported string type: %s' % (type(text)))
-else sys.version_info[0] == 2:
+else:
     def _convert_to_unicode(text):
         if isinstance(text, str):
             return text.decode('utf-8', 'ignore')
