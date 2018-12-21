@@ -893,8 +893,8 @@ class BERTTokenizer(object):
         Vocabulary for the corpus.
     lower_case : bool, default True
         whether the text strips accents and convert to lower case.
-        If you use the BERT pre-training model, 
-        lower_case is set to Flase when using the cased model, 
+        If you use the BERT pre-training model,
+        lower_case is set to Flase when using the cased model,
         otherwise it is set to True.
     max_input_chars_per_word : int, default 200
 
