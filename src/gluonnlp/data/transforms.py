@@ -699,27 +699,32 @@ class SentencepieceDetokenizer(_SentencepieceProcessor):
 
 
 class BasicTokenizer():
-    r"""Runs basic tokenization (punctuation splitting, lower casing, etc.).
+    r"""Runs basic tokenization
+
+    convert strings to unicode.
+    performs invalid character removal (e.g. control chars) and whitespace.
+    tokenize CJK chars. (https://en.wikipedia.org/wiki/CJK_Unified_Ideographs_(Unicode_block))
+    splits punctuation on a piece of text.
+    strips accents and convert to lower case.(If lower_case is true)
 
     Parameters
     ----------
-    do_lower_case : bool, default True
-        If model is uncased, then do_lower_case should be set to True
-    max_input_chars_per_word : int, default 200
+    lower_case : bool, default True
+        whether the text strips accents and convert to lower case.
 
     Examples
     --------
-    >>> tokenizer = gluonnlp.data.BasicTokenizer(do_lower_case=True)
+    >>> tokenizer = gluonnlp.data.BasicTokenizer(lower_case=True)
     >>> tokenizer(u" \tHeLLo!how  \n Are yoU?  ")
     ['hello', '!', 'how', 'are', 'you', '?']
-    >>> tokenizer = gluonnlp.data.BasicTokenizer(do_lower_case=False)
+    >>> tokenizer = gluonnlp.data.BasicTokenizer(lower_case=False)
     >>> tokenizer(u" \tHeLLo!how  \n Are yoU?  ")
     ['HeLLo', '!', 'how', 'Are', 'yoU', '?']
 
     """
 
-    def __init__(self, do_lower_case=True):
-        self.do_lower_case = do_lower_case
+    def __init__(self, lower_case=True):
+        self.lower_case = lower_case
 
     def __call__(self, sample):
         """
@@ -751,7 +756,7 @@ class BasicTokenizer():
         orig_tokens = _whitespace_tokenize(text)
         split_tokens = []
         for token in orig_tokens:
-            if self.do_lower_case:
+            if self.lower_case:
                 token = token.lower()
                 token = self._run_strip_accents(token)
             split_tokens.extend(self._run_split_on_punc(token))
@@ -764,7 +769,7 @@ class BasicTokenizer():
         output = []
         for char in text:
             cp = ord(char)
-            if cp == 0 or cp == 0xfffd or self._is_control(char):
+            if cp in (0, 0xfffd) or self._is_control(char):
                 continue
             if self._is_whitespace(char):
                 output.append(' ')
@@ -880,15 +885,18 @@ class BasicTokenizer():
 
 
 class BERTTokenizer(object):
-    r"""End-to-end tokenziation for BERT models.
+    r"""End-to-end tokenization for BERT models.
 
     Parameters
     ----------
     vocab : gluonnlp.Vocab or None, default None
         Vocabulary for the corpus.
-    do_lower_case : bool, default True
-        If model is uncased, then do_lower_case should be set to True
+    lower_case : bool, default True
+        whether the text strips accents and convert to lower case.
+        If you use the BERT pre-training model, 
+        lower_case is set to Flase when using the cased model, otherwise it is set to True.
     max_input_chars_per_word : int, default 200
+
 
     Examples
     --------
@@ -899,10 +907,10 @@ class BERTTokenizer(object):
 
     """
 
-    def __init__(self, vocab, do_lower_case=True, max_input_chars_per_word=200):
+    def __init__(self, vocab, lower_case=True, max_input_chars_per_word=200):
         self.vocab = vocab
         self.max_input_chars_per_word = max_input_chars_per_word
-        self.basic_tokenizer = BasicTokenizer(do_lower_case=do_lower_case)
+        self.basic_tokenizer = BasicTokenizer(lower_case=lower_case)
 
     def __call__(self, sample):
         """
@@ -922,12 +930,12 @@ class BERTTokenizer(object):
     def _tokenizer(self, text):
         split_tokens = []
         for token in self.basic_tokenizer(text):
-            for sub_token in self._WordpieceTokenizer(token):
+            for sub_token in self._tokenize_wordpiece(token):
                 split_tokens.append(sub_token)
 
         return split_tokens
 
-    def _WordpieceTokenizer(self, text):
+    def _tokenize_wordpiece(self, text):
         """Tokenizes a piece of text into its word pieces.
 
         This uses a greedy longest-match-first algorithm to perform tokenization
