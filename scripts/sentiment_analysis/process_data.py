@@ -19,13 +19,12 @@
 
 """Load various datasets."""
 
-from functools import partial
-import multiprocessing as mp
 import re
 import time
 
 import gluonnlp as nlp
 from mxnet import nd, gluon
+
 
 def _load_file(data_name):
     if data_name == 'MR':
@@ -52,6 +51,7 @@ def _load_file(data_name):
         output_size = 6
         return train_dataset, test_dataset, output_size
 
+
 def _clean_str(string, data_name):
     if data_name == 'SST-1' or data_name == 'SST-2':
         string = re.sub(r'[^A-Za-z0-9(),!?\'\`]', ' ', string)
@@ -73,6 +73,7 @@ def _clean_str(string, data_name):
         string = re.sub(r'\s{2,}', ' ', string)
         return string.strip() if data_name == 'TREC' else string.strip().lower()
 
+
 def _build_vocab(data_name, train_dataset, test_dataset):
     all_token = []
     max_len = 0
@@ -85,7 +86,7 @@ def _build_vocab(data_name, train_dataset, test_dataset):
         test_dataset[i][0] = _clean_str(line[0], data_name)
         line = test_dataset[i][0].split()
         max_len = max_len if max_len > len(line) else len(line)
-    all_token.extend(line)
+        all_token.extend(line)
     vocab = nlp.Vocab(nlp.data.count_tokens(all_token))
     vocab.set_embedding(nlp.embedding.create('Word2Vec', source='GoogleNews-vectors-negative300'))
     for word in vocab.embedding._idx_to_token:
@@ -98,29 +99,23 @@ def _build_vocab(data_name, train_dataset, test_dataset):
     print('maximum length (in tokens): ', max_len)
     return vocab, max_len
 
+
 # Dataset preprocessing.
 def _preprocess(x, vocab, max_len):
     data, label = x
     data = vocab[data.split()]
-    if len(data) > max_len:
-        data = data[:max_len]
-    else:
-        while len(data) < max_len:
-            data.append(0)
+    data = data[:max_len] + [0] * (max_len - len(data[:max_len]))
     return data, label
 
-def _get_length(x):
-    return float(len(x[0]))
 
 def _preprocess_dataset(dataset, vocab, max_len):
     start = time.time()
-    pool = mp.Pool(8)
-    partial_work = partial(_preprocess, vocab=vocab, max_len=max_len)
-    dataset = pool.map(partial_work, dataset)
-    lengths = gluon.data.SimpleDataset(pool.map(_get_length, dataset))
+    dataset = [_preprocess(d, vocab=vocab, max_len=max_len) for d in dataset]
+    lengths = gluon.data.SimpleDataset([len(d[0]) for d in dataset])
     end = time.time()
     print('Done! Tokenizing Time={:.2f}s, #Sentences={}'.format(end - start, len(dataset)))
     return dataset, lengths
+
 
 def load_dataset(data_name):
     """Load sentiment dataset."""
