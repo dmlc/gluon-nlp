@@ -894,7 +894,8 @@ class BERTTokenizer(object):
     lower_case : bool, default True
         whether the text strips accents and convert to lower case.
         If you use the BERT pre-training model, 
-        lower_case is set to Flase when using the cased model, otherwise it is set to True.
+        lower_case is set to Flase when using the cased model, 
+        otherwise it is set to True.
     max_input_chars_per_word : int, default 200
 
 
@@ -954,14 +955,12 @@ class BERTTokenizer(object):
         """
 
         text = _convert_to_unicode(text)
-
         output_tokens = []
         for token in _whitespace_tokenize(text):
             chars = list(token)
             if len(chars) > self.max_input_chars_per_word:
                 output_tokens.append(self.vocab.unknown_token)
                 continue
-
             is_bad = False
             start = 0
             sub_tokens = []
@@ -981,7 +980,6 @@ class BERTTokenizer(object):
                     break
                 sub_tokens.append(cur_substr)
                 start = end
-
             if is_bad:
                 output_tokens.append(self.vocab.unknown_token)
             else:
