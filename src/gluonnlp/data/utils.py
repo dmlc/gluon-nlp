@@ -400,21 +400,3 @@ class Splitter(object):
             List of strings. Obtained by calling s.split(separator).
         """
         return s.split(self._separator)
-
-
-if sys.version_info[0] == 3:
-    def _convert_to_unicode(text):
-        if isinstance(text, str):
-            return text
-        elif isinstance(text, bytes):
-            return text.decode('utf-8', 'ignore')
-        else:
-            raise ValueError('Unsupported string type: %s' % (type(text)))
-else:
-    def _convert_to_unicode(text):
-        if isinstance(text, str):
-            return text.decode('utf-8', 'ignore')
-        elif isinstance(text, unicode):  # noqa: F821
-            return text
-        else:
-            raise ValueError('Unsupported string type: %s' % (type(text)))

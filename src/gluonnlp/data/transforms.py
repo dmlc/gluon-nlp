@@ -36,7 +36,7 @@ import unicodedata
 import numpy as np
 import mxnet as mx
 from mxnet.gluon.utils import download, check_sha1
-from .utils import _get_home_dir, _extract_archive, _convert_to_unicode
+from .utils import _get_home_dir, _extract_archive
 
 
 class ClipSequence(object):
@@ -701,7 +701,6 @@ class SentencepieceDetokenizer(_SentencepieceProcessor):
 class BasicTokenizer():
     r"""Runs basic tokenization
 
-    convert strings to unicode.
     performs invalid character removal (e.g. control chars) and whitespace.
     tokenize CJK chars. (https://en.wikipedia.org/wiki/CJK_Unified_Ideographs_(Unicode_block))
     splits punctuation on a piece of text.
@@ -731,19 +730,18 @@ class BasicTokenizer():
 
         Parameters
         ----------
-        sample: list(str)
-            The sentence to detokenize
+        sample: str
+            The string to tokenize, the encoding must be Unicode.
 
         Returns
         -------
-        ret : str
-            Detokenized text
+        ret : list of strs
+            List of tokens
         """
         return self._tokenize(sample)
 
     def _tokenize(self, text):
         """Tokenizes a piece of text."""
-        text = _convert_to_unicode(text)
         text = self._clean_text(text)
 
         # This was added on November 1st, 2018 for the multilingual and Chinese
@@ -918,13 +916,13 @@ class BERTTokenizer(object):
 
         Parameters
         ----------
-        sample: list(str)
-            The sentence to detokenize
+        sample: str
+            The string to tokenize, the encoding must be Unicode.
 
         Returns
         -------
-        ret : str
-            Detokenized text
+        ret : list of strs
+            List of tokens
         """
         return self._tokenizer(sample)
 
@@ -954,7 +952,6 @@ class BERTTokenizer(object):
           A list of wordpiece tokens.
         """
 
-        text = _convert_to_unicode(text)
         output_tokens = []
         for token in _whitespace_tokenize(text):
             chars = list(token)
