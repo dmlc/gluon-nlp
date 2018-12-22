@@ -70,7 +70,7 @@ def clip_grad_global_norm(parameters, max_norm, check_isfinite=True):
                 t = int(s/2)
                 if s != t:
                     target = grads[t]
-                    target[:] = target + grads[s].as_in_context(target.context)
+                    target += grads[s].as_in_context(target.context)
                 else:
                     continue
         return grads[0]
@@ -81,7 +81,7 @@ def clip_grad_global_norm(parameters, max_norm, check_isfinite=True):
         if len(grads) > 1:
             for t in range(1, len(grads)):
                 target = grads[t]
-                target[:] = grads[0].as_in_context(target.context)
+                grads[0].copyto(target)
 
     def _norm(array):
         if array.stype == 'default':
@@ -91,23 +91,23 @@ def clip_grad_global_norm(parameters, max_norm, check_isfinite=True):
 
     arrays = [_reduce_grad(p) for p in parameters if p.grad_req != 'null']
     assert len(arrays) > 0
-    ctx = arrays[0].context
+    ctx, dtype = arrays[0].context, arrays[0].dtype
     total_norm = nd.add_n(*[_norm(arr).as_in_context(ctx) for arr in arrays])
     total_norm = nd.sqrt(total_norm)
     if check_isfinite:
-        if not np.isfinite(total_norm.asscalar()):
+        total_norm = total_norm.asscalar()
+        if not np.isfinite(total_norm):
             warnings.warn(
                 UserWarning('nan or inf is detected. '
                             'Clipping results will be undefined.'), stacklevel=2)
     scale = max_norm / (total_norm + 1e-8)
-    scale = nd.min(nd.concat(scale, nd.ones(1, ctx=ctx), dim=0))
+    if check_isfinite:
+        scale = nd.array([scale], dtype=dtype, ctx=ctx)
+    scale = nd.min(nd.concat(scale, nd.ones((1,), dtype=dtype, ctx=ctx), dim=0))
     for arr in arrays:
-        arr[:] = arr * scale.as_in_context(arr.context)
+        arr *= scale.as_in_context(arr.context)
 
     for p in parameters:
         if p.grad_req != 'null':
             _broadcast_grad(p)
-    if check_isfinite:
-        return total_norm.asscalar()
-    else:
-        return total_norm
+    return total_norm
