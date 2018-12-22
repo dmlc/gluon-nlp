@@ -27,7 +27,6 @@ __all__ = [
 ]
 
 import os
-import sys
 import collections
 import zipfile
 import tarfile
