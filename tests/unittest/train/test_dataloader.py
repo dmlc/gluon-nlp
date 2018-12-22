@@ -21,26 +21,30 @@ def test_sharded_data_loader():
                                        num_buckets=1,
                                        shuffle=False,
                                        num_shards=num_shards)
-    for num_workers in [0, 1, 2, 3, 4]:
-        loader = ShardedDataLoader(dataset, batch_sampler=batch_sampler, num_workers=num_workers)
-        for i, seqs in enumerate(loader):
-            assert len(seqs) == num_shards
-            for j in range(num_shards):
-                if i != len(loader) - 1:
-                    assert mx.test_utils.almost_equal(seqs[j][0].asnumpy(),
-                                                      X[(i*num_shards+j)*2:(i*num_shards+j+1)*2])
-                    assert mx.test_utils.almost_equal(seqs[j][1].asnumpy(),
-                                                      Y[(i*num_shards+j)*2:(i*num_shards+j+1)*2])
-                else:
-                    assert mx.test_utils.almost_equal(seqs[j][0].asnumpy(),
-                                                      X[(i*num_shards+j)*2-num_shards:
-                                                        (i*num_shards+j+1)*2-num_shards])
-                    assert mx.test_utils.almost_equal(seqs[j][1].asnumpy(),
-                                                      Y[(i*num_shards+j)*2-num_shards:
-                                                        (i*num_shards+j+1)*2-num_shards])
+    for thread_pool in [True, False]:
+        for num_workers in [0, 1, 2, 3, 4]:
+            loader = ShardedDataLoader(dataset, batch_sampler=batch_sampler, num_workers=num_workers, thread_pool=thread_pool)
+            for i, seqs in enumerate(loader):
+                assert len(seqs) == num_shards
+                for j in range(num_shards):
+                    if i != len(loader) - 1:
+                        assert mx.test_utils.almost_equal(seqs[j][0].asnumpy(),
+                                                          X[(i*num_shards+j)*2:(i*num_shards+j+1)*2])
+                        assert mx.test_utils.almost_equal(seqs[j][1].asnumpy(),
+                                                          Y[(i*num_shards+j)*2:(i*num_shards+j+1)*2])
+                    else:
+                        assert mx.test_utils.almost_equal(seqs[j][0].asnumpy(),
+                                                          X[(i*num_shards+j)*2-num_shards:
+                                                            (i*num_shards+j+1)*2-num_shards])
+                        assert mx.test_utils.almost_equal(seqs[j][1].asnumpy(),
+                                                          Y[(i*num_shards+j)*2-num_shards:
+                                                            (i*num_shards+j+1)*2-num_shards])
 
 @pytest.mark.remote_required
 def test_sharded_data_loader_record_file():
+    if not hasattr(mx.recordio.MXRecordIO, '_check_pid'):
+        # skip if mxnet<=1.4.0 detected, some hotfix is not included so recordfile will break
+        return
     # test record file
     url_format = 'https://apache-mxnet.s3-accelerate.amazonaws.com/gluon/dataset/pikachu/{}'
     filename = 'val.rec'
