@@ -702,7 +702,7 @@ class BasicTokenizer():
     r"""Runs basic tokenization
 
     performs invalid character removal (e.g. control chars) and whitespace.
-    tokenize CJK chars. (https://en.wikipedia.org/wiki/CJK_Unified_Ideographs_(Unicode_block))
+    tokenize CJK chars. https://en.wikipedia.org/wiki/CJK_Unified_Ideographs_(Unicode_block)
     splits punctuation on a piece of text.
     strips accents and convert to lower case.(If lower_case is true)
 
@@ -730,8 +730,8 @@ class BasicTokenizer():
 
         Parameters
         ----------
-        sample: str
-            The string to tokenize, the encoding must be Unicode.
+        sample:  str (unicode for Python 2)
+            The string to tokenize. Must be unicode.
 
         Returns
         -------
@@ -916,8 +916,8 @@ class BERTTokenizer(object):
 
         Parameters
         ----------
-        sample: str
-            The string to tokenize, the encoding must be Unicode.
+        sample: str (unicode for Python 2)
+            The string to tokenize. Must be unicode.
 
         Returns
         -------
