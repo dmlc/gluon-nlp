@@ -22,13 +22,13 @@ __all__ = [
 
 import os
 import numpy as np
+from mxnet.metric import Accuracy, F1, MCC, PearsonCorrelation, CompositeEvalMetric
 try:
     from tokenizer import convert_to_unicode
 except ImportError:
     from .tokenizer import convert_to_unicode
 from gluonnlp.data import TSVDataset
 from gluonnlp.data.registry import register
-from mxnet.metric import Accuracy, F1, MCC, PearsonCorrelation, CompositeEvalMetric
 
 
 
@@ -110,7 +110,7 @@ class QQPDataset(GLUEDataset):
             fields = [A_IDX, B_IDX, LABEL_IDX]
         elif segment == 'test':
             A_IDX, B_IDX = 1, 2
-            fields = [A_IDX, B_IDX]    
+            fields = [A_IDX, B_IDX]
         super(QQPDataset, self).__init__(path, num_discard_samples=1, fields=fields)
 
 
@@ -132,7 +132,7 @@ class QQPDataset(GLUEDataset):
 @register(segment=['train', 'dev', 'test'])
 class RTEDataset(GLUEDataset):
     """Task class for Recognizing Textual Entailment
-   
+
     Parameters
     ----------
     segment : str or list of str, default 'train'
@@ -152,7 +152,7 @@ class RTEDataset(GLUEDataset):
             fields = [A_IDX, B_IDX, LABEL_IDX]
         elif segment == 'test':
             A_IDX, B_IDX = 1, 2
-            fields = [A_IDX, B_IDX]    
+            fields = [A_IDX, B_IDX]
         super(RTEDataset, self).__init__(path, num_discard_samples=1, fields=fields)
 
     @staticmethod
@@ -170,7 +170,7 @@ class RTEDataset(GLUEDataset):
 @register(segment=['train', 'dev', 'test'])
 class QNLIDataset(GLUEDataset):
     """Task class for SQuAD NLI
-   
+
     Parameters
     ----------
     segment : str or list of str, default 'train'
@@ -190,7 +190,7 @@ class QNLIDataset(GLUEDataset):
             fields = [A_IDX, B_IDX, LABEL_IDX]
         elif segment == 'test':
             A_IDX, B_IDX = 1, 2
-            fields = [A_IDX, B_IDX]    
+            fields = [A_IDX, B_IDX]
         super(QNLIDataset, self).__init__(path, num_discard_samples=1, fields=fields)
 
     @staticmethod
@@ -208,7 +208,7 @@ class QNLIDataset(GLUEDataset):
 @register(segment=['train', 'dev', 'test'])
 class STSBDataset(GLUEDataset):
     """Task class for Sentence Textual Similarity Benchmark.
-   
+
     Parameters
     ----------
     segment : str or list of str, default 'train'
@@ -228,7 +228,7 @@ class STSBDataset(GLUEDataset):
             fields = [A_IDX, B_IDX, LABEL_IDX]
         elif segment == 'test':
             A_IDX, B_IDX = 7, 8
-            fields = [A_IDX, B_IDX]    
+            fields = [A_IDX, B_IDX]
         super(STSBDataset, self).__init__(path, num_discard_samples=1, fields=fields)
 
 
@@ -243,7 +243,7 @@ class STSBDataset(GLUEDataset):
 @register(segment=['train', 'dev', 'test'])
 class COLADataset(GLUEDataset):
     """Class for Warstdadt acceptability task
-    
+
     Parameters
     ----------
     segment : str or list of str, default 'train'
@@ -264,36 +264,43 @@ class COLADataset(GLUEDataset):
             super(COLADataset, self).__init__(path, num_discard_samples=0, fields=fields)
         elif segment == 'test':
             A_IDX = 3
-            fields = [A_IDX]   
+            fields = [A_IDX]
             super(COLADataset, self).__init__(path, num_discard_samples=1, fields=fields)
 
     @staticmethod
     def get_metric():
         """Get metrics  Matthews Correlation Coefficient"""
         return MCC(average='micro')
-    
+
     @staticmethod
     def get_labels():
         """Get classification label ids of the dataset."""
         return ['0', '1']
 
 
-@register(segment=['dev_matched', 'dev_mismatched', 'test_matched', 'test_mismatched', 'diagnostic'])
+@register(segment=['dev_matched', 'dev_mismatched', 'test_matched', 'test_mismatched', 'diagnostic']) #pylint: disable=c0301
 class MNLIDataset(GLUEDataset):
     """Task class for Multi-Genre Natural Language Inference
-   
+
     Parameters
     ----------
     segment : str or list of str, default 'train'
-        Dataset segment. Options are 'dev_matched', 'dev_mismatched', 'test_matched', 'test_mismatched', 'diagnostic' or their combinations.
+        Dataset segment. Options are 'dev_matched', 'dev_mismatched',
+        'test_matched', 'test_mismatched', 'diagnostic' or their combinations.
     root : str, default '$GLUE_DIR/MNLI'
         Path to the folder which stores the MNLI dataset.
         The datset can be downloaded by the following script:
         https://gist.github.com/W4ngatang/60c2bdb54d156a41194446737ce03e2e
     """
     def __init__(self, segment='dev_matched',
-                 root=os.path.join(os.getenv('GLUE_DIR', 'glue_data'), 'MNLI')):
-        self._supported_segments = ['dev_matched', 'dev_mismatched', 'test_matched', 'test_mismatched', 'diagnostic']
+                root=os.path.join(os.getenv('GLUE_DIR', 'glue_data'), 'MNLI')): #pylint: disable=c0330
+        self._supported_segments = [
+            'dev_matched',
+            'dev_mismatched',
+            'test_matched',
+            'test_mismatched',
+            'diagnostic'
+            ]
         assert segment in self._supported_segments, 'Unsupported segment: %s'%segment
         path = os.path.join(root, '%s.tsv'%segment)
         if segment in ['dev_matched', 'dev_mismatched']:
@@ -301,10 +308,10 @@ class MNLIDataset(GLUEDataset):
             fields = [A_IDX, B_IDX, LABEL_IDX]
         elif segment in ['test_matched', 'test_mismatched']:
             A_IDX, B_IDX = 8, 9
-            fields = [A_IDX, B_IDX]    
+            fields = [A_IDX, B_IDX]
         elif segment == 'diagnostic':
             A_IDX, B_IDX = 1, 2
-            fields = [A_IDX, B_IDX]    
+            fields = [A_IDX, B_IDX]
         super(MNLIDataset, self).__init__(path, num_discard_samples=1, fields=fields)
 
     @staticmethod
@@ -323,7 +330,7 @@ class MNLIDataset(GLUEDataset):
 @register(segment=['train', 'dev', 'test'])
 class WNLIDataset(GLUEDataset):
     """Class for Winograd NLI task
-  
+
     Parameters
     ----------
     segment : str or list of str, default 'train'
@@ -343,7 +350,7 @@ class WNLIDataset(GLUEDataset):
             fields = [A_IDX, B_IDX, LABEL_IDX]
         elif segment == 'test':
             A_IDX, B_IDX = 1, 2
-            fields = [A_IDX, B_IDX]    
+            fields = [A_IDX, B_IDX]
         super(WNLIDataset, self).__init__(path, num_discard_samples=1, fields=fields)
 
     @staticmethod
@@ -355,13 +362,6 @@ class WNLIDataset(GLUEDataset):
     def get_metric():
         """Get metrics Accuracy"""
         return Accuracy()
-
-
-
-
-
-
-
 
 
 
@@ -382,7 +382,7 @@ def _truncate_seq_pair(tokens_a, tokens_b, max_length):
 
 
 
-class BERTTransform(object):
+class BERTTransform:
     """BERT style data transformation.
 
     Parameters
@@ -514,7 +514,7 @@ class BERTTransform(object):
                np.array(segment_ids, dtype='int32')
 
 
-class ClassificationTransform(object):
+class ClassificationTransform:
     """Dataset Transformation for BERT-style Sentence Classification.
 
     Parameters
@@ -596,15 +596,13 @@ class ClassificationTransform(object):
         return input_ids, valid_length, segment_ids, label_id
 
 
-class RegressionTransform(object):
-    """Dataset Transformation for BERT-style Sentence Classification.
+class RegressionTransform:
+    """Dataset Transformation for BERT-style Sentence Regression.
 
     Parameters
     ----------
     tokenizer : BasicTokenizer or FullTokensizer.
         Tokenizer for the sentences.
-    labels : list of int.
-        List of all label ids for the classification task.
     max_seq_length : int.
         Maximum sequence length of the sentences.
     pad : bool, default True
@@ -657,15 +655,15 @@ class RegressionTransform(object):
         ----------
         line: tuple of str
             Input strings. For sequence pairs, the input is a tuple of 3 strings:
-            (text_a, text_b, label). For single sequences, the input is a tuple
-            of 2 strings: (text_a, label).
+            (text_a, text_b, score). For single sequences, the input is a tuple
+            of 2 strings: (text_a, score).
 
         Returns
         -------
         np.array: input token ids in 'int32', shape (batch_size, seq_length)
         np.array: valid length in 'int32', shape (batch_size,)
         np.array: input token type ids in 'int32', shape (batch_size, seq_length)
-        np.array: label id in 'int32', shape (batch_size, 1)
+        np.array: score in 'float32', shape (batch_size, 1)
         """
         score = line[-1]
         scroe_np = np.array([score], dtype='float32')

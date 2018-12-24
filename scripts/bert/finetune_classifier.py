@@ -39,12 +39,13 @@ import random
 import logging
 import numpy as np
 import mxnet as mx
-from mxnet import nd
 from mxnet import gluon
 from gluonnlp.model import bert_12_768_12
 from bert import BERTClassifier, BERTRegression
 from tokenizer import FullTokenizer
-from dataset import MRPCDataset, QQPDataset, RTEDataset, STSBDataset, ClassificationTransform, RegressionTransform, QNLIDataset, COLADataset, MNLIDataset, WNLIDataset
+from dataset import MRPCDataset, QQPDataset, RTEDataset, \
+    STSBDataset, ClassificationTransform, RegressionTransform, \
+    QNLIDataset, COLADataset, MNLIDataset, WNLIDataset
 
 np.random.seed(0)
 random.seed(0)
@@ -58,7 +59,8 @@ parser.add_argument('--batch_size', type=int, default=32,
                     help='Batch size. Number of examples per gpu in a minibatch')
 parser.add_argument('--test_batch_size', type=int, default=8, help='Test batch size')
 parser.add_argument('--optimizer', type=str, default='adam', help='optimization algorithm')
-parser.add_argument('--task_name', type=str, default='MRPC', help='The name of the task to fine-tune.(MRPC,...)')
+parser.add_argument('--task_name', type=str, default='MRPC',
+                    help='The name of the task to fine-tune.(MRPC,...)')
 parser.add_argument('--lr', type=float, default=5e-5, help='Initial learning rate')
 parser.add_argument('--warmup_ratio', type=float, default=0.1,
                     help='ratio of warmup steps used in NOAM\'s stepsize schedule')
@@ -89,13 +91,9 @@ else:
     model.classifier.initialize(init=mx.init.Normal(0.02), ctx=ctx)
     loss_function = gluon.loss.SoftmaxCELoss()
 
-
 logging.info(model)
 model.hybridize(static_alloc=True)
-
-
 loss_function.hybridize(static_alloc=True)
-
 
 tasks = {
     'MRPC':MRPCDataset,
@@ -202,13 +200,14 @@ def train(metric):
                 if not isinstance(metric_nm, list):
                     metric_nm = [metric_nm,]
                     metric_val = [metric_val,]
-                eval_str = '[Epoch {} Batch {}/{}] loss={:.4f}, lr={:.7f}, metrics=' + ','.join([i + ':{:.4f}' for i in metric_nm])
-                logging.info(eval_str.format(epoch_id, batch_id + 1, len(bert_dataloader),
-                                    step_loss / args.log_interval,
-                                    trainer.learning_rate, *metric_val))
+                eval_str = '[Epoch {} Batch {}/{}] loss={:.4f}, lr={:.7f}, metrics=' + \
+                    ','.join([i + ':{:.4f}' for i in metric_nm])
+                logging.info(eval_str.format(epoch_id, batch_id + 1, len(bert_dataloader), \
+                    step_loss / args.log_interval, \
+                    trainer.learning_rate, *metric_val))
                 step_loss = 0
         mx.nd.waitall()
         evaluate(metric)
 
 if __name__ == '__main__':
-    train(metric = task.get_metric())
+    train(metric=task.get_metric())

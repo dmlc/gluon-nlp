@@ -44,7 +44,7 @@ class BERTRegression(Block):
     params : ParameterDict or None
         See document of `mx.gluon.Block`.
     """
-    def __init__(self, bert, num_classes=2, dropout=0.0, prefix=None, params=None):
+    def __init__(self, bert, dropout=0.0, prefix=None, params=None):
         super(BERTRegression, self).__init__(prefix=prefix, params=params)
         self.bert = bert
         with self.name_scope():
@@ -128,4 +128,3 @@ class BERTClassifier(Block):
         """
         _, pooler_out = self.bert(inputs, token_types, valid_length)
         return self.classifier(pooler_out)
-

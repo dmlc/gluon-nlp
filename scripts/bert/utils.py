@@ -19,8 +19,8 @@
 """Utility functions for BERT."""
 import json
 import hashlib
-import gluonnlp
 from tensorflow.python import pywrap_tensorflow
+import gluonnlp
 try:
     from tokenizer import load_vocab
 except ImportError:
@@ -94,3 +94,4 @@ def read_tf_checkpoint(path):
         tensor = reader.get_tensor(key)
         tensors[key] = tensor
     return tensors
+
