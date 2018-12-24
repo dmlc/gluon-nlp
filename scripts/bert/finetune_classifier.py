@@ -39,11 +39,12 @@ import random
 import logging
 import numpy as np
 import mxnet as mx
+from mxnet import nd
 from mxnet import gluon
 from gluonnlp.model import bert_12_768_12
-from bert import BERTClassifier
+from bert import BERTClassifier, BERTRegression
 from tokenizer import FullTokenizer
-from dataset import MRPCDataset, ClassificationTransform
+from dataset import MRPCDataset, QQPDataset, RTEDataset, STSBDataset, ClassificationTransform, RegressionTransform, QNLIDataset, COLADataset, MNLIDataset, WNLIDataset
 
 np.random.seed(0)
 random.seed(0)
@@ -57,6 +58,7 @@ parser.add_argument('--batch_size', type=int, default=32,
                     help='Batch size. Number of examples per gpu in a minibatch')
 parser.add_argument('--test_batch_size', type=int, default=8, help='Test batch size')
 parser.add_argument('--optimizer', type=str, default='adam', help='optimization algorithm')
+parser.add_argument('--task_name', type=str, default='MRPC', help='The name of the task to fine-tune.(MRPC,...)')
 parser.add_argument('--lr', type=float, default=5e-5, help='Initial learning rate')
 parser.add_argument('--warmup_ratio', type=float, default=0.1,
                     help='ratio of warmup steps used in NOAM\'s stepsize schedule')
@@ -78,26 +80,59 @@ bert, vocabulary = bert_12_768_12(dataset_name=dataset,
 do_lower_case = 'uncased' in dataset
 tokenizer = FullTokenizer(vocabulary, do_lower_case=do_lower_case)
 
-model = BERTClassifier(bert, dropout=0.1)
-model.classifier.initialize(init=mx.init.Normal(0.02), ctx=ctx)
+if args.task_name in ['STS-B']:
+    model = BERTRegression(bert, dropout=0.1)
+    model.regression.initialize(init=mx.init.Normal(0.02), ctx=ctx)
+    loss_function = gluon.loss.L2Loss()
+else:
+    model = BERTClassifier(bert, dropout=0.1)
+    model.classifier.initialize(init=mx.init.Normal(0.02), ctx=ctx)
+    loss_function = gluon.loss.SoftmaxCELoss()
+
+
 logging.info(model)
 model.hybridize(static_alloc=True)
 
-loss_function = gluon.loss.SoftmaxCELoss()
+
 loss_function.hybridize(static_alloc=True)
 
-metric = mx.metric.Accuracy()
 
-trans = ClassificationTransform(tokenizer, MRPCDataset.get_labels(), args.max_len)
-data_train = MRPCDataset('train').transform(trans)
-data_dev = MRPCDataset('dev').transform(trans)
+tasks = {
+    'MRPC':MRPCDataset,
+    'QQP':QQPDataset,
+    'QNLI':QNLIDataset,
+    'RTE':RTEDataset,
+    'STS-B':STSBDataset,
+    'CoLA':COLADataset,
+    'MNLI':MNLIDataset,
+    'WNLI':WNLIDataset
+    }
+
+
+task = tasks[args.task_name]
+
+if args.task_name in ['STS-B',]:
+    trans = RegressionTransform(tokenizer, args.max_len)
+elif args.task_name in ['CoLA']:
+    trans = ClassificationTransform(tokenizer, task.get_labels(), args.max_len, pair=False)
+else:
+    trans = ClassificationTransform(tokenizer, task.get_labels(), args.max_len)
+
+
+if args.task_name == 'MNLI':
+    data_train = task('dev_matched').transform(trans)
+    data_dev = task('dev_mismatched').transform(trans)
+else:
+    data_train = task('train').transform(trans)
+    data_dev = task('dev').transform(trans)
+
 
 bert_dataloader = mx.gluon.data.DataLoader(data_train, batch_size=batch_size,
                                            shuffle=True, last_batch='rollover')
 bert_dataloader_dev = mx.gluon.data.DataLoader(data_dev, batch_size=test_batch_size,
                                                shuffle=False)
 
-def evaluate():
+def evaluate(metric):
     """Evaluate the model on validation dataset.
     """
     step_loss = 0
@@ -111,10 +146,15 @@ def evaluate():
         Ls.append(ls)
         step_loss += sum([L.asscalar() for L in Ls])
         metric.update([label], [out])
-    logging.info('validation accuracy: %s', metric.get()[1])
+    metric_nm, metric_val = metric.get()
+    if not isinstance(metric_nm, list):
+        metric_nm = [metric_nm,]
+        metric_val = [metric_val,]
+    metric_str = 'validation metrics:' + ','.join([i + ':{:.4f}' for i in metric_nm])
+    logging.info(metric_str.format(*metric_val))
 
 
-def train():
+def train(metric):
     """Training function."""
     trainer = gluon.Trainer(model.collect_params(), args.optimizer,
                             {'learning_rate': lr, 'epsilon': 1e-9})
@@ -158,13 +198,17 @@ def train():
             step_loss += ls.asscalar()
             metric.update([label], [out])
             if (batch_id + 1) % (args.log_interval) == 0:
-                logging.info('[Epoch {} Batch {}/{}] loss={:.4f}, lr={:.7f}, acc={:.3f}'
-                             .format(epoch_id, batch_id + 1, len(bert_dataloader),
-                                     step_loss / args.log_interval,
-                                     trainer.learning_rate, metric.get()[1]))
+                metric_nm, metric_val = metric.get()
+                if not isinstance(metric_nm, list):
+                    metric_nm = [metric_nm,]
+                    metric_val = [metric_val,]
+                eval_str = '[Epoch {} Batch {}/{}] loss={:.4f}, lr={:.7f}, metrics=' + ','.join([i + ':{:.4f}' for i in metric_nm])
+                logging.info(eval_str.format(epoch_id, batch_id + 1, len(bert_dataloader),
+                                    step_loss / args.log_interval,
+                                    trainer.learning_rate, *metric_val))
                 step_loss = 0
         mx.nd.waitall()
-        evaluate()
+        evaluate(metric)
 
 if __name__ == '__main__':
-    train()
+    train(metric = task.get_metric())
