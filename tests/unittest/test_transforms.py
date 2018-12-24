@@ -155,9 +155,9 @@ def test_sentencepiece_tokenizer_subword_regularization():
     assert all(detokenizer(reg_ret[i]) == detext for i in range(len(reg_ret)))
 
 def test_basictokenizer():
-    tokenizer = t.BasicTokenizer(do_lower_case=True)
+    tokenizer = t.BasicTokenizer(lower_case=True)
 
-    # test do_lower_case=True
+    # test lower_case=True
     assert tokenizer(u" \tHeLLo!how  \n Are yoU?  ") == [
         "hello", "!", "how", "are", "you", "?"]
     assert tokenizer(u"H\u00E9llo") == ["hello"]
@@ -190,8 +190,8 @@ def test_basictokenizer():
     assert tokenizer._is_punctuation(u"A") == False
     assert tokenizer._is_punctuation(u" ") == False
 
-    # test do_lower_case=False
-    tokenizer = t.BasicTokenizer(do_lower_case=False)
+    # test lower_case=False
+    tokenizer = t.BasicTokenizer(lower_case=False)
     assert tokenizer(u" \tHeLLo!how  \n Are yoU?  ") == [
         "HeLLo", "!", "how", "Are", "yoU", "?"]
 
@@ -204,7 +204,7 @@ def test_berttokenizer():
                   "[CLS]", "[SEP]"], unknown_token="[UNK]", padding_token=None, bos_token=None, eos_token=None)
     tokenizer = t.BERTTokenizer(vocab=vocab)
 
-    assert tokenizer._WordpieceTokenizer("") == []
+    assert tokenizer._tokenize_wordpiece("") == []
     assert tokenizer("unwanted running") == [
         "un", "##want", "##ed", "runn", "##ing"]
     assert tokenizer("unwantedX running") == ["[UNK]", "runn", "##ing"]
