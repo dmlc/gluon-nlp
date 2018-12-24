@@ -204,10 +204,10 @@ def test_berttokenizer():
                   "[CLS]", "[SEP]"], unknown_token="[UNK]", padding_token=None, bos_token=None, eos_token=None)
     tokenizer = t.BERTTokenizer(vocab=vocab)
 
-    assert tokenizer._tokenize_wordpiece("") == []
-    assert tokenizer("unwanted running") == [
+    assert tokenizer._tokenize_wordpiece(u"") == []
+    assert tokenizer(u"unwanted running") == [
         "un", "##want", "##ed", "runn", "##ing"]
-    assert tokenizer("unwantedX running") == ["[UNK]", "runn", "##ing"]
+    assert tokenizer(u"unwantedX running") == ["[UNK]", "runn", "##ing"]
 
     # test BERTTokenizer
     vocab_tokens = ["[CLS]", "[SEP]", "want", "##want", "##ed", "wa", "un", "runn",
