@@ -23,17 +23,19 @@ BERT for Sentence Pair Classification
 GluonNLP provides the following example script to fine-tune sentence pair classification with pre-trained
 BERT model.
 
-Download the MRPC dataset:
+Download the GLUE dataset:
 
  .. code-block:: console
 
     $ curl -L https://tinyurl.com/yaznh3os -o download_glue_data.py
-    $ python3 download_glue_data.py --data_dir glue_data --tasks MRPC
+    $ python3 download_glue_data.py --data_dir glue_data --tasks all
 
 Use the following command to fine-tune the BERT model for classification on the MRPC dataset.
 
 .. code-block:: console
 
-   $ GLUE_DIR=glue_data MXNET_GPU_MEM_POOL_TYPE=Round python3 finetune_classifier.py --batch_size 32 --optimizer adam --epochs 3 --gpu
+   $ GLUE_DIR=glue_data MXNET_GPU_MEM_POOL_TYPE=Round python3 finetune_classifier.py --task_name MRPC --batch_size 32 --optimizer adam --epochs 3 --gpu
 
 It gets validation accuracy of 87.0%, whereas the the original Tensorflow implementation give evaluation results between 84% and 88%.
+
+

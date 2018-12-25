@@ -51,10 +51,6 @@ class BERTRegression(Block):
             self.regression = nn.HybridSequential(prefix=prefix)
             if dropout:
                 self.regression.add(nn.Dropout(rate=dropout))
-            self.regression.add(nn.Dense(256))
-            self.regression.add(nn.Activation('tanh'))
-            self.regression.add(nn.LayerNorm())
-            self.regression.add(nn.Dropout(rate=dropout))
             self.regression.add(nn.Dense(1))
 
     def forward(self, inputs, token_types, valid_length=None): # pylint: disable=arguments-differ
@@ -106,7 +102,7 @@ class BERTClassifier(Block):
             self.classifier = nn.HybridSequential(prefix=prefix)
             if dropout:
                 self.classifier.add(nn.Dropout(rate=dropout))
-            self.classifier.add(nn.Dense(units=num_classes, flatten=False))
+            self.classifier.add(nn.Dense(units=num_classes))
 
     def forward(self, inputs, token_types, valid_length=None): # pylint: disable=arguments-differ
         """Generate the unnormalized score for the given the input sequences.

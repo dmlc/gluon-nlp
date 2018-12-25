@@ -45,7 +45,7 @@ from bert import BERTClassifier, BERTRegression
 from tokenizer import FullTokenizer
 from dataset import MRPCDataset, QQPDataset, RTEDataset, \
     STSBDataset, ClassificationTransform, RegressionTransform, \
-    QNLIDataset, COLADataset, MNLIDataset, WNLIDataset
+    QNLIDataset, COLADataset, MNLIDataset, WNLIDataset, SSTDataset
 
 np.random.seed(0)
 random.seed(0)
@@ -103,7 +103,8 @@ tasks = {
     'STS-B':STSBDataset,
     'CoLA':COLADataset,
     'MNLI':MNLIDataset,
-    'WNLI':WNLIDataset
+    'WNLI':WNLIDataset,
+    'SST':SSTDataset
     }
 
 
@@ -111,7 +112,7 @@ task = tasks[args.task_name]
 
 if args.task_name in ['STS-B',]:
     trans = RegressionTransform(tokenizer, args.max_len)
-elif args.task_name in ['CoLA']:
+elif args.task_name in ['CoLA', 'SST']:
     trans = ClassificationTransform(tokenizer, task.get_labels(), args.max_len, pair=False)
 else:
     trans = ClassificationTransform(tokenizer, task.get_labels(), args.max_len)
@@ -154,8 +155,12 @@ def evaluate(metric):
 
 def train(metric):
     """Training function."""
-    trainer = gluon.Trainer(model.collect_params(), args.optimizer,
-                            {'learning_rate': lr, 'epsilon': 1e-9})
+    trainer_w = gluon.Trainer(model.collect_params('.*weight'), args.optimizer, \
+                            {'learning_rate': lr, 'epsilon': 1e-9, 'wd':0.01})
+
+    # Do not apply weight decay on LayerNorm and bias terms
+    trainer_b = gluon.Trainer(model.collect_params('.*beta|.*gamma|.*bias'), args.optimizer, \
+                            {'learning_rate': lr, 'epsilon': 1e-9, 'wd':0.0})
 
     num_train_examples = len(data_train)
     num_train_steps = int(num_train_examples / batch_size * args.epochs)
@@ -183,7 +188,8 @@ def train(metric):
             else:
                 offset = (step_num - num_warmup_steps) * lr / (num_train_steps - num_warmup_steps)
                 new_lr = lr - offset
-            trainer.set_learning_rate(new_lr)
+            trainer_w.set_learning_rate(new_lr)
+            trainer_b.set_learning_rate(new_lr)
             with mx.autograd.record():
                 input_ids, valid_length, type_ids, label = seqs
                 out = model(input_ids.as_in_context(ctx), type_ids.as_in_context(ctx),
@@ -192,7 +198,8 @@ def train(metric):
             ls.backward()
             grads = [p.grad(ctx) for p in differentiable_params]
             gluon.utils.clip_global_norm(grads, 1)
-            trainer.step(1)
+            trainer_w.step(1)
+            trainer_b.step(1)
             step_loss += ls.asscalar()
             metric.update([label], [out])
             if (batch_id + 1) % (args.log_interval) == 0:
@@ -204,7 +211,7 @@ def train(metric):
                     ','.join([i + ':{:.4f}' for i in metric_nm])
                 logging.info(eval_str.format(epoch_id, batch_id + 1, len(bert_dataloader), \
                     step_loss / args.log_interval, \
-                    trainer.learning_rate, *metric_val))
+                    trainer_w.learning_rate, *metric_val))
                 step_loss = 0
         mx.nd.waitall()
         evaluate(metric)

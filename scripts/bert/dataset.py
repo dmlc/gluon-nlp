@@ -17,7 +17,7 @@
 __all__ = [
     'MRPCDataset', 'QQPDataset', 'ClassificationTransform',
     'BERTTransform', 'QNLIDataset', 'RTEDataset', 'STSBDataset',
-    'COLADataset', 'MNLIDataset', 'WNLIDataset'
+    'COLADataset', 'MNLIDataset', 'WNLIDataset', 'SSTDataset'
 ]
 
 import os
@@ -39,7 +39,7 @@ class MRPCDataset(TSVDataset):
     Parameters
     ----------
     segment : str or list of str, default 'train'
-        Dataset segment. Options are 'train', 'val', 'test' or their combinations.
+        Dataset segment. Options are 'train', 'dev', 'test' or their combinations.
     root : str, default '$GLUE_DIR/MRPC'
         Path to the folder which stores the MRPC dataset.
         The datset can be downloaded by the following script:
@@ -94,7 +94,7 @@ class QQPDataset(GLUEDataset):
     Parameters
     ----------
     segment : str or list of str, default 'train'
-        Dataset segment. Options are 'train', 'val', 'test' or their combinations.
+        Dataset segment. Options are 'train', 'dev', 'test' or their combinations.
     root : str, default '$GLUE_DIR/QQP'
         Path to the folder which stores the QQP dataset.
         The datset can be downloaded by the following script:
@@ -136,7 +136,7 @@ class RTEDataset(GLUEDataset):
     Parameters
     ----------
     segment : str or list of str, default 'train'
-        Dataset segment. Options are 'train', 'val', 'test' or their combinations.
+        Dataset segment. Options are 'train', 'dev', 'test' or their combinations.
     root : str, default '$GLUE_DIR/RTE'
         Path to the folder which stores the RTE dataset.
         The datset can be downloaded by the following script:
@@ -174,7 +174,7 @@ class QNLIDataset(GLUEDataset):
     Parameters
     ----------
     segment : str or list of str, default 'train'
-        Dataset segment. Options are 'train', 'val', 'test' or their combinations.
+        Dataset segment. Options are 'train', 'dev', 'test' or their combinations.
     root : str, default '$GLUE_DIR/QNLI'
         Path to the folder which stores the QNLI dataset.
         The datset can be downloaded by the following script:
@@ -212,7 +212,7 @@ class STSBDataset(GLUEDataset):
     Parameters
     ----------
     segment : str or list of str, default 'train'
-        Dataset segment. Options are 'train', 'val', 'test' or their combinations.
+        Dataset segment. Options are 'train', 'dev', 'test' or their combinations.
     root : str, default '$GLUE_DIR/STS-B'
         Path to the folder which stores the STS dataset.
         The datset can be downloaded by the following script:
@@ -247,7 +247,7 @@ class COLADataset(GLUEDataset):
     Parameters
     ----------
     segment : str or list of str, default 'train'
-        Dataset segment. Options are 'train', 'val', 'test' or their combinations.
+        Dataset segment. Options are 'train', 'dev', 'test' or their combinations.
     root : str, default '$GLUE_DIR/CoLA
         Path to the folder which stores the CoLA dataset.
         The datset can be downloaded by the following script:
@@ -276,6 +276,44 @@ class COLADataset(GLUEDataset):
     def get_labels():
         """Get classification label ids of the dataset."""
         return ['0', '1']
+
+
+@register(segment=['train', 'dev', 'test'])
+class SSTDataset(GLUEDataset):
+    """Task class for Stanford Sentiment Treebank.
+
+    Parameters
+    ----------
+    segment : str or list of str, default 'train'
+        Dataset segment. Options are 'train', 'dev', 'test' or their combinations.
+    root : str, default '$GLUE_DIR/SST-2
+        Path to the folder which stores the SST-2 dataset.
+        The datset can be downloaded by the following script:
+        https://gist.github.com/W4ngatang/60c2bdb54d156a41194446737ce03e2e
+    """
+    def __init__(self, segment='train',
+                 root=os.path.join(os.getenv('GLUE_DIR', 'glue_data'), 'CoLA')):
+        self._supported_segments = ['train', 'dev', 'test']
+        assert segment in self._supported_segments, 'Unsupported segment: %s'%segment
+        path = os.path.join(root, '%s.tsv'%segment)
+        if segment in ['train', 'dev']:
+            A_IDX, LABEL_IDX = 0, 1
+            fields = [A_IDX, LABEL_IDX]
+        elif segment == 'test':
+            A_IDX = 1
+            fields = [A_IDX]
+        super(SSTDataset, self).__init__(path, num_discard_samples=1, fields=fields)
+
+    @staticmethod
+    def get_metric():
+        """Get metrics Accuracy"""
+        return Accuracy()
+
+    @staticmethod
+    def get_labels():
+        """Get classification label ids of the dataset."""
+        return ['0', '1']
+
 
 
 @register(segment=['dev_matched', 'dev_mismatched', 'test_matched', 'test_mismatched', 'diagnostic']) #pylint: disable=c0301
