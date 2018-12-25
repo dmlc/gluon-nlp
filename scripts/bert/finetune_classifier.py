@@ -34,68 +34,100 @@ sentence pair classification, with Gluon NLP Toolkit.
 # under the License.
 # pylint:disable=redefined-outer-name,logging-format-interpolation
 
+import os
+os.environ['MXNET_GPU_MEM_POOL_TYPE'] = 'Round'
+
+import time
 import argparse
 import random
 import logging
+import warnings
 import numpy as np
 import mxnet as mx
 from mxnet import gluon
+import gluonnlp as nlp
 from gluonnlp.model import bert_12_768_12
 from bert import BERTClassifier
 from tokenizer import FullTokenizer
 from dataset import MRPCDataset, ClassificationTransform
 
-np.random.seed(0)
-random.seed(0)
-mx.random.seed(2)
-logging.getLogger().setLevel(logging.DEBUG)
-
 parser = argparse.ArgumentParser(description='BERT sentence pair classification example.'
                                              'We fine-tune the BERT model on MRPC')
-parser.add_argument('--epochs', type=int, default=3, help='number of epochs')
+parser.add_argument('--epochs', type=int, default=3, help='number of epochs, default is 3')
 parser.add_argument('--batch_size', type=int, default=32,
-                    help='Batch size. Number of examples per gpu in a minibatch')
-parser.add_argument('--test_batch_size', type=int, default=8, help='Test batch size')
-parser.add_argument('--optimizer', type=str, default='adam', help='optimization algorithm')
-parser.add_argument('--lr', type=float, default=5e-5, help='Initial learning rate')
+                    help='Batch size. Number of examples per gpu in a minibatch, default is 32')
+parser.add_argument('--dev_batch_size', type=int, default=8,
+                    help='Batch size for dev set, default is 8')
+parser.add_argument('--optimizer', type=str, default='adam',
+                    help='Optimization algorithm, default is adam')
+parser.add_argument('--lr', type=float, default=5e-5,
+                    help='Initial learning rate, default is 5e-5')
 parser.add_argument('--warmup_ratio', type=float, default=0.1,
-                    help='ratio of warmup steps used in NOAM\'s stepsize schedule')
-parser.add_argument('--log_interval', type=int, default=10, help='report interval')
-parser.add_argument('--max_len', type=int, default=128, help='Maximum length of the sentence pairs')
+                    help='ratio of warmup steps used in NOAM\'s stepsize schedule, default is 0.1')
+parser.add_argument('--log_interval', type=int, default=10, help='report interval, default is 10')
+parser.add_argument('--max_len', type=int, default=128,
+                    help='Maximum length of the sentence pairs, default is 128')
+parser.add_argument('--seed', type=int, default=2, help='Random seed, default is 2')
+parser.add_argument('--accumulate', type=int, default=None, help='The number of batches for '
+                    'gradients accumulation to simulate large batch size. Default is None')
 parser.add_argument('--gpu', action='store_true', help='whether to use gpu for finetuning')
 args = parser.parse_args()
+
+logging.getLogger().setLevel(logging.DEBUG)
 logging.info(args)
+
 batch_size = args.batch_size
-test_batch_size = args.test_batch_size
+dev_batch_size = args.dev_batch_size
 lr = args.lr
+accumulate = args.accumulate
+log_interval = args.log_interval * accumulate if accumulate else args.log_interval
+
+# random seed
+np.random.seed(args.seed)
+random.seed(args.seed)
+mx.random.seed(args.seed)
 
 ctx = mx.cpu() if not args.gpu else mx.gpu()
 
+# model and loss
 dataset = 'book_corpus_wiki_en_uncased'
 bert, vocabulary = bert_12_768_12(dataset_name=dataset,
                                   pretrained=True, ctx=ctx, use_pooler=True,
                                   use_decoder=False, use_classifier=False)
-do_lower_case = 'uncased' in dataset
-tokenizer = FullTokenizer(vocabulary, do_lower_case=do_lower_case)
-
 model = BERTClassifier(bert, dropout=0.1)
 model.classifier.initialize(init=mx.init.Normal(0.02), ctx=ctx)
-logging.info(model)
 model.hybridize(static_alloc=True)
 
 loss_function = gluon.loss.SoftmaxCELoss()
 loss_function.hybridize(static_alloc=True)
-
 metric = mx.metric.Accuracy()
 
-trans = ClassificationTransform(tokenizer, MRPCDataset.get_labels(), args.max_len)
-data_train = MRPCDataset('train').transform(trans)
-data_dev = MRPCDataset('dev').transform(trans)
+# data processing
+do_lower_case = 'uncased' in dataset
+tokenizer = FullTokenizer(vocabulary, do_lower_case=do_lower_case)
+train_trans = ClassificationTransform(tokenizer, MRPCDataset.get_labels(),
+                                      args.max_len, pad=False)
+dev_trans = ClassificationTransform(tokenizer, MRPCDataset.get_labels(), args.max_len)
 
-bert_dataloader = mx.gluon.data.DataLoader(data_train, batch_size=batch_size,
-                                           shuffle=True, last_batch='rollover')
-bert_dataloader_dev = mx.gluon.data.DataLoader(data_dev, batch_size=test_batch_size,
-                                               shuffle=False)
+data_train = MRPCDataset('train').transform(train_trans, lazy=False)
+data_train_len = data_train.transform(lambda input_id, length, segment_id, label_id: length)
+
+batchify_fn = nlp.data.batchify.Tuple(nlp.data.batchify.Pad(axis=0),
+                                      nlp.data.batchify.Stack(),
+                                      nlp.data.batchify.Pad(axis=0),
+                                      nlp.data.batchify.Stack())
+
+batch_sampler = nlp.data.sampler.FixedBucketSampler(data_train_len,
+                                                    batch_size=batch_size,
+                                                    num_buckets=10,
+                                                    ratio=0,
+                                                    shuffle=True)
+bert_dataloader = gluon.data.DataLoader(dataset=data_train, num_workers=1,
+                                        batch_sampler=batch_sampler,
+                                        batchify_fn=batchify_fn)
+
+bert_dataloader_dev = mx.gluon.data.DataLoader(data_dev, batch_size=dev_batch_size,
+                                               num_workers=1, shuffle=False)
 
 def evaluate():
     """Evaluate the model on validation dataset.
@@ -111,60 +143,84 @@ def evaluate():
         Ls.append(ls)
         step_loss += sum([L.asscalar() for L in Ls])
         metric.update([label], [out])
-    logging.info('validation accuracy: %s', metric.get()[1])
+    logging.info('Validation accuracy: {:.3f}'.format(metric.get()[1]))
 
 
 def train():
     """Training function."""
-    trainer = gluon.Trainer(model.collect_params(), args.optimizer,
-                            {'learning_rate': lr, 'epsilon': 1e-9})
+    try:
+        trainer = gluon.Trainer(model.collect_params(), args.optimizer,
+                                {'learning_rate': lr, 'epsilon': 1e-6, 'wd': 0.01})
+    except ValueError as e:
+        warnings.warn("AdamW optimizer is not found. Please consider upgrading to "
+                      "mxnet>=1.5.0. Now the original Adam optimizer is used instead.")
+        trainer = gluon.Trainer(model.collect_params(), 'adam',
+                                {'learning_rate': lr, 'epsilon': 1e-6, 'wd': 0.01})
 
     num_train_examples = len(data_train)
-    num_train_steps = int(num_train_examples / batch_size * args.epochs)
+    step_size = batch_size * accumulate if accumulate else batch_size
+    num_train_steps = int(num_train_examples / step_size * args.epochs)
     warmup_ratio = args.warmup_ratio
     num_warmup_steps = int(num_train_steps * warmup_ratio)
     step_num = 0
-    differentiable_params = []
+    params = []
 
     # Do not apply weight decay on LayerNorm and bias terms
     for _, v in model.collect_params('.*beta|.*gamma|.*bias').items():
         v.wd_mult = 0.0
-
+    # Collect differentiable parameters
     for p in model.collect_params().values():
         if p.grad_req != 'null':
-            differentiable_params.append(p)
+            params.append(p)
+    # Set grad_req if gradient accumulation is required
+    if accumulate:
+        for p in model.collect_params().values():
+            p.grad_req = 'add'
 
     for epoch_id in range(args.epochs):
         metric.reset()
         step_loss = 0
-
+        tic = time.time()
         for batch_id, seqs in enumerate(bert_dataloader):
-            step_num += 1
+            # set grad to zero for gradient accumulation
+            if accumulate:
+                if batch_id % accumulate == 0:
+                    model.collect_params().zero_grad()
+                    step_num += 1
+            else:
+                step_num += 1
+            # learning rate schedule
             if step_num < num_warmup_steps:
                 new_lr = lr * step_num / num_warmup_steps
             else:
                 offset = (step_num - num_warmup_steps) * lr / (num_train_steps - num_warmup_steps)
                 new_lr = lr - offset
             trainer.set_learning_rate(new_lr)
+            # forward and backward
             with mx.autograd.record():
                 input_ids, valid_length, type_ids, label = seqs
                 out = model(input_ids.as_in_context(ctx), type_ids.as_in_context(ctx),
                             valid_length.astype('float32').as_in_context(ctx))
                 ls = loss_function(out, label.as_in_context(ctx)).mean()
             ls.backward()
-            grads = [p.grad(ctx) for p in differentiable_params]
-            gluon.utils.clip_global_norm(grads, 1)
-            trainer.step(1)
+            # update
+            if not accumulate or (batch_id + 1) % accumulate == 0:
+                grads = [p.grad(ctx) for p in params]
+                gluon.utils.clip_global_norm(grads, 1)
+                trainer.step(accumulate if accumulate else 1)
             step_loss += ls.asscalar()
             metric.update([label], [out])
-            if (batch_id + 1) % (args.log_interval) == 0:
+            if (batch_id + 1) % log_interval == 0:
                 logging.info('[Epoch {} Batch {}/{}] loss={:.4f}, lr={:.7f}, acc={:.3f}'
                              .format(epoch_id, batch_id + 1, len(bert_dataloader),
-                                     step_loss / args.log_interval,
+                                     step_loss / log_interval,
                                      trainer.learning_rate, metric.get()[1]))
                 step_loss = 0
         mx.nd.waitall()
         evaluate()
+        toc = time.time()
+        logging.info('Time cost={:.1f}s'.format(toc - tic))
+        tic = toc
 
 if __name__ == '__main__':
     train()
