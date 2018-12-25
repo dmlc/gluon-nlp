@@ -110,6 +110,7 @@ train_trans = ClassificationTransform(tokenizer, MRPCDataset.get_labels(),
 dev_trans = ClassificationTransform(tokenizer, MRPCDataset.get_labels(), args.max_len)
 
 data_train = MRPCDataset('train').transform(train_trans, lazy=False)
+data_dev = MRPCDataset('dev').transform(dev_trans, lazy=False)
 data_train_len = data_train.transform(lambda input_id, length, segment_id, label_id: length)
 
 batchify_fn = nlp.data.batchify.Tuple(nlp.data.batchify.Pad(axis=0),
