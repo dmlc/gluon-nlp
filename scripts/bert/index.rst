@@ -18,7 +18,7 @@ The following pre-trained BERT models are available from the **gluonnlp.model.ge
 where **bert_12_768_12** refers to the BERT BASE model, and **bert_24_1024_16** refers to the BERT LARGE model.
 
 BERT for Sentence Classification on GLUE tasks
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 GluonNLP provides the following example script to fine-tune sentence classification with pre-trained
 BERT model.
