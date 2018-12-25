@@ -94,4 +94,3 @@ def read_tf_checkpoint(path):
         tensor = reader.get_tensor(key)
         tensors[key] = tensor
     return tensors
-
