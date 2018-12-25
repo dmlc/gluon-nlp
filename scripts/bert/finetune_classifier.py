@@ -168,11 +168,6 @@ def train(metric):
     num_warmup_steps = int(num_train_steps * warmup_ratio)
     step_num = 0
     differentiable_params = []
-
-    # Do not apply weight decay on LayerNorm and bias terms
-    for _, v in model.collect_params('.*beta|.*gamma|.*bias').items():
-        v.wd_mult = 0.0
-
     for p in model.collect_params().values():
         if p.grad_req != 'null':
             differentiable_params.append(p)
