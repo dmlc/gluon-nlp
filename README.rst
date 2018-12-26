@@ -166,3 +166,9 @@ English word embeddings:
     <class 'mxnet.ndarray.ndarray.NDArray'>
     >>> glove['baby'].shape
     (50,)
+
+
+New to Deep Learning or NLP?
+============================
+
+Please refer to the open source book `Dive into Deep Learning <http://en.diveintodeeplearning.org/>`__.
