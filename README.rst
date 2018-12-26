@@ -171,4 +171,4 @@ English word embeddings:
 New to Deep Learning or NLP?
 ============================
 
-Please refer to the open source book `Dive into Deep Learning <http://en.diveintodeeplearning.org/>`__.
+For background knowledge of deep learning or NLP, please refer to the open source book `Dive into Deep Learning <http://en.diveintodeeplearning.org/>`__.
