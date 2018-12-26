@@ -52,8 +52,7 @@ random.seed(0)
 mx.random.seed(2)
 logging.getLogger().setLevel(logging.DEBUG)
 
-parser = argparse.ArgumentParser(description='BERT sentence pair classification example.'
-                                             'We fine-tune the BERT model on MRPC')
+parser = argparse.ArgumentParser(description='BERT fine-tune examples for GLUE tasks.')
 parser.add_argument('--epochs', type=int, default=3, help='number of epochs')
 parser.add_argument('--batch_size', type=int, default=32,
                     help='Batch size. Number of examples per gpu in a minibatch')
