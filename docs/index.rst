@@ -89,7 +89,7 @@ research ideas and products based on these models. This toolkit offers four main
 5. Community support.
 
 This toolkit assumes that users have basic knowledge about deep learning and
-NLP. Otherwise, please refer to an introduction course such as
+NLP. Otherwise, please refer to an introductory course such as
 `Dive into Deep Learning <http://en.diveintodeeplearning.org/>`_ or
 `Stanford CS224n <http://web.stanford.edu/class/cs224n/>`_.
 
