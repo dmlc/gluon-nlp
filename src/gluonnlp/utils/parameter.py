@@ -27,8 +27,9 @@ from mxnet import nd
 
 def clip_grad_global_norm(parameters, max_norm, check_isfinite=True):
     """Rescales gradients of parameters so that the sum of their 2-norm is smaller than `max_norm`.
-    If gradients exist for more than one context for a parameter, these gradients are summed
-    first before calculating the 2-norm.
+    If gradients exist for more than one context for a parameter, user needs to explicitly call
+    ``trainer.allreduce_grads`` so that the gradients are summed first before calculating
+    the 2-norm.
 
     .. note::
 
@@ -42,6 +43,7 @@ def clip_grad_global_norm(parameters, max_norm, check_isfinite=True):
                 y = net(x)
                 loss = loss_fn(y, label)
             loss.backward()
+        trainer.allreduce_grads()
         nlp.utils.clip_grad_global_norm(net.collect_params().values(), max_norm)
         trainer.update(batch_size)
         ...
@@ -61,36 +63,14 @@ def clip_grad_global_norm(parameters, max_norm, check_isfinite=True):
       False. Otherwise a float is returned.
 
     """
-    def _reduce_grad(parameter):
-        """Sum gradients of all devices onto the first context and return gradient sum.
-        This function has side effect and does not preserve the original per-device gradients."""
-        grads = parameter.list_grad()
-        if len(grads) > 1:
-            for s in reversed(range(len(grads))):
-                t = int(s/2)
-                if s != t:
-                    target = grads[t]
-                    target += grads[s].as_in_context(target.context)
-                else:
-                    continue
-        return grads[0]
-
-    def _broadcast_grad(parameter):
-        """Broadcast the gradient on the first context to the copies on all other contexts."""
-        grads = parameter.list_grad()
-        if len(grads) > 1:
-            for t in range(1, len(grads)):
-                target = grads[t]
-                grads[0].copyto(target)
-
     def _norm(array):
         if array.stype == 'default':
             x = array.reshape((-1,))
             return nd.dot(x, x)
         return array.norm().square()
 
-    arrays = [_reduce_grad(p) for p in parameters if p.grad_req != 'null']
-    assert len(arrays) > 0
+    arrays = [p.grad() for p in parameters if p.grad_req != 'null']
+    assert len(arrays) > 0, 'No parameter found available for gradient norm clipping.'
     ctx, dtype = arrays[0].context, arrays[0].dtype
     total_norm = nd.add_n(*[_norm(arr).as_in_context(ctx) for arr in arrays])
     total_norm = nd.sqrt(total_norm)
@@ -104,10 +84,8 @@ def clip_grad_global_norm(parameters, max_norm, check_isfinite=True):
     if check_isfinite:
         scale = nd.array([scale], dtype=dtype, ctx=ctx)
     scale = nd.min(nd.concat(scale, nd.ones((1,), dtype=dtype, ctx=ctx), dim=0))
-    for arr in arrays:
-        arr *= scale.as_in_context(arr.context)
-
     for p in parameters:
         if p.grad_req != 'null':
-            _broadcast_grad(p)
+            for arr in p.list_grad():
+                arr *= scale.as_in_context(arr.context)
     return total_norm

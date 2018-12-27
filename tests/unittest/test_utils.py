@@ -75,10 +75,12 @@ def test_clip_grad_norm(max_norm, check_isfinite):
     net = mx.gluon.nn.Dense(1, weight_initializer='ones', bias_initializer='ones')
     net.initialize(ctx=contexts)
     net.hybridize()
+    trainer = mx.gluon.Trainer(net.collect_params(), 'sgd', update_on_kvstore=False)
     for ctx in contexts:
         with mx.autograd.record():
             out = net(mx.nd.ones((1, 1), ctx=ctx))
         out.backward()
+    trainer.allreduce_grads()
     norm = nlp.utils.clip_grad_global_norm(net.collect_params().values(),
                                            max_norm, check_isfinite)
     if isinstance(norm, mx.nd.NDArray):
