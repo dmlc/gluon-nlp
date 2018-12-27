@@ -22,7 +22,7 @@ __all__ = ['BERTModel', 'BERTEncoder', 'BERTEncoderCell', 'BERTPositionwiseFFN',
            'BERTLayerNorm', 'bert_12_768_12', 'bert_24_1024_16']
 
 import os
-from mxnet.gluon import Block, HybridBlock
+from mxnet.gluon import Block
 from mxnet.gluon import nn
 from mxnet.gluon.model_zoo import model_store
 import mxnet as mx
