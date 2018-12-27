@@ -38,11 +38,11 @@ class BERTLayerNorm(nn.LayerNorm):
     """BERT style Layer Normalization, where epsilon is added inside the square
     root and set to 1e-12 by default.
 
-     Inputs:
-         - **data**: input tensor with arbitrary shape.
-         - **out**: output tensor with the same shape as `data`.
-     """
-     def __init__(self, epsilon=1e-12, in_channels=0, prefix=None, params=None):
+    Inputs:
+        - **data**: input tensor with arbitrary shape.
+        - **out**: output tensor with the same shape as `data`.
+    """
+    def __init__(self, epsilon=1e-12, in_channels=0, prefix=None, params=None):
         super(BERTLayerNorm, self).__init__(epsilon=epsilon, in_channels=in_channels,
                                             prefix=prefix, params=params)
 
