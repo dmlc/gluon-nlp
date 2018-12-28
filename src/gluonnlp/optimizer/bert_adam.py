@@ -62,11 +62,13 @@ class BERTAdam(Optimizer):
         self.beta2 = beta2
         self.epsilon = epsilon
 
-    def create_state(self, index, weight):
+    def create_state(self, index, weight): # pylint-disable=unused-argument
+        """Initialization for mean and var."""
         return (zeros(weight.shape, weight.context, dtype=weight.dtype), #mean
                 zeros(weight.shape, weight.context, dtype=weight.dtype)) #variance
 
     def update(self, index, weight, grad, state):
+        """Update method."""
         try:
             from mxnet.ndarray.contrib import adamw_update
         except ImportError:
