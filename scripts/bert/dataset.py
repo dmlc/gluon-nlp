@@ -15,9 +15,9 @@
 """BERT datasets."""
 
 __all__ = [
-    'MRPCDataset', 'QQPDataset', 'ClassificationTransform',
-    'BERTTransform', 'QNLIDataset', 'RTEDataset', 'STSBDataset',
-    'COLADataset', 'MNLIDataset', 'WNLIDataset', 'SSTDataset'
+    'MRPCDataset', 'QQPDataset', 'BERTTransform', 'QNLIDataset', 'RTEDataset',
+    'STSBDataset', 'COLADataset', 'MNLIDataset', 'WNLIDataset', 'SSTDataset',
+    'ClassificationTransform'
 ]
 
 import os
@@ -29,7 +29,6 @@ except ImportError:
     from .tokenizer import convert_to_unicode
 from gluonnlp.data import TSVDataset
 from gluonnlp.data.registry import register
-
 
 
 @register(segment=['train', 'dev', 'test'])
@@ -45,14 +44,18 @@ class MRPCDataset(TSVDataset):
         The datset can be downloaded by the following script:
         https://gist.github.com/W4ngatang/60c2bdb54d156a41194446737ce03e2e
     """
-    def __init__(self, segment='train',
-                 root=os.path.join(os.getenv('GLUE_DIR', 'glue_data'), 'MRPC')):
+
+    def __init__(self,
+                 segment='train',
+                 root=os.path.join(os.getenv('GLUE_DIR', 'glue_data'),
+                                   'MRPC')):
         self._supported_segments = ['train', 'dev', 'test']
-        assert segment in self._supported_segments, 'Unsupported segment: %s'%segment
-        path = os.path.join(root, '%s.tsv'%segment)
+        assert segment in self._supported_segments, 'Unsupported segment: %s' % segment
+        path = os.path.join(root, '%s.tsv' % segment)
         A_IDX, B_IDX, LABEL_IDX = 3, 4, 0
         fields = [A_IDX, B_IDX, LABEL_IDX]
-        super(MRPCDataset, self).__init__(path, num_discard_samples=1, field_indices=fields)
+        super(MRPCDataset, self).__init__(
+            path, num_discard_samples=1, field_indices=fields)
 
     @staticmethod
     def get_labels():
@@ -68,23 +71,21 @@ class MRPCDataset(TSVDataset):
         return metric
 
 
-
 class GLUEDataset(TSVDataset):
     """GLUEDataset class"""
+
     def __init__(self, path, num_discard_samples, fields):
         self.fields = fields
-        super(GLUEDataset, self).__init__(path, num_discard_samples=num_discard_samples)
+        super(GLUEDataset, self).__init__(
+            path, num_discard_samples=num_discard_samples)
 
     def _read(self):
         all_samples = super(GLUEDataset, self)._read()
         largest_field = max(self.fields)
         #to filter out error records
-        final_samples = [
-            [s[f] for f in self.fields] for s in all_samples
-            if len(s) >= largest_field + 1
-            ]
+        final_samples = [[s[f] for f in self.fields] for s in all_samples
+                         if len(s) >= largest_field + 1]
         return final_samples
-
 
 
 @register(segment=['train', 'dev', 'test'])
@@ -100,19 +101,21 @@ class QQPDataset(GLUEDataset):
         The datset can be downloaded by the following script:
         https://gist.github.com/W4ngatang/60c2bdb54d156a41194446737ce03e2e
     """
-    def __init__(self, segment='train',
+
+    def __init__(self,
+                 segment='train',
                  root=os.path.join(os.getenv('GLUE_DIR', 'glue_data'), 'QQP')):
         self._supported_segments = ['train', 'dev', 'test']
-        assert segment in self._supported_segments, 'Unsupported segment: %s'%segment
-        path = os.path.join(root, '%s.tsv'%segment)
+        assert segment in self._supported_segments, 'Unsupported segment: %s' % segment
+        path = os.path.join(root, '%s.tsv' % segment)
         if segment in ['train', 'dev']:
             A_IDX, B_IDX, LABEL_IDX = 3, 4, 5
             fields = [A_IDX, B_IDX, LABEL_IDX]
         elif segment == 'test':
             A_IDX, B_IDX = 1, 2
             fields = [A_IDX, B_IDX]
-        super(QQPDataset, self).__init__(path, num_discard_samples=1, fields=fields)
-
+        super(QQPDataset, self).__init__(
+            path, num_discard_samples=1, fields=fields)
 
     @staticmethod
     def get_labels():
@@ -128,7 +131,6 @@ class QQPDataset(GLUEDataset):
         return metric
 
 
-
 @register(segment=['train', 'dev', 'test'])
 class RTEDataset(GLUEDataset):
     """Task class for Recognizing Textual Entailment
@@ -142,18 +144,21 @@ class RTEDataset(GLUEDataset):
         The datset can be downloaded by the following script:
         https://gist.github.com/W4ngatang/60c2bdb54d156a41194446737ce03e2e
     """
-    def __init__(self, segment='train',
+
+    def __init__(self,
+                 segment='train',
                  root=os.path.join(os.getenv('GLUE_DIR', 'glue_data'), 'RTE')):
         self._supported_segments = ['train', 'dev', 'test']
-        assert segment in self._supported_segments, 'Unsupported segment: %s'%segment
-        path = os.path.join(root, '%s.tsv'%segment)
+        assert segment in self._supported_segments, 'Unsupported segment: %s' % segment
+        path = os.path.join(root, '%s.tsv' % segment)
         if segment in ['train', 'dev']:
             A_IDX, B_IDX, LABEL_IDX = 1, 2, 3
             fields = [A_IDX, B_IDX, LABEL_IDX]
         elif segment == 'test':
             A_IDX, B_IDX = 1, 2
             fields = [A_IDX, B_IDX]
-        super(RTEDataset, self).__init__(path, num_discard_samples=1, fields=fields)
+        super(RTEDataset, self).__init__(
+            path, num_discard_samples=1, fields=fields)
 
     @staticmethod
     def get_labels():
@@ -164,7 +169,6 @@ class RTEDataset(GLUEDataset):
     def get_metric():
         """Get metrics Accuracy"""
         return Accuracy()
-
 
 
 @register(segment=['train', 'dev', 'test'])
@@ -180,18 +184,21 @@ class QNLIDataset(GLUEDataset):
         The datset can be downloaded by the following script:
         https://gist.github.com/W4ngatang/60c2bdb54d156a41194446737ce03e2e
     """
-    def __init__(self, segment='train',
+
+    def __init__(self,
+                 segment='train',
                  root=os.path.join(os.getenv('GLUE_DIR', 'glue_data'), 'RTE')):
         self._supported_segments = ['train', 'dev', 'test']
-        assert segment in self._supported_segments, 'Unsupported segment: %s'%segment
-        path = os.path.join(root, '%s.tsv'%segment)
+        assert segment in self._supported_segments, 'Unsupported segment: %s' % segment
+        path = os.path.join(root, '%s.tsv' % segment)
         if segment in ['train', 'dev']:
             A_IDX, B_IDX, LABEL_IDX = 1, 2, 3
             fields = [A_IDX, B_IDX, LABEL_IDX]
         elif segment == 'test':
             A_IDX, B_IDX = 1, 2
             fields = [A_IDX, B_IDX]
-        super(QNLIDataset, self).__init__(path, num_discard_samples=1, fields=fields)
+        super(QNLIDataset, self).__init__(
+            path, num_discard_samples=1, fields=fields)
 
     @staticmethod
     def get_labels():
@@ -202,7 +209,6 @@ class QNLIDataset(GLUEDataset):
     def get_metric():
         """Get metrics Accuracy"""
         return Accuracy()
-
 
 
 @register(segment=['train', 'dev', 'test'])
@@ -218,19 +224,22 @@ class STSBDataset(GLUEDataset):
         The datset can be downloaded by the following script:
         https://gist.github.com/W4ngatang/60c2bdb54d156a41194446737ce03e2e
     """
-    def __init__(self, segment='train',
-                 root=os.path.join(os.getenv('GLUE_DIR', 'glue_data'), 'STS-B')):
+
+    def __init__(self,
+                 segment='train',
+                 root=os.path.join(
+                     os.getenv('GLUE_DIR', 'glue_data'), 'STS-B')):
         self._supported_segments = ['train', 'dev', 'test']
-        assert segment in self._supported_segments, 'Unsupported segment: %s'%segment
-        path = os.path.join(root, '%s.tsv'%segment)
+        assert segment in self._supported_segments, 'Unsupported segment: %s' % segment
+        path = os.path.join(root, '%s.tsv' % segment)
         if segment in ['train', 'dev']:
             A_IDX, B_IDX, LABEL_IDX = 7, 8, 9
             fields = [A_IDX, B_IDX, LABEL_IDX]
         elif segment == 'test':
             A_IDX, B_IDX = 7, 8
             fields = [A_IDX, B_IDX]
-        super(STSBDataset, self).__init__(path, num_discard_samples=1, fields=fields)
-
+        super(STSBDataset, self).__init__(
+            path, num_discard_samples=1, fields=fields)
 
     @staticmethod
     def get_metric():
@@ -253,19 +262,24 @@ class COLADataset(GLUEDataset):
         The datset can be downloaded by the following script:
         https://gist.github.com/W4ngatang/60c2bdb54d156a41194446737ce03e2e
     """
-    def __init__(self, segment='train',
-                 root=os.path.join(os.getenv('GLUE_DIR', 'glue_data'), 'CoLA')):
+
+    def __init__(self,
+                 segment='train',
+                 root=os.path.join(os.getenv('GLUE_DIR', 'glue_data'),
+                                   'CoLA')):
         self._supported_segments = ['train', 'dev', 'test']
-        assert segment in self._supported_segments, 'Unsupported segment: %s'%segment
-        path = os.path.join(root, '%s.tsv'%segment)
+        assert segment in self._supported_segments, 'Unsupported segment: %s' % segment
+        path = os.path.join(root, '%s.tsv' % segment)
         if segment in ['train', 'dev']:
             A_IDX, LABEL_IDX = 3, 1
             fields = [A_IDX, LABEL_IDX]
-            super(COLADataset, self).__init__(path, num_discard_samples=0, fields=fields)
+            super(COLADataset, self).__init__(
+                path, num_discard_samples=0, fields=fields)
         elif segment == 'test':
             A_IDX = 3
             fields = [A_IDX]
-            super(COLADataset, self).__init__(path, num_discard_samples=1, fields=fields)
+            super(COLADataset, self).__init__(
+                path, num_discard_samples=1, fields=fields)
 
     @staticmethod
     def get_metric():
@@ -291,18 +305,22 @@ class SSTDataset(GLUEDataset):
         The datset can be downloaded by the following script:
         https://gist.github.com/W4ngatang/60c2bdb54d156a41194446737ce03e2e
     """
-    def __init__(self, segment='train',
-                 root=os.path.join(os.getenv('GLUE_DIR', 'glue_data'), 'CoLA')):
+
+    def __init__(self,
+                 segment='train',
+                 root=os.path.join(os.getenv('GLUE_DIR', 'glue_data'),
+                                   'CoLA')):
         self._supported_segments = ['train', 'dev', 'test']
-        assert segment in self._supported_segments, 'Unsupported segment: %s'%segment
-        path = os.path.join(root, '%s.tsv'%segment)
+        assert segment in self._supported_segments, 'Unsupported segment: %s' % segment
+        path = os.path.join(root, '%s.tsv' % segment)
         if segment in ['train', 'dev']:
             A_IDX, LABEL_IDX = 0, 1
             fields = [A_IDX, LABEL_IDX]
         elif segment == 'test':
             A_IDX = 1
             fields = [A_IDX]
-        super(SSTDataset, self).__init__(path, num_discard_samples=1, fields=fields)
+        super(SSTDataset, self).__init__(
+            path, num_discard_samples=1, fields=fields)
 
     @staticmethod
     def get_metric():
@@ -315,8 +333,10 @@ class SSTDataset(GLUEDataset):
         return ['0', '1']
 
 
-
-@register(segment=['dev_matched', 'dev_mismatched', 'test_matched', 'test_mismatched', 'diagnostic']) #pylint: disable=c0301
+@register(segment=[
+    'dev_matched', 'dev_mismatched', 'test_matched', 'test_mismatched',
+    'diagnostic'
+])  #pylint: disable=c0301
 class MNLIDataset(GLUEDataset):
     """Task class for Multi-Genre Natural Language Inference
 
@@ -330,17 +350,17 @@ class MNLIDataset(GLUEDataset):
         The datset can be downloaded by the following script:
         https://gist.github.com/W4ngatang/60c2bdb54d156a41194446737ce03e2e
     """
-    def __init__(self, segment='dev_matched',
-                root=os.path.join(os.getenv('GLUE_DIR', 'glue_data'), 'MNLI')): #pylint: disable=c0330
+
+    def __init__(self,
+                 segment='dev_matched',
+                 root=os.path.join(os.getenv('GLUE_DIR', 'glue_data'),
+                                   'MNLI')):  #pylint: disable=c0330
         self._supported_segments = [
-            'dev_matched',
-            'dev_mismatched',
-            'test_matched',
-            'test_mismatched',
+            'dev_matched', 'dev_mismatched', 'test_matched', 'test_mismatched',
             'diagnostic'
-            ]
-        assert segment in self._supported_segments, 'Unsupported segment: %s'%segment
-        path = os.path.join(root, '%s.tsv'%segment)
+        ]
+        assert segment in self._supported_segments, 'Unsupported segment: %s' % segment
+        path = os.path.join(root, '%s.tsv' % segment)
         if segment in ['dev_matched', 'dev_mismatched']:
             A_IDX, B_IDX, LABEL_IDX = 8, 9, 15
             fields = [A_IDX, B_IDX, LABEL_IDX]
@@ -350,7 +370,8 @@ class MNLIDataset(GLUEDataset):
         elif segment == 'diagnostic':
             A_IDX, B_IDX = 1, 2
             fields = [A_IDX, B_IDX]
-        super(MNLIDataset, self).__init__(path, num_discard_samples=1, fields=fields)
+        super(MNLIDataset, self).__init__(
+            path, num_discard_samples=1, fields=fields)
 
     @staticmethod
     def get_labels():
@@ -361,8 +382,6 @@ class MNLIDataset(GLUEDataset):
     def get_metric():
         """Get metrics Accuracy"""
         return Accuracy()
-
-
 
 
 @register(segment=['train', 'dev', 'test'])
@@ -378,18 +397,22 @@ class WNLIDataset(GLUEDataset):
         The datset can be downloaded by the following script:
         https://gist.github.com/W4ngatang/60c2bdb54d156a41194446737ce03e2e
     """
-    def __init__(self, segment='train',
-                 root=os.path.join(os.getenv('GLUE_DIR', 'glue_data'), 'WNLI')):
+
+    def __init__(self,
+                 segment='train',
+                 root=os.path.join(os.getenv('GLUE_DIR', 'glue_data'),
+                                   'WNLI')):
         self._supported_segments = ['train', 'dev', 'test']
-        assert segment in self._supported_segments, 'Unsupported segment: %s'%segment
-        path = os.path.join(root, '%s.tsv'%segment)
+        assert segment in self._supported_segments, 'Unsupported segment: %s' % segment
+        path = os.path.join(root, '%s.tsv' % segment)
         if segment in ['train', 'dev']:
             A_IDX, B_IDX, LABEL_IDX = 1, 2, 3
             fields = [A_IDX, B_IDX, LABEL_IDX]
         elif segment == 'test':
             A_IDX, B_IDX = 1, 2
             fields = [A_IDX, B_IDX]
-        super(WNLIDataset, self).__init__(path, num_discard_samples=1, fields=fields)
+        super(WNLIDataset, self).__init__(
+            path, num_discard_samples=1, fields=fields)
 
     @staticmethod
     def get_labels():
@@ -400,7 +423,6 @@ class WNLIDataset(GLUEDataset):
     def get_metric():
         """Get metrics Accuracy"""
         return Accuracy()
-
 
 
 def _truncate_seq_pair(tokens_a, tokens_b, max_length):
@@ -419,7 +441,6 @@ def _truncate_seq_pair(tokens_a, tokens_b, max_length):
             tokens_b.pop()
 
 
-
 class BERTTransform:
     """BERT style data transformation.
 
@@ -434,6 +455,7 @@ class BERTTransform:
     pair : bool, default True
         Whether to transform sentences or sentence pairs.
     """
+
     def __init__(self, tokenizer, max_seq_length, pad=True, pair=True):
         self._tokenizer = tokenizer
         self._max_seq_length = max_seq_length
@@ -568,11 +590,13 @@ class ClassificationTransform:
     pair : bool, default True
         Whether to transform sentences or sentence pairs.
     """
+
     def __init__(self, tokenizer, labels, max_seq_length, pad=True, pair=True):
         self._label_map = {}
         for (i, label) in enumerate(labels):
             self._label_map[label] = i
-        self._bert_xform = BERTTransform(tokenizer, max_seq_length, pad=pad, pair=pair)
+        self._bert_xform = BERTTransform(
+            tokenizer, max_seq_length, pad=pad, pair=pair)
 
     def __call__(self, line):
         """Perform transformation for sequence pairs or single sequences.
@@ -648,8 +672,10 @@ class RegressionTransform:
     pair : bool, default True
         Whether to transform sentences or sentence pairs.
     """
+
     def __init__(self, tokenizer, max_seq_length, pad=True, pair=True):
-        self._bert_xform = BERTTransform(tokenizer, max_seq_length, pad=pad, pair=pair)
+        self._bert_xform = BERTTransform(
+            tokenizer, max_seq_length, pad=pad, pair=pair)
 
     def __call__(self, line):
         """Perform transformation for sequence pairs or single sequences.
