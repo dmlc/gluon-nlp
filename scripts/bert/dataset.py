@@ -192,6 +192,7 @@ class BERTTransform(object):
         if self._pad:
             # Zero-pad up to the sequence length.
             padding_length = self._max_seq_length - valid_length
+            # use padding tokens for the rest
             input_ids.extend([self._tokenizer.vocab['[PAD]']] * padding_length)
             segment_ids.extend([self._tokenizer.vocab['[PAD]']] * padding_length)
 

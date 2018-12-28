@@ -20,7 +20,6 @@
 import math
 from mxnet.optimizer import Optimizer, register
 from mxnet.ndarray import zeros, NDArray
-from mxnet.ndarray.contrib import adamw_update
 
 __all__ = ['BERTAdam']
 
@@ -68,6 +67,12 @@ class BERTAdam(Optimizer):
                 zeros(weight.shape, weight.context, dtype=weight.dtype)) #variance
 
     def update(self, index, weight, grad, state):
+        try:
+            from mxnet.ndarray.contrib import adamw_update
+        except ImportError:
+            raise ImportError("Failed to import nd.contrib.adamw_update from MXNet. "
+                              "BERTAdam optimizer requires mxnet>=1.5.0b20181228. "
+                              "Please upgrade your MXNet version.")
         assert(isinstance(weight, NDArray))
         assert(isinstance(grad, NDArray))
         self._update_count(index)
