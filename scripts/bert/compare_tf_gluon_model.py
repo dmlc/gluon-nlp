@@ -138,6 +138,7 @@ bert, vocabulary = nlp.model.get_model(args.gluon_model,
                                        dataset_name=args.gluon_dataset,
                                        pretrained=True, use_pooler=False,
                                        use_decoder=False, use_classifier=False)
+print(bert)
 tokenizer = FullTokenizer(vocabulary, do_lower_case=do_lower_case)
 dataset = TSVDataset(input_file, field_separator=nlp.data.Splitter(' ||| '))
 

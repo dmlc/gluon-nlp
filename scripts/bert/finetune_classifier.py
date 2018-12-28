@@ -79,6 +79,8 @@ dev_batch_size = args.dev_batch_size
 lr = args.lr
 accumulate = args.accumulate
 log_interval = args.log_interval * accumulate if accumulate else args.log_interval
+if accumulate:
+    logging.info("Using gradient accumulation. Effective batch size = %d"%(accumulate*batch_size))
 
 # random seed
 np.random.seed(args.seed)
@@ -102,38 +104,45 @@ metric = mx.metric.Accuracy()
 
 # data processing
 do_lower_case = 'uncased' in dataset
-tokenizer = FullTokenizer(vocabulary, do_lower_case=do_lower_case)
-train_trans = ClassificationTransform(tokenizer, MRPCDataset.get_labels(),
-                                      args.max_len, pad=False)
-dev_trans = ClassificationTransform(tokenizer, MRPCDataset.get_labels(), args.max_len)
+bert_tokenizer = FullTokenizer(vocabulary, do_lower_case=do_lower_case)
 
-data_train = MRPCDataset('train').transform(train_trans, lazy=False)
-data_dev = MRPCDataset('dev').transform(dev_trans, lazy=False)
-data_train_len = data_train.transform(lambda input_id, length, segment_id, label_id: length)
+def preprocess_data(tokenizer, batch_size, dev_batch_size, max_len):
+    """Data preparation function."""
+    # transformation
+    train_trans = ClassificationTransform(tokenizer, MRPCDataset.get_labels(),
+                                          args.max_len, pad=False)
+    dev_trans = ClassificationTransform(tokenizer, MRPCDataset.get_labels(), args.max_len)
+    data_train = MRPCDataset('train').transform(train_trans, lazy=False)
+    data_dev = MRPCDataset('dev').transform(dev_trans, lazy=False)
+    data_train_len = data_train.transform(lambda input_id, length, segment_id, label_id: length)
+    num_samples_train = len(data_train)
+    # bucket sampler
+    batchify_fn = nlp.data.batchify.Tuple(nlp.data.batchify.Pad(axis=0),
+                                          nlp.data.batchify.Stack(),
+                                          nlp.data.batchify.Pad(axis=0),
+                                          nlp.data.batchify.Stack())
+    batch_sampler = nlp.data.sampler.FixedBucketSampler(data_train_len,
+                                                        batch_size=batch_size,
+                                                        num_buckets=10,
+                                                        ratio=0,
+                                                        shuffle=True)
+    # data loaders
+    dataloader = gluon.data.DataLoader(dataset=data_train, num_workers=1,
+                                       batch_sampler=batch_sampler,
+                                       batchify_fn=batchify_fn)
+    dataloader_dev = mx.gluon.data.DataLoader(data_dev, batch_size=dev_batch_size,
+                                              num_workers=1, shuffle=False)
+    return dataloader, dataloader_dev, num_samples_train
 
-batchify_fn = nlp.data.batchify.Tuple(nlp.data.batchify.Pad(axis=0),
-                                      nlp.data.batchify.Stack(),
-                                      nlp.data.batchify.Pad(axis=0),
-                                      nlp.data.batchify.Stack())
-
-batch_sampler = nlp.data.sampler.FixedBucketSampler(data_train_len,
-                                                    batch_size=batch_size,
-                                                    num_buckets=10,
-                                                    ratio=0,
-                                                    shuffle=True)
-bert_dataloader = gluon.data.DataLoader(dataset=data_train, num_workers=1,
-                                        batch_sampler=batch_sampler,
-                                        batchify_fn=batchify_fn)
-
-bert_dataloader_dev = mx.gluon.data.DataLoader(data_dev, batch_size=dev_batch_size,
-                                               num_workers=1, shuffle=False)
+train_data, dev_data, num_train_examples = preprocess_data(bert_tokenizer, batch_size,
+                                                           dev_batch_size, args.max_len)
 
 def evaluate():
     """Evaluate the model on validation dataset.
     """
     step_loss = 0
     metric.reset()
-    for _, seqs in enumerate(bert_dataloader_dev):
+    for _, seqs in enumerate(dev_data):
         Ls = []
         input_ids, valid_len, type_ids, label = seqs
         out = model(input_ids.as_in_context(ctx), type_ids.as_in_context(ctx),
@@ -147,40 +156,38 @@ def evaluate():
 
 def train():
     """Training function."""
+    optimizer_params = {'learning_rate': lr, 'epsilon': 1e-6, 'wd': 0.01}
     try:
         trainer = gluon.Trainer(model.collect_params(), args.optimizer,
-                                {'learning_rate': lr, 'epsilon': 1e-6, 'wd': 0.01})
+                                optimizer_params, update_on_kvstore=False)
     except ValueError as e:
+        print(e)
         warnings.warn("AdamW optimizer is not found. Please consider upgrading to "
                       "mxnet>=1.5.0. Now the original Adam optimizer is used instead.")
         trainer = gluon.Trainer(model.collect_params(), 'adam',
-                                {'learning_rate': lr, 'epsilon': 1e-6, 'wd': 0.01})
+                                optimizer_params, update_on_kvstore=False)
 
-    num_train_examples = len(data_train)
     step_size = batch_size * accumulate if accumulate else batch_size
     num_train_steps = int(num_train_examples / step_size * args.epochs)
     warmup_ratio = args.warmup_ratio
     num_warmup_steps = int(num_train_steps * warmup_ratio)
     step_num = 0
-    params = []
 
     # Do not apply weight decay on LayerNorm and bias terms
     for _, v in model.collect_params('.*beta|.*gamma|.*bias').items():
         v.wd_mult = 0.0
     # Collect differentiable parameters
-    for p in model.collect_params().values():
-        if p.grad_req != 'null':
-            params.append(p)
+    params = [p for p in model.collect_params().values() if p.grad_req != 'null']
     # Set grad_req if gradient accumulation is required
     if accumulate:
-        for p in model.collect_params().values():
+        for p in params:
             p.grad_req = 'add'
 
     for epoch_id in range(args.epochs):
         metric.reset()
         step_loss = 0
         tic = time.time()
-        for batch_id, seqs in enumerate(bert_dataloader):
+        for batch_id, seqs in enumerate(train_data):
             # set grad to zero for gradient accumulation
             if accumulate:
                 if batch_id % accumulate == 0:
@@ -204,14 +211,14 @@ def train():
             ls.backward()
             # update
             if not accumulate or (batch_id + 1) % accumulate == 0:
-                grads = [p.grad(ctx) for p in params]
-                gluon.utils.clip_global_norm(grads, 1)
-                trainer.step(accumulate if accumulate else 1)
+                trainer.allreduce_grads()
+                nlp.utils.clip_grad_global_norm(params, 1)
+                trainer.update(accumulate if accumulate else 1)
             step_loss += ls.asscalar()
             metric.update([label], [out])
             if (batch_id + 1) % log_interval == 0:
                 logging.info('[Epoch {} Batch {}/{}] loss={:.4f}, lr={:.7f}, acc={:.3f}'
-                             .format(epoch_id, batch_id + 1, len(bert_dataloader),
+                             .format(epoch_id, batch_id + 1, len(train_data),
                                      step_loss / log_interval,
                                      trainer.learning_rate, metric.get()[1]))
                 step_loss = 0
