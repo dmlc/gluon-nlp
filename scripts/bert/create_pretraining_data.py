@@ -92,7 +92,7 @@ args = parser.parse_args()
 logging.info(args)
 
 
-class TrainingInstance:
+class TrainingInstance(object):
     """A single training instance (sentence pair)."""
 
     def __init__(self, tokens, segment_ids, masked_lm_positions,
