@@ -66,7 +66,7 @@ def get_final_text(pred_text, orig_text, tokenizer):
 
     def _strip_spaces(text):
         ns_chars = []
-        ns_to_s_map = collections.OrderedDict()
+        ns_to_s_map = OrderedDict()
         for (i, c) in enumerate(text):
             if c == ' ':
                 continue
