@@ -47,7 +47,7 @@ class BERTSquad(Block):
         with self.name_scope():
             self.Dense = nn.Dense(units=2, flatten=False)
 
-    def forward(self, inputs, token_types, valid_length=None):
+    def forward(self, inputs, token_types, valid_length=None): # pylint: disable=arguments-differ
         """Generate the unnormalized score for the given the input sequences.
 
         Parameters
@@ -80,7 +80,7 @@ class BERTloss(Loss):
         super(BERTloss, self).__init__(weight=None, batch_axis=0, **kwargs)
         self.loss = loss.SoftmaxCELoss()
 
-    def hybrid_forward(self, F, pred, label):
+    def hybrid_forward(self, F, pred, label): # pylint: disable=arguments-differ
         pred = F.split(pred, axis=0, num_outputs=2)
         start_pred = pred[0].reshape((-3, 0))
         start_label = label[0]
