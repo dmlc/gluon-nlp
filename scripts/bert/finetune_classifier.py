@@ -229,4 +229,9 @@ def train():
         tic = toc
 
 if __name__ == '__main__':
+    pool_type = os.environ.get('MXNET_GPU_MEM_POOL_TYPE', '')
+    if pool_type.lower() == 'round':
+        logging.info('Setting MXNET_GPU_MEM_POOL_TYPE="Round" may lead to higher memory '
+                     'usage and faster speed. If you encounter OOM errors, please unset '
+                     'this environment variable.')
     train()
