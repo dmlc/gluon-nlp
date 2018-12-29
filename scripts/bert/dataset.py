@@ -441,7 +441,7 @@ def _truncate_seq_pair(tokens_a, tokens_b, max_length):
             tokens_b.pop()
 
 
-class BERTTransform:
+class BERTTransform(object):
     """BERT style data transformation.
 
     Parameters
@@ -574,7 +574,7 @@ class BERTTransform:
                np.array(segment_ids, dtype='int32')
 
 
-class ClassificationTransform:
+class ClassificationTransform(object):
     """Dataset Transformation for BERT-style Sentence Classification.
 
     Parameters
@@ -658,7 +658,7 @@ class ClassificationTransform:
         return input_ids, valid_length, segment_ids, label_id
 
 
-class RegressionTransform:
+class RegressionTransform(object):
     """Dataset Transformation for BERT-style Sentence Regression.
 
     Parameters

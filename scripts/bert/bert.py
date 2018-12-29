@@ -25,18 +25,16 @@ from mxnet.gluon import Block
 from mxnet.gluon import nn
 
 class BERTRegression(Block):
-    """Model for sentence (pair) classification task with BERT.
+    """Model for sentence (pair) regression task with BERT.
 
     The model feeds token ids and token type ids into BERT to get the
     pooled BERT sequence representation, then apply a Dense layer for
-    classification.
+    regression.
 
     Parameters
     ----------
     bert: BERTModel
         Bidirectional encoder with transformer.
-    num_classes : int, default is 2
-        The number of target classes.
     dropout : float or None, default 0.0.
         Dropout probability for the bert output.
     prefix : str or None
