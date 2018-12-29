@@ -15,7 +15,7 @@ SQuAD, with Gluon NLP Toolkit.
 }
 """
 
-# coding: utf-8
+# coding=utf-8
 
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
@@ -90,7 +90,7 @@ parser.add_argument(
     '--test_batch_size', type=int, default=24, help='Test batch size. default is 24')
 
 parser.add_argument(
-    '--optimizer', type=str, default='adam', help='optimization algorithm. default is adam)
+    '--optimizer', type=str, default='adam', help='optimization algorithm. default is adam')
 parser.add_argument(
     '--lr', type=float, default=3e-5, help='Initial learning rate. default is 3e-5')
 
@@ -212,7 +212,8 @@ train_data_transform = preprocess_dataset(train_data, SQuADTransform(
     is_training=True))
 
 train_dataloader = mx.gluon.data.DataLoader(
-    train_data_transform, batch_size=batch_size, batchify_fn=bert_qa_batchify_fn, num_workers=4, shuffle=True)
+    train_data_transform, batch_size=batch_size,
+    batchify_fn=bert_qa_batchify_fn, num_workers=4, shuffle=True)
 
 net = BERTSquad(bert=bert)
 net.Dense.initialize(init=mx.init.Normal(0.02), ctx=ctx)
@@ -248,7 +249,6 @@ def Train():
         step_loss = 0.0
         tic = time.time()
         for batch_id, data in enumerate(train_dataloader):
-
             step_num += 1
             if step_num < num_warmup_steps:
                 new_lr = lr * step_num / num_warmup_steps
@@ -310,14 +310,16 @@ def Evaluate():
         is_training=False))
 
     dev_dataloader = mx.gluon.data.DataLoader(
-        dev_data_transform, batch_size=test_batch_size, batchify_fn=bert_qa_batchify_fn, num_workers=4, shuffle=False, last_batch='keep')
+        dev_data_transform, batch_size=test_batch_size,
+        batchify_fn=bert_qa_batchify_fn,
+        num_workers=4, shuffle=False, last_batch='keep')
 
     start_logits = []
     end_logits = []
     logging.info('Start predict')
 
     _Result = collections.namedtuple(
-        "_Result", ["example_id", "start_logits", "end_logits"])
+        '_Result', ['example_id', 'start_logits', 'end_logits'])
     all_results = {}
 
     for data in dev_dataloader:
@@ -345,21 +347,17 @@ def Evaluate():
         max_answer_length=max_answer_length,
         tokenizer=nlp.data.BasicTokenizer(lower_case=True))
 
-    with open(
-            os.path.join(output_dir, 'predictions.json'), 'w',
-            encoding='utf-8') as all_predictions_write:
+    with open(os.path.join(output_dir, 'predictions.json'),
+              'w', encoding='utf-8') as all_predictions_write:
         all_predictions_write.write(json.dumps(all_predictions))
 
-    with open(
-            os.path.join(output_dir, 'nbest_predictions.json'),
-            'w',
-            encoding='utf-8') as all_predictions_write:
+    with open(os.path.join(output_dir, 'nbest_predictions.json'),
+              'w', encoding='utf-8') as all_predictions_write:
         all_predictions_write.write(json.dumps(all_nbest_json))
 
     if version_2:
-        with open(
-                os.path.join(output_dir, 'null_odds.json'), 'w',
-                encoding='utf-8') as all_predictions_write:
+        with open(os.path.join(output_dir, 'null_odds.json'),
+                  'w', encoding='utf-8') as all_predictions_write:
             all_predictions_write.write(json.dumps(scores_diff_json))
     else:
         logging.info(evaluate(predict_file, all_predictions))

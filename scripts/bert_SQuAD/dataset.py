@@ -12,6 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""BERT datasets."""
 import collections
 import json
 import multiprocessing as mp
@@ -20,8 +21,6 @@ import time
 import numpy as np
 from mxnet import context, nd
 from mxnet.gluon.data import SimpleDataset
-
-"""BERT datasets."""
 
 
 class SquadExample(object):
@@ -74,9 +73,21 @@ def preprocess_dataset(dataset, transform):
     return dataset
 
 
-class SquadFeature():
-    def __init__(self, example_id, qas_id, doc_tokens, doc_span_index, tokens, token_to_orig_map,
-                 token_is_max_context, input_ids, valid_length, segment_ids, start_position, end_position, is_impossible):
+class SquadFeature(object):
+    def __init__(self,
+                 example_id,
+                 qas_id,
+                 doc_tokens,
+                 doc_span_index,
+                 tokens,
+                 token_to_orig_map,
+                 token_is_max_context,
+                 input_ids,
+                 valid_length,
+                 segment_ids,
+                 start_position,
+                 end_position,
+                 is_impossible):
         self.example_id = example_id
         self.qas_id = qas_id
         self.doc_tokens = doc_tokens
@@ -384,14 +395,14 @@ class SQuADTransform(object):
         examples = self._transform(example)
         features = []
 
-        for example in examples:
+        for _example in examples:
             feature = []
-            feature.append(example.example_id)
-            feature.append(example.input_ids)
-            feature.append(example.segment_ids)
-            feature.append(example.valid_length)
-            feature.append(example.start_position)
-            feature.append(example.end_position)
+            feature.append(_example.example_id)
+            feature.append(_example.input_ids)
+            feature.append(_example.segment_ids)
+            feature.append(_example.valid_length)
+            feature.append(_example.start_position)
+            feature.append(_example.end_position)
             features.append(feature)
 
         return features

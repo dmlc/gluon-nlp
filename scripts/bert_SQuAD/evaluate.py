@@ -14,13 +14,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import collections
 import json
 import re
 import string
-from collections import Counter
+from collections import Counter, namedtuple, OrderedDict
 
 import six
+from mxnet import nd
 
 
 def _get_best_indexes(logits, n_best_size):
@@ -135,19 +135,19 @@ def predictions(dev_dataset,
     max_answer_length = max_answer_length
     null_score_diff_threshold = null_score_diff_threshold
 
-    _PrelimPrediction = collections.namedtuple('PrelimPrediction',
-                                               ['feature_index', 'start_index', 'end_index', 'start_logit', 'end_logit'])
+    _PrelimPrediction = namedtuple('PrelimPrediction',
+                                   ['feature_index', 'start_index', 'end_index',
+                                    'start_logit', 'end_logit'])
 
-    _NbestPrediction = collections.namedtuple(
+    _NbestPrediction = namedtuple(
         'NbestPrediction', ['text', 'start_logit', 'end_logit'])
 
-    all_predictions = collections.OrderedDict()
-    all_nbest_json = collections.OrderedDict()
-    scores_diff_json = collections.OrderedDict()
+    all_predictions = OrderedDict()
+    all_nbest_json = OrderedDict()
+    scores_diff_json = OrderedDict()
 
     for features in dev_dataset:
         results = all_results[features[0].example_id]
-        example = features[0]
         prelim_predictions = []
         for features_id, (result, feature) in enumerate(zip(results, features)):
             start_indexes = _get_best_indexes(result.start_logits, n_best_size)
@@ -258,13 +258,13 @@ def predictions(dev_dataset,
                 if entry.text:
                     best_non_null_entry = entry
 
-        # probs = _compute_softmax(total_scores)
+        probs = nd.softmax(nd.array(total_scores)).asnumpy()
 
         nbest_json = []
         for (i, entry) in enumerate(nbest):
-            output = collections.OrderedDict()
+            output = OrderedDict()
             output['text'] = entry.text
-            # output['probability'] = probs[i]
+            output['probability'] = probs[i]
             output['start_logit'] = entry.start_logit
             output['end_logit'] = entry.end_logit
             nbest_json.append(output)
@@ -331,22 +331,22 @@ def metric_max_over_ground_truths(metric_fn, prediction, ground_truths):
     return max(scores_for_ground_truths)
 
 
-def evaluate(dataset_file, predictions):
-    with open(dataset_file) as dataset_file:
-        dataset_json = json.load(dataset_file)
+def evaluate(dataset_file, predict_data):
+    with open(dataset_file) as file_read:
+        dataset_json = json.load(file_read)
         dataset = dataset_json['data']
     f1 = exact_match = total = 0
     for article in dataset:
         for paragraph in article['paragraphs']:
             for qa in paragraph['qas']:
                 total += 1
-                if qa['id'] not in predictions:
+                if qa['id'] not in predict_data:
                     message = 'Unanswered question ' + qa['id'] + \
                               ' will receive score 0.'
-                    print(message, file=sys.stderr)
+                    print(message)
                     continue
                 ground_truths = list(map(lambda x: x['text'], qa['answers']))
-                prediction = predictions[qa['id']]
+                prediction = predict_data[qa['id']]
                 exact_match += metric_max_over_ground_truths(
                     exact_match_score, prediction, ground_truths)
                 f1 += metric_max_over_ground_truths(f1_score, prediction,
