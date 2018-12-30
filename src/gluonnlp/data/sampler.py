@@ -20,10 +20,11 @@
 (e.g. in the order sorted by length). They can also be used to perform bucketing
 for speeding up the processing of variable-length sequences."""
 __all__ = ['ConstWidthBucket', 'LinearWidthBucket', 'ExpWidthBucket',
-           'SortedSampler', 'FixedBucketSampler', 'SortedBucketSampler']
+           'SortedSampler', 'FixedBucketSampler', 'SortedBucketSampler', 'SplitSampler']
 
 import math
 import warnings
+import random
 import numpy as np
 from mxnet.gluon.data import Sampler
 from .._constants import INT_TYPES
@@ -497,3 +498,35 @@ class SortedBucketSampler(Sampler):
 
     def __len__(self):
         return (len(self._sort_keys) + self._batch_size - 1) // self._batch_size
+
+class SplitSampler(Sampler):
+    """Split the dataset into `num_parts` parts and randomly sample from the part
+    with index `part_index`.
+
+    Parameters
+    ----------
+    length: int
+      Number of examples in the dataset
+    num_parts: int
+      Number of partitions which the data is split into
+    part_index: int
+      The index of the part to read from
+    """
+    def __init__(self, length, num_parts=1, part_index=0):
+        # Compute the length of each partition
+        part_len = length // num_parts
+        # Compute the start index for this partition
+        self._start = part_len * part_index
+        # Compute the end index for this partition
+        self._end = self._start + part_len
+        if part_index == num_parts - 1:
+            self._end = length
+
+    def __iter__(self):
+        # Extract examples between `start` and `end`, shuffle and return them.
+        indices = list(range(self._start, self._end))
+        random.shuffle(indices)
+        return iter(indices)
+
+    def __len__(self):
+        return self._end - self._start
