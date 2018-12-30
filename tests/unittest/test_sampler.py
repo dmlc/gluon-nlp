@@ -97,7 +97,7 @@ def test_sorted_bucket_sampler(seq_lengths, mult, batch_size, shuffle):
     assert len(set(total_sampled_ids)) == len(total_sampled_ids) == N
 
 
-@pytest.mark.parametrize('num_samples', 30)
+@pytest.mark.parametrize('num_samples', [30])
 @pytest.mark.parametrize('num_parts', [3, 7])
 def test_split_sampler(num_samples, num_parts):
     total_count = 0
