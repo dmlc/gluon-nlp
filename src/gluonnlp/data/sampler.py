@@ -514,12 +514,12 @@ class SplitSampler(Sampler):
     """
     def __init__(self, length, num_parts=1, part_index=0):
         # Compute the length of each partition
-        part_len = (length + num_parts - 1) // num_parts
+        part_len = length // num_parts
         # Compute the start index for this partition
         self._start = part_len * part_index
         # Compute the end index for this partition
         self._end = self._start + part_len
-        if self._end > length:
+        if part_index == num_parts - 1:
             self._end = length
 
     def __iter__(self):
