@@ -21,7 +21,7 @@ BERT for Sentence Classification on GLUE tasks
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 GluonNLP provides the following example script to fine-tune sentence classification with pre-trained
-BERT model. 
+BERT model.
 
 Download the GLUE dataset:
 
@@ -34,15 +34,6 @@ Use the following command to fine-tune the BERT model for classification on the 
 
 .. code-block:: console
 
-   $ GLUE_DIR=glue_data MXNET_GPU_MEM_POOL_TYPE=Round python3 finetune_classifier.py --task_name MRPC --batch_size 32 --optimizer adam --epochs 3 --gpu
+   $ MXNET_GPU_MEM_POOL_TYPE=Round GLUE_DIR=glue_data python3 finetune_classifier.py --batch_size 32 --optimizer bertadam --epochs 2 --gpu --seed 2 --lr 6e-5
 
-It gets validation accuracy of 87.0%, whereas the the original Tensorflow implementation give evaluation results between 84% and 88%.
-
-.. code-block:: console
-
-   $ GLUE_DIR=glue_data MXNET_GPU_MEM_POOL_TYPE=Round python3 finetune_classifier.py --task_name RTE --batch_size 32 --optimizer adam --epochs 3 --gpu
-
-It gets RTE validation accuracy of `67.9% <https://raw.githubusercontent.com/dmlc/web-data/master/gluonnlp/logs/bert/bert_glue_rte.log>`_
-, whereas the the original Tensorflow implementation give evaluation results 66.4%.
-
-Some other tasks can be modeled with `--task_name` parameter.
+It gets validation accuracy of 87.7%, whereas the the original Tensorflow implementation give evaluation results between 84% and 88%.
