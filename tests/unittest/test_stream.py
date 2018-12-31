@@ -121,3 +121,20 @@ def test_eager_iter_lazytransform(transform, stream_identity_wrappers):
 
     with pytest.raises(EagerIterWorksException):
         iter(stream)
+
+@pytest.mark.serial
+@pytest.mark.remote_required
+def test_dataset_stream_sampler():
+    path = os.path.join('tests', 'data', 'wikitext-2')
+    token_path = os.path.join('tests', 'data', 'wikitext-2/*.tokens')
+    test = nlp.data.WikiText2(segment='test', root=path)
+    num_parts = 2
+    lengths = []
+    for part_idx in range(num_parts):
+        sampler = nlp.data.SplitSampler(3, num_parts, part_idx)
+        corpus = nlp.data.SimpleDatasetStream(
+            nlp.data.CorpusDataset, token_path, sampler)
+        for c in corpus:
+            assert len(c) not in lengths
+            lengths.append(len(c))
+    assert len(lengths) == 3
