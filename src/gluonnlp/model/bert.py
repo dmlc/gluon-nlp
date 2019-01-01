@@ -19,7 +19,8 @@
 """BERT models."""
 
 __all__ = ['BERTModel', 'BERTEncoder', 'BERTEncoderCell', 'BERTPositionwiseFFN',
-           'BERTLayerNorm', 'bert_12_768_12', 'bert_24_1024_16']
+           'BERTLayerNorm', 'BERTForPreTraining', 'bert_12_768_12', 'bert_24_1024_16',
+           'bert_pretraining_12_768_12']
 
 import os
 from mxnet.gluon import Block
@@ -244,7 +245,7 @@ def _get_decoder(units, vocab_size, embed, prefix):
     return decoder
 
 class BERTForPreTraining(Block):
-    """Generic Model for BERT (Bidirectional Encoder Representations from Transformers).
+    """Model for BERT PreTraining (Bidirectional Encoder Representations from Transformers).
     Parameters
     ----------
     encoder : BERTEncoder
@@ -270,14 +271,6 @@ class BERTForPreTraining(Block):
     token_type_embed : Block or None, default None
         The token type embedding. If set to None and the token_type_embed will be constructed using
         embed_size and embed_dropout.
-    use_pooler : bool, default True
-        Whether to include the pooler which converts the encoded sequence tensor of shape
-        (batch_size, seq_length, units) to a tensor of shape (batch_size, units)
-        for segment level classification task.
-    use_decoder : bool, default True
-        Whether to include the decoder for masked language model prediction.
-    use_classifier : bool, default True
-        Whether to include the classifier for next sentence classification.
     prefix : str or None
         See document of `mx.gluon.Block`.
     params : ParameterDict or None
@@ -303,8 +296,6 @@ class BERTForPreTraining(Block):
     def __init__(self, encoder, vocab_size=None, token_type_vocab_size=None, units=None,
                  embed_size=None, embed_dropout=0.0, embed_initializer=None,
                  word_embed=None, token_type_embed=None,
-                 use_pooler=True, use_decoder=True,
-                 use_classifier=True,
                  prefix=None, params=None, static=False):
         super(BERTForPreTraining, self).__init__(prefix=prefix, params=params)
         self.encoder = encoder
@@ -351,14 +342,11 @@ class BERTForPreTraining(Block):
         """Generate the representation given the inputs.
         This is used in training or fine-tuning a BERT model.
         """
-        outputs = []
         seq_out, _ = self._encode_sequence(inputs, token_types, valid_length)
         pooled_out = self._apply_pooling(seq_out)
         classifier_out = self.classifier(pooled_out)
-        outputs.append(classifier_out)
         decoder_out = self._decode(seq_out, positions)
-        outputs.append(decoder_out)
-        return tuple(outputs)
+        return classifier_out, decoder_out
 
     def _encode_sequence(self, inputs, token_types, valid_length=None):
         """Generate the representation given the input sequences.
@@ -410,7 +398,7 @@ class BERTForPreTraining(Block):
         return self.decoder(encoded)
 
 class BERTModel(Block):
-    """Model for BERT (Bidirectional Encoder Representations from Transformers).
+    """Generic Model for BERT (Bidirectional Encoder Representations from Transformers).
 
     Parameters
     ----------
@@ -650,10 +638,40 @@ bert_hparams = {
 }
 
 
+def bert_pretraining_12_768_12(dataset_name=None, vocab=None, pretrained=True,
+                               ctx=mx.cpu(), root=os.path.join('~', '.mxnet', 'models'),
+                               **kwargs):
+    """BERT BASE model for pretraining.
+
+    The number of layers (L) is 12, number of units (H) is 768, and the
+    number of self-attention heads (A) is 12.
+
+    Parameters
+    ----------
+    dataset_name : str or None, default None
+        Options include 'book_corpus_wiki_en_cased', 'book_corpus_wiki_en_uncased',
+        'wiki_cn', 'wiki_multilingual' and 'wiki_multilingual_cased'.
+    vocab : gluonnlp.Vocab or None, default None
+        Vocabulary for the dataset. Must be provided if dataset is not specified.
+    pretrained : bool, default True
+        Whether to load the pretrained weights for model.
+    ctx : Context, default CPU
+        The context in which to load the pretrained weights.
+    root : str, default '~/.mxnet/models'
+        Location for keeping the model parameters.
+
+    Returns
+    -------
+    BERTForPretraining, gluonnlp.Vocab
+    """
+    return _bert_pretraining(model_name='bert_12_768_12', vocab=vocab,
+                             dataset_name=dataset_name,
+                             pretrained=pretrained, ctx=ctx, root=root, **kwargs)
+
 def bert_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
                    root=os.path.join('~', '.mxnet', 'models'), use_pooler=True,
                    use_decoder=True, use_classifier=True, **kwargs):
-    """BERT BASE pretrained model.
+    """Generic BERT BASE model.
 
     The number of layers (L) is 12, number of units (H) is 768, and the
     number of self-attention heads (A) is 12.
@@ -692,7 +710,7 @@ def bert_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
 def bert_24_1024_16(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
                     use_pooler=True, use_decoder=True, use_classifier=True,
                     root=os.path.join('~', '.mxnet', 'models'), **kwargs):
-    """BERT LARGE pretrained model.
+    """Generic BERT LARGE model.
 
     The number of layers (L) is 24, number of units (H) is 1024, and the
     number of self-attention heads (A) is 16.
@@ -727,9 +745,46 @@ def bert_24_1024_16(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu()
                        use_decoder=use_decoder, use_classifier=use_classifier, root=root,
                        **kwargs)
 
+def _bert_pretraining(model_name=None, dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
+                      root=os.path.join('~', '.mxnet', 'models'), **kwargs):
+    """BERT pretrained model.
+
+    Returns
+    -------
+    BERTModel, gluonnlp.Vocab
+    """
+    predefined_args = bert_hparams[model_name]
+    mutable_args = ['use_residual', 'dropout', 'embed_dropout', 'word_embed']
+    mutable_args = frozenset(mutable_args)
+    assert all((k not in kwargs or k in mutable_args) for k in predefined_args), \
+           'Cannot override predefined model settings.'
+    predefined_args.update(kwargs)
+    # encoder
+    encoder = BERTEncoder(attention_cell=predefined_args['attention_cell'],
+                          num_layers=predefined_args['num_layers'],
+                          units=predefined_args['units'],
+                          hidden_size=predefined_args['hidden_size'],
+                          max_length=predefined_args['max_length'],
+                          num_heads=predefined_args['num_heads'],
+                          scaled=predefined_args['scaled'],
+                          dropout=predefined_args['dropout'],
+                          use_residual=predefined_args['use_residual'])
+    # vocab
+    vocab = _load_vocab(dataset_name, vocab, root)
+    # BERT
+    net = BERTForPreTraining(encoder, len(vocab),
+                             token_type_vocab_size=predefined_args['token_type_vocab_size'],
+                             units=predefined_args['units'],
+                             embed_size=predefined_args['embed_size'],
+                             embed_dropout=predefined_args['embed_dropout'],
+                             word_embed=predefined_args['word_embed'])
+    if pretrained:
+        _load_pretrained_params(net, model_name, dataset_name, root, ctx,
+                                ignore_extra=False)
+    return net, vocab
+
 def _bert_model(model_name=None, dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
                 use_pooler=True, use_decoder=True, use_classifier=True,
-                for_pretrain=False,
                 root=os.path.join('~', '.mxnet', 'models'), **kwargs):
     """BERT pretrained model.
 
@@ -756,8 +811,7 @@ def _bert_model(model_name=None, dataset_name=None, vocab=None, pretrained=True,
     # vocab
     vocab = _load_vocab(dataset_name, vocab, root)
     # BERT
-    m = BERTForPreTraining if for_pretrain else BERTModel
-    net = m(encoder, len(vocab),
+    net = BERTModel(encoder, len(vocab),
                     token_type_vocab_size=predefined_args['token_type_vocab_size'],
                     units=predefined_args['units'],
                     embed_size=predefined_args['embed_size'],

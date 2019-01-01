@@ -32,21 +32,21 @@ from dataset import BERTTransform
 parser = argparse.ArgumentParser(description='Comparison script for BERT model in Tensorflow'
                                              'and that in Gluon')
 parser.add_argument('--input_file', type=str, default='input.txt',
-                    help='sample input file for testing')
+                    help='sample input file for testing, Default is input.txt')
 parser.add_argument('--tf_bert_repo_dir', type=str,
                     default='/home/ubuntu/bert/',
                     help='path to the original Tensorflow bert repository. '
-                         'e.g. /home/ubuntu/bert/')
+                         'Default is /home/ubuntu/bert/')
 parser.add_argument('--tf_model_dir', type=str,
                     default='/home/ubuntu/uncased_L-12_H-768_A-12/',
                     help='path to the original Tensorflow bert checkpoint directory. '
-                         'e.g. /home/ubuntu/uncased_L-12_H-768_A-12/')
+                         'Default is /home/ubuntu/uncased_L-12_H-768_A-12/')
 parser.add_argument('--cased', action='store_true',
                     help='if not set, inputs are converted to lower case')
 parser.add_argument('--gluon_dataset', type=str, default='book_corpus_wiki_en_uncased',
-                    help='gluon dataset name. e.g. book_corpus_wiki_en_uncased')
+                    help='gluon dataset name. Default is book_corpus_wiki_en_uncased')
 parser.add_argument('--gluon_model', type=str, default='bert_12_768_12',
-                    help='gluon model name. e.g. bert_12_768_12')
+                    help='gluon model name. Default is bert_12_768_12')
 
 args = parser.parse_args()
 
