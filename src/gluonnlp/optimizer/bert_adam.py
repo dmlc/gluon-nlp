@@ -81,11 +81,6 @@ class BERTAdam(Optimizer):
         lr = self._get_lr(index)
         wd = self._get_wd(index)
 
-        t = self._index_update_count[index]
-        coef1 = 1. - self.beta1**t
-        coef2 = 1. - self.beta2**t
-        lr *= math.sqrt(coef2)/coef1
-
         kwargs = {'beta1': self.beta1, 'beta2': self.beta2, 'epsilon': self.epsilon,
                   'rescale_grad': self.rescale_grad}
         if self.clip_gradient:
