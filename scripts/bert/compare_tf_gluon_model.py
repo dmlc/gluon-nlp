@@ -80,10 +80,6 @@ examples = read_examples(input_file)
 features = convert_examples_to_features(
     examples=examples, seq_length=max_length, tokenizer=tokenizer)
 
-unique_id_to_feature = {}
-for feature in features:
-    unique_id_to_feature[feature.unique_id] = feature
-
 is_per_host = tf.contrib.tpu.InputPipelineConfig.PER_HOST_V2
 run_config = tf.contrib.tpu.RunConfig(
     master=None,
@@ -109,10 +105,7 @@ input_fn = input_fn_builder(
 
 tensorflow_all_out = []
 for result in estimator.predict(input_fn, yield_single_examples=True):
-    unique_id = int(result['unique_id'])
-    feature = unique_id_to_feature[unique_id]
     output_json = collections.OrderedDict()
-    output_json['linex_index'] = unique_id
     tensorflow_all_out_features = []
     all_layers = []
     for (j, layer_index) in enumerate(layer_indexes):
@@ -161,5 +154,5 @@ for i, seq in enumerate(bert_dataloader):
     mx.test_utils.assert_almost_equal(a, b, atol=1e-4, rtol=1e-4)
     mx.test_utils.assert_almost_equal(a, b, atol=1e-5, rtol=1e-5)
     mx.test_utils.assert_almost_equal(a, b, atol=5e-6, rtol=5e-6)
-    mx.test_utils.assert_almost_equal(a, b, atol=2e-6, rtol=2e-6)
+    mx.test_utils.assert_almost_equal(a, b, atol=3e-6, rtol=3e-6)
     break
