@@ -20,18 +20,20 @@ from __future__ import print_function
 
 import argparse
 import logging
-import pickle
 import io
+import os
+import json
 import glob
 import collections
 import random
 import mxnet as mx
+import gluonnlp as nlp
 import tokenizer as tokenization
 
 logging.getLogger().setLevel(logging.DEBUG)
 
 parser = argparse.ArgumentParser(
-    description='Pretraining data generator for BERT pretraining')
+    description='Pre-training data generator for BERT')
 
 parser.add_argument('--input_file', type=str, default=None, help='input_file')
 
@@ -49,8 +51,7 @@ parser.add_argument(
 
 parser.add_argument(
     '--do_lower_case',
-    type=bool,
-    default=False,
+    action='store_true',
     help='Whether to lower case the input text. Should be True for uncased'
     'models and False for cased models.')
 
@@ -85,8 +86,8 @@ parser.add_argument(
     '--short_seq_prob',
     type=float,
     default=0.1,
-    help="Probability of creating sequences which are shorter than the "
-    "maximum length.")
+    help='Probability of creating sequences which are shorter than the '
+    'maximum length.')
 
 args = parser.parse_args()
 
@@ -105,17 +106,17 @@ class TrainingInstance(object):
         self.masked_lm_labels = masked_lm_labels
 
     def __str__(self):
-        s = ""
-        s += "tokens: %s\n" % (" ".join(
+        s = ''
+        s += 'tokens: %s\n' % (' '.join(
             [tokenization.printable_text(x) for x in self.tokens]))
-        s += "segment_ids: %s\n" % (" ".join(
+        s += 'segment_ids: %s\n' % (' '.join(
             [str(x) for x in self.segment_ids]))
-        s += "is_random_next: %s\n" % self.is_random_next
-        s += "masked_lm_positions: %s\n" % (" ".join(
+        s += 'is_random_next: %s\n' % self.is_random_next
+        s += 'masked_lm_positions: %s\n' % (' '.join(
             [str(x) for x in self.masked_lm_positions]))
-        s += "masked_lm_labels: %s\n" % (" ".join(
+        s += 'masked_lm_labels: %s\n' % (' '.join(
             [tokenization.printable_text(x) for x in self.masked_lm_labels]))
-        s += "\n"
+        s += '\n'
         return s
 
     def __repr__(self):
@@ -127,11 +128,14 @@ def write_instance_to_example_files(instances, tokenizer, max_seq_length,
     """Create RecordIO files from `TrainingInstance`s."""
     writers = []
     for output_file in output_files:
-        writers.append(mx.recordio.MXRecordIO(output_file, 'w'))
+        writers.append(
+            mx.recordio.MXIndexedRecordIO(
+                os.path.splitext(output_file)[0] + '.idx', output_file, 'w'))
 
     writer_index = 0
 
     total_written = 0
+    pad = tokenizer.convert_tokens_to_ids(['[PAD]'])[0]
     for (inst_index, instance) in enumerate(instances):
         input_ids = tokenizer.convert_tokens_to_ids(instance.tokens)
         input_mask = [1] * len(input_ids)
@@ -139,7 +143,8 @@ def write_instance_to_example_files(instances, tokenizer, max_seq_length,
         assert len(input_ids) <= max_seq_length
 
         while len(input_ids) < max_seq_length:
-            input_ids.append(0)
+            input_ids.append(pad)
+            #Padding index MUST be defined to 0 on input_mask, segment_ids
             input_mask.append(0)
             segment_ids.append(0)
 
@@ -160,35 +165,36 @@ def write_instance_to_example_files(instances, tokenizer, max_seq_length,
         next_sentence_label = 1 if instance.is_random_next else 0
 
         features = collections.OrderedDict()
-        features["input_ids"] = input_ids
-        features["input_mask"] = input_mask
-        features["segment_ids"] = segment_ids
-        features["masked_lm_positions"] = masked_lm_positions
-        features["masked_lm_ids"] = masked_lm_ids
-        features["masked_lm_weights"] = masked_lm_weights
-        features["next_sentence_labels"] = [next_sentence_label]
-
+        features['input_ids'] = input_ids
+        features['input_mask'] = input_mask
+        features['segment_ids'] = segment_ids
+        features['masked_lm_positions'] = masked_lm_positions
+        features['masked_lm_ids'] = masked_lm_ids
+        features['masked_lm_weights'] = masked_lm_weights
+        features['next_sentence_labels'] = [next_sentence_label]
         example = features
 
-        writers[writer_index].write(pickle.dumps(example))
+        writers[writer_index].write_idx(inst_index,
+                                        json.dumps(example).encode('UTF-8'))
         writer_index = (writer_index + 1) % len(writers)
 
         total_written += 1
 
         if inst_index < 20:
-            logging.info("*** Example ***")
-            logging.info("tokens: {}".format(" ".join(
-                [tokenization.printable_text(x) for x in instance.tokens])))
+            logging.info('*** Example ***')
+            logging.info('tokens: %s' % ' '.join(  # pylint: disable=W1201
+                [tokenization.printable_text(x) for x in instance.tokens]))
 
             for feature_name in features.keys():
                 feature = features[feature_name]
-                logging.info("{}: {}".format(feature_name, " ".join(
-                    [str(x) for x in feature])))
+                logging.info(  # pylint: disable=W1201
+                    '%s: %s' % (feature_name, ' '.join(
+                        [str(x) for x in feature])))
 
     for writer in writers:
         writer.close()
 
-    logging.info("Wrote %d total instances", total_written)
+    logging.info('Wrote %d total instances', total_written)
 
 
 def create_training_instances(input_files, tokenizer, max_seq_length,
@@ -265,7 +271,7 @@ def create_instances_from_document(
     current_chunk = []
     current_length = 0
     i = 0
-    while i < len(document):
+    while i < len(document):  # pylint: disable=R1702
         segment = document[i]
         current_chunk.append(segment)
         current_length += len(segment)
@@ -305,7 +311,7 @@ def create_instances_from_document(
                         tokens_b.extend(random_document[j])
                         if len(tokens_b) >= target_b_length:
                             break
-                    # We didn't actually use these segments so we "put them back" so
+                    # We didn't actually use these segments so we 'put them back' so
                     # they don't go to waste.
                     num_unused_segments = len(current_chunk) - a_end
                     i -= num_unused_segments
@@ -321,19 +327,19 @@ def create_instances_from_document(
 
                 tokens = []
                 segment_ids = []
-                tokens.append("[CLS]")
+                tokens.append('[CLS]')
                 segment_ids.append(0)
                 for token in tokens_a:
                     tokens.append(token)
                     segment_ids.append(0)
 
-                tokens.append("[SEP]")
+                tokens.append('[SEP]')
                 segment_ids.append(0)
 
                 for token in tokens_b:
                     tokens.append(token)
                     segment_ids.append(1)
-                tokens.append("[SEP]")
+                tokens.append('[SEP]')
                 segment_ids.append(1)
 
                 (tokens, masked_lm_positions,
@@ -354,8 +360,8 @@ def create_instances_from_document(
     return instances
 
 
-MaskedLmInstance = collections.namedtuple("MaskedLmInstance",
-                                          ["index", "label"])
+MaskedLmInstance = collections.namedtuple('MaskedLmInstance',
+                                          ['index', 'label'])
 
 
 def create_masked_lm_predictions(tokens, masked_lm_prob,
@@ -364,7 +370,7 @@ def create_masked_lm_predictions(tokens, masked_lm_prob,
 
     cand_indexes = []
     for (i, token) in enumerate(tokens):
-        if token == "[CLS]" or token == "[SEP]":
+        if token in ['[CLS]', '[SEP]']:
             continue
         cand_indexes.append(i)
 
@@ -387,7 +393,7 @@ def create_masked_lm_predictions(tokens, masked_lm_prob,
         masked_token = None
         # 80% of the time, replace with [MASK]
         if rng.random() < 0.8:
-            masked_token = "[MASK]"
+            masked_token = '[MASK]'
         else:
             # 10% of the time, keep original
             if rng.random() < 0.5:
@@ -431,17 +437,21 @@ def truncate_seq_pair(tokens_a, tokens_b, max_num_tokens, rng):
 
 
 def main():
-    vocab_obj = pickle.load(open(args.vocab_file, 'rb'))
+    """
+    main function
+    """
+    logging.info("loading vocab file")
+    vocab_obj = nlp.Vocab.from_json(open(args.vocab_file, 'rt').read())
     tokenizer = tokenization.FullTokenizer(
         vocab=vocab_obj, do_lower_case=args.do_lower_case)
 
     input_files = []
-    for input_pattern in args.input_file.split(","):
+    for input_pattern in args.input_file.split(','):
         input_files.extend(glob.glob(input_pattern))
 
-    logging.info("*** Reading from input files ***")
+    logging.info('*** Reading from input files ***')
     for input_file in input_files:
-        logging.info("  %s", input_file)
+        logging.info('  %s', input_file)
 
     rng = random.Random(args.random_seed)
     instances = create_training_instances(
@@ -449,14 +459,14 @@ def main():
         args.short_seq_prob, args.masked_lm_prob, args.max_predictions_per_seq,
         rng)
 
-    output_files = args.output_file.split(",")
-    logging.info("*** Writing to output files ***")
+    output_files = args.output_file.split(',')
+    logging.info('*** Writing to output files ***')
     for output_file in output_files:
-        logging.info("  %s", output_file)
+        logging.info('  %s', output_file)
 
     write_instance_to_example_files(instances, tokenizer, args.max_seq_length,
                                     args.max_predictions_per_seq, output_files)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
