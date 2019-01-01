@@ -40,8 +40,9 @@ class BERTAdam(Optimizer):
 
     This is also slightly different from the AdamW optimizer described in
     *Fixing Weight Decay Regularization in Adam*, where the schedule multiplier and
-    learning rate is decoupled. The BERTAdam optimizer uses the same learning rate to
-    apply gradients w.r.t. the loss and weight decay.
+    learning rate is decoupled, and the bias-correction terms are removed.
+    The BERTAdam optimizer uses the same learning rate to apply gradients
+    w.r.t. the loss and weight decay.
 
     This optimizer accepts the following parameters in addition to those accepted
     by :class:`mxnet.optimizer.Optimizer`.
