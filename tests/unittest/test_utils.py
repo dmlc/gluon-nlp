@@ -64,3 +64,32 @@ def test_parallel():
     assert serial_loss == parallel_loss
     for para_grad, serial_grad in zip(parallel_grads_np, serial_grads_np):
         mx.test_utils.assert_almost_equal(para_grad, serial_grad)
+
+@pytest.mark.parametrize('max_norm,check_isfinite',
+                         [(1, True),
+                          (1, False),
+                          (3, True),
+                          (3, False)])
+def test_clip_grad_norm(max_norm, check_isfinite):
+    contexts = [mx.cpu(0), mx.cpu(1)]
+    net = mx.gluon.nn.Dense(1, weight_initializer='ones', bias_initializer='ones')
+    net.initialize(ctx=contexts)
+    net.hybridize()
+    trainer = mx.gluon.Trainer(net.collect_params(), 'sgd', update_on_kvstore=False)
+    for ctx in contexts:
+        with mx.autograd.record():
+            out = net(mx.nd.ones((1, 1), ctx=ctx))
+        out.backward()
+    trainer.allreduce_grads()
+    norm = nlp.utils.clip_grad_global_norm(net.collect_params().values(),
+                                           max_norm, check_isfinite)
+    if isinstance(norm, mx.nd.NDArray):
+        norm = norm.asnumpy()
+    mx.test_utils.assert_almost_equal(norm, np.sqrt(8), atol=1e-5)
+    for ctx in contexts:
+        if max_norm > np.sqrt(8): # no clipping
+            assert net.weight.grad(ctx).reshape(-1) == 2
+            assert net.bias.grad(ctx).reshape(-1) == 2
+        else:
+            assert net.weight.grad(ctx).reshape(-1) < 2
+            assert net.bias.grad(ctx).reshape(-1) < 2

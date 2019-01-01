@@ -34,6 +34,6 @@ Use the following command to fine-tune the BERT model for classification on the 
 
 .. code-block:: console
 
-   $ GLUE_DIR=glue_data MXNET_GPU_MEM_POOL_TYPE=Round python3 finetune_classifier.py --batch_size 32 --optimizer adam --epochs 3 --gpu
+   $ GLUE_DIR=glue_data python3 finetune_classifier.py --batch_size 32 --optimizer bertadam --epochs 2 --gpu --seed 2 --lr 6e-5
 
-It gets validation accuracy of 87.0%, whereas the the original Tensorflow implementation give evaluation results between 84% and 88%.
+It gets validation accuracy of 87.7%, whereas the the original Tensorflow implementation give evaluation results between 84% and 88%.

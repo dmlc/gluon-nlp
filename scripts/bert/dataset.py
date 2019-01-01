@@ -192,8 +192,9 @@ class BERTTransform(object):
         if self._pad:
             # Zero-pad up to the sequence length.
             padding_length = self._max_seq_length - valid_length
-            input_ids.extend([0] * padding_length)
-            segment_ids.extend([0] * padding_length)
+            # use padding tokens for the rest
+            input_ids.extend([self._tokenizer.vocab['[PAD]']] * padding_length)
+            segment_ids.extend([self._tokenizer.vocab['[PAD]']] * padding_length)
 
         return np.array(input_ids, dtype='int32'), np.array(valid_length, dtype='int32'),\
                np.array(segment_ids, dtype='int32')
