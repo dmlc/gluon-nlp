@@ -16,6 +16,7 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+"""Masked accuracy metric."""
 
 import mxnet as mx
 from mxnet.metric import register, alias, EvalMetric, check_label_shapes
