@@ -71,7 +71,8 @@ parser.add_argument('--lr', type=float, default=1e-4, help='Learning rate')
 parser.add_argument('--warmup_ratio', type=float, default=0.1,
                     help='ratio of warmup steps used in NOAM\'s stepsize schedule')
 parser.add_argument('--log_interval', type=int, default=10, help='report interval')
-parser.add_argument('--max_len', type=int, default=512, help='Maximum length of the sentence pairs')
+parser.add_argument('--max_len', type=int, default=512,
+                    help='Maximum length of the sentence pairs. Default is 512')
 #parser.add_argument('--gpu', action='store_true', help='Whether to use GPU')
 parser.add_argument('--gpu', type=int, required=True,help='Whether to use GPU')
 parser.add_argument('--seed', type=int, default=0, help='Random seed')
@@ -107,8 +108,8 @@ def get_model(ctx):
     # losses
     nsp_loss = gluon.loss.SoftmaxCELoss()
     mlm_loss = gluon.loss.SoftmaxCELoss()
-    nsp_loss.hybridize(static_alloc=True, static_shape=True)
-    mlm_loss.hybridize(static_alloc=True, static_shape=True)
+    nsp_loss.hybridize(static_alloc=True)
+    mlm_loss.hybridize(static_alloc=True)
 
     return model, nsp_loss, mlm_loss, vocabulary
 
@@ -226,7 +227,8 @@ def evaluate(data_eval, model, nsp_loss, mlm_loss, vocab_size, ctx):
         data = as_in_ctx(data, ctx[0])
         with mx.autograd.pause():
             input_id, masked_id, masked_position, masked_weight, next_sentence_label, segment_id, valid_length = data
-            num_masks = masked_weight.sum()
+            # avoid divide by zero error
+            num_masks = masked_weight.sum() + 1e-8
             valid_length = valid_length.astype('float32', copy=False)
             classified, decoded = model(input_id, segment_id, valid_length=valid_length, positions=masked_position)
             masked_id = masked_id.reshape(-1)
@@ -235,6 +237,7 @@ def evaluate(data_eval, model, nsp_loss, mlm_loss, vocab_size, ctx):
             ls = ls1 + ls2
         local_mlm_loss += ls1
         local_nsp_loss += ls2
+        decoded = decoded.reshape((-1, vocab_size))
         nsp_metric.update(next_sentence_label, classified)
         mlm_metric.update(masked_id, decoded, masked_weight)
         if (step_num + 1) % (args.log_interval) == 0:
@@ -245,7 +248,7 @@ def evaluate(data_eval, model, nsp_loss, mlm_loss, vocab_size, ctx):
             total_nsp_loss += local_nsp_loss
             local_mlm_loss /= args.log_interval
             local_nsp_loss /= args.log_interval
-            logging.info('[step {}]\tmlm_loss={:.3f}\tmlm_acc={:.1f}\tnsp_loss={:.3f}\tnsp_acc={:.1f}\tthroughput={:.1f}K tks/s\t'
+            logging.info('[step {}]\tmlm_loss={:.8f}\tmlm_acc={:.8f}\tnsp_loss={:.8f}\tnsp_acc={:.5f}\tthroughput={:.1f}K tks/s\t'
                          .format(step_num, local_mlm_loss.asscalar(), mlm_metric.get()[1] * 100, local_nsp_loss.asscalar(),
                                  nsp_metric.get()[1] * 100, throughput))
             begin_time = end_time
@@ -295,7 +298,7 @@ def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx):
                 break
             step_num += 1
             # update learning rate
-            if step_num < num_warmup_steps:
+            if step_num <= num_warmup_steps:
                 new_lr = lr * step_num / num_warmup_steps
             else:
                 offset = (step_num - num_warmup_steps) * lr / (num_train_steps - num_warmup_steps)
@@ -306,10 +309,9 @@ def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx):
             with mx.autograd.record():
                 input_id, masked_id, masked_position, masked_weight, next_sentence_label, segment_id, valid_length = data
                 num_masks = masked_weight.sum()
-                valid_length = valid_length.astype('float32')
+                valid_length = valid_length.astype('float32', copy=False)
                 classified, decoded = model(input_id, segment_id, valid_length=valid_length, positions=masked_position)
                 masked_id = masked_id.reshape(-1)
-                decoded = decoded.reshape((-1, vocab_size))
                 ls1 = mlm_loss(decoded, masked_id, masked_weight.reshape((-1, 1))).sum() / num_masks
                 ls2 = nsp_loss(classified, next_sentence_label).mean()
                 ls = ls1 + ls2
@@ -319,6 +321,7 @@ def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx):
             trainer.allreduce_grads()
             clip_grad_global_norm(params, 1)
             trainer.update(1)
+            decoded = decoded.reshape((-1, vocab_size))
             nsp_metric.update(next_sentence_label, classified)
             mlm_metric.update(masked_id, decoded, masked_weight)
             if (step_num + 1) % (args.log_interval) == 0:
@@ -327,7 +330,7 @@ def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx):
                 throughput = args.log_interval * batch_size * args.max_len / 1000.0 / duration
                 local_mlm_loss /= args.log_interval
                 local_nsp_loss /= args.log_interval
-                logging.info('[step {}]\tmlm_loss={:.3f}\tmlm_acc={:.1f}\tnsp_loss={:.3f}\tnsp_acc={:.1f}\tthroughput={:.1f}K tks/s\tlr={:.7f}'
+                logging.info('[step {}]\tmlm_loss={:.5f}\tmlm_acc={:.5f}\tnsp_loss={:.5f}\tnsp_acc={:.5f}\tthroughput={:.1f}K tks/s\tlr={:.7f}'
                              .format(step_num, local_mlm_loss.asscalar(), mlm_metric.get()[1] * 100, local_nsp_loss.asscalar(),
                                      nsp_metric.get()[1] * 100, throughput, trainer.learning_rate))
                 begin_time = end_time

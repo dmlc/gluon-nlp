@@ -241,7 +241,7 @@ def _get_decoder(units, vocab_size, embed, prefix):
     decoder.add(nn.Dense(units))
     decoder.add(GELU())
     decoder.add(BERTLayerNorm(in_channels=units))
-    decoder.add(nn.Dense(vocab_size, params=embed.params))
+    decoder.add(nn.Dense(vocab_size, params=embed.collect_params()))
     return decoder
 
 class BERTForPreTraining(Block):
@@ -316,7 +316,7 @@ class BERTForPreTraining(Block):
             # Construct classifier for next sentence predicition
             self.classifier = nn.Dense(2, prefix='cls_')
             # Construct decoder for masked language model
-            self.decoder = _get_decoder(units, vocab_size, self.word_embed, 'decoder_')
+            self.decoder = _get_decoder(units, vocab_size, self.word_embed[0], 'decoder_')
 
     def _get_embed(self, embed, vocab_size, embed_size, initializer, dropout, prefix):
         """ Construct an embedding block. """
@@ -395,7 +395,8 @@ class BERTForPreTraining(Block):
         positions = positions.reshape((1, -1))
         position_idx = mx.nd.Concat(batch_idx, positions, dim=0)
         encoded = mx.nd.gather_nd(sequence, position_idx)
-        return self.decoder(encoded)
+        decoded = self.decoder(encoded)
+        return decoded
 
 class BERTModel(Block):
     """Generic Model for BERT (Bidirectional Encoder Representations from Transformers).
