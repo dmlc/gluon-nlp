@@ -19,13 +19,13 @@
 
 import mxnet as mx
 import numpy as np
-import gluonnlp as nlp
+from gluonnlp.metric import MaskedAccuracy
 
 def test_acc():
     pred = mx.nd.array([[0.3, 0.7], [0, 1.], [0.4, 0.6]])
     label = mx.nd.array([0, 1, 1])
     mask = mx.nd.array([1, 1, 0])
-    metric = mx.metric.create('masked-acc')
+    metric = MaskedAccuracy()
     metric.update([label], [pred], [mask])
     _, acc = metric.get()
     matched = (np.argmax(pred.asnumpy(), axis=1) == label.asnumpy()) * mask.asnumpy()
@@ -33,7 +33,7 @@ def test_acc():
     expected_acc = 1.0 * matched.sum() / valid_count
     assert acc == expected_acc
 
-    metric = mx.metric.create('masked-acc')
+    metric = MaskedAccuracy()
     metric.update([label], [pred])
     _, acc = metric.get()
     matched = (np.argmax(pred.asnumpy(), axis=1) == label.asnumpy())
