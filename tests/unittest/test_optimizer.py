@@ -16,7 +16,7 @@
 # under the License.
 
 import mxnet as mx
-from mxnet.test_utils import default_context, assert_almost_equal
+from mxnet.test_utils import default_context, assert_almost_equal, rand_ndarray
 import numpy as np
 from gluonnlp import optimizer
 
