@@ -440,11 +440,13 @@ class BERTModel(Block):
         See document of `mx.gluon.Block`.
 
     Inputs:
-        - **inputs**: input sequence tensor of shape (batch_size, seq_length)
-        - **token_types**: input token type tensor of shape (batch_size, seq_length).
+        - **inputs**: input sequence tensor, shape (batch_size, seq_length)
+        - **token_types**: input token type tensor, shape (batch_size, seq_length).
             If the inputs contain two sequences, then the token type of the first
             sequence differs from that of the second one.
-        - **valid_length**: tensor for valid length of shape (batch_size)
+        - **valid_length**: optional tensor of input sequence valid lengths, shape (batch_size)
+        - **positions**: optional tensor of position of tokens for decoding,
+            shape (batch_size, num_positions)
 
     Outputs:
         - **sequence_outputs**: output tensor of sequence encodings.
@@ -455,7 +457,7 @@ class BERTModel(Block):
             Returned only if use_classifier is True. Shape (batch_size, 2)
         - **decode_output**: output tensor of sequence decoding for masked language model
             prediction. Returned only if use_decoder True.
-            Shape (batch_size, vocab_size)
+            Shape (batch_size, num_positions, vocab_size)
     """
     def __init__(self, encoder, vocab_size=None, token_type_vocab_size=None, units=None,
                  embed_size=None, embed_dropout=0.0, embed_initializer=None,
@@ -465,6 +467,7 @@ class BERTModel(Block):
         self._use_decoder = use_decoder
         self._use_classifier = use_classifier
         self._use_pooler = use_pooler
+        self._vocab_size = vocab_size
         self.encoder = encoder
         # Construct word embedding
         self.word_embed = self._get_embed(word_embed, vocab_size, embed_size,
@@ -528,7 +531,7 @@ class BERTModel(Block):
                               prefix=prefix)
         return pooler
 
-    def forward(self, inputs, token_types, valid_length=None): #pylint: disable=arguments-differ
+    def forward(self, inputs, token_types, valid_length=None, positions=None): #pylint: disable=arguments-differ
         """Generate the representation given the inputs.
 
         This is used in training or fine-tuning a BERT model.
@@ -543,7 +546,9 @@ class BERTModel(Block):
                 classifier_out = self.classifier(pooled_out)
                 outputs.append(classifier_out)
         if self._use_decoder:
-            decoder_out = self._decode(seq_out, valid_length)
+            assert positions is not None, \
+              'positions tensor is required for decoding masked language model'
+            decoder_out = self._decode(seq_out, positions)
             outputs.append(decoder_out)
         return tuple(outputs) if len(outputs) > 1 else outputs[0]
 
@@ -569,22 +574,33 @@ class BERTModel(Block):
         outputs = sequence[:, 0, :]
         return self.pooler(outputs)
 
-    def _decode(self, sequence, valid_length=None):
+    def _decode(self, sequence, positions):
         """Generate unormalized prediction for the masked language model task.
-
         This is only used for pre-training the BERT model.
+
+        Inputs:
+            - **sequence**: input tensor of sequence encodings.
+              Shape (batch_size, seq_length, units).
+            - **position**: input tensor of position of tokens for decoding.
+              Shape (batch_size, max_num_positions)
+
+        Outputs:
+            - **decode_outputs**: output tensor of token predictions for target positions.
+                Shape (batch_size, max_num_positions, vocab_size).
         """
-        if valid_length is None:
-            last_step = sequence[:, -1, :]
-        else:
-            batch_size = sequence.shape[0]
-            ctx = valid_length.context
-            dtype = valid_length.dtype
-            batch_idx = mx.nd.arange(0, batch_size, dtype=dtype, ctx=ctx).reshape((1, -1))
-            valid_length = (valid_length - 1).reshape((1, -1))
-            last_step_idx = mx.nd.Concat(batch_idx, valid_length, dim=0)
-            last_step = mx.nd.gather_nd(sequence, last_step_idx)
-        return self.decoder(last_step)
+        batch_size = sequence.shape[0]
+        max_num_positions = positions.shape[1]
+        ctx = positions.context
+        dtype = positions.dtype
+        # batch_idx = [0,0,0,1,1,1,2,2,2...]
+        # positions = [1,2,4,0,3,4,2,3,5...]
+        batch_idx = mx.nd.arange(0, batch_size, repeat=max_num_positions, dtype=dtype, ctx=ctx)
+        batch_idx = batch_idx.reshape((1, -1))
+        positions = positions.reshape((1, -1))
+        position_idx = mx.nd.Concat(batch_idx, positions, dim=0)
+        encoded = mx.nd.gather_nd(sequence, position_idx)
+        decoded = self.decoder(encoded).reshape((batch_size, max_num_positions, self._vocab_size))
+        return decoded
 
 ###############################################################################
 #                               GET MODEL                                     #
