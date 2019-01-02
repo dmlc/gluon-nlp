@@ -130,5 +130,9 @@ def test_bert_adam():
                     kwarg.update(cg_option)
                     kwarg.update(rg_option)
                     kwarg.update(wd_option)
-                    compare_optimizer(opt1(**kwarg), opt2(**kwarg), shape, dtype,
-                                      rtol=1e-4, atol=2e-5)
+                    try:
+                        compare_optimizer(opt1(**kwarg), opt2(**kwarg), shape, dtype,
+                                          rtol=1e-4, atol=2e-5)
+                    except ImportError:
+                        print('skipping test_bert_adam() because an old version of MXNet is found')
+                        return
