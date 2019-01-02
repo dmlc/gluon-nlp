@@ -56,7 +56,6 @@ parser.add_argument('--dataset_name', type=str, default='book_corpus_wiki_en_unc
                     help='The dataset from which the vocabulary is created. '
                          'Options include book_corpus_wiki_en_uncased, book_corpus_wiki_en_cased. '
                          'Default is book_corpus_wiki_en_uncased')
-parser.add_argument('--load_ckpt', type=str, default=None, help='Load model from a checkpoint.')
 parser.add_argument('--pretrained', action='store_true',
                     help='Load the pretrained model released by Google.')
 parser.add_argument('--data', type=str, default=None,
@@ -69,8 +68,7 @@ parser.add_argument('--warmup_ratio', type=float, default=0.1,
 parser.add_argument('--log_interval', type=int, default=10, help='report interval')
 parser.add_argument('--max_len', type=int, default=512,
                     help='Maximum length of the sentence pairs. Default is 512')
-#parser.add_argument('--gpu', action='store_true', help='Whether to use GPU')
-parser.add_argument('--gpu', type=int, required=True,help='Whether to use GPU')
+parser.add_argument('--gpu', action='store_true', help='Whether to use GPU')
 parser.add_argument('--seed', type=int, default=0, help='Random seed')
 parser.add_argument('--do-training', action='store_true',
                     help='Whether to do training on the training set.')
@@ -122,82 +120,6 @@ def as_in_ctx(arrs, ctx):
         return [arr.as_in_context(ctx) for arr in arrs]
     return arrs.as_in_context(ctx)
 
-@mx.metric.register
-@mx.metric.alias('masked_acc')
-# TODO update meth
-class MaskedAccuracy(mx.metric.EvalMetric):
-    """Computes accuracy classification score.
-    The accuracy score is defined as
-
-    .. math::
-        \\text{accuracy}(y, \\hat{y}) = \\frac{1}{n} \\sum_{i=0}^{n-1}
-        \\text{1}(\\hat{y_i} == y_i)
-
-    Parameters
-    ----------
-    axis : int, default=1
-        The axis that represents classes
-    name : str
-        Name of this metric instance for display.
-    output_names : list of str, or None
-        Name of predictions that should be used when updating with update_dict.
-        By default include all predictions.
-    label_names : list of str, or None
-        Name of labels that should be used when updating with update_dict.
-        By default include all labels.
-
-    Examples
-    --------
-    >>> predicts = [mx.nd.array([[0.3, 0.7], [0, 1.], [0.4, 0.6]])]
-    >>> labels   = [mx.nd.array([0, 1, 1])]
-    >>> acc = mx.metric.Accuracy()
-    >>> acc.update(preds = predicts, labels = labels)
-    >>> print acc.get()
-    ('accuracy', 0.6666666666666666)
-    """
-    def __init__(self, axis=1, name='masked-accuracy',
-                 output_names=None, label_names=None):
-        super(MaskedAccuracy, self).__init__(
-            name, axis=axis,
-            output_names=output_names, label_names=label_names,
-            has_global_stats=True)
-        self.axis = axis
-
-    # TODO update doc
-    def update(self, labels, preds, masks=None):
-        """Updates the internal evaluation result.
-
-        Parameters
-        ----------
-        labels : list of `NDArray`
-            The labels of the data with class indices as values, one per sample.
-        preds : list of `NDArray`
-            Prediction values for samples. Each prediction value can either be the class index,
-            or a vector of likelihoods for all classes.
-        """
-        labels, preds = mx.metric.check_label_shapes(labels, preds, True)
-
-        for label, pred_label in zip(labels, preds):
-            if pred_label.shape != label.shape:
-                pred_label = mx.ndarray.argmax(pred_label, axis=self.axis)
-            pred_label = pred_label.astype('int32', copy=False).reshape((-1,))
-            label = label.astype('int32', copy=False).reshape((-1,))
-            # flatten before checking shapes to avoid shape miss match
-            mx.metric.check_label_shapes(label, pred_label)
-
-            if masks is not None:
-                masks = masks.astype('int32', copy=False).reshape((-1,))
-                mx.metric.check_label_shapes(label, masks)
-                num_correct = ((pred_label == label) * masks).sum().asscalar()
-                num_inst =  masks.sum().asscalar()
-            else:
-                num_correct = (pred_label == label).sum().asscalar()
-                num_inst =  len(label)
-            self.sum_metric += num_correct
-            self.global_sum_metric += num_correct
-            self.num_inst += num_inst
-            self.global_num_inst += num_inst
-
 def evaluate(data_eval, model, nsp_loss, mlm_loss, vocab_size, ctx):
     """Evaluation function."""
     mlm_metric = MaskedAccuracy()
@@ -226,9 +148,8 @@ def evaluate(data_eval, model, nsp_loss, mlm_loss, vocab_size, ctx):
             ls = ls1 + ls2
         local_mlm_loss += ls1
         local_nsp_loss += ls2
-        decoded = decoded.reshape((-1, vocab_size))
-        nsp_metric.update(next_sentence_label, classified)
-        mlm_metric.update(masked_id, decoded, masked_weight)
+        nsp_metric.update([next_sentence_label], [classified])
+        mlm_metric.update([masked_id], [decoded], [masked_weight])
         if (step_num + 1) % (args.log_interval) == 0:
             end_time = time.time()
             duration = end_time - begin_time
@@ -311,9 +232,8 @@ def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx):
             trainer.allreduce_grads()
             clip_grad_global_norm(params, 1)
             trainer.update(1)
-            decoded = decoded.reshape((-1, vocab_size))
-            nsp_metric.update(next_sentence_label, classified)
-            mlm_metric.update(masked_id, decoded, masked_weight)
+            nsp_metric.update([next_sentence_label], [classified])
+            mlm_metric.update([masked_id], [decoded], [masked_weight])
             if (step_num + 1) % (args.log_interval) == 0:
                 end_time = time.time()
                 duration = end_time - begin_time
@@ -339,8 +259,7 @@ if __name__ == '__main__':
     random.seed(seed)
     mx.random.seed(seed)
 
-    # TODO update me
-    ctx = [mx.gpu(args.gpu)]# else mx.cpu()]
+    ctx = [mx.gpu() if args.gpu else mx.cpu()]
     model, nsp_loss, mlm_loss, vocabulary = get_model(ctx)
 
     batch_size = args.batch_size * len(ctx)
