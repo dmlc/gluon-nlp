@@ -19,8 +19,7 @@
 """BERT models."""
 
 __all__ = ['BERTModel', 'BERTEncoder', 'BERTEncoderCell', 'BERTPositionwiseFFN',
-           'BERTLayerNorm', 'BERTForPreTraining', 'bert_12_768_12', 'bert_24_1024_16',
-           'bert_pretraining_12_768_12']
+           'BERTLayerNorm', 'bert_12_768_12', 'bert_24_1024_16']
 
 import os
 from mxnet.gluon import Block
@@ -244,159 +243,6 @@ def _get_decoder(units, vocab_size, embed, prefix):
     decoder.add(nn.Dense(vocab_size, params=embed.collect_params()))
     return decoder
 
-class BERTForPreTraining(Block):
-    """Model for BERT PreTraining (Bidirectional Encoder Representations from Transformers).
-    Parameters
-    ----------
-    encoder : BERTEncoder
-        Bidirectional encoder that encodes the input sentence.
-    vocab_size : int or None, default None
-        The size of the vocabulary.
-    token_type_vocab_size : int or None, default None
-        The vocabulary size of token types.
-    units : int or None, default None
-        Number of units for the final pooler layer.
-    embed_size : int or None, default None
-        Size of the embedding vectors. It is used to generate the word and token type
-        embeddings if word_embed and token_type_embed are None.
-    embed_dropout : float, default 0.0
-        Dropout rate of the embedding weights. It is used to generate the source and target
-        embeddings if word_embed and token_type_embed are None.
-    embed_initializer : Initializer, default None
-        Initializer of the embedding weights. It is used to generate the source and target
-        embeddings if word_embed and token_type_embed are None.
-    word_embed : Block or None, default None
-        The word embedding. If set to None, word_embed will be constructed using embed_size and
-        embed_dropout.
-    token_type_embed : Block or None, default None
-        The token type embedding. If set to None and the token_type_embed will be constructed using
-        embed_size and embed_dropout.
-    prefix : str or None
-        See document of `mx.gluon.Block`.
-    params : ParameterDict or None
-        See document of `mx.gluon.Block`.
-    Inputs:
-        - **inputs**: input sequence tensor of shape (batch_size, seq_length)
-        - **token_types**: input token type tensor of shape (batch_size, seq_length).
-            If the inputs contain two sequences, then the token type of the first
-            sequence differs from that of the second one.
-        - **valid_length**: tensor for valid length of shape (batch_size)
-    Outputs:
-        - **sequence_outputs**: output tensor of sequence encodings.
-            Shape (batch_size, seq_length, units).
-        - **pooled_output**: output tensor of pooled representation of the first tokens.
-            Returned only if use_pooler is True. Shape (batch_size, units)
-        - **classifier_output**: output tensor of next sentence classification prediction.
-            Returned only if use_classifier is True. Shape (batch_size, 2)
-        - **decode_output**: output tensor of sequence decoding for masked language model
-            prediction. Returned only if use_decoder True.
-            Shape (batch_size, max_num_positions, vocab_size), where max_num_positions denotes
-            the maximum number of positions for decoding.
-    """
-    def __init__(self, encoder, vocab_size=None, token_type_vocab_size=None, units=None,
-                 embed_size=None, embed_dropout=0.0, embed_initializer=None,
-                 word_embed=None, token_type_embed=None,
-                 prefix=None, params=None, static=False):
-        super(BERTForPreTraining, self).__init__(prefix=prefix, params=params)
-        self.encoder = encoder
-        self._static = static
-        # Construct word embedding
-        self.word_embed = self._get_embed(word_embed, vocab_size, embed_size,
-                                          embed_initializer, embed_dropout, 'word_embed_')
-        # Construct token type embedding
-        self.token_type_embed = self._get_embed(token_type_embed, token_type_vocab_size,
-                                                embed_size, embed_initializer, embed_dropout,
-                                                'token_type_embed_')
-        with self.name_scope():
-            # Construct pooler
-            # The pooler slices and projects the hidden output of first token
-            # in the sequence for segment level classification.
-            self.pooler = nn.Dense(units=units, flatten=False, activation='tanh',
-                                   prefix='pooler_')
-            # Construct classifier for next sentence predicition
-            self.classifier = nn.Dense(2, prefix='cls_')
-            # Construct decoder for masked language model
-            self.decoder = _get_decoder(units, vocab_size, self.word_embed[0], 'decoder_')
-
-    def _get_embed(self, embed, vocab_size, embed_size, initializer, dropout, prefix):
-        """ Construct an embedding block. """
-        if embed is None:
-            assert embed_size is not None, '"embed_size" cannot be None if "word_embed" or ' \
-                                           'token_type_embed is not given.'
-            with self.name_scope():
-                embed = nn.HybridSequential(prefix=prefix)
-                with embed.name_scope():
-                    embed.add(nn.Embedding(input_dim=vocab_size, output_dim=embed_size,
-                                           weight_initializer=initializer))
-                    if dropout:
-                        embed.add(nn.Dropout(rate=dropout))
-        assert isinstance(embed, Block)
-        return embed
-
-    def __call__(self, inputs, token_types, valid_length=None, positions=None):
-        """Encode the input sequence.
-        """
-        return self.forward(inputs, token_types, valid_length=valid_length, positions=positions)
-
-    def forward(self, inputs, token_types, valid_length=None, positions=None): #pylint: disable=arguments-differ
-        """Generate the representation given the inputs.
-        This is used in training or fine-tuning a BERT model.
-        """
-        seq_out, _ = self._encode_sequence(inputs, token_types, valid_length)
-        pooled_out = self._apply_pooling(seq_out)
-        classifier_out = self.classifier(pooled_out)
-        decoder_out = self._decode(seq_out, positions)
-        return classifier_out, decoder_out
-
-    def _encode_sequence(self, inputs, token_types, valid_length=None):
-        """Generate the representation given the input sequences.
-        This is used for pre-training or fine-tuning a BERT model.
-        """
-        # embedding
-        word_embedding = self.word_embed(inputs)
-        type_embedding = self.token_type_embed(token_types)
-        embedding = word_embedding + type_embedding
-        # encoding
-        if not self._static:
-            outputs, additional_outputs = self.encoder(embedding, None, valid_length)
-        else:
-            outputs, additional_outputs = self.encoder(embedding, valid_length)
-        return outputs, additional_outputs
-
-    def _apply_pooling(self, sequence):
-        """Generate the representation given the inputs.
-        This is used for pre-training or fine-tuning a BERT model.
-        """
-        outputs = sequence[:, 0, :]
-        return self.pooler(outputs)
-
-    def _decode(self, sequence, positions):
-        """Generate unormalized prediction for the masked language model task.
-        This is only used for pre-training the BERT model.
-        Inputs:
-            - **sequence**: input tensor of sequence encodings.
-              Shape (batch_size, seq_length, units).
-            - **position**: input tensor of position of tokens for decoding.
-              Shape (batch_size, max_num_positions)
-            - **position_mask**: input tensor of position masks of tokens for decoding.
-              This is used when the number of positions of a samples is less than max_num_positions.
-              Shape (batch_size, max_num_positions)
-        Outputs:
-            - **decode_outputs**: output tensor of sequence encodings.
-                Shape (batch_size, max_num_positions, vocab_size).
-        """
-        batch_size = sequence.shape[0]
-        max_num_positions = positions.shape[1]
-        ctx = positions.context
-        dtype = positions.dtype
-        # [0,0,0,1,1,1,2,2,2...]
-        batch_idx = mx.nd.arange(0, batch_size, repeat=max_num_positions, dtype=dtype, ctx=ctx).reshape((1, -1))
-        # [1,2,4,0,3,4,2,3,5...]
-        positions = positions.reshape((1, -1))
-        position_idx = mx.nd.Concat(batch_idx, positions, dim=0)
-        encoded = mx.nd.gather_nd(sequence, position_idx)
-        decoded = self.decoder(encoded)
-        return decoded
 
 class BERTModel(Block):
     """Generic Model for BERT (Bidirectional Encoder Representations from Transformers).
@@ -655,36 +501,6 @@ bert_hparams = {
 }
 
 
-def bert_pretraining_12_768_12(dataset_name=None, vocab=None, pretrained=True,
-                               ctx=mx.cpu(), root=os.path.join('~', '.mxnet', 'models'),
-                               **kwargs):
-    """BERT BASE model for pretraining.
-
-    The number of layers (L) is 12, number of units (H) is 768, and the
-    number of self-attention heads (A) is 12.
-
-    Parameters
-    ----------
-    dataset_name : str or None, default None
-        Options include 'book_corpus_wiki_en_cased', 'book_corpus_wiki_en_uncased',
-        'wiki_cn', 'wiki_multilingual' and 'wiki_multilingual_cased'.
-    vocab : gluonnlp.Vocab or None, default None
-        Vocabulary for the dataset. Must be provided if dataset is not specified.
-    pretrained : bool, default True
-        Whether to load the pretrained weights for model.
-    ctx : Context, default CPU
-        The context in which to load the pretrained weights.
-    root : str, default '~/.mxnet/models'
-        Location for keeping the model parameters.
-
-    Returns
-    -------
-    BERTForPretraining, gluonnlp.Vocab
-    """
-    return _bert_pretraining(model_name='bert_12_768_12', vocab=vocab,
-                             dataset_name=dataset_name,
-                             pretrained=pretrained, ctx=ctx, root=root, **kwargs)
-
 def bert_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
                    root=os.path.join('~', '.mxnet', 'models'), use_pooler=True,
                    use_decoder=True, use_classifier=True, **kwargs):
@@ -761,44 +577,6 @@ def bert_24_1024_16(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu()
                        pretrained=pretrained, ctx=ctx, use_pooler=use_pooler,
                        use_decoder=use_decoder, use_classifier=use_classifier, root=root,
                        **kwargs)
-
-def _bert_pretraining(model_name=None, dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
-                      root=os.path.join('~', '.mxnet', 'models'), **kwargs):
-    """BERT pretrained model.
-
-    Returns
-    -------
-    BERTModel, gluonnlp.Vocab
-    """
-    predefined_args = bert_hparams[model_name]
-    mutable_args = ['use_residual', 'dropout', 'embed_dropout', 'word_embed']
-    mutable_args = frozenset(mutable_args)
-    assert all((k not in kwargs or k in mutable_args) for k in predefined_args), \
-           'Cannot override predefined model settings.'
-    predefined_args.update(kwargs)
-    # encoder
-    encoder = BERTEncoder(attention_cell=predefined_args['attention_cell'],
-                          num_layers=predefined_args['num_layers'],
-                          units=predefined_args['units'],
-                          hidden_size=predefined_args['hidden_size'],
-                          max_length=predefined_args['max_length'],
-                          num_heads=predefined_args['num_heads'],
-                          scaled=predefined_args['scaled'],
-                          dropout=predefined_args['dropout'],
-                          use_residual=predefined_args['use_residual'])
-    # vocab
-    vocab = _load_vocab(dataset_name, vocab, root)
-    # BERT
-    net = BERTForPreTraining(encoder, len(vocab),
-                             token_type_vocab_size=predefined_args['token_type_vocab_size'],
-                             units=predefined_args['units'],
-                             embed_size=predefined_args['embed_size'],
-                             embed_dropout=predefined_args['embed_dropout'],
-                             word_embed=predefined_args['word_embed'])
-    if pretrained:
-        _load_pretrained_params(net, model_name, dataset_name, root, ctx,
-                                ignore_extra=False)
-    return net, vocab
 
 def _bert_model(model_name=None, dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
                 use_pooler=True, use_decoder=True, use_classifier=True,
