@@ -41,7 +41,8 @@ import time
 from mxnet import gluon
 from mxnet.gluon.data import ArrayDataset, DataLoader
 from gluonnlp.utils import clip_grad_global_norm
-from gluonnlp.model import bert_12_768_12, bert_pretraining_12_768_12
+from gluonnlp.metric import MaskedAccuracy
+from gluonnlp.model import bert_12_768_12
 from gluonnlp.data import SimpleDatasetStream, SplitSampler, NumpyDataset
 from tokenizer import FullTokenizer
 from dataset import MRPCDataset, ClassificationTransform
@@ -84,16 +85,8 @@ def get_model(ctx):
     # model
     pretrained = args.pretrained
     dataset = args.dataset_name
-    # TODO API
-    model, vocabulary = bert_pretraining_12_768_12(dataset_name=dataset,
-                                                   pretrained=pretrained, ctx=ctx)
-    # load from checkpoint
-    if pretrained and args.load_ckpt:
-        raise UserWarning('Both pretrained and load_ckpt are set. Do you intend to load from '
-                          'the checkpoint instead of the pretrained model from Google?')
-    if args.load_ckpt:
-        raise NotImplementedError()
-
+    model, vocabulary = bert_12_768_12(dataset_name=dataset,
+                                       pretrained=pretrained, ctx=ctx)
     if not pretrained:
         model.initialize(init=mx.init.Normal(0.02), ctx=ctx)
     model.cast(args.dtype)
@@ -225,8 +218,9 @@ def evaluate(data_eval, model, nsp_loss, mlm_loss, vocab_size, ctx):
             # avoid divide by zero error
             num_masks = masked_weight.sum() + 1e-8
             valid_length = valid_length.astype('float32', copy=False)
-            classified, decoded = model(input_id, segment_id, valid_length=valid_length, positions=masked_position)
+            _, _, classified, decoded = model(input_id, segment_id, valid_length, masked_position)
             masked_id = masked_id.reshape(-1)
+            decoded = decoded.reshape((-1, vocab_size))
             ls1 = mlm_loss(decoded, masked_id, masked_weight.reshape((-1, 1))).sum() / num_masks
             ls2 = nsp_loss(classified, next_sentence_label).mean()
             ls = ls1 + ls2
@@ -305,8 +299,9 @@ def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx):
                 input_id, masked_id, masked_position, masked_weight, next_sentence_label, segment_id, valid_length = data
                 num_masks = masked_weight.sum()
                 valid_length = valid_length.astype('float32', copy=False)
-                classified, decoded = model(input_id, segment_id, valid_length=valid_length, positions=masked_position)
+                _, _, classified, decoded = model(input_id, segment_id, valid_length, masked_position)
                 masked_id = masked_id.reshape(-1)
+                decoded = decoded.reshape((-1, vocab_size))
                 ls1 = mlm_loss(decoded, masked_id, masked_weight.reshape((-1, 1))).sum() / num_masks
                 ls2 = nsp_loss(classified, next_sentence_label).mean()
                 ls = ls1 + ls2
