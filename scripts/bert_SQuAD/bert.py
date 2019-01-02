@@ -64,7 +64,7 @@ class BERTSquad(Block):
         Returns
         -------
         outputs : NDArray
-            Shape (batch_size, num_classes)
+            Shape (2, batch_size, seq_length)
         """
         bert_output = self.bert(inputs, token_types, valid_length)
         output = self.classifier(bert_output)
@@ -77,11 +77,20 @@ class BERTLoss(Loss):
 
     """
 
-    def __init__(self, weight=None, batch_axis=0, **kwargs):
+    def __init__(self, weight=None, batch_axis=0, **kwargs):  # pylint: disable=arguments-differ
         super(BERTLoss, self).__init__(weight=None, batch_axis=0, **kwargs)
         self.loss = loss.SoftmaxCELoss()
 
     def hybrid_forward(self, F, pred, label):  # pylint: disable=arguments-differ
+        """
+        Parameters
+        ----------
+        pred : NDArray, shape (2, batch_size, seq_length)
+            BERTSquad forward output.
+        label : list, length is 2, each shape is (batch_size,1)
+            label[0] is the starting position of the answer,
+            label[1] is the ending position of the answer.
+        """
         pred = F.split(pred, axis=0, num_outputs=2)
         start_pred = pred[0].reshape((-3, 0))
         start_label = label[0]

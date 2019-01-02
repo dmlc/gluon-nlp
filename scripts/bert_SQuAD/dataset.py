@@ -51,29 +51,45 @@ class SquadExample(object):
 _transform = None
 
 
-def preprocess(example):
+def _worker_fn(example):
+    """Function for processing data in worker process."""
     global _transform
     feature = _transform(example)
     return feature
 
 
-def preprocess_dataset(dataset, transform):
+def preprocess_dataset(dataset, transform, num_workers=8):
+    """Use multiprocessing to perform transform for dataset.
+
+    Parameters
+    ----------
+    dataset: dataset-like object
+        Source dataset.
+    transform: callable
+        Transformer function.
+    num_workers: int, default 8
+        The number of multiprocessing workers to use for data preprocessing.
+
+    """
     global _transform
     _transform = transform
     start = time.time()
 
-    with mp.Pool(8) as pool:
+    with mp.Pool(num_workers) as pool:
         dataset_transform = []
-        for data in pool.map(preprocess, dataset):
+        for data in pool.map(_worker_fn, dataset):
             dataset_transform.extend(data)
 
         dataset = SimpleDataset(dataset_transform)
     end = time.time()
-    print(end-start)
+    print('Done! Transform dataset costs %.2f seconds.' % (end-start))
     return dataset
 
 
 class SquadFeature(object):
+    """Single feature of a single example transform of the SQuAD question.
+
+    """
     def __init__(self,
                  example_id,
                  qas_id,
@@ -243,9 +259,10 @@ class SQuADTransform(object):
     max_seq_length : int, default 384
         Maximum sequence length of the sentences.
     doc_stride : int, default 128
-        pass
+        When splitting up a long document into chunks,
+        how much stride to take between chunks.
     max_query_length : int, default 64
-        pass
+        The maximum length of the query tokens.
     is_training : bool, default True
         Whether to run training.
     """
