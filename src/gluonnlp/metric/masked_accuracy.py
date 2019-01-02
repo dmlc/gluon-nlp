@@ -85,7 +85,7 @@ class MaskedAccuracy(EvalMetric):
             be either 1 or 0. If None, all samples are considered valid.
         """
         labels, preds = check_label_shapes(labels, preds, True)
-        masks = [None] * len(label) if masks is None else masks
+        masks = [None] * len(labels) if masks is None else masks
 
         for label, pred_label, mask in zip(labels, preds, masks):
             if pred_label.shape != label.shape:
