@@ -48,7 +48,7 @@ import numpy as np
 from mxnet import gluon, nd
 
 import gluonnlp as nlp
-from bert import BERTloss, BERTSquad
+from bert import BERTLoss, BERTSquad
 from dataset import (SQuAD, SQuADTransform, bert_qa_batchify_fn,
                      preprocess_dataset)
 from evaluate import evaluate, predictions
@@ -91,6 +91,9 @@ parser.add_argument(
 
 parser.add_argument(
     '--optimizer', type=str, default='adam', help='optimization algorithm. default is adam')
+
+parser.add_argument('--accumulate', type=int, default=None, help='The number of batches for '
+                    'gradients accumulation to simulate large batch size. Default is None')
 parser.add_argument(
     '--lr', type=float, default=3e-5, help='Initial learning rate. default is 3e-5')
 
@@ -166,13 +169,21 @@ output_dir = args.output_dir
 if os.path.exists(output_dir):
     os.mkdir(output_dir)
 
+
 epochs = args.epochs
 batch_size = args.batch_size
 test_batch_size = args.test_batch_size
 lr = args.lr
 ctx = mx.cpu() if not args.gpu else mx.gpu()
+
+accumulate = args.accumulate
+log_interval = args.log_interval * accumulate if accumulate else args.log_interval
+if accumulate:
+    logging.info("Using gradient accumulation. Effective batch size = %d" % (
+        accumulate*batch_size))
+
 optimizer = args.optimizer
-log_interval = args.log_interval
+# log_interval = args.log_interval
 warmup_ratio = args.warmup_ratio
 
 dataset_name = 'book_corpus_wiki_en_uncased'
@@ -219,7 +230,7 @@ net = BERTSquad(bert=bert)
 net.Dense.initialize(init=mx.init.Normal(0.02), ctx=ctx)
 net.hybridize(static_alloc=True)
 
-loss_function = BERTloss()
+loss_function = BERTLoss()
 loss_function.hybridize(static_alloc=True)
 
 
@@ -227,29 +238,51 @@ def Train():
 
     logging.info('Start Training')
 
-    trainer = gluon.Trainer(net.collect_params(), optimizer, {
-        'learning_rate': lr,
-        'epsilon': 1e-9
-    })
+    optimizer_params = {'learning_rate': lr, 'epsilon': 1e-6, 'wd': 0.01}
+    try:
+        trainer = gluon.Trainer(model.collect_params(), args.optimizer,
+                                optimizer_params, update_on_kvstore=False)
+    except ValueError as e:
+        print(e)
+        warnings.warn("AdamW optimizer is not found. Please consider upgrading to "
+                      "mxnet>=1.5.0. Now the original Adam optimizer is used instead.")
+        trainer = gluon.Trainer(model.collect_params(), 'adam',
+                                optimizer_params, update_on_kvstore=False)
 
-    num_train_examples = len(train_data)
-    num_train_steps = int(num_train_examples / batch_size * epochs)
+    # trainer = gluon.Trainer(net.collect_params(), optimizer, {
+    #     'learning_rate': lr,
+    #     'epsilon': 1e-9
+    # })
+
+    step_size = batch_size * accumulate if accumulate else batch_size
+    num_train_steps = int(num_train_examples / step_size * args.epochs)
+    warmup_ratio = args.warmup_ratio
     num_warmup_steps = int(num_train_steps * warmup_ratio)
     step_num = 0
-    differentiable_params = []
 
-    for _, v in net.collect_params('.*beta|.*gamma|.*bias').items():
+    # Do not apply weight decay on LayerNorm and bias terms
+    for _, v in model.collect_params('.*beta|.*gamma|.*bias').items():
         v.wd_mult = 0.0
-
-    for p in net.collect_params().values():
-        if p.grad_req != 'null':
-            differentiable_params.append(p)
+    # Collect differentiable parameters
+    params = [p for p in model.collect_params().values()
+              if p.grad_req != 'null']
+    # Set grad_req if gradient accumulation is required
+    if accumulate:
+        for p in params:
+            p.grad_req = 'add'
 
     for epoch_id in range(epochs):
         step_loss = 0.0
         tic = time.time()
         for batch_id, data in enumerate(train_dataloader):
-            step_num += 1
+            # set grad to zero for gradient accumulation
+            if accumulate:
+                if batch_id % accumulate == 0:
+                    model.collect_params().zero_grad()
+                    step_num += 1
+            else:
+                step_num += 1
+            # learning rate schedule
             if step_num < num_warmup_steps:
                 new_lr = lr * step_num / num_warmup_steps
             else:
@@ -257,7 +290,7 @@ def Train():
                     (num_train_steps - num_warmup_steps)
                 new_lr = lr - offset
             trainer.set_learning_rate(new_lr)
-
+            # forward and backward
             with mx.autograd.record():
                 _, inputs, token_types, valid_length, start_label, end_label = data
 
@@ -271,10 +304,11 @@ def Train():
                     end_label.astype('float32').as_in_context(ctx)
                 ]).mean()
             ls.backward()
-
-            grads = [p.grad(ctx) for p in differentiable_params]
-            gluon.utils.clip_global_norm(grads, 1)
-            trainer.step(1)
+            # update
+            if not accumulate or (batch_id + 1) % accumulate == 0:
+                trainer.allreduce_grads()
+                nlp.utils.clip_grad_global_norm(params, 1)
+                trainer.update(accumulate if accumulate else 1)
 
             step_loss += ls.asscalar()
 

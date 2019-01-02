@@ -148,6 +148,7 @@ def predictions(dev_dataset,
 
     for features in dev_dataset:
         results = all_results[features[0].example_id]
+        example_qas_id = features[0].qas_id
         prelim_predictions = []
         for features_id, (result, feature) in enumerate(zip(results, features)):
             start_indexes = _get_best_indexes(result.start_logits, n_best_size)
@@ -270,20 +271,20 @@ def predictions(dev_dataset,
             nbest_json.append(output)
 
         if not version_2:
-            all_predictions[feature.qas_id] = nbest_json[0]['text']
+            all_predictions[example_qas_id] = nbest_json[0]['text']
             scores_diff_json = None
         else:
             # predict '' iff the null score - the score of best non-null > threshold
             score_diff = score_null - best_non_null_entry.start_logit - \
                 best_non_null_entry.end_logit
 
-            scores_diff_json[feature.qas_id] = score_diff
+            scores_diff_json[example_qas_id] = score_diff
             if score_diff > null_score_diff_threshold:
-                all_predictions[feature.qas_id] = ''
+                all_predictions[example_qas_id] = ''
             else:
-                all_predictions[feature.qas_id] = best_non_null_entry.text
+                all_predictions[example_qas_id] = best_non_null_entry.text
 
-            all_nbest_json[feature.qas_id] = nbest_json
+            all_nbest_json[example_qas_id] = nbest_json
     return all_predictions, all_nbest_json, scores_diff_json
 
 
