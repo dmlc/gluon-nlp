@@ -20,7 +20,7 @@ Note that this will require more than 12G of GPU memory.
  
 .. code-block:: console
 
-    $ python finetune_squad.py --train_file train-v1.1.json --predict_file dev-v1.1.json --gpu
+    $ python finetune_squad.py --train_file ./squad1.1/train-v1.1.json --predict_file ./squad1.1/dev-v1.1.json --gpu
 
 
 Should produce an output like this. Explain that the F1 score on the dev dataset is 88.4%
