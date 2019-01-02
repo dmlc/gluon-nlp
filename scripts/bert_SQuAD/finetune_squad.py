@@ -240,13 +240,13 @@ def Train():
 
     optimizer_params = {'learning_rate': lr, 'epsilon': 1e-6, 'wd': 0.01}
     try:
-        trainer = gluon.Trainer(model.collect_params(), args.optimizer,
+        trainer = gluon.Trainer(net.collect_params(), optimizer,
                                 optimizer_params, update_on_kvstore=False)
     except ValueError as e:
         print(e)
         warnings.warn("AdamW optimizer is not found. Please consider upgrading to "
                       "mxnet>=1.5.0. Now the original Adam optimizer is used instead.")
-        trainer = gluon.Trainer(model.collect_params(), 'adam',
+        trainer = gluon.Trainer(net.collect_params(), 'adam',
                                 optimizer_params, update_on_kvstore=False)
 
     # trainer = gluon.Trainer(net.collect_params(), optimizer, {
@@ -261,10 +261,10 @@ def Train():
     step_num = 0
 
     # Do not apply weight decay on LayerNorm and bias terms
-    for _, v in model.collect_params('.*beta|.*gamma|.*bias').items():
+    for _, v in net.collect_params('.*beta|.*gamma|.*bias').items():
         v.wd_mult = 0.0
     # Collect differentiable parameters
-    params = [p for p in model.collect_params().values()
+    params = [p for p in net.collect_params().values()
               if p.grad_req != 'null']
     # Set grad_req if gradient accumulation is required
     if accumulate:
@@ -278,7 +278,7 @@ def Train():
             # set grad to zero for gradient accumulation
             if accumulate:
                 if batch_id % accumulate == 0:
-                    model.collect_params().zero_grad()
+                    net.collect_params().zero_grad()
                     step_num += 1
             else:
                 step_num += 1
