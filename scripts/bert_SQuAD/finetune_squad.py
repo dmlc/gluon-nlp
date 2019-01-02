@@ -254,6 +254,7 @@ def Train():
     #     'epsilon': 1e-9
     # })
 
+    num_train_examples = len(train_data_transform)
     step_size = batch_size * accumulate if accumulate else batch_size
     num_train_steps = int(num_train_examples / step_size * args.epochs)
     warmup_ratio = args.warmup_ratio
