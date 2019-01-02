@@ -90,7 +90,7 @@ parser.add_argument(
     '--test_batch_size', type=int, default=24, help='Test batch size. default is 24')
 
 parser.add_argument(
-    '--optimizer', type=str, default='adam', help='optimization algorithm. default is adam')
+    '--optimizer', type=str, default='bertadam', help='optimization algorithm. default is adam')
 
 parser.add_argument('--accumulate', type=int, default=None, help='The number of batches for '
                     'gradients accumulation to simulate large batch size. Default is None')
