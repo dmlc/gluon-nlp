@@ -30,5 +30,13 @@ def test_acc():
     _, acc = metric.get()
     matched = (np.argmax(pred.asnumpy(), axis=1) == label.asnumpy()) * mask.asnumpy()
     valid_count = mask.asnumpy().sum()
-    expected_acc = matched.sum() / valid_count
+    expected_acc = 1.0 * matched.sum() / valid_count
+    assert acc == expected_acc
+
+    metric = mx.metric.create('masked-acc')
+    metric.update([label], [pred])
+    _, acc = metric.get()
+    matched = (np.argmax(pred.asnumpy(), axis=1) == label.asnumpy())
+    valid_count = len(label)
+    expected_acc = 1.0 * matched.sum() / valid_count
     assert acc == expected_acc
