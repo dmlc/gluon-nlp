@@ -179,8 +179,10 @@ skip validation steps.
 ```{.python .input}
 batch_size = 32
 lr = 5e-6
-bert_dataloader = mx.gluon.data.DataLoader(data_train, batch_size=batch_size,
-                                           shuffle=True, last_batch='rollover')
+train_sampler = nlp.data.FixedBucketSampler(lengths=[int(item[1]) for item in data_train],
+                                            batch_size=batch_size,
+                                            shuffle=True)
+bert_dataloader = mx.gluon.data.DataLoader(data_train, batch_sampler=train_sampler)
 
 trainer = gluon.Trainer(model.collect_params(), 'adam',
                         {'learning_rate': lr, 'epsilon': 1e-9})
