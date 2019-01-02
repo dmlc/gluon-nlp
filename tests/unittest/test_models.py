@@ -133,16 +133,19 @@ def test_bert_models():
     vocab_size = 30522
     batch_size = 2
     seq_len = 3
+    num_masks = 2
     ones = mx.nd.ones((batch_size, seq_len))
     valid_length = mx.nd.ones((batch_size, ))
+    positions = mx.nd.ones((batch_size, num_masks))
+
     kwargs = [{'use_pooler' : False, 'use_decoder' : False, 'use_classifier' : False},
               {'use_pooler' : True, 'use_decoder' : False, 'use_classifier' : False},
               {'use_pooler' : True, 'use_decoder' : True, 'use_classifier' : False},
               {'use_pooler' : True, 'use_decoder' : True, 'use_classifier' : True}]
     expected_shapes = [[(batch_size, seq_len, -1)],
                        [(batch_size, seq_len, -1), (batch_size, -1)],
-                       [(batch_size, seq_len, -1), (batch_size, -1), (batch_size, vocab_size)],
-                       [(batch_size, seq_len, -1), (batch_size, -1), (batch_size, 2), (batch_size, vocab_size)]
+                       [(batch_size, seq_len, -1), (batch_size, -1), (batch_size, num_masks, vocab_size)],
+                       [(batch_size, seq_len, -1), (batch_size, -1), (batch_size, 2), (batch_size, num_masks, vocab_size)]
                       ]
     def infer_shape(shapes, unit):
         inferred_shapes = []
@@ -166,7 +169,11 @@ def test_bert_models():
                                            pretrained=False, root='tests/data/model/',
                                            **kwarg)
             model.initialize()
-            output = model(ones, ones, valid_length)
+            if kwarg['use_decoder']:
+                # position tensor is required for decoding
+                output = model(ones, ones, valid_length, positions)
+            else:
+                output = model(ones, ones, valid_length)
             out_shapes = get_shapes(output)
             assert out_shapes == expected_shape, (out_shapes, expected_shape)
             output[0].wait_to_read()
