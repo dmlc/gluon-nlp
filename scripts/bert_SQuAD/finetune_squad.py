@@ -227,7 +227,7 @@ train_dataloader = mx.gluon.data.DataLoader(
     batchify_fn=bert_qa_batchify_fn, num_workers=4, shuffle=True)
 
 net = BERTSquad(bert=bert)
-net.Dense.initialize(init=mx.init.Normal(0.02), ctx=ctx)
+net.classifier.initialize(init=mx.init.Normal(0.02), ctx=ctx)
 net.hybridize(static_alloc=True)
 
 loss_function = BERTLoss()
