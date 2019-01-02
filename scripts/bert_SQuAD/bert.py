@@ -18,7 +18,7 @@
 # under the License.
 """BERT models."""
 
-__all__ = ['BERTSquad', 'BERTloss']
+__all__ = ['BERTSquad', 'BERTLoss']
 
 from mxnet import nd
 from mxnet.gluon import Block, loss, nn
@@ -45,9 +45,10 @@ class BERTSquad(Block):
         super(BERTSquad, self).__init__(prefix=prefix, params=params)
         self.bert = bert
         with self.name_scope():
-            self.Dense = nn.Dense(units=2, flatten=False)
+            self.classifier = nn.HybridSequential(prefix=prefix)
+            self.classifier.add(nn.Dense(units=2, flatten=False))
 
-    def forward(self, inputs, token_types, valid_length=None): # pylint: disable=arguments-differ
+    def forward(self, inputs, token_types, valid_length=None):  # pylint: disable=arguments-differ
         """Generate the unnormalized score for the given the input sequences.
 
         Parameters
@@ -63,24 +64,33 @@ class BERTSquad(Block):
         Returns
         -------
         outputs : NDArray
-            Shape (batch_size, num_classes)
+            Shape (2, batch_size, seq_length)
         """
         bert_output = self.bert(inputs, token_types, valid_length)
-        output = self.Dense(bert_output)
+        output = self.classifier(bert_output)
         output = nd.transpose(output, (2, 0, 1))
         return output
 
 
-class BERTloss(Loss):
+class BERTLoss(Loss):
     """Loss for SQuAD task with BERT.
 
     """
 
-    def __init__(self, weight=None, batch_axis=0, **kwargs):
-        super(BERTloss, self).__init__(weight=None, batch_axis=0, **kwargs)
+    def __init__(self, weight=None, batch_axis=0, **kwargs):  # pylint: disable=arguments-differ
+        super(BERTLoss, self).__init__(weight=None, batch_axis=0, **kwargs)
         self.loss = loss.SoftmaxCELoss()
 
-    def hybrid_forward(self, F, pred, label): # pylint: disable=arguments-differ
+    def hybrid_forward(self, F, pred, label):  # pylint: disable=arguments-differ
+        """
+        Parameters
+        ----------
+        pred : NDArray, shape (2, batch_size, seq_length)
+            BERTSquad forward output.
+        label : list, length is 2, each shape is (batch_size,1)
+            label[0] is the starting position of the answer,
+            label[1] is the ending position of the answer.
+        """
         pred = F.split(pred, axis=0, num_outputs=2)
         start_pred = pred[0].reshape((-3, 0))
         start_label = label[0]
