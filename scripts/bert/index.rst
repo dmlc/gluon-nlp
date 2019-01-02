@@ -37,3 +37,26 @@ Use the following command to fine-tune the BERT model for classification on the 
    $ GLUE_DIR=glue_data python finetune_classifier.py --batch_size 32 --optimizer bertadam --epochs 3 --gpu --seed 1 --lr 2e-5
 
 It gets validation accuracy of 87.3%, whereas the the original Tensorflow implementation give evaluation results between 84% and 88%.
+
+Pre-training with BERT
+~~~~~~~~~~~~~~~~~~~~~~
+
+The scripts for masked language modeling and and next sentence prediction are also provided.
+
+Data generation for pre-training on sample texts:
+
+ .. code-block:: console
+
+    $ python3 download_glue_data.py --data_dir glue_data --tasks MRPC
+
+The data generation script takes a file path as the input (could be one or more files by wildcard). Each file contains one or more documents separated by empty lines, and each document contains one line per sentence. You can perform sentence segmentation with an off-the-shelf NLP toolkit such as NLTK.
+
+Run pre-training with generated data:
+
+ .. code-block:: console
+
+    $ python run_pretraining.py --gpu --do-training --batch_size 32 --lr 2e-5 --data sample_text.npz --warmup_ratio 0.5 --num_steps 20 --pretrained --log_interval=1 --do-eval --data_eval sample_text.npz --batch_size_eval 8 --max_len 128
+
+With 20 steps of pre-training it reaches the following evaluation result on the training data::
+
+    mlm_loss=0.087  mlm_acc=98.9  nsp_loss=0.000  nsp_acc=100.0

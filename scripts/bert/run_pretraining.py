@@ -32,11 +32,6 @@ This example shows how to pre-train a BERT model with Gluon NLP Toolkit.
 
 import sys
 import os
-
-# os.environ['GLUON_MIN'] = '8'
-sys.path.insert(0, '/home/ubuntu/gluon-nlp/src/')
-sys.path.insert(0, '/home/ubuntu/mxnet/python/')
-
 import argparse
 import random
 import logging
