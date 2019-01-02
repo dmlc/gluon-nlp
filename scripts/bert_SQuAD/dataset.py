@@ -348,8 +348,8 @@ class SQuADTransform(object):
 
             # Zero-pad up to the sequence length.
             while len(input_ids) < self.max_seq_length:
-                input_ids.append(0)
-                segment_ids.append(0)
+                input_ids.append(self.tokenizer.vocab['<PAD>'])
+                segment_ids.append(self.tokenizer.vocab['<PAD>'])
 
             assert len(input_ids) == self.max_seq_length
             assert len(segment_ids) == self.max_seq_length
