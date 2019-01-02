@@ -99,10 +99,10 @@ class MaskedAccuracy(EvalMetric):
                 mask = mask.astype('int32', copy=False).reshape((-1,))
                 check_label_shapes(label, mask)
                 num_correct = ((pred_label == label) * mask).sum().asscalar()
-                num_inst =  mask.sum().asscalar()
+                num_inst = mask.sum().asscalar()
             else:
                 num_correct = (pred_label == label).sum().asscalar()
-                num_inst =  len(label)
+                num_inst = len(label)
             self.sum_metric += num_correct
             self.global_sum_metric += num_correct
             self.num_inst += num_inst
