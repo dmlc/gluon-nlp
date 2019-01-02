@@ -430,7 +430,8 @@ class BERTModel(Block):
         dtype = positions.dtype
         # batch_idx = [0,0,0,1,1,1,2,2,2...]
         # positions = [1,2,4,0,3,4,2,3,5...]
-        batch_idx = mx.nd.arange(0, batch_size, repeat=max_num_positions, dtype=dtype, ctx=ctx).reshape((1, -1))
+        batch_idx = mx.nd.arange(0, batch_size, repeat=max_num_positions, dtype=dtype, ctx=ctx)
+        batch_idx = batch_idx.reshape((1, -1))
         positions = positions.reshape((1, -1))
         position_idx = mx.nd.Concat(batch_idx, positions, dim=0)
         encoded = mx.nd.gather_nd(sequence, position_idx)
