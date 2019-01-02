@@ -104,6 +104,7 @@ def test_pretrained_bert_models():
     special_tokens = ['[UNK]', '[PAD]', '[SEP]', '[CLS]', '[MASK]']
     ones = mx.nd.ones((2, 10))
     valid_length = mx.nd.ones((2,))
+    positions = mx.nd.zeros((2, 3))
     for model_name in models:
         eprint('testing forward for %s' % model_name)
         pretrained_datasets = pretrained.get(model_name)
@@ -119,7 +120,7 @@ def test_pretrained_bert_models():
             assert vocab.unknown_token == '[UNK]'
             assert vocab.bos_token is None
             assert vocab.eos_token is None
-            output = model(ones, ones, valid_length)
+            output = model(ones, ones, valid_length, positions)
             output[0].wait_to_read()
             del model
             mx.nd.waitall()
