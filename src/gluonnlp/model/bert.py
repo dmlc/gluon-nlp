@@ -335,6 +335,8 @@ class BERTModel(Block):
             decoder.add(GELU())
             decoder.add(BERTLayerNorm(in_channels=units))
             decoder.add(nn.Dense(vocab_size, params=embed.collect_params()))
+        assert decoder[3].weight == list(embed.collect_params().values())[0], \
+          'The weights of word embedding are not tied with those of decoder'
         return decoder
 
     def _get_embed(self, embed, vocab_size, embed_size, initializer, dropout, prefix):
