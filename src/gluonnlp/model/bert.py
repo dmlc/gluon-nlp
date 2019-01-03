@@ -334,10 +334,10 @@ class BERTModel(Block):
         """ Construct a decoder for the masked language model task """
         with self.name_scope():
             decoder = nn.HybridSequential(prefix=prefix)
-            decoder.add(nn.Dense(units))
+            decoder.add(nn.Dense(units, flatten=False))
             decoder.add(GELU())
             decoder.add(BERTLayerNorm(in_channels=units))
-            decoder.add(nn.Dense(vocab_size, params=embed.params))
+            decoder.add(nn.Dense(vocab_size, flatten=False, params=embed.collect_params()))
         return decoder
 
     def _get_embed(self, embed, vocab_size, embed_size, initializer, dropout, prefix):
@@ -435,7 +435,8 @@ class BERTModel(Block):
         positions = positions.reshape((1, -1))
         position_idx = mx.nd.Concat(batch_idx, positions, dim=0)
         encoded = mx.nd.gather_nd(sequence, position_idx)
-        decoded = self.decoder(encoded).reshape((batch_size, max_num_positions, self._vocab_size))
+        encoded = encoded.reshape((batch_size, max_num_positions, sequence.shape[-1]))
+        decoded = self.decoder(encoded)
         return decoded
 
 ###############################################################################
