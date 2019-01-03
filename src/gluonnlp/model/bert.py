@@ -487,7 +487,7 @@ def bert_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
     ----------
     dataset_name : str or None, default None
         Options include 'book_corpus_wiki_en_cased', 'book_corpus_wiki_en_uncased',
-        and 'wiki_multilingual'.
+        'wiki_cn', 'wiki_multilingual' and 'wiki_multilingual_cased'.
     vocab : gluonnlp.Vocab or None, default None
         Vocabulary for the dataset. Must be provided if dataset is not specified.
     pretrained : bool, default True
@@ -525,7 +525,7 @@ def bert_24_1024_16(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu()
     Parameters
     ----------
     dataset_name : str or None, default None
-        Options include 'book_corpus_wiki_en_uncased'.
+        Options include 'book_corpus_wiki_en_uncased' and 'book_corpus_wiki_en_cased'.
     vocab : gluonnlp.Vocab or None, default None
         Vocabulary for the dataset. Must be provided if dataset is not specified.
     pretrained : bool, default True

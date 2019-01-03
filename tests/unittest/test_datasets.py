@@ -608,3 +608,33 @@ def test_tsv():
     assert len(dataset) == num_samples
     assert len(dataset[0]) == 2
     assert dataset[1] == [u'g', u'i']
+
+def test_numpy_dataset():
+    a = np.arange(6).reshape((2,3))
+    filename = 'test_numpy_dataset'
+
+    # test npy
+    np.save(filename, a)
+    dataset = nlp.data.NumpyDataset(filename + '.npy')
+    assert dataset.keys is None
+    assert len(dataset) == len(a)
+    assert np.all(dataset[0] == a[0])
+    assert np.all(dataset[1] == a[1])
+
+    # test npz with a single array
+    np.savez(filename, a)
+    dataset = nlp.data.NumpyDataset(filename + '.npz')
+    assert len(dataset) == len(a)
+    assert np.all(dataset[0] == a[0])
+    assert np.all(dataset[1] == a[1])
+
+    # test npz with multiple arrays
+    b = np.arange(16).reshape((2,8))
+    np.savez(filename, a=a, b=b)
+    dataset = nlp.data.NumpyDataset(filename + '.npz')
+    assert dataset.keys == ['a', 'b']
+    assert len(dataset) == len(a)
+    assert np.all(dataset[0][0] == a[0])
+    assert np.all(dataset[1][0] == a[1])
+    assert np.all(dataset[0][1] == b[0])
+    assert np.all(dataset[1][1] == b[1])
