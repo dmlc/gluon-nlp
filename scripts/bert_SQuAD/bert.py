@@ -77,7 +77,7 @@ class BERTLoss(Loss):
 
     """
 
-    def __init__(self, weight=None, batch_axis=0, **kwargs):  # pylint: disable=arguments-differ
+    def __init__(self, weight=None, batch_axis=0, **kwargs):  # pylint: disable=unused-argument
         super(BERTLoss, self).__init__(weight=None, batch_axis=0, **kwargs)
         self.loss = loss.SoftmaxCELoss()
 
