@@ -44,8 +44,8 @@ import random
 import time
 import warnings
 
-import mxnet as mx
 import numpy as np
+import mxnet as mx
 from mxnet import gluon, nd
 
 import gluonnlp as nlp
@@ -180,8 +180,8 @@ ctx = mx.cpu() if not args.gpu else mx.gpu()
 accumulate = args.accumulate
 log_interval = args.log_interval * accumulate if accumulate else args.log_interval
 if accumulate:
-    logging.info('Using gradient accumulation. Effective batch size = %d' % (
-        accumulate*batch_size))
+    logging.info('Using gradient accumulation. Effective batch size = {}'.
+                 format(accumulate*batch_size))
 
 optimizer = args.optimizer
 # log_interval = args.log_interval
@@ -316,10 +316,10 @@ def Train():
 
             if (batch_id + 1) % log_interval == 0:
                 toc = time.time()
-                logging.info(
-                    'Epoch: %d, Batch: %d/%d, Loss=%.4f, lr=%.7f Time cost=%.1f'
-                    % (epoch_id, batch_id, len(train_dataloader), step_loss /
-                       (log_interval), trainer.learning_rate, toc - tic))
+                logging.info('Epoch: {}, Batch: {}/{}, Loss={:.4f}, lr={:.7f} Time cost={:.1f}'
+                             .format(epoch_id, batch_id, len(train_dataloader),
+                                     step_loss / log_interval,
+                                     trainer.learning_rate, toc - tic))
                 tic = time.time()
                 step_loss = 0.0
 
