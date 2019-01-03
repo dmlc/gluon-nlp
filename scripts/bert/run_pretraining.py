@@ -66,8 +66,6 @@ parser.add_argument('--lr', type=float, default=1e-4, help='Learning rate')
 parser.add_argument('--warmup_ratio', type=float, default=0.1,
                     help='ratio of warmup steps used in NOAM\'s stepsize schedule')
 parser.add_argument('--log_interval', type=int, default=10, help='report interval')
-parser.add_argument('--max_len', type=int, default=512,
-                    help='Maximum length of the sentence pairs. Default is 512')
 parser.add_argument('--gpu', action='store_true', help='Whether to use GPU')
 parser.add_argument('--seed', type=int, default=0, help='Random seed')
 parser.add_argument('--do-training', action='store_true',
@@ -132,6 +130,7 @@ def evaluate(data_eval, model, nsp_loss, mlm_loss, vocab_size, ctx):
     step_num = 0
     local_mlm_loss = local_nsp_loss = 0
     total_mlm_loss = total_nsp_loss = 0
+    local_num_tks = 0
     for _, data in enumerate(data_eval):
         step_num += 1
         data = as_in_ctx(data, ctx[0])
@@ -148,22 +147,24 @@ def evaluate(data_eval, model, nsp_loss, mlm_loss, vocab_size, ctx):
             ls = ls1 + ls2
         local_mlm_loss += ls1
         local_nsp_loss += ls2
+        local_num_tks += valid_length.sum()
         nsp_metric.update([next_sentence_label], [classified])
         mlm_metric.update([masked_id], [decoded], [masked_weight])
         if (step_num + 1) % (args.log_interval) == 0:
             end_time = time.time()
             duration = end_time - begin_time
-            throughput = args.log_interval * args.batch_size_eval * args.max_len / 1000.0 / duration
+            throughput = local_num_tks / 1000.0 / duration
             total_mlm_loss += local_mlm_loss
             total_nsp_loss += local_nsp_loss
             local_mlm_loss /= args.log_interval
             local_nsp_loss /= args.log_interval
-            logging.info('[step {}]\tmlm_loss={:.8f}\tmlm_acc={:.8f}\tnsp_loss={:.8f}\tnsp_acc={:.5f}\tthroughput={:.1f}K tks/s\t'
+            logging.info('[step {}]\tmlm_loss={:.8f}\tmlm_acc={:.8f}\tnsp_loss={:.8f}\tnsp_acc={:.3f}\tthroughput={:.1f}K tks/s\t'
                          .format(step_num, local_mlm_loss.asscalar(), mlm_metric.get()[1] * 100, local_nsp_loss.asscalar(),
-                                 nsp_metric.get()[1] * 100, throughput))
+                                 nsp_metric.get()[1] * 100, throughput.asscalar()))
             begin_time = end_time
             local_mlm_loss = 0
             local_nsp_loss = 0
+            local_num_tks = 0
             mlm_metric.reset_local()
             nsp_metric.reset_local()
 
@@ -201,6 +202,7 @@ def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx):
     begin_time = time.time()
     local_mlm_loss = 0
     local_nsp_loss = 0
+    local_num_tks = 0
     step_num = 0
     while step_num < num_train_steps:
         for _, data in enumerate(data_train):
@@ -218,7 +220,7 @@ def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx):
             data = as_in_ctx(data, ctx[0])
             with mx.autograd.record():
                 input_id, masked_id, masked_position, masked_weight, next_sentence_label, segment_id, valid_length = data
-                num_masks = masked_weight.sum()
+                num_masks = masked_weight.sum() + 1e-8
                 valid_length = valid_length.astype('float32', copy=False)
                 _, _, classified, decoded = model(input_id, segment_id, valid_length, masked_position)
                 masked_id = masked_id.reshape(-1)
@@ -229,6 +231,7 @@ def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx):
             mx.autograd.backward(ls)
             local_mlm_loss += ls1
             local_nsp_loss += ls2
+            local_num_tks += valid_length.sum()
             trainer.allreduce_grads()
             clip_grad_global_norm(params, 1)
             trainer.update(1)
@@ -237,15 +240,16 @@ def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx):
             if (step_num + 1) % (args.log_interval) == 0:
                 end_time = time.time()
                 duration = end_time - begin_time
-                throughput = args.log_interval * batch_size * args.max_len / 1000.0 / duration
+                throughput = local_num_tks / 1000.0 / duration
                 local_mlm_loss /= args.log_interval
                 local_nsp_loss /= args.log_interval
-                logging.info('[step {}]\tmlm_loss={:.5f}\tmlm_acc={:.5f}\tnsp_loss={:.5f}\tnsp_acc={:.5f}\tthroughput={:.1f}K tks/s\tlr={:.7f}'
+                logging.info('[step {}]\tmlm_loss={:.5f}\tmlm_acc={:.5f}\tnsp_loss={:.5f}\tnsp_acc={:.3f}\tthroughput={:.1f}K tks/s\tlr={:.7f}'
                              .format(step_num, local_mlm_loss.asscalar(), mlm_metric.get()[1] * 100, local_nsp_loss.asscalar(),
-                                     nsp_metric.get()[1] * 100, throughput, trainer.learning_rate))
+                                     nsp_metric.get()[1] * 100, throughput.asscalar(), trainer.learning_rate))
                 begin_time = end_time
                 local_mlm_loss = 0
                 local_nsp_loss = 0
+                local_num_tks = 0
                 mlm_metric.reset_local()
                 nsp_metric.reset_local()
     mx.nd.waitall()
