@@ -164,7 +164,7 @@ class SQuAD(SimpleDataset):
 
         examples = []
         example_id = 0
-        for entry in input_data:
+        for entry in input_data: # pylint: disable=too-many-nested-blocks
             for paragraph in entry['paragraphs']:
                 paragraph_text = paragraph['context']
                 doc_tokens = []
