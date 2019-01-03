@@ -13,7 +13,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+"""Bert SQuAD evaluate."""
 import json
 import re
 import string
@@ -29,7 +29,7 @@ def _get_best_indexes(logits, n_best_size):
         enumerate(logits), key=lambda x: x[1], reverse=True)
 
     best_indexes = []
-    for i in range(len(index_and_score)):
+    for i, _ in enumerate(index_and_score):
         if i >= n_best_size:
             break
         best_indexes.append(index_and_score[i][0])
@@ -128,6 +128,34 @@ def predictions(dev_dataset,
                 null_score_diff_threshold=0.0,
                 n_best_size=10,
                 version_2=False):
+    """Get prediction results
+
+    Parameters
+    ----------
+    dev_dataset: dataset
+        Examples of transform.
+    all_results: dict
+        A dictionary containing model prediction results.
+    tokenizer: callable
+        Tokenizer function.
+    max_answer_length: int, default 64
+        Maximum length of the answer tokens.
+    null_score_diff_threshold: float, default 0.0
+        If null_score - best_non_null is greater than the threshold predict null.
+    n_best_size: int, default 10
+        The total number of n-best predictions.
+    version_2: bool, default False
+        If true, the SQuAD examples contain some that do not have an answer.
+    Returns
+    -------
+    all_predictions: dict
+        All final predictions.
+    all_nbest_json: dict
+        All n-best predictions.
+    scores_diff_json: dict
+        If version_2 is True.
+        Difference between the null score and the score of best non-null.
+    """
     score_null = 1000000  # large and positive
     min_null_feature_index = 0  # the paragraph slice with min mull score
     null_start_logit = 0  # the start logit at the slice with min null score
@@ -308,6 +336,8 @@ def normalize_answer(s):
 
 
 def f1_score(prediction, ground_truth):
+    """Calculate the F1 scores.
+    """
     prediction_tokens = normalize_answer(prediction).split()
     ground_truth_tokens = normalize_answer(ground_truth).split()
     common = Counter(prediction_tokens) & Counter(ground_truth_tokens)
@@ -321,6 +351,8 @@ def f1_score(prediction, ground_truth):
 
 
 def exact_match_score(prediction, ground_truth):
+    """Calculate the EM scores.
+    """
     return (normalize_answer(prediction) == normalize_answer(ground_truth))
 
 
@@ -332,7 +364,22 @@ def metric_max_over_ground_truths(metric_fn, prediction, ground_truths):
     return max(scores_for_ground_truths)
 
 
-def evaluate(dataset_file, predict_data):
+def Get_F1_EM(dataset_file, predict_data):
+    """Calculate the F1 and EM scores of the predicted results.
+    Use only with the SQuAD1.1 dataset.
+
+    Parameters
+    ----------
+    dataset_file: string
+        Path to the data file.
+    predict_data: dict
+        All final predictions.
+
+    Returns
+    -------
+    scores: dict
+        F1 and EM scores.
+    """
     with open(dataset_file) as file_read:
         dataset_json = json.load(file_read)
         dataset = dataset_json['data']
@@ -356,4 +403,6 @@ def evaluate(dataset_file, predict_data):
     exact_match = 100.0 * exact_match / total
     f1 = 100.0 * f1 / total
 
-    return {'exact_match': exact_match, 'f1': f1}
+    scores = {'exact_match': exact_match, 'f1': f1}
+
+    return scores

@@ -1,8 +1,5 @@
-Bidirectional Encoder Representations from Transformers
--------------------------------------------------------
-
 BERT for SQuAD
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+-------------------------------------------------------
 
 GluonNLP provides the following example script to fine-tune SQuAD with pre-trained
 BERT model.
@@ -20,11 +17,16 @@ Note that this will require more than 12G of GPU memory.
  
 .. code-block:: console
 
-    $ python finetune_squad.py --train_file ./squad1.1/train-v1.1.json --predict_file ./squad1.1/dev-v1.1.json --gpu
+    $ python finetune_squad.py --train_file ./squad1.1/train-v1.1.json --predict_file ./squad1.1/dev-v1.1.json --optimizer adam --gpu
+
+If you are using less than 12G of GPU memory, you can use the following command to achieve a similar effect. But need Mxnet>1.5.0
+.. code-block:: console
+
+    $ python finetune_squad.py --train_file ./squad1.1/train-v1.1.json --predict_file ./squad1.1/dev-v1.1.json --optimizer bertadam --accumulate 2 --batch_size 6 --gpu
 
 
-Should produce an output like this. Explain that the F1 score on the dev dataset is 88.4%
+Should produce an output like this. Explain that the F1 score on the dev dataset is 88.2%
 
 .. code-block:: console
 
-    {"f1": 88.41249612335034, "exact_match": 81.2488174077578}
+    {'exact_match': 80.59602649006622, 'f1': 88.2265602637271}

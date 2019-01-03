@@ -52,7 +52,7 @@ import gluonnlp as nlp
 from bert import BERTLoss, BERTSquad
 from dataset import (SQuAD, SQuADTransform, bert_qa_batchify_fn,
                      preprocess_dataset)
-from evaluate import evaluate, predictions
+from evaluate import Get_F1_EM, predictions
 
 np.random.seed(0)
 random.seed(0)
@@ -91,7 +91,7 @@ parser.add_argument(
     '--test_batch_size', type=int, default=24, help='Test batch size. default is 24')
 
 parser.add_argument(
-    '--optimizer', type=str, default='bertadam', help='optimization algorithm. default is adam')
+    '--optimizer', type=str, default='bertadam', help='optimization algorithm. default is bertadam')
 
 parser.add_argument('--accumulate', type=int, default=None, help='The number of batches for '
                     'gradients accumulation to simulate large batch size. Default is None')
@@ -167,7 +167,7 @@ logging.info(args)
 train_file = args.train_file
 predict_file = args.predict_file
 output_dir = args.output_dir
-if os.path.exists(output_dir):
+if not os.path.exists(output_dir):
     os.mkdir(output_dir)
 
 
@@ -180,7 +180,7 @@ ctx = mx.cpu() if not args.gpu else mx.gpu()
 accumulate = args.accumulate
 log_interval = args.log_interval * accumulate if accumulate else args.log_interval
 if accumulate:
-    logging.info("Using gradient accumulation. Effective batch size = %d" % (
+    logging.info('Using gradient accumulation. Effective batch size = %d' % (
         accumulate*batch_size))
 
 optimizer = args.optimizer
@@ -236,7 +236,7 @@ loss_function.hybridize(static_alloc=True)
 
 
 def Train():
-
+    """Training function."""
     logging.info('Start Training')
 
     optimizer_params = {'learning_rate': lr, 'epsilon': 1e-6, 'wd': 0.01}
@@ -245,8 +245,8 @@ def Train():
                                 optimizer_params, update_on_kvstore=False)
     except ValueError as e:
         print(e)
-        warnings.warn("AdamW optimizer is not found. Please consider upgrading to "
-                      "mxnet>=1.5.0. Now the original Adam optimizer is used instead.")
+        warnings.warn('AdamW optimizer is not found. Please consider upgrading to '
+                      'mxnet>=1.5.0. Now the original Adam optimizer is used instead.')
         trainer = gluon.Trainer(net.collect_params(), 'adam',
                                 optimizer_params, update_on_kvstore=False)
 
@@ -327,6 +327,8 @@ def Train():
 
 
 def Evaluate():
+    """Evaluate the model on validation dataset.
+    """
     logging.info('Loader dev data...')
     dev_data = SQuAD(predict_file, version_2=version_2, is_training=False)
 
@@ -396,7 +398,7 @@ def Evaluate():
                   'w', encoding='utf-8') as all_predictions_write:
             all_predictions_write.write(json.dumps(scores_diff_json))
     else:
-        logging.info(evaluate(predict_file, all_predictions))
+        logging.info(Get_F1_EM(predict_file, all_predictions))
 
 
 if __name__ == '__main__':
