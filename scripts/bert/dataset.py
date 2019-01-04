@@ -24,7 +24,6 @@ except ImportError:
     from .tokenizer import convert_to_unicode
 from gluonnlp.data import TSVDataset
 from gluonnlp.data.registry import register
-from gluonnlp.vocab import BERTVocab
 
 
 @register(segment=['train', 'dev', 'test'])
