@@ -156,10 +156,10 @@ def predictions(dev_dataset,
         If version_2 is True.
         Difference between the null score and the score of best non-null.
     """
-    score_null = 1000000  # large and positive
-    min_null_feature_index = 0  # the paragraph slice with min mull score
-    null_start_logit = 0  # the start logit at the slice with min null score
-    null_end_logit = 0  # the end logit at the slice with min null score
+    # score_null = 1000000  # large and positive
+    # min_null_feature_index = 0  # the paragraph slice with min mull score
+    # null_start_logit = 0  # the start logit at the slice with min null score
+    # null_end_logit = 0  # the end logit at the slice with min null score
     max_answer_length = max_answer_length
     null_score_diff_threshold = null_score_diff_threshold
 
@@ -178,9 +178,23 @@ def predictions(dev_dataset,
         results = all_results[features[0].example_id]
         example_qas_id = features[0].qas_id
         prelim_predictions = []
+
+        score_null = 1000000  # large and positive
+        min_null_feature_index = 0  # the paragraph slice with min mull score
+        null_start_logit = 0  # the start logit at the slice with min null score
+        null_end_logit = 0  # the end logit at the slice with min null score
+
         for features_id, (result, feature) in enumerate(zip(results, features)):
             start_indexes = _get_best_indexes(result.start_logits, n_best_size)
             end_indexes = _get_best_indexes(result.end_logits, n_best_size)
+
+            if version_2:
+                feature_null_score = result.start_logits[0] + result.end_logits[0]
+                if feature_null_score < score_null:
+                    score_null = feature_null_score
+                    min_null_feature_index = features_id
+                    null_start_logit = result.start_logits[0]
+                    null_end_logit = result.end_logits[0]
 
             for start_index in start_indexes:
                 for end_index in end_indexes:
