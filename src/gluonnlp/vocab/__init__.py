@@ -24,5 +24,6 @@ from . import subwords, vocab
 from .subwords import *
 from .vocab import *
 from .elmo import *
+from .bert import *
 
-__all__ = vocab.__all__ + subwords.__all__ + elmo.__all__
+__all__ = vocab.__all__ + subwords.__all__ + elmo.__all__ + bert.__all__
