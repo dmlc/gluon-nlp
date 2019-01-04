@@ -17,7 +17,7 @@ Intuitively, these embeddings are chosen based on the contexts in which words ap
 Words that appear in similar contexts (like "tennis" and "racquet") should have similar embeddings
 while words that do not like (like "rat" and "gourmet") should have dissimilar embeddings.
 
-Practitioners of deep learning for NLP typically inititalize their models
+Practitioners of deep learning for NLP typically initialize their models
 using *pretrained* word embeddings, bringing in outside information, and reducing the number of parameters that a neural network needs to learn from scratch.
 
 

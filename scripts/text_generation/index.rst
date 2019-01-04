@@ -21,7 +21,7 @@ Output is
 
 .. code-block:: console
 
-   Beam Seach Parameters: beam_size=5, alpha=0.0, K=5
+   Beam Search Parameters: beam_size=5, alpha=0.0, K=5
    Generation Result:
    [u'I love it .', -1.1241297]
    [u'I love it " .', -4.001592]
@@ -39,7 +39,7 @@ Output is
 
 .. code-block:: console
 
-   Beam Seach Parameters: beam_size=15, alpha=0.0, K=5
+   Beam Search Parameters: beam_size=15, alpha=0.0, K=5
    Generation Result:
    [u'I love it .', -1.1241297]
    [u'I love it " .', -4.001592]

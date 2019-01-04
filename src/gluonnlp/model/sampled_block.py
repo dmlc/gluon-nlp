@@ -498,7 +498,7 @@ class SparseISDense(_SparseSampledDense):
         row_sparse format, which helps reduce memory consumption and
         communication overhead during multi-GPU training. However,
         sparse parameters cannot be shared with other blocks, nor could we hybridize
-        a block containinng sparse parameters. Therefore, the parameters have
+        a block containing sparse parameters. Therefore, the parameters have
         to be saved before they are used for testing.
 
     Example::
@@ -589,7 +589,7 @@ class SparseNCEDense(_SparseSampledDense):
         in row_sparse format, which helps reduce memory consumption and
         communication overhead during multi-GPU training. However,
         sparse parameters cannot be shared with other blocks, nor could we
-        hybridize a block containinng sparse parameters. Therefore, the
+        hybridize a block containing sparse parameters. Therefore, the
         parameters have to be saved before they are used for testing.
 
     Example::

@@ -30,7 +30,7 @@ from mxnet.gluon.data import sampler as _sampler
 
 _worker_dataset = None
 def _worker_initializer(dataset):
-    """Initialier for processing pool."""
+    """Initializer for processing pool."""
     # global dataset is per-process based and only available in worker processes
     # this is only necessary to handle MXIndexedRecordIO because otherwise dataset
     # can be passed as argument

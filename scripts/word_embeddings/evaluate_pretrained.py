@@ -63,7 +63,7 @@ def get_args():
     group.add_argument(
         '--max-vocab-size', type=int, default=None,
         help=('Only retain the X first tokens from the pre-trained embedding. '
-              'The tokens are ordererd by decreasing frequency.'
+              'The tokens are ordered by decreasing frequency.'
               'As the analogy task takes the whole vocabulary into account, '
               'removing very infrequent words improves performance.'))
     group.add_argument('--list-embedding-sources', action='store_true')

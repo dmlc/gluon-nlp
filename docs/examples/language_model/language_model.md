@@ -23,7 +23,7 @@ These days recurrent neural networks (RNNs) are the preferred method for LM. In 
 (i) implement a typical LSTM language model architecture
 (ii) train the language model on a corpus of real data
 (iii) bring in your own dataset for training
-(iv) grab off-the-shelf pre-trained state-of-the-art languague models (i.e., AWD language model) using GluonNLP.
+(iv) grab off-the-shelf pre-trained state-of-the-art language models (i.e., AWD language model) using GluonNLP.
 
 ## Language model definition - one sentence
 

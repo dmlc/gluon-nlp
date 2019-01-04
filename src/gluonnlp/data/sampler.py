@@ -439,7 +439,7 @@ class FixedBucketSampler(Sampler):
 
 
 class SortedBucketSampler(Sampler):
-    r"""Batches are samled from sorted buckets of data.
+    r"""Batches are sampled from sorted buckets of data.
 
     First, partition data in buckets of size `batch_size * mult`.
     Each bucket contains `batch_size * mult` elements. The samples inside each bucket are sorted
