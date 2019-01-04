@@ -81,7 +81,7 @@ def _tokenize_mteval_13a(segment):
     Parameters
     ----------
     segment: str
-        A string to be tokenzied
+        A string to be tokenized
 
     Returns
     -------
@@ -163,18 +163,18 @@ def compute_bleu(reference_corpus_list, translation_corpus, tokenized=True,
     Parameters
     ----------
     reference_corpus_list: list of list(list(str)) or list of list(str)
-        list of list(list(str)): tokenzied references
+        list of list(list(str)): tokenized references
         list of list(str): plain text
         List of references for each translation.
     translation_corpus: list(list(str)) or list(str)
-        list(list(str)): tokenzied translation
+        list(list(str)): tokenized translation
         list(str): plain text
         Translations to score.
     tokenized: bool, default True
         Whether the inputs has been tokenized.
     tokenizer: str or None, default '13a'
         '13a': follow the tokenizer in mteval-v13a.pl
-        'intl': follow the international tokenzier in mteval-v14.pl
+        'intl': follow the international tokenizer in mteval-v14.pl
         None: identity mapping on the string.
         This option is ignored if tokenized is True
     max_n: int, default 4
@@ -204,12 +204,12 @@ def compute_bleu(reference_corpus_list, translation_corpus, tokenized=True,
         assert isinstance(reference_corpus_list[0][0], LIST_TYPES) and \
                isinstance(translation_corpus[0], LIST_TYPES), \
             'references and translation should have format of list of list(list(str)) ' \
-            'and list(list(str)), respectively, when toknized is True.'
+            'and list(list(str)), respectively, when tokenized is True.'
     else:
         assert isinstance(reference_corpus_list[0][0], six.string_types) and \
                isinstance(translation_corpus[0], six.string_types), \
             'references and translation should have format of list(list(str)) ' \
-            'and list(str), respectively, when toknized is False.'
+            'and list(str), respectively, when tokenized is False.'
     for references, translation in zip(zip(*reference_corpus_list), translation_corpus):
         if not tokenized:
             references = [TOKENIZERS[tokenizer](reference).split() for reference in references]

@@ -76,7 +76,7 @@ def parse_args():
     parser.add_argument('--embedding', default='glove',
                         help='word embedding type')
     parser.add_argument('--embedding-source', default='glove.6B.300d',
-                        help='embedding file soure')
+                        help='embedding file source')
     parser.add_argument('--embedding-size', type=int, default=300,
                         help='size of pretrained word embedding')
     parser.add_argument('--hidden-size', type=int, default=200,
@@ -102,7 +102,7 @@ def train_model(model, train_data_loader, val_data_loader, embedding, ctx, args)
     """
     logger.info(vars(args))
 
-    # Initialziation
+    # Initialization
     model.hybridize()
     model.collect_params().initialize(mx.init.Normal(0.01), ctx=ctx)
     model.word_emb.weight.set_data(embedding.idx_to_vec)

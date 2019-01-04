@@ -88,7 +88,7 @@ Notebook Guidelines:
 - Hide uninteresting complex functions in .py and import them.
 - Hide uninteresting model parameters. We can make some of them default parameters in model definition. Maybe out of 30 we just show 5 interesting ones and pass those to model constructor.
 - Only import module instead of classes and functions (i.e. from gluonnlp import model and use model.get_model, instead of from gluonnlp.model import get_model)
-- Make tutorials more engaging, interative, prepare practice questions for people to try it out. For example, for embedding evaluation, we can ask questions to the audience like what's the most similar word to xxx.
+- Make tutorials more engaging, interactive, prepare practice questions for people to try it out. For example, for embedding evaluation, we can ask questions to the audience like what's the most similar word to xxx.
 - Make sure the notebook can be zoomed in and still render well. This helps accommodate different viewing devices.
 - For low level APIs such as BeamSearch and Scorer, explain the API with examples so ppl know how to play with it / hack it.
 

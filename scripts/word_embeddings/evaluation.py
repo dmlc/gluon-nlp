@@ -92,7 +92,7 @@ def validate_args(args):
 def iterate_similarity_datasets(args):
     """Generator over all similarity evaluation datasets.
 
-    Iteratos over dataset names, keyword arguments for their creation and the
+    Iterates over dataset names, keyword arguments for their creation and the
     created dataset.
 
     """
@@ -106,7 +106,7 @@ def iterate_similarity_datasets(args):
 def iterate_analogy_datasets(args):
     """Generator over all analogy evaluation datasets.
 
-    Iteratos over dataset names, keyword arguments for their creation and the
+    Iterates over dataset names, keyword arguments for their creation and the
     created dataset.
 
     """
@@ -118,7 +118,7 @@ def iterate_analogy_datasets(args):
 
 
 def get_tokens_in_evaluation_datasets(args):
-    """Returns a set of all tokens occuring the evaluation datasets."""
+    """Returns a set of all tokens occurring the evaluation datasets."""
     tokens = set()
     for _, _, dataset in iterate_similarity_datasets(args):
         tokens.update(
