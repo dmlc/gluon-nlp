@@ -33,7 +33,8 @@ from ..data.utils import DefaultLookupDict
 
 
 class BERTVocab(Vocab):
-    r"""BERT special character vocabulary
+    """BERT special character vocabulary.
+
     Parameters
     ----------
     counter : Counter or None, default None
@@ -72,13 +73,14 @@ class BERTVocab(Vocab):
         contain `unknown_token` or duplicate reserved tokens. Keys of `counter`, `unknown_token`,
         and values of `reserved_tokens` must be of the same hashable type. Examples: str, int, and
         tuple.
+
     Attributes
     ----------
     UNKNOWN_TOKEN : '[UNK]'
         Static attribute of BERTVocab, unknown token for BERT.
     PADDING_TOKEN : '[PAD]'
         Static attribute of BERTVocab, padding token for BERT.
-     MASK_TOKEN : '[MASK]'
+    MASK_TOKEN : '[MASK]'
         Static attribute of BERTVocab, mask token for BERT.
     SEP_TOKEN : '[SEP]'
         Static attribute of BERTVocab, a token used to separate sentence pairs for BERT.
