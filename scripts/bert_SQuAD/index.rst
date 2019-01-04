@@ -20,6 +20,9 @@ Note that this will require more than 12G of GPU memory.
     $ python finetune_squad.py --train_file ./squad1.1/train-v1.1.json --predict_file ./squad1.1/dev-v1.1.json --optimizer adam --gpu
 
 If you are using less than 12G of GPU memory, you can use the following command to achieve a similar effect. But need Mxnet>1.5.0
+
+Note that this will require approximately no more than 8G of GPU memory. If your GPU memory is too small, you can adjust **accumulate** and **batch_size**.
+
 .. code-block:: console
 
     $ python finetune_squad.py --train_file ./squad1.1/train-v1.1.json --predict_file ./squad1.1/dev-v1.1.json --optimizer bertadam --accumulate 2 --batch_size 6 --gpu
@@ -29,4 +32,4 @@ Should produce an output like this. Explain that the F1 score on the dev dataset
 
 .. code-block:: console
 
-    {'exact_match': 80.59602649006622, 'f1': 88.2265602637271}
+    {'exact_match': 80.6244087038789, 'f1': 88.27500178605726}
