@@ -382,7 +382,8 @@ def Evaluate():
         all_results=all_results,
         max_answer_length=max_answer_length,
         tokenizer=nlp.data.BasicTokenizer(lower_case=True),
-        null_score_diff_threshold=null_score_diff_threshold)
+        null_score_diff_threshold=null_score_diff_threshold,
+        version_2=version_2)
 
     with open(os.path.join(output_dir, 'predictions.json'),
               'w', encoding='utf-8') as all_predictions_write:
