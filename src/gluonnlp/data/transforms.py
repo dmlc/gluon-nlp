@@ -26,7 +26,7 @@ from __future__ import print_function
 __all__ = ['ClipSequence', 'PadSequence', 'SacreMosesTokenizer', 'NLTKMosesTokenizer',
            'SpacyTokenizer', 'SacreMosesDetokenizer', 'NLTKMosesDetokenizer', 'JiebaTokenizer',
            'NLTKStanfordSegmenter', 'SentencepieceTokenizer',
-           'SentencepieceDetokenizer', 'BasicTokenizer', 'BERTTokenizer']
+           'SentencepieceDetokenizer', 'BasicTokenizer', 'BERTTokenizer', 'convert_to_unicode']
 
 import os
 import warnings
@@ -64,6 +64,7 @@ class ClipSequence(object):
            [5, 6]]), array([[2, 4],
            [4, 2]])]
     """
+
     def __init__(self, length):
         self._length = length
 
@@ -95,6 +96,7 @@ class PadSequence(object):
     >>> list(datasets.transform(gluonnlp.data.PadSequence(6, pad_val=-1, clip=False)))
     [[1, 3, 5, 7, -1, -1], [1, 2, 3, -1, -1, -1], [1, 2, 3, 4, 5, 6, 7, 8]]
     """
+
     def __init__(self, length, pad_val=0, clip=True):
         self._length = length
         self._pad_val = pad_val
@@ -155,6 +157,7 @@ class NLTKMosesTokenizer(object):
     ['Das', 'Gluon', 'NLP-Toolkit', 'stellt', 'eine', 'Reihe', 'von', 'Textverarbeitungstools', \
 'zur', 'Verf\xfcgung', '.']
     """
+
     def __init__(self):
         try:
             from nltk.tokenize.moses import MosesTokenizer
@@ -216,6 +219,7 @@ class SacreMosesTokenizer(object):
     ['Das', 'Gluon', 'NLP-Toolkit', 'stellt', 'eine', 'Reihe', 'von', 'Textverarbeitungstools', \
 'zur', 'Verf\xfcgung', '.']
     """
+
     def __init__(self):
         try:
             from sacremoses import MosesTokenizer
@@ -282,6 +286,7 @@ class SpacyTokenizer(object):
     ['Das', 'Gluon', 'NLP-Toolkit', 'stellt', 'eine', 'Reihe', 'von', 'Textverarbeitungstools', \
 'zur', 'Verf\xfcgung', '.']
     """
+
     def __init__(self, lang='en'):
         try:
             import spacy
@@ -333,6 +338,7 @@ class NLTKMosesDetokenizer(object):
     ...              'Textverarbeitungstools','zur','Verfügung','.'], return_str=True)
     'Das Gluon NLP-Toolkit stellt eine Reihe von Textverarbeitungstools zur Verfügung.'
     """
+
     def __init__(self):
         try:
             from nltk.tokenize.moses import MosesDetokenizer
@@ -394,6 +400,7 @@ class SacreMosesDetokenizer(object):
     ...              'Textverarbeitungstools','zur','Verfügung','.'], return_str=True)
     'Das Gluon NLP-Toolkit stellt eine Reihe von Textverarbeitungstools zur Verfügung.'
     """
+
     def __init__(self):
         try:
             from sacremoses import MosesDetokenizer
@@ -459,6 +466,7 @@ class JiebaTokenizer(object):
     ['小明', '硕士', '毕业', '于', '中国科学院', '计算所', '，', '后', '在', '日本京都大学', '深造']
 
     """
+
     def __init__(self):
         try:
             import jieba
@@ -513,6 +521,7 @@ class NLTKStanfordSegmenter(object):
     ['小明', '硕士', '毕业', '于', '中国科学院', '计算所', '，', '后', '在', '日本京都大学', '深造']
 
     """
+
     def __init__(self, segmenter_root=os.path.join(_get_home_dir(), 'stanford-segmenter'),
                  slf4j_root=os.path.join(_get_home_dir(), 'slf4j'),
                  java_class='edu.stanford.nlp.ie.crf.CRFClassifier'):
@@ -599,6 +608,7 @@ class _SentencepieceProcessor(object):
     def tokens(self):
         return [self._processor.id_to_piece(i) for i in range(len(self))]
 
+
 class SentencepieceTokenizer(_SentencepieceProcessor):
     r"""Apply the Sentencepiece Tokenizer, which supports subword tokenization such as BPE.
 
@@ -634,6 +644,7 @@ class SentencepieceTokenizer(_SentencepieceProcessor):
     'This is a very awesome, life-changing sentence.'
 
     """
+
     def __init__(self, path, num_best=0, alpha=1.0):
         super(SentencepieceTokenizer, self).__init__(path)
         self._nbest = num_best
@@ -682,6 +693,7 @@ class SentencepieceDetokenizer(_SentencepieceProcessor):
     'This is a very awesome, life-changing sentence.'
 
     """
+
     def __call__(self, sample):
         """
 
@@ -742,6 +754,7 @@ class BasicTokenizer():
 
     def _tokenize(self, text):
         """Tokenizes a piece of text."""
+        text = convert_to_unicode(text)
         text = self._clean_text(text)
 
         # This was added on November 1st, 2018 for the multilingual and Chinese
@@ -995,3 +1008,23 @@ def _whitespace_tokenize(text):
         return []
     tokens = text.split()
     return tokens
+
+
+def convert_to_unicode(text):
+    """Converts `text` to Unicode (if it's not already), assuming utf-8 input."""
+    if six.PY3:
+        if isinstance(text, str):
+            return text
+        elif isinstance(text, bytes):
+            return text.decode('utf-8', 'ignore')
+        else:
+            raise ValueError('Unsupported string type: %s' % (type(text)))
+    elif six.PY2:
+        if isinstance(text, str):
+            return text.decode('utf-8', 'ignore')
+        elif isinstance(text, unicode):  # noqa: F821
+            return text
+        else:
+            raise ValueError('Unsupported string type: %s' % (type(text)))
+    else:
+        raise ValueError('Not running on Python2 or Python 3?')

@@ -18,11 +18,7 @@ __all__ = ['MRPCDataset', 'ClassificationTransform', 'BERTTransform']
 
 import os
 import numpy as np
-try:
-    from tokenizer import convert_to_unicode
-except ImportError:
-    from .tokenizer import convert_to_unicode
-from gluonnlp.data import TSVDataset
+from gluonnlp.data import convert_to_unicode, TSVDataset
 from gluonnlp.data.registry import register
 
 
@@ -76,7 +72,7 @@ class BERTTransform(object):
 
     Parameters
     ----------
-    tokenizer : BasicTokenizer or FullTokensizer.
+    tokenizer : BERTTokenizer.
         Tokenizer for the sentences.
     max_seq_length : int.
         Maximum sequence length of the sentences.
@@ -141,17 +137,15 @@ class BERTTransform(object):
         """
         # convert to unicode
         text_a = line[0]
-        text_a = convert_to_unicode(text_a)
         if self._pair:
             assert len(line) == 2
             text_b = line[1]
-            text_b = convert_to_unicode(text_b)
 
-        tokens_a = self._tokenizer.tokenize(text_a)
+        tokens_a = self._tokenizer(a)
         tokens_b = None
 
         if self._pair:
-            tokens_b = self._tokenizer.tokenize(text_b)
+            tokens_b = self._tokenizer(text_b)
 
         if tokens_b:
             # Modifies `tokens_a` and `tokens_b` in place so that the total
@@ -211,7 +205,7 @@ class ClassificationTransform(object):
 
     Parameters
     ----------
-    tokenizer : BasicTokenizer or FullTokensizer.
+    tokenizer : BERTTokenizer.
         Tokenizer for the sentences.
     labels : list of int.
         List of all label ids for the classification task.
