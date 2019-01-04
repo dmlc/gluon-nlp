@@ -145,10 +145,8 @@ parser.add_argument(
 )
 
 parser.add_argument(
-    '--version_2',
-    type=bool,
-    default=False,
-    help='If true, the SQuAD examples contain some that do not have an answer. default is False'
+    '--version_2', action='store_true',
+    help='SQuAD examples whether contain some that do not have an answer.'
 )
 
 parser.add_argument(
@@ -188,7 +186,7 @@ optimizer = args.optimizer
 warmup_ratio = args.warmup_ratio
 
 dataset_name = 'book_corpus_wiki_en_uncased'
-version_2 = args.version_2
+version_2 = False if not args.version_2 else True
 max_seq_length = args.max_seq_length
 doc_stride = args.doc_stride
 max_query_length = args.max_query_length
@@ -239,7 +237,7 @@ def Train():
     """Training function."""
     logging.info('Start Training')
 
-    optimizer_params = {'learning_rate': lr, 'epsilon': 1e-6, 'wd': 0.01}
+    optimizer_params = {'learning_rate': lr, 'epsilon': 1e-9}
     try:
         trainer = gluon.Trainer(net.collect_params(), optimizer,
                                 optimizer_params, update_on_kvstore=False)
@@ -323,7 +321,7 @@ def Train():
                 tic = time.time()
                 step_loss = 0.0
 
-    net.save_parameters(output_dir + 'net_parameters')
+    net.save_parameters(os.path.join(output_dir, 'net_parameters'))
 
 
 def Evaluate():
