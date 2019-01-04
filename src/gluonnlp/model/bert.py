@@ -408,7 +408,7 @@ class BERTModel(Block):
         return self.pooler(outputs)
 
     def _decode(self, sequence, valid_length=None):
-        """Generate unormalized prediction for the masked language model task.
+        """Generate unnormalized prediction for the masked language model task.
 
         This is only used for pre-training the BERT model.
         """

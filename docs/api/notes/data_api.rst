@@ -5,7 +5,7 @@ In this tutorial, we show how to load and process the sentiment dataset to form 
 using classes from :mod:`gluonnlp.data.sampler` and :mod:`gluonnlp.data.batchify`.
 We use :class:`~gluonnlp.data.IMDB`
 dataset as an example, where the dataset has 50,000 movie reviews, labeled as positive or negative. The dataset
-is splitted into training/testing dataset, each consisting of 25,000 reviews.
+is split into the training/testing dataset, each consisting of 25,000 reviews.
 
 Data Loading
 ~~~~~~~~~~~~

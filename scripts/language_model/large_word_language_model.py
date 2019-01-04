@@ -92,7 +92,7 @@ parser.add_argument('--clip', type=float, default=1.0,
 parser.add_argument('--test-mode', action='store_true',
                     help='Whether to run through the script with few examples')
 parser.add_argument('--eval-only', action='store_true',
-                    help='Whether to only run evluation for the trained model')
+                    help='Whether to only run evaluation for the trained model')
 args = parser.parse_args()
 
 segments = ['train', 'test']
@@ -285,7 +285,7 @@ def test(data_stream, batch_size, ctx=None):
     Parameters
     ----------
     data_stream : DataStream
-        The dataset is testd on.
+        The dataset is tested on.
     batch_size : int
         The size of the mini-batch.
     ctx : mx.cpu() or mx.gpu()
