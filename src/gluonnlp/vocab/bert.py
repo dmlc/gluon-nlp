@@ -94,14 +94,14 @@ class BERTVocab(Vocab):
         A list of reserved tokens that will always be indexed.
     token_to_idx : dict mapping str to int
         A dict mapping each token to its index integer.
-    unknown_token : hashable object or None
+    unknown_token : hashable object or None, default '[UNK]'
         The representation for any unknown token. In other words, any unknown token will be indexed
         as the same representation.
-    padding_token : hashable object or None
+    padding_token : hashable object or None, default '[PAD]'
         The representation for padding token.
-    bos_token : hashable object or None
+    bos_token : hashable object or None, default None
         The representation for beginning-of-sentence token.
-    eos_token : hashable object or None
+    eos_token : hashable object or None, default None
         The representation for end-of-sentence token.
     mask_token : hashable object or None, default '[MASK]'
         The representation for the special token of mask token for BERT.
@@ -124,8 +124,12 @@ class BERTVocab(Vocab):
                  padding_token=PADDING_TOKEN, bos_token=None, eos_token=None,
                  mask_token=MASK_TOKEN, sep_token=SEP_TOKEN, cls_token=CLS_TOKEN,
                  reserved_tokens=None):
-        if not reserved_tokens:
-            reserved_tokens = [mask_token, sep_token, cls_token]
+        special_tokens = [token for token in [mask_token, sep_token, cls_token]
+                          if token is not None]
+        if reserved_tokens:
+            reserved_tokens.extend(special_tokens)
+        else:
+            reserved_tokens = special_tokens
         super(BERTVocab, self).__init__(counter, max_size, min_freq, unknown_token,
                                         padding_token, bos_token, eos_token, reserved_tokens)
         self._mask_token = mask_token
@@ -152,7 +156,7 @@ class BERTVocab(Vocab):
             warnings.warn('Serialization of attached embedding '
                           'to json is not supported. '
                           'You may serialize the embedding to a binary format '
-                          'separately using vocab.embedding.serialize')
+                          'separately using bert_vocab.embedding.serialize')
         vocab_dict = {}
         vocab_dict['idx_to_token'] = self._idx_to_token
         vocab_dict['token_to_idx'] = dict(self._token_to_idx)
@@ -168,30 +172,52 @@ class BERTVocab(Vocab):
 
     @classmethod
     def from_json(cls, json_str):
-        """Deserialize Vocab object from json string.
+        """Deserialize BERTVocab object from json string.
         Parameters
         ----------
         json_str : str
-            Serialized json string of a Vocab object.
+            Serialized json string of a BERTVocab object.
         Returns
         -------
-        Vocab
+        BERTVocab
         """
         vocab_dict = json.loads(json_str)
 
         unknown_token = vocab_dict.get('unknown_token')
-        vocab = cls(unknown_token=unknown_token)
-        vocab._idx_to_token = vocab_dict.get('idx_to_token')
-        vocab._token_to_idx = vocab_dict.get('token_to_idx')
+        bert_vocab = cls(unknown_token=unknown_token)
+        bert_vocab._idx_to_token = vocab_dict.get('idx_to_token')
+        bert_vocab._token_to_idx = vocab_dict.get('token_to_idx')
         if unknown_token:
-            vocab._token_to_idx = DefaultLookupDict(vocab._token_to_idx[unknown_token],
-                                                    vocab._token_to_idx)
-        vocab._reserved_tokens = vocab_dict.get('reserved_tokens')
-        vocab._padding_token = vocab_dict.get('padding_token')
-        vocab._bos_token = vocab_dict.get('bos_token')
-        vocab._eos_token = vocab_dict.get('eos_token')
-        vocab._mask_token = vocab_dict.get('mask_token')
-        vocab._sep_token = vocab_dict.get('sep_token')
-        vocab._cls_token = vocab_dict.get('cls_token')
+            bert_vocab._token_to_idx = DefaultLookupDict(bert_vocab._token_to_idx[unknown_token],
+                                                         bert_vocab._token_to_idx)
+        bert_vocab._reserved_tokens = vocab_dict.get('reserved_tokens')
+        bert_vocab._padding_token = vocab_dict.get('padding_token')
+        bert_vocab._bos_token = vocab_dict.get('bos_token')
+        bert_vocab._eos_token = vocab_dict.get('eos_token')
+        bert_vocab._mask_token = vocab_dict.get('mask_token')
+        bert_vocab._sep_token = vocab_dict.get('sep_token')
+        bert_vocab._cls_token = vocab_dict.get('cls_token')
 
-        return vocab
+        return bert_vocab
+
+    @classmethod
+    def from_vocab(cls, vocab):
+        """Create BERTVocab object from Vocab object.
+        Parameters
+        ----------
+        vocab : Vocab
+            Vocab object.
+        Returns
+        -------
+        BERTVocab
+        """
+        unknown_token = vocab.unknown_token
+        bert_vocab = cls(unknown_token=unknown_token, padding_token=vocab.padding_token,
+                         bos_token=vocab.bos_token, eos_token=vocab.eos_token)
+        bert_vocab._idx_to_token = vocab.idx_to_token
+        bert_vocab._token_to_idx = vocab.token_to_idx
+        if unknown_token:
+            bert_vocab._token_to_idx = DefaultLookupDict(bert_vocab._token_to_idx[unknown_token],
+                                                         bert_vocab._token_to_idx)
+
+        return bert_vocab
