@@ -51,7 +51,7 @@ def convert_vocab(vocab_file):
     reserved_tokens = [gluonnlp.vocab.BERTVocab.PADDING_TOKEN, gluonnlp.vocab.BERTVocab.CLS_TOKEN,
                        gluonnlp.vocab.BERTVocab.SEP_TOKEN, gluonnlp.vocab.BERTVocab.MASK_TOKEN]
 
-    unknown_token = gluonnl.vocab.BERTVocab.UNKNOWN_TOKEN
+    unknown_token = gluonnlp.vocab.BERTVocab.UNKNOWN_TOKEN
     padding_token = gluonnlp.vocab.BERTVocab.PADDING_TOKEN
     swap_idx = []
     assert unknown_token in token_to_idx
