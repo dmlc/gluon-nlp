@@ -75,7 +75,6 @@ def convert_vocab(vocab_file):
     vocab_dict['bos_token'] = None
     vocab_dict['eos_token'] = None
     json_str = json.dumps(vocab_dict)
-    # converted_vocab = gluonnlp.Vocab.from_json(json_str)
     converted_vocab = gluonnlp.vocab.BERTVocab.from_json(json_str)
     return converted_vocab, swap_idx
 

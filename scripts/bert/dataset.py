@@ -175,19 +175,19 @@ class BERTTransform(object):
         # the entire model is fine-tuned.
         tokens = []
         segment_ids = []
-        tokens.append(BERTVocab.CLS_TOKEN)
+        tokens.append(self._tokenizer.vocab.cls_token)
         segment_ids.append(0)
         for token in tokens_a:
             tokens.append(token)
             segment_ids.append(0)
-        tokens.append(BERTVocab.SEP_TOKEN)
+        tokens.append(self._tokenizer.vocab.sep_token)
         segment_ids.append(0)
 
         if tokens_b:
             for token in tokens_b:
                 tokens.append(token)
                 segment_ids.append(1)
-            tokens.append(BERTVocab.SEP_TOKEN)
+            tokens.append(self._tokenizer.vocab.sep_token)
             segment_ids.append(1)
 
         input_ids = self._tokenizer.convert_tokens_to_ids(tokens)
@@ -199,8 +199,10 @@ class BERTTransform(object):
             # Zero-pad up to the sequence length.
             padding_length = self._max_seq_length - valid_length
             # use padding tokens for the rest
-            input_ids.extend([self._tokenizer.vocab[BERTVocab.PADDING_TOKEN]] * padding_length)
-            segment_ids.extend([self._tokenizer.vocab[BERTVocab.PADDING_TOKEN]] * padding_length)
+            input_ids.extend(
+                [self._tokenizer.vocab[self._tokenizer.vocab.padding_token]] * padding_length)
+            segment_ids.extend(
+                [self._tokenizer.vocab[self._tokenizer.vocab.padding_token]] * padding_length)
 
         return np.array(input_ids, dtype='int32'), np.array(valid_length, dtype='int32'),\
             np.array(segment_ids, dtype='int32')
