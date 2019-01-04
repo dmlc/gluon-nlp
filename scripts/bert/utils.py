@@ -28,6 +28,7 @@ except ImportError:
 
 __all__ = ['convert_vocab']
 
+
 def convert_vocab(vocab_file):
     """GluonNLP specific code to convert the original vocabulary to nlp.vocab.Vocab."""
     original_vocab = load_vocab(vocab_file)
@@ -47,9 +48,11 @@ def convert_vocab(vocab_file):
         idx_to_token[original_idx] = original_token
         swap_idx.append((original_idx, target_idx))
 
-    reserved_tokens = ['[PAD]', '[CLS]', '[SEP]', '[MASK]']
-    unknown_token = '[UNK]'
-    padding_token = '[PAD]'
+    reserved_tokens = [gluonnlp.vocab.BERTVocab.PADDING_TOKEN, gluonnlp.vocab.BERTVocab.CLS_TOKEN,
+                       gluonnlp.vocab.BERTVocab.SEP_TOKEN, gluonnlp.vocab.BERTVocab.MASK_TOKEN]
+
+    unknown_token = gluonnlp.vocab.BERTVocab.UNKNOWN_TOKEN
+    padding_token = gluonnlp.vocab.BERTVocab.PADDING_TOKEN
     swap_idx = []
     assert unknown_token in token_to_idx
     assert padding_token in token_to_idx
@@ -72,8 +75,10 @@ def convert_vocab(vocab_file):
     vocab_dict['bos_token'] = None
     vocab_dict['eos_token'] = None
     json_str = json.dumps(vocab_dict)
-    converted_vocab = gluonnlp.Vocab.from_json(json_str)
+    # converted_vocab = gluonnlp.Vocab.from_json(json_str)
+    converted_vocab = gluonnlp.vocab.BERTVocab.from_json(json_str)
     return converted_vocab, swap_idx
+
 
 def get_hash(filename):
     sha1 = hashlib.sha1()
@@ -84,6 +89,7 @@ def get_hash(filename):
                 break
             sha1.update(data)
     return sha1.hexdigest(), str(sha1.hexdigest())[:8]
+
 
 def read_tf_checkpoint(path):
     """read tensorflow checkpoint"""

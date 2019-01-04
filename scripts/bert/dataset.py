@@ -24,6 +24,8 @@ except ImportError:
     from .tokenizer import convert_to_unicode
 from gluonnlp.data import TSVDataset
 from gluonnlp.data.registry import register
+from gluonnlp.vocab import BERTVocab
+
 
 @register(segment=['train', 'dev', 'test'])
 class MRPCDataset(TSVDataset):
@@ -38,11 +40,12 @@ class MRPCDataset(TSVDataset):
         The datset can be downloaded by the following script:
         https://gist.github.com/W4ngatang/60c2bdb54d156a41194446737ce03e2e
     """
+
     def __init__(self, segment='train',
                  root=os.path.join(os.getenv('GLUE_DIR', 'glue_data'), 'MRPC')):
         self._supported_segments = ['train', 'dev', 'test']
-        assert segment in self._supported_segments, 'Unsupported segment: %s'%segment
-        path = os.path.join(root, '%s.tsv'%segment)
+        assert segment in self._supported_segments, 'Unsupported segment: %s' % segment
+        path = os.path.join(root, '%s.tsv' % segment)
         A_IDX, B_IDX, LABEL_IDX = 3, 4, 0
         fields = [A_IDX, B_IDX, LABEL_IDX]
         super(MRPCDataset, self).__init__(path, num_discard_samples=1, field_indices=fields)
@@ -51,6 +54,7 @@ class MRPCDataset(TSVDataset):
     def get_labels():
         """Get classification label ids of the dataset."""
         return ['0', '1']
+
 
 def _truncate_seq_pair(tokens_a, tokens_b, max_length):
     """Truncates a sequence pair in place to the maximum length."""
@@ -67,6 +71,7 @@ def _truncate_seq_pair(tokens_a, tokens_b, max_length):
         else:
             tokens_b.pop()
 
+
 class BERTTransform(object):
     """BERT style data transformation.
 
@@ -81,6 +86,7 @@ class BERTTransform(object):
     pair : bool, default True
         Whether to transform sentences or sentence pairs.
     """
+
     def __init__(self, tokenizer, max_seq_length, pad=True, pair=True):
         self._tokenizer = tokenizer
         self._max_seq_length = max_seq_length
@@ -169,19 +175,19 @@ class BERTTransform(object):
         # the entire model is fine-tuned.
         tokens = []
         segment_ids = []
-        tokens.append('[CLS]')
+        tokens.append(BERTVocab.CLS_TOKEN)
         segment_ids.append(0)
         for token in tokens_a:
             tokens.append(token)
             segment_ids.append(0)
-        tokens.append('[SEP]')
+        tokens.append(BERTVocab.SEP_TOKEN)
         segment_ids.append(0)
 
         if tokens_b:
             for token in tokens_b:
                 tokens.append(token)
                 segment_ids.append(1)
-            tokens.append('[SEP]')
+            tokens.append(BERTVocab.SEP_TOKEN)
             segment_ids.append(1)
 
         input_ids = self._tokenizer.convert_tokens_to_ids(tokens)
@@ -193,11 +199,12 @@ class BERTTransform(object):
             # Zero-pad up to the sequence length.
             padding_length = self._max_seq_length - valid_length
             # use padding tokens for the rest
-            input_ids.extend([self._tokenizer.vocab['[PAD]']] * padding_length)
-            segment_ids.extend([self._tokenizer.vocab['[PAD]']] * padding_length)
+            input_ids.extend([self._tokenizer.vocab[BERTVocab.PADDING_TOKEN]] * padding_length)
+            segment_ids.extend([self._tokenizer.vocab[BERTVocab.PADDING_TOKEN]] * padding_length)
 
         return np.array(input_ids, dtype='int32'), np.array(valid_length, dtype='int32'),\
-               np.array(segment_ids, dtype='int32')
+            np.array(segment_ids, dtype='int32')
+
 
 class ClassificationTransform(object):
     """Dataset Transformation for BERT-style Sentence Classification.
@@ -215,6 +222,7 @@ class ClassificationTransform(object):
     pair : bool, default True
         Whether to transform sentences or sentence pairs.
     """
+
     def __init__(self, tokenizer, labels, max_seq_length, pad=True, pair=True):
         self._label_map = {}
         for (i, label) in enumerate(labels):
