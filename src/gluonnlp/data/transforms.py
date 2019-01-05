@@ -1078,7 +1078,7 @@ class BERTTransform(object):
             assert len(line) == 2
             text_b = line[1]
 
-        tokens_a = self._tokenizer(a)
+        tokens_a = self._tokenizer(text_a)
         tokens_b = None
 
         if self._pair:
