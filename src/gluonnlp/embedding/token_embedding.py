@@ -118,9 +118,9 @@ def list_sources(embedding_name=None):
     -------
     dict or list:
         A list of all the valid pre-trained token embedding file names (`source`) for the
-        specified token embedding name (`embedding_name`). If the text embedding name is set to None,
-        returns a dict mapping each valid token embedding name to a list of valid pre-trained files
-        (`source`). They can be plugged into
+        specified token embedding name (`embedding_name`). If the text embedding name is set to
+        None, returns a dict mapping each valid token embedding name to a list of valid pre-trained
+        files (`source`). They can be plugged into
         `gluonnlp.embedding.create(embedding_name, source)`.
     """
 
