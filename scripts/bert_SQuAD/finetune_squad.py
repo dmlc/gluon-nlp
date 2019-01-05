@@ -89,7 +89,8 @@ parser.add_argument('--model',
 parser.add_argument('--dataset_name',
                     type=str,
                     default='book_corpus_wiki_en_uncased',
-                    help='BERT dataset name. options are book_corpus_wiki_en_uncased and book_corpus_wiki_en_cased.')
+                    help='BERT dataset name.'
+                    'options are book_corpus_wiki_en_uncased and book_corpus_wiki_en_cased.')
 parser.add_argument('--cased',
                     action='store_false',
                     help='if not set, inputs are converted to lower case.')
@@ -97,7 +98,8 @@ parser.add_argument('--cased',
 parser.add_argument('--output_dir',
                     type=str,
                     default='./output_dir',
-                    help='The output directory where the model params will be written. default is ./output_dir')
+                    help='The output directory where the model params will be written.'
+                    ' default is ./output_dir')
 
 parser.add_argument('--epochs',
                     type=int,
@@ -168,7 +170,8 @@ parser.add_argument('--max_answer_length',
                     type=int,
                     default=30,
                     help='The maximum length of an answer that can be generated. This is needed '
-                    'because the start and end predictions are not conditioned on one another. default is 30')
+                    'because the start and end predictions are not conditioned on one another.'
+                    ' default is 30')
 
 parser.add_argument('--version_2',
                     action='store_true',
@@ -177,7 +180,8 @@ parser.add_argument('--version_2',
 parser.add_argument('--null_score_diff_threshold',
                     type=float,
                     default=0.0,
-                    help='If null_score - best_non_null is greater than the threshold predict null. default is 0.0')
+                    help='If null_score - best_non_null is greater than the threshold predict null.'
+                    ' default is 0.0')
 
 parser.add_argument('--gpu',
                     action='store_true',
@@ -262,8 +266,9 @@ def Train():
         max_query_length=max_query_length,
         is_training=True))
 
-    train_dataloader = mx.gluon.data.DataLoader(train_data_transform, batch_size=batch_size,
-                                                batchify_fn=bert_qa_batchify_fn, num_workers=4, shuffle=True)
+    train_dataloader = mx.gluon.data.DataLoader(
+        train_data_transform, batch_size=batch_size,
+        batchify_fn=bert_qa_batchify_fn, num_workers=4, shuffle=True)
 
     logging.info('Start Training')
 
