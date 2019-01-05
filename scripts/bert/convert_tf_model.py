@@ -29,12 +29,16 @@ from utils import convert_vocab, get_hash, read_tf_checkpoint
 
 parser = argparse.ArgumentParser(description='Conversion script for Tensorflow BERT model')
 parser.add_argument('--model', type=str, default='bert_12_768_12',
-                    help='BERT model name. options are bert_12_768_12 and bert_24_1024_16')
-parser.add_argument('--tf_checkpoint_dir', type=str, required=True,
+                    help='BERT model name. options are bert_12_768_12 and bert_24_1024_16.'
+                         'Default is bert_12_768_12')
+parser.add_argument('--tf_checkpoint_dir', type=str,
+                    default='/home/ubuntu/cased_L-12_H-768_A-12/',
                     help='Path to Tensorflow checkpoint folder. '
-                         'e.g. /home/ubuntu/cased_L-12_H-768_A-12/')
-parser.add_argument('--out_dir', type=str, required=True,
-                    help='Path to output folder. The folder must exist. e.g. /home/ubuntu/output/')
+                         'Default is /home/ubuntu/cased_L-12_H-768_A-12/')
+parser.add_argument('--out_dir', type=str,
+                    default='/home/ubuntu/output/',
+                    help='Path to output folder. The folder must exist. '
+                         'Default is /home/ubuntu/output/')
 parser.add_argument('--debug', action='store_true', help='debugging mode')
 args = parser.parse_args()
 logging.getLogger().setLevel(logging.DEBUG if args.debug else logging.INFO)
@@ -159,10 +163,10 @@ for name in params:
     # pylint: disable=broad-except
     except Exception:
         if name not in mx_tensors:
-            logging.info('cannot initialize %s from tf checkpoint', name)
+            raise RuntimeError('cannot initialize %s from tf checkpoint'%name)
         else:
-            logging.info('cannot initialize %s. Expect shape = %s, but found %s',
-                         name, params[name].shape, arr.shape)
+            raise RuntimeError('cannot initialize %s. Expect shape = %s, but found %s'%\
+                               name, params[name].shape, arr.shape)
 
 logging.info('num loaded params = %d, total num params = %d',
              len(loaded_params), len(mx_tensors))

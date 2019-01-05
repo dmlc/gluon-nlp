@@ -293,7 +293,7 @@ class BaseTransformerEncoder(HybridBlock, Seq2SeqEncoder):
         Initializer for the bias vector.
     positional_weight: str, default 'sinusoidal'
         Type of positional embedding. Can be 'sinusoidal', 'learned'.
-        If set to 'sinusoidal', the embedding is intialized as sinusoidal values and keep constant.
+        If set to 'sinusoidal', the embedding is initialized as sinusoidal values and keep constant.
     use_bert_encoder : bool, default False
         Whether to use BERTEncoderCell and BERTLayerNorm. Set to True for pre-trained BERT model
     use_layer_norm_before_dropout: bool, default False
