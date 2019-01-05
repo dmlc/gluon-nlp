@@ -227,6 +227,7 @@ if max_seq_length <= max_query_length + 3:
                      '(%d) + 3' % (max_seq_length, max_query_length))
 
 bert, vocab = nlp.model.get_model(
+    name=model_name,
     dataset_name=dataset_name,
     pretrained=not model_parameters,
     ctx=ctx,
