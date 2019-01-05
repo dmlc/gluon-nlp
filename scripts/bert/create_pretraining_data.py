@@ -48,7 +48,7 @@ parser.add_argument(
     '--format',
     type=str,
     default='numpy',
-    choices=['numpy', 'recordio', 'mmap'],
+    choices=['numpy', 'recordio'],
     help='Output file format. If set to "numpy", examples are serialized as a single "npz" file.'
          'If set to "recordio", examples are serialized using IndexedRecordIO format.')
 
@@ -133,7 +133,7 @@ class TrainingInstance(object):
     def __repr__(self):
         return self.__str__()
 
-def transform(instance, tokenizer, max_seq_length, max_predictions_per_seq, pad):
+def transform(instance, tokenizer, max_seq_length, max_predictions_per_seq):
     """Transform instance to inputs for MLM and NSP."""
     pad = tokenizer.convert_tokens_to_ids(['[PAD]'])[0]
     input_ids = tokenizer.convert_tokens_to_ids(instance.tokens)
@@ -148,20 +148,19 @@ def transform(instance, tokenizer, max_seq_length, max_predictions_per_seq, pad)
     masked_lm_weights = [1.0] * len(masked_lm_ids)
     masked_lm_valid_lengths = len(masked_lm_ids)
 
-    if pad:
-        while len(input_ids) < max_seq_length:
-            input_ids.append(pad)
-            # Padding index MUST be defined to 0 on input_mask, segment_ids
-            input_mask.append(0)
-            segment_ids.append(0)
-        while len(masked_lm_positions) < max_predictions_per_seq:
-            masked_lm_positions.append(0)
-            masked_lm_ids.append(pad)
-            masked_lm_weights.append(0.0)
+    while len(input_ids) < max_seq_length:
+        input_ids.append(pad)
+        # Padding index MUST be defined to 0 on input_mask, segment_ids
+        input_mask.append(0)
+        segment_ids.append(0)
+    while len(masked_lm_positions) < max_predictions_per_seq:
+        masked_lm_positions.append(0)
+        masked_lm_ids.append(pad)
+        masked_lm_weights.append(0.0)
 
-        assert len(input_ids) == max_seq_length
-        assert len(input_mask) == max_seq_length
-        assert len(segment_ids) == max_seq_length
+    assert len(input_ids) == max_seq_length
+    assert len(input_mask) == max_seq_length
+    assert len(segment_ids) == max_seq_length
 
     next_sentence_label = 1 if instance.is_random_next else 0
 
@@ -198,16 +197,20 @@ def write_to_files_np(instances, tokenizer, max_seq_length,
     next_sentence_labels = []
     segment_a_lengths = []
     segment_b_lengths = []
-    input_ids = []
-    masked_lm_positions = []
-    masked_lm_ids = []
+
+    num_inst = len(instances)
+    pad = tokenizer.convert_tokens_to_ids(['[PAD]'])[0]
+    input_ids = np.full((num_inst, max_seq_length), pad, dtype='int32')
+    masked_lm_positions = np.full((num_inst, max_predictions_per_seq), 0, dtype='int32')
+    masked_lm_ids = np.full((num_inst, max_predictions_per_seq), 0, dtype='int32')
 
     total_written = 0
     for (inst_index, instance) in enumerate(instances):
-        features = transform(instance, tokenizer, max_seq_length, max_predictions_per_seq, False)
-        input_ids.append(features['input_ids'])
-        masked_lm_positions.append(features['masked_lm_positions'])
-        masked_lm_ids.append(features['masked_lm_ids'])
+        features = transform(instance, tokenizer, max_seq_length, max_predictions_per_seq)
+        input_ids[inst_index] = features['input_ids']
+        masked_lm_positions[inst_index] = features['masked_lm_positions']
+        masked_lm_ids[inst_index] = features['masked_lm_ids']
+
         segment_a_lengths.append(features['segment_a_lengths'][0])
         segment_b_lengths.append(features['segment_b_lengths'][0])
         next_sentence_labels.append(features['next_sentence_labels'][0])
@@ -220,9 +223,9 @@ def write_to_files_np(instances, tokenizer, max_seq_length,
     output_file = output_files[0]
 
     outputs = collections.OrderedDict()
-    outputs["input_ids"] = np.array(input_ids, dtype=object)
-    outputs["masked_lm_positions"] = np.array(masked_lm_positions, dtype=object)
-    outputs["masked_lm_ids"] = np.array(masked_lm_ids, dtype=object)
+    outputs["input_ids"] = input_ids
+    outputs["masked_lm_positions"] = masked_lm_positions
+    outputs["masked_lm_ids"] = masked_lm_ids
     outputs["segment_a_lengths"] = np.array(segment_a_lengths, dtype='int32')
     outputs["segment_b_lengths"] = np.array(segment_b_lengths, dtype='int32')
     outputs["next_sentence_labels"] = np.array(next_sentence_labels, dtype='int32')
@@ -252,7 +255,7 @@ def write_to_files_mmap(instances, tokenizer, max_seq_length,
 
     total_written = 0
     for (inst_index, instance) in enumerate(instances):
-        features = transform(instance, tokenizer, max_seq_length, max_predictions_per_seq, False)
+        features = transform(instance, tokenizer, max_seq_length, max_predictions_per_seq)
         features_np["input_ids"][inst_index] = features['input_ids']
         features_np["segment_ids"][inst_index] = features['segment_ids']
         features_np["masked_lm_positions"][inst_index] = features['masked_lm_positions']
@@ -282,7 +285,7 @@ def write_to_files_rec(instances, tokenizer, max_seq_length,
     writer_index = 0
     total_written = 0
     for (inst_index, instance) in enumerate(instances):
-        features = transform(instance, tokenizer, max_seq_length, max_predictions_per_seq, True)
+        features = transform(instance, tokenizer, max_seq_length, max_predictions_per_seq)
         example = features
 
         writers[writer_index].write_idx(inst_index, json.dumps(example).encode('UTF-8'))
