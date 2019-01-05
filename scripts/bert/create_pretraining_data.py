@@ -195,12 +195,12 @@ def write_to_files_np(instances, tokenizer, max_seq_length,
                       max_predictions_per_seq, output_files):
     """Write to numpy files from `TrainingInstance`s."""
     next_sentence_labels = []
-    segment_a_lengths = []
-    segment_b_lengths = []
+    valid_lengths = []
 
     num_inst = len(instances)
     pad = tokenizer.convert_tokens_to_ids(['[PAD]'])[0]
     input_ids = np.full((num_inst, max_seq_length), pad, dtype='int32')
+    segment_ids = np.full((num_inst, max_seq_length), 0, dtype='int32')
     masked_lm_positions = np.full((num_inst, max_predictions_per_seq), 0, dtype='int32')
     masked_lm_ids = np.full((num_inst, max_predictions_per_seq), 0, dtype='int32')
 
@@ -208,12 +208,11 @@ def write_to_files_np(instances, tokenizer, max_seq_length,
     for (inst_index, instance) in enumerate(instances):
         features = transform(instance, tokenizer, max_seq_length, max_predictions_per_seq)
         input_ids[inst_index] = features['input_ids']
+        segment_ids[inst_index] = features['segment_ids']
         masked_lm_positions[inst_index] = features['masked_lm_positions']
         masked_lm_ids[inst_index] = features['masked_lm_ids']
-
-        segment_a_lengths.append(features['segment_a_lengths'][0])
-        segment_b_lengths.append(features['segment_b_lengths'][0])
         next_sentence_labels.append(features['next_sentence_labels'][0])
+        valid_lengths.append(features['valid_lengths'][0])
 
         total_written += 1
         if inst_index < 20:
@@ -224,11 +223,11 @@ def write_to_files_np(instances, tokenizer, max_seq_length,
 
     outputs = collections.OrderedDict()
     outputs["input_ids"] = input_ids
+    outputs["segment_ids"] = segment_ids
     outputs["masked_lm_positions"] = masked_lm_positions
     outputs["masked_lm_ids"] = masked_lm_ids
-    outputs["segment_a_lengths"] = np.array(segment_a_lengths, dtype='int32')
-    outputs["segment_b_lengths"] = np.array(segment_b_lengths, dtype='int32')
     outputs["next_sentence_labels"] = np.array(next_sentence_labels, dtype='int32')
+    outputs["valid_lengths"] = np.array(valid_lengths, dtype='int32')
 
     np.savez(output_file, **outputs)
     logging.info('Wrote %d total instances', total_written)
