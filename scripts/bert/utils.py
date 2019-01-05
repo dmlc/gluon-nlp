@@ -74,9 +74,9 @@ def convert_vocab(vocab_file):
     bert_vocab_dict['padding_token'] = padding_token
     bert_vocab_dict['bos_token'] = None
     bert_vocab_dict['eos_token'] = None
-    bert_vocab_dict['mask_token'] = BERTVocab.MASK_TOKEN
-    bert_vocab_dict['sep_token'] = BERTVocab.SEP_TOKEN
-    bert_vocab_dict['cls_token'] = BERTVocab.CLS_TOKEN
+    bert_vocab_dict['mask_token'] = gluonnlp.vocab.BERTVocab.MASK_TOKEN
+    bert_vocab_dict['sep_token'] = gluonnlp.vocab.BERTVocab.SEP_TOKEN
+    bert_vocab_dict['cls_token'] = gluonnlp.vocab.BERTVocab.CLS_TOKEN
     json_str = json.dumps(bert_vocab_dict)
     converted_vocab = gluonnlp.vocab.BERTVocab.from_json(json_str)
     return converted_vocab, swap_idx
