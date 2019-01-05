@@ -18,14 +18,14 @@
 # under the License.
 """BERT models."""
 
-__all__ = ['BERTSquad', 'BERTLoss']
+__all__ = ['BertForQA', 'BertForQALoss']
 
 from mxnet import nd
 from mxnet.gluon import Block, loss, nn
 from mxnet.gluon.loss import Loss
 
 
-class BERTSquad(Block):
+class BertForQA(Block):
     """Model for SQuAD task with BERT.
 
     The model feeds token ids and token type ids into BERT to get the
@@ -42,7 +42,7 @@ class BERTSquad(Block):
     """
 
     def __init__(self, bert, prefix=None, params=None):
-        super(BERTSquad, self).__init__(prefix=prefix, params=params)
+        super(BertForQA, self).__init__(prefix=prefix, params=params)
         self.bert = bert
         with self.name_scope():
             self.classifier = nn.HybridSequential(prefix=prefix)
@@ -64,37 +64,42 @@ class BERTSquad(Block):
         Returns
         -------
         outputs : NDArray
-            Shape (2, batch_size, seq_length)
+            Shape (batch_size, seq_length, 2)
         """
         bert_output = self.bert(inputs, token_types, valid_length)
         output = self.classifier(bert_output)
-        output = nd.transpose(output, (2, 0, 1))
         return output
 
 
-class BERTLoss(Loss):
+class BertForQALoss(Loss):
     """Loss for SQuAD task with BERT.
 
     """
 
     def __init__(self, weight=None, batch_axis=0, **kwargs):  # pylint: disable=unused-argument
-        super(BERTLoss, self).__init__(weight=None, batch_axis=0, **kwargs)
+        super(BertForQALoss, self).__init__(
+            weight=None, batch_axis=0, **kwargs)
         self.loss = loss.SoftmaxCELoss()
 
     def hybrid_forward(self, F, pred, label):  # pylint: disable=arguments-differ
         """
         Parameters
         ----------
-        pred : NDArray, shape (2, batch_size, seq_length)
+        pred : NDArray, shape (batch_size, seq_length, 2)
             BERTSquad forward output.
         label : list, length is 2, each shape is (batch_size,1)
             label[0] is the starting position of the answer,
             label[1] is the ending position of the answer.
+
+        Returns
+        -------
+        outputs : NDArray
+            Shape (batch_size,)
         """
-        pred = F.split(pred, axis=0, num_outputs=2)
-        start_pred = pred[0].reshape((-3, 0))
+        pred = F.split(pred, axis=2, num_outputs=2)
+        start_pred = pred[0].reshape((0, -3))
         start_label = label[0]
-        end_pred = pred[1].reshape((-3, 0))
+        end_pred = pred[1].reshape((0, -3))
         end_label = label[1]
         return (self.loss(start_pred, start_label) + self.loss(
             end_pred, end_label)) / 2

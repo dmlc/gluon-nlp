@@ -189,7 +189,8 @@ def predictions(dev_dataset,
             end_indexes = _get_best_indexes(result.end_logits, n_best_size)
 
             if version_2:
-                feature_null_score = result.start_logits[0] + result.end_logits[0]
+                feature_null_score = result.start_logits[0] + \
+                    result.end_logits[0]
                 if feature_null_score < score_null:
                     score_null = feature_null_score
                     min_null_feature_index = features_id
@@ -378,7 +379,7 @@ def metric_max_over_ground_truths(metric_fn, prediction, ground_truths):
     return max(scores_for_ground_truths)
 
 
-def Get_F1_EM(dataset_file, predict_data):
+def get_F1_EM(dataset_file, predict_data):
     """Calculate the F1 and EM scores of the predicted results.
     Use only with the SQuAD1.1 dataset.
 

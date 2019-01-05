@@ -49,10 +49,10 @@ import mxnet as mx
 from mxnet import gluon, nd
 
 import gluonnlp as nlp
-from bert import BERTLoss, BERTSquad
+from bert import BertForQALoss, BertForQA
 from dataset import (SQuAD, SQuADTransform, bert_qa_batchify_fn,
                      preprocess_dataset)
-from evaluate import Get_F1_EM, predictions
+from evaluate import get_F1_EM, predictions
 
 np.random.seed(0)
 random.seed(0)
@@ -62,102 +62,126 @@ logging.getLogger().setLevel(logging.DEBUG)
 parser = argparse.ArgumentParser(description='BERT QA example.'
                                  'We fine-tune the BERT model on SQuAD 1.1')
 
-parser.add_argument(
-    '--train_file',
-    type=str,
-    default='train-v1.1.json',
-    help='SQuAD json for training. E.g., train-v1.1.json')
-parser.add_argument(
-    '--predict_file',
-    type=str,
-    default=None,
-    help='SQuAD json for predictions. E.g., dev-v1.1.json or test-v1.1.json')
-parser.add_argument(
-    '--output_dir',
-    type=str,
-    default='./output_dir',
-    help='The output directory where the model params will be written. default is ./output_dir')
+parser.add_argument('--train_file',
+                    type=str,
+                    default='train-v1.1.json',
+                    help='SQuAD json for training. E.g., train-v1.1.json')
 
-parser.add_argument('--epochs', type=int, default=2,
+parser.add_argument('--predict_file',
+                    type=str,
+                    default=None,
+                    help='SQuAD json for predictions. E.g., dev-v1.1.json or test-v1.1.json')
+
+parser.add_argument('--only_predict',
+                    action='store_true',
+                    help='Whether to predict only.')
+
+parser.add_argument('--model_parameters',
+                    type=str,
+                    default=None,
+                    help='Model parameter file')
+
+parser.add_argument('--model',
+                    type=str,
+                    default='bert_12_768_12',
+                    help='BERT model name. options are bert_12_768_12 and bert_24_1024_16.')
+
+parser.add_argument('--dataset_name',
+                    type=str,
+                    default='book_corpus_wiki_en_uncased',
+                    help='BERT dataset name. options are book_corpus_wiki_en_uncased and book_corpus_wiki_en_cased.')
+parser.add_argument('--cased',
+                    action='store_false',
+                    help='if not set, inputs are converted to lower case.')
+
+parser.add_argument('--output_dir',
+                    type=str,
+                    default='./output_dir',
+                    help='The output directory where the model params will be written. default is ./output_dir')
+
+parser.add_argument('--epochs',
+                    type=int,
+                    default=2,
                     help='number of epochs, default is 2')
 
-parser.add_argument(
-    '--batch_size',
-    type=int,
-    default=12,
-    help='Batch size. Number of examples per gpu in a minibatch. default is 12')
+parser.add_argument('--batch_size',
+                    type=int,
+                    default=12,
+                    help='Batch size. Number of examples per gpu in a minibatch. default is 12')
 
-parser.add_argument(
-    '--test_batch_size', type=int, default=24, help='Test batch size. default is 24')
+parser.add_argument('--test_batch_size',
+                    type=int,
+                    default=24,
+                    help='Test batch size. default is 24')
 
-parser.add_argument(
-    '--optimizer', type=str, default='bertadam', help='optimization algorithm. default is bertadam')
+parser.add_argument('--optimizer',
+                    type=str,
+                    default='bertadam',
+                    help='optimization algorithm. default is bertadam')
 
-parser.add_argument('--accumulate', type=int, default=None, help='The number of batches for '
+parser.add_argument('--accumulate',
+                    type=int,
+                    default=None,
+                    help='The number of batches for '
                     'gradients accumulation to simulate large batch size. Default is None')
-parser.add_argument(
-    '--lr', type=float, default=3e-5, help='Initial learning rate. default is 3e-5')
+parser.add_argument('--lr',
+                    type=float,
+                    default=3e-5,
+                    help='Initial learning rate. default is 3e-5')
 
-parser.add_argument(
-    '--warmup_ratio',
-    type=float,
-    default=0.1,
-    help='ratio of warmup steps used in NOAM\'s stepsize schedule. default is 0.1')
+parser.add_argument('--warmup_ratio',
+                    type=float,
+                    default=0.1,
+                    help='ratio of warmup steps used in NOAM\'s stepsize schedule. default is 0.1')
 
-parser.add_argument(
-    '--log_interval', type=int, default=50, help='report interval. default is 50')
+parser.add_argument('--log_interval',
+                    type=int,
+                    default=50,
+                    help='report interval. default is 50')
 
-parser.add_argument(
-    '--max_seq_length',
-    type=int,
-    default=384,
-    help='The maximum total input sequence length after WordPiece tokenization.'
-    'Sequences longer than this will be truncated, and sequences shorter '
-    'than this will be padded. default is 384')
+parser.add_argument('--max_seq_length',
+                    type=int,
+                    default=384,
+                    help='The maximum total input sequence length after WordPiece tokenization.'
+                    'Sequences longer than this will be truncated, and sequences shorter '
+                    'than this will be padded. default is 384')
 
-parser.add_argument(
-    '--doc_stride',
-    type=int,
-    default=128,
-    help='When splitting up a long document into chunks, how much stride to '
-    'take between chunks. default is 128')
+parser.add_argument('--doc_stride',
+                    type=int,
+                    default=128,
+                    help='When splitting up a long document into chunks, how much stride to '
+                    'take between chunks. default is 128')
 
-parser.add_argument(
-    '--max_query_length',
-    type=int,
-    default=64,
-    help='The maximum number of tokens for the question. Questions longer than '
-    'this will be truncated to this length. default is 64')
+parser.add_argument('--max_query_length',
+                    type=int,
+                    default=64,
+                    help='The maximum number of tokens for the question. Questions longer than '
+                    'this will be truncated to this length. default is 64')
 
-parser.add_argument(
-    '--n_best_size',
-    type=int,
-    default=20,
-    help='The total number of n-best predictions to generate in the '
-    'nbest_predictions.json output file. default is 20')
+parser.add_argument('--n_best_size',
+                    type=int,
+                    default=20,
+                    help='The total number of n-best predictions to generate in the '
+                    'nbest_predictions.json output file. default is 20')
 
-parser.add_argument(
-    '--max_answer_length',
-    type=int,
-    default=30,
-    help='The maximum length of an answer that can be generated. This is needed '
-    'because the start and end predictions are not conditioned on one another. default is 30'
-)
+parser.add_argument('--max_answer_length',
+                    type=int,
+                    default=30,
+                    help='The maximum length of an answer that can be generated. This is needed '
+                    'because the start and end predictions are not conditioned on one another. default is 30')
 
-parser.add_argument(
-    '--version_2', action='store_true',
-    help='SQuAD examples whether contain some that do not have an answer.'
-)
+parser.add_argument('--version_2',
+                    action='store_true',
+                    help='SQuAD examples whether contain some that do not have an answer.')
 
-parser.add_argument(
-    '--null_score_diff_threshold',
-    type=float,
-    default=0.0,
-    help='If null_score - best_non_null is greater than the threshold predict null. default is 0.0'
-)
+parser.add_argument('--null_score_diff_threshold',
+                    type=float,
+                    default=0.0,
+                    help='If null_score - best_non_null is greater than the threshold predict null. default is 0.0')
 
-parser.add_argument(
-    '--gpu', action='store_true', help='whether to use gpu for finetuning')
+parser.add_argument('--gpu',
+                    action='store_true',
+                    help='whether to use gpu for finetuning')
 
 args = parser.parse_args()
 logging.info(args)
@@ -168,6 +192,11 @@ output_dir = args.output_dir
 if not os.path.exists(output_dir):
     os.mkdir(output_dir)
 
+model_name = args.model
+dataset_name = args.dataset_name
+only_predict = args.only_predict
+model_parameters = args.model_parameters
+lower_case = args.cased
 
 epochs = args.epochs
 batch_size = args.batch_size
@@ -182,11 +211,10 @@ if accumulate:
                  format(accumulate*batch_size))
 
 optimizer = args.optimizer
-# log_interval = args.log_interval
 warmup_ratio = args.warmup_ratio
 
-dataset_name = 'book_corpus_wiki_en_uncased'
-version_2 = False if not args.version_2 else True
+
+version_2 = args.version_2
 max_seq_length = args.max_seq_length
 doc_stride = args.doc_stride
 max_query_length = args.max_query_length
@@ -195,46 +223,47 @@ max_answer_length = args.max_answer_length
 null_score_diff_threshold = args.null_score_diff_threshold
 
 if max_seq_length <= max_query_length + 3:
-    raise ValueError(
-        'The max_seq_length (%d) must be greater than max_query_length '
-        '(%d) + 3' % (max_seq_length, max_query_length))
+    raise ValueError('The max_seq_length (%d) must be greater than max_query_length '
+                     '(%d) + 3' % (max_seq_length, max_query_length))
 
-bert, vocab = nlp.model.bert_12_768_12(
+bert, vocab = nlp.model.get_model(
     dataset_name=dataset_name,
-    pretrained=True,
+    pretrained=not model_parameters,
     ctx=ctx,
     use_pooler=False,
     use_decoder=False,
-    use_classifier=False,
-)
+    use_classifier=False)
 
-berttoken = nlp.data.BERTTokenizer(vocab=vocab)
+berttoken = nlp.data.BERTTokenizer(vocab=vocab, lower_case=lower_case)
 
 
-logging.info('Loader Train data...')
-train_data = SQuAD(train_file, version_2=version_2)
-
-train_data_transform = preprocess_dataset(train_data, SQuADTransform(
-    berttoken,
-    max_seq_length=max_seq_length,
-    doc_stride=doc_stride,
-    max_query_length=max_query_length,
-    is_training=True))
-
-train_dataloader = mx.gluon.data.DataLoader(
-    train_data_transform, batch_size=batch_size,
-    batchify_fn=bert_qa_batchify_fn, num_workers=4, shuffle=True)
-
-net = BERTSquad(bert=bert)
-net.classifier.initialize(init=mx.init.Normal(0.02), ctx=ctx)
+net = BertForQA(bert=bert)
+if not model_parameters:
+    net.classifier.initialize(init=mx.init.Normal(0.02), ctx=ctx)
+else:
+    net.load_parameters(model_parameters, ctx=ctx)
 net.hybridize(static_alloc=True)
 
-loss_function = BERTLoss()
+loss_function = BertForQALoss()
 loss_function.hybridize(static_alloc=True)
 
 
 def Train():
     """Training function."""
+
+    logging.info('Loader Train data...')
+    train_data = SQuAD(train_file, version_2=version_2)
+
+    train_data_transform = preprocess_dataset(train_data, SQuADTransform(
+        berttoken,
+        max_seq_length=max_seq_length,
+        doc_stride=doc_stride,
+        max_query_length=max_query_length,
+        is_training=True))
+
+    train_dataloader = mx.gluon.data.DataLoader(train_data_transform, batch_size=batch_size,
+                                                batchify_fn=bert_qa_batchify_fn, num_workers=4, shuffle=True)
+
     logging.info('Start Training')
 
     optimizer_params = {'learning_rate': lr, 'epsilon': 1e-9}
@@ -248,15 +277,9 @@ def Train():
         trainer = gluon.Trainer(net.collect_params(), 'adam',
                                 optimizer_params, update_on_kvstore=False)
 
-    # trainer = gluon.Trainer(net.collect_params(), optimizer, {
-    #     'learning_rate': lr,
-    #     'epsilon': 1e-9
-    # })
-
     num_train_examples = len(train_data_transform)
     step_size = batch_size * accumulate if accumulate else batch_size
     num_train_steps = int(num_train_examples / step_size * args.epochs)
-    warmup_ratio = args.warmup_ratio
     num_warmup_steps = int(num_train_steps * warmup_ratio)
     step_num = 0
 
@@ -294,15 +317,13 @@ def Train():
             with mx.autograd.record():
                 _, inputs, token_types, valid_length, start_label, end_label = data
 
-                out = net(
-                    inputs.astype('float32').as_in_context(ctx),
-                    token_types.astype('float32').as_in_context(ctx),
-                    valid_length.astype('float32').as_in_context(ctx))
+                out = net(inputs.astype('float32').as_in_context(ctx),
+                          token_types.astype('float32').as_in_context(ctx),
+                          valid_length.astype('float32').as_in_context(ctx))
 
                 ls = loss_function(out, [
                     start_label.astype('float32').as_in_context(ctx),
-                    end_label.astype('float32').as_in_context(ctx)
-                ]).mean()
+                    end_label.astype('float32').as_in_context(ctx)]).mean()
             ls.backward()
             # update
             if not accumulate or (batch_id + 1) % accumulate == 0:
@@ -361,10 +382,9 @@ def Evaluate():
     for data in dev_dataloader:
         example_ids, inputs, token_types, valid_length, _, _ = data
 
-        out = net(
-            inputs.astype('float32').as_in_context(ctx),
-            token_types.astype('float32').as_in_context(ctx),
-            valid_length.astype('float32').as_in_context(ctx))
+        out = net(inputs.astype('float32').as_in_context(ctx),
+                  token_types.astype('float32').as_in_context(ctx),
+                  valid_length.astype('float32').as_in_context(ctx))
 
         output = nd.split(out, axis=0, num_outputs=2)
         start_logits = output[0].reshape((-3, 0)).asnumpy()
@@ -380,9 +400,10 @@ def Evaluate():
     all_predictions, all_nbest_json, scores_diff_json = predictions(
         dev_dataset=dev_dataset,
         all_results=all_results,
+        tokenizer=nlp.data.BasicTokenizer(lower_case=lower_case),
         max_answer_length=max_answer_length,
-        tokenizer=nlp.data.BasicTokenizer(lower_case=True),
         null_score_diff_threshold=null_score_diff_threshold,
+        n_best_size=n_best_size,
         version_2=version_2)
 
     with open(os.path.join(output_dir, 'predictions.json'),
@@ -398,10 +419,11 @@ def Evaluate():
                   'w', encoding='utf-8') as all_predictions_write:
             all_predictions_write.write(json.dumps(scores_diff_json))
     else:
-        logging.info(Get_F1_EM(predict_file, all_predictions))
+        logging.info(get_F1_EM(predict_file, all_predictions))
 
 
 if __name__ == '__main__':
-    Train()
-    if predict_file is not None:
+    if not only_predict:
+        Train()
+    elif not predict_file:
         Evaluate()
