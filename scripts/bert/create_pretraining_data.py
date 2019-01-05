@@ -203,6 +203,7 @@ def write_to_files_np(instances, tokenizer, max_seq_length,
     segment_ids = np.full((num_inst, max_seq_length), 0, dtype='int32')
     masked_lm_positions = np.full((num_inst, max_predictions_per_seq), 0, dtype='int32')
     masked_lm_ids = np.full((num_inst, max_predictions_per_seq), 0, dtype='int32')
+    masked_lm_weights = np.full((num_inst, max_predictions_per_seq), 0, dtype='int32')
 
     total_written = 0
     for (inst_index, instance) in enumerate(instances):
@@ -211,6 +212,7 @@ def write_to_files_np(instances, tokenizer, max_seq_length,
         segment_ids[inst_index] = features['segment_ids']
         masked_lm_positions[inst_index] = features['masked_lm_positions']
         masked_lm_ids[inst_index] = features['masked_lm_ids']
+        masked_lm_weights[inst_index] = features['masked_lm_weights']
         next_sentence_labels.append(features['next_sentence_labels'][0])
         valid_lengths.append(features['valid_lengths'][0])
 
@@ -226,6 +228,7 @@ def write_to_files_np(instances, tokenizer, max_seq_length,
     outputs["segment_ids"] = segment_ids
     outputs["masked_lm_positions"] = masked_lm_positions
     outputs["masked_lm_ids"] = masked_lm_ids
+    outputs["masked_lm_weights"] = masked_lm_weights
     outputs["next_sentence_labels"] = np.array(next_sentence_labels, dtype='int32')
     outputs["valid_lengths"] = np.array(valid_lengths, dtype='int32')
 
