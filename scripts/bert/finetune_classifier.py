@@ -44,9 +44,9 @@ import mxnet as mx
 from mxnet import gluon
 import gluonnlp as nlp
 from gluonnlp.model import bert_12_768_12
+from gluonnlp.data import BERTTokenizer, BERTClassificationTransform, MRPCDataset
+
 from bert import BERTClassifier
-from tokenizer import FullTokenizer
-from dataset import MRPCDataset, ClassificationTransform
 
 parser = argparse.ArgumentParser(description='BERT sentence pair classification example.'
                                              'We fine-tune the BERT model on MRPC')
@@ -79,7 +79,11 @@ lr = args.lr
 accumulate = args.accumulate
 log_interval = args.log_interval * accumulate if accumulate else args.log_interval
 if accumulate:
+<<<<<<< HEAD
     logging.info('Using gradient accumulation. Effective batch size = %d', accumulate*batch_size)
+=======
+    logging.info("Using gradient accumulation. Effective batch size = %d" % (accumulate*batch_size))
+>>>>>>> replace some code with new bert api
 
 # random seed
 np.random.seed(args.seed)
@@ -103,14 +107,21 @@ metric = mx.metric.Accuracy()
 
 # data processing
 do_lower_case = 'uncased' in dataset
-bert_tokenizer = FullTokenizer(vocabulary, do_lower_case=do_lower_case)
+bert_tokenizer = BERTTokenizer(vocabulary, do_lower_case=do_lower_case)
+
 
 def preprocess_data(tokenizer, batch_size, dev_batch_size, max_len):
     """Data preparation function."""
     # transformation
+<<<<<<< HEAD
     train_trans = ClassificationTransform(tokenizer, MRPCDataset.get_labels(),
                                           max_len, pad=False)
     dev_trans = ClassificationTransform(tokenizer, MRPCDataset.get_labels(), max_len)
+=======
+    train_trans = BERTClassificationTransform(tokenizer, MRPCDataset.get_labels(),
+                                              args.max_len, pad=False)
+    dev_trans = BERTClassificationTransform(tokenizer, MRPCDataset.get_labels(), args.max_len)
+>>>>>>> replace some code with new bert api
     data_train = MRPCDataset('train').transform(train_trans, lazy=False)
     data_dev = MRPCDataset('dev').transform(dev_trans, lazy=False)
     data_train_len = data_train.transform(lambda input_id, length, segment_id, label_id: length)
@@ -133,8 +144,10 @@ def preprocess_data(tokenizer, batch_size, dev_batch_size, max_len):
                                               num_workers=1, shuffle=False)
     return dataloader, dataloader_dev, num_samples_train
 
+
 train_data, dev_data, num_train_examples = preprocess_data(bert_tokenizer, batch_size,
                                                            dev_batch_size, args.max_len)
+
 
 def evaluate():
     """Evaluate the model on validation dataset.
@@ -226,6 +239,7 @@ def train():
         toc = time.time()
         logging.info('Time cost={:.1f}s'.format(toc - tic))
         tic = toc
+
 
 if __name__ == '__main__':
     train()

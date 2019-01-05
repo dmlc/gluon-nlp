@@ -17,14 +17,14 @@
 # specific language governing permissions and limitations
 # under the License.
 """Utility functions for BERT."""
+
 import json
+import collections
+import io
+import six
 import hashlib
 import gluonnlp
 from tensorflow.python import pywrap_tensorflow
-try:
-    from tokenizer import load_vocab
-except ImportError:
-    from .tokenizer import load_vocab
 
 __all__ = ['convert_vocab']
 
@@ -102,3 +102,40 @@ def read_tf_checkpoint(path):
         tensor = reader.get_tensor(key)
         tensors[key] = tensor
     return tensors
+
+
+def load_vocab(vocab_file):
+    """Loads a vocabulary file into a dictionary."""
+    vocab = collections.OrderedDict()
+    index = 0
+    with io.open(vocab_file, 'r') as reader:
+        while True:
+            token = convert_to_unicode(reader.readline())
+            if not token:
+                break
+            token = token.strip()
+            vocab[token] = index
+            index += 1
+    return vocab
+
+
+def printable_text(text):
+    """Returns text encoded in a way suitable for print."""
+    # These functions want `str` for both Python2 and Python3, but in one case
+    # it's a Unicode string and in the other it's a byte string.
+    if six.PY3:
+        if isinstance(text, str):
+            return text
+        elif isinstance(text, bytes):
+            return text.decode('utf-8', 'ignore')
+        else:
+            raise ValueError('Unsupported string type: %s' % (type(text)))
+    elif six.PY2:
+        if isinstance(text, str):
+            return text
+        elif isinstance(text, unicode):  # noqa: F821
+            return text.encode('utf-8')
+        else:
+            raise ValueError('Unsupported string type: %s' % (type(text)))
+    else:
+        raise ValueError('Not running on Python2 or Python 3?')

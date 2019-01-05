@@ -27,7 +27,7 @@ import mxnet as mx
 import gluonnlp as nlp
 from gluonnlp.data import TSVDataset
 from gluonnlp.data import BERTTokenizer
-from dataset import BERTTransform
+from gluon.data import BERTTransform
 
 parser = argparse.ArgumentParser(description='Comparison script for BERT model in Tensorflow'
                                              'and that in Gluon')
