@@ -18,12 +18,13 @@
 # under the License.
 """Utility functions for BERT."""
 
-import json
 import collections
-import io
-import six
 import hashlib
+import io
+import json
+
 import gluonnlp
+import six
 from tensorflow.python import pywrap_tensorflow
 
 __all__ = ['convert_vocab']

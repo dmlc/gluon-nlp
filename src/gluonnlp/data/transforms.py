@@ -719,26 +719,26 @@ class BasicTokenizer():
     performs invalid character removal (e.g. control chars) and whitespace.
     tokenize CJK chars.
     splits punctuation on a piece of text.
-    strips accents and convert to lower case.(If lower_case is true)
+    strips accents and convert to lower case.(If do_lower_case is true)
 
     Parameters
     ----------
-    lower_case : bool, default True
+    do_lower_case : bool, default True
         whether the text strips accents and convert to lower case.
 
     Examples
     --------
-    >>> tokenizer = gluonnlp.data.BasicTokenizer(lower_case=True)
+    >>> tokenizer = gluonnlp.data.BasicTokenizer(do_lower_case=True)
     >>> tokenizer(u" \tHeLLo!how  \n Are yoU?  ")
     ['hello', '!', 'how', 'are', 'you', '?']
-    >>> tokenizer = gluonnlp.data.BasicTokenizer(lower_case=False)
+    >>> tokenizer = gluonnlp.data.BasicTokenizer(do_lower_case=False)
     >>> tokenizer(u" \tHeLLo!how  \n Are yoU?  ")
     ['HeLLo', '!', 'how', 'Are', 'yoU', '?']
 
     """
 
-    def __init__(self, lower_case=True):
-        self.lower_case = lower_case
+    def __init__(self, do_lower_case=True):
+        self.do_lower_case = do_lower_case
 
     def __call__(self, sample):
         """
@@ -770,7 +770,7 @@ class BasicTokenizer():
         orig_tokens = _whitespace_tokenize(text)
         split_tokens = []
         for token in orig_tokens:
-            if self.lower_case:
+            if self.do_lower_case:
                 token = token.lower()
                 token = self._run_strip_accents(token)
             split_tokens.extend(self._run_split_on_punc(token))
@@ -905,10 +905,10 @@ class BERTTokenizer(object):
     ----------
     vocab : gluonnlp.Vocab or None, default None
         Vocabulary for the corpus.
-    lower_case : bool, default True
+    do_lower_case : bool, default True
         whether the text strips accents and convert to lower case.
         If you use the BERT pre-training model,
-        lower_case is set to Flase when using the cased model,
+        do_lower_case is set to Flase when using the cased model,
         otherwise it is set to True.
     max_input_chars_per_word : int, default 200
 
@@ -922,10 +922,10 @@ class BERTTokenizer(object):
 
     """
 
-    def __init__(self, vocab, lower_case=True, max_input_chars_per_word=200):
+    def __init__(self, vocab, do_lower_case=True, max_input_chars_per_word=200):
         self.vocab = vocab
         self.max_input_chars_per_word = max_input_chars_per_word
-        self.basic_tokenizer = BasicTokenizer(lower_case=lower_case)
+        self.basic_tokenizer = BasicTokenizer(do_lower_case=do_lower_case)
 
     def __call__(self, sample):
         """
