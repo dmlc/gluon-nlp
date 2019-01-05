@@ -235,46 +235,6 @@ def write_to_files_np(instances, tokenizer, max_seq_length,
     np.savez(output_file, **outputs)
     logging.info('Wrote %d total instances', total_written)
 
-def write_to_files_mmap(instances, tokenizer, max_seq_length,
-                                         max_predictions_per_seq, output_files):
-    """Create files from `TrainingInstance`s."""
-    features_np = collections.OrderedDict()
-    num_instances = len(instances)
-    features_np["next_sentence_labels"] = np.empty((num_instances,), dtype='int32')
-    features_np["valid_lengths"] = np.empty((num_instances,), dtype='int32')
-
-    seq_shape = (num_instances, max_seq_length)
-    features_np["input_ids"] = np.empty(seq_shape, dtype='int32')
-    features_np["segment_ids"] = np.empty(seq_shape, dtype='int32')
-
-    mask_shape = (num_instances, max_predictions_per_seq)
-    features_np["masked_lm_positions"] = np.empty(mask_shape, dtype='int32')
-    features_np["masked_lm_ids"] = np.empty(mask_shape, dtype='int32')
-    features_np["masked_lm_weights"] = np.empty(mask_shape, dtype='float32')
-
-    assert len(output_files) == 1, 'numpy format only support single output file'
-    output_file = output_files[0]
-
-    total_written = 0
-    for (inst_index, instance) in enumerate(instances):
-        features = transform(instance, tokenizer, max_seq_length, max_predictions_per_seq)
-        features_np["input_ids"][inst_index] = features['input_ids']
-        features_np["segment_ids"][inst_index] = features['segment_ids']
-        features_np["masked_lm_positions"][inst_index] = features['masked_lm_positions']
-        features_np["masked_lm_ids"][inst_index] = features['masked_lm_ids']
-        features_np["masked_lm_weights"][inst_index] = features['masked_lm_weights']
-        # both valid length and next sentence label are single numbers
-        features_np["next_sentence_labels"][inst_index] = features['next_sentence_labels'][0]
-        features_np["valid_lengths"][inst_index] = features['valid_lengths'][0]
-
-        total_written += 1
-
-        if inst_index < 20:
-            print_example(instance, features)
-
-    np.savez(output_file, **features_np)
-    logging.info('Wrote %d total instances', total_written)
-
 def write_to_files_rec(instances, tokenizer, max_seq_length,
                                         max_predictions_per_seq, output_files):
     """Create IndexedRecordIO files from `TrainingInstance`s."""
@@ -583,9 +543,6 @@ def main():
     elif args.format == 'recordio':
         write_to_files_rec(instances, tokenizer, args.max_seq_length,
                                             args.max_predictions_per_seq, output_files)
-    elif args.format == 'mmap':
-        write_to_files_mmap(instances, tokenizer, args.max_seq_length,
-                                             args.max_predictions_per_seq, output_files)
     else:
         raise ValueError('unsupported format: %s'%args.format)
 
