@@ -20,7 +20,7 @@
 # pylint: disable=wildcard-import
 """Vocabulary."""
 
-from . import subwords, vocab
+from . import subwords, vocab, bert
 from .subwords import *
 from .vocab import *
 from .elmo import *

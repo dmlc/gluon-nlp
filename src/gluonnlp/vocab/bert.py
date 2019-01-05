@@ -173,10 +173,12 @@ class BERTVocab(Vocab):
     @classmethod
     def from_json(cls, json_str):
         """Deserialize BERTVocab object from json string.
+
         Parameters
         ----------
         json_str : str
             Serialized json string of a BERTVocab object.
+
         Returns
         -------
         BERTVocab
@@ -197,27 +199,5 @@ class BERTVocab(Vocab):
         bert_vocab._mask_token = vocab_dict.get('mask_token')
         bert_vocab._sep_token = vocab_dict.get('sep_token')
         bert_vocab._cls_token = vocab_dict.get('cls_token')
-
-        return bert_vocab
-
-    @classmethod
-    def from_vocab(cls, vocab):
-        """Create BERTVocab object from Vocab object.
-        Parameters
-        ----------
-        vocab : Vocab
-            Vocab object.
-        Returns
-        -------
-        BERTVocab
-        """
-        unknown_token = vocab.unknown_token
-        bert_vocab = cls(unknown_token=unknown_token, padding_token=vocab.padding_token,
-                         bos_token=vocab.bos_token, eos_token=vocab.eos_token)
-        bert_vocab._idx_to_token = vocab.idx_to_token
-        bert_vocab._token_to_idx = vocab.token_to_idx
-        if unknown_token:
-            bert_vocab._token_to_idx = DefaultLookupDict(bert_vocab._token_to_idx[unknown_token],
-                                                         bert_vocab._token_to_idx)
 
         return bert_vocab
