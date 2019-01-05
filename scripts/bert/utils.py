@@ -30,7 +30,7 @@ __all__ = ['convert_vocab']
 
 
 def convert_vocab(vocab_file):
-    """GluonNLP specific code to convert the original vocabulary to nlp.vocab.Vocab."""
+    """GluonNLP specific code to convert the original vocabulary to nlp.vocab.BERTVocab."""
     original_vocab = load_vocab(vocab_file)
     token_to_idx = dict(original_vocab)
     num_tokens = len(token_to_idx)
@@ -66,15 +66,18 @@ def convert_vocab(vocab_file):
     assert None not in idx_to_token
     assert len(set(idx_to_token)) == num_tokens
 
-    vocab_dict = {}
-    vocab_dict['idx_to_token'] = idx_to_token
-    vocab_dict['token_to_idx'] = token_to_idx
-    vocab_dict['reserved_tokens'] = reserved_tokens
-    vocab_dict['unknown_token'] = unknown_token
-    vocab_dict['padding_token'] = padding_token
-    vocab_dict['bos_token'] = None
-    vocab_dict['eos_token'] = None
-    json_str = json.dumps(vocab_dict)
+    bert_vocab_dict = {}
+    bert_vocab_dict['idx_to_token'] = idx_to_token
+    bert_vocab_dict['token_to_idx'] = token_to_idx
+    bert_vocab_dict['reserved_tokens'] = reserved_tokens
+    bert_vocab_dict['unknown_token'] = unknown_token
+    bert_vocab_dict['padding_token'] = padding_token
+    bert_vocab_dict['bos_token'] = None
+    bert_vocab_dict['eos_token'] = None
+    bert_vocab_dict['mask_token'] = BERTVocab.MASK_TOKEN
+    bert_vocab_dict['sep_token'] = BERTVocab.SEP_TOKEN
+    bert_vocab_dict['cls_token'] = BERTVocab.CLS_TOKEN
+    json_str = json.dumps(bert_vocab_dict)
     converted_vocab = gluonnlp.vocab.BERTVocab.from_json(json_str)
     return converted_vocab, swap_idx
 

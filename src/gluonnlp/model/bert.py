@@ -26,10 +26,9 @@ from mxnet.gluon import Block
 from mxnet.gluon import nn
 from mxnet.gluon.model_zoo import model_store
 import mxnet as mx
-from gluonnlp.vocab import BERTVocab
 from .transformer import BasePositionwiseFFN, BaseTransformerEncoderCell, BaseTransformerEncoder
 from .block import GELU
-from .utils import _load_vocab, _load_pretrained_params
+from .utils import _load_pretrained_params, _load_bert_vocab
 
 ###############################################################################
 #                              COMPONENTS                                     #
@@ -505,7 +504,7 @@ bert_hparams = {
 }
 
 
-def bert_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
+def bert_12_768_12(dataset_name=None, bert_vocab=None, pretrained=True, ctx=mx.cpu(),
                    root=os.path.join('~', '.mxnet', 'models'), use_pooler=True,
                    use_decoder=True, use_classifier=True, **kwargs):
     """BERT BASE pretrained model.
@@ -518,7 +517,7 @@ def bert_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
     dataset_name : str or None, default None
         Options include 'book_corpus_wiki_en_cased', 'book_corpus_wiki_en_uncased',
         'wiki_cn', 'wiki_multilingual' and 'wiki_multilingual_cased'.
-    vocab : gluonnlp.Vocab or None, default None
+    bert_vocab : gluonnlp.vocab.BERTVocab or None, default None
         Vocabulary for the dataset. Must be provided if dataset is not specified.
     pretrained : bool, default True
         Whether to load the pretrained weights for model.
@@ -537,15 +536,15 @@ def bert_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
 
     Returns
     -------
-    BERTModel, gluonnlp.Vocab
+    BERTModel, gluonnlp.vocab.BERTVocab
     """
-    return _bert_model(model_name='bert_12_768_12', vocab=vocab, dataset_name=dataset_name,
+    return _bert_model(model_name='bert_12_768_12', bert_vocab=bert_vocab, dataset_name=dataset_name,
                        pretrained=pretrained, ctx=ctx, use_pooler=use_pooler,
                        use_decoder=use_decoder, use_classifier=use_classifier, root=root,
                        **kwargs)
 
 
-def bert_24_1024_16(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
+def bert_24_1024_16(dataset_name=None, bert_vocab=None, pretrained=True, ctx=mx.cpu(),
                     use_pooler=True, use_decoder=True, use_classifier=True,
                     root=os.path.join('~', '.mxnet', 'models'), **kwargs):
     """BERT LARGE pretrained model.
@@ -557,7 +556,7 @@ def bert_24_1024_16(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu()
     ----------
     dataset_name : str or None, default None
         Options include 'book_corpus_wiki_en_uncased' and 'book_corpus_wiki_en_cased'.
-    vocab : gluonnlp.Vocab or None, default None
+    bert_vocab : gluonnlp.vocab.BERTVocab or None, default None
         Vocabulary for the dataset. Must be provided if dataset is not specified.
     pretrained : bool, default True
         Whether to load the pretrained weights for model.
@@ -576,22 +575,22 @@ def bert_24_1024_16(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu()
 
     Returns
     -------
-    BERTModel, gluonnlp.Vocab
+    BERTModel, gluonnlp.vocab.BERTVocab
     """
-    return _bert_model(model_name='bert_24_1024_16', vocab=vocab, dataset_name=dataset_name,
+    return _bert_model(model_name='bert_24_1024_16', bert_vocab=bert_vocab, dataset_name=dataset_name,
                        pretrained=pretrained, ctx=ctx, use_pooler=use_pooler,
                        use_decoder=use_decoder, use_classifier=use_classifier, root=root,
                        **kwargs)
 
 
-def _bert_model(model_name=None, dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
+def _bert_model(model_name=None, dataset_name=None, bert_vocab=None, pretrained=True, ctx=mx.cpu(),
                 use_pooler=True, use_decoder=True, use_classifier=True,
                 root=os.path.join('~', '.mxnet', 'models'), **kwargs):
     """BERT pretrained model.
 
     Returns
     -------
-    BERTModel, gluonnlp.Vocab
+    BERTModel, gluonnlp.vocab.BERTVocab
     """
     predefined_args = bert_hparams[model_name]
     mutable_args = ['use_residual', 'dropout', 'embed_dropout', 'word_embed']
@@ -609,12 +608,10 @@ def _bert_model(model_name=None, dataset_name=None, vocab=None, pretrained=True,
                           scaled=predefined_args['scaled'],
                           dropout=predefined_args['dropout'],
                           use_residual=predefined_args['use_residual'])
-    # vocab
-    vocab = _load_vocab(dataset_name, vocab, root)
-    # convert vocab to BERTVocab
-    vocab = BERTVocab.from_vocab(vocab)
+    # bert_vocab
+    bert_vocab = _load_bert_vocab(dataset_name, bert_vocab, root)
     # BERT
-    net = BERTModel(encoder, len(vocab),
+    net = BERTModel(encoder, len(bert_vocab),
                     token_type_vocab_size=predefined_args['token_type_vocab_size'],
                     units=predefined_args['units'],
                     embed_size=predefined_args['embed_size'],
@@ -626,4 +623,4 @@ def _bert_model(model_name=None, dataset_name=None, vocab=None, pretrained=True,
         ignore_extra = not (use_pooler and use_decoder and use_classifier)
         _load_pretrained_params(net, model_name, dataset_name, root, ctx,
                                 ignore_extra=ignore_extra)
-    return net, vocab
+    return net, bert_vocab
