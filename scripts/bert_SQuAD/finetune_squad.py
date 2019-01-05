@@ -394,7 +394,7 @@ def Evaluate():
 
         output = nd.split(out, axis=2, num_outputs=2)
         start_logits = output[0].reshape((0, -3)).asnumpy()
-        end_logits = output[1].reshape((0 - 3)).asnumpy()
+        end_logits = output[1].reshape((0, -3)).asnumpy()
 
         for example_id, start, end in zip(example_ids, start_logits, end_logits):
             example_id = example_id.asscalar()
