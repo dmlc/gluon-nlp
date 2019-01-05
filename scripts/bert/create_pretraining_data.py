@@ -203,7 +203,7 @@ def write_to_files_np(instances, tokenizer, max_seq_length,
     segment_ids = np.full((num_inst, max_seq_length), 0, dtype='int32')
     masked_lm_positions = np.full((num_inst, max_predictions_per_seq), 0, dtype='int32')
     masked_lm_ids = np.full((num_inst, max_predictions_per_seq), 0, dtype='int32')
-    masked_lm_weights = np.full((num_inst, max_predictions_per_seq), 0, dtype='int32')
+    masked_lm_weights = np.full((num_inst, max_predictions_per_seq), 0, dtype='float32')
 
     total_written = 0
     for (inst_index, instance) in enumerate(instances):
