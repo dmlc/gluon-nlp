@@ -538,10 +538,10 @@ def bert_12_768_12(dataset_name=None, bert_vocab=None, pretrained=True, ctx=mx.c
     -------
     BERTModel, gluonnlp.vocab.BERTVocab
     """
-    return _bert_model(model_name='bert_12_768_12', bert_vocab=bert_vocab, dataset_name=dataset_name,
-                       pretrained=pretrained, ctx=ctx, use_pooler=use_pooler,
-                       use_decoder=use_decoder, use_classifier=use_classifier, root=root,
-                       **kwargs)
+    return _bert_model(model_name='bert_12_768_12', bert_vocab=bert_vocab,
+                       dataset_name=dataset_name, pretrained=pretrained, ctx=ctx,
+                       use_pooler=use_pooler, use_decoder=use_decoder,
+                       use_classifier=use_classifier, root=root, **kwargs)
 
 
 def bert_24_1024_16(dataset_name=None, bert_vocab=None, pretrained=True, ctx=mx.cpu(),
@@ -577,13 +577,15 @@ def bert_24_1024_16(dataset_name=None, bert_vocab=None, pretrained=True, ctx=mx.
     -------
     BERTModel, gluonnlp.vocab.BERTVocab
     """
-    return _bert_model(model_name='bert_24_1024_16', bert_vocab=bert_vocab, dataset_name=dataset_name,
-                       pretrained=pretrained, ctx=ctx, use_pooler=use_pooler,
-                       use_decoder=use_decoder, use_classifier=use_classifier, root=root,
-                       **kwargs)
+    return _bert_model(model_name='bert_24_1024_16', bert_vocab=bert_vocab,
+                       dataset_name=dataset_name, pretrained=pretrained,
+                       ctx=ctx, use_pooler=use_pooler,
+                       use_decoder=use_decoder, use_classifier=use_classifier,
+                       root=root, **kwargs)
 
 
-def _bert_model(model_name=None, dataset_name=None, bert_vocab=None, pretrained=True, ctx=mx.cpu(),
+def _bert_model(model_name=None, dataset_name=None, bert_vocab=None,
+                pretrained=True, ctx=mx.cpu(),
                 use_pooler=True, use_decoder=True, use_classifier=True,
                 root=os.path.join('~', '.mxnet', 'models'), **kwargs):
     """BERT pretrained model.
