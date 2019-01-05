@@ -387,9 +387,9 @@ def Evaluate():
                   token_types.astype('float32').as_in_context(ctx),
                   valid_length.astype('float32').as_in_context(ctx))
 
-        output = nd.split(out, axis=0, num_outputs=2)
-        start_logits = output[0].reshape((-3, 0)).asnumpy()
-        end_logits = output[1].reshape((-3, 0)).asnumpy()
+        output = nd.split(out, axis=2, num_outputs=2)
+        start_logits = output[0].reshape((0, -3)).asnumpy()
+        end_logits = output[1].reshape((0 - 3)).asnumpy()
 
         for example_id, start, end in zip(example_ids, start_logits, end_logits):
             example_id = example_id.asscalar()
@@ -426,5 +426,5 @@ def Evaluate():
 if __name__ == '__main__':
     if not only_predict:
         Train()
-    elif not predict_file:
+    elif predict_file:
         Evaluate()
