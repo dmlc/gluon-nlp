@@ -308,7 +308,7 @@ def predictions(dev_dataset,
         for (i, entry) in enumerate(nbest):
             output = OrderedDict()
             output['text'] = entry.text
-            output['probability'] = probs[i]
+            output['probability'] = float(probimps[i])
             output['start_logit'] = entry.start_logit
             output['end_logit'] = entry.end_logit
             nbest_json.append(output)
@@ -327,7 +327,7 @@ def predictions(dev_dataset,
             else:
                 all_predictions[example_qas_id] = best_non_null_entry.text
 
-            all_nbest_json[example_qas_id] = nbest_json
+        all_nbest_json[example_qas_id] = nbest_json
     return all_predictions, all_nbest_json, scores_diff_json
 
 
