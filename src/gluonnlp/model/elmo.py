@@ -133,7 +133,7 @@ class ELMoCharacterEncoder(gluon.HybridBlock):
 class ELMoBiLM(gluon.HybridBlock):
     r"""ELMo Bidirectional language model
 
-    Run a pre-trained bidirectional language model, outputing the weighted
+    Run a pre-trained bidirectional language model, outputting the weighted
     ELMo representation.
 
     We implement the ELMo Bidirectional language model (BiLm) proposed in the following work::

@@ -321,7 +321,7 @@ class BERTModel(Block):
             assert not use_classifier, 'Cannot use classifier if use_pooler is False'
         if self._use_decoder:
             # Construct decoder for masked language model
-            self.decoder = self._get_decoder(units, vocab_size, self.word_embed, 'decoder_')
+            self.decoder = self._get_decoder(units, vocab_size, self.word_embed[0], 'decoder_')
 
     def _get_classifier(self, prefix):
         """ Construct a decoder for the masked language model task """
@@ -337,6 +337,8 @@ class BERTModel(Block):
             decoder.add(GELU())
             decoder.add(BERTLayerNorm(in_channels=units))
             decoder.add(nn.Dense(vocab_size, flatten=False, params=embed.collect_params()))
+        assert decoder[3].weight == list(embed.collect_params().values())[0], \
+          'The weights of word embedding are not tied with those of decoder'
         return decoder
 
     def _get_embed(self, embed, vocab_size, embed_size, initializer, dropout, prefix):
@@ -410,7 +412,8 @@ class BERTModel(Block):
         return self.pooler(outputs)
 
     def _decode(self, sequence, masked_positions):
-        """Generate unormalized prediction for the masked language model task.
+        """Generate unnormalized prediction for the masked language model task.
+
         This is only used for pre-training the BERT model.
 
         Inputs:

@@ -10,13 +10,13 @@ sampler, and
 Let's use `V` to denote the vocabulary size, and `T` to denote the sequence
 length. Given a language model, we can sample sequences according to the
 probability that they would occur according to our model. At each time step, a
-language model predicts the likelihood of each word occuring, given the context
+language model predicts the likelihood of each word occurring, given the context
 from prior time steps. The outputs at any time step can be any word from the
 vocabulary whose size is V and thus the number of all possible outcomes for a
 sequence of length T is thus V^T.
 
 While sometimes we might want to sample
-sentences according to their probability of occuring, at other times we want to
+sentences according to their probability of occurring, at other times we want to
 find the sentences that *are most likely to occur*. This is especially true in
 the case of language translation where we don't just want to see *a*
 translation. We want the *best* translation. While finding the optimal outcome
@@ -142,7 +142,7 @@ generate_sequences(beam_sampler, inputs, begin_states, 5)
 ## Sampling a Sequence with `SequenceSampler`
 
 The previous generation results
-may look a bit borning. Now, let's use sequence sampler to get some more
+may look a bit boring. Now, let's use sequence sampler to get some more
 interesting results.
 
 A `SequenceSampler` samples from the contextual multinomial distribution

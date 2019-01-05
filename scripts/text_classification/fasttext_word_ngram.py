@@ -165,8 +165,6 @@ def parse_args():
         '--output', type=str, help='Location to save trained model')
     group.add_argument(
         '--ngrams', type=int, default=1, help='NGrams used for training')
-    group.add_argument(
-        '--batch-size', type=int, default=16, help='Batch size for training.')
     group.add_argument('--epochs', type=int, default=10, help='Epoch limit')
     group.add_argument(
         '--gpu',

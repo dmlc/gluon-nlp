@@ -20,7 +20,7 @@
 # pylint: disable=arguments-differ
 
 """
-Implementation of the decomposable attentiontion model with intra sentence attention.
+Implementation of the decomposable attention model with intra sentence attention.
 """
 
 from mxnet import gluon
@@ -79,7 +79,7 @@ class NLIModel(gluon.HybridBlock):
 
 class IntraSentenceAttention(gluon.HybridBlock):
     """
-    Intra Sentence Attentiontion block.
+    Intra Sentence Attention block.
     """
     def __init__(self, inp_size, hidden_size, dropout=0., **kwargs):
         super(IntraSentenceAttention, self).__init__(**kwargs)
@@ -116,7 +116,7 @@ class IntraSentenceAttention(gluon.HybridBlock):
 
 class DecomposableAttention(gluon.HybridBlock):
     """
-    Decomposable Attentiontion block.
+    Decomposable Attention block.
     """
     def __init__(self, inp_size, hidden_size, num_class, dropout=0., **kwargs):
         super(DecomposableAttention, self).__init__(**kwargs)
@@ -143,7 +143,7 @@ class DecomposableAttention(gluon.HybridBlock):
 
     def hybrid_forward(self, F, a, b):
         """
-        Forward of Decomposable Attentiontion layer
+        Forward of Decomposable Attention layer
         """
         # a.shape = [B, L1, H]
         # b.shape = [B, L2, H]
