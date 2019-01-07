@@ -215,11 +215,10 @@ for epoch_id in range(num_epochs):
         ls.backward()
         
         # gradient clipping
-        grads = [p.grad(c) for p in params for c in [ctx]]
-        gluon.utils.clip_global_norm(grads, grad_clip)
-        
-        # parameter update
-        trainer.step(1)
+        trainer.allreduce_grads()
+        nlp.utils.clip_grad_global_norm(params, 1)
+        trainer.update(1)
+
         step_loss += ls.asscalar()
         metric.update([label], [out])
         if (batch_id + 1) % (log_interval) == 0:
