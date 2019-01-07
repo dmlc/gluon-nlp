@@ -69,7 +69,7 @@ def clip_grad_global_norm(parameters, max_norm, check_isfinite=True):
             return nd.dot(x, x)
         return array.norm().square()
 
-    arrays = [p.grad() for p in parameters if p.grad_req != 'null']
+    arrays = [p.list_grad()[0] for p in parameters if p.grad_req != 'null']
     assert len(arrays) > 0, 'No parameter found available for gradient norm clipping.'
     ctx, dtype = arrays[0].context, arrays[0].dtype
     total_norm = nd.add_n(*[_norm(arr).as_in_context(ctx) for arr in arrays])
