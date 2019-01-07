@@ -81,8 +81,9 @@ def test_clip_grad_norm(max_norm, check_isfinite):
             out = net(mx.nd.ones((1, 1), ctx=ctx))
         out.backward()
     trainer.allreduce_grads()
-    norm = nlp.utils.clip_grad_global_norm(net.collect_params().values(),
-                                           max_norm, check_isfinite)
+    with mx.cpu(2):
+        norm = nlp.utils.clip_grad_global_norm(net.collect_params().values(),
+                                               max_norm, check_isfinite)
     if isinstance(norm, mx.nd.NDArray):
         norm = norm.asnumpy()
     mx.test_utils.assert_almost_equal(norm, np.sqrt(8), atol=1e-5)
