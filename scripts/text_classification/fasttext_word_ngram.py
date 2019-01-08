@@ -30,9 +30,11 @@ For larger datasets please refrain from using -ngrams to value > 2
 import argparse
 import logging
 import math
+import time
 
 from collections import Counter
 import numpy as np
+import multiprocessing as mp
 from mxnet import nd, autograd
 from mxnet.gluon import nn, HybridBlock
 import mxnet as mx
@@ -40,7 +42,24 @@ import mxnet.gluon as gluon
 import gluonnlp.data.batchify as btf
 
 import gluonnlp
+#import evaluation
 
+
+
+class MeanPoolingLayer(gluon.HybridBlock):
+    """A block for mean pooling of encoder features"""
+    def __init__(self, prefix=None, params=None):
+        super(MeanPoolingLayer, self).__init__(prefix=prefix, params=params)
+
+    def hybrid_forward(self, F, data, valid_length): # pylint: disable=arguments-differ
+        """Forward logic"""
+        # Data will have shape (T, N, C)
+        masked_encoded = F.SequenceMask(data,
+                                        sequence_length=valid_length,
+                                        use_sequence_length=True)
+        agg_state = F.broadcast_div(F.sum(masked_encoded, axis=0),
+                                    F.expand_dims(valid_length, axis=1))
+        return agg_state
 
 class FastTextClassificationModel(HybridBlock):
     """
@@ -64,11 +83,14 @@ class FastTextClassificationModel(HybridBlock):
                 num_output_units = 1
             logging.info('Number of output units in the last layer :%s',
                          num_output_units)
+            self.agg_layer = MeanPoolingLayer()
             self.dense = nn.Dense(num_output_units)
 
-    def hybrid_forward(self, F, x):  # pylint: disable=arguments-differ
-        embeddings = self.embedding(x)
-        dense_output = self.dense(embeddings.mean(axis=1))
+    def hybrid_forward(self, F, x, valid_length):  # pylint: disable=arguments-differ
+        input = x.swapaxes(dim1=0, dim2=1)
+        embeddings = self.embedding(input)
+        mean_pooled = self.agg_layer(embeddings, valid_length)
+        dense_output = self.dense(mean_pooled)
         return F.Dropout(dense_output, 0.1)
 
 
@@ -118,18 +140,19 @@ def evaluate_accuracy(data_iterator, net, ctx, loss_fun, num_classes):
     """
     acc = mx.metric.Accuracy()
     loss_avg = 0.
-    for i, (data, labels) in enumerate(data_iterator):
+    for i, ((data, length), label) in enumerate(data_iterator):
         data = data.as_in_context(ctx)  #.reshape((-1,784))
-        labels = labels.as_in_context(ctx)
-        output = net(data)
-        loss = loss_fun(output, labels)
+        length = length.astype('float32').as_in_context(ctx)
+        label = label.as_in_context(ctx)
+        output = net(data,length)
+        loss = loss_fun(output, label)
         preds = []
         if (num_classes == 2):
             preds = (nd.sign(output) + 1) / 2
             preds = preds.reshape(-1)
         else:
             preds = nd.argmax(output, axis=1)
-        acc.update(preds=preds, labels=labels)
+        acc.update(preds=preds, labels=label)
         loss_avg = loss_avg * i / (i + 1) + nd.mean(loss).asscalar() / (i + 1)
     return acc.get()[1], loss_avg
 
@@ -165,6 +188,8 @@ def parse_args():
         '--output', type=str, help='Location to save trained model')
     group.add_argument(
         '--ngrams', type=int, default=1, help='NGrams used for training')
+    group.add_argument(
+        '--batch_size', type=int, default=16, help='Batch size for training.')
     group.add_argument('--epochs', type=int, default=10, help='Epoch limit')
     group.add_argument(
         '--gpu',
@@ -185,9 +210,12 @@ def parse_args():
     group = parser.add_argument_group('Optimization arguments')
     group.add_argument('--optimizer', type=str, default='adam')
     group.add_argument('--lr', type=float, default=0.05)
-    group.add_argument('--batch_size', type=float, default=16)
+
+    # Evaluation options
+    #evaluation.add_parameters(parser)
 
     args = parser.parse_args()
+    #evaluation.validate_args(args)
     return args
 
 
@@ -217,10 +245,66 @@ def get_context(args):
         context = mx.gpu(args.gpu)
     return context
 
+def get_length(x):
+    return float(len(x[0]))
+
+def get_sequence(input):
+    x=input[0]
+    vocab = input[1]
+    return vocab[x.split()]
+
+def convert_to_sequences(dataset, vocab):
+    start = time.time()
+    dataset_vocab=map(lambda x:(x,vocab),dataset)
+    with mp.Pool() as pool:
+        # Each sample is processed in an asynchronous manner.
+        output = pool.map(get_sequence, dataset_vocab)
+    end = time.time()
+    logging.info('Done! Sequence conversion Time={:.2f}s, #Sentences={}'
+        .format(end - start, len(dataset)))
+    return output
+
+def preprocess_dataset(dataset, labels):
+    start = time.time()
+    with mp.Pool() as pool:
+        # Each sample is processed in an asynchronous manner.
+        dataset = gluon.data.SimpleDataset(list(zip(dataset, labels)))
+        lengths = gluon.data.SimpleDataset(pool.map(get_length, dataset))
+    end = time.time()
+    logging.info('Done! Preprocessing Time={:.2f}s, #Sentences={}'
+        .format(end - start, len(dataset)))
+    return dataset, lengths
+
+def get_dataloader(train_dataset, train_data_lengths,
+                   test_dataset, test_data_lengths, batch_size):
+    # Construct the DataLoader
+    # Pad data, stack label and lengths
+    bucket_num, bucket_ratio = 20, 0.2
+    batchify_fn = gluonnlp.data.batchify.Tuple(
+        gluonnlp.data.batchify.Pad(axis=0, ret_length=True),
+        gluonnlp.data.batchify.Stack(dtype='float32'))
+    batch_sampler = gluonnlp.data.sampler.FixedBucketSampler(
+        train_data_lengths,
+        batch_size=batch_size,
+        num_buckets=bucket_num,
+        ratio=bucket_ratio,
+        shuffle=True)
+    train_dataloader = gluon.data.DataLoader(
+        dataset=train_dataset,
+        batch_sampler=batch_sampler,
+        batchify_fn=batchify_fn)
+    test_dataloader = gluon.data.DataLoader(
+        dataset=test_dataset,
+        batch_size=batch_size,
+        shuffle=False,
+        batchify_fn=batchify_fn)
+    return train_dataloader, test_dataloader
+
 
 ###############################################################################
 # Training code
 ###############################################################################
+
 def train(args):  # Load and clean data
     """
     Training function that orchestrates the Classification!
@@ -231,6 +315,8 @@ def train(args):  # Load and clean data
     logging.info('Ngrams range for the training run : %s', ngram_range)
     logging.info('Loading Training data')
     train_labels, train_data = read_input_data(train_file)
+    logging.info('Loading Test data')
+    test_labels, test_data = read_input_data(test_file)
     tokens_list = []
     for x in train_data:
         tokens_list.extend(x.split())
@@ -239,10 +325,10 @@ def train(args):  # Load and clean data
     train_vocab = gluonnlp.Vocab(cntr)
     logging.info('Vocabulary size: %s', len(train_vocab))
     logging.info('Training data converting to sequences...')
-    train_sequences = [train_vocab.to_indices(x.split()) for x in train_data]
-    logging.info('Reading test dataset')
-    test_labels, test_data = read_input_data(test_file)
-    test_sequences = [train_vocab.to_indices(x.split()) for x in test_data]
+
+    # Preprocess the dataset
+    train_sequences = convert_to_sequences(train_data,train_vocab)
+    test_sequences = convert_to_sequences(test_data,train_vocab)
 
     if ngram_range >= 2:
         logging.info('Adding %s-gram features', ngram_range)
@@ -263,6 +349,12 @@ def train(args):  # Load and clean data
     label_mapping = get_label_mapping(train_labels)
     y_train_final = list(map(lambda x: label_mapping[x], train_labels))
     y_test_final = list(map(lambda x: label_mapping[x], test_labels))
+
+    train_sequences, train_data_lengths = preprocess_dataset(train_sequences, y_train_final)
+    test_sequences, test_data_lengths = preprocess_dataset(test_sequences, y_test_final)
+    train_dataloader, test_dataloader = get_dataloader(train_sequences, train_data_lengths,
+                                                       test_sequences, test_data_lengths,
+                                                       args.batch_size)
 
     num_classes = len(np.unique(train_labels))
     logging.info('Number of labels: %s', num_classes)
@@ -290,25 +382,8 @@ def train(args):  # Load and clean data
     batch_size = args.batch_size
     logging.info('Starting Training!')
     learning_rate = args.lr
-    trainer1 = gluon.Trainer(net.embedding.collect_params(), 'adam',
+    trainer = gluon.Trainer(net.collect_params(), 'adam',
                              {'learning_rate': learning_rate})
-    trainer2 = gluon.Trainer(net.dense.collect_params(), 'adam',
-                             {'learning_rate': learning_rate})
-    train_batchify_fn = btf.Tuple(btf.Pad(), mx.nd.array)
-    logging.info('Loading the training data to memory and creating sequences!')
-    train_data_iter = mx.gluon.data.DataLoader(
-        mx.gluon.data.ArrayDataset(train_sequences,
-                                   mx.nd.array(y_train_final)),
-        batch_size=batch_size,
-        shuffle=False,
-        batchify_fn=train_batchify_fn)
-    logging.info('Loading the test data to memory and creating sequences')
-    test_data_iter = mx.gluon.data.DataLoader(
-        mx.gluon.data.ArrayDataset(test_sequences, mx.nd.array(y_test_final)),
-        batch_size=2048,
-        shuffle=False,
-        batchify_fn=train_batchify_fn)
-
     num_batches = len(train_data) / batch_size
     display_batch_cadence = int(math.ceil(num_batches / 10))
     logging.info('Training on %s samples and testing on %s samples',
@@ -316,27 +391,25 @@ def train(args):  # Load and clean data
     logging.info('Number of batches for each epoch : %s, Display cadence: %s',
                  num_batches, display_batch_cadence)
     for e in range(num_epochs):
-        for batch, (data, label) in enumerate(train_data_iter):
+        for batch, ((data, length), label) in enumerate(train_dataloader):
             #num_batches += 1
             data = data.as_in_context(ctx)
             label = label.as_in_context(ctx)
+            length = length.astype('float32').as_in_context(ctx)
             with autograd.record():
-                output = net(data)
+                output = net(data, length)
                 loss = loss_function(output, label)
             loss.backward()
-            trainer1.step(data.shape[0])
-            trainer2.step(data.shape[0])
+            trainer.step(data.shape[0])
             if (batch % display_batch_cadence == 0):
                 logging.info('Epoch : %s, Batches complete :%s', e, batch)
         logging.info('Epoch complete :%s, Computing Accuracy', e)
-
         test_accuracy, test_loss = evaluate_accuracy(
-            test_data_iter, net, ctx, loss_function, num_classes)
+            test_dataloader, net, ctx, loss_function, num_classes)
         logging.info('Epochs completed : %s Test Accuracy: %s, Test Loss: %s',
                      e, test_accuracy, test_loss)
         learning_rate = learning_rate * 0.5
-        trainer1.set_learning_rate(learning_rate)
-        trainer2.set_learning_rate(learning_rate)
+        trainer.set_learning_rate(learning_rate)
     save_model(net, args.output)
 
 

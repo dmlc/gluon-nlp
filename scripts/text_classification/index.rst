@@ -23,7 +23,7 @@ The datasets used in this script can be obtained with
    $ python fasttext_word_ngram.py --input yelp_review_polarity.train \
                                    --output yelp_review_polarity.gluon \
                                    --validation dbpedia.test \
-                                   --ngrams 1 --epochs 25 --lr 0.1 --emsize 100 --gpu 0
+                                   --ngrams 1 --epochs 10 --lr 0.1 --emsize 100 --gpu 0
 
 
 It gets validation accuracy score of 93.96%. Yelp review is a binary classification dataset. (It has 2 classes)
