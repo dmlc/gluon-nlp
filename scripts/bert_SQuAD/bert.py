@@ -20,7 +20,6 @@
 
 __all__ = ['BertForQA', 'BertForQALoss']
 
-from mxnet import nd
 from mxnet.gluon import Block, loss, nn
 from mxnet.gluon.loss import Loss
 
