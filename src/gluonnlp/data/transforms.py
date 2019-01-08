@@ -618,7 +618,7 @@ class SentencepieceTokenizer(_SentencepieceProcessor):
         samples from the all hypothesis (lattice) using forward-filtering-and-backward-sampling
         algorithm.
     alpha : float
-        A scalar for a smoothing parameter. Inverse temparature for probablity rescaling.
+        A scalar for a smoothing parameter. Inverse temperature for probability rescaling.
 
     Examples
     --------

@@ -17,7 +17,7 @@ from concurrent.futures import ThreadPoolExecutor
 class LazyThreadPoolExecutor(ThreadPoolExecutor):
     """ThreadPoolExecutor with lazy iterable collection in map().
 
-    Implmentation taken from https://github.com/python/cpython/pull/707
+    Implementation taken from https://github.com/python/cpython/pull/707
 
     """
 

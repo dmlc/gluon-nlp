@@ -65,8 +65,8 @@ objective made popular by [1].
 
 For SkipGram, we sample pairs of co-occurring
 words from the corpus.
-Two words are said to co-occur if they occurr with
-distance less then a specified *window* size.
+Two words are said to co-occur if they occur with
+distance less than a specified *window* size.
 The *window* size is usually
 chosen around 5.
 
@@ -84,7 +84,7 @@ To obtain good
 results, each sentence is further subsampled, meaning that words are deleted
 with a probability proportional to their frequency.
 [1] proposes to discard
-individual occurences of words from the dataset with probability
+individual occurrences of words from the dataset with probability
 
 $$P(w_i) = 1 -
 \sqrt{\frac{t}{f(w_i)}}$$
@@ -104,7 +104,7 @@ associated with zero, one or multiple character-ngrams. The mapping between
 character-ngrams and subwords is based on a hash function.
 The *final* embedding
 vector of a token is the mean of the vectors associated with the token and all
-character-ngrams occuring in the string representation of the token. Thereby a
+character-ngrams occurring in the string representation of the token. Thereby a
 fastText embedding model can compute meaningful embedding vectors for tokens
 that were not seen during training.
 
@@ -128,7 +128,7 @@ multiple CPU cores for separate batches.
 You can find it in `data.py` in the
 archive that can be downloaded via the Download button at the top of this page.
 - [1] Mikolov, Tomas, et al. “Distributed representations of words and phrases
-and their compositionality.”
+and their compositionally.”
    Advances in neural information processing
 systems. 2013.
 - [2] Bojanowski et al., "Enriching Word Vectors with Subword
@@ -306,7 +306,7 @@ train_embedding(num_epochs=1)
 ## Word Similarity and Relatedness Task
 
 Word embeddings should capture the
-relationsship between words in natural language.
+relationship between words in natural language.
 In the Word Similarity and
 Relatedness Task word embeddings are evaluated by comparing word similarity
 scores computed from a pair of words with human labels for the similarity or
@@ -316,7 +316,7 @@ relatedness of the pair.
 the Word Similarity and Relatedness Task. The included datasets are listed in
 the [API documentation](http://gluon-nlp.mxnet.io/api/data.html#word-embedding-evaluation-datasets). We use several of them in the evaluation example below.
 We first show a few samples from the WordSim353 dataset, to get an overall
-feeling of the Dataset structur
+feeling of the Dataset structure.
 
 ## Evaluation
 

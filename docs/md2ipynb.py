@@ -8,7 +8,7 @@ assert len(sys.argv) == 2, 'usage: input.md'
 # timeout for each notebook, in sec
 timeout = 40 * 60
 
-# the files will be ingored for execution
+# the files will be ignored for execution
 ignore_execution = []
 
 input_fn = sys.argv[1]

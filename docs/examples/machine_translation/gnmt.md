@@ -1,7 +1,7 @@
 # Google Neural Machine Translation
 
 In this notebook, we are going to train Google NMT on IWSLT 2015 English-Vietnamese
-Dataset. The building prcoess includes four steps: 1) load and process dataset, 2)
+Dataset. The building process includes four steps: 1) load and process dataset, 2)
 create sampler and DataLoader, 3) build model, and 4) write training epochs.
 
 ## Load MXNET and Gluon

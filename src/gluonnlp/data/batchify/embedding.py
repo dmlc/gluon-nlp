@@ -102,7 +102,7 @@ class EmbeddingCenterContextBatchify(object):
              context). center is a numpy.ndarray of shape (batch_size, ).
              context is a tuple of 3 numpy.ndarray, representing a sparse COO
              array (data, row, col). The center and context arrays contain the
-             center and correpsonding context words respectively. A sparse
+             center and corresponding context words respectively. A sparse
              representation is used for context as the number of context words
              for one center word varies based on the randomly chosen context
              window size and sentence boundaries. The returned center and col
