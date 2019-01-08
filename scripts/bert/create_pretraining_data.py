@@ -48,7 +48,7 @@ parser.add_argument(
     '--format',
     type=str,
     default='numpy',
-    choices=['numpy', 'recordio'],
+    choices=['numpy', 'recordio', 'h5py'],
     help='Output file format. If set to "numpy", examples are serialized as a single "npz" file.'
          'If set to "recordio", examples are serialized using IndexedRecordIO format.')
 
@@ -133,7 +133,7 @@ class TrainingInstance(object):
     def __repr__(self):
         return self.__str__()
 
-def transform(instance, tokenizer, max_seq_length, max_predictions_per_seq):
+def transform(instance, tokenizer, max_seq_length, max_predictions_per_seq, do_pad=True):
     """Transform instance to inputs for MLM and NSP."""
     pad = tokenizer.convert_tokens_to_ids(['[PAD]'])[0]
     input_ids = tokenizer.convert_tokens_to_ids(instance.tokens)
@@ -147,20 +147,20 @@ def transform(instance, tokenizer, max_seq_length, max_predictions_per_seq):
         instance.masked_lm_labels)
     masked_lm_weights = [1.0] * len(masked_lm_ids)
     masked_lm_valid_lengths = len(masked_lm_ids)
+    if do_pad:
+        while len(input_ids) < max_seq_length:
+            input_ids.append(pad)
+            # Padding index MUST be defined to 0 on input_mask, segment_ids
+            input_mask.append(0)
+            segment_ids.append(0)
+        while len(masked_lm_positions) < max_predictions_per_seq:
+            masked_lm_positions.append(0)
+            masked_lm_ids.append(pad)
+            masked_lm_weights.append(0.0)
 
-    while len(input_ids) < max_seq_length:
-        input_ids.append(pad)
-        # Padding index MUST be defined to 0 on input_mask, segment_ids
-        input_mask.append(0)
-        segment_ids.append(0)
-    while len(masked_lm_positions) < max_predictions_per_seq:
-        masked_lm_positions.append(0)
-        masked_lm_ids.append(pad)
-        masked_lm_weights.append(0.0)
-
-    assert len(input_ids) == max_seq_length
-    assert len(input_mask) == max_seq_length
-    assert len(segment_ids) == max_seq_length
+        assert len(input_ids) == max_seq_length
+        assert len(input_mask) == max_seq_length
+        assert len(segment_ids) == max_seq_length
 
     next_sentence_label = 1 if instance.is_random_next else 0
 
@@ -191,6 +191,43 @@ def print_example(instance, features):
             '%s: %s' % (feature_name, ' '.join(
                 [str(x) for x in feature])))
 
+def write_to_files_h5py(instances, tokenizer, max_seq_length,
+                        max_predictions_per_seq, output_files):
+    """Write to HDF5 files from `TrainingInstance`s."""
+    from h5py import File, special_dtype
+    num_inst = len(instances)
+    var_len_int = special_dtype(vlen=np.dtype('int32'))
+    var_len_float = special_dtype(vlen=np.dtype('float32'))
+
+    assert len(output_files) == 1, 'h5py format only support single output file'
+    output_file = output_files[0]
+    f = File(output_file, 'w')
+
+    input_ids = f.create_dataset("f.input_ids", (num_inst,), dtype=var_len_int)
+    segment_ids = f.create_dataset("f.segment_ids", (num_inst,), dtype=var_len_int)
+    masked_lm_positions = f.create_dataset("f.masked_lm_positions", (num_inst,), dtype=var_len_int)
+    masked_lm_ids = f.create_dataset("f.masked_lm_ids", (num_inst,), dtype=var_len_int)
+    masked_lm_weights = f.create_dataset("f.masked_lm_weights", (num_inst,), dtype=var_len_float)
+    next_sentence_labels = f.create_dataset("f.next_sentence_labels", (num_inst, 1), dtype='int32')
+    valid_lengths = f.create_dataset("f.valid_lengths", (num_inst, 1), dtype='int32')
+
+    total_written = 0
+    for (inst_index, instance) in enumerate(instances):
+        features = transform(instance, tokenizer, max_seq_length, max_predictions_per_seq, False)
+        input_ids[inst_index] = features['input_ids']
+        segment_ids[inst_index] = features['segment_ids']
+        masked_lm_positions[inst_index] = features['masked_lm_positions']
+        masked_lm_ids[inst_index] = features['masked_lm_ids']
+        masked_lm_weights[inst_index] = features['masked_lm_weights']
+        next_sentence_labels[inst_index] = features['next_sentence_labels'][0]
+        valid_lengths[inst_index] = features['valid_lengths'][0]
+
+        total_written += 1
+        if inst_index < 20:
+            print_example(instance, features)
+
+    logging.info('Wrote %d total instances', total_written)
+
 def write_to_files_np(instances, tokenizer, max_seq_length,
                       max_predictions_per_seq, output_files):
     """Write to numpy files from `TrainingInstance`s."""
@@ -207,7 +244,7 @@ def write_to_files_np(instances, tokenizer, max_seq_length,
 
     total_written = 0
     for (inst_index, instance) in enumerate(instances):
-        features = transform(instance, tokenizer, max_seq_length, max_predictions_per_seq)
+        features = transform(instance, tokenizer, max_seq_length, max_predictions_per_seq, False)
         input_ids[inst_index] = features['input_ids']
         segment_ids[inst_index] = features['segment_ids']
         masked_lm_positions[inst_index] = features['masked_lm_positions']
@@ -583,9 +620,9 @@ def main():
     elif args.format == 'recordio':
         write_to_files_rec(instances, tokenizer, args.max_seq_length,
                                             args.max_predictions_per_seq, output_files)
-    elif args.format == 'mmap':
-        write_to_files_mmap(instances, tokenizer, args.max_seq_length,
-                                             args.max_predictions_per_seq, output_files)
+    elif args.format == 'h5py':
+        write_to_files_h5py(instances, tokenizer, args.max_seq_length,
+                            args.max_predictions_per_seq, output_files)
     else:
         raise ValueError('unsupported format: %s'%args.format)
 
