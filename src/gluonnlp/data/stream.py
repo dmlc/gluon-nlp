@@ -31,11 +31,13 @@ import random
 import sys
 import threading
 import traceback
+import re
 
 import numpy as np
 
 import mxnet as mx
-from mxnet.gluon.data import RandomSampler, SequentialSampler
+from gluonnlp.base import _str_types
+from mxnet.gluon.data import RandomSampler, SequentialSampler, Sampler, SimpleDataset, ArrayDataset
 
 try:
     import Queue as queue
@@ -44,7 +46,7 @@ except ImportError:
 
 __all__ = [
     'DataStream', 'SimpleDataStream', 'DatasetStream', 'SimpleDatasetStream',
-    'PrefetchingStream']
+    'PrefetchingStream', 'H5PyDatasetStream', 'ArrayDatasetStream']
 
 
 class DataStream(object):
@@ -97,7 +99,6 @@ class SimpleDataStream(DataStream):
 
     def __iter__(self):
         return iter(self._stream)
-
 
 class _LazyTransformDataStream(DataStream):
     """Data stream that lazily transforms the data."""
@@ -154,6 +155,40 @@ class DatasetStream(DataStream):
     def __iter__(self):
         raise NotImplementedError
 
+class ArrayDatasetStream(DatasetStream):
+    """A dataset stream that combines multiple DatasetStream objects,
+    and returns a stream of ArrayDataset.
+
+    Parameters
+    ----------
+    *args : one or more DatasetStream objects
+        The data arrays.
+    """
+    def __init__(self, *args):
+        assert len(args) > 0, "Needs at least 1 arrays"
+        self._data = list(args)
+
+    def __iter__(self):
+        streams = [iter(data) for data in self._data]
+        num_active = len(streams)
+        inactive_idx = None
+        while True:
+            datasets = []
+            for i, stream in enumerate(streams):
+                try:
+                    dataset = next(stream)
+                    datasets.append(dataset)
+                except StopIteration:
+                    inactive_idx = i
+                    num_active -= 1
+            if num_active == 0:
+                return
+            if len(datasets) != len(streams):
+                raise ValueError('All dataset stream must have the same number of datasets.'\
+                    ' While streams[%d] contains fewer datasets'%inactive_idx)
+            yield ArrayDataset(*datasets)
+
+
 
 class SimpleDatasetStream(DatasetStream):
     """A simple stream of Datasets.
@@ -204,6 +239,70 @@ class SimpleDatasetStream(DatasetStream):
             filename = files[file_idx]
             yield self._dataset(filename, **self._kwargs)
 
+class H5PyDatasetStream(DatasetStream):
+    """A dataset stream wrapping over a h5py file.
+
+    Parameters
+    ----------
+    filename : str
+        Path to the .h5py file.
+    dataset_sampler : str or gluon.data.Sampler, defaults to 'random'
+        The sampler used to sample a file. The following string values are supported:
+
+        - 'sequential': SequentialSampler
+        - 'random': RandomSampler
+    select : str or list of str, default is '.*'
+        Regular expression to select a subset of datasets. If a list of str is provided,
+        multiple datasets from the h5py is returned at each iteration.
+    """
+    def __init__(self, filename, dataset_sampler='random', select='.*'):
+        import h5py
+        if isinstance(select, _str_types):
+            select = [select]
+        patterns = [re.compile(s) for s in select]
+        self._num_selects = len(patterns)
+        self._data = h5py.File(filename, 'r')
+        dataset_keys = self._collect_datasets(patterns)
+        self._dataset_keys = [sorted(keys) for keys in dataset_keys]
+        self._sampler = self._get_sampler(dataset_sampler)
+
+    def _collect_datasets(self, patterns):
+        # collect dataset
+        import h5py
+        dataset_keys = [[] for _ in range(self._num_selects)]
+        def collect_datasets(name, dataset):
+            if not isinstance(dataset, h5py.Dataset):
+                return 
+            for i in range(self._num_selects):
+                if patterns[i].match(name):
+                    dataset_keys[i].append(name)
+        self._data.visititems(collect_datasets)
+        return dataset_keys
+
+    def _get_sampler(self, sampler):
+        if isinstance(sampler, Sampler):
+            return sampler
+        if isinstance(sampler, str):
+            length = len(self._dataset_keys[0])
+            if sampler == 'random':
+                return RandomSampler(length)
+            if sampler == 'sequential':
+                return SequentialSampler(length)
+        raise ValueError('file_sampler must be a supported str ("random", "sequential") or'
+                         'a `gluon.data.Sampler`, but got %s'%(sampler))
+
+    def __iter__(self):
+        # generate dataset samples
+        for dataset_idx in iter(self._sampler):
+            datasets = []
+            for i in range(self._num_selects):
+                dataset_key = self._dataset_keys[i][dataset_idx]
+                datasets.append(SimpleDataset(self._data[dataset_key]))
+            yield tuple(datasets) if len(datasets) > 1 else datasets[0]
+
+    @property
+    def keys(self):
+        return self._dataset_keys
 
 class _Prefetcher(object):
     """Internal shared prefetcher logic."""
