@@ -221,8 +221,10 @@ if __name__ == '__main__':
         with utils.print_time('extend open vocabulary with '
                               'OOV tokens for analogy'):
             tokens = evaluation.get_analogy_task_tokens(args_)
-            assert token_embedding_.unknown_token is not None
-            tokens.update(token_embedding_.idx_to_token[1:])
+            if token_embedding_.unknown_token is not None:
+                tokens.update(token_embedding_.idx_to_token[1:])
+            else:
+                tokens.update(token_embedding_.idx_to_token)
         vocab = nlp.Vocab(nlp.data.count_tokens(tokens))
         with utils.print_time('set {} embeddings'.format(len(tokens))):
             vocab.set_embedding(token_embedding_)
