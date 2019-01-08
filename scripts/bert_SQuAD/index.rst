@@ -28,8 +28,8 @@ Note that this will require approximately no more than 8G of GPU memory. If your
     $ python finetune_squad.py --train_file ./squad1.1/train-v1.1.json --predict_file ./squad1.1/dev-v1.1.json --optimizer bertadam --accumulate 2 --batch_size 6 --gpu
 
 
-Should produce an output like this. Explain that the F1 score on the dev dataset is 88.2%
+Should produce an output like this. Explain that the F1 score on the dev dataset is 88.45%
 
 .. code-block:: console
 
-    {'exact_match': 80.6244087038789, 'f1': 88.27500178605726}
+    {'exact_match': 81.21097445600756, 'f1': 88.4551346176558}

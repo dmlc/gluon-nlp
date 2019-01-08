@@ -54,9 +54,9 @@ from dataset import (SQuAD, SQuADTransform, bert_qa_batchify_fn,
                      preprocess_dataset)
 from evaluate import get_F1_EM, predictions
 
-np.random.seed(0)
-random.seed(0)
-mx.random.seed(2)
+np.random.seed(6)
+random.seed(6)
+mx.random.seed(6)
 logging.getLogger().setLevel(logging.DEBUG)
 
 parser = argparse.ArgumentParser(description='BERT QA example.'
@@ -431,5 +431,5 @@ def Evaluate():
 if __name__ == '__main__':
     if not only_predict:
         Train()
-    elif predict_file:
+    if predict_file:
         Evaluate()
