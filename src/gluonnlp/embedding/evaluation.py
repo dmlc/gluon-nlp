@@ -269,11 +269,11 @@ class ThreeCosMul(WordEmbeddingAnalogyFunction):
         Parameters
         ----------
         words1 : Symbol or NDArray
-            Question words at first posiiton. Shape (batch_size, )
+            Question words at first position. Shape (batch_size, )
         words2 : Symbol or NDArray
-            Question words at second posiiton. Shape (batch_size, )
+            Question words at second position. Shape (batch_size, )
         words3 : Symbol or NDArray
-            Question words at third posiiton. Shape (batch_size, )
+            Question words at third position. Shape (batch_size, )
 
         Returns
         -------
@@ -363,11 +363,11 @@ class ThreeCosAdd(WordEmbeddingAnalogyFunction):
         Parameters
         ----------
         words1 : Symbol or NDArray
-            Question words at first posiiton. Shape (batch_size, )
+            Question words at first position. Shape (batch_size, )
         words2 : Symbol or NDArray
-            Question words at second posiiton. Shape (batch_size, )
+            Question words at second position. Shape (batch_size, )
         words3 : Symbol or NDArray
-            Question words at third posiiton. Shape (batch_size, )
+            Question words at third position. Shape (batch_size, )
 
         Returns
         -------

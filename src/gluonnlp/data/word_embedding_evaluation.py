@@ -138,7 +138,7 @@ class WordSim353(WordSimilarityEvaluationDataset):
     Parameters
     ----------
     segment : str
-        'relatedness', 'similiarity' or 'all'
+        'relatedness', 'similarity' or 'all'
     root : str, default '$MXNET_HOME/datasets/wordsim353'
         Path to temp folder for storing data.
         MXNET_HOME defaults to '~/.mxnet'.

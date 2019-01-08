@@ -179,8 +179,10 @@ skip validation steps.
 ```{.python .input}
 batch_size = 32
 lr = 5e-6
-bert_dataloader = mx.gluon.data.DataLoader(data_train, batch_size=batch_size,
-                                           shuffle=True, last_batch='rollover')
+train_sampler = nlp.data.FixedBucketSampler(lengths=[int(item[1]) for item in data_train],
+                                            batch_size=batch_size,
+                                            shuffle=True)
+bert_dataloader = mx.gluon.data.DataLoader(data_train, batch_sampler=train_sampler)
 
 trainer = gluon.Trainer(model.collect_params(), 'adam',
                         {'learning_rate': lr, 'epsilon': 1e-9})
@@ -213,11 +215,10 @@ for epoch_id in range(num_epochs):
         ls.backward()
         
         # gradient clipping
-        grads = [p.grad(c) for p in params for c in [ctx]]
-        gluon.utils.clip_global_norm(grads, grad_clip)
-        
-        # parameter update
-        trainer.step(1)
+        trainer.allreduce_grads()
+        nlp.utils.clip_grad_global_norm(params, 1)
+        trainer.update(1)
+
         step_loss += ls.asscalar()
         metric.update([label], [out])
         if (batch_id + 1) % (log_interval) == 0:

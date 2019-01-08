@@ -318,7 +318,7 @@ class BigRNN(Block):
              decoder block will be stored in row_sparse format, which helps reduce memory
              consumption and communication overhead during multi-GPU training. However,
              sparse parameters cannot be shared with other blocks, nor could we hybridize
-             a block containinng sparse parameters.
+             a block containing sparse parameters.
     """
     def __init__(self, vocab_size, embed_size, hidden_size, num_layers,
                  projection_size, num_sampled, embed_dropout=0.0, encode_dropout=0.0,

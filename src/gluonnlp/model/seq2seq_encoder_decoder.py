@@ -16,7 +16,7 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-"""Encoder and decoder usded in sequence-to-sequence learning."""
+"""Encoder and decoder used in sequence-to-sequence learning."""
 __all__ = ['Seq2SeqEncoder']
 
 from functools import partial
