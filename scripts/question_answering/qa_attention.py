@@ -32,7 +32,7 @@ class ContextQueryAttention(gluon.HybridBlock):
     An implementation of co-attention block.
     """
 
-    def __init__(self, emb_encoder_conv_channels, **kwargs):
+    def __init__(self, emb_encoder_conv_channels=128, **kwargs):
         super(ContextQueryAttention, self).__init__(**kwargs)
 
         self._emb_encoder_conv_channels = emb_encoder_conv_channels

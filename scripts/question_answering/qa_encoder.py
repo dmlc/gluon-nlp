@@ -32,8 +32,8 @@ class QANetEncoder(gluon.HybridBlock):
     Stacked block of Embedding encoder or Model encoder.
     """
 
-    def __init__(self, kernel_size, num_filters, layers_dropout, conv_layers=2, num_heads=8,
-                 num_blocks=1, **kwargs):
+    def __init__(self, kernel_size, num_filters, layers_dropout=0.1,
+                 conv_layers=2, num_heads=8, num_blocks=1, **kwargs):
         super(QANetEncoder, self).__init__(**kwargs)
 
         self._layers_dropout = layers_dropout
@@ -96,7 +96,8 @@ class QANetEncoderCell(gluon.HybridBlock):
     """
 
     def __init__(self, kernel_size, num_filters, conv_layers, num_heads, total_layers,
-                 sub_layer_idx, layers_dropout, p_l, emb_encoder_conv_channels, **kwargs):
+                 sub_layer_idx, emb_encoder_conv_channels=128,
+                 layers_dropout=0.1, p_l=0.9, **kwargs):
         super(QANetEncoderCell, self).__init__(**kwargs)
 
         self._layers_dropout = layers_dropout
@@ -224,7 +225,7 @@ class SelfAttention(gluon.HybridBlock):
     Implementation of self-attention with gluonnlp.model.MultiHeadAttentionCell
     """
 
-    def __init__(self, num_heads, layers_dropout, emb_encoder_conv_channels, **kwargs):
+    def __init__(self, num_heads, layers_dropout=0.1, emb_encoder_conv_channels=128, **kwargs):
         super(SelfAttention, self).__init__(**kwargs)
 
         self._layers_dropout = layers_dropout

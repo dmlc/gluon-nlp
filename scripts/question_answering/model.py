@@ -51,13 +51,13 @@ class QANet(gluon.HybridBlock):
     """
 
     def __init__(self, word_emb_dim, char_emb_dim, character_corpus, word_corpus, highway_layers,
-                 char_conv_filters, char_conv_ngrams, emb_encoder_conv_channels,
-                 emb_encoder_conv_kernerl_size, emb_encoder_num_conv_layers, emb_encoder_num_head,
-                 emb_encoder_num_block, model_encoder_conv_channels, model_encoder_conv_kernel_size,
-                 model_encoder_conv_layers, model_encoder_num_head, model_encoder_num_block,
-                 layers_dropout, p_l, word_emb_dropout, char_emb_dropout,
-                 max_context_sentence_len, max_question_sentence_len,
-                 max_character_per_word, **kwargs):
+                 char_conv_filters, char_conv_ngrams, emb_encoder_conv_kernerl_size,
+                 emb_encoder_num_conv_layers, emb_encoder_num_head, emb_encoder_num_block,
+                 model_encoder_conv_channels, model_encoder_conv_kernel_size,
+                 model_encoder_conv_layers, model_encoder_num_head,
+                 model_encoder_num_block, word_emb_dropout, char_emb_dropout,
+                 max_context_sentence_len, max_question_sentence_len, max_character_per_word,
+                 emb_encoder_conv_channels=128, layers_dropout=0.1, p_l=0.9, **kwargs):
         super(QANet, self).__init__(**kwargs)
 
         self._word_emb_dim = word_emb_dim
@@ -67,7 +67,6 @@ class QANet(gluon.HybridBlock):
         self._highway_layers = highway_layers
         self._char_conv_filters = char_conv_filters
         self._char_conv_ngrams = char_conv_ngrams
-        self._emb_encoder_conv_channels = emb_encoder_conv_channels
         self._emb_encoder_conv_kernerl_size = emb_encoder_conv_kernerl_size
         self._emb_encoder_num_conv_layers = emb_encoder_num_conv_layers
         self._emb_encoder_num_head = emb_encoder_num_head
@@ -84,6 +83,7 @@ class QANet(gluon.HybridBlock):
         self._max_context_sentence_len = max_context_sentence_len
         self._max_question_sentence_len = max_question_sentence_len
         self._max_character_per_word = max_character_per_word
+        self._emb_encoder_conv_channels = emb_encoder_conv_channels
 
         with self.name_scope():
 
@@ -158,7 +158,8 @@ class QANet(gluon.HybridBlock):
                 weight_initializer=Xavier()
             )
 
-            self.context_query_attention = ContextQueryAttention()
+            self.context_query_attention = ContextQueryAttention(emb_encoder_conv_channels
+                                                                 =self._emb_encoder_conv_channels)
 
             self.model_encoder = QANetEncoder(
                 kernel_size=self._model_encoder_conv_kernel_size,
