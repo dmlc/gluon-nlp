@@ -251,7 +251,7 @@ def train():
 
     logging.info('Start Training')
 
-    optimizer_params = {'learning_rate': lr, 'epsilon': 1e-9}
+    optimizer_params = {'learning_rate': lr}
     try:
         trainer = gluon.Trainer(net.collect_params(), optimizer,
                                 optimizer_params, update_on_kvstore=False)
@@ -404,12 +404,12 @@ def evaluate():
                   'w', encoding='utf-8') as all_predictions_write:
             all_predictions_write.write(json.dumps(scores_diff_json))
     else:
-        logging.info(get_F1_EM(predict_file, all_predictions))
+        logging.info(get_F1_EM(dev_data, all_predictions))
 
 
 if __name__ == '__main__':
     if not only_predict:
         train()
-        evaluate
+        evaluate()
     elif model_parameters:
         evaluate()

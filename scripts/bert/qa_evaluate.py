@@ -379,7 +379,7 @@ def metric_max_over_ground_truths(metric_fn, prediction, ground_truths):
     return max(scores_for_ground_truths)
 
 
-def get_F1_EM(dataset_file, predict_data):
+def get_F1_EM(dataset, predict_data):
     """Calculate the F1 and EM scores of the predicted results.
     Use only with the SQuAD1.1 dataset.
 
@@ -399,21 +399,36 @@ def get_F1_EM(dataset_file, predict_data):
         dataset_json = json.load(file_read)
         dataset = dataset_json['data']
     f1 = exact_match = total = 0
-    for article in dataset:
-        for paragraph in article['paragraphs']:
-            for qa in paragraph['qas']:
-                total += 1
-                if qa['id'] not in predict_data:
-                    message = 'Unanswered question ' + qa['id'] + \
-                              ' will receive score 0.'
-                    print(message)
-                    continue
-                ground_truths = list(map(lambda x: x['text'], qa['answers']))
-                prediction = predict_data[qa['id']]
-                exact_match += metric_max_over_ground_truths(
-                    exact_match_score, prediction, ground_truths)
-                f1 += metric_max_over_ground_truths(f1_score, prediction,
-                                                    ground_truths)
+
+    for record in dataset:
+        total += 1
+        if record[1] not in predict_data:
+            message = 'Unanswered question ' + qa['id'] + \
+                        ' will receive score 0.'
+            print(message)
+            continue
+        ground_truths = record[4]
+        prediction = predict_data[record[1]]
+        exact_match += metric_max_over_ground_truths(
+            exact_match_score, prediction, ground_truths)
+        f1 += metric_max_over_ground_truths(f1_score, prediction,
+                                            ground_truths)
+
+    # for article in dataset:
+    #     for paragraph in article['paragraphs']:
+    #         for qa in paragraph['qas']:
+    #             total += 1
+    #             if qa['id'] not in predict_data:
+    #                 message = 'Unanswered question ' + qa['id'] + \
+    #                           ' will receive score 0.'
+    #                 print(message)
+    #                 continue
+    #             ground_truths = list(map(lambda x: x['text'], qa['answers']))
+    #             prediction = predict_data[qa['id']]
+    #             exact_match += metric_max_over_ground_truths(
+    #                 exact_match_score, prediction, ground_truths)
+    #             f1 += metric_max_over_ground_truths(f1_score, prediction,
+    #                                                 ground_truths)
 
     exact_match = 100.0 * exact_match / total
     f1 = 100.0 * f1 / total
