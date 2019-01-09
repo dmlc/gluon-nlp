@@ -255,3 +255,7 @@ class NumpyDataset(ArrayDataset):
     @property
     def keys(self):
         return self._keys
+
+    def get_field(self, field):
+        idx = self._keys.index(field)
+        return self._data[idx]

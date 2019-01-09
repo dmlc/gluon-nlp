@@ -40,10 +40,12 @@ import mxnet as mx
 import time
 from mxnet import gluon
 from mxnet.gluon.data import ArrayDataset, DataLoader
+import gluonnlp as nlp
 from gluonnlp.utils import clip_grad_global_norm
 from gluonnlp.metric import MaskedAccuracy
 from gluonnlp.model import bert_12_768_12
-from gluonnlp.data import SimpleDatasetStream, SplitSampler, NumpyDataset
+from gluonnlp.data.batchify import Tuple, Stack, Pad
+from gluonnlp.data import SimpleDatasetStream, SplitSampler, H5PyDatasetStream, FixedBucketSampler, NumpyDataset
 from tokenizer import FullTokenizer
 from dataset import MRPCDataset, ClassificationTransform
 
@@ -97,24 +99,36 @@ def get_model(ctx):
 
     return model, nsp_loss, mlm_loss, vocabulary
 
-def get_dataset(data):
+def get_dataset(data, batch_size, is_train):
     t0 = time.time()
-    data_train = NumpyDataset(data)
-    t1 = time.time()
-    logging.debug('Loading {} took {:.3f}s'.format(data, t1-t0))
-    return data_train
+    data = data
+    #fields = ['input_ids', 'masked_lm_ids', 'masked_lm_positions', 'masked_lm_weights',
+    #          'next_sentence_labels', 'segment_id', 'valid_lengths']
 
-def get_dataloader(data, batch_size, evaluate):
-    if evaluate:
-        dataloader = DataLoader(data, batch_size=batch_size,
-                                shuffle=False, last_batch='keep')
-    else:
-        dataloader = DataLoader(data, batch_size=batch_size,
-                                shuffle=True, last_batch='rollover')
-    return dataloader
+    #regex_fields = ['.*\.' + field for field in fields]
+    #stream = H5PyDatasetStream(data, select=regex_fields)
+
+    # numpy
+    stream = SimpleDatasetStream(NumpyDataset, data)
+
+    def get_dataloader(dataset):
+        lengths = dataset.get_field('valid_lengths')
+        sampler = FixedBucketSampler(lengths,
+                                     batch_size=batch_size,
+                                     num_buckets=1,
+                                     ratio=0,
+                                     shuffle=is_train)
+        batchify_fn = Tuple(Pad(), Pad(), Pad(), Pad(), Stack(), Pad(), Stack())
+        dataloader = DataLoader(dataset=dataset,
+                                batch_sampler=sampler,
+                                batchify_fn=batchify_fn)
+        return dataloader
+
+    stream = stream.transform(get_dataloader)
+    return stream
 
 def as_in_ctx(arrs, ctx):
-    if isinstance(arrs, list):
+    if isinstance(arrs, (list, tuple)):
         return [arr.as_in_context(ctx) for arr in arrs]
     return arrs.as_in_context(ctx)
 
@@ -131,42 +145,44 @@ def evaluate(data_eval, model, nsp_loss, mlm_loss, vocab_size, ctx):
     local_mlm_loss = local_nsp_loss = 0
     total_mlm_loss = total_nsp_loss = 0
     local_num_tks = 0
-    for _, data in enumerate(data_eval):
-        step_num += 1
-        data = as_in_ctx(data, ctx[0])
-        with mx.autograd.pause():
-            input_id, masked_id, masked_position, masked_weight, next_sentence_label, segment_id, valid_length = data
-            # avoid divide by zero error
-            num_masks = masked_weight.sum() + 1e-8
-            valid_length = valid_length.astype('float32', copy=False)
-            _, _, classified, decoded = model(input_id, segment_id, valid_length, masked_position)
-            masked_id = masked_id.reshape(-1)
-            decoded = decoded.reshape((-1, vocab_size))
-            ls1 = mlm_loss(decoded, masked_id, masked_weight.reshape((-1, 1))).sum() / num_masks
-            ls2 = nsp_loss(classified, next_sentence_label).mean()
-            ls = ls1 + ls2
-        local_mlm_loss += ls1
-        local_nsp_loss += ls2
-        local_num_tks += valid_length.sum()
-        nsp_metric.update([next_sentence_label], [classified])
-        mlm_metric.update([masked_id], [decoded], [masked_weight])
-        if (step_num + 1) % (args.log_interval) == 0:
-            end_time = time.time()
-            duration = end_time - begin_time
-            throughput = local_num_tks / 1000.0 / duration
-            total_mlm_loss += local_mlm_loss
-            total_nsp_loss += local_nsp_loss
-            local_mlm_loss /= args.log_interval
-            local_nsp_loss /= args.log_interval
-            logging.info('[step {}]\tmlm_loss={:.8f}\tmlm_acc={:.8f}\tnsp_loss={:.8f}\tnsp_acc={:.3f}\tthroughput={:.1f}K tks/s\t'
-                         .format(step_num, local_mlm_loss.asscalar(), mlm_metric.get()[1] * 100, local_nsp_loss.asscalar(),
-                                 nsp_metric.get()[1] * 100, throughput.asscalar()))
-            begin_time = end_time
-            local_mlm_loss = 0
-            local_nsp_loss = 0
-            local_num_tks = 0
-            mlm_metric.reset_local()
-            nsp_metric.reset_local()
+    for _, dataloader in enumerate(data_eval):
+        for _, data in enumerate(dataloader):
+            step_num += 1
+            data = as_in_ctx(data, ctx[0])
+            with mx.autograd.pause():
+                input_id, masked_id, masked_position, masked_weight, next_sentence_label, segment_id, valid_length = data
+                # avoid divide by zero error
+                valid_length = valid_length.reshape(-1)
+                num_masks = masked_weight.sum() + 1e-8
+                valid_length = valid_length.astype('float32', copy=False)
+                _, _, classified, decoded = model(input_id, segment_id, valid_length, masked_position)
+                masked_id = masked_id.reshape(-1)
+                decoded = decoded.reshape((-1, vocab_size))
+                ls1 = mlm_loss(decoded, masked_id, masked_weight.reshape((-1, 1))).sum() / num_masks
+                ls2 = nsp_loss(classified, next_sentence_label).mean()
+                ls = ls1 + ls2
+            local_mlm_loss += ls1
+            local_nsp_loss += ls2
+            local_num_tks += valid_length.sum()
+            nsp_metric.update([next_sentence_label], [classified])
+            mlm_metric.update([masked_id], [decoded], [masked_weight])
+            if (step_num + 1) % (args.log_interval) == 0:
+                end_time = time.time()
+                duration = end_time - begin_time
+                throughput = local_num_tks / 1000.0 / duration
+                total_mlm_loss += local_mlm_loss
+                total_nsp_loss += local_nsp_loss
+                local_mlm_loss /= args.log_interval
+                local_nsp_loss /= args.log_interval
+                logging.info('[step {}]\tmlm_loss={:.8f}\tmlm_acc={:.8f}\tnsp_loss={:.8f}\tnsp_acc={:.3f}\tthroughput={:.1f}K tks/s\t'
+                             .format(step_num, local_mlm_loss.asscalar(), mlm_metric.get()[1] * 100, local_nsp_loss.asscalar(),
+                                     nsp_metric.get()[1] * 100, throughput.asscalar()))
+                begin_time = end_time
+                local_mlm_loss = 0
+                local_nsp_loss = 0
+                local_num_tks = 0
+                mlm_metric.reset_local()
+                nsp_metric.reset_local()
 
     mx.nd.waitall()
     eval_end_time = time.time()
@@ -205,53 +221,57 @@ def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx):
     local_num_tks = 0
     step_num = 0
     while step_num < num_train_steps:
-        for _, data in enumerate(data_train):
+        for _, dataloader in enumerate(data_train):
             if step_num >= num_train_steps:
                 break
-            step_num += 1
-            # update learning rate
-            if step_num <= num_warmup_steps:
-                new_lr = lr * step_num / num_warmup_steps
-            else:
-                offset = (step_num - num_warmup_steps) * lr / (num_train_steps - num_warmup_steps)
-                new_lr = lr - offset
-            trainer.set_learning_rate(new_lr)
+            for _, data in enumerate(dataloader):
+                if step_num >= num_train_steps:
+                    break
+                step_num += 1
+                # update learning rate
+                if step_num <= num_warmup_steps:
+                    new_lr = lr * step_num / num_warmup_steps
+                else:
+                    offset = (step_num - num_warmup_steps) * lr / (num_train_steps - num_warmup_steps)
+                    new_lr = lr - offset
+                trainer.set_learning_rate(new_lr)
 
-            data = as_in_ctx(data, ctx[0])
-            with mx.autograd.record():
-                input_id, masked_id, masked_position, masked_weight, next_sentence_label, segment_id, valid_length = data
-                num_masks = masked_weight.sum() + 1e-8
-                valid_length = valid_length.astype('float32', copy=False)
-                _, _, classified, decoded = model(input_id, segment_id, valid_length, masked_position)
-                masked_id = masked_id.reshape(-1)
-                decoded = decoded.reshape((-1, vocab_size))
-                ls1 = mlm_loss(decoded, masked_id, masked_weight.reshape((-1, 1))).sum() / num_masks
-                ls2 = nsp_loss(classified, next_sentence_label).mean()
-                ls = ls1 + ls2
-            mx.autograd.backward(ls)
-            local_mlm_loss += ls1
-            local_nsp_loss += ls2
-            local_num_tks += valid_length.sum()
-            trainer.allreduce_grads()
-            clip_grad_global_norm(params, 1)
-            trainer.update(1)
-            nsp_metric.update([next_sentence_label], [classified])
-            mlm_metric.update([masked_id], [decoded], [masked_weight])
-            if (step_num + 1) % (args.log_interval) == 0:
-                end_time = time.time()
-                duration = end_time - begin_time
-                throughput = local_num_tks / 1000.0 / duration
-                local_mlm_loss /= args.log_interval
-                local_nsp_loss /= args.log_interval
-                logging.info('[step {}]\tmlm_loss={:.5f}\tmlm_acc={:.5f}\tnsp_loss={:.5f}\tnsp_acc={:.3f}\tthroughput={:.1f}K tks/s\tlr={:.7f}'
-                             .format(step_num, local_mlm_loss.asscalar(), mlm_metric.get()[1] * 100, local_nsp_loss.asscalar(),
-                                     nsp_metric.get()[1] * 100, throughput.asscalar(), trainer.learning_rate))
-                begin_time = end_time
-                local_mlm_loss = 0
-                local_nsp_loss = 0
-                local_num_tks = 0
-                mlm_metric.reset_local()
-                nsp_metric.reset_local()
+                data = as_in_ctx(data, ctx[0])
+                with mx.autograd.record():
+                    input_id, masked_id, masked_position, masked_weight, next_sentence_label, segment_id, valid_length = data
+                    num_masks = masked_weight.sum() + 1e-8
+                    valid_length = valid_length.reshape(-1)
+                    valid_length = valid_length.astype('float32', copy=False)
+                    _, _, classified, decoded = model(input_id, segment_id, valid_length, masked_position)
+                    masked_id = masked_id.reshape(-1)
+                    decoded = decoded.reshape((-1, vocab_size))
+                    ls1 = mlm_loss(decoded, masked_id, masked_weight.reshape((-1, 1))).sum() / num_masks
+                    ls2 = nsp_loss(classified, next_sentence_label).mean()
+                    ls = ls1 + ls2
+                mx.autograd.backward(ls)
+                local_mlm_loss += ls1
+                local_nsp_loss += ls2
+                local_num_tks += valid_length.sum()
+                trainer.allreduce_grads()
+                clip_grad_global_norm(params, 1)
+                trainer.update(1)
+                nsp_metric.update([next_sentence_label], [classified])
+                mlm_metric.update([masked_id], [decoded], [masked_weight])
+                if (step_num + 1) % (args.log_interval) == 0:
+                    end_time = time.time()
+                    duration = end_time - begin_time
+                    throughput = local_num_tks / 1000.0 / duration
+                    local_mlm_loss /= args.log_interval
+                    local_nsp_loss /= args.log_interval
+                    logging.info('[step {}]\tmlm_loss={:.5f}\tmlm_acc={:.5f}\tnsp_loss={:.5f}\tnsp_acc={:.3f}\tthroughput={:.1f}K tks/s\tlr={:.7f}'
+                                 .format(step_num, local_mlm_loss.asscalar(), mlm_metric.get()[1] * 100, local_nsp_loss.asscalar(),
+                                         nsp_metric.get()[1] * 100, throughput.asscalar(), trainer.learning_rate))
+                    begin_time = end_time
+                    local_mlm_loss = 0
+                    local_nsp_loss = 0
+                    local_num_tks = 0
+                    mlm_metric.reset_local()
+                    nsp_metric.reset_local()
     mx.nd.waitall()
     train_end_time = time.time()
     logging.info('Train cost={:.1f}s'.format(train_end_time - train_begin_time))
@@ -272,11 +292,9 @@ if __name__ == '__main__':
     tokenizer = FullTokenizer(vocabulary, do_lower_case=do_lower_case)
     if args.do_training:
         assert args.data, '--data must be provided for training'
-        dataset_train = get_dataset(args.data)
-        data_train = get_dataloader(dataset_train, args.batch_size, False)
+        data_train = get_dataset(args.data, args.batch_size, True)
         train(data_train, model, nsp_loss, mlm_loss, len(tokenizer.vocab), ctx)
     if args.do_eval:
         assert args.data_eval, '--data_eval must be provided for evaluation'
-        dataset_eval = get_dataset(args.data_eval)
-        data_eval = get_dataloader(dataset_eval, args.batch_size_eval, True)
+        data_eval = get_dataset(args.data_eval, args.batch_size_eval, False)
         evaluate(data_eval, model, nsp_loss, mlm_loss, len(tokenizer.vocab), ctx)

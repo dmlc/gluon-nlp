@@ -1,5 +1,5 @@
 # coding=utf-8
-# Copyright 2018 The Google AI Language Team Authors.
+# Copyright 2018 The Google AI Language Team Authors and DMLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -26,12 +26,14 @@ import json
 import glob
 import collections
 import random
+import time
+import multiprocessing
 import numpy as np
 import mxnet as mx
 import gluonnlp as nlp
 import tokenizer as tokenization
+from multiprocessing import Pool
 
-logging.getLogger().setLevel(logging.DEBUG)
 
 parser = argparse.ArgumentParser(
     description='Pre-training data generator for BERT')
@@ -39,10 +41,10 @@ parser = argparse.ArgumentParser(
 parser.add_argument('--input_file', type=str, default=None, help='input file(s)')
 
 parser.add_argument(
-    '--output_file',
+    '--output_dir',
     type=str,
     default=None,
-    help='Output file (or comma-separated list of files).')
+    help='Output directory.')
 
 parser.add_argument(
     '--format',
@@ -98,8 +100,30 @@ parser.add_argument(
     help='Probability of creating sequences which are shorter than the '
     'maximum length.')
 
-args = parser.parse_args()
+parser.add_argument(
+    '--debug',
+    action='store_true',
+    help='Print debug information')
 
+parser.add_argument(
+    '--num_workers',
+    type=int,
+    default=1,
+    help='Number of workers for parallel processing.')
+
+parser.add_argument(
+    '--num_outputs',
+    type=int,
+    default=1,
+    help='Number of desired output files, where each one is processed independently')
+
+parser.add_argument(
+    '--tokenized',
+    action='store_true',
+    help='Use tokenized document for input.')
+
+args = parser.parse_args()
+logging.getLogger().setLevel(logging.DEBUG if args.debug else logging.INFO)
 logging.info(args)
 
 
@@ -181,96 +205,66 @@ def transform(instance, tokenizer, max_seq_length, max_predictions_per_seq, do_p
     return features
 
 def print_example(instance, features):
-    logging.info('*** Example ***')
-    logging.info('tokens: %s' % ' '.join(  # pylint: disable=W1201
+    logging.debug('*** Example ***')
+    logging.debug('tokens: %s' % ' '.join(  # pylint: disable=W1201
         [tokenization.printable_text(x) for x in instance.tokens]))
 
     for feature_name in features.keys():
         feature = features[feature_name]
-        logging.info(  # pylint: disable=W1201
+        logging.debug(  # pylint: disable=W1201
             '%s: %s' % (feature_name, ' '.join(
                 [str(x) for x in feature])))
 
-def write_to_files_h5py(instances, tokenizer, max_seq_length,
+def write_to_files_h5py(features, tokenizer, max_seq_length,
                         max_predictions_per_seq, output_files):
     """Write to HDF5 files from `TrainingInstance`s."""
     from h5py import File, special_dtype
-    num_inst = len(instances)
     var_len_int = special_dtype(vlen=np.dtype('int32'))
     var_len_float = special_dtype(vlen=np.dtype('float32'))
 
     assert len(output_files) == 1, 'h5py format only support single output file'
     output_file = output_files[0]
     f = File(output_file, 'w')
+    name = 'dataset'
+    start_time = time.time()
 
-    input_ids = f.create_dataset("f.input_ids", (num_inst,), dtype=var_len_int)
-    segment_ids = f.create_dataset("f.segment_ids", (num_inst,), dtype=var_len_int)
-    masked_lm_positions = f.create_dataset("f.masked_lm_positions", (num_inst,), dtype=var_len_int)
-    masked_lm_ids = f.create_dataset("f.masked_lm_ids", (num_inst,), dtype=var_len_int)
-    masked_lm_weights = f.create_dataset("f.masked_lm_weights", (num_inst,), dtype=var_len_float)
-    next_sentence_labels = f.create_dataset("f.next_sentence_labels", (num_inst, 1), dtype='int32')
-    valid_lengths = f.create_dataset("f.valid_lengths", (num_inst, 1), dtype='int32')
+    input_ids, segment_ids, masked_lm_positions, masked_lm_ids, masked_lm_weights, next_sentence_labels, valid_lengths = features
+    total_written = len(next_sentence_labels)
+    input_ids = f.create_dataset(name+'.input_ids', data=input_ids, dtype=var_len_int)
+    segment_ids = f.create_dataset(name+'.segment_ids', data=segment_ids, dtype=var_len_int)
+    masked_lm_positions = f.create_dataset(name+'.masked_lm_positions',data=masked_lm_positions, dtype=var_len_int)
+    masked_lm_ids = f.create_dataset(name+'.masked_lm_ids',data=masked_lm_ids, dtype=var_len_int)
+    masked_lm_weights = f.create_dataset(name+'.masked_lm_weights',data=masked_lm_weights, dtype=var_len_float)
+    next_sentence_labels = f.create_dataset(name+'.next_sentence_labels',data=next_sentence_labels, dtype='int32')
+    valid_lengths = f.create_dataset(name+'.valid_lengths',data=valid_lengths, dtype='int32')
 
-    total_written = 0
-    for (inst_index, instance) in enumerate(instances):
-        features = transform(instance, tokenizer, max_seq_length, max_predictions_per_seq, False)
-        input_ids[inst_index] = features['input_ids']
-        segment_ids[inst_index] = features['segment_ids']
-        masked_lm_positions[inst_index] = features['masked_lm_positions']
-        masked_lm_ids[inst_index] = features['masked_lm_ids']
-        masked_lm_weights[inst_index] = features['masked_lm_weights']
-        next_sentence_labels[inst_index] = features['next_sentence_labels'][0]
-        valid_lengths[inst_index] = features['valid_lengths'][0]
+    end_time = time.time()
+    logging.info('Wrote %d total instances to %s. Time cost=%.1f'%
+                (total_written, name, end_time - start_time))
 
-        total_written += 1
-        if inst_index < 20:
-            print_example(instance, features)
-
-    logging.info('Wrote %d total instances', total_written)
-
-def write_to_files_np(instances, tokenizer, max_seq_length,
+def write_to_files_np(features, tokenizer, max_seq_length,
                       max_predictions_per_seq, output_files):
     """Write to numpy files from `TrainingInstance`s."""
     next_sentence_labels = []
     valid_lengths = []
 
-    num_inst = len(instances)
-    pad = tokenizer.convert_tokens_to_ids(['[PAD]'])[0]
-    input_ids = np.full((num_inst, max_seq_length), pad, dtype='int32')
-    segment_ids = np.full((num_inst, max_seq_length), 0, dtype='int32')
-    masked_lm_positions = np.full((num_inst, max_predictions_per_seq), 0, dtype='int32')
-    masked_lm_ids = np.full((num_inst, max_predictions_per_seq), 0, dtype='int32')
-    masked_lm_weights = np.full((num_inst, max_predictions_per_seq), 0, dtype='int32')
-
-    total_written = 0
-    for (inst_index, instance) in enumerate(instances):
-        features = transform(instance, tokenizer, max_seq_length, max_predictions_per_seq, False)
-        input_ids[inst_index] = features['input_ids']
-        segment_ids[inst_index] = features['segment_ids']
-        masked_lm_positions[inst_index] = features['masked_lm_positions']
-        masked_lm_ids[inst_index] = features['masked_lm_ids']
-        masked_lm_weights[inst_index] = features['masked_lm_weights']
-        next_sentence_labels.append(features['next_sentence_labels'][0])
-        valid_lengths.append(features['valid_lengths'][0])
-
-        total_written += 1
-        if inst_index < 20:
-            print_example(instance, features)
-
     assert len(output_files) == 1, 'numpy format only support single output file'
     output_file = output_files[0]
+    input_ids, segment_ids, masked_lm_positions, masked_lm_ids, masked_lm_weights, next_sentence_labels, valid_lengths = features
+    total_written = len(next_sentence_labels)
 
     outputs = collections.OrderedDict()
-    outputs["input_ids"] = input_ids
-    outputs["segment_ids"] = segment_ids
-    outputs["masked_lm_positions"] = masked_lm_positions
-    outputs["masked_lm_ids"] = masked_lm_ids
-    outputs["masked_lm_weights"] = masked_lm_weights
+    outputs["input_ids"] = np.array(input_ids, dtype=object)
+    outputs["segment_ids"] = np.array(segment_ids, dtype=object)
+    outputs["masked_lm_positions"] = np.array(masked_lm_positions, dtype=object)
+    outputs["masked_lm_ids"] = np.array(masked_lm_ids, dtype=object)
+    outputs["masked_lm_weights"] = np.array(masked_lm_weights, dtype=object)
     outputs["next_sentence_labels"] = np.array(next_sentence_labels, dtype='int32')
     outputs["valid_lengths"] = np.array(valid_lengths, dtype='int32')
 
     np.savez(output_file, **outputs)
     logging.info('Wrote %d total instances', total_written)
+
 
 def write_to_files_mmap(instances, tokenizer, max_seq_length,
                                          max_predictions_per_seq, output_files):
@@ -341,10 +335,13 @@ def write_to_files_rec(instances, tokenizer, max_seq_length,
     logging.info('Wrote %d total instances', total_written)
 
 
-def create_training_instances(input_files, tokenizer, max_seq_length,
-                              dupe_factor, short_seq_prob, masked_lm_prob,
-                              max_predictions_per_seq, rng):
+def create_training_instances(x):
     """Create `TrainingInstance`s from raw text."""
+    input_files, out, tokenizer, max_seq_length,\
+    dupe_factor, short_seq_prob, masked_lm_prob, \
+    max_predictions_per_seq, rng = x
+    time_start = time.time()
+    logging.info('Processing %s'%input_files)
     all_documents = [[]]
 
     # Input file format:
@@ -356,7 +353,7 @@ def create_training_instances(input_files, tokenizer, max_seq_length,
     for input_file in input_files:
         with io.open(input_file, 'r', encoding='UTF-8') as reader:
             while True:
-                line = tokenization.convert_to_unicode(reader.readline())
+                line = tokenization.convert_to_unicode(reader.readline()) if not args.tokenized else reader.readline()
                 if not line:
                     break
                 line = line.strip()
@@ -364,7 +361,7 @@ def create_training_instances(input_files, tokenizer, max_seq_length,
                 # Empty lines are used as document delimiters
                 if not line:
                     all_documents.append([])
-                tokens = tokenizer.tokenize(line)
+                tokens = tokenizer.tokenize(line) if not args.tokenized else line.split(' ')
                 if tokens:
                     all_documents[-1].append(tokens)
 
@@ -383,7 +380,40 @@ def create_training_instances(input_files, tokenizer, max_seq_length,
                     vocab_words, rng))
 
     rng.shuffle(instances)
-    return instances
+    input_ids = []
+    segment_ids = []
+    masked_lm_positions = []
+    masked_lm_ids = []
+    masked_lm_weights = []
+    next_sentence_labels = []
+    valid_lengths = []
+
+    for (inst_index, instance) in enumerate(instances):
+        feature = transform(instance, tokenizer, max_seq_length, max_predictions_per_seq, False)
+        input_ids.append(np.ascontiguousarray(feature['input_ids'], dtype='int32'))
+        segment_ids.append(np.ascontiguousarray(feature['segment_ids'], dtype='int32'))
+        masked_lm_positions.append(np.ascontiguousarray(feature['masked_lm_positions'], dtype='int32'))
+        masked_lm_ids.append(np.ascontiguousarray(feature['masked_lm_ids'], dtype='int32'))
+        masked_lm_weights.append(np.ascontiguousarray(feature['masked_lm_weights'], dtype='float32'))
+        next_sentence_labels.append(feature['next_sentence_labels'][0])
+        valid_lengths.append(feature['valid_lengths'][0])
+
+    features = (input_ids, segment_ids, masked_lm_positions, masked_lm_ids, masked_lm_weights, next_sentence_labels, valid_lengths)
+    time_end = time.time()
+
+    logging.info('*** Writing to output file %s ***'%out)
+    if args.format == 'numpy':
+        write_to_files_np(features, tokenizer, args.max_seq_length,
+                          args.max_predictions_per_seq, [out])
+    elif args.format == 'h5py':
+        write_to_files_h5py(features, tokenizer, args.max_seq_length,
+                            args.max_predictions_per_seq, [out])
+    elif args.format == 'recordio':
+        write_to_files_rec(instances, tokenizer, args.max_seq_length,
+                           args.max_predictions_per_seq, [out])
+    else:
+        raise ValueError('unsupported format: %s'%args.format)
+    logging.info('Process %d files took %.1f s'%(len(input_files), time_end - time_start))
 
 
 def create_instances_from_document(
@@ -584,47 +614,58 @@ def truncate_seq_pair(tokens_a, tokens_b, max_num_tokens, rng):
 
 
 def main():
-    """
-    main function
-    """
-    logging.info("loading vocab file")
+    """Main function."""
+    time_start = time.time()
+    logging.info("loading vocab file: %s"%args.vocab_file)
     vocab_obj = nlp.Vocab.from_json(open(args.vocab_file, 'rt').read())
     tokenizer = tokenization.FullTokenizer(
         vocab=vocab_obj, do_lower_case=args.do_lower_case)
 
     input_files = []
     for input_pattern in args.input_file.split(','):
-        input_files.extend(glob.glob(input_pattern))
+        input_files.extend(glob.glob(os.path.expanduser(input_pattern)))
 
-    logging.info('*** Reading from input files ***')
+    logging.info('*** Reading from %d input files ***'%len(input_files))
     for input_file in input_files:
         logging.info('  %s', input_file)
 
-    output_files = args.output_file.split(',')
-    if args.format == 'numpy':
-        assert len(output_files) == 1, 'numpy format only support single output file'
+    num_outputs = args.num_outputs
+    assert len(input_files) >= num_outputs, \
+        'Number of outputs must be fewer than that of inputs'
+
+    output_dir = os.path.expanduser(args.output_dir)
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
 
     rng = random.Random(args.random_seed)
-    instances = create_training_instances(
-        input_files, tokenizer, args.max_seq_length, args.dupe_factor,
-        args.short_seq_prob, args.masked_lm_prob, args.max_predictions_per_seq,
-        rng)
+    nworker = args.num_workers
 
-    logging.info('*** Writing to output files ***')
-    for output_file in output_files:
-        logging.info('  %s', output_file)
+    file_splits = []
+    split_size = (len(input_files) + num_outputs - 1) // num_outputs
+    for i in range(num_outputs - 1):
+        file_splits.append(input_files[i*split_size:(i+1)*split_size])
+    file_splits.append(input_files[(num_outputs-1)*split_size:])
 
-    if args.format == 'numpy':
-        write_to_files_np(instances, tokenizer, args.max_seq_length,
-                                           args.max_predictions_per_seq, output_files)
-    elif args.format == 'recordio':
-        write_to_files_rec(instances, tokenizer, args.max_seq_length,
-                                            args.max_predictions_per_seq, output_files)
-    elif args.format == 'h5py':
-        write_to_files_h5py(instances, tokenizer, args.max_seq_length,
-                            args.max_predictions_per_seq, output_files)
+    count = 0
+    map_args = []
+    pool_args = (tokenizer, args.max_seq_length, args.dupe_factor,\
+                 args.short_seq_prob, args.masked_lm_prob,
+                 args.max_predictions_per_seq, rng)
+    for i in range(len(file_splits)):
+        file_split = file_splits[i]
+        out = os.path.join(output_dir, 'part-%03d.npz'%i)
+        count += len(file_split)
+        map_args.append((file_split, out) + pool_args)
+    assert count == len(input_files)
+    if nworker > 0:
+        pool = Pool(nworker)
+        results = pool.map(create_training_instances, map_args)
     else:
-        raise ValueError('unsupported format: %s'%args.format)
+        for map_arg in map_args:
+            create_training_instances(map_arg)
+
+    time_end = time.time()
+    logging.info('Time cost=%.1f'%(time_end - time_start))
 
 if __name__ == '__main__':
     main()
