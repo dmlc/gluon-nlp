@@ -213,6 +213,7 @@ class SQuADTransform(object):
         self.max_query_length = max_query_length
         self.doc_stride = doc_stride
         self.is_training = is_training
+        self.version_2 = version_2
 
     def is_whitespace(self, c):
         if c == ' ' or c == '\t' or c == '\r' or c == '\n' or ord(
