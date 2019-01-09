@@ -408,10 +408,10 @@ def test_weight_drop():
 
         drop_rate = 0.5
         nlp.model.utils.apply_weight_drop(net, '.*h2h_weight', drop_rate)
-        net.initialize('uniform')
 
-        mx.test_utils.assert_almost_equal(net(x).asnumpy(),
-                                          shared_net(x).asnumpy())
+        with mx.autograd.predict_mode():
+            mx.test_utils.assert_almost_equal(net(x).asnumpy(),
+                                              shared_net(x).asnumpy())
         with mx.autograd.train_mode():
             assert not mx.test_utils.almost_equal(net(x).asnumpy(),
                                                   shared_net(x).asnumpy())
