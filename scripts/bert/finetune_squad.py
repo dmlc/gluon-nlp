@@ -49,10 +49,11 @@ import mxnet as mx
 from mxnet import gluon, nd
 
 import gluonnlp as nlp
-from bert import BertForQALoss, BertForQA
-from dataset import (SQuAD, SQuADTransform, bert_qa_batchify_fn,
-                     preprocess_dataset)
-from evaluate import get_F1_EM, predictions
+from gluonnlp.data import SQuAD
+from BertForQA import BertForQALoss, BertForQA
+from qa_dataset import (SQuADTransform, bert_qa_batchify_fn,
+                        preprocess_dataset)
+from qa_evaluate import get_F1_EM, predictions
 
 np.random.seed(6)
 random.seed(6)
@@ -61,16 +62,6 @@ logging.getLogger().setLevel(logging.DEBUG)
 
 parser = argparse.ArgumentParser(description='BERT QA example.'
                                  'We fine-tune the BERT model on SQuAD 1.1')
-
-parser.add_argument('--train_file',
-                    type=str,
-                    default='train-v1.1.json',
-                    help='SQuAD json for training. E.g., train-v1.1.json')
-
-parser.add_argument('--predict_file',
-                    type=str,
-                    default=None,
-                    help='SQuAD json for predictions. E.g., dev-v1.1.json or test-v1.1.json')
 
 parser.add_argument('--only_predict',
                     action='store_true',
@@ -91,6 +82,7 @@ parser.add_argument('--dataset_name',
                     default='book_corpus_wiki_en_uncased',
                     help='BERT dataset name.'
                     'options are book_corpus_wiki_en_uncased and book_corpus_wiki_en_cased.')
+
 parser.add_argument('--cased',
                     action='store_false',
                     help='if not set, inputs are converted to lower case.')
@@ -173,16 +165,6 @@ parser.add_argument('--max_answer_length',
                     'because the start and end predictions are not conditioned on one another.'
                     ' default is 30')
 
-parser.add_argument('--version_2',
-                    action='store_true',
-                    help='SQuAD examples whether contain some that do not have an answer.')
-
-parser.add_argument('--null_score_diff_threshold',
-                    type=float,
-                    default=0.0,
-                    help='If null_score - best_non_null is greater than the threshold predict null.'
-                    ' default is 0.0')
-
 parser.add_argument('--gpu',
                     action='store_true',
                     help='whether to use gpu for finetuning')
@@ -190,8 +172,6 @@ parser.add_argument('--gpu',
 args = parser.parse_args()
 logging.info(args)
 
-train_file = args.train_file
-predict_file = args.predict_file
 output_dir = args.output_dir
 if not os.path.exists(output_dir):
     os.mkdir(output_dir)
@@ -218,13 +198,13 @@ optimizer = args.optimizer
 warmup_ratio = args.warmup_ratio
 
 
-version_2 = args.version_2
+version_2 = False
 max_seq_length = args.max_seq_length
 doc_stride = args.doc_stride
 max_query_length = args.max_query_length
 n_best_size = args.n_best_size
 max_answer_length = args.max_answer_length
-null_score_diff_threshold = args.null_score_diff_threshold
+null_score_diff_threshold = 0.0
 
 if max_seq_length <= max_query_length + 3:
     raise ValueError('The max_seq_length (%d) must be greater than max_query_length '
@@ -241,7 +221,6 @@ bert, vocab = nlp.model.get_model(
 
 berttoken = nlp.data.BERTTokenizer(vocab=vocab, lower_case=lower_case)
 
-
 net = BertForQA(bert=bert)
 if not model_parameters:
     net.classifier.initialize(init=mx.init.Normal(0.02), ctx=ctx)
@@ -253,11 +232,11 @@ loss_function = BertForQALoss()
 loss_function.hybridize(static_alloc=True)
 
 
-def Train():
+def train():
     """Training function."""
 
     logging.info('Loader Train data...')
-    train_data = SQuAD(train_file, version_2=version_2)
+    train_data = SQuAD('train')
 
     train_data_transform = preprocess_dataset(train_data, SQuADTransform(
         berttoken,
@@ -351,11 +330,11 @@ def Train():
     net.save_parameters(os.path.join(output_dir, 'net_parameters'))
 
 
-def Evaluate():
+def evaluate():
     """Evaluate the model on validation dataset.
     """
     logging.info('Loader dev data...')
-    dev_data = SQuAD(predict_file, version_2=version_2, is_training=False)
+    dev_data = SQuAD('dev')
 
     dev_dataset = dev_data.transform(
         SQuADTransform(
@@ -430,6 +409,6 @@ def Evaluate():
 
 if __name__ == '__main__':
     if not only_predict:
-        Train()
+        train()
     if predict_file:
-        Evaluate()
+        evaluate()

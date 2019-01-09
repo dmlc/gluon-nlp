@@ -12,7 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""BERT datasets."""
+"""BERT for QA datasets."""
 import collections
 import json
 import multiprocessing as mp
@@ -120,132 +120,13 @@ class SquadFeature(object):
         self.is_impossible = is_impossible
 
 
-class SQuAD(SimpleDataset):
-    """Stanford Question Answering Dataset (SQuAD) - reading comprehension dataset.
-
-    From
-    https://rajpurkar.github.io/SQuAD-explorer/
-
-    License: CreativeCommons BY-SA 4.0
-
-    The original data format is json, which has multiple contexts (a context is a paragraph of text
-    from which questions are drawn). For each context there are multiple questions, and for each of
-    these questions there are multiple (usually 3) answers.
-
-    This class loads the json and flattens it to question dataset.
-    Number of records in the dataset is equal to number of questions in json file.
-
-
-    Parameters
-    ----------
-    filename : str
-        SQuAD json file path.
-    is_training : bool, default True
-        Whether to run training.
-    version_2 : bool, default False
-        If true, the SQuAD examples contain some that do not have an answer.
-    """
-
-    def __init__(self, filename, is_training=True, version_2=False):
-        self.input_file = filename
-        self.is_training = is_training
-        self.version_2 = version_2
-        super(SQuAD, self).__init__(self._read())
-
-    def _read(self):
-        """Read a SQuAD json file into a list of SquadExample."""
-        with open(self.input_file, 'r') as reader:
-            input_data = json.load(reader)['data']
-
-        def is_whitespace(c):
-            if c == ' ' or c == '\t' or c == '\r' or c == '\n' or ord(
-                    c) == 0x202F:
-                return True
-            return False
-
-        examples = []
-        example_id = 0
-        for entry in input_data:  # pylint: disable=too-many-nested-blocks
-            for paragraph in entry['paragraphs']:
-                paragraph_text = paragraph['context']
-                doc_tokens = []
-                char_to_word_offset = []
-                prev_is_whitespace = True
-                for c in paragraph_text:
-                    if is_whitespace(c):
-                        prev_is_whitespace = True
-                    else:
-                        if prev_is_whitespace:
-                            doc_tokens.append(c)
-                        else:
-                            doc_tokens[-1] += c
-                        prev_is_whitespace = False
-                    char_to_word_offset.append(len(doc_tokens) - 1)
-
-                for qa in paragraph['qas']:
-                    qas_id = qa['id']
-                    question_text = qa['question']
-                    start_position = None
-                    end_position = None
-                    orig_answer_text = None
-                    is_impossible = False
-                    if self.is_training:
-
-                        if self.version_2:
-                            is_impossible = qa['is_impossible']
-                        if (len(qa['answers']) != 1) and (not is_impossible):
-                            raise ValueError(
-                                'For training, each question should have exactly 1 answer.'
-                            )
-                        if not is_impossible:
-                            answer = qa['answers'][0]
-                            orig_answer_text = answer['text']
-                            answer_offset = answer['answer_start']
-                            answer_length = len(orig_answer_text)
-                            start_position = char_to_word_offset[answer_offset]
-                            end_position = char_to_word_offset[
-                                answer_offset + answer_length - 1]
-                            # Only add answers where the text can be exactly recovered from the
-                            # document. If this CAN'T happen it's likely due to weird Unicode
-                            # stuff so we will just skip the example.
-                            #
-                            # Note that this means for training mode, every example is NOT
-                            # guaranteed to be preserved.
-                            actual_text = ' '.join(
-                                doc_tokens[start_position:(end_position + 1)])
-                            cleaned_answer_text = ' '.join(
-                                self.whitespace_tokenize(orig_answer_text))
-                            if actual_text.find(cleaned_answer_text) == -1:
-                                print('Could not find answer: %s vs. %s' %
-                                      (actual_text, cleaned_answer_text))
-                                continue
-                        else:
-                            start_position = -1
-                            end_position = -1
-                            orig_answer_text = ''
-
-                    example = SquadExample(
-                        qas_id=qas_id,
-                        question_text=question_text,
-                        doc_tokens=doc_tokens,
-                        example_id=example_id,
-                        orig_answer_text=orig_answer_text,
-                        start_position=start_position,
-                        end_position=end_position,
-                        is_impossible=is_impossible)
-                    examples.append(example)
-
-                    example_id += 1
-
-        return examples
-
-    def whitespace_tokenize(self, text):
-        """Runs basic whitespace cleaning and splitting on a piece of text."""
-        text = text.strip()
-        if not text:
-            return []
-        tokens = text.split()
-        return tokens
+def whitespace_tokenize(text):
+    """Runs basic whitespace cleaning and splitting on a piece of text."""
+    text = text.strip()
+    if not text:
+        return []
+    tokens = text.split()
+    return tokens
 
 
 class SQuADTransform(object):
@@ -279,13 +160,14 @@ class SQuADTransform(object):
                 ',','which','operated','between','december','2004','and','april',
                 '2006','.','it','ceased','operations','after','its','japanese',
                 'distributor','folded','.','[SEP]']
-        segment_ids: [0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+        segment_ids: [0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,
+            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
         start_position: 20
         end_position: 21
         valid_length: 36
 
     Because of the sliding window approach taken to scoring documents, a single
-    token can appear in multiple documents. 
+    token can appear in multiple documents.
     So you need to record whether each token is a maximum context. E.g.
        Doc: the man went to the store and bought a gallon of milk
        Span A: the man went to the
@@ -324,14 +206,87 @@ class SQuADTransform(object):
                  max_seq_length=384,
                  doc_stride=128,
                  max_query_length=64,
-                 is_training=True):
+                 is_training=True,
+                 version_2=False):
         self.tokenizer = tokenizer
         self.max_seq_length = max_seq_length
         self.max_query_length = max_query_length
         self.doc_stride = doc_stride
         self.is_training = is_training
 
-    def _transform(self, example):
+    def _toSquadExample(self, record):
+        example_id = record[0]
+        qas_id = record[1]
+        question_text = record[2]
+        paragraph_text = record[3]
+        orig_answer_text = record[4][0]
+        answer_offset = record[5][0]
+
+        doc_tokens = []
+
+        char_to_word_offset = []
+        prev_is_whitespace = True
+        for c in paragraph_text:
+            if is_whitespace(c):
+                prev_is_whitespace = True
+            else:
+                if prev_is_whitespace:
+                    doc_tokens.append(c)
+                else:
+                    doc_tokens[-1] += c
+                prev_is_whitespace = False
+            char_to_word_offset.append(len(doc_tokens) - 1)
+
+        start_position = None
+        end_position = None
+        is_impossible = False
+
+        if self.is_training:
+            if self.version_2:
+                is_impossible = qa['is_impossible']
+            if (len(qa['answers']) != 1) and (not is_impossible):
+                raise ValueError(
+                    'For training, each question should have exactly 1 answer.')
+            if not is_impossible:
+                answer_length = len(orig_answer_text)
+                start_position = char_to_word_offset[answer_offset]
+                end_position = char_to_word_offset[
+                    answer_offset + answer_length - 1]
+                # Only add answers where the text can be exactly recovered from the
+                # document. If this CAN'T happen it's likely due to weird Unicode
+                # stuff so we will just skip the example.
+                #
+                # Note that this means for training mode, every example is NOT
+                # guaranteed to be preserved.
+                actual_text = ' '.join(
+                    doc_tokens[start_position:(end_position + 1)])
+                cleaned_answer_text = ' '.join(
+                    whitespace_tokenize(orig_answer_text))
+                if actual_text.find(cleaned_answer_text) == -1:
+                    print('Could not find answer: %s vs. %s' %
+                          (actual_text, cleaned_answer_text))
+                    return None
+            else:
+                start_position = -1
+                end_position = -1
+                orig_answer_text = ''
+
+        example = SquadExample(
+            qas_id=qas_id,
+            question_text=question_text,
+            doc_tokens=doc_tokens,
+            example_id=example_id,
+            orig_answer_text=orig_answer_text,
+            start_position=start_position,
+            end_position=end_position,
+            is_impossible=is_impossible)
+        return example
+
+    def _transform(self, record):
+        example = self._toSquadExample(record)
+        if not example:
+            return None
+
         features = []
         query_tokens = self.tokenizer(example.question_text)
 
@@ -460,8 +415,10 @@ class SQuADTransform(object):
                                          is_impossible=example.is_impossible))
         return features
 
-    def __call__(self, example):
-        examples = self._transform(example)
+    def __call__(self, record):
+        examples = self._transform(record)
+        if not examples:
+            return None
         features = []
 
         for _example in examples:
