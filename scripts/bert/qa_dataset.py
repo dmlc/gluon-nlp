@@ -249,8 +249,8 @@ class SQuADTransform(object):
         is_impossible = False
 
         if self.is_training:
-            if self.version_2:
-                is_impossible = qa['is_impossible']
+            # if self.version_2:
+            #     is_impossible = qa['is_impossible']
             if not is_impossible:
                 answer_length = len(orig_answer_text)
                 start_position = char_to_word_offset[answer_offset]
