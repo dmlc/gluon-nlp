@@ -286,7 +286,7 @@ class SQuADTransform(object):
             is_impossible=is_impossible)
         return example
 
-    def _transform(self, record):
+    def _transform(self, *record):
         example = self._toSquadExample(record)
         if not example:
             return None
@@ -420,7 +420,7 @@ class SQuADTransform(object):
         return features
 
     def __call__(self, record):
-        examples = self._transform(record)
+        examples = self._transform(*record)
         if not examples:
             return None
         features = []
