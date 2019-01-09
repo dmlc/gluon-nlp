@@ -214,6 +214,12 @@ class SQuADTransform(object):
         self.doc_stride = doc_stride
         self.is_training = is_training
 
+    def is_whitespace(self, c):
+        if c == ' ' or c == '\t' or c == '\r' or c == '\n' or ord(
+                c) == 0x202F:
+            return True
+        return False
+
     def _toSquadExample(self, record):
         example_id = record[0]
         qas_id = record[1]
@@ -227,7 +233,7 @@ class SQuADTransform(object):
         char_to_word_offset = []
         prev_is_whitespace = True
         for c in paragraph_text:
-            if is_whitespace(c):
+            if self.is_whitespace(c):
                 prev_is_whitespace = True
             else:
                 if prev_is_whitespace:

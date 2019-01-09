@@ -410,5 +410,6 @@ def evaluate():
 if __name__ == '__main__':
     if not only_predict:
         train()
-    if predict_file:
+        evaluate
+    elif model_parameters:
         evaluate()
