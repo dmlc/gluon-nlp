@@ -39,3 +39,7 @@ PYTHONPATH=~/gluon-nlp/src/:~/mxnet/python/ python run_pretraining.py --gpu --da
 PYTHONPATH=~/gluon-nlp/src/:~/mxnet/python/ python create_pretraining_data.py --input_file "sample_text.txt" --output_dir data_dir --vocab_file /home/ubuntu/.mxnet/models/book_corpus_wiki_en_uncased-c3e2bd00.vocab --do_lower_case --max_seq_length 128 --max_predictions_per_seq 20 --dupe_factor 5  --num_workers 1 --num_outputs 1 --format numpy
 
 PYTHONPATH=~/gluon-nlp/src/:~/mxnet/python/ python run_pretraining.py --gpu --data "data_dir/*" --num_steps 20 --pretrained --log_interval=1  --data_eval "data_dir/*" --batch_size_eval 8 --lr 2e-5 --batch_size 32  --warmup_ratio 0.5 --do-training --warmup_ratio 0.5 --do-eval --seed 2
+
+PYTHONPATH=~/gluon-nlp/src/:~/mxnet/python/ python run_pretraining.py --data "/newvolume/enwiki-samples-tokenized/part-000.npz" --num_steps 200 --pretrained --log_interval 32  --data_eval "data_dir/*" --batch_size_eval 8 --lr 2e-5 --batch_size 8  --warmup_ratio 0.5 --do-training --warmup_ratio 0.5 --do-eval --seed 2 --gpus 0,1,2,3
+
+PYTHONPATH=~/gluon-nlp/src/:~/mxnet/python/ python create_pretraining_data.py --input_file "/newvolume/enwiki-doc-tokens/AA/wiki_00.tokens" --output_dir /newvolume/enwiki-samples-tokenized/ --vocab_file /home/ubuntu/.mxnet/models/book_corpus_wiki_en_uncased-c3e2bd00.vocab --do_lower_case --max_seq_length 512 --max_predictions_per_seq 78 --dupe_factor 5 --num_workers 72 --num_outputs 1 --format numpy --tokenized
