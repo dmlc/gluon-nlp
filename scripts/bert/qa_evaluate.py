@@ -395,11 +395,7 @@ def get_F1_EM(dataset, predict_data):
     scores: dict
         F1 and EM scores.
     """
-    with open(dataset_file) as file_read:
-        dataset_json = json.load(file_read)
-        dataset = dataset_json['data']
     f1 = exact_match = total = 0
-
     for record in dataset:
         total += 1
         if record[1] not in predict_data:
@@ -413,23 +409,6 @@ def get_F1_EM(dataset, predict_data):
             exact_match_score, prediction, ground_truths)
         f1 += metric_max_over_ground_truths(f1_score, prediction,
                                             ground_truths)
-
-    # for article in dataset:
-    #     for paragraph in article['paragraphs']:
-    #         for qa in paragraph['qas']:
-    #             total += 1
-    #             if qa['id'] not in predict_data:
-    #                 message = 'Unanswered question ' + qa['id'] + \
-    #                           ' will receive score 0.'
-    #                 print(message)
-    #                 continue
-    #             ground_truths = list(map(lambda x: x['text'], qa['answers']))
-    #             prediction = predict_data[qa['id']]
-    #             exact_match += metric_max_over_ground_truths(
-    #                 exact_match_score, prediction, ground_truths)
-    #             f1 += metric_max_over_ground_truths(f1_score, prediction,
-    #                                                 ground_truths)
-
     exact_match = 100.0 * exact_match / total
     f1 = 100.0 * f1 / total
 
