@@ -30,6 +30,8 @@ import logging
 import os
 import sys
 
+import mxnet as mx
+
 import evaluation
 import gluonnlp as nlp
 import utils
@@ -61,7 +63,7 @@ def get_args():
         help=('Specify load_ngrams=True '
               'when loading pretrained fastText embedding.'))
     group.add_argument(
-        '--max-vocab-size', type=int, default=None,
+        '--analogy-max-vocab-size', type=int, default=None,
         help=('Only retain the X first tokens from the pre-trained embedding. '
               'The tokens are ordered by decreasing frequency.'
               'As the analogy task takes the whole vocabulary into account, '
@@ -131,37 +133,53 @@ def validate_args(args):
 
 def load_embedding_from_path(args):
     """Load a TokenEmbedding."""
-    if 'bin' in args.embedding_path:
+    if args.embedding_path.endswith('.bin'):
         with utils.print_time('load fastText model.'):
             model = \
                 nlp.model.train.FasttextEmbeddingModel.load_fasttext_format(
                     args.embedding_path)
+        idx_to_token = sorted(model._token_to_idx, key=model._token_to_idx.get)
 
         embedding = nlp.embedding.TokenEmbedding(
-            unknown_token=None, unknown_lookup=model, allow_extend=True,
-            unknown_autoextend=True)
+            unknown_token=None, unknown_lookup=model, allow_extend=True)
 
-        idx_to_token = sorted(model._token_to_idx, key=model._token_to_idx.get)
+        # Analogy task is open-vocabulary, so must keep all known words.
+        # But if not evaluating analogy, no need to precompute now as all
+        # words for closed vocabulary task can be obtained via the unknown
+        # lookup
         if not args.analogy_datasets:
-            # Prune tokens not used in evaluation datasets
-            eval_tokens_ = set(
-                evaluation.get_tokens_in_evaluation_datasets(args))
-            idx_to_token = [t for t in idx_to_token if t in eval_tokens_]
-        if args.max_vocab_size:
-            idx_to_token = idx_to_token[:args.max_vocab_size]
+            idx_to_token = []
+        elif args.analogy_datasets and args.analogy_max_vocab_size:
+            idx_to_token = idx_to_token[:args.analogy_max_vocab_size]
 
-        with utils.print_time('compute vectors from subwords '
-                              'for {} words.'.format(len(idx_to_token))):
-            embedding[idx_to_token] = model[idx_to_token]
-
+        embedding['<unk>'] = mx.nd.zeros(model.weight.shape[1])
+        if idx_to_token:
+            with utils.print_time('compute vectors for {} known '
+                                  'words.'.format(len(idx_to_token))):
+                embedding[idx_to_token] = model[idx_to_token]
     else:
         embedding = nlp.embedding.TokenEmbedding.from_file(args.embedding_path)
 
     return embedding
 
 
+def load_embedding_from_gluonnlp(args):
+    if args.embedding_name.lower() == 'fasttext':
+        token_embedding = nlp.embedding.create(
+            args.embedding_name,
+            source=args.embedding_source,
+            load_ngrams=args.fasttext_load_ngrams)
+    else:
+        token_embedding = nlp.embedding.create(
+            args.embedding_name, source=args.embedding_source)
+    return token_embedding
+
+
 def enforce_max_size(token_embedding, size):
+    assert token_embedding.idx_to_vec is not None
     if size and len(token_embedding.idx_to_token) > size:
+        assert size > 0
+        size = size + 1 if token_embedding.unknown_token is not None else size
         token_embedding._idx_to_token = token_embedding._idx_to_token[:size]
         token_embedding._idx_to_vec = token_embedding._idx_to_vec[:size]
         token_embedding._token_to_idx = {
@@ -181,44 +199,35 @@ if __name__ == '__main__':
 
     # Load pre-trained embeddings
     if not args_.embedding_path:
-        if args_.embedding_name.lower() == 'fasttext':
-            token_embedding_ = nlp.embedding.create(
-                args_.embedding_name,
-                source=args_.embedding_source,
-                load_ngrams=args_.fasttext_load_ngrams,
-                allow_extend=True,
-                unknown_autoextend=True)
-        else:
-            token_embedding_ = nlp.embedding.create(
-                args_.embedding_name, source=args_.embedding_source)
+        token_embedding_ = load_embedding_from_gluonnlp(args_)
         name = '-' + args_.embedding_name + '-' + args_.embedding_source
     else:
         token_embedding_ = load_embedding_from_path(args_)
         name = ''
 
-    enforce_max_size(token_embedding_, args_.max_vocab_size)
+    enforce_max_size(token_embedding_, args_.analogy_max_vocab_size)
     known_tokens = set(token_embedding_.idx_to_token)
-    # Auto-extend token_embedding with unknown extra eval tokens
-    if token_embedding_.unknown_lookup is not None:
-        eval_tokens = evaluation.get_tokens_in_evaluation_datasets(args_)
-        # pylint: disable=pointless-statement
-        token_embedding_[[
-            t for t in eval_tokens - known_tokens
-            if t in token_embedding_.unknown_lookup
-        ]]
 
-        if args_.max_vocab_size is not None and len(
-                token_embedding_.idx_to_token) > args_.max_vocab_size:
-            logging.warning('Computing embeddings for OOV words that occur '
-                            'in the evaluation dataset lead to having '
-                            'more words than --max-vocab-size. '
-                            'Have %s words (--max-vocab-size %s)',
-                            len(token_embedding_.idx_to_token),
-                            args_.max_vocab_size)
-
-    similarity_results = evaluation.evaluate_similarity(
-        args_, token_embedding_, ctx, logfile=os.path.join(
-            args_.logdir, 'similarity{}.tsv'.format(name)))
-    analogy_results = evaluation.evaluate_analogy(
-        args_, token_embedding_, ctx, logfile=os.path.join(
-            args_.logdir, 'analogy{}.tsv'.format(name)))
+    if args_.similarity_datasets:
+        with utils.print_time('find relevant tokens for similarity'):
+            tokens = evaluation.get_similarity_task_tokens(args_)
+        vocab = nlp.Vocab(nlp.data.count_tokens(tokens))
+        with utils.print_time('set {} embeddings'.format(len(tokens))):
+            vocab.set_embedding(token_embedding_)
+        evaluation.evaluate_similarity(
+            args_, vocab.embedding, ctx, logfile=os.path.join(
+                args_.logdir, 'similarity{}.tsv'.format(name)))
+    if args_.analogy_datasets:
+        with utils.print_time('extend open vocabulary with '
+                              'OOV tokens for analogy'):
+            tokens = evaluation.get_analogy_task_tokens(args_)
+            if token_embedding_.unknown_token is not None:
+                tokens.update(token_embedding_.idx_to_token[1:])
+            else:
+                tokens.update(token_embedding_.idx_to_token)
+        vocab = nlp.Vocab(nlp.data.count_tokens(tokens))
+        with utils.print_time('set {} embeddings'.format(len(tokens))):
+            vocab.set_embedding(token_embedding_)
+        evaluation.evaluate_analogy(
+            args_, vocab.embedding, ctx, logfile=os.path.join(
+                args_.logdir, 'analogy{}.tsv'.format(name)))

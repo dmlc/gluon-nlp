@@ -172,24 +172,19 @@ class TokenEmbedding(object):
         via token_embedding[tokens] = vecs. If False, only vectors for known
         tokens can be updated.
     unknown_lookup : object subscriptable with list of tokens returning nd.NDarray, default None
-        If not None, unknown_lookup[tokens] is called for any unknown tokens.
-        The result is cached if unknown_autoextend is True.
-    unknown_autoextend : bool, default True
-        If True, any unknown token for which a vector was looked up in
-        unknown_lookup together with the resulting vector will be added to
-        token_to_idx, idx_to_token and idx_to_vec, adding a new index. This
-        option is ignored if allow_extend is False.
+        If not None, the TokenEmbedding obtains embeddings for unknown tokens
+        automatically from `unknown_lookup[unknown_tokens]`. For example, in a
+        FastText model, embeddings for unknown tokens can be computed from the
+        subword information.
 
     """
 
     def __init__(self, unknown_token='<unk>', init_unknown_vec=nd.zeros,
-                 allow_extend=False, unknown_lookup=None,
-                 unknown_autoextend=True):
+                 allow_extend=False, unknown_lookup=None):
         self._unknown_token = unknown_token
         self._init_unknown_vec = init_unknown_vec
         self._allow_extend = allow_extend
         self._unknown_lookup = unknown_lookup
-        self._unknown_autoextend = unknown_autoextend
         self._idx_to_token = [unknown_token] if unknown_token else []
         if unknown_token:
             self._token_to_idx = DefaultLookupDict(C.UNK_IDX)
@@ -457,8 +452,8 @@ class TokenEmbedding(object):
     def unknown_lookup(self):
         """Vector lookup for unknown tokens.
 
-        If not None, unknown_lookup[tokens] is called for any unknown tokens.
-        The result is cached if unknown_autoextend is True.
+        If not None, unknown_lookup[tokens] is automatically called for any
+        unknown tokens.
 
         Returns
         -------
@@ -473,7 +468,6 @@ class TokenEmbedding(object):
         """Vector lookup for unknown tokens.
 
         If not None, unknown_lookup[tokens] is called for any unknown tokens.
-        The result is cached if unknown_autoextend is True.
 
         Parameters
         ----------
@@ -482,23 +476,6 @@ class TokenEmbedding(object):
 
         """
         self._unknown_lookup = unknown_lookup
-
-    @property
-    def unknown_autoextend(self):
-        """Autoextension behavior for unknown token lookup.
-
-        If True, any unknown token for which a vector was looked up in
-        unknown_lookup together with the resulting vector will be added to
-        token_to_idx, idx_to_token and idx_to_vec, adding a new index. Applies
-        only if unknown_lookup is not None.
-
-        Returns
-        -------
-        bool
-            Autoextension behavior
-        """
-
-        return self._unknown_autoextend
 
     def __contains__(self, token):
         """Check if token is known.
@@ -552,19 +529,20 @@ class TokenEmbedding(object):
         if to_reduce:
             tokens = [tokens]
 
-        if self.unknown_lookup is not None and (not self.allow_extend
-                                                or not self.unknown_autoextend):
-            vecs = [
-                self.idx_to_vec[self.token_to_idx[token]]
-                if token in self.token_to_idx else self.unknown_lookup[token]
-                for token in tokens
-            ]
-            vecs = nd.stack(*vecs, axis=0)
+        if self.unknown_lookup is not None:
+            if self.idx_to_vec is None:
+                # May raise KeyError, but we cannot fallback to idx_to_vec's
+                # unknown vector, as idx_to_vec has not been initialized yet.
+                # Cannot initialize it, as we don't know the dimension.
+                vecs = self.unknown_lookup[tokens]
+            else:
+                vecs = [
+                    self.idx_to_vec[self.token_to_idx[token]] if
+                    (token in self.token_to_idx
+                     or token not in self.unknown_lookup) else
+                    self.unknown_lookup[token] for token in tokens]
+                vecs = nd.stack(*vecs, axis=0)
         else:
-            if self.unknown_lookup is not None and self.allow_extend and self.unknown_autoextend:
-                new_tokens = [t for t in tokens if t not in self.token_to_idx]
-                self[new_tokens] = self.unknown_lookup[new_tokens]
-
             indices = [self._token_to_idx[token] for token in tokens]
             vecs = nd.Embedding(
                 nd.array(indices), self.idx_to_vec, self.idx_to_vec.shape[0],
@@ -612,10 +590,14 @@ class TokenEmbedding(object):
             the glossary. If `tokens` is a singleton, it must be 1-D or 2-D. If `tokens` is a list
             of multiple strings, it must be 2-D.
         """
-        if self.allow_extend and self._idx_to_vec is None:
+        if not isinstance(tokens, (list, tuple)):
+            tokens = [tokens]
+        if ((self.allow_extend or all(t in self.token_to_idx for t in tokens))
+                and self._idx_to_vec is None):
             # Initialize self._idx_to_vec
             assert C.UNK_IDX == 0
-            self._idx_to_vec = self._init_unknown_vec(shape=(1, new_embedding.shape[-1]))
+            self._idx_to_vec = self._init_unknown_vec(
+                shape=(1, new_embedding.shape[-1]))
 
         tokens = self._check_vector_update(tokens, new_embedding)
 
