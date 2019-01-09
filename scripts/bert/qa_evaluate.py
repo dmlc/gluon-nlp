@@ -399,7 +399,7 @@ def get_F1_EM(dataset, predict_data):
     for record in dataset:
         total += 1
         if record[1] not in predict_data:
-            message = 'Unanswered question ' + qa['id'] + \
+            message = 'Unanswered question ' + record[1] + \
                         ' will receive score 0.'
             print(message)
             continue
