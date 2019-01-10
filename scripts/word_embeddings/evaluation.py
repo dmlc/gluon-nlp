@@ -117,18 +117,28 @@ def iterate_analogy_datasets(args):
             yield dataset_name, kwargs, nlp.data.create(dataset_name, **kwargs)
 
 
-def get_tokens_in_evaluation_datasets(args):
+def get_similarity_task_tokens(args):
     """Returns a set of all tokens occurring the evaluation datasets."""
     tokens = set()
     for _, _, dataset in iterate_similarity_datasets(args):
         tokens.update(
             itertools.chain.from_iterable((d[0], d[1]) for d in dataset))
+    return tokens
 
+
+def get_analogy_task_tokens(args):
+    """Returns a set of all tokens occuring the evaluation datasets."""
+    tokens = set()
     for _, _, dataset in iterate_analogy_datasets(args):
         tokens.update(
             itertools.chain.from_iterable(
                 (d[0], d[1], d[2], d[3]) for d in dataset))
+    return tokens
 
+
+def get_tokens_in_evaluation_datasets(args):
+    tokens = get_similarity_task_tokens(args)
+    tokens.update(get_analogy_task_tokens(args))
     return tokens
 
 
