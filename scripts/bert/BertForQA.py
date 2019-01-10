@@ -44,8 +44,7 @@ class BertForQA(Block):
         super(BertForQA, self).__init__(prefix=prefix, params=params)
         self.bert = bert
         with self.name_scope():
-            self.classifier = nn.HybridSequential(prefix=prefix)
-            self.classifier.add(nn.Dense(units=2, flatten=False))
+            self.classifier = nn.Dense(units=2, flatten=False)
 
     def forward(self, inputs, token_types, valid_length=None):  # pylint: disable=arguments-differ
         """Generate the unnormalized score for the given the input sequences.

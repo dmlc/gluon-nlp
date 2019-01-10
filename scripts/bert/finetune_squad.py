@@ -118,6 +118,7 @@ parser.add_argument('--accumulate',
                     default=None,
                     help='The number of batches for '
                     'gradients accumulation to simulate large batch size. Default is None')
+
 parser.add_argument('--lr',
                     type=float,
                     default=3e-5,
@@ -197,14 +198,18 @@ if accumulate:
 optimizer = args.optimizer
 warmup_ratio = args.warmup_ratio
 
-
+# If true, the SQuAD examples contain some that do not have an answer.
 version_2 = False
+
+# If null_score - best_non_null is greater than the threshold predict null.
+# When SQuAD contains some examples without answers.
+null_score_diff_threshold = 0.0
+
 max_seq_length = args.max_seq_length
 doc_stride = args.doc_stride
 max_query_length = args.max_query_length
 n_best_size = args.n_best_size
 max_answer_length = args.max_answer_length
-null_score_diff_threshold = 0.0
 
 if max_seq_length <= max_query_length + 3:
     raise ValueError('The max_seq_length (%d) must be greater than max_query_length '

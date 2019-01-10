@@ -17,6 +17,7 @@ import collections
 import json
 import multiprocessing as mp
 import time
+from functools import partial
 
 import numpy as np
 from mxnet import context, nd
@@ -48,13 +49,9 @@ class SquadExample(object):
         self.example_id = example_id
 
 
-_transform = None
-
-
-def _worker_fn(example):
+def _worker_fn(example, transform):
     """Function for processing data in worker process."""
-    global _transform
-    feature = _transform(example)
+    feature = transform(example)
     return feature
 
 
@@ -71,14 +68,14 @@ def preprocess_dataset(dataset, transform, num_workers=8):
         The number of multiprocessing workers to use for data preprocessing.
 
     """
-    global _transform
-    _transform = transform
+    worker_fn = partial(_worker_fn, transform=transform)
     start = time.time()
 
     with mp.Pool(num_workers) as pool:
         dataset_transform = []
-        for data in pool.map(_worker_fn, dataset):
-            dataset_transform.extend(data)
+        for data in pool.map(worker_fn, dataset):
+            if not data:
+                dataset_transform.extend(data)
 
         dataset = SimpleDataset(dataset_transform)
     end = time.time()
@@ -133,6 +130,7 @@ class SQuADTransform(object):
     """Dataset Transformation for BERT-style QA.
 
     The transformation is processed in the following steps:
+    - Convert from gluonnlp.data.SQuAD's record to SquadExample.
     - Tokenize the question_text in the example.
     - For examples where the document is too long,
       use a sliding window to split into multiple features and
@@ -199,6 +197,8 @@ class SQuADTransform(object):
         The maximum length of the query tokens.
     is_training : bool, default True
         Whether to run training.
+    version_2: bool, default False
+        If true, the SQuAD examples contain some that do not have an answer.
     """
 
     def __init__(self,
@@ -215,7 +215,7 @@ class SQuADTransform(object):
         self.is_training = is_training
         self.version_2 = version_2
 
-    def is_whitespace(self, c):
+    def _is_whitespace(self, c):
         if c == ' ' or c == '\t' or c == '\r' or c == '\n' or ord(
                 c) == 0x202F:
             return True
@@ -234,7 +234,7 @@ class SQuADTransform(object):
         char_to_word_offset = []
         prev_is_whitespace = True
         for c in paragraph_text:
-            if self.is_whitespace(c):
+            if self._is_whitespace(c):
                 prev_is_whitespace = True
             else:
                 if prev_is_whitespace:
