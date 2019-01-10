@@ -74,7 +74,7 @@ def preprocess_dataset(dataset, transform, num_workers=8):
     with mp.Pool(num_workers) as pool:
         dataset_transform = []
         for data in pool.map(worker_fn, dataset):
-            if not data:
+            if data:
                 dataset_transform.extend(data)
 
         dataset = SimpleDataset(dataset_transform)
