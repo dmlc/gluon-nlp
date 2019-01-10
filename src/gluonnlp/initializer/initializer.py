@@ -21,11 +21,10 @@
 """Highway layer initializer."""
 from __future__ import absolute_import, print_function
 
-__all__ = ['HighwayBias']
+__all__ = ['HighwayBias', 'TruncNorm']
 
 import mxnet
 from mxnet.initializer import Initializer
-
 
 @mxnet.initializer.register
 class HighwayBias(Initializer):
@@ -63,3 +62,17 @@ class HighwayBias(Initializer):
         """Abstract method to Initialize weight."""
         arr[:int(arr.shape[0] / 2)] = self.nonlinear_transform_bias
         arr[int(arr.shape[0] / 2):] = self.transform_gate_bias
+
+
+@mxnet.initializer.register
+class TruncNorm(Initializer):
+    r"""Initialize the weight by drawing sample from truncated normal distribution with
+    provided mean and standard deviation. Values whose magnitude is more than 2 standard deviations
+    from the mean are dropped and re-picked.."""
+    def __init__(self, mean=0, stdev=0.01, **kwargs):
+        super(TruncNorm, self).__init__(**kwargs)
+        from scipy.stats import truncnorm
+        self._frozen_rv = truncnorm(-2, 2, mean, stdev)
+
+    def _init_weight(self, name, arr):
+        arr[:] = self._frozen_rv.rvs(arr.size).reshape(arr.shape)
