@@ -68,8 +68,23 @@ class HighwayBias(Initializer):
 class TruncNorm(Initializer):
     r"""Initialize the weight by drawing sample from truncated normal distribution with
     provided mean and standard deviation. Values whose magnitude is more than 2 standard deviations
-    from the mean are dropped and re-picked.."""
+    from the mean are dropped and re-picked..
+
+    Parameters
+    ----------
+    mean : float, default 0
+        Mean of the underlying normal distribution
+
+    stdev : float, default 0.01
+        Standard deviation of the underlying normal distribution
+
+    **kwargs : dict
+        Additional parameters for base Initializer.
+    """
     def __init__(self, mean=0, stdev=0.01, **kwargs):
+        """
+
+        """
         super(TruncNorm, self).__init__(**kwargs)
         from scipy.stats import truncnorm
         self._frozen_rv = truncnorm(-2, 2, mean, stdev)
