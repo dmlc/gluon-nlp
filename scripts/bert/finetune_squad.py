@@ -177,7 +177,8 @@ parser.add_argument('--gpu',
 
 args = parser.parse_args()
 
-fh = logging.FileHandler(os.path.join(args.output_dir, 'finetune_squad.log'))
+fh = logging.FileHandler(os.path.join(
+    args.output_dir, 'finetune_squad.log'), mode='w')
 fh.setLevel(logging.INFO)
 fh.setFormatter(formatter)
 
