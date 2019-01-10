@@ -27,11 +27,13 @@ After installing MXNet, you can install the GluonNLP toolkit by
 
    pip install gluonnlp
 
+
 Install from Master Branch
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 If you are intersted in trying out features on master branch that hasn't been released yet, you have
 the option of installing from master branch directly.
+
 
 Install from Github
 +++++++++++++++++++
@@ -59,9 +61,11 @@ then use the provided `setup.py` to install into site-packages
 
    python setup.py install
 
+
 .. note::
 
    You may need to use `sudo` in case you run into permission denied error.
+
 
 Alternatively, you can set up the package with development mode, so that local changes are
 immediately reflected in the installed python package

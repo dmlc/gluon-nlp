@@ -70,6 +70,13 @@ After installing MXNet, you can install the GluonNLP toolkit by
    pip install gluonnlp
 
 
+.. hint::
+
+   For more detailed guide on installing pre-release from latest master branch,
+   install from local copy of GluonNLP source code, etc.,
+   click the :doc:`install <install>` link in the top navigation bar.
+
+
 About GluonNLP
 --------------
 
