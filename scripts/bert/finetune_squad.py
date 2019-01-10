@@ -177,6 +177,10 @@ parser.add_argument('--gpu',
 
 args = parser.parse_args()
 
+output_dir = args.output_dir
+if not os.path.exists(output_dir):
+    os.mkdir(output_dir)
+
 fh = logging.FileHandler(os.path.join(
     args.output_dir, 'finetune_squad.log'), mode='w')
 fh.setLevel(logging.INFO)
@@ -189,10 +193,6 @@ log.addHandler(console)
 log.addHandler(fh)
 
 log.info(args)
-
-output_dir = args.output_dir
-if not os.path.exists(output_dir):
-    os.mkdir(output_dir)
 
 model_name = args.model
 dataset_name = args.dataset_name
