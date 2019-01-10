@@ -265,4 +265,4 @@ def write_sentences(sentences, file_path):
             if isinstance(sent, (list, tuple)):
                 of.write(u' '.join(sent) + u'\n')
             else: 
-                of.write(u''.join(sent) + u'\n')
+                of.write(u' '.join(sent) + u'\n')
