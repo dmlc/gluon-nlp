@@ -185,7 +185,6 @@ fh = logging.FileHandler(os.path.join(
     args.output_dir, 'finetune_squad.log'), mode='w')
 fh.setLevel(logging.INFO)
 fh.setFormatter(formatter)
-
 console = logging.StreamHandler()
 console.setLevel(logging.INFO)
 console.setFormatter(formatter)
