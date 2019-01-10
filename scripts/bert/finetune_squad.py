@@ -58,7 +58,12 @@ from qa_evaluate import get_F1_EM, predictions
 np.random.seed(6)
 random.seed(6)
 mx.random.seed(6)
-logging.getLogger().setLevel(logging.DEBUG)
+
+log = logging.getLogger('gluonnlp')
+log.setLevel(logging.DEBUG)
+formatter = logging.Formatter(
+    fmt='%(levelname)s:%(name)s:%(asctime)s %(message)s', datefmt='%H:%M:%S')
+
 
 parser = argparse.ArgumentParser(description='BERT QA example.'
                                  'We fine-tune the BERT model on SQuAD 1.1')
@@ -171,7 +176,18 @@ parser.add_argument('--gpu',
                     help='whether to use gpu for finetuning')
 
 args = parser.parse_args()
-logging.info(args)
+
+fh = logging.FileHandler(os.path.join(args.output_dir, 'finetune_squad.log'))
+fh.setLevel(logging.INFO)
+fh.setFormatter(formatter)
+
+console = logging.StreamHandler()
+console.setLevel(logging.INFO)
+console.setFormatter(formatter)
+log.addHandler(console)
+log.addHandler(fh)
+
+log.info(args)
 
 output_dir = args.output_dir
 if not os.path.exists(output_dir):
@@ -192,8 +208,8 @@ ctx = mx.cpu() if not args.gpu else mx.gpu()
 accumulate = args.accumulate
 log_interval = args.log_interval * accumulate if accumulate else args.log_interval
 if accumulate:
-    logging.info('Using gradient accumulation. Effective batch size = {}'.
-                 format(accumulate*batch_size))
+    log.info('Using gradient accumulation. Effective batch size = {}'.
+             format(accumulate*batch_size))
 
 optimizer = args.optimizer
 warmup_ratio = args.warmup_ratio
@@ -240,8 +256,9 @@ loss_function.hybridize(static_alloc=True)
 def train():
     """Training function."""
 
-    logging.info('Loader Train data...')
+    log.info('Loader Train data...')
     train_data = SQuAD('train')
+    log.info('Number of records in Train data:{}'.format(len(train_data)))
 
     train_data_transform = preprocess_dataset(train_data, SQuADTransform(
         berttoken,
@@ -249,12 +266,14 @@ def train():
         doc_stride=doc_stride,
         max_query_length=max_query_length,
         is_training=True))
+    log.info('The number of examples after preprocessing:{}'.format(
+        len(train_data_transform)))
 
     train_dataloader = mx.gluon.data.DataLoader(
         train_data_transform, batch_size=batch_size,
         batchify_fn=bert_qa_batchify_fn, num_workers=4, shuffle=True)
 
-    logging.info('Start Training')
+    log.info('Start Training')
 
     optimizer_params = {'learning_rate': lr}
     try:
@@ -325,10 +344,10 @@ def train():
 
             if (batch_id + 1) % log_interval == 0:
                 toc = time.time()
-                logging.info('Epoch: {}, Batch: {}/{}, Loss={:.4f}, lr={:.7f} Time cost={:.1f}'
-                             .format(epoch_id, batch_id, len(train_dataloader),
-                                     step_loss / log_interval,
-                                     trainer.learning_rate, toc - tic))
+                log.info('Epoch: {}, Batch: {}/{}, Loss={:.4f}, lr={:.7f} Time cost={:.1f}'
+                         .format(epoch_id, batch_id, len(train_dataloader),
+                                 step_loss / log_interval,
+                                 trainer.learning_rate, toc - tic))
                 tic = time.time()
                 step_loss = 0.0
 
@@ -338,8 +357,9 @@ def train():
 def evaluate():
     """Evaluate the model on validation dataset.
     """
-    logging.info('Loader dev data...')
+    log.info('Loader dev data...')
     dev_data = SQuAD('dev')
+    log.info('Number of records in Train data:{}'.format(len(dev_data)))
 
     dev_dataset = dev_data.transform(
         SQuADTransform(
@@ -355,6 +375,8 @@ def evaluate():
         doc_stride=doc_stride,
         max_query_length=max_query_length,
         is_training=False))
+    log.info('The number of examples after preprocessing:{}'.format(
+        len(dev_data_transform)))
 
     dev_dataloader = mx.gluon.data.DataLoader(
         dev_data_transform, batch_size=test_batch_size,
@@ -363,7 +385,7 @@ def evaluate():
 
     start_logits = []
     end_logits = []
-    logging.info('Start predict')
+    log.info('Start predict')
 
     _Result = collections.namedtuple(
         '_Result', ['example_id', 'start_logits', 'end_logits'])
@@ -386,6 +408,7 @@ def evaluate():
                 all_results[example_id] = []
             all_results[example_id].append(
                 _Result(example_id, start.tolist(), end.tolist()))
+    log.info('Get prediction results...')
 
     all_predictions, all_nbest_json, scores_diff_json = predictions(
         dev_dataset=dev_dataset,
@@ -409,7 +432,7 @@ def evaluate():
                   'w', encoding='utf-8') as all_predictions_write:
             all_predictions_write.write(json.dumps(scores_diff_json))
     else:
-        logging.info(get_F1_EM(dev_data, all_predictions))
+        log.info(get_F1_EM(dev_data, all_predictions))
 
 
 if __name__ == '__main__':
