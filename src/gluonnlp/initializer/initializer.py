@@ -82,9 +82,6 @@ class TruncNorm(Initializer):
         Additional parameters for base Initializer.
     """
     def __init__(self, mean=0, stdev=0.01, **kwargs):
-        """
-
-        """
         super(TruncNorm, self).__init__(**kwargs)
         from scipy.stats import truncnorm
         self._frozen_rv = truncnorm(-2, 2, mean, stdev)
