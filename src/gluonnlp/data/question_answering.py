@@ -58,7 +58,8 @@ class SQuAD(ArrayDataset):
     - answer_list:   All answers for this question. Stored as python list
     - start_indices: All answers' starting indices. Stored as python list.
       The position in this list is the same as the position of an answer in answer_list
-    - is_impossible: The question is unanswerable. In SQuAd2.0, there are some unanswerable questions.
+    - is_impossible: The question is unanswerable.
+      In SQuAd2.0, there are some unanswerable questions.
 
     Parameters
     ----------
@@ -70,7 +71,8 @@ class SQuAD(ArrayDataset):
         Path to temp folder for storing data.
     """
 
-    def __init__(self, segment='train', version='1.1', root=os.path.join('~', '.mxnet', 'datasets', 'squad')):
+    def __init__(self, segment='train', version='1.1',
+                 root=os.path.join('~', '.mxnet', 'datasets', 'squad')):
         self._data_file = {'1.1': {'train': ('train-v1.1.zip', 'train-v1.1.json',
                                              '052a75bf8fdb3e843b8649971658eae8133f9b0e'),
                                    'dev': ('dev-v1.1.zip', 'dev-v1.1.json',
