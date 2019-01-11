@@ -87,4 +87,6 @@ class TruncNorm(Initializer):
         self._frozen_rv = truncnorm(-2, 2, mean, stdev)
 
     def _init_weight(self, name, arr):
+        # pylint: disable=unused-argument
+        """Abstract method to Initialize weight."""
         arr[:] = self._frozen_rv.rvs(arr.size).reshape(arr.shape)
