@@ -31,14 +31,14 @@ After installing MXNet, you can install the GluonNLP toolkit by
 Install from Master Branch
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-If you are intersted in trying out features on master branch that hasn't been released yet, you have
+If you are interested in trying out features on master branch that hasn't been released yet, you have
 the option of installing from master branch directly.
 
 
-Install from Github
+Install from GitHub
 +++++++++++++++++++
 
-Use the following command to automatically download and install the current code on master branch
+Use the following command to automatically download and install the current code on master branch:
 
 .. code-block:: console
 
@@ -48,14 +48,14 @@ Use the following command to automatically download and install the current code
 Install from Source Code
 ++++++++++++++++++++++++
 
-You can also first check out the code locally using git
+You can also first check out the code locally using Git:
 
 .. code-block:: console
 
    git clone https://github.com/dmlc/gluon-nlp
    cd gluon-nlp
 
-then use the provided `setup.py` to install into site-packages
+then use the provided `setup.py` to install into site-packages:
 
 .. code-block:: console
 
@@ -76,5 +76,5 @@ immediately reflected in the installed python package
 
 .. note::
 
-   The master branch may rely on mxnet nightly builds which are available on pypi,
+   The master branch may rely on MXNet nightly builds which are available on PyPI,
    please refer to `this page <http://beta.mxnet.io/install.html>`_ for installation guide.
