@@ -21,6 +21,6 @@ dependencies:
     - mxnet-cu92mkl>=1.3.0
     - sacremoses
     - seaborn
-    - sentencepiece
+    - https://github.com/google/sentencepiece/releases/download/v0.1.8/sentencepiece-0.1.8-cp36-cp36m-manylinux1_x86_64.whl
     - jieba
     - sphinx-autorun
