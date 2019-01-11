@@ -34,7 +34,6 @@ sentence pair classification, with Gluon NLP Toolkit.
 # under the License.
 # pylint:disable=redefined-outer-name,logging-format-interpolation
 
-import os
 import time
 import argparse
 import random
@@ -80,7 +79,7 @@ lr = args.lr
 accumulate = args.accumulate
 log_interval = args.log_interval * accumulate if accumulate else args.log_interval
 if accumulate:
-    logging.info("Using gradient accumulation. Effective batch size = %d"%(accumulate*batch_size))
+    logging.info('Using gradient accumulation. Effective batch size = %d', accumulate*batch_size)
 
 # random seed
 np.random.seed(args.seed)
@@ -110,8 +109,8 @@ def preprocess_data(tokenizer, batch_size, dev_batch_size, max_len):
     """Data preparation function."""
     # transformation
     train_trans = ClassificationTransform(tokenizer, MRPCDataset.get_labels(),
-                                          args.max_len, pad=False)
-    dev_trans = ClassificationTransform(tokenizer, MRPCDataset.get_labels(), args.max_len)
+                                          max_len, pad=False)
+    dev_trans = ClassificationTransform(tokenizer, MRPCDataset.get_labels(), max_len)
     data_train = MRPCDataset('train').transform(train_trans, lazy=False)
     data_dev = MRPCDataset('dev').transform(dev_trans, lazy=False)
     data_train_len = data_train.transform(lambda input_id, length, segment_id, label_id: length)
@@ -162,8 +161,8 @@ def train():
                                 optimizer_params, update_on_kvstore=False)
     except ValueError as e:
         print(e)
-        warnings.warn("AdamW optimizer is not found. Please consider upgrading to "
-                      "mxnet>=1.5.0. Now the original Adam optimizer is used instead.")
+        warnings.warn('AdamW optimizer is not found. Please consider upgrading to '
+                      'mxnet>=1.5.0. Now the original Adam optimizer is used instead.')
         trainer = gluon.Trainer(model.collect_params(), 'adam',
                                 optimizer_params, update_on_kvstore=False)
 
