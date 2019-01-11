@@ -74,3 +74,7 @@ immediately reflected in the installed python package
 
    python setup.py develop
 
+.. note::
+
+   The master branch may rely on mxnet nightly builds which are available on pypi,
+   please refer to `this page <http://beta.mxnet.io/install.html>`_ for installation guide.
