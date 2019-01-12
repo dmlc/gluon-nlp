@@ -14,7 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Bert SQuAD evaluate."""
-import json
 import re
 import string
 from collections import Counter, namedtuple, OrderedDict
@@ -400,7 +399,7 @@ def get_F1_EM(dataset, predict_data):
         total += 1
         if record[1] not in predict_data:
             message = 'Unanswered question ' + record[1] + \
-                        ' will receive score 0.'
+                ' will receive score 0.'
             print(message)
             continue
         ground_truths = record[4]
