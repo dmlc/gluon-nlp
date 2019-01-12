@@ -105,7 +105,6 @@ class SQuAD(ArrayDataset):
     def _get_data(self):
         """Load data from the file. Does nothing if data was loaded before.
         """
-        path = os.path.join(self._root, data_archive_name)
         (data_archive_name, archive_hash), (data_name,
                                             data_hash) = self._data_file[self._version][self._segment]
         data_path = os.path.join(self._root, data_name)
