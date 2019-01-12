@@ -98,7 +98,7 @@ def test_pretrained_bert_models():
                   'bert_24_1024_16': ['book_corpus_wiki_en_uncased','book_corpus_wiki_en_cased']}
     vocab_size = {'book_corpus_wiki_en_cased': 28996,
                   'book_corpus_wiki_en_uncased': 30522,
-                  'wiki_multilingual_cased': 119547, 
+                  'wiki_multilingual_cased': 119547,
                   'wiki_cn': 21128,
                   'wiki_multilingual': 105879}
     special_tokens = ['[UNK]', '[PAD]', '[SEP]', '[CLS]', '[MASK]']
@@ -382,12 +382,12 @@ def test_weight_drop():
     shared_net3 = gluon.nn.HybridSequential(params=net3.collect_params())
     shared_net3.add(gluon.rnn.LSTM(10, params=net3[0].collect_params()))
 
-    x = mx.nd.ones((3, 4, 5))
+    x = mx.random.uniform(shape=(3, 4, 5))
     nets = [(net1, shared_net1),
             (net2, shared_net2),
             (net3, shared_net3)]
     for net, shared_net in nets:
-        net.initialize('ones')
+        net.initialize('uniform')
         mx.test_utils.assert_almost_equal(net(x).asnumpy(),
                                           shared_net(x).asnumpy())
         with mx.autograd.train_mode():
@@ -408,10 +408,10 @@ def test_weight_drop():
 
         drop_rate = 0.5
         nlp.model.utils.apply_weight_drop(net, '.*h2h_weight', drop_rate)
-        net.initialize('ones')
 
-        mx.test_utils.assert_almost_equal(net(x).asnumpy(),
-                                          shared_net(x).asnumpy())
+        with mx.autograd.predict_mode():
+            mx.test_utils.assert_almost_equal(net(x).asnumpy(),
+                                              shared_net(x).asnumpy())
         with mx.autograd.train_mode():
             assert not mx.test_utils.almost_equal(net(x).asnumpy(),
                                                   shared_net(x).asnumpy())
