@@ -67,10 +67,14 @@ class SQuAD(ArrayDataset):
         Path to temp folder for storing data.
     """
     def __init__(self, segment='train', root=os.path.join('~', '.mxnet', 'datasets', 'squad')):
-        self._data_file = {'train': ('train-v1.1.zip', 'train-v1.1.json',
-                                     '052a75bf8fdb3e843b8649971658eae8133f9b0e'),
-                           'dev': ('dev-v1.1.zip', 'dev-v1.1.json',
-                                   'e31ad736582b72a8eabd5c0b0a38cb779ed913d7')}
+        self._data_file = {'train': (('train-v1.1.zip',
+                                      '052a75bf8fdb3e843b8649971658eae8133f9b0e'),
+                                     ('train-v1.1.json',
+                                      '1faea1252438a64f9718412a55036b786cfcc636')),
+                           'dev': (('dev-v1.1.zip',
+                                    'e31ad736582b72a8eabd5c0b0a38cb779ed913d7'),
+                                   ('dev-v1.1.json',
+                                    'e1621aae0683b346ee9743bd5609266ba0cc34fc'))}
         root = os.path.expanduser(root)
 
         if not os.path.isdir(root):
@@ -83,14 +87,14 @@ class SQuAD(ArrayDataset):
         super(SQuAD, self).__init__(self._read_data())
 
     def _get_data(self):
-        """Load data from the file. Does nothing if data was loaded before
+        """Load data from the file. Does nothing if data was loaded before.
         """
-        data_archive_name, _, data_hash = self._data_file[self._segment]
-        path = os.path.join(self._root, data_archive_name)
+        (data_archive_name, archive_hash), (data_name, data_hash) = self._data_file[self._segment]
+        data_path = os.path.join(self._root, data_name)
 
-        if not os.path.exists(path) or not check_sha1(path, data_hash):
+        if not os.path.exists(data_path) or not check_sha1(data_path, data_hash):
             file_path = download(_get_repo_file_url('gluon/dataset/squad', data_archive_name),
-                                 path=self._root, sha1_hash=data_hash)
+                                 path=self._root, sha1_hash=archive_hash)
 
             with zipfile.ZipFile(file_path, 'r') as zf:
                 for member in zf.namelist():
@@ -113,7 +117,7 @@ class SQuAD(ArrayDataset):
         List[Tuple]
             Flatten list of questions
         """
-        _, data_file_name, _ = self._data_file[self._segment]
+        (_, _), (data_file_name, _) = self._data_file[self._segment]
 
         with open(os.path.join(self._root, data_file_name)) as f:
             samples = json.load(f)
