@@ -14,7 +14,6 @@
 # limitations under the License.
 """BERT for QA datasets."""
 import collections
-import json
 import multiprocessing as mp
 import time
 from functools import partial
