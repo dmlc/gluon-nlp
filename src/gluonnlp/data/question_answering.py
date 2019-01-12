@@ -77,10 +77,14 @@ class SQuAD(ArrayDataset):
                                              '052a75bf8fdb3e843b8649971658eae8133f9b0e'),
                                    'dev': ('dev-v1.1.zip', 'dev-v1.1.json',
                                            'e31ad736582b72a8eabd5c0b0a38cb779ed913d7')},
-                           '2.0': {'train': ('train-v2.0.zip', 'train-v2.0.json',
-                                             '4f085a06bad637e9dc91654a49b1dba18f2c2825'),
-                                   'dev': ('dev-v2.0.zip', 'dev-v2.0.json',
-                                           '846082d15ed71cb5220645b9d473441e00070778')}}
+                           '2.0': {'train': (('train-v2.0.zip',
+                                              'fe497797fc090ee61a046b74eadfee51320b54fb'),
+                                             ('train-v2.0.json',
+                                              'ceb2acdea93b9d82ab1829c7b1e03bee9e302c99')),
+                                   'dev': (('dev-v2.0.zip',
+                                            'de4dad80b3de9194484ca013e95a96a3e2d5603f'),
+                                           ('dev-v2.0.json',
+                                            '846082d15ed71cb5220645b9d473441e00070778'))}}
         root = os.path.expanduser(root)
 
         if not os.path.isdir(root):
@@ -151,7 +155,7 @@ class SQuAD(ArrayDataset):
             for paragraph in title['paragraphs']:
                 for qas in paragraph['qas']:
                     answers = SQuAD._get_answers(qas)
-                    is_impossible = qas['is_impossible'] if 'is_impossible' in qas else False
+                    is_impossible = qas.get('is_impossible', False)
                     record = (
                         record_index, qas['id'], qas['question'],
                         paragraph['context'], answers[0], answers[1], is_impossible
