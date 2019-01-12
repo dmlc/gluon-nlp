@@ -40,6 +40,7 @@ class WeightDropParameter(gluon.Parameter):
     """
     def __init__(self, parameter, rate=0.0, mode='training', axes=()):
         p = parameter
+        self._deferred_init = p._deferred_init
         super(WeightDropParameter, self).__init__(
             name=p.name, grad_req=p.grad_req, shape=p._shape, dtype=p.dtype,
             lr_mult=p.lr_mult, wd_mult=p.wd_mult, init=p.init,
@@ -48,6 +49,12 @@ class WeightDropParameter(gluon.Parameter):
         self._rate = rate
         self._mode = mode
         self._axes = axes
+        self._var = p._var
+        self._data = p._data
+        self._grad = p._grad
+        self._ctx_list = p._ctx_list
+        self._ctx_map = p._ctx_map
+        self._trainer = p._trainer
 
     def data(self, ctx=None):
         """Returns a copy of this parameter on one context. Must have been
