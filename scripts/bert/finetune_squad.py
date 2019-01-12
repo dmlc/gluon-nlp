@@ -264,7 +264,10 @@ def train():
     """Training function."""
 
     log.info('Loader Train data...')
-    train_data = SQuAD('train')
+    if version_2:
+        train_data = SQuAD('train', version='2.0')
+    else:
+        train_data = SQuAD('train', version='1.1')
     log.info('Number of records in Train data:{}'.format(len(train_data)))
 
     train_data_transform = preprocess_dataset(train_data, SQuADTransform(
@@ -365,7 +368,10 @@ def evaluate():
     """Evaluate the model on validation dataset.
     """
     log.info('Loader dev data...')
-    dev_data = SQuAD('dev')
+    if version_2:
+        dev_data = SQuAD('dev', version='2.0')
+    else:
+        dev_data = SQuAD('dev', version='1.1')
     log.info('Number of records in Train data:{}'.format(len(dev_data)))
 
     dev_dataset = dev_data.transform(
