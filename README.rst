@@ -43,7 +43,7 @@ You can install ``MXNet`` and ``GluonNLP`` using pip:
 
 ::
 
-    pip install --pre --upgrade mxnet
+    pip install --pre --upgrade mxnet=='1.3.1'
     pip install gluonnlp
 
 Docs 📖
