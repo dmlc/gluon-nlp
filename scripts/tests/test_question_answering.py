@@ -33,12 +33,13 @@ context_max_length = 256
 def test_transform_to_nd_array():
     dataset = SQuAD(segment='dev', root='tests/data/squad')
     vocab_provider = VocabProvider(dataset)
-    transformer = SQuADTransform(vocab_provider, question_max_length, context_max_length)
+    transformer = SQuADTransform(
+        vocab_provider, question_max_length, context_max_length)
     record = dataset[0]
 
     transformed_record = transformer(*record)
     assert transformed_record is not None
-    assert len(transformed_record) == 7
+    assert len(transformed_record) == 8
 
 
 @pytest.mark.serial
@@ -46,15 +47,17 @@ def test_transform_to_nd_array():
 def test_data_loader_able_to_read():
     dataset = SQuAD(segment='dev', root='tests/data/squad')
     vocab_provider = VocabProvider(dataset)
-    transformer = SQuADTransform(vocab_provider, question_max_length, context_max_length)
+    transformer = SQuADTransform(
+        vocab_provider, question_max_length, context_max_length)
     record = dataset[0]
 
     processed_dataset = SimpleDataset([transformer(*record)])
-    loadable_data = SimpleDataset([(r[0], r[2], r[3], r[4], r[5], r[6]) for r in processed_dataset])
+    loadable_data = SimpleDataset(
+        [(r[0], r[2], r[3], r[4], r[5], r[6], r[7]) for r in processed_dataset])
     dataloader = DataLoader(loadable_data, batch_size=1)
 
     for data in dataloader:
-        record_index, question_words, context_words, question_chars, context_chars, answers = data
+        record_index, question_words, context_words, question_chars, context_chars, answers, is_impossible = data
 
         assert record_index is not None
         assert question_words is not None
@@ -62,6 +65,7 @@ def test_data_loader_able_to_read():
         assert question_chars is not None
         assert context_chars is not None
         assert answers is not None
+        assert is_impossible is not None
 
 
 @pytest.mark.serial
