@@ -105,8 +105,8 @@ class SQuAD(ArrayDataset):
     def _get_data(self):
         """Load data from the file. Does nothing if data was loaded before.
         """
-        (data_archive_name, archive_hash), (data_name,
-                                            data_hash) = self._data_file[self._version][self._segment]
+        (data_archive_name, archive_hash), (data_name, data_hash) \
+            = self._data_file[self._version][self._segment]
         data_path = os.path.join(self._root, data_name)
 
         if not os.path.exists(data_path) or not check_sha1(data_path, data_hash):
@@ -134,8 +134,8 @@ class SQuAD(ArrayDataset):
         List[Tuple]
             Flatten list of questions
         """
-        (_, _), (data_file_name,
-                 _) = self._data_file[self._version][self._segment]
+        (_, _), (data_file_name, _) \
+            = self._data_file[self._version][self._segment]
 
         with open(os.path.join(self._root, data_file_name)) as f:
             samples = json.load(f)
