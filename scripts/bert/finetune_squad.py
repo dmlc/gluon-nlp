@@ -170,6 +170,15 @@ parser.add_argument('--max_answer_length',
                     help='The maximum length of an answer that can be generated. This is needed '
                     'because the start and end predictions are not conditioned on one another.'
                     ' default is 30')
+parser.add_argument('--version_2',
+                    action='store_true',
+                    help='SQuAD examples whether contain some that do not have an answer.')
+
+parser.add_argument('--null_score_diff_threshold',
+                    type=float,
+                    default=-2.0,
+                    help='If null_score - best_non_null is greater than the threshold predict null.'
+                    ' default is -2.0')
 
 parser.add_argument('--gpu',
                     action='store_true',
@@ -214,12 +223,9 @@ if accumulate:
 optimizer = args.optimizer
 warmup_ratio = args.warmup_ratio
 
-# If true, the SQuAD examples contain some that do not have an answer.
-version_2 = False
 
-# If null_score - best_non_null is greater than the threshold predict null.
-# When SQuAD contains some examples without answers.
-null_score_diff_threshold = 0.0
+version_2 = args.version_2
+null_score_diff_threshold = args.null_score_diff_threshold
 
 max_seq_length = args.max_seq_length
 doc_stride = args.doc_stride
