@@ -18,7 +18,6 @@
 # under the License.
 """Masked accuracy metric."""
 
-import mxnet as mx
 from mxnet import ndarray
 from mxnet.metric import check_label_shapes
 
@@ -49,12 +48,12 @@ class EvalMetric(object):
         self.name = str(name)
         self.output_names = output_names
         self.label_names = label_names
-        self._has_global_stats = kwargs.pop("has_global_stats", False)
+        self._has_global_stats = kwargs.pop('has_global_stats', False)
         self._kwargs = kwargs
         self.reset()
 
     def __str__(self):
-        return "EvalMetric: {}".format(dict(self.get_name_value()))
+        return 'EvalMetric: {}'.format(dict(self.get_name_value()))
 
     def get_config(self):
         """Save configurations of metric. Can be recreated
@@ -231,6 +230,7 @@ class MaskedAccuracy(EvalMetric):
         self.axis = axis
 
     def update(self, labels, preds, masks=None):
+        # pylint: disable=arguments-differ
         """Updates the internal evaluation result.
 
         Parameters
@@ -249,7 +249,7 @@ class MaskedAccuracy(EvalMetric):
 
         for label, pred_label, mask in zip(labels, preds, masks):
             if pred_label.shape != label.shape:
-                pred_label = mx.ndarray.argmax(pred_label, axis=self.axis)
+                pred_label = ndarray.argmax(pred_label, axis=self.axis)
 
             # flatten before checking shapes to avoid shape miss match
             pred_label = pred_label.astype('int32', copy=False).reshape((-1,))
