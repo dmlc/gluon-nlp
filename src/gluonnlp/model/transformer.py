@@ -314,7 +314,7 @@ class BaseTransformerEncoder(HybridBlock, Seq2SeqEncoder):
                  use_residual=True, output_attention=False,
                  weight_initializer=None, bias_initializer='zeros',
                  positional_weight='sinusoidal', use_bert_encoder=False,
-                 use_layer_norm_before_dropout=True, scale_embed=True,
+                 use_layer_norm_before_dropout=False, scale_embed=True,
                  prefix=None, params=None):
         super(BaseTransformerEncoder, self).__init__(prefix=prefix, params=params)
         assert units % num_heads == 0,\
@@ -660,7 +660,7 @@ class TransformerEncoder(BaseTransformerEncoder):
                                                  # extra configurations for transformer
                                                  positional_weight='sinusoidal',
                                                  use_bert_encoder=False,
-                                                 use_layer_norm_before_dropout=True,
+                                                 use_layer_norm_before_dropout=False,
                                                  scale_embed=True)
 
 ###############################################################################
