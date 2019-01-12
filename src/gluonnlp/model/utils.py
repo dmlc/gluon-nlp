@@ -30,7 +30,7 @@ from mxnet.gluon.model_zoo import model_store
 from gluonnlp.data.utils import _load_pretrained_vocab
 from .parameter import WeightDropParameter
 from .lstmpcellwithclip import LSTMPCellWithClip
-from ..vocab import BERTVocab
+from ..vocab import Vocab
 
 # pylint: disable=too-many-nested-blocks
 
@@ -264,49 +264,15 @@ def _get_rnn_layer(mode, num_layers, input_size, hidden_size, dropout, weight_dr
     return block
 
 
-def _load_vocab(dataset_name, vocab, root):
+def _load_vocab(dataset_name, vocab, root, cls=Vocab):
     if dataset_name:
         if vocab is not None:
             warnings.warn('Both dataset_name and vocab are specified. Loading vocab for dataset. '
                           'Input "vocab" argument will be ignored.')
-        vocab = _load_pretrained_vocab(dataset_name, root)
+        vocab = _load_pretrained_vocab(dataset_name, root, cls)
     else:
         assert vocab is not None, 'Must specify vocab if not loading from predefined datasets.'
     return vocab
-
-
-def _load_bert_vocab(dataset_name, bert_vocab, root):
-    if dataset_name:
-        if bert_vocab is not None:
-            warnings.warn('Both dataset_name and vocab are specified. \
-            Loading bert_vocab for dataset. '
-                          'Input "bert_vocab" argument will be ignored.')
-        vocab = _load_pretrained_vocab(dataset_name, root)
-
-        if any([BERTVocab.CLS_TOKEN not in vocab.idx_to_token,
-                BERTVocab.MASK_TOKEN not in vocab.idx_to_token,
-                BERTVocab.SEP_TOKEN not in vocab.idx_to_token]):
-            raise ValueError('The special token for BERT is missing or \
-            The special tokens of pretrained vocab are inconsistent \
-            with the special tokens of BERTVocab..')
-        else:
-            bert_vocab_dict = {}
-            bert_vocab_dict['idx_to_token'] = vocab.idx_to_token
-            bert_vocab_dict['token_to_idx'] = vocab.token_to_idx
-            bert_vocab_dict['reserved_tokens'] = vocab.reserved_tokens
-            bert_vocab_dict['unknown_token'] = vocab.unknown_token
-            bert_vocab_dict['padding_token'] = vocab.padding_token
-            bert_vocab_dict['bos_token'] = vocab.bos_token
-            bert_vocab_dict['eos_token'] = vocab.eos_token
-            bert_vocab_dict['mask_token'] = BERTVocab.MASK_TOKEN
-            bert_vocab_dict['sep_token'] = BERTVocab.SEP_TOKEN
-            bert_vocab_dict['cls_token'] = BERTVocab.CLS_TOKEN
-
-            bert_vocab = BERTVocab.from_json(json.dumps(bert_vocab_dict))
-    else:
-        assert bert_vocab is not None, 'Must specify bert_vocab \
-        if not loading from predefined datasets.'
-    return bert_vocab
 
 
 def _load_pretrained_params(net, model_name, dataset_name, root, ctx, ignore_extra=False):
