@@ -197,8 +197,6 @@ class SQuADTransform(object):
         The maximum length of the query tokens.
     is_training : bool, default True
         Whether to run training.
-    version_2: bool, default False
-        If true, the SQuAD examples contain some that do not have an answer.
     """
 
     def __init__(self,
@@ -206,14 +204,12 @@ class SQuADTransform(object):
                  max_seq_length=384,
                  doc_stride=128,
                  max_query_length=64,
-                 is_training=True,
-                 version_2=False):
+                 is_training=True):
         self.tokenizer = tokenizer
         self.max_seq_length = max_seq_length
         self.max_query_length = max_query_length
         self.doc_stride = doc_stride
         self.is_training = is_training
-        self.version_2 = version_2
 
     def _is_whitespace(self, c):
         if c == ' ' or c == '\t' or c == '\r' or c == '\n' or ord(
@@ -228,6 +224,7 @@ class SQuADTransform(object):
         paragraph_text = record[3]
         orig_answer_text = record[4][0]
         answer_offset = record[5][0]
+        is_impossible = record[6]
 
         doc_tokens = []
 
@@ -246,11 +243,8 @@ class SQuADTransform(object):
 
         start_position = None
         end_position = None
-        is_impossible = False
 
         if self.is_training:
-            # if self.version_2:
-            #     is_impossible = qa['is_impossible']
             if not is_impossible:
                 answer_length = len(orig_answer_text)
                 start_position = char_to_word_offset[answer_offset]
