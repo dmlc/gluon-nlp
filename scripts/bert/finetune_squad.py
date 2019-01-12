@@ -66,7 +66,7 @@ formatter = logging.Formatter(
 
 
 parser = argparse.ArgumentParser(description='BERT QA example.'
-                                 'We fine-tune the BERT model on SQuAD 1.1')
+                                 'We fine-tune the BERT model on SQuAD dataset.')
 
 parser.add_argument('--only_predict',
                     action='store_true',
@@ -170,6 +170,7 @@ parser.add_argument('--max_answer_length',
                     help='The maximum length of an answer that can be generated. This is needed '
                     'because the start and end predictions are not conditioned on one another.'
                     ' default is 30')
+
 parser.add_argument('--version_2',
                     action='store_true',
                     help='SQuAD examples whether contain some that do not have an answer.')
