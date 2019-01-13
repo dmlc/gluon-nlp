@@ -122,7 +122,8 @@ lr = args.lr
 accumulate = args.accumulate
 log_interval = args.log_interval * accumulate if accumulate else args.log_interval
 if accumulate:
-    logging.info('Using gradient accumulation. Effective batch size = %d', accumulate*batch_size)
+    logging.info('Using gradient accumulation. Effective batch size = %d',
+                 accumulate * batch_size)
 
 # random seed
 np.random.seed(args.seed)
@@ -266,7 +267,6 @@ def train(metric):
             'Adam',
             optimizer_params_b,
             update_on_kvstore=False)
-
 
     step_size = batch_size * accumulate if accumulate else batch_size
     num_train_steps = int(num_train_examples / step_size * args.epochs)
