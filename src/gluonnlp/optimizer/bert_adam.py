@@ -17,7 +17,6 @@
 # under the License.
 
 """Weight updating functions."""
-import math
 from mxnet.optimizer import Optimizer, register
 from mxnet.ndarray import zeros, NDArray
 
@@ -40,8 +39,9 @@ class BERTAdam(Optimizer):
 
     This is also slightly different from the AdamW optimizer described in
     *Fixing Weight Decay Regularization in Adam*, where the schedule multiplier and
-    learning rate is decoupled. The BERTAdam optimizer uses the same learning rate to
-    apply gradients w.r.t. the loss and weight decay.
+    learning rate is decoupled, and the bias-correction terms are removed.
+    The BERTAdam optimizer uses the same learning rate to apply gradients
+    w.r.t. the loss and weight decay.
 
     This optimizer accepts the following parameters in addition to those accepted
     by :class:`mxnet.optimizer.Optimizer`.
@@ -62,7 +62,7 @@ class BERTAdam(Optimizer):
         self.beta2 = beta2
         self.epsilon = epsilon
 
-    def create_state(self, index, weight): # pylint-disable=unused-argument
+    def create_state(self, index, weight): # pylint: disable=unused-argument
         """Initialization for mean and var."""
         return (zeros(weight.shape, weight.context, dtype=weight.dtype), #mean
                 zeros(weight.shape, weight.context, dtype=weight.dtype)) #variance
@@ -72,19 +72,14 @@ class BERTAdam(Optimizer):
         try:
             from mxnet.ndarray.contrib import adamw_update
         except ImportError:
-            raise ImportError("Failed to import nd.contrib.adamw_update from MXNet. "
-                              "BERTAdam optimizer requires mxnet>=1.5.0b20181228. "
-                              "Please upgrade your MXNet version.")
+            raise ImportError('Failed to import nd.contrib.adamw_update from MXNet. '
+                              'BERTAdam optimizer requires mxnet>=1.5.0b20181228. '
+                              'Please upgrade your MXNet version.')
         assert(isinstance(weight, NDArray))
         assert(isinstance(grad, NDArray))
         self._update_count(index)
         lr = self._get_lr(index)
         wd = self._get_wd(index)
-
-        t = self._index_update_count[index]
-        coef1 = 1. - self.beta1**t
-        coef2 = 1. - self.beta2**t
-        lr *= math.sqrt(coef2)/coef1
 
         kwargs = {'beta1': self.beta1, 'beta2': self.beta2, 'epsilon': self.epsilon,
                   'rescale_grad': self.rescale_grad}

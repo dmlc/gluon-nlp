@@ -297,6 +297,10 @@ class Vocab(object):
             assert isinstance(embs, emb.TokenEmbedding), \
                 'The argument `embeddings` must be an instance or a list of instances of ' \
                 '`gluonnlp.embedding.TokenEmbedding`.'
+            assert embs.idx_to_vec is not None, \
+                'For all specified `embeddings`, `embeddings.idx_to_vec` must be initialized. ' \
+                'Use eg. `emb[emb.unknown_token] = nd.zeros(emsize)` to initialize, ' \
+                'where `emsize` is the desired embedding dimensionality.'
 
         assert all([embs.unknown_token for embs in embeddings]) or \
             all([not embs.unknown_token for embs in embeddings]), \
@@ -307,8 +311,7 @@ class Vocab(object):
         new_embedding._token_to_idx = self.token_to_idx
         new_embedding._idx_to_token = self.idx_to_token
 
-        new_vec_len = sum(embs.idx_to_vec.shape[1] for embs in embeddings
-                          if embs and embs.idx_to_vec is not None)
+        new_vec_len = sum(embs.idx_to_vec.shape[1] for embs in embeddings)
         new_idx_to_vec = nd.zeros(shape=(len(self), new_vec_len))
 
         col_start = 0

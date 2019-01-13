@@ -517,7 +517,7 @@ class WikiDumpStream(SimpleDatasetStream):
         Whether to skip the empty samples produced from sample_splitters. If
         False, `bos` and `eos` will be added in empty samples.
     bos : str or None, default None
-        The token to add at the begining of each sentence. If None, nothing is
+        The token to add at the beginning of each sentence. If None, nothing is
         added.
     eos : str or None, default None
         The token to add at the end of each sentence. If None, nothing is

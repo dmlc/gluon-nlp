@@ -161,5 +161,4 @@ for i, seq in enumerate(bert_dataloader):
     mx.test_utils.assert_almost_equal(a, b, atol=1e-4, rtol=1e-4)
     mx.test_utils.assert_almost_equal(a, b, atol=1e-5, rtol=1e-5)
     mx.test_utils.assert_almost_equal(a, b, atol=5e-6, rtol=5e-6)
-    mx.test_utils.assert_almost_equal(a, b, atol=2e-6, rtol=2e-6)
     break

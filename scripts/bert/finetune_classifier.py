@@ -122,7 +122,7 @@ lr = args.lr
 accumulate = args.accumulate
 log_interval = args.log_interval * accumulate if accumulate else args.log_interval
 if accumulate:
-    logging.info("Using gradient accumulation. Effective batch size = %d"%(accumulate*batch_size))
+    logging.info('Using gradient accumulation. Effective batch size = %d', accumulate*batch_size)
 
 # random seed
 np.random.seed(args.seed)
@@ -185,6 +185,7 @@ def preprocess_data(tokenizer, task_name, batch_size, dev_batch_size, max_len):
 
     data_train_len = data_train.transform(
         lambda input_id, length, segment_id, label_id: length)
+
     num_samples_train = len(data_train)
     # bucket sampler
     batchify_fn = nlp.data.batchify.Tuple(
@@ -255,11 +256,17 @@ def train(metric):
         warnings.warn(
             "AdamW optimizer is not found. Please consider upgrading to "
             "mxnet>=1.5.0. Now the original Adam optimizer is used instead.")
-        trainer = gluon.Trainer(
-            model.collect_params(),
-            'adam',
-            optimizer_params,
+        trainer_w = gluon.Trainer(
+            model.collect_params('.*weight'),
+            'Adam',
+            optimizer_params_w,
             update_on_kvstore=False)
+        trainer_b = gluon.Trainer(
+            model.collect_params('.*beta|.*gamma|.*bias'),
+            'Adam',
+            optimizer_params_b,
+            update_on_kvstore=False)
+
 
     step_size = batch_size * accumulate if accumulate else batch_size
     num_train_steps = int(num_train_examples / step_size * args.epochs)
@@ -321,7 +328,7 @@ def train(metric):
                     metric_val = [metric_val]
                 eval_str = '[Epoch {} Batch {}/{}] loss={:.4f}, lr={:.7f}, metrics=' + \
                     ','.join([i + ':{:.4f}' for i in metric_nm])
-                logging.info(eval_str.format(epoch_id, batch_id + 1, len(train_data), \
+                logging.info(eval_str.format(epoch_id + 1, batch_id + 1, len(train_data), \
                     step_loss / args.log_interval, \
                     trainer_w.learning_rate, *metric_val))
                 step_loss = 0

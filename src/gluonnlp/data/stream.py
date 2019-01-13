@@ -35,7 +35,7 @@ import traceback
 import numpy as np
 
 import mxnet as mx
-from mxnet.gluon.data import RandomSampler, SequentialSampler
+from mxnet.gluon.data import RandomSampler, SequentialSampler, Sampler
 
 try:
     import Queue as queue
@@ -170,8 +170,8 @@ class SimpleDatasetStream(DatasetStream):
         passed to this class.
     file_pattern: str
         Path to the input text files.
-    file_sampler : str, {'sequential', 'random'}, defaults to 'random'
-        The sampler used to sample a file.
+    file_sampler : str or gluon.data.Sampler, defaults to 'random'
+        The sampler used to sample a file. The following string values are supported:
 
         - 'sequential': SequentialSampler
         - 'random': RandomSampler
@@ -182,26 +182,29 @@ class SimpleDatasetStream(DatasetStream):
         if not isinstance(file_pattern, str):
             raise TypeError('file_pattern must be str, but got %s'%type(file_pattern))
         self._dataset = dataset
-        self._file_pattern = os.path.expanduser(file_pattern)
-        self._file_sampler = file_sampler
+        file_pattern = os.path.expanduser(file_pattern)
+        self._files = sorted(glob.glob(file_pattern))
+        if len(self._files) == 0:
+            raise ValueError('Cannot find any file with path "%s"'%file_pattern)
+        self._file_sampler = self._get_sampler(file_sampler)
         self._kwargs = kwargs
 
     def _get_sampler(self, sampler):
-        assert isinstance(sampler, str), 'Expected sampler to be a str, but got %s'%type(sampler)
-        if sampler == 'random':
-            return RandomSampler
-        if sampler == 'sequential':
-            return SequentialSampler
-        raise ValueError('sampler must be either "random" or "sequential", but got %s'%(sampler))
+        if isinstance(sampler, Sampler):
+            return sampler
+        if isinstance(sampler, str):
+            length = len(self._files)
+            if sampler == 'random':
+                return RandomSampler(length)
+            if sampler == 'sequential':
+                return SequentialSampler(length)
+        raise ValueError('file_sampler must be a supported str ("random", "sequential") or'
+                         'a `gluon.data.Sampler`, but got %s'%(sampler))
 
     def __iter__(self):
-        file_sampler = self._get_sampler(self._file_sampler)
         # generate file samples
-        files = sorted(glob.glob(self._file_pattern))
-        if len(files) == 0:
-            raise ValueError('Cannot find any file with path "%s"'%self._file_pattern)
-        for file_idx in iter(file_sampler(len(files))):
-            filename = files[file_idx]
+        for file_idx in iter(self._file_sampler):
+            filename = self._files[file_idx]
             yield self._dataset(filename, **self._kwargs)
 
 
