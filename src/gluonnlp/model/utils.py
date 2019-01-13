@@ -23,14 +23,12 @@ import collections
 import functools
 import re
 import warnings
-import json
 
 from mxnet.gluon import Block, contrib, rnn
 from mxnet.gluon.model_zoo import model_store
 from gluonnlp.data.utils import _load_pretrained_vocab
 from .parameter import WeightDropParameter
 from .lstmpcellwithclip import LSTMPCellWithClip
-from ..vocab import Vocab
 
 # pylint: disable=too-many-nested-blocks
 
@@ -264,7 +262,7 @@ def _get_rnn_layer(mode, num_layers, input_size, hidden_size, dropout, weight_dr
     return block
 
 
-def _load_vocab(dataset_name, vocab, root, cls=Vocab):
+def _load_vocab(dataset_name, vocab, root, cls=None):
     if dataset_name:
         if vocab is not None:
             warnings.warn('Both dataset_name and vocab are specified. Loading vocab for dataset. '

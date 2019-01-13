@@ -29,7 +29,7 @@ import mxnet as mx
 from .transformer import BasePositionwiseFFN, BaseTransformerEncoderCell, BaseTransformerEncoder
 from .block import GELU
 from .utils import _load_vocab, _load_pretrained_params
-from ..vocab import BERTVocab
+
 
 ###############################################################################
 #                              COMPONENTS                                     #
@@ -612,6 +612,7 @@ def _bert_model(model_name=None, dataset_name=None, vocab=None,
                           dropout=predefined_args['dropout'],
                           use_residual=predefined_args['use_residual'])
     # bert_vocab
+    from ..vocab import BERTVocab
     bert_vocab = _load_vocab(dataset_name, vocab, root, cls=BERTVocab)
     # BERT
     net = BERTModel(encoder, len(bert_vocab),

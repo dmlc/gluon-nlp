@@ -28,7 +28,7 @@ __all__ = ['BERTVocab']
 import json
 import warnings
 
-from . import Vocab
+from .vocab import Vocab
 from ..data.utils import DefaultLookupDict
 
 

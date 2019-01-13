@@ -36,7 +36,6 @@ from mxnet.gluon.data import SimpleDataset
 from mxnet.gluon.utils import _get_repo_url, download, check_sha1
 
 from .. import _constants as C
-from ..vocab import Vocab
 
 
 class Counter(collections.Counter):  # pylint: disable=abstract-method
@@ -264,7 +263,7 @@ def short_hash(name):
     return _vocab_sha1[name][:8]
 
 
-def _load_pretrained_vocab(name, root=os.path.join('~', '.mxnet', 'models'), cls=Vocab):
+def _load_pretrained_vocab(name, root=os.path.join('~', '.mxnet', 'models'), cls=None):
     """Load the accompanying vocabulary object for pre-trained model.
 
     Parameters
@@ -273,7 +272,7 @@ def _load_pretrained_vocab(name, root=os.path.join('~', '.mxnet', 'models'), cls
         Name of the vocabulary, usually the name of the dataset.
     root : str, default '~/.mxnet/models'
         Location for keeping the model parameters.
-    cls : nlp.Vocab or nlp.bert.BERTVocab, default nlp.Vocab
+    cls : nlp.Vocab or nlp.vocab.BERTVocab, default nlp.Vocab
 
     Returns
     -------
@@ -315,6 +314,10 @@ def _load_pretrained_vocab(name, root=os.path.join('~', '.mxnet', 'models'), cls
 
 def _load_vocab_file(file_path, cls):
     with open(file_path, 'r') as f:
+        if cls is None:
+            from ..vocab import Vocab
+            cls = Vocab
+
         return cls.from_json(f.read())
 
 
