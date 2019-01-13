@@ -254,8 +254,8 @@ def train(metric):
     except ValueError as e:
         print(e)
         warnings.warn(
-            "AdamW optimizer is not found. Please consider upgrading to "
-            "mxnet>=1.5.0. Now the original Adam optimizer is used instead.")
+            'AdamW optimizer is not found. Please consider upgrading to '
+            'mxnet>=1.5.0. Now the original Adam optimizer is used instead.')
         trainer_w = gluon.Trainer(
             model.collect_params('.*weight'),
             'Adam',
