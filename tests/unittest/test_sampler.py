@@ -95,3 +95,20 @@ def test_sorted_bucket_sampler(seq_lengths, mult, batch_size, shuffle):
     for batch_sample_ids in sampler:
         total_sampled_ids.extend(batch_sample_ids)
     assert len(set(total_sampled_ids)) == len(total_sampled_ids) == N
+
+
+@pytest.mark.parametrize('num_samples', [30])
+@pytest.mark.parametrize('num_parts', [3, 7])
+def test_split_sampler(num_samples, num_parts):
+    total_count = 0
+    indices = []
+    for part_idx in range(num_parts):
+        sampler = s.SplitSampler(num_samples, num_parts, part_idx)
+        count = 0
+        for i in sampler:
+            count += 1
+            indices.append(i)
+        total_count += count
+        assert count == len(sampler)
+    assert total_count == num_samples
+    assert sorted(indices) == list(range(num_samples))
