@@ -27,14 +27,13 @@ from __future__ import division
 __all__ = ['ClipSequence', 'PadSequence', 'SacreMosesTokenizer', 'NLTKMosesTokenizer',
            'SpacyTokenizer', 'SacreMosesDetokenizer', 'NLTKMosesDetokenizer', 'JiebaTokenizer',
            'NLTKStanfordSegmenter', 'SentencepieceTokenizer',
-           'SentencepieceDetokenizer', 'BasicTokenizer', 'BERTTokenizer', 'convert_to_unicode',
-           'BERTTransform', 'BERTClassificationTransform']
+           'SentencepieceDetokenizer', 'BasicTokenizer', 'BERTTokenizer',
+           'BERTSentenceTransform', 'BERTDatasetTransform']
 
 import os
 import warnings
 
 import unicodedata
-import six
 
 import numpy as np
 import mxnet as mx
@@ -757,7 +756,6 @@ class BasicTokenizer():
 
     def _tokenize(self, text):
         """Tokenizes a piece of text."""
-        text = convert_to_unicode(text)
         text = self._clean_text(text)
 
         # This was added on November 1st, 2018 for the multilingual and Chinese
@@ -767,7 +765,7 @@ class BasicTokenizer():
         # characters in the vocabulary because Wikipedia does have some Chinese
         # words in the English Wikipedia.).
         text = self._tokenize_chinese_chars(text)
-        orig_tokens = _whitespace_tokenize(text)
+        orig_tokens = self._whitespace_tokenize(text)
         split_tokens = []
         for token in orig_tokens:
             if self.do_lower_case:
@@ -775,7 +773,7 @@ class BasicTokenizer():
                 token = self._run_strip_accents(token)
             split_tokens.extend(self._run_split_on_punc(token))
 
-        output_tokens = _whitespace_tokenize(' '.join(split_tokens))
+        output_tokens = self._whitespace_tokenize(' '.join(split_tokens))
         return output_tokens
 
     def _clean_text(self, text):
@@ -897,6 +895,14 @@ class BasicTokenizer():
             return True
         return False
 
+    def _whitespace_tokenize(self, text):
+        """Runs basic whitespace cleaning and splitting on a piece of text."""
+        text = text.strip()
+        if not text:
+            return []
+        tokens = text.split()
+        return tokens
+
 
 class BERTTokenizer(object):
     r"""End-to-end tokenization for BERT models.
@@ -969,7 +975,7 @@ class BERTTokenizer(object):
         """
 
         output_tokens = []
-        for token in _whitespace_tokenize(text):
+        for token in self.basic_tokenizer._whitespace_tokenize(text):
             chars = list(token)
             if len(chars) > self.max_input_chars_per_word:
                 output_tokens.append(self.vocab.unknown_token)
@@ -1004,7 +1010,7 @@ class BERTTokenizer(object):
         return self.vocab.to_indices(tokens)
 
 
-class BERTTransform(object):
+class BERTSentenceTransform(object):
     """BERT style data transformation.
 
     Parameters
@@ -1088,7 +1094,7 @@ class BERTTransform(object):
             # Modifies `tokens_a` and `tokens_b` in place so that the total
             # length is less than the specified length.
             # Account for [CLS], [SEP], [SEP] with "- 3"
-            _truncate_seq_pair(tokens_a, tokens_b, self._max_seq_length - 3)
+            self._truncate_seq_pair(tokens_a, tokens_b, self._max_seq_length - 3)
         else:
             # Account for [CLS] and [SEP] with "- 2"
             if len(tokens_a) > self._max_seq_length - 2:
@@ -1135,29 +1141,49 @@ class BERTTransform(object):
         return np.array(input_ids, dtype='int32'), np.array(valid_length, dtype='int32'),\
             np.array(segment_ids, dtype='int32')
 
+    def _truncate_seq_pair(self, tokens_a, tokens_b, max_length):
+        """Truncates a sequence pair in place to the maximum length."""
+        # This is a simple heuristic which will always truncate the longer sequence
+        # one token at a time. This makes more sense than truncating an equal percent
+        # of tokens from each, since if one sequence is very short then each token
+        # that's truncated likely contains more information than a longer sequence.
+        while True:
+            total_length = len(tokens_a) + len(tokens_b)
+            if total_length <= max_length:
+                break
+            if len(tokens_a) > len(tokens_b):
+                tokens_a.pop()
+            else:
+                tokens_b.pop()
 
-class BERTClassificationTransform(object):
-    """Dataset Transformation for BERT-style Sentence Classification.
+
+class BERTDatasetTransform(object):
+    """Dataset Transformation for BERT-style Sentence Classification or Regression.
 
     Parameters
     ----------
     tokenizer : BERTTokenizer.
         Tokenizer for the sentences.
-    labels : list of int.
-        List of all label ids for the classification task.
+    labels : list of int or float.
+        List of all label ids for the classification task and regressing task.
     max_seq_length : int.
         Maximum sequence length of the sentences.
     pad : bool, default True
         Whether to pad the sentences to maximum length.
     pair : bool, default True
         Whether to transform sentences or sentence pairs.
+    label_dtype: int32 or float32
+        label_dtype = int32 for classification task
+        label_dtype = float32 for regression task
     """
 
-    def __init__(self, tokenizer, labels, max_seq_length, pad=True, pair=True):
+    def __init__(self, tokenizer, labels, max_seq_length,
+                 pad=True, pair=True, label_dtype='float32'):
+        self.label_dtype = label_dtype
         self._label_map = {}
         for (i, label) in enumerate(labels):
             self._label_map[label] = i
-        self._bert_xform = BERTTransform(tokenizer, max_seq_length, pad=pad, pair=pair)
+        self._bert_xform = BERTSentenceTransform(tokenizer, max_seq_length, pad=pad, pair=pair)
 
     def __call__(self, line):
         """Perform transformation for sequence pairs or single sequences.
@@ -1209,56 +1235,20 @@ class BERTClassificationTransform(object):
         np.array: input token ids in 'int32', shape (batch_size, seq_length)
         np.array: valid length in 'int32', shape (batch_size,)
         np.array: input token type ids in 'int32', shape (batch_size, seq_length)
-        np.array: label id in 'int32', shape (batch_size, 1)
+        np.array: classification task: label id in 'int32', shape (batch_size, 1),
+            regression task: label in 'float32', shape (batch_size, 1)
         """
-        label = line[-1]
-        label = convert_to_unicode(label)
-        label_id = self._label_map[label]
-        label_id = np.array([label_id], dtype='int32')
         input_ids, valid_length, segment_ids = self._bert_xform(line[:-1])
-        return input_ids, valid_length, segment_ids, label_id
 
-
-def _whitespace_tokenize(text):
-    """Runs basic whitespace cleaning and splitting on a piece of text."""
-    text = text.strip()
-    if not text:
-        return []
-    tokens = text.split()
-    return tokens
-
-
-def convert_to_unicode(text):
-    """Converts `text` to Unicode (if it's not already), assuming utf-8 input."""
-    if six.PY3:
-        if isinstance(text, str):
-            return text
-        elif isinstance(text, bytes):
-            return text.decode('utf-8', 'ignore')
+        label = line[-1]
+        # classification task
+        if self.label_dtype == 'int32':
+            label_id = self._label_map[label]
+            label_id = np.array([label_id], dtype='int32')
+            return input_ids, valid_length, segment_ids, label_id
+        # regression task
+        elif self.label_dtype == 'float32':
+            label = np.array([float(label)], dtype='float32')
+            return input_ids, valid_length, segment_ids, label
         else:
-            raise ValueError('Unsupported string type: %s' % (type(text)))
-    elif six.PY2:
-        if isinstance(text, str):
-            return text.decode('utf-8', 'ignore')
-        elif isinstance(text, unicode):  # noqa: F821
-            return text
-        else:
-            raise ValueError('Unsupported string type: %s' % (type(text)))
-    else:
-        raise ValueError('Not running on Python2 or Python 3?')
-
-
-def _truncate_seq_pair(tokens_a, tokens_b, max_length):
-    """Truncates a sequence pair in place to the maximum length."""
-    # This is a simple heuristic which will always truncate the longer sequence
-    # one token at a time. This makes more sense than truncating an equal percent
-    # of tokens from each, since if one sequence is very short then each token
-    # that's truncated likely contains more information than a longer sequence.
-    while True:
-        total_length = len(tokens_a) + len(tokens_b)
-        if total_length <= max_length:
-            break
-        if len(tokens_a) > len(tokens_b):
-            tokens_a.pop()
-        else:
-            tokens_b.pop()
+            raise ValueError('Lable dtype does not belong to [float32, int32]')

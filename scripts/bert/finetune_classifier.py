@@ -44,7 +44,7 @@ import mxnet as mx
 from mxnet import gluon
 import gluonnlp as nlp
 from gluonnlp.model import bert_12_768_12
-from gluonnlp.data import BERTTokenizer, BERTClassificationTransform, MRPCDataset
+from gluonnlp.data import BERTTokenizer, BERTDatasetTransform, MRPCDataset
 
 from bert import BERTClassifier
 
@@ -114,6 +114,7 @@ def preprocess_data(tokenizer, batch_size, dev_batch_size, max_len):
     """Data preparation function."""
     # transformation
 <<<<<<< HEAD
+<<<<<<< HEAD
     train_trans = ClassificationTransform(tokenizer, MRPCDataset.get_labels(),
                                           max_len, pad=False)
     dev_trans = ClassificationTransform(tokenizer, MRPCDataset.get_labels(), max_len)
@@ -122,6 +123,11 @@ def preprocess_data(tokenizer, batch_size, dev_batch_size, max_len):
                                               args.max_len, pad=False)
     dev_trans = BERTClassificationTransform(tokenizer, MRPCDataset.get_labels(), args.max_len)
 >>>>>>> replace some code with new bert api
+=======
+    train_trans = BERTDatasetTransform(tokenizer, MRPCDataset.get_labels(),
+                                       args.max_len, pad=False)
+    dev_trans = BERTDatasetTransform(tokenizer, MRPCDataset.get_labels(), args.max_len)
+>>>>>>> update some bert transforms
     data_train = MRPCDataset('train').transform(train_trans, lazy=False)
     data_dev = MRPCDataset('dev').transform(dev_trans, lazy=False)
     data_train_len = data_train.transform(lambda input_id, length, segment_id, label_id: length)

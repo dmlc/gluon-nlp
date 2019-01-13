@@ -29,7 +29,7 @@ import random
 import mxnet as mx
 import gluonnlp as nlp
 
-from gluonnlp.data import convert_to_unicode, BERTTokenizer
+from gluonnlp.data import BERTTokenizer
 from utils import printable_text
 
 
@@ -215,7 +215,7 @@ def create_training_instances(input_files, tokenizer, max_seq_length,
     for input_file in input_files:
         with io.open(input_file, 'r', encoding='UTF-8') as reader:
             while True:
-                line = convert_to_unicode(reader.readline())
+                line = reader.readline()
                 if not line:
                     break
                 line = line.strip()
