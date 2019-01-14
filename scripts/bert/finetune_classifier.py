@@ -80,7 +80,7 @@ lr = args.lr
 accumulate = args.accumulate
 log_interval = args.log_interval * accumulate if accumulate else args.log_interval
 if accumulate:
-    logging.info("Using gradient accumulation. Effective batch size = %d" % (accumulate*batch_size))
+    logging.info('Using gradient accumulation. Effective batch size = %d', accumulate*batch_size)
 
 # random seed
 np.random.seed(args.seed)

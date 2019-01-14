@@ -23,8 +23,8 @@ import hashlib
 import io
 import json
 
-import gluonnlp
 import six
+import gluonnlp
 from tensorflow.python import pywrap_tensorflow
 
 __all__ = ['convert_vocab']
