@@ -61,7 +61,7 @@ Note that this will require approximately no more than 8G of GPU memory. If your
     $ python finetune_squad.py --optimizer bertadam --accumulate 2 --batch_size 6 --gpu
 
 
-Should produce an output like this. Explain that the F1 score on the dev dataset is 88.45%
+Should produce an output like this. Explain that the F1 score on the dev dataset is `88.45% <https://raw.githubusercontent.com/dmlc/web-data/master/gluonnlp/logs/bert/finetune_squad.log>`_
 
 .. code-block:: console
 
