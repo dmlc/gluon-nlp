@@ -50,7 +50,7 @@ from mxnet import gluon, nd
 
 import gluonnlp as nlp
 from gluonnlp.data import SQuAD
-from BertForQA import BertForQALoss, BertForQA
+from bert_for qa import BertForQALoss, BertForQA
 from qa_dataset import (SQuADTransform, bert_qa_batchify_fn,
                         preprocess_dataset)
 from qa_evaluate import get_F1_EM, predictions
