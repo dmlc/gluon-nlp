@@ -550,16 +550,31 @@ def test_wmt2014bpe():
 @pytest.mark.remote_required
 def test_load_dev_squad():
     # number of records in dataset is equal to number of different questions
-    train_dataset = nlp.data.SQuAD(segment='train', root='tests/data/squad')
+    train_dataset = nlp.data.SQuAD(
+        segment='train', version='1.1', root='tests/data/squad')
     assert len(train_dataset) == 87599
 
-    val_dataset = nlp.data.SQuAD(segment='dev', root='tests/data/squad')
+    val_dataset = nlp.data.SQuAD(
+        segment='dev',version='1.1', root='tests/data/squad')
     assert len(val_dataset) == 10570
 
     # Each record is a tuple of 6 elements: record_id, question Id, question, context,
     # list of answer texts, list of answer start indices
     for record in val_dataset:
         assert len(record) == 6
+
+    train_dataset_2 = nlp.data.SQuAD(
+        segment='train', version='2.0', root='tests/data/squad')
+    assert len(train_dataset_2) == 130319
+
+    val_dataset = nlp.data.SQuAD(
+        segment='dev', version='2.0', root='tests/data/squad')
+    assert len(val_dataset) == 11873
+
+    # Each record is a tuple of 7 elements: record_id, question Id, question, context,
+    # list of answer texts, list of answer start indices, is_impossible
+    for record in val_dataset:
+        assert len(record) == 7
 
 def test_counter():
     x = nlp.data.Counter({'a': 10, 'b': 1, 'c': 1})
