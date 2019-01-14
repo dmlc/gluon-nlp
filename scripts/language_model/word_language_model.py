@@ -94,7 +94,7 @@ parser.add_argument('--alpha', type=float, default=2,
                     help='alpha L2 regularization on RNN activation '
                          '(alpha = 0 means no regularization)')
 parser.add_argument('--beta', type=float, default=1,
-                    help='beta slowness regularization applied on RNN activiation '
+                    help='beta slowness regularization applied on RNN activation '
                          '(beta = 0 means no regularization)')
 parser.add_argument('--ntasgd', action='store_true',
                     help='Whether to apply ntasgd')

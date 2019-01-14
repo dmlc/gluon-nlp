@@ -82,7 +82,7 @@ class AttentionCell(HybridBlock):
         -------
         att_weights : Symbol or NDArray
             For single-head attention, Shape (batch_size, query_length, memory_length)
-            For multi-head attentino, Shape (batch_size, num_heads, query_length, memory_length)
+            For multi-head attention, Shape (batch_size, num_heads, query_length, memory_length)
         """
         raise NotImplementedError
 

@@ -175,7 +175,7 @@ class CorpusDataset(SimpleDataset):
         A function that splits each sample string into list of tokens. If None, raw samples are
         returned according to `sample_splitter`.
     bos : str or None, default None
-        The token to add at the begining of each sequence. If None, or if tokenizer is not
+        The token to add at the beginning of each sequence. If None, or if tokenizer is not
         specified, then nothing is added.
     eos : str or None, default None
         The token to add at the end of each sequence. If None, or if tokenizer is not

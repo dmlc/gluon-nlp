@@ -47,7 +47,7 @@ wmt_transformer_model, wmt_src_vocab, wmt_tgt_vocab = \
                         pretrained=True,
                         ctx=ctx)
 
-# we are using mixed vocab of EN-DE, so the source and target langauge vocab are the same
+# we are using mixed vocab of EN-DE, so the source and target language vocab are the same
 print(len(wmt_src_vocab), len(wmt_tgt_vocab))
 ```
 

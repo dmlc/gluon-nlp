@@ -1,11 +1,11 @@
 # A Structured Self-attentive Sentence Embedding
 
 After word embedding is applied to the representation of words, natural language processing(NLP) has been effectively improved in many ways. Along with the widespread use of word embedding, many techniques have been developed to express the semantics of sentences by words, such as:
-1. The vector representation of multiple words in a sentence is concated or weighted to obtain a vector to represent the sentence.
+1. The vector representation of multiple words in a sentence is concatenated or weighted to obtain a vector to represent the sentence.
 2. Convolution(CNN) and maximum pooling(MaxPooling) on the matrix of all the word vectors of the sentence, using the final result to represent the semantics of the sentence.
 3. Unroll the sentence according to the time step of the word, input the vector representation of each word into a recurrent neural network(RNN), and use the output of the last time step of the RNN as the semantic representation of the sentence.
 
-The above method solves the problem of sentence meaning in a certain extent in many aspects. When concating is used in method one, if the word of the sentence is too long and the vector dimension of the word is slightly larger, then the vector dimension of the sentence will be particularly large, and the internal interaction between the words of the sentence is not taken into account. The use of weighted averaging is not accurate and does not adequately express the impact of each word on sentence semantics. Many useful word meanings may be lost in Method2. The third method selects the output of the last step. If the sentence is too long, the output of the last step does not accurately express the semantics of the sentence.
+The above method solves the problem of sentence meaning in a certain extent in many aspects. When concatenating is used in method one, if the word of the sentence is too long and the vector dimension of the word is slightly larger, then the vector dimension of the sentence will be particularly large, and the internal interaction between the words of the sentence is not taken into account. The use of weighted averaging is not accurate and does not adequately express the impact of each word on sentence semantics. Many useful word meanings may be lost in Method2. The third method selects the output of the last step. If the sentence is too long, the output of the last step does not accurately express the semantics of the sentence.
 
 Based on the above mentioned method, Zhouhan Lin, Minwei Feng et al. published a paper [A Structured Self-attentive Sentence Embedding](https://arxiv.org/pdf/1703.03130.pdf)[1] in 2017, proposed a method based on self-attention structure for sentence embedding and applied to user's reviews classification, textual entailment and other tasks. In the end, good results were obtained.
 
@@ -51,7 +51,7 @@ def try_gpu():
 
 ### Load The Reviews of Yelp Data
 
-[Yelp users' review dataset](https://www.kaggle.com/yelp-dataset/yelp-dataset) is formatted as json. The original paper selected 500K documents as the training set, 2K as the validation set, and 2Kas the test set. For easier reproducilbility of the experiment, we subsampled 198K documents from this dataset as training set and 2K documents as validation set.
+[Yelp users' review dataset](https://www.kaggle.com/yelp-dataset/yelp-dataset) is formatted as json. The original paper selected 500K documents as the training set, 2K as the validation set, and 2Kas the test set. For easier reproducibility of the experiment, we subsampled 198K documents from this dataset as training set and 2K documents as validation set.
 Each sample in the data is a user's comment, the language is English, and each comment category is marked 1-5, representing 5 different emotional colors.
 
 
@@ -146,7 +146,7 @@ Since each sentence may have a different length, we need to use `Pad` to fill th
 
 In order to make the length of the sentence pad in each minibatch as small as possible, we should make the sentences with similar lengths in a batch as much as possible. In light of this, we consider constructing a sampler using `FixedBucketSampler`, which defines how the samples in a dataset will be iterated in a more economic way.
 
-Finally, we use `DataLoader` to build a data loader for the training. dataset and validation dataset. The training dataset requires FixedBucketSampler, but the validation dataset dosen't require the sampler.
+Finally, we use `DataLoader` to build a data loader for the training. dataset and validation dataset. The training dataset requires FixedBucketSampler, but the validation dataset doesn't require the sampler.
 
 
 ```
@@ -315,7 +315,7 @@ vocab_len = len(vocab)
 emsize = 300   # word embedding size
 nhidden = 300    # lstm hidden_dim
 nlayers = 2     # lstm layers
-natt_unit = 300     # the hidden_units of attenion layer
+natt_unit = 300     # the hidden_units of attention layer
 natt_hops = 2    # the channels of attention
 nfc = 512
 nclass = 5

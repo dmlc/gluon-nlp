@@ -36,7 +36,7 @@ class LogUniformSampler(gluon.block.Block):
     For example, if the classes represent words in a lexicon sorted in decreasing order of
     frequency. If your classes are not ordered by decreasing frequency, do not use this op.
 
-    Additionaly, it also returns the number of times each of the
+    Additionally, it also returns the number of times each of the
     true classes and the sampled classes is expected to occur.
 
     Parameters

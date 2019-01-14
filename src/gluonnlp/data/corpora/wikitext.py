@@ -95,7 +95,7 @@ class WikiText2(_WikiText):
     tokenizer : function, default str.split
         A function that splits each sample string into list of tokens.
     bos : str or None, default None
-        The token to add at the begining of each sentence. If None, nothing is added.
+        The token to add at the beginning of each sentence. If None, nothing is added.
     eos : str or None, default '<eos>'
         The token to add at the end of each sentence. If None, nothing is added.
     root : str, default '$MXNET_HOME/datasets/wikitext-2'
@@ -157,7 +157,7 @@ class WikiText103(_WikiText):
     tokenizer : function, default str.split
         A function that splits each sample string into list of tokens.
     bos : str or None, default None
-        The token to add at the begining of each sentence. If None, nothing is added.
+        The token to add at the beginning of each sentence. If None, nothing is added.
     eos : str or None, default '<eos>'
         The token to add at the end of each sentence. If None, nothing is added.
     root : str, default '$MXNET_HOME/datasets/wikitext-103'
@@ -222,7 +222,7 @@ class WikiText2Raw(_WikiText):
         The tokenizer can also be used to convert everything to lowercase.
         E.g. with tokenizer=lambda s: s.lower().encode('utf-8')
     bos : str or None, default None
-        The token to add at the begining of each sentence. If None, nothing is added.
+        The token to add at the beginning of each sentence. If None, nothing is added.
     eos : str or None, default '<eos>'
         The token to add at the end of each sentence. If None, nothing is added.
     root : str, default '$MXNET_HOME/datasets/wikitext-2'
@@ -287,7 +287,7 @@ class WikiText103Raw(_WikiText):
         The tokenizer can also be used to convert everything to lowercase.
         E.g. with tokenizer=lambda s: s.lower().encode('utf-8')
     bos : str or None, default None
-        The token to add at the begining of each sentence. If None, nothing is added.
+        The token to add at the beginning of each sentence. If None, nothing is added.
     eos : str or None, default '<eos>'
         The token to add at the end of each sentence. If None, nothing is added.
     root : str, default '$MXNET_HOME/datasets/wikitext-103'
