@@ -111,9 +111,9 @@ def preprocess_data(tokenizer, batch_size, dev_batch_size, max_len):
     """Data preparation function."""
     # transformation
     train_trans = BERTDatasetTransform(tokenizer, MRPCDataset.get_labels(),
-                                       args.max_len, pad=False, label_dtype='int32')
+                                       max_len, pad=False, label_dtype='int32')
     dev_trans = BERTDatasetTransform(tokenizer, MRPCDataset.get_labels(),
-                                     args.max_len, label_dtype='int32')
+                                     max_len, label_dtype='int32')
     data_train = MRPCDataset('train').transform(train_trans, lazy=False)
     data_dev = MRPCDataset('dev').transform(dev_trans, lazy=False)
     data_train_len = data_train.transform(lambda input_id, length, segment_id, label_id: length)
