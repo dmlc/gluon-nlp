@@ -17,29 +17,26 @@
 # specific language governing permissions and limitations
 # under the License.
 
-# pylint: disable=wildcard-import
-"""NLP toolkit."""
+import mxnet as mx
+import numpy as np
+from gluonnlp.metric import MaskedAccuracy
 
-from . import loss
-from . import data
-from . import embedding
-from . import model
-from . import metric
-from . import utils
-from . import vocab
-from . import optimizer
-from . import initializer
-from .vocab import Vocab
+def test_acc():
+    pred = mx.nd.array([[0.3, 0.7], [0, 1.], [0.4, 0.6]])
+    label = mx.nd.array([0, 1, 1])
+    mask = mx.nd.array([1, 1, 0])
+    metric = MaskedAccuracy()
+    metric.update([label], [pred], [mask])
+    _, acc = metric.get()
+    matched = (np.argmax(pred.asnumpy(), axis=1) == label.asnumpy()) * mask.asnumpy()
+    valid_count = mask.asnumpy().sum()
+    expected_acc = 1.0 * matched.sum() / valid_count
+    assert acc == expected_acc
 
-__version__ = '0.5.1'
-
-__all__ = ['data',
-           'model',
-           'embedding',
-           'Vocab',
-           'vocab',
-           'loss',
-           'initializer',
-           'optimizer',
-           'utils',
-           'metric']
+    metric = MaskedAccuracy()
+    metric.update([label], [pred])
+    _, acc = metric.get()
+    matched = (np.argmax(pred.asnumpy(), axis=1) == label.asnumpy())
+    valid_count = len(label)
+    expected_acc = 1.0 * matched.sum() / valid_count
+    assert acc == expected_acc
