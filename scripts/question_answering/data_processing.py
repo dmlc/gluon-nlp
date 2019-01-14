@@ -66,7 +66,7 @@ class SQuADTransform(object):
         self._padder = Pad()
 
     def __call__(self, record_index, question_id, question, context, answer_list,
-                 answer_start_list, is_impossible):
+                 answer_start_list):
         """
         Method converts text into numeric arrays based on Vocabulary.
         Answers are not processed, as they are not needed in input
@@ -92,7 +92,7 @@ class SQuADTransform(object):
             answer_list, answer_start_list)
 
         return record_index, question_id, question_words_nd, context_words_nd, \
-            question_chars_nd, context_chars_nd, answer_spans, is_impossible
+            question_chars_nd, context_chars_nd, answer_spans
 
     @staticmethod
     def _get_answer_spans(answer_list, answer_start_list):

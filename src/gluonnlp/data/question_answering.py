@@ -58,7 +58,7 @@ class SQuAD(ArrayDataset):
     - answer_list:   All answers for this question. Stored as python list
     - start_indices: All answers' starting indices. Stored as python list.
       The position in this list is the same as the position of an answer in answer_list
-    - is_impossible: The question is unanswerable.
+    - is_impossible: The question is unanswerable. if version is '2.0'.
       In SQuAd2.0, there are some unanswerable questions.
 
     Parameters
@@ -152,7 +152,7 @@ class SQuAD(ArrayDataset):
         -------
         List[Tuple]
             Flatten list of records in format: record_index, question_id, question, context,
-            answer, answer_start_index, is_impossible
+            answer, answer_start_index, is_impossible(if version is '2.0)
         """
         records = []
 
@@ -162,11 +162,16 @@ class SQuAD(ArrayDataset):
             for paragraph in title['paragraphs']:
                 for qas in paragraph['qas']:
                     answers = SQuAD._get_answers(qas)
-                    is_impossible = qas.get('is_impossible', False)
-                    record = (
-                        record_index, qas['id'], qas['question'],
-                        paragraph['context'], answers[0], answers[1], is_impossible
-                    )
+                    is_impossible = qas.get('is_impossible', None)
+                    if is_impossible is not None:
+                        record = (
+                            record_index, qas['id'], qas['question'],
+                            paragraph['context'], answers[0], answers[1], is_impossible
+                        )
+                    else:
+                        record = (
+                            record_index, qas['id'], qas['question'],
+                            paragraph['context'], answers[0], answers[1])
 
                     record_index += 1
                     records.append(record)

@@ -558,6 +558,11 @@ def test_load_dev_squad():
         segment='dev',version='1.1', root='tests/data/squad')
     assert len(val_dataset) == 10570
 
+    # Each record is a tuple of 6 elements: record_id, question Id, question, context,
+    # list of answer texts, list of answer start indices
+    for record in val_dataset:
+        assert len(record) == 6
+
     train_dataset_2 = nlp.data.SQuAD(
         segment='train', version='2.0', root='tests/data/squad')
     assert len(train_dataset_2) == 130319
@@ -566,7 +571,7 @@ def test_load_dev_squad():
         segment='dev', version='2.0', root='tests/data/squad')
     assert len(val_dataset) == 11873
 
-    # Each record is a tuple of 6 elements: record_id, question Id, question, context,
+    # Each record is a tuple of 7 elements: record_id, question Id, question, context,
     # list of answer texts, list of answer start indices, is_impossible
     for record in val_dataset:
         assert len(record) == 7
