@@ -214,7 +214,6 @@ def _slice_pad_length(num_items, length, overlap=0):
         return 0
 
 
-<<<<<<< HEAD
 _vocab_sha1 = {'wikitext-2': 'be36dc5238c2e7d69720881647ab72eb506d0131',
                'gbw': 'ebb1a287ca14d8fa6f167c3a779e5e7ed63ac69f',
                'WMT2014_src': '230ebb817b1d86950d71e2e765f192a4e4f34415',
@@ -225,17 +224,6 @@ _vocab_sha1 = {'wikitext-2': 'be36dc5238c2e7d69720881647ab72eb506d0131',
                'wiki_cn': 'a1e06f8e39ae51ab8a92b8458e6a658b8b1f72bf',
                'wiki_multilingual': '2b2514cc539047b9179e9d98a4e68c36db05c97a'}
 
-=======
-_vocab_sha1 = {'wikitext-2'                 : 'be36dc5238c2e7d69720881647ab72eb506d0131',
-               'gbw'                        : 'ebb1a287ca14d8fa6f167c3a779e5e7ed63ac69f',
-               'WMT2014_src'                : '230ebb817b1d86950d71e2e765f192a4e4f34415',
-               'WMT2014_tgt'                : '230ebb817b1d86950d71e2e765f192a4e4f34415',
-               'book_corpus_wiki_en_cased'  : '412a6bbeae603b9b9ba6505dd8b58a8594fe5c4c',
-               'book_corpus_wiki_en_uncased': 'c3e2bd000830b08b5535a75726af637f791d2bce',
-               'wiki_multilingual_cased'    : '71bb9e248dc75dce9227d3c8c16fde3993588b9e',
-               'wiki_cn'                    : 'a1e06f8e39ae51ab8a92b8458e6a658b8b1f72bf',
-               'wiki_multilingual'          : '4cf30ef8fd0e0a6a4f9ef05b716b108f8b61c2d7'}
->>>>>>> Add Chinese, multilingual cased Bert model and Chinese Tokenize
 
 _url_format = '{repo_url}gluon/dataset/vocab/{file_name}.zip'
 
