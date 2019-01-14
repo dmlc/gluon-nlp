@@ -17,7 +17,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-# pylint: disable=invalid-encoded-data
+# pylint: disable=invalid-encoded-data, too-many-lines
 """Transformer API. It provides tools for common transformation on samples in text dataset, such as
 clipping, padding, and tokenization."""
 
@@ -1067,7 +1067,7 @@ class BERTSentenceTransform(object):
         Parameters
         ----------
         line: tuple of str
-            Input strings. For sequence pairs, the input is a tuple of 3 strings:
+            Input strings. For sequence pairs, the input is a tuple of 2 strings:
             (text_a, text_b). For single sequences, the input is a tuple of single
             string: (text_a,).
 
