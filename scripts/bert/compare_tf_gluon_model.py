@@ -27,7 +27,7 @@ import mxnet as mx
 import gluonnlp as nlp
 from gluonnlp.data import TSVDataset
 from gluonnlp.data import BERTTokenizer
-from gluon.data import BERTTransform
+from gluon.data import BERTSentenceTransform
 
 parser = argparse.ArgumentParser(description='Comparison script for BERT model in Tensorflow'
                                              'and that in Gluon')
@@ -142,7 +142,7 @@ print(bert)
 tokenizer = BERTTokenizer(vocabulary, do_lower_case=do_lower_case)
 dataset = TSVDataset(input_file, field_separator=nlp.data.Splitter(' ||| '))
 
-trans = BERTTransform(tokenizer, max_length)
+trans = BERTSentenceTransform(tokenizer, max_length)
 dataset = dataset.transform(trans)
 
 bert_dataloader = mx.gluon.data.DataLoader(dataset, batch_size=1,

@@ -12,20 +12,18 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""MRPCDatasets."""
+"""BERT datasets."""
 
 __all__ = ['MRPCDataset']
 
 import os
-
-from . import TSVDataset
-from .registry import register
+from gluonnlp.data import TSVDataset
+from gluonnlp.data.registry import register
 
 
 @register(segment=['train', 'dev', 'test'])
 class MRPCDataset(TSVDataset):
     """The Microsoft Research Paraphrase Corpus dataset.
-
     Parameters
     ----------
     segment : str or list of str, default 'train'

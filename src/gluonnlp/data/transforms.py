@@ -20,6 +20,7 @@
 # pylint: disable=invalid-encoded-data
 """Transformer API. It provides tools for common transformation on samples in text dataset, such as
 clipping, padding, and tokenization."""
+
 from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import division
@@ -32,7 +33,6 @@ __all__ = ['ClipSequence', 'PadSequence', 'SacreMosesTokenizer', 'NLTKMosesToken
 
 import os
 import warnings
-
 import unicodedata
 
 import numpy as np
@@ -918,7 +918,6 @@ class BERTTokenizer(object):
         otherwise it is set to True.
     max_input_chars_per_word : int, default 200
 
-
     Examples
     --------
     >>> _,vocab = gluonnlp.model.bert_12_768_12(dataset_name='wiki_multilingual',pretrained=False)
@@ -1109,21 +1108,22 @@ class BERTSentenceTransform(object):
         # For classification tasks, the first vector (corresponding to [CLS]) is
         # used as as the "sentence vector". Note that this only makes sense because
         # the entire model is fine-tuned.
+        vocab = self._tokenizer.vocab
         tokens = []
         segment_ids = []
-        tokens.append('[CLS]')
+        tokens.append(vocab.cls_token)
         segment_ids.append(0)
         for token in tokens_a:
             tokens.append(token)
             segment_ids.append(0)
-        tokens.append('[SEP]')
+        tokens.append(vocab.sep_token)
         segment_ids.append(0)
 
         if tokens_b:
             for token in tokens_b:
                 tokens.append(token)
                 segment_ids.append(1)
-            tokens.append('[SEP]')
+            tokens.append(vocab.sep_token)
             segment_ids.append(1)
 
         input_ids = self._tokenizer.convert_tokens_to_ids(tokens)
@@ -1135,8 +1135,8 @@ class BERTSentenceTransform(object):
             # Zero-pad up to the sequence length.
             padding_length = self._max_seq_length - valid_length
             # use padding tokens for the rest
-            input_ids.extend([self._tokenizer.vocab['[PAD]']] * padding_length)
-            segment_ids.extend([self._tokenizer.vocab['[PAD]']] * padding_length)
+            input_ids.extend([vocab[vocab.padding_token]] * padding_length)
+            segment_ids.extend([0] * padding_length)
 
         return np.array(input_ids, dtype='int32'), np.array(valid_length, dtype='int32'),\
             np.array(segment_ids, dtype='int32')
@@ -1172,7 +1172,7 @@ class BERTDatasetTransform(object):
         Whether to pad the sentences to maximum length.
     pair : bool, default True
         Whether to transform sentences or sentence pairs.
-    label_dtype: int32 or float32
+    label_dtype: int32 or float32, default float32
         label_dtype = int32 for classification task
         label_dtype = float32 for regression task
     """

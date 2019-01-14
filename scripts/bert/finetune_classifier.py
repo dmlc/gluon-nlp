@@ -44,9 +44,10 @@ import mxnet as mx
 from mxnet import gluon
 import gluonnlp as nlp
 from gluonnlp.model import bert_12_768_12
-from gluonnlp.data import BERTTokenizer, BERTDatasetTransform, MRPCDataset
+from gluonnlp.data import BERTTokenizer, BERTDatasetTransform
 
 from bert import BERTClassifier
+from dataset import MRPCDataset
 
 parser = argparse.ArgumentParser(description='BERT sentence pair classification example.'
                                              'We fine-tune the BERT model on MRPC')
@@ -79,11 +80,7 @@ lr = args.lr
 accumulate = args.accumulate
 log_interval = args.log_interval * accumulate if accumulate else args.log_interval
 if accumulate:
-<<<<<<< HEAD
-    logging.info('Using gradient accumulation. Effective batch size = %d', accumulate*batch_size)
-=======
     logging.info("Using gradient accumulation. Effective batch size = %d" % (accumulate*batch_size))
->>>>>>> replace some code with new bert api
 
 # random seed
 np.random.seed(args.seed)
@@ -113,21 +110,10 @@ bert_tokenizer = BERTTokenizer(vocabulary, do_lower_case=do_lower_case)
 def preprocess_data(tokenizer, batch_size, dev_batch_size, max_len):
     """Data preparation function."""
     # transformation
-<<<<<<< HEAD
-<<<<<<< HEAD
-    train_trans = ClassificationTransform(tokenizer, MRPCDataset.get_labels(),
-                                          max_len, pad=False)
-    dev_trans = ClassificationTransform(tokenizer, MRPCDataset.get_labels(), max_len)
-=======
-    train_trans = BERTClassificationTransform(tokenizer, MRPCDataset.get_labels(),
-                                              args.max_len, pad=False)
-    dev_trans = BERTClassificationTransform(tokenizer, MRPCDataset.get_labels(), args.max_len)
->>>>>>> replace some code with new bert api
-=======
     train_trans = BERTDatasetTransform(tokenizer, MRPCDataset.get_labels(),
-                                       args.max_len, pad=False)
-    dev_trans = BERTDatasetTransform(tokenizer, MRPCDataset.get_labels(), args.max_len)
->>>>>>> update some bert transforms
+                                       args.max_len, pad=False, label_dtype='int32')
+    dev_trans = BERTDatasetTransform(tokenizer, MRPCDataset.get_labels(),
+                                     args.max_len, label_dtype='int32')
     data_train = MRPCDataset('train').transform(train_trans, lazy=False)
     data_dev = MRPCDataset('dev').transform(dev_trans, lazy=False)
     data_train_len = data_train.transform(lambda input_id, length, segment_id, label_id: length)

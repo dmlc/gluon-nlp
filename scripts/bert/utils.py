@@ -111,7 +111,7 @@ def load_vocab(vocab_file):
     index = 0
     with io.open(vocab_file, 'r') as reader:
         while True:
-            token = gluonnlp.data.convert_to_unicode(reader.readline())
+            token = reader.readline()
             if not token:
                 break
             token = token.strip()
