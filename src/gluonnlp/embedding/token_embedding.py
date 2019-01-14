@@ -147,7 +147,7 @@ class TokenEmbedding(object):
     :func:`gluonnlp.embedding.list_sources`.
 
     Alternatively, to load embedding vectors from a custom pre-trained token embedding file, use
-    :func:`gluonnlp.embedding.from_file`.
+    :func:`gluonnlp.embedding.TokenEmbedding.from_file`.
 
     If `unknown_token` is None, looking up unknown tokens results in KeyError.
     Otherwise, for every unknown token, if its representation `self.unknown_token` is encountered

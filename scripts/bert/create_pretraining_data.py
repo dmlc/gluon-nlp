@@ -440,7 +440,7 @@ def main():
     """
     main function
     """
-    logging.info("loading vocab file")
+    logging.info('loading vocab file')
     vocab_obj = nlp.Vocab.from_json(open(args.vocab_file, 'rt').read())
     tokenizer = tokenization.FullTokenizer(
         vocab=vocab_obj, do_lower_case=args.do_lower_case)
