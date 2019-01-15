@@ -945,6 +945,7 @@ class BERTTokenizer(object):
         ret : list of strs
             List of tokens
         """
+
         return self._tokenizer(sample)
 
     def _tokenizer(self, text):
@@ -1010,7 +1011,7 @@ class BERTTokenizer(object):
 
 
 class BERTSentenceTransform(object):
-    """BERT style data transformation.
+    r"""BERT style data transformation.
 
     Parameters
     ----------
@@ -1037,7 +1038,7 @@ class BERTSentenceTransform(object):
         - tokenize the input sequences
         - insert [CLS], [SEP] as necessary
         - generate type ids to indicate whether a token belongs to the first
-          sequence or the second sequence.
+            sequence or the second sequence.
         - generate valid length
 
         For sequence pairs, the input is a tuple of 2 strings:
@@ -1076,7 +1077,9 @@ class BERTSentenceTransform(object):
         np.array: input token ids in 'int32', shape (batch_size, seq_length)
         np.array: valid length in 'int32', shape (batch_size,)
         np.array: input token type ids in 'int32', shape (batch_size, seq_length)
+
         """
+
         # convert to unicode
         text_a = line[0]
         if self._pair:

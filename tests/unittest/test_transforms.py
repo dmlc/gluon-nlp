@@ -227,8 +227,8 @@ def test_berttokenizer():
 
 
 def test_bert_sentences_transform():
-    text_a = 'is this jacksonville ?'
-    text_b = 'no it is not'
+    text_a = u'is this jacksonville ?'
+    text_b = u'no it is not'
     vocab_tokens = ['is', 'this', 'jack', '##son', '##ville', '?', 'no', 'it', 'is', 'not']
 
     bert_vocab = BERTVocab(count_tokens(vocab_tokens))

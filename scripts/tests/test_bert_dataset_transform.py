@@ -28,8 +28,8 @@ from ..bert.dataset import BERTDatasetTransform
 
 
 def test_bert_dataset_transform():
-    text_a = 'is this jacksonville ?'
-    text_b = 'no it is not'
+    text_a = u'is this jacksonville ?'
+    text_b = u'no it is not'
     label_cls = 0
     vocab_tokens = ['is', 'this', 'jack', '##son', '##ville', '?', 'no', 'it', 'is', 'not']
 
