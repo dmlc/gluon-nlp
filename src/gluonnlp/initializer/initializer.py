@@ -83,7 +83,14 @@ class TruncNorm(Initializer):
     """
     def __init__(self, mean=0, stdev=0.01, **kwargs):
         super(TruncNorm, self).__init__(**kwargs)
-        from scipy.stats import truncnorm
+        try:
+            from scipy.stats import truncnorm
+        except ImportError:
+            raise ImportError('SciPy is not installed. '
+                              'You must install SciPy >= 1.0.0 in order to use the '
+                              'TruncNorm. You can refer to the official '
+                              'installation guide in https://www.scipy.org/install.html .')
+
         self._frozen_rv = truncnorm(-2, 2, mean, stdev)
 
     def _init_weight(self, name, arr):
