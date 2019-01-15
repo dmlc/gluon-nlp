@@ -46,6 +46,7 @@ import mxnet as mx
 from mxnet import gluon, autograd
 import gluonnlp as nlp
 from sampler import LogUniformSampler
+from gluonnlp.utils import Parallel, Parallelizable
 
 curr_path = os.path.dirname(os.path.abspath(os.path.expanduser(__file__)))
 sys.path.append(os.path.join(curr_path, '..', '..'))
@@ -175,6 +176,21 @@ test_data = nlp.data.PrefetchingStream(test_data)
 # Build the model
 ###############################################################################
 
+class ParallelBigRNN(Parallelizable):
+    def __init__(self, model, loss):
+        self._model = model
+        self._loss = loss
+
+    def forward_backward(self, data):
+        X, y, m, s, h = data
+        with autograd.record():
+            output, hidden, new_target = self._model(X, y, h, s)
+            output = output.reshape((-3, -1))
+            new_target = new_target.reshape((-1,))
+            ls = self._loss(output, new_target) * m.reshape((-1,))
+            ls = ls / args.batch_size
+            ls.backward()
+        return hidden, ls
 
 eval_model = nlp.model.language_model.BigRNN(ntokens, args.emsize, args.nhid,
                                              args.nlayers, args.nproj,
@@ -208,7 +224,8 @@ def train():
     model.hybridize(static_alloc=True, static_shape=True)
     encoder_params = model.encoder.collect_params().values()
     embedding_params = list(model.embedding.collect_params().values())
-
+    parallel_model = ParallelBigRNN(model, loss)
+    parallel = Parallel(len(context), parallel_model)
     for epoch in range(from_epoch, args.epochs):
         sys.stdout.flush()
         total_L = 0.0
@@ -225,16 +242,14 @@ def train():
             nbatch += 1
             hiddens = detach(hiddens)
             Ls = []
-            with autograd.record():
-                for j, (X, y, m, s, h) in enumerate(zip(data, target, mask, sample, hiddens)):
-                    output, h, new_target = model(X, y, h, s)
-                    output = output.reshape((-3, -1))
-                    new_target = new_target.reshape((-1,))
-                    l = loss(output, new_target) * m.reshape((-1,))
-                    Ls.append(l/args.batch_size)
-                    hiddens[j] = h
+            for _, batch in enumerate(zip(data, target, mask, sample, hiddens)):
+                parallel.put(batch)
 
-            autograd.backward(Ls)
+            for i in range(len(data)):
+                hidden, ls = parallel.get()
+                index = context.index(hidden[0].context)
+                hiddens[index] = hidden
+                Ls.append(ls)
 
             # prefetch the next batch of data
             try:
