@@ -1038,7 +1038,7 @@ class BERTSentenceTransform(object):
         - tokenize the input sequences
         - insert [CLS], [SEP] as necessary
         - generate type ids to indicate whether a token belongs to the first
-            sequence or the second sequence.
+        sequence or the second sequence.
         - generate valid length
 
         For sequence pairs, the input is a tuple of 2 strings:
@@ -1051,17 +1051,19 @@ class BERTSentenceTransform(object):
             text_a: 'is this jack ##son ##ville ?'
             text_b: 'no it is not .'
         Processed:
-            tokens:  '[CLS] is this jack ##son ##ville ? [SEP] no it is not . [SEP]'
+            tokens: '[CLS] is this jack ##son ##ville ? [SEP] no it is not . [SEP]'
             type_ids: 0     0  0    0    0     0       0 0     1  1  1  1   1 1
             valid_length: 14
 
-        For single sequences, the input is a tuple of single string: text_a.
+        For single sequences, the input is a tuple of single string:
+        text_a.
+
         Inputs:
             text_a: 'the dog is hairy .'
         Tokenization:
             text_a: 'the dog is hairy .'
         Processed:
-            text_a:  '[CLS] the dog is hairy . [SEP]'
+            text_a: '[CLS] the dog is hairy . [SEP]'
             type_ids: 0     0   0   0  0     0 0
             valid_length: 7
 
