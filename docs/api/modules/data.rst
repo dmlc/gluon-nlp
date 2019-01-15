@@ -201,7 +201,6 @@ with `Dataset.transform` method.
     NLTKMosesDetokenizer
     BERTTokenizer
     BERTSentenceTransform
-    BERTDatasetTransform
 
 Samplers
 --------

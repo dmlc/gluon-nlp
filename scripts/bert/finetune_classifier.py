@@ -44,10 +44,10 @@ import mxnet as mx
 from mxnet import gluon
 import gluonnlp as nlp
 from gluonnlp.model import bert_12_768_12
-from gluonnlp.data import BERTTokenizer, BERTDatasetTransform
+from gluonnlp.data import BERTTokenizer
 
 from bert import BERTClassifier
-from dataset import MRPCDataset
+from dataset import MRPCDataset, BERTDatasetTransform
 
 parser = argparse.ArgumentParser(description='BERT sentence pair classification example.'
                                              'We fine-tune the BERT model on MRPC')
