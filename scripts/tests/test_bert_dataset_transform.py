@@ -37,7 +37,8 @@ def test_bert_dataset_transform():
     tokenizer = BERTTokenizer(vocab=bert_vocab)
 
     # test BERTDatasetTransform for classification task
-    bert_cls_dataset_t = BERTDatasetTransform(tokenizer, [label_cls], 15, pad=True,
+    bert_cls_dataset_t = BERTDatasetTransform(tokenizer, 15,
+                                              labels=[label_cls], pad=True,
                                               pair=True, label_dtype='int32')
     token_ids, length, type_ids, label_ids = bert_cls_dataset_t((text_a, text_b, label_cls))
 
@@ -66,7 +67,7 @@ def test_bert_dataset_transform():
 
     # test BERTDatasetTransform for regression task
     label_reg = 0.2
-    bert_reg_dataset_t = BERTDatasetTransform(tokenizer, [label_reg], 15, pad=True,
+    bert_reg_dataset_t = BERTDatasetTransform(tokenizer, 15, pad=True,
                                               pair=True, label_dtype='float32')
     token_ids, length, type_ids, label_reg_val = bert_reg_dataset_t((text_a, text_b, label_reg))
     assert all(token_ids == valid_token_ids)

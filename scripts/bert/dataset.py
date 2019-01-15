@@ -14,7 +14,7 @@
 # limitations under the License.
 """BERT datasets."""
 
-__all__ = ['MRPCDataset']
+__all__ = ['MRPCDataset', 'BERTDatasetTransform']
 
 import os
 import numpy as np
@@ -57,10 +57,11 @@ class BERTDatasetTransform(object):
     ----------
     tokenizer : BERTTokenizer.
         Tokenizer for the sentences.
-    labels : list of int or float.
-        List of all label ids for the classification task and regressing task.
     max_seq_length : int.
         Maximum sequence length of the sentences.
+    labels : list of int , float or None. defaults None
+        List of all label ids for the classification task and regressing task.
+        If labels is None, the default task is regression
     pad : bool, default True
         Whether to pad the sentences to maximum length.
     pair : bool, default True
@@ -70,12 +71,14 @@ class BERTDatasetTransform(object):
         label_dtype = float32 for regression task
     """
 
-    def __init__(self, tokenizer, labels, max_seq_length,
+    def __init__(self, tokenizer, max_seq_length, labels=None,
                  pad=True, pair=True, label_dtype='float32'):
         self.label_dtype = label_dtype
-        self._label_map = {}
-        for (i, label) in enumerate(labels):
-            self._label_map[label] = i
+        self.labels = labels
+        if self.labels:
+            self._label_map = {}
+            for (i, label) in enumerate(labels):
+                self._label_map[label] = i
         self._bert_xform = BERTSentenceTransform(tokenizer, max_seq_length, pad=pad, pair=pair)
 
     def __call__(self, line):
@@ -134,14 +137,8 @@ class BERTDatasetTransform(object):
         input_ids, valid_length, segment_ids = self._bert_xform(line[:-1])
 
         label = line[-1]
-        # classification task
-        if self.label_dtype == 'int32':
-            label_id = self._label_map[label]
-            label_id = np.array([label_id], dtype='int32')
-            return input_ids, valid_length, segment_ids, label_id
-        # regression task
-        elif self.label_dtype == 'float32':
-            label = np.array([float(label)], dtype='float32')
-            return input_ids, valid_length, segment_ids, label
-        else:
-            raise ValueError('Lable dtype does not belong to [float32, int32]')
+        if self.labels:  # for classification task
+            label = self._label_map[label]
+        label = np.array([label], dtype=self.label_dtype)
+
+        return input_ids, valid_length, segment_ids, label
