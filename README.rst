@@ -45,7 +45,7 @@ In particular, if you want the ``GluonNLP`` built on most recent ``MXNet`` relea
 
 ::
 
-    pip install --pre --upgrade mxnet=='1.3.1'
+    pip install --upgrade mxnet=='1.3.1'
 
 Else, if you want the ``GluonNLP`` built on ``MXNet`` nightly builds:
 
