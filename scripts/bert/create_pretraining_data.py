@@ -30,7 +30,6 @@ import mxnet as mx
 import gluonnlp as nlp
 
 from gluonnlp.data import BERTTokenizer
-from utils import printable_text
 
 
 logging.getLogger().setLevel(logging.DEBUG)
@@ -110,15 +109,13 @@ class TrainingInstance(object):
 
     def __str__(self):
         s = ''
-        s += 'tokens: %s\n' % (' '.join(
-            [printable_text(x) for x in self.tokens]))
+        s += 'tokens: %s\n' % (' '.join(self.tokens))
         s += 'segment_ids: %s\n' % (' '.join(
             [str(x) for x in self.segment_ids]))
         s += 'is_random_next: %s\n' % self.is_random_next
         s += 'masked_lm_positions: %s\n' % (' '.join(
             [str(x) for x in self.masked_lm_positions]))
-        s += 'masked_lm_labels: %s\n' % (' '.join(
-            [printable_text(x) for x in self.masked_lm_labels]))
+        s += 'masked_lm_labels: %s\n' % (' '.join(self.masked_lm_labels))
         s += '\n'
         return s
 
@@ -185,8 +182,7 @@ def write_instance_to_example_files(instances, tokenizer, max_seq_length,
 
         if inst_index < 20:
             logging.info('*** Example ***')
-            logging.info('tokens: %s' % ' '.join(  # pylint: disable=W1201
-                [printable_text(x) for x in instance.tokens]))
+            logging.info('tokens: %s' % ' '.join(instance.tokens))  # pylint: disable=W1201
 
             for feature_name in features.keys():
                 feature = features[feature_name]

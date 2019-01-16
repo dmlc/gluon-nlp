@@ -1115,21 +1115,15 @@ class BERTSentenceTransform(object):
         # the entire model is fine-tuned.
         vocab = self._tokenizer.vocab
         tokens = []
-        segment_ids = []
         tokens.append(vocab.cls_token)
-        segment_ids.append(0)
-        for token in tokens_a:
-            tokens.append(token)
-            segment_ids.append(0)
+        tokens.extend(tokens_a)
         tokens.append(vocab.sep_token)
-        segment_ids.append(0)
+        segment_ids = [0]*len(tokens)
 
         if tokens_b:
-            for token in tokens_b:
-                tokens.append(token)
-                segment_ids.append(1)
+            tokens.extend(tokens_b)
             tokens.append(vocab.sep_token)
-            segment_ids.append(1)
+            segment_ids.extend([1]*(len(tokens)-len(segment_ids)))
 
         input_ids = self._tokenizer.convert_tokens_to_ids(tokens)
 
