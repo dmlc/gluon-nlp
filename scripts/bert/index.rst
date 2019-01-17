@@ -41,28 +41,16 @@ It gets validation accuracy of 87.3%, whereas the the original Tensorflow implem
 BERT for SQuAD
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-GluonNLP provides the following example script to fine-tune SQuAD with pre-trained
-BERT model.
+GluonNLP provides the following example script to fine-tune SQuAD with pre-trained BERT model.
 
-Use the following command to fine-tune the BERT model for SQuAD1.1 dataset.
+The throughputs of training and inference are based on fixed sequence length=384 and input embedding size=768, which are 1.65 samples/s and 3.97 samples/s respectively.
 
-Note that this will require more than 12G of GPU memory.
+In total, one training epoch costs 4466.87s and inference costs 113.99s on SQuAD v1.1.
+
+The evaluation result of the model after one training epoch is 'Exact Match': 78.78, 'F1': 86.99.
+
+To reproduce the above result, simply run the following command with MXNet==1.5.0b20190116.
  
 .. code-block:: console
 
     $ python finetune_squad.py --optimizer adam --gpu
-
-If you are using less than 12G of GPU memory, you can use the following command to achieve a similar effect. But need Mxnet>1.5.0
-
-Note that this will require approximately no more than 8G of GPU memory. If your GPU memory is too small, you can adjust **accumulate** and **batch_size**.
-
-.. code-block:: console
-
-    $ python finetune_squad.py --optimizer bertadam --accumulate 2 --batch_size 6 --gpu
-
-
-Should produce an output like this. Explain that the F1 score on the dev dataset is `88.45% <https://raw.githubusercontent.com/dmlc/web-data/master/gluonnlp/logs/bert/finetune_squad.log>`_
-
-.. code-block:: console
-
-    {'exact_match': 81.21097445600756, 'f1': 88.4551346176558}
