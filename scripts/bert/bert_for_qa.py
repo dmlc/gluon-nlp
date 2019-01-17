@@ -20,11 +20,11 @@
 
 __all__ = ['BertForQA', 'BertForQALoss']
 
-from mxnet.gluon import Block, loss, nn
+from mxnet.gluon import HybridBlock, loss, nn
 from mxnet.gluon.loss import Loss
 
 
-class BertForQA(Block):
+class BertForQA(HybridBlock):
     """Model for SQuAD task with BERT.
 
     The model feeds token ids and token type ids into BERT to get the
@@ -46,7 +46,9 @@ class BertForQA(Block):
         with self.name_scope():
             self.classifier = nn.Dense(units=2, flatten=False)
 
-    def forward(self, inputs, token_types, valid_length=None):  # pylint: disable=arguments-differ
+
+    def hybrid_forward(self, F, inputs, token_types, valid_length=None):
+        # pylint: disable=arguments-differ
         """Generate the unnormalized score for the given the input sequences.
 
         Parameters

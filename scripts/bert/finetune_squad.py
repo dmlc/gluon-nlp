@@ -185,7 +185,20 @@ parser.add_argument('--gpu',
                     action='store_true',
                     help='whether to use gpu for finetuning')
 
+parser.add_argument('--seq_length',
+                    type=int,
+                    default=384,
+                    help='The sequence length of the input')
+
+parser.add_argument('--input_size',
+                    type=int,
+                    default=768,
+                    help='The embedding size of the input')
+
 args = parser.parse_args()
+
+os.environ['SEQLENGTH'] = str(args.seq_length)
+os.environ['INPUTSIZE'] = str(args.input_size)
 
 output_dir = args.output_dir
 if not os.path.exists(output_dir):
@@ -316,6 +329,7 @@ def train():
     for epoch_id in range(epochs):
         step_loss = 0.0
         tic = time.time()
+        epoch_tic = time.time()
         for batch_id, data in enumerate(train_dataloader):
             # set grad to zero for gradient accumulation
             if accumulate:
@@ -354,14 +368,17 @@ def train():
 
             if (batch_id + 1) % log_interval == 0:
                 toc = time.time()
-                log.info('Epoch: {}, Batch: {}/{}, Loss={:.4f}, lr={:.7f} Time cost={:.1f}'
+                log.info('Epoch: {}, Batch: {}/{}, Loss={:.4f}, lr={:.7f} Time cost={:.2f} s'
                          .format(epoch_id, batch_id, len(train_dataloader),
                                  step_loss / log_interval,
                                  trainer.learning_rate, toc - tic))
                 tic = time.time()
                 step_loss = 0.0
-
-    net.save_parameters(os.path.join(output_dir, 'net_parameters'))
+        epoch_toc = time.time()
+        log.info('Epoch: {}, Time cost={:.2f} s, Thoughput={:.2f} samples/s'
+                 .format(epoch_id, epoch_toc - epoch_tic, len(train_dataloader)/(epoch_toc - epoch_tic)))
+        net.save_parameters(os.path.join(output_dir, 'net_parameters'))
+        evaluate()
 
 
 def evaluate():
@@ -404,6 +421,7 @@ def evaluate():
         '_Result', ['example_id', 'start_logits', 'end_logits'])
     all_results = {}
 
+    tic = time.time()
     for data in dev_dataloader:
         example_ids, inputs, token_types, valid_length, _, _ = data
 
@@ -422,6 +440,11 @@ def evaluate():
             all_results[example_id].append(
                 _Result(example_id, start.tolist(), end.tolist()))
     log.info('Get prediction results...')
+
+    toc = time.time()
+    log.info('Inference time cost={:.2f} s, Thoughput={:.2f} samples/s'
+             .format(toc - tic,
+                     len(dev_dataloader) / (toc - tic)))
 
     all_predictions, all_nbest_json, scores_diff_json = predictions(
         dev_dataset=dev_dataset,

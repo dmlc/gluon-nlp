@@ -31,6 +31,7 @@ from mxnet.gluon import nn
 from mxnet.gluon.block import HybridBlock
 from mxnet.gluon.model_zoo import model_store
 from gluonnlp.utils.parallel import Parallelizable
+
 from .seq2seq_encoder_decoder import Seq2SeqEncoder, Seq2SeqDecoder, _get_attention_cell
 from .block import GELU
 from .translation import NMTModel
@@ -260,7 +261,7 @@ class BaseTransformerEncoderCell(HybridBlock):
         return outputs, additional_outputs
 
 
-class BaseTransformerEncoder(HybridBlock, Seq2SeqEncoder):
+class BaseTransformerEncoder(HybridBlock):
     """Base Structure of the Transformer Encoder.
 
     Parameters
@@ -369,30 +370,10 @@ class BaseTransformerEncoder(HybridBlock, Seq2SeqEncoder):
                     prefix='transformer%d_'%i)
 
 
-    def __call__(self, inputs, states=None, valid_length=None): #pylint: disable=arguments-differ
-        """Encoder the inputs given the states and valid sequence length.
-
-        Parameters
-        ----------
-        inputs : NDArray
-            Input sequence. Shape (batch_size, length, C_in)
-        states : list of NDArrays or None
-            Initial states. The list of initial states and masks
-        valid_length : NDArray or None
-            Valid lengths of each sequence. This is usually used when part of sequence has
-            been padded. Shape (batch_size,)
-
-        Returns
-        -------
-        encoder_outputs: list
-            Outputs of the encoder. Contains:
-
-            - outputs of the transformer encoder. Shape (batch_size, length, C_out)
-            - additional_outputs of all the transformer encoder
-        """
-        return super(BaseTransformerEncoder, self).__call__(inputs, states, valid_length)
-
-    def forward(self, inputs, states=None, valid_length=None, steps=None): # pylint: disable=arguments-differ
+    def hybrid_forward(self, F, inputs, states=None,
+                       valid_length=None, steps=None,
+                       position_weight=None):
+        # pylint: disable=arguments-differ
         """
 
         Parameters
@@ -414,52 +395,24 @@ class BaseTransformerEncoder(HybridBlock, Seq2SeqEncoder):
             (batch_size, num_heads, length, length)
 
         """
-        length = inputs.shape[1]
+        length = int(os.environ['SEQLENGTH'])
+        C_in = int(os.environ['INPUTSIZE'])
         if valid_length is not None:
-            mask = mx.nd.broadcast_lesser(
-                mx.nd.arange(length, ctx=valid_length.context).reshape((1, -1)),
+            mask = F.broadcast_lesser(
+                F.arange(length).reshape((1, -1)),
                 valid_length.reshape((-1, 1)))
-            mask = mx.nd.broadcast_axes(mx.nd.expand_dims(mask, axis=1), axis=1, size=length)
+            mask = F.broadcast_axes(F.expand_dims(mask, axis=1), axis=1, size=length)
             if states is None:
                 states = [mask]
             else:
                 states.append(mask)
         if self._scale_embed:
-            inputs = inputs * math.sqrt(inputs.shape[-1])
-        steps = mx.nd.arange(length, ctx=inputs.context)
+            inputs = inputs * math.sqrt(C_in)
+        steps = F.arange(length)
         if states is None:
             states = [steps]
         else:
             states.append(steps)
-        if valid_length is not None:
-            step_output, additional_outputs =\
-                super(BaseTransformerEncoder, self).forward(inputs, states, valid_length)
-        else:
-            step_output, additional_outputs =\
-                super(BaseTransformerEncoder, self).forward(inputs, states)
-        return step_output, additional_outputs
-
-    def hybrid_forward(self, F, inputs, states=None, valid_length=None, position_weight=None):
-        # pylint: disable=arguments-differ
-        """
-
-        Parameters
-        ----------
-        inputs : NDArray or Symbol, Shape(batch_size, length, C_in)
-        states : list of NDArray or Symbol
-        valid_length : NDArray or Symbol
-        position_weight : NDArray or Symbol
-
-        Returns
-        -------
-        outputs : NDArray or Symbol
-            The output of the encoder. Shape is (batch_size, length, C_out)
-        additional_outputs : list
-            Either be an empty list or contains the attention weights in this step.
-            The attention weights will have shape (batch_size, length, length) or
-            (batch_size, num_heads, length, length)
-
-        """
         if states is not None:
             steps = states[-1]
             # Positional Encoding
@@ -486,6 +439,7 @@ class BaseTransformerEncoder(HybridBlock, Seq2SeqEncoder):
             outputs = F.SequenceMask(outputs, sequence_length=valid_length,
                                      use_sequence_length=True, axis=1)
         return outputs, additional_outputs
+
 
 ###############################################################################
 #                                ENCODER                                      #
