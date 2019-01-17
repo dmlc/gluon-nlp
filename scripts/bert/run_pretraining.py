@@ -41,7 +41,7 @@ import time
 from mxnet import gluon
 from mxnet.gluon.data import ArrayDataset, DataLoader
 import gluonnlp as nlp
-from gluonnlp.utils import clip_grad_global_norm
+from gluonnlp.utils import clip_grad_global_norm, Parallelizable, Parallel
 from gluonnlp.metric import MaskedAccuracy
 from gluonnlp.model import bert_12_768_12
 from gluonnlp.data.batchify import Tuple, Stack, Pad
@@ -55,6 +55,7 @@ parser.add_argument('--num_buckets', type=int, default=1,
                     help='Number of buckets for variable length sequence sampling')
 parser.add_argument('--dtype', type=str, default='float32', help='data dtype')
 parser.add_argument('--batch_size', type=int, default=8, help='Batch size per GPU.')
+parser.add_argument('--accumulate', type=int, default=1, help='Number of batches for gradient accumulation.')
 parser.add_argument('--batch_size_eval', type=int, default=8, help='Batch size per GPU for evaluation.')
 parser.add_argument('--dataset_name', type=str, default='book_corpus_wiki_en_uncased',
                     help='The dataset from which the vocabulary is created. '
@@ -77,6 +78,7 @@ parser.add_argument('--ckpt_interval', type=int, default=10, help='Checkpoint in
 parser.add_argument('--gpus', type=str, default='0', help='List of GPUs to use. e.g. 1,3')
 parser.add_argument('--seed', type=int, default=0, help='Random seed')
 parser.add_argument('--verbose', action='store_true', help='verbose logging')
+parser.add_argument('--profile', action='store_true', help='profile the program')
 parser.add_argument('--do-training', action='store_true',
                     help='Whether to do training on the training set.')
 parser.add_argument('--do-eval', action='store_true',
@@ -104,7 +106,6 @@ def get_model(ctx):
 
     model.cast(args.dtype)
     model.hybridize(static_alloc=True)
-    logging.debug(model)
 
     # losses
     nsp_loss = gluon.loss.SoftmaxCELoss()
@@ -131,7 +132,8 @@ def get_dataset(data, batch_size, is_train):
         batchify_fn = Tuple(Pad(), Pad(), Pad(), Pad(), Stack(), Pad(), Stack())
         dataloader = DataLoader(dataset=dataset,
                                 batch_sampler=sampler,
-                                batchify_fn=batchify_fn)
+                                batchify_fn=batchify_fn,
+                                num_workers=0)
         t1 = time.time()
         logging.debug('Dataloader creation cost = %.2f s'%(t1-t0))
         logging.debug('Batch Sampler:\n%s', sampler.stats())
@@ -148,6 +150,35 @@ def split_and_load(arrs, ctx):
         # split and load
         loaded_arrs = [gluon.utils.split_and_load(arr, ctx, even_split=False) for arr in arrs]
         return zip(*loaded_arrs)
+
+class ParallelBERT(Parallelizable):
+    """Data parallel BERT model.
+
+    Parameters
+    ----------
+    model : Block
+        The BERT model.
+    """
+    def __init__(self, model, mlm_loss, nsp_loss, vocab_size):
+        self._model = model
+        self._mlm_loss = mlm_loss
+        self._nsp_loss = nsp_loss
+        self._vocab_size = vocab_size
+
+    def forward_backward(self, x):
+        input_id, masked_id, masked_position, masked_weight, next_sentence_label, segment_id, valid_length = x
+        num_masks = masked_weight.sum() + 1e-8
+        valid_length = valid_length.reshape(-1)
+        valid_length = valid_length.astype('float32', copy=False)
+        masked_id = masked_id.reshape(-1)
+        with mx.autograd.record():
+            _, _, classified, decoded = self._model(input_id, segment_id, valid_length, masked_position)
+            decoded = decoded.reshape((-1, self._vocab_size))
+            ls1 = self._mlm_loss(decoded, masked_id, masked_weight.reshape((-1, 1))).sum() / num_masks
+            ls2 = self._nsp_loss(classified, next_sentence_label).mean()
+            ls = ls1 + ls2
+        ls.backward()
+        return ls, next_sentence_label, classified, masked_id, decoded, masked_weight, ls1, ls2, valid_length
 
 def forward(data, model, mlm_loss, nsp_loss, vocab_size):
     input_id, masked_id, masked_position, masked_weight, next_sentence_label, segment_id, valid_length = data
@@ -244,6 +275,7 @@ def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx):
     if args.ckpt_dir and args.start_step:
         trainer.load_states(os.path.join(args.ckpt_dir, '%07d.states'%args.start_step))
 
+    accumulate = args.accumulate
     num_train_steps = args.num_steps
     warmup_ratio = args.warmup_ratio
     num_warmup_steps = int(num_train_steps * warmup_ratio)
@@ -252,64 +284,97 @@ def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx):
     # Do not apply weight decay on LayerNorm and bias terms
     for _, v in model.collect_params('.*beta|.*gamma|.*bias').items():
         v.wd_mult = 0.0
+    for p in params:
+        p.grad_req = 'add'
 
     train_begin_time = time.time()
     begin_time = time.time()
     local_mlm_loss = 0
     local_nsp_loss = 0
     local_num_tks = 0
+    batch_num = 0
     step_num = args.start_step
+
+    parallel_model = ParallelBERT(model, mlm_loss, nsp_loss, vocab_size)
+    parallel = Parallel(len(ctx), parallel_model)
+
     while step_num < num_train_steps:
         for _, dataloader in enumerate(data_train):
-            for _, data in enumerate(dataloader):
-                step_num += 1
-                # update learning rate
-                if step_num <= num_warmup_steps:
-                    new_lr = lr * step_num / num_warmup_steps
-                else:
-                    offset = (step_num - num_warmup_steps) * lr / (num_train_steps - num_warmup_steps)
-                    new_lr = lr - offset
-                trainer.set_learning_rate(new_lr)
-                data_list = split_and_load(data, ctx)
+            iterator = enumerate(dataloader)
+            _, data_batch = next(iterator)
+            while True:
+            #for _, data_batch in enumerate(dataloader):
+                if batch_num % accumulate == 0:
+                    step_num += 1
+                    # zero grad
+                    model.collect_params().zero_grad()
+                    # update learning rate
+                    if step_num <= num_warmup_steps:
+                        new_lr = lr * step_num / num_warmup_steps
+                    else:
+                        offset = (step_num - num_warmup_steps) * lr / (num_train_steps - num_warmup_steps)
+                        new_lr = lr - offset
+                    trainer.set_learning_rate(new_lr)
+                    if args.profile:
+                        if step_num == 2:
+                            mx.nd.waitall()
+                            mx.profiler.set_config(profile_memory=False, profile_symbolic=True,
+                                                   profile_imperative=True, filename='profile.json',
+                                                   aggregate_stats=True)
+                            mx.profiler.set_state('run')
+                        if step_num == 3:
+                            mx.nd.waitall()
+                            mx.profiler.set_state('stop')
+                            logging.info(mx.profiler.dumps())
+                            mx.profiler.dump()
+                            exit()
+                if data_batch[0].shape[0] < len(ctx):
+                    continue
+                data_list = split_and_load(data_batch, ctx)
                 loss_list = []
                 ns_label_list, ns_pred_list = [], []
                 mask_label_list, mask_pred_list, mask_weight_list = [], [], []
-                for data in data_list:
-                    with mx.autograd.record():
-                        out = forward(data, model, mlm_loss, nsp_loss, vocab_size)
-                        ls, next_sentence_label, classified, masked_id, decoded, masked_weight, ls1, ls2, valid_length = out
-                        loss_list.append(ls)
-                        ns_label_list.append(next_sentence_label)
-                        ns_pred_list.append(classified)
-                        mask_label_list.append(masked_id)
-                        mask_pred_list.append(decoded)
-                        mask_weight_list.append(masked_weight)
 
+                # parallel forward / backward
+                for data in data_list:
+                    parallel.put(data)
+                for _ in range(len(ctx)):
+                    ls, next_sentence_label, classified, masked_id, decoded, masked_weight, ls1, ls2, valid_length = parallel.get()
+                    loss_list.append(ls)
+                    ns_label_list.append(next_sentence_label)
+                    ns_pred_list.append(classified)
+                    mask_label_list.append(masked_id)
+                    mask_pred_list.append(decoded)
+                    mask_weight_list.append(masked_weight)
                     local_mlm_loss += ls1.as_in_context(mx.cpu())
                     local_nsp_loss += ls2.as_in_context(mx.cpu())
                     local_num_tks += valid_length.sum().as_in_context(mx.cpu())
 
-                mx.autograd.backward(loss_list)
-                trainer.allreduce_grads()
-                clip_grad_global_norm(params, 1)
-                trainer.update(1)
+                # update
+                if (batch_num + 1) % accumulate == 0:
+                    trainer.allreduce_grads()
+                    clip_grad_global_norm(params, 1)
+                    trainer.update(1)
                 nsp_metric.update(ns_label_list, ns_pred_list)
                 mlm_metric.update(mask_label_list, mask_pred_list, mask_weight_list)
                 # logging
-                if (step_num + 1) % (args.log_interval) == 0:
-                    log(begin_time, local_num_tks, local_mlm_loss, local_nsp_loss, step_num, mlm_metric, nsp_metric, trainer)
+                if (step_num + 1) % (args.log_interval) == 0 and (batch_num + 1) % accumulate == 0:
+                    print(local_num_tks.asscalar())
+                    log(begin_time, local_num_tks, local_mlm_loss / accumulate,
+                        local_nsp_loss / accumulate, step_num, mlm_metric, nsp_metric, trainer)
                     begin_time = time.time()
                     local_mlm_loss = local_nsp_loss = local_num_tks = 0
                     mlm_metric.reset_local()
                     nsp_metric.reset_local()
 
                 # saving checkpoints
-                if args.ckpt_dir and (step_num + 1) % (args.ckpt_interval) == 0:
+                if args.ckpt_dir and (step_num + 1) % (args.ckpt_interval) == 0 and (batch_num + 1) % accumulate == 0:
                     param_path = os.path.join(args.ckpt_dir, '%07d.params'%step_num)
                     trainer_path = os.path.join(args.ckpt_dir, '%07d.states'%step_num)
                     logging.info('[step %d] Saving checkpoints to %s, %s.'%(step_num, param_path, trainer_path))
                     model.save_parameters(param_path)
                     trainer.save_states(trainer_path)
+                batch_num += 1
     mx.nd.waitall()
     train_end_time = time.time()
     logging.info('Train cost={:.1f}s'.format(train_end_time - train_begin_time))

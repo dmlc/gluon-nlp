@@ -86,7 +86,8 @@ class MaskedAccuracy(EvalMetric):
         """
         labels, preds = check_label_shapes(labels, preds, True)
         masks = [None] * len(labels) if masks is None else masks
-
+        num_corrects = []
+        num_insts = []
         for label, pred_label, mask in zip(labels, preds, masks):
             if pred_label.shape != label.shape:
                 pred_label = mx.ndarray.argmax(pred_label, axis=self.axis)
@@ -98,11 +99,18 @@ class MaskedAccuracy(EvalMetric):
             if mask is not None:
                 mask = mask.astype('int32', copy=False).reshape((-1,))
                 check_label_shapes(label, mask)
-                num_correct = ((pred_label == label) * mask).sum().asscalar()
-                num_inst =  mask.sum().asscalar()
+                num_correct = ((pred_label == label) * mask).sum()
+                num_inst =  mask.sum()
             else:
-                num_correct = (pred_label == label).sum().asscalar()
+                num_correct = (pred_label == label).sum()
                 num_inst =  len(label)
+            num_corrects.append(num_correct)
+            num_insts.append(num_inst)
+        for num_correct, num_inst in zip(num_corrects, num_insts):
+            if isinstance(num_correct, mx.nd.NDArray):
+                num_correct = num_correct.asscalar()
+            if isinstance(num_inst, mx.nd.NDArray):
+                num_inst = num_inst.asscalar()
             self.sum_metric += num_correct
             self.global_sum_metric += num_correct
             self.num_inst += num_inst

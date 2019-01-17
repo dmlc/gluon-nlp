@@ -48,3 +48,7 @@ PYTHONPATH=~/gluon-nlp/src/:~/mxnet/python/ python create_pretraining_data.py --
 PYTHONPATH=~/nlp/src/:~/mxnet/python/ python create_pretraining_data.py --input_file sample_text.txt --output_dir inputs --vocab_file /home/ubuntu/.mxnet/models/book_corpus_wiki_en_uncased-c3e2bd00.vocab --do_lower_case --max_seq_length 128 --max_predictions_per_seq 20 --dupe_factor 5 --num_workers 1 --num_outputs 1 --format numpy
 
 MXNET_CUDA_NUM_RAND_STATES=3276800 MXNET_CUDA_MIN_NUM_RAND_PER_THREAD=8 PYTHONPATH=~/nlp/src:~/mxnet-master/python/ python run_pretraining.py --data "inputs/*" --num_steps 20 --pretrained --log_interval 1 --data_eval "inputs/*" --batch_size_eval 8 --lr 2e-5 --batch_size 32  --warmup_ratio 0.5 --do-training --do-eval --seed 2 --gpus 0 --ckpt_dir ckpt
+
+
+# TODO load from ckpt
+MXNET_CUDA_NUM_RAND_STATES=3276800 MXNET_CUDA_MIN_NUM_RAND_PER_THREAD=8 PYTHONPATH=~/nlp/src:~/mxnet-master/python/ python run_pretraining.py --data "/home/ubuntu/samples/book-enwiki/*/*/*.npz" --num_steps 1000000 --pretrained --log_interval 5 --data_eval "inputs/*" --batch_size_eval 8 --lr 1e-4 --batch_size 4  --warmup_ratio 0.01 --gpus 0,1,2,3,4,5,6,7 --ckpt_dir ckpt --start_step 0 --do-training --ckpt_interval 100 --verbose --accumulate 8
