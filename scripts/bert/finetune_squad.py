@@ -298,7 +298,7 @@ def train():
 
     num_train_examples = len(train_data_transform)
     step_size = batch_size * accumulate if accumulate else batch_size
-    num_train_steps = int(num_train_examples / step_size * args.epochs)
+    num_train_steps = int(num_train_examples / step_size * epochs)
     num_warmup_steps = int(num_train_steps * warmup_ratio)
     step_num = 0
 
