@@ -49,6 +49,7 @@ class BertForQA(HybridBlock):
 
     def hybrid_forward(self, F, inputs, token_types, valid_length=None):
         # pylint: disable=arguments-differ
+        # pylint: disable=unused-argument
         """Generate the unnormalized score for the given the input sequences.
 
         Parameters
