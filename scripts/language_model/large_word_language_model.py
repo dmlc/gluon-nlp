@@ -177,6 +177,7 @@ test_data = nlp.data.PrefetchingStream(test_data)
 ###############################################################################
 
 class ParallelBigRNN(Parallelizable):
+    """Data parallel BigRNN model for training."""
     def __init__(self, model, loss):
         self._model = model
         self._loss = loss
@@ -247,6 +248,7 @@ def train():
 
             for i in range(len(data)):
                 hidden, ls = parallel.get()
+                # hidden states are ordered by context id
                 index = context.index(hidden[0].context)
                 hiddens[index] = hidden
                 Ls.append(ls)
