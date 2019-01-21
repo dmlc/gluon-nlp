@@ -37,3 +37,20 @@ Use the following command to fine-tune the BERT model for classification on the 
    $ GLUE_DIR=glue_data python finetune_classifier.py --batch_size 32 --optimizer bertadam --epochs 3 --gpu --seed 1 --lr 2e-5
 
 It gets validation accuracy of 87.3%, whereas the the original Tensorflow implementation give evaluation results between 84% and 88%.
+
+BERT for SQuAD
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+GluonNLP provides the following example script to fine-tune SQuAD with pre-trained BERT model.
+
+The throughputs of training and inference are based on fixed sequence length=384 and input embedding size=768, which are 1.65 samples/s and 3.97 samples/s respectively.
+
+In total, one training epoch costs 4466.87s and inference costs 113.99s on SQuAD v1.1.
+
+The evaluation result of the model after one training epoch is 'Exact Match': 78.78, 'F1': 86.99.
+
+To reproduce the above result, simply run the following command with MXNet==1.5.0b20190116.
+ 
+.. code-block:: console
+
+    $ python finetune_squad.py --optimizer adam --gpu

@@ -22,7 +22,7 @@ __all__ = ['Seq2SeqEncoder']
 from functools import partial
 import mxnet as mx
 from mxnet.gluon import rnn
-from mxnet.gluon.block import Block
+from mxnet.gluon.block import Block, HybridBlock
 from gluonnlp.model import AttentionCell, MLPAttentionCell, DotProductAttentionCell, \
     MultiHeadAttentionCell
 
@@ -127,7 +127,7 @@ def _nested_sequence_last(data, valid_length):
         raise NotImplementedError
 
 
-class Seq2SeqEncoder(Block):
+class Seq2SeqEncoder(HybridBlock):
     r"""Base class of the encoders in sequence to sequence learning models.
     """
     def __call__(self, inputs, valid_length=None, states=None):  #pylint: disable=arguments-differ
