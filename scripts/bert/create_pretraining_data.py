@@ -28,7 +28,9 @@ import collections
 import random
 import mxnet as mx
 import gluonnlp as nlp
-import tokenizer as tokenization
+
+from gluonnlp.data import BERTTokenizer
+
 
 logging.getLogger().setLevel(logging.DEBUG)
 
@@ -107,15 +109,13 @@ class TrainingInstance(object):
 
     def __str__(self):
         s = ''
-        s += 'tokens: %s\n' % (' '.join(
-            [tokenization.printable_text(x) for x in self.tokens]))
+        s += 'tokens: %s\n' % (' '.join(self.tokens))
         s += 'segment_ids: %s\n' % (' '.join(
             [str(x) for x in self.segment_ids]))
         s += 'is_random_next: %s\n' % self.is_random_next
         s += 'masked_lm_positions: %s\n' % (' '.join(
             [str(x) for x in self.masked_lm_positions]))
-        s += 'masked_lm_labels: %s\n' % (' '.join(
-            [tokenization.printable_text(x) for x in self.masked_lm_labels]))
+        s += 'masked_lm_labels: %s\n' % (' '.join(self.masked_lm_labels))
         s += '\n'
         return s
 
@@ -144,7 +144,7 @@ def write_instance_to_example_files(instances, tokenizer, max_seq_length,
 
         while len(input_ids) < max_seq_length:
             input_ids.append(pad)
-            #Padding index MUST be defined to 0 on input_mask, segment_ids
+            # Padding index MUST be defined to 0 on input_mask, segment_ids
             input_mask.append(0)
             segment_ids.append(0)
 
@@ -182,8 +182,7 @@ def write_instance_to_example_files(instances, tokenizer, max_seq_length,
 
         if inst_index < 20:
             logging.info('*** Example ***')
-            logging.info('tokens: %s' % ' '.join(  # pylint: disable=W1201
-                [tokenization.printable_text(x) for x in instance.tokens]))
+            logging.info('tokens: %s' % ' '.join(instance.tokens))  # pylint: disable=W1201
 
             for feature_name in features.keys():
                 feature = features[feature_name]
@@ -212,7 +211,7 @@ def create_training_instances(input_files, tokenizer, max_seq_length,
     for input_file in input_files:
         with io.open(input_file, 'r', encoding='UTF-8') as reader:
             while True:
-                line = tokenization.convert_to_unicode(reader.readline())
+                line = reader.readline()
                 if not line:
                     break
                 line = line.strip()
@@ -220,7 +219,7 @@ def create_training_instances(input_files, tokenizer, max_seq_length,
                 # Empty lines are used as document delimiters
                 if not line:
                     all_documents.append([])
-                tokens = tokenizer.tokenize(line)
+                tokens = tokenizer(line)
                 if tokens:
                     all_documents[-1].append(tokens)
 
@@ -442,8 +441,8 @@ def main():
     """
     logging.info('loading vocab file')
     vocab_obj = nlp.Vocab.from_json(open(args.vocab_file, 'rt').read())
-    tokenizer = tokenization.FullTokenizer(
-        vocab=vocab_obj, do_lower_case=args.do_lower_case)
+    tokenizer = BERTTokenizer(
+        vocab=vocab_obj, lower=args.do_lower_case)
 
     input_files = []
     for input_pattern in args.input_file.split(','):

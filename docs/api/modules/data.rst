@@ -199,6 +199,8 @@ with `Dataset.transform` method.
     SpacyTokenizer
     SacreMosesDetokenizer
     NLTKMosesDetokenizer
+    BERTTokenizer
+    BERTSentenceTransform
 
 Samplers
 --------
@@ -255,4 +257,4 @@ API Reference
 .. automodule:: gluonnlp.data
    :members:
    :imported-members:
-   :special-members: __iter__
+   :special-members: __iter__, __call__
