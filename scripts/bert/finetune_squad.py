@@ -301,10 +301,9 @@ def train():
     num_warmup_steps = int(num_train_steps * warmup_ratio)
     step_num = 0
 
-    def set_new_lr():
+    def set_new_lr(step_num, batch_id):
         """set new learning rate"""
         # set grad to zero for gradient accumulation
-        global step_num
         if accumulate:
             if batch_id % accumulate == 0:
                 net.collect_params().zero_grad()
@@ -319,6 +318,7 @@ def train():
                 (num_train_steps - num_warmup_steps)
             new_lr = lr - offset
         trainer.set_learning_rate(new_lr)
+        return step_num
 
     # Do not apply weight decay on LayerNorm and bias terms
     for _, v in net.collect_params('.*beta|.*gamma|.*bias').items():
@@ -336,7 +336,7 @@ def train():
         tic = time.time()
         for batch_id, data in enumerate(train_dataloader):
             # set new lr
-            set_new_lr()
+            step_num = set_new_lr(step_num, batch_id)
             # forward and backward
             with mx.autograd.record():
                 _, inputs, token_types, valid_length, start_label, end_label = data

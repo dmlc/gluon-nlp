@@ -152,7 +152,8 @@ def predictions(dev_dataset,
     all_nbest_json: dict
         All n-best predictions.
     scores_diff_json: dict
-        Record the difference between null score and the score of best non-null when version_2 is True.
+        Record the difference between null score and the score of best non-null.
+        when version_2 is True.
     """
 
     _PrelimPrediction = namedtuple('PrelimPrediction',
