@@ -262,25 +262,6 @@ loss_function.hybridize(static_alloc=True)
 
 def train():
     """Training function."""
-
-    def set_new_lr():
-        """set new learning rate"""
-        # set grad to zero for gradient accumulation
-        if accumulate:
-            if batch_id % accumulate == 0:
-                net.collect_params().zero_grad()
-                step_num += 1
-        else:
-            step_num += 1
-        # learning rate schedule
-        if step_num < num_warmup_steps:
-            new_lr = lr * step_num / num_warmup_steps
-        else:
-            offset = (step_num - num_warmup_steps) * lr / \
-                (num_train_steps - num_warmup_steps)
-            new_lr = lr - offset
-        trainer.set_learning_rate(new_lr)
-
     log.info('Loader Train data...')
     if version_2:
         train_data = SQuAD('train', version='2.0')
@@ -320,6 +301,24 @@ def train():
     num_warmup_steps = int(num_train_steps * warmup_ratio)
     step_num = 0
 
+    def set_new_lr(batch_id):
+        """set new learning rate"""
+        # set grad to zero for gradient accumulation
+        if accumulate:
+            if batch_id % accumulate == 0:
+                net.collect_params().zero_grad()
+                step_num += 1
+        else:
+            step_num += 1
+        # learning rate schedule
+        if step_num < num_warmup_steps:
+            new_lr = lr * step_num / num_warmup_steps
+        else:
+            offset = (step_num - num_warmup_steps) * lr / \
+                (num_train_steps - num_warmup_steps)
+            new_lr = lr - offset
+        trainer.set_learning_rate(new_lr)
+
     # Do not apply weight decay on LayerNorm and bias terms
     for _, v in net.collect_params('.*beta|.*gamma|.*bias').items():
         v.wd_mult = 0.0
@@ -336,7 +335,7 @@ def train():
         tic = time.time()
         for batch_id, data in enumerate(train_dataloader):
             # set new lr
-            set_new_lr()
+            set_new_lr(batch_id)
             # forward and backward
             with mx.autograd.record():
                 _, inputs, token_types, valid_length, start_label, end_label = data
