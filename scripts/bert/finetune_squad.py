@@ -301,9 +301,10 @@ def train():
     num_warmup_steps = int(num_train_steps * warmup_ratio)
     step_num = 0
 
-    def set_new_lr(batch_id):
+    def set_new_lr():
         """set new learning rate"""
         # set grad to zero for gradient accumulation
+        global step_num
         if accumulate:
             if batch_id % accumulate == 0:
                 net.collect_params().zero_grad()
@@ -335,7 +336,7 @@ def train():
         tic = time.time()
         for batch_id, data in enumerate(train_dataloader):
             # set new lr
-            set_new_lr(batch_id)
+            set_new_lr()
             # forward and backward
             with mx.autograd.record():
                 _, inputs, token_types, valid_length, start_label, end_label = data
