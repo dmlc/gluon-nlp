@@ -89,8 +89,8 @@ class _SampledDenseHelper(HybridBlock):
             new_label = F.zeros_like(label)
         else:
             label_vec = F.reshape(label, (-1, 1))
-            new_label_sampled = F.zeros_like(pred_sampled)
             new_label_true = F.ones_like(label_vec)
+            new_label_sampled = F.zeros_like(pred_sampled)
             new_label = F.Concat(new_label_true, new_label_sampled, dim=1)
         return pred, new_label
 
