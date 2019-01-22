@@ -156,7 +156,7 @@ generate valid length
 
 ```{.python .input}
 # use the vocabulary from pre-trained model for tokenization
-bert_tokenizer = nlp.data.BERTTokenizer(vocabulary, do_lower_case=True)
+bert_tokenizer = nlp.data.BERTTokenizer(vocabulary, lower=True)
 # maximum sequence length
 max_len = 128
 all_labels = ["0", "1"]

@@ -80,7 +80,7 @@ lr = args.lr
 accumulate = args.accumulate
 log_interval = args.log_interval * accumulate if accumulate else args.log_interval
 if accumulate:
-    logging.info('Using gradient accumulation. Effective batch size = %d', accumulate*batch_size)
+    logging.info('Using gradient accumulation. Effective batch size = %d', accumulate * batch_size)
 
 # random seed
 np.random.seed(args.seed)
@@ -104,7 +104,7 @@ metric = mx.metric.Accuracy()
 
 # data processing
 do_lower_case = 'uncased' in dataset
-bert_tokenizer = BERTTokenizer(vocabulary, do_lower_case=do_lower_case)
+bert_tokenizer = BERTTokenizer(vocabulary, lower=do_lower_case)
 
 
 def preprocess_data(tokenizer, batch_size, dev_batch_size, max_len):

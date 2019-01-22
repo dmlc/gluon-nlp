@@ -718,26 +718,26 @@ class BasicTokenizer():
     performs invalid character removal (e.g. control chars) and whitespace.
     tokenize CJK chars.
     splits punctuation on a piece of text.
-    strips accents and convert to lower case.(If do_lower_case is true)
+    strips accents and convert to lower case.(If lower is true)
 
     Parameters
     ----------
-    do_lower_case : bool, default True
+    lower : bool, default True
         whether the text strips accents and convert to lower case.
 
     Examples
     --------
-    >>> tokenizer = gluonnlp.data.BasicTokenizer(do_lower_case=True)
+    >>> tokenizer = gluonnlp.data.BasicTokenizer(lower=True)
     >>> tokenizer(u" \tHeLLo!how  \n Are yoU?  ")
     ['hello', '!', 'how', 'are', 'you', '?']
-    >>> tokenizer = gluonnlp.data.BasicTokenizer(do_lower_case=False)
+    >>> tokenizer = gluonnlp.data.BasicTokenizer(lower=False)
     >>> tokenizer(u" \tHeLLo!how  \n Are yoU?  ")
     ['HeLLo', '!', 'how', 'Are', 'yoU', '?']
 
     """
 
-    def __init__(self, do_lower_case=True):
-        self.do_lower_case = do_lower_case
+    def __init__(self, lower=True):
+        self.lower = lower
 
     def __call__(self, sample):
         """
@@ -768,7 +768,7 @@ class BasicTokenizer():
         orig_tokens = self._whitespace_tokenize(text)
         split_tokens = []
         for token in orig_tokens:
-            if self.do_lower_case:
+            if self.lower:
                 token = token.lower()
                 token = self._run_strip_accents(token)
             split_tokens.extend(self._run_split_on_punc(token))
@@ -898,8 +898,6 @@ class BasicTokenizer():
     def _whitespace_tokenize(self, text):
         """Runs basic whitespace cleaning and splitting on a piece of text."""
         text = text.strip()
-        if not text:
-            return []
         tokens = text.split()
         return tokens
 
@@ -911,10 +909,10 @@ class BERTTokenizer(object):
     ----------
     vocab : gluonnlp.Vocab or None, default None
         Vocabulary for the corpus.
-    do_lower_case : bool, default True
+    lower : bool, default True
         whether the text strips accents and convert to lower case.
         If you use the BERT pre-training model,
-        do_lower_case is set to Flase when using the cased model,
+        lower is set to Flase when using the cased model,
         otherwise it is set to True.
     max_input_chars_per_word : int, default 200
 
@@ -927,10 +925,10 @@ class BERTTokenizer(object):
 
     """
 
-    def __init__(self, vocab, do_lower_case=True, max_input_chars_per_word=200):
+    def __init__(self, vocab, lower=True, max_input_chars_per_word=200):
         self.vocab = vocab
         self.max_input_chars_per_word = max_input_chars_per_word
-        self.basic_tokenizer = BasicTokenizer(do_lower_case=do_lower_case)
+        self.basic_tokenizer = BasicTokenizer(lower=lower)
 
     def __call__(self, sample):
         """
@@ -1118,12 +1116,12 @@ class BERTSentenceTransform(object):
         tokens.append(vocab.cls_token)
         tokens.extend(tokens_a)
         tokens.append(vocab.sep_token)
-        segment_ids = [0]*len(tokens)
+        segment_ids = [0] * len(tokens)
 
         if tokens_b:
             tokens.extend(tokens_b)
             tokens.append(vocab.sep_token)
-            segment_ids.extend([1]*(len(tokens)-len(segment_ids)))
+            segment_ids.extend([1] * (len(tokens) - len(segment_ids)))
 
         input_ids = self._tokenizer.convert_tokens_to_ids(tokens)
 

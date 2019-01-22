@@ -139,7 +139,7 @@ bert, vocabulary = nlp.model.get_model(args.gluon_model,
                                        pretrained=True, use_pooler=False,
                                        use_decoder=False, use_classifier=False)
 print(bert)
-tokenizer = BERTTokenizer(vocabulary, do_lower_case=do_lower_case)
+tokenizer = BERTTokenizer(vocabulary, lower=do_lower_case)
 dataset = TSVDataset(input_file, field_separator=nlp.data.Splitter(' ||| '))
 
 trans = BERTSentenceTransform(tokenizer, max_length)
@@ -157,7 +157,7 @@ for i, seq in enumerate(bert_dataloader):
     a = tf_outputs[-1][:length]
     b = out[0][:length].asnumpy()
 
-    print('stdev = %s' % (np.std(a-b)))
+    print('stdev = %s' % (np.std(a - b)))
     mx.test_utils.assert_almost_equal(a, b, atol=1e-4, rtol=1e-4)
     mx.test_utils.assert_almost_equal(a, b, atol=1e-5, rtol=1e-5)
     mx.test_utils.assert_almost_equal(a, b, atol=5e-6, rtol=5e-6)

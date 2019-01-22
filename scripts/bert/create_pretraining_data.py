@@ -442,7 +442,7 @@ def main():
     logging.info('loading vocab file')
     vocab_obj = nlp.Vocab.from_json(open(args.vocab_file, 'rt').read())
     tokenizer = BERTTokenizer(
-        vocab=vocab_obj, do_lower_case=args.do_lower_case)
+        vocab=vocab_obj, lower=args.do_lower_case)
 
     input_files = []
     for input_pattern in args.input_file.split(','):

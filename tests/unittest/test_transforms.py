@@ -158,7 +158,7 @@ def test_sentencepiece_tokenizer_subword_regularization():
 
 
 def test_basictokenizer():
-    tokenizer = t.BasicTokenizer(do_lower_case=True)
+    tokenizer = t.BasicTokenizer(lower=True)
 
     # test lower_case=True
     assert tokenizer(u" \tHeLLo!how  \n Are yoU?  ") == [
@@ -194,7 +194,7 @@ def test_basictokenizer():
     assert tokenizer._is_punctuation(u" ") == False
 
     # test lower_case=False
-    tokenizer = t.BasicTokenizer(do_lower_case=False)
+    tokenizer = t.BasicTokenizer(lower=False)
     assert tokenizer(u" \tHeLLo!how  \n Are yoU?  ") == [
         "HeLLo", "!", "how", "Are", "yoU", "?"]
 
@@ -248,12 +248,12 @@ def test_bert_sentences_transform():
     pad_ids = bert_vocab[[bert_vocab.padding_token]]
 
     concated_ids = cls_ids + text_a_ids + sep_ids + text_b_ids + sep_ids + pad_ids
-    valid_token_ids = np.array([pad_ids[0]]*15, dtype=np.int32)
+    valid_token_ids = np.array([pad_ids[0]] * 15, dtype=np.int32)
     for i, x in enumerate(concated_ids):
         valid_token_ids[i] = x
     valid_type_ids = np.zeros((15,), dtype=np.int32)
     start = len(text_a_tokens) + 2
-    end = len(text_a_tokens)+2+len(text_b_tokens)+1
+    end = len(text_a_tokens) + 2 + len(text_b_tokens) + 1
     valid_type_ids[start:end] = 1
 
     assert all(token_ids == valid_token_ids)
