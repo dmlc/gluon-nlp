@@ -28,7 +28,7 @@ from __future__ import division
 __all__ = ['ClipSequence', 'PadSequence', 'SacreMosesTokenizer', 'NLTKMosesTokenizer',
            'SpacyTokenizer', 'SacreMosesDetokenizer', 'NLTKMosesDetokenizer', 'JiebaTokenizer',
            'NLTKStanfordSegmenter', 'SentencepieceTokenizer',
-           'SentencepieceDetokenizer', 'BasicTokenizer', 'BERTTokenizer',
+           'SentencepieceDetokenizer', 'BERTBasicTokenizer', 'BERTTokenizer',
            'BERTSentenceTransform']
 
 import os
@@ -712,7 +712,7 @@ class SentencepieceDetokenizer(_SentencepieceProcessor):
         return self._processor.DecodePieces(sample)
 
 
-class BasicTokenizer():
+class BERTBasicTokenizer():
     r"""Runs basic tokenization
 
     performs invalid character removal (e.g. control chars) and whitespace.
@@ -727,10 +727,10 @@ class BasicTokenizer():
 
     Examples
     --------
-    >>> tokenizer = gluonnlp.data.BasicTokenizer(lower=True)
+    >>> tokenizer = gluonnlp.data.BERTBasicTokenizer(lower=True)
     >>> tokenizer(u" \tHeLLo!how  \n Are yoU?  ")
     ['hello', '!', 'how', 'are', 'you', '?']
-    >>> tokenizer = gluonnlp.data.BasicTokenizer(lower=False)
+    >>> tokenizer = gluonnlp.data.BERTBasicTokenizer(lower=False)
     >>> tokenizer(u" \tHeLLo!how  \n Are yoU?  ")
     ['HeLLo', '!', 'how', 'Are', 'yoU', '?']
 
@@ -928,7 +928,7 @@ class BERTTokenizer(object):
     def __init__(self, vocab, lower=True, max_input_chars_per_word=200):
         self.vocab = vocab
         self.max_input_chars_per_word = max_input_chars_per_word
-        self.basic_tokenizer = BasicTokenizer(lower=lower)
+        self.basic_tokenizer = BERTBasicTokenizer(lower=lower)
 
     def __call__(self, sample):
         """
@@ -966,7 +966,7 @@ class BERTTokenizer(object):
 
         Args:
           text: A single token or whitespace separated tokens. This should have
-            already been passed through `BasicTokenizer.
+            already been passed through `BERTBasicTokenizer.
 
         Returns:
           A list of wordpiece tokens.

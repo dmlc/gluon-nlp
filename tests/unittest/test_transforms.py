@@ -157,8 +157,8 @@ def test_sentencepiece_tokenizer_subword_regularization():
     assert all(detokenizer(reg_ret[i]) == detext for i in range(len(reg_ret)))
 
 
-def test_basictokenizer():
-    tokenizer = t.BasicTokenizer(lower=True)
+def test_bertbasictokenizer():
+    tokenizer = t.BERTBasicTokenizer(lower=True)
 
     # test lower_case=True
     assert tokenizer(u" \tHeLLo!how  \n Are yoU?  ") == [
@@ -194,7 +194,7 @@ def test_basictokenizer():
     assert tokenizer._is_punctuation(u" ") == False
 
     # test lower_case=False
-    tokenizer = t.BasicTokenizer(lower=False)
+    tokenizer = t.BERTBasicTokenizer(lower=False)
     assert tokenizer(u" \tHeLLo!how  \n Are yoU?  ") == [
         "HeLLo", "!", "how", "Are", "yoU", "?"]
 
