@@ -152,15 +152,8 @@ def predictions(dev_dataset,
     all_nbest_json: dict
         All n-best predictions.
     scores_diff_json: dict
-        If version_2 is True.
-        Difference between the null score and the score of best non-null.
+        Record the difference between null score and the score of best non-null when version_2 is True.
     """
-    # score_null = 1000000  # large and positive
-    # min_null_feature_index = 0  # the paragraph slice with min mull score
-    # null_start_logit = 0  # the start logit at the slice with min null score
-    # null_end_logit = 0  # the end logit at the slice with min null score
-    max_answer_length = max_answer_length
-    null_score_diff_threshold = null_score_diff_threshold
 
     _PrelimPrediction = namedtuple('PrelimPrediction',
                                    ['feature_index', 'start_index', 'end_index',
@@ -314,7 +307,6 @@ def predictions(dev_dataset,
 
         if not version_2:
             all_predictions[example_qas_id] = nbest_json[0]['text']
-            scores_diff_json = None
         else:
             # predict '' iff the null score - the score of best non-null > threshold
             score_diff = score_null - best_non_null_entry.start_logit - \

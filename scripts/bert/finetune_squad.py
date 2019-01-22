@@ -88,7 +88,7 @@ parser.add_argument('--dataset_name',
                     help='BERT dataset name.'
                     'options are book_corpus_wiki_en_uncased and book_corpus_wiki_en_cased.')
 
-parser.add_argument('--cased',
+parser.add_argument('--uncased',
                     action='store_false',
                     help='if not set, inputs are converted to lower case.')
 
@@ -263,6 +263,24 @@ loss_function.hybridize(static_alloc=True)
 def train():
     """Training function."""
 
+    def set_new_lr():
+        """set new learning rate"""
+        # set grad to zero for gradient accumulation
+        if accumulate:
+            if batch_id % accumulate == 0:
+                net.collect_params().zero_grad()
+                step_num += 1
+        else:
+            step_num += 1
+        # learning rate schedule
+        if step_num < num_warmup_steps:
+            new_lr = lr * step_num / num_warmup_steps
+        else:
+            offset = (step_num - num_warmup_steps) * lr / \
+                (num_train_steps - num_warmup_steps)
+            new_lr = lr - offset
+        trainer.set_learning_rate(new_lr)
+
     log.info('Loader Train data...')
     if version_2:
         train_data = SQuAD('train', version='2.0')
@@ -317,21 +335,8 @@ def train():
         step_loss = 0.0
         tic = time.time()
         for batch_id, data in enumerate(train_dataloader):
-            # set grad to zero for gradient accumulation
-            if accumulate:
-                if batch_id % accumulate == 0:
-                    net.collect_params().zero_grad()
-                    step_num += 1
-            else:
-                step_num += 1
-            # learning rate schedule
-            if step_num < num_warmup_steps:
-                new_lr = lr * step_num / num_warmup_steps
-            else:
-                offset = (step_num - num_warmup_steps) * lr / \
-                    (num_train_steps - num_warmup_steps)
-                new_lr = lr - offset
-            trainer.set_learning_rate(new_lr)
+            # set new lr
+            set_new_lr()
             # forward and backward
             with mx.autograd.record():
                 _, inputs, token_types, valid_length, start_label, end_label = data
@@ -396,8 +401,6 @@ def evaluate():
         batchify_fn=bert_qa_batchify_fn,
         num_workers=4, shuffle=False, last_batch='keep')
 
-    start_logits = []
-    end_logits = []
     log.info('Start predict')
 
     _Result = collections.namedtuple(
