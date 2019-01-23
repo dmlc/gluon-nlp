@@ -31,7 +31,7 @@ Test:
 
 	$ python3 main.py --test-file data/snli_1.0/test.txt --model-dir output/snli-basic --gpu-id 0 --mode test --output-dir output/snli-basic/test
 
-We achieve 84.6% accuracy on the SNLI test set, comparable to 86.3% reported in the
+We achieve 85.0% accuracy on the SNLI test set, comparable to 86.3% reported in the
 original paper.
 
 Train the model with intra-sentence attention:
@@ -46,7 +46,7 @@ Test:
 
 	$ python3 main.py --test-file data/snli_1.0/test.txt --model-dir output/snli-intra --gpu-id 0 --mode test --output-dir output/snli-intra/test
 
-We achieve 84.4% accuracy on the SNLI test set, compared to 86.8% reported in the
+We achieve 85.5% accuracy on the SNLI test set, compared to 86.8% reported in the
 original paper.
 Note that our intra-sentence attention implementation omitted the
 distance-sensitive bias term described in Equation (7) in the original paper.
