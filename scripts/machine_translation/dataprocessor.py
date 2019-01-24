@@ -86,11 +86,11 @@ class TrainValDataTransform(object):
         self._tgt_max_len = tgt_max_len
 
     def __call__(self, src, tgt):
-        if self._src_max_len:
+        if self._src_max_len > 0:
             src_sentence = self._src_vocab[src.split()[:self._src_max_len]]
         else:
             src_sentence = self._src_vocab[src.split()]
-        if self._tgt_max_len:
+        if self._tgt_max_len > 0:
             tgt_sentence = self._tgt_vocab[tgt.split()[:self._tgt_max_len]]
         else:
             tgt_sentence = self._tgt_vocab[tgt.split()]
