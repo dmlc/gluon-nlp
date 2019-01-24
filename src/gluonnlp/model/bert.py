@@ -30,9 +30,11 @@ from .transformer import BasePositionwiseFFN, BaseTransformerEncoderCell, BaseTr
 from .block import GELU
 from .utils import _load_vocab, _load_pretrained_params
 
+
 ###############################################################################
 #                              COMPONENTS                                     #
 ###############################################################################
+
 
 class BERTLayerNorm(nn.LayerNorm):
     """BERT style Layer Normalization, where epsilon is added inside the square
@@ -42,6 +44,7 @@ class BERTLayerNorm(nn.LayerNorm):
         - **data**: input tensor with arbitrary shape.
         - **out**: output tensor with the same shape as `data`.
     """
+
     def __init__(self, epsilon=1e-12, in_channels=0, prefix=None, params=None):
         super(BERTLayerNorm, self).__init__(epsilon=epsilon, in_channels=in_channels,
                                             prefix=prefix, params=params)
@@ -81,6 +84,7 @@ class BERTPositionwiseFFN(BasePositionwiseFFN):
     Outputs:
         - **outputs** : output encoding of shape (batch_size, length, C_out).
     """
+
     def __init__(self, units=512, hidden_size=2048, dropout=0.0, use_residual=True,
                  weight_initializer=None, bias_initializer='zeros',
                  prefix=None, params=None):
@@ -92,6 +96,7 @@ class BERTPositionwiseFFN(BasePositionwiseFFN):
                                                   # extra configurations for BERT
                                                   activation='gelu',
                                                   use_bert_layer_norm=True)
+
 
 class BERTEncoder(BaseTransformerEncoder):
     """Structure of the BERT Encoder.
@@ -145,6 +150,7 @@ class BERTEncoder(BaseTransformerEncoder):
             Either be an empty list or contains the attention weights in this step.
             The attention weights will have shape (batch_size, num_heads, length, mem_length)
     """
+
     def __init__(self, attention_cell='multi_head', num_layers=2,
                  units=512, hidden_size=2048, max_length=50,
                  num_heads=4, scaled=True, dropout=0.0,
@@ -165,6 +171,7 @@ class BERTEncoder(BaseTransformerEncoder):
                                           use_bert_encoder=True,
                                           use_layer_norm_before_dropout=False,
                                           scale_embed=False)
+
 
 class BERTEncoderCell(BaseTransformerEncoderCell):
     """Structure of the Transformer Encoder Cell for BERT.
@@ -211,6 +218,7 @@ class BERTEncoderCell(BaseTransformerEncoderCell):
             Shape (batch_size, length, C_out)
         - **additional_outputs**: the additional output of all the transformer encoder cell.
     """
+
     def __init__(self, attention_cell='multi_head', units=128,
                  hidden_size=512, num_heads=4, scaled=True,
                  dropout=0.0, use_residual=True, output_attention=False,
@@ -233,6 +241,7 @@ class BERTEncoderCell(BaseTransformerEncoderCell):
 ###############################################################################
 #                                FULL MODEL                                   #
 ###############################################################################
+
 
 class BERTModel(Block):
     """Model for BERT (Bidirectional Encoder Representations from Transformers).
@@ -295,6 +304,7 @@ class BERTModel(Block):
             prediction. Returned only if use_decoder True.
             Shape (batch_size, num_masked_positions, vocab_size)
     """
+
     def __init__(self, encoder, vocab_size=None, token_type_vocab_size=None, units=None,
                  embed_size=None, embed_dropout=0.0, embed_initializer=None,
                  word_embed=None, token_type_embed=None, use_pooler=True, use_decoder=True,
@@ -338,7 +348,7 @@ class BERTModel(Block):
             decoder.add(BERTLayerNorm(in_channels=units))
             decoder.add(nn.Dense(vocab_size, flatten=False, params=embed.collect_params()))
         assert decoder[3].weight == list(embed.collect_params().values())[0], \
-          'The weights of word embedding are not tied with those of decoder'
+            'The weights of word embedding are not tied with those of decoder'
         return decoder
 
     def _get_embed(self, embed, vocab_size, embed_size, initializer, dropout, prefix):
@@ -368,7 +378,7 @@ class BERTModel(Block):
                               prefix=prefix)
         return pooler
 
-    def forward(self, inputs, token_types, valid_length=None, masked_positions=None): #pylint: disable=arguments-differ
+    def forward(self, inputs, token_types, valid_length=None, masked_positions=None):  # pylint: disable=arguments-differ
         """Generate the representation given the inputs.
 
         This is used in training or fine-tuning a BERT model.
@@ -384,11 +394,10 @@ class BERTModel(Block):
                 outputs.append(next_sentence_classifier_out)
         if self._use_decoder:
             assert masked_positions is not None, \
-              'masked_positions tensor is required for decoding masked language model'
+                'masked_positions tensor is required for decoding masked language model'
             decoder_out = self._decode(seq_out, masked_positions)
             outputs.append(decoder_out)
         return tuple(outputs) if len(outputs) > 1 else outputs[0]
-
 
     def _encode_sequence(self, inputs, token_types, valid_length=None):
         """Generate the representation given the input sequences.
@@ -445,6 +454,7 @@ class BERTModel(Block):
 ###############################################################################
 #                               GET MODEL                                     #
 ###############################################################################
+
 
 model_store._model_sha1.update(
     {name: checksum for checksum, name in [
@@ -508,7 +518,7 @@ def bert_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
     dataset_name : str or None, default None
         Options include 'book_corpus_wiki_en_cased', 'book_corpus_wiki_en_uncased',
         'wiki_cn', 'wiki_multilingual' and 'wiki_multilingual_cased'.
-    vocab : gluonnlp.Vocab or None, default None
+    vocab : gluonnlp.vocab.BERTVocab or None, default None
         Vocabulary for the dataset. Must be provided if dataset is not specified.
     pretrained : bool, default True
         Whether to load the pretrained weights for model.
@@ -527,12 +537,13 @@ def bert_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
 
     Returns
     -------
-    BERTModel, gluonnlp.Vocab
+    BERTModel, gluonnlp.vocab.BERTVocab
     """
-    return _bert_model(model_name='bert_12_768_12', vocab=vocab, dataset_name=dataset_name,
-                       pretrained=pretrained, ctx=ctx, use_pooler=use_pooler,
-                       use_decoder=use_decoder, use_classifier=use_classifier, root=root,
-                       **kwargs)
+    return _bert_model(model_name='bert_12_768_12', vocab=vocab,
+                       dataset_name=dataset_name, pretrained=pretrained, ctx=ctx,
+                       use_pooler=use_pooler, use_decoder=use_decoder,
+                       use_classifier=use_classifier, root=root, **kwargs)
+
 
 def bert_24_1024_16(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
                     use_pooler=True, use_decoder=True, use_classifier=True,
@@ -546,7 +557,7 @@ def bert_24_1024_16(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu()
     ----------
     dataset_name : str or None, default None
         Options include 'book_corpus_wiki_en_uncased' and 'book_corpus_wiki_en_cased'.
-    vocab : gluonnlp.Vocab or None, default None
+    vocab : gluonnlp.vocab.BERTVocab or None, default None
         Vocabulary for the dataset. Must be provided if dataset is not specified.
     pretrained : bool, default True
         Whether to load the pretrained weights for model.
@@ -565,27 +576,30 @@ def bert_24_1024_16(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu()
 
     Returns
     -------
-    BERTModel, gluonnlp.Vocab
+    BERTModel, gluonnlp.vocab.BERTVocab
     """
-    return _bert_model(model_name='bert_24_1024_16', vocab=vocab, dataset_name=dataset_name,
-                       pretrained=pretrained, ctx=ctx, use_pooler=use_pooler,
-                       use_decoder=use_decoder, use_classifier=use_classifier, root=root,
-                       **kwargs)
+    return _bert_model(model_name='bert_24_1024_16', vocab=vocab,
+                       dataset_name=dataset_name, pretrained=pretrained,
+                       ctx=ctx, use_pooler=use_pooler,
+                       use_decoder=use_decoder, use_classifier=use_classifier,
+                       root=root, **kwargs)
 
-def _bert_model(model_name=None, dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
+
+def _bert_model(model_name=None, dataset_name=None, vocab=None,
+                pretrained=True, ctx=mx.cpu(),
                 use_pooler=True, use_decoder=True, use_classifier=True,
                 root=os.path.join('~', '.mxnet', 'models'), **kwargs):
     """BERT pretrained model.
 
     Returns
     -------
-    BERTModel, gluonnlp.Vocab
+    BERTModel, gluonnlp.vocab.BERTVocab
     """
     predefined_args = bert_hparams[model_name]
     mutable_args = ['use_residual', 'dropout', 'embed_dropout', 'word_embed']
     mutable_args = frozenset(mutable_args)
     assert all((k not in kwargs or k in mutable_args) for k in predefined_args), \
-           'Cannot override predefined model settings.'
+        'Cannot override predefined model settings.'
     predefined_args.update(kwargs)
     # encoder
     encoder = BERTEncoder(attention_cell=predefined_args['attention_cell'],
@@ -597,10 +611,11 @@ def _bert_model(model_name=None, dataset_name=None, vocab=None, pretrained=True,
                           scaled=predefined_args['scaled'],
                           dropout=predefined_args['dropout'],
                           use_residual=predefined_args['use_residual'])
-    # vocab
-    vocab = _load_vocab(dataset_name, vocab, root)
+    # bert_vocab
+    from ..vocab import BERTVocab
+    bert_vocab = _load_vocab(dataset_name, vocab, root, cls=BERTVocab)
     # BERT
-    net = BERTModel(encoder, len(vocab),
+    net = BERTModel(encoder, len(bert_vocab),
                     token_type_vocab_size=predefined_args['token_type_vocab_size'],
                     units=predefined_args['units'],
                     embed_size=predefined_args['embed_size'],
@@ -612,4 +627,4 @@ def _bert_model(model_name=None, dataset_name=None, vocab=None, pretrained=True,
         ignore_extra = not (use_pooler and use_decoder and use_classifier)
         _load_pretrained_params(net, model_name, dataset_name, root, ctx,
                                 ignore_extra=ignore_extra)
-    return net, vocab
+    return net, bert_vocab

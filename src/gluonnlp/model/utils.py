@@ -31,6 +31,8 @@ from .parameter import WeightDropParameter
 from .lstmpcellwithclip import LSTMPCellWithClip
 
 # pylint: disable=too-many-nested-blocks
+
+
 def apply_weight_drop(block, local_param_regex, rate, axes=(),
                       weight_dropout_mode='training'):
     """Apply weight drop to the parameter of a block.
@@ -86,7 +88,7 @@ rate=0.5, mode=training)
 
     existing_params = _find_params(block, local_param_regex)
     for (local_param_name, param), \
-        (ref_params_list, ref_reg_params_list) in existing_params.items():
+            (ref_params_list, ref_reg_params_list) in existing_params.items():
         dropped_param = WeightDropParameter(param, rate, weight_dropout_mode, axes)
         for ref_params in ref_params_list:
             ref_params[param.name] = dropped_param
@@ -112,6 +114,8 @@ rate=0.5, mode=training)
                     super(Block, block).__setattr__(local_param_name, local_attr)
 
 # pylint: enable=too-many-nested-blocks
+
+
 def _find_params(block, local_param_regex):
     # return {(local_param_name, parameter): (referenced_params_list,
     #                                         referenced_reg_params_list)}
@@ -258,15 +262,16 @@ def _get_rnn_layer(mode, num_layers, input_size, hidden_size, dropout, weight_dr
     return block
 
 
-def _load_vocab(dataset_name, vocab, root):
+def _load_vocab(dataset_name, vocab, root, cls=None):
     if dataset_name:
         if vocab is not None:
             warnings.warn('Both dataset_name and vocab are specified. Loading vocab for dataset. '
                           'Input "vocab" argument will be ignored.')
-        vocab = _load_pretrained_vocab(dataset_name, root)
+        vocab = _load_pretrained_vocab(dataset_name, root, cls)
     else:
         assert vocab is not None, 'Must specify vocab if not loading from predefined datasets.'
     return vocab
+
 
 def _load_pretrained_params(net, model_name, dataset_name, root, ctx, ignore_extra=False):
     path = '_'.join([model_name, dataset_name])

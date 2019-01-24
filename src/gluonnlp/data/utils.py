@@ -38,8 +38,9 @@ from mxnet.gluon.utils import _get_repo_url, download, check_sha1
 from .. import _constants as C
 
 
-class Counter(collections.Counter): # pylint: disable=abstract-method
+class Counter(collections.Counter):  # pylint: disable=abstract-method
     """Counter class for keeping token frequencies."""
+
     def discard(self, min_freq, unknown_token):
         """Discards tokens with frequency below min_frequency and represents them
         as `unknown_token`.
@@ -71,6 +72,7 @@ class Counter(collections.Counter): # pylint: disable=abstract-method
                 ret[token] = count
         ret[unknown_token] = ret.get(unknown_token, 0) + freq
         return ret
+
 
 class DefaultLookupDict(dict):
     """Dictionary class with fall-back look-up with default value set in the constructor."""
@@ -212,15 +214,16 @@ def _slice_pad_length(num_items, length, overlap=0):
         return 0
 
 
-_vocab_sha1 = {'wikitext-2'                 : 'be36dc5238c2e7d69720881647ab72eb506d0131',
-               'gbw'                        : 'ebb1a287ca14d8fa6f167c3a779e5e7ed63ac69f',
-               'WMT2014_src'                : '230ebb817b1d86950d71e2e765f192a4e4f34415',
-               'WMT2014_tgt'                : '230ebb817b1d86950d71e2e765f192a4e4f34415',
-               'book_corpus_wiki_en_cased'  : '412a6bbeae603b9b9ba6505dd8b58a8594fe5c4c',
-               'book_corpus_wiki_en_uncased': 'c3e2bd000830b08b5535a75726af637f791d2bce',
-               'wiki_multilingual_cased'    : '71bb9e248dc75dce9227d3c8c16fde3993588b9e',
-               'wiki_cn'                    : 'a1e06f8e39ae51ab8a92b8458e6a658b8b1f72bf',
-               'wiki_multilingual'          : '4cf30ef8fd0e0a6a4f9ef05b716b108f8b61c2d7'}
+_vocab_sha1 = {'wikitext-2': 'be36dc5238c2e7d69720881647ab72eb506d0131',
+               'gbw': 'ebb1a287ca14d8fa6f167c3a779e5e7ed63ac69f',
+               'WMT2014_src': '230ebb817b1d86950d71e2e765f192a4e4f34415',
+               'WMT2014_tgt': '230ebb817b1d86950d71e2e765f192a4e4f34415',
+               'book_corpus_wiki_en_cased': '2d62af22535ed51f35cc8e2abb607723c89c2636',
+               'book_corpus_wiki_en_uncased': 'a66073971aa0b1a262453fe51342e57166a8abcf',
+               'wiki_multilingual_cased': '71bb9e248dc75dce9227d3c8c16fde3993588b9e',
+               'wiki_cn': 'a1e06f8e39ae51ab8a92b8458e6a658b8b1f72bf',
+               'wiki_multilingual': '2b2514cc539047b9179e9d98a4e68c36db05c97a'}
+
 
 _url_format = '{repo_url}gluon/dataset/vocab/{file_name}.zip'
 
@@ -260,7 +263,7 @@ def short_hash(name):
     return _vocab_sha1[name][:8]
 
 
-def _load_pretrained_vocab(name, root=os.path.join('~', '.mxnet', 'models')):
+def _load_pretrained_vocab(name, root=os.path.join('~', '.mxnet', 'models'), cls=None):
     """Load the accompanying vocabulary object for pre-trained model.
 
     Parameters
@@ -269,10 +272,11 @@ def _load_pretrained_vocab(name, root=os.path.join('~', '.mxnet', 'models')):
         Name of the vocabulary, usually the name of the dataset.
     root : str, default '~/.mxnet/models'
         Location for keeping the model parameters.
+    cls : nlp.Vocab or nlp.vocab.BERTVocab, default nlp.Vocab
 
     Returns
     -------
-    Vocab
+    Vocab or nlp.bert.BERTVocab
         Loaded vocabulary object for the pre-trained model.
     """
     file_name = '{name}-{short_hash}'.format(name=name,
@@ -282,7 +286,7 @@ def _load_pretrained_vocab(name, root=os.path.join('~', '.mxnet', 'models')):
     sha1_hash = _vocab_sha1[name]
     if os.path.exists(file_path):
         if check_sha1(file_path, sha1_hash):
-            return _load_vocab_file(file_path)
+            return _load_vocab_file(file_path, cls)
         else:
             print('Detected mismatch in the content of model vocab file. Downloading again.')
     else:
@@ -303,15 +307,18 @@ def _load_pretrained_vocab(name, root=os.path.join('~', '.mxnet', 'models')):
     os.remove(zip_file_path)
 
     if check_sha1(file_path, sha1_hash):
-        return _load_vocab_file(file_path)
+        return _load_vocab_file(file_path, cls)
     else:
         raise ValueError('Downloaded file has different hash. Please try again.')
 
 
-def _load_vocab_file(file_path):
+def _load_vocab_file(file_path, cls):
     with open(file_path, 'r') as f:
-        from ..vocab import Vocab
-        return Vocab.from_json(f.read())
+        if cls is None:
+            from ..vocab import Vocab
+            cls = Vocab
+
+        return cls.from_json(f.read())
 
 
 def _get_home_dir():
@@ -359,6 +366,7 @@ def line_splitter(s):
     """
     return s.splitlines()
 
+
 def whitespace_splitter(s):
     """Split a string at whitespace (space, tab, newline, return, formfeed).
 
@@ -374,6 +382,7 @@ def whitespace_splitter(s):
     """
     return s.split()
 
+
 class Splitter(object):
     """Split a string based on a separator.
 
@@ -382,6 +391,7 @@ class Splitter(object):
     separator : str
         The separator based on which string is split.
     """
+
     def __init__(self, separator=None):
         self._separator = separator
 

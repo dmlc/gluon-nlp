@@ -17,13 +17,26 @@
 # specific language governing permissions and limitations
 # under the License.
 
-# pylint: disable=wildcard-import
-"""Vocabulary."""
+import mxnet as mx
+import numpy as np
+from gluonnlp.metric import MaskedAccuracy
 
-from . import subwords, vocab, bert
-from .subwords import *
-from .vocab import *
-from .elmo import *
-from .bert import *
+def test_acc():
+    pred = mx.nd.array([[0.3, 0.7], [0, 1.], [0.4, 0.6]])
+    label = mx.nd.array([0, 1, 1])
+    mask = mx.nd.array([1, 1, 0])
+    metric = MaskedAccuracy()
+    metric.update([label], [pred], [mask])
+    _, acc = metric.get()
+    matched = (np.argmax(pred.asnumpy(), axis=1) == label.asnumpy()) * mask.asnumpy()
+    valid_count = mask.asnumpy().sum()
+    expected_acc = 1.0 * matched.sum() / valid_count
+    assert acc == expected_acc
 
-__all__ = vocab.__all__ + subwords.__all__ + elmo.__all__ + bert.__all__
+    metric = MaskedAccuracy()
+    metric.update([label], [pred])
+    _, acc = metric.get()
+    matched = (np.argmax(pred.asnumpy(), axis=1) == label.asnumpy())
+    valid_count = len(label)
+    expected_acc = 1.0 * matched.sum() / valid_count
+    assert acc == expected_acc

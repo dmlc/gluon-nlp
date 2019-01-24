@@ -18,12 +18,8 @@
 # under the License.
 
 # pylint: disable=wildcard-import
-"""Vocabulary."""
+"""NLP Metrics."""
 
-from . import subwords, vocab, bert
-from .subwords import *
-from .vocab import *
-from .elmo import *
-from .bert import *
+from .masked_accuracy import *
 
-__all__ = vocab.__all__ + subwords.__all__ + elmo.__all__ + bert.__all__
+__all__ = masked_accuracy.__all__
