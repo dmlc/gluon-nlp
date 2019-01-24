@@ -207,7 +207,7 @@ model_name = args.model
 dataset_name = args.dataset_name
 only_predict = args.only_predict
 model_parameters = args.model_parameters
-lower_case = args.cased
+lower = args.cased
 
 epochs = args.epochs
 batch_size = args.batch_size
@@ -247,7 +247,7 @@ bert, vocab = nlp.model.get_model(
     use_decoder=False,
     use_classifier=False)
 
-berttoken = nlp.data.BERTTokenizer(vocab=vocab, lower_case=lower_case)
+berttoken = nlp.data.BERTTokenizer(vocab=vocab, lower=lower)
 
 net = BertForQA(bert=bert)
 if not model_parameters:
@@ -429,7 +429,7 @@ def evaluate():
     all_predictions, all_nbest_json, scores_diff_json = predictions(
         dev_dataset=dev_dataset,
         all_results=all_results,
-        tokenizer=nlp.data.BasicTokenizer(lower_case=lower_case),
+        tokenizer=nlp.data.BERTBasicTokenizer(lower=lower),
         max_answer_length=max_answer_length,
         null_score_diff_threshold=null_score_diff_threshold,
         n_best_size=n_best_size,
