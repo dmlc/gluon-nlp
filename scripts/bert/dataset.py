@@ -14,10 +14,11 @@
 # limitations under the License.
 """BERT datasets."""
 
-__all__ = ['MRPCDataset', 'BERTDatasetTransform']
+__all__ = ['MRPCDataset', 'MNLIDataset', 'BERTDatasetTransform']
 
 import os
 import numpy as np
+from mxnet.metric import Accuracy
 from gluonnlp.data import TSVDataset, BERTSentenceTransform
 from gluonnlp.data.registry import register
 
@@ -48,6 +49,71 @@ class MRPCDataset(TSVDataset):
     def get_labels():
         """Get classification label ids of the dataset."""
         return ['0', '1']
+
+
+class GLUEDataset(TSVDataset):
+    """GLUEDataset class"""
+
+    def __init__(self, path, num_discard_samples, fields):
+        self.fields = fields
+        super(GLUEDataset, self).__init__(
+            path, num_discard_samples=num_discard_samples)
+
+    def _read(self):
+        all_samples = super(GLUEDataset, self)._read()
+        largest_field = max(self.fields)
+        # to filter out error records
+        final_samples = [[s[f] for f in self.fields] for s in all_samples
+                         if len(s) >= largest_field + 1]
+        return final_samples
+
+
+@register(segment=[
+    'dev_matched', 'dev_mismatched', 'test_matched', 'test_mismatched',
+    'diagnostic'
+])  # pylint: disable=c0301
+class MNLIDataset(GLUEDataset):
+    """Task class for Multi-Genre Natural Language Inference
+    Parameters
+    ----------
+    segment : str or list of str, default 'train'
+        Dataset segment. Options are 'dev_matched', 'dev_mismatched',
+        'test_matched', 'test_mismatched', 'diagnostic' or their combinations.
+    root : str, default '$GLUE_DIR/MNLI'
+        Path to the folder which stores the MNLI dataset.
+        The datset can be downloaded by the following script:
+        https://gist.github.com/W4ngatang/60c2bdb54d156a41194446737ce03e2e
+    """
+
+    def __init__(self,
+                 segment='train',
+                 root=os.path.join(os.getenv('GLUE_DIR', 'glue_data'),
+                                   'MNLI')):  # pylint: disable=c0330
+        self._supported_segments = [
+            'train', 'dev_matched', 'dev_mismatched',
+            'test_matched', 'test_mismatched',
+        ]
+        assert segment in self._supported_segments, 'Unsupported segment: %s' % segment
+        path = os.path.join(root, '%s.tsv' % segment)
+        if segment in ['train', 'dev_matched', 'dev_mismatched']:
+            A_IDX, B_IDX, LABEL_IDX = 8, 9, 15
+            LABEL_IDX = 11 if segment == 'train' else 15
+            fields = [A_IDX, B_IDX, LABEL_IDX]
+        elif segment in ['test_matched', 'test_mismatched']:
+            A_IDX, B_IDX = 8, 9
+            fields = [A_IDX, B_IDX]
+        super(MNLIDataset, self).__init__(
+            path, num_discard_samples=1, fields=fields)
+
+    @staticmethod
+    def get_labels():
+        """Get classification label ids of the dataset."""
+        return ['neutral', 'entailment', 'contradiction']
+
+    @staticmethod
+    def get_metric():
+        """Get metrics Accuracy"""
+        return Accuracy()
 
 
 class BERTDatasetTransform(object):
