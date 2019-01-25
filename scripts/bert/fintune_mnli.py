@@ -62,9 +62,9 @@ parser.add_argument('--lr', type=float, default=5e-5,
                     help='Initial learning rate, default is 5e-5')
 parser.add_argument('--warmup_ratio', type=float, default=0.1,
                     help='ratio of warmup steps used in NOAM\'s stepsize schedule, default is 0.1')
-parser.add_argument('--log_interval', type=int, default=10, help='report interval, default is 10')
-parser.add_argument('--max_len', type=int, default=128,
-                    help='Maximum length of the sentence pairs, default is 128')
+parser.add_argument('--log_interval', type=int, default=100, help='report interval, default is 100')
+parser.add_argument('--max_len', type=int, default=80,
+                    help='Maximum length of the sentence pairs, default is 80')
 parser.add_argument('--seed', type=int, default=2, help='Random seed, default is 2')
 parser.add_argument('--accumulate', type=int, default=None, help='The number of batches for '
                     'gradients accumulation to simulate large batch size. Default is None')
@@ -149,20 +149,19 @@ def evaluate():
     step_loss = 0
     metric.reset()
     for _, seqs in enumerate(dev_data):
-        Ls = []
         input_ids, valid_len, type_ids, label = seqs
         out = model(input_ids.as_in_context(ctx), type_ids.as_in_context(ctx),
                     valid_len.astype('float32').as_in_context(ctx))
         ls = loss_function(out, label.as_in_context(ctx)).mean()
-        Ls.append(ls)
-        step_loss += sum([L.asscalar() for L in Ls])
+
+        step_loss += ls.asscalar()
         metric.update([label], [out])
     logging.info('Validation accuracy: {:.3f}'.format(metric.get()[1]))
 
 
 def train():
     """Training function."""
-    optimizer_params = {'learning_rate': lr, 'epsilon': 1e-6, 'wd': 0.01}
+    optimizer_params = {'learning_rate': lr, 'wd': 0.01}
     try:
         trainer = gluon.Trainer(model.collect_params(), args.optimizer,
                                 optimizer_params, update_on_kvstore=False)

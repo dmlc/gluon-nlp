@@ -96,7 +96,7 @@ class MNLIDataset(GLUEDataset):
         assert segment in self._supported_segments, 'Unsupported segment: %s' % segment
         path = os.path.join(root, '%s.tsv' % segment)
         if segment in ['train', 'dev_matched', 'dev_mismatched']:
-            A_IDX, B_IDX, LABEL_IDX = 8, 9, 15
+            A_IDX, B_IDX = 8, 9
             LABEL_IDX = 11 if segment == 'train' else 15
             fields = [A_IDX, B_IDX, LABEL_IDX]
         elif segment in ['test_matched', 'test_mismatched']:
