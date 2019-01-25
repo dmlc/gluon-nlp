@@ -353,7 +353,7 @@ def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx):
                 # update
                 if (batch_num + 1) % accumulate == 0:
                     trainer.allreduce_grads()
-                    clip_grad_global_norm(params, 1)
+                    clip_grad_global_norm(params, 1, check_isfinite=False)
                     trainer.update(1)
                 nsp_metric.update(ns_label_list, ns_pred_list)
                 mlm_metric.update(mask_label_list, mask_pred_list, mask_weight_list)
