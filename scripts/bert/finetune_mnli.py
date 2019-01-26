@@ -56,8 +56,8 @@ parser.add_argument('--batch_size', type=int, default=32,
                     help='Batch size. Number of examples per gpu in a minibatch, default is 32')
 parser.add_argument('--dev_batch_size', type=int, default=8,
                     help='Batch size for dev set, default is 8')
-parser.add_argument('--optimizer', type=str, default='adam',
-                    help='Optimization algorithm, default is adam')
+parser.add_argument('--optimizer', type=str, default='bertadam',
+                    help='Optimization algorithm, default is bertadam')
 parser.add_argument('--lr', type=float, default=5e-5,
                     help='Initial learning rate, default is 5e-5')
 parser.add_argument('--warmup_ratio', type=float, default=0.1,
@@ -117,7 +117,8 @@ def preprocess_data(tokenizer, batch_size, dev_batch_size, max_len):
                                      labels=MNLIDataset.get_labels(),
                                      label_dtype='int32')
     data_train = MNLIDataset('train').transform(train_trans, lazy=False)
-    data_dev = MNLIDataset('dev_mismatched').transform(dev_trans, lazy=False)
+    data_dev_matched = MNLIDataset('dev_matched').transform(dev_trans, lazy=False)
+    data_dev_mismatched = MNLIDataset('dev_mismatched').transform(dev_trans, lazy=False)
     data_train_len = data_train.transform(lambda input_id, length, segment_id, label_id: length)
     num_samples_train = len(data_train)
     # bucket sampler
@@ -134,21 +135,23 @@ def preprocess_data(tokenizer, batch_size, dev_batch_size, max_len):
     dataloader = gluon.data.DataLoader(dataset=data_train, num_workers=1,
                                        batch_sampler=batch_sampler,
                                        batchify_fn=batchify_fn)
-    dataloader_dev = mx.gluon.data.DataLoader(data_dev, batch_size=dev_batch_size,
-                                              num_workers=1, shuffle=False)
-    return dataloader, dataloader_dev, num_samples_train
+    dataloader_dev_matched = mx.gluon.data.DataLoader(data_dev_matched, batch_size=dev_batch_size,
+                                                      num_workers=1, shuffle=False)
+    dataloader_dev_mismatched = mx.gluon.data.DataLoader(
+        data_dev_mismatched, batch_size=dev_batch_size, num_workers=1, shuffle=False)
+    return dataloader, dataloader_dev_matched, dataloader_dev_mismatched, num_samples_train
 
 
-train_data, dev_data, num_train_examples = preprocess_data(bert_tokenizer, batch_size,
-                                                           dev_batch_size, args.max_len)
+train_data, dev_data_matched, dev_data_mismatched, num_train_examples = preprocess_data(
+    bert_tokenizer, batch_size, dev_batch_size, args.max_len)
 
 
-def evaluate():
+def evaluate(dataloader_eval):
     """Evaluate the model on validation dataset.
     """
     step_loss = 0
     metric.reset()
-    for _, seqs in enumerate(dev_data):
+    for _, seqs in enumerate(dataloader_eval):
         input_ids, valid_len, type_ids, label = seqs
         out = model(input_ids.as_in_context(ctx), type_ids.as_in_context(ctx),
                     valid_len.astype('float32').as_in_context(ctx))
@@ -228,7 +231,10 @@ def train():
                                      trainer.learning_rate, metric.get()[1]))
                 step_loss = 0
         mx.nd.waitall()
-        evaluate()
+        logging.info('On MNLI Matched: ')
+        evaluate(dev_data_matched)
+        logging.info('On MNLI Mismatched: ')
+        evaluate(dev_data_mismatched)
         toc = time.time()
         logging.info('Time cost={:.1f}s'.format(toc - tic))
         tic = toc
