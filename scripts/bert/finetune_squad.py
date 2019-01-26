@@ -50,10 +50,10 @@ from mxnet import gluon, nd
 
 import gluonnlp as nlp
 from gluonnlp.data import SQuAD
-from bert_for_qa import BertForQALoss, BertForQA
-from qa_dataset import (SQuADTransform, bert_qa_batchify_fn,
-                        preprocess_dataset)
-from qa_evaluate import get_F1_EM, predictions
+from bert_qa_model import BertForQALoss, BertForQA
+from bert_qa_dataset import (SQuADTransform, bert_qa_batchify_fn,
+                             preprocess_dataset)
+from bert_qa_evaluate import get_F1_EM, predictions
 
 np.random.seed(6)
 random.seed(6)
@@ -77,12 +77,12 @@ parser.add_argument('--model_parameters',
                     default=None,
                     help='Model parameter file')
 
-parser.add_argument('--model',
+parser.add_argument('--bert_model',
                     type=str,
                     default='bert_12_768_12',
                     help='BERT model name. options are bert_12_768_12 and bert_24_1024_16.')
 
-parser.add_argument('--dataset_name',
+parser.add_argument('--bert_dataset',
                     type=str,
                     default='book_corpus_wiki_en_uncased',
                     help='BERT dataset name.'
@@ -116,7 +116,7 @@ parser.add_argument('--test_batch_size',
 parser.add_argument('--optimizer',
                     type=str,
                     default='bertadam',
-                    help='optimization algorithm. default is bertadam')
+                    help='optimization algorithm. default is bertadam(mxnet >= 1.5.0.)')
 
 parser.add_argument('--accumulate',
                     type=int,
@@ -203,11 +203,11 @@ log.addHandler(fh)
 
 log.info(args)
 
-model_name = args.model
-dataset_name = args.dataset_name
+model_name = args.bert_model
+dataset_name = args.bert_dataset
 only_predict = args.only_predict
 model_parameters = args.model_parameters
-lower = args.cased
+lower = args.uncased
 
 epochs = args.epochs
 batch_size = args.batch_size
@@ -251,7 +251,7 @@ berttoken = nlp.data.BERTTokenizer(vocab=vocab, lower=lower)
 
 net = BertForQA(bert=bert)
 if not model_parameters:
-    net.classifier.initialize(init=mx.init.Normal(0.02), ctx=ctx)
+    net.span_classifier.initialize(init=mx.init.Normal(0.02), ctx=ctx)
 else:
     net.load_parameters(model_parameters, ctx=ctx)
 net.hybridize(static_alloc=True)
@@ -331,15 +331,21 @@ def train():
         for p in params:
             p.grad_req = 'add'
 
+    epoch_tic = time.time()
+    total_num = 0
     for epoch_id in range(epochs):
         step_loss = 0.0
         tic = time.time()
+        log_num = 0
         for batch_id, data in enumerate(train_dataloader):
             # set new lr
             step_num = set_new_lr(step_num, batch_id)
             # forward and backward
             with mx.autograd.record():
                 _, inputs, token_types, valid_length, start_label, end_label = data
+
+                log_num += len(inputs)
+                total_num += len(inputs)
 
                 out = net(inputs.astype('float32').as_in_context(ctx),
                           token_types.astype('float32').as_in_context(ctx),
@@ -359,12 +365,15 @@ def train():
 
             if (batch_id + 1) % log_interval == 0:
                 toc = time.time()
-                log.info('Epoch: {}, Batch: {}/{}, Loss={:.4f}, lr={:.7f} Time cost={:.1f}'
+                log.info('Epoch: {}, Batch: {}/{}, Loss={:.4f}, lr={:.7f} Time cost={:.1f} Thoughput={:.2f} samples/s'
                          .format(epoch_id, batch_id, len(train_dataloader),
                                  step_loss / log_interval,
-                                 trainer.learning_rate, toc - tic))
+                                 trainer.learning_rate, toc - tic, log_num/(toc - tic)))
                 tic = time.time()
                 step_loss = 0.0
+        epoch_toc = time.time()
+        log.info('Time cost={:.2f} s, Thoughput={:.2f} samples/s'.format(
+            epoch_toc - epoch_tic, total_num/(epoch_toc - epoch_tic)))
 
     net.save_parameters(os.path.join(output_dir, 'net_parameters'))
 
@@ -407,9 +416,11 @@ def evaluate():
         '_Result', ['example_id', 'start_logits', 'end_logits'])
     all_results = {}
 
+    epoch_tic = time.time()
+    total_num = 0
     for data in dev_dataloader:
         example_ids, inputs, token_types, valid_length, _, _ = data
-
+        total_num += len(inputs)
         out = net(inputs.astype('float32').as_in_context(ctx),
                   token_types.astype('float32').as_in_context(ctx),
                   valid_length.astype('float32').as_in_context(ctx))
@@ -424,6 +435,9 @@ def evaluate():
                 all_results[example_id] = []
             all_results[example_id].append(
                 _Result(example_id, start.tolist(), end.tolist()))
+    epoch_toc = time.time()
+    log.info('Time cost={:.2f} s, Thoughput={:.2f} samples/s'.format(
+        epoch_toc - epoch_tic, total_num/(epoch_toc - epoch_tic)))
     log.info('Get prediction results...')
 
     all_predictions, all_nbest_json, scores_diff_json = predictions(

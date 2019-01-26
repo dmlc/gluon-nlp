@@ -44,7 +44,7 @@ class BertForQA(Block):
         super(BertForQA, self).__init__(prefix=prefix, params=params)
         self.bert = bert
         with self.name_scope():
-            self.classifier = nn.Dense(units=2, flatten=False)
+            self.span_classifier = nn.Dense(units=2, flatten=False)
 
     def forward(self, inputs, token_types, valid_length=None):  # pylint: disable=arguments-differ
         """Generate the unnormalized score for the given the input sequences.
@@ -56,7 +56,7 @@ class BertForQA(Block):
         token_types : NDArray, shape (batch_size, seq_length)
             Token types for the sequences, used to indicate whether the word belongs to the
             first sentence or the second one.
-        valid_length : NDArray or None, shape (batch_size)
+        valid_length : NDArray or None, shape (batch_size,)
             Valid length of the sequence. This is used to mask the padded tokens.
 
         Returns
@@ -65,7 +65,7 @@ class BertForQA(Block):
             Shape (batch_size, seq_length, 2)
         """
         bert_output = self.bert(inputs, token_types, valid_length)
-        output = self.classifier(bert_output)
+        output = self.span_classifier(bert_output)
         return output
 
 
