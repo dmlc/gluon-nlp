@@ -32,6 +32,13 @@ This example shows how to pre-train a BERT model with Gluon NLP Toolkit.
 
 import sys
 import os
+
+os.environ['MXNET_KVSTORE_USETREE'] = '1'
+os.environ['MXNET_CUDA_NUM_RAND_STATES'] = '3276800'
+os.environ['MXNET_CUDA_MIN_NUM_RAND_PER_THREAD'] = '8'
+sys.path.insert(0, '/home/ubuntu/nlp/src')
+sys.path.insert(0, '/home/ubuntu/mxnet-master/python/')
+
 import argparse
 import random
 import logging
@@ -76,6 +83,7 @@ parser.add_argument('--warmup_ratio', type=float, default=0.1,
 parser.add_argument('--log_interval', type=int, default=10, help='Report interval')
 parser.add_argument('--ckpt_interval', type=int, default=10, help='Checkpoint interval')
 parser.add_argument('--gpus', type=str, default='0', help='List of GPUs to use. e.g. 1,3')
+parser.add_argument('--kvstore', type=str, default='device', help='KVStore type')
 parser.add_argument('--seed', type=int, default=0, help='Random seed')
 parser.add_argument('--verbose', action='store_true', help='verbose logging')
 parser.add_argument('--profile', action='store_true', help='profile the program')
@@ -261,7 +269,7 @@ def log(begin_time, local_num_tks, local_mlm_loss, local_nsp_loss, step_num, mlm
                          nsp_metric.get()[1] * 100, throughput.asscalar(), lr, duration))
 
 
-def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx):
+def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx, store):
     """Training function."""
     mlm_metric = MaskedAccuracy()
     nsp_metric = MaskedAccuracy()
@@ -270,7 +278,8 @@ def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx):
 
     lr = args.lr
     trainer = gluon.Trainer(model.collect_params(), 'bertadam',
-                            {'learning_rate': lr, 'epsilon': 1e-6, 'wd': 0.01}, update_on_kvstore=False)
+                            {'learning_rate': lr, 'epsilon': 1e-6, 'wd': 0.01},
+                            update_on_kvstore=False, kvstore=store)
 
     if args.ckpt_dir and args.start_step:
         trainer.load_states(os.path.join(args.ckpt_dir, '%07d.states'%args.start_step))
@@ -302,8 +311,8 @@ def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx):
         for _, dataloader in enumerate(data_train):
             iterator = enumerate(dataloader)
             _, data_batch = next(iterator)
-            while True:
-            #for _, data_batch in enumerate(dataloader):
+            #while True:
+            for _, data_batch in enumerate(dataloader):
                 if batch_num % accumulate == 0:
                     step_num += 1
                     # zero grad
@@ -396,6 +405,7 @@ if __name__ == '__main__':
 
     do_lower_case = 'uncased' in args.dataset_name
     tokenizer = FullTokenizer(vocabulary, do_lower_case=do_lower_case)
+    store = mx.kv.create(args.kvstore)
 
     if args.ckpt_dir:
         ckpt_dir = os.path.expanduser(args.ckpt_dir)
@@ -405,7 +415,7 @@ if __name__ == '__main__':
     if args.do_training:
         assert args.data, '--data must be provided for training'
         data_train = get_dataset(args.data, batch_size, True)
-        train(data_train, model, nsp_loss, mlm_loss, len(tokenizer.vocab), ctx)
+        train(data_train, model, nsp_loss, mlm_loss, len(tokenizer.vocab), ctx, store)
     if args.do_eval:
         assert args.data_eval, '--data_eval must be provided for evaluation'
         data_eval = get_dataset(args.data_eval, batch_size_eval, False)
