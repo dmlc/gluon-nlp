@@ -17,14 +17,14 @@
 # specific language governing permissions and limitations
 # under the License.
 """Utility functions for BERT."""
-import json
+
+import collections
 import hashlib
+import io
+import json
+
 import gluonnlp
 from tensorflow.python import pywrap_tensorflow
-try:
-    from tokenizer import load_vocab
-except ImportError:
-    from .tokenizer import load_vocab
 
 __all__ = ['convert_vocab']
 
@@ -102,3 +102,18 @@ def read_tf_checkpoint(path):
         tensor = reader.get_tensor(key)
         tensors[key] = tensor
     return tensors
+
+
+def load_vocab(vocab_file):
+    """Loads a vocabulary file into a dictionary."""
+    vocab = collections.OrderedDict()
+    index = 0
+    with io.open(vocab_file, 'r') as reader:
+        while True:
+            token = reader.readline()
+            if not token:
+                break
+            token = token.strip()
+            vocab[token] = index
+            index += 1
+    return vocab
