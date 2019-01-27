@@ -45,8 +45,8 @@ import numpy as np
 import mxnet as mx
 from mxnet import gluon, autograd
 import gluonnlp as nlp
-from sampler import LogUniformSampler
 from gluonnlp.utils import Parallel, Parallelizable
+from sampler import LogUniformSampler
 
 curr_path = os.path.dirname(os.path.abspath(os.path.expanduser(__file__)))
 sys.path.append(os.path.join(curr_path, '..', '..'))
@@ -178,12 +178,12 @@ test_data = nlp.data.PrefetchingStream(test_data)
 
 class ParallelBigRNN(Parallelizable):
     """Data parallel BigRNN model for training."""
-    def __init__(self, model, loss):
-        self._model = model
-        self._loss = loss
+    def __init__(self, rnn, loss_fn):
+        self._model = rnn
+        self._loss = loss_fn
 
-    def forward_backward(self, data):
-        X, y, m, s, h = data
+    def forward_backward(self, x):
+        X, y, m, s, h = x
         with autograd.record():
             output, hidden, new_target = self._model(X, y, h, s)
             output = output.reshape((-3, -1))
@@ -246,7 +246,7 @@ def train():
             for _, batch in enumerate(zip(data, target, mask, sample, hiddens)):
                 parallel.put(batch)
 
-            for i in range(len(data)):
+            for _ in range(len(data)):
                 hidden, ls = parallel.get()
                 # hidden states are ordered by context id
                 index = context.index(hidden[0].context)
