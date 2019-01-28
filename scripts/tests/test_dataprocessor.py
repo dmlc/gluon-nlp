@@ -34,7 +34,7 @@ def test:
         data_val = TOY('val', src_lang=src_lang, tgt_lang=tgt_lang)
         src_vocab, tgt_vocab = data_train.src_vocab, data_train.tgt_vocab
         data_val_processed = process_dataset(data_val, src_vocab, tgt_vocab,
-                                               src_max_len, tgt_max_len)
+                                             src_max_len, tgt_max_len)
         for (src, tgt), (preprocessed_src, preprocessed_tgt) in zip(data_val, data_val_processed):
             if src_max_len >= 0:
                 assert len(preprocessed_src) == min(len(src.split()), src_max_len) + 1
