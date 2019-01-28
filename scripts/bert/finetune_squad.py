@@ -336,7 +336,7 @@ def train():
     log_num = 0
     for epoch_id in range(epochs):
         step_loss = 0.0
-        tic = time.time() 
+        tic = time.time()
         for batch_id, data in enumerate(train_dataloader):
             # set new lr
             step_num = set_new_lr(step_num, batch_id)
