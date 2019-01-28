@@ -202,7 +202,6 @@ class SimpleDatasetStream(DatasetStream):
                          'a `gluon.data.Sampler`, but got %s'%(sampler))
 
     def __iter__(self):
-        file_sampler = self._get_sampler(self._file_sampler)
         # generate file samples
         for file_idx in iter(self._file_sampler):
             filename = self._files[file_idx]

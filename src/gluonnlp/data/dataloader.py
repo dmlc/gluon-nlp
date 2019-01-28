@@ -93,11 +93,11 @@ class _MultiWorkerIter(object):
     def __next__(self):
         self._push_next()
         if self._rcvd_idx == self._sent_idx:
-            assert not self._data_buffer, "Data buffer should be empty at this moment"
+            assert not self._data_buffer, 'Data buffer should be empty at this moment'
             raise StopIteration
 
-        assert self._rcvd_idx < self._sent_idx, "rcvd_idx must be smaller than sent_idx"
-        assert self._rcvd_idx in self._data_buffer, "fatal error with _push_next, rcvd_idx missing"
+        assert self._rcvd_idx < self._sent_idx, 'rcvd_idx must be smaller than sent_idx'
+        assert self._rcvd_idx in self._data_buffer, 'fatal error with _push_next, rcvd_idx missing'
         ret = self._data_buffer.pop(self._rcvd_idx)
         batch = pickle.loads(ret.get()) if self._dataset is None else ret.get()
         if self._pin_memory:
@@ -180,22 +180,22 @@ class ShardedDataLoader(object):
 
         if batch_sampler is None:
             if batch_size is None:
-                raise ValueError("batch_size must be specified unless " \
-                                 "batch_sampler is specified")
+                raise ValueError('batch_size must be specified unless ' \
+                                 'batch_sampler is specified')
             if sampler is None:
                 if shuffle:
                     sampler = _sampler.RandomSampler(len(dataset))
                 else:
                     sampler = _sampler.SequentialSampler(len(dataset))
             elif shuffle:
-                raise ValueError("shuffle must not be specified if sampler is specified")
+                raise ValueError('shuffle must not be specified if sampler is specified')
 
             batch_sampler = _sampler.BatchSampler(
                 sampler, batch_size, last_batch if last_batch else 'keep')
         elif batch_size is not None or shuffle or sampler is not None or \
                 last_batch is not None:
-            raise ValueError("batch_size, shuffle, sampler and last_batch must " \
-                             "not be specified if batch_sampler is specified.")
+            raise ValueError('batch_size, shuffle, sampler and last_batch must ' \
+                             'not be specified if batch_sampler is specified.')
 
         self._batch_sampler = batch_sampler
         self._num_workers = num_workers if num_workers >= 0 else 0

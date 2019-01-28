@@ -43,4 +43,4 @@ __all__ = (['batchify'] + utils.__all__ + transforms.__all__ + sampler.__all__
            + dataset.__all__ + corpora.__all__ + sentiment.__all__ +
            word_embedding_evaluation.__all__ + stream.__all__ + conll.__all__ +
            translation.__all__ + registry.__all__ + question_answering.__all__
-           + dataloader.__all__)
+           + dataloader.__all__ + candidate_sampler.__all__)

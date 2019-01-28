@@ -17,7 +17,6 @@
 # under the License.
 
 """Weight updating functions."""
-import math
 from mxnet.optimizer import Optimizer, register
 from mxnet.ndarray import zeros, NDArray
 
@@ -63,7 +62,7 @@ class BERTAdam(Optimizer):
         self.beta2 = beta2
         self.epsilon = epsilon
 
-    def create_state(self, index, weight): # pylint-disable=unused-argument
+    def create_state(self, index, weight): # pylint: disable=unused-argument
         """Initialization for mean and var."""
         return (zeros(weight.shape, weight.context, dtype=weight.dtype), #mean
                 zeros(weight.shape, weight.context, dtype=weight.dtype)) #variance
@@ -73,9 +72,9 @@ class BERTAdam(Optimizer):
         try:
             from mxnet.ndarray.contrib import adamw_update
         except ImportError:
-            raise ImportError("Failed to import nd.contrib.adamw_update from MXNet. "
-                              "BERTAdam optimizer requires mxnet>=1.5.0b20181228. "
-                              "Please upgrade your MXNet version.")
+            raise ImportError('Failed to import nd.contrib.adamw_update from MXNet. '
+                              'BERTAdam optimizer requires mxnet>=1.5.0b20181228. '
+                              'Please upgrade your MXNet version.')
         assert(isinstance(weight, NDArray))
         assert(isinstance(grad, NDArray))
         self._update_count(index)

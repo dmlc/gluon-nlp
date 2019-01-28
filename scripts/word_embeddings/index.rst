@@ -48,10 +48,10 @@ by Python.
 
 .. code-block:: console
 
-   $ python train_sg_cbow.py --model skipgram --ngram-buckts 0  # Word2Vec Skipgram
-   $ python train_sg_cbow.py --model skipgram --ngram-buckts 2000000  # fastText Skipgram
-   $ python train_sg_cbow.py --model cbow --ngram-buckts 0  # Word2Vec CBOW
-   $ python train_sg_cbow.py --model cbow --ngram-buckts 2000000  # fastText CBOW
+   $ python train_sg_cbow.py --model skipgram --ngram-buckets 0  # Word2Vec Skipgram
+   $ python train_sg_cbow.py --model skipgram --ngram-buckets 2000000  # fastText Skipgram
+   $ python train_sg_cbow.py --model cbow --ngram-buckets 0  # Word2Vec CBOW
+   $ python train_sg_cbow.py --model cbow --ngram-buckets 2000000  # fastText CBOW
 
 Word2Vec models were introduced by Mikolov et al., "Efficient estimation of word
 representations in vector space" ICLR Workshop 2013. FastText models were

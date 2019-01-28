@@ -34,7 +34,6 @@ sentence pair classification, with Gluon NLP Toolkit.
 # under the License.
 # pylint:disable=redefined-outer-name,logging-format-interpolation
 
-import os
 import time
 import argparse
 import random
@@ -45,9 +44,10 @@ import mxnet as mx
 from mxnet import gluon
 import gluonnlp as nlp
 from gluonnlp.model import bert_12_768_12
+from gluonnlp.data import BERTTokenizer
+
 from bert import BERTClassifier
-from tokenizer import FullTokenizer
-from dataset import MRPCDataset, ClassificationTransform
+from dataset import MRPCDataset, BERTDatasetTransform
 
 parser = argparse.ArgumentParser(description='BERT sentence pair classification example.'
                                              'We fine-tune the BERT model on MRPC')
@@ -80,7 +80,7 @@ lr = args.lr
 accumulate = args.accumulate
 log_interval = args.log_interval * accumulate if accumulate else args.log_interval
 if accumulate:
-    logging.info("Using gradient accumulation. Effective batch size = %d"%(accumulate*batch_size))
+    logging.info('Using gradient accumulation. Effective batch size = %d', accumulate * batch_size)
 
 # random seed
 np.random.seed(args.seed)
@@ -104,14 +104,18 @@ metric = mx.metric.Accuracy()
 
 # data processing
 do_lower_case = 'uncased' in dataset
-bert_tokenizer = FullTokenizer(vocabulary, do_lower_case=do_lower_case)
+bert_tokenizer = BERTTokenizer(vocabulary, lower=do_lower_case)
+
 
 def preprocess_data(tokenizer, batch_size, dev_batch_size, max_len):
     """Data preparation function."""
     # transformation
-    train_trans = ClassificationTransform(tokenizer, MRPCDataset.get_labels(),
-                                          args.max_len, pad=False)
-    dev_trans = ClassificationTransform(tokenizer, MRPCDataset.get_labels(), args.max_len)
+    train_trans = BERTDatasetTransform(tokenizer, max_len,
+                                       labels=MRPCDataset.get_labels(),
+                                       pad=False, label_dtype='int32')
+    dev_trans = BERTDatasetTransform(tokenizer, max_len,
+                                     labels=MRPCDataset.get_labels(),
+                                     label_dtype='int32')
     data_train = MRPCDataset('train').transform(train_trans, lazy=False)
     data_dev = MRPCDataset('dev').transform(dev_trans, lazy=False)
     data_train_len = data_train.transform(lambda input_id, length, segment_id, label_id: length)
@@ -134,8 +138,10 @@ def preprocess_data(tokenizer, batch_size, dev_batch_size, max_len):
                                               num_workers=1, shuffle=False)
     return dataloader, dataloader_dev, num_samples_train
 
+
 train_data, dev_data, num_train_examples = preprocess_data(bert_tokenizer, batch_size,
                                                            dev_batch_size, args.max_len)
+
 
 def evaluate():
     """Evaluate the model on validation dataset.
@@ -162,8 +168,8 @@ def train():
                                 optimizer_params, update_on_kvstore=False)
     except ValueError as e:
         print(e)
-        warnings.warn("AdamW optimizer is not found. Please consider upgrading to "
-                      "mxnet>=1.5.0. Now the original Adam optimizer is used instead.")
+        warnings.warn('AdamW optimizer is not found. Please consider upgrading to '
+                      'mxnet>=1.5.0. Now the original Adam optimizer is used instead.')
         trainer = gluon.Trainer(model.collect_params(), 'adam',
                                 optimizer_params, update_on_kvstore=False)
 
@@ -227,6 +233,7 @@ def train():
         toc = time.time()
         logging.info('Time cost={:.1f}s'.format(toc - tic))
         tic = toc
+
 
 if __name__ == '__main__':
     train()

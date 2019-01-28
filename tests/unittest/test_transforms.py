@@ -30,7 +30,7 @@ from mxnet.gluon.utils import download
 from gluonnlp.data import transforms as t
 from gluonnlp.data import count_tokens
 from gluonnlp.model.utils import _load_vocab
-from gluonnlp.vocab import Vocab
+from gluonnlp.vocab import Vocab, BERTVocab
 
 
 def test_clip_sequence():
@@ -75,7 +75,7 @@ def test_pad_sequence():
                             assert_allclose(ret_l, gt_npy)
 
 
-@pytest.mark.skipif(sys.version_info < (3,0),
+@pytest.mark.skipif(sys.version_info < (3, 0),
                     reason="requires python3 or higher")
 def test_moses_tokenizer():
     tokenizer = t.SacreMosesTokenizer()
@@ -101,7 +101,7 @@ def test_spacy_tokenizer():
     assert len(ret) > 0
 
 
-@pytest.mark.skipif(sys.version_info < (3,0),
+@pytest.mark.skipif(sys.version_info < (3, 0),
                     reason="requires python3 or higher")
 def test_moses_detokenizer():
     detokenizer = t.SacreMosesDetokenizer()
@@ -114,6 +114,7 @@ def test_moses_detokenizer():
         return
     assert isinstance(ret, list)
     assert len(ret) > 0
+
 
 @pytest.mark.remote_required
 def test_sentencepiece_tokenizer():
@@ -133,6 +134,7 @@ def test_sentencepiece_tokenizer():
     assert all(t in tokenizer.tokens for t in ret)
     assert len(ret) > 0
     assert text == detext
+
 
 @pytest.mark.remote_required
 def test_sentencepiece_tokenizer_subword_regularization():
@@ -154,8 +156,9 @@ def test_sentencepiece_tokenizer_subword_regularization():
     assert all(t in tokenizer.tokens for ret in reg_ret for t in ret)
     assert all(detokenizer(reg_ret[i]) == detext for i in range(len(reg_ret)))
 
-def test_basictokenizer():
-    tokenizer = t.BasicTokenizer(lower_case=True)
+
+def test_bertbasictokenizer():
+    tokenizer = t.BERTBasicTokenizer(lower=True)
 
     # test lower_case=True
     assert tokenizer(u" \tHeLLo!how  \n Are yoU?  ") == [
@@ -191,7 +194,7 @@ def test_basictokenizer():
     assert tokenizer._is_punctuation(u" ") == False
 
     # test lower_case=False
-    tokenizer = t.BasicTokenizer(lower_case=False)
+    tokenizer = t.BERTBasicTokenizer(lower=False)
     assert tokenizer(u" \tHeLLo!how  \n Are yoU?  ") == [
         "HeLLo", "!", "how", "Are", "yoU", "?"]
 
@@ -200,8 +203,10 @@ def test_berttokenizer():
 
     # test WordpieceTokenizer
     vocab_tokens = ["want", "##want", "##ed", "wa", "un", "runn", "##ing"]
-    vocab = Vocab(count_tokens(vocab_tokens), reserved_tokens=[
-                  "[CLS]", "[SEP]"], unknown_token="[UNK]", padding_token=None, bos_token=None, eos_token=None)
+    vocab = Vocab(
+        count_tokens(vocab_tokens),
+        reserved_tokens=["[CLS]", "[SEP]"],
+        unknown_token="[UNK]", padding_token=None, bos_token=None, eos_token=None)
     tokenizer = t.BERTTokenizer(vocab=vocab)
 
     assert tokenizer(u"unwanted running") == [
@@ -212,8 +217,45 @@ def test_berttokenizer():
     vocab_tokens = ["[CLS]", "[SEP]", "want", "##want", "##ed", "wa", "un", "runn",
                     "##ing", ","]
 
-    vocab = Vocab(count_tokens(vocab_tokens), reserved_tokens=[
-                  "[CLS]", "[SEP]"], unknown_token="[UNK]", padding_token=None, bos_token=None, eos_token=None)
+    vocab = Vocab(
+        count_tokens(vocab_tokens),
+        reserved_tokens=["[CLS]", "[SEP]"],
+        unknown_token="[UNK]", padding_token=None, bos_token=None, eos_token=None)
     tokenizer = t.BERTTokenizer(vocab=vocab)
     tokens = tokenizer(u"UNwant\u00E9d,running")
     assert tokens == ["un", "##want", "##ed", ",", "runn", "##ing"]
+
+
+def test_bert_sentences_transform():
+    text_a = u'is this jacksonville ?'
+    text_b = u'no it is not'
+    vocab_tokens = ['is', 'this', 'jack', '##son', '##ville', '?', 'no', 'it', 'is', 'not']
+
+    bert_vocab = BERTVocab(count_tokens(vocab_tokens))
+    tokenizer = t.BERTTokenizer(vocab=bert_vocab)
+
+    # test BERTSentenceTransform
+    bert_st = t.BERTSentenceTransform(tokenizer, 15, pad=True, pair=True)
+    token_ids, length, type_ids = bert_st((text_a, text_b))
+
+    text_a_tokens = ['is', 'this', 'jack', '##son', '##ville', '?']
+    text_b_tokens = ['no', 'it', 'is', 'not']
+    text_a_ids = bert_vocab[text_a_tokens]
+    text_b_ids = bert_vocab[text_b_tokens]
+
+    cls_ids = bert_vocab[[bert_vocab.cls_token]]
+    sep_ids = bert_vocab[[bert_vocab.sep_token]]
+    pad_ids = bert_vocab[[bert_vocab.padding_token]]
+
+    concated_ids = cls_ids + text_a_ids + sep_ids + text_b_ids + sep_ids + pad_ids
+    valid_token_ids = np.array([pad_ids[0]] * 15, dtype=np.int32)
+    for i, x in enumerate(concated_ids):
+        valid_token_ids[i] = x
+    valid_type_ids = np.zeros((15,), dtype=np.int32)
+    start = len(text_a_tokens) + 2
+    end = len(text_a_tokens) + 2 + len(text_b_tokens) + 1
+    valid_type_ids[start:end] = 1
+
+    assert all(token_ids == valid_token_ids)
+    assert length == len(vocab_tokens) + 3
+    assert all(type_ids == valid_type_ids)

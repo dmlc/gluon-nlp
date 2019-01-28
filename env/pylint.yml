@@ -7,4 +7,4 @@ dependencies:
   - sphinx=1.7.7
   - flake8
   - pip:
-    - pylint-quotes
+    - pylint-quotes<0.2

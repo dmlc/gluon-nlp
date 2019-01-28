@@ -31,8 +31,7 @@ tune BERT model for sentence classification.
 ## Preparation
 
 To run this tutorial locally, please [install gluonnlp](http://gluon-nlp.mxnet.io/#installation)
-and click the [download button](http://gluon-nlp.mxnet.io/examples/sentence_embedding/bert.html)
-at the top to get all related code.
+and click the download button at the top of the tutorial page to get all related code.
 
 Then we start with some usual preparation such as importing libraries
 and setting the environment.
@@ -146,7 +145,7 @@ way it was trained. The following figure shows the input representation in BERT:
 <div style="width: 500px;">![bert-embed](bert-embed.png)</div>
 
 We will use
-`ClassificationTransform` to perform the following transformations:
+`BERTDatasetTransform` to perform the following transformations:
 - tokenize
 the input sequences
 - insert [CLS], [SEP] as necessary
@@ -157,11 +156,12 @@ generate valid length
 
 ```{.python .input}
 # use the vocabulary from pre-trained model for tokenization
-bert_tokenizer = tokenizer.FullTokenizer(vocabulary, do_lower_case=True)
+bert_tokenizer = nlp.data.BERTTokenizer(vocabulary, lower=True)
 # maximum sequence length
 max_len = 128
 all_labels = ["0", "1"]
-transform = dataset.ClassificationTransform(bert_tokenizer, all_labels, max_len)
+transform = dataset.BERTDatasetTransform(bert_tokenizer, max_len,
+                                         labels=all_labels, label_dtype='int32')
 data_train = data_train.transform(transform)
 
 print('token ids = \n%s'%data_train[sample_id][0])
@@ -179,8 +179,10 @@ skip validation steps.
 ```{.python .input}
 batch_size = 32
 lr = 5e-6
-bert_dataloader = mx.gluon.data.DataLoader(data_train, batch_size=batch_size,
-                                           shuffle=True, last_batch='rollover')
+train_sampler = nlp.data.FixedBucketSampler(lengths=[int(item[1]) for item in data_train],
+                                            batch_size=batch_size,
+                                            shuffle=True)
+bert_dataloader = mx.gluon.data.DataLoader(data_train, batch_sampler=train_sampler)
 
 trainer = gluon.Trainer(model.collect_params(), 'adam',
                         {'learning_rate': lr, 'epsilon': 1e-9})
@@ -213,11 +215,10 @@ for epoch_id in range(num_epochs):
         ls.backward()
         
         # gradient clipping
-        grads = [p.grad(c) for p in params for c in [ctx]]
-        gluon.utils.clip_global_norm(grads, grad_clip)
-        
-        # parameter update
-        trainer.step(1)
+        trainer.allreduce_grads()
+        nlp.utils.clip_grad_global_norm(params, 1)
+        trainer.update(1)
+
         step_loss += ls.asscalar()
         metric.update([label], [out])
         if (batch_id + 1) % (log_interval) == 0:
