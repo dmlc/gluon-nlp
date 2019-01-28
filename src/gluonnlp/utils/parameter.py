@@ -69,8 +69,15 @@ def clip_grad_global_norm(parameters, max_norm, check_isfinite=True):
             return nd.dot(x, x)
         return array.norm().square()
 
-    arrays = [p.list_grad()[0] for p in parameters if p.grad_req != 'null']
+    # collect grad arrays on contexts with round robin schedule to avoid overwhelming
+    # ctx[0]
+    num_ctxes = len(parameters[0].list_grad())
+    arrays = []
+    for p in parameters:
+        if p.grad_req != 'null':
+            arrays.append(p.list_grad()[len(arrays) % num_ctxes])
     assert len(arrays) > 0, 'No parameter found available for gradient norm clipping.'
+
     ctx, dtype = arrays[0].context, arrays[0].dtype
     total_norm = nd.add_n(*[_norm(arr).as_in_context(ctx) for arr in arrays])
     total_norm = nd.sqrt(total_norm)
