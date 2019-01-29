@@ -132,7 +132,8 @@ parser.add_argument('--lr',
 parser.add_argument('--warmup_ratio',
                     type=float,
                     default=0.1,
-                    help='ratio of warmup steps that linearly increase learning rate from 0 to target learning rate. default is 0.1')
+                    help='ratio of warmup steps that linearly increase learning rate from '
+                    '0 to target learning rate. default is 0.1')
 
 parser.add_argument('--log_interval',
                     type=int,
