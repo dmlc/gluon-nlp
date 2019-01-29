@@ -24,6 +24,7 @@ from . import loss
 from . import data
 from . import embedding
 from . import model
+from . import metric
 from . import utils
 from . import vocab
 from . import optimizer
@@ -40,4 +41,5 @@ __all__ = ['data',
            'loss',
            'initializer',
            'optimizer',
-           'utils']
+           'utils',
+           'metric']

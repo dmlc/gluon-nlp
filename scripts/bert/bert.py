@@ -18,11 +18,11 @@
 # under the License.
 """BERT models."""
 
-
 __all__ = ['BERTClassifier', 'BERTRegression']
 
 from mxnet.gluon import Block
 from mxnet.gluon import nn
+
 
 class BERTRegression(Block):
     """Model for sentence (pair) regression task with BERT.
@@ -42,6 +42,7 @@ class BERTRegression(Block):
     params : ParameterDict or None
         See document of `mx.gluon.Block`.
     """
+
     def __init__(self, bert, dropout=0.0, prefix=None, params=None):
         super(BERTRegression, self).__init__(prefix=prefix, params=params)
         self.bert = bert
@@ -51,7 +52,7 @@ class BERTRegression(Block):
                 self.regression.add(nn.Dropout(rate=dropout))
             self.regression.add(nn.Dense(1))
 
-    def forward(self, inputs, token_types, valid_length=None): # pylint: disable=arguments-differ
+    def forward(self, inputs, token_types, valid_length=None):  # pylint: disable=arguments-differ
         """Generate the unnormalized score for the given the input sequences.
 
         Parameters
@@ -93,7 +94,13 @@ class BERTClassifier(Block):
     params : ParameterDict or None
         See document of `mx.gluon.Block`.
     """
-    def __init__(self, bert, num_classes=2, dropout=0.0, prefix=None, params=None):
+
+    def __init__(self,
+                 bert,
+                 num_classes=2,
+                 dropout=0.0,
+                 prefix=None,
+                 params=None):
         super(BERTClassifier, self).__init__(prefix=prefix, params=params)
         self.bert = bert
         with self.name_scope():
@@ -102,7 +109,7 @@ class BERTClassifier(Block):
                 self.classifier.add(nn.Dropout(rate=dropout))
             self.classifier.add(nn.Dense(units=num_classes))
 
-    def forward(self, inputs, token_types, valid_length=None): # pylint: disable=arguments-differ
+    def forward(self, inputs, token_types, valid_length=None):  # pylint: disable=arguments-differ
         """Generate the unnormalized score for the given the input sequences.
 
         Parameters

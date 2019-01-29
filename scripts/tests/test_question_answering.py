@@ -31,9 +31,10 @@ context_max_length = 256
 @pytest.mark.serial
 @pytest.mark.remote_required
 def test_transform_to_nd_array():
-    dataset = SQuAD(segment='dev', root='tests/data/squad')
+    dataset = SQuAD(segment='dev', version='1.1', root='tests/data/squad')
     vocab_provider = VocabProvider(dataset)
-    transformer = SQuADTransform(vocab_provider, question_max_length, context_max_length)
+    transformer = SQuADTransform(
+        vocab_provider, question_max_length, context_max_length)
     record = dataset[0]
 
     transformed_record = transformer(*record)
@@ -46,11 +47,13 @@ def test_transform_to_nd_array():
 def test_data_loader_able_to_read():
     dataset = SQuAD(segment='dev', root='tests/data/squad')
     vocab_provider = VocabProvider(dataset)
-    transformer = SQuADTransform(vocab_provider, question_max_length, context_max_length)
+    transformer = SQuADTransform(
+        vocab_provider, question_max_length, context_max_length)
     record = dataset[0]
 
     processed_dataset = SimpleDataset([transformer(*record)])
-    loadable_data = SimpleDataset([(r[0], r[2], r[3], r[4], r[5], r[6]) for r in processed_dataset])
+    loadable_data = SimpleDataset(
+        [(r[0], r[2], r[3], r[4], r[5], r[6]) for r in processed_dataset])
     dataloader = DataLoader(loadable_data, batch_size=1)
 
     for data in dataloader:

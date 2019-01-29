@@ -26,8 +26,8 @@ import numpy as np
 import mxnet as mx
 import gluonnlp as nlp
 from gluonnlp.data import TSVDataset
-from tokenizer import FullTokenizer
-from dataset import BERTTransform
+from gluonnlp.data import BERTTokenizer
+from gluon.data import BERTSentenceTransform
 
 parser = argparse.ArgumentParser(description='Comparison script for BERT model in Tensorflow'
                                              'and that in Gluon')
@@ -139,10 +139,10 @@ bert, vocabulary = nlp.model.get_model(args.gluon_model,
                                        pretrained=True, use_pooler=False,
                                        use_decoder=False, use_classifier=False)
 print(bert)
-tokenizer = FullTokenizer(vocabulary, do_lower_case=do_lower_case)
+tokenizer = BERTTokenizer(vocabulary, lower=do_lower_case)
 dataset = TSVDataset(input_file, field_separator=nlp.data.Splitter(' ||| '))
 
-trans = BERTTransform(tokenizer, max_length)
+trans = BERTSentenceTransform(tokenizer, max_length)
 dataset = dataset.transform(trans)
 
 bert_dataloader = mx.gluon.data.DataLoader(dataset, batch_size=1,
@@ -157,7 +157,7 @@ for i, seq in enumerate(bert_dataloader):
     a = tf_outputs[-1][:length]
     b = out[0][:length].asnumpy()
 
-    print('stdev = %s'%(np.std(a-b)))
+    print('stdev = %s' % (np.std(a - b)))
     mx.test_utils.assert_almost_equal(a, b, atol=1e-4, rtol=1e-4)
     mx.test_utils.assert_almost_equal(a, b, atol=1e-5, rtol=1e-5)
     mx.test_utils.assert_almost_equal(a, b, atol=5e-6, rtol=5e-6)
