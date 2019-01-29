@@ -326,7 +326,7 @@ class SSTDataset(GLUEDataset):
     def __init__(self,
                  segment='train',
                  root=os.path.join(
-                     os.getenv('GLUE_DIR', 'glue_data'), task_name)):
+                     os.getenv('GLUE_DIR', 'glue_data'), 'SST-2')):
         self._supported_segments = ['train', 'dev', 'test']
         assert segment in self._supported_segments, 'Unsupported segment: %s' % segment
         path = os.path.join(root, '%s.tsv' % segment)
