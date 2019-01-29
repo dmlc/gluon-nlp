@@ -267,10 +267,10 @@ if not model_parameters:
     net.classifier.initialize(init=mx.init.Normal(0.02), ctx=ctx)
 else:
     net.load_parameters(model_parameters, ctx=ctx)
-net.hybridize(static_alloc=True)
+net.hybridize(static_alloc=True, static_shape=True)
 
 loss_function = BertForQALoss()
-loss_function.hybridize(static_alloc=True)
+loss_function.hybridize(static_alloc=True, static_shape=True)
 
 
 def train():
