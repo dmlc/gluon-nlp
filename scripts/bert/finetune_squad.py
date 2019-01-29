@@ -100,13 +100,13 @@ parser.add_argument('--output_dir',
 
 parser.add_argument('--epochs',
                     type=int,
-                    default=2,
-                    help='number of epochs, default is 2')
+                    default=3,
+                    help='number of epochs, default is 3')
 
 parser.add_argument('--batch_size',
                     type=int,
-                    default=12,
-                    help='Batch size. Number of examples per gpu in a minibatch. default is 12')
+                    default=32,
+                    help='Batch size. Number of examples per gpu in a minibatch. default is 32')
 
 parser.add_argument('--test_batch_size',
                     type=int,
@@ -126,13 +126,13 @@ parser.add_argument('--accumulate',
 
 parser.add_argument('--lr',
                     type=float,
-                    default=3e-5,
-                    help='Initial learning rate. default is 3e-5')
+                    default=5e-5,
+                    help='Initial learning rate. default is 5e-5')
 
 parser.add_argument('--warmup_ratio',
                     type=float,
                     default=0.1,
-                    help='ratio of warmup steps used in NOAM\'s stepsize schedule. default is 0.1')
+                    help='ratio of warmup steps that linearly increase learning rate from 0 to target learning rate. default is 0.1')
 
 parser.add_argument('--log_interval',
                     type=int,
@@ -177,9 +177,9 @@ parser.add_argument('--version_2',
 
 parser.add_argument('--null_score_diff_threshold',
                     type=float,
-                    default=-2.0,
+                    default=0.0,
                     help='If null_score - best_non_null is greater than the threshold predict null.'
-                    ' default is -2.0')
+                    'Typical values are between -1.0 and -5.0. default is 0.0')
 
 parser.add_argument('--gpu',
                     action='store_true',
