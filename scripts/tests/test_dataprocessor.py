@@ -25,10 +25,10 @@ from ..machine_translation.dataprocessor import process_dataset
 from ..machine_translation.dataset import TOY
 
 
-def test:
+def test_translation_preprocess():
     src_lang = 'en'
     tgt_lang = 'vi'
-    max_lens = ((10, 10), (-1, -1))
+    max_lens = ((10, 10), (0, 0), (-1, -1))
     for (src_max_len, tgt_max_len) in max_lens:
         data_train = TOY('train', src_lang=src_lang, tgt_lang=tgt_lang)
         data_val = TOY('val', src_lang=src_lang, tgt_lang=tgt_lang)
