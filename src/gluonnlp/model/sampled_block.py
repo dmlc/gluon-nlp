@@ -89,9 +89,9 @@ class _SampledDenseHelper(HybridBlock):
             new_label = F.zeros_like(label)
         else:
             label_vec = F.reshape(label, (-1, 1))
-            new_label_sampled = F.zeros_like(pred_sampled)
             new_label_true = F.ones_like(label_vec)
-            new_label = F.Concat(new_label_sampled, new_label_true, dim=1)
+            new_label_sampled = F.zeros_like(pred_sampled)
+            new_label = F.Concat(new_label_true, new_label_sampled, dim=1)
         return pred, new_label
 
     def __repr__(self):
@@ -194,6 +194,12 @@ class NCEDense(_SampledDense):
     """Noise contrastive estimated Dense block, which computes sampled pred
     output and labels for noise contrastive estimation loss during training.
 
+    Reference:
+
+    Exploring the Limits of Language Modeling
+    Jozefowicz, Rafal and Vinyals, Oriol and Schuster, Mike and Shazeer, Noam and Wu, Yonghui
+    https://arxiv.org/pdf/1602.02410
+
     Please use `loss.SigmoidBinaryCrossEntropyLoss` for noise contrastive estimation loss
     during training.
 
@@ -278,6 +284,12 @@ class NCEDense(_SampledDense):
 class ISDense(_SampledDense):
     """Importance sampled Dense block, which computes sampled pred output and labels
     for importance sampled softmax loss during training.
+
+    Reference:
+
+    Exploring the Limits of Language Modeling
+    Jozefowicz, Rafal and Vinyals, Oriol and Schuster, Mike and Shazeer, Noam and Wu, Yonghui
+    https://arxiv.org/pdf/1602.02410
 
     Please use `loss.SoftmaxCrossEntropyLoss` for sampled softmax loss.
 
@@ -486,6 +498,12 @@ class SparseISDense(_SparseSampledDense):
     """Importance sampled Dense block with sparse weights, which computes sampled pred output
     and labels for importance sampled softmax loss during training.
 
+    Reference:
+
+    Exploring the Limits of Language Modeling
+    Jozefowicz, Rafal and Vinyals, Oriol and Schuster, Mike and Shazeer, Noam and Wu, Yonghui
+    https://arxiv.org/pdf/1602.02410
+
     Please use `loss.SoftmaxCrossEntropyLoss` for sampled softmax loss.
 
     The block is designed for distributed training with extremely large
@@ -576,6 +594,12 @@ class SparseNCEDense(_SparseSampledDense):
     """Noise contrastive estimated Dense block with sparse weights, which computes sampled
     pred output and labels for noise contrastive estimation loss during training.
 
+    Reference:
+
+    Exploring the Limits of Language Modeling
+    Jozefowicz, Rafal and Vinyals, Oriol and Schuster, Mike and Shazeer, Noam and Wu, Yonghui
+    https://arxiv.org/pdf/1602.02410
+
     Please use `loss.SigmoidBinaryCrossEntropyLoss` for noise contrastive estimation loss
     during training.
 
@@ -652,7 +676,7 @@ class SparseNCEDense(_SparseSampledDense):
     Outputs:
         - **out**: A tensor of shape `(batch_size, 1+num_sampled)`.
           The output probability for the true class and sampled classes
-        - **new_targets**: A tensor of shape `(batch_size,)`.
+        - **new_targets**: A tensor of shape `(batch_size, 1+num_sampled)`.
           The new target classes.
 
     """
