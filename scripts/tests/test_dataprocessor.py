@@ -21,8 +21,13 @@
 
 from __future__ import print_function
 
-from ..machine_translation.dataprocessor import process_dataset
-from ..machine_translation.dataset import TOY
+import sys
+import os
+
+sys.path.append(os.path.join(os.path.dirname(sys.path[0]), 'machine_translation'))
+
+from dataprocessor import process_dataset
+from dataset import TOY
 
 
 def test_translation_preprocess():
