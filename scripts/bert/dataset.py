@@ -21,6 +21,7 @@ __all__ = [
 ]
 
 import os
+import warnings
 import numpy as np
 from mxnet.metric import Accuracy, F1, MCC, PearsonCorrelation, CompositeEvalMetric
 from gluonnlp.data import TSVDataset, BERTSentenceTransform
@@ -82,6 +83,11 @@ class GLUEDataset(TSVDataset):
         #to filter out error records
         final_samples = [[s[f] for f in self.fields] for s in all_samples
                          if len(s) >= largest_field + 1]
+        residuals = len(all_samples) - len(final_samples)
+        if residuals > 0:
+            warnings.warn(
+                '{} samples have been filtered out due to parsing error.'.
+                format(residuals))
         return final_samples
 
 
@@ -444,22 +450,6 @@ class WNLIDataset(GLUEDataset):
     def get_metric():
         """Get metrics Accuracy"""
         return Accuracy()
-
-
-def _truncate_seq_pair(tokens_a, tokens_b, max_length):
-    """Truncates a sequence pair in place to the maximum length."""
-    # This is a simple heuristic which will always truncate the longer sequence
-    # one token at a time. This makes more sense than truncating an equal percent
-    # of tokens from each, since if one sequence is very short then each token
-    # that's truncated likely contains more information than a longer sequence.
-    while True:
-        total_length = len(tokens_a) + len(tokens_b)
-        if total_length <= max_length:
-            break
-        if len(tokens_a) > len(tokens_b):
-            tokens_a.pop()
-        else:
-            tokens_b.pop()
 
 
 class BERTDatasetTransform(object):

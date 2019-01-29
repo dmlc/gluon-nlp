@@ -44,7 +44,7 @@ import numpy as np
 import mxnet as mx
 from mxnet import gluon
 import gluonnlp as nlp
-from gluonnlp.model import bert_12_768_12
+from gluonnlp.model import get_bert_model
 from gluonnlp.data import BERTTokenizer
 
 from bert import BERTClassifier, BERTRegression
@@ -82,8 +82,8 @@ parser.add_argument(
 parser.add_argument(
     '--optimizer',
     type=str,
-    default='adam',
-    help='Optimization algorithm, default is adam')
+    default='bertadam',
+    help='Optimization algorithm, default is bertadam')
 parser.add_argument(
     '--lr',
     type=float,
@@ -120,9 +120,26 @@ parser.add_argument(
     type=str,
     choices=tasks.keys(),
     help='The name of the task to fine-tune.(MRPC,...)')
+parser.add_argument(
+    '--bert_model',
+    type=str,
+    default='bert_12_768_12',
+    help='The name of pre-trained BERT model to fine-tune'
+    '(bert_24_1024_16 and bert_12_768_12).')
+parser.add_argument(
+    '--bert_dataset',
+    type=str,
+    default='book_corpus_wiki_en_uncased',
+    help='Dataset of BERT pre-trained with.'
+    'Options include \'book_corpus_wiki_en_cased\', \'book_corpus_wiki_en_uncased\''
+    'for both bert_24_1024_16 and bert_12_768_12.'
+    '\'wiki_cn\', \'wiki_multilingual\' and \'wiki_multilingual_cased\' for bert_12_768_12 only.'
+)
+
 args = parser.parse_args()
 
 logging.getLogger().setLevel(logging.DEBUG)
+logging.captureWarnings(True)
 logging.info(args)
 
 batch_size = args.batch_size
@@ -145,8 +162,10 @@ ctx = mx.cpu() if not args.gpu else mx.gpu()
 task = tasks[task_name]
 
 # model and loss
-dataset = 'book_corpus_wiki_en_uncased'
-bert, vocabulary = bert_12_768_12(
+model_name = args.bert_model
+dataset = args.bert_dataset
+bert, vocabulary = get_bert_model(
+    model_name=model_name,
     dataset_name=dataset,
     pretrained=True,
     ctx=ctx,
@@ -176,14 +195,7 @@ bert_tokenizer = BERTTokenizer(vocabulary, lower=do_lower_case)
 def preprocess_data(tokenizer, task, batch_size, dev_batch_size, max_len):
     """Data preparation function."""
     # transformation
-    train_trans = BERTDatasetTransform(
-        tokenizer,
-        max_len,
-        labels=task.get_labels(),
-        pad=False,
-        pair=task.is_pair,
-        label_dtype='float32' if not task.get_labels() else 'int32')
-    dev_trans = BERTDatasetTransform(
+    trans = BERTDatasetTransform(
         tokenizer,
         max_len,
         labels=task.get_labels(),
@@ -192,11 +204,11 @@ def preprocess_data(tokenizer, task, batch_size, dev_batch_size, max_len):
         label_dtype='float32' if not task.get_labels() else 'int32')
 
     if task.task_name == 'MNLI':
-        data_train = task('dev_matched').transform(train_trans, lazy=False)
-        data_dev = task('dev_mismatched').transform(dev_trans, lazy=False)
+        data_train = task('dev_matched').transform(trans, lazy=False)
+        data_dev = task('dev_mismatched').transform(trans, lazy=False)
     else:
-        data_train = task('train').transform(train_trans, lazy=False)
-        data_dev = task('dev').transform(dev_trans, lazy=False)
+        data_train = task('train').transform(trans, lazy=False)
+        data_dev = task('dev').transform(trans, lazy=False)
 
     data_train_len = data_train.transform(
         lambda input_id, length, segment_id, label_id: length)
@@ -236,17 +248,12 @@ train_data, dev_data, num_train_examples = preprocess_data(
 def evaluate(metric):
     """Evaluate the model on validation dataset.
     """
-    step_loss = 0
     metric.reset()
     for _, seqs in enumerate(dev_data):
-        Ls = []
         input_ids, valid_len, type_ids, label = seqs
         out = model(
             input_ids.as_in_context(ctx), type_ids.as_in_context(ctx),
             valid_len.astype('float32').as_in_context(ctx))
-        ls = loss_function(out, label.as_in_context(ctx)).mean()
-        Ls.append(ls)
-        step_loss += sum([L.asscalar() for L in Ls])
         metric.update([label], [out])
     metric_nm, metric_val = metric.get()
     if not isinstance(metric_nm, list):
