@@ -93,8 +93,7 @@ parser.add_argument(
     '--warmup_ratio',
     type=float,
     default=0.1,
-    help=
-    'ratio of warmup steps used in NOAM\'s stepsize schedule, default is 0.1')
+    help='ratio of warmup steps used in NOAM\'s stepsize schedule, default is 0.1')
 parser.add_argument(
     '--log_interval',
     type=int,
@@ -203,13 +202,7 @@ def preprocess_data(tokenizer, task, batch_size, dev_batch_size, max_len):
         pair=task.is_pair,
         label_dtype='float32' if not task.get_labels() else 'int32')
 
-    if task.task_name == 'MNLI':
-        data_train = task('dev_matched').transform(trans, lazy=False)
-        data_dev = task('dev_mismatched').transform(trans, lazy=False)
-    else:
-        data_train = task('train').transform(trans, lazy=False)
-        data_dev = task('dev').transform(trans, lazy=False)
-
+    data_train = task('train').transform(trans, lazy=False)
     data_train_len = data_train.transform(
         lambda input_id, length, segment_id, label_id: length)
 
@@ -227,29 +220,46 @@ def preprocess_data(tokenizer, task, batch_size, dev_batch_size, max_len):
         ratio=0,
         shuffle=True)
     # data loaders
-    dataloader = gluon.data.DataLoader(
+    dataloader_train = gluon.data.DataLoader(
         dataset=data_train,
         num_workers=1,
         batch_sampler=batch_sampler,
         batchify_fn=batchify_fn)
-    dataloader_dev = mx.gluon.data.DataLoader(
-        data_dev,
-        batch_size=dev_batch_size,
-        num_workers=1,
-        shuffle=False,
-        batchify_fn=batchify_fn)
-    return dataloader, dataloader_dev, num_samples_train
+    if task.task_name == 'MNLI':
+        data_dev_matched = task('dev_matched').transform(trans, lazy=False)
+        data_dev_mismatched = task('dev_mismatched').transform(trans, lazy=False)
+
+        dataloader_dev_matched = mx.gluon.data.DataLoader(
+            data_dev_matched, batch_size=dev_batch_size, num_workers=1, shuffle=False)
+        dataloader_dev_mismatched = mx.gluon.data.DataLoader(
+            data_dev_mismatched, batch_size=dev_batch_size, num_workers=1, shuffle=False)
+        return dataloader_train, dataloader_dev_matched, \
+            dataloader_dev_mismatched, num_samples_train
+    else:
+        data_dev = task('dev').transform(trans, lazy=False)
+        dataloader_dev = mx.gluon.data.DataLoader(
+            data_dev,
+            batch_size=dev_batch_size,
+            num_workers=1,
+            shuffle=False,
+            batchify_fn=batchify_fn)
+        return dataloader_train, dataloader_dev, num_samples_train
 
 
-train_data, dev_data, num_train_examples = preprocess_data(
-    bert_tokenizer, task, batch_size, dev_batch_size, args.max_len)
+# Get the dataloader. Data set for special handling of MNLI tasks
+if task.task_name == 'MNLI':
+    train_data, dev_data_matched, dev_data_mismatched, num_train_examples = preprocess_data(
+        bert_tokenizer, task, batch_size, dev_batch_size, args.max_len)
+else:
+    train_data, dev_data, num_train_examples = preprocess_data(
+        bert_tokenizer, task, batch_size, dev_batch_size, args.max_len)
 
 
-def evaluate(metric):
+def evaluate(dataloader_eval, metric):
     """Evaluate the model on validation dataset.
     """
     metric.reset()
-    for _, seqs in enumerate(dev_data):
+    for _, seqs in enumerate(dataloader_eval):
         input_ids, valid_len, type_ids, label = seqs
         out = model(
             input_ids.as_in_context(ctx), type_ids.as_in_context(ctx),
@@ -344,12 +354,18 @@ def train(metric):
                     metric_val = [metric_val]
                 eval_str = '[Epoch {} Batch {}/{}] loss={:.4f}, lr={:.7f}, metrics=' + \
                     ','.join([i + ':{:.4f}' for i in metric_nm])
-                logging.info(eval_str.format(epoch_id + 1, batch_id + 1, len(train_data), \
-                    step_loss / args.log_interval, \
-                    trainer.learning_rate, *metric_val))
+                logging.info(eval_str.format(epoch_id + 1, batch_id + 1, len(train_data),
+                                             step_loss / args.log_interval,
+                                             trainer.learning_rate, *metric_val))
                 step_loss = 0
         mx.nd.waitall()
-        evaluate(metric)
+        if task.task_name == 'MNLI':
+            logging.info('On MNLI Matched: ')
+            evaluate(dev_data_matched, metric)
+            logging.info('On MNLI Mismatched: ')
+            evaluate(dev_data_mismatched, metric)
+        else:
+            evaluate(dev_data, metric)
         toc = time.time()
         logging.info('Time cost={:.1f}s'.format(toc - tic))
         tic = toc
