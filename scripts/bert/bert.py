@@ -18,11 +18,61 @@
 # under the License.
 """BERT models."""
 
-
-__all__ = ['BERTClassifier']
+__all__ = ['BERTClassifier', 'BERTRegression']
 
 from mxnet.gluon import Block
 from mxnet.gluon import nn
+
+
+class BERTRegression(Block):
+    """Model for sentence (pair) regression task with BERT.
+
+    The model feeds token ids and token type ids into BERT to get the
+    pooled BERT sequence representation, then apply a Dense layer for
+    regression.
+
+    Parameters
+    ----------
+    bert: BERTModel
+        Bidirectional encoder with transformer.
+    dropout : float or None, default 0.0.
+        Dropout probability for the bert output.
+    prefix : str or None
+        See document of `mx.gluon.Block`.
+    params : ParameterDict or None
+        See document of `mx.gluon.Block`.
+    """
+
+    def __init__(self, bert, dropout=0.0, prefix=None, params=None):
+        super(BERTRegression, self).__init__(prefix=prefix, params=params)
+        self.bert = bert
+        with self.name_scope():
+            self.regression = nn.HybridSequential(prefix=prefix)
+            if dropout:
+                self.regression.add(nn.Dropout(rate=dropout))
+            self.regression.add(nn.Dense(1))
+
+    def forward(self, inputs, token_types, valid_length=None):  # pylint: disable=arguments-differ
+        """Generate the unnormalized score for the given the input sequences.
+
+        Parameters
+        ----------
+        inputs : NDArray, shape (batch_size, seq_length)
+            Input words for the sequences.
+        token_types : NDArray, shape (batch_size, seq_length)
+            Token types for the sequences, used to indicate whether the word belongs to the
+            first sentence or the second one.
+        valid_length : NDArray or None, shape (batch_size)
+            Valid length of the sequence. This is used to mask the padded tokens.
+
+        Returns
+        -------
+        outputs : NDArray
+            Shape (batch_size, num_classes)
+        """
+        _, pooler_out = self.bert(inputs, token_types, valid_length)
+        return self.regression(pooler_out)
+
 
 class BERTClassifier(Block):
     """Model for sentence (pair) classification task with BERT.
@@ -44,16 +94,22 @@ class BERTClassifier(Block):
     params : ParameterDict or None
         See document of `mx.gluon.Block`.
     """
-    def __init__(self, bert, num_classes=2, dropout=0.0, prefix=None, params=None):
+
+    def __init__(self,
+                 bert,
+                 num_classes=2,
+                 dropout=0.0,
+                 prefix=None,
+                 params=None):
         super(BERTClassifier, self).__init__(prefix=prefix, params=params)
         self.bert = bert
         with self.name_scope():
             self.classifier = nn.HybridSequential(prefix=prefix)
             if dropout:
                 self.classifier.add(nn.Dropout(rate=dropout))
-            self.classifier.add(nn.Dense(units=num_classes, flatten=False))
+            self.classifier.add(nn.Dense(units=num_classes))
 
-    def forward(self, inputs, token_types, valid_length=None): # pylint: disable=arguments-differ
+    def forward(self, inputs, token_types, valid_length=None):  # pylint: disable=arguments-differ
         """Generate the unnormalized score for the given the input sequences.
 
         Parameters
