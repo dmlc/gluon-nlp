@@ -252,9 +252,11 @@ def preprocess_data(tokenizer, task, batch_size, dev_batch_size, max_len):
         data_dev_mismatched = task('dev_mismatched').transform(trans, lazy=False)
 
         dataloader_dev_matched = mx.gluon.data.DataLoader(
-            data_dev_matched, batch_size=dev_batch_size, num_workers=1, shuffle=False)
+            data_dev_matched, batch_size=dev_batch_size,
+            num_workers=1, shuffle=False, batchify_fn=batchify_fn)
         dataloader_dev_mismatched = mx.gluon.data.DataLoader(
-            data_dev_mismatched, batch_size=dev_batch_size, num_workers=1, shuffle=False)
+            data_dev_mismatched, batch_size=dev_batch_size,
+            num_workers=1, shuffle=False, batchify_fn=batchify_fn)
         return dataloader_train, dataloader_dev_matched, \
             dataloader_dev_mismatched, num_samples_train
     else:
