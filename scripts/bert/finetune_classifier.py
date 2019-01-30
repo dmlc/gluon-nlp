@@ -134,6 +134,19 @@ parser.add_argument(
     'for both bert_24_1024_16 and bert_12_768_12.'
     '\'wiki_cn\', \'wiki_multilingual\' and \'wiki_multilingual_cased\' for bert_12_768_12 only.'
 )
+parser.add_argument(
+    '--model_parameters',
+    type=str,
+    default=None,
+    help='Model parameter file. default is None'
+)
+parser.add_argument(
+    '--output_dir',
+    type=str,
+    default='./output_dir',
+    help='The output directory where the model params will be written.'
+    ' default is ./output_dir'
+)
 
 args = parser.parse_args()
 
@@ -181,6 +194,15 @@ else:
         bert, dropout=0.1, num_classes=len(task.get_labels()))
     model.classifier.initialize(init=mx.init.Normal(0.02), ctx=ctx)
     loss_function = gluon.loss.SoftmaxCELoss()
+
+model_parameters = args.model_parameters
+output_dir = args.output_dir
+if model_parameters:
+    logging.info('loading params from {0}'.format(model_parameters))
+    model.load_parameters(model_parameters)
+if not os.path.exists(output_dir):
+    os.makedirs(output_dir)
+
 
 logging.info(model)
 model.hybridize(static_alloc=True)
@@ -247,6 +269,7 @@ def preprocess_data(tokenizer, task, batch_size, dev_batch_size, max_len):
 
 
 # Get the dataloader. Data set for special handling of MNLI tasks
+logging.info('processing dataset...')
 if task.task_name == 'MNLI':
     train_data, dev_data_matched, dev_data_mismatched, num_train_examples = preprocess_data(
         bert_tokenizer, task, batch_size, dev_batch_size, args.max_len)
@@ -366,6 +389,12 @@ def train(metric):
             evaluate(dev_data_mismatched, metric)
         else:
             evaluate(dev_data, metric)
+
+        # save params
+        params_saved = os.path.join(output_dir,
+                                    'model_bert_{0}_{1}.params'.format(task.task_name, epoch_id))
+        model.save_parameters(params_saved)
+        logging.info('params saved in : {0}'.format(params_saved))
         toc = time.time()
         logging.info('Time cost={:.1f}s'.format(toc - tic))
         tic = toc
