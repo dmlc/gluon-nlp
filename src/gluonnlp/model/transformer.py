@@ -333,6 +333,7 @@ class BaseTransformerEncoder(HybridBlock):
         self._scaled = scaled
         self._use_layer_norm_before_dropout = use_layer_norm_before_dropout
         self._scale_embed = scale_embed
+        self._dtype = 'float32'
         with self.name_scope():
             self.dropout_layer = nn.Dropout(dropout)
             self.layer_norm = _get_layer_norm(use_bert_encoder, units)
@@ -369,6 +370,9 @@ class BaseTransformerEncoder(HybridBlock):
                     scaled=scaled, output_attention=output_attention,
                     prefix='transformer%d_'%i)
 
+    def cast(self, dtype):
+        self._dtype = dtype
+        super(BaseTransformerEncoder, self).cast(dtype)
 
     def hybrid_forward(self, F, inputs, states=None,
                        valid_length=None, steps=None,
@@ -399,7 +403,7 @@ class BaseTransformerEncoder(HybridBlock):
         C_in = int(os.environ['INPUTSIZE'])
         if valid_length is not None:
             mask = F.broadcast_lesser(
-                F.arange(length).reshape((1, -1)),
+                F.arange(length, dtype=self._dtype).reshape((1, -1)),
                 valid_length.reshape((-1, 1)))
             mask = F.broadcast_axes(F.expand_dims(mask, axis=1), axis=1, size=length)
             if states is None:
@@ -843,7 +847,7 @@ class TransformerDecoder(HybridBlock, Seq2SeqDecoder):
         mem_length = mem_value.shape[1]
         if encoder_valid_length is not None:
             mem_masks = mx.nd.broadcast_lesser(
-                mx.nd.arange(mem_length, ctx=encoder_valid_length.context).reshape((1, -1)),
+                mx.nd.arange(mem_length, ctx=encoder_valid_length.context, dtype=encoder_valid_length.dtype).reshape((1, -1)),
                 encoder_valid_length.reshape((-1, 1)))
             decoder_states.append(mem_masks)
         self._encoder_valid_length = encoder_valid_length
@@ -876,13 +880,13 @@ class TransformerDecoder(HybridBlock, Seq2SeqDecoder):
         """
         batch_size = inputs.shape[0]
         length = inputs.shape[1]
-        length_array = mx.nd.arange(length, ctx=inputs.context)
+        length_array = mx.nd.arange(length, ctx=inputs.context, dtype=inputs.dtype)
         mask = mx.nd.broadcast_lesser_equal(
             length_array.reshape((1, -1)),
             length_array.reshape((-1, 1)))
         if valid_length is not None:
             batch_mask = mx.nd.broadcast_lesser(
-                mx.nd.arange(length, ctx=valid_length.context).reshape((1, -1)),
+                mx.nd.arange(length, ctx=valid_length.context, dtype=valid_length.dtype).reshape((1, -1)),
                 valid_length.reshape((-1, 1)))
             mask = mx.nd.broadcast_mul(mx.nd.expand_dims(batch_mask, -1),
                                        mx.nd.expand_dims(mask, 0))

@@ -121,12 +121,13 @@ class LabelSmoothing(HybridBlock):
         Created if `None`.
     """
     def __init__(self, axis=-1, epsilon=0.1, units=None,
-                 sparse_label=True, prefix=None, params=None):
+                 sparse_label=True, dtype='float32', prefix=None, params=None):
         super(LabelSmoothing, self).__init__(prefix=prefix, params=params)
         self._axis = axis
         self._epsilon = epsilon
         self._sparse_label = sparse_label
         self._units = units
+        self._dtype = dtype
 
     def hybrid_forward(self, F, inputs, units=None): # pylint: disable=arguments-differ
         """
@@ -148,7 +149,7 @@ class LabelSmoothing(HybridBlock):
                 'instance initialization when sparse_label is False'
             if units is None:
                 units = self._units
-            inputs = F.one_hot(inputs, depth=units)
+            inputs = F.one_hot(inputs, depth=units, dtype=self._dtype)
         if units is None and self._units is None:
             return F.Custom(inputs, epsilon=self._epsilon, axis=self._axis,
                             op_type='_smoothing_with_dim')
