@@ -26,8 +26,8 @@ import os
 
 sys.path.append(os.path.join(os.path.dirname(sys.path[0]), 'machine_translation'))
 
-from machine_translation.dataprocessor import process_dataset
-from machine_translation.dataset import TOY
+from ..machine_translation.dataprocessor import process_dataset
+from ..machine_translation.dataset import TOY
 
 
 def test_translation_preprocess():
