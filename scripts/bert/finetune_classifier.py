@@ -34,6 +34,7 @@ sentence pair classification, with Gluon NLP Toolkit.
 # under the License.
 # pylint:disable=redefined-outer-name,logging-format-interpolation
 
+import os
 import time
 import argparse
 import random
@@ -43,44 +44,113 @@ import numpy as np
 import mxnet as mx
 from mxnet import gluon
 import gluonnlp as nlp
-from gluonnlp.model import bert_12_768_12
+from gluonnlp.model import get_bert_model
 from gluonnlp.data import BERTTokenizer
 
-from bert import BERTClassifier
-from dataset import MRPCDataset, BERTDatasetTransform
+from bert import BERTClassifier, BERTRegression
+from dataset import MRPCDataset, QQPDataset, RTEDataset, \
+    STSBDataset, BERTDatasetTransform, \
+    QNLIDataset, COLADataset, MNLIDataset, WNLIDataset, SSTDataset
 
-parser = argparse.ArgumentParser(description='BERT sentence pair classification example.'
-                                             'We fine-tune the BERT model on MRPC')
-parser.add_argument('--epochs', type=int, default=3, help='number of epochs, default is 3')
-parser.add_argument('--batch_size', type=int, default=32,
-                    help='Batch size. Number of examples per gpu in a minibatch, default is 32')
-parser.add_argument('--dev_batch_size', type=int, default=8,
-                    help='Batch size for dev set, default is 8')
-parser.add_argument('--optimizer', type=str, default='adam',
-                    help='Optimization algorithm, default is adam')
-parser.add_argument('--lr', type=float, default=5e-5,
-                    help='Initial learning rate, default is 5e-5')
-parser.add_argument('--warmup_ratio', type=float, default=0.1,
-                    help='ratio of warmup steps used in NOAM\'s stepsize schedule, default is 0.1')
-parser.add_argument('--log_interval', type=int, default=10, help='report interval, default is 10')
-parser.add_argument('--max_len', type=int, default=128,
-                    help='Maximum length of the sentence pairs, default is 128')
-parser.add_argument('--seed', type=int, default=2, help='Random seed, default is 2')
-parser.add_argument('--accumulate', type=int, default=None, help='The number of batches for '
-                    'gradients accumulation to simulate large batch size. Default is None')
-parser.add_argument('--gpu', action='store_true', help='whether to use gpu for finetuning')
+tasks = {
+    'MRPC': MRPCDataset,
+    'QQP': QQPDataset,
+    'QNLI': QNLIDataset,
+    'RTE': RTEDataset,
+    'STS-B': STSBDataset,
+    'CoLA': COLADataset,
+    'MNLI': MNLIDataset,
+    'WNLI': WNLIDataset,
+    'SST': SSTDataset
+}
+
+parser = argparse.ArgumentParser(
+    description='BERT fine-tune examples for GLUE tasks.')
+parser.add_argument(
+    '--epochs', type=int, default=3, help='number of epochs, default is 3')
+parser.add_argument(
+    '--batch_size',
+    type=int,
+    default=32,
+    help='Batch size. Number of examples per gpu in a minibatch, default is 32'
+)
+parser.add_argument(
+    '--dev_batch_size',
+    type=int,
+    default=8,
+    help='Batch size for dev set, default is 8')
+parser.add_argument(
+    '--optimizer',
+    type=str,
+    default='bertadam',
+    help='Optimization algorithm, default is bertadam')
+parser.add_argument(
+    '--lr',
+    type=float,
+    default=5e-5,
+    help='Initial learning rate, default is 5e-5')
+parser.add_argument(
+    '--warmup_ratio',
+    type=float,
+    default=0.1,
+    help=
+    'ratio of warmup steps used in NOAM\'s stepsize schedule, default is 0.1')
+parser.add_argument(
+    '--log_interval',
+    type=int,
+    default=10,
+    help='report interval, default is 10')
+parser.add_argument(
+    '--max_len',
+    type=int,
+    default=128,
+    help='Maximum length of the sentence pairs, default is 128')
+parser.add_argument(
+    '--seed', type=int, default=2, help='Random seed, default is 2')
+parser.add_argument(
+    '--accumulate',
+    type=int,
+    default=None,
+    help='The number of batches for '
+    'gradients accumulation to simulate large batch size. Default is None')
+parser.add_argument(
+    '--gpu', action='store_true', help='whether to use gpu for finetuning')
+parser.add_argument(
+    '--task_name',
+    type=str,
+    choices=tasks.keys(),
+    help='The name of the task to fine-tune.(MRPC,...)')
+parser.add_argument(
+    '--bert_model',
+    type=str,
+    default='bert_12_768_12',
+    help='The name of pre-trained BERT model to fine-tune'
+    '(bert_24_1024_16 and bert_12_768_12).')
+parser.add_argument(
+    '--bert_dataset',
+    type=str,
+    default='book_corpus_wiki_en_uncased',
+    help='Dataset of BERT pre-trained with.'
+    'Options include \'book_corpus_wiki_en_cased\', \'book_corpus_wiki_en_uncased\''
+    'for both bert_24_1024_16 and bert_12_768_12.'
+    '\'wiki_cn\', \'wiki_multilingual\' and \'wiki_multilingual_cased\' for bert_12_768_12 only.'
+)
+
 args = parser.parse_args()
 
 logging.getLogger().setLevel(logging.DEBUG)
+logging.captureWarnings(True)
 logging.info(args)
 
 batch_size = args.batch_size
 dev_batch_size = args.dev_batch_size
+task_name = args.task_name
 lr = args.lr
 accumulate = args.accumulate
 log_interval = args.log_interval * accumulate if accumulate else args.log_interval
 if accumulate:
-    logging.info('Using gradient accumulation. Effective batch size = %d', accumulate * batch_size)
+    logging.info('Using gradient accumulation. Effective batch size = %d',
+                 accumulate * batch_size)
 
 # random seed
 np.random.seed(args.seed)
@@ -89,89 +159,130 @@ mx.random.seed(args.seed)
 
 ctx = mx.cpu() if not args.gpu else mx.gpu()
 
-# model and loss
-dataset = 'book_corpus_wiki_en_uncased'
-bert, vocabulary = bert_12_768_12(dataset_name=dataset,
-                                  pretrained=True, ctx=ctx, use_pooler=True,
-                                  use_decoder=False, use_classifier=False)
-model = BERTClassifier(bert, dropout=0.1)
-model.classifier.initialize(init=mx.init.Normal(0.02), ctx=ctx)
-model.hybridize(static_alloc=True)
+task = tasks[task_name]
 
-loss_function = gluon.loss.SoftmaxCELoss()
+# model and loss
+model_name = args.bert_model
+dataset = args.bert_dataset
+bert, vocabulary = get_bert_model(
+    model_name=model_name,
+    dataset_name=dataset,
+    pretrained=True,
+    ctx=ctx,
+    use_pooler=True,
+    use_decoder=False,
+    use_classifier=False)
+
+if task.task_name in ['STS-B']:
+    model = BERTRegression(bert, dropout=0.1)
+    model.regression.initialize(init=mx.init.Normal(0.02), ctx=ctx)
+    loss_function = gluon.loss.L2Loss()
+else:
+    model = BERTClassifier(
+        bert, dropout=0.1, num_classes=len(task.get_labels()))
+    model.classifier.initialize(init=mx.init.Normal(0.02), ctx=ctx)
+    loss_function = gluon.loss.SoftmaxCELoss()
+
+logging.info(model)
+model.hybridize(static_alloc=True)
 loss_function.hybridize(static_alloc=True)
-metric = mx.metric.Accuracy()
 
 # data processing
 do_lower_case = 'uncased' in dataset
 bert_tokenizer = BERTTokenizer(vocabulary, lower=do_lower_case)
 
 
-def preprocess_data(tokenizer, batch_size, dev_batch_size, max_len):
+def preprocess_data(tokenizer, task, batch_size, dev_batch_size, max_len):
     """Data preparation function."""
     # transformation
-    train_trans = BERTDatasetTransform(tokenizer, max_len,
-                                       labels=MRPCDataset.get_labels(),
-                                       pad=False, label_dtype='int32')
-    dev_trans = BERTDatasetTransform(tokenizer, max_len,
-                                     labels=MRPCDataset.get_labels(),
-                                     label_dtype='int32')
-    data_train = MRPCDataset('train').transform(train_trans, lazy=False)
-    data_dev = MRPCDataset('dev').transform(dev_trans, lazy=False)
-    data_train_len = data_train.transform(lambda input_id, length, segment_id, label_id: length)
+    trans = BERTDatasetTransform(
+        tokenizer,
+        max_len,
+        labels=task.get_labels(),
+        pad=False,
+        pair=task.is_pair,
+        label_dtype='float32' if not task.get_labels() else 'int32')
+
+    if task.task_name == 'MNLI':
+        data_train = task('dev_matched').transform(trans, lazy=False)
+        data_dev = task('dev_mismatched').transform(trans, lazy=False)
+    else:
+        data_train = task('train').transform(trans, lazy=False)
+        data_dev = task('dev').transform(trans, lazy=False)
+
+    data_train_len = data_train.transform(
+        lambda input_id, length, segment_id, label_id: length)
+
     num_samples_train = len(data_train)
     # bucket sampler
-    batchify_fn = nlp.data.batchify.Tuple(nlp.data.batchify.Pad(axis=0),
-                                          nlp.data.batchify.Stack(),
-                                          nlp.data.batchify.Pad(axis=0),
-                                          nlp.data.batchify.Stack())
-    batch_sampler = nlp.data.sampler.FixedBucketSampler(data_train_len,
-                                                        batch_size=batch_size,
-                                                        num_buckets=10,
-                                                        ratio=0,
-                                                        shuffle=True)
+    batchify_fn = nlp.data.batchify.Tuple(
+        nlp.data.batchify.Pad(axis=0), nlp.data.batchify.Stack(),
+        nlp.data.batchify.Pad(axis=0),
+        nlp.data.batchify.Stack(
+            'float32' if not task.get_labels() else 'int32'))
+    batch_sampler = nlp.data.sampler.FixedBucketSampler(
+        data_train_len,
+        batch_size=batch_size,
+        num_buckets=10,
+        ratio=0,
+        shuffle=True)
     # data loaders
-    dataloader = gluon.data.DataLoader(dataset=data_train, num_workers=1,
-                                       batch_sampler=batch_sampler,
-                                       batchify_fn=batchify_fn)
-    dataloader_dev = mx.gluon.data.DataLoader(data_dev, batch_size=dev_batch_size,
-                                              num_workers=1, shuffle=False)
+    dataloader = gluon.data.DataLoader(
+        dataset=data_train,
+        num_workers=1,
+        batch_sampler=batch_sampler,
+        batchify_fn=batchify_fn)
+    dataloader_dev = mx.gluon.data.DataLoader(
+        data_dev,
+        batch_size=dev_batch_size,
+        num_workers=1,
+        shuffle=False,
+        batchify_fn=batchify_fn)
     return dataloader, dataloader_dev, num_samples_train
 
 
-train_data, dev_data, num_train_examples = preprocess_data(bert_tokenizer, batch_size,
-                                                           dev_batch_size, args.max_len)
+train_data, dev_data, num_train_examples = preprocess_data(
+    bert_tokenizer, task, batch_size, dev_batch_size, args.max_len)
 
 
-def evaluate():
+def evaluate(metric):
     """Evaluate the model on validation dataset.
     """
-    step_loss = 0
     metric.reset()
     for _, seqs in enumerate(dev_data):
-        Ls = []
         input_ids, valid_len, type_ids, label = seqs
-        out = model(input_ids.as_in_context(ctx), type_ids.as_in_context(ctx),
-                    valid_len.astype('float32').as_in_context(ctx))
-        ls = loss_function(out, label.as_in_context(ctx)).mean()
-        Ls.append(ls)
-        step_loss += sum([L.asscalar() for L in Ls])
+        out = model(
+            input_ids.as_in_context(ctx), type_ids.as_in_context(ctx),
+            valid_len.astype('float32').as_in_context(ctx))
         metric.update([label], [out])
-    logging.info('Validation accuracy: {:.3f}'.format(metric.get()[1]))
+    metric_nm, metric_val = metric.get()
+    if not isinstance(metric_nm, list):
+        metric_nm = [metric_nm]
+        metric_val = [metric_val]
+    metric_str = 'validation metrics:' + ','.join(
+        [i + ':{:.4f}' for i in metric_nm])
+    logging.info(metric_str.format(*metric_val))
 
 
-def train():
+def train(metric):
     """Training function."""
     optimizer_params = {'learning_rate': lr, 'epsilon': 1e-6, 'wd': 0.01}
     try:
-        trainer = gluon.Trainer(model.collect_params(), args.optimizer,
-                                optimizer_params, update_on_kvstore=False)
+        trainer = gluon.Trainer(
+            model.collect_params(),
+            args.optimizer,
+            optimizer_params,
+            update_on_kvstore=False)
     except ValueError as e:
         print(e)
-        warnings.warn('AdamW optimizer is not found. Please consider upgrading to '
-                      'mxnet>=1.5.0. Now the original Adam optimizer is used instead.')
-        trainer = gluon.Trainer(model.collect_params(), 'adam',
-                                optimizer_params, update_on_kvstore=False)
+        warnings.warn(
+            'AdamW optimizer is not found. Please consider upgrading to '
+            'mxnet>=1.5.0. Now the original Adam optimizer is used instead.')
+        trainer = gluon.Trainer(
+            model.collect_params(),
+            'adam',
+            optimizer_params,
+            update_on_kvstore=False)
 
     step_size = batch_size * accumulate if accumulate else batch_size
     num_train_steps = int(num_train_examples / step_size * args.epochs)
@@ -183,7 +294,9 @@ def train():
     for _, v in model.collect_params('.*beta|.*gamma|.*bias').items():
         v.wd_mult = 0.0
     # Collect differentiable parameters
-    params = [p for p in model.collect_params().values() if p.grad_req != 'null']
+    params = [
+        p for p in model.collect_params().values() if p.grad_req != 'null'
+    ]
     # Set grad_req if gradient accumulation is required
     if accumulate:
         for p in params:
@@ -205,14 +318,16 @@ def train():
             if step_num < num_warmup_steps:
                 new_lr = lr * step_num / num_warmup_steps
             else:
-                offset = (step_num - num_warmup_steps) * lr / (num_train_steps - num_warmup_steps)
+                offset = (step_num - num_warmup_steps) * lr / (
+                    num_train_steps - num_warmup_steps)
                 new_lr = lr - offset
             trainer.set_learning_rate(new_lr)
             # forward and backward
             with mx.autograd.record():
                 input_ids, valid_length, type_ids, label = seqs
-                out = model(input_ids.as_in_context(ctx), type_ids.as_in_context(ctx),
-                            valid_length.astype('float32').as_in_context(ctx))
+                out = model(
+                    input_ids.as_in_context(ctx), type_ids.as_in_context(ctx),
+                    valid_length.astype('float32').as_in_context(ctx))
                 ls = loss_function(out, label.as_in_context(ctx)).mean()
             ls.backward()
             # update
@@ -222,18 +337,29 @@ def train():
                 trainer.update(accumulate if accumulate else 1)
             step_loss += ls.asscalar()
             metric.update([label], [out])
-            if (batch_id + 1) % log_interval == 0:
-                logging.info('[Epoch {} Batch {}/{}] loss={:.4f}, lr={:.7f}, acc={:.3f}'
-                             .format(epoch_id, batch_id + 1, len(train_data),
-                                     step_loss / log_interval,
-                                     trainer.learning_rate, metric.get()[1]))
+            if (batch_id + 1) % (args.log_interval) == 0:
+                metric_nm, metric_val = metric.get()
+                if not isinstance(metric_nm, list):
+                    metric_nm = [metric_nm]
+                    metric_val = [metric_val]
+                eval_str = '[Epoch {} Batch {}/{}] loss={:.4f}, lr={:.7f}, metrics=' + \
+                    ','.join([i + ':{:.4f}' for i in metric_nm])
+                logging.info(eval_str.format(epoch_id + 1, batch_id + 1, len(train_data), \
+                    step_loss / args.log_interval, \
+                    trainer.learning_rate, *metric_val))
                 step_loss = 0
         mx.nd.waitall()
-        evaluate()
+        evaluate(metric)
         toc = time.time()
         logging.info('Time cost={:.1f}s'.format(toc - tic))
         tic = toc
 
 
 if __name__ == '__main__':
-    train()
+    pool_type = os.environ.get('MXNET_GPU_MEM_POOL_TYPE', '')
+    if pool_type.lower() == 'round':
+        logging.info(
+            'Setting MXNET_GPU_MEM_POOL_TYPE="Round" may lead to higher memory '
+            'usage and faster speed. If you encounter OOM errors, please unset '
+            'this environment variable.')
+    train(task.get_metric())

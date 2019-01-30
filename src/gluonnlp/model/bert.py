@@ -19,7 +19,7 @@
 """BERT models."""
 
 __all__ = ['BERTModel', 'BERTEncoder', 'BERTEncoderCell', 'BERTPositionwiseFFN',
-           'BERTLayerNorm', 'bert_12_768_12', 'bert_24_1024_16']
+           'BERTLayerNorm', 'bert_12_768_12', 'bert_24_1024_16', 'get_bert_model']
 
 import os
 from mxnet.gluon import Block
@@ -539,10 +539,10 @@ def bert_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
     -------
     BERTModel, gluonnlp.vocab.BERTVocab
     """
-    return _bert_model(model_name='bert_12_768_12', vocab=vocab,
-                       dataset_name=dataset_name, pretrained=pretrained, ctx=ctx,
-                       use_pooler=use_pooler, use_decoder=use_decoder,
-                       use_classifier=use_classifier, root=root, **kwargs)
+    return get_bert_model(model_name='bert_12_768_12', vocab=vocab,
+                          dataset_name=dataset_name, pretrained=pretrained, ctx=ctx,
+                          use_pooler=use_pooler, use_decoder=use_decoder,
+                          use_classifier=use_classifier, root=root, **kwargs)
 
 
 def bert_24_1024_16(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
@@ -578,18 +578,43 @@ def bert_24_1024_16(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu()
     -------
     BERTModel, gluonnlp.vocab.BERTVocab
     """
-    return _bert_model(model_name='bert_24_1024_16', vocab=vocab,
-                       dataset_name=dataset_name, pretrained=pretrained,
-                       ctx=ctx, use_pooler=use_pooler,
-                       use_decoder=use_decoder, use_classifier=use_classifier,
-                       root=root, **kwargs)
+    return get_bert_model(model_name='bert_24_1024_16', vocab=vocab,
+                          dataset_name=dataset_name, pretrained=pretrained,
+                          ctx=ctx, use_pooler=use_pooler,
+                          use_decoder=use_decoder, use_classifier=use_classifier,
+                          root=root, **kwargs)
 
 
-def _bert_model(model_name=None, dataset_name=None, vocab=None,
-                pretrained=True, ctx=mx.cpu(),
-                use_pooler=True, use_decoder=True, use_classifier=True,
-                root=os.path.join('~', '.mxnet', 'models'), **kwargs):
-    """BERT pretrained model.
+def get_bert_model(model_name=None, dataset_name=None, vocab=None,
+                   pretrained=True, ctx=mx.cpu(),
+                   use_pooler=True, use_decoder=True, use_classifier=True,
+                   root=os.path.join('~', '.mxnet', 'models'), **kwargs):
+    """Any BERT pretrained model.
+
+    Parameters
+    ----------
+    model_name : str or None, default None
+        Options include 'bert_24_1024_16' and 'bert_12_768_12'.
+    dataset_name : str or None, default None
+        Options include 'book_corpus_wiki_en_cased', 'book_corpus_wiki_en_uncased'
+        for both bert_24_1024_16 and bert_12_768_12.
+        'wiki_cn', 'wiki_multilingual' and 'wiki_multilingual_cased' for bert_12_768_12 only.
+    vocab : gluonnlp.vocab.BERTVocab or None, default None
+        Vocabulary for the dataset. Must be provided if dataset is not specified.
+    pretrained : bool, default True
+        Whether to load the pretrained weights for model.
+    ctx : Context, default CPU
+        The context in which to load the pretrained weights.
+    root : str, default '~/.mxnet/models'
+        Location for keeping the model parameters.
+    use_pooler : bool, default True
+        Whether to include the pooler which converts the encoded sequence tensor of shape
+        (batch_size, seq_length, units) to a tensor of shape (batch_size, units)
+        for for segment level classification task.
+    use_decoder : bool, default True
+        Whether to include the decoder for masked language model prediction.
+    use_classifier : bool, default True
+        Whether to include the classifier for next sentence classification.
 
     Returns
     -------
