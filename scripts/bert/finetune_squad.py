@@ -195,6 +195,10 @@ parser.add_argument('--input_size',
                     default=768,
                     help='The embedding size of the input')
 
+parser.add_argument('--fp16',
+                    action='store_true',
+                    help='use fp16 for inference')
+
 args = parser.parse_args()
 
 os.environ['SEQLENGTH'] = str(args.seq_length)
@@ -275,7 +279,7 @@ loss_function.hybridize(static_alloc=True, static_shape=True)
 
 def train():
     """Training function."""
-
+    assert not args.fp16, "fp16 training is not supported"
     log.info('Loader Train data...')
     if version_2:
         train_data = SQuAD('train', version='2.0')
@@ -421,14 +425,17 @@ def evaluate():
     _Result = collections.namedtuple(
         '_Result', ['example_id', 'start_logits', 'end_logits'])
     all_results = {}
+    dtype = 'float16' if args.fp16 else 'float32'
+    if args.fp16:
+        net.cast(dtype)
 
     tic = time.time()
     for data in dev_dataloader:
         example_ids, inputs, token_types, valid_length, _, _ = data
 
-        out = net(inputs.astype('float32').as_in_context(ctx),
-                  token_types.astype('float32').as_in_context(ctx),
-                  valid_length.astype('float32').as_in_context(ctx))
+        out = net(inputs.astype(dtype).as_in_context(ctx),
+                  token_types.astype(dtype).as_in_context(ctx),
+                  valid_length.astype(dtype).as_in_context(ctx))
 
         output = nd.split(out, axis=2, num_outputs=2)
         start_logits = output[0].reshape((0, -3)).asnumpy()

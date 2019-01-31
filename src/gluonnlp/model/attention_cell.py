@@ -53,7 +53,7 @@ def _masked_softmax(F, att_score, mask, dtype):
             neg = -10000
         else:
             raise ValueError('unexpected dtype: %s'%str(dtype))
-        att_score = F.where(mask, att_score, -1e18 * F.ones_like(att_score))
+        att_score = F.where(mask, att_score, neg * F.ones_like(att_score))
         att_weights = F.softmax(att_score, axis=-1) * mask
     else:
         att_weights = F.softmax(att_score, axis=-1)
