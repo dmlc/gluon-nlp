@@ -32,7 +32,7 @@ from ..machine_translation.dataset import TOY
 
 def test_translation_preprocess():
     src_lang = 'en'
-    tgt_lang = 'vi'
+    tgt_lang = 'de'
     max_lens = ((10, 10), (0, 0), (-1, -1))
     for (src_max_len, tgt_max_len) in max_lens:
         data_train = TOY('train', src_lang=src_lang, tgt_lang=tgt_lang)
