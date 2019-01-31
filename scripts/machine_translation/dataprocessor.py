@@ -164,10 +164,10 @@ def load_translation_data(dataset, bleu, args):
     if not data_val_processed:
         data_val_processed = process_dataset(data_val, src_vocab, tgt_vocab)
         _cache_dataset(data_val_processed, common_prefix + '_val')
-    data_test_processed = _load_cached_dataset(common_prefix + '_' + str(False) + '_test')
+    data_test_processed = _load_cached_dataset(common_prefix + '_' + str(args.full) + '_test')
     if not data_test_processed:
         data_test_processed = process_dataset(data_test, src_vocab, tgt_vocab)
-        _cache_dataset(data_test_processed, common_prefix + '_' + str(False) + '_test')
+        _cache_dataset(data_test_processed, common_prefix + '_' + str(args.full) + '_test')
     if bleu == 'tweaked':
         fetch_tgt_sentence = lambda src, tgt: tgt.split()
         val_tgt_sentences = list(data_val.transform(fetch_tgt_sentence))
