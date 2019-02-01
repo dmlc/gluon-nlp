@@ -24,7 +24,7 @@ from __future__ import print_function
 import sys
 import os
 
-sys.path.append(os.path.join(os.path.dirname(sys.path[0]), 'machine_translation'))
+sys.path.append(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'machine_translation'))
 
 from ..machine_translation.dataprocessor import process_dataset
 from ..machine_translation.dataset import TOY
