@@ -36,8 +36,8 @@ import os
 os.environ['MXNET_KVSTORE_USETREE'] = '1'
 os.environ['MXNET_CUDA_NUM_RAND_STATES'] = '3276800'
 os.environ['MXNET_CUDA_MIN_NUM_RAND_PER_THREAD'] = '8'
-sys.path.insert(0, '/home/ubuntu/nlp/src')
-sys.path.insert(0, '/home/ubuntu/mxnet-master/python/')
+sys.path.insert(0, '/home/ubuntu/gluon-nlp/src')
+sys.path.insert(0, '/home/ubuntu/mxnet/python/')
 
 import argparse
 import random
@@ -167,11 +167,12 @@ class ParallelBERT(Parallelizable):
     model : Block
         The BERT model.
     """
-    def __init__(self, model, mlm_loss, nsp_loss, vocab_size):
+    def __init__(self, model, mlm_loss, nsp_loss, vocab_size, rescale_factor):
         self._model = model
         self._mlm_loss = mlm_loss
         self._nsp_loss = nsp_loss
         self._vocab_size = vocab_size
+        self._rescale_factor = rescale_factor
 
     def forward_backward(self, x):
         input_id, masked_id, masked_position, masked_weight, next_sentence_label, segment_id, valid_length = x
@@ -185,6 +186,7 @@ class ParallelBERT(Parallelizable):
             ls1 = self._mlm_loss(decoded, masked_id, masked_weight.reshape((-1, 1))).sum() / num_masks
             ls2 = self._nsp_loss(classified, next_sentence_label).mean()
             ls = ls1 + ls2
+            ls = ls / self._rescale_factor
         ls.backward()
         return ls, next_sentence_label, classified, masked_id, decoded, masked_weight, ls1, ls2, valid_length
 
@@ -214,6 +216,7 @@ def evaluate(data_eval, model, nsp_loss, mlm_loss, vocab_size, ctx):
     local_mlm_loss = local_nsp_loss = 0
     total_mlm_loss = total_nsp_loss = 0
     local_num_tks = 0
+    # TODO fix eval acc
     for _, dataloader in enumerate(data_eval):
         for _, data in enumerate(dataloader):
             step_num += 1
@@ -304,8 +307,9 @@ def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx, store):
     batch_num = 0
     step_num = args.start_step
 
-    parallel_model = ParallelBERT(model, mlm_loss, nsp_loss, vocab_size)
-    parallel = Parallel(len(ctx), parallel_model)
+    parallel_model = ParallelBERT(model, mlm_loss, nsp_loss, vocab_size, store.num_workers * accumulate)
+    num_ctxes = len(ctx)
+    parallel = Parallel(num_ctxes, parallel_model)
 
     while step_num < num_train_steps:
         for _, dataloader in enumerate(data_train):
@@ -321,7 +325,7 @@ def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx, store):
                     if step_num <= num_warmup_steps:
                         new_lr = lr * step_num / num_warmup_steps
                     else:
-                        offset = (step_num - num_warmup_steps) * lr / (num_train_steps - num_warmup_steps)
+                        offset = lr * step_num / num_train_steps
                         new_lr = lr - offset
                     trainer.set_learning_rate(new_lr)
                     if args.profile:
@@ -340,7 +344,6 @@ def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx, store):
                 if data_batch[0].shape[0] < len(ctx):
                     continue
                 data_list = split_and_load(data_batch, ctx)
-                loss_list = []
                 ns_label_list, ns_pred_list = [], []
                 mask_label_list, mask_pred_list, mask_weight_list = [], [], []
 
@@ -348,15 +351,14 @@ def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx, store):
                 for data in data_list:
                     parallel.put(data)
                 for _ in range(len(ctx)):
-                    ls, next_sentence_label, classified, masked_id, decoded, masked_weight, ls1, ls2, valid_length = parallel.get()
-                    loss_list.append(ls)
+                    _, next_sentence_label, classified, masked_id, decoded, masked_weight, ls1, ls2, valid_length = parallel.get()
                     ns_label_list.append(next_sentence_label)
                     ns_pred_list.append(classified)
                     mask_label_list.append(masked_id)
                     mask_pred_list.append(decoded)
                     mask_weight_list.append(masked_weight)
-                    local_mlm_loss += ls1.as_in_context(mx.cpu())
-                    local_nsp_loss += ls2.as_in_context(mx.cpu())
+                    local_mlm_loss += ls1.as_in_context(mx.cpu()) / num_ctxes
+                    local_nsp_loss += ls2.as_in_context(mx.cpu()) / num_ctxes
                     local_num_tks += valid_length.sum().as_in_context(mx.cpu())
 
                 # update
@@ -368,7 +370,6 @@ def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx, store):
                 mlm_metric.update(mask_label_list, mask_pred_list, mask_weight_list)
                 # logging
                 if (step_num + 1) % (args.log_interval) == 0 and (batch_num + 1) % accumulate == 0:
-                    print(local_num_tks.asscalar())
                     log(begin_time, local_num_tks, local_mlm_loss / accumulate,
                         local_nsp_loss / accumulate, step_num, mlm_metric, nsp_metric, trainer)
                     begin_time = time.time()
