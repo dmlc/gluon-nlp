@@ -42,6 +42,7 @@ sys.path.insert(0, '/home/ubuntu/mxnet/python/')
 import argparse
 import random
 import logging
+import glob
 import numpy as np
 import mxnet as mx
 import time
@@ -123,10 +124,11 @@ def get_model(ctx):
 
     return model, nsp_loss, mlm_loss, vocabulary
 
-def get_dataset(data, batch_size, is_train):
+def get_dataset(data, batch_size, is_train, store):
     data = data
-    # numpy
-    stream = SimpleDatasetStream(NumpyDataset, data)
+    split_sampler = nlp.data.SplitSampler(len(glob.glob(data)), num_parts=store.num_workers,
+                                          part_index=store.rank)
+    stream = SimpleDatasetStream(NumpyDataset, data, split_sampler)
 
     def get_dataloader(dataset):
         t0 = time.time()
@@ -415,7 +417,7 @@ if __name__ == '__main__':
 
     if args.do_training:
         assert args.data, '--data must be provided for training'
-        data_train = get_dataset(args.data, batch_size, True)
+        data_train = get_dataset(args.data, batch_size, True, store)
         train(data_train, model, nsp_loss, mlm_loss, len(tokenizer.vocab), ctx, store)
     if args.do_eval:
         assert args.data_eval, '--data_eval must be provided for evaluation'
