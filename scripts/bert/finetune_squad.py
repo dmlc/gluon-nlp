@@ -433,8 +433,8 @@ def evaluate():
     for data in dev_dataloader:
         example_ids, inputs, token_types, valid_length, _, _ = data
 
-        out = net(inputs.astype(dtype).as_in_context(ctx),
-                  token_types.astype(dtype).as_in_context(ctx),
+        out = net(inputs.astype('float32').as_in_context(ctx),
+                  token_types.astype('float32').as_in_context(ctx),
                   valid_length.astype(dtype).as_in_context(ctx))
 
         output = nd.split(out, axis=2, num_outputs=2)

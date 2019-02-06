@@ -26,6 +26,7 @@ from mxnet.gluon import Block, HybridBlock
 from mxnet.gluon import nn
 from mxnet.gluon.model_zoo import model_store
 import mxnet as mx
+import numpy as np
 from .transformer import BasePositionwiseFFN, BaseTransformerEncoderCell, BaseTransformerEncoder
 from .block import GELU
 from .utils import _load_vocab, _load_pretrained_params
@@ -43,8 +44,23 @@ class BERTLayerNorm(nn.LayerNorm):
         - **out**: output tensor with the same shape as `data`.
     """
     def __init__(self, epsilon=1e-12, in_channels=0, prefix=None, params=None):
+        self._dtype = 'float32'
         super(BERTLayerNorm, self).__init__(epsilon=epsilon, in_channels=in_channels,
                                             prefix=prefix, params=params)
+    def cast(self, dtype):
+        self._dtype = dtype
+
+    def hybrid_forward(self, F, data, gamma, beta):
+        dtype = self._dtype
+        if np.dtype(dtype) == np.float16:
+            data = data.astype('float32')
+            gamma = gamma.astype('float32')
+            beta = beta.astype('float32')
+            norm_data = F.LayerNorm(data, gamma=gamma, beta=beta, axis=self._axis, eps=self._epsilon)
+            norm_data = norm_data.astype('float16')
+        else:
+            norm_data = F.LayerNorm(data, gamma=gamma, beta=beta, axis=self._axis, eps=self._epsilon)
+        return norm_data
 
 
 class BERTPositionwiseFFN(BasePositionwiseFFN):
