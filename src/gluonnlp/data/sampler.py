@@ -290,8 +290,8 @@ class FixedBucketSampler(Sampler):
     bucket_scheme : BucketScheme, default ConstWidthBucket
         It is used to generate bucket keys. It supports:
         ConstWidthBucket: all the buckets have the same width
-        LinearWidthBucket: the width of ith  bucket follows :math:`w_i = \alpha * i + 1`
-        ExpWidthBucket: the width of ith bucket follows :math:`w_i = bucket_len_step * w_{i-1}`
+        LinearWidthBucket: the width of i^{th}  bucket follows :math:`w_i = \alpha * i + 1`
+        ExpWidthBucket: the width of i^{th} bucket follows :math:`w_i = \texttt{\detokenize{bucket_len_step}} * w_{i-1}`
     Examples
     --------
     >>> lengths = [np.random.randint(1, 100) for _ in range(1000)]
