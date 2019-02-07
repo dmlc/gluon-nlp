@@ -42,8 +42,6 @@ import mxnet.gluon as gluon
 import gluonnlp.data.batchify as btf
 
 import gluonnlp
-#import evaluation
-
 
 
 class MeanPoolingLayer(gluon.HybridBlock):
@@ -211,11 +209,7 @@ def parse_args():
     group.add_argument('--optimizer', type=str, default='adam')
     group.add_argument('--lr', type=float, default=0.05)
 
-    # Evaluation options
-    #evaluation.add_parameters(parser)
-
     args = parser.parse_args()
-    #evaluation.validate_args(args)
     return args
 
 
