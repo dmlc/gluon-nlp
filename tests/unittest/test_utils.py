@@ -3,7 +3,7 @@ import numpy as np
 import mxnet as mx
 import gluonnlp as nlp
 
-@pytest.mark.parametrize([0, 2])
+@pytest.mark.parametrize('num_workers', [0, 2])
 def test_parallel(num_workers):
     class ParallelNet(nlp.utils.Parallelizable):
         def __init__(self, net, loss):
