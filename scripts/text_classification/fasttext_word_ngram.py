@@ -247,7 +247,7 @@ def get_length(inp):
 
 
 def get_sequence(inpt):
-    "Transforms input to vocab id's"""
+    """Transforms input to vocab id's"""
     document = inpt[0]
     vocab = inpt[1]
     return vocab[document.split()]
