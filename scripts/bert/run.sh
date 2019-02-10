@@ -52,3 +52,5 @@ MXNET_CUDA_NUM_RAND_STATES=3276800 MXNET_CUDA_MIN_NUM_RAND_PER_THREAD=8 PYTHONPA
 
 # TODO load from ckpt
 MXNET_CUDA_NUM_RAND_STATES=3276800 MXNET_CUDA_MIN_NUM_RAND_PER_THREAD=8 PYTHONPATH=~/nlp/src:~/mxnet-master/python/ python run_pretraining.py --data "/home/ubuntu/samples/book-enwiki/*/*/*.npz" --num_steps 1000000 --pretrained --log_interval 5 --data_eval "inputs/*" --batch_size_eval 8 --lr 1e-4 --batch_size 4  --warmup_ratio 0.01 --gpus 0,1,2,3,4,5,6,7 --ckpt_dir ckpt --start_step 0 --do-training --ckpt_interval 100 --verbose --accumulate 8
+
+python launch.py -n 2 -H ~/hosts python2 ~/gluon-nlp/scripts/bert/run_pretraining.py --data='/home/ubuntu/book-enwiki/part-*/*/*.npz' --num_steps 1000000 --log_interval 500 --data_eval "inputs/*" --batch_size_eval 8 --lr 1e-4 --batch_size 8 --warmup_ratio 0.01 --gpus 0,1,2,3,4,5,6,7 --ckpt_dir /home/ubuntu/ckpt/ --do-training --ckpt_interval 25000 --accumulate 2 --num_buckets 10 --kvstore dist_device_sync 2>&1 | tee -a ~/full-acc-2.log
