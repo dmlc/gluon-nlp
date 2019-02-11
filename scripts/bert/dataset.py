@@ -553,8 +553,26 @@ class BERTDatasetTransform(object):
 
 
 class BertEmbeddingDataset(Dataset):
+    """Dataset for BERT Embedding
+
+    Parameters
+    ----------
+    sentences : List[str].
+        Sentences for embeddings.
+    transform : BERTDatasetTransform, default None.
+        transformer for BERT input format
+    """
 
     def __init__(self, sentences: List[str], transform=None):
+        """Dataset for BERT Embedding
+
+        Parameters
+        ----------
+        sentences : List[str].
+            Sentences for embeddings.
+    transform : BERTDatasetTransform, default None.
+            transformer for BERT input format
+        """
         self.sentences = sentences
         self.transform = transform
 
