@@ -3,7 +3,8 @@ import numpy as np
 import mxnet as mx
 import gluonnlp as nlp
 
-def test_parallel():
+@pytest.mark.parametrize('num_workers', [0, 2])
+def test_parallel(num_workers):
     class ParallelNet(nlp.utils.Parallelizable):
         def __init__(self, net, loss):
             self._net = net
@@ -17,7 +18,7 @@ def test_parallel():
             loss.backward()
             return loss
     # model
-    net = mx.gluon.nn.Dense(2)
+    net = mx.gluon.nn.Dense(2, prefix='test_parallel_')
     loss = mx.gluon.loss.SoftmaxCELoss()
     ctxs = [mx.cpu(0), mx.cpu(1)]
     net.initialize(ctx=ctxs)
@@ -25,7 +26,7 @@ def test_parallel():
 
     # parallel model
     para_net = ParallelNet(net, loss)
-    parallel = nlp.utils.Parallel(len(ctxs), para_net)
+    parallel = nlp.utils.Parallel(num_workers, para_net)
 
     # sample data
     data = mx.nd.random.uniform(shape=(2,5))
@@ -45,7 +46,7 @@ def test_parallel():
             ls = parallel.get()
             parallel_loss += ls.asscalar()
 
-    grads = params['dense0_weight'].list_grad()
+    grads = params['test_parallel_weight'].list_grad()
     parallel_grads_np = [grad.asnumpy() for grad in grads]
 
     # train serial
@@ -59,7 +60,7 @@ def test_parallel():
                 ls.backward()
                 serial_loss += ls.asscalar()
 
-    grads = params['dense0_weight'].list_grad()
+    grads = params['test_parallel_weight'].list_grad()
     serial_grads_np = [grad.asnumpy() for grad in grads]
     assert serial_loss == parallel_loss
     for para_grad, serial_grad in zip(parallel_grads_np, serial_grads_np):
