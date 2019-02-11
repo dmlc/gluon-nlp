@@ -23,13 +23,14 @@ from __future__ import print_function
 __all__ = ['AttentionCell', 'MultiHeadAttentionCell', 'MLPAttentionCell', 'DotProductAttentionCell']
 
 import math
+import numpy as np
 import mxnet as mx
 from mxnet.gluon.block import HybridBlock
 from mxnet.gluon import nn
 from .block import L2Normalization
 
 # TODO(sxjscience) Add mask flag to softmax operator. Think about how to accelerate the kernel
-def _masked_softmax(F, att_score, mask):
+def _masked_softmax(F, att_score, mask, dtype):
     """Ignore the masked elements when calculating the softmax
 
     Parameters
@@ -44,12 +45,18 @@ def _masked_softmax(F, att_score, mask):
     att_weights : Symborl or NDArray
         Shape (batch_size, query_length, memory_length)
     """
+    if np.dtype(dtype) == np.float16:
+        att_score = att_score.astype('float32')
+        mask = mask.astype('float32')
     if mask is not None:
         # Fill in the masked scores with a very small value
-        att_score = F.where(mask, att_score, -1e18 * F.ones_like(att_score))
+        neg = -1e18
+        att_score = F.where(mask, att_score, neg * F.ones_like(att_score))
         att_weights = F.softmax(att_score, axis=-1) * mask
     else:
         att_weights = F.softmax(att_score, axis=-1)
+    if np.dtype(dtype) == np.float16:
+        att_weights = att_weights.astype(dtype)
     return att_weights
 
 
@@ -63,6 +70,14 @@ class AttentionCell(HybridBlock):
         out = cell(query, key, value, mask)
 
     """
+    def __init__(self, prefix=None, params=None):
+        self._dtype = np.float32
+        super(AttentionCell, self).__init__(prefix=prefix, params=params)
+
+    def cast(self, dtype):
+        self._dtype = dtype
+        super(AttentionCell, self).cast(dtype)
+
     def _compute_weight(self, F, query, key, mask=None):
         """Compute attention weights based on the query and the keys
 
@@ -106,7 +121,13 @@ class AttentionCell(HybridBlock):
         context_vec: Symbol or NDArray
             Shape (batch_size, query_length, context_vec_dim)
         """
-        return F.batch_dot(att_weights, value)
+        if np.dtype(self._dtype) == np.float16:
+            att_weights = att_weights.astype('float32')
+            value = value.astype('float32')
+        output = F.batch_dot(att_weights, value)
+        if np.dtype(self._dtype) == np.float16:
+            output = output.astype(self._dtype)
+        return output
 
     def __call__(self, query, key, value=None, mask=None):  # pylint: disable=arguments-differ
         """Compute the attention.
@@ -362,7 +383,7 @@ class MLPAttentionCell(AttentionCell):
                                    F.expand_dims(mapped_key, axis=1))
         mid_feat = self._act(mid_feat)
         att_score = self._attention_score(mid_feat).reshape(shape=(0, 0, 0))
-        att_weights = self._dropout_layer(_masked_softmax(F, att_score, mask))
+        att_weights = self._dropout_layer(_masked_softmax(F, att_score, mask, self._dtype))
         return att_weights
 
 
@@ -466,6 +487,13 @@ class DotProductAttentionCell(AttentionCell):
             key = self._l2_norm(key)
         if self._scaled:
             query = F.contrib.div_sqrt_dim(query)
+
+        if np.dtype(self._dtype) == np.float16:
+            query =  query.astype('float32')
+            key = key.astype('float32')
         att_score = F.batch_dot(query, key, transpose_b=True)
-        att_weights = self._dropout_layer(_masked_softmax(F, att_score, mask))
+        if np.dtype(self._dtype) == np.float16:
+            att_score = att_score.astype(self._dtype)
+
+        att_weights = self._dropout_layer(_masked_softmax(F, att_score, mask, self._dtype))
         return att_weights

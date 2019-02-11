@@ -142,9 +142,9 @@ def clip_grad_global_norm(parameters, max_norm, check_isfinite=True):
     """
     def _norm(array):
         if array.stype == 'default':
-            x = array.reshape((-1,))
-            return nd.dot(x, x)
-        return array.norm().square()
+            x = array.reshape((-1))
+            return nd.dot(x,x)
+        return array.norm().astype('float32').square()
 
     num_ctxes = len(parameters[0].list_grad())
     arrays = []
@@ -158,7 +158,7 @@ def clip_grad_global_norm(parameters, max_norm, check_isfinite=True):
     total_norm = nd.add_n(*[_norm(arr).as_in_context(ctx) for arr in arrays])
     total_norm = nd.sqrt(total_norm)
     if check_isfinite:
-        total_norm = total_norm.asscalar()
+        total_norm = total_norm.reshape(-1).asscalar()
         if not np.isfinite(total_norm):
             warnings.warn(
                 UserWarning('nan or inf is detected. '
@@ -170,5 +170,5 @@ def clip_grad_global_norm(parameters, max_norm, check_isfinite=True):
     for p in parameters:
         if p.grad_req != 'null':
             for arr in p.list_grad():
-                arr *= scale.as_in_context(arr.context)
+                arr *= scale.as_in_context(arr.context).astype(arr.dtype)
     return total_norm

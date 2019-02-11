@@ -45,8 +45,8 @@ from mxnet import gluon
 import gluonnlp as nlp
 from gluonnlp.model import bert_12_768_12
 from bert import BERTClassifier
-from tokenizer import FullTokenizer
-from dataset import MRPCDataset, ClassificationTransform
+from dataset import MRPCDataset, BERTDatasetTransform
+from gluonnlp.optimizer.utils import FP16Trainer
 
 parser = argparse.ArgumentParser(description='BERT sentence pair classification example.'
                                              'We fine-tune the BERT model on MRPC')
@@ -68,6 +68,9 @@ parser.add_argument('--seed', type=int, default=2, help='Random seed, default is
 parser.add_argument('--accumulate', type=int, default=None, help='The number of batches for '
                     'gradients accumulation to simulate large batch size. Default is None')
 parser.add_argument('--gpu', action='store_true', help='whether to use gpu for finetuning')
+parser.add_argument('--fp16', action='store_true', help='whether to use fp16 for inference')
+parser.add_argument('--eval', action='store_true', help='whether to run eval only')
+parser.add_argument('--profile', action='store_true', help='whether to use profiler')
 args = parser.parse_args()
 
 logging.getLogger().setLevel(logging.DEBUG)
@@ -136,26 +139,34 @@ def preprocess_data(tokenizer, batch_size, dev_batch_size, max_len):
 train_data, dev_data, num_train_examples = preprocess_data(bert_tokenizer, batch_size,
                                                            dev_batch_size, args.max_len)
 
+
+dtype = 'float16' if args.fp16 else 'float32'
+
 def evaluate():
     """Evaluate the model on validation dataset.
     """
     step_loss = 0
     metric.reset()
-    for _, seqs in enumerate(dev_data):
+    if args.profile:
+        mx.profiler.set_config(profile_all=True, aggregate_stats=True)
+        mx.profiler.set_state('run')
+    for i, seqs in enumerate(dev_data):
         Ls = []
         input_ids, valid_len, type_ids, label = seqs
         out = model(input_ids.as_in_context(ctx), type_ids.as_in_context(ctx),
-                    valid_len.astype('float32').as_in_context(ctx))
-        ls = loss_function(out, label.as_in_context(ctx)).mean()
-        Ls.append(ls)
-        step_loss += sum([L.asscalar() for L in Ls])
+                    valid_len.astype(dtype).as_in_context(ctx))
         metric.update([label], [out])
     logging.info('Validation accuracy: {:.3f}'.format(metric.get()[1]))
+    if args.profile:
+        mx.profiler.set_state('stop')
+        print(mx.profiler.dumps())
 
 
 def train():
     """Training function."""
     optimizer_params = {'learning_rate': lr, 'epsilon': 1e-6, 'wd': 0.01}
+    if args.fp16:
+        optimizer_params['multi_precision'] = True
     try:
         trainer = gluon.Trainer(model.collect_params(), args.optimizer,
                                 optimizer_params, update_on_kvstore=False)
@@ -165,6 +176,8 @@ def train():
                       'mxnet>=1.5.0. Now the original Adam optimizer is used instead.')
         trainer = gluon.Trainer(model.collect_params(), 'adam',
                                 optimizer_params, update_on_kvstore=False)
+    if args.fp16:
+        fp16_trainer = FP16Trainer(trainer)
 
     step_size = batch_size * accumulate if accumulate else batch_size
     num_train_steps = int(num_train_examples / step_size * args.epochs)
@@ -182,11 +195,26 @@ def train():
         for p in params:
             p.grad_req = 'add'
 
+    if args.eval:
+        #model.load_parameters('pretrained.params', ctx=ctx)
+        if args.fp16:
+            model.cast(dtype)
+        evaluate()
+        exit()
+
+    if args.fp16:
+        model.cast(dtype)
+
     for epoch_id in range(args.epochs):
         metric.reset()
         step_loss = 0
         tic = time.time()
         for batch_id, seqs in enumerate(train_data):
+            if args.profile and batch_id == 2:
+                mx.nd.waitall()
+                mx.profiler.set_config(profile_all=True, aggregate_stats=True)
+                mx.profiler.set_state('run')
+
             # set grad to zero for gradient accumulation
             if accumulate:
                 if batch_id % accumulate == 0:
@@ -204,15 +232,25 @@ def train():
             # forward and backward
             with mx.autograd.record():
                 input_ids, valid_length, type_ids, label = seqs
+                valid_length = valid_length.astype(dtype)
+                type_ids = type_ids.astype('float32')
+                label = label.astype('float32')
                 out = model(input_ids.as_in_context(ctx), type_ids.as_in_context(ctx),
-                            valid_length.astype('float32').as_in_context(ctx))
-                ls = loss_function(out, label.as_in_context(ctx)).mean()
-            ls.backward()
+                            valid_length.as_in_context(ctx))
+                ls = loss_function(out.astype('float32'), label.as_in_context(ctx).astype('float32')).mean()
+            if args.fp16:
+                fp16_trainer.backward(ls)
+            else:
+                ls.backward()
+
             # update
             if not accumulate or (batch_id + 1) % accumulate == 0:
-                trainer.allreduce_grads()
-                nlp.utils.clip_grad_global_norm(params, 1)
-                trainer.update(accumulate if accumulate else 1)
+                if args.fp16:
+                    fp16_trainer.step(accumulate if accumulate else 1, global_norm=1)
+                else:
+                    trainer.allreduce_grads()
+                    nlp.utils.clip_grad_global_norm(params, 1)
+                    trainer.update(accumulate if accumulate else 1)
             step_loss += ls.asscalar()
             metric.update([label], [out])
             if (batch_id + 1) % log_interval == 0:
@@ -221,7 +259,13 @@ def train():
                                      step_loss / log_interval,
                                      trainer.learning_rate, metric.get()[1]))
                 step_loss = 0
-        mx.nd.waitall()
+
+                if args.profile:
+                    mx.nd.waitall()
+                    mx.profiler.set_state('stop')
+                    print(mx.profiler.dumps())
+                    exit()
+        model.save_parameters('ckpt.params')
         evaluate()
         toc = time.time()
         logging.info('Time cost={:.1f}s'.format(toc - tic))
