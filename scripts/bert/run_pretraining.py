@@ -49,7 +49,7 @@ import time
 from mxnet import gluon
 from mxnet.gluon.data import ArrayDataset, DataLoader
 import gluonnlp as nlp
-from gluonnlp.utils import clip_grad_global_norm, Parallelizable, Parallel
+from gluonnlp.utils import clip_grad_global_norm, grad_global_norm, Parallelizable, Parallel
 from gluonnlp.metric import MaskedAccuracy
 from gluonnlp.model import bert_12_768_12
 from gluonnlp.data.batchify import Tuple, Stack, Pad
@@ -389,8 +389,8 @@ def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx, store):
                 # update
                 if (batch_num + 1) % accumulate == 0:
                     trainer.allreduce_grads()
-                    clip_grad_global_norm(params, 1, check_isfinite=False)
-                    trainer.update(1)
+                    _, ratio = grad_global_norm(params, 1)
+                    trainer.update(ratio)
                 nsp_metric.update(ns_label_list, ns_pred_list)
                 mlm_metric.update(mask_label_list, mask_pred_list, mask_weight_list)
                 # logging
