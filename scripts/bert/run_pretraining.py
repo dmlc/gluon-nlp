@@ -88,6 +88,7 @@ parser.add_argument('--kvstore', type=str, default='device', help='KVStore type'
 parser.add_argument('--seed', type=int, default=0, help='Random seed')
 parser.add_argument('--verbose', action='store_true', help='verbose logging')
 parser.add_argument('--profile', action='store_true', help='profile the program')
+parser.add_argument('--by-token', action='store_true', help='set batch size by the number of tokens in the batch')
 parser.add_argument('--do-training', action='store_true',
                     help='Whether to do training on the training set.')
 parser.add_argument('--do-eval', action='store_true',
@@ -134,16 +135,33 @@ def get_dataset(data, batch_size, is_train, store):
         t0 = time.time()
         lengths = dataset.get_field('valid_lengths')
         logging.debug('Num samples = %d'%len(lengths))
-        sampler = FixedBucketSampler(lengths,
-                                     batch_size=batch_size,
-                                     num_buckets=args.num_buckets,
-                                     ratio=0,
-                                     shuffle=is_train)
         batchify_fn = Tuple(Pad(), Pad(), Pad(), Pad(), Stack(), Pad(), Stack())
-        dataloader = DataLoader(dataset=dataset,
-                                batch_sampler=sampler,
-                                batchify_fn=batchify_fn,
-                                num_workers=0)
+        if args.by_token:
+            # sharded data loader
+            sampler = nlp.data.FixedBucketSampler(lengths=lengths,
+                                                  batch_size=batch_size/8,#args.batch_size,
+                                                  num_buckets=args.num_buckets,
+                                                  shuffle=is_train,
+                                                  use_average_length=True,
+                                                  num_shards=8)
+                                                  #bucket_scheme=bucket_scheme)
+            dataloader = nlp.data.ShardedDataLoader(dataset,
+                                                    batch_sampler=sampler,
+                                                    batchify_fn=batchify_fn,
+                                                    num_workers=8)
+        else:
+            sampler = FixedBucketSampler(lengths,
+                                         batch_size=batch_size,
+                                         num_buckets=args.num_buckets,
+                                         ratio=0,
+                                         shuffle=is_train)
+            dataloader = DataLoader(dataset=dataset,
+                                    batch_sampler=sampler,
+                                    batchify_fn=batchify_fn,
+                                    num_workers=1)
+
+        logging.info('Train Batch Sampler:\n%s', sampler.stats())
+
         t1 = time.time()
         logging.debug('Dataloader creation cost = %.2f s'%(t1-t0))
         logging.debug('Batch Sampler:\n%s', sampler.stats())
@@ -331,21 +349,26 @@ def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx, store):
                         new_lr = lr - offset
                     trainer.set_learning_rate(new_lr)
                     if args.profile:
-                        if step_num == 2:
+                        if step_num == 10:
                             mx.nd.waitall()
                             mx.profiler.set_config(profile_memory=False, profile_symbolic=True,
                                                    profile_imperative=True, filename='profile.json',
                                                    aggregate_stats=True)
                             mx.profiler.set_state('run')
-                        if step_num == 3:
+                        if step_num == 11:
                             mx.nd.waitall()
                             mx.profiler.set_state('stop')
                             logging.info(mx.profiler.dumps())
                             mx.profiler.dump()
                             exit()
-                if data_batch[0].shape[0] < len(ctx):
-                    continue
-                data_list = split_and_load(data_batch, ctx)
+                if args.by_token:
+                    data_list = [[seq.as_in_context(context) for seq in shard]
+                                  for context, shard in zip(ctx, data_batch)]
+                else:
+                    if data_batch[0].shape[0] < len(ctx):
+                        continue
+                    data_list = split_and_load(data_batch, ctx)
+
                 ns_label_list, ns_pred_list = [], []
                 mask_label_list, mask_pred_list, mask_weight_list = [], [], []
 
