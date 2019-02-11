@@ -326,7 +326,7 @@ def train(args):
     train_vocab = gluonnlp.Vocab(cntr)
     logging.info('Vocabulary size: %s', len(train_vocab))
     logging.info('Training data converting to sequences...')
-
+    embedding_matrix_len = len(train_vocab)
     # Preprocess the dataset
     train_sequences = convert_to_sequences(train_data, train_vocab)
     test_sequences = convert_to_sequences(test_data, train_vocab)
@@ -341,6 +341,7 @@ def train(args):
                 ngram_set.update(set_of_ngram)
         start_index = len(cntr)
         token_indices = {v: k + start_index for k, v in enumerate(ngram_set)}
+        embedding_matrix_len = embedding_matrix_len + len(token_indices)
         train_sequences = add_ngram(train_sequences, token_indices,
                                     ngram_range)
         test_sequences = add_ngram(test_sequences, token_indices, ngram_range)
@@ -364,8 +365,9 @@ def train(args):
     ctx = get_context(args)
     logging.info('Running Training on ctx:%s', ctx)
     embedding_dim = args.emsize
+    logging.info('Embedding Matrix Length:%s', embedding_matrix_len)
     net = FastTextClassificationModel(
-        len(train_vocab), embedding_dim, num_classes)
+        embedding_matrix_len, embedding_dim, num_classes)
     net.hybridize()
     net.collect_params().initialize(mx.init.Xavier(), ctx=ctx)
     logging.info('Network initialized')
@@ -394,7 +396,6 @@ def train(args):
                  num_batches, display_batch_cadence)
     for epoch in range(num_epochs):
         for batch, ((data, length), label) in enumerate(train_dataloader):
-            #num_batches += 1
             data = data.as_in_context(ctx)
             label = label.as_in_context(ctx)
             length = length.astype('float32').as_in_context(ctx)
