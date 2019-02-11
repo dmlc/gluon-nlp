@@ -20,9 +20,8 @@
 # pylint: disable=wildcard-import
 """Language Model example."""
 
-from . import transformer_lm, transformer_lm_data
+from . import transformer_lm
 
-from .transformer_lm import *
-from .transformer_lm_data import *
+from .transformer_lm import BERTRNN
 
-__all__ = transformer_lm.__all__ + transformer_lm_data.__all__
+__all__ = transformer_lm.__all__

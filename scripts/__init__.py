@@ -19,3 +19,7 @@
 
 # pylint: disable=wildcard-import
 """NLP examples."""
+
+from .language_model import *
+
+__all__ = language_model.__all__
