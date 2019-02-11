@@ -64,7 +64,7 @@ Usage
 """""
 
 .. code-block:: python
-    from bert.bert_embedding import BertEmbedding
+    from bert.embedding import BertEmbedding
 
     bert_abstract = """We introduce a new language representation model called BERT, which stands for Bidirectional Encoder Representations from Transformers.
      Unlike recent language representation models, BERT is designed to pre-train deep bidirectional representations by jointly conditioning on both left and right context in all layers.
@@ -72,26 +72,26 @@ Usage
     BERT is conceptually simple and empirically powerful.
     It obtains new state-of-the-art results on eleven natural language processing tasks, including pushing the GLUE benchmark to 80.4% (7.6% absolute improvement), MultiNLI accuracy to 86.7 (5.6% absolute improvement) and the SQuAD v1.1 question answering Test F1 to 93.2 (1.5% absolute improvement), outperforming human performance by 2.0%."""
     sentences = bert_abstract.split('\n')
-    bert = BertEmbedding()
+    bert_embedding = BertEmbedding()
     result = bert.embedding(sentences)
 
 If you want to use GPU, please import mxnet and set context
 
 .. code-block:: python
     import mxnet as mx
-    from bert.bert_embedding import BertEmbedding
+    from bert.embedding import BertEmbedding
 
     ...
 
     ctx = mx.gpu(0)
-    bert = BertEmbedding(ctx=ctx)
+    bert_embedding = BertEmbedding(ctx=ctx)
 
 Example of using the large pre-trained BERT model from Google
 
 .. code-block:: python
-    from bert.bert_embedding import BertEmbedding
+    from bert.embedding import BertEmbedding
 
-    bert = BertEmbedding(model='bert_24_1024_16', dataset_name='book_corpus_wiki_en_cased')
+    bert_embedding = BertEmbedding(model='bert_24_1024_16', dataset_name='book_corpus_wiki_en_cased')
 
 Example outputs:
 
