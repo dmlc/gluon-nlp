@@ -18,12 +18,89 @@
 # under the License.
 """Utility functions for parallel processing."""
 
-__all__ = ['clip_grad_global_norm']
+__all__ = ['clip_grad_global_norm', 'grad_global_norm']
 
 import warnings
 
 import numpy as np
 from mxnet import nd
+import mxnet as mx
+
+def grad_global_norm(parameters, max_norm):
+    """Rescales gradients of parameters so that the sum of their 2-norm is smaller than `max_norm`.
+    If gradients exist for more than one context for a parameter, user needs to explicitly call
+    ``trainer.allreduce_grads`` so that the gradients are summed first before calculating
+    the 2-norm.
+
+    .. note::
+
+        This function is only for use when `update_on_kvstore` is set to False in trainer.
+
+    Example::
+
+        trainer = Trainer(net.collect_params(), update_on_kvstore=False, ...)
+        for x, y in mx.gluon.utils.split_and_load(X, [mx.gpu(0), mx.gpu(1)]):
+            with mx.autograd.record():
+                y = net(x)
+                loss = loss_fn(y, label)
+            loss.backward()
+        trainer.allreduce_grads()
+        norm, ratio = nlp.utils.grad_global_norm(net.collect_params().values(), max_norm)
+        trainer.update(batch_size * ratio)
+        ...
+
+    Parameters
+    ----------
+    parameters : list of Parameters
+
+    Returns
+    -------
+    NDArray
+      Total norm.
+    float
+      Ratio for rescaling gradients based on max_norm.
+    """
+    # collect gradient arrays
+    arrays = []
+    idx = 0
+    for p in parameters:
+        if p.grad_req != 'null':
+            p_grads = p.list_grad()
+            arrays.append(p_grads[idx % len(p_grads)])
+            idx += 1
+    assert len(arrays) > 0, 'No parameter found available for gradient norm.'
+
+    # compute gradient norms
+    def _norm(array):
+        if array.stype == 'default':
+            x = array.reshape((-1,))
+            return nd.dot(x, x)
+        return array.norm().square()
+    norm_arrays = [_norm(arr) for arr in arrays]
+
+    # group norm arrays by ctx
+    def group_by_ctx(arr_list):
+        groups = {}
+        for arr in arr_list:
+            ctx = arr.context
+            if ctx in groups:
+                groups[ctx].append(arr)
+            else:
+                groups[ctx] = [arr]
+        return groups
+    norm_groups = group_by_ctx(norm_arrays)
+
+    # reduce
+    ctx, dtype = arrays[0].context, arrays[0].dtype
+    total_norm = mx.nd.zeros((1,), ctx=ctx, dtype=dtype)
+    for group in norm_groups:
+        total_norm += nd.add_n(*norm_groups[group]).as_in_context(ctx)
+    total_norm = nd.sqrt(total_norm)
+    total_norm_scalar = total_norm.asscalar()
+    if not np.isfinite(total_norm_scalar):
+        warnings.warn(UserWarning('nan or inf is detected.'), stacklevel=2)
+    scale = min(1, total_norm_scalar / max_norm)
+    return total_norm, scale
 
 def clip_grad_global_norm(parameters, max_norm, check_isfinite=True):
     """Rescales gradients of parameters so that the sum of their 2-norm is smaller than `max_norm`.
