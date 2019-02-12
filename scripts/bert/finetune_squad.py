@@ -51,8 +51,7 @@ from mxnet import gluon, nd
 import gluonnlp as nlp
 from gluonnlp.data import SQuAD
 from bert_qa_model import BertForQALoss, BertForQA
-from bert_qa_dataset import (SQuADTransform, bert_qa_batchify_fn,
-                             preprocess_dataset)
+from bert_qa_dataset import (SQuADTransform, preprocess_dataset)
 from bert_qa_evaluate import get_F1_EM, predictions
 
 np.random.seed(6)
@@ -248,6 +247,14 @@ bert, vocab = nlp.model.get_model(
     use_decoder=False,
     use_classifier=False)
 
+batchify_fn = nlp.data.batchify.Tuple(
+    nlp.data.batchify.Stack(),
+    nlp.data.batchify.Pad(axis=0, pad_val=vocab[vocab.padding_token]),
+    nlp.data.batchify.Pad(axis=0, pad_val=vocab[vocab.padding_token]),
+    nlp.data.batchify.Stack('float32'),
+    nlp.data.batchify.Stack('float32'),
+    nlp.data.batchify.Stack('float32'))
+
 berttoken = nlp.data.BERTTokenizer(vocab=vocab, lower=lower)
 
 net = BertForQA(bert=bert)
@@ -275,13 +282,14 @@ def train():
         max_seq_length=max_seq_length,
         doc_stride=doc_stride,
         max_query_length=max_query_length,
+        is_pad=False,
         is_training=True))
     log.info('The number of examples after preprocessing:{}'.format(
         len(train_data_transform)))
 
     train_dataloader = mx.gluon.data.DataLoader(
         train_data_transform, batch_size=batch_size,
-        batchify_fn=bert_qa_batchify_fn, num_workers=4, shuffle=True)
+        batchify_fn=batchify_fn, num_workers=4, shuffle=True)
 
     log.info('Start Training')
 
@@ -377,7 +385,7 @@ def train():
         log.info('Time cost={:.2f} s, Thoughput={:.2f} samples/s'.format(
             epoch_toc - epoch_tic, total_num/(epoch_toc - epoch_tic)))
 
-    net.save_parameters(os.path.join(output_dir, 'net_parameters'))
+    net.save_parameters(os.path.join(output_dir, 'net.params'))
 
 
 def evaluate():
@@ -396,6 +404,7 @@ def evaluate():
             max_seq_length=max_seq_length,
             doc_stride=doc_stride,
             max_query_length=max_query_length,
+            is_pad=False,
             is_training=False)._transform)
 
     dev_data_transform = preprocess_dataset(dev_data, SQuADTransform(
@@ -403,13 +412,14 @@ def evaluate():
         max_seq_length=max_seq_length,
         doc_stride=doc_stride,
         max_query_length=max_query_length,
+        is_pad=False,
         is_training=False))
     log.info('The number of examples after preprocessing:{}'.format(
         len(dev_data_transform)))
 
     dev_dataloader = mx.gluon.data.DataLoader(
         dev_data_transform, batch_size=test_batch_size,
-        batchify_fn=bert_qa_batchify_fn,
+        batchify_fn=batchify_fn,
         num_workers=4, shuffle=False, last_batch='keep')
 
     log.info('Start predict')

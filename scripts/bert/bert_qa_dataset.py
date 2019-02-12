@@ -21,6 +21,7 @@ from functools import partial
 import numpy as np
 from mxnet import context, nd
 from mxnet.gluon.data import SimpleDataset
+from gluonnlp.data.utils import whitespace_splitter
 
 
 class SquadExample(object):
@@ -76,7 +77,8 @@ def preprocess_dataset(dataset, transform, num_workers=8):
             if data:
                 dataset_transform.extend(data)
 
-        dataset = SimpleDataset(dataset_transform)
+        dataset = SimpleDataset(dataset_transform).transform(
+            lambda x: (x[0], x[1], x[2], x[3], x[4], x[5]))
     end = time.time()
     print('Done! Transform dataset costs %.2f seconds.' % (end-start))
     return dataset
@@ -114,15 +116,6 @@ class SquadFeature(object):
         self.start_position = start_position
         self.end_position = end_position
         self.is_impossible = is_impossible
-
-
-def whitespace_tokenize(text):
-    """Runs basic whitespace cleaning and splitting on a piece of text."""
-    text = text.strip()
-    if not text:
-        return []
-    tokens = text.split()
-    return tokens
 
 
 class SQuADTransform(object):
@@ -203,11 +196,13 @@ class SQuADTransform(object):
                  max_seq_length=384,
                  doc_stride=128,
                  max_query_length=64,
+                 is_pad=True,
                  is_training=True):
         self.tokenizer = tokenizer
         self.max_seq_length = max_seq_length
         self.max_query_length = max_query_length
         self.doc_stride = doc_stride
+        self.is_pad = is_pad
         self.is_training = is_training
 
     def _is_whitespace(self, c):
@@ -240,9 +235,6 @@ class SQuADTransform(object):
                 prev_is_whitespace = False
             char_to_word_offset.append(len(doc_tokens) - 1)
 
-        start_position = None
-        end_position = None
-
         if self.is_training:
             if not is_impossible:
                 answer_length = len(orig_answer_text)
@@ -258,7 +250,7 @@ class SQuADTransform(object):
                 actual_text = ' '.join(
                     doc_tokens[start_position:(end_position + 1)])
                 cleaned_answer_text = ' '.join(
-                    whitespace_tokenize(orig_answer_text))
+                    whitespace_splitter(orig_answer_text.strip()))
                 if actual_text.find(cleaned_answer_text) == -1:
                     print('Could not find answer: %s vs. %s' %
                           (actual_text, cleaned_answer_text))
@@ -368,12 +360,12 @@ class SQuADTransform(object):
             valid_length = len(input_ids)
 
             # Zero-pad up to the sequence length.
-            while len(input_ids) < self.max_seq_length:
-                input_ids.append(self.tokenizer.vocab['<PAD>'])
-                segment_ids.append(self.tokenizer.vocab['<PAD>'])
-
-            assert len(input_ids) == self.max_seq_length
-            assert len(segment_ids) == self.max_seq_length
+            if self.is_pad:
+                while len(input_ids) < self.max_seq_length:
+                    input_ids.append(self.tokenizer.vocab['<PAD>'])
+                    segment_ids.append(self.tokenizer.vocab['<PAD>'])
+                assert len(input_ids) == self.max_seq_length
+                assert len(segment_ids) == self.max_seq_length
 
             start_position = 0
             end_position = 0
@@ -429,17 +421,6 @@ class SQuADTransform(object):
             features.append(feature)
 
         return features
-
-
-def bert_qa_batchify_fn(data):
-    """Collate data into batch."""
-    def batchify_fn(data):
-        data = np.asarray(data)
-        return nd.array(data, dtype=data.dtype, ctx=context.Context('cpu_shared', 0))
-
-    data = zip(*data)
-    return [batchify_fn(i) for i in data]
-
 
 def _improve_answer_span(doc_tokens, input_start, input_end, tokenizer,
                          orig_answer_text):
