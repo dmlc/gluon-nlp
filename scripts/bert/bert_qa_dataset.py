@@ -233,6 +233,9 @@ class SQuADTransform(object):
                 prev_is_whitespace = False
             char_to_word_offset.append(len(doc_tokens) - 1)
 
+        start_position = -1
+        end_position = -1
+
         if self.is_training:
             if not is_impossible:
                 answer_length = len(orig_answer_text)
