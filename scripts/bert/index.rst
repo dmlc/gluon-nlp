@@ -53,6 +53,9 @@ BERT for SQuAD
 GluonNLP provides the following example script to fine-tune SQuAD with pre-trained
 BERT model.
 
+SQuAD 1.1
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 Use the following command to fine-tune the BERT model for SQuAD1.1 dataset.
 
 Note that this will require more than 12G of GPU memory.
@@ -75,3 +78,14 @@ Should produce an output like this. Explain that the F1 score on the dev dataset
 .. code-block:: console
 
     {'exact_match': 81.21097445600756, 'f1': 88.4551346176558}
+
+SQuAD 2.0
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+If you are pre-training on the SQuAD2.0 dataset, you need to specify the parameter **version_2** and specify the parameter **null_score_diff_threshold** (Typical values are between -1.0 and -5.0).
+
+Use the following command to fine tune the BERT model of the SQuAD2.0 dataset and generate predictions.json, nbest_predictions.json, and null_odds.json.
+
+.. code-block:: console
+
+    $ python finetune_squad.py --optimizer adam --batch_size 12 --lr 3e-5 --epochs 2 --null_score_diff_threshold -2.0 --gpu --version_2
