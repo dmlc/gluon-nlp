@@ -67,17 +67,19 @@ class FP16Trainer(object):
 
     def step(self, batch_size, ignore_stale_grad=False, global_norm=None):
         self.fp32_trainer.allreduce_grads()
+        step_size = batch_size * self._scaler.loss_scale
         if global_norm:
-            from ..utils import clip_grad_global_norm
-            norm = clip_grad_global_norm(self.fp32_trainer._params, global_norm * self._scaler.loss_scale)
-            overflow = not np.isfinite(norm)
+            from ..utils import clip_grad_global_norm, grad_global_norm
+            norm, ratio = grad_global_norm(self.fp32_trainer._params, global_norm * self._scaler.loss_scale)
+            step_size *= ratio
+            overflow = not np.isfinite(norm.asscalar())
         else:
             overflow = self._scaler.has_overflow(self.fp32_trainer._params)
 
         self._scaler.update_scale(overflow)
         if not overflow:
             #print('perform update')
-            self.fp32_trainer.update(batch_size * self._scaler.loss_scale,
+            self.fp32_trainer.update(step_size,
                                      ignore_stale_grad=ignore_stale_grad)
         else:
             #raise Exception()

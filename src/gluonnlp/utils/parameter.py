@@ -73,7 +73,7 @@ def grad_global_norm(parameters, max_norm):
     # compute gradient norms
     def _norm(array):
         if array.stype == 'default':
-            x = array.reshape((-1,))
+            x = array.reshape((-1,)).astype('float32', copy=False)
             return nd.dot(x, x)
         return array.norm().square()
     norm_arrays = [_norm(arr) for arr in arrays]
@@ -91,7 +91,7 @@ def grad_global_norm(parameters, max_norm):
     norm_groups = group_by_ctx(norm_arrays)
 
     # reduce
-    ctx, dtype = arrays[0].context, arrays[0].dtype
+    ctx, dtype = arrays[0].context, 'float32'#arrays[0].dtype
     total_norm = mx.nd.zeros((1,), ctx=ctx, dtype=dtype)
     for group in norm_groups:
         total_norm += nd.add_n(*norm_groups[group]).as_in_context(ctx)

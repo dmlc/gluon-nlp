@@ -90,7 +90,8 @@ class MaskedAccuracy(EvalMetric):
         num_insts = []
         for label, pred_label, mask in zip(labels, preds, masks):
             if pred_label.shape != label.shape:
-                pred_label = mx.ndarray.argmax(pred_label, axis=self.axis)
+                # pred_label = mx.ndarray.argmax(pred_label, axis=self.axis)
+                pred_label = mx.ndarray.topk(pred_label.astype('float32', copy=False), ret_typ='indices', axis=self.axis)
             pred_label = pred_label.astype('int32', copy=False).reshape((-1,))
             label = label.astype('int32', copy=False).reshape((-1,))
             # flatten before checking shapes to avoid shape miss match

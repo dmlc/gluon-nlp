@@ -50,6 +50,7 @@ from mxnet import gluon
 from mxnet.gluon.data import ArrayDataset, DataLoader
 import gluonnlp as nlp
 from gluonnlp.utils import clip_grad_global_norm, grad_global_norm, Parallelizable, Parallel
+from gluonnlp.optimizer.utils import FP16Trainer
 from gluonnlp.metric import MaskedAccuracy
 from gluonnlp.model import bert_12_768_12
 from gluonnlp.data.batchify import Tuple, Stack, Pad
@@ -125,7 +126,7 @@ def get_model(ctx):
 
     return model, nsp_loss, mlm_loss, vocabulary
 
-def get_dataset(data, batch_size, is_train, store):
+def get_dataset(data, batch_size, num_ctxes, is_train, store):
     data = data
     split_sampler = nlp.data.SplitSampler(len(glob.glob(data)), num_parts=store.num_workers,
                                           part_index=store.rank)
@@ -135,23 +136,25 @@ def get_dataset(data, batch_size, is_train, store):
         t0 = time.time()
         lengths = dataset.get_field('valid_lengths')
         logging.debug('Num samples = %d'%len(lengths))
+        # A batch includes: input_id, masked_id, masked_position, masked_weight,
+        #                   next_sentence_label, segment_id, valid_length
         batchify_fn = Tuple(Pad(), Pad(), Pad(), Pad(), Stack(), Pad(), Stack())
         if args.by_token:
             # sharded data loader
             sampler = nlp.data.FixedBucketSampler(lengths=lengths,
-                                                  batch_size=batch_size/8,#args.batch_size,
+                                                  # batch_size per shard
+                                                  batch_size=batch_size,
                                                   num_buckets=args.num_buckets,
                                                   shuffle=is_train,
                                                   use_average_length=True,
-                                                  num_shards=8)
-                                                  #bucket_scheme=bucket_scheme)
+                                                  num_shards=num_ctxes)
             dataloader = nlp.data.ShardedDataLoader(dataset,
                                                     batch_sampler=sampler,
                                                     batchify_fn=batchify_fn,
-                                                    num_workers=8)
+                                                    num_workers=num_ctxes)
         else:
             sampler = FixedBucketSampler(lengths,
-                                         batch_size=batch_size,
+                                         batch_size=batch_size * num_ctxes,
                                          num_buckets=args.num_buckets,
                                          ratio=0,
                                          shuffle=is_train)
@@ -159,8 +162,6 @@ def get_dataset(data, batch_size, is_train, store):
                                     batch_sampler=sampler,
                                     batchify_fn=batchify_fn,
                                     num_workers=1)
-
-        logging.info('Train Batch Sampler:\n%s', sampler.stats())
 
         t1 = time.time()
         logging.debug('Dataloader creation cost = %.2f s'%(t1-t0))
@@ -187,27 +188,31 @@ class ParallelBERT(Parallelizable):
     model : Block
         The BERT model.
     """
-    def __init__(self, model, mlm_loss, nsp_loss, vocab_size, rescale_factor):
+    def __init__(self, model, mlm_loss, nsp_loss, vocab_size, rescale_factor, trainer=None):
         self._model = model
         self._mlm_loss = mlm_loss
         self._nsp_loss = nsp_loss
         self._vocab_size = vocab_size
         self._rescale_factor = rescale_factor
+        self._trainer = trainer
 
     def forward_backward(self, x):
         input_id, masked_id, masked_position, masked_weight, next_sentence_label, segment_id, valid_length = x
         num_masks = masked_weight.sum() + 1e-8
         valid_length = valid_length.reshape(-1)
-        valid_length = valid_length.astype('float32', copy=False)
         masked_id = masked_id.reshape(-1)
         with mx.autograd.record():
-            _, _, classified, decoded = self._model(input_id, segment_id, valid_length, masked_position)
+            valid_length_typed = valid_length.astype(args.dtype, copy=False)
+            _, _, classified, decoded = self._model(input_id, segment_id, valid_length_typed, masked_position)
             decoded = decoded.reshape((-1, self._vocab_size))
-            ls1 = self._mlm_loss(decoded, masked_id, masked_weight.reshape((-1, 1))).sum() / num_masks
-            ls2 = self._nsp_loss(classified, next_sentence_label).mean()
+            ls1 = self._mlm_loss(decoded.astype('float32', copy=False), masked_id, masked_weight.reshape((-1, 1))).sum() / num_masks
+            ls2 = self._nsp_loss(classified.astype('float32', copy=False), next_sentence_label).mean()
             ls = ls1 + ls2
             ls = ls / self._rescale_factor
-        ls.backward()
+        if args.dtype == 'float16':
+            self._trainer.backward(ls)
+        else:
+            ls.backward()
         return ls, next_sentence_label, classified, masked_id, decoded, masked_weight, ls1, ls2, valid_length
 
 def forward(data, model, mlm_loss, nsp_loss, vocab_size):
@@ -300,12 +305,18 @@ def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx, store):
     nsp_metric.reset()
 
     lr = args.lr
-    trainer = gluon.Trainer(model.collect_params(), 'bertadam',
-                            {'learning_rate': lr, 'epsilon': 1e-6, 'wd': 0.01},
+    optim_params = {'learning_rate': lr, 'epsilon': 1e-6, 'wd': 0.01}
+    if args.dtype == 'float16':
+        optim_params['multi_precision'] = True
+
+    trainer = gluon.Trainer(model.collect_params(), 'bertadam', optim_params,
                             update_on_kvstore=False, kvstore=store)
 
     if args.ckpt_dir and args.start_step:
         trainer.load_states(os.path.join(args.ckpt_dir, '%07d.states'%args.start_step))
+
+    if args.dtype == 'float16':
+        fp16_trainer = FP16Trainer(trainer)
 
     accumulate = args.accumulate
     num_train_steps = args.num_steps
@@ -327,7 +338,8 @@ def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx, store):
     batch_num = 0
     step_num = args.start_step
 
-    parallel_model = ParallelBERT(model, mlm_loss, nsp_loss, vocab_size, store.num_workers * accumulate)
+    parallel_model = ParallelBERT(model, mlm_loss, nsp_loss, vocab_size, store.num_workers * accumulate,
+                                  trainer=fp16_trainer if args.dtype == 'float16' else None)
     num_ctxes = len(ctx)
     parallel = Parallel(num_ctxes, parallel_model)
 
@@ -335,7 +347,6 @@ def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx, store):
         for _, dataloader in enumerate(data_train):
             iterator = enumerate(dataloader)
             _, data_batch = next(iterator)
-            #while True:
             for _, data_batch in enumerate(dataloader):
                 if batch_num % accumulate == 0:
                     step_num += 1
@@ -388,9 +399,12 @@ def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx, store):
 
                 # update
                 if (batch_num + 1) % accumulate == 0:
-                    trainer.allreduce_grads()
-                    _, ratio = grad_global_norm(params, 1)
-                    trainer.update(ratio)
+                    if args.dtype == 'float16':
+                        fp16_trainer.step(1, global_norm=1)
+                    else:
+                        trainer.allreduce_grads()
+                        _, ratio = grad_global_norm(params, 1)
+                        trainer.update(ratio)
                 nsp_metric.update(ns_label_list, ns_pred_list)
                 mlm_metric.update(mask_label_list, mask_pred_list, mask_weight_list)
                 # logging
@@ -426,7 +440,6 @@ if __name__ == '__main__':
 
     model, nsp_loss, mlm_loss, vocabulary = get_model(ctx)
 
-    batch_size = args.batch_size * len(ctx)
     batch_size_eval = args.batch_size_eval * len(ctx)
 
     do_lower_case = 'uncased' in args.dataset_name
@@ -440,7 +453,7 @@ if __name__ == '__main__':
 
     if args.do_training:
         assert args.data, '--data must be provided for training'
-        data_train = get_dataset(args.data, batch_size, True, store)
+        data_train = get_dataset(args.data, args.batch_size, len(ctx), True, store)
         train(data_train, model, nsp_loss, mlm_loss, len(tokenizer.vocab), ctx, store)
     if args.do_eval:
         assert args.data_eval, '--data_eval must be provided for evaluation'

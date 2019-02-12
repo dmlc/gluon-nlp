@@ -45,18 +45,13 @@ def _masked_softmax(F, att_score, mask, dtype):
     att_weights : Symborl or NDArray
         Shape (batch_size, query_length, memory_length)
     """
-    if np.dtype(dtype) == np.float16:
-        att_score = att_score.astype('float32')
-        mask = mask.astype('float32')
     if mask is not None:
         # Fill in the masked scores with a very small value
-        neg = -1e18
+        neg = -10000
         att_score = F.where(mask, att_score, neg * F.ones_like(att_score))
         att_weights = F.softmax(att_score, axis=-1) * mask
     else:
         att_weights = F.softmax(att_score, axis=-1)
-    if np.dtype(dtype) == np.float16:
-        att_weights = att_weights.astype(dtype)
     return att_weights
 
 
@@ -121,12 +116,7 @@ class AttentionCell(HybridBlock):
         context_vec: Symbol or NDArray
             Shape (batch_size, query_length, context_vec_dim)
         """
-        if np.dtype(self._dtype) == np.float16:
-            att_weights = att_weights.astype('float32')
-            value = value.astype('float32')
         output = F.batch_dot(att_weights, value)
-        if np.dtype(self._dtype) == np.float16:
-            output = output.astype(self._dtype)
         return output
 
     def __call__(self, query, key, value=None, mask=None):  # pylint: disable=arguments-differ
@@ -488,12 +478,7 @@ class DotProductAttentionCell(AttentionCell):
         if self._scaled:
             query = F.contrib.div_sqrt_dim(query)
 
-        if np.dtype(self._dtype) == np.float16:
-            query =  query.astype('float32')
-            key = key.astype('float32')
         att_score = F.batch_dot(query, key, transpose_b=True)
-        if np.dtype(self._dtype) == np.float16:
-            att_score = att_score.astype(self._dtype)
 
         att_weights = self._dropout_layer(_masked_softmax(F, att_score, mask, self._dtype))
         return att_weights
