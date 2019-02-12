@@ -18,10 +18,8 @@ import multiprocessing as mp
 import time
 from functools import partial
 
-import numpy as np
-from mxnet import context, nd
-from mxnet.gluon.data import SimpleDataset
 from gluonnlp.data.utils import whitespace_splitter
+from mxnet.gluon.data import SimpleDataset
 
 
 class SquadExample(object):
@@ -421,6 +419,7 @@ class SQuADTransform(object):
             features.append(feature)
 
         return features
+
 
 def _improve_answer_span(doc_tokens, input_start, input_end, tokenizer,
                          orig_answer_text):
