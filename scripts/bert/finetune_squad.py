@@ -282,7 +282,7 @@ def train():
         max_seq_length=max_seq_length,
         doc_stride=doc_stride,
         max_query_length=max_query_length,
-        is_pad=False,
+        is_pad=True,
         is_training=True))
     log.info('The number of examples after preprocessing:{}'.format(
         len(train_data_transform)))
@@ -404,7 +404,7 @@ def evaluate():
             max_seq_length=max_seq_length,
             doc_stride=doc_stride,
             max_query_length=max_query_length,
-            is_pad=False,
+            is_pad=True,
             is_training=False)._transform)
 
     dev_data_transform = preprocess_dataset(dev_data, SQuADTransform(
@@ -412,7 +412,7 @@ def evaluate():
         max_seq_length=max_seq_length,
         doc_stride=doc_stride,
         max_query_length=max_query_length,
-        is_pad=False,
+        is_pad=True,
         is_training=False))
     log.info('The number of examples after preprocessing:{}'.format(
         len(dev_data_transform)))
