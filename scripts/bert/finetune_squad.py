@@ -277,19 +277,26 @@ def train():
         train_data = SQuAD('train', version='1.1')
     log.info('Number of records in Train data:{}'.format(len(train_data)))
 
-    train_data_transform = preprocess_dataset(train_data, SQuADTransform(
-        berttoken,
-        max_seq_length=max_seq_length,
-        doc_stride=doc_stride,
-        max_query_length=max_query_length,
-        is_pad=True,
-        is_training=True))
+    train_data_transform, data_train_len = preprocess_dataset(
+        train_data, SQuADTransform(
+            berttoken,
+            max_seq_length=max_seq_length,
+            doc_stride=doc_stride,
+            max_query_length=max_query_length,
+            is_pad=False,
+            is_training=True))
     log.info('The number of examples after preprocessing:{}'.format(
         len(train_data_transform)))
 
+    batch_sampler = nlp.data.sampler.FixedBucketSampler(data_train_len,
+                                                        batch_size=batch_size,
+                                                        num_buckets=10,
+                                                        ratio=0,
+                                                        shuffle=True)
+
     train_dataloader = mx.gluon.data.DataLoader(
-        train_data_transform, batch_size=batch_size,
-        batchify_fn=batchify_fn, num_workers=4, shuffle=True)
+        train_data_transform, batchify_fn=batchify_fn,
+        batch_sampler=batch_sampler, num_workers=4)
 
     log.info('Start Training')
 
@@ -404,23 +411,30 @@ def evaluate():
             max_seq_length=max_seq_length,
             doc_stride=doc_stride,
             max_query_length=max_query_length,
-            is_pad=True,
+            is_pad=False,
             is_training=False)._transform)
 
-    dev_data_transform = preprocess_dataset(dev_data, SQuADTransform(
-        berttoken,
-        max_seq_length=max_seq_length,
-        doc_stride=doc_stride,
-        max_query_length=max_query_length,
-        is_pad=True,
-        is_training=False))
+    dev_data_transform, data_dev_len = preprocess_dataset(
+        dev_data, SQuADTransform(
+            berttoken,
+            max_seq_length=max_seq_length,
+            doc_stride=doc_stride,
+            max_query_length=max_query_length,
+            is_pad=False,
+            is_training=False))
     log.info('The number of examples after preprocessing:{}'.format(
         len(dev_data_transform)))
 
+    batch_sampler = nlp.data.sampler.FixedBucketSampler(data_dev_len,
+                                                        batch_size=test_batch_size,
+                                                        num_buckets=10,
+                                                        ratio=0,
+                                                        shuffle=True)
+
     dev_dataloader = mx.gluon.data.DataLoader(
-        dev_data_transform, batch_size=test_batch_size,
+        dev_data_transform,
         batchify_fn=batchify_fn,
-        num_workers=4, shuffle=False, last_batch='keep')
+        num_workers=4, batch_sampler=batch_sampler)
 
     log.info('Start predict')
 
