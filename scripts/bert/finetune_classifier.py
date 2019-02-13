@@ -135,6 +135,12 @@ parser.add_argument(
     '\'wiki_cn\', \'wiki_multilingual\' and \'wiki_multilingual_cased\' for bert_12_768_12 only.'
 )
 parser.add_argument(
+    '--pretrained_bert_parameters',
+    type=str,
+    default=None,
+    help='Pre-trained bert model parameter file. default is None'
+)
+parser.add_argument(
     '--model_parameters',
     type=str,
     default=None,
@@ -195,10 +201,15 @@ else:
     model.classifier.initialize(init=mx.init.Normal(0.02), ctx=ctx)
     loss_function = gluon.loss.SoftmaxCELoss()
 
+# load checkpointing
+pretrained_bert_parameters = args.pretrained_bert_parameters
 model_parameters = args.model_parameters
 output_dir = args.output_dir
+if pretrained_bert_parameters:
+    logging.info('loading bert params from {0}'.format(pretrained_bert_parameters))
+    model.bert.load_parameters(pretrained_bert_parameters)
 if model_parameters:
-    logging.info('loading params from {0}'.format(model_parameters))
+    logging.info('loading model params from {0}'.format(model_parameters))
     model.load_parameters(model_parameters)
 if not os.path.exists(output_dir):
     os.makedirs(output_dir)
