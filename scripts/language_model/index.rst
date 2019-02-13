@@ -184,10 +184,8 @@ The dataset used for training the models is Google's 1 billion words dataset.
    $ python large_word_language_model.py --gpus 0,1,2,3 --clip=10
    $ python large_word_language_model.py --gpus 4 --eval-only --batch-size=1
 
-Language Models with Transformers
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Reference: C. Wang, M. Li, S. Alexander. "`Language Models with Transformers`". Available soon.
+BERT-based Language Models
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The datasets used for training the models are wikitext-2 and wikitext-103 respectively.
 

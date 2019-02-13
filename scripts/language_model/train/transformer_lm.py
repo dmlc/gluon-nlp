@@ -111,8 +111,6 @@ class BERTRNN(Block):
 
         with self.name_scope():
             self.embedding = embedding
-            for cell in self.embedding.encoder.transformer_cells[:upperbound_fixed_layer]:
-                cell.collect_params().setattr('grad_req', 'null')
             self.encoder = self._get_encoder()
             self.prior = self._get_prior()
             self.latent = self._get_latent()

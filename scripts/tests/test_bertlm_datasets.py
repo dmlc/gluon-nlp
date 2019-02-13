@@ -33,7 +33,6 @@ from ..language_model.transformer_lm_data import WikiText2WordPiece, WikiText103
 ###############################################################################
 # Language model
 ###############################################################################
-@pytest.mark.serial
 @pytest.mark.remote_required
 def test_wikitext2wp():
     train_dataset = WikiText2WordPiece(
@@ -48,7 +47,6 @@ def test_wikitext2wp():
     assert len(val_dataset) == 271452, len(val_dataset)
 
 
-@pytest.mark.serial
 @pytest.mark.remote_required
 def test_wikitext103wp():
     train_dataset = WikiText103WordPiece(

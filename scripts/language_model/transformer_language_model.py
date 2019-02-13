@@ -1,5 +1,5 @@
 """
-Language Model with Transformers
+BERT-based Language Models
 ==================================
 
 Reference paper will be available soon.
@@ -44,7 +44,7 @@ except ImportError:
         TransformedCorpusBatchify
 
 parser = argparse.ArgumentParser(
-    description='Language Models with Transformers')
+    description='BERT based Language Models')
 parser.add_argument('--data', type=str, default='wikitext2',
                     help='language model corpus (wikitext2, wikitext103)')
 parser.add_argument('--model', type=str, default='bert_lm_12_768_12_300_1150',
