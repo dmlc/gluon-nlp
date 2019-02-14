@@ -39,12 +39,30 @@ Installation
 ============
 
 Make sure you have Python 2.7 or Python 3.6 and recent version of MXNet.
-You can install ``MXNet`` and ``GluonNLP`` using pip:
+You can install ``MXNet`` and ``GluonNLP`` using pip.
+
+``GluonNLP`` is based on the most recent version of ``MXNet``.
+
+
+In particular, if you want to install the most recent ``MXNet`` release:
+
+::
+
+    pip install --upgrade mxnet>=1.3.0
+
+Else, if you want to install the most recent ``MXNet`` nightly build:
 
 ::
 
     pip install --pre --upgrade mxnet
+
+Then, you can install ``GluonNLP``:
+
+::
+
     pip install gluonnlp
+
+Please check more `installation details <https://github.com/dmlc/gluon-nlp/blob/master/docs/install.rst>`_.
 
 Docs 📖
 =======

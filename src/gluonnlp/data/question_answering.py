@@ -58,23 +58,38 @@ class SQuAD(ArrayDataset):
     - answer_list:   All answers for this question. Stored as python list
     - start_indices: All answers' starting indices. Stored as python list.
       The position in this list is the same as the position of an answer in answer_list
+    - is_impossible: The question is unanswerable. if version is '2.0'.
+      In SQuAd2.0, there are some unanswerable questions.
 
     Parameters
     ----------
     segment : str, default 'train'
         Dataset segment. Options are 'train' and 'dev'.
+    version : str, default '1.1'
+        Dataset version. Options are '1.1' and '2.0'.
     root : str, default '~/.mxnet/datasets/squad'
         Path to temp folder for storing data.
     """
-    def __init__(self, segment='train', root=os.path.join('~', '.mxnet', 'datasets', 'squad')):
-        self._data_file = {'train': (('train-v1.1.zip',
-                                      '052a75bf8fdb3e843b8649971658eae8133f9b0e'),
-                                     ('train-v1.1.json',
-                                      '1faea1252438a64f9718412a55036b786cfcc636')),
-                           'dev': (('dev-v1.1.zip',
-                                    'e31ad736582b72a8eabd5c0b0a38cb779ed913d7'),
-                                   ('dev-v1.1.json',
-                                    'e1621aae0683b346ee9743bd5609266ba0cc34fc'))}
+
+    def __init__(self, segment='train', version='1.1',
+                 root=os.path.join('~', '.mxnet', 'datasets', 'squad')):
+        self._data_file = {'1.1': {'train': (('train-v1.1.zip',
+                                              '052a75bf8fdb3e843b8649971658eae8133f9b0e'),
+                                             ('train-v1.1.json',
+                                              '1faea1252438a64f9718412a55036b786cfcc636')),
+                                   'dev': (('dev-v1.1.zip',
+                                            'e31ad736582b72a8eabd5c0b0a38cb779ed913d7'),
+                                           ('dev-v1.1.json',
+                                            'e1621aae0683b346ee9743bd5609266ba0cc34fc'))},
+                           '2.0': {'train': (('train-v2.0.zip',
+                                              'fe497797fc090ee61a046b74eadfee51320b54fb'),
+                                             ('train-v2.0.json',
+                                              'ceb2acdea93b9d82ab1829c7b1e03bee9e302c99')),
+                                   'dev': (('dev-v2.0.zip',
+                                            'de4dad80b3de9194484ca013e95a96a3e2d5603f'),
+                                           ('dev-v2.0.json',
+                                            '846082d15ed71cb5220645b9d473441e00070778'))}}
+
         root = os.path.expanduser(root)
 
         if not os.path.isdir(root):
@@ -82,6 +97,7 @@ class SQuAD(ArrayDataset):
 
         self._root = root
         self._segment = segment
+        self._version = version
         self._get_data()
 
         super(SQuAD, self).__init__(self._read_data())
@@ -89,7 +105,8 @@ class SQuAD(ArrayDataset):
     def _get_data(self):
         """Load data from the file. Does nothing if data was loaded before.
         """
-        (data_archive_name, archive_hash), (data_name, data_hash) = self._data_file[self._segment]
+        (data_archive_name, archive_hash), (data_name, data_hash) \
+            = self._data_file[self._version][self._segment]
         data_path = os.path.join(self._root, data_name)
 
         if not os.path.exists(data_path) or not check_sha1(data_path, data_hash):
@@ -117,7 +134,8 @@ class SQuAD(ArrayDataset):
         List[Tuple]
             Flatten list of questions
         """
-        (_, _), (data_file_name, _) = self._data_file[self._segment]
+        (_, _), (data_file_name, _) \
+            = self._data_file[self._version][self._segment]
 
         with open(os.path.join(self._root, data_file_name)) as f:
             samples = json.load(f)
@@ -134,7 +152,7 @@ class SQuAD(ArrayDataset):
         -------
         List[Tuple]
             Flatten list of records in format: record_index, question_id, question, context,
-            answer, answer_start_index
+            answer, answer_start_index, is_impossible(if version is '2.0)
         """
         records = []
 
@@ -144,10 +162,16 @@ class SQuAD(ArrayDataset):
             for paragraph in title['paragraphs']:
                 for qas in paragraph['qas']:
                     answers = SQuAD._get_answers(qas)
-                    record = (
-                        record_index, qas['id'], qas['question'],
-                        paragraph['context'], answers[0], answers[1]
-                    )
+                    is_impossible = qas.get('is_impossible', None)
+                    if is_impossible is not None:
+                        record = (
+                            record_index, qas['id'], qas['question'],
+                            paragraph['context'], answers[0], answers[1], is_impossible
+                        )
+                    else:
+                        record = (
+                            record_index, qas['id'], qas['question'],
+                            paragraph['context'], answers[0], answers[1])
 
                     record_index += 1
                     records.append(record)

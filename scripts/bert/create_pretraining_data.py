@@ -31,6 +31,7 @@ import multiprocessing
 import numpy as np
 import mxnet as mx
 import gluonnlp as nlp
+from gluonnlp.data import BERTTokenizer
 import tokenizer as tokenization
 from multiprocessing import Pool
 
@@ -142,15 +143,13 @@ class TrainingInstance(object):
 
     def __str__(self):
         s = ''
-        s += 'tokens: %s\n' % (' '.join(
-            [tokenization.printable_text(x) for x in self.tokens]))
+        s += 'tokens: %s\n' % (' '.join(self.tokens))
         s += 'segment_ids: %s\n' % (' '.join(
             [str(x) for x in self.segment_ids]))
         s += 'is_random_next: %s\n' % self.is_random_next
         s += 'masked_lm_positions: %s\n' % (' '.join(
             [str(x) for x in self.masked_lm_positions]))
-        s += 'masked_lm_labels: %s\n' % (' '.join(
-            [tokenization.printable_text(x) for x in self.masked_lm_labels]))
+        s += 'masked_lm_labels: %s\n' % (' '.join(self.masked_lm_labels))
         s += '\n'
         return s
 
@@ -353,7 +352,7 @@ def create_training_instances(x):
     for input_file in input_files:
         with io.open(input_file, 'r', encoding='UTF-8') as reader:
             while True:
-                line = tokenization.convert_to_unicode(reader.readline()) if not args.tokenized else reader.readline()
+                line = reader.readline()
                 if not line:
                     break
                 line = line.strip()
@@ -361,7 +360,7 @@ def create_training_instances(x):
                 # Empty lines are used as document delimiters
                 if not line:
                     all_documents.append([])
-                tokens = tokenizer.tokenize(line) if not args.tokenized else line.split(' ')
+                tokens = tokenizer(line)
                 if tokens:
                     all_documents[-1].append(tokens)
 
@@ -618,8 +617,8 @@ def main():
     time_start = time.time()
     logging.info("loading vocab file: %s"%args.vocab_file)
     vocab_obj = nlp.Vocab.from_json(open(args.vocab_file, 'rt').read())
-    tokenizer = tokenization.FullTokenizer(
-        vocab=vocab_obj, do_lower_case=args.do_lower_case)
+    tokenizer = BERTTokenizer(
+        vocab=vocab_obj, lower=args.do_lower_case)
 
     input_files = []
     for input_pattern in args.input_file.split(','):

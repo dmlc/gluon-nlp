@@ -21,11 +21,10 @@
 """Highway layer initializer."""
 from __future__ import absolute_import, print_function
 
-__all__ = ['HighwayBias']
+__all__ = ['HighwayBias', 'TruncNorm']
 
 import mxnet
 from mxnet.initializer import Initializer
-
 
 @mxnet.initializer.register
 class HighwayBias(Initializer):
@@ -63,3 +62,38 @@ class HighwayBias(Initializer):
         """Abstract method to Initialize weight."""
         arr[:int(arr.shape[0] / 2)] = self.nonlinear_transform_bias
         arr[int(arr.shape[0] / 2):] = self.transform_gate_bias
+
+
+@mxnet.initializer.register
+class TruncNorm(Initializer):
+    r"""Initialize the weight by drawing sample from truncated normal distribution with
+    provided mean and standard deviation. Values whose magnitude is more than 2 standard deviations
+    from the mean are dropped and re-picked..
+
+    Parameters
+    ----------
+    mean : float, default 0
+        Mean of the underlying normal distribution
+
+    stdev : float, default 0.01
+        Standard deviation of the underlying normal distribution
+
+    **kwargs : dict
+        Additional parameters for base Initializer.
+    """
+    def __init__(self, mean=0, stdev=0.01, **kwargs):
+        super(TruncNorm, self).__init__(**kwargs)
+        try:
+            from scipy.stats import truncnorm
+        except ImportError:
+            raise ImportError('SciPy is not installed. '
+                              'You must install SciPy >= 1.0.0 in order to use the '
+                              'TruncNorm. You can refer to the official '
+                              'installation guide in https://www.scipy.org/install.html .')
+
+        self._frozen_rv = truncnorm(-2, 2, mean, stdev)
+
+    def _init_weight(self, name, arr):
+        # pylint: disable=unused-argument
+        """Abstract method to Initialize weight."""
+        arr[:] = self._frozen_rv.rvs(arr.size).reshape(arr.shape)

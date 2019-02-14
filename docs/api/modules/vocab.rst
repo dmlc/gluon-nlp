@@ -51,6 +51,18 @@ We provide the following vocabulary class to keep consistent with ELMo pre-train
     ELMoCharVocab
 
 
+BERT Vocabulary
+----------------
+
+The vocabulary for BERT, inherited from :class:`gluon.Vocab` , provides some additional special tokens for ease of use.
+
+.. currentmodule:: gluonnlp.vocab
+.. autosummary::
+    :nosignatures:
+
+    BERTVocab
+
+
 API Reference
 -------------
 

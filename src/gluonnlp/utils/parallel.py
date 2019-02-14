@@ -89,7 +89,8 @@ class Parallel(object):
     Parameters
     ----------
     num_workers : int
-        Number of worker threads.
+        Number of worker threads. If set to 0, the main thread is used as the worker for
+        debugging purpose.
     parallelizable :
         Parallelizable net whose `forward` and `backward` methods are invoked
         by multiple worker threads.
@@ -108,7 +109,6 @@ class Parallel(object):
         self._in_queue = queue.Queue(-1)
         self._out_queue = queue.Queue(-1)
         self._num_workers = num_workers
-        # assert self._num_workers > 0, 'num_workers must be positive'
         self._threads = []
         self._parallizable = parallizable
         self._num_serial = num_workers if serial_init else 0

@@ -44,8 +44,10 @@ def preprocess_dataset(dataset, question_max_length, context_max_length):
         Dataset of preprocessed records
     """
     vocab_provider = VocabProvider(dataset)
-    transformer = SQuADTransform(vocab_provider, question_max_length, context_max_length)
-    processed_dataset = SimpleDataset(dataset.transform(transformer, lazy=False))
+    transformer = SQuADTransform(
+        vocab_provider, question_max_length, context_max_length)
+    processed_dataset = SimpleDataset(
+        dataset.transform(transformer, lazy=False))
     return processed_dataset
 
 
@@ -53,6 +55,7 @@ class SQuADTransform(object):
     """SQuADTransform class responsible for converting text data into NDArrays that can be later
     feed into DataProvider
     """
+
     def __init__(self, vocab_provider, question_max_length, context_max_length):
         self._word_vocab = vocab_provider.get_word_level_vocab()
         self._char_vocab = vocab_provider.get_char_level_vocab()
@@ -68,8 +71,10 @@ class SQuADTransform(object):
         Method converts text into numeric arrays based on Vocabulary.
         Answers are not processed, as they are not needed in input
         """
-        question_words = self._word_vocab[question.split()[:self._question_max_length]]
-        context_words = self._word_vocab[context.split()[:self._context_max_length]]
+        question_words = self._word_vocab[question.split()[
+            :self._question_max_length]]
+        context_words = self._word_vocab[context.split()[
+            :self._context_max_length]]
 
         question_chars = [self._char_vocab[list(iter(word))]
                           for word in question.split()[:self._question_max_length]]
@@ -83,10 +88,11 @@ class SQuADTransform(object):
         context_words_nd = nd.array(context_words, dtype=np.int32)
         context_chars_nd = self._padder(context_chars)
 
-        answer_spans = SQuADTransform._get_answer_spans(answer_list, answer_start_list)
+        answer_spans = SQuADTransform._get_answer_spans(
+            answer_list, answer_start_list)
 
         return record_index, question_id, question_words_nd, context_words_nd, \
-               question_chars_nd, context_chars_nd, answer_spans
+            question_chars_nd, context_chars_nd, answer_spans
 
     @staticmethod
     def _get_answer_spans(answer_list, answer_start_list):
@@ -107,6 +113,7 @@ class SQuADTransform(object):
 class VocabProvider(object):
     """Provides word level and character level vocabularies
     """
+
     def __init__(self, dataset):
         self._dataset = dataset
 

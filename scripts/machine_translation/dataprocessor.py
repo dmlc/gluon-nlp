@@ -86,11 +86,13 @@ class TrainValDataTransform(object):
         self._tgt_max_len = tgt_max_len
 
     def __call__(self, src, tgt):
-        if self._src_max_len:
+        # For src_max_len < 0, we do not clip the sequence
+        if self._src_max_len >= 0:
             src_sentence = self._src_vocab[src.split()[:self._src_max_len]]
         else:
             src_sentence = self._src_vocab[src.split()]
-        if self._tgt_max_len:
+        # For tgt_max_len < 0, we do not clip the sequence
+        if self._tgt_max_len >= 0:
             tgt_sentence = self._tgt_vocab[tgt.split()[:self._tgt_max_len]]
         else:
             tgt_sentence = self._tgt_vocab[tgt.split()]
@@ -162,10 +164,14 @@ def load_translation_data(dataset, bleu, args):
     if not data_val_processed:
         data_val_processed = process_dataset(data_val, src_vocab, tgt_vocab)
         _cache_dataset(data_val_processed, common_prefix + '_val')
-    data_test_processed = _load_cached_dataset(common_prefix + '_' + str(False) + '_test')
+    if dataset == 'WMT2014BPE':
+        filename = common_prefix + '_' + str(args.full) + '_test'
+    else:
+        filename = common_prefix + '_test'
+    data_test_processed = _load_cached_dataset(filename)
     if not data_test_processed:
         data_test_processed = process_dataset(data_test, src_vocab, tgt_vocab)
-        _cache_dataset(data_test_processed, common_prefix + '_' + str(False) + '_test')
+        _cache_dataset(data_test_processed, filename)
     if bleu == 'tweaked':
         fetch_tgt_sentence = lambda src, tgt: tgt.split()
         val_tgt_sentences = list(data_val.transform(fetch_tgt_sentence))
@@ -263,6 +269,6 @@ def write_sentences(sentences, file_path):
     with io.open(file_path, 'w', encoding='utf-8') as of:
         for sent in sentences:
             if isinstance(sent, (list, tuple)):
-                of.write(' '.join(sent) + '\n')
+                of.write(u' '.join(sent) + u'\n')
             else:
-                of.write(sent + '\n')
+                of.write(sent + u'\n')

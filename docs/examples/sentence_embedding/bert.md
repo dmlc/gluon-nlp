@@ -30,8 +30,10 @@ tune BERT model for sentence classification.
 
 ## Preparation
 
-To run this tutorial locally, please [install gluonnlp](http://gluon-nlp.mxnet.io/#installation)
-and click the download button at the top of the tutorial page to get all related code.
+To run this tutorial locally, please:
+
+- [install gluonnlp](http://gluon-nlp.mxnet.io/#installation), and
+- click the download button at the top of the tutorial page to get all related code.
 
 Then we start with some usual preparation such as importing libraries
 and setting the environment.
@@ -145,7 +147,7 @@ way it was trained. The following figure shows the input representation in BERT:
 <div style="width: 500px;">![bert-embed](bert-embed.png)</div>
 
 We will use
-`ClassificationTransform` to perform the following transformations:
+`BERTDatasetTransform` to perform the following transformations:
 - tokenize
 the input sequences
 - insert [CLS], [SEP] as necessary
@@ -156,11 +158,12 @@ generate valid length
 
 ```{.python .input}
 # use the vocabulary from pre-trained model for tokenization
-bert_tokenizer = tokenizer.FullTokenizer(vocabulary, do_lower_case=True)
+bert_tokenizer = nlp.data.BERTTokenizer(vocabulary, lower=True)
 # maximum sequence length
 max_len = 128
 all_labels = ["0", "1"]
-transform = dataset.ClassificationTransform(bert_tokenizer, all_labels, max_len)
+transform = dataset.BERTDatasetTransform(bert_tokenizer, max_len,
+                                         labels=all_labels, label_dtype='int32')
 data_train = data_train.transform(transform)
 
 print('token ids = \n%s'%data_train[sample_id][0])

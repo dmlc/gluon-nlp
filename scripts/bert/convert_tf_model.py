@@ -163,9 +163,9 @@ for name in params:
     # pylint: disable=broad-except
     except Exception:
         if name not in mx_tensors:
-            raise RuntimeError('cannot initialize %s from tf checkpoint'%name)
+            raise RuntimeError('cannot initialize %s from tf checkpoint' % name)
         else:
-            raise RuntimeError('cannot initialize %s. Expect shape = %s, but found %s'%\
+            raise RuntimeError('cannot initialize %s. Expect shape = %s, but found %s' %
                                name, params[name].shape, arr.shape)
 
 logging.info('num loaded params = %d, total num params = %d',

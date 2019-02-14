@@ -54,7 +54,7 @@ from gluonnlp.model import bert_12_768_12
 from gluonnlp.data.batchify import Tuple, Stack, Pad
 from gluonnlp.data import SimpleDatasetStream, FixedBucketSampler, NumpyDataset
 from tokenizer import FullTokenizer
-from dataset import MRPCDataset, ClassificationTransform
+from dataset import MRPCDataset
 from utils import profile
 from fp16_utils import FP16Trainer, grad_global_norm
 
