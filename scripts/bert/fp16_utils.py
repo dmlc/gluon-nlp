@@ -19,6 +19,7 @@
 """Trainer for mixed precision training."""
 import mxnet as mx
 import numpy as np
+import logging
 from mxnet import nd
 from mxnet.gluon import Trainer
 from mxnet.optimizer import Optimizer, register
