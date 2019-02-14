@@ -47,7 +47,7 @@ def _masked_softmax(F, att_score, mask, dtype):
     """
     if mask is not None:
         # Fill in the masked scores with a very small value
-        neg = -10000
+        neg = -10000 if np.dtype(dtype) == np.float16 else -1e18
         att_score = F.where(mask, att_score, neg * F.ones_like(att_score))
         att_weights = F.softmax(att_score, axis=-1) * mask
     else:

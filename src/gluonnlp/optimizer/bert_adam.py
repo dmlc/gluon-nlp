@@ -77,7 +77,7 @@ class BERTAdam(Optimizer):
                           'BERTAdam optimizer')
         return self.create_state(index, weight)
 
-    def create_state(self, _,  weight):
+    def create_state(self, _, weight):
         """state creation function."""
         return (zeros(weight.shape, weight.context, dtype=weight.dtype), #mean
                 zeros(weight.shape, weight.context, dtype=weight.dtype)) #variance

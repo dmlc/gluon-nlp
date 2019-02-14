@@ -18,13 +18,13 @@
 # under the License.
 """Utility functions for BERT."""
 
+import logging
 import collections
 import hashlib
 import io
 import json
 
 import gluonnlp
-import logging
 import mxnet as mx
 
 __all__ = ['convert_vocab']

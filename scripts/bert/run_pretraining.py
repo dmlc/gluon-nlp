@@ -40,10 +40,6 @@ import glob
 import time
 import numpy as np
 
-os.environ['MXNET_KVSTORE_USETREE'] = '1'
-sys.path.insert(0, '/home/ubuntu/gluon-nlp/src')
-sys.path.insert(0, '/home/ubuntu/mxnet/python/')
-
 import mxnet as mx
 from mxnet import gluon
 from mxnet.gluon.data import DataLoader
@@ -100,6 +96,8 @@ parser.add_argument('--do-eval', action='store_true',
                     help='Whether to do evaluation on the eval set.')
 args = parser.parse_args()
 
+os.environ['MXNET_KVSTORE_USETREE'] = '1'
+
 # logging
 level = logging.DEBUG if args.verbose else logging.INFO
 logging.getLogger().setLevel(level)
@@ -118,7 +116,7 @@ def get_model(ctx):
     if args.ckpt_dir and args.start_step:
         param_path = os.path.join(args.ckpt_dir, '%07d.params'%args.start_step)
         model.load_parameters(param_path, ctx=ctx)
-        logging.info('Loading step %d checkpoints from %s.'%(args.start_step, param_path))
+        logging.info('Loading step %d checkpoints from %s.', args.start_step, param_path)
 
     model.cast(args.dtype)
     model.hybridize(static_alloc=True)
@@ -139,6 +137,7 @@ def get_dataset(data, batch_size, num_ctxes, is_train, store):
     stream = SimpleDatasetStream(NumpyDataset, data, split_sampler)
 
     def get_dataloader(dataset):
+        """create data loader based on the dataset chunk"""
         t0 = time.time()
         lengths = dataset.get_field('valid_lengths')
         logging.debug('Num samples = %d', len(lengths))
@@ -227,10 +226,13 @@ class ParallelBERT(Parallelizable):
             self._trainer.backward(ls)
         else:
             ls.backward()
-        return ls, next_sentence_label, classified, masked_id, decoded, masked_weight, ls1, ls2, valid_length
+        return ls, next_sentence_label, classified, masked_id, decoded, \
+               masked_weight, ls1, ls2, valid_length
 
 def forward(data, model, mlm_loss, nsp_loss, vocab_size):
-    input_id, masked_id, masked_position, masked_weight, next_sentence_label, segment_id, valid_length = data
+    """forward computation for evaluation"""
+    (input_id, masked_id, masked_position, masked_weight, \
+     next_sentence_label, segment_id, valid_length) = data
     num_masks = masked_weight.sum() + 1e-8
     valid_length = valid_length.reshape(-1)
     valid_length = valid_length.astype('float32', copy=False)
@@ -240,7 +242,8 @@ def forward(data, model, mlm_loss, nsp_loss, vocab_size):
     ls1 = mlm_loss(decoded, masked_id, masked_weight.reshape((-1, 1))).sum() / num_masks
     ls2 = nsp_loss(classified, next_sentence_label).mean()
     ls = ls1 + ls2
-    return ls, next_sentence_label, classified, masked_id, decoded, masked_weight, ls1, ls2, valid_length
+    return ls, next_sentence_label, classified, masked_id, decoded, \
+           masked_weight, ls1, ls2, valid_length
 
 def evaluate(data_eval, model, nsp_loss, mlm_loss, vocab_size, ctx):
     """Evaluation function."""
@@ -266,7 +269,8 @@ def evaluate(data_eval, model, nsp_loss, mlm_loss, vocab_size, ctx):
             mask_label_list, mask_pred_list, mask_weight_list = [], [], []
             for data in data_list:
                 out = forward(data, model, mlm_loss, nsp_loss, vocab_size)
-                ls, next_sentence_label, classified, masked_id, decoded, masked_weight, ls1, ls2, valid_length = out
+                (ls, next_sentence_label, classified, masked_id,
+                 decoded, masked_weight, ls1, ls2, valid_length = out
                 loss_list.append(ls)
                 ns_label_list.append(next_sentence_label)
                 ns_pred_list.append(classified)
@@ -284,7 +288,8 @@ def evaluate(data_eval, model, nsp_loss, mlm_loss, vocab_size, ctx):
             if (step_num + 1) % (args.log_interval) == 0:
                 total_mlm_loss += local_mlm_loss
                 total_nsp_loss += local_nsp_loss
-                log(begin_time, local_num_tks, local_mlm_loss, local_nsp_loss, step_num, mlm_metric, nsp_metric, None)
+                log(begin_time, local_num_tks, local_mlm_loss, local_nsp_loss,
+                    step_num, mlm_metric, nsp_metric, None)
                 begin_time = time.time()
                 local_mlm_loss = local_nsp_loss = local_num_tks = 0
                 mlm_metric.reset_local()
@@ -419,7 +424,8 @@ def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx, store):
                    and (batch_num + 1) % accumulate == 0:
                     param_path = os.path.join(args.ckpt_dir, '%07d.params'%step_num)
                     trainer_path = os.path.join(args.ckpt_dir, '%07d.states'%step_num)
-                    logging.info('[step %d] Saving checkpoints to %s, %s.'%(step_num, param_path, trainer_path))
+                    logging.info('[step %d] Saving checkpoints to %s, %s.',
+                                 step_num, param_path, trainer_path))
                     model.save_parameters(param_path)
                     trainer.save_states(trainer_path)
                 batch_num += 1
@@ -439,8 +445,6 @@ if __name__ == '__main__':
 
     model, nsp_loss, mlm_loss, vocabulary = get_model(ctx)
 
-    batch_size_eval = args.batch_size_eval * len(ctx)
-
     do_lower_case = 'uncased' in args.dataset_name
     tokenizer = FullTokenizer(vocabulary, do_lower_case=do_lower_case)
     store = mx.kv.create(args.kvstore)
@@ -456,5 +460,5 @@ if __name__ == '__main__':
         train(data_train, model, nsp_loss, mlm_loss, len(tokenizer.vocab), ctx, store)
     if args.do_eval:
         assert args.data_eval, '--data_eval must be provided for evaluation'
-        data_eval = get_dataset(args.data_eval, batch_size_eval, False)
+        data_eval = get_dataset(args.data_eval, args.batch_size_eval, len(ctx), False, store)
         evaluate(data_eval, model, nsp_loss, mlm_loss, len(tokenizer.vocab), ctx)

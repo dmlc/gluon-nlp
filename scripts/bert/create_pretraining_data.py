@@ -215,7 +215,7 @@ def print_example(instance, features):
 
 def write_to_files_h5py(features, tokenizer, max_seq_length,
                         max_predictions_per_seq, output_files):
-    # pylint: diable=unused-argument
+    # pylint: disable=unused-argument
     """Write to HDF5 files from `TrainingInstance`s."""
     from h5py import File, special_dtype
     var_len_int = special_dtype(vlen=np.dtype('int32'))
@@ -242,7 +242,7 @@ def write_to_files_h5py(features, tokenizer, max_seq_length,
     valid_lengths = f.create_dataset(name+'.valid_lengths', data=valid_lengths, dtype='int32')
 
     end_time = time.time()
-    logging.info('Wrote %d total instances to %s. Time cost=%.1f'%
+    logging.info('Wrote %d total instances to %s. Time cost=%.1f',
                  (total_written, name, end_time - start_time))
 
 def write_to_files_np(features, tokenizer, max_seq_length,
@@ -394,11 +394,15 @@ def create_training_instances(x):
 
     for _, instance in enumerate(instances):
         feature = transform(instance, tokenizer, max_seq_length, max_predictions_per_seq, False)
-        input_ids.append(np.ascontiguousarray(feature['input_ids'], dtype='int32'))
-        segment_ids.append(np.ascontiguousarray(feature['segment_ids'], dtype='int32'))
-        masked_lm_positions.append(np.ascontiguousarray(feature['masked_lm_positions'], dtype='int32'))
+        input_ids.append(
+            np.ascontiguousarray(feature['input_ids'], dtype='int32'))
+        segment_ids.append(
+            np.ascontiguousarray(feature['segment_ids'], dtype='int32'))
+        masked_lm_positions.append(
+            np.ascontiguousarray(feature['masked_lm_positions'], dtype='int32'))
         masked_lm_ids.append(np.ascontiguousarray(feature['masked_lm_ids'], dtype='int32'))
-        masked_lm_weights.append(np.ascontiguousarray(feature['masked_lm_weights'], dtype='float32'))
+        masked_lm_weights.append(
+            np.ascontiguousarray(feature['masked_lm_weights'], dtype='float32'))
         next_sentence_labels.append(feature['next_sentence_labels'][0])
         valid_lengths.append(feature['valid_lengths'][0])
 
@@ -406,7 +410,7 @@ def create_training_instances(x):
                 masked_lm_weights, next_sentence_labels, valid_lengths)
     time_end = time.time()
 
-    logging.info('*** Writing to output file %s ***'%out)
+    logging.info('*** Writing to output file %s ***', out)
     if args.format == 'numpy':
         write_to_files_np(features, tokenizer, args.max_seq_length,
                           args.max_predictions_per_seq, [out])
@@ -417,8 +421,8 @@ def create_training_instances(x):
         write_to_files_rec(instances, tokenizer, args.max_seq_length,
                            args.max_predictions_per_seq, [out])
     else:
-        raise ValueError('unsupported format: %s'%args.format)
-    logging.info('Process %d files took %.1f s'%(len(input_files), time_end - time_start))
+        raise ValueError('unsupported format: %s', args.format)
+    logging.info('Process %d files took %.1f s', len(input_files), time_end - time_start)
 
 
 def create_instances_from_document(
@@ -621,7 +625,7 @@ def truncate_seq_pair(tokens_a, tokens_b, max_num_tokens, rng):
 def main():
     """Main function."""
     time_start = time.time()
-    logging.info("loading vocab file: %s"%args.vocab_file)
+    logging.info('loading vocab file: %s', args.vocab_file)
     vocab_obj = nlp.Vocab.from_json(open(args.vocab_file, 'rt').read())
     tokenizer = BERTTokenizer(
         vocab=vocab_obj, lower=args.do_lower_case)
@@ -630,7 +634,7 @@ def main():
     for input_pattern in args.input_file.split(','):
         input_files.extend(glob.glob(os.path.expanduser(input_pattern)))
 
-    logging.info('*** Reading from %d input files ***'%len(input_files))
+    logging.info('*** Reading from %d input files ***', len(input_files))
     for input_file in input_files:
         logging.info('  %s', input_file)
 
@@ -656,8 +660,7 @@ def main():
     pool_args = (tokenizer, args.max_seq_length, args.dupe_factor,\
                  args.short_seq_prob, args.masked_lm_prob,
                  args.max_predictions_per_seq, rng)
-    for i in range(len(file_splits)):
-        file_split = file_splits[i]
+    for i, file_split in enumerate(file_splits):
         out = os.path.join(output_dir, 'part-%03d.npz'%i)
         count += len(file_split)
         map_args.append((file_split, out) + pool_args)

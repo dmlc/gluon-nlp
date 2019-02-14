@@ -146,6 +146,7 @@ class FP16Trainer(object):
                 param.zero_grad()
 
 class LossScaler(object):
+    """Abstract loss scaler"""
     def has_overflow(self, params):
         """ detect inf and nan """
         is_not_finite = 0
@@ -160,6 +161,7 @@ class LossScaler(object):
             return True
 
 class StaticLossScaler(LossScaler):
+    """static loss scaler"""
     def __init__(self, init_scale=1):
         self.loss_scale = init_scale
 
@@ -168,6 +170,7 @@ class StaticLossScaler(LossScaler):
         pass
 
 class DynamicLossScaler(object):
+    """dynamic loss scaler"""
     def __init__(self, init_scale=2.**15, scale_factor=2., scale_window=2000,
                  tolerance=0.05, verbose=False):
         self.loss_scale = init_scale
