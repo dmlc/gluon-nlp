@@ -144,7 +144,9 @@ parser.add_argument(
     '--model_parameters',
     type=str,
     default=None,
-    help='Model parameter file. default is None'
+    help='A parameter file for the model that is loaded into the model'
+    ' before training/inference. It is different from the parameter'
+    ' file written after the model is trained. default is None'
 )
 parser.add_argument(
     '--output_dir',
@@ -212,10 +214,11 @@ else:
 output_dir = args.output_dir
 if pretrained_bert_parameters:
     logging.info('loading bert params from {0}'.format(pretrained_bert_parameters))
-    model.bert.load_parameters(pretrained_bert_parameters, ignore_extra=True)
+    model.bert.load_parameters(pretrained_bert_parameters, ctx=ctx,
+                               ignore_extra=True)
 if model_parameters:
     logging.info('loading model params from {0}'.format(model_parameters))
-    model.load_parameters(model_parameters)
+    model.load_parameters(model_parameters, ctx=ctx)
 if not os.path.exists(output_dir):
     os.makedirs(output_dir)
 
