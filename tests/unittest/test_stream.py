@@ -23,8 +23,6 @@ import itertools
 import os
 import pytest
 import gluonnlp as nlp
-import numpy as np
-import mxnet as mx
 
 @pytest.mark.serial
 @pytest.mark.remote_required
@@ -75,68 +73,6 @@ def test_lazy_stream(stream_identity_wrappers):
             zip(dataset, prefetched_dataset, transformed_dataset, corpus)
         ])
 
-
-@pytest.mark.serial
-def test_h5py_stream():
-    import h5py
-    file_path = os.path.join('tests', 'data', 'test_h5py_stream.hdf5')
-    with h5py.File(file_path, 'w') as f:
-        data = f.create_dataset("g1/g2/g3/mydataset.data", (5,3), dtype='i')
-        data[0] = a = [1,2,3]
-        data[1] = b = [4,5,6]
-
-        label = f.create_dataset("g1/g2/g3/mydataset.label", (5,3), dtype='i')
-        label[0] = 0
-        label[1] = 1
-
-        var_int = h5py.special_dtype(vlen=np.dtype('int32'))
-        var_len_data = f.create_dataset("g1/g2/g3/mydataset.varlen", (10,), dtype=var_int)
-        var_len_data[0] = c = [7,8,9]
-        var_len_data[1] = d = [10,11]
-
-    stream = nlp.data.H5PyDatasetStream(file_path)
-    datasets = [data for data in stream]
-    assert len(datasets) == 3
-    
-    stream = nlp.data.H5PyDatasetStream(file_path, select='.*\.data')
-    datasets = [data for data in stream]
-    assert len(datasets) == 1
-    dataset = datasets[0]
-    assert np.all(dataset[0] == a)
-    assert np.all(dataset[1] == b)
-    
-    stream = nlp.data.H5PyDatasetStream(file_path, select='.*\.varlen')
-    datasets = [data for data in stream]
-    assert len(datasets) == 1
-    dataset = datasets[0]
-    assert np.all(dataset[0] == c)
-    assert np.all(dataset[1] == d)
-
-@pytest.mark.serial
-def test_array_stream():
-    import h5py
-    file_path = os.path.join('tests', 'data', 'test_array_stream.hdf5')
-    with h5py.File(file_path, 'w') as f:
-        data1 = f.create_dataset("g1/g2/g3/1.data", (5,3), dtype='i')
-        data2 = f.create_dataset("g1/g2/g3/2.data", (5,3), dtype='i')
-        label1 = f.create_dataset("g1/g2/g3/1.label", (5,3), dtype='i')
-        label2 = f.create_dataset("g1/g2/g3/2.label", (5,3), dtype='i')
-        invalid = f.create_dataset("g1/g2/g3/1.invalid", (5,3), dtype='i')
-
-    data_stream = nlp.data.H5PyDatasetStream(file_path, select='.*\.data')
-    label_stream = nlp.data.H5PyDatasetStream(file_path, select='.*\.label')
-    array_stream = nlp.data.ArrayDatasetStream(data_stream, label_stream)
-    for arr in array_stream:
-        assert isinstance(arr, mx.gluon.data.ArrayDataset)
-
-    invalid_stream = nlp.data.H5PyDatasetStream(file_path, select='.*\.invalid')
-    array_stream2 = nlp.data.ArrayDatasetStream(data_stream, label_stream, invalid_stream)
-    try:
-        for arr in array_stream2:
-            assert isinstance(arr, mx.gluon.data.ArrayDataset)
-        raise AssertionError('No exception caught')
-    except ValueError:
-        pass
 
 @pytest.mark.parametrize('num_prefetch', [0, 1, 10])
 @pytest.mark.parametrize('worker_type', ['thread', 'process'])

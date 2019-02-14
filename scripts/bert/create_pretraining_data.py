@@ -50,7 +50,7 @@ parser.add_argument(
     '--format',
     type=str,
     default='numpy',
-    choices=['numpy', 'recordio', 'h5py'],
+    choices=['numpy', 'recordio'],
     help='Output file format. If set to "numpy", examples are serialized as a single "npz" file.'
          'If set to "recordio", examples are serialized using IndexedRecordIO format.')
 
@@ -213,38 +213,6 @@ def print_example(instance, features):
             '%s: %s' % (feature_name, ' '.join(
                 [str(x) for x in feature])))
 
-def write_to_files_h5py(features, tokenizer, max_seq_length,
-                        max_predictions_per_seq, output_files):
-    # pylint: disable=unused-argument
-    """Write to HDF5 files from `TrainingInstance`s."""
-    from h5py import File, special_dtype
-    var_len_int = special_dtype(vlen=np.dtype('int32'))
-    var_len_float = special_dtype(vlen=np.dtype('float32'))
-
-    assert len(output_files) == 1, 'h5py format only support single output file'
-    output_file = output_files[0]
-    f = File(output_file, 'w')
-    name = 'dataset'
-    start_time = time.time()
-
-    (input_ids, segment_ids, masked_lm_positions,
-     masked_lm_ids, masked_lm_weights, next_sentence_labels, valid_lengths) = features
-    total_written = len(next_sentence_labels)
-    input_ids = f.create_dataset(name+'.input_ids', data=input_ids, dtype=var_len_int)
-    segment_ids = f.create_dataset(name+'.segment_ids', data=segment_ids, dtype=var_len_int)
-    masked_lm_positions = f.create_dataset(name+'.masked_lm_positions',
-                                           data=masked_lm_positions, dtype=var_len_int)
-    masked_lm_ids = f.create_dataset(name+'.masked_lm_ids', data=masked_lm_ids, dtype=var_len_int)
-    masked_lm_weights = f.create_dataset(name+'.masked_lm_weights', data=masked_lm_weights,
-                                         dtype=var_len_float)
-    next_sentence_labels = f.create_dataset(name+'.next_sentence_labels',
-                                            data=next_sentence_labels, dtype='int32')
-    valid_lengths = f.create_dataset(name+'.valid_lengths', data=valid_lengths, dtype='int32')
-
-    end_time = time.time()
-    logging.info('Wrote %d total instances to %s. Time cost=%.1f',
-                 total_written, name, end_time - start_time)
-
 def write_to_files_np(features, tokenizer, max_seq_length,
                       max_predictions_per_seq, output_files):
     # pylint: disable=unused-argument
@@ -268,47 +236,6 @@ def write_to_files_np(features, tokenizer, max_seq_length,
     outputs['valid_lengths'] = np.array(valid_lengths, dtype='int32')
 
     np.savez(output_file, **outputs)
-    logging.info('Wrote %d total instances', total_written)
-
-
-def write_to_files_mmap(instances, tokenizer, max_seq_length,
-                        max_predictions_per_seq, output_files):
-    """Create files from `TrainingInstance`s."""
-    features_np = collections.OrderedDict()
-    num_instances = len(instances)
-    features_np['next_sentence_labels'] = np.empty((num_instances,), dtype='int32')
-    features_np['valid_lengths'] = np.empty((num_instances,), dtype='int32')
-
-    seq_shape = (num_instances, max_seq_length)
-    features_np['input_ids'] = np.empty(seq_shape, dtype='int32')
-    features_np['segment_ids'] = np.empty(seq_shape, dtype='int32')
-
-    mask_shape = (num_instances, max_predictions_per_seq)
-    features_np['masked_lm_positions'] = np.empty(mask_shape, dtype='int32')
-    features_np['masked_lm_ids'] = np.empty(mask_shape, dtype='int32')
-    features_np['masked_lm_weights'] = np.empty(mask_shape, dtype='float32')
-
-    assert len(output_files) == 1, 'numpy format only support single output file'
-    output_file = output_files[0]
-
-    total_written = 0
-    for (inst_index, instance) in enumerate(instances):
-        features = transform(instance, tokenizer, max_seq_length, max_predictions_per_seq)
-        features_np['input_ids'][inst_index] = features['input_ids']
-        features_np['segment_ids'][inst_index] = features['segment_ids']
-        features_np['masked_lm_positions'][inst_index] = features['masked_lm_positions']
-        features_np['masked_lm_ids'][inst_index] = features['masked_lm_ids']
-        features_np['masked_lm_weights'][inst_index] = features['masked_lm_weights']
-        # both valid length and next sentence label are single numbers
-        features_np['next_sentence_labels'][inst_index] = features['next_sentence_labels'][0]
-        features_np['valid_lengths'][inst_index] = features['valid_lengths'][0]
-
-        total_written += 1
-
-        if inst_index < 20:
-            print_example(instance, features)
-
-    np.savez(output_file, **features_np)
     logging.info('Wrote %d total instances', total_written)
 
 def write_to_files_rec(instances, tokenizer, max_seq_length,
@@ -415,9 +342,6 @@ def create_training_instances(x):
     if args.format == 'numpy':
         write_to_files_np(features, tokenizer, args.max_seq_length,
                           args.max_predictions_per_seq, [out])
-    elif args.format == 'h5py':
-        write_to_files_h5py(features, tokenizer, args.max_seq_length,
-                            args.max_predictions_per_seq, [out])
     elif args.format == 'recordio':
         write_to_files_rec(instances, tokenizer, args.max_seq_length,
                            args.max_predictions_per_seq, [out])
