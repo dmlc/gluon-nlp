@@ -182,10 +182,15 @@ task = tasks[task_name]
 # model and loss
 model_name = args.bert_model
 dataset = args.bert_dataset
+pretrained_bert_parameters = args.pretrained_bert_parameters
+model_parameters = args.model_parameters
+
+get_pretrained = not (pretrained_bert_parameters is not None
+                      or model_parameters is not None)
 bert, vocabulary = get_bert_model(
     model_name=model_name,
     dataset_name=dataset,
-    pretrained=True,
+    pretrained=get_pretrained,
     ctx=ctx,
     use_pooler=True,
     use_decoder=False,
@@ -193,27 +198,26 @@ bert, vocabulary = get_bert_model(
 
 if task.task_name in ['STS-B']:
     model = BERTRegression(bert, dropout=0.1)
-    model.regression.initialize(init=mx.init.Normal(0.02), ctx=ctx)
+    if not model_parameters:
+        model.regression.initialize(init=mx.init.Normal(0.02), ctx=ctx)
     loss_function = gluon.loss.L2Loss()
 else:
     model = BERTClassifier(
         bert, dropout=0.1, num_classes=len(task.get_labels()))
-    model.classifier.initialize(init=mx.init.Normal(0.02), ctx=ctx)
+    if not model_parameters:
+        model.classifier.initialize(init=mx.init.Normal(0.02), ctx=ctx)
     loss_function = gluon.loss.SoftmaxCELoss()
 
 # load checkpointing
-pretrained_bert_parameters = args.pretrained_bert_parameters
-model_parameters = args.model_parameters
 output_dir = args.output_dir
 if pretrained_bert_parameters:
     logging.info('loading bert params from {0}'.format(pretrained_bert_parameters))
-    model.bert.load_parameters(pretrained_bert_parameters)
+    model.bert.load_parameters(pretrained_bert_parameters, ignore_extra=True)
 if model_parameters:
     logging.info('loading model params from {0}'.format(model_parameters))
     model.load_parameters(model_parameters)
 if not os.path.exists(output_dir):
     os.makedirs(output_dir)
-
 
 logging.info(model)
 model.hybridize(static_alloc=True)
