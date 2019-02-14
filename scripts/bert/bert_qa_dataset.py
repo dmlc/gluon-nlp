@@ -219,8 +219,8 @@ class SQuADTransform(object):
         qas_id = record[1]
         question_text = record[2]
         paragraph_text = record[3]
-        orig_answer_text = record[4][0]
-        answer_offset = record[5][0]
+        orig_answer_text = record[4][0] if record[4] else ''
+        answer_offset = record[5][0] if record[5] else ''
         is_impossible = record[6] if len(record) == 7 else False
 
         doc_tokens = []

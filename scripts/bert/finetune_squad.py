@@ -283,7 +283,7 @@ def train():
             max_seq_length=max_seq_length,
             doc_stride=doc_stride,
             max_query_length=max_query_length,
-            is_pad=False,
+            is_pad=True,
             is_training=True))
     log.info('The number of examples after preprocessing:{}'.format(
         len(train_data_transform)))
@@ -429,7 +429,7 @@ def evaluate():
                                                         batch_size=test_batch_size,
                                                         num_buckets=10,
                                                         ratio=0,
-                                                        shuffle=True)
+                                                        shuffle=False)
 
     dev_dataloader = mx.gluon.data.DataLoader(
         dev_data_transform,
