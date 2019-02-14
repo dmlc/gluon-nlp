@@ -34,8 +34,6 @@ import sys
 import os
 
 os.environ['MXNET_KVSTORE_USETREE'] = '1'
-os.environ['MXNET_CUDA_NUM_RAND_STATES'] = '3276800'
-os.environ['MXNET_CUDA_MIN_NUM_RAND_PER_THREAD'] = '8'
 sys.path.insert(0, '/home/ubuntu/gluon-nlp/src')
 sys.path.insert(0, '/home/ubuntu/mxnet/python/')
 
@@ -48,15 +46,17 @@ import mxnet as mx
 import time
 from mxnet import gluon
 from mxnet.gluon.data import ArrayDataset, DataLoader
+
 import gluonnlp as nlp
-from gluonnlp.utils import clip_grad_global_norm, grad_global_norm, Parallelizable, Parallel
-from gluonnlp.optimizer.utils import FP16Trainer
+from gluonnlp.utils import Parallelizable, Parallel
 from gluonnlp.metric import MaskedAccuracy
 from gluonnlp.model import bert_12_768_12
 from gluonnlp.data.batchify import Tuple, Stack, Pad
 from gluonnlp.data import SimpleDatasetStream, FixedBucketSampler, NumpyDataset
 from tokenizer import FullTokenizer
 from dataset import MRPCDataset, ClassificationTransform
+from utils import profile
+from fp16_utils import FP16Trainer, grad_global_norm
 
 parser = argparse.ArgumentParser(description='BERT pretraining example.')
 parser.add_argument('--num_steps', type=int, default=20, help='Number of optimization steps')
@@ -162,6 +162,7 @@ def get_dataset(data, batch_size, num_ctxes, is_train, store):
                                     batch_sampler=sampler,
                                     batchify_fn=batchify_fn,
                                     num_workers=1)
+            dataloader = nlp.data.PrefetchingStream(dataloader)
 
         t1 = time.time()
         logging.debug('Dataloader creation cost = %.2f s'%(t1-t0))
@@ -288,7 +289,7 @@ def evaluate(data_eval, model, nsp_loss, mlm_loss, vocab_size, ctx):
 def log(begin_time, local_num_tks, local_mlm_loss, local_nsp_loss, step_num, mlm_metric, nsp_metric, trainer):
     end_time = time.time()
     duration = end_time - begin_time
-    throughput = local_num_tks / 1000.0 / duration
+    throughput = local_num_tks / duration / 1000.0
     local_mlm_loss = local_mlm_loss / args.log_interval
     local_nsp_loss = local_nsp_loss / args.log_interval
     lr = trainer.learning_rate if trainer else 0
@@ -311,12 +312,10 @@ def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx, store):
 
     trainer = gluon.Trainer(model.collect_params(), 'bertadam', optim_params,
                             update_on_kvstore=False, kvstore=store)
+    fp16_trainer = FP16Trainer(trainer, fp16=args.dtype == 'float16')
 
     if args.ckpt_dir and args.start_step:
         trainer.load_states(os.path.join(args.ckpt_dir, '%07d.states'%args.start_step))
-
-    if args.dtype == 'float16':
-        fp16_trainer = FP16Trainer(trainer)
 
     accumulate = args.accumulate
     num_train_steps = args.num_steps
@@ -338,15 +337,13 @@ def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx, store):
     batch_num = 0
     step_num = args.start_step
 
-    parallel_model = ParallelBERT(model, mlm_loss, nsp_loss, vocab_size, store.num_workers * accumulate,
-                                  trainer=fp16_trainer if args.dtype == 'float16' else None)
+    parallel_model = ParallelBERT(model, mlm_loss, nsp_loss, vocab_size,
+                                  store.num_workers * accumulate, trainer=fp16_trainer)
     num_ctxes = len(ctx)
     parallel = Parallel(num_ctxes, parallel_model)
 
     while step_num < num_train_steps:
         for _, dataloader in enumerate(data_train):
-            iterator = enumerate(dataloader)
-            _, data_batch = next(iterator)
             for _, data_batch in enumerate(dataloader):
                 if batch_num % accumulate == 0:
                     step_num += 1
@@ -360,18 +357,7 @@ def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx, store):
                         new_lr = lr - offset
                     trainer.set_learning_rate(new_lr)
                     if args.profile:
-                        if step_num == 10:
-                            mx.nd.waitall()
-                            mx.profiler.set_config(profile_memory=False, profile_symbolic=True,
-                                                   profile_imperative=True, filename='profile.json',
-                                                   aggregate_stats=True)
-                            mx.profiler.set_state('run')
-                        if step_num == 11:
-                            mx.nd.waitall()
-                            mx.profiler.set_state('stop')
-                            logging.info(mx.profiler.dumps())
-                            mx.profiler.dump()
-                            exit()
+                        profile(step_num, 10, 12)
                 if args.by_token:
                     data_list = [[seq.as_in_context(context) for seq in shard]
                                   for context, shard in zip(ctx, data_batch)]
@@ -399,12 +385,7 @@ def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx, store):
 
                 # update
                 if (batch_num + 1) % accumulate == 0:
-                    if args.dtype == 'float16':
-                        fp16_trainer.step(1, global_norm=1)
-                    else:
-                        trainer.allreduce_grads()
-                        _, ratio = grad_global_norm(params, 1)
-                        trainer.update(ratio)
+                    fp16_trainer.step(1, max_norm=1)
                 nsp_metric.update(ns_label_list, ns_pred_list)
                 mlm_metric.update(mask_label_list, mask_pred_list, mask_weight_list)
                 # logging
