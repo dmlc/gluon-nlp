@@ -33,19 +33,20 @@ This example shows how to pre-train a BERT model with Gluon NLP Toolkit.
 import sys
 import os
 
-os.environ['MXNET_KVSTORE_USETREE'] = '1'
-sys.path.insert(0, '/home/ubuntu/gluon-nlp/src')
-sys.path.insert(0, '/home/ubuntu/mxnet/python/')
-
 import argparse
 import random
 import logging
 import glob
-import numpy as np
-import mxnet as mx
 import time
+import numpy as np
+
+os.environ['MXNET_KVSTORE_USETREE'] = '1'
+sys.path.insert(0, '/home/ubuntu/gluon-nlp/src')
+sys.path.insert(0, '/home/ubuntu/mxnet/python/')
+
+import mxnet as mx
 from mxnet import gluon
-from mxnet.gluon.data import ArrayDataset, DataLoader
+from mxnet.gluon.data import DataLoader
 
 import gluonnlp as nlp
 from gluonnlp.utils import Parallelizable, Parallel
@@ -54,9 +55,8 @@ from gluonnlp.model import bert_12_768_12
 from gluonnlp.data.batchify import Tuple, Stack, Pad
 from gluonnlp.data import SimpleDatasetStream, FixedBucketSampler, NumpyDataset
 from tokenizer import FullTokenizer
-from dataset import MRPCDataset
 from utils import profile
-from fp16_utils import FP16Trainer, grad_global_norm
+from fp16_utils import FP16Trainer
 
 parser = argparse.ArgumentParser(description='BERT pretraining example.')
 parser.add_argument('--num_steps', type=int, default=20, help='Number of optimization steps')
@@ -64,8 +64,10 @@ parser.add_argument('--num_buckets', type=int, default=1,
                     help='Number of buckets for variable length sequence sampling')
 parser.add_argument('--dtype', type=str, default='float32', help='data dtype')
 parser.add_argument('--batch_size', type=int, default=8, help='Batch size per GPU.')
-parser.add_argument('--accumulate', type=int, default=1, help='Number of batches for gradient accumulation.')
-parser.add_argument('--batch_size_eval', type=int, default=8, help='Batch size per GPU for evaluation.')
+parser.add_argument('--accumulate', type=int, default=1,
+                    help='Number of batches for gradient accumulation.')
+parser.add_argument('--batch_size_eval', type=int, default=8,
+                    help='Batch size per GPU for evaluation.')
 parser.add_argument('--dataset_name', type=str, default='book_corpus_wiki_en_uncased',
                     help='The dataset from which the vocabulary is created. '
                          'Options include book_corpus_wiki_en_uncased, book_corpus_wiki_en_cased. '
@@ -76,7 +78,8 @@ parser.add_argument('--data', type=str, default=None,
                     help='Path to training data.')
 parser.add_argument('--ckpt_dir', type=str, default=None,
                     help='Path to checkpoint directory')
-parser.add_argument('--start_step', type=int, default=0, help='Start optimization step from the checkpoint.')
+parser.add_argument('--start_step', type=int, default=0,
+                    help='Start optimization step from the checkpoint.')
 parser.add_argument('--data_eval', type=str, default=None,
                     help='Path to evaluation data.')
 parser.add_argument('--lr', type=float, default=1e-4, help='Learning rate')
@@ -89,7 +92,8 @@ parser.add_argument('--kvstore', type=str, default='device', help='KVStore type'
 parser.add_argument('--seed', type=int, default=0, help='Random seed')
 parser.add_argument('--verbose', action='store_true', help='verbose logging')
 parser.add_argument('--profile', action='store_true', help='profile the program')
-parser.add_argument('--by-token', action='store_true', help='set batch size by the number of tokens in the batch')
+parser.add_argument('--by-token', action='store_true',
+                    help='set batch size by the number of tokens in the batch')
 parser.add_argument('--do-training', action='store_true',
                     help='Whether to do training on the training set.')
 parser.add_argument('--do-eval', action='store_true',
@@ -102,6 +106,7 @@ logging.getLogger().setLevel(level)
 logging.info(args)
 
 def get_model(ctx):
+    """get model"""
     # model
     pretrained = args.pretrained
     dataset = args.dataset_name
@@ -127,6 +132,7 @@ def get_model(ctx):
     return model, nsp_loss, mlm_loss, vocabulary
 
 def get_dataset(data, batch_size, num_ctxes, is_train, store):
+    """create dataset"""
     data = data
     split_sampler = nlp.data.SplitSampler(len(glob.glob(data)), num_parts=store.num_workers,
                                           part_index=store.rank)
@@ -135,7 +141,7 @@ def get_dataset(data, batch_size, num_ctxes, is_train, store):
     def get_dataloader(dataset):
         t0 = time.time()
         lengths = dataset.get_field('valid_lengths')
-        logging.debug('Num samples = %d'%len(lengths))
+        logging.debug('Num samples = %d', len(lengths))
         # A batch includes: input_id, masked_id, masked_position, masked_weight,
         #                   next_sentence_label, segment_id, valid_length
         batchify_fn = Tuple(Pad(), Pad(), Pad(), Pad(), Stack(), Pad(), Stack())
@@ -165,7 +171,7 @@ def get_dataset(data, batch_size, num_ctxes, is_train, store):
             dataloader = nlp.data.PrefetchingStream(dataloader)
 
         t1 = time.time()
-        logging.debug('Dataloader creation cost = %.2f s'%(t1-t0))
+        logging.debug('Dataloader creation cost = %.2f s', t1 - t0)
         logging.debug('Batch Sampler:\n%s', sampler.stats())
         return dataloader
 
@@ -173,6 +179,7 @@ def get_dataset(data, batch_size, num_ctxes, is_train, store):
     return stream
 
 def split_and_load(arrs, ctx):
+    """split and load arrays to a list of contexts"""
     assert isinstance(arrs, (list, tuple))
     if len(ctx) == 1:
         return [[arr.as_in_context(ctx[0]) for arr in arrs]]
@@ -198,16 +205,22 @@ class ParallelBERT(Parallelizable):
         self._trainer = trainer
 
     def forward_backward(self, x):
-        input_id, masked_id, masked_position, masked_weight, next_sentence_label, segment_id, valid_length = x
+        """forward backward implementation"""
+        (input_id, masked_id, masked_position, masked_weight,
+         next_sentence_label, segment_id, valid_length) = x
         num_masks = masked_weight.sum() + 1e-8
         valid_length = valid_length.reshape(-1)
         masked_id = masked_id.reshape(-1)
         with mx.autograd.record():
             valid_length_typed = valid_length.astype(args.dtype, copy=False)
-            _, _, classified, decoded = self._model(input_id, segment_id, valid_length_typed, masked_position)
+            _, _, classified, decoded = self._model(input_id, segment_id, valid_length_typed,
+                                                    masked_position)
             decoded = decoded.reshape((-1, self._vocab_size))
-            ls1 = self._mlm_loss(decoded.astype('float32', copy=False), masked_id, masked_weight.reshape((-1, 1))).sum() / num_masks
-            ls2 = self._nsp_loss(classified.astype('float32', copy=False), next_sentence_label).mean()
+            ls1 = self._mlm_loss(decoded.astype('float32', copy=False),
+                                 masked_id, masked_weight.reshape((-1, 1)))
+            ls2 = self._nsp_loss(classified.astype('float32', copy=False), next_sentence_label)
+            ls1 = ls1.sum() / num_masks
+            ls2 = ls2.mean()
             ls = ls1 + ls2
             ls = ls / self._rescale_factor
         if args.dtype == 'float16':
@@ -286,16 +299,19 @@ def evaluate(data_eval, model, nsp_loss, mlm_loss, vocab_size, ctx):
                          total_nsp_loss.asscalar(), nsp_metric.get_global()[1] * 100))
     logging.info('Eval cost={:.1f}s'.format(eval_end_time - eval_begin_time))
 
-def log(begin_time, local_num_tks, local_mlm_loss, local_nsp_loss, step_num, mlm_metric, nsp_metric, trainer):
+def log(begin_time, local_num_tks, local_mlm_loss, local_nsp_loss, step_num,
+        mlm_metric, nsp_metric, trainer):
     end_time = time.time()
     duration = end_time - begin_time
     throughput = local_num_tks / duration / 1000.0
     local_mlm_loss = local_mlm_loss / args.log_interval
     local_nsp_loss = local_nsp_loss / args.log_interval
     lr = trainer.learning_rate if trainer else 0
+    # pylint: disable=line-too-long
     logging.info('[step {}]\tmlm_loss={:.5f}\tmlm_acc={:.5f}\tnsp_loss={:.5f}\tnsp_acc={:.3f}\tthroughput={:.1f}K tks/s\tlr={:.7f} time={:.2f}'
                  .format(step_num, local_mlm_loss.asscalar(), mlm_metric.get()[1] * 100, local_nsp_loss.asscalar(),
                          nsp_metric.get()[1] * 100, throughput.asscalar(), lr, duration))
+    # pylint: enable=line-too-long
 
 
 def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx, store):
@@ -360,7 +376,7 @@ def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx, store):
                         profile(step_num, 10, 12)
                 if args.by_token:
                     data_list = [[seq.as_in_context(context) for seq in shard]
-                                  for context, shard in zip(ctx, data_batch)]
+                                 for context, shard in zip(ctx, data_batch)]
                 else:
                     if data_batch[0].shape[0] < len(ctx):
                         continue
@@ -373,7 +389,8 @@ def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx, store):
                 for data in data_list:
                     parallel.put(data)
                 for _ in range(len(ctx)):
-                    _, next_sentence_label, classified, masked_id, decoded, masked_weight, ls1, ls2, valid_length = parallel.get()
+                    (_, next_sentence_label, classified, masked_id,
+                     decoded, masked_weight, ls1, ls2, valid_length) = parallel.get()
                     ns_label_list.append(next_sentence_label)
                     ns_pred_list.append(classified)
                     mask_label_list.append(masked_id)
@@ -398,7 +415,8 @@ def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx, store):
                     nsp_metric.reset_local()
 
                 # saving checkpoints
-                if args.ckpt_dir and (step_num + 1) % (args.ckpt_interval) == 0 and (batch_num + 1) % accumulate == 0:
+                if args.ckpt_dir and (step_num + 1) % (args.ckpt_interval) == 0 \
+                   and (batch_num + 1) % accumulate == 0:
                     param_path = os.path.join(args.ckpt_dir, '%07d.params'%step_num)
                     trainer_path = os.path.join(args.ckpt_dir, '%07d.states'%step_num)
                     logging.info('[step %d] Saving checkpoints to %s, %s.'%(step_num, param_path, trainer_path))

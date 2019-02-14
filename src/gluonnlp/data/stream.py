@@ -35,8 +35,8 @@ import re
 
 import numpy as np
 
-import mxnet as mx
 from gluonnlp.base import _str_types
+import mxnet as mx
 from mxnet.gluon.data import RandomSampler, SequentialSampler, Sampler, SimpleDataset, ArrayDataset
 
 try:
@@ -165,7 +165,7 @@ class ArrayDatasetStream(DatasetStream):
         The data arrays.
     """
     def __init__(self, *args):
-        assert len(args) > 0, "Needs at least 1 arrays"
+        assert len(args) > 0, 'ArrayDatasetStream needs at least 1 array'
         self._data = list(args)
 
     def __iter__(self):
@@ -275,7 +275,7 @@ class H5PyDatasetStream(DatasetStream):
         dataset_keys = [[] for _ in range(self._num_selects)]
         def collect_datasets(name, dataset):
             if not isinstance(dataset, h5py.Dataset):
-                return 
+                return
             for i in range(self._num_selects):
                 if patterns[i].match(name):
                     dataset_keys[i].append(name)

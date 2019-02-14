@@ -17,13 +17,10 @@
 # under the License.
 
 """Trainer for mixed precision training."""
-import mxnet as mx
-import numpy as np
 import logging
+import numpy as np
+import mxnet as mx
 from mxnet import nd
-from mxnet.gluon import Trainer
-from mxnet.optimizer import Optimizer, register
-from mxnet.ndarray import zeros, NDArray
 
 def grad_global_norm(parameters, max_norm):
     """Rescales gradients of parameters so that the sum of their 2-norm is smaller than `max_norm`.
@@ -116,7 +113,8 @@ class FP16Trainer(object):
     # TODO(haibin): inherit from gluon.Trainer
     def __init__(self, trainer, fp16=True):
         if trainer._kvstore_params['update_on_kvstore'] is not False:
-            raise NotImplementedError('Only gluon.Trainer created with update_on_kvstore=False is supported.')
+            err = 'Only gluon.Trainer created with update_on_kvstore=False is supported.'
+            raise NotImplementedError(err)
         self.fp32_trainer = trainer
         self._scaler = DynamicLossScaler() if fp16 else StaticLossScaler()
 
@@ -129,6 +127,7 @@ class FP16Trainer(object):
         mx.autograd.backward(ls)
 
     def step(self, batch_size, max_norm=None):
+        """step function"""
         self.fp32_trainer.allreduce_grads()
         step_size = batch_size * self._scaler.loss_scale
         if max_norm:
@@ -165,6 +164,7 @@ class StaticLossScaler(LossScaler):
         self.loss_scale = init_scale
 
     def update_scale(self, overflow):
+        """update loss scale"""
         pass
 
 class DynamicLossScaler(object):
@@ -181,6 +181,7 @@ class DynamicLossScaler(object):
         self._verbose = verbose
 
     def update_scale(self, overflow):
+        """dynamically update loss scale"""
         iter_since_rescale = self._iter - self._last_rescale_iter
         if overflow:
             self._last_overflow_iter = self._iter
@@ -191,7 +192,7 @@ class DynamicLossScaler(object):
                 self._last_rescale_iter = self._iter
                 self._overflows_since_rescale = 0
             if self._verbose:
-                logging.info('overflow detected. set loss_scale = %s'%(self.loss_scale))
+                logging.info('overflow detected. set loss_scale = %s', self.loss_scale)
         elif (self._iter - self._last_overflow_iter) % self.scale_window == 0:
             self.loss_scale *= self.scale_factor
             self._last_rescale_iter = self._iter

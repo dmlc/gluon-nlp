@@ -27,7 +27,6 @@ import glob
 import collections
 import random
 import time
-import multiprocessing
 import numpy as np
 import mxnet as mx
 import gluonnlp as nlp
@@ -216,6 +215,7 @@ def print_example(instance, features):
 
 def write_to_files_h5py(features, tokenizer, max_seq_length,
                         max_predictions_per_seq, output_files):
+    # pylint: diable=unused-argument
     """Write to HDF5 files from `TrainingInstance`s."""
     from h5py import File, special_dtype
     var_len_int = special_dtype(vlen=np.dtype('int32'))
@@ -227,19 +227,23 @@ def write_to_files_h5py(features, tokenizer, max_seq_length,
     name = 'dataset'
     start_time = time.time()
 
-    input_ids, segment_ids, masked_lm_positions, masked_lm_ids, masked_lm_weights, next_sentence_labels, valid_lengths = features
+    (input_ids, segment_ids, masked_lm_positions,
+     masked_lm_ids, masked_lm_weights, next_sentence_labels, valid_lengths) = features
     total_written = len(next_sentence_labels)
     input_ids = f.create_dataset(name+'.input_ids', data=input_ids, dtype=var_len_int)
     segment_ids = f.create_dataset(name+'.segment_ids', data=segment_ids, dtype=var_len_int)
-    masked_lm_positions = f.create_dataset(name+'.masked_lm_positions',data=masked_lm_positions, dtype=var_len_int)
-    masked_lm_ids = f.create_dataset(name+'.masked_lm_ids',data=masked_lm_ids, dtype=var_len_int)
-    masked_lm_weights = f.create_dataset(name+'.masked_lm_weights',data=masked_lm_weights, dtype=var_len_float)
-    next_sentence_labels = f.create_dataset(name+'.next_sentence_labels',data=next_sentence_labels, dtype='int32')
-    valid_lengths = f.create_dataset(name+'.valid_lengths',data=valid_lengths, dtype='int32')
+    masked_lm_positions = f.create_dataset(name+'.masked_lm_positions',
+                                           data=masked_lm_positions, dtype=var_len_int)
+    masked_lm_ids = f.create_dataset(name+'.masked_lm_ids', data=masked_lm_ids, dtype=var_len_int)
+    masked_lm_weights = f.create_dataset(name+'.masked_lm_weights', data=masked_lm_weights,
+                                         dtype=var_len_float)
+    next_sentence_labels = f.create_dataset(name+'.next_sentence_labels',
+                                            data=next_sentence_labels, dtype='int32')
+    valid_lengths = f.create_dataset(name+'.valid_lengths', data=valid_lengths, dtype='int32')
 
     end_time = time.time()
     logging.info('Wrote %d total instances to %s. Time cost=%.1f'%
-                (total_written, name, end_time - start_time))
+                 (total_written, name, end_time - start_time))
 
 def write_to_files_np(features, tokenizer, max_seq_length,
                       max_predictions_per_seq, output_files):
@@ -249,38 +253,39 @@ def write_to_files_np(features, tokenizer, max_seq_length,
 
     assert len(output_files) == 1, 'numpy format only support single output file'
     output_file = output_files[0]
-    input_ids, segment_ids, masked_lm_positions, masked_lm_ids, masked_lm_weights, next_sentence_labels, valid_lengths = features
+    (input_ids, segment_ids, masked_lm_positions, masked_lm_ids,
+     masked_lm_weights, next_sentence_labels, valid_lengths) = features
     total_written = len(next_sentence_labels)
 
     outputs = collections.OrderedDict()
-    outputs["input_ids"] = np.array(input_ids, dtype=object)
-    outputs["segment_ids"] = np.array(segment_ids, dtype=object)
-    outputs["masked_lm_positions"] = np.array(masked_lm_positions, dtype=object)
-    outputs["masked_lm_ids"] = np.array(masked_lm_ids, dtype=object)
-    outputs["masked_lm_weights"] = np.array(masked_lm_weights, dtype=object)
-    outputs["next_sentence_labels"] = np.array(next_sentence_labels, dtype='int32')
-    outputs["valid_lengths"] = np.array(valid_lengths, dtype='int32')
+    outputs['input_ids'] = np.array(input_ids, dtype=object)
+    outputs['segment_ids'] = np.array(segment_ids, dtype=object)
+    outputs['masked_lm_positions'] = np.array(masked_lm_positions, dtype=object)
+    outputs['masked_lm_ids'] = np.array(masked_lm_ids, dtype=object)
+    outputs['masked_lm_weights'] = np.array(masked_lm_weights, dtype=object)
+    outputs['next_sentence_labels'] = np.array(next_sentence_labels, dtype='int32')
+    outputs['valid_lengths'] = np.array(valid_lengths, dtype='int32')
 
     np.savez(output_file, **outputs)
     logging.info('Wrote %d total instances', total_written)
 
 
 def write_to_files_mmap(instances, tokenizer, max_seq_length,
-                                         max_predictions_per_seq, output_files):
+                        max_predictions_per_seq, output_files):
     """Create files from `TrainingInstance`s."""
     features_np = collections.OrderedDict()
     num_instances = len(instances)
-    features_np["next_sentence_labels"] = np.empty((num_instances,), dtype='int32')
-    features_np["valid_lengths"] = np.empty((num_instances,), dtype='int32')
+    features_np['next_sentence_labels'] = np.empty((num_instances,), dtype='int32')
+    features_np['valid_lengths'] = np.empty((num_instances,), dtype='int32')
 
     seq_shape = (num_instances, max_seq_length)
-    features_np["input_ids"] = np.empty(seq_shape, dtype='int32')
-    features_np["segment_ids"] = np.empty(seq_shape, dtype='int32')
+    features_np['input_ids'] = np.empty(seq_shape, dtype='int32')
+    features_np['segment_ids'] = np.empty(seq_shape, dtype='int32')
 
     mask_shape = (num_instances, max_predictions_per_seq)
-    features_np["masked_lm_positions"] = np.empty(mask_shape, dtype='int32')
-    features_np["masked_lm_ids"] = np.empty(mask_shape, dtype='int32')
-    features_np["masked_lm_weights"] = np.empty(mask_shape, dtype='float32')
+    features_np['masked_lm_positions'] = np.empty(mask_shape, dtype='int32')
+    features_np['masked_lm_ids'] = np.empty(mask_shape, dtype='int32')
+    features_np['masked_lm_weights'] = np.empty(mask_shape, dtype='float32')
 
     assert len(output_files) == 1, 'numpy format only support single output file'
     output_file = output_files[0]
@@ -288,14 +293,14 @@ def write_to_files_mmap(instances, tokenizer, max_seq_length,
     total_written = 0
     for (inst_index, instance) in enumerate(instances):
         features = transform(instance, tokenizer, max_seq_length, max_predictions_per_seq)
-        features_np["input_ids"][inst_index] = features['input_ids']
-        features_np["segment_ids"][inst_index] = features['segment_ids']
-        features_np["masked_lm_positions"][inst_index] = features['masked_lm_positions']
-        features_np["masked_lm_ids"][inst_index] = features['masked_lm_ids']
-        features_np["masked_lm_weights"][inst_index] = features['masked_lm_weights']
+        features_np['input_ids'][inst_index] = features['input_ids']
+        features_np['segment_ids'][inst_index] = features['segment_ids']
+        features_np['masked_lm_positions'][inst_index] = features['masked_lm_positions']
+        features_np['masked_lm_ids'][inst_index] = features['masked_lm_ids']
+        features_np['masked_lm_weights'][inst_index] = features['masked_lm_weights']
         # both valid length and next sentence label are single numbers
-        features_np["next_sentence_labels"][inst_index] = features['next_sentence_labels'][0]
-        features_np["valid_lengths"][inst_index] = features['valid_lengths'][0]
+        features_np['next_sentence_labels'][inst_index] = features['next_sentence_labels'][0]
+        features_np['valid_lengths'][inst_index] = features['valid_lengths'][0]
 
         total_written += 1
 
@@ -306,7 +311,7 @@ def write_to_files_mmap(instances, tokenizer, max_seq_length,
     logging.info('Wrote %d total instances', total_written)
 
 def write_to_files_rec(instances, tokenizer, max_seq_length,
-                                        max_predictions_per_seq, output_files):
+                       max_predictions_per_seq, output_files):
     """Create IndexedRecordIO files from `TrainingInstance`s."""
     writers = []
     for output_file in output_files:
@@ -340,7 +345,7 @@ def create_training_instances(x):
     dupe_factor, short_seq_prob, masked_lm_prob, \
     max_predictions_per_seq, rng = x
     time_start = time.time()
-    logging.info('Processing %s'%input_files)
+    logging.info('Processing %s', input_files)
     all_documents = [[]]
 
     # Input file format:
@@ -387,7 +392,7 @@ def create_training_instances(x):
     next_sentence_labels = []
     valid_lengths = []
 
-    for (inst_index, instance) in enumerate(instances):
+    for _, instance in enumerate(instances):
         feature = transform(instance, tokenizer, max_seq_length, max_predictions_per_seq, False)
         input_ids.append(np.ascontiguousarray(feature['input_ids'], dtype='int32'))
         segment_ids.append(np.ascontiguousarray(feature['segment_ids'], dtype='int32'))
@@ -397,7 +402,8 @@ def create_training_instances(x):
         next_sentence_labels.append(feature['next_sentence_labels'][0])
         valid_lengths.append(feature['valid_lengths'][0])
 
-    features = (input_ids, segment_ids, masked_lm_positions, masked_lm_ids, masked_lm_weights, next_sentence_labels, valid_lengths)
+    features = (input_ids, segment_ids, masked_lm_positions, masked_lm_ids, \
+                masked_lm_weights, next_sentence_labels, valid_lengths)
     time_end = time.time()
 
     logging.info('*** Writing to output file %s ***'%out)
@@ -658,13 +664,13 @@ def main():
     assert count == len(input_files)
     if nworker > 0:
         pool = Pool(nworker)
-        results = pool.map(create_training_instances, map_args)
+        pool.map(create_training_instances, map_args)
     else:
         for map_arg in map_args:
             create_training_instances(map_arg)
 
     time_end = time.time()
-    logging.info('Time cost=%.1f'%(time_end - time_start))
+    logging.info('Time cost=%.1f', time_end - time_start)
 
 if __name__ == '__main__':
     main()

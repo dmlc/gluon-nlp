@@ -26,10 +26,6 @@ import json
 import gluonnlp
 import logging
 import mxnet as mx
-try:
-    from tokenizer import load_vocab
-except ImportError:
-    from .tokenizer import load_vocab
 
 __all__ = ['convert_vocab']
 
