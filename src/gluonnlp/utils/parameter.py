@@ -24,7 +24,6 @@ import warnings
 
 import numpy as np
 from mxnet import nd
-import mxnet as mx
 
 def clip_grad_global_norm(parameters, max_norm, check_isfinite=True):
     """Rescales gradients of parameters so that the sum of their 2-norm is smaller than `max_norm`.

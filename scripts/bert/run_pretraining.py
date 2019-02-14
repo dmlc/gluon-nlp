@@ -30,7 +30,6 @@ This example shows how to pre-train a BERT model with Gluon NLP Toolkit.
 # under the License.
 # pylint:disable=redefined-outer-name,logging-format-interpolation
 
-import sys
 import os
 
 import argparse

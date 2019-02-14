@@ -27,12 +27,12 @@ import glob
 import collections
 import random
 import time
+from multiprocessing import Pool
 import numpy as np
 import mxnet as mx
 import gluonnlp as nlp
 from gluonnlp.data import BERTTokenizer
 import tokenizer as tokenization
-from multiprocessing import Pool
 
 
 parser = argparse.ArgumentParser(
@@ -243,10 +243,11 @@ def write_to_files_h5py(features, tokenizer, max_seq_length,
 
     end_time = time.time()
     logging.info('Wrote %d total instances to %s. Time cost=%.1f',
-                 (total_written, name, end_time - start_time))
+                 total_written, name, end_time - start_time)
 
 def write_to_files_np(features, tokenizer, max_seq_length,
                       max_predictions_per_seq, output_files):
+    # pylint: disable=unused-argument
     """Write to numpy files from `TrainingInstance`s."""
     next_sentence_labels = []
     valid_lengths = []
@@ -421,7 +422,7 @@ def create_training_instances(x):
         write_to_files_rec(instances, tokenizer, args.max_seq_length,
                            args.max_predictions_per_seq, [out])
     else:
-        raise ValueError('unsupported format: %s', args.format)
+        raise ValueError('unsupported format: %s'%args.format)
     logging.info('Process %d files took %.1f s', len(input_files), time_end - time_start)
 
 

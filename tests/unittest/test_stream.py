@@ -112,8 +112,6 @@ def test_h5py_stream():
     assert np.all(dataset[0] == c)
     assert np.all(dataset[1] == d)
 
-test_h5py_stream()
-
 @pytest.mark.serial
 def test_array_stream():
     import h5py
@@ -139,8 +137,6 @@ def test_array_stream():
         raise AssertionError('No exception caught')
     except ValueError:
         pass
-
-test_array_stream()
 
 @pytest.mark.parametrize('num_prefetch', [0, 1, 10])
 @pytest.mark.parametrize('worker_type', ['thread', 'process'])
