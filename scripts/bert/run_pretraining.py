@@ -270,7 +270,7 @@ def evaluate(data_eval, model, nsp_loss, mlm_loss, vocab_size, ctx):
             for data in data_list:
                 out = forward(data, model, mlm_loss, nsp_loss, vocab_size)
                 (ls, next_sentence_label, classified, masked_id,
-                 decoded, masked_weight, ls1, ls2, valid_length = out
+                 decoded, masked_weight, ls1, ls2, valid_length) = out
                 loss_list.append(ls)
                 ns_label_list.append(next_sentence_label)
                 ns_pred_list.append(classified)
