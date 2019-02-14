@@ -425,7 +425,7 @@ def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx, store):
                     param_path = os.path.join(args.ckpt_dir, '%07d.params'%step_num)
                     trainer_path = os.path.join(args.ckpt_dir, '%07d.states'%step_num)
                     logging.info('[step %d] Saving checkpoints to %s, %s.',
-                                 step_num, param_path, trainer_path))
+                                 step_num, param_path, trainer_path)
                     model.save_parameters(param_path)
                     trainer.save_states(trainer_path)
                 batch_num += 1
