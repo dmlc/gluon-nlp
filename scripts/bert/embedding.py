@@ -47,16 +47,18 @@ class BertEmbedding(object):
         """
         Encoding from BERT model.
 
-        :param ctx: running BertEmbedding on which gpu device id.
-        :type ctx: Context
-        :param model: pre-trained BERT model
-        :type model: str
-        :param dataset_name: pre-trained model dataset
-        :type dataset_name: str
-        :param max_seq_length: max length of each sequence
-        :type  max_seq_length: int
-        :param batch_size: batch size
-        :type batch_size: int
+        Parameters
+        ----------
+        ctx : Context.
+            running BertEmbedding on which gpu device id.
+        model : str, default bert_12_768_12.
+            pre-trained BERT model
+        dataset_name : str, default book_corpus_wiki_en_uncased.
+            pre-trained model dataset
+        max_seq_length : int, default 25
+            max length of each sequence
+        batch_size : int, default 256
+            batch size
         """
         self.ctx = mx.cpu() if ctx is None else ctx
         self.max_seq_length = max_seq_length
