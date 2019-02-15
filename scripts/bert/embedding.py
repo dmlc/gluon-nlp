@@ -74,11 +74,17 @@ class BertEmbedding(object):
         """
         Get sentence embedding, tokens, tokens embedding
 
-        :param sentences: sentences for encoding
-        :type sentences: List[str]
-        :param oov: use **sum** or **last** to get token embedding for those out of vocabulary words
-        :type oov: str
-        :return: List[(sentence embedding, tokens, tokens embedding)]
+        Parameters
+        ----------
+        sentences : List[str]
+            sentences for encoding.
+        oov : str, default avg.
+            use **avg**, **sum** or **last** to get token embedding for those out of vocabulary words
+
+        Returns
+        -------
+        List[(ndarray, List[str], List[ndarray])]
+            List of sentence embedding, tokens, and tokens embedding
         """
         data_iter = self.data_loader(sentences=sentences, batch_size=self.batch_size)
         batches = []
