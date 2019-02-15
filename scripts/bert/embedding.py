@@ -42,7 +42,8 @@ class BertEmbedding(object):
         batch size
     """
 
-    def __init__(self, ctx=mx.cpu(), model='bert_12_768_12', dataset_name='book_corpus_wiki_en_uncased',
+    def __init__(self, ctx=mx.cpu(), model='bert_12_768_12',
+                 dataset_name='book_corpus_wiki_en_uncased',
                  max_seq_length=25, batch_size=256):
         """
         Encoding from BERT model.
@@ -79,7 +80,8 @@ class BertEmbedding(object):
         sentences : List[str]
             sentences for encoding.
         oov_way : str, default avg.
-            use **avg**, **sum** or **last** to get token embedding for those out of vocabulary words
+            use **avg**, **sum** or **last** to get token embedding for those out of
+            vocabulary words
 
         Returns
         -------
@@ -115,10 +117,15 @@ class BertEmbedding(object):
 
         Parameters
         ----------
-        batches : List[(tokens_id, sequence_outputs, pooled_output].
-            batch token_ids (max_seq_length, ), sequence_outputs (max_seq_length, dim, ),  pooled_output (dim, )
+        batches : List[(tokens_id,
+                        sequence_outputs,
+                        pooled_output].
+            batch   token_ids (max_seq_length, ),
+                    sequence_outputs (max_seq_length, dim, ),
+                    pooled_output (dim, )
         oov_way : str
-            use **avg**, **sum** or **last** to get token embedding for those out of vocabulary words
+            use **avg**, **sum** or **last** to get token embedding for those out of
+            vocabulary words
 
         Returns
         -------
