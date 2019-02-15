@@ -22,7 +22,6 @@ __all__ = [
 
 import os
 import warnings
-from typing import List
 import numpy as np
 from mxnet.metric import Accuracy, F1, MCC, PearsonCorrelation, CompositeEvalMetric
 from mxnet.gluon.data import Dataset
@@ -563,7 +562,7 @@ class BertEmbeddingDataset(Dataset):
         transformer for BERT input format
     """
 
-    def __init__(self, sentences: List[str], transform=None):
+    def __init__(self, sentences, transform=None):
         """Dataset for BERT Embedding
 
         Parameters

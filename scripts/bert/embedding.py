@@ -15,7 +15,6 @@
 """BERT embedding."""
 import argparse
 import io
-from typing import List
 
 import numpy as np
 import mxnet as mx
@@ -73,7 +72,7 @@ class BertEmbedding(object):
                                                          use_decoder=False,
                                                          use_classifier=False)
 
-    def embedding(self, sentences: List[str], oov_way='avg'):
+    def embedding(self, sentences, oov_way='avg'):
         """
         Get sentence embedding, tokens, tokens embedding
 
