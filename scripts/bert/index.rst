@@ -64,6 +64,7 @@ Usage
 """""
 
 .. code-block:: python
+
     from bert.embedding import BertEmbedding
 
     bert_abstract = """We introduce a new language representation model called BERT, which stands for Bidirectional Encoder Representations from Transformers.
@@ -78,10 +79,9 @@ Usage
 If you want to use GPU, please import mxnet and set context
 
 .. code-block:: python
+
     import mxnet as mx
     from bert.embedding import BertEmbedding
-
-    ...
 
     ctx = mx.gpu(0)
     bert_embedding = BertEmbedding(ctx=ctx)
@@ -89,6 +89,7 @@ If you want to use GPU, please import mxnet and set context
 Example of using the large pre-trained BERT model from Google
 
 .. code-block:: python
+
     from bert.embedding import BertEmbedding
 
     bert_embedding = BertEmbedding(model='bert_24_1024_16', dataset_name='book_corpus_wiki_en_cased')
@@ -96,6 +97,7 @@ Example of using the large pre-trained BERT model from Google
 Example outputs:
 
 .. code-block:: python
+
     first_sentence = result[0]
 
     first_sentence[0]
