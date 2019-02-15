@@ -277,7 +277,7 @@ def train():
         train_data = SQuAD('train', version='1.1')
     log.info('Number of records in Train data:{}'.format(len(train_data)))
 
-    train_data_transform, data_train_len = preprocess_dataset(
+    train_data_transform, _ = preprocess_dataset(
         train_data, SQuADTransform(
             berttoken,
             max_seq_length=max_seq_length,
@@ -408,7 +408,7 @@ def evaluate():
             is_pad=False,
             is_training=False)._transform)
 
-    dev_data_transform, data_dev_len = preprocess_dataset(
+    dev_data_transform, _ = preprocess_dataset(
         dev_data, SQuADTransform(
             berttoken,
             max_seq_length=max_seq_length,
