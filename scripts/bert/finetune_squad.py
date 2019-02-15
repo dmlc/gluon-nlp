@@ -364,12 +364,15 @@ def train():
                 ls = loss_function(out, [
                     start_label.astype('float32').as_in_context(ctx),
                     end_label.astype('float32').as_in_context(ctx)]).mean()
+
+                if accumulate:
+                    ls = ls / accumulate
             ls.backward()
             # update
             if not accumulate or (batch_id + 1) % accumulate == 0:
                 trainer.allreduce_grads()
                 nlp.utils.clip_grad_global_norm(params, 1)
-                trainer.update(accumulate if accumulate else 1)
+                trainer.update(1)
 
             step_loss += ls.asscalar()
 
