@@ -288,15 +288,9 @@ def train():
     log.info('The number of examples after preprocessing:{}'.format(
         len(train_data_transform)))
 
-    batch_sampler = nlp.data.sampler.FixedBucketSampler(data_train_len,
-                                                        batch_size=batch_size,
-                                                        num_buckets=10,
-                                                        ratio=0,
-                                                        shuffle=True)
-
     train_dataloader = mx.gluon.data.DataLoader(
         train_data_transform, batchify_fn=batchify_fn,
-        batch_sampler=batch_sampler, num_workers=4)
+        batch_size=batch_size, num_workers=4, shuffle=True)
 
     log.info('Start Training')
 
@@ -425,16 +419,10 @@ def evaluate():
     log.info('The number of examples after preprocessing:{}'.format(
         len(dev_data_transform)))
 
-    batch_sampler = nlp.data.sampler.FixedBucketSampler(data_dev_len,
-                                                        batch_size=test_batch_size,
-                                                        num_buckets=10,
-                                                        ratio=0,
-                                                        shuffle=False)
-
     dev_dataloader = mx.gluon.data.DataLoader(
         dev_data_transform,
         batchify_fn=batchify_fn,
-        num_workers=4, batch_sampler=batch_sampler)
+        num_workers=4, batch_size=test_batch_size, shuffle=False, last_batch='keep')
 
     log.info('Start predict')
 
