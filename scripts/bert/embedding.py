@@ -24,7 +24,7 @@ from gluonnlp.data import BERTTokenizer, BERTSentenceTransform
 from .dataset import BertEmbeddingDataset
 
 
-class BertEmbedding:
+class BertEmbedding(object):
     """
     Encoding from BERT model.
 
