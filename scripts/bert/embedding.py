@@ -17,8 +17,8 @@ import argparse
 import io
 from typing import List
 
-import mxnet as mx
 import numpy as np
+import mxnet as mx
 from mxnet.gluon.data import DataLoader
 import gluonnlp
 from gluonnlp.data import BERTTokenizer, BERTSentenceTransform
