@@ -42,7 +42,7 @@ class BertEmbedding(object):
         batch size
     """
 
-    def __init__(self, ctx=None, model='bert_12_768_12', dataset_name='book_corpus_wiki_en_uncased',
+    def __init__(self, ctx=mx.cpu(), model='bert_12_768_12', dataset_name='book_corpus_wiki_en_uncased',
                  max_seq_length=25, batch_size=256):
         """
         Encoding from BERT model.
@@ -60,7 +60,7 @@ class BertEmbedding(object):
         batch_size : int, default 256
             batch size
         """
-        self.ctx = mx.cpu() if ctx is None else ctx
+        self.ctx = ctx
         self.max_seq_length = max_seq_length
         self.batch_size = batch_size
         self.bert, self.vocab = gluonnlp.model.get_model(model,
