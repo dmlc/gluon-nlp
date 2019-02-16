@@ -9,6 +9,7 @@ dependencies:
   - sphinx-gallery
   - sphinx_rtd_theme
   - nbsphinx>=0.3.4,<0.4
+  - nbconvert=5.4.0
   - recommonmark
   - spacy
   - nltk
