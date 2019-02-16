@@ -321,6 +321,8 @@ def train():
         else:
             step_num += 1
         # learning rate schedule
+        # Notice that this learning rate scheduler is adapted from traditional linear learning rate scheduler
+        # where step_num >= num_warmup_steps, new_lr = 1 - step_num/num_train_steps
         if step_num < num_warmup_steps:
             new_lr = lr * step_num / num_warmup_steps
         else:
