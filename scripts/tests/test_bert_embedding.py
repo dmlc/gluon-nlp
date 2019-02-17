@@ -26,8 +26,8 @@ import pytest
 from scripts.bert.embedding import BertEmbedding
 from ..bert.dataset import BertEmbeddingDataset
 
-sentence = "GluonNLP is a toolkit that enables easy text preprocessing, datasets loading " \
-            "and neural models building to help you speed up your Natural Language Processing (NLP) research."
+sentence = u'GluonNLP is a toolkit that enables easy text preprocessing, datasets loading ' \
+            'and neural models building to help you speed up your Natural Language Processing (NLP) research.'
 
 
 def test_bert_embedding_dataset():
