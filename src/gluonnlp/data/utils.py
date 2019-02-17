@@ -181,7 +181,9 @@ def slice_sequence(sequence, length, pad_last=False, pad_val=C.PAD_TOKEN, overla
         pad_len = _slice_pad_length(len(sequence), length, overlap)
         sequence = sequence + [pad_val] * pad_len
     num_samples = (len(sequence) - length) // (length - overlap) + 1
-    return [sequence[i * (length - overlap):((i + 1) * length - i * overlap)] for i in range(num_samples)]
+
+    return [sequence[i * (length - overlap): ((i + 1) * length - i * overlap)]
+            for i in range(num_samples)]
 
 
 def _slice_pad_length(num_items, length, overlap=0):
