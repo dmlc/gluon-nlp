@@ -98,11 +98,11 @@ def grad_global_norm(parameters, max_norm):
     scale = total_norm / max_norm
     # is_finite = 0 if NaN or Inf, 1 otherwise.
     is_finite = nd.contrib.isfinite(scale)
-    # if scale is finite, nd.minimum selects the minimum between scale and 1. That is,
+    # if scale is finite, nd.maximum selects the max between scale and 1. That is,
     # 1 is returned if total_norm does not exceed max_norm.
     # if scale = NaN or Inf, the result of nd.minimum is undefined. Therefore, we use
     # choices.take to return NaN or Inf.
-    scale_or_one = nd.minimum(nd.ones((1,), dtype=dtype, ctx=ctx), scale)
+    scale_or_one = nd.maximum(nd.ones((1,), dtype=dtype, ctx=ctx), scale)
     choices = nd.concat(scale, scale_or_one, dim=0)
     chosen_scale = choices.take(is_finite)
     return total_norm, chosen_scale
