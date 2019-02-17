@@ -22,7 +22,24 @@ from mxnet.gluon.data import DataLoader
 import gluonnlp
 from gluonnlp.data import BERTTokenizer, BERTSentenceTransform
 
-from .dataset import BertEmbeddingDataset
+try:
+    from dataset import BertEmbeddingDataset
+except ImportError:
+    from .dataset import BertEmbeddingDataset
+
+try:
+    unicode
+except NameError:
+    # Define `unicode` for Python3
+    def unicode(s, *_):
+        return s
+
+
+def to_unicode(s):
+    return unicode(s, 'utf-8')
+
+
+__all__ = ['BertEmbedding']
 
 
 class BertEmbedding(object):
@@ -184,7 +201,7 @@ if __name__ == '__main__':
                              'avg: average all oov embeddings to represent the original token\n'
                              'sum: sum all oov embeddings to represent the original token\n'
                              'last: use last oov embeddings to represent the original token\n')
-    parser.add_argument('--sentences', type=str, nargs='+', default=None,
+    parser.add_argument('--sentences', type=to_unicode, nargs='+', default=None,
                         help='sentence for encoding')
     parser.add_argument('--file', type=str, default=None,
                         help='file for encoding')

@@ -23,19 +23,18 @@ import time
 
 import pytest
 
-from scripts.bert.embedding import BertEmbedding
+from ..bert.embedding import BertEmbedding
 from ..bert.dataset import BertEmbeddingDataset
-
-sentence = u'GluonNLP is a toolkit that enables easy text preprocessing, datasets loading ' \
-            'and neural models building to help you speed up your Natural Language Processing (NLP) research.'
 
 
 def test_bert_embedding_dataset():
+    sentence = u'is this jacksonville ?'
     dataset = BertEmbeddingDataset([sentence])
     assert len(dataset) == 1
 
 
 def test_bert_embedding_data_loader():
+    sentence = u'is this jacksonville ?'
     bert = BertEmbedding(max_seq_length=10)
     iter = bert.data_loader([sentence])
     first_sentence = []
@@ -51,9 +50,7 @@ def test_bert_embedding_data_loader():
 def test_bert_embedding():
     process = subprocess.check_call(['python', './scripts/bert/embedding.py', '--gpu', '0',
                                      '--model', 'bert_12_768_12', '--dataset_name', 'book_corpus_wiki_en_uncased',
-                                     'max_seq_length', '25', '--batch_size', '256',
-                                     '--oov_way', 'avg', '--sentences', sentence])
+                                     '--max_seq_length', '25', '--batch_size', '256',
+                                     '--oov_way', 'avg', '--sentences', '"is this jacksonville ?"'])
     time.sleep(5)
 
-
-__author__ = "Gary Lai"
