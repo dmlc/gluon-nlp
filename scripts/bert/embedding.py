@@ -167,7 +167,8 @@ class BertEmbedding(object):
 
 if __name__ == '__main__':
     np.set_printoptions(threshold=5)
-    parser = argparse.ArgumentParser(description='Get embeddings from BERT')
+    parser = argparse.ArgumentParser(description='Get embeddings from BERT',
+                                     formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument('--gpu', type=int, default=None,
                         help='id of the gpu to use. Set it to empty means to use cpu.')
     parser.add_argument('--model', type=str, default='bert_12_768_12',
@@ -179,7 +180,11 @@ if __name__ == '__main__':
     parser.add_argument('--batch_size', type=int, default=256,
                         help='batch size')
     parser.add_argument('--oov_way', type=str, default='avg',
-                        help='how to handle oov')
+                        help='how to handle oov\n'
+                             'avg: average all oov embeddings to represent the original token\n'
+                             'sum: sum all oov embeddings to represent the original token\n'
+                             'last: use last oov embeddings to represent the original token\n',
+                        )
     parser.add_argument('--sentences', type=str, nargs='+', default=None,
                         help='sentence for encoding')
     parser.add_argument('--file', type=str, default=None,
