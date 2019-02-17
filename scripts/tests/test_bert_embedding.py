@@ -42,7 +42,7 @@ def test_bert_embedding_data_loader():
     for i in iter:
         first_sentence = i
         break
-    assert len(first_sentence[0]) == 10
+    assert len(first_sentence[0][0]) == 10
 
 
 @pytest.mark.serial

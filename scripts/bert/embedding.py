@@ -190,7 +190,6 @@ if __name__ == '__main__':
                         help='file for encoding')
 
     args = parser.parse_args()
-    print(args)
     context = mx.gpu(args.gpu) if args.gpu else mx.cpu()
     bert = BertEmbedding(ctx=context, model=args.model, dataset_name=args.dataset_name,
                          max_seq_length=args.max_seq_length, batch_size=args.batch_size)
