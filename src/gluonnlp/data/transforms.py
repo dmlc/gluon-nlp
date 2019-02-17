@@ -918,7 +918,7 @@ class BERTTokenizer(object):
 
     Examples
     --------
-    >>> _,vocab = gluonnlp.model.bert_12_768_12(dataset_name='wiki_multilingual',pretrained=False)
+    >>> _,vocab = gluonnlp.model.bert_12_768_12(dataset_name='wiki_multilingual_uncased',pretrained=False)
     >>> tokenizer = gluonnlp.data.BERTTokenizer(vocab=vocab)
     >>> tokenizer(u"gluonnlp: 使NLP变得简单。")
     ['gl', '##uo', '##nn', '##lp', ':', '使', 'nl', '##p', '变', '得', '简', '单', '。']
