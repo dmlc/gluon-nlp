@@ -89,7 +89,7 @@ class BertEmbedding(object):
         List[(ndarray, List[str], List[ndarray])]
             List of sentence embedding, tokens, and tokens embedding
         """
-        data_iter = self.data_loader(sentences=sentences, batch_size=self.batch_size)
+        data_iter = self.data_loader(sentences=sentences)
         batches = []
         for token_ids, valid_length, token_types in data_iter:
             token_ids = token_ids.as_in_context(self.ctx)
@@ -104,13 +104,13 @@ class BertEmbedding(object):
                 batches.append((token_id, sequence_output, pooled_output))
         return self.oov(batches, oov_way)
 
-    def data_loader(self, sentences, batch_size, shuffle=False):
+    def data_loader(self, sentences, shuffle=False):
         tokenizer = BERTTokenizer(self.vocab)
         transform = BERTSentenceTransform(tokenizer=tokenizer,
                                           max_seq_length=self.max_seq_length,
                                           pair=False)
         dataset = BertEmbeddingDataset(sentences, transform)
-        return DataLoader(dataset=dataset, batch_size=batch_size, shuffle=shuffle)
+        return DataLoader(dataset=dataset, batch_size=self.batch_size, shuffle=shuffle)
 
     def oov(self, batches, oov_way='avg'):
         """
