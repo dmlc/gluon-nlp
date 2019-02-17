@@ -183,8 +183,7 @@ if __name__ == '__main__':
                         help='how to handle oov\n'
                              'avg: average all oov embeddings to represent the original token\n'
                              'sum: sum all oov embeddings to represent the original token\n'
-                             'last: use last oov embeddings to represent the original token\n',
-                        )
+                             'last: use last oov embeddings to represent the original token\n')
     parser.add_argument('--sentences', type=str, nargs='+', default=None,
                         help='sentence for encoding')
     parser.add_argument('--file', type=str, default=None,
