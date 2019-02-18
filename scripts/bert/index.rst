@@ -45,4 +45,10 @@ It gets validation accuracy of `88.7% <https://raw.githubusercontent.com/dmlc/we
 It gets RTE validation accuracy of `70.8% <https://raw.githubusercontent.com/dmlc/web-data/master/gluonnlp/logs/bert/finetuned_rte.log>`_
 , whereas the the original Tensorflow implementation give evaluation results 66.4%.
 
+.. code-block:: console
+
+   $GLUE_DIR=glue_data python3 finetune_classifier.py --task_name SST --epochs 4 --batch_size 16 --accumulate 1 --optimizer bertadam --gpu --lr 2e-5 --log_interval 500
+
+It gets SST validation accuracy of `93.0% <https://raw.githubusercontent.com/dmlc/web-data/master/gluonnlp/logs/bert/finetuned_sst.log>`_.
+
 Some other tasks can be modeled with `--task_name` parameter.
