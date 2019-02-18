@@ -789,7 +789,8 @@ class TransformerDecoderCell(HybridBlock):
         outputs, attention_inter_outputs = \
             self.attention_cell_inter(inputs, mem_value, mem_value, mem_mask)
         outputs = self.proj_inter(outputs)
-        outputs = self.dropout_layer(outputs)
+        if self._dropout:
+            outputs = self.dropout_layer(outputs)
         if self._use_residual:
             outputs = outputs + inputs
         outputs = self.layer_norm_inter(outputs)
