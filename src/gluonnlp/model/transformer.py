@@ -204,7 +204,8 @@ class BaseTransformerEncoderCell(HybridBlock):
         self._use_residual = use_residual
         self._output_attention = output_attention
         with self.name_scope():
-            self.dropout_layer = nn.Dropout(dropout)
+            if dropout:
+                self.dropout_layer = nn.Dropout(rate=dropout)
             self.attention_cell = _get_attention_cell(attention_cell,
                                                       units=units,
                                                       num_heads=num_heads,
@@ -252,7 +253,8 @@ class BaseTransformerEncoderCell(HybridBlock):
         outputs, attention_weights =\
             self.attention_cell(inputs, inputs, inputs, mask)
         outputs = self.proj(outputs)
-        outputs = self.dropout_layer(outputs)
+        if self._dropout:
+            outputs = self.dropout_layer(outputs)
         if self._use_residual:
             outputs = outputs + inputs
         outputs = self.layer_norm(outputs)
@@ -336,7 +338,8 @@ class BaseTransformerEncoder(HybridBlock, Seq2SeqEncoder):
         self._use_layer_norm_before_dropout = use_layer_norm_before_dropout
         self._scale_embed = scale_embed
         with self.name_scope():
-            self.dropout_layer = nn.Dropout(dropout)
+            if dropout:
+                self.dropout_layer = nn.Dropout(rate=dropout)
             self.layer_norm = _get_layer_norm(use_bert_encoder, units)
             self.position_weight = self._get_positional(positional_weight, max_length, units,
                                                         weight_initializer)
@@ -468,11 +471,14 @@ class BaseTransformerEncoder(HybridBlock, Seq2SeqEncoder):
             # Positional Encoding
             positional_embed = F.Embedding(steps, position_weight, self._max_length, self._units)
             inputs = F.broadcast_add(inputs, F.expand_dims(positional_embed, axis=0))
-        if self._use_layer_norm_before_dropout:
-            inputs = self.layer_norm(inputs)
-            inputs = self.dropout_layer(inputs)
+        if self._dropout:
+            if self._use_layer_norm_before_dropout:
+                inputs = self.layer_norm(inputs)
+                inputs = self.dropout_layer(inputs)
+            else:
+                inputs = self.dropout_layer(inputs)
+                inputs = self.layer_norm(inputs)
         else:
-            inputs = self.dropout_layer(inputs)
             inputs = self.layer_norm(inputs)
         outputs = inputs
         if valid_length is not None:
@@ -716,7 +722,8 @@ class TransformerDecoderCell(HybridBlock):
         self._output_attention = output_attention
         self._scaled = scaled
         with self.name_scope():
-            self.dropout_layer = nn.Dropout(dropout)
+            if dropout:
+                self.dropout_layer = nn.Dropout(rate=dropout)
             self.attention_cell_in = _get_attention_cell(attention_cell,
                                                          units=units,
                                                          num_heads=num_heads,
@@ -773,7 +780,8 @@ class TransformerDecoderCell(HybridBlock):
         outputs, attention_in_outputs =\
             self.attention_cell_in(inputs, inputs, inputs, mask)
         outputs = self.proj_in(outputs)
-        outputs = self.dropout_layer(outputs)
+        if self._dropout:
+            outputs = self.dropout_layer(outputs)
         if self._use_residual:
             outputs = outputs + inputs
         outputs = self.layer_norm_in(outputs)
@@ -851,7 +859,8 @@ class TransformerDecoder(HybridBlock, Seq2SeqDecoder):
         self._scaled = scaled
         self._scale_embed = scale_embed
         with self.name_scope():
-            self.dropout_layer = nn.Dropout(dropout)
+            if dropout:
+                self.dropout_layer = nn.Dropout(rate=dropout)
             self.layer_norm = nn.LayerNorm()
             encoding = _position_encoding_init(max_length, units)
             self.position_weight = self.params.get_constant('const', encoding)
@@ -1058,7 +1067,8 @@ class TransformerDecoder(HybridBlock, Seq2SeqDecoder):
                                                                self._max_length,
                                                                self._units),
                                                    axis=0))
-        step_input = self.dropout_layer(step_input)
+        if self._dropout:
+            step_input = self.dropout_layer(step_input)
         step_input = self.layer_norm(step_input)
         inputs = step_input
         outputs = inputs
