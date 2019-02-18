@@ -224,7 +224,9 @@ _vocab_sha1 = {'wikitext-2': 'be36dc5238c2e7d69720881647ab72eb506d0131',
                'book_corpus_wiki_en_uncased': 'a66073971aa0b1a262453fe51342e57166a8abcf',
                'wiki_multilingual_cased': '71bb9e248dc75dce9227d3c8c16fde3993588b9e',
                'wiki_cn_cased': 'a1e06f8e39ae51ab8a92b8458e6a658b8b1f72bf',
-               'wiki_multilingual_uncased': '2b2514cc539047b9179e9d98a4e68c36db05c97a'}
+               'wiki_cn': 'a1e06f8e39ae51ab8a92b8458e6a658b8b1f72bf',
+               'wiki_multilingual_uncased': '2b2514cc539047b9179e9d98a4e68c36db05c97a',
+               'wiki_multilingual': '2b2514cc539047b9179e9d98a4e68c36db05c97a'}
 
 
 _url_format = '{repo_url}gluon/dataset/vocab/{file_name}.zip'
