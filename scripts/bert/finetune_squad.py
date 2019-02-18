@@ -90,8 +90,7 @@ parser.add_argument('--bert_dataset',
 parser.add_argument('--pretrained_bert_parameters',
                     type=str,
                     default=None,
-                    help='Pre-trained bert model parameter file. default is None'
-                    )
+                    help='Pre-trained bert model parameter file. default is None')
 
 parser.add_argument('--uncased',
                     action='store_false',
