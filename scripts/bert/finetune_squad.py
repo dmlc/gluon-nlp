@@ -87,6 +87,12 @@ parser.add_argument('--bert_dataset',
                     help='BERT dataset name.'
                     'options are book_corpus_wiki_en_uncased and book_corpus_wiki_en_cased.')
 
+parser.add_argument('--pretrained_bert_parameters',
+                    type=str,
+                    default=None,
+                    help='Pre-trained bert model parameter file. default is None'
+                    )
+
 parser.add_argument('--uncased',
                     action='store_false',
                     help='if not set, inputs are converted to lower case.')
@@ -207,6 +213,7 @@ model_name = args.bert_model
 dataset_name = args.bert_dataset
 only_predict = args.only_predict
 model_parameters = args.model_parameters
+pretrained_bert_parameters = args.pretrained_bert_parameters
 lower = args.uncased
 
 epochs = args.epochs
@@ -241,7 +248,7 @@ if max_seq_length <= max_query_length + 3:
 bert, vocab = nlp.model.get_model(
     name=model_name,
     dataset_name=dataset_name,
-    pretrained=not model_parameters,
+    pretrained=not model_parameters and not pretrained_bert_parameters,
     ctx=ctx,
     use_pooler=False,
     use_decoder=False,
@@ -258,6 +265,9 @@ batchify_fn = nlp.data.batchify.Tuple(
 berttoken = nlp.data.BERTTokenizer(vocab=vocab, lower=lower)
 
 net = BertForQA(bert=bert)
+if pretrained_bert_parameters and not model_parameters:
+    bert.load_parameters(pretrained_bert_parameters, ctx=ctx,
+                         ignore_extra=True)
 if not model_parameters:
     net.span_classifier.initialize(init=mx.init.Normal(0.02), ctx=ctx)
 else:
