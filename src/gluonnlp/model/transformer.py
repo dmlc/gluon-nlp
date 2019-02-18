@@ -96,6 +96,7 @@ class BasePositionwiseFFN(HybridBlock):
         self._hidden_size = hidden_size
         self._units = units
         self._use_residual = use_residual
+        self._dropout = dropout
         with self.name_scope():
             self.ffn_1 = nn.Dense(units=hidden_size, flatten=False,
                                   weight_initializer=weight_initializer,
@@ -106,7 +107,8 @@ class BasePositionwiseFFN(HybridBlock):
                                   weight_initializer=weight_initializer,
                                   bias_initializer=bias_initializer,
                                   prefix='ffn_2_')
-            self.dropout_layer = nn.Dropout(dropout)
+            if dropout:
+                self.dropout_layer = nn.Dropout(rate=dropout)
             self.layer_norm = _get_layer_norm(use_bert_layer_norm, units)
 
     def _get_activation(self, act):
@@ -137,7 +139,8 @@ class BasePositionwiseFFN(HybridBlock):
         if self.activation:
             outputs = self.activation(outputs)
         outputs = self.ffn_2(outputs)
-        outputs = self.dropout_layer(outputs)
+        if self._dropout:
+            outputs = self.dropout_layer(outputs)
         if self._use_residual:
             outputs = outputs + inputs
         outputs = self.layer_norm(outputs)
