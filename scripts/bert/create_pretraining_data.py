@@ -32,7 +32,6 @@ import numpy as np
 import mxnet as mx
 import gluonnlp as nlp
 from gluonnlp.data import BERTTokenizer
-import tokenizer as tokenization
 
 
 parser = argparse.ArgumentParser(
@@ -204,8 +203,7 @@ def transform(instance, tokenizer, max_seq_length, max_predictions_per_seq, do_p
 
 def print_example(instance, features):
     logging.debug('*** Example ***')
-    logging.debug('tokens: %s' % ' '.join(  # pylint: disable=W1201
-        [tokenization.printable_text(x) for x in instance.tokens]))
+    logging.debug('tokens: %s' % ' '.join(instance.tokens))  # pylint: disable=W1201
 
     for feature_name in features.keys():
         feature = features[feature_name]
