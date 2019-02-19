@@ -23,10 +23,10 @@ The datasets used in this script can be obtained with
    $ python fasttext_word_ngram.py --input yelp_review_polarity.train \
                                    --output yelp_review_polarity.gluon \
                                    --validation dbpedia.test \
-                                   --ngrams 1 --epochs 25 --lr 0.1 --emsize 100 --gpu 0
+                                   --ngrams 1 --epochs 10 --lr 0.1 --emsize 100 --gpu 0
 
 
-It gets validation accuracy score of 93.96%. Yelp review is a binary classification dataset. (It has 2 classes)
+It gets validation accuracy score of 94%. Yelp review is a binary classification dataset. (It has 2 classes)
 Training logs : `log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/classification/fasttext-yelp-review.log>`__
 
 We can call the script for multiclass classification as well without any change, it automatically figures out the number of classes
@@ -39,9 +39,9 @@ Use the following commands to train a Classification model on the dbpedia datase
    $ python fasttext_word_ngram.py --input dbpedia.train \
                                    --output yelp_review_polarity.gluon \
                                    --validation dbpedia.test \
-                                   --ngrams 1 --epochs 25 --lr 0.1 --emsize 100 --gpu 0
+                                   --ngrams 2 --epochs 25 --lr 0.1 --emsize 100 --gpu 0
 
-It gives validation accuracy of 98%. Try tweaking --ngrams to 2 or 3 for improved accuracy numbers.
+It gives validation accuracy of 98.8%. Try tweaking --ngrams to 2 or 3 for improved accuracy numbers.
 Training logs : `log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/classification/fasttext-dbpedia.log>`__
 
 
@@ -52,9 +52,9 @@ Use the following command to train a Classification model on the ag_news dataset
    $ python fasttext_word_ngram.py --input ag_news.train \
                                    --output ag_news.gluon \
                                    --validation ag_news.test \
-                                   --ngrams 1 --epochs 25 --lr 0.1 --emsize 100 --gpu 0
+                                   --ngrams 2 --epochs 25 --lr 0.1 --emsize 100 --gpu 0
 
-It gives a validation accuracy of 91%
+It gives a validation accuracy of 92.5%. 
 Training logs : `log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/classification/fasttext-ag-news.log>`__
 
 Note: Its not advised to try higher order n-grams with large datasets since it would cause OOM on the GPU's.

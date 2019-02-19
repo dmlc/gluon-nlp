@@ -47,6 +47,12 @@ It gets RTE validation accuracy of `70.8% <https://raw.githubusercontent.com/dml
 
 .. code-block:: console
 
+   $ MXNET_GPU_MEM_POOL_TYPE=Round GLUE_DIR=glue_data python3 finetune_classifier.py --task_name MNLI --max_len 80 --log_interval 100 --epsilon 1e-8 --gpu
+
+It gets MNLI validation accuracy of `84.55% (matched) and 84.66% (mismatched) <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/bert/finetuned_mnli.log>`_
+
+.. code-block:: console
+
    $GLUE_DIR=glue_data python3 finetune_classifier.py --task_name SST --epochs 4 --batch_size 16 --accumulate 1 --optimizer bertadam --gpu --lr 2e-5 --log_interval 500
 
 It gets SST validation accuracy of `93.0% <https://raw.githubusercontent.com/dmlc/web-data/master/gluonnlp/logs/bert/finetuned_sst.log>`_.
