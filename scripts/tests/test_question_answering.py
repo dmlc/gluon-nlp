@@ -28,7 +28,6 @@ question_max_length = 30
 context_max_length = 256
 
 
-@pytest.mark.serial
 @pytest.mark.remote_required
 def test_transform_to_nd_array():
     dataset = SQuAD(segment='dev', version='1.1', root='tests/data/squad')
@@ -42,7 +41,6 @@ def test_transform_to_nd_array():
     assert len(transformed_record) == 7
 
 
-@pytest.mark.serial
 @pytest.mark.remote_required
 def test_data_loader_able_to_read():
     dataset = SQuAD(segment='dev', root='tests/data/squad')
@@ -67,7 +65,6 @@ def test_data_loader_able_to_read():
         assert answers is not None
 
 
-@pytest.mark.serial
 @pytest.mark.remote_required
 def test_load_vocabs():
     dataset = SQuAD(segment='dev', root='tests/data/squad')
