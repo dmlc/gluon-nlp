@@ -21,6 +21,7 @@
 # pylint: disable=wrong-import-position, wrong-import-order, wildcard-import
 
 import sys
+import os
 import argparse
 import numpy as np
 import mxnet as mx
@@ -50,9 +51,9 @@ parser.add_argument('--gluon_model', type=str, default='bert_12_768_12',
 
 args = parser.parse_args()
 
-input_file = args.input_file
-tf_bert_repo_dir = args.tf_bert_repo_dir
-tf_model_dir = args.tf_model_dir
+input_file = os.path.expanduser(args.input_file)
+tf_bert_repo_dir = os.path.expanduser(args.tf_bert_repo_dir)
+tf_model_dir = os.path.expanduser(args.tf_model_dir)
 vocab_file = tf_model_dir + 'vocab.txt'
 bert_config_file = tf_model_dir + 'bert_config.json'
 init_checkpoint = tf_model_dir + 'bert_model.ckpt'
