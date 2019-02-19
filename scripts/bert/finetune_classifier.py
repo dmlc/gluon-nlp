@@ -92,8 +92,8 @@ parser.add_argument(
 parser.add_argument(
     '--epsilon',
     type=float,
-    default=1e-08,
-    help='Small value to avoid division by 0, default is 1e-08'
+    default=1e-06,
+    help='Small value to avoid division by 0, default is 1e-06'
 )
 parser.add_argument(
     '--warmup_ratio',
