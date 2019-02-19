@@ -90,6 +90,12 @@ parser.add_argument(
     default=5e-5,
     help='Initial learning rate, default is 5e-5')
 parser.add_argument(
+    '--epsilon',
+    type=float,
+    default=1e-08,
+    help='Small value to avoid division by 0, default is 1e-08'
+)
+parser.add_argument(
     '--warmup_ratio',
     type=float,
     default=0.1,
@@ -166,6 +172,7 @@ batch_size = args.batch_size
 dev_batch_size = args.dev_batch_size
 task_name = args.task_name
 lr = args.lr
+epsilon = args.epsilon
 accumulate = args.accumulate
 log_interval = args.log_interval * accumulate if accumulate else args.log_interval
 if accumulate:
@@ -319,7 +326,7 @@ def evaluate(dataloader_eval, metric):
 
 def train(metric):
     """Training function."""
-    optimizer_params = {'learning_rate': lr, 'epsilon': 1e-6, 'wd': 0.01}
+    optimizer_params = {'learning_rate': lr, 'epsilon': epsilon, 'wd': 0.01}
     try:
         trainer = gluon.Trainer(
             model.collect_params(),
