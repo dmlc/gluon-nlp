@@ -45,4 +45,12 @@ It gets validation accuracy of `88.7% <https://raw.githubusercontent.com/dmlc/we
 It gets RTE validation accuracy of `70.8% <https://raw.githubusercontent.com/dmlc/web-data/master/gluonnlp/logs/bert/finetuned_rte.log>`_
 , whereas the the original Tensorflow implementation give evaluation results 66.4%.
 
+.. code-block:: console
+
+   $ MXNET_GPU_MEM_POOL_TYPE=Round GLUE_DIR=glue_data python3 finetune_classifier.py --task_name MNLI --max_len 80 --log_interval 100 --epsilon 1e-8 --gpu
+
+It gets MNLI validation accuracy ,On dev_matched.tsv: 84.6%
+On dev_mismatched.tsv: 84.7%. `log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/bert/finetuned_mnli.log>`_
+
+
 Some other tasks can be modeled with `--task_name` parameter.
