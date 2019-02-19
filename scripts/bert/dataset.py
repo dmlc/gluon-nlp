@@ -80,7 +80,7 @@ class GLUEDataset(TSVDataset):
     def _read(self):
         all_samples = super(GLUEDataset, self)._read()
         largest_field = max(self.fields)
-        #to filter out error records
+        # to filter out error records
         final_samples = [[s[f] for f in self.fields] for s in all_samples
                          if len(s) >= largest_field + 1]
         residuals = len(all_samples) - len(final_samples)
@@ -358,42 +358,40 @@ class SSTDataset(GLUEDataset):
 
 @register(segment=[
     'dev_matched', 'dev_mismatched', 'test_matched', 'test_mismatched',
-    'diagnostic'
-])  #pylint: disable=c0301
+    'train'
+])  # pylint: disable=c0301
 class MNLIDataset(GLUEDataset):
     """Task class for Multi-Genre Natural Language Inference
-
     Parameters
     ----------
     segment : str or list of str, default 'train'
         Dataset segment. Options are 'dev_matched', 'dev_mismatched',
-        'test_matched', 'test_mismatched', 'diagnostic' or their combinations.
+        'test_matched', 'test_mismatched', 'train' or their combinations.
     root : str, default '$GLUE_DIR/MNLI'
         Path to the folder which stores the MNLI dataset.
         The datset can be downloaded by the following script:
         https://gist.github.com/W4ngatang/60c2bdb54d156a41194446737ce03e2e
     """
+
     task_name = 'MNLI'
     is_pair = True
 
     def __init__(self,
-                 segment='dev_matched',
-                 root=os.path.join(
-                     os.getenv('GLUE_DIR', 'glue_data'), task_name)):  #pylint: disable=c0330
+                 segment='train',
+                 root=os.path.join(os.getenv('GLUE_DIR', 'glue_data'),
+                                   'MNLI')):  # pylint: disable=c0330
         self._supported_segments = [
-            'dev_matched', 'dev_mismatched', 'test_matched', 'test_mismatched',
-            'diagnostic'
+            'train', 'dev_matched', 'dev_mismatched',
+            'test_matched', 'test_mismatched',
         ]
         assert segment in self._supported_segments, 'Unsupported segment: %s' % segment
         path = os.path.join(root, '%s.tsv' % segment)
-        if segment in ['dev_matched', 'dev_mismatched']:
-            A_IDX, B_IDX, LABEL_IDX = 8, 9, 15
+        if segment in ['train', 'dev_matched', 'dev_mismatched']:
+            A_IDX, B_IDX = 8, 9
+            LABEL_IDX = 11 if segment == 'train' else 15
             fields = [A_IDX, B_IDX, LABEL_IDX]
         elif segment in ['test_matched', 'test_mismatched']:
             A_IDX, B_IDX = 8, 9
-            fields = [A_IDX, B_IDX]
-        elif segment == 'diagnostic':
-            A_IDX, B_IDX = 1, 2
             fields = [A_IDX, B_IDX]
         super(MNLIDataset, self).__init__(
             path, num_discard_samples=1, fields=fields)
