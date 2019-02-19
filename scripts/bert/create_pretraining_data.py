@@ -37,7 +37,8 @@ from gluonnlp.data import BERTTokenizer
 parser = argparse.ArgumentParser(
     description='Pre-training data generator for BERT')
 
-parser.add_argument('--input_file', type=str, default=None, help='input file(s)')
+parser.add_argument('--input_file', type=str, default=None,
+    help='input file(s). For example, "~/data/*.txt"')
 
 parser.add_argument(
     '--output_dir',
@@ -54,10 +55,11 @@ parser.add_argument(
          'If set to "recordio", examples are serialized using IndexedRecordIO format.')
 
 parser.add_argument(
-    '--vocab_file',
+    '--vocab',
     type=str,
     default=None,
-    help='The vocabulary file that the BERT model was trained on.')
+    help='The dataset name for the vocab file BERT model was trained on. For example, '
+         'dafdfdfas')
 
 parser.add_argument(
     '--do_lower_case',
@@ -100,7 +102,7 @@ parser.add_argument(
     'maximum length.')
 
 parser.add_argument(
-    '--debug',
+    '--verbose',
     action='store_true',
     help='Print debug information')
 
@@ -108,21 +110,23 @@ parser.add_argument(
     '--num_workers',
     type=int,
     default=1,
-    help='Number of workers for parallel processing.')
+    help='Number of workers for parallel processing, where each worker generates an output file')
 
 parser.add_argument(
     '--num_outputs',
     type=int,
     default=1,
-    help='Number of desired output files, where each one is processed independently')
+    help='Number of desired output files, where each one is processed independently by a worker.')
 
 parser.add_argument(
     '--tokenized',
     action='store_true',
-    help='Use tokenized document for input.')
+    help='Use --tokenized to indicate that the input data is already tokenized. '
+         'Hence tokenization will be skipped when generating training samples. '
+         'Setting this may accelerate the generation speed')
 
 args = parser.parse_args()
-logging.getLogger().setLevel(logging.DEBUG if args.debug else logging.INFO)
+logging.getLogger().setLevel(logging.DEBUG if args.verbose else logging.INFO)
 logging.info(args)
 
 
@@ -224,6 +228,7 @@ def write_to_files_np(features, tokenizer, max_seq_length,
      masked_lm_weights, next_sentence_labels, valid_lengths) = features
     total_written = len(next_sentence_labels)
 
+    # store variable length numpy array object directly.
     outputs = collections.OrderedDict()
     outputs['input_ids'] = np.array(input_ids, dtype=object)
     outputs['segment_ids'] = np.array(segment_ids, dtype=object)
@@ -253,11 +258,7 @@ def write_to_files_rec(instances, tokenizer, max_seq_length,
 
         writers[writer_index].write_idx(inst_index, json.dumps(example).encode('UTF-8'))
         writer_index = (writer_index + 1) % len(writers)
-
         total_written += 1
-
-        if inst_index < 20:
-            print_example(instance, features)
 
     for writer in writers:
         writer.close()
@@ -267,9 +268,8 @@ def write_to_files_rec(instances, tokenizer, max_seq_length,
 
 def create_training_instances(x):
     """Create `TrainingInstance`s from raw text."""
-    input_files, out, tokenizer, max_seq_length,\
-    dupe_factor, short_seq_prob, masked_lm_prob, \
-    max_predictions_per_seq, rng = x
+    (input_files, out, tokenizer, max_seq_length, dupe_factor,
+     short_seq_prob, masked_lm_prob, max_predictions_per_seq, rng) = x
     time_start = time.time()
     logging.info('Processing %s', input_files)
     all_documents = [[]]
@@ -291,7 +291,7 @@ def create_training_instances(x):
                 # Empty lines are used as document delimiters
                 if not line:
                     all_documents.append([])
-                tokens = tokenizer(line)
+                tokens = tokenizer(line) if not args.tokenized else line.split(' ')
                 if tokens:
                     all_documents[-1].append(tokens)
 
@@ -318,7 +318,7 @@ def create_training_instances(x):
     next_sentence_labels = []
     valid_lengths = []
 
-    for _, instance in enumerate(instances):
+    for inst_index, instance in enumerate(instances):
         feature = transform(instance, tokenizer, max_seq_length, max_predictions_per_seq, False)
         input_ids.append(
             np.ascontiguousarray(feature['input_ids'], dtype='int32'))
@@ -331,10 +331,11 @@ def create_training_instances(x):
             np.ascontiguousarray(feature['masked_lm_weights'], dtype='float32'))
         next_sentence_labels.append(feature['next_sentence_labels'][0])
         valid_lengths.append(feature['valid_lengths'][0])
+        if inst_index < 20:
+            print_example(instance, feature)
 
     features = (input_ids, segment_ids, masked_lm_positions, masked_lm_ids, \
                 masked_lm_weights, next_sentence_labels, valid_lengths)
-    time_end = time.time()
 
     logging.info('*** Writing to output file %s ***', out)
     if args.format == 'numpy':
@@ -345,6 +346,8 @@ def create_training_instances(x):
                            args.max_predictions_per_seq, [out])
     else:
         raise ValueError('unsupported format: %s'%args.format)
+
+    time_end = time.time()
     logging.info('Process %d files took %.1f s', len(input_files), time_end - time_start)
 
 
@@ -548,8 +551,8 @@ def truncate_seq_pair(tokens_a, tokens_b, max_num_tokens, rng):
 def main():
     """Main function."""
     time_start = time.time()
-    logging.info('loading vocab file: %s', args.vocab_file)
-    vocab_obj = nlp.Vocab.from_json(open(args.vocab_file, 'rt').read())
+    logging.info('loading vocab file from dataset: %s', args.vocab)
+    vocab_obj = nlp.data.utils._load_pretrained_vocab(args.vocab)
     tokenizer = BERTTokenizer(
         vocab=vocab_obj, lower=args.do_lower_case)
 
@@ -572,22 +575,29 @@ def main():
     rng = random.Random(args.random_seed)
     nworker = args.num_workers
 
+    # calculate the number of splits
     file_splits = []
     split_size = (len(input_files) + num_outputs - 1) // num_outputs
     for i in range(num_outputs - 1):
         file_splits.append(input_files[i*split_size:(i+1)*split_size])
     file_splits.append(input_files[(num_outputs-1)*split_size:])
 
+    # prepare workload
+    suffix = 'npz' if args.format == 'numpy' else 'rec'
     count = 0
     map_args = []
     pool_args = (tokenizer, args.max_seq_length, args.dupe_factor,\
                  args.short_seq_prob, args.masked_lm_prob,
                  args.max_predictions_per_seq, rng)
     for i, file_split in enumerate(file_splits):
-        out = os.path.join(output_dir, 'part-%03d.npz'%i)
+        out = os.path.join(output_dir, 'part-%03d.%s'%(i, suffix))
         count += len(file_split)
         map_args.append((file_split, out) + pool_args)
+
+    # sanity check
     assert count == len(input_files)
+
+    # dispatch to workers
     if nworker > 0:
         pool = Pool(nworker)
         pool.map(create_training_instances, map_args)

@@ -63,7 +63,7 @@ Data generation for pre-training on sample texts:
 
  .. code-block:: console
 
-    $ python create_pretraining_data.py --input_file sample_text.txt --output_file out --vocab_file /home/ubuntu/.mxnet/models/book_corpus_wiki_en_uncased-c3e2bd00.vocab --do_lower_case --max_seq_length 128 --max_predictions_per_seq 20 --dupe_factor 5 --masked_lm_prob 0.15 --short_seq_prob 0.1
+    $ python create_pretraining_data.py --input_file sample_text.txt --output_dir out --vocab book_corpus_wiki_en_uncased --do_lower_case --max_seq_length 128 --max_predictions_per_seq 20 --dupe_factor 5 --masked_lm_prob 0.15 --short_seq_prob 0.1 --verbose
 
 The data generation script takes a file path as the input (could be one or more files by wildcard). Each file contains one or more documents separated by empty lines, and each document contains one line per sentence. You can perform sentence segmentation with an off-the-shelf NLP toolkit such as NLTK.
 
