@@ -48,8 +48,7 @@ from gluonnlp.utils import Parallelizable, Parallel
 from gluonnlp.metric import MaskedAccuracy
 from gluonnlp.model import bert_12_768_12
 from gluonnlp.data.batchify import Tuple, Stack, Pad
-from gluonnlp.data import SimpleDatasetStream, FixedBucketSampler, NumpyDataset
-from tokenizer import FullTokenizer
+from gluonnlp.data import SimpleDatasetStream, FixedBucketSampler, NumpyDataset, BERTTokenizer
 from utils import profile
 from fp16_utils import FP16Trainer
 
@@ -69,19 +68,17 @@ parser.add_argument('--dataset_name', type=str, default='book_corpus_wiki_en_unc
                          'Default is book_corpus_wiki_en_uncased')
 parser.add_argument('--pretrained', action='store_true',
                     help='Load the pretrained model released by Google.')
-parser.add_argument('--data', type=str, default=None,
-                    help='Path to training data.')
-parser.add_argument('--ckpt_dir', type=str, default=None,
+parser.add_argument('--data', type=str, default=None, help='Path to training data.')
+parser.add_argument('--data_eval', type=str, default=None, help='Path to evaluation data.')
+parser.add_argument('--ckpt_dir', type=str, required=True,
                     help='Path to checkpoint directory')
 parser.add_argument('--start_step', type=int, default=0,
                     help='Start optimization step from the checkpoint.')
-parser.add_argument('--data_eval', type=str, default=None,
-                    help='Path to evaluation data.')
 parser.add_argument('--lr', type=float, default=1e-4, help='Learning rate')
 parser.add_argument('--warmup_ratio', type=float, default=0.1,
                     help='ratio of warmup steps used in NOAM\'s stepsize schedule')
 parser.add_argument('--log_interval', type=int, default=10, help='Report interval')
-parser.add_argument('--ckpt_interval', type=int, default=10, help='Checkpoint interval')
+parser.add_argument('--ckpt_interval', type=int, default=250000, help='Checkpoint interval')
 parser.add_argument('--gpus', type=str, default='0', help='List of GPUs to use. e.g. 1,3')
 parser.add_argument('--kvstore', type=str, default='device', help='KVStore type')
 parser.add_argument('--seed', type=int, default=0, help='Random seed')
@@ -91,8 +88,6 @@ parser.add_argument('--by-token', action='store_true',
                     help='set batch size by the number of tokens in the batch')
 parser.add_argument('--do-training', action='store_true',
                     help='Whether to do training on the training set.')
-parser.add_argument('--do-eval', action='store_true',
-                    help='Whether to do evaluation on the eval set.')
 args = parser.parse_args()
 
 os.environ['MXNET_KVSTORE_USETREE'] = '1'
@@ -156,6 +151,7 @@ def get_dataset(data, batch_size, num_ctxes, is_train, store):
                                                     batch_sampler=sampler,
                                                     batchify_fn=batchify_fn,
                                                     num_workers=num_ctxes)
+            logging.debug('Batch Sampler:\n%s', sampler.stats())
         else:
             sampler = FixedBucketSampler(lengths,
                                          batch_size=batch_size * num_ctxes,
@@ -166,11 +162,9 @@ def get_dataset(data, batch_size, num_ctxes, is_train, store):
                                     batch_sampler=sampler,
                                     batchify_fn=batchify_fn,
                                     num_workers=1)
-            dataloader = nlp.data.PrefetchingStream(dataloader)
-
+            logging.debug('Batch Sampler:\n%s', sampler.stats())
         t1 = time.time()
         logging.debug('Dataloader creation cost = %.2f s', t1 - t0)
-        logging.debug('Batch Sampler:\n%s', sampler.stats())
         return dataloader
 
     stream = stream.transform(get_dataloader)
@@ -257,7 +251,6 @@ def evaluate(data_eval, model, nsp_loss, mlm_loss, vocab_size, ctx):
     local_mlm_loss = local_nsp_loss = 0
     total_mlm_loss = total_nsp_loss = 0
     local_num_tks = 0
-    # TODO fix eval acc
     for _, dataloader in enumerate(data_eval):
         for _, data in enumerate(dataloader):
             step_num += 1
@@ -317,6 +310,13 @@ def log(begin_time, local_num_tks, local_mlm_loss, local_nsp_loss, step_num,
                          nsp_metric.get()[1] * 100, throughput.asscalar(), lr, duration))
     # pylint: enable=line-too-long
 
+def save_params(step_num, args, model, trainer):
+    param_path = os.path.join(args.ckpt_dir, '%07d.params'%step_num)
+    trainer_path = os.path.join(args.ckpt_dir, '%07d.states'%step_num)
+    logging.info('[step %d] Saving checkpoints to %s, %s.',
+                 step_num, param_path, trainer_path)
+    model.save_parameters(param_path)
+    trainer.save_states(trainer_path)
 
 def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx, store):
     """Training function."""
@@ -332,7 +332,8 @@ def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx, store):
 
     trainer = gluon.Trainer(model.collect_params(), 'bertadam', optim_params,
                             update_on_kvstore=False, kvstore=store)
-    fp16_trainer = FP16Trainer(trainer, fp16=args.dtype == 'float16')
+    dynamic_loss_scale = args.dtype == 'float16'
+    fp16_trainer = FP16Trainer(trainer, dynamic_loss_scale=dynamic_loss_scale)
 
     if args.ckpt_dir and args.start_step:
         trainer.load_states(os.path.join(args.ckpt_dir, '%07d.states'%args.start_step))
@@ -364,7 +365,11 @@ def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx, store):
 
     while step_num < num_train_steps:
         for _, dataloader in enumerate(data_train):
+            if step_num >= num_train_steps:
+                break
             for _, data_batch in enumerate(dataloader):
+                if step_num >= num_train_steps:
+                    break
                 if batch_num % accumulate == 0:
                     step_num += 1
                     # zero grad
@@ -421,13 +426,9 @@ def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx, store):
                 # saving checkpoints
                 if args.ckpt_dir and (step_num + 1) % (args.ckpt_interval) == 0 \
                    and (batch_num + 1) % accumulate == 0:
-                    param_path = os.path.join(args.ckpt_dir, '%07d.params'%step_num)
-                    trainer_path = os.path.join(args.ckpt_dir, '%07d.states'%step_num)
-                    logging.info('[step %d] Saving checkpoints to %s, %s.',
-                                 step_num, param_path, trainer_path)
-                    model.save_parameters(param_path)
-                    trainer.save_states(trainer_path)
+                    save_params(step_num, args, model, trainer)
                 batch_num += 1
+    save_params(step_num, args, model, trainer)
     mx.nd.waitall()
     train_end_time = time.time()
     logging.info('Train cost={:.1f}s'.format(train_end_time - train_begin_time))
@@ -444,8 +445,8 @@ if __name__ == '__main__':
 
     model, nsp_loss, mlm_loss, vocabulary = get_model(ctx)
 
-    do_lower_case = 'uncased' in args.dataset_name
-    tokenizer = FullTokenizer(vocabulary, do_lower_case=do_lower_case)
+    lower = 'uncased' in args.dataset_name
+    tokenizer = BERTTokenizer(vocabulary, lower=lower)
     store = mx.kv.create(args.kvstore)
 
     if args.ckpt_dir:
@@ -457,7 +458,6 @@ if __name__ == '__main__':
         assert args.data, '--data must be provided for training'
         data_train = get_dataset(args.data, args.batch_size, len(ctx), True, store)
         train(data_train, model, nsp_loss, mlm_loss, len(tokenizer.vocab), ctx, store)
-    if args.do_eval:
-        assert args.data_eval, '--data_eval must be provided for evaluation'
+    if args.data_eval:
         data_eval = get_dataset(args.data_eval, args.batch_size_eval, len(ctx), False, store)
         evaluate(data_eval, model, nsp_loss, mlm_loss, len(tokenizer.vocab), ctx)

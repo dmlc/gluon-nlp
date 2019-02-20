@@ -249,6 +249,8 @@ class MaskedAccuracy(EvalMetric):
 
         for label, pred_label, mask in zip(labels, preds, masks):
             if pred_label.shape != label.shape:
+                # TODO(haibin) topk does not support fp16. Issue tracked at:
+                # https://github.com/apache/incubator-mxnet/issues/14125
                 pred_label = ndarray.topk(pred_label.astype('float32', copy=False),
                                           k=1, ret_typ='indices', axis=self.axis)
 

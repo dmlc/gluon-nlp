@@ -99,8 +99,9 @@ class BERTAdam(Optimizer):
         except ImportError:
             raise ImportError('Failed to import nd.contrib.adamw_update and '
                               'nd.contrib.mp_adamw_update from MXNet. '
-                              'BERTAdam optimizer requires mxnet>=1.5.0b20190212. '
-                              'Please upgrade your MXNet version.')
+                              'BERTAdam optimizer requires mxnet>=1.5.0b20190220. '
+                              'Please upgrade your MXNet version. For example: '
+                              'pip uninstall mxnet-cu90 -y; pip install mxnet-cu90 --pre')
         self._update_count(indices)
         lr = self._get_lr(indices)
         wd = self._get_wd(indices)

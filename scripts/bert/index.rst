@@ -71,7 +71,7 @@ Run pre-training with generated data:
 
  .. code-block:: console
 
-    $ python run_pretraining.py --gpu --do-training --batch_size 32 --lr 2e-5 --data out.npz --warmup_ratio 0.5 --num_steps 20 --pretrained --log_interval=1 --do-eval --data_eval out.npz --batch_size_eval 8
+    $ python run_pretraining.py --gpus 0 --do-training --batch_size 32 --lr 2e-5 --data out/*.npz --warmup_ratio 0.5 --num_steps 20 --pretrained --log_interval=2 --do-eval --data_eval out/*.npz --batch_size_eval 8 --ckpt_dir ckpt
 
 With 20 steps of pre-training it reaches the following evaluation result on the training data::
 

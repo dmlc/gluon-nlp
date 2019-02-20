@@ -23,7 +23,8 @@ import mxnet as mx
 from mxnet import nd
 
 def grad_global_norm(parameters, max_norm):
-    """Rescales gradients of parameters so that the sum of their 2-norm is smaller than `max_norm`.
+    """Calculate the 2-norm of gradients of parameters, and how much they should be scaled down
+    such that their 2-norm does not exceed `max_norm`.
 
     If gradients exist for more than one context for a parameter, user needs to explicitly call
     ``trainer.allreduce_grads`` so that the gradients are summed first before calculating
@@ -42,7 +43,7 @@ def grad_global_norm(parameters, max_norm):
                 loss = loss_fn(y, label)
             loss.backward()
         trainer.allreduce_grads()
-        norm, ratio = nlp.utils.grad_global_norm(net.collect_params().values(), max_norm)
+        norm, ratio = grad_global_norm(net.collect_params().values(), max_norm)
         trainer.update(batch_size * ratio)
         ...
 
@@ -70,11 +71,10 @@ def grad_global_norm(parameters, max_norm):
 
     # compute gradient norms
     def _norm(array):
-        if array.stype == 'default':
-            # TODO(haibin) remove temporary cast to fp32.
-            x = array.reshape((-1,)).astype('float32', copy=False)
-            return nd.dot(x, x)
-        return array.norm().square()
+        # TODO(haibin) norm operator does not support fp16 safe reduction.
+        # Issue is tracked at: https://github.com/apache/incubator-mxnet/issues/14126
+        x = array.reshape((-1,)).astype('float32', copy=False)
+        return nd.dot(x, x)
     norm_arrays = [_norm(arr) for arr in arrays]
 
     # group norm arrays by ctx
@@ -109,16 +109,31 @@ def grad_global_norm(parameters, max_norm):
 
 
 class FP16Trainer(object):
-    """ Trainer for mixed precision training. """
-    # TODO(haibin): inherit from gluon.Trainer
-    def __init__(self, trainer, fp16=True):
+    """ Trainer for mixed precision training.
+
+    Parameters
+    ----------
+    trainer: gluon.Trainer
+      the original gluon Trainer object for fp32 training.
+    dynamic_loss_scale: bool. Default is True
+      whether to use dynamic loss scaling. This is recommended for optimizing model
+      parameters using FP16.
+    loss_scaler_params : dict
+        Key-word arguments to be passed to loss scaler constructor. For example,
+        `{"init_scale" : 2.**15, "scale_window" : 2000,
+          "tolerance" : 0.05, "verbose" : False"}` for `DynamicLossScaler`.
+        See each `LossScaler` for a list of supported arguments'
+    """
+    def __init__(self, trainer, dynamic_loss_scale=True, loss_scaler_params={}):
         if trainer._kvstore_params['update_on_kvstore'] is not False:
             err = 'Only gluon.Trainer created with update_on_kvstore=False is supported.'
             raise NotImplementedError(err)
         self.fp32_trainer = trainer
-        self._scaler = DynamicLossScaler() if fp16 else StaticLossScaler()
+        self._scaler = DynamicLossScaler(**loss_scaler_params) if dynamic_loss_scale \
+                       else StaticLossScaler(**loss_scaler_params)
 
     def backward(self, loss):
+        """backward propagation with loss"""
         with mx.autograd.record():
             if isinstance(loss, (tuple, list)):
                 ls = [l * self._scaler.loss_scale for l in loss]
@@ -127,7 +142,17 @@ class FP16Trainer(object):
         mx.autograd.backward(ls)
 
     def step(self, batch_size, max_norm=None):
-        """step function"""
+        """Makes one step of parameter update. Should be called after
+        `fp16_optimizer.backward()`, and outside of `record()` scope.
+
+        Parameters
+        ----------
+        batch_size : int
+            Batch size of data processed. Gradient will be normalized by `1/batch_size`.
+            Set this to 1 if you normalized loss manually with `loss = mean(loss)`.
+        max_norm : NDArray, optional, default is None
+            max value for global 2-norm of gradients.
+        """
         self.fp32_trainer.allreduce_grads()
         step_size = batch_size * self._scaler.loss_scale
         if max_norm:
@@ -137,8 +162,10 @@ class FP16Trainer(object):
             self.fp32_trainer.update(step_size)
             overflow = not np.isfinite(norm.asscalar())
         else:
+            # TODO(haibin) optimize the performance when max_norm is not present
             self.fp32_trainer.update(step_size)
             overflow = self._scaler.has_overflow(self.fp32_trainer._params)
+
         # update scale based on overflow information
         self._scaler.update_scale(overflow)
         if overflow:
@@ -155,13 +182,14 @@ class LossScaler(object):
                 grad = param.list_grad()[0]
                 is_not_finite += mx.nd.contrib.isnan(grad).sum()
                 is_not_finite += mx.nd.contrib.isinf(grad).sum()
+        # NDArray is implicitly converted to bool
         if is_not_finite == 0:
             return False
         else:
             return True
 
 class StaticLossScaler(LossScaler):
-    """static loss scaler"""
+    """Static loss scaler"""
     def __init__(self, init_scale=1):
         self.loss_scale = init_scale
 
@@ -170,14 +198,14 @@ class StaticLossScaler(LossScaler):
         pass
 
 class DynamicLossScaler(object):
-    """dynamic loss scaler"""
+    """Class that manages dynamic loss scaling."""
     def __init__(self, init_scale=2.**15, scale_factor=2., scale_window=2000,
                  tolerance=0.05, verbose=False):
         self.loss_scale = init_scale
         self.scale_factor = scale_factor
         self.scale_window = scale_window
         self.tolerance = tolerance
-        self._iter = 0
+        self._num_steps = 0
         self._last_overflow_iter = -1
         self._last_rescale_iter = -1
         self._overflows_since_rescale = 0
@@ -185,18 +213,18 @@ class DynamicLossScaler(object):
 
     def update_scale(self, overflow):
         """dynamically update loss scale"""
-        iter_since_rescale = self._iter - self._last_rescale_iter
+        iter_since_rescale = self._num_steps - self._last_rescale_iter
         if overflow:
-            self._last_overflow_iter = self._iter
+            self._last_overflow_iter = self._num_steps
             self._overflows_since_rescale += 1
-            pct_overflow = self._overflows_since_rescale / float(iter_since_rescale)
-            if pct_overflow >= self.tolerance:
+            percentage = self._overflows_since_rescale / float(iter_since_rescale)
+            if percentage >= self.tolerance:
                 self.loss_scale /= self.scale_factor
-                self._last_rescale_iter = self._iter
+                self._last_rescale_iter = self._num_steps
                 self._overflows_since_rescale = 0
-            if self._verbose:
-                logging.info('overflow detected. set loss_scale = %s', self.loss_scale)
-        elif (self._iter - self._last_overflow_iter) % self.scale_window == 0:
+                if self._verbose:
+                    logging.info('overflow detected. set loss_scale = %s', self.loss_scale)
+        elif (self._num_steps - self._last_overflow_iter) % self.scale_window == 0:
             self.loss_scale *= self.scale_factor
-            self._last_rescale_iter = self._iter
-        self._iter += 1
+            self._last_rescale_iter = self._num_steps
+        self._num_steps += 1
