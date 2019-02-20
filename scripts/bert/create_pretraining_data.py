@@ -37,7 +37,8 @@ from gluonnlp.data import BERTTokenizer
 parser = argparse.ArgumentParser(
     description='Pre-training data generator for BERT')
 
-parser.add_argument('--input_file',
+parser.add_argument(
+    '--input_file',
     type=str,
     default=None,
     help='input file(s). For example, "~/data/*.txt"')
