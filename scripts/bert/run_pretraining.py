@@ -86,8 +86,6 @@ parser.add_argument('--verbose', action='store_true', help='verbose logging')
 parser.add_argument('--profile', action='store_true', help='profile the program')
 parser.add_argument('--by-token', action='store_true',
                     help='set batch size by the number of tokens in the batch')
-parser.add_argument('--do-training', action='store_true',
-                    help='Whether to do training on the training set.')
 args = parser.parse_args()
 
 os.environ['MXNET_KVSTORE_USETREE'] = '1'
@@ -454,8 +452,7 @@ if __name__ == '__main__':
         if not os.path.exists(ckpt_dir):
             os.makedirs(ckpt_dir)
 
-    if args.do_training:
-        assert args.data, '--data must be provided for training'
+    if args.data:
         data_train = get_dataset(args.data, args.batch_size, len(ctx), True, store)
         train(data_train, model, nsp_loss, mlm_loss, len(tokenizer.vocab), ctx, store)
     if args.data_eval:

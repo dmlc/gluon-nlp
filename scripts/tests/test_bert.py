@@ -6,10 +6,10 @@ import pytest
 
 @pytest.mark.serial
 @pytest.mark.remote_required
-def test_transformer():
+def test_pretrain():
     process = subprocess.check_call(['python', './scripts/bert/create_pretraining_data.py',
                                      '--input_file', './scripts/bert/sample_text.txt',
-                                     '--output_dir', 'test/bert/out', 
+                                     '--output_dir', 'test/bert/data',
                                      '--vocab', 'book_corpus_wiki_en_uncased',
                                      # TODO remove --do_lower_case
                                      '--do_lower_case',
@@ -19,4 +19,18 @@ def test_transformer():
                                      '--masked_lm_prob', '0.15',
                                      '--short_seq_prob', '0.1',
                                      '--verbose'])
+
+    process = subprocess.check_call(['python', './scripts/bert/run_pretraining.py',
+                                     '--gpus', '0',
+                                     '--data', './test/bert/data/*.npz',
+                                     '--batch_size', '32',
+                                     '--lr', '2e-5',
+                                     '--warmup_ratio', '0.5',
+                                     '--num_steps', '20',
+                                     '--pretrained',
+                                     '--log_interval', '2',
+                                     '--data_eval', './test/bert/data/*.npz',
+                                     '--short_seq_prob', '0.1',
+                                     '--batch_size_eval', '8',
+                                     '--ckpt_dir', './test/bert/ckpt'])
     time.sleep(5)

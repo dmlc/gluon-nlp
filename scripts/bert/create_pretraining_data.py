@@ -12,7 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Create masked LM/next sentence masked_lm Gluon examples for BERT."""
+"""Create masked LM/next sentence masked_lm examples for BERT."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -59,13 +59,7 @@ parser.add_argument(
     type=str,
     default=None,
     help='The dataset name for the vocab file BERT model was trained on. For example, '
-         'dafdfdfas')
-
-parser.add_argument(
-    '--do_lower_case',
-    action='store_true',
-    help='Whether to lower case the input text. Should be True for uncased'
-    'models and False for cased models.')
+         '"book_corpus_wiki_en_uncased"')
 
 parser.add_argument(
     '--max_seq_length', type=int, default=128, help='Maximum sequence length.')
@@ -554,7 +548,7 @@ def main():
     logging.info('loading vocab file from dataset: %s', args.vocab)
     vocab_obj = nlp.data.utils._load_pretrained_vocab(args.vocab)
     tokenizer = BERTTokenizer(
-        vocab=vocab_obj, lower=args.do_lower_case)
+        vocab=vocab_obj, lower='uncased' in args.vocab)
 
     input_files = []
     for input_pattern in args.input_file.split(','):
