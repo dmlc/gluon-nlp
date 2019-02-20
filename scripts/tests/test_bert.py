@@ -9,7 +9,7 @@ import pytest
 def test_pretrain():
     process = subprocess.check_call(['python', './scripts/bert/create_pretraining_data.py',
                                      '--input_file', './scripts/bert/sample_text.txt',
-                                     '--output_dir', 'test/bert/data':
+                                     '--output_dir', 'test/bert/data',
                                      '--vocab', 'book_corpus_wiki_en_uncased',
                                      '--max_seq_length', '128',
                                      '--max_predictions_per_seq', '20',
