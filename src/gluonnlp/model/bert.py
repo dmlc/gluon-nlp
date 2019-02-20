@@ -661,7 +661,6 @@ def get_bert_model(model_name=None, dataset_name=None, vocab=None,
                     embed_dropout=predefined_args['embed_dropout'],
                     word_embed=predefined_args['word_embed'],
                     use_pooler=use_pooler, use_decoder=use_decoder,
-
                     use_classifier=use_classifier)
     if pretrained:
         ignore_extra = not (use_pooler and use_decoder and use_classifier)
