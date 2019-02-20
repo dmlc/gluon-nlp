@@ -216,6 +216,13 @@ class MEN(WordSimilarityEvaluationDataset):
     segment : str, default 'train'
         Dataset segment. Options are 'train', 'dev', 'test'.
 
+    Examples
+    --------
+    >>> men_dataset = nlp.data.MEN('test', root='./datasets/men')
+    >>> len(men)
+    1000
+    >>> men[0]
+    [u'display', u'pond', 10.0]
     """
     _url = 'https://staff.fnwi.uva.nl/e.bruni/resources/MEN.tar.gz'
     _namespace = 'gluon/dataset/men'
