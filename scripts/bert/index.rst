@@ -63,7 +63,7 @@ Data generation for pre-training on sample texts:
 
  .. code-block:: console
 
-    $ python create_pretraining_data.py --input_file sample_text.txt --output_dir out --vocab book_corpus_wiki_en_uncased --do_lower_case --max_seq_length 128 --max_predictions_per_seq 20 --dupe_factor 5 --masked_lm_prob 0.15 --short_seq_prob 0.1 --verbose
+    $ python create_pretraining_data.py --input_file sample_text.txt --output_dir out --vocab book_corpus_wiki_en_uncased --max_seq_length 128 --max_predictions_per_seq 20 --dupe_factor 5 --masked_lm_prob 0.15 --short_seq_prob 0.1 --verbose
 
 The data generation script takes a file path as the input (could be one or more files by wildcard). Each file contains one or more documents separated by empty lines, and each document contains one line per sentence. You can perform sentence segmentation with an off-the-shelf NLP toolkit such as NLTK.
 
@@ -71,8 +71,6 @@ Run pre-training with generated data:
 
  .. code-block:: console
 
-    $ python run_pretraining.py --gpus 0 --do-training --batch_size 32 --lr 2e-5 --data out/*.npz --warmup_ratio 0.5 --num_steps 20 --pretrained --log_interval=2 --do-eval --data_eval out/*.npz --batch_size_eval 8 --ckpt_dir ckpt
+    $ python run_pretraining.py --gpus 0 --batch_size 32 --lr 2e-5 --data out/*.npz --warmup_ratio 0.5 --num_steps 20 --pretrained --log_interval=2 --data_eval out/*.npz --batch_size_eval 8 --ckpt_dir ckpt
 
-With 20 steps of pre-training it reaches the following evaluation result on the training data::
-
-    mlm_loss=0.082  mlm_acc=98.9  nsp_loss=0.000  nsp_acc=100.0
+With 20 steps of pre-training it easily reaches about 95% masked language model accuracy and 98% next sentence prediction accuracy on the training data.
