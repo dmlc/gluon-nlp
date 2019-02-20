@@ -297,6 +297,9 @@ class BERTModel(Block):
     Outputs:
         - **sequence_outputs**: output tensor of sequence encodings.
             Shape (batch_size, seq_length, units).
+        - **attention_outputs**: output list of all intermediate encodings per layer
+            Returned only if BERTEncoder.output_attention is True.
+            List of tensors of shape (num_masks, num_attention_heads, seq_length, seq_length)
         - **pooled_output**: output tensor of pooled representation of the first tokens.
             Returned only if use_pooler is True. Shape (batch_size, units)
         - **next_sentence_classifier_output**: output tensor of next sentence classification.
