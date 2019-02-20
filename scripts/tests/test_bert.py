@@ -28,7 +28,6 @@ def test_pretrain():
                                      '--pretrained',
                                      '--log_interval', '2',
                                      '--data_eval', './test/bert/data/*.npz',
-                                     '--short_seq_prob', '0.1',
                                      '--batch_size_eval', '8',
                                      '--ckpt_dir', './test/bert/ckpt'])
     time.sleep(5)
