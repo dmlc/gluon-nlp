@@ -85,7 +85,7 @@ Note that this will require approximately no more than 8G of GPU memory. If your
 
     $ python finetune_squad.py --optimizer adam --accumulate 2 --batch_size 6 --lr 3e-5 --epochs 2 --gpu
 
-The F1 score on the dev dataset is `88.45% <https://raw.githubusercontent.com/dmlc/web-data/master/gluonnlp/logs/bert/finetune_squad1.1_base_mx1.5.0b20190216.log>`_
+The F1 score on the dev dataset is `88.45% <https://raw.githubusercontent.com/dmlc/web-data/master/gluonnlp/logs/bert/finetune_squad1.1_base_mx1.5.0b20190216.log>`_ (Based on mxnet-cu90-1.5.0b20190216)
 
 Use the following command to fine-tune the BERT large model for SQuAD1.1 dataset.
 
@@ -95,7 +95,7 @@ Note that this will require more than 14G of GPU memory.
 
     $ python finetune_squad.py --bert_model bert_24_1024_16 --optimizer adam --accumulate 6 --batch_size 4 --lr 3e-5 --epochs 2 --gpu
 
-The F1 score on the dev dataset is `90.97% <https://raw.githubusercontent.com/dmlc/web-data/master/gluonnlp/logs/bert/finetune_squad1.1_large_mx1.5.0b20190216.log>`_
+The F1 score on the dev dataset is `90.97% <https://raw.githubusercontent.com/dmlc/web-data/master/gluonnlp/logs/bert/finetune_squad1.1_large_mx1.5.0b20190216.log>`_ (Based on mxnet-cu90-1.5.0b20190216)
 
 
 SQuAD 2.0
@@ -111,7 +111,7 @@ Use the following command to fine tune the BERT large model of the SQuAD2.0 data
 
 If you want to get the score of the dev data, you need to download the dev dataset and the evaluate script.
 
-`dev-v2.0.json <https://rajpurkar.github.io/SQuAD-explorer/dataset/dev-v2.0.json>`_
+`dev-v2.0.json <https://rajpurkar.github.io/SQuAD-explorer/dataset/dev-v2.0.json>`_ (Based on mxnet-cu90-1.5.0b20190216)
 
 `evaluate-2.0.py <https://worksheets.codalab.org/rest/bundles/0x6b567e1cf2e041ec80d7098f031c5c9e/contents/blob/>`_
 
