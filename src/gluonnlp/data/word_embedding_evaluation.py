@@ -218,7 +218,7 @@ class MEN(WordSimilarityEvaluationDataset):
 
     Examples
     --------
-    >>> men_dataset = nlp.data.MEN('test', root='./datasets/men')
+    >>> men_dataset = gluonnlp.data.MEN('test', root='./datasets/men')
     -etc-
     >>> len(men)
     1000
