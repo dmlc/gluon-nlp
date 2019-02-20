@@ -220,9 +220,9 @@ class MEN(WordSimilarityEvaluationDataset):
     --------
     >>> men_dataset = gluonnlp.data.MEN('test', root='./datasets/men')
     -etc-
-    >>> len(men)
+    >>> len(men_dataset)
     1000
-    >>> men[0]
+    >>> men_dataset[0]
     [u'display', u'pond', 10.0]
     """
     _url = 'https://staff.fnwi.uva.nl/e.bruni/resources/MEN.tar.gz'
