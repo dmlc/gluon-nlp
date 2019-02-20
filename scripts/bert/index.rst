@@ -103,7 +103,7 @@ SQuAD 2.0
 
 If you are pre-training on the SQuAD2.0 dataset, you need to specify the parameter **version_2** and specify the parameter **null_score_diff_threshold** (Typical values are between -1.0 and -5.0).
 
-Use the following command to fine tune the BERT large model of the SQuAD2.0 dataset and generate `predictions.json, nbest_predictions.json, and null_odds.json. <https://raw.githubusercontent.com/dmlc/web-data/master/gluonnlp/logs/bert/finetune_squad2.0_large_mx1.5.0b20160216.log>`_
+Use the following command to fine tune the BERT large model of the SQuAD2.0 dataset and generate `predictions.json, nbest_predictions.json, and null_odds.json. <https://raw.githubusercontent.com/dmlc/web-data/master/gluonnlp/logs/bert/finetune_squad2.0_large_mx1.5.0b20160216.log>`_ (Based on mxnet-cu90-1.5.0b20190216)
 
 .. code-block:: console
 
@@ -111,7 +111,7 @@ Use the following command to fine tune the BERT large model of the SQuAD2.0 data
 
 If you want to get the score of the dev data, you need to download the dev dataset and the evaluate script.
 
-`dev-v2.0.json <https://rajpurkar.github.io/SQuAD-explorer/dataset/dev-v2.0.json>`_ (Based on mxnet-cu90-1.5.0b20190216)
+`dev-v2.0.json <https://rajpurkar.github.io/SQuAD-explorer/dataset/dev-v2.0.json>`_ 
 
 `evaluate-2.0.py <https://worksheets.codalab.org/rest/bundles/0x6b567e1cf2e041ec80d7098f031c5c9e/contents/blob/>`_
 
