@@ -504,7 +504,7 @@ class SplitSampler(Sampler):
     """Split the dataset into `num_parts` parts and randomly sample from the part
     with index `part_index`.
 
-    The data are randomly shuffled at each iteration within each partition.
+    The data is randomly shuffled at each iteration within each partition.
 
     Parameters
     ----------
