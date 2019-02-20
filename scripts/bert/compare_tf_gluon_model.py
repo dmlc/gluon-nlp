@@ -33,7 +33,7 @@ from gluon.data import BERTSentenceTransform
 parser = argparse.ArgumentParser(description='Comparison script for BERT model in Tensorflow'
                                              'and that in Gluon')
 parser.add_argument('--input_file', type=str, default='input.txt',
-                    help='sample input file for testing, Default is input.txt')
+                    help='sample input file for testing. Default is input.txt')
 parser.add_argument('--tf_bert_repo_dir', type=str,
                     default='~/bert/',
                     help='path to the original Tensorflow bert repository. '
