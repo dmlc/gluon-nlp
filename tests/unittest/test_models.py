@@ -137,6 +137,8 @@ def test_pretrained_bert_models():
 @pytest.mark.remote_required
 def test_bert_models():
     models = ['bert_12_768_12', 'bert_24_1024_16']
+    layers = [12, 24]
+    attention_heads = [12, 16]
     units = [768, 1024]
     dataset = 'book_corpus_wiki_en_uncased'
     vocab_size = 30522
@@ -150,18 +152,9 @@ def test_bert_models():
     kwargs = [{'use_pooler': False, 'use_decoder': False, 'use_classifier': False},
               {'use_pooler': True, 'use_decoder': False, 'use_classifier': False},
               {'use_pooler': True, 'use_decoder': True, 'use_classifier': False},
-              {'use_pooler': True, 'use_decoder': True, 'use_classifier': True}]
-    expected_shapes = [
-        [(batch_size, seq_len, -1)],
-        [(batch_size, seq_len, -1),
-         (batch_size, -1)],
-        [(batch_size, seq_len, -1),
-         (batch_size, -1),
-         (batch_size, num_masks, vocab_size)],
-        [(batch_size, seq_len, -1),
-         (batch_size, -1),
-         (batch_size, 2),
-         (batch_size, num_masks, vocab_size)]]
+              {'use_pooler': True, 'use_decoder': True, 'use_classifier': True},
+              {'use_pooler': False, 'use_decoder': False, 'use_classifier': False,
+               'output_attention': True}]
 
     def infer_shape(shapes, unit):
         inferred_shapes = []
@@ -173,12 +166,36 @@ def test_bert_models():
         return inferred_shapes
 
     def get_shapes(output):
-        if isinstance(output, (list, tuple)):
-            return [out.shape for out in output]
-        return [output.shape]
+        if not isinstance(output, (list, tuple)):
+            return [output.shape]
 
-    for model_name, unit in zip(models, units):
+        shapes = []
+        for out in output:
+            if isinstance(out, (list, tuple)):
+                # attention output is nested lists - recover original NDArrays
+                shapes.extend([out_array.shape for head in out for out_array in head])
+            else:
+                shapes.append(out.shape)
+
+        return shapes
+
+    for model_name, layer, unit, head in zip(models, layers, units, attention_heads):
         eprint('testing forward for %s' % model_name)
+
+        expected_shapes = [
+            [(batch_size, seq_len, -1)],
+            [(batch_size, seq_len, -1),
+             (batch_size, -1)],
+            [(batch_size, seq_len, -1),
+             (batch_size, -1),
+             (batch_size, num_masks, vocab_size)],
+            [(batch_size, seq_len, -1),
+             (batch_size, -1),
+             (batch_size, 2),
+             (batch_size, num_masks, vocab_size)],
+            [(batch_size, seq_len, -1)] + [(num_masks, head, seq_len, seq_len)] * layer,
+        ]
+
         for kwarg, expected_shape in zip(kwargs, expected_shapes):
             expected_shape = infer_shape(expected_shape, unit)
             model, _ = nlp.model.get_model(model_name, dataset_name=dataset,

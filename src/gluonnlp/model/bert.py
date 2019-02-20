@@ -385,8 +385,12 @@ class BERTModel(Block):
         This is used in training or fine-tuning a BERT model.
         """
         outputs = []
-        seq_out, _ = self._encode_sequence(inputs, token_types, valid_length)
+        seq_out, attention_out = self._encode_sequence(inputs, token_types, valid_length)
         outputs.append(seq_out)
+
+        if attention_out:
+            outputs.append(attention_out)
+
         if self._use_pooler:
             pooled_out = self._apply_pooling(seq_out)
             outputs.append(pooled_out)
@@ -590,7 +594,7 @@ def bert_24_1024_16(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu()
 
 def get_bert_model(model_name=None, dataset_name=None, vocab=None,
                    pretrained=True, ctx=mx.cpu(),
-                   use_pooler=True, use_decoder=True, use_classifier=True,
+                   use_pooler=True, use_decoder=True, use_classifier=True, output_attention=False,
                    root=os.path.join('~', '.mxnet', 'models'), **kwargs):
     """Any BERT pretrained model.
 
@@ -619,6 +623,8 @@ def get_bert_model(model_name=None, dataset_name=None, vocab=None,
         Whether to include the decoder for masked language model prediction.
     use_classifier : bool, default True
         Whether to include the classifier for next sentence classification.
+    output_attention : bool, default False
+        Whether to include intermediate encodings at each layer to the output.
 
     Returns
     -------
@@ -639,6 +645,7 @@ def get_bert_model(model_name=None, dataset_name=None, vocab=None,
                           num_heads=predefined_args['num_heads'],
                           scaled=predefined_args['scaled'],
                           dropout=predefined_args['dropout'],
+                          output_attention=output_attention,
                           use_residual=predefined_args['use_residual'])
     # bert_vocab
     from ..vocab import BERTVocab
@@ -654,6 +661,7 @@ def get_bert_model(model_name=None, dataset_name=None, vocab=None,
                     embed_dropout=predefined_args['embed_dropout'],
                     word_embed=predefined_args['word_embed'],
                     use_pooler=use_pooler, use_decoder=use_decoder,
+
                     use_classifier=use_classifier)
     if pretrained:
         ignore_extra = not (use_pooler and use_decoder and use_classifier)
