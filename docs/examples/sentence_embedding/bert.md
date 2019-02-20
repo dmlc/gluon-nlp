@@ -30,8 +30,10 @@ tune BERT model for sentence classification.
 
 ## Preparation
 
-To run this tutorial locally, please [install gluonnlp](http://gluon-nlp.mxnet.io/#installation)
-and click the download button at the top of the tutorial page to get all related code.
+To run this tutorial locally, please:
+
+- [install gluonnlp](http://gluon-nlp.mxnet.io/#installation), and
+- click the download button at the top of the tutorial page to get all related code.
 
 Then we start with some usual preparation such as importing libraries
 and setting the environment.

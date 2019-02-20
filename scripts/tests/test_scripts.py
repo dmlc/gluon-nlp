@@ -62,11 +62,13 @@ def test_glove():
 
 @pytest.mark.serial
 @pytest.mark.remote_required
+@pytest.mark.gpu
 @pytest.mark.parametrize('fasttextloadngrams', [True, False])
 def test_embedding_evaluate_pretrained(fasttextloadngrams):
     cmd = [
         'python', './scripts/word_embeddings/evaluate_pretrained.py',
-        '--embedding-name', 'fasttext', '--embedding-source', 'wiki.simple'
+        '--embedding-name', 'fasttext', '--embedding-source', 'wiki.simple',
+        '--gpu', '0'
     ]
     if fasttextloadngrams:
         cmd.append('--fasttext-load-ngrams')
@@ -77,6 +79,7 @@ def test_embedding_evaluate_pretrained(fasttextloadngrams):
 
 @pytest.mark.serial
 @pytest.mark.remote_required
+@pytest.mark.gpu
 @pytest.mark.parametrize('evaluateanalogies', [True, False])
 @pytest.mark.parametrize('maxvocabsize', [None, 16])
 def test_embedding_evaluate_from_path(evaluateanalogies, maxvocabsize):
@@ -85,7 +88,7 @@ def test_embedding_evaluate_from_path(evaluateanalogies, maxvocabsize):
         path, '../../tests/unittest/train/test_embedding/lorem_ipsum.bin')
     cmd = [
         'python', './scripts/word_embeddings/evaluate_pretrained.py',
-        '--embedding-path', path]
+        '--embedding-path', path, '--gpu', '0']
     if evaluateanalogies:
         cmd += ['--analogy-datasets', 'GoogleAnalogyTestSet']
     else:
