@@ -219,6 +219,7 @@ class MEN(WordSimilarityEvaluationDataset):
     Examples
     --------
     >>> men_dataset = nlp.data.MEN('test', root='./datasets/men')
+    -etc-
     >>> len(men)
     1000
     >>> men[0]
