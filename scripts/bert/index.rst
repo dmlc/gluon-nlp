@@ -56,7 +56,7 @@ BERT model.
 SQuAD 1.1
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Use the following command to fine-tune the BERT model for SQuAD1.1 dataset.
+Use the following command to fine-tune the BERT base model for SQuAD1.1 dataset.
 
 Note that this will require more than 12G of GPU memory.
  
@@ -64,7 +64,9 @@ Note that this will require more than 12G of GPU memory.
 
     $ python finetune_squad.py --optimizer adam --batch_size 12 --lr 3e-5 --epochs 2 --gpu
 
-If you are using less than 12G of GPU memory, you can use the following command to achieve a similar effect. But need Mxnet>1.5.0
+python finetune_squad.py --bert_model bert_24_1024_16 --optimizer adam --accumulate 6 --batch_size 4 --lr 3e-5 --epochs 2 --gpu
+
+If you are using less than 12G of GPU memory, you can use the following command to achieve a similar effect.
 
 Note that this will require approximately no more than 8G of GPU memory. If your GPU memory is too small, you can adjust **accumulate** and **batch_size**.
 
@@ -72,20 +74,55 @@ Note that this will require approximately no more than 8G of GPU memory. If your
 
     $ python finetune_squad.py --optimizer adam --accumulate 2 --batch_size 6 --lr 3e-5 --epochs 2 --gpu
 
+The F1 score on the dev dataset is `88.45% <https://raw.githubusercontent.com/dmlc/web-data/master/gluonnlp/logs/bert/finetune_squad1.1_base_mx1.5.0b20190216.log>`_
 
-Should produce an output like this. Explain that the F1 score on the dev dataset is `88.45% <https://raw.githubusercontent.com/dmlc/web-data/master/gluonnlp/logs/bert/finetune_squad.log>`_
+Use the following command to fine-tune the BERT large model for SQuAD1.1 dataset.
+
+Note that this will require more than 14G of GPU memory.
 
 .. code-block:: console
 
-    {'exact_match': 81.21097445600756, 'f1': 88.4551346176558}
+    $ python finetune_squad.py --bert_model bert_24_1024_16 --optimizer adam --accumulate 6 --batch_size 4 --lr 3e-5 --epochs 2 --gpu
+
+The F1 score on the dev dataset is `90.97% <https://raw.githubusercontent.com/dmlc/web-data/master/gluonnlp/logs/bert/finetune_squad1.1_large_mx1.5.0b20190216.log>`_
+
 
 SQuAD 2.0
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 If you are pre-training on the SQuAD2.0 dataset, you need to specify the parameter **version_2** and specify the parameter **null_score_diff_threshold** (Typical values are between -1.0 and -5.0).
 
-Use the following command to fine tune the BERT model of the SQuAD2.0 dataset and generate predictions.json, nbest_predictions.json, and null_odds.json.
+Use the following command to fine tune the BERT large model of the SQuAD2.0 dataset and generate `predictions.json, nbest_predictions.json, and null_odds.json. <https://raw.githubusercontent.com/dmlc/web-data/master/gluonnlp/logs/bert/finetune_squad2.0_large_mx1.5.0b20160216.log>`_
 
 .. code-block:: console
 
-    $ python finetune_squad.py --optimizer adam --batch_size 12 --lr 3e-5 --epochs 2 --null_score_diff_threshold -2.0 --gpu --version_2
+    $ python finetune_squad.py --bert_model bert_24_1024_16 --optimizer adam --accumulate 8 --batch_size 4 --lr 3e-5 --epochs 2 --gpu --null_score_diff_threshold -2.0 --version_2
+
+If you want to get the score of the dev data, you need to download the dev dataset and the evaluate script.
+
+`dev-v2.0.json <https://rajpurkar.github.io/SQuAD-explorer/dataset/dev-v2.0.json>`_
+
+`evaluate-2.0.py <https://worksheets.codalab.org/rest/bundles/0x6b567e1cf2e041ec80d7098f031c5c9e/contents/blob/>`_
+
+Use the following command to get the score of the dev dataset
+
+.. code-block:: console
+
+    $ python evaluate-v2.0.py dev-v2.0.json predictions.json
+
+Using the predictions.json file generated above, the result should look like this:
+
+.. code-block:: json
+    
+    {
+        "exact": 77.958392992504,
+        "f1": 81.02012658815627,
+        "total": 11873,
+        "HasAns_exact": 73.3974358974359,
+        "HasAns_f1": 79.52968336389662,
+        "HasAns_total": 5928,
+        "NoAns_exact": 82.50630782169891,
+        "NoAns_f1": 82.50630782169891,
+        "NoAns_total": 5945
+    }
+
