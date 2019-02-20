@@ -124,11 +124,12 @@ class FP16Trainer(object):
           "tolerance" : 0.05, "verbose" : False"}` for `DynamicLossScaler`.
         See each `LossScaler` for a list of supported arguments'
     """
-    def __init__(self, trainer, dynamic_loss_scale=True, loss_scaler_params={}):
+    def __init__(self, trainer, dynamic_loss_scale=True, loss_scaler_params=None):
         if trainer._kvstore_params['update_on_kvstore'] is not False:
             err = 'Only gluon.Trainer created with update_on_kvstore=False is supported.'
             raise NotImplementedError(err)
         self.fp32_trainer = trainer
+        loss_scaler_params = loss_scaler_params if loss_scaler_params else {}
         self._scaler = DynamicLossScaler(**loss_scaler_params) if dynamic_loss_scale \
                        else StaticLossScaler(**loss_scaler_params)
 

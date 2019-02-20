@@ -56,6 +56,7 @@ class BERTLayerNorm(nn.LayerNorm):
         super(BERTLayerNorm, self).cast('float32')
 
     def hybrid_forward(self, F, data, gamma, beta):
+        """forward computation."""
         # TODO(haibin): LayerNorm does not support fp16 safe reduction. Issue is tracked at:
         # https://github.com/apache/incubator-mxnet/issues/14073
         if self._dtype:
