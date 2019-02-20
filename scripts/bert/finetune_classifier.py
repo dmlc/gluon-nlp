@@ -138,7 +138,8 @@ parser.add_argument(
     help='Dataset of BERT pre-trained with.'
     'Options include \'book_corpus_wiki_en_cased\', \'book_corpus_wiki_en_uncased\''
     'for both bert_24_1024_16 and bert_12_768_12.'
-    '\'wiki_cn\', \'wiki_multilingual\' and \'wiki_multilingual_cased\' for bert_12_768_12 only.'
+    '\'wiki_cn_cased\', \'wiki_multilingual_uncased\' and \'wiki_multilingual_cased\''
+    'for bert_12_768_12 only.'
 )
 parser.add_argument(
     '--pretrained_bert_parameters',
@@ -320,8 +321,8 @@ def evaluate(dataloader_eval, metric):
         metric_nm = [metric_nm]
         metric_val = [metric_val]
     metric_str = 'validation metrics:' + ','.join(
-        [i + ':{:.4f}' for i in metric_nm])
-    logging.info(metric_str.format(*metric_val))
+        [i + ':%.4f' for i in metric_nm])
+    logging.info(metric_str, *metric_val)
 
 
 def train(metric):
@@ -402,11 +403,11 @@ def train(metric):
                 if not isinstance(metric_nm, list):
                     metric_nm = [metric_nm]
                     metric_val = [metric_val]
-                eval_str = '[Epoch {} Batch {}/{}] loss={:.4f}, lr={:.7f}, metrics=' + \
-                    ','.join([i + ':{:.4f}' for i in metric_nm])
-                logging.info(eval_str.format(epoch_id + 1, batch_id + 1, len(train_data),
-                                             step_loss / args.log_interval,
-                                             trainer.learning_rate, *metric_val))
+                eval_str = '[Epoch %d Batch %d/%d] loss=%.4f, lr=%.7f, metrics=' + \
+                    ','.join([i + ':%.4f' for i in metric_nm])
+                logging.info(eval_str, epoch_id + 1, batch_id + 1, len(train_data),
+                             step_loss / args.log_interval,
+                             trainer.learning_rate, *metric_val)
                 step_loss = 0
         mx.nd.waitall()
         if task.task_name == 'MNLI':
@@ -423,7 +424,7 @@ def train(metric):
         model.save_parameters(params_saved)
         logging.info('params saved in : {0}'.format(params_saved))
         toc = time.time()
-        logging.info('Time cost={:.1f}s'.format(toc - tic))
+        logging.info('Time cost=%.1fs', toc - tic)
         tic = toc
 
 

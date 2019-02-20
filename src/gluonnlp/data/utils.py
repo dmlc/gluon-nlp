@@ -180,8 +180,10 @@ def slice_sequence(sequence, length, pad_last=False, pad_val=C.PAD_TOKEN, overla
     if pad_last:
         pad_len = _slice_pad_length(len(sequence), length, overlap)
         sequence = sequence + [pad_val] * pad_len
-    num_samples = (len(sequence)-length) // (length-overlap) + 1
-    return [sequence[i*(length-overlap):((i+1)*length-i*overlap)] for i in range(num_samples)]
+    num_samples = (len(sequence) - length) // (length - overlap) + 1
+
+    return [sequence[i * (length - overlap): ((i + 1) * length - i * overlap)]
+            for i in range(num_samples)]
 
 
 def _slice_pad_length(num_items, length, overlap=0):
@@ -205,8 +207,8 @@ def _slice_pad_length(num_items, length, overlap=0):
     if length <= overlap:
         raise ValueError('length needs to be larger than overlap')
 
-    step = length-overlap
-    span = num_items-length
+    step = length - overlap
+    span = num_items - length
     residual = span % step
     if residual:
         return step - residual
@@ -221,7 +223,9 @@ _vocab_sha1 = {'wikitext-2': 'be36dc5238c2e7d69720881647ab72eb506d0131',
                'book_corpus_wiki_en_cased': '2d62af22535ed51f35cc8e2abb607723c89c2636',
                'book_corpus_wiki_en_uncased': 'a66073971aa0b1a262453fe51342e57166a8abcf',
                'wiki_multilingual_cased': '71bb9e248dc75dce9227d3c8c16fde3993588b9e',
+               'wiki_cn_cased': 'a1e06f8e39ae51ab8a92b8458e6a658b8b1f72bf',
                'wiki_cn': 'a1e06f8e39ae51ab8a92b8458e6a658b8b1f72bf',
+               'wiki_multilingual_uncased': '2b2514cc539047b9179e9d98a4e68c36db05c97a',
                'wiki_multilingual': '2b2514cc539047b9179e9d98a4e68c36db05c97a'}
 
 
@@ -282,7 +286,7 @@ def _load_pretrained_vocab(name, root=os.path.join('~', '.mxnet', 'models'), cls
     file_name = '{name}-{short_hash}'.format(name=name,
                                              short_hash=short_hash(name))
     root = os.path.expanduser(root)
-    file_path = os.path.join(root, file_name+'.vocab')
+    file_path = os.path.join(root, file_name + '.vocab')
     sha1_hash = _vocab_sha1[name]
     if os.path.exists(file_path):
         if check_sha1(file_path, sha1_hash):
@@ -295,7 +299,7 @@ def _load_pretrained_vocab(name, root=os.path.join('~', '.mxnet', 'models'), cls
     if not os.path.exists(root):
         os.makedirs(root)
 
-    zip_file_path = os.path.join(root, file_name+'.zip')
+    zip_file_path = os.path.join(root, file_name + '.zip')
     repo_url = _get_repo_url()
     if repo_url[-1] != '/':
         repo_url = repo_url + '/'
