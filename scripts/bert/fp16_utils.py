@@ -18,6 +18,7 @@
 
 """Trainer for mixed precision training."""
 import logging
+from collections import defaultdict
 import numpy as np
 import mxnet as mx
 from mxnet import nd
@@ -79,22 +80,17 @@ def grad_global_norm(parameters, max_norm):
 
     # group norm arrays by ctx
     def group_by_ctx(arr_list):
-        groups = {}
+        groups = defaultdict(list)
         for arr in arr_list:
             ctx = arr.context
-            if ctx in groups:
-                groups[ctx].append(arr)
-            else:
-                groups[ctx] = [arr]
+            groups[ctx].append(arr)
         return groups
     norm_groups = group_by_ctx(norm_arrays)
 
     # reduce
     ctx, dtype = arrays[0].context, 'float32'
-    total_norm = mx.nd.zeros((1,), ctx=ctx, dtype=dtype)
-    for group in norm_groups:
-        total_norm += nd.add_n(*norm_groups[group]).as_in_context(ctx)
-    total_norm = nd.sqrt(total_norm)
+    norms = [nd.add_n(*norm_groups[g]).as_in_context(ctx) for g in norm_groups]
+    total_norm = nd.add_n(*norms).sqrt()
     scale = total_norm / max_norm
     # is_finite = 0 if NaN or Inf, 1 otherwise.
     is_finite = nd.contrib.isfinite(scale)
@@ -132,6 +128,9 @@ class FP16Trainer(object):
         loss_scaler_params = loss_scaler_params if loss_scaler_params else {}
         self._scaler = DynamicLossScaler(**loss_scaler_params) if dynamic_loss_scale \
                        else StaticLossScaler(**loss_scaler_params)
+        # if the optimizer supports NaN check, we can always defer the NaN check to the optimizer
+        # TODO(haibin) this should be added via registry
+        self._support_nan_check = trainer._optimizer.__class__.__name__ == 'BERTAdam'
 
     def backward(self, loss):
         """backward propagation with loss"""
@@ -160,12 +159,23 @@ class FP16Trainer(object):
             norm, ratio = grad_global_norm(self.fp32_trainer._params,
                                            max_norm * self._scaler.loss_scale)
             step_size = ratio * step_size
-            self.fp32_trainer.update(step_size)
-            overflow = not np.isfinite(norm.asscalar())
+            if self._support_nan_check:
+                self.fp32_trainer.update(step_size)
+                overflow = not np.isfinite(norm.asscalar())
+            else:
+                overflow = not np.isfinite(norm.asscalar())
+                if not overflow:
+                    self.fp32_trainer.update(step_size)
         else:
             # TODO(haibin) optimize the performance when max_norm is not present
-            self.fp32_trainer.update(step_size)
-            overflow = self._scaler.has_overflow(self.fp32_trainer._params)
+            # sequentially adding isnan/isinf results may be slow
+            if self._support_nan_check:
+                self.fp32_trainer.update(step_size)
+                overflow = self._scaler.has_overflow(self.fp32_trainer._params)
+            else:
+                overflow = self._scaler.has_overflow(self.fp32_trainer._params)
+                if not overflow:
+                    self.fp32_trainer.update(step_size)
 
         # update scale based on overflow information
         self._scaler.update_scale(overflow)
@@ -189,6 +199,9 @@ class LossScaler(object):
         else:
             return True
 
+    def update_scale(self, overflow):
+        raise NotImplementedError()
+
 class StaticLossScaler(LossScaler):
     """Static loss scaler"""
     def __init__(self, init_scale=1):
@@ -198,7 +211,7 @@ class StaticLossScaler(LossScaler):
         """update loss scale"""
         pass
 
-class DynamicLossScaler(object):
+class DynamicLossScaler(LossScaler):
     """Class that manages dynamic loss scaling.
 
     There are two problems regarding gradient scale when fp16 is used for training.

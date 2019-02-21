@@ -61,6 +61,8 @@ parser.add_argument(
     '--vocab',
     type=str,
     default=None,
+    choices=['book_corpus_wiki_en_uncased', 'book_corpus_wiki_en_cased',
+             'wiki_multilingual_uncased', 'wiki_multilingual_cased', 'wiki_cn_cased'],
     help='The dataset name for the vocab file BERT model was trained on. For example, '
          '"book_corpus_wiki_en_uncased"')
 
@@ -186,7 +188,7 @@ def transform(instance, tokenizer, max_seq_length, max_predictions_per_seq, do_p
 
     next_sentence_label = 1 if instance.is_random_next else 0
 
-    features = collections.OrderedDict()
+    features = {}
     features['input_ids'] = input_ids
     features['input_mask'] = input_mask
     features['segment_ids'] = segment_ids
@@ -587,7 +589,7 @@ def main():
                  args.short_seq_prob, args.masked_lm_prob,
                  args.max_predictions_per_seq, rng)
     for i, file_split in enumerate(file_splits):
-        out = os.path.join(output_dir, 'part-%03d.%s'%(i, suffix))
+        out = os.path.join(output_dir, 'part-{}.{}'.format(str(i).zfill(3), suffix))
         count += len(file_split)
         map_args.append((file_split, out) + pool_args)
 
