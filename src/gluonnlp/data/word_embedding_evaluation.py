@@ -223,7 +223,7 @@ class MEN(WordSimilarityEvaluationDataset):
     >>> len(men_dataset)
     1000
     >>> men_dataset[0]
-    [u'display', u'pond', 10.0]
+    ['display', 'pond', 10.0]
     """
     _url = 'https://staff.fnwi.uva.nl/e.bruni/resources/MEN.tar.gz'
     _namespace = 'gluon/dataset/men'
