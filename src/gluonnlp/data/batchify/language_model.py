@@ -285,7 +285,7 @@ class _StreamBPTTBatchify(DataStream):
         def _read(buffers, i, vocab, corpus):
             """Read a sentence from the corpus into i-th buffer."""
             if len(buffers[i]) <= 1:
-                buffers[i].extend(vocab[next(corpus)])
+                buffers[i].append(vocab[next(corpus)])
 
         def _write(data, target, buffers, seq_len, i, length):
             """Write a sentence from i-th buffer to data and target."""
