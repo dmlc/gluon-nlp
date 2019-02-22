@@ -486,15 +486,18 @@ class BaseTransformerEncoder(HybridBlock, Seq2SeqEncoder):
             outputs, attention_weights = cell(inputs, mask)
             inputs = outputs
             if self._output_all_encodings:
-                all_encodings_outputs.append(outputs)
+                outputs_masked = outputs
+                if valid_length is not None:
+                    outputs_masked = F.SequenceMask(outputs, sequence_length=valid_length,
+                                                    use_sequence_length=True, axis=1)
+                all_encodings_outputs.append(outputs_masked)
+
             if self._output_attention:
                 additional_outputs.append(attention_weights)
 
         if valid_length is not None:
             outputs = F.SequenceMask(outputs, sequence_length=valid_length,
                                      use_sequence_length=True, axis=1)
-            if self._output_all_encodings:
-                all_encodings_outputs[len(self.transformer_cells) - 1] = outputs
 
         if self._output_all_encodings:
             return all_encodings_outputs, additional_outputs
