@@ -99,6 +99,8 @@ This toolkit assumes that users have basic knowledge about deep learning and
 NLP. Otherwise, please refer to an introductory course such as
 `Dive into Deep Learning <http://en.diveintodeeplearning.org/>`_ or
 `Stanford CS224n <http://web.stanford.edu/class/cs224n/>`_.
+If you are not familiar with Gluon, check out the
+`60-min Gluon crash course <http://beta.mxnet.io/guide/crash-course/index.html>`_.
 
 
 .. toctree::
