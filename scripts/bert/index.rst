@@ -107,10 +107,10 @@ BERT model.
 
 For all model settings above, we set learing rate = 3e-5 and optimizer = adam.
 
-SQuAD 1.1
-^^^^^^^^^
- 
-[5] bert_12_768_12 on SQuAD 1.1
+BERT BASE on SQuAD 1.1
+^^^^^^^^^^^^^^^^^^^^^^
+
+[5] bert_12_768_12
 
 .. code-block:: console
 
@@ -123,7 +123,10 @@ Note that this requires about 12G of GPU memory. If your GPU memory is less than
     $ python finetune_squad.py --optimizer adam --accumulate 2 --batch_size 6 --lr 3e-5 --epochs 2 --gpu
 python finetune_squad.py --bert_model bert_24_1024_16 --optimizer adam --accumulate 6 --batch_size 4 --lr 3e-5 --epochs 2 --gpu
 
-[6] bert_24_1024_16 on SQuAD 1.1
+BERT LARGE on SQuAD 1.1
+^^^^^^^^^^^^^^^^^^^^^^
+
+[6] bert_24_1024_16
 
 .. code-block:: console
 
@@ -131,20 +134,18 @@ python finetune_squad.py --bert_model bert_24_1024_16 --optimizer adam --accumul
     
 Note that this requires about 14G of GPU memory.
 
-SQuAD 2.0
-^^^^^^^^^
-
-[7] bert_24_1024_16 on SQuAD 2.0
+BERT LARGE on SQuAD 2.0
+^^^^^^^^^^^^^^^^^^^^^^^
 
 For SQuAD 2.0, you need to specify the parameter *version_2* and specify the parameter *null_score_diff_threshold*. Typical values are between -1.0 and -5.0. Use the following command to fine-tune the BERT large model on SQuAD 2.0 and generate predictions.json, nbest_predictions.json, and null_odds.json.
+
+[7] bert_24_1024_16
 
 .. code-block:: console
 
     $ python finetune_squad.py --bert_model bert_24_1024_16 --optimizer adam --accumulate 8 --batch_size 4 --lr 3e-5 --epochs 2 --gpu --null_score_diff_threshold -2.0 --version_2
 
-To get the score of the dev data, you need to download the dev dataset and the evaluate script:
-
-`dev-v2.0.json <https://rajpurkar.github.io/SQuAD-explorer/dataset/dev-v2.0.json>`_, `evaluate-2.0.py <https://worksheets.codalab.org/rest/bundles/0x6b567e1cf2e041ec80d7098f031c5c9e/contents/blob/>`_
+To get the score of the dev data, you need to download the dev dataset (`dev-v2.0.json <https://rajpurkar.github.io/SQuAD-explorer/dataset/dev-v2.0.json>`_) and the evaluate script (`evaluate-2.0.py <https://worksheets.codalab.org/rest/bundles/0x6b567e1cf2e041ec80d7098f031c5c9e/contents/blob/>`_).
 
 Use the following command to get the score of the dev dataset.
 
@@ -152,7 +153,6 @@ Use the following command to get the score of the dev dataset.
 
     $ python evaluate-v2.0.py dev-v2.0.json predictions.json
 
-Using the predictions.json file generated above, the result should look like this
 .. code-block:: json
     
     {
