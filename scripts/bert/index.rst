@@ -7,13 +7,19 @@ Reference: Devlin, Jacob, et al. "`Bert: Pre-training of deep bidirectional tran
 
 The following pre-trained BERT models are available from the **gluonnlp.model.get_model** API:
 
-+--------------------+---------------------------------+-------------------------------+----------------------------+-------------------------+---------------+
-|                    | book_corpus_wiki_en_uncased     | book_corpus_wiki_en_cased     | wiki_multilingual_uncased  | wiki_multilingual_cased | wiki_cn_cased |
-+====================+=================================+===============================+============================+=========================+===============+
-| bert_12_768_12     | ✓                               | ✓                             | ✓                          | ✓                       | ✓             |
-+--------------------+---------------------------------+-------------------------------+----------------------------+-------------------------+---------------+
-| bert_24_1024_16    | ✓                               | ✓                             | x                          | x                       | x             |
-+--------------------+---------------------------------+-------------------------------+----------------------------+-------------------------+---------------+
++-----------------------------+----------------+-----------------+
+|                             | bert_12_768_12 | bert_24_1024_16 |
++=============================+================+=================+
+| book_corpus_wiki_en_uncased | ✓              | ✓               |
++-----------------------------+----------------+-----------------+
+| book_corpus_wiki_en_cased   | ✓              | ✓               |
++-----------------------------+----------------+-----------------+
+| wiki_multilingual_uncased   | ✓              | x               |
++-----------------------------+----------------+-----------------+
+| wiki_multilingual_cased     | ✓              | x               |
++-----------------------------+----------------+-----------------+
+| wiki_cn_cased               | ✓              | x               |
++-----------------------------+----------------+-----------------+
 
 where **bert_12_768_12** refers to the BERT BASE model, and **bert_24_1024_16** refers to the BERT LARGE model.
 
@@ -23,43 +29,144 @@ BERT for Sentence Classification on GLUE tasks
 GluonNLP provides the following example script to fine-tune sentence classification with pre-trained
 BERT model.
 
-Download the GLUE dataset:
++---------------------+--------------------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------+
+|                     |                                                  MRPC                                                  |                                                  RTE                                                  |                                                 SST-2                                                 |                                                MNLI-m/mm                                               |
++---------------------+--------------------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------+
+|        model        |                                             bert_12_768_12                                             |                                             bert_12_768_12                                            |                                             bert_12_768_12                                            |                                             bert_12_768_12                                             |
++---------------------+--------------------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------+
+| validation accuracy |                                                  88.7%                                                 |                                                 70.8%                                                 |                                                  93%                                                  |                                             84.55%, 84.66%                                             |
++---------------------+--------------------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------+
+|      batch_size     |                                                   32                                                   |                                                   32                                                  |                                                   16                                                  |                                                   32                                                   |
++---------------------+--------------------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------+
+|        epochs       |                                                    3                                                   |                                                   3                                                   |                                                   4                                                   |                                                    3                                                   |
+|                     |                                                                                                        |                                                                                                       |                                                                                                       |                                                                                                        |
++---------------------+--------------------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------+
+|       epsilon       |                                                  1e-6                                                  |                                                  1e-6                                                 |                                                  1e-6                                                 |                                                  1e-8                                                  |
++---------------------+--------------------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------+
+|     training log    | `log <https://raw.githubusercontent.com/dmlc/web-data/master/gluonnlp/logs/bert/finetuned_mrpc.log>`__ | `log <https://raw.githubusercontent.com/dmlc/web-data/master/gluonnlp/logs/bert/finetuned_rte.log>`__ | `log <https://raw.githubusercontent.com/dmlc/web-data/master/gluonnlp/logs/bert/finetuned_sst.log>`__ | `log <https://raw.githubusercontent.com/dmlc/web-data/master/gluonnlp/logs/bert/finetuned_mnli.log>`__ |
++---------------------+--------------------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------+
+|       command       |                                                   [1]                                                  |                                                  [2]                                                  |                                                  [3]                                                  |                                                   [4]                                                  |
++---------------------+--------------------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------+
+
+For all model settings above, we set learing rate = 2e-5 and optimizer = bertadam.
+
+[1] MRPC
 
 .. code-block:: console
 
     $ curl -L https://tinyurl.com/yaznh3os -o download_glue_data.py
-    $ python3 download_glue_data.py --data_dir glue_data --tasks all
+    $ python3 download_glue_data.py --data_dir glue_data --tasks MRPC
+    $ GLUE_DIR=glue_data finetune_classifier.py --task_name MRPC --batch_size 32 --optimizer bertadam --epochs 3 --gpu --lr 2e-5
 
-Use the following command to fine-tune the BERT model for classification on the GLUE(MRPC, RTE, QQP, QNLI, STS-B, CoLA, MNLI, WNLI, SST) dataset.
-
-.. code-block:: console
-
-   $ MXNET_GPU_MEM_POOL_TYPE=Round GLUE_DIR=glue_data finetune_classifier.py --task_name MRPC --batch_size 32 --optimizer bertadam --epochs 3 --gpu --lr 2e-5
-
-It gets validation accuracy of `88.7% <https://raw.githubusercontent.com/dmlc/web-data/master/gluonnlp/logs/bert/finetuned_mrpc.log>`_, whereas the the original Tensorflow implementation give evaluation results between 84% and 88%.
+[2] SST-2
 
 .. code-block:: console
 
-   $ MXNET_GPU_MEM_POOL_TYPE=Round GLUE_DIR=glue_data python3 finetune_classifier.py --task_name RTE --batch_size 32 --optimizer bertadam --epochs 3 --gpu  --lr 2e-5
+    $ curl -L https://tinyurl.com/yaznh3os -o download_glue_data.py
+    $ python3 download_glue_data.py --data_dir glue_data --tasks SST
+    $ GLUE_DIR=glue_data python3 finetune_classifier.py --task_name SST --epochs 4 --batch_size 16 --optimizer bertadam --gpu --lr 2e-5 --log_interval 500
 
-It gets RTE validation accuracy of `70.8% <https://raw.githubusercontent.com/dmlc/web-data/master/gluonnlp/logs/bert/finetuned_rte.log>`_
-, whereas the the original Tensorflow implementation give evaluation results 66.4%.
+[3] RTE
+
+.. code-block:: console
+
+    $ curl -L https://tinyurl.com/yaznh3os -o download_glue_data.py
+    $ python3 download_glue_data.py --data_dir glue_data --tasks RTE
+    $ GLUE_DIR=glue_data python3 finetune_classifier.py --task_name RTE --batch_size 32 --optimizer bertadam --epochs 3 --gpu  --lr 2e-5
+
+[4] MNLI
+
+.. code-block:: console
+
+    $ curl -L https://tinyurl.com/yaznh3os -o download_glue_data.py
+    $ python3 download_glue_data.py --data_dir glue_data --tasks MNLI
+    $ GLUE_DIR=glue_data python3 finetune_classifier.py --task_name MNLI --max_len 80 --log_interval 100 --epsilon 1e-8 --gpu
 
 Some other tasks can be modeled with `--task_name` parameter.
 
+BERT for Question Answering on SQuAD
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
++-----------------------+---------------------------------------------------------------------------------------------------------------------------------+----------------------------------------------------------------------------------------------------------------------------------+----------------------------------------------------------------------------------------------------------------------------------+
+|                       |                                                            SQuAD 1.1                                                            |                                                             SQuAD 1.1                                                            |                                                             SQuAD 2.0                                                            |
++-----------------------+---------------------------------------------------------------------------------------------------------------------------------+----------------------------------------------------------------------------------------------------------------------------------+----------------------------------------------------------------------------------------------------------------------------------+
+|         model         |                                                          bert_12_768_12                                                         |                                                          bert_24_1024_16                                                         |                                                          bert_24_1024_16                                                         |
++-----------------------+---------------------------------------------------------------------------------------------------------------------------------+----------------------------------------------------------------------------------------------------------------------------------+----------------------------------------------------------------------------------------------------------------------------------+
+|           F1          |                                                              88.53                                                              |                                                               90.97                                                              |                                                               77.96                                                              |
++-----------------------+---------------------------------------------------------------------------------------------------------------------------------+----------------------------------------------------------------------------------------------------------------------------------+----------------------------------------------------------------------------------------------------------------------------------+
+|           EM          |                                                              80.98                                                              |                                                               84.05                                                              | 81.02                                                                                                                            |
++-----------------------+---------------------------------------------------------------------------------------------------------------------------------+----------------------------------------------------------------------------------------------------------------------------------+----------------------------------------------------------------------------------------------------------------------------------+
+|       batch_size      |                                                                12                                                               |                                                                 4                                                                |                                                                 4                                                                |
++-----------------------+---------------------------------------------------------------------------------------------------------------------------------+----------------------------------------------------------------------------------------------------------------------------------+----------------------------------------------------------------------------------------------------------------------------------+
+| gradient accumulation |                                                               None                                                              |                                                                 6                                                                |                                                                 8                                                                |
++-----------------------+---------------------------------------------------------------------------------------------------------------------------------+----------------------------------------------------------------------------------------------------------------------------------+----------------------------------------------------------------------------------------------------------------------------------+
+|         epochs        |                                                                2                                                                |                                                                 2                                                                |                                                                 2                                                                |
++-----------------------+---------------------------------------------------------------------------------------------------------------------------------+----------------------------------------------------------------------------------------------------------------------------------+----------------------------------------------------------------------------------------------------------------------------------+
+|      training log     | `log <https://raw.githubusercontent.com/dmlc/web-data/master/gluonnlp/logs/bert/finetune_squad1.1_base_mx1.5.0b20190216.log>`__ | `log <https://raw.githubusercontent.com/dmlc/web-data/master/gluonnlp/logs/bert/finetune_squad1.1_large_mx1.5.0b20190216.log>`__ | `log <https://raw.githubusercontent.com/dmlc/web-data/master/gluonnlp/logs/bert/finetune_squad2.0_large_mx1.5.0b20160216.log>`__ |
++-----------------------+---------------------------------------------------------------------------------------------------------------------------------+----------------------------------------------------------------------------------------------------------------------------------+----------------------------------------------------------------------------------------------------------------------------------+
+|        command        |                                                               [5]                                                               |                                                                [6]                                                               |                                                                [7]                                                               |
++-----------------------+---------------------------------------------------------------------------------------------------------------------------------+----------------------------------------------------------------------------------------------------------------------------------+----------------------------------------------------------------------------------------------------------------------------------+
+
+For all model settings above, we set learing rate = 3e-5 and optimizer = adam.
+
+BERT BASE on SQuAD 1.1
+++++++++++++++++++++++
+
+[5] bert_12_768_12
+
 .. code-block:: console
 
-   $ MXNET_GPU_MEM_POOL_TYPE=Round GLUE_DIR=glue_data python3 finetune_classifier.py --task_name MNLI --max_len 80 --log_interval 100 --epsilon 1e-8 --gpu
-
-It gets MNLI validation accuracy of `84.55% (matched) and 84.66% (mismatched) <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/bert/finetuned_mnli.log>`_
+    $ python finetune_squad.py --optimizer adam --batch_size 12 --lr 3e-5 --epochs 2 --gpu
+ 
+Note that this requires about 12G of GPU memory. If your GPU memory is less than 12G, you can use the following command to achieve a similar effect. This will require approximately no more than 8G of GPU memory. If your GPU memory is too small, please adjust *accumulate* and *batch_size* arguments accordingly.
 
 .. code-block:: console
 
-   $GLUE_DIR=glue_data python3 finetune_classifier.py --task_name SST --epochs 4 --batch_size 16 --accumulate 1 --optimizer bertadam --gpu --lr 2e-5 --log_interval 500
+    $ python finetune_squad.py --optimizer adam --accumulate 2 --batch_size 6 --lr 3e-5 --epochs 2 --gpu
 
-It gets SST validation accuracy of `93.0% <https://raw.githubusercontent.com/dmlc/web-data/master/gluonnlp/logs/bert/finetuned_sst.log>`_.
 
-Some other tasks can be modeled with `--task_name` parameter.
+BERT LARGE on SQuAD 1.1
++++++++++++++++++++++++
+
+[6] bert_24_1024_16
+
+.. code-block:: console
+
+    $ python finetune_squad.py --bert_model bert_24_1024_16 --optimizer adam --accumulate 6 --batch_size 4 --lr 3e-5 --epochs 2 --gpu
+    
+Note that this requires about 14G of GPU memory.
+
+
+BERT LARGE on SQuAD 2.0
++++++++++++++++++++++++
+
+For SQuAD 2.0, you need to specify the parameter *version_2* and specify the parameter *null_score_diff_threshold*. Typical values are between -1.0 and -5.0. Use the following command to fine-tune the BERT large model on SQuAD 2.0 and generate predictions.json, nbest_predictions.json, and null_odds.json.
+
+[7] bert_24_1024_16
+
+.. code-block:: console
+
+    $ python finetune_squad.py --bert_model bert_24_1024_16 --optimizer adam --accumulate 8 --batch_size 4 --lr 3e-5 --epochs 2 --gpu --null_score_diff_threshold -2.0 --version_2
+
+To get the score of the dev data, you need to download the dev dataset (`dev-v2.0.json <https://rajpurkar.github.io/SQuAD-explorer/dataset/dev-v2.0.json>`_) and the evaluate script (`evaluate-2.0.py <https://worksheets.codalab.org/rest/bundles/0x6b567e1cf2e041ec80d7098f031c5c9e/contents/blob/>`_). Then use the following command to get the score of the dev dataset.
+
+.. code-block:: console
+
+    $ python evaluate-v2.0.py dev-v2.0.json predictions.json
+
+.. code-block:: json
+    
+    {
+        "exact": 77.958392992504,
+        "f1": 81.02012658815627,
+        "total": 11873,
+        "HasAns_exact": 73.3974358974359,
+        "HasAns_f1": 79.52968336389662,
+        "HasAns_total": 5928,
+        "NoAns_exact": 82.50630782169891,
+        "NoAns_f1": 82.50630782169891,
+        "NoAns_total": 5945
+    }
 
 BERT for Sentence or Tokens Embedding
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -150,82 +257,3 @@ Command line interface
        -0.37806216,  0.23336883], dtype=float32), array([ 0.1876977 ,  0.30165672,  0.47167772, ..., -0.43823618,
        -0.42823148, -0.48873612], dtype=float32), array([-0.6576557 , -0.09822252,  0.1121515 , ..., -0.21743725,
        -0.1820574 , -0.16115054], dtype=float32)]
-
-BERT for SQuAD
-~~~~~~~~~~~~~~
-
-GluonNLP provides the following example script to fine-tune SQuAD with pre-trained
-BERT model.
-
-SQuAD 1.1
-+++++++++
-
-Use the following command to fine-tune the BERT base model for SQuAD1.1 dataset.
-
-Note that this will require more than 12G of GPU memory.
- 
-.. code-block:: console
-
-    $ python finetune_squad.py --optimizer adam --batch_size 12 --lr 3e-5 --epochs 2 --gpu
-
-python finetune_squad.py --bert_model bert_24_1024_16 --optimizer adam --accumulate 6 --batch_size 4 --lr 3e-5 --epochs 2 --gpu
-
-If you are using less than 12G of GPU memory, you can use the following command to achieve a similar effect.
-
-Note that this will require approximately no more than 8G of GPU memory. If your GPU memory is too small, you can adjust **accumulate** and **batch_size**.
-
-.. code-block:: console
-
-    $ python finetune_squad.py --optimizer adam --accumulate 2 --batch_size 6 --lr 3e-5 --epochs 2 --gpu
-
-The F1 score on the dev dataset is `88.45% <https://raw.githubusercontent.com/dmlc/web-data/master/gluonnlp/logs/bert/finetune_squad1.1_base_mx1.5.0b20190216.log>`_ (Based on mxnet-cu90-1.5.0b20190216)
-
-Use the following command to fine-tune the BERT large model for SQuAD1.1 dataset.
-
-Note that this will require more than 14G of GPU memory.
-
-.. code-block:: console
-
-    $ python finetune_squad.py --bert_model bert_24_1024_16 --optimizer adam --accumulate 6 --batch_size 4 --lr 3e-5 --epochs 2 --gpu
-
-The F1 score on the dev dataset is `90.97% <https://raw.githubusercontent.com/dmlc/web-data/master/gluonnlp/logs/bert/finetune_squad1.1_large_mx1.5.0b20190216.log>`_ (Based on mxnet-cu90-1.5.0b20190216)
-
-
-SQuAD 2.0
-+++++++++
-
-If you are pre-training on the SQuAD2.0 dataset, you need to specify the parameter **version_2** and specify the parameter **null_score_diff_threshold** (Typical values are between -1.0 and -5.0).
-
-Use the following command to fine tune the BERT large model of the SQuAD2.0 dataset and generate `predictions.json, nbest_predictions.json, and null_odds.json. <https://raw.githubusercontent.com/dmlc/web-data/master/gluonnlp/logs/bert/finetune_squad2.0_large_mx1.5.0b20160216.log>`_ (Based on mxnet-cu90-1.5.0b20190216)
-
-.. code-block:: console
-
-    $ python finetune_squad.py --bert_model bert_24_1024_16 --optimizer adam --accumulate 8 --batch_size 4 --lr 3e-5 --epochs 2 --gpu --null_score_diff_threshold -2.0 --version_2
-
-If you want to get the score of the dev data, you need to download the dev dataset and the evaluate script.
-
-`dev-v2.0.json <https://rajpurkar.github.io/SQuAD-explorer/dataset/dev-v2.0.json>`_ 
-
-`evaluate-2.0.py <https://worksheets.codalab.org/rest/bundles/0x6b567e1cf2e041ec80d7098f031c5c9e/contents/blob/>`_
-
-Use the following command to get the score of the dev dataset
-
-.. code-block:: console
-
-    $ python evaluate-v2.0.py dev-v2.0.json predictions.json
-
-Using the predictions.json file generated above, the result should look like this:
-
-.. code-block:: json
-    
-    {
-        "exact": 77.958392992504,
-        "f1": 81.02012658815627,
-        "total": 11873,
-        "HasAns_exact": 73.3974358974359,
-        "HasAns_f1": 79.52968336389662,
-        "HasAns_total": 5928,
-        "NoAns_exact": 82.50630782169891,
-        "NoAns_f1": 82.50630782169891,
-        "NoAns_total": 5945
-    }
