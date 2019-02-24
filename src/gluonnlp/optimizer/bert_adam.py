@@ -48,14 +48,14 @@ class BERTAdam(Optimizer):
 
     Parameters
     ----------
-    beta1 : float, optional
+    beta1 : float, optional, default is 0.9
         Exponential decay rate for the first moment estimates.
-    beta2 : float, optional
+    beta2 : float, optional, default is 0.999
         Exponential decay rate for the second moment estimates.
-    epsilon : float, optional
+    epsilon : float, optional, default is 1e-6
         Small value to avoid division by 0.
     """
-    def __init__(self, learning_rate=0.001, beta1=0.9, beta2=0.999, epsilon=1e-8,
+    def __init__(self, learning_rate=0.001, beta1=0.9, beta2=0.999, epsilon=1e-6,
                  **kwargs):
         super(BERTAdam, self).__init__(learning_rate=learning_rate, **kwargs)
         self.beta1 = beta1

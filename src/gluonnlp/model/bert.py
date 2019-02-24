@@ -22,6 +22,7 @@ __all__ = ['BERTModel', 'BERTEncoder', 'BERTEncoderCell', 'BERTPositionwiseFFN',
            'BERTLayerNorm', 'bert_12_768_12', 'bert_24_1024_16', 'get_bert_model']
 
 import os
+import warnings
 from mxnet.gluon import Block
 from mxnet.gluon import nn
 from mxnet.gluon.model_zoo import model_store
@@ -461,8 +462,10 @@ model_store._model_sha1.update(
         ('5656dac6965b5054147b0375337d5a6a7a2ff832', 'bert_12_768_12_book_corpus_wiki_en_cased'),
         ('75cc780f085e8007b3bf6769c6348bb1ff9a3074', 'bert_12_768_12_book_corpus_wiki_en_uncased'),
         ('237f39851b24f0b56d70aa20efd50095e3926e26', 'bert_12_768_12_wiki_multilingual'),
+        ('237f39851b24f0b56d70aa20efd50095e3926e26', 'bert_12_768_12_wiki_multilingual_uncased'),
         ('b0f57a207f85a7d361bb79de80756a8c9a4276f7', 'bert_12_768_12_wiki_multilingual_cased'),
         ('885ebb9adc249a170c5576e90e88cfd1bbd98da6', 'bert_12_768_12_wiki_cn'),
+        ('885ebb9adc249a170c5576e90e88cfd1bbd98da6', 'bert_12_768_12_wiki_cn_cased'),
         ('4e685a966f8bf07d533bd6b0e06c04136f23f620', 'bert_24_1024_16_book_corpus_wiki_en_cased'),
         ('24551e1446180e045019a87fc4ffbf714d99c0b5', 'bert_24_1024_16_book_corpus_wiki_en_uncased')
     ]})
@@ -517,7 +520,7 @@ def bert_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
     ----------
     dataset_name : str or None, default None
         Options include 'book_corpus_wiki_en_cased', 'book_corpus_wiki_en_uncased',
-        'wiki_cn', 'wiki_multilingual' and 'wiki_multilingual_cased'.
+        'wiki_cn_cased', 'wiki_multilingual_uncased' and 'wiki_multilingual_cased'.
     vocab : gluonnlp.vocab.BERTVocab or None, default None
         Vocabulary for the dataset. Must be provided if dataset is not specified.
     pretrained : bool, default True
@@ -598,7 +601,8 @@ def get_bert_model(model_name=None, dataset_name=None, vocab=None,
     dataset_name : str or None, default None
         Options include 'book_corpus_wiki_en_cased', 'book_corpus_wiki_en_uncased'
         for both bert_24_1024_16 and bert_12_768_12.
-        'wiki_cn', 'wiki_multilingual' and 'wiki_multilingual_cased' for bert_12_768_12 only.
+        'wiki_cn_cased', 'wiki_multilingual_uncased' and 'wiki_multilingual_cased'
+        for bert_12_768_12 only.
     vocab : gluonnlp.vocab.BERTVocab or None, default None
         Vocabulary for the dataset. Must be provided if dataset is not specified.
     pretrained : bool, default True
@@ -638,6 +642,9 @@ def get_bert_model(model_name=None, dataset_name=None, vocab=None,
                           use_residual=predefined_args['use_residual'])
     # bert_vocab
     from ..vocab import BERTVocab
+    if dataset_name in ['wiki_cn', 'wiki_multilingual']:
+        warnings.warn('wiki_cn/wiki_multilingual will be deprecated.'
+                      ' Please use wiki_cn_cased/wiki_multilingual_uncased instead.')
     bert_vocab = _load_vocab(dataset_name, vocab, root, cls=BERTVocab)
     # BERT
     net = BERTModel(encoder, len(bert_vocab),

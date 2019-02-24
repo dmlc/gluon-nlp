@@ -26,6 +26,7 @@ from mxnet import gluon
 import gluonnlp as nlp
 import pytest
 
+
 def eprint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
 
@@ -48,6 +49,7 @@ def _test_pretrained_big_text_models():
         output, state = model(mx.nd.arange(330).reshape((33, 10)), hidden)
         output.wait_to_read()
 
+
 @pytest.mark.serial
 @pytest.mark.remote_required
 def test_big_text_models(wikitext2_val_and_counter):
@@ -66,6 +68,7 @@ def test_big_text_models(wikitext2_val_and_counter):
         hidden = model.begin_state(batch_size=batch_size, func=mx.nd.zeros)
         output, state = model(mx.nd.arange(330).reshape((33, 10)), hidden)
         output.wait_to_read()
+
 
 @pytest.mark.serial
 @pytest.mark.remote_required
@@ -90,17 +93,21 @@ def test_transformer_models():
         del model
         mx.nd.waitall()
 
+
 @pytest.mark.serial
 @pytest.mark.remote_required
 def test_pretrained_bert_models():
     models = ['bert_12_768_12', 'bert_24_1024_16']
-    pretrained = {'bert_12_768_12': ['book_corpus_wiki_en_cased', 'book_corpus_wiki_en_uncased', 'wiki_multilingual','wiki_multilingual_cased','wiki_cn'],
-                  'bert_24_1024_16': ['book_corpus_wiki_en_uncased','book_corpus_wiki_en_cased']}
+    pretrained = {
+        'bert_12_768_12':
+        ['book_corpus_wiki_en_cased', 'book_corpus_wiki_en_uncased',
+         'wiki_multilingual_uncased', 'wiki_multilingual_cased', 'wiki_cn_cased'],
+        'bert_24_1024_16': ['book_corpus_wiki_en_uncased', 'book_corpus_wiki_en_cased']}
     vocab_size = {'book_corpus_wiki_en_cased': 28996,
                   'book_corpus_wiki_en_uncased': 30522,
                   'wiki_multilingual_cased': 119547,
-                  'wiki_cn': 21128,
-                  'wiki_multilingual': 105879}
+                  'wiki_cn_cased': 21128,
+                  'wiki_multilingual_uncased': 105879}
     special_tokens = ['[UNK]', '[PAD]', '[SEP]', '[CLS]', '[MASK]']
     ones = mx.nd.ones((2, 10))
     valid_length = mx.nd.ones((2,))
@@ -114,7 +121,7 @@ def test_pretrained_bert_models():
                                                root='tests/data/model/')
             assert len(vocab) == vocab_size[dataset]
             for token in special_tokens:
-                assert token in vocab, "Token %s not found in the vocab"%token
+                assert token in vocab, "Token %s not found in the vocab" % token
             assert vocab['RandomWordByHaibin'] == 0
             assert vocab.padding_token == '[PAD]'
             assert vocab.unknown_token == '[UNK]'
@@ -124,6 +131,7 @@ def test_pretrained_bert_models():
             output[0].wait_to_read()
             del model
             mx.nd.waitall()
+
 
 @pytest.mark.serial
 @pytest.mark.remote_required
@@ -139,15 +147,22 @@ def test_bert_models():
     valid_length = mx.nd.ones((batch_size, ))
     positions = mx.nd.ones((batch_size, num_masks))
 
-    kwargs = [{'use_pooler' : False, 'use_decoder' : False, 'use_classifier' : False},
-              {'use_pooler' : True, 'use_decoder' : False, 'use_classifier' : False},
-              {'use_pooler' : True, 'use_decoder' : True, 'use_classifier' : False},
-              {'use_pooler' : True, 'use_decoder' : True, 'use_classifier' : True}]
-    expected_shapes = [[(batch_size, seq_len, -1)],
-                       [(batch_size, seq_len, -1), (batch_size, -1)],
-                       [(batch_size, seq_len, -1), (batch_size, -1), (batch_size, num_masks, vocab_size)],
-                       [(batch_size, seq_len, -1), (batch_size, -1), (batch_size, 2), (batch_size, num_masks, vocab_size)]
-                      ]
+    kwargs = [{'use_pooler': False, 'use_decoder': False, 'use_classifier': False},
+              {'use_pooler': True, 'use_decoder': False, 'use_classifier': False},
+              {'use_pooler': True, 'use_decoder': True, 'use_classifier': False},
+              {'use_pooler': True, 'use_decoder': True, 'use_classifier': True}]
+    expected_shapes = [
+        [(batch_size, seq_len, -1)],
+        [(batch_size, seq_len, -1),
+         (batch_size, -1)],
+        [(batch_size, seq_len, -1),
+         (batch_size, -1),
+         (batch_size, num_masks, vocab_size)],
+        [(batch_size, seq_len, -1),
+         (batch_size, -1),
+         (batch_size, 2),
+         (batch_size, num_masks, vocab_size)]]
+
     def infer_shape(shapes, unit):
         inferred_shapes = []
         for shape in shapes:
@@ -181,10 +196,12 @@ def test_bert_models():
             del model
             mx.nd.waitall()
 
+
 @pytest.mark.serial
 @pytest.mark.remote_required
 def test_language_models():
-    text_models = ['standard_lstm_lm_200', 'standard_lstm_lm_650', 'standard_lstm_lm_1500', 'awd_lstm_lm_1150', 'awd_lstm_lm_600']
+    text_models = ['standard_lstm_lm_200', 'standard_lstm_lm_650',
+                   'standard_lstm_lm_1500', 'awd_lstm_lm_1150', 'awd_lstm_lm_600']
     pretrained_to_test = {'standard_lstm_lm_1500': 'wikitext-2',
                           'standard_lstm_lm_650': 'wikitext-2',
                           'standard_lstm_lm_200': 'wikitext-2',
@@ -206,18 +223,19 @@ def test_language_models():
         del model
         mx.nd.waitall()
 
+
 @pytest.mark.serial
 @pytest.mark.remote_required
 def test_cache_models():
     cache_language_models = ['awd_lstm_lm_1150', 'awd_lstm_lm_600', 'standard_lstm_lm_200',
-                   'standard_lstm_lm_650', 'standard_lstm_lm_1500']
+                             'standard_lstm_lm_650', 'standard_lstm_lm_1500']
     datasets = ['wikitext-2']
     for name in cache_language_models:
         for dataset_name in datasets:
             cache_cell = nlp.model.train.get_cache_model(name, dataset_name, window=1, theta=0.6,
                                                          lambdas=0.2, root='tests/data/model/')
-            outs, word_history, cache_history, hidden = \
-                cache_cell(mx.nd.arange(10).reshape(10, 1), mx.nd.arange(10).reshape(10, 1), None, None)
+            outs, word_history, cache_history, hidden = cache_cell(mx.nd.arange(
+                10).reshape(10, 1), mx.nd.arange(10).reshape(10, 1), None, None)
             print(cache_cell)
             print("outs:")
             print(outs)
@@ -230,11 +248,12 @@ def test_cache_models():
 @pytest.mark.serial
 @pytest.mark.remote_required
 def test_get_cache_model_noncache_models():
-    language_models_params = {'awd_lstm_lm_1150': 'awd_lstm_lm_1150_wikitext-2-f9562ed0.params',
-                              'awd_lstm_lm_600': 'awd_lstm_lm_600_wikitext-2-e952becc.params',
-                              'standard_lstm_lm_200': 'standard_lstm_lm_200_wikitext-2-b233c700.params',
-                              'standard_lstm_lm_650': 'standard_lstm_lm_650_wikitext-2-631f3904.params',
-                              'standard_lstm_lm_1500': 'standard_lstm_lm_1500_wikitext-2-a4163513.params'}
+    language_models_params = {
+        'awd_lstm_lm_1150': 'awd_lstm_lm_1150_wikitext-2-f9562ed0.params',
+        'awd_lstm_lm_600': 'awd_lstm_lm_600_wikitext-2-e952becc.params',
+        'standard_lstm_lm_200': 'standard_lstm_lm_200_wikitext-2-b233c700.params',
+        'standard_lstm_lm_650': 'standard_lstm_lm_650_wikitext-2-631f3904.params',
+        'standard_lstm_lm_1500': 'standard_lstm_lm_1500_wikitext-2-a4163513.params'}
     datasets = ['wikitext-2']
     for name in language_models_params.keys():
         for dataset_name in datasets:
@@ -248,14 +267,15 @@ def test_get_cache_model_noncache_models():
 
             model, _ = nlp.model.get_model(name=name, dataset_name=dataset_name, pretrained=True,
                                            root='tests/data/model/')
-            cache_cell_1 = nlp.model.train.CacheCell(model, ntokens, window=1, theta=0.6, lambdas=0.2)
+            cache_cell_1 = nlp.model.train.CacheCell(
+                model, ntokens, window=1, theta=0.6, lambdas=0.2)
             cache_cell_1.load_parameters('tests/data/model/' + language_models_params.get(name))
             print(cache_cell_1)
 
-            outs0, word_history0, cache_history0, hidden0 = \
-                cache_cell_0(mx.nd.arange(10).reshape(10, 1), mx.nd.arange(10).reshape(10, 1), None, None)
-            outs1, word_history1, cache_history1, hidden1 = \
-                cache_cell_1(mx.nd.arange(10).reshape(10, 1), mx.nd.arange(10).reshape(10, 1), None, None)
+            outs0, word_history0, cache_history0, hidden0 = cache_cell_0(
+                mx.nd.arange(10).reshape(10, 1), mx.nd.arange(10).reshape(10, 1), None, None)
+            outs1, word_history1, cache_history1, hidden1 = cache_cell_1(
+                mx.nd.arange(10).reshape(10, 1), mx.nd.arange(10).reshape(10, 1), None, None)
 
             assert outs0.shape == outs1.shape, outs0.shape
             assert len(word_history0) == len(word_history1), len(word_history0)
@@ -267,7 +287,7 @@ def test_get_cache_model_noncache_models():
 @pytest.mark.remote_required
 def test_save_load_cache_models():
     cache_language_models = ['awd_lstm_lm_1150', 'awd_lstm_lm_600', 'standard_lstm_lm_200',
-                   'standard_lstm_lm_650', 'standard_lstm_lm_1500']
+                             'standard_lstm_lm_650', 'standard_lstm_lm_1500']
     datasets = ['wikitext-2']
     for name in cache_language_models:
         for dataset_name in datasets:
@@ -276,6 +296,7 @@ def test_save_load_cache_models():
             print(cache_cell)
             cache_cell.save_parameters('tests/data/model/' + name + '-' + dataset_name + '.params')
             cache_cell.load_parameters('tests/data/model/' + name + '-' + dataset_name + '.params')
+
 
 @pytest.mark.serial
 def test_save_load_big_rnn_models():
@@ -300,13 +321,13 @@ def test_save_load_big_rnn_models():
     y = mx.nd.ones((seq_len, batch_size))
     sampled_cls = mx.nd.ones((num_sampled,))
     sampled_cls_cnt = mx.nd.ones((num_sampled,))
-    true_cls_cnt = mx.nd.ones((seq_len,batch_size))
+    true_cls_cnt = mx.nd.ones((seq_len, batch_size))
     samples = (sampled_cls, sampled_cls_cnt, true_cls_cnt)
     hidden = model.begin_state(batch_size=batch_size, func=mx.nd.zeros, ctx=ctx)
     # test forward
     with mx.autograd.record():
         pred, hidden, new_y = model(x, y, hidden, samples)
-        assert pred.shape == (seq_len, batch_size, 1+num_sampled)
+        assert pred.shape == (seq_len, batch_size, 1 + num_sampled)
         assert new_y.shape == (seq_len, batch_size)
         pred = pred.reshape((-3, -1))
         new_y = new_y.reshape((-1,))
@@ -316,6 +337,7 @@ def test_save_load_big_rnn_models():
     path = 'tests/data/model/test_save_load_big_rnn_models.params'
     model.save_parameters(path)
     eval_model.load_parameters(path)
+
 
 def test_big_rnn_model_share_params():
     ctx = mx.cpu()
@@ -341,7 +363,7 @@ def test_big_rnn_model_share_params():
     hidden = model.begin_state(batch_size=batch_size, func=mx.nd.zeros, ctx=ctx)
     with mx.autograd.record():
         pred, hidden, new_y = model(x, y, hidden, samples)
-        assert pred.shape == (seq_len, batch_size, 1+num_sampled)
+        assert pred.shape == (seq_len, batch_size, 1 + num_sampled)
         assert new_y.shape == (seq_len, batch_size)
         pred = pred.reshape((-3, -1))
         new_y = new_y.reshape((-1,))
@@ -356,6 +378,7 @@ def test_big_rnn_model_share_params():
     pred, hidden = eval_model(x, hidden)
     assert pred.shape == (seq_len, batch_size, vocab_size)
     mx.nd.waitall()
+
 
 def test_weight_drop():
     class RefBiLSTM(gluon.Block):
