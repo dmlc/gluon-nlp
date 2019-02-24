@@ -125,10 +125,9 @@ Note that this requires about 12G of GPU memory. If your GPU memory is less than
 .. code-block:: console
 
     $ python finetune_squad.py --optimizer adam --accumulate 2 --batch_size 6 --lr 3e-5 --epochs 2 --gpu
-python finetune_squad.py --bert_model bert_24_1024_16 --optimizer adam --accumulate 6 --batch_size 4 --lr 3e-5 --epochs 2 --gpu
 
 BERT LARGE on SQuAD 1.1
-^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^
 
 [6] bert_24_1024_16
 
