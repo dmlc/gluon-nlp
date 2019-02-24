@@ -82,12 +82,8 @@ For all model settings above, we set learing rate = 2e-5 and optimizer = bertada
 
 Some other tasks can be modeled with `--task_name` parameter.
 
-
 BERT for Question Answering on SQuAD
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-GluonNLP provides the following example script to fine-tune SQuAD with pre-trained
-BERT model.
 
 +-----------------------+---------------------------------------------------------------------------------------------------------------------------------+----------------------------------------------------------------------------------------------------------------------------------+----------------------------------------------------------------------------------------------------------------------------------+
 |                       |                                                            SQuAD 1.1                                                            |                                                             SQuAD 1.1                                                            |                                                             SQuAD 2.0                                                            |
@@ -138,6 +134,7 @@ BERT LARGE on SQuAD 1.1
     
 Note that this requires about 14G of GPU memory.
 
+
 BERT LARGE on SQuAD 2.0
 ^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -168,3 +165,93 @@ To get the score of the dev data, you need to download the dev dataset (`dev-v2.
         "NoAns_f1": 82.50630782169891,
         "NoAns_total": 5945
     }
+
+BERT for Sentence or Tokens Embedding
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The goal of this BERT Embedding is to obtain the sentence and token embedding from BERT's pre-trained model. In this way, instead of building and do fine-tuning for an end-to-end NLP model, you can build your model by just utilizing the sentence or token embeddings.
+
+Usage
++++++
+
+.. code-block:: python
+
+    from bert.embedding import BertEmbedding
+
+    bert_abstract = """We introduce a new language representation model called BERT, which stands for Bidirectional Encoder Representations from Transformers.
+     Unlike recent language representation models, BERT is designed to pre-train deep bidirectional representations by jointly conditioning on both left and right context in all layers.
+     As a result, the pre-trained BERT representations can be fine-tuned with just one additional output layer to create state-of-the-art models for a wide range of tasks, such as question answering and language inference, without substantial task-specific architecture modifications.
+    BERT is conceptually simple and empirically powerful.
+    It obtains new state-of-the-art results on eleven natural language processing tasks, including pushing the GLUE benchmark to 80.4% (7.6% absolute improvement), MultiNLI accuracy to 86.7 (5.6% absolute improvement) and the SQuAD v1.1 question answering Test F1 to 93.2 (1.5% absolute improvement), outperforming human performance by 2.0%."""
+    sentences = bert_abstract.split('\n')
+    bert_embedding = BertEmbedding()
+    result = bert.embedding(sentences)
+
+If you want to use GPU, please import mxnet and set context
+
+.. code-block:: python
+
+    import mxnet as mx
+    from bert.embedding import BertEmbedding
+
+    ctx = mx.gpu(0)
+    bert_embedding = BertEmbedding(ctx=ctx)
+
+Example of using the large pre-trained BERT model from Google
+
+.. code-block:: python
+
+    from bert.embedding import BertEmbedding
+
+    bert_embedding = BertEmbedding(model='bert_24_1024_16', dataset_name='book_corpus_wiki_en_cased')
+
+Example outputs:
+
+.. code-block:: python
+
+    first_sentence = result[0]
+
+    first_sentence[0]
+    # array([-0.835946  , -0.4605566 , -0.95620036, ..., -0.95608854,
+    #       -0.6258104 ,  0.7697007 ], dtype=float32)
+    first_sentence[0].shape
+    # (768,)
+
+    first_sentence[1]
+    # ['we', 'introduce', 'a', 'new', 'language', 'representation', 'model', 'called', 'bert', ',', 'which', 'stands', 'for', 'bidirectional', 'encoder', 'representations', 'from', 'transformers']
+    len(first_sentence[1])
+    # 18
+
+
+    len(first_sentence[2])
+    # 18
+    first_token_in_first_sentence = first_sentence[2]
+    first_token_in_first_sentence[0]
+    # array([ 0.4805648 ,  0.18369392, -0.28554988, ..., -0.01961522,
+    #        1.0207764 , -0.67167974], dtype=float32)
+    first_token_in_first_sentence[0].shape
+    # (768,)
+
+Command line interface
+++++++++++++++++++++++
+
+.. code-block:: shell
+
+    python bert_embedding/bert.py --sentences "GluonNLP is a toolkit that enables easy text preprocessing, datasets loading and neural models building to help you speed up your Natural Language Processing (NLP) research."
+    Text: GluonNLP is a toolkit that enables easy text preprocessing, datasets loading and neural models building to help you speed up your Natural Language Processing (NLP) research.
+    Sentence embedding: [-0.6098857  -0.1458175  -0.2767048  ... -0.42009002 -0.40388978
+  0.2774383 ]
+    Tokens embedding: [array([-0.11881411, -0.59530115,  0.627092  , ...,  0.00648153,
+       -0.03886228,  0.03406909], dtype=float32), array([-0.7995638 , -0.6540758 , -0.00521846, ..., -0.42272145,
+       -0.5787281 ,  0.7021201 ], dtype=float32), array([-0.7406778 , -0.80276626,  0.3931962 , ..., -0.49068323,
+       -0.58128357,  0.6811132 ], dtype=float32), array([-0.43287313, -1.0018158 ,  0.79617643, ..., -0.26877284,
+       -0.621779  , -0.2731115 ], dtype=float32), array([-0.8515188 , -0.74098676,  0.4427735 , ..., -0.41267148,
+       -0.64225197,  0.3949393 ], dtype=float32), array([-0.86652845, -0.27746758,  0.8806506 , ..., -0.87452525,
+       -0.9551989 , -0.0786318 ], dtype=float32), array([-1.0987284 , -0.36603633,  0.2826037 , ..., -0.33794224,
+       -0.55210876, -0.09221527], dtype=float32), array([-0.3483025 ,  0.401534  ,  0.9361341 , ..., -0.29747447,
+       -0.49559578, -0.08878893], dtype=float32), array([-0.65626   , -0.14857645,  0.29733548, ..., -0.15890433,
+       -0.45487815, -0.28494897], dtype=float32), array([-0.1983894 ,  0.67196256,  0.7867421 , ..., -0.7990434 ,
+        0.05860569, -0.26884627], dtype=float32), array([-0.3775159 , -0.00590206,  0.5240432 , ..., -0.26754653,
+       -0.37806216,  0.23336883], dtype=float32), array([ 0.1876977 ,  0.30165672,  0.47167772, ..., -0.43823618,
+       -0.42823148, -0.48873612], dtype=float32), array([-0.6576557 , -0.09822252,  0.1121515 , ..., -0.21743725,
+       -0.1820574 , -0.16115054], dtype=float32)]
