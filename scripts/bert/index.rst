@@ -108,7 +108,7 @@ BERT for Question Answering on SQuAD
 For all model settings above, we set learing rate = 3e-5 and optimizer = adam.
 
 BERT BASE on SQuAD 1.1
-^^^^^^^^^^^^^^^^^^^^^^
+++++++++++++++++++++++
 
 [5] bert_12_768_12
 
@@ -124,7 +124,7 @@ Note that this requires about 12G of GPU memory. If your GPU memory is less than
 
 
 BERT LARGE on SQuAD 1.1
-^^^^^^^^^^^^^^^^^^^^^^^
++++++++++++++++++++++++
 
 [6] bert_24_1024_16
 
@@ -136,7 +136,7 @@ Note that this requires about 14G of GPU memory.
 
 
 BERT LARGE on SQuAD 2.0
-^^^^^^^^^^^^^^^^^^^^^^^
++++++++++++++++++++++++
 
 For SQuAD 2.0, you need to specify the parameter *version_2* and specify the parameter *null_score_diff_threshold*. Typical values are between -1.0 and -5.0. Use the following command to fine-tune the BERT large model on SQuAD 2.0 and generate predictions.json, nbest_predictions.json, and null_odds.json.
 
