@@ -67,7 +67,7 @@ BERT for Sentence or Tokens Embedding
 The goal of this BERT Embedding is to obtain the sentence and token embedding from BERT's pre-trained model. In this way, instead of building and do fine-tuning for an end-to-end NLP model, you can build your model by just utilizing the sentence or token embeddings.
 
 Usage
-"""""
++++++
 
 .. code-block:: python
 
@@ -128,7 +128,7 @@ Example outputs:
     # (768,)
 
 Command line interface
-~~~~~~~~~~~~~~~~~~~~~~
+++++++++++++++++++++++
 
 .. code-block:: shell
 
@@ -158,7 +158,7 @@ GluonNLP provides the following example script to fine-tune SQuAD with pre-train
 BERT model.
 
 SQuAD 1.1
-^^^^^^^^^
++++++++++
 
 Use the following command to fine-tune the BERT base model for SQuAD1.1 dataset.
 
@@ -192,7 +192,7 @@ The F1 score on the dev dataset is `90.97% <https://raw.githubusercontent.com/dm
 
 
 SQuAD 2.0
-^^^^^^^^^
++++++++++
 
 If you are pre-training on the SQuAD2.0 dataset, you need to specify the parameter **version_2** and specify the parameter **null_score_diff_threshold** (Typical values are between -1.0 and -5.0).
 
