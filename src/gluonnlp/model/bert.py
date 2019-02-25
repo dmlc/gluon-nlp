@@ -298,8 +298,9 @@ class BERTModel(Block):
             shape (batch_size, num_masked_positions).
 
     Outputs:
-        - **sequence_outputs**: output tensor of sequence encodings.
-            Shape (batch_size, seq_length, units).
+        - **sequence_outputs**: Encoded sequence, which can be either a tensor of the last
+            layer of the Encoder, or a list of all sequence encodings of all layers.
+            In both cases shape of the tensor(s) is/are (batch_size, seq_length, units).
         - **attention_outputs**: output list of all intermediate encodings per layer
             Returned only if BERTEncoder.output_attention is True.
             List of num_layers length of tensors of shape
@@ -394,7 +395,12 @@ class BERTModel(Block):
         outputs = []
         seq_out, attention_out = self._encode_sequence(inputs, token_types, valid_length)
         outputs.append(seq_out)
-        output = seq_out[-1] if isinstance(seq_out, list) else seq_out
+
+        if self.encoder._output_all_encodings:
+            assert isinstance(seq_out, list)
+            output = seq_out[-1]
+        else:
+            output = seq_out
 
         if attention_out:
             outputs.append(attention_out)
@@ -635,7 +641,7 @@ def get_bert_model(model_name=None, dataset_name=None, vocab=None,
     output_attention : bool, default False
         Whether to include attention weights of each encoding cell to the output.
     output_all_encodings : bool, default False
-        Whether to include intermediate encodings of each encoding cell to the output.
+        Whether to output encodings of all encoder cells.
 
     Returns
     -------

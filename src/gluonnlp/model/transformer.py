@@ -455,8 +455,10 @@ class BaseTransformerEncoder(HybridBlock, Seq2SeqEncoder):
 
         Returns
         -------
-        outputs : NDArray or Symbol
-            The output of the encoder. Shape is (batch_size, length, C_out)
+        outputs : NDArray or Symbol, or List[NDArray] or List[Symbol]
+            If output_all_encodings flag is False, then the output of the last encoder.
+            If output_all_encodings flag is True, then the list of all outputs of all encoders.
+            In both cases, shape of the tensor(s) is/are (batch_size, length, C_out)
         additional_outputs : list
             Either be an empty list or contains the attention weights in this step.
             The attention weights will have shape (batch_size, length, length) or
@@ -486,11 +488,10 @@ class BaseTransformerEncoder(HybridBlock, Seq2SeqEncoder):
             outputs, attention_weights = cell(inputs, mask)
             inputs = outputs
             if self._output_all_encodings:
-                outputs_masked = outputs
                 if valid_length is not None:
-                    outputs_masked = F.SequenceMask(outputs, sequence_length=valid_length,
-                                                    use_sequence_length=True, axis=1)
-                all_encodings_outputs.append(outputs_masked)
+                    outputs = F.SequenceMask(outputs, sequence_length=valid_length,
+                                             use_sequence_length=True, axis=1)
+                all_encodings_outputs.append(outputs)
 
             if self._output_attention:
                 additional_outputs.append(attention_weights)
