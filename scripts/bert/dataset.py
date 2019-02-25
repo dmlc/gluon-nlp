@@ -16,7 +16,7 @@
 
 __all__ = [
     'MRPCDataset', 'QQPDataset', 'QNLIDataset', 'RTEDataset', 'STSBDataset',
-    'COLADataset', 'MNLIDataset', 'WNLIDataset', 'SSTDataset',
+    'COLADataset', 'MNLIDataset', 'WNLIDataset', 'SSTDataset', 'BertEmbeddingDataset',
     'BERTDatasetTransform'
 ]
 
@@ -24,6 +24,7 @@ import os
 import warnings
 import numpy as np
 from mxnet.metric import Accuracy, F1, MCC, PearsonCorrelation, CompositeEvalMetric
+from mxnet.gluon.data import Dataset
 from gluonnlp.data import TSVDataset, BERTSentenceTransform
 from gluonnlp.data.registry import register
 
@@ -548,3 +549,38 @@ class BERTDatasetTransform(object):
         label = np.array([label], dtype=self.label_dtype)
 
         return input_ids, valid_length, segment_ids, label
+
+
+class BertEmbeddingDataset(Dataset):
+    """Dataset for BERT Embedding
+
+    Parameters
+    ----------
+    sentences : List[str].
+        Sentences for embeddings.
+    transform : BERTDatasetTransform, default None.
+        transformer for BERT input format
+    """
+
+    def __init__(self, sentences, transform=None):
+        """Dataset for BERT Embedding
+
+        Parameters
+        ----------
+        sentences : List[str].
+            Sentences for embeddings.
+    transform : BERTDatasetTransform, default None.
+            transformer for BERT input format
+        """
+        self.sentences = sentences
+        self.transform = transform
+
+    def __getitem__(self, idx):
+        sentence = (self.sentences[idx], 0)
+        if self.transform:
+            return self.transform(sentence)
+        else:
+            return sentence
+
+    def __len__(self):
+        return len(self.sentences)
