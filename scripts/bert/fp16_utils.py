@@ -18,7 +18,7 @@
 
 """Trainer for mixed precision training."""
 import logging
-from collections import defaultdict
+import collections
 import numpy as np
 import mxnet as mx
 from mxnet import nd
@@ -80,7 +80,7 @@ def grad_global_norm(parameters, max_norm):
 
     # group norm arrays by ctx
     def group_by_ctx(arr_list):
-        groups = defaultdict(list)
+        groups = collections.defaultdict(list)
         for arr in arr_list:
             ctx = arr.context
             groups[ctx].append(arr)
@@ -89,7 +89,7 @@ def grad_global_norm(parameters, max_norm):
 
     # reduce
     ctx, dtype = arrays[0].context, 'float32'
-    norms = [nd.add_n(*norm_groups[g]).as_in_context(ctx) for g in norm_groups]
+    norms = [nd.add_n(*g).as_in_context(ctx) for g in norm_groups.values()]
     total_norm = nd.add_n(*norms).sqrt()
     scale = total_norm / max_norm
     # is_finite = 0 if NaN or Inf, 1 otherwise.
@@ -179,9 +179,6 @@ class FP16Trainer(object):
 
         # update scale based on overflow information
         self._scaler.update_scale(overflow)
-        if overflow:
-            for param in self.fp32_trainer._params:
-                param.zero_grad()
 
 class LossScaler(object):
     """Abstract loss scaler"""

@@ -106,18 +106,25 @@ class BERTAdam(Optimizer):
         lr = self._get_lr(indices)
         wd = self._get_wd(indices)
 
-        kwargs = {'beta1': self.beta1, 'beta2': self.beta2, 'epsilon': self.epsilon}
-        if self.clip_gradient:
-            kwargs['clip_gradient'] = self.clip_gradient
         weight = weights
         grad = grads
         state = states
+
+        if not isinstance(self.rescale_grad, NDArray):
+            self.rescale_grad = full(self.rescale_grad, shape=(1,), ctx=weight.context)
+        else:
+            self.rescale_grad = self.rescale_grad.as_in_context(weight.context)
+
+        kwargs = {'beta1': self.beta1, 'beta2': self.beta2, 'epsilon': self.epsilon,
+                  'rescale_grad': self.rescale_grad}
+        if self.clip_gradient:
+            kwargs['clip_gradient'] = self.clip_gradient
         # pylint: disable=access-member-before-definition
         if not multi_precision:
             mean, var = state
-            adamw_update(weight, grad, mean, var, self.rescale_grad, out=weight,
+            adamw_update(weight, grad, mean, var, out=weight,
                          lr=1, wd=wd, eta=lr, **kwargs)
         else:
             mean, var = state[0]
-            mp_adamw_update(weight, grad, mean, var, state[1], self.rescale_grad, out=weight,
+            mp_adamw_update(weight, grad, mean, var, state[1], out=weight,
                             lr=1, wd=wd, eta=lr, **kwargs)

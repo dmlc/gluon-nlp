@@ -210,9 +210,7 @@ def print_example(instance, features):
 
     for feature_name in features.keys():
         feature = features[feature_name]
-        logging.debug(  # pylint: disable=W1201
-            '%s: %s' % (feature_name, ' '.join(
-                [str(x) for x in feature])))
+        logging.debug('%s: %s', feature_name, feature)
 
 def write_to_files_np(features, tokenizer, max_seq_length,
                       max_predictions_per_seq, output_files):
