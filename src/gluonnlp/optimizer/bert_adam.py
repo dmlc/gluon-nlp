@@ -109,7 +109,7 @@ class BERTAdam(Optimizer):
         weight = weights
         grad = grads
         state = states
-
+        # pylint: disable=access-member-before-definition
         if not isinstance(self.rescale_grad, NDArray):
             self.rescale_grad = full(self.rescale_grad, shape=(1,), ctx=weight.context)
         else:
@@ -119,7 +119,6 @@ class BERTAdam(Optimizer):
                   'rescale_grad': self.rescale_grad}
         if self.clip_gradient:
             kwargs['clip_gradient'] = self.clip_gradient
-        # pylint: disable=access-member-before-definition
         if not multi_precision:
             mean, var = state
             adamw_update(weight, grad, mean, var, out=weight,
