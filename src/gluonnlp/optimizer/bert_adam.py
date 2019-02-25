@@ -111,7 +111,7 @@ class BERTAdam(Optimizer):
         state = states
         # pylint: disable=access-member-before-definition
         if not isinstance(self.rescale_grad, NDArray):
-            self.rescale_grad = full(self.rescale_grad, shape=(1,), ctx=weight.context)
+            self.rescale_grad = full(shape=(1,), val=self.rescale_grad, ctx=weight.context)
         else:
             self.rescale_grad = self.rescale_grad.as_in_context(weight.context)
 
