@@ -69,6 +69,39 @@ class SQuAD(ArrayDataset):
         Dataset version. Options are '1.1' and '2.0'.
     root : str, default '~/.mxnet/datasets/squad'
         Path to temp folder for storing data.
+
+    Examples
+    --------
+    >>> squad = gluonnlp.data.SQuAD('dev', '1.1', root='./datasets/squad')
+    -etc-
+    >>> len(squad)
+    10570
+    >>> len(squad[0])
+    6
+    >>> tuple(type(squad[0][i]) for i in range(6))
+    (<class 'int'>, <class 'str'>, <class 'str'>, <class 'str'>, <class 'list'>, <class 'list'>)
+    >>> squad[0][0]
+    0
+    >>> squad[0][1]
+    '56be4db0acb8001400a502ec'
+    >>> squad[0][2]
+    'Which NFL team represented the AFC at Super Bowl 50?'
+    >>> squad[0][3][:70]
+    'Super Bowl 50 was an American football game to determine the champion '
+    >>> squad[0][4]
+    ['Denver Broncos', 'Denver Broncos', 'Denver Broncos']
+    >>> squad[0][5]
+    [177, 177, 177]
+    >>> squad2 = gluonnlp.data.SQuAD('dev', '2.0', root='./datasets/squad')
+    -etc-
+    >>> len(squad2)
+    11873
+    >>> len(squad2[0])
+    7
+    >>> type(squad2[0][6])
+    <class 'bool'>
+    >>> squad2[0][6]
+    False
     """
 
     def __init__(self, segment='train', version='1.1',
