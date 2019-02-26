@@ -241,7 +241,7 @@ print(sample_tgt_seq)
 ```
 
 If you'd like to train your own transformer models, you may find the training scripts in our
-[model zoo](../../model_zoo/machine_translation/index.rst).
+[model zoo](../../../scripts/machine_translation/index.rst).
 
 ## References
 

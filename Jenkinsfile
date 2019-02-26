@@ -35,15 +35,24 @@ stage("Unit Test") {
       ws('workspace/gluon-nlp-docs') {
         checkout scm
         if (env.BRANCH_NAME.startsWith("PR-")) {
-          sh("ci/step_documentation.sh false")
+          sh("ci/step_documentation.sh false false")
           bucket = 'gluon-nlp-staging'
           path = env.BRANCH_NAME+'/'+env.BUILD_NUMBER
         } else {
-          sh("ci/step_documentation.sh true")
+          sh("ci/step_documentation.sh false true")
           bucket = 'gluon-nlp'
           path = env.BRANCH_NAME
         }
         sh("ci/upload_doc.sh ${bucket} ${path}")
+      }
+    }
+  },
+  // Make sure documentation can be built without building notebooks
+  'Documentation (dev setup)': {
+    node {
+      ws('workspace/gluon-nlp-docs') {
+        checkout scm
+        sh("ci/step_documentation.sh true false")
       }
     }
   }
