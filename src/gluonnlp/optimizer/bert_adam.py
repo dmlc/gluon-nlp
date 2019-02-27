@@ -92,7 +92,7 @@ class BERTAdam(Optimizer):
         self._update_impl(index, weight, grad, state,
                           multi_precision=use_multi_precision)
 
-    def _update_impl(self, indices, weights, grads, states, multi_precision=False):
+    def _update_impl(self, indices, weight, grad, state, multi_precision=False):
         """update function"""
         try:
             from mxnet.ndarray.contrib import adamw_update, mp_adamw_update
@@ -106,9 +106,6 @@ class BERTAdam(Optimizer):
         lr = self._get_lr(indices)
         wd = self._get_wd(indices)
 
-        weight = weights
-        grad = grads
-        state = states
         # pylint: disable=access-member-before-definition
         if not isinstance(self.rescale_grad, NDArray):
             self.rescale_grad = full(shape=(1,), val=self.rescale_grad, ctx=weight.context)
