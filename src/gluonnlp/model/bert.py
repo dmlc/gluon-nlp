@@ -127,8 +127,10 @@ class BERTEncoder(BaseTransformerEncoder):
     dropout : float
         Dropout probability of the attention probabilities.
     use_residual : bool
-    output_attention: bool
+    output_attention: bool, default False
         Whether to output the attention weights
+    output_all_encodings: bool, default False
+        Whether to output encodings of all encoder cells
     weight_initializer : str or Initializer
         Initializer for the input weights matrix, used for the linear
         transformation of the inputs.
@@ -155,7 +157,7 @@ class BERTEncoder(BaseTransformerEncoder):
     def __init__(self, attention_cell='multi_head', num_layers=2,
                  units=512, hidden_size=2048, max_length=50,
                  num_heads=4, scaled=True, dropout=0.0,
-                 use_residual=True, output_attention=False,
+                 use_residual=True, output_attention=False, output_all_encodings=False,
                  weight_initializer=None, bias_initializer='zeros',
                  prefix=None, params=None):
         super(BERTEncoder, self).__init__(attention_cell=attention_cell,
@@ -164,6 +166,7 @@ class BERTEncoder(BaseTransformerEncoder):
                                           num_heads=num_heads, scaled=scaled, dropout=dropout,
                                           use_residual=use_residual,
                                           output_attention=output_attention,
+                                          output_all_encodings=output_all_encodings,
                                           weight_initializer=weight_initializer,
                                           bias_initializer=bias_initializer,
                                           prefix=prefix, params=params,
@@ -295,8 +298,13 @@ class BERTModel(Block):
             shape (batch_size, num_masked_positions).
 
     Outputs:
-        - **sequence_outputs**: output tensor of sequence encodings.
-            Shape (batch_size, seq_length, units).
+        - **sequence_outputs**: Encoded sequence, which can be either a tensor of the last
+            layer of the Encoder, or a list of all sequence encodings of all layers.
+            In both cases shape of the tensor(s) is/are (batch_size, seq_length, units).
+        - **attention_outputs**: output list of all intermediate encodings per layer
+            Returned only if BERTEncoder.output_attention is True.
+            List of num_layers length of tensors of shape
+            (num_masks, num_attention_heads, seq_length, seq_length)
         - **pooled_output**: output tensor of pooled representation of the first tokens.
             Returned only if use_pooler is True. Shape (batch_size, units)
         - **next_sentence_classifier_output**: output tensor of next sentence classification.
@@ -385,10 +393,20 @@ class BERTModel(Block):
         This is used in training or fine-tuning a BERT model.
         """
         outputs = []
-        seq_out, _ = self._encode_sequence(inputs, token_types, valid_length)
+        seq_out, attention_out = self._encode_sequence(inputs, token_types, valid_length)
         outputs.append(seq_out)
+
+        if self.encoder._output_all_encodings:
+            assert isinstance(seq_out, list)
+            output = seq_out[-1]
+        else:
+            output = seq_out
+
+        if attention_out:
+            outputs.append(attention_out)
+
         if self._use_pooler:
-            pooled_out = self._apply_pooling(seq_out)
+            pooled_out = self._apply_pooling(output)
             outputs.append(pooled_out)
             if self._use_classifier:
                 next_sentence_classifier_out = self.classifier(pooled_out)
@@ -396,7 +414,7 @@ class BERTModel(Block):
         if self._use_decoder:
             assert masked_positions is not None, \
                 'masked_positions tensor is required for decoding masked language model'
-            decoder_out = self._decode(seq_out, masked_positions)
+            decoder_out = self._decode(output, masked_positions)
             outputs.append(decoder_out)
         return tuple(outputs) if len(outputs) > 1 else outputs[0]
 
@@ -591,6 +609,7 @@ def bert_24_1024_16(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu()
 def get_bert_model(model_name=None, dataset_name=None, vocab=None,
                    pretrained=True, ctx=mx.cpu(),
                    use_pooler=True, use_decoder=True, use_classifier=True,
+                   output_attention=False, output_all_encodings=False,
                    root=os.path.join('~', '.mxnet', 'models'), **kwargs):
     """Any BERT pretrained model.
 
@@ -619,6 +638,10 @@ def get_bert_model(model_name=None, dataset_name=None, vocab=None,
         Whether to include the decoder for masked language model prediction.
     use_classifier : bool, default True
         Whether to include the classifier for next sentence classification.
+    output_attention : bool, default False
+        Whether to include attention weights of each encoding cell to the output.
+    output_all_encodings : bool, default False
+        Whether to output encodings of all encoder cells.
 
     Returns
     -------
@@ -639,6 +662,8 @@ def get_bert_model(model_name=None, dataset_name=None, vocab=None,
                           num_heads=predefined_args['num_heads'],
                           scaled=predefined_args['scaled'],
                           dropout=predefined_args['dropout'],
+                          output_attention=output_attention,
+                          output_all_encodings=output_all_encodings,
                           use_residual=predefined_args['use_residual'])
     # bert_vocab
     from ..vocab import BERTVocab
