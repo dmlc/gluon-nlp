@@ -11,6 +11,7 @@ enforce_linkcheck=$1
 if [[ $enforce_linkcheck == true ]]; then
     make -C docs linkcheck SPHINXOPTS=-W
 else
+    set +ex
     make -C docs linkcheck
 fi;
 set +ex
