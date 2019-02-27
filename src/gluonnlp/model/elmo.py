@@ -32,6 +32,7 @@ from .convolutional_encoder import ConvolutionalEncoder
 from .bilm_encoder import BiLMEncoder
 from ..initializer.initializer import HighwayBias
 from ..vocab.elmo import ELMoCharVocab
+from ..base import get_home_dir
 
 
 class ELMoCharacterEncoder(gluon.HybridBlock):
@@ -305,7 +306,7 @@ def _get_elmo_model(model_cls, model_name, dataset_name, pretrained, ctx, root, 
 
 
 def elmo_2x1024_128_2048cnn_1xhighway(dataset_name=None, pretrained=False, ctx=mx.cpu(),
-                                      root=os.path.join('~', '.mxnet', 'models'), **kwargs):
+                                      root=os.path.join(get_home_dir(), 'models'), **kwargs):
     r"""ELMo 2-layer BiLSTM with 1024 hidden units, 128 projection size, 1 highway layer.
 
     Parameters
@@ -317,8 +318,9 @@ def elmo_2x1024_128_2048cnn_1xhighway(dataset_name=None, pretrained=False, ctx=m
         Whether to load the pre-trained weights for model.
     ctx : Context, default CPU
         The context in which to load the pre-trained weights.
-    root : str, default '~/.mxnet/models'
+    root : str, default '$MXNET_HOME/models'
         Location for keeping the model parameters.
+        MXNET_HOME defaults to '~/.mxnet'.
 
     Returns
     -------
@@ -348,7 +350,7 @@ def elmo_2x1024_128_2048cnn_1xhighway(dataset_name=None, pretrained=False, ctx=m
 
 
 def elmo_2x2048_256_2048cnn_1xhighway(dataset_name=None, pretrained=False, ctx=mx.cpu(),
-                                      root=os.path.join('~', '.mxnet', 'models'), **kwargs):
+                                      root=os.path.join(get_home_dir(), 'models'), **kwargs):
     r"""ELMo 2-layer BiLSTM with 2048 hidden units, 256 projection size, 1 highway layer.
 
     Parameters
@@ -360,8 +362,9 @@ def elmo_2x2048_256_2048cnn_1xhighway(dataset_name=None, pretrained=False, ctx=m
         Whether to load the pre-trained weights for model.
     ctx : Context, default CPU
         The context in which to load the pre-trained weights.
-    root : str, default '~/.mxnet/models'
+    root : str, default '$MXNET_HOME/models'
         Location for keeping the model parameters.
+        MXNET_HOME defaults to '~/.mxnet'.
 
     Returns
     -------
@@ -391,7 +394,7 @@ def elmo_2x2048_256_2048cnn_1xhighway(dataset_name=None, pretrained=False, ctx=m
 
 
 def elmo_2x4096_512_2048cnn_2xhighway(dataset_name=None, pretrained=False, ctx=mx.cpu(),
-                                      root=os.path.join('~', '.mxnet', 'models'), **kwargs):
+                                      root=os.path.join(get_home_dir(), 'models'), **kwargs):
     r"""ELMo 2-layer BiLSTM with 4096 hidden units, 512 projection size, 2 highway layer.
 
     Parameters
@@ -403,8 +406,9 @@ def elmo_2x4096_512_2048cnn_2xhighway(dataset_name=None, pretrained=False, ctx=m
         Whether to load the pre-trained weights for model.
     ctx : Context, default CPU
         The context in which to load the pre-trained weights.
-    root : str, default '~/.mxnet/models'
+    root : str, default '$MXNET_HOME/models'
         Location for keeping the model parameters.
+        MXNET_HOME defaults to '~/.mxnet'.
 
     Returns
     -------

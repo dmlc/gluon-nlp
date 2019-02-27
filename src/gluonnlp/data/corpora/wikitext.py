@@ -31,7 +31,7 @@ from mxnet.gluon.utils import _get_repo_file_url, check_sha1, download
 from ... import _constants as C
 from ..dataset import CorpusDataset
 from ..registry import register
-from ..utils import _get_home_dir
+from ...base import get_home_dir
 
 
 class _WikiText(CorpusDataset):
@@ -135,7 +135,7 @@ class WikiText2(_WikiText):
                  tokenizer=lambda s: s.split(),
                  bos=None,
                  eos=C.EOS_TOKEN,
-                 root=os.path.join(_get_home_dir(), 'datasets', 'wikitext-2'),
+                 root=os.path.join(get_home_dir(), 'datasets', 'wikitext-2'),
                  **kwargs):
         self._archive_file = ('wikitext-2-v1.zip',
                               '3c914d17d80b1459be871a5039ac23e752a53cbe')
@@ -222,7 +222,7 @@ class WikiText103(_WikiText):
                  tokenizer=lambda s: s.split(),
                  bos=None,
                  eos=C.EOS_TOKEN,
-                 root=os.path.join(_get_home_dir(), 'datasets',
+                 root=os.path.join(get_home_dir(), 'datasets',
                                    'wikitext-103'),
                  **kwargs):
         self._archive_file = ('wikitext-103-v1.zip',
@@ -309,7 +309,7 @@ class WikiText2Raw(_WikiText):
                  bos=None,
                  eos=None,
                  tokenizer=lambda s: s.encode('utf-8'),
-                 root=os.path.join(_get_home_dir(), 'datasets', 'wikitext-2'),
+                 root=os.path.join(get_home_dir(), 'datasets', 'wikitext-2'),
                  **kwargs):
         self._archive_file = ('wikitext-2-raw-v1.zip',
                               '3b6993c138fc61c95f7fffd900fef68f8411371d')
@@ -393,7 +393,7 @@ class WikiText103Raw(_WikiText):
                  tokenizer=lambda s: s.encode('utf-8'),
                  bos=None,
                  eos=None,
-                 root=os.path.join(_get_home_dir(), 'datasets',
+                 root=os.path.join(get_home_dir(), 'datasets',
                                    'wikitext-103'),
                  **kwargs):
         self._archive_file = ('wikitext-103-raw-v1.zip',

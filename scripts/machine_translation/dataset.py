@@ -23,7 +23,8 @@
 __all__ = ['TOY']
 
 import os
-from gluonnlp.data.translation import _TranslationDataset, _get_pair_key, _get_home_dir
+from gluonnlp.base import get_home_dir
+from gluonnlp.data.translation import _TranslationDataset, _get_pair_key
 from gluonnlp.data.registry import register
 
 
@@ -44,7 +45,7 @@ class TOY(_TranslationDataset):
         MXNET_HOME defaults to '~/.mxnet'.
     """
     def __init__(self, segment='train', src_lang='en', tgt_lang='de',
-                 root=os.path.join(_get_home_dir(), 'datasets', 'translation_test')):
+                 root=os.path.join(get_home_dir(), 'datasets', 'translation_test')):
         self._supported_segments = ['train', 'val', 'test']
         self._archive_file = {_get_pair_key('en', 'de'):
                                   ('translation_test.zip',

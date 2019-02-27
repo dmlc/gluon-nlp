@@ -30,7 +30,7 @@ from mxnet.gluon.utils import check_sha1, _get_repo_file_url, download
 from .. import _constants as C
 from .dataset import CorpusDataset
 from .registry import register
-from .utils import _get_home_dir
+from ..base import get_home_dir
 
 base_datasets = [
     'WordSimilarityEvaluationDataset', 'WordAnalogyEvaluationDataset'
@@ -182,7 +182,7 @@ class WordSim353(WordSimilarityEvaluationDataset):
     max = 10
 
     def __init__(self, segment='all', root=os.path.join(
-            _get_home_dir(), 'datasets', 'wordsim353')):
+            get_home_dir(), 'datasets', 'wordsim353')):
         if segment is not None:
             assert segment in ['all', 'relatedness', 'similarity']
 
@@ -274,7 +274,7 @@ class MEN(WordSimilarityEvaluationDataset):
     max = 50
 
     def __init__(self, segment='dev', root=os.path.join(
-            _get_home_dir(), 'datasets', 'men')):
+            get_home_dir(), 'datasets', 'men')):
         self.segment = segment
         super(MEN, self).__init__(root=root)
 
@@ -324,7 +324,7 @@ class RadinskyMTurk(WordSimilarityEvaluationDataset):
     min = 1
     max = 5
 
-    def __init__(self, root=os.path.join(_get_home_dir(), 'datasets',
+    def __init__(self, root=os.path.join(get_home_dir(), 'datasets',
                                          'radinskymturk')):
         super(RadinskyMTurk, self).__init__(root=root)
 
@@ -372,7 +372,7 @@ class RareWords(WordSimilarityEvaluationDataset):
     min = 0
     max = 10
 
-    def __init__(self, root=os.path.join(_get_home_dir(), 'datasets',
+    def __init__(self, root=os.path.join(get_home_dir(), 'datasets',
                                          'rarewords')):
         super(RareWords, self).__init__(root=root)
 
@@ -423,7 +423,7 @@ class SimLex999(WordSimilarityEvaluationDataset):
 
     score = 'SimLex999'
 
-    def __init__(self, root=os.path.join(_get_home_dir(), 'datasets',
+    def __init__(self, root=os.path.join(get_home_dir(), 'datasets',
                                          'simlex999')):
         super(SimLex999, self).__init__(root=root)
 
@@ -492,7 +492,7 @@ class SimVerb3500(WordSimilarityEvaluationDataset):
     max = 10
 
     def __init__(self, segment='full', root=os.path.join(
-            _get_home_dir(), 'datasets', 'simverb3500')):
+            get_home_dir(), 'datasets', 'simverb3500')):
         self.segment = segment
         super(SimVerb3500, self).__init__(root=root)
 
@@ -564,7 +564,7 @@ class SemEval17Task2(WordSimilarityEvaluationDataset):
     languages = ('en', 'es', 'de', 'it', 'fa')
 
     def __init__(self, segment='trial', language='en', root=os.path.join(
-            _get_home_dir(), 'datasets', 'semeval17task2')):
+            get_home_dir(), 'datasets', 'semeval17task2')):
         assert segment in self.segments
         assert language in self.languages
         self.language = language
@@ -629,7 +629,7 @@ class BakerVerb143(WordSimilarityEvaluationDataset):
     min = 0
     max = 1
 
-    def __init__(self, root=os.path.join(_get_home_dir(), 'datasets',
+    def __init__(self, root=os.path.join(get_home_dir(), 'datasets',
                                          'verb143')):
         super(BakerVerb143, self).__init__(root=root)
 
@@ -802,7 +802,7 @@ class GoogleAnalogyTestSet(WordAnalogyEvaluationDataset):
 
     def __init__(self, group=None,
                  category=None, lowercase=True, root=os.path.join(
-                     _get_home_dir(), 'datasets', 'google_analogy')):
+                     get_home_dir(), 'datasets', 'google_analogy')):
 
         assert group is None or group in self.groups
         assert category is None or category in self.categories
@@ -879,7 +879,7 @@ class BiggerAnalogyTestSet(WordAnalogyEvaluationDataset):
 
     def __init__(self, category=None, form_analogy_pairs=True,
                  drop_alternative_solutions=True, root=os.path.join(
-                     _get_home_dir(), 'datasets', 'bigger_analogy')):
+                     get_home_dir(), 'datasets', 'bigger_analogy')):
         self.form_analogy_pairs = form_analogy_pairs
         self.drop_alternative_solutions = drop_alternative_solutions
         self.category = category

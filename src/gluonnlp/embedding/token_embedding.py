@@ -38,7 +38,8 @@ from mxnet import nd, registry, cpu
 from mxnet.gluon.utils import download, check_sha1, _get_repo_file_url
 
 from .. import _constants as C
-from ..data.utils import DefaultLookupDict, _get_home_dir
+from ..base import get_home_dir
+from ..data.utils import DefaultLookupDict
 from ..model.train import FasttextEmbeddingModel
 
 
@@ -839,7 +840,7 @@ class GloVe(TokenEmbedding):
     source_file_hash = C.GLOVE_NPZ_SHA1
 
     def __init__(self, source='glove.6B.50d',
-                 embedding_root=os.path.join(_get_home_dir(), 'embedding'), **kwargs):
+                 embedding_root=os.path.join(get_home_dir(), 'embedding'), **kwargs):
         self._check_source(self.source_file_hash, source)
 
         super(GloVe, self).__init__(**kwargs)
@@ -931,7 +932,7 @@ class FastText(TokenEmbedding):
     source_bin_file_hash = C.FAST_TEXT_BIN_SHA1
 
     def __init__(self, source='wiki.simple', embedding_root=os.path.join(
-            _get_home_dir(), 'embedding'), load_ngrams=False, ctx=cpu(), **kwargs):
+            get_home_dir(), 'embedding'), load_ngrams=False, ctx=cpu(), **kwargs):
         self._check_source(self.source_file_hash, source)
 
         if load_ngrams:
@@ -1018,7 +1019,7 @@ class Word2Vec(TokenEmbedding):
     source_file_hash = C.WORD2VEC_NPZ_SHA1
 
     def __init__(self, source='GoogleNews-vectors-negative300',
-                 embedding_root=os.path.join(_get_home_dir(), 'embedding'), **kwargs):
+                 embedding_root=os.path.join(get_home_dir(), 'embedding'), **kwargs):
         self._check_source(self.source_file_hash, source)
 
         super(Word2Vec, self).__init__(**kwargs)

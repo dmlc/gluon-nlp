@@ -35,7 +35,7 @@ from mxnet.gluon.utils import download, check_sha1
 
 from .. import _constants as C
 from .registry import register
-from .utils import _get_home_dir
+from ..base import get_home_dir
 
 
 class _CoNLLSequenceTagging(SimpleDataset):
@@ -132,7 +132,7 @@ class CoNLL2000(_CoNLLSequenceTagging):
     ['B-NP', 'I-NP', 'I-NP', 'I-NP', 'O']
     """
     def __init__(self, segment='train',
-                 root=os.path.join(_get_home_dir(), 'datasets', 'conll2000')):
+                 root=os.path.join(get_home_dir(), 'datasets', 'conll2000')):
         self._data_file = {'train': ('train.txt.gz',
                                      '9f31cf936554cebf558d07cce923dca0b7f31864'),
                            'test': ('test.txt.gz',
@@ -180,7 +180,7 @@ class CoNLL2001(_CoNLLSequenceTagging):
     ['X', 'X', 'X', 'X', 'X']
     """
     def __init__(self, part, segment='train',
-                 root=os.path.join(_get_home_dir(), 'datasets', 'conll2001')):
+                 root=os.path.join(get_home_dir(), 'datasets', 'conll2001')):
         self._part = part
         self._data_file = [
             {'train': ('train1',
@@ -252,7 +252,7 @@ class CoNLL2002(_CoNLLSequenceTagging):
     ['B-LOC', 'I-LOC', 'O', 'B-LOC', 'O', 'O', 'O', 'O', 'O', 'B-ORG', 'O', 'O']
     """
     def __init__(self, lang, segment='train',
-                 root=os.path.join(_get_home_dir(), 'datasets', 'conll2002')):
+                 root=os.path.join(get_home_dir(), 'datasets', 'conll2002')):
         self._lang = lang
         self._data_file = {
             'esp': {'train': ('esp.train.gz',
@@ -323,7 +323,7 @@ class CoNLL2004(_CoNLLSequenceTagging):
     ['-', '-', '-', '-', '-']
     """
     def __init__(self, segment='train',
-                 root=os.path.join(_get_home_dir(), 'datasets', 'conll2004')):
+                 root=os.path.join(get_home_dir(), 'datasets', 'conll2004')):
         self._archive_file = ('conll04st-release.tar.gz',
                               '09ef957d908d34fa0abd745cbe43e279414f076c')
         self._data_file = {
@@ -429,7 +429,7 @@ class UniversalDependencies21(_CoNLLSequenceTagging):
     ['_', '_', '_', '_', '_', '_', '_']
     """
     def __init__(self, lang='en', segment='train',
-                 root=os.path.join(_get_home_dir(), 'datasets', 'ud2.1')):
+                 root=os.path.join(get_home_dir(), 'datasets', 'ud2.1')):
         self._archive_file = ('ud-treebanks-v2.1.tgz',
                               '77657b897951e21d2eca6b29958e663964eb57ae')
         self._lang = lang

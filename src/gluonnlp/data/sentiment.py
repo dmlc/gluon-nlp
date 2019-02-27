@@ -30,7 +30,7 @@ from mxnet.gluon.data import SimpleDataset
 from mxnet.gluon.utils import download, check_sha1, _get_repo_file_url
 
 from .registry import register
-from .utils import _get_home_dir
+from ..base import get_home_dir
 
 
 class SentimentDataset(SimpleDataset):
@@ -117,7 +117,7 @@ class IMDB(SentimentDataset):
     >>> imdb[0][1]
     0
     """
-    def __init__(self, segment='train', root=os.path.join(_get_home_dir(), 'datasets', 'imdb')):
+    def __init__(self, segment='train', root=os.path.join(get_home_dir(), 'datasets', 'imdb')):
         super(IMDB, self).__init__(segment, root)
 
     def _data_file(self):
@@ -159,7 +159,7 @@ class MR(SentimentDataset):
     >>> mr[3][1]
     1
     """
-    def __init__(self, root=os.path.join(_get_home_dir(), 'datasets', 'mr')):
+    def __init__(self, root=os.path.join(get_home_dir(), 'datasets', 'mr')):
         super(MR, self).__init__('all', root)
 
     def _data_file(self):
@@ -209,7 +209,7 @@ class TREC(SentimentDataset):
     >>> (trec[0][1], trec[0][0].split()[0])
     (3, 'ind')
     """
-    def __init__(self, segment='train', root=os.path.join(_get_home_dir(), 'datasets', 'trec')):
+    def __init__(self, segment='train', root=os.path.join(get_home_dir(), 'datasets', 'trec')):
         super(TREC, self).__init__(segment, root)
 
     def _data_file(self):
@@ -247,7 +247,7 @@ class SUBJ(SentimentDataset):
     >>> subj[0][1]
     1
     """
-    def __init__(self, root=os.path.join(_get_home_dir(), 'datasets', 'subj')):
+    def __init__(self, root=os.path.join(get_home_dir(), 'datasets', 'subj')):
         super(SUBJ, self).__init__('all', root)
 
     def _data_file(self):
@@ -296,7 +296,7 @@ class SST_1(SentimentDataset):
     >>> sst_1[0][1]
     2
     """
-    def __init__(self, segment='train', root=os.path.join(_get_home_dir(), 'datasets', 'sst-1')):
+    def __init__(self, segment='train', root=os.path.join(get_home_dir(), 'datasets', 'sst-1')):
         super(SST_1, self).__init__(segment, root)
 
     def _data_file(self):
@@ -341,7 +341,7 @@ class SST_2(SentimentDataset):
     >>> sst_2[0][1]
     1
     """
-    def __init__(self, segment='train', root=os.path.join(_get_home_dir(), 'datasets', 'sst-2')):
+    def __init__(self, segment='train', root=os.path.join(get_home_dir(), 'datasets', 'sst-2')):
         super(SST_2, self).__init__(segment, root)
 
     def _data_file(self):
