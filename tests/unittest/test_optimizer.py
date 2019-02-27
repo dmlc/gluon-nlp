@@ -15,6 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
+import warnings
 import mxnet as mx
 from mxnet.test_utils import default_context, assert_almost_equal, rand_ndarray
 import numpy as np
