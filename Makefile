@@ -33,7 +33,7 @@ lint:
 	make restruc
 
 docs: release
-	make -C docs doctest html SPHINXOPTS=-W
+	make -C docs html SPHINXOPTS=-W
 	for f in $(shell find docs/examples -type f -name '*.md' -print) ; do \
 		FILE=`echo $$f | sed 's/docs\///g'` ; \
 		DIR=`dirname $$FILE` ; \
@@ -56,9 +56,6 @@ docs: release
 
 clean:
 	git clean -ff -d -x --exclude="$(ROOTDIR)/tests/externaldata/*" --exclude="$(ROOTDIR)/tests/data/*" --exclude="$(ROOTDIR)/conda/"
-
-clean_doc:
-	make -C docs clean
 
 compile_notebooks:
 	for f in $(shell find docs/examples -type f -name '*.md' -print) ; do \

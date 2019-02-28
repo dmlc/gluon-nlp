@@ -40,6 +40,14 @@ stage("Unit Test") {
       }
     }
   },
+  'DocTest': {
+    node {
+      ws('workspace/gluon-nlp-doctest') {
+        checkout scm
+        sh("ci/step_doc_test.sh")
+      }
+    }
+  },
   'Documentation': {
     node {
       ws('workspace/gluon-nlp-docs') {
