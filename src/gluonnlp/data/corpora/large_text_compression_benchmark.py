@@ -45,7 +45,7 @@ import zipfile
 from mxnet.gluon.utils import _get_repo_file_url, check_sha1, download
 
 from ..dataset import CorpusDataset
-from ..utils import _get_home_dir
+from ...base import get_home_dir
 
 
 class _LargeTextCompressionBenchmark(CorpusDataset):
@@ -100,7 +100,7 @@ class Text8(_LargeTextCompressionBenchmark):
     }
 
     def __init__(self,
-                 root=os.path.join(_get_home_dir(), 'datasets', 'text8'),
+                 root=os.path.join(get_home_dir(), 'datasets', 'text8'),
                  segment='train',
                  max_sentence_length=10000):
         root = os.path.expanduser(root)
@@ -142,7 +142,7 @@ class Fil9(_LargeTextCompressionBenchmark):
     data_file = {'train': ('fil9', '08caf9b1d5600233aa19cb6b25d7b798558304d3')}
 
     def __init__(self,
-                 root=os.path.join(_get_home_dir(), 'datasets', 'fil9'),
+                 root=os.path.join(get_home_dir(), 'datasets', 'fil9'),
                  segment='train',
                  max_sentence_length=None):
         root = os.path.expanduser(root)

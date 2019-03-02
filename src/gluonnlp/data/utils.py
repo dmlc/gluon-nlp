@@ -36,6 +36,7 @@ from mxnet.gluon.data import SimpleDataset
 from mxnet.gluon.utils import _get_repo_url, download, check_sha1
 
 from .. import _constants as C
+from ..base import get_home_dir
 
 
 class Counter(collections.Counter):  # pylint: disable=abstract-method
@@ -267,15 +268,16 @@ def short_hash(name):
     return _vocab_sha1[name][:8]
 
 
-def _load_pretrained_vocab(name, root=os.path.join('~', '.mxnet', 'models'), cls=None):
+def _load_pretrained_vocab(name, root=os.path.join(get_home_dir(), 'models'), cls=None):
     """Load the accompanying vocabulary object for pre-trained model.
 
     Parameters
     ----------
     name : str
         Name of the vocabulary, usually the name of the dataset.
-    root : str, default '~/.mxnet/models'
+    root : str, default '$MXNET_HOME/models'
         Location for keeping the model parameters.
+        MXNET_HOME defaults to '~/.mxnet'.
     cls : nlp.Vocab or nlp.vocab.BERTVocab, default nlp.Vocab
 
     Returns
@@ -323,14 +325,6 @@ def _load_vocab_file(file_path, cls):
             cls = Vocab
 
         return cls.from_json(f.read())
-
-
-def _get_home_dir():
-    """Get home directory for storing datasets/models/pre-trained word embeddings"""
-    _home_dir = os.environ.get('MXNET_HOME', os.path.join('~', '.mxnet'))
-    # expand ~ to actual path
-    _home_dir = os.path.expanduser(_home_dir)
-    return _home_dir
 
 
 def _extract_archive(file, target_dir):

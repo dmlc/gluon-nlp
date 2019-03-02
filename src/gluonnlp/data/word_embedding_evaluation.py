@@ -30,7 +30,7 @@ from mxnet.gluon.utils import check_sha1, _get_repo_file_url, download
 from .. import _constants as C
 from .dataset import CorpusDataset
 from .registry import register
-from .utils import _get_home_dir
+from ..base import get_home_dir
 
 base_datasets = [
     'WordSimilarityEvaluationDataset', 'WordAnalogyEvaluationDataset'
@@ -135,6 +135,9 @@ class WordSim353(WordSimilarityEvaluationDataset):
 
     License: Creative Commons Attribution 4.0 International (CC BY 4.0)
 
+    Each sample consists of a pair of words, and a score with scale from
+    0 (totally unrelated words) to 10 (very much related or identical words).
+
     Parameters
     ----------
     segment : str
@@ -142,6 +145,15 @@ class WordSim353(WordSimilarityEvaluationDataset):
     root : str, default '$MXNET_HOME/datasets/wordsim353'
         Path to temp folder for storing data.
         MXNET_HOME defaults to '~/.mxnet'.
+
+    Examples
+    --------
+    >>> wordsim353 = gluonnlp.data.WordSim353('similarity', root='./datasets/wordsim353')
+    -etc-
+    >>> len(wordsim353)
+    203
+    >>> wordsim353[0]
+    ['Arafat', 'Jackson', 2.5]
     """
     _url = 'http://alfonseca.org/pubs/ws353simrel.tar.gz'
     _archive_file = ('ws353simrel.tar.gz',
@@ -170,7 +182,7 @@ class WordSim353(WordSimilarityEvaluationDataset):
     max = 10
 
     def __init__(self, segment='all', root=os.path.join(
-            _get_home_dir(), 'datasets', 'wordsim353')):
+            get_home_dir(), 'datasets', 'wordsim353')):
         if segment is not None:
             assert segment in ['all', 'relatedness', 'similarity']
 
@@ -190,7 +202,7 @@ class WordSim353(WordSimilarityEvaluationDataset):
                     self.root,
                     'wordsim353_sim_rel/wordsim_similarity_goldstandard.txt'))
 
-        return list({tuple(row) for row in CorpusDataset(paths)})
+        return sorted(list({tuple(row) for row in CorpusDataset(paths)}))
 
 
 @register(segment=['full', 'dev', 'test'])
@@ -208,6 +220,9 @@ class MEN(WordSimilarityEvaluationDataset):
 
     License: Creative Commons Attribution 2.0 Generic (CC BY 2.0)
 
+    Each sample consists of a pair of words, and a score with scale from
+    0 (totally unrelated words) to 50 (very much related or identical words).
+
     Parameters
     ----------
     root : str, default '$MXNET_HOME/datasets/men'
@@ -218,11 +233,11 @@ class MEN(WordSimilarityEvaluationDataset):
 
     Examples
     --------
-    >>> men_dataset = gluonnlp.data.MEN('test', root='./datasets/men')
+    >>> men = gluonnlp.data.MEN('test', root='./datasets/men')
     -etc-
-    >>> len(men_dataset)
+    >>> len(men)
     1000
-    >>> men_dataset[0]
+    >>> men[0]
     ['display', 'pond', 10.0]
     """
     _url = 'https://staff.fnwi.uva.nl/e.bruni/resources/MEN.tar.gz'
@@ -259,7 +274,7 @@ class MEN(WordSimilarityEvaluationDataset):
     max = 50
 
     def __init__(self, segment='dev', root=os.path.join(
-            _get_home_dir(), 'datasets', 'men')):
+            get_home_dir(), 'datasets', 'men')):
         self.segment = segment
         super(MEN, self).__init__(root=root)
 
@@ -284,12 +299,23 @@ class RadinskyMTurk(WordSimilarityEvaluationDataset):
 
     License: Unspecified
 
+    Each sample consists of a pair of words, and a score with scale from
+    1 (totally unrelated words) to 5 (very much related or identical words).
+
     Parameters
     ----------
     root : str, default '$MXNET_HOME/datasets/radinskymturk'
         Path to temp folder for storing data.
         MXNET_HOME defaults to '~/.mxnet'.
 
+    Examples
+    --------
+    >>> radinskymturk = gluonnlp.data.RadinskyMTurk(root='./datasets/radinskymturk')
+    -etc-
+    >>> len(radinskymturk)
+    287
+    >>> radinskymturk[0]
+    ['episcopal', 'russia', 2.75]
     """
     _url = 'http://www.kiraradinsky.com/files/Mtruk.csv'
     _archive_file = ('Mtruk.csv', '14959899c092148abba21401950d6957c787434c')
@@ -298,7 +324,7 @@ class RadinskyMTurk(WordSimilarityEvaluationDataset):
     min = 1
     max = 5
 
-    def __init__(self, root=os.path.join(_get_home_dir(), 'datasets',
+    def __init__(self, root=os.path.join(get_home_dir(), 'datasets',
                                          'radinskymturk')):
         super(RadinskyMTurk, self).__init__(root=root)
 
@@ -321,12 +347,23 @@ class RareWords(WordSimilarityEvaluationDataset):
 
     License: Unspecified
 
+    Each sample consists of a pair of words, and a score with scale from
+    0 (totally unrelated words) to 10 (very much related or identical words).
+
     Parameters
     ----------
     root : str, default '$MXNET_HOME/datasets/rarewords',
         MXNET_HOME defaults to '~/.mxnet'.
         Path to temp folder for storing data.
 
+    Examples
+    --------
+    >>> rarewords = gluonnlp.data.RareWords(root='./datasets/rarewords')
+    -etc-
+    >>> len(rarewords)
+    2034
+    >>> rarewords[0]
+    ['squishing', 'squirt', 5.88]
     """
     _url = 'http://www-nlp.stanford.edu/~lmthang/morphoNLM/rw.zip'
     _archive_file = ('rw.zip', 'bf9c5959a0a2d7ed8e51d91433ac5ebf366d4fb9')
@@ -335,7 +372,7 @@ class RareWords(WordSimilarityEvaluationDataset):
     min = 0
     max = 10
 
-    def __init__(self, root=os.path.join(_get_home_dir(), 'datasets',
+    def __init__(self, root=os.path.join(get_home_dir(), 'datasets',
                                          'rarewords')):
         super(RareWords, self).__init__(root=root)
 
@@ -355,35 +392,8 @@ class SimLex999(WordSimilarityEvaluationDataset):
 
     License: Unspecified
 
-    The dataset contains
-
-    - word1: The first concept in the pair.
-    - word2: The second concept in the pair. Note that the order is only
-      relevant to the column Assoc(USF). These values (free association scores)
-      are asymmetric. All other values are symmetric properties independent of
-      the ordering word1, word2.
-    - POS: The majority part-of-speech of the concept words, as determined by
-      occurrence in the POS-tagged British National Corpus. Only pairs of
-      matching POS are included in SimLex-999.
-    - SimLex999: The SimLex999 similarity rating. Note that average annotator
-      scores have been (linearly) mapped from the range [0,6] to the range
-      [0,10] to match other datasets such as WordSim-353.
-    - conc(w1): The concreteness rating of word1 on a scale of 1-7. Taken from
-      the University of South Florida Free Association Norms database.
-    - conc(w2): The concreteness rating of word2 on a scale of 1-7. Taken from
-      the University of South Florida Free Association Norms database.
-    - concQ: The quartile the pair occupies based on the two concreteness
-      ratings. Used for some analyses in the above paper.
-    - Assoc(USF): The strength of free association from word1 to word2. Values
-      are taken from the University of South Florida Free Association Dataset.
-    - SimAssoc333: Binary indicator of whether the pair is one of the 333 most
-      associated in the dataset (according to Assoc(USF)). This subset of
-      SimLex999 is often the hardest for computational models to capture
-      because the noise from high association can confound the similarity
-      rating. See the paper for more details.
-    - SD(SimLex): The standard deviation of annotator scores when rating this
-      pair. Low values indicate good agreement between the 15+ annotators on
-      the similarity value SimLex999. Higher scores indicate less certainty.
+    Each sample consists of a pair of words, and a score with scale from
+    0 (totally unrelated words) to 10 (very much related or identical words).
 
     Parameters
     ----------
@@ -391,6 +401,14 @@ class SimLex999(WordSimilarityEvaluationDataset):
         Path to temp folder for storing data.
         MXNET_HOME defaults to '~/.mxnet'.
 
+    Examples
+    --------
+    >>> simlex999 = gluonnlp.data.SimLex999(root='./datasets/simlex999')
+    -etc-
+    >>> len(simlex999)
+    999
+    >>> simlex999[0]
+    ['old', 'new', 1.58]
     """
     _url = 'https://www.cl.cam.ac.uk/~fh295/SimLex-999.zip'
     _archive_file = ('SimLex-999.zip',
@@ -405,7 +423,7 @@ class SimLex999(WordSimilarityEvaluationDataset):
 
     score = 'SimLex999'
 
-    def __init__(self, root=os.path.join(_get_home_dir(), 'datasets',
+    def __init__(self, root=os.path.join(get_home_dir(), 'datasets',
                                          'simlex999')):
         super(SimLex999, self).__init__(root=root)
 
@@ -426,18 +444,8 @@ class SimVerb3500(WordSimilarityEvaluationDataset):
 
     License: Unspecified
 
-    The dataset contains
-
-    - word1: The first verb of the pair.
-    - word2: The second verb of the pair.
-    - POS: The part-of-speech tag. Note that it is 'V' for all pairs, since the
-      dataset exclusively contains verbs. We decided to include it nevertheless
-      to make it compatible with SimLex-999.
-    - score: The SimVerb-3500 similarity rating. Note that average annotator
-      scores have been linearly mapped from the range [0,6] to the range [0,10]
-      to match other datasets.
-    - relation: the lexical relation of the pair. Possible values: 'SYNONYMS',
-      'ANTONYMS', 'HYPER/HYPONYMS', 'COHYPONYMS', 'NONE'.
+    Each sample consists of a pair of words, and a score with scale from
+    0 (totally unrelated words) to 10 (very much related or identical words).
 
     Parameters
     ----------
@@ -445,6 +453,14 @@ class SimVerb3500(WordSimilarityEvaluationDataset):
         Path to temp folder for storing data.
         MXNET_HOME defaults to '~/.mxnet'.
 
+    Examples
+    --------
+    >>> simverb3500 = gluonnlp.data.SimVerb3500(root='./datasets/simverb3500')
+    -etc-
+    >>> len(simverb3500)
+    3500
+    >>> simverb3500[0]
+    ['take', 'remove', 6.81]
     """
     _url = 'http://people.ds.cam.ac.uk/dsg40/paper/simverb/simverb-3500-data.zip'
     _archive_file = ('simverb-3500-data.zip',
@@ -476,7 +492,7 @@ class SimVerb3500(WordSimilarityEvaluationDataset):
     max = 10
 
     def __init__(self, segment='full', root=os.path.join(
-            _get_home_dir(), 'datasets', 'simverb3500')):
+            get_home_dir(), 'datasets', 'simverb3500')):
         self.segment = segment
         super(SimVerb3500, self).__init__(root=root)
 
@@ -510,6 +526,9 @@ class SemEval17Task2(WordSimilarityEvaluationDataset):
 
     License: Unspecified
 
+    Each sample consists of a pair of words, and a score with scale from
+    0 (totally unrelated words) to 5 (very much related or identical words).
+
     Parameters
     ----------
     root : str, default '$MXNET_HOME/datasets/semeval17task2'
@@ -520,6 +539,14 @@ class SemEval17Task2(WordSimilarityEvaluationDataset):
     language : str, default 'en'
         Dataset language.
 
+    Examples
+    --------
+    >>> semeval17task2 = gluonnlp.data.SemEval17Task2(root='./datasets/semeval17task2')
+    -etc-
+    >>> len(semeval17task2)
+    18
+    >>> semeval17task2[0]
+    ['sunset', 'string', 0.05]
     """
     _url = 'http://alt.qcri.org/semeval2017/task2/data/uploads/semeval2017-task2.zip'
     _archive_file = ('semeval2017-task2.zip',
@@ -537,7 +564,7 @@ class SemEval17Task2(WordSimilarityEvaluationDataset):
     languages = ('en', 'es', 'de', 'it', 'fa')
 
     def __init__(self, segment='trial', language='en', root=os.path.join(
-            _get_home_dir(), 'datasets', 'semeval17task2')):
+            get_home_dir(), 'datasets', 'semeval17task2')):
         assert segment in self.segments
         assert language in self.languages
         self.language = language
@@ -573,12 +600,23 @@ class BakerVerb143(WordSimilarityEvaluationDataset):
 
     License: unspecified
 
+    Each sample consists of a pair of words, and a score with scale from
+    0 (totally unrelated words) to 1 (very much related or identical words).
+
     Parameters
     ----------
     root : str, default '$MXNET_HOME/datasets/verb143'
         Path to temp folder for storing data.
         MXNET_HOME defaults to '~/.mxnet'.
 
+    Examples
+    --------
+    >>> bakerverb143 = gluonnlp.data.BakerVerb143(root='./datasets/bakerverb143')
+    -etc-
+    >>> len(bakerverb143)
+    144
+    >>> bakerverb143[0]
+    ['happen', 'say', 0.19]
     """
     _url = 'https://ie.technion.ac.il/~roiri/papers/EMNLP14.zip'
     _archive_file = ('EMNLP14.zip', '1862e52af784e76e83d472532a75eb797fb8b807')
@@ -589,9 +627,9 @@ class BakerVerb143(WordSimilarityEvaluationDataset):
     _verify_ssl = False  # ie.technion.ac.il serves an invalid cert as of 2018-04-16
 
     min = 0
-    max = 10
+    max = 1
 
-    def __init__(self, root=os.path.join(_get_home_dir(), 'datasets',
+    def __init__(self, root=os.path.join(get_home_dir(), 'datasets',
                                          'verb143')):
         super(BakerVerb143, self).__init__(root=root)
 
@@ -611,12 +649,22 @@ class YangPowersVerb130(WordSimilarityEvaluationDataset):
 
     License: Unspecified
 
+    Each sample consists of a pair of words, and a score with scale from
+    0 (totally unrelated words) to 4 (very much related or identical words).
+
     Parameters
     ----------
     root : str, default '$MXNET_HOME/datasets/verb130'
         Path to temp folder for storing data.
         MXNET_HOME defaults to '~/.mxnet'.
 
+    Examples
+    --------
+    >>> yangpowersverb130 = gluonnlp.data.YangPowersVerb130(root='./datasets/yangpowersverb130')
+    >>> len(yangpowersverb130)
+    130
+    >>> yangpowersverb130[0]
+    ['brag', 'boast', 4.0]
     """
 
     _words1 = [
@@ -709,6 +757,37 @@ class GoogleAnalogyTestSet(WordAnalogyEvaluationDataset):
 
     License: Unspecified
 
+    Each sample consists of two analogical pairs of words.
+
+    Parameters
+    ----------
+    group : {'syntactic', 'semantic'} or None, default None
+        The subset for the specified type of analogy. None for the complete dataset.
+    category : str or None, default None
+        The subset for the specified category of analogy. None for the complete dataset.
+    lowercase : boolean, default True
+        Whether to convert words to lowercase.
+    root : str, default '$MXNET_HOME/datasets/google_analogy'
+        Path to temp folder for storing data.
+        MXNET_HOME defaults to '~/.mxnet'.
+
+    Examples
+    --------
+    >>> googleanalogytestset = gluonnlp.data.GoogleAnalogyTestSet(
+    ...     root='./datasets/googleanalogytestset')
+    -etc-
+    >>> len(googleanalogytestset)
+    19544
+    >>> googleanalogytestset[0]
+    ['athens', 'greece', 'baghdad', 'iraq']
+    >>> googleanalogytestset = gluonnlp.data.GoogleAnalogyTestSet(
+    ...     'syntactic', root='./datasets/googleanalogytestset')
+    >>> googleanalogytestset[0]
+    ['amazing', 'amazingly', 'apparent', 'apparently']
+    >>> googleanalogytestset = gluonnlp.data.GoogleAnalogyTestSet(
+    ...     'syntactic', 'gram8-plural', root='./datasets/googleanalogytestset')
+    >>> googleanalogytestset[0]
+    ['banana', 'bananas', 'bird', 'birds']
     """
 
     _archive_file = ('questions-words.txt',
@@ -723,7 +802,7 @@ class GoogleAnalogyTestSet(WordAnalogyEvaluationDataset):
 
     def __init__(self, group=None,
                  category=None, lowercase=True, root=os.path.join(
-                     _get_home_dir(), 'datasets', 'google_analogy')):
+                     get_home_dir(), 'datasets', 'google_analogy')):
 
         assert group is None or group in self.groups
         assert category is None or category in self.categories
@@ -768,12 +847,23 @@ class BiggerAnalogyTestSet(WordAnalogyEvaluationDataset):
 
     License: Unspecified
 
+    Each sample consists of two analogical pairs of words.
+
     Parameters
     ----------
     root : str, default '$MXNET_HOME/datasets/bats'
         Path to temp folder for storing data.
         MXNET_HOME defaults to '~/.mxnet'.
 
+    Examples
+    --------
+    >>> biggeranalogytestset = gluonnlp.data.BiggerAnalogyTestSet(
+    ...     root='./datasets/biggeranalogytestset')
+    -etc-
+    >>> len(biggeranalogytestset)
+    98000
+    >>> biggeranalogytestset[0]
+    ['album', 'albums', 'application', 'applications']
     """
     _archive_file = ('BATS_3.0.zip',
                      'bf94d47884be9ea83af369beeea7499ed25dcf0d')
@@ -789,7 +879,7 @@ class BiggerAnalogyTestSet(WordAnalogyEvaluationDataset):
 
     def __init__(self, category=None, form_analogy_pairs=True,
                  drop_alternative_solutions=True, root=os.path.join(
-                     _get_home_dir(), 'datasets', 'bigger_analogy')):
+                     get_home_dir(), 'datasets', 'bigger_analogy')):
         self.form_analogy_pairs = form_analogy_pairs
         self.drop_alternative_solutions = drop_alternative_solutions
         self.category = category
