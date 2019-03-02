@@ -30,6 +30,7 @@ import mxnet as mx
 from .transformer import BasePositionwiseFFN, BaseTransformerEncoderCell, BaseTransformerEncoder
 from .block import GELU
 from .utils import _load_vocab, _load_pretrained_params
+from ..base import get_home_dir
 
 
 ###############################################################################
@@ -527,7 +528,7 @@ bert_hparams = {
 
 
 def bert_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
-                   root=os.path.join('~', '.mxnet', 'models'), use_pooler=True,
+                   root=os.path.join(get_home_dir(), 'models'), use_pooler=True,
                    use_decoder=True, use_classifier=True, **kwargs):
     """BERT BASE pretrained model.
 
@@ -545,8 +546,9 @@ def bert_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
         Whether to load the pretrained weights for model.
     ctx : Context, default CPU
         The context in which to load the pretrained weights.
-    root : str, default '~/.mxnet/models'
+    root : str, default '$MXNET_HOME/models'
         Location for keeping the model parameters.
+        MXNET_HOME defaults to '~/.mxnet'.
     use_pooler : bool, default True
         Whether to include the pooler which converts the encoded sequence tensor of shape
         (batch_size, seq_length, units) to a tensor of shape (batch_size, units)
@@ -568,7 +570,7 @@ def bert_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
 
 def bert_24_1024_16(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
                     use_pooler=True, use_decoder=True, use_classifier=True,
-                    root=os.path.join('~', '.mxnet', 'models'), **kwargs):
+                    root=os.path.join(get_home_dir(), 'models'), **kwargs):
     """BERT LARGE pretrained model.
 
     The number of layers (L) is 24, number of units (H) is 1024, and the
@@ -584,8 +586,9 @@ def bert_24_1024_16(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu()
         Whether to load the pretrained weights for model.
     ctx : Context, default CPU
         The context in which to load the pretrained weights.
-    root : str, default '~/.mxnet/models'
+    root : str, default '$MXNET_HOME/models'
         Location for keeping the model parameters.
+        MXNET_HOME defaults to '~/.mxnet'.
     use_pooler : bool, default True
         Whether to include the pooler which converts the encoded sequence tensor of shape
         (batch_size, seq_length, units) to a tensor of shape (batch_size, units)
@@ -610,7 +613,7 @@ def get_bert_model(model_name=None, dataset_name=None, vocab=None,
                    pretrained=True, ctx=mx.cpu(),
                    use_pooler=True, use_decoder=True, use_classifier=True,
                    output_attention=False, output_all_encodings=False,
-                   root=os.path.join('~', '.mxnet', 'models'), **kwargs):
+                   root=os.path.join(get_home_dir(), 'models'), **kwargs):
     """Any BERT pretrained model.
 
     Parameters
@@ -628,8 +631,9 @@ def get_bert_model(model_name=None, dataset_name=None, vocab=None,
         Whether to load the pretrained weights for model.
     ctx : Context, default CPU
         The context in which to load the pretrained weights.
-    root : str, default '~/.mxnet/models'
+    root : str, default '$MXNET_HOME/models'
         Location for keeping the model parameters.
+        MXNET_HOME defaults to '~/.mxnet'.
     use_pooler : bool, default True
         Whether to include the pooler which converts the encoded sequence tensor of shape
         (batch_size, seq_length, units) to a tensor of shape (batch_size, units)

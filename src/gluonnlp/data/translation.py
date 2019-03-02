@@ -34,7 +34,7 @@ from mxnet.gluon.data import ArrayDataset
 from .dataset import TextLineDataset
 from ..vocab import Vocab
 from .registry import register
-from .utils import _get_home_dir
+from ..base import get_home_dir
 
 
 def _get_pair_key(src_lang, tgt_lang):
@@ -169,7 +169,7 @@ class IWSLT2015(_TranslationDataset):
         MXNET_HOME defaults to '~/.mxnet'.
     """
     def __init__(self, segment='train', src_lang='en', tgt_lang='vi',
-                 root=os.path.join(_get_home_dir(), 'datasets', 'iwslt2015')):
+                 root=os.path.join(get_home_dir(), 'datasets', 'iwslt2015')):
         self._supported_segments = ['train', 'val', 'test']
         self._archive_file = {_get_pair_key('en', 'vi'):
                                   ('iwslt15.zip', '15a05df23caccb1db458fb3f9d156308b97a217b')}
@@ -218,7 +218,7 @@ class WMT2014(_TranslationDataset):
         MXNET_HOME defaults to '~/.mxnet'.
     """
     def __init__(self, segment='train', src_lang='en', tgt_lang='de', full=False,
-                 root=os.path.join(_get_home_dir(), 'datasets', 'wmt2014')):
+                 root=os.path.join(get_home_dir(), 'datasets', 'wmt2014')):
         self._supported_segments = ['train'] + ['newstest%d' % i for i in range(2009, 2015)]
         self._archive_file = {_get_pair_key('de', 'en'):
                                   ('wmt2014_de_en-b0e0e703.zip',
@@ -293,7 +293,7 @@ class WMT2014BPE(_TranslationDataset):
         MXNET_HOME defaults to '~/.mxnet'.
     """
     def __init__(self, segment='train', src_lang='en', tgt_lang='de', full=False,
-                 root=os.path.join(_get_home_dir(), 'datasets', 'wmt2014')):
+                 root=os.path.join(get_home_dir(), 'datasets', 'wmt2014')):
         self._supported_segments = ['train'] + ['newstest%d' % i for i in range(2009, 2015)]
         self._archive_file = {_get_pair_key('de', 'en'):
                                   ('wmt2014bpe_de_en-ace8f41c.zip',
@@ -368,7 +368,7 @@ class WMT2016(_TranslationDataset):
         MXNET_HOME defaults to '~/.mxnet'.
     """
     def __init__(self, segment='train', src_lang='en', tgt_lang='de',
-                 root=os.path.join(_get_home_dir(), 'datasets', 'wmt2016')):
+                 root=os.path.join(get_home_dir(), 'datasets', 'wmt2016')):
         self._supported_segments = ['train'] + ['newstest%d' % i for i in range(2012, 2017)]
         self._archive_file = {_get_pair_key('de', 'en'):
                                   ('wmt2016_de_en-88767407.zip',
@@ -425,7 +425,7 @@ class WMT2016BPE(_TranslationDataset):
         MXNET_HOME defaults to '~/.mxnet'.
     """
     def __init__(self, segment='train', src_lang='en', tgt_lang='de',
-                 root=os.path.join(_get_home_dir(), 'datasets', 'wmt2016')):
+                 root=os.path.join(get_home_dir(), 'datasets', 'wmt2016')):
         self._supported_segments = ['train'] + ['newstest%d' % i for i in range(2012, 2017)]
         self._archive_file = {_get_pair_key('de', 'en'):
                                   ('wmt2016bpe_de_en-8cf0dbf6.zip',

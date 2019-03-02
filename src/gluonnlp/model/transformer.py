@@ -35,6 +35,7 @@ from .seq2seq_encoder_decoder import Seq2SeqEncoder, Seq2SeqDecoder, _get_attent
 from .block import GELU
 from .translation import NMTModel
 from .utils import _load_vocab, _load_pretrained_params
+from ..base import get_home_dir
 
 
 ###############################################################################
@@ -1177,7 +1178,7 @@ def _get_transformer_model(model_cls, model_name, dataset_name, src_vocab, tgt_v
 
 
 def transformer_en_de_512(dataset_name=None, src_vocab=None, tgt_vocab=None, pretrained=False,
-                          ctx=cpu(), root=os.path.join('~', '.mxnet', 'models'), **kwargs):
+                          ctx=cpu(), root=os.path.join(get_home_dir(), 'models'), **kwargs):
     r"""Transformer pretrained model.
 
     Embedding size is 400, and hidden layer size is 1150.
@@ -1191,8 +1192,9 @@ def transformer_en_de_512(dataset_name=None, src_vocab=None, tgt_vocab=None, pre
         Whether to load the pretrained weights for model.
     ctx : Context, default CPU
         The context in which to load the pretrained weights.
-    root : str, default '~/.mxnet/models'
+    root : str, default '$MXNET_HOME/models'
         Location for keeping the model parameters.
+        MXNET_HOME defaults to '~/.mxnet'.
 
     Returns
     -------
