@@ -17,8 +17,10 @@
 # under the License.
 
 """Weight updating functions."""
+import warnings
+import numpy
 from mxnet.optimizer import Optimizer, register
-from mxnet.ndarray import zeros, NDArray
+from mxnet.ndarray import zeros, NDArray, full
 
 __all__ = ['BERTAdam']
 
@@ -48,43 +50,77 @@ class BERTAdam(Optimizer):
 
     Parameters
     ----------
-    beta1 : float, optional
+    beta1 : float, optional, default is 0.9
         Exponential decay rate for the first moment estimates.
-    beta2 : float, optional
+    beta2 : float, optional, default is 0.999
         Exponential decay rate for the second moment estimates.
-    epsilon : float, optional
+    epsilon : float, optional, default is 1e-6
         Small value to avoid division by 0.
     """
-    def __init__(self, learning_rate=0.001, beta1=0.9, beta2=0.999, epsilon=1e-8,
+    def __init__(self, learning_rate=0.001, beta1=0.9, beta2=0.999, epsilon=1e-6,
                  **kwargs):
         super(BERTAdam, self).__init__(learning_rate=learning_rate, **kwargs)
         self.beta1 = beta1
         self.beta2 = beta2
         self.epsilon = epsilon
 
-    def create_state(self, index, weight): # pylint: disable=unused-argument
-        """Initialization for mean and var."""
+    def create_state_multi_precision(self, index, weight):
+        """multi-precision state creation function."""
+        weight_master_copy = None
+        if self.multi_precision and weight.dtype == numpy.float16:
+            weight_master_copy = weight.astype(numpy.float32)
+            return (self.create_state(index, weight_master_copy), weight_master_copy)
+        if weight.dtype == numpy.float16 and not self.multi_precision:
+            warnings.warn('Accumulating with float16 in optimizer can lead to '
+                          'poor accuracy or slow convergence. '
+                          'Consider using multi_precision=True option of the '
+                          'BERTAdam optimizer')
+        return self.create_state(index, weight)
+
+    def create_state(self, _, weight):
+        """state creation function."""
         return (zeros(weight.shape, weight.context, dtype=weight.dtype), #mean
                 zeros(weight.shape, weight.context, dtype=weight.dtype)) #variance
 
     def update(self, index, weight, grad, state):
-        """Update method."""
+        """update function"""
+        self._update_impl(index, weight, grad, state, multi_precision=False)
+
+    def update_multi_precision(self, index, weight, grad, state):
+        """multi-precision update function"""
+        use_multi_precision = self.multi_precision and weight.dtype == numpy.float16
+        self._update_impl(index, weight, grad, state,
+                          multi_precision=use_multi_precision)
+
+    def _update_impl(self, indices, weight, grad, state, multi_precision=False):
+        """update function"""
         try:
-            from mxnet.ndarray.contrib import adamw_update
+            from mxnet.ndarray.contrib import adamw_update, mp_adamw_update
         except ImportError:
-            raise ImportError('Failed to import nd.contrib.adamw_update from MXNet. '
-                              'BERTAdam optimizer requires mxnet>=1.5.0b20181228. '
-                              'Please upgrade your MXNet version.')
-        assert(isinstance(weight, NDArray))
-        assert(isinstance(grad, NDArray))
-        self._update_count(index)
-        lr = self._get_lr(index)
-        wd = self._get_wd(index)
+            raise ImportError('Failed to import nd.contrib.adamw_update and '
+                              'nd.contrib.mp_adamw_update from MXNet. '
+                              'BERTAdam optimizer requires mxnet>=1.5.0b20190220. '
+                              'Please upgrade your MXNet version. For example: '
+                              'pip uninstall mxnet-cu90 -y; pip install mxnet-cu90 --pre')
+        self._update_count(indices)
+        lr = self._get_lr(indices)
+        wd = self._get_wd(indices)
+
+        # pylint: disable=access-member-before-definition
+        if not isinstance(self.rescale_grad, NDArray):
+            self.rescale_grad = full(shape=(1,), val=self.rescale_grad, ctx=weight.context)
+        else:
+            self.rescale_grad = self.rescale_grad.as_in_context(weight.context)
 
         kwargs = {'beta1': self.beta1, 'beta2': self.beta2, 'epsilon': self.epsilon,
                   'rescale_grad': self.rescale_grad}
         if self.clip_gradient:
             kwargs['clip_gradient'] = self.clip_gradient
-
-        mean, var = state
-        adamw_update(weight, grad, mean, var, out=weight, lr=1, wd=wd, eta=lr, **kwargs)
+        if not multi_precision:
+            mean, var = state
+            adamw_update(weight, grad, mean, var, out=weight,
+                         lr=1, wd=wd, eta=lr, **kwargs)
+        else:
+            mean, var = state[0]
+            mp_adamw_update(weight, grad, mean, var, state[1], out=weight,
+                            lr=1, wd=wd, eta=lr, **kwargs)

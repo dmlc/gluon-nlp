@@ -90,11 +90,16 @@ parser.add_argument(
     default=5e-5,
     help='Initial learning rate, default is 5e-5')
 parser.add_argument(
+    '--epsilon',
+    type=float,
+    default=1e-06,
+    help='Small value to avoid division by 0, default is 1e-06'
+)
+parser.add_argument(
     '--warmup_ratio',
     type=float,
     default=0.1,
-    help=
-    'ratio of warmup steps used in NOAM\'s stepsize schedule, default is 0.1')
+    help='ratio of warmup steps used in NOAM\'s stepsize schedule, default is 0.1')
 parser.add_argument(
     '--log_interval',
     type=int,
@@ -133,7 +138,29 @@ parser.add_argument(
     help='Dataset of BERT pre-trained with.'
     'Options include \'book_corpus_wiki_en_cased\', \'book_corpus_wiki_en_uncased\''
     'for both bert_24_1024_16 and bert_12_768_12.'
-    '\'wiki_cn\', \'wiki_multilingual\' and \'wiki_multilingual_cased\' for bert_12_768_12 only.'
+    '\'wiki_cn_cased\', \'wiki_multilingual_uncased\' and \'wiki_multilingual_cased\''
+    'for bert_12_768_12 only.'
+)
+parser.add_argument(
+    '--pretrained_bert_parameters',
+    type=str,
+    default=None,
+    help='Pre-trained bert model parameter file. default is None'
+)
+parser.add_argument(
+    '--model_parameters',
+    type=str,
+    default=None,
+    help='A parameter file for the model that is loaded into the model'
+    ' before training/inference. It is different from the parameter'
+    ' file written after the model is trained. default is None'
+)
+parser.add_argument(
+    '--output_dir',
+    type=str,
+    default='./output_dir',
+    help='The output directory where the model params will be written.'
+    ' default is ./output_dir'
 )
 
 args = parser.parse_args()
@@ -146,6 +173,7 @@ batch_size = args.batch_size
 dev_batch_size = args.dev_batch_size
 task_name = args.task_name
 lr = args.lr
+epsilon = args.epsilon
 accumulate = args.accumulate
 log_interval = args.log_interval * accumulate if accumulate else args.log_interval
 if accumulate:
@@ -164,10 +192,15 @@ task = tasks[task_name]
 # model and loss
 model_name = args.bert_model
 dataset = args.bert_dataset
+pretrained_bert_parameters = args.pretrained_bert_parameters
+model_parameters = args.model_parameters
+
+get_pretrained = not (pretrained_bert_parameters is not None
+                      or model_parameters is not None)
 bert, vocabulary = get_bert_model(
     model_name=model_name,
     dataset_name=dataset,
-    pretrained=True,
+    pretrained=get_pretrained,
     ctx=ctx,
     use_pooler=True,
     use_decoder=False,
@@ -175,13 +208,27 @@ bert, vocabulary = get_bert_model(
 
 if task.task_name in ['STS-B']:
     model = BERTRegression(bert, dropout=0.1)
-    model.regression.initialize(init=mx.init.Normal(0.02), ctx=ctx)
+    if not model_parameters:
+        model.regression.initialize(init=mx.init.Normal(0.02), ctx=ctx)
     loss_function = gluon.loss.L2Loss()
 else:
     model = BERTClassifier(
         bert, dropout=0.1, num_classes=len(task.get_labels()))
-    model.classifier.initialize(init=mx.init.Normal(0.02), ctx=ctx)
+    if not model_parameters:
+        model.classifier.initialize(init=mx.init.Normal(0.02), ctx=ctx)
     loss_function = gluon.loss.SoftmaxCELoss()
+
+# load checkpointing
+output_dir = args.output_dir
+if pretrained_bert_parameters:
+    logging.info('loading bert params from {0}'.format(pretrained_bert_parameters))
+    model.bert.load_parameters(pretrained_bert_parameters, ctx=ctx,
+                               ignore_extra=True)
+if model_parameters:
+    logging.info('loading model params from {0}'.format(model_parameters))
+    model.load_parameters(model_parameters, ctx=ctx)
+if not os.path.exists(output_dir):
+    os.makedirs(output_dir)
 
 logging.info(model)
 model.hybridize(static_alloc=True)
@@ -203,13 +250,7 @@ def preprocess_data(tokenizer, task, batch_size, dev_batch_size, max_len):
         pair=task.is_pair,
         label_dtype='float32' if not task.get_labels() else 'int32')
 
-    if task.task_name == 'MNLI':
-        data_train = task('dev_matched').transform(trans, lazy=False)
-        data_dev = task('dev_mismatched').transform(trans, lazy=False)
-    else:
-        data_train = task('train').transform(trans, lazy=False)
-        data_dev = task('dev').transform(trans, lazy=False)
-
+    data_train = task('train').transform(trans, lazy=False)
     data_train_len = data_train.transform(
         lambda input_id, length, segment_id, label_id: length)
 
@@ -227,29 +268,49 @@ def preprocess_data(tokenizer, task, batch_size, dev_batch_size, max_len):
         ratio=0,
         shuffle=True)
     # data loaders
-    dataloader = gluon.data.DataLoader(
+    dataloader_train = gluon.data.DataLoader(
         dataset=data_train,
         num_workers=1,
         batch_sampler=batch_sampler,
         batchify_fn=batchify_fn)
-    dataloader_dev = mx.gluon.data.DataLoader(
-        data_dev,
-        batch_size=dev_batch_size,
-        num_workers=1,
-        shuffle=False,
-        batchify_fn=batchify_fn)
-    return dataloader, dataloader_dev, num_samples_train
+    if task.task_name == 'MNLI':
+        data_dev_matched = task('dev_matched').transform(trans, lazy=False)
+        data_dev_mismatched = task('dev_mismatched').transform(trans, lazy=False)
+
+        dataloader_dev_matched = mx.gluon.data.DataLoader(
+            data_dev_matched, batch_size=dev_batch_size,
+            num_workers=1, shuffle=False, batchify_fn=batchify_fn)
+        dataloader_dev_mismatched = mx.gluon.data.DataLoader(
+            data_dev_mismatched, batch_size=dev_batch_size,
+            num_workers=1, shuffle=False, batchify_fn=batchify_fn)
+        return dataloader_train, dataloader_dev_matched, \
+            dataloader_dev_mismatched, num_samples_train
+    else:
+        data_dev = task('dev').transform(trans, lazy=False)
+        dataloader_dev = mx.gluon.data.DataLoader(
+            data_dev,
+            batch_size=dev_batch_size,
+            num_workers=1,
+            shuffle=False,
+            batchify_fn=batchify_fn)
+        return dataloader_train, dataloader_dev, num_samples_train
 
 
-train_data, dev_data, num_train_examples = preprocess_data(
-    bert_tokenizer, task, batch_size, dev_batch_size, args.max_len)
+# Get the dataloader. Data set for special handling of MNLI tasks
+logging.info('processing dataset...')
+if task.task_name == 'MNLI':
+    train_data, dev_data_matched, dev_data_mismatched, num_train_examples = preprocess_data(
+        bert_tokenizer, task, batch_size, dev_batch_size, args.max_len)
+else:
+    train_data, dev_data, num_train_examples = preprocess_data(
+        bert_tokenizer, task, batch_size, dev_batch_size, args.max_len)
 
 
-def evaluate(metric):
+def evaluate(dataloader_eval, metric):
     """Evaluate the model on validation dataset.
     """
     metric.reset()
-    for _, seqs in enumerate(dev_data):
+    for _, seqs in enumerate(dataloader_eval):
         input_ids, valid_len, type_ids, label = seqs
         out = model(
             input_ids.as_in_context(ctx), type_ids.as_in_context(ctx),
@@ -260,13 +321,13 @@ def evaluate(metric):
         metric_nm = [metric_nm]
         metric_val = [metric_val]
     metric_str = 'validation metrics:' + ','.join(
-        [i + ':{:.4f}' for i in metric_nm])
-    logging.info(metric_str.format(*metric_val))
+        [i + ':%.4f' for i in metric_nm])
+    logging.info(metric_str, *metric_val)
 
 
 def train(metric):
     """Training function."""
-    optimizer_params = {'learning_rate': lr, 'epsilon': 1e-6, 'wd': 0.01}
+    optimizer_params = {'learning_rate': lr, 'epsilon': epsilon, 'wd': 0.01}
     try:
         trainer = gluon.Trainer(
             model.collect_params(),
@@ -342,16 +403,28 @@ def train(metric):
                 if not isinstance(metric_nm, list):
                     metric_nm = [metric_nm]
                     metric_val = [metric_val]
-                eval_str = '[Epoch {} Batch {}/{}] loss={:.4f}, lr={:.7f}, metrics=' + \
-                    ','.join([i + ':{:.4f}' for i in metric_nm])
-                logging.info(eval_str.format(epoch_id + 1, batch_id + 1, len(train_data), \
-                    step_loss / args.log_interval, \
-                    trainer.learning_rate, *metric_val))
+                eval_str = '[Epoch %d Batch %d/%d] loss=%.4f, lr=%.7f, metrics=' + \
+                    ','.join([i + ':%.4f' for i in metric_nm])
+                logging.info(eval_str, epoch_id + 1, batch_id + 1, len(train_data),
+                             step_loss / args.log_interval,
+                             trainer.learning_rate, *metric_val)
                 step_loss = 0
         mx.nd.waitall()
-        evaluate(metric)
+        if task.task_name == 'MNLI':
+            logging.info('On MNLI Matched: ')
+            evaluate(dev_data_matched, metric)
+            logging.info('On MNLI Mismatched: ')
+            evaluate(dev_data_mismatched, metric)
+        else:
+            evaluate(dev_data, metric)
+
+        # save params
+        params_saved = os.path.join(output_dir,
+                                    'model_bert_{0}_{1}.params'.format(task.task_name, epoch_id))
+        model.save_parameters(params_saved)
+        logging.info('params saved in : {0}'.format(params_saved))
         toc = time.time()
-        logging.info('Time cost={:.1f}s'.format(toc - tic))
+        logging.info('Time cost=%.1fs', toc - tic)
         tic = toc
 
 

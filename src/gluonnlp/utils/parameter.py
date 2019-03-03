@@ -16,7 +16,7 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-"""Utility functions for parallel processing."""
+"""Utility functions for parameters."""
 
 __all__ = ['clip_grad_global_norm']
 
@@ -65,11 +65,17 @@ def clip_grad_global_norm(parameters, max_norm, check_isfinite=True):
     """
     def _norm(array):
         if array.stype == 'default':
-            x = array.reshape((-1,))
+            x = array.reshape((-1))
             return nd.dot(x, x)
         return array.norm().square()
 
-    arrays = [p.list_grad()[0] for p in parameters if p.grad_req != 'null']
+    arrays = []
+    i = 0
+    for p in parameters:
+        if p.grad_req != 'null':
+            grad_list = p.list_grad()
+            arrays.append(grad_list[i % len(grad_list)])
+            i += 1
     assert len(arrays) > 0, 'No parameter found available for gradient norm clipping.'
     ctx, dtype = arrays[0].context, arrays[0].dtype
     total_norm = nd.add_n(*[_norm(arr).as_in_context(ctx) for arr in arrays])

@@ -29,6 +29,7 @@ from mxnet.gluon.model_zoo import model_store
 
 from gluonnlp.model import train
 from .utils import _load_vocab, _load_pretrained_params
+from ..base import get_home_dir
 
 
 class AWDRNN(train.AWDRNN):
@@ -178,7 +179,7 @@ def _get_rnn_model(model_cls, model_name, dataset_name, vocab, pretrained, ctx, 
 
 
 def awd_lstm_lm_1150(dataset_name=None, vocab=None, pretrained=False, ctx=cpu(),
-                     root=os.path.join('~', '.mxnet', 'models'), **kwargs):
+                     root=os.path.join(get_home_dir(), 'models'), **kwargs):
     r"""3-layer LSTM language model with weight-drop, variational dropout, and tied weights.
 
     Embedding size is 400, and hidden layer size is 1150.
@@ -199,8 +200,9 @@ def awd_lstm_lm_1150(dataset_name=None, vocab=None, pretrained=False, ctx=cpu(),
         Whether to load the pre-trained weights for model.
     ctx : Context, default CPU
         The context in which to load the pre-trained weights.
-    root : str, default '~/.mxnet/models'
+    root : str, default '$MXNET_HOME/models'
         Location for keeping the model parameters.
+        MXNET_HOME defaults to '~/.mxnet'.
 
     Returns
     -------
@@ -225,7 +227,7 @@ def awd_lstm_lm_1150(dataset_name=None, vocab=None, pretrained=False, ctx=cpu(),
 
 
 def awd_lstm_lm_600(dataset_name=None, vocab=None, pretrained=False, ctx=cpu(),
-                    root=os.path.join('~', '.mxnet', 'models'), **kwargs):
+                    root=os.path.join(get_home_dir(), 'models'), **kwargs):
     r"""3-layer LSTM language model with weight-drop, variational dropout, and tied weights.
 
     Embedding size is 200, and hidden layer size is 600.
@@ -246,8 +248,9 @@ def awd_lstm_lm_600(dataset_name=None, vocab=None, pretrained=False, ctx=cpu(),
         Whether to load the pre-trained weights for model.
     ctx : Context, default CPU
         The context in which to load the pre-trained weights.
-    root : str, default '~/.mxnet/models'
+    root : str, default '$MXNET_HOME/models'
         Location for keeping the model parameters.
+        MXNET_HOME defaults to '~/.mxnet'.
 
     Returns
     -------
@@ -271,7 +274,7 @@ def awd_lstm_lm_600(dataset_name=None, vocab=None, pretrained=False, ctx=cpu(),
                           ctx, root, **predefined_args)
 
 def standard_lstm_lm_200(dataset_name=None, vocab=None, pretrained=False, ctx=cpu(),
-                         root=os.path.join('~', '.mxnet', 'models'), **kwargs):
+                         root=os.path.join(get_home_dir(), 'models'), **kwargs):
     r"""Standard 2-layer LSTM language model with tied embedding and output weights.
 
     Both embedding and hidden dimensions are 200.
@@ -292,8 +295,9 @@ def standard_lstm_lm_200(dataset_name=None, vocab=None, pretrained=False, ctx=cp
         Whether to load the pre-trained weights for model.
     ctx : Context, default CPU
         The context in which to load the pre-trained weights.
-    root : str, default '~/.mxnet/models'
+    root : str, default '$MXNET_HOME/models'
         Location for keeping the model parameters.
+        MXNET_HOME defaults to '~/.mxnet'.
 
     Returns
     -------
@@ -314,7 +318,7 @@ def standard_lstm_lm_200(dataset_name=None, vocab=None, pretrained=False, ctx=cp
 
 
 def standard_lstm_lm_650(dataset_name=None, vocab=None, pretrained=False, ctx=cpu(),
-                         root=os.path.join('~', '.mxnet', 'models'), **kwargs):
+                         root=os.path.join(get_home_dir(), 'models'), **kwargs):
     r"""Standard 2-layer LSTM language model with tied embedding and output weights.
 
     Both embedding and hidden dimensions are 650.
@@ -335,8 +339,9 @@ def standard_lstm_lm_650(dataset_name=None, vocab=None, pretrained=False, ctx=cp
         Whether to load the pre-trained weights for model.
     ctx : Context, default CPU
         The context in which to load the pre-trained weights.
-    root : str, default '~/.mxnet/models'
+    root : str, default '$MXNET_HOME/models'
         Location for keeping the model parameters.
+        MXNET_HOME defaults to '~/.mxnet'.
 
     Returns
     -------
@@ -357,7 +362,7 @@ def standard_lstm_lm_650(dataset_name=None, vocab=None, pretrained=False, ctx=cp
 
 
 def standard_lstm_lm_1500(dataset_name=None, vocab=None, pretrained=False, ctx=cpu(),
-                          root=os.path.join('~', '.mxnet', 'models'), **kwargs):
+                          root=os.path.join(get_home_dir(), 'models'), **kwargs):
     r"""Standard 2-layer LSTM language model with tied embedding and output weights.
 
     Both embedding and hidden dimensions are 1500.
@@ -378,8 +383,9 @@ def standard_lstm_lm_1500(dataset_name=None, vocab=None, pretrained=False, ctx=c
         Whether to load the pre-trained weights for model.
     ctx : Context, default CPU
         The context in which to load the pre-trained weights.
-    root : str, default '~/.mxnet/models'
+    root : str, default '$MXNET_HOME/models'
         Location for keeping the model parameters.
+        MXNET_HOME defaults to '~/.mxnet'.
 
     Returns
     -------
@@ -504,7 +510,7 @@ class BigRNN(Block):
         return out, state
 
 def big_rnn_lm_2048_512(dataset_name=None, vocab=None, pretrained=False, ctx=cpu(),
-                        root=os.path.join('~', '.mxnet', 'models'), **kwargs):
+                        root=os.path.join(get_home_dir(), 'models'), **kwargs):
     r"""Big 1-layer LSTMP language model.
 
     Both embedding and projection size are 512. Hidden size is 2048.
@@ -525,8 +531,9 @@ def big_rnn_lm_2048_512(dataset_name=None, vocab=None, pretrained=False, ctx=cpu
         Whether to load the pre-trained weights for model.
     ctx : Context, default CPU
         The context in which to load the pre-trained weights.
-    root : str, default '~/.mxnet/models'
+    root : str, default '$MXNET_HOME/models'
         Location for keeping the model parameters.
+        MXNET_HOME defaults to '~/.mxnet'.
 
     Returns
     -------

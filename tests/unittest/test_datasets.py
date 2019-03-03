@@ -653,3 +653,5 @@ def test_numpy_dataset():
     assert np.all(dataset[1][0] == a[1])
     assert np.all(dataset[0][1] == b[0])
     assert np.all(dataset[1][1] == b[1])
+    dataset_b = dataset.get_field('b')
+    assert np.all(dataset_b == b)

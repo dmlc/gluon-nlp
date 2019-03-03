@@ -22,6 +22,7 @@ __all__ = ['BERTModel', 'BERTEncoder', 'BERTEncoderCell', 'BERTPositionwiseFFN',
            'BERTLayerNorm', 'bert_12_768_12', 'bert_24_1024_16', 'get_bert_model']
 
 import os
+import warnings
 from mxnet.gluon import Block
 from mxnet.gluon import nn
 from mxnet.gluon.model_zoo import model_store
@@ -29,6 +30,7 @@ import mxnet as mx
 from .transformer import BasePositionwiseFFN, BaseTransformerEncoderCell, BaseTransformerEncoder
 from .block import GELU
 from .utils import _load_vocab, _load_pretrained_params
+from ..base import get_home_dir
 
 
 ###############################################################################
@@ -48,6 +50,24 @@ class BERTLayerNorm(nn.LayerNorm):
     def __init__(self, epsilon=1e-12, in_channels=0, prefix=None, params=None):
         super(BERTLayerNorm, self).__init__(epsilon=epsilon, in_channels=in_channels,
                                             prefix=prefix, params=params)
+        self._dtype = None
+
+    def cast(self, dtype):
+        self._dtype = dtype
+        super(BERTLayerNorm, self).cast('float32')
+
+    def hybrid_forward(self, F, data, gamma, beta):
+        """forward computation."""
+        # TODO(haibin): LayerNorm does not support fp16 safe reduction. Issue is tracked at:
+        # https://github.com/apache/incubator-mxnet/issues/14073
+        if self._dtype:
+            data = data.astype('float32')
+            gamma = gamma.astype('float32')
+            beta = beta.astype('float32')
+        norm_data = F.LayerNorm(data, gamma=gamma, beta=beta, axis=self._axis, eps=self._epsilon)
+        if self._dtype:
+            norm_data = norm_data.astype(self._dtype)
+        return norm_data
 
 
 class BERTPositionwiseFFN(BasePositionwiseFFN):
@@ -126,8 +146,10 @@ class BERTEncoder(BaseTransformerEncoder):
     dropout : float
         Dropout probability of the attention probabilities.
     use_residual : bool
-    output_attention: bool
+    output_attention: bool, default False
         Whether to output the attention weights
+    output_all_encodings: bool, default False
+        Whether to output encodings of all encoder cells
     weight_initializer : str or Initializer
         Initializer for the input weights matrix, used for the linear
         transformation of the inputs.
@@ -154,7 +176,7 @@ class BERTEncoder(BaseTransformerEncoder):
     def __init__(self, attention_cell='multi_head', num_layers=2,
                  units=512, hidden_size=2048, max_length=50,
                  num_heads=4, scaled=True, dropout=0.0,
-                 use_residual=True, output_attention=False,
+                 use_residual=True, output_attention=False, output_all_encodings=False,
                  weight_initializer=None, bias_initializer='zeros',
                  prefix=None, params=None):
         super(BERTEncoder, self).__init__(attention_cell=attention_cell,
@@ -163,6 +185,7 @@ class BERTEncoder(BaseTransformerEncoder):
                                           num_heads=num_heads, scaled=scaled, dropout=dropout,
                                           use_residual=use_residual,
                                           output_attention=output_attention,
+                                          output_all_encodings=output_all_encodings,
                                           weight_initializer=weight_initializer,
                                           bias_initializer=bias_initializer,
                                           prefix=prefix, params=params,
@@ -242,9 +265,8 @@ class BERTEncoderCell(BaseTransformerEncoderCell):
 #                                FULL MODEL                                   #
 ###############################################################################
 
-
 class BERTModel(Block):
-    """Model for BERT (Bidirectional Encoder Representations from Transformers).
+    """Generic Model for BERT (Bidirectional Encoder Representations from Transformers).
 
     Parameters
     ----------
@@ -294,8 +316,13 @@ class BERTModel(Block):
             shape (batch_size, num_masked_positions).
 
     Outputs:
-        - **sequence_outputs**: output tensor of sequence encodings.
-            Shape (batch_size, seq_length, units).
+        - **sequence_outputs**: Encoded sequence, which can be either a tensor of the last
+            layer of the Encoder, or a list of all sequence encodings of all layers.
+            In both cases shape of the tensor(s) is/are (batch_size, seq_length, units).
+        - **attention_outputs**: output list of all intermediate encodings per layer
+            Returned only if BERTEncoder.output_attention is True.
+            List of num_layers length of tensors of shape
+            (num_masks, num_attention_heads, seq_length, seq_length)
         - **pooled_output**: output tensor of pooled representation of the first tokens.
             Returned only if use_pooler is True. Shape (batch_size, units)
         - **next_sentence_classifier_output**: output tensor of next sentence classification.
@@ -313,6 +340,7 @@ class BERTModel(Block):
         self._use_decoder = use_decoder
         self._use_classifier = use_classifier
         self._use_pooler = use_pooler
+        self._vocab_size = vocab_size
         self.encoder = encoder
         # Construct word embedding
         self.word_embed = self._get_embed(word_embed, vocab_size, embed_size,
@@ -384,10 +412,20 @@ class BERTModel(Block):
         This is used in training or fine-tuning a BERT model.
         """
         outputs = []
-        seq_out, _ = self._encode_sequence(inputs, token_types, valid_length)
+        seq_out, attention_out = self._encode_sequence(inputs, token_types, valid_length)
         outputs.append(seq_out)
+
+        if self.encoder._output_all_encodings:
+            assert isinstance(seq_out, list)
+            output = seq_out[-1]
+        else:
+            output = seq_out
+
+        if attention_out:
+            outputs.append(attention_out)
+
         if self._use_pooler:
-            pooled_out = self._apply_pooling(seq_out)
+            pooled_out = self._apply_pooling(output)
             outputs.append(pooled_out)
             if self._use_classifier:
                 next_sentence_classifier_out = self.classifier(pooled_out)
@@ -395,7 +433,7 @@ class BERTModel(Block):
         if self._use_decoder:
             assert masked_positions is not None, \
                 'masked_positions tensor is required for decoding masked language model'
-            decoder_out = self._decode(seq_out, masked_positions)
+            decoder_out = self._decode(output, masked_positions)
             outputs.append(decoder_out)
         return tuple(outputs) if len(outputs) > 1 else outputs[0]
 
@@ -461,8 +499,10 @@ model_store._model_sha1.update(
         ('5656dac6965b5054147b0375337d5a6a7a2ff832', 'bert_12_768_12_book_corpus_wiki_en_cased'),
         ('75cc780f085e8007b3bf6769c6348bb1ff9a3074', 'bert_12_768_12_book_corpus_wiki_en_uncased'),
         ('237f39851b24f0b56d70aa20efd50095e3926e26', 'bert_12_768_12_wiki_multilingual'),
+        ('237f39851b24f0b56d70aa20efd50095e3926e26', 'bert_12_768_12_wiki_multilingual_uncased'),
         ('b0f57a207f85a7d361bb79de80756a8c9a4276f7', 'bert_12_768_12_wiki_multilingual_cased'),
         ('885ebb9adc249a170c5576e90e88cfd1bbd98da6', 'bert_12_768_12_wiki_cn'),
+        ('885ebb9adc249a170c5576e90e88cfd1bbd98da6', 'bert_12_768_12_wiki_cn_cased'),
         ('4e685a966f8bf07d533bd6b0e06c04136f23f620', 'bert_24_1024_16_book_corpus_wiki_en_cased'),
         ('24551e1446180e045019a87fc4ffbf714d99c0b5', 'bert_24_1024_16_book_corpus_wiki_en_uncased')
     ]})
@@ -506,9 +546,9 @@ bert_hparams = {
 
 
 def bert_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
-                   root=os.path.join('~', '.mxnet', 'models'), use_pooler=True,
+                   root=os.path.join(get_home_dir(), 'models'), use_pooler=True,
                    use_decoder=True, use_classifier=True, **kwargs):
-    """BERT BASE pretrained model.
+    """Generic BERT BASE model.
 
     The number of layers (L) is 12, number of units (H) is 768, and the
     number of self-attention heads (A) is 12.
@@ -517,15 +557,16 @@ def bert_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
     ----------
     dataset_name : str or None, default None
         Options include 'book_corpus_wiki_en_cased', 'book_corpus_wiki_en_uncased',
-        'wiki_cn', 'wiki_multilingual' and 'wiki_multilingual_cased'.
+        'wiki_cn_cased', 'wiki_multilingual_uncased' and 'wiki_multilingual_cased'.
     vocab : gluonnlp.vocab.BERTVocab or None, default None
         Vocabulary for the dataset. Must be provided if dataset is not specified.
     pretrained : bool, default True
         Whether to load the pretrained weights for model.
     ctx : Context, default CPU
         The context in which to load the pretrained weights.
-    root : str, default '~/.mxnet/models'
+    root : str, default '$MXNET_HOME/models'
         Location for keeping the model parameters.
+        MXNET_HOME defaults to '~/.mxnet'.
     use_pooler : bool, default True
         Whether to include the pooler which converts the encoded sequence tensor of shape
         (batch_size, seq_length, units) to a tensor of shape (batch_size, units)
@@ -547,8 +588,8 @@ def bert_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
 
 def bert_24_1024_16(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
                     use_pooler=True, use_decoder=True, use_classifier=True,
-                    root=os.path.join('~', '.mxnet', 'models'), **kwargs):
-    """BERT LARGE pretrained model.
+                    root=os.path.join(get_home_dir(), 'models'), **kwargs):
+    """Generic BERT LARGE model.
 
     The number of layers (L) is 24, number of units (H) is 1024, and the
     number of self-attention heads (A) is 16.
@@ -563,8 +604,9 @@ def bert_24_1024_16(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu()
         Whether to load the pretrained weights for model.
     ctx : Context, default CPU
         The context in which to load the pretrained weights.
-    root : str, default '~/.mxnet/models'
+    root : str, default '$MXNET_HOME/models'
         Location for keeping the model parameters.
+        MXNET_HOME defaults to '~/.mxnet'.
     use_pooler : bool, default True
         Whether to include the pooler which converts the encoded sequence tensor of shape
         (batch_size, seq_length, units) to a tensor of shape (batch_size, units)
@@ -588,7 +630,8 @@ def bert_24_1024_16(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu()
 def get_bert_model(model_name=None, dataset_name=None, vocab=None,
                    pretrained=True, ctx=mx.cpu(),
                    use_pooler=True, use_decoder=True, use_classifier=True,
-                   root=os.path.join('~', '.mxnet', 'models'), **kwargs):
+                   output_attention=False, output_all_encodings=False,
+                   root=os.path.join(get_home_dir(), 'models'), **kwargs):
     """Any BERT pretrained model.
 
     Parameters
@@ -598,15 +641,17 @@ def get_bert_model(model_name=None, dataset_name=None, vocab=None,
     dataset_name : str or None, default None
         Options include 'book_corpus_wiki_en_cased', 'book_corpus_wiki_en_uncased'
         for both bert_24_1024_16 and bert_12_768_12.
-        'wiki_cn', 'wiki_multilingual' and 'wiki_multilingual_cased' for bert_12_768_12 only.
+        'wiki_cn_cased', 'wiki_multilingual_uncased' and 'wiki_multilingual_cased'
+        for bert_12_768_12 only.
     vocab : gluonnlp.vocab.BERTVocab or None, default None
         Vocabulary for the dataset. Must be provided if dataset is not specified.
     pretrained : bool, default True
         Whether to load the pretrained weights for model.
     ctx : Context, default CPU
         The context in which to load the pretrained weights.
-    root : str, default '~/.mxnet/models'
+    root : str, default '$MXNET_HOME/models'
         Location for keeping the model parameters.
+        MXNET_HOME defaults to '~/.mxnet'.
     use_pooler : bool, default True
         Whether to include the pooler which converts the encoded sequence tensor of shape
         (batch_size, seq_length, units) to a tensor of shape (batch_size, units)
@@ -615,6 +660,10 @@ def get_bert_model(model_name=None, dataset_name=None, vocab=None,
         Whether to include the decoder for masked language model prediction.
     use_classifier : bool, default True
         Whether to include the classifier for next sentence classification.
+    output_attention : bool, default False
+        Whether to include attention weights of each encoding cell to the output.
+    output_all_encodings : bool, default False
+        Whether to output encodings of all encoder cells.
 
     Returns
     -------
@@ -635,9 +684,14 @@ def get_bert_model(model_name=None, dataset_name=None, vocab=None,
                           num_heads=predefined_args['num_heads'],
                           scaled=predefined_args['scaled'],
                           dropout=predefined_args['dropout'],
+                          output_attention=output_attention,
+                          output_all_encodings=output_all_encodings,
                           use_residual=predefined_args['use_residual'])
     # bert_vocab
     from ..vocab import BERTVocab
+    if dataset_name in ['wiki_cn', 'wiki_multilingual']:
+        warnings.warn('wiki_cn/wiki_multilingual will be deprecated.'
+                      ' Please use wiki_cn_cased/wiki_multilingual_uncased instead.')
     bert_vocab = _load_vocab(dataset_name, vocab, root, cls=BERTVocab)
     # BERT
     net = BERTModel(encoder, len(bert_vocab),
