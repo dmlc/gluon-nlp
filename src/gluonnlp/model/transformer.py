@@ -420,8 +420,9 @@ class BaseTransformerEncoder(HybridBlock, Seq2SeqEncoder):
         """
         length = inputs.shape[1]
         if valid_length is not None:
+            arange = mx.nd.arange(length, ctx=valid_length.context, dtype=valid_length.dtype)
             mask = mx.nd.broadcast_lesser(
-                mx.nd.arange(length, ctx=valid_length.context).reshape((1, -1)),
+                arange.reshape((1, -1)),
                 valid_length.reshape((-1, 1)))
             mask = mx.nd.broadcast_axes(mx.nd.expand_dims(mask, axis=1), axis=1, size=length)
             if states is None:
@@ -907,8 +908,10 @@ class TransformerDecoder(HybridBlock, Seq2SeqDecoder):
         decoder_states = [mem_value]
         mem_length = mem_value.shape[1]
         if encoder_valid_length is not None:
+            dtype = encoder_valid_length.dtype
+            ctx = encoder_valid_length.context
             mem_masks = mx.nd.broadcast_lesser(
-                mx.nd.arange(mem_length, ctx=encoder_valid_length.context).reshape((1, -1)),
+                mx.nd.arange(mem_length, ctx=ctx, dtype=dtype).reshape((1, -1)),
                 encoder_valid_length.reshape((-1, 1)))
             decoder_states.append(mem_masks)
         self._encoder_valid_length = encoder_valid_length
@@ -941,13 +944,14 @@ class TransformerDecoder(HybridBlock, Seq2SeqDecoder):
         """
         batch_size = inputs.shape[0]
         length = inputs.shape[1]
-        length_array = mx.nd.arange(length, ctx=inputs.context)
+        length_array = mx.nd.arange(length, ctx=inputs.context, dtype=inputs.dtype)
         mask = mx.nd.broadcast_lesser_equal(
             length_array.reshape((1, -1)),
             length_array.reshape((-1, 1)))
         if valid_length is not None:
+            arange = mx.nd.arange(length, ctx=valid_length.context, dtype=valid_length.dtype)
             batch_mask = mx.nd.broadcast_lesser(
-                mx.nd.arange(length, ctx=valid_length.context).reshape((1, -1)),
+                arange.reshape((1, -1)),
                 valid_length.reshape((-1, 1)))
             mask = mx.nd.broadcast_mul(mx.nd.expand_dims(batch_mask, -1),
                                        mx.nd.expand_dims(mask, 0))
@@ -1018,7 +1022,8 @@ class TransformerDecoder(HybridBlock, Seq2SeqDecoder):
                 .broadcast_axes(axis=1, size=step_input.shape[1])
             states[-1] = augmented_mem_mask
         if mask is None:
-            length_array = mx.nd.arange(step_input.shape[1], ctx=step_input.context)
+            length_array = mx.nd.arange(step_input.shape[1], ctx=step_input.context,
+                                        dtype=step_input.dtype)
             mask = mx.nd.broadcast_lesser_equal(
                 length_array.reshape((1, -1)),
                 length_array.reshape((-1, 1)))

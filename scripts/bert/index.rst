@@ -168,6 +168,35 @@ To get the score of the dev data, you need to download the dev dataset (`dev-v2.
         "NoAns_total": 5945
     }
 
+BERT Pre-training
+~~~~~~~~~~~~~~~~~
+
+The scripts for masked language modeling and and next sentence prediction are also provided.
+
+Data generation for pre-training on sample texts:
+
+ .. code-block:: console
+
+    $ python create_pretraining_data.py --input_file sample_text.txt --output_dir out --vocab book_corpus_wiki_en_uncased --max_seq_length 128 --max_predictions_per_seq 20 --dupe_factor 5 --masked_lm_prob 0.15 --short_seq_prob 0.1 --verbose
+
+The data generation script takes a file path as the input (could be one or more files by wildcard). Each file contains one or more documents separated by empty lines, and each document contains one line per sentence. You can perform sentence segmentation with an off-the-shelf NLP toolkit such as NLTK.
+
+Run pre-training with generated data:
+
+ .. code-block:: console
+
+    $ python run_pretraining.py --gpus 0 --batch_size 32 --lr 2e-5 --data out/*.npz --warmup_ratio 0.5 --num_steps 20 --pretrained --log_interval=2 --data_eval out/*.npz --batch_size_eval 8 --ckpt_dir ckpt
+
+With 20 steps of pre-training it easily reaches above 90% masked language model accuracy and 98% next sentence prediction accuracy on the training data.
+
+To reproduce BERT pre-training with books corpus and English wikipedia datasets from scratch, we recommend using float16 for pre-training with gradient accumulation.
+
+ .. code-block:: console
+
+    $ python run_pretraining.py --gpus 0,1,2,3,4,5,6,7 --batch_size 8 --lr 1e-4 --data /path/to/generated/samples/train/*.npz --warmup_ratio 0.01 --num_steps 1000000 --log_interval=250 --data_eval /path/to/generated/samples/dev/*.npz --batch_size_eval 8 --ckpt_dir ckpt --ckpt_interval 25000 --accumulate 4 --num_buckets 10 --dtype float16
+
+The BERT base model produced by gluonnlp pre-training script achieves 83.6% on MNLI-mm, 93% on SST-2, 87.99% on MRPC and 80.99/88.60 on SQuAD 1.1 validation set.
+
 BERT for Sentence or Tokens Embedding
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -257,3 +286,4 @@ Command line interface
        -0.37806216,  0.23336883], dtype=float32), array([ 0.1876977 ,  0.30165672,  0.47167772, ..., -0.43823618,
        -0.42823148, -0.48873612], dtype=float32), array([-0.6576557 , -0.09822252,  0.1121515 , ..., -0.21743725,
        -0.1820574 , -0.16115054], dtype=float32)]
+

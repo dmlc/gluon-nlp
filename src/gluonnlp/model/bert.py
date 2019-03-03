@@ -50,6 +50,24 @@ class BERTLayerNorm(nn.LayerNorm):
     def __init__(self, epsilon=1e-12, in_channels=0, prefix=None, params=None):
         super(BERTLayerNorm, self).__init__(epsilon=epsilon, in_channels=in_channels,
                                             prefix=prefix, params=params)
+        self._dtype = None
+
+    def cast(self, dtype):
+        self._dtype = dtype
+        super(BERTLayerNorm, self).cast('float32')
+
+    def hybrid_forward(self, F, data, gamma, beta):
+        """forward computation."""
+        # TODO(haibin): LayerNorm does not support fp16 safe reduction. Issue is tracked at:
+        # https://github.com/apache/incubator-mxnet/issues/14073
+        if self._dtype:
+            data = data.astype('float32')
+            gamma = gamma.astype('float32')
+            beta = beta.astype('float32')
+        norm_data = F.LayerNorm(data, gamma=gamma, beta=beta, axis=self._axis, eps=self._epsilon)
+        if self._dtype:
+            norm_data = norm_data.astype(self._dtype)
+        return norm_data
 
 
 class BERTPositionwiseFFN(BasePositionwiseFFN):
@@ -247,9 +265,8 @@ class BERTEncoderCell(BaseTransformerEncoderCell):
 #                                FULL MODEL                                   #
 ###############################################################################
 
-
 class BERTModel(Block):
-    """Model for BERT (Bidirectional Encoder Representations from Transformers).
+    """Generic Model for BERT (Bidirectional Encoder Representations from Transformers).
 
     Parameters
     ----------
@@ -323,6 +340,7 @@ class BERTModel(Block):
         self._use_decoder = use_decoder
         self._use_classifier = use_classifier
         self._use_pooler = use_pooler
+        self._vocab_size = vocab_size
         self.encoder = encoder
         # Construct word embedding
         self.word_embed = self._get_embed(word_embed, vocab_size, embed_size,
@@ -530,7 +548,7 @@ bert_hparams = {
 def bert_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
                    root=os.path.join(get_home_dir(), 'models'), use_pooler=True,
                    use_decoder=True, use_classifier=True, **kwargs):
-    """BERT BASE pretrained model.
+    """Generic BERT BASE model.
 
     The number of layers (L) is 12, number of units (H) is 768, and the
     number of self-attention heads (A) is 12.
@@ -571,7 +589,7 @@ def bert_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
 def bert_24_1024_16(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
                     use_pooler=True, use_decoder=True, use_classifier=True,
                     root=os.path.join(get_home_dir(), 'models'), **kwargs):
-    """BERT LARGE pretrained model.
+    """Generic BERT LARGE model.
 
     The number of layers (L) is 24, number of units (H) is 1024, and the
     number of self-attention heads (A) is 16.

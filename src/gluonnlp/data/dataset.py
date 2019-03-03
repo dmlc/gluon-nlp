@@ -255,3 +255,22 @@ class NumpyDataset(ArrayDataset):
     @property
     def keys(self):
         return self._keys
+
+    def get_field(self, field):
+        """Return the dataset corresponds to the provided key.
+
+        Example::
+            a = np.ones((2,2))
+            b = np.zeros((2,2))
+            np.savez('data.npz', a=a, b=b)
+            dataset = NumpyDataset('data.npz')
+            data_a = dataset.get_field('a')
+            data_b = dataset.get_field('b')
+
+        Parameters
+        ----------
+        field : str
+            The name of the field to retrieve.
+        """
+        idx = self._keys.index(field)
+        return self._data[idx]
