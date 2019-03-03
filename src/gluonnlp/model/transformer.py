@@ -18,6 +18,7 @@
 # under the License.
 # pylint: disable=too-many-lines
 """Encoder and decoder usded in sequence-to-sequence learning."""
+
 __all__ = ['TransformerEncoder', 'PositionwiseFFN', 'TransformerEncoderCell',
            'transformer_en_de_512']
 
