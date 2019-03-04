@@ -216,7 +216,7 @@ Usage
     It obtains new state-of-the-art results on eleven natural language processing tasks, including pushing the GLUE benchmark to 80.4% (7.6% absolute improvement), MultiNLI accuracy to 86.7 (5.6% absolute improvement) and the SQuAD v1.1 question answering Test F1 to 93.2 (1.5% absolute improvement), outperforming human performance by 2.0%."""
     sentences = bert_abstract.split('\n')
     bert_embedding = BertEmbedding()
-    result = bert.embedding(sentences)
+    result = bert_embedding(sentences)
 
 If you want to use GPU, please import mxnet and set context
 
