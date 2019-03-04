@@ -75,23 +75,25 @@ def test_big_text_models(wikitext2_val_and_counter):
 def test_transformer_models():
     models = ['transformer_en_de_512']
     pretrained_to_test = {'transformer_en_de_512': 'WMT2014'}
+    dropout_rates = [0.1, 0.0]
     src = mx.nd.ones((2, 10))
     tgt = mx.nd.ones((2, 8))
     valid_len = mx.nd.ones((2,))
     for model_name in models:
-        eprint('testing forward for %s' % model_name)
-        pretrained_dataset = pretrained_to_test.get(model_name)
-        model, _, _ = nlp.model.get_model(model_name, dataset_name=pretrained_dataset,
-                                          pretrained=pretrained_dataset is not None,
-                                          root='tests/data/model/')
+        for rate in dropout_rates:
+            eprint('testing forward for %s, dropout rate %f' % (model_name, rate))
+            pretrained_dataset = pretrained_to_test.get(model_name)
+            model, _, _ = nlp.model.get_model(model_name, dataset_name=pretrained_dataset,
+                                              pretrained=pretrained_dataset is not None,
+                                              root='tests/data/model/', dropout=rate)
 
-        print(model)
-        if not pretrained_dataset:
-            model.initialize()
-        output, state = model(src, tgt, src_valid_length=valid_len, tgt_valid_length=valid_len)
-        output.wait_to_read()
-        del model
-        mx.nd.waitall()
+            print(model)
+            if not pretrained_dataset:
+                model.initialize()
+            output, state = model(src, tgt, src_valid_length=valid_len, tgt_valid_length=valid_len)
+            output.wait_to_read()
+            del model
+            mx.nd.waitall()
 
 
 @pytest.mark.serial
