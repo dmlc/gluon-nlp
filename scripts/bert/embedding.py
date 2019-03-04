@@ -1,17 +1,3 @@
-# coding=utf-8
-# Copyright 2018 The Google AI Language Team Authors and DMLC.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
 """BERT embedding."""
 import argparse
 import io
@@ -85,13 +71,16 @@ class BertEmbedding(object):
         self.bert, self.vocab = gluonnlp.model.get_model(model,
                                                          dataset_name=dataset_name,
                                                          pretrained=True, ctx=self.ctx,
-                                                         use_pooler=True,
+                                                         use_pooler=False,
                                                          use_decoder=False,
                                                          use_classifier=False)
 
+    def __call__(self, sentences, oov_way='avg'):
+        return self.embedding(sentences, oov_way='avg')
+
     def embedding(self, sentences, oov_way='avg'):
         """
-        Get sentence embedding, tokens, tokens embedding
+        Get tokens, tokens embedding
 
         Parameters
         ----------
@@ -103,8 +92,8 @@ class BertEmbedding(object):
 
         Returns
         -------
-        List[(ndarray, List[str], List[ndarray])]
-            List of sentence embedding, tokens, and tokens embedding
+        List[(List[str], List[ndarray])]
+            List of tokens, and tokens embedding
         """
         data_iter = self.data_loader(sentences=sentences)
         batches = []
@@ -112,13 +101,11 @@ class BertEmbedding(object):
             token_ids = token_ids.as_in_context(self.ctx)
             valid_length = valid_length.as_in_context(self.ctx)
             token_types = token_types.as_in_context(self.ctx)
-            sequence_outputs, pooled_outputs = self.bert(token_ids,
-                                                         token_types,
-                                                         valid_length.astype('float32'))
-            for token_id, sequence_output, pooled_output in zip(token_ids.asnumpy(),
-                                                                sequence_outputs.asnumpy(),
-                                                                pooled_outputs.asnumpy()):
-                batches.append((token_id, sequence_output, pooled_output))
+            sequence_outputs = self.bert(token_ids, token_types,
+                                         valid_length.astype('float32'))
+            for token_id, sequence_output in zip(token_ids.asnumpy(),
+                                                 sequence_outputs.asnumpy()):
+                batches.append((token_id, sequence_output))
         return self.oov(batches, oov_way)
 
     def data_loader(self, sentences, shuffle=False):
@@ -147,11 +134,11 @@ class BertEmbedding(object):
 
         Returns
         -------
-        List[(ndarray, List[str], List[ndarray])]
-            List of sentence embedding, tokens, and tokens embedding
+        List[(List[str], List[ndarray])]
+            List of tokens, and tokens embedding
         """
         sentences = []
-        for token_ids, sequence_outputs, pooled_output in batches:
+        for token_ids, sequence_outputs in batches:
             tokens = []
             tensors = []
             oov_len = 1
@@ -178,7 +165,7 @@ class BertEmbedding(object):
                     tensors.append(sequence_output)
             if oov_len > 1:  # if the whole sentence is one oov, handle this special case
                 tensors[-1] /= oov_len
-            sentences.append((pooled_output, tokens, tensors))
+            sentences.append((tokens, tensors))
         return sentences
 
 
@@ -208,24 +195,23 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     context = mx.gpu(args.gpu) if args.gpu else mx.cpu()
-    bert = BertEmbedding(ctx=context, model=args.model, dataset_name=args.dataset_name,
-                         max_seq_length=args.max_seq_length, batch_size=args.batch_size)
+    bert_embedding = BertEmbedding(ctx=context, model=args.model, dataset_name=args.dataset_name,
+                                   max_seq_length=args.max_seq_length, batch_size=args.batch_size)
     result = []
     sents = []
     if args.sentences:
         sents = args.sentences
-        result = bert.embedding(sents, oov_way=args.oov_way)
+        result = bert_embedding(sents, oov_way=args.oov_way)
     elif args.file:
         with io.open(args.file, 'r', encoding='utf8') as in_file:
             for line in in_file:
                 sents.append(line.strip())
-        result = bert.embedding(sents, oov_way=args.oov_way)
+        result = bert_embedding(sents, oov_way=args.oov_way)
     else:
         print('Please specify --sentence or --file')
 
     if result:
         for sent, embeddings in zip(sents, result):
             print('Text: {}'.format(sent))
-            sentence_embedding, _, tokens_embedding = embeddings
-            print('Sentence embedding: {}'.format(sentence_embedding))
+            _, tokens_embedding = embeddings
             print('Tokens embedding: {}'.format(tokens_embedding))

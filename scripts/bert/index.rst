@@ -200,7 +200,7 @@ The BERT base model produced by gluonnlp pre-training script achieves 83.6% on M
 BERT for Sentence or Tokens Embedding
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The goal of this BERT Embedding is to obtain the sentence and token embedding from BERT's pre-trained model. In this way, instead of building and do fine-tuning for an end-to-end NLP model, you can build your model by just utilizing the sentence or token embeddings.
+The goal of this BERT Embedding is to obtain the token embedding from BERT's pre-trained model. In this way, instead of building and do fine-tuning for an end-to-end NLP model, you can build your model by just utilizing the token embeddings.
 
 Usage
 +++++
@@ -216,7 +216,7 @@ Usage
     It obtains new state-of-the-art results on eleven natural language processing tasks, including pushing the GLUE benchmark to 80.4% (7.6% absolute improvement), MultiNLI accuracy to 86.7 (5.6% absolute improvement) and the SQuAD v1.1 question answering Test F1 to 93.2 (1.5% absolute improvement), outperforming human performance by 2.0%."""
     sentences = bert_abstract.split('\n')
     bert_embedding = BertEmbedding()
-    result = bert.embedding(sentences)
+    result = bert_embedding(sentences)
 
 If you want to use GPU, please import mxnet and set context
 
@@ -243,20 +243,14 @@ Example outputs:
     first_sentence = result[0]
 
     first_sentence[0]
-    # array([-0.835946  , -0.4605566 , -0.95620036, ..., -0.95608854,
-    #       -0.6258104 ,  0.7697007 ], dtype=float32)
-    first_sentence[0].shape
-    # (768,)
-
-    first_sentence[1]
     # ['we', 'introduce', 'a', 'new', 'language', 'representation', 'model', 'called', 'bert', ',', 'which', 'stands', 'for', 'bidirectional', 'encoder', 'representations', 'from', 'transformers']
+    len(first_sentence[0])
+    # 18
+
+
     len(first_sentence[1])
     # 18
-
-
-    len(first_sentence[2])
-    # 18
-    first_token_in_first_sentence = first_sentence[2]
+    first_token_in_first_sentence = first_sentence[1]
     first_token_in_first_sentence[0]
     # array([ 0.4805648 ,  0.18369392, -0.28554988, ..., -0.01961522,
     #        1.0207764 , -0.67167974], dtype=float32)
@@ -270,8 +264,6 @@ Command line interface
 
     python bert_embedding/bert.py --sentences "GluonNLP is a toolkit that enables easy text preprocessing, datasets loading and neural models building to help you speed up your Natural Language Processing (NLP) research."
     Text: GluonNLP is a toolkit that enables easy text preprocessing, datasets loading and neural models building to help you speed up your Natural Language Processing (NLP) research.
-    Sentence embedding: [-0.6098857  -0.1458175  -0.2767048  ... -0.42009002 -0.40388978
-  0.2774383 ]
     Tokens embedding: [array([-0.11881411, -0.59530115,  0.627092  , ...,  0.00648153,
        -0.03886228,  0.03406909], dtype=float32), array([-0.7995638 , -0.6540758 , -0.00521846, ..., -0.42272145,
        -0.5787281 ,  0.7021201 ], dtype=float32), array([-0.7406778 , -0.80276626,  0.3931962 , ..., -0.49068323,
