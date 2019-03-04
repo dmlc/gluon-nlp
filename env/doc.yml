@@ -10,6 +10,7 @@ dependencies:
   - sphinx_rtd_theme
   - nbsphinx>=0.3.4,<0.4
   - nbconvert=5.4.0
+  - tornado=5.1.1
   - recommonmark
   - spacy
   - nltk
