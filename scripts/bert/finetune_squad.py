@@ -64,9 +64,8 @@ log.setLevel(logging.DEBUG)
 formatter = logging.Formatter(
     fmt='%(levelname)s:%(name)s:%(asctime)s %(message)s', datefmt='%H:%M:%S')
 
-
 parser = argparse.ArgumentParser(description='BERT QA example.'
-                                 'We fine-tune the BERT model on SQuAD dataset.')
+                                             'We fine-tune the BERT model on SQuAD dataset.')
 
 parser.add_argument('--only_predict',
                     action='store_true',
@@ -86,7 +85,7 @@ parser.add_argument('--dataset_name',
                     type=str,
                     default='book_corpus_wiki_en_uncased',
                     help='BERT dataset name.'
-                    'options are book_corpus_wiki_en_uncased and book_corpus_wiki_en_cased.')
+                         'options are book_corpus_wiki_en_uncased and book_corpus_wiki_en_cased.')
 
 parser.add_argument('--cased',
                     action='store_false',
@@ -96,7 +95,7 @@ parser.add_argument('--output_dir',
                     type=str,
                     default='./output_dir',
                     help='The output directory where the model params will be written.'
-                    ' default is ./output_dir')
+                         ' default is ./output_dir')
 
 parser.add_argument('--epochs',
                     type=int,
@@ -122,7 +121,7 @@ parser.add_argument('--accumulate',
                     type=int,
                     default=None,
                     help='The number of batches for '
-                    'gradients accumulation to simulate large batch size. Default is None')
+                         'gradients accumulation to simulate large batch size. Default is None')
 
 parser.add_argument('--lr',
                     type=float,
@@ -143,33 +142,33 @@ parser.add_argument('--max_seq_length',
                     type=int,
                     default=384,
                     help='The maximum total input sequence length after WordPiece tokenization.'
-                    'Sequences longer than this will be truncated, and sequences shorter '
-                    'than this will be padded. default is 384')
+                         'Sequences longer than this will be truncated, and sequences shorter '
+                         'than this will be padded. default is 384')
 
 parser.add_argument('--doc_stride',
                     type=int,
                     default=128,
                     help='When splitting up a long document into chunks, how much stride to '
-                    'take between chunks. default is 128')
+                         'take between chunks. default is 128')
 
 parser.add_argument('--max_query_length',
                     type=int,
                     default=64,
                     help='The maximum number of tokens for the question. Questions longer than '
-                    'this will be truncated to this length. default is 64')
+                         'this will be truncated to this length. default is 64')
 
 parser.add_argument('--n_best_size',
                     type=int,
                     default=20,
                     help='The total number of n-best predictions to generate in the '
-                    'nbest_predictions.json output file. default is 20')
+                         'nbest_predictions.json output file. default is 20')
 
 parser.add_argument('--max_answer_length',
                     type=int,
                     default=30,
                     help='The maximum length of an answer that can be generated. This is needed '
-                    'because the start and end predictions are not conditioned on one another.'
-                    ' default is 30')
+                         'because the start and end predictions are not conditioned on one another.'
+                         ' default is 30')
 
 parser.add_argument('--version_2',
                     action='store_true',
@@ -179,7 +178,7 @@ parser.add_argument('--null_score_diff_threshold',
                     type=float,
                     default=-2.0,
                     help='If null_score - best_non_null is greater than the threshold predict null.'
-                    ' default is -2.0')
+                         ' default is -2.0')
 
 parser.add_argument('--gpu',
                     action='store_true',
@@ -194,6 +193,10 @@ parser.add_argument('--input_size',
                     type=int,
                     default=768,
                     help='The embedding size of the input')
+
+parser.add_argument('--export',
+                    action='store_true',
+                    help='Whether to export the model.')
 
 args = parser.parse_args()
 
@@ -232,11 +235,10 @@ accumulate = args.accumulate
 log_interval = args.log_interval * accumulate if accumulate else args.log_interval
 if accumulate:
     log.info('Using gradient accumulation. Effective batch size = {}'.
-             format(accumulate*batch_size))
+             format(accumulate * batch_size))
 
 optimizer = args.optimizer
 warmup_ratio = args.warmup_ratio
-
 
 version_2 = args.version_2
 null_score_diff_threshold = args.null_score_diff_threshold
@@ -343,7 +345,7 @@ def train():
                 new_lr = lr * step_num / num_warmup_steps
             else:
                 offset = (step_num - num_warmup_steps) * lr / \
-                    (num_train_steps - num_warmup_steps)
+                         (num_train_steps - num_warmup_steps)
                 new_lr = lr - offset
             trainer.set_learning_rate(new_lr)
             # forward and backward
@@ -377,7 +379,7 @@ def train():
         epoch_toc = time.time()
         log.info('Epoch: {}, Time cost={:.2f} s, Thoughput={:.2f} samples/s'
                  .format(epoch_id, epoch_toc - epoch_tic,
-                         len(train_dataloader)/(epoch_toc - epoch_tic)))
+                         len(train_dataloader) / (epoch_toc - epoch_tic)))
         net.save_parameters(os.path.join(output_dir, 'net_parameters'))
         evaluate()
 
@@ -475,6 +477,9 @@ def evaluate():
 if __name__ == '__main__':
     if not only_predict:
         train()
-        evaluate()
+        if args.export:
+            net.export('net', epoch=args.epochs)
     elif model_parameters:
         evaluate()
+        if args.export:
+            net.export('net', epoch=args.epochs)

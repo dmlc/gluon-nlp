@@ -1,49 +1,48 @@
-Bidirectional Encoder Representations from Transformers
--------------------------------------------------------
-
-:download:`[Download] </model_zoo/bert.zip>`
-
-Reference: Devlin, Jacob, et al. "`Bert: Pre-training of deep bidirectional transformers for language understanding. <https://arxiv.org/abs/1810.04805>`_" arXiv preprint arXiv:1810.04805 (2018).
-
-The following pre-trained BERT models are available from the **gluonnlp.model.get_model** API:
-
-+--------------------+---------------------------------+-------------------------------+--------------------+-------------------------+---------+
-|                    | book_corpus_wiki_en_uncased     | book_corpus_wiki_en_cased     | wiki_multilingual  | wiki_multilingual_cased | wiki_cn |
-+====================+=================================+===============================+====================+=========================+=========+
-| bert_12_768_12     | ✓                               | ✓                             | ✓                  | ✓                       | ✓       |
-+--------------------+---------------------------------+-------------------------------+--------------------+-------------------------+---------+
-| bert_24_1024_16    | ✓                               | ✓                             | x                  | x                       | x       |
-+--------------------+---------------------------------+-------------------------------+--------------------+-------------------------+---------+
-
-where **bert_12_768_12** refers to the BERT BASE model, and **bert_24_1024_16** refers to the BERT LARGE model.
-
-BERT for Sentence Pair Classification
+Example Usage of Hybridizable BERT
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-GluonNLP provides the following example script to fine-tune sentence pair classification with pre-trained
-BERT model.
+This example mainly introduces the steps needed to use the hybridizable BERT.
 
-Download the MRPC dataset:
 
- .. code-block:: console
-
-    $ curl -L https://tinyurl.com/yaznh3os -o download_glue_data.py
-    $ python3 download_glue_data.py --data_dir glue_data --tasks MRPC
-
-Use the following command to fine-tune the BERT model for classification on the MRPC dataset.
+Step 1: create a hybridizable task guided model using BERT:
 
 .. code-block:: console
 
-   $ GLUE_DIR=glue_data python finetune_classifier.py --batch_size 32 --optimizer bertadam --epochs 3 --gpu --seed 1 --lr 2e-5
+    $ class BertForQA(HybridBlock)
 
-It gets validation accuracy of 87.3%, whereas the the original Tensorflow implementation give evaluation results between 84% and 88%.
+An example can be found in 'bert_for_qa.py'.
 
-BERT for SQuAD
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Step 2: specify the input size and sequence length of the input data via environment variables
+in the training script:
+
+.. code-block:: console
+
+    $ os.environ['SEQLENGTH'] = str(args.seq_length)
+    $ os.environ['INPUTSIZE'] = str(args.input_size)
+
+An example can be found in 'finetune_squad.py'.
+
+Step 3: hybridize the model in the training script:
+
+.. code-block:: console
+
+    $ net = BertForQA(bert=bert)
+    $ net.hybridize(static_alloc=True, static_shape=True)
+
+An example can be found in 'finetune_squad.py'.
+
+Step 4: export trained model:
+
+.. code-block:: console
+
+    $ net.export('net', epoch=args.epochs)
+
+To export the model, in 'finetune_squad.py', set export=True.
 
 GluonNLP provides the following example script to fine-tune SQuAD with pre-trained BERT model.
 
-The throughputs of training and inference are based on fixed sequence length=384 and input embedding size=768, which are 1.65 samples/s and 3.97 samples/s respectively.
+The throughputs of training and inference are based on fixed sequence length=384 and input embedding size=768,
+which are 1.65 samples/s and 3.97 samples/s respectively.
 
 In total, one training epoch costs 4466.87s and inference costs 113.99s on SQuAD v1.1.
 
@@ -53,4 +52,4 @@ To reproduce the above result, simply run the following command with MXNet==1.5.
  
 .. code-block:: console
 
-    $ python finetune_squad.py --optimizer adam --gpu
+    $ python finetune_squad.py --optimizer adam --gpu --export
