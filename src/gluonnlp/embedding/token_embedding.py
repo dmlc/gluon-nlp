@@ -448,7 +448,6 @@ class TokenEmbedding(object):
         """
         return self._allow_extend
 
-
     @property
     def unknown_lookup(self):
         """Vector lookup for unknown tokens.
@@ -1026,3 +1025,77 @@ class Word2Vec(TokenEmbedding):
         pretrained_file_path = self._get_file_path(self.source_file_hash, embedding_root, source)
 
         self._load_embedding(pretrained_file_path, elem_delim=' ')
+
+    def load_w2v_binary(self, pretrained_file_path, encoding='utf8'):
+        """Load embedding vectors from a binary pre-trained token embedding file.
+
+        Parameters
+        ----------
+        pretrained_file_path: str
+            The path to a binary pre-trained token embedding file.
+        encoding: str
+            The encoding type of the file.
+        """
+        self._idx_to_token = [self.unknown_token] if self.unknown_token else []
+        if self.unknown_token:
+            self._token_to_idx = DefaultLookupDict(C.UNK_IDX)
+        else:
+            self._token_to_idx = {}
+        self._token_to_idx.update((token, idx) for idx, token in enumerate(self._idx_to_token))
+        self._idx_to_vec = None
+        all_elems = []
+        tokens = set()
+        loaded_unknown_vec = None
+        with io.open(pretrained_file_path, 'rb') as f:
+            header = f.readline().decode(encoding=encoding)
+            vocab_size, vec_len = (int(x) for x in header.split())
+            binary_len = np.dtype(np.float32).itemsize * vec_len
+            for line_num in range(vocab_size):
+                token = []
+                while True:
+                    ch = f.read(1)
+                    if ch == b' ':
+                        break
+                    if ch == b'':
+                        raise EOFError('unexpected end of input; is count incorrect or file '
+                                       'otherwise damaged?')
+                    if ch != b'\n':  # ignore newlines in front of words (some binary files have)
+                        token.append(ch)
+                try:
+                    token = b''.join(token).decode(encoding=encoding)
+                except ValueError:
+                    warnings.warn('line {} in {}: failed to decode. Skipping.'
+                                  .format(line_num, pretrained_file_path))
+                    continue
+                elems = np.fromstring(f.read(binary_len), dtype=np.float32)
+                if token == self.unknown_token and loaded_unknown_vec is None:
+                    loaded_unknown_vec = elems
+                    tokens.add(self.unknown_token)
+                elif token in tokens:
+                    warnings.warn('line {} in {}: duplicate embedding found for '
+                                  'token "{}". Skipped.'.format(line_num, pretrained_file_path,
+                                                                token))
+                else:
+                    if not vec_len:
+                        vec_len = len(elems)
+                        if self.unknown_token:
+                            # Reserve a vector slot for the unknown token at the very beggining
+                            # because the unknown token index is 0.
+                            all_elems.extend([0] * vec_len)
+                    else:
+                        assert len(elems) == vec_len, \
+                            'line {} in {}: found vector of inconsistent dimension for token ' \
+                            '"{}". expected dim: {}, found: {}'.format(line_num,
+                                                                       pretrained_file_path,
+                                                                       token, vec_len, len(elems))
+                    all_elems.extend(elems)
+                    self._idx_to_token.append(token)
+                    self._token_to_idx[token] = len(self._idx_to_token) - 1
+                    tokens.add(token)
+        self._idx_to_vec = nd.array(all_elems).reshape((-1, vec_len))
+
+        if self.unknown_token:
+            if loaded_unknown_vec is None:
+                self._idx_to_vec[C.UNK_IDX] = self._init_unknown_vec(shape=vec_len)
+            else:
+                self._idx_to_vec[C.UNK_IDX] = nd.array(loaded_unknown_vec)
