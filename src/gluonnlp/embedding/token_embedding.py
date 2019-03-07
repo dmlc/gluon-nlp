@@ -1053,6 +1053,10 @@ class Word2Vec(TokenEmbedding):
         with io.open(pretrained_file_path, 'rb') as f:
             header = f.readline().decode(encoding=encoding)
             vocab_size, vec_len = (int(x) for x in header.split())
+            if self.unknown_token:
+                # Reserve a vector slot for the unknown token at the very beggining
+                # because the unknown token index is 0.
+                all_elems.extend([0] * vec_len)
             binary_len = np.dtype(np.float32).itemsize * vec_len
             for line_num in range(vocab_size):
                 token = []
@@ -1072,6 +1076,10 @@ class Word2Vec(TokenEmbedding):
                                   .format(line_num, pretrained_file_path))
                     continue
                 elems = np.fromstring(f.read(binary_len), dtype=np.float32)
+
+                assert len(elems) > 1, 'line {} in {}: unexpected data format.'.format(
+                    line_num, pretrained_file_path)
+
                 if token == self.unknown_token and loaded_unknown_vec is None:
                     loaded_unknown_vec = elems
                     tokens.add(self.unknown_token)
@@ -1080,18 +1088,11 @@ class Word2Vec(TokenEmbedding):
                                   'token "{}". Skipped.'.format(line_num, pretrained_file_path,
                                                                 token))
                 else:
-                    if not vec_len:
-                        vec_len = len(elems)
-                        if self.unknown_token:
-                            # Reserve a vector slot for the unknown token at the very beggining
-                            # because the unknown token index is 0.
-                            all_elems.extend([0] * vec_len)
-                    else:
-                        assert len(elems) == vec_len, \
-                            'line {} in {}: found vector of inconsistent dimension for token ' \
-                            '"{}". expected dim: {}, found: {}'.format(line_num,
-                                                                       pretrained_file_path,
-                                                                       token, vec_len, len(elems))
+                    assert len(elems) == vec_len, \
+                        'line {} in {}: found vector of inconsistent dimension for token ' \
+                        '"{}". expected dim: {}, found: {}'.format(line_num,
+                                                                   pretrained_file_path,
+                                                                   token, vec_len, len(elems))
                     all_elems.extend(elems)
                     self._idx_to_token.append(token)
                     self._token_to_idx[token] = len(self._idx_to_token) - 1
