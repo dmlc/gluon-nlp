@@ -1046,6 +1046,7 @@ class Word2Vec(TokenEmbedding):
         all_elems = []
         tokens = set()
         loaded_unknown_vec = None
+        pretrained_file_path = os.path.expanduser(pretrained_file_path)
         with io.open(pretrained_file_path, 'rb') as f:
             header = f.readline().decode(encoding=encoding)
             vocab_size, vec_len = (int(x) for x in header.split())
