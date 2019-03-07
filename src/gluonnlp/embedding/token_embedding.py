@@ -999,6 +999,8 @@ class Word2Vec(TokenEmbedding):
     embedding_root : str, default '$MXNET_HOME/embedding'
         The root directory for storing embedding-related files.
         MXNET_HOME defaults to '~/.mxnet'.
+    preload : bool, default True
+        Decide to load default model or not.
     kwargs
         All other keyword arguments are passed to
         `gluonnlp.embedding.TokenEmbedding`.
@@ -1018,13 +1020,14 @@ class Word2Vec(TokenEmbedding):
     source_file_hash = C.WORD2VEC_NPZ_SHA1
 
     def __init__(self, source='GoogleNews-vectors-negative300',
-                 embedding_root=os.path.join(get_home_dir(), 'embedding'), **kwargs):
+                 embedding_root=os.path.join(get_home_dir(), 'embedding'), preload=True, **kwargs):
         self._check_source(self.source_file_hash, source)
 
         super(Word2Vec, self).__init__(**kwargs)
         pretrained_file_path = self._get_file_path(self.source_file_hash, embedding_root, source)
 
-        self._load_embedding(pretrained_file_path, elem_delim=' ')
+        if preload:
+            self._load_embedding(pretrained_file_path, elem_delim=' ')
 
     def load_w2v_binary(self, pretrained_file_path, encoding='utf8'):
         """Load embedding vectors from a binary pre-trained token embedding file.
