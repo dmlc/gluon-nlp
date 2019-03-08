@@ -279,3 +279,16 @@ Command line interface
        -0.42823148, -0.48873612], dtype=float32), array([-0.6576557 , -0.09822252,  0.1121515 , ..., -0.21743725,
        -0.1820574 , -0.16115054], dtype=float32)]
 
+.. container:: cards
+
+   .. card::
+      :title: Static BERT
+      :link: staticbert/index.html
+
+      Hybridizable BERT of static shape with an example on SQuAD.
+
+.. toctree::
+   :hidden:
+   :maxdepth: 1
+
+   staticbert/index
