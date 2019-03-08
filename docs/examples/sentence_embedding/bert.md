@@ -144,8 +144,9 @@ the dev set of the
 Microsoft Research Paraphrase Corpus dataset. The file is
 named 'dev.tsv'. Let's take a look at the raw dataset.
 
-```{.python .input}
-!head -n 5 dev.tsv
+```{.bash .input}
+%%bash
+head -n 5 dev.tsv
 ```
 
 The file contains 5 columns, separated by tabs (i.e. '\t').
