@@ -145,7 +145,6 @@ Microsoft Research Paraphrase Corpus dataset. The file is
 named 'dev.tsv'. Let's take a look at the raw dataset.
 
 ```{.bash .input}
-%%bash
 head -n 5 dev.tsv
 ```
 
