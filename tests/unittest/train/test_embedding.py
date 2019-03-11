@@ -93,14 +93,12 @@ def test_fasttext_embedding_load_binary_compare_vec():
 
 def test_word2vec_embedding_load_binary_format():
     test_dir = os.path.dirname(os.path.realpath(__file__))
-    word2vec_vec = nlp.embedding.Word2Vec(source=None)
-    word2vec_vec._load_embedding(
+    word2vec_vec = nlp.embedding.Word2Vec.from_file(
         os.path.join(str(test_dir), 'test_embedding', 'lorem_ipsum_w2v.vec'),
         elem_delim=' '
     )
-    word2vec_bin = nlp.embedding.Word2Vec(source=None)
-    word2vec_bin.load_w2v_binary(
-        os.path.join(str(test_dir), 'test_embedding', 'lorem_ipsum_w2v.bin'),
+    word2vec_bin = nlp.embedding.Word2Vec.from_binary(
+        os.path.join(str(test_dir), 'test_embedding', 'lorem_ipsum_w2v.bin')
     )
     idx_to_vec = word2vec_bin[word2vec_vec.idx_to_token]
     assert np.all(

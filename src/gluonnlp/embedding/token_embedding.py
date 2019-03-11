@@ -1023,11 +1023,11 @@ class Word2Vec(TokenEmbedding):
         super(Word2Vec, self).__init__(**kwargs)
         if source:
             self._check_source(self.source_file_hash, source)
-            pretrained_file_path = self._get_file_path(self.source_file_hash, embedding_root,
-                                                       source)
+            pretrained_file_path = self._get_file_path(self.source_file_hash,
+                                                       embedding_root, source)
             self._load_embedding(pretrained_file_path, elem_delim=' ')
 
-    def load_w2v_binary(self, pretrained_file_path, encoding='utf8'):
+    def _load_w2v_binary(self, pretrained_file_path, encoding='utf8'):
         """Load embedding vectors from a binary pre-trained token embedding file.
 
         Parameters
@@ -1102,3 +1102,18 @@ class Word2Vec(TokenEmbedding):
                 self._idx_to_vec[C.UNK_IDX] = self._init_unknown_vec(shape=vec_len)
             else:
                 self._idx_to_vec[C.UNK_IDX] = nd.array(loaded_unknown_vec)
+
+    @classmethod
+    def from_binary(cls, pretrained_file_path, encoding='utf8'):
+        """Load embedding vectors from a binary pre-trained token embedding file.
+
+        Parameters
+        ----------
+        pretrained_file_path: str
+            The path to a binary pre-trained token embedding file.
+        encoding: str
+            The encoding type of the file.
+        """
+        embedding = cls(None)
+        embedding._load_w2v_binary(pretrained_file_path, encoding=encoding)
+        return embedding
