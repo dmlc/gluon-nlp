@@ -5,9 +5,12 @@ representations have been shown to improve many downstream NLP tasks such as
 question answering, and natural language inference. To apply pre-trained
 representations to these tasks, there are two strategies:
 
-1. **feature-based** approach, which uses the pre-trained representations as additional
-features to the downstream task.
-2. **fine-tuning** based approach, which trains the downstream tasks by
+1. **feature-based**
+approach, which uses the pre-trained representations as additional
+features to
+the downstream task.
+2. **fine-tuning** based approach, which trains the
+downstream tasks by
 fine-tuning pre-trained parameters.
 
 While feature-based
@@ -22,21 +25,26 @@ In this tutorial, we will focus on fine-tuning with the
 pre-trained BERT model to classify semantically equivalent sentence pairs.
 Specifically, we will:
 
-1. load the state-of-the-art pre-trained BERT model.
-2.
-process and transform sentence pair data to be used for fine-tuning.
-3. fine-
-tune BERT model for sentence classification.
+1. load the state-of-the-art pre-trained BERT model and
+attach an additional layer for classification,
+2. process and transform sentence
+pair data for the task at hand, and
+3. fine-tune BERT model for sentence
+classification.
 
 ## Preparation
 
 To run this tutorial locally, please:
 
-- [install gluonnlp](http://gluon-nlp.mxnet.io/#installation), and
-- click the download button at the top of the tutorial page to get all related code.
+-
+[install gluonnlp](http://gluon-nlp.mxnet.io/#installation), and
+- click the
+download button at the top of the tutorial page to get all related code.
 
-Then we start with some usual preparation such as importing libraries
-and setting the environment.
+Then
+we start with some usual preparation such as importing libraries
+and setting the
+environment.
 
 ### Load MXNet and GluonNLP
 
@@ -49,6 +57,7 @@ import numpy as np
 import mxnet as mx
 from mxnet import gluon
 import gluonnlp as nlp
+from bert import *
 ```
 
 ### Set Environment
@@ -57,40 +66,47 @@ import gluonnlp as nlp
 np.random.seed(100)
 random.seed(100)
 mx.random.seed(10000)
+# change `ctx` to `mx.cpu()` if no GPU is available.
 ctx = mx.gpu(0)
 ```
 
-## Use the Pre-trained BERT model
+## Use the Pre-trained BERT Model
 
-The list of pre-trained BERT model available in GluonNLP can be found
+The list of pre-trained BERT model available
+in GluonNLP can be found
 [here](../../model_zoo/bert/index.rst).
 
-In this tutorial, we will load the BERT
-BASE model trained on uncased book corpus and English Wikipedia dataset in
+In this
+tutorial, we will load the BERT
+BASE model trained on uncased book corpus and
+English Wikipedia dataset in
 GluonNLP model zoo.
 
 ### Get BERT
 
-Let's first take a look at the BERT model
+Let's first take
+a look at the BERT model
 architecture for sentence pair classification below:
-
 <div style="width:
 500px;">![bert-sentence-pair](bert-sentence-pair.png)</div>
-
 where the model takes a pair of
-sequences and **pools** the representation of the first token in the sequence.
-Note that the original BERT model was trained for masked language model and next
-sentence prediction tasks, which includes layers for language model decoding and
-classification and are not useful for sentence pair classification.
+sequences and *pools* the representation of the
+first token in the sequence.
+Note that the original BERT model was trained for
+masked language model and next
+sentence prediction tasks, which includes layers
+for language model decoding and
+classification. These layers will not be used
+for fine-tuning sentence pair classification.
 
-We load the
-pre-trained BERT using the model API in GluonNLP, which returns the vocabulary
-along with the model. To include the pooler layer of the pre-trained model,
-`use_pooler` is set to `True`.
+Let's load the
+pre-trained BERT
+using the model API in GluonNLP, which returns the vocabulary
+along with the
+model. We include the pooler layer of the pre-trained model by setting
+`use_pooler` to `True`.
 
 ```{.python .input}
-from bert import *
-
 bert_base, vocabulary = nlp.model.get_model('bert_12_768_12', 
                                              dataset_name='book_corpus_wiki_en_uncased',
                                              pretrained=True, ctx=ctx, use_pooler=True,
@@ -123,23 +139,50 @@ metric = mx.metric.Accuracy()
 
 ### Dataset
 
-In this tutorial, for demonstration we use the dev set of the
-Microsoft Research Paraphrase Corpus dataset. Each example in the dataset
-contains a pair of sentences, and a label indicating whether the two sentences
-are semantically equivalent. 
+For demonstration purpose, we use
+the dev set of the
+Microsoft Research Paraphrase Corpus dataset. The file is
+named 'dev.tsv'. Let's take a look at the raw dataset.
 
-Let's take a look at the 3rd example in the
-dataset:
+```{.bash .input}
+head -n 5 dev.tsv
+```
+
+The file contains 5 columns, separated by tabs (i.e. '\t').
+The first line of
+the file explains each of these columns:
+0. the label indicating whether the two
+sentences are semantically equivalent
+1. the id of the first sentence in this
+sample
+2. the id of the second sentence in this sample
+3. the content of the
+first sentence
+4. the content of the second sentence
+
+For our task, we are
+interested in the 0th, 3rd and 4th columns.
+To load this dataset, we can use the
+`TSVDataset` API:
 
 ```{.python .input}
-data_train = dataset.MRPCDataset('dev', root='.')
+# skip the first line, which is the schema
+num_discard_samples = 1
+# split fields by tabs
+field_separator = nlp.data.Splitter('\t')
+# fields to select from the file
+field_indices = [3, 4, 0]
+data_train_raw = nlp.data.TSVDataset(filename='dev.tsv',
+                                 field_separator=field_separator,
+                                 num_discard_samples=num_discard_samples,
+                                 field_indices=field_indices)
 sample_id = 0
 # sentence a
-print(data_train[sample_id][0])
+print(data_train_raw[sample_id][0])
 # sentence b
-print(data_train[sample_id][1])
+print(data_train_raw[sample_id][1])
 # 1 means equivalent, 0 means not equivalent
-print(data_train[sample_id][2])
+print(data_train_raw[sample_id][2])
 ```
 
 To use the pre-trained BERT model, we need to preprocess the data in the same
@@ -149,23 +192,37 @@ way it was trained. The following figure shows the input representation in BERT:
 We will use
 `BERTDatasetTransform` to perform the following transformations:
 - tokenize
-the input sequences
-- insert [CLS], [SEP] as necessary
-- generate segment ids to
-indicate whether a token belongs to the first sequence or the second sequence.
--
-generate valid length
+the
+input sequences
+- insert [CLS] at the beginning
+- insert [SEP] between sentence
+one and sentence two, and at the end
+- generate segment ids to indicate whether
+a token belongs to the first sequence or the second sequence.
+- generate valid
+length
 
 ```{.python .input}
 # use the vocabulary from pre-trained model for tokenization
 bert_tokenizer = nlp.data.BERTTokenizer(vocabulary, lower=True)
 # maximum sequence length
 max_len = 128
+# the labels for the two classes
 all_labels = ["0", "1"]
+# whether to transform the data as sentence pairs.
+# for single sentence classification, set pair=False
+pair = True
 transform = dataset.BERTDatasetTransform(bert_tokenizer, max_len,
-                                         labels=all_labels, label_dtype='int32')
-data_train = data_train.transform(transform)
+                                         labels=all_labels,
+                                         label_dtype='int32',
+                                         pad=True,
+                                         pair=pair)
+data_train = data_train_raw.transform(transform)
 
+print('vocabulary used for tokenization = \n%s'%vocabulary)
+print('[PAD] token id = %s'%(vocabulary['[PAD]']))
+print('[CLS] token id = %s'%(vocabulary['[CLS]']))
+print('[SEP] token id = %s'%(vocabulary['[SEP]']))
 print('token ids = \n%s'%data_train[sample_id][0])
 print('valid length = \n%s'%data_train[sample_id][1])
 print('segment ids = \n%s'%data_train[sample_id][2])
@@ -237,20 +294,27 @@ In this tutorial, we show how to fine-tune a sentence pair
 classification model with pre-trained BERT parameters. In GluonNLP, this can be
 done with just a few simple steps: apply BERT-style data transformation to
 preprocess the data, automatically download the pre-trained model, and feed the
-transformed data into the model. For demonstration purpose, we skipped the warmup learning rate
-schedule and validation on dev dataset used in the original implementation. Please visit
-[here](../../model_zoo/bert/index.rst) for the complete fine-tuning scripts.
+transformed data into the model. For demonstration purpose, we skipped the
+warmup learning rate
+schedule and validation on dev dataset used in the original
+implementation. Please visit
+[here](../../model_zoo/bert/index.rst) for the
+complete fine-tuning scripts.
 
 ## References
 
-[1] Devlin, Jacob, et al. "Bert: Pre-training of deep
-bidirectional transformers for language understanding." arXiv preprint
+[1] Devlin, Jacob, et al. "Bert:
+Pre-training of deep
+bidirectional transformers for language understanding."
+arXiv preprint
 arXiv:1810.04805 (2018).
 
-[2] Dolan, William B., and Chris Brockett.
-"Automatically constructing a corpus of sentential paraphrases." Proceedings of
+[2] Dolan, William B., and Chris
+Brockett.
+"Automatically constructing a corpus of sentential paraphrases."
+Proceedings of
 the Third International Workshop on Paraphrasing (IWP2005). 2005.
-
 [3] Peters,
-Matthew E., et al. "Deep contextualized word representations." arXiv preprint
+Matthew E., et al. "Deep contextualized word representations." arXiv
+preprint
 arXiv:1802.05365 (2018).
