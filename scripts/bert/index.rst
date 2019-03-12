@@ -56,7 +56,7 @@ For all model settings above, we set learing rate = 2e-5 and optimizer = bertada
 
     $ curl -L https://tinyurl.com/yaznh3os -o download_glue_data.py
     $ python3 download_glue_data.py --data_dir glue_data --tasks MRPC
-    $ GLUE_DIR=glue_data finetune_classifier.py --task_name MRPC --batch_size 32 --optimizer bertadam --epochs 3 --gpu --lr 2e-5
+    $ GLUE_DIR=glue_data python finetune_classifier.py --task_name MRPC --batch_size 32 --optimizer bertadam --epochs 3 --gpu --lr 2e-5
 
 [2] SST-2
 
@@ -64,7 +64,7 @@ For all model settings above, we set learing rate = 2e-5 and optimizer = bertada
 
     $ curl -L https://tinyurl.com/yaznh3os -o download_glue_data.py
     $ python3 download_glue_data.py --data_dir glue_data --tasks SST
-    $ GLUE_DIR=glue_data python3 finetune_classifier.py --task_name SST --epochs 4 --batch_size 16 --optimizer bertadam --gpu --lr 2e-5 --log_interval 500
+    $ GLUE_DIR=glue_data python finetune_classifier.py --task_name SST --epochs 4 --batch_size 16 --optimizer bertadam --gpu --lr 2e-5 --log_interval 500
 
 [3] RTE
 
@@ -72,7 +72,7 @@ For all model settings above, we set learing rate = 2e-5 and optimizer = bertada
 
     $ curl -L https://tinyurl.com/yaznh3os -o download_glue_data.py
     $ python3 download_glue_data.py --data_dir glue_data --tasks RTE
-    $ GLUE_DIR=glue_data python3 finetune_classifier.py --task_name RTE --batch_size 32 --optimizer bertadam --epochs 3 --gpu  --lr 2e-5
+    $ GLUE_DIR=glue_data python finetune_classifier.py --task_name RTE --batch_size 32 --optimizer bertadam --epochs 3 --gpu  --lr 2e-5
 
 [4] MNLI
 
@@ -80,7 +80,7 @@ For all model settings above, we set learing rate = 2e-5 and optimizer = bertada
 
     $ curl -L https://tinyurl.com/yaznh3os -o download_glue_data.py
     $ python3 download_glue_data.py --data_dir glue_data --tasks MNLI
-    $ GLUE_DIR=glue_data python3 finetune_classifier.py --task_name MNLI --max_len 80 --log_interval 100 --epsilon 1e-8 --gpu
+    $ GLUE_DIR=glue_data python finetune_classifier.py --task_name MNLI --max_len 80 --log_interval 100 --epsilon 1e-8 --gpu
 
 Some other tasks can be modeled with `--task_name` parameter.
 
