@@ -97,7 +97,7 @@ def test_word2vec_embedding_load_binary_format():
         os.path.join(str(test_dir), 'test_embedding', 'lorem_ipsum_w2v.vec'),
         elem_delim=' '
     )
-    word2vec_bin = nlp.embedding.Word2Vec.from_binary(
+    word2vec_bin = nlp.embedding.Word2Vec.from_w2v_binary(
         os.path.join(str(test_dir), 'test_embedding', 'lorem_ipsum_w2v.bin')
     )
     idx_to_vec = word2vec_bin[word2vec_vec.idx_to_token]

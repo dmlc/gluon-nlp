@@ -1104,7 +1104,7 @@ class Word2Vec(TokenEmbedding):
                 self._idx_to_vec[C.UNK_IDX] = nd.array(loaded_unknown_vec)
 
     @classmethod
-    def from_binary(cls, pretrained_file_path, encoding='utf8'):
+    def from_w2v_binary(cls, pretrained_file_path, encoding='utf8'):
         """Load embedding vectors from a binary pre-trained token embedding file.
 
         Parameters
