@@ -195,7 +195,7 @@ To reproduce BERT pre-training with books corpus and English wikipedia datasets 
 
     $ python run_pretraining.py --gpus 0,1,2,3,4,5,6,7 --batch_size 8 --lr 1e-4 --data /path/to/generated/samples/train/*.npz --warmup_ratio 0.01 --num_steps 1000000 --log_interval=250 --data_eval /path/to/generated/samples/dev/*.npz --batch_size_eval 8 --ckpt_dir ckpt --ckpt_interval 25000 --accumulate 4 --num_buckets 10 --dtype float16
 
-The BERT base model produced by gluonnlp pre-training script achieves 83.6% on MNLI-mm, 93% on SST-2, 87.99% on MRPC and 80.99/88.60 on SQuAD 1.1 validation set.
+The BERT base model produced by gluonnlp pre-training script (`log <https://raw.githubusercontent.com/dmlc/web-data/master/gluonnlp/logs/bert/bert_base_pretrain.log>`__) achieves 83.6% on MNLI-mm, 93% on SST-2, 87.99% on MRPC and 80.99/88.60 on SQuAD 1.1 validation set.
 
 BERT for Sentence or Tokens Embedding
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
