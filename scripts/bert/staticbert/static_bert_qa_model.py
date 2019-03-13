@@ -16,15 +16,16 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-"""BertForQA models."""
+"""Static BertForQA models."""
 
-__all__ = ['BertForQA', 'BertForQALoss']
+__all__ = ['StaticBertForQA', 'BertForQALoss']
 
 from mxnet.gluon import HybridBlock, loss, nn
 from mxnet.gluon.loss import Loss
 
 
-class BertForQA(HybridBlock):
+#create a hybridizable task guided model using BERT
+class StaticBertForQA(HybridBlock):
     """Hybridizable Model for SQuAD task with BERT.
 
     The model feeds token ids and token type ids into BERT to get the
@@ -41,7 +42,7 @@ class BertForQA(HybridBlock):
     """
 
     def __init__(self, bert, prefix=None, params=None):
-        super(BertForQA, self).__init__(prefix=prefix, params=params)
+        super(StaticBertForQA, self).__init__(prefix=prefix, params=params)
         self.bert = bert
         with self.name_scope():
             self.span_classifier = nn.Dense(units=2, flatten=False)

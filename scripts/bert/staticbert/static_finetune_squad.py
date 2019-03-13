@@ -50,9 +50,9 @@ from mxnet import gluon, nd
 
 import gluonnlp as nlp
 from gluonnlp.data import SQuAD
-from static_bert_qa_model import BertForQALoss, BertForQA
-from bert_qa_dataset import (SQuADTransform, preprocess_dataset)
-from bert_qa_evaluate import get_F1_EM, predictions
+from static_bert_qa_model import BertForQALoss, StaticBertForQA
+from ..bert_qa_dataset import (SQuADTransform, preprocess_dataset)
+from ..bert_qa_evaluate import get_F1_EM, predictions
 from static_bert import get_model
 
 np.random.seed(6)
@@ -204,6 +204,10 @@ parser.add_argument('--export',
 
 args = parser.parse_args()
 
+
+###############################################################################
+#        Specify the static input size and sequence length                    #
+###############################################################################
 os.environ['SEQLENGTH'] = str(args.seq_length)
 os.environ['INPUTSIZE'] = str(args.input_size)
 
@@ -277,7 +281,11 @@ batchify_fn = nlp.data.batchify.Tuple(
 
 berttoken = nlp.data.BERTTokenizer(vocab=vocab, lower=lower)
 
-net = BertForQA(bert=bert)
+
+###############################################################################
+#                              Hybridize the model                            #
+###############################################################################
+net = StaticBertForQA(bert=bert)
 if pretrained_bert_parameters and not model_parameters:
     bert.load_parameters(pretrained_bert_parameters, ctx=ctx,
                          ignore_extra=True)
@@ -510,13 +518,16 @@ def evaluate():
         log.info(get_F1_EM(dev_data, all_predictions))
 
 
+###############################################################################
+#                              Export the model                               #
+###############################################################################
 if __name__ == '__main__':
     if not only_predict:
         train()
         evaluate()
         if args.export:
-            net.export(os.path.join(args.output_dir, 'net'), epoch=args.epochs)
+            net.export(os.path.join(args.output_dir, 'static_net'), epoch=args.epochs)
     elif model_parameters:
         evaluate()
         if args.export:
-            net.export(os.path.join(args.output_dir, 'net'), epoch=args.epochs)
+            net.export(os.path.join(args.output_dir, 'static_net'), epoch=args.epochs)

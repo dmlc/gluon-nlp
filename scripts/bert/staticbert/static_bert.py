@@ -16,10 +16,10 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-"""BERT models."""
+"""Static BERT models."""
 
-__all__ = ['BERTModel', 'BERTEncoder',
-           'get_model', 'bert_12_768_12', 'bert_24_1024_16', 'get_bert_model']
+__all__ = ['StaticBERTModel', 'StaticBERTEncoder',
+           'get_model', 'bert_12_768_12', 'bert_24_1024_16', 'get_static_bert_model']
 
 import os
 import math
@@ -42,7 +42,7 @@ from gluonnlp.base import get_home_dir
 ###############################################################################
 
 
-class BaseTransformerEncoder(HybridBlock):
+class StaticBaseTransformerEncoder(HybridBlock):
     """Base Structure of the Transformer Encoder.
 
     Parameters
@@ -101,7 +101,7 @@ class BaseTransformerEncoder(HybridBlock):
                  positional_weight='sinusoidal', use_bert_encoder=False,
                  use_layer_norm_before_dropout=False, scale_embed=True,
                  prefix=None, params=None):
-        super(BaseTransformerEncoder, self).__init__(prefix=prefix, params=params)
+        super(StaticBaseTransformerEncoder, self).__init__(prefix=prefix, params=params)
         assert units % num_heads == 0, \
             'In TransformerEncoder, The units should be divided exactly ' \
             'by the number of heads. Received units={}, num_heads={}' \
@@ -243,7 +243,7 @@ class BaseTransformerEncoder(HybridBlock):
             return outputs, additional_outputs
 
 
-class BERTEncoder(BaseTransformerEncoder):
+class StaticBERTEncoder(StaticBaseTransformerEncoder):
     """Structure of the BERT Encoder.
 
     Different from the original encoder for transformer,
@@ -304,28 +304,28 @@ class BERTEncoder(BaseTransformerEncoder):
                  use_residual=True, output_attention=False, output_all_encodings=False,
                  weight_initializer=None, bias_initializer='zeros',
                  prefix=None, params=None):
-        super(BERTEncoder, self).__init__(attention_cell=attention_cell,
-                                          num_layers=num_layers, units=units,
-                                          hidden_size=hidden_size, max_length=max_length,
-                                          num_heads=num_heads, scaled=scaled, dropout=dropout,
-                                          use_residual=use_residual,
-                                          output_attention=output_attention,
-                                          output_all_encodings=output_all_encodings,
-                                          weight_initializer=weight_initializer,
-                                          bias_initializer=bias_initializer,
-                                          prefix=prefix, params=params,
-                                          # extra configurations for BERT
-                                          positional_weight='learned',
-                                          use_bert_encoder=True,
-                                          use_layer_norm_before_dropout=False,
-                                          scale_embed=False)
+        super(StaticBERTEncoder, self).__init__(attention_cell=attention_cell,
+                                                num_layers=num_layers, units=units,
+                                                hidden_size=hidden_size, max_length=max_length,
+                                                num_heads=num_heads, scaled=scaled, dropout=dropout,
+                                                use_residual=use_residual,
+                                                output_attention=output_attention,
+                                                output_all_encodings=output_all_encodings,
+                                                weight_initializer=weight_initializer,
+                                                bias_initializer=bias_initializer,
+                                                prefix=prefix, params=params,
+                                                # extra configurations for BERT
+                                                positional_weight='learned',
+                                                use_bert_encoder=True,
+                                                use_layer_norm_before_dropout=False,
+                                                scale_embed=False)
 
 
 ###############################################################################
 #                                FULL MODEL                                   #
 ###############################################################################
 
-class BERTModel(HybridBlock):
+class StaticBERTModel(HybridBlock):
     """Static Model for BERT (Bidirectional Encoder Representations from Transformers).
 
     Parameters
@@ -396,7 +396,7 @@ class BERTModel(HybridBlock):
                  embed_size=None, embed_dropout=0.0, embed_initializer=None,
                  word_embed=None, token_type_embed=None, use_pooler=True, use_decoder=True,
                  use_classifier=True, prefix=None, params=None):
-        super(BERTModel, self).__init__(prefix=prefix, params=params)
+        super(StaticBERTModel, self).__init__(prefix=prefix, params=params)
         self._use_decoder = use_decoder
         self._use_classifier = use_classifier
         self._use_pooler = use_pooler
@@ -628,10 +628,10 @@ def bert_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
     -------
     BERTModel, gluonnlp.vocab.BERTVocab
     """
-    return get_bert_model(model_name='bert_12_768_12', vocab=vocab,
-                          dataset_name=dataset_name, pretrained=pretrained, ctx=ctx,
-                          use_pooler=use_pooler, use_decoder=use_decoder,
-                          use_classifier=use_classifier, root=root, **kwargs)
+    return get_static_bert_model(model_name='bert_12_768_12', vocab=vocab,
+                                 dataset_name=dataset_name, pretrained=pretrained, ctx=ctx,
+                                 use_pooler=use_pooler, use_decoder=use_decoder,
+                                 use_classifier=use_classifier, root=root, **kwargs)
 
 
 def bert_24_1024_16(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
@@ -668,18 +668,18 @@ def bert_24_1024_16(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu()
     -------
     BERTModel, gluonnlp.vocab.BERTVocab
     """
-    return get_bert_model(model_name='bert_24_1024_16', vocab=vocab,
-                          dataset_name=dataset_name, pretrained=pretrained,
-                          ctx=ctx, use_pooler=use_pooler,
-                          use_decoder=use_decoder, use_classifier=use_classifier,
-                          root=root, **kwargs)
+    return get_static_bert_model(model_name='bert_24_1024_16', vocab=vocab,
+                                 dataset_name=dataset_name, pretrained=pretrained,
+                                 ctx=ctx, use_pooler=use_pooler,
+                                 use_decoder=use_decoder, use_classifier=use_classifier,
+                                 root=root, **kwargs)
 
 
-def get_bert_model(model_name=None, dataset_name=None, vocab=None,
-                   pretrained=True, ctx=mx.cpu(),
-                   use_pooler=True, use_decoder=True, use_classifier=True,
-                   output_attention=False, output_all_encodings=False,
-                   root=os.path.join(get_home_dir(), 'models'), **kwargs):
+def get_static_bert_model(model_name=None, dataset_name=None, vocab=None,
+                          pretrained=True, ctx=mx.cpu(),
+                          use_pooler=True, use_decoder=True, use_classifier=True,
+                          output_attention=False, output_all_encodings=False,
+                          root=os.path.join(get_home_dir(), 'models'), **kwargs):
     """Any BERT pretrained model.
 
     Parameters
@@ -724,30 +724,30 @@ def get_bert_model(model_name=None, dataset_name=None, vocab=None,
         'Cannot override predefined model settings.'
     predefined_args.update(kwargs)
     # encoder
-    encoder = BERTEncoder(attention_cell=predefined_args['attention_cell'],
-                          num_layers=predefined_args['num_layers'],
-                          units=predefined_args['units'],
-                          hidden_size=predefined_args['hidden_size'],
-                          max_length=predefined_args['max_length'],
-                          num_heads=predefined_args['num_heads'],
-                          scaled=predefined_args['scaled'],
-                          dropout=predefined_args['dropout'],
-                          output_attention=output_attention,
-                          output_all_encodings=output_all_encodings,
-                          use_residual=predefined_args['use_residual'])
+    encoder = StaticBERTEncoder(attention_cell=predefined_args['attention_cell'],
+                                num_layers=predefined_args['num_layers'],
+                                units=predefined_args['units'],
+                                hidden_size=predefined_args['hidden_size'],
+                                max_length=predefined_args['max_length'],
+                                num_heads=predefined_args['num_heads'],
+                                scaled=predefined_args['scaled'],
+                                dropout=predefined_args['dropout'],
+                                output_attention=output_attention,
+                                output_all_encodings=output_all_encodings,
+                                use_residual=predefined_args['use_residual'])
     if dataset_name in ['wiki_cn', 'wiki_multilingual']:
         warnings.warn('wiki_cn/wiki_multilingual will be deprecated.'
                       ' Please use wiki_cn_cased/wiki_multilingual_uncased instead.')
     bert_vocab = _load_vocab(dataset_name, vocab, root, cls=BERTVocab)
     # BERT
-    net = BERTModel(encoder, len(bert_vocab),
-                    token_type_vocab_size=predefined_args['token_type_vocab_size'],
-                    units=predefined_args['units'],
-                    embed_size=predefined_args['embed_size'],
-                    embed_dropout=predefined_args['embed_dropout'],
-                    word_embed=predefined_args['word_embed'],
-                    use_pooler=use_pooler, use_decoder=use_decoder,
-                    use_classifier=use_classifier)
+    net = StaticBERTModel(encoder, len(bert_vocab),
+                          token_type_vocab_size=predefined_args['token_type_vocab_size'],
+                          units=predefined_args['units'],
+                          embed_size=predefined_args['embed_size'],
+                          embed_dropout=predefined_args['embed_dropout'],
+                          word_embed=predefined_args['word_embed'],
+                          use_pooler=use_pooler, use_decoder=use_decoder,
+                          use_classifier=use_classifier)
     if pretrained:
         ignore_extra = not (use_pooler and use_decoder and use_classifier)
         _load_pretrained_params(net, model_name, dataset_name, root, ctx,

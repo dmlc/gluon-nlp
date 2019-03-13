@@ -285,7 +285,7 @@ Command line interface
       :title: Static BERT
       :link: staticbert/index.html
 
-      Hybridizable BERT of static shape with an example on SQuAD.
+      Deployment of BERT.
 
 .. toctree::
    :hidden:
