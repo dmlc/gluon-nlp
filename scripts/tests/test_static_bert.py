@@ -29,9 +29,8 @@ from mxnet import gluon
 import gluonnlp as nlp
 import pytest
 
-sys.path.append("..")
 
-from bert.staticbert.static_bert import get_model
+from ..bert.staticbert.static_bert import get_model
 
 
 @pytest.mark.serial
