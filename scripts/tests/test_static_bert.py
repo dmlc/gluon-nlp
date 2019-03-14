@@ -21,6 +21,7 @@
 
 from __future__ import print_function
 
+import os
 import sys
 
 import mxnet as mx
@@ -28,7 +29,9 @@ from mxnet import gluon
 import gluonnlp as nlp
 import pytest
 
-from ..bert.staticbert.static_bert import get_model
+sys.path.append("..")
+
+from bert.staticbert.static_bert import get_model
 
 
 @pytest.mark.serial
@@ -86,8 +89,10 @@ def test_bert_models():
             collect_shapes(child, shapes)
 
     for model_name, layer, unit, head in zip(models, layers, units, attention_heads):
+        os.environ['SEQLENGTH'] = str(seq_len)
+        os.environ['INPUTSIZE'] = str(unit)
         print('testing forward for %s' % model_name)
-
+	
         expected_shapes = [
             [(batch_size, seq_len, -1)],
             [(batch_size, seq_len, -1),
@@ -122,3 +127,4 @@ def test_bert_models():
             sync_instance.wait_to_read()
             del model
             mx.nd.waitall()
+

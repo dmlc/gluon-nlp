@@ -123,12 +123,19 @@ parser.add_argument('--export',
                     action='store_true',
                     help='Whether to export the model.')
 
+parser.add_argument('--evaluate',
+                    action='store_true',
+                    help='Whether to evaluate the model.')
+
 args = parser.parse_args()
 
 
 ###############################################################################
 #        Specify the static input size and sequence length                    #
 ###############################################################################
+
+#SEQLENGTH stands for the sequence length of the input,
+#INPUTSIZE represents the embedding size of the input.
 os.environ['SEQLENGTH'] = str(args.seq_length)
 os.environ['INPUTSIZE'] = str(args.input_size)
 
@@ -157,7 +164,6 @@ lower = args.uncased
 seq_length = args.seq_length
 input_size = args.input_size
 test_batch_size = args.test_batch_size
-lr = args.lr
 ctx = mx.cpu() if not args.gpu else mx.gpu(int(args.gpu))
 
 max_seq_length = args.max_seq_length
@@ -172,14 +178,15 @@ if max_seq_length <= max_query_length + 3:
 ###############################################################################
 #                              Load datasets                                  #
 ###############################################################################
-inputs = mx.nd.arange(test_batch_size * seq_length).reshape(shape=(test_batch_size, seq_length))
-token_types = mx.nd.zeros_like(inputs)
-valid_length = mx.nd.arange(seq_length)[:test_batch_size]
-batch = inputs, token_types, valid_length
-num_batch = 10
-sample_dataset = []
-for _ in range(num_batch):
-    sample_dataset.append(batch)
+if args.evaluate:
+    inputs = mx.nd.arange(test_batch_size * seq_length).reshape(shape=(test_batch_size, seq_length))
+    token_types = mx.nd.zeros_like(inputs)
+    valid_length = mx.nd.arange(seq_length)[:test_batch_size]
+    batch = inputs, token_types, valid_length
+    num_batch = 10
+    sample_dataset = []
+    for _ in range(num_batch):
+        sample_dataset.append(batch)
 
 
 bert, vocab = get_model(
@@ -228,6 +235,11 @@ def evaluate(data_source):
 #                              Export the model                               #
 ###############################################################################
 if __name__ == '__main__':
-    evaluate(sample_dataset)
     if args.export:
         net.export(os.path.join(args.output_dir, 'static_net'), epoch=0)
+        if args.evaluate:
+            net.load_parameters(os.path.join(args.output_dir, 'static_net-0000.params'))
+            evaluate(sample_dataset)
+    else:
+        if args.evaluate:
+            evaluate(sample_dataset)

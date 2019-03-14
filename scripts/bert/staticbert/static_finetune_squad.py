@@ -48,11 +48,14 @@ import numpy as np
 import mxnet as mx
 from mxnet import gluon, nd
 
+import sys
+sys.path.append("..")
+
 import gluonnlp as nlp
 from gluonnlp.data import SQuAD
 from static_bert_qa_model import BertForQALoss, StaticBertForQA
-from ..bert_qa_dataset import (SQuADTransform, preprocess_dataset)
-from ..bert_qa_evaluate import get_F1_EM, predictions
+from bert_qa_dataset import (SQuADTransform, preprocess_dataset)
+from bert_qa_evaluate import get_F1_EM, predictions
 from static_bert import get_model
 
 np.random.seed(6)
@@ -208,6 +211,9 @@ args = parser.parse_args()
 ###############################################################################
 #        Specify the static input size and sequence length                    #
 ###############################################################################
+
+#SEQLENGTH stands for the sequence length of the input,
+#INPUTSIZE represents the embedding size of the input.
 os.environ['SEQLENGTH'] = str(args.seq_length)
 os.environ['INPUTSIZE'] = str(args.input_size)
 
@@ -216,7 +222,7 @@ if not os.path.exists(output_dir):
     os.mkdir(output_dir)
 
 fh = logging.FileHandler(os.path.join(
-    args.output_dir, 'finetune_static_squad.log'), mode='w')
+    args.output_dir, 'static_finetune_squad.log'), mode='w')
 fh.setLevel(logging.INFO)
 fh.setFormatter(formatter)
 console = logging.StreamHandler()
