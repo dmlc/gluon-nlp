@@ -293,28 +293,28 @@ Please follow the steps below for exporting the model.
 
 Step 1: create a hybridizable task guided model using BERT:
 
-.. code-block:: console
+.. code-block:: python
 
-    $ class StaticBertForQA(HybridBlock)
+    class StaticBertForQA(HybridBlock)
 
 An example can be found in 'staticbert/static_bert_for_qa_model.py'.
 
 
 Step 2: hybridize the model in the script:
 
-.. code-block:: console
+.. code-block:: python
 
-    $ net = StaticBertForQA(bert=bert)
-    $ net.hybridize(static_alloc=True, static_shape=True)
+    net = StaticBertForQA(bert=bert)
+    net.hybridize(static_alloc=True, static_shape=True)
 
 An example can be found in 'staticbert/static_export_squad.py'.
 
 
 Step 3: export trained model:
 
-.. code-block:: console
+.. code-block:: python
 
-    $ net.export(os.path.join(args.output_dir, 'static_net'), epoch=args.epochs)
+    net.export(os.path.join(args.output_dir, 'static_net'), epoch=args.epochs)
 
 To export the model, in 'staticbert/static_export_squad.py', set export=True.
 
@@ -339,31 +339,9 @@ This example mainly introduces the steps needed to use the hybridizable BERT mod
 We use SQuAD dataset for Question Answering as an example.
 
 
-Step 1: create a hybridizable task guided model using BERT:
-
-.. code-block:: console
-
-    $ class StaticBertForQA(HybridBlock)
-
-An example can be found in 'staticbert/static_bert_for_qa_model.py'.
-
-
-Step 2: hybridize the model in the training script:
-
-.. code-block:: console
-
-    $ net = StaticBertForQA(bert=bert)
-    $ net.hybridize(static_alloc=True, static_shape=True)
-
-An example can be found in 'staticbert/static_finetune_squad.py'.
-
-
-Step 3: export trained model:
-
-.. code-block:: console
-
-    $ net.export(os.path.join(args.output_dir, 'static_net'), epoch=args.epochs)
-
+Step 1-3 are the same as in previous section 'Example Usage of Exporting Hybridizable BERT',
+where an example of Step 1 can be found in 'staticbert/static_bert_for_qa_model.py',
+an example of Step 2-3 can be found in 'staticbert/static_finetune_squad.py'.
 To export the model, in 'staticbert/static_finetune_squad.py', set export=True.
 
 
