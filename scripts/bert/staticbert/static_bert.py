@@ -43,7 +43,7 @@ from gluonnlp.base import get_home_dir
 
 
 class StaticBaseTransformerEncoder(HybridBlock):
-    """Base Structure of the Transformer Encoder.
+    """Base Structure of the Static Transformer Encoder.
 
     Parameters
     ----------
@@ -91,6 +91,10 @@ class StaticBaseTransformerEncoder(HybridBlock):
     params : Parameter or None
         Container for weight sharing between cells.
         Created if `None`.
+    input_size : int, default None
+        Represents the embedding size of the input.
+    seq_length : int, default None
+        Stands for the sequence length of the input.
     """
 
     def __init__(self, attention_cell='multi_head', num_layers=2,
@@ -99,8 +103,8 @@ class StaticBaseTransformerEncoder(HybridBlock):
                  use_residual=True, output_attention=False, output_all_encodings=False,
                  weight_initializer=None, bias_initializer='zeros',
                  positional_weight='sinusoidal', use_bert_encoder=False,
-                 use_layer_norm_before_dropout=False, scale_embed=True,
-                 prefix=None, params=None):
+                 use_layer_norm_before_dropout=False, scale_embed=True, input_size=None,
+                 seq_length=None, prefix=None, params=None):
         super(StaticBaseTransformerEncoder, self).__init__(prefix=prefix, params=params)
         assert units % num_heads == 0, \
             'In TransformerEncoder, The units should be divided exactly ' \
@@ -118,6 +122,8 @@ class StaticBaseTransformerEncoder(HybridBlock):
         self._scaled = scaled
         self._use_layer_norm_before_dropout = use_layer_norm_before_dropout
         self._scale_embed = scale_embed
+        self._input_size = input_size
+        self._seq_length = seq_length
         with self.name_scope():
             if dropout:
                 self.dropout_layer = nn.Dropout(rate=dropout)
@@ -180,8 +186,8 @@ class StaticBaseTransformerEncoder(HybridBlock):
             (batch_size, num_heads, length, length)
 
         """
-        length = int(os.environ['SEQLENGTH'])
-        C_in = int(os.environ['INPUTSIZE'])
+        length = self._seq_length
+        C_in = self._input_size
         if valid_length is not None:
             arange = F.arange(length)
             mask = F.broadcast_lesser(
@@ -244,10 +250,10 @@ class StaticBaseTransformerEncoder(HybridBlock):
 
 
 class StaticBERTEncoder(StaticBaseTransformerEncoder):
-    """Structure of the BERT Encoder.
+    """Structure of the Static BERT Encoder.
 
     Different from the original encoder for transformer,
-    `BERTEncoder` uses learnable positional embedding, `BERTPositionwiseFFN`
+    `StaticBERTEncoder` uses learnable positional embedding, `BERTPositionwiseFFN`
     and `BERTLayerNorm`.
 
     Parameters
@@ -284,6 +290,10 @@ class StaticBERTEncoder(StaticBaseTransformerEncoder):
         Prefix for name of `Block`s. (and name of weight if params is `None`).
     params : Parameter or None
         Container for weight sharing between cells. Created if `None`.
+    input_size : int, default None
+        Represents the embedding size of the input.
+    seq_length : int, default None
+        Stands for the sequence length of the input.
 
     Inputs:
         - **inputs** : input sequence of shape (batch_size, length, C_in)
@@ -302,8 +312,8 @@ class StaticBERTEncoder(StaticBaseTransformerEncoder):
                  units=512, hidden_size=2048, max_length=50,
                  num_heads=4, scaled=True, dropout=0.0,
                  use_residual=True, output_attention=False, output_all_encodings=False,
-                 weight_initializer=None, bias_initializer='zeros',
-                 prefix=None, params=None):
+                 weight_initializer=None, bias_initializer='zeros', input_size=None,
+                 seq_length=None, prefix=None, params=None):
         super(StaticBERTEncoder, self).__init__(attention_cell=attention_cell,
                                                 num_layers=num_layers, units=units,
                                                 hidden_size=hidden_size, max_length=max_length,
@@ -318,7 +328,9 @@ class StaticBERTEncoder(StaticBaseTransformerEncoder):
                                                 positional_weight='learned',
                                                 use_bert_encoder=True,
                                                 use_layer_norm_before_dropout=False,
-                                                scale_embed=False)
+                                                scale_embed=False,
+                                                input_size=input_size,
+                                                seq_length=seq_length)
 
 
 ###############################################################################
@@ -330,7 +342,7 @@ class StaticBERTModel(HybridBlock):
 
     Parameters
     ----------
-    encoder : BERTEncoder
+    encoder : StaticBERTEncoder
         Bidirectional encoder that encodes the input sentence.
     vocab_size : int or None, default None
         The size of the vocabulary.
@@ -380,7 +392,7 @@ class StaticBERTModel(HybridBlock):
             layer of the Encoder, or a list of all sequence encodings of all layers.
             In both cases shape of the tensor(s) is/are (batch_size, seq_length, units).
         - **attention_outputs**: output list of all intermediate encodings per layer
-            Returned only if BERTEncoder.output_attention is True.
+            Returned only if StaticBERTEncoder.output_attention is True.
             List of num_layers length of tensors of shape
             (num_masks, num_attention_heads, seq_length, seq_length)
         - **pooled_output**: output tensor of pooled representation of the first tokens.
@@ -595,8 +607,9 @@ def get_model(name, dataset_name='wikitext-2', **kwargs):
 
 def bert_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
                    root=os.path.join(get_home_dir(), 'models'), use_pooler=True,
-                   use_decoder=True, use_classifier=True, **kwargs):
-    """Generic BERT BASE model.
+                   use_decoder=True, use_classifier=True, input_size=None, seq_length=None,
+                   **kwargs):
+    """Static BERT BASE model.
 
     The number of layers (L) is 12, number of units (H) is 768, and the
     number of self-attention heads (A) is 12.
@@ -623,21 +636,27 @@ def bert_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
         Whether to include the decoder for masked language model prediction.
     use_classifier : bool, default True
         Whether to include the classifier for next sentence classification.
+    input_size : int, default None
+        Represents the embedding size of the input.
+    seq_length : int, default None
+        Stands for the sequence length of the input.
 
     Returns
     -------
-    BERTModel, gluonnlp.vocab.BERTVocab
+    StaticBERTModel, gluonnlp.vocab.BERTVocab
     """
     return get_static_bert_model(model_name='bert_12_768_12', vocab=vocab,
                                  dataset_name=dataset_name, pretrained=pretrained, ctx=ctx,
                                  use_pooler=use_pooler, use_decoder=use_decoder,
-                                 use_classifier=use_classifier, root=root, **kwargs)
+                                 use_classifier=use_classifier, root=root, input_size=input_size,
+                                 seq_length=seq_length, **kwargs)
 
 
 def bert_24_1024_16(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
                     use_pooler=True, use_decoder=True, use_classifier=True,
-                    root=os.path.join(get_home_dir(), 'models'), **kwargs):
-    """Generic BERT LARGE model.
+                    root=os.path.join(get_home_dir(), 'models'), input_size=None, seq_length=None,
+                    **kwargs):
+    """Static BERT LARGE model.
 
     The number of layers (L) is 24, number of units (H) is 1024, and the
     number of self-attention heads (A) is 16.
@@ -663,24 +682,29 @@ def bert_24_1024_16(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu()
         Whether to include the decoder for masked language model prediction.
     use_classifier : bool, default True
         Whether to include the classifier for next sentence classification.
+    input_size : int, default None
+        Represents the embedding size of the input.
+    seq_length : int, default None
+        Stands for the sequence length of the input.
 
     Returns
     -------
-    BERTModel, gluonnlp.vocab.BERTVocab
+    StaticBERTModel, gluonnlp.vocab.BERTVocab
     """
     return get_static_bert_model(model_name='bert_24_1024_16', vocab=vocab,
                                  dataset_name=dataset_name, pretrained=pretrained,
                                  ctx=ctx, use_pooler=use_pooler,
                                  use_decoder=use_decoder, use_classifier=use_classifier,
-                                 root=root, **kwargs)
+                                 root=root, input_size=input_size, seq_length=seq_length, **kwargs)
 
 
 def get_static_bert_model(model_name=None, dataset_name=None, vocab=None,
                           pretrained=True, ctx=mx.cpu(),
                           use_pooler=True, use_decoder=True, use_classifier=True,
                           output_attention=False, output_all_encodings=False,
-                          root=os.path.join(get_home_dir(), 'models'), **kwargs):
-    """Any BERT pretrained model.
+                          root=os.path.join(get_home_dir(), 'models'), input_size=None,
+                          seq_length=None, **kwargs):
+    """Any Static BERT pretrained model.
 
     Parameters
     ----------
@@ -712,10 +736,14 @@ def get_static_bert_model(model_name=None, dataset_name=None, vocab=None,
         Whether to include attention weights of each encoding cell to the output.
     output_all_encodings : bool, default False
         Whether to output encodings of all encoder cells.
+    input_size : int, default None
+        Represents the embedding size of the input.
+    seq_length : int, default None
+        Stands for the sequence length of the input.
 
     Returns
     -------
-    BERTModel, gluonnlp.vocab.BERTVocab
+    StaticBERTModel, gluonnlp.vocab.BERTVocab
     """
     predefined_args = bert_hparams[model_name]
     mutable_args = ['use_residual', 'dropout', 'embed_dropout', 'word_embed']
@@ -734,7 +762,9 @@ def get_static_bert_model(model_name=None, dataset_name=None, vocab=None,
                                 dropout=predefined_args['dropout'],
                                 output_attention=output_attention,
                                 output_all_encodings=output_all_encodings,
-                                use_residual=predefined_args['use_residual'])
+                                use_residual=predefined_args['use_residual'],
+                                input_size=input_size,
+                                seq_length=seq_length)
     if dataset_name in ['wiki_cn', 'wiki_multilingual']:
         warnings.warn('wiki_cn/wiki_multilingual will be deprecated.'
                       ' Please use wiki_cn_cased/wiki_multilingual_uncased instead.')

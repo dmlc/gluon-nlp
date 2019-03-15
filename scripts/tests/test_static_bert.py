@@ -35,7 +35,7 @@ from ..bert.staticbert.static_bert import get_model
 
 @pytest.mark.serial
 @pytest.mark.remote_required
-def test_bert_models():
+def test_static_bert_models():
     models = ['bert_12_768_12', 'bert_24_1024_16']
     layers = [12, 24]
     attention_heads = [12, 16]
@@ -88,8 +88,6 @@ def test_bert_models():
             collect_shapes(child, shapes)
 
     for model_name, layer, unit, head in zip(models, layers, units, attention_heads):
-        os.environ['SEQLENGTH'] = str(seq_len)
-        os.environ['INPUTSIZE'] = str(unit)
         print('testing forward for %s' % model_name)
 	
         expected_shapes = [
@@ -113,6 +111,7 @@ def test_bert_models():
             expected_shape = infer_shape(expected_shape, unit)
             model, _ = get_model(model_name, dataset_name=dataset,
                                  pretrained=False, root='tests/data/model/',
+                                 seq_length=seq_len, input_size=unit,
                                  **kwarg)
             model.initialize()
             if kwarg['use_decoder']:

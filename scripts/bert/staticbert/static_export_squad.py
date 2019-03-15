@@ -130,15 +130,6 @@ parser.add_argument('--evaluate',
 args = parser.parse_args()
 
 
-###############################################################################
-#        Specify the static input size and sequence length                    #
-###############################################################################
-
-#SEQLENGTH stands for the sequence length of the input,
-#INPUTSIZE represents the embedding size of the input.
-os.environ['SEQLENGTH'] = str(args.seq_length)
-os.environ['INPUTSIZE'] = str(args.input_size)
-
 output_dir = args.output_dir
 if not os.path.exists(output_dir):
     os.mkdir(output_dir)
@@ -176,7 +167,7 @@ if max_seq_length <= max_query_length + 3:
 
 
 ###############################################################################
-#                              Load datasets                                  #
+#                              Prepare dummy input data                       #
 ###############################################################################
 if args.evaluate:
     inputs = mx.nd.arange(test_batch_size * seq_length).reshape(shape=(test_batch_size, seq_length))
@@ -196,7 +187,9 @@ bert, vocab = get_model(
     ctx=ctx,
     use_pooler=False,
     use_decoder=False,
-    use_classifier=False)
+    use_classifier=False,
+    input_size=args.input_size,
+    seq_length=args.seq_length)
 
 
 ###############################################################################

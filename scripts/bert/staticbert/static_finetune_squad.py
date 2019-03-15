@@ -208,15 +208,6 @@ parser.add_argument('--export',
 args = parser.parse_args()
 
 
-###############################################################################
-#        Specify the static input size and sequence length                    #
-###############################################################################
-
-#SEQLENGTH stands for the sequence length of the input,
-#INPUTSIZE represents the embedding size of the input.
-os.environ['SEQLENGTH'] = str(args.seq_length)
-os.environ['INPUTSIZE'] = str(args.input_size)
-
 output_dir = args.output_dir
 if not os.path.exists(output_dir):
     os.mkdir(output_dir)
@@ -275,7 +266,9 @@ bert, vocab = get_model(
     ctx=ctx,
     use_pooler=False,
     use_decoder=False,
-    use_classifier=False)
+    use_classifier=False,
+    input_size=args.input_size,
+    seq_length=args.seq_length)
 
 batchify_fn = nlp.data.batchify.Tuple(
     nlp.data.batchify.Stack(),

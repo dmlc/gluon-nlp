@@ -300,19 +300,7 @@ Step 1: create a hybridizable task guided model using BERT:
 An example can be found in 'staticbert/static_bert_for_qa_model.py'.
 
 
-Step 2: specify the static input size and sequence length of the input data via environment variables
-in the training script:
-
-.. code-block:: console
-
-    $ os.environ['SEQLENGTH'] = str(args.seq_length)
-    $ os.environ['INPUTSIZE'] = str(args.input_size)
-
-Where SEQLENGTH stands for the sequence length of the input, INPUTSIZE represents the embedding size of the input.
-An example can be found in 'staticbert/static_export_squad.py'.
-
-
-Step 3: hybridize the model in the script:
+Step 2: hybridize the model in the script:
 
 .. code-block:: console
 
@@ -322,7 +310,7 @@ Step 3: hybridize the model in the script:
 An example can be found in 'staticbert/static_export_squad.py'.
 
 
-Step 4: export trained model:
+Step 3: export trained model:
 
 .. code-block:: console
 
@@ -331,15 +319,17 @@ Step 4: export trained model:
 To export the model, in 'staticbert/static_export_squad.py', set export=True.
 
 To run the example, if you would like to export the Block parameters
-and test the HybridBlock on your datasets,
+and test the HybridBlock on your datasets with the specified input size and sequence length,
 
 .. code-block:: console
 
     $ cd staticbert
-    $ python static_export_squad.py --model_parameters output_dir/net.params --export --evaluate --gpu 0
+    $ python static_export_squad.py --model_parameters output_dir/net.params --export --evaluate --seq_length 384 --input_size 768 --gpu 0
 
 This will load the the StaticBERTQA HybridBlock with parameter (requirement: output_dir/net.params should exist)
 trained by a normal BERTQA Block, and export the HybridBlock to json format.
+
+Besides, Where seq_length stands for the sequence length of the input, input_size represents the embedding size of the input.
 
 
 Example Usage of Finetuning Hybridizable BERT
@@ -347,6 +337,7 @@ Example Usage of Finetuning Hybridizable BERT
 
 This example mainly introduces the steps needed to use the hybridizable BERT models to finetune on a specific NLP task.
 We use SQuAD dataset for Question Answering as an example.
+
 
 Step 1: create a hybridizable task guided model using BERT:
 
@@ -357,19 +348,7 @@ Step 1: create a hybridizable task guided model using BERT:
 An example can be found in 'staticbert/static_bert_for_qa_model.py'.
 
 
-Step 2: specify the input size and sequence length of the input data via environment variables
-in the training script:
-
-.. code-block:: console
-
-    $ os.environ['SEQLENGTH'] = str(args.seq_length)
-    $ os.environ['INPUTSIZE'] = str(args.input_size)
-
-Where SEQLENGTH stands for the sequence length of the input, INPUTSIZE represents the embedding size of the input.
-An example can be found in 'staticbert/static_finetune_squad.py'.
-
-
-Step 3: hybridize the model in the training script:
+Step 2: hybridize the model in the training script:
 
 .. code-block:: console
 
@@ -379,7 +358,7 @@ Step 3: hybridize the model in the training script:
 An example can be found in 'staticbert/static_finetune_squad.py'.
 
 
-Step 4: export trained model:
+Step 3: export trained model:
 
 .. code-block:: console
 
@@ -389,6 +368,8 @@ To export the model, in 'staticbert/static_finetune_squad.py', set export=True.
 
 
 For all model settings above, we set learning rate = 3e-5 and optimizer = adam.
+Besides, seq_length stands for the sequence length of the input, input_size represents the embedding size of the input.
+The options can be specified in the following command lines.
 
 
 +-----------------------+----------------------------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------+
