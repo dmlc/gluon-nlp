@@ -1118,4 +1118,4 @@ class Word2Vec(TokenEmbedding):
         encoding: str
             The encoding type of the file.
         """
-        return cls(pretrained_file_path)
+        return cls(source=pretrained_file_path, encoding=encoding)
