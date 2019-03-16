@@ -279,3 +279,146 @@ Command line interface
        -0.42823148, -0.48873612], dtype=float32), array([-0.6576557 , -0.09822252,  0.1121515 , ..., -0.21743725,
        -0.1820574 , -0.16115054], dtype=float32)]
 
+
+Example Usage of Exporting Hybridizable BERT
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The BERTModel class is a subclass of Block, rather than HybridBlock.
+To support exporting BERT model to json format for deployment, we introduce the StaticBERT class.
+Specifically, by exporting hybridizable BERT, we mean the BERT with fixed input embedding size and sequence length can be exported through
+a static shape based implementation of hybridblock based BERT. By using this, we can export a block based BERT model.
+
+Please follow the steps below for exporting the model.
+
+
+Step 1: create a hybridizable task guided model using BERT:
+
+.. code-block:: python
+
+    class StaticBertForQA(HybridBlock)
+
+An example can be found in 'staticbert/static_bert_for_qa_model.py'.
+
+
+Step 2: hybridize the model in the script:
+
+.. code-block:: python
+
+    net = StaticBertForQA(bert=bert)
+    net.hybridize(static_alloc=True, static_shape=True)
+
+An example can be found in 'staticbert/static_export_squad.py'.
+
+
+Step 3: export trained model:
+
+.. code-block:: python
+
+    net.export(os.path.join(args.output_dir, 'static_net'), epoch=args.epochs)
+
+To export the model, in 'staticbert/static_export_squad.py', set export=True.
+
+To run the example, if you would like to export the Block parameters
+and test the HybridBlock on your datasets with the specified input size and sequence length,
+
+.. code-block:: console
+
+    $ cd staticbert
+    $ python static_export_squad.py --model_parameters output_dir/net.params --export --evaluate --seq_length 384 --input_size 768 --gpu 0
+
+This will load the the StaticBERTQA HybridBlock with parameter (requirement: output_dir/net.params should exist)
+trained by a normal BERTQA Block, and export the HybridBlock to json format.
+
+Besides, Where seq_length stands for the sequence length of the input, input_size represents the embedding size of the input.
+
+
+Example Usage of Finetuning Hybridizable BERT
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This example mainly introduces the steps needed to use the hybridizable BERT models to finetune on a specific NLP task.
+We use SQuAD dataset for Question Answering as an example.
+
+
+Step 1-3 are the same as in previous section 'Example Usage of Exporting Hybridizable BERT',
+where an example of Step 1 can be found in 'staticbert/static_bert_for_qa_model.py',
+an example of Step 2-3 can be found in 'staticbert/static_finetune_squad.py'.
+To export the model, in 'staticbert/static_finetune_squad.py', set export=True.
+
+
+For all model settings above, we set learning rate = 3e-5 and optimizer = adam.
+Besides, seq_length stands for the sequence length of the input, input_size represents the embedding size of the input.
+The options can be specified in the following command lines.
+
+
++-----------------------+----------------------------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------+
+|                       | SQuAD 1.1                                                                                                                  | SQuAD 1.1                                                                                                                   | SQuAD 2.0                                                                                                                   |
++=======================+============================================================================================================================+=============================================================================================================================+=============================================================================================================================+
+| model                 | bert_12_768_12                                                                                                             | bert_24_1024_16                                                                                                             | bert_24_1024_16                                                                                                             |
++-----------------------+----------------------------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------+
+| F1                    | 88.54                                                                                                                      | 90.84                                                                                                                       | 81.46                                                                                                                       |
++-----------------------+----------------------------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------+
+| EM                    | 81.10                                                                                                                      | 84.03                                                                                                                       | 78.49                                                                                                                       |
++-----------------------+----------------------------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------+
+| batch_size            | 12                                                                                                                         | 4                                                                                                                           | 4                                                                                                                           |
++-----------------------+----------------------------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------+
+| gradient accumulation | None                                                                                                                       | 6                                                                                                                           | 8                                                                                                                           |
++-----------------------+----------------------------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------+
+| epochs                | 2                                                                                                                          | 2                                                                                                                           | 2                                                                                                                           |
++-----------------------+----------------------------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------+
+| training log          | `log <https://raw.githubusercontent.com/dmlc/web-data/master/gluonnlp/logs/bert/static_finetune_squad1.1_base.log>`__      | `log <https://raw.githubusercontent.com/dmlc/web-data/master/gluonnlp/logs/bert/static_finetune_squad1.1_large.log>`__      | `log <https://raw.githubusercontent.com/dmlc/web-data/master/gluonnlp/logs/bert/static_finetune_squad2.0_large.log>`__      |
++-----------------------+----------------------------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------+
+| command               | [8]                                                                                                                        | [9]                                                                                                                         | [10]                                                                                                                        |
++-----------------------+----------------------------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------+
+
+BERT BASE on SQuAD 1.1
+++++++++++++++++++++++
+
+[8] bert_12_768_12
+
+.. code-block:: console
+
+    $ cd staticbert
+    $ python static_finetune_squad.py --optimizer adam --batch_size 12 --lr 3e-5 --epochs 2 --gpu 0 --export
+
+
+BERT LARGE on SQuAD 1.1
++++++++++++++++++++++++
+
+[9] bert_24_1024_16
+
+.. code-block:: console
+
+    $ cd staticbert
+    $ python static_finetune_squad.py --bert_model bert_24_1024_16 --optimizer adam --accumulate 6 --batch_size 4 --lr 3e-5 --epochs 2 --gpu 0 --export
+
+
+BERT LARGE on SQuAD 2.0
++++++++++++++++++++++++
+
+[10] bert_24_1024_16
+
+.. code-block:: console
+
+    $ cd staticbert
+    $ python static_finetune_squad.py --bert_model bert_24_1024_16 --optimizer adam --accumulate 8 --batch_size 4 --lr 3e-5 --epochs 2 --gpu 0 --null_score_diff_threshold -2.0 --version_2 --export
+
+To get the score of the dev data, you need to download the dev dataset (`dev-v2.0.json <https://rajpurkar.github.io/SQuAD-explorer/dataset/dev-v2.0.json>`_) and the evaluate script (`evaluate-2.0.py <https://worksheets.codalab.org/rest/bundles/0x6b567e1cf2e041ec80d7098f031c5c9e/contents/blob/>`_). Then use the following command to get the score of the dev dataset.
+
+.. code-block:: console
+
+    $ cd staticbert
+    $ python evaluate-v2.0.py dev-v2.0.json predictions.json
+
+.. code-block:: json
+
+    {
+        "exact": 78.49743114629833,
+        "f1": 81.46366127573552,
+        "total": 11873,
+        "HasAns_exact": 73.38056680161944,
+        "HasAns_f1": 79.32153345593925,
+        "HasAns_total": 5928,
+        "NoAns_exact": 83.59966358284272,
+        "NoAns_f1": 83.59966358284272,
+        "NoAns_total": 5945
+    }
