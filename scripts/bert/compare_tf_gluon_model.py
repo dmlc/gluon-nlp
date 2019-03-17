@@ -26,9 +26,6 @@ import argparse
 import numpy as np
 import mxnet as mx
 import gluonnlp as nlp
-from gluonnlp.data import TSVDataset
-from gluonnlp.data import BERTTokenizer
-from gluon.data import BERTSentenceTransform
 
 parser = argparse.ArgumentParser(description='Comparison script for BERT model in Tensorflow'
                                              'and that in Gluon')
@@ -54,9 +51,9 @@ args = parser.parse_args()
 input_file = os.path.expanduser(args.input_file)
 tf_bert_repo_dir = os.path.expanduser(args.tf_bert_repo_dir)
 tf_model_dir = os.path.expanduser(args.tf_model_dir)
-vocab_file = tf_model_dir + 'vocab.txt'
-bert_config_file = tf_model_dir + 'bert_config.json'
-init_checkpoint = tf_model_dir + 'bert_model.ckpt'
+vocab_file = os.path.join(tf_model_dir, 'vocab.txt')
+bert_config_file = os.path.join(tf_model_dir, 'bert_config.json')
+init_checkpoint = os.path.join(tf_model_dir, 'bert_model.ckpt')
 do_lower_case = not args.cased
 max_length = 128
 
@@ -133,10 +130,10 @@ bert, vocabulary = nlp.model.get_model(args.gluon_model,
                                        pretrained=True, use_pooler=False,
                                        use_decoder=False, use_classifier=False)
 print(bert)
-tokenizer = BERTTokenizer(vocabulary, lower=do_lower_case)
-dataset = TSVDataset(input_file, field_separator=nlp.data.Splitter(' ||| '))
+tokenizer = nlp.data.BERTTokenizer(vocabulary, lower=do_lower_case)
+dataset = nlp.data.TSVDataset(input_file, field_separator=nlp.data.Splitter(' ||| '))
 
-trans = BERTSentenceTransform(tokenizer, max_length)
+trans = nlp.data.BERTSentenceTransform(tokenizer, max_length)
 dataset = dataset.transform(trans)
 
 bert_dataloader = mx.gluon.data.DataLoader(dataset, batch_size=1,
@@ -152,7 +149,5 @@ for i, seq in enumerate(bert_dataloader):
     b = out[0][:length].asnumpy()
 
     print('stdev = %s' % (np.std(a - b)))
-    mx.test_utils.assert_almost_equal(a, b, atol=1e-4, rtol=1e-4)
-    mx.test_utils.assert_almost_equal(a, b, atol=1e-5, rtol=1e-5)
     mx.test_utils.assert_almost_equal(a, b, atol=5e-6, rtol=5e-6)
     break
