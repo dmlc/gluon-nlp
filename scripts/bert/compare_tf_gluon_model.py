@@ -28,12 +28,14 @@ import mxnet as mx
 import gluonnlp as nlp
 
 parser = argparse.ArgumentParser(description='Comparison script for BERT model in Tensorflow'
-                                             'and that in Gluon')
+                                             'and that in Gluon. This script works with '
+                                             'google/bert@f39e881b')
 parser.add_argument('--input_file', type=str, default='input.txt',
                     help='sample input file for testing. Default is input.txt')
 parser.add_argument('--tf_bert_repo_dir', type=str,
                     default='~/bert/',
                     help='path to the original Tensorflow bert repository. '
+                         'The repo should be at f39e881b. '
                          'Default is ~/bert/')
 parser.add_argument('--tf_model_dir', type=str,
                     default='~/uncased_L-12_H-768_A-12/',
