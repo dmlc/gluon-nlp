@@ -994,9 +994,8 @@ class Word2Vec(TokenEmbedding):
 
     Parameters
     ----------
-    source : str or None, default 'GoogleNews-vectors-negative300'
+    source : str, default 'GoogleNews-vectors-negative300'
         The name of the pre-trained token embedding file.
-        If source is None, construct an empty Word2Vec class object.
     embedding_root : str, default '$MXNET_HOME/embedding'
         The root directory for storing embedding-related files.
         MXNET_HOME defaults to '~/.mxnet'.
@@ -1037,7 +1036,8 @@ class Word2Vec(TokenEmbedding):
         Parameters
         ----------
         pretrained_file_path: str
-            The path to a binary pre-trained token embedding file.
+            The path to a binary pre-trained token embedding file end with .bin as file extension
+            name.
         encoding: str
             The encoding type of the file.
         """
@@ -1114,7 +1114,8 @@ class Word2Vec(TokenEmbedding):
         Parameters
         ----------
         pretrained_file_path: str
-            The path to a binary pre-trained token embedding file.
+            The path to a binary pre-trained token embedding file end with .bin as file extension
+            name.
         encoding: str
             The encoding type of the file.
         """
