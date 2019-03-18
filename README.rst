@@ -30,7 +30,9 @@ Language Processing (NLP) research.
 News
 ====
 
-- GluonNLP is featured in:
+- Tutorial proposal for GluonNLP is accepted at `EMNLP 2019 <https://www.emnlp-ijcnlp2019.org>`__, Hong Kong.
+
+- GluonNLP was featured in:
 
   - **AWS re:invent 2018 in Las Vegas, 2018-11-28**! Checkout `details <https://www.portal.reinvent.awsevents.com/connect/sessionDetail.ww?SESSION_ID=88736>`_.
   - **KDD 2018 London, 2018-08-21, Apache MXNet Gluon tutorial**! Check out **https://kdd18.mxnet.io**.
@@ -48,7 +50,7 @@ In particular, if you want to install the most recent ``MXNet`` release:
 
 ::
 
-    pip install --upgrade mxnet>=1.3.0
+    pip install --upgrade mxnet>=1.4.0
 
 Else, if you want to install the most recent ``MXNet`` nightly build:
 
