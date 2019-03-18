@@ -39,6 +39,7 @@ import glob
 import time
 import numpy as np
 
+import gluonnlp
 import mxnet as mx
 from mxnet import gluon
 from mxnet.gluon.data import DataLoader
@@ -46,7 +47,7 @@ from mxnet.gluon.data import DataLoader
 import gluonnlp as nlp
 from gluonnlp.utils import Parallelizable, Parallel
 from gluonnlp.metric import MaskedAccuracy
-from gluonnlp.model import bert_12_768_12
+from gluonnlp.model import get_model
 from gluonnlp.data.batchify import Tuple, Stack, Pad
 from gluonnlp.data import SimpleDatasetStream, FixedBucketSampler, NumpyDataset, BERTTokenizer
 from utils import profile
@@ -66,8 +67,10 @@ parser.add_argument('--dataset_name', type=str, default='book_corpus_wiki_en_unc
                     help='The dataset from which the vocabulary is created. '
                          'Options include book_corpus_wiki_en_uncased, book_corpus_wiki_en_cased. '
                          'Default is book_corpus_wiki_en_uncased')
+parser.add_argument('--model', type=str, default='bert_12_768_12',
+                    help='Pre-trained model to run fine-tuning on.')
 parser.add_argument('--pretrained', action='store_true',
-                    help='Load the pretrained model released by Google.')
+                    help='Load the a pre-trained BERT model.')
 parser.add_argument('--data', type=str, default=None, help='Path to training data.')
 parser.add_argument('--data_eval', type=str, default=None, help='Path to evaluation data.')
 parser.add_argument('--ckpt_dir', type=str, required=True,
@@ -86,6 +89,8 @@ parser.add_argument('--verbose', action='store_true', help='verbose logging')
 parser.add_argument('--profile', action='store_true', help='profile the program')
 parser.add_argument('--by-token', action='store_true',
                     help='set batch size by the number of tokens in the batch')
+parser.add_argument('--eval_only', action='store_true',
+                    help='Only run the evaluation')
 args = parser.parse_args()
 
 os.environ['MXNET_KVSTORE_USETREE'] = '1'
@@ -100,12 +105,15 @@ def get_model(ctx):
     # model
     pretrained = args.pretrained
     dataset = args.dataset_name
-    model, vocabulary = bert_12_768_12(dataset_name=dataset,
-                                       pretrained=pretrained, ctx=ctx)
+    model, vocabulary = gluonnlp.model.get_model(args.model,
+                                                 dataset_name=dataset,
+                                                 pretrained=pretrained, ctx=ctx)
     if not pretrained:
         model.initialize(init=mx.init.Normal(0.02), ctx=ctx)
 
     if args.ckpt_dir and args.start_step:
+        # Cast the model in case we're loading a fine-tuned float16 model.
+        model.cast(args.dtype)
         param_path = os.path.join(args.ckpt_dir, '%07d.params'%args.start_step)
         model.load_parameters(param_path, ctx=ctx)
         logging.info('Loading step %d checkpoints from %s.', args.start_step, param_path)
@@ -249,10 +257,13 @@ def evaluate(data_eval, model, nsp_loss, mlm_loss, vocab_size, ctx):
             loss_list = []
             ns_label_list, ns_pred_list = [], []
             mask_label_list, mask_pred_list, mask_weight_list = [], [], []
+
+            # Run inference on the data, collect the predictions and losses
             for data in data_list:
                 out = forward(data, model, mlm_loss, nsp_loss, vocab_size)
                 (ls, next_sentence_label, classified, masked_id,
                  decoded, masked_weight, ls1, ls2, valid_length) = out
+
                 loss_list.append(ls)
                 ns_label_list.append(next_sentence_label)
                 ns_pred_list.append(classified)
@@ -263,13 +274,15 @@ def evaluate(data_eval, model, nsp_loss, mlm_loss, vocab_size, ctx):
                 local_mlm_loss += ls1.as_in_context(mx.cpu())
                 local_nsp_loss += ls2.as_in_context(mx.cpu())
                 local_num_tks += valid_length.sum().as_in_context(mx.cpu())
+
+                total_mlm_loss += local_mlm_loss
+                total_nsp_loss += local_nsp_loss
+
             nsp_metric.update(ns_label_list, ns_pred_list)
             mlm_metric.update(mask_label_list, mask_pred_list, mask_weight_list)
 
             # logging
             if (step_num + 1) % (args.log_interval) == 0:
-                total_mlm_loss += local_mlm_loss
-                total_nsp_loss += local_nsp_loss
                 log(begin_time, local_num_tks, local_mlm_loss, local_nsp_loss,
                     step_num, mlm_metric, nsp_metric, None)
                 begin_time = time.time()
@@ -326,6 +339,7 @@ def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx, store):
     fp16_trainer = FP16Trainer(trainer, dynamic_loss_scale=dynamic_loss_scale)
 
     if args.ckpt_dir and args.start_step:
+        logging.info("Loading checkpoint from {}".format(args.ckpt_dir))
         trainer.load_states(os.path.join(args.ckpt_dir, '%07d.states'%args.start_step))
 
     accumulate = args.accumulate
@@ -444,9 +458,13 @@ if __name__ == '__main__':
         if not os.path.exists(ckpt_dir):
             os.makedirs(ckpt_dir)
 
-    if args.data:
-        data_train = get_dataset(args.data, args.batch_size, len(ctx), True, store)
-        train(data_train, model, nsp_loss, mlm_loss, len(tokenizer.vocab), ctx, store)
+    if not args.eval_only:
+        if args.data:
+            logging.info("Using training data at {}".format(args.data))
+            data_train = get_dataset(args.data, args.batch_size, len(ctx), True, store)
+            train(data_train, model, nsp_loss, mlm_loss, len(tokenizer.vocab), ctx, store)
+
     if args.data_eval:
+        logging.info("Using evaluation data at {}".format(args.data_eval))
         data_eval = get_dataset(args.data_eval, args.batch_size_eval, len(ctx), False, store)
         evaluate(data_eval, model, nsp_loss, mlm_loss, len(tokenizer.vocab), ctx)
