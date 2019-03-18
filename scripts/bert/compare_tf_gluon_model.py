@@ -47,6 +47,8 @@ parser.add_argument('--gluon_dataset', type=str, default='book_corpus_wiki_en_un
                     help='gluon dataset name. Default is book_corpus_wiki_en_uncased')
 parser.add_argument('--gluon_model', type=str, default='bert_12_768_12',
                     help='gluon model name. Default is bert_12_768_12')
+parser.add_argument('--gluon_parameter_file', type=str, default=None,
+                    help='gluon parameter file name.')
 
 args = parser.parse_args()
 
@@ -129,8 +131,19 @@ tf_outputs = [tensorflow_all_out[0]['features'][0]['layers'][t]['values'] for t 
 
 bert, vocabulary = nlp.model.get_model(args.gluon_model,
                                        dataset_name=args.gluon_dataset,
-                                       pretrained=True, use_pooler=False,
-                                       use_decoder=False, use_classifier=False)
+                                       pretrained=not args.gluon_parameter_file,
+                                       use_pooler=False,
+                                       use_decoder=False,
+                                       use_classifier=False)
+if args.gluon_parameter_file:
+    try:
+        bert.cast('float16')
+        bert.load_parameters(args.gluon_parameter_file, ignore_extra=True)
+        bert.cast('float32')
+    except AssertionError:
+        bert.cast('float32')
+        bert.load_parameters(args.gluon_parameter_file, ignore_extra=True)
+
 print(bert)
 tokenizer = nlp.data.BERTTokenizer(vocabulary, lower=do_lower_case)
 dataset = nlp.data.TSVDataset(input_file, field_separator=nlp.data.Splitter(' ||| '))
