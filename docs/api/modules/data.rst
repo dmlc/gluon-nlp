@@ -24,6 +24,8 @@ The dataset is available under the Creative Commons Attribution-ShareAlike Licen
 
     WikiText2
     WikiText103
+    WikiText2Raw
+    WikiText103Raw
 
 Language modeling: Google 1 Billion Words
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
