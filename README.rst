@@ -35,6 +35,7 @@ News
 - GluonNLP was featured in:
 
   - **AWS re:invent 2018 in Las Vegas, 2018-11-28**! Checkout `details <https://www.portal.reinvent.awsevents.com/connect/sessionDetail.ww?SESSION_ID=88736>`_.
+  - **PyData 2018 NYC, 2018-10-18**! Checkout the `awesome talk <https://pydata.org/nyc2018/schedule/presentation/76/>`__ by Sneha Jha.
   - **KDD 2018 London, 2018-08-21, Apache MXNet Gluon tutorial**! Check out **https://kdd18.mxnet.io**.
 
 Installation
