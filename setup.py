@@ -41,6 +41,7 @@ setup(
     url='https://github.com/dmlc/gluon-nlp',
     description='MXNet Gluon NLP Toolkit',
     long_description=readme,
+    long_description_content_type='text/x-rst',
     license='Apache-2.0',
 
     # Package info
