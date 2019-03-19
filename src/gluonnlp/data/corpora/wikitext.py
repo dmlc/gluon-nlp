@@ -79,7 +79,7 @@ class WikiText2(_WikiText):
     WikiText2 is implemented as CorpusDataset with the default flatten=True.
 
     From
-    https://einstein.ai/research/the-wikitext-long-term-dependency-language-modeling-dataset
+    https://www.salesforce.com/products/einstein/ai-research/the-wikitext-dependency-language-modeling-dataset/
 
     License: Creative Commons Attribution-ShareAlike
 
@@ -166,7 +166,7 @@ class WikiText103(_WikiText):
     WikiText103 is implemented as CorpusDataset with the default flatten=True.
 
     From
-    https://einstein.ai/research/the-wikitext-long-term-dependency-language-modeling-dataset
+    https://www.salesforce.com/products/einstein/ai-research/the-wikitext-dependency-language-modeling-dataset/
 
     License: Creative Commons Attribution-ShareAlike
 
