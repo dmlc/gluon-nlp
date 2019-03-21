@@ -3,11 +3,12 @@ import argparse
 import io
 import logging
 
-import gluonnlp
 import numpy as np
 import mxnet as mx
 
 from mxnet.gluon.data import DataLoader
+
+import gluonnlp
 from gluonnlp.data import BERTTokenizer, BERTSentenceTransform
 
 try:
@@ -55,7 +56,7 @@ class BertEmbedding(object):
         batch size
     """
 
-    def __init__(self, ctx=mx.cpu(), dtype="float32", model='bert_12_768_12',
+    def __init__(self, ctx=mx.cpu(), dtype='float32', model='bert_12_768_12',
                  dataset_name='book_corpus_wiki_en_uncased',
                  params_path=None, max_seq_length=25, batch_size=256):
         """
@@ -92,7 +93,7 @@ class BertEmbedding(object):
         self.bert.cast(self.dtype)
 
         if params_path:
-            logger.info("Loading params from {}".format(params_path))
+            logger.info('Loading params from {}' % params_path)
             self.bert.load_parameters(params_path, ctx=ctx, ignore_extra=True)
 
     def __call__(self, sentences, oov_way='avg'):
@@ -129,10 +130,8 @@ class BertEmbedding(object):
         return self.oov(batches, oov_way)
 
     def data_loader(self, sentences, shuffle=False):
-        if "uncased" in self.dataset_name:
-            lower = True
-        else:
-            lower = False
+        """Load, tokenize and prepare the input sentences."""
+        lower = 'uncased' in self.dataset_name
         tokenizer = BERTTokenizer(self.vocab, lower=lower)
         transform = BERTSentenceTransform(tokenizer=tokenizer,
                                           max_seq_length=self.max_seq_length,

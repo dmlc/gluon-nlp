@@ -39,7 +39,6 @@ import glob
 import time
 import numpy as np
 
-import gluonnlp
 import mxnet as mx
 from mxnet import gluon
 from mxnet.gluon.data import DataLoader
@@ -100,14 +99,14 @@ level = logging.DEBUG if args.verbose else logging.INFO
 logging.getLogger().setLevel(level)
 logging.info(args)
 
-def get_model(ctx):
+def load_model(ctx):
     """get model"""
     # model
     pretrained = args.pretrained
     dataset = args.dataset_name
-    model, vocabulary = gluonnlp.model.get_model(args.model,
-                                                 dataset_name=dataset,
-                                                 pretrained=pretrained, ctx=ctx)
+    model, vocabulary = get_model(args.model,
+                                  dataset_name=dataset,
+                                  pretrained=pretrained, ctx=ctx)
     if not pretrained:
         model.initialize(init=mx.init.Normal(0.02), ctx=ctx)
 
@@ -447,7 +446,7 @@ if __name__ == '__main__':
     ctx = [mx.cpu()] if args.gpus is None or args.gpus == '' else \
           [mx.gpu(int(x)) for x in args.gpus.split(',')]
 
-    model, nsp_loss, mlm_loss, vocabulary = get_model(ctx)
+    model, nsp_loss, mlm_loss, vocabulary = load_model(ctx)
 
     lower = 'uncased' in args.dataset_name
     tokenizer = BERTTokenizer(vocabulary, lower=lower)
@@ -460,11 +459,11 @@ if __name__ == '__main__':
 
     if not args.eval_only:
         if args.data:
-            logging.info("Using training data at {}".format(args.data))
+            logging.info('Using training data at {}'.format(args.data))
             data_train = get_dataset(args.data, args.batch_size, len(ctx), True, store)
             train(data_train, model, nsp_loss, mlm_loss, len(tokenizer.vocab), ctx, store)
 
     if args.data_eval:
-        logging.info("Using evaluation data at {}".format(args.data_eval))
+        logging.info('Using evaluation data at {}'.format(args.data_eval))
         data_eval = get_dataset(args.data_eval, args.batch_size_eval, len(ctx), False, store)
         evaluate(data_eval, model, nsp_loss, mlm_loss, len(tokenizer.vocab), ctx)
