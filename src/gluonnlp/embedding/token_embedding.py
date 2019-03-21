@@ -996,6 +996,8 @@ class Word2Vec(TokenEmbedding):
     ----------
     source : str, default 'GoogleNews-vectors-negative300'
         The name of the pre-trained token embedding file.
+        A binary pre-trained file outside from the source list can be used for this constructor by
+        passing the path to it which ends with .bin as file extension name.
     embedding_root : str, default '$MXNET_HOME/embedding'
         The root directory for storing embedding-related files.
         MXNET_HOME defaults to '~/.mxnet'.
