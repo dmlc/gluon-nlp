@@ -93,7 +93,7 @@ class BertEmbedding(object):
         self.bert.cast(self.dtype)
 
         if params_path:
-            logger.info('Loading params from {}' % params_path)
+            logger.info('Loading params from %s', params_path)
             self.bert.load_parameters(params_path, ctx=ctx, ignore_extra=True)
 
     def __call__(self, sentences, oov_way='avg'):

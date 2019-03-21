@@ -338,8 +338,8 @@ def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx, store):
     fp16_trainer = FP16Trainer(trainer, dynamic_loss_scale=dynamic_loss_scale)
 
     if args.ckpt_dir and args.start_step:
-        logging.info("Loading checkpoint from {}".format(args.ckpt_dir))
-        trainer.load_states(os.path.join(args.ckpt_dir, '%07d.states'%args.start_step))
+        logging.info('Loading checkpoint from {}' % args.ckpt_dir)
+        trainer.load_states(os.path.join(args.ckpt_dir, '%07d.states' % args.start_step))
 
     accumulate = args.accumulate
     num_train_steps = args.num_steps
