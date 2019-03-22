@@ -57,8 +57,8 @@ class BertEmbedding(object):
     """
 
     def __init__(self, ctx=mx.cpu(), dtype='float32', model='bert_12_768_12',
-                 dataset_name='book_corpus_wiki_en_uncased',
-                 params_path=None, max_seq_length=25, batch_size=256):
+                 dataset_name='book_corpus_wiki_en_uncased', params_path=None,
+                 max_seq_length=25, batch_size=256):
         """
         Encoding from BERT model.
 
@@ -96,6 +96,12 @@ class BertEmbedding(object):
             logger.info('Loading params from %s', params_path)
             self.bert.load_parameters(params_path, ctx=ctx, ignore_extra=True)
 
+        lower = 'uncased' in self.dataset_name
+        self.tokenizer = BERTTokenizer(self.vocab, lower=lower)
+        self.transform = BERTSentenceTransform(tokenizer=self.tokenizer,
+                                               max_seq_length=self.max_seq_length,
+                                               pair=False)
+
     def __call__(self, sentences, oov_way='avg'):
         return self.embedding(sentences, oov_way='avg')
 
@@ -131,12 +137,7 @@ class BertEmbedding(object):
 
     def data_loader(self, sentences, shuffle=False):
         """Load, tokenize and prepare the input sentences."""
-        lower = 'uncased' in self.dataset_name
-        tokenizer = BERTTokenizer(self.vocab, lower=lower)
-        transform = BERTSentenceTransform(tokenizer=tokenizer,
-                                          max_seq_length=self.max_seq_length,
-                                          pair=False)
-        dataset = BertEmbeddingDataset(sentences, transform)
+        dataset = BertEmbeddingDataset(sentences, self.transform)
         return DataLoader(dataset=dataset, batch_size=self.batch_size, shuffle=shuffle)
 
     def oov(self, batches, oov_way='avg'):
@@ -220,7 +221,7 @@ if __name__ == '__main__':
                         help='sentence for encoding')
     parser.add_argument('--file', type=str, default=None,
                         help='file for encoding')
-
+    parser.add_argument('--verbose', action='store_true', help='verbose logging')
     args = parser.parse_args()
 
     level = logging.DEBUG if args.verbose else logging.INFO
