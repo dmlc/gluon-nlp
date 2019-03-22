@@ -45,12 +45,12 @@ def test_bert_embedding_data_loader():
 
 def test_bert_embedding_data_loader_works_with_cased_data():
     bert = BertEmbedding(dataset_name="book_corpus_wiki_en_cased")
-    assert bert.tokenizer.basic_tokenizer.lower = False
+    assert bert.tokenizer.basic_tokenizer.lower == False
 
 
 def test_bert_embedding_data_loader_works_with_uncased_data():
     bert = BertEmbedding(dataset_name="book_corpus_wiki_en_uncased")
-    assert bert.tokenizer.basic_tokenizer.lower = True
+    assert bert.tokenizer.basic_tokenizer.lower == True
 
 
 @pytest.mark.serial
