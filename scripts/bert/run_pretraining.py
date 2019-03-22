@@ -48,7 +48,7 @@ from gluonnlp.utils import Parallelizable, Parallel
 from gluonnlp.metric import MaskedAccuracy
 from gluonnlp.model import get_model
 from gluonnlp.data.batchify import Tuple, Stack, Pad
-from gluonnlp.data import SimpleDatasetStream, FixedBucketSampler, NumpyDataset, BERTTokenizer
+from gluonnlp.data import SimpleDatasetStream, FixedBucketSampler, NumpyDataset
 from utils import profile
 from fp16_utils import FP16Trainer
 
@@ -447,9 +447,6 @@ if __name__ == '__main__':
           [mx.gpu(int(x)) for x in args.gpus.split(',')]
 
     model, nsp_loss, mlm_loss, vocabulary = load_model(ctx)
-
-    lower = 'uncased' in args.dataset_name
-    tokenizer = BERTTokenizer(vocabulary, lower=lower)
     store = mx.kv.create(args.kvstore)
 
     if args.ckpt_dir:
@@ -461,9 +458,9 @@ if __name__ == '__main__':
         if args.data:
             logging.info('Using training data at {}'.format(args.data))
             data_train = get_dataset(args.data, args.batch_size, len(ctx), True, store)
-            train(data_train, model, nsp_loss, mlm_loss, len(tokenizer.vocab), ctx, store)
+            train(data_train, model, nsp_loss, mlm_loss, len(vocabulary), ctx, store)
 
     if args.data_eval:
         logging.info('Using evaluation data at {}'.format(args.data_eval))
         data_eval = get_dataset(args.data_eval, args.batch_size_eval, len(ctx), False, store)
-        evaluate(data_eval, model, nsp_loss, mlm_loss, len(tokenizer.vocab), ctx)
+        evaluate(data_eval, model, nsp_loss, mlm_loss, len(vocabulary), ctx)
