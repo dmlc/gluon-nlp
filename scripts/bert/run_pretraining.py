@@ -245,9 +245,13 @@ def evaluate(data_eval, model, nsp_loss, mlm_loss, vocab_size, ctx):
     eval_begin_time = time.time()
     begin_time = time.time()
     step_num = 0
-    local_mlm_loss = local_nsp_loss = 0
+
+    # Total loss for the whole dataset
     total_mlm_loss = total_nsp_loss = 0
-    local_num_tks = 0
+
+    # Running loss, reset when a log is emitted
+    running_mlm_loss = running_nsp_loss = 0
+    running_num_tks = 0
     for _, dataloader in enumerate(data_eval):
         for _, data in enumerate(dataloader):
             step_num += 1
@@ -257,7 +261,8 @@ def evaluate(data_eval, model, nsp_loss, mlm_loss, vocab_size, ctx):
             ns_label_list, ns_pred_list = [], []
             mask_label_list, mask_pred_list, mask_weight_list = [], [], []
 
-            # Run inference on the data, collect the predictions and losses
+            # Run inference on the batch, collect the predictions and losses
+            batch_mlm_loss = batch_nsp_loss = 0
             for data in data_list:
                 out = forward(data, model, mlm_loss, nsp_loss, vocab_size)
                 (ls, next_sentence_label, classified, masked_id,
@@ -270,24 +275,26 @@ def evaluate(data_eval, model, nsp_loss, mlm_loss, vocab_size, ctx):
                 mask_pred_list.append(decoded)
                 mask_weight_list.append(masked_weight)
 
-                local_mlm_loss += ls1.as_in_context(mx.cpu())
-                local_nsp_loss += ls2.as_in_context(mx.cpu())
-                local_num_tks += valid_length.sum().as_in_context(mx.cpu())
+                batch_mlm_loss += ls1.as_in_context(mx.cpu())
+                batch_nsp_loss += ls2.as_in_context(mx.cpu())
+                running_num_tks += valid_length.sum().as_in_context(mx.cpu())
 
-                total_mlm_loss += local_mlm_loss
-                total_nsp_loss += local_nsp_loss
+            running_mlm_loss += batch_mlm_loss
+            running_nsp_loss += batch_nsp_loss
+            total_mlm_loss += batch_mlm_loss
+            total_nsp_loss += batch_nsp_loss
 
             nsp_metric.update(ns_label_list, ns_pred_list)
             mlm_metric.update(mask_label_list, mask_pred_list, mask_weight_list)
 
-            # logging
+            # Log and reset running loss
             if (step_num + 1) % (args.log_interval) == 0:
-                log(begin_time, local_num_tks, local_mlm_loss, local_nsp_loss,
+                log(begin_time, running_num_tks, running_mlm_loss, running_nsp_loss,
                     step_num, mlm_metric, nsp_metric, None)
                 begin_time = time.time()
-                local_mlm_loss = local_nsp_loss = local_num_tks = 0
-                mlm_metric.reset_local()
-                nsp_metric.reset_local()
+                running_mlm_loss = running_nsp_loss = running_num_tks = 0
+                mlm_metric.reset_running()
+                nsp_metric.reset_running()
 
     mx.nd.waitall()
     eval_end_time = time.time()
@@ -298,17 +305,17 @@ def evaluate(data_eval, model, nsp_loss, mlm_loss, vocab_size, ctx):
                          total_nsp_loss.asscalar(), nsp_metric.get_global()[1] * 100))
     logging.info('Eval cost={:.1f}s'.format(eval_end_time - eval_begin_time))
 
-def log(begin_time, local_num_tks, local_mlm_loss, local_nsp_loss, step_num,
+def log(begin_time, running_num_tks, running_mlm_loss, running_nsp_loss, step_num,
         mlm_metric, nsp_metric, trainer):
     end_time = time.time()
     duration = end_time - begin_time
-    throughput = local_num_tks / duration / 1000.0
-    local_mlm_loss = local_mlm_loss / args.log_interval
-    local_nsp_loss = local_nsp_loss / args.log_interval
+    throughput = running_num_tks / duration / 1000.0
+    running_mlm_loss = running_mlm_loss / args.log_interval
+    running_nsp_loss = running_nsp_loss / args.log_interval
     lr = trainer.learning_rate if trainer else 0
     # pylint: disable=line-too-long
     logging.info('[step {}]\tmlm_loss={:.5f}\tmlm_acc={:.5f}\tnsp_loss={:.5f}\tnsp_acc={:.3f}\tthroughput={:.1f}K tks/s\tlr={:.7f} time={:.2f}'
-                 .format(step_num, local_mlm_loss.asscalar(), mlm_metric.get()[1] * 100, local_nsp_loss.asscalar(),
+                 .format(step_num, running_mlm_loss.asscalar(), mlm_metric.get()[1] * 100, running_nsp_loss.asscalar(),
                          nsp_metric.get()[1] * 100, throughput.asscalar(), lr, duration))
     # pylint: enable=line-too-long
 
@@ -338,8 +345,9 @@ def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx, store):
     fp16_trainer = FP16Trainer(trainer, dynamic_loss_scale=dynamic_loss_scale)
 
     if args.ckpt_dir and args.start_step:
-        logging.info('Loading checkpoint from %s', args.ckpt_dir)
-        trainer.load_states(os.path.join(args.ckpt_dir, '%07d.states' % args.start_step))
+        state_path = os.path.join(args.ckpt_dir, '%07d.states' % args.start_step)
+        logging.info('Loading trainer state from %s', state_path)
+        trainer.load_states(state_path)
 
     accumulate = args.accumulate
     num_train_steps = args.num_steps

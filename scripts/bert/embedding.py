@@ -84,9 +84,15 @@ class BertEmbedding(object):
         self.max_seq_length = max_seq_length
         self.batch_size = batch_size
         self.dataset_name = dataset_name
+        if params_path is not None:
+            # Don't download the pretrained models if we have a parameter path
+            pretrained = False
+        else:
+            pretrained = True
         self.bert, self.vocab = gluonnlp.model.get_model(model,
                                                          dataset_name=self.dataset_name,
-                                                         pretrained=True, ctx=self.ctx,
+                                                         pretrained=pretrained,
+                                                         ctx=self.ctx,
                                                          use_pooler=False,
                                                          use_decoder=False,
                                                          use_classifier=False)
