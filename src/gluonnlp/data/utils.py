@@ -282,7 +282,7 @@ def _load_pretrained_vocab(name, root=os.path.join(get_home_dir(), 'models'), cl
 
     Returns
     -------
-    Vocab or nlp.bert.BERTVocab
+    Vocab or nlp.vocab.BERTVocab
         Loaded vocabulary object for the pre-trained model.
     """
     file_name = '{name}-{short_hash}'.format(name=name,
