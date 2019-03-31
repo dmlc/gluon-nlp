@@ -595,7 +595,7 @@ def main():
     assert count == len(input_files)
 
     # dispatch to workers
-    if nworker > 0:
+    if nworker > 1:
         pool = Pool(nworker)
         pool.map(create_training_instances, map_args)
     else:
