@@ -55,7 +55,8 @@ parser.add_argument(
     default='numpy',
     choices=['numpy', 'recordio'],
     help='Output file format. If set to "numpy", examples are serialized as a single "npz" file.'
-         'If set to "recordio", examples are serialized using IndexedRecordIO format.')
+         'If set to "recordio", examples are serialized using IndexedRecordIO format. '
+         'Default is numpy.')
 
 parser.add_argument(
     '--vocab',
@@ -67,13 +68,13 @@ parser.add_argument(
          '"book_corpus_wiki_en_uncased"')
 
 parser.add_argument(
-    '--max_seq_length', type=int, default=128, help='Maximum sequence length.')
+    '--max_seq_length', type=int, default=128, help='Maximum sequence length. Default is 128.')
 
 parser.add_argument(
     '--max_predictions_per_seq',
     type=int,
     default=20,
-    help='Maximum number of masked LM predictions per sequence.')
+    help='Maximum number of masked LM predictions per sequence. Default is 20.')
 
 parser.add_argument(
     '--random_seed',
@@ -85,20 +86,20 @@ parser.add_argument(
     '--dupe_factor',
     type=int,
     default=10,
-    help='Number of times to duplicate the input data (with different masks).')
+    help='Number of times to duplicate the input data (with different masks). Default is 10.')
 
 parser.add_argument(
     '--masked_lm_prob',
     type=float,
     default=0.15,
-    help='Masked LM probability.')
+    help='Masked LM probability. Default is 0.15')
 
 parser.add_argument(
     '--short_seq_prob',
     type=float,
     default=0.1,
     help='Probability of creating sequences which are shorter than the '
-    'maximum length.')
+    'maximum length. Default is 0.1')
 
 parser.add_argument(
     '--verbose',
@@ -109,13 +110,15 @@ parser.add_argument(
     '--num_workers',
     type=int,
     default=1,
-    help='Number of workers for parallel processing, where each worker generates an output file')
+    help='Number of workers for parallel processing, where each worker generates an output file.'
+         ' Default is 1')
 
 parser.add_argument(
     '--num_outputs',
     type=int,
     default=1,
-    help='Number of desired output files, where each one is processed independently by a worker.')
+    help='Number of desired output files, where each one is processed independently by a worker.'
+         'Default is 1')
 
 parser.add_argument(
     '--tokenized',
@@ -235,7 +238,7 @@ def write_to_files_np(features, tokenizer, max_seq_length,
     outputs['next_sentence_labels'] = np.array(next_sentence_labels, dtype='int32')
     outputs['valid_lengths'] = np.array(valid_lengths, dtype='int32')
 
-    np.savez(output_file, **outputs)
+    np.savez_compressed(output_file, **outputs)
     logging.info('Wrote %d total instances', total_written)
 
 def write_to_files_rec(instances, tokenizer, max_seq_length,
@@ -561,9 +564,7 @@ def main():
     for input_file in input_files:
         logging.info('  %s', input_file)
 
-    num_outputs = args.num_outputs
-    assert len(input_files) >= num_outputs, \
-        'Number of outputs must be fewer than that of inputs'
+    num_outputs = min(args.num_outputs, len(input_files))
 
     output_dir = os.path.expanduser(args.output_dir)
     if not os.path.exists(output_dir):
