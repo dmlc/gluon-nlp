@@ -68,7 +68,7 @@ def test_bert_embedding():
                                      '--max_seq_length', '25', '--batch_size', '256',
                                      '--params_path',
                                      '~/.mxnet/models/bert_12_768_12_book_corpus_wiki_en_uncased-75cc780f.params',
-                                     '--oov_way', 'avg', '--sentences', '"is this jacksonville ?"'])
+                                     '--oov_way', 'avg', '--sentences', '"is this jacksonville ?"', '--verbose'])
 
 
     time.sleep(5)
