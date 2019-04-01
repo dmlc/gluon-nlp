@@ -126,7 +126,7 @@ def get_dataset(data, batch_size, num_ctxes, is_train, store):
     data = data
     split_sampler = nlp.data.SplitSampler(len(glob.glob(data)), num_parts=store.num_workers,
                                           part_index=store.rank)
-    stream = SimpleDatasetStream(NumpyDataset, data, split_sampler)
+    stream = nlp.data.PrefetchingStream(SimpleDatasetStream(NumpyDataset, data, split_sampler))
 
     def get_dataloader(dataset):
         """create data loader based on the dataset chunk"""
