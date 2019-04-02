@@ -46,9 +46,9 @@ from mxnet.gluon.data import DataLoader
 import gluonnlp as nlp
 from gluonnlp.utils import Parallelizable, Parallel
 from gluonnlp.metric import MaskedAccuracy
-from gluonnlp.model import bert_12_768_12
+from gluonnlp.model import get_model
 from gluonnlp.data.batchify import Tuple, Stack, Pad
-from gluonnlp.data import SimpleDatasetStream, FixedBucketSampler, NumpyDataset, BERTTokenizer
+from gluonnlp.data import SimpleDatasetStream, FixedBucketSampler, NumpyDataset
 from utils import profile
 from fp16_utils import FP16Trainer
 
@@ -66,8 +66,10 @@ parser.add_argument('--dataset_name', type=str, default='book_corpus_wiki_en_unc
                     help='The dataset from which the vocabulary is created. '
                          'Options include book_corpus_wiki_en_uncased, book_corpus_wiki_en_cased. '
                          'Default is book_corpus_wiki_en_uncased')
+parser.add_argument('--model', type=str, default='bert_12_768_12',
+                    help='Pre-trained model to run fine-tuning on.')
 parser.add_argument('--pretrained', action='store_true',
-                    help='Load the pretrained model released by Google.')
+                    help='Load the a pre-trained BERT model.')
 parser.add_argument('--data', type=str, default=None, help='Path to training data.')
 parser.add_argument('--data_eval', type=str, default=None, help='Path to evaluation data.')
 parser.add_argument('--ckpt_dir', type=str, required=True,
@@ -86,6 +88,8 @@ parser.add_argument('--verbose', action='store_true', help='verbose logging')
 parser.add_argument('--profile', action='store_true', help='profile the program')
 parser.add_argument('--by-token', action='store_true',
                     help='set batch size by the number of tokens in the batch')
+parser.add_argument('--eval_only', action='store_true',
+                    help='Only run the evaluation')
 args = parser.parse_args()
 
 os.environ['MXNET_KVSTORE_USETREE'] = '1'
@@ -95,17 +99,20 @@ level = logging.DEBUG if args.verbose else logging.INFO
 logging.getLogger().setLevel(level)
 logging.info(args)
 
-def get_model(ctx):
+def load_model(ctx):
     """get model"""
     # model
     pretrained = args.pretrained
     dataset = args.dataset_name
-    model, vocabulary = bert_12_768_12(dataset_name=dataset,
-                                       pretrained=pretrained, ctx=ctx)
+    model, vocabulary = get_model(args.model,
+                                  dataset_name=dataset,
+                                  pretrained=pretrained, ctx=ctx)
     if not pretrained:
         model.initialize(init=mx.init.Normal(0.02), ctx=ctx)
 
     if args.ckpt_dir and args.start_step:
+        # Cast the model in case we're loading a fine-tuned float16 model.
+        model.cast(args.dtype)
         param_path = os.path.join(args.ckpt_dir, '%07d.params'%args.start_step)
         model.load_parameters(param_path, ctx=ctx)
         logging.info('Loading step %d checkpoints from %s.', args.start_step, param_path)
@@ -238,9 +245,13 @@ def evaluate(data_eval, model, nsp_loss, mlm_loss, vocab_size, ctx):
     eval_begin_time = time.time()
     begin_time = time.time()
     step_num = 0
-    local_mlm_loss = local_nsp_loss = 0
+
+    # Total loss for the whole dataset
     total_mlm_loss = total_nsp_loss = 0
-    local_num_tks = 0
+
+    # Running loss, reset when a log is emitted
+    running_mlm_loss = running_nsp_loss = 0
+    running_num_tks = 0
     for _, dataloader in enumerate(data_eval):
         for _, data in enumerate(dataloader):
             step_num += 1
@@ -249,10 +260,14 @@ def evaluate(data_eval, model, nsp_loss, mlm_loss, vocab_size, ctx):
             loss_list = []
             ns_label_list, ns_pred_list = [], []
             mask_label_list, mask_pred_list, mask_weight_list = [], [], []
+
+            # Run inference on the batch, collect the predictions and losses
+            batch_mlm_loss = batch_nsp_loss = 0
             for data in data_list:
                 out = forward(data, model, mlm_loss, nsp_loss, vocab_size)
                 (ls, next_sentence_label, classified, masked_id,
                  decoded, masked_weight, ls1, ls2, valid_length) = out
+
                 loss_list.append(ls)
                 ns_label_list.append(next_sentence_label)
                 ns_pred_list.append(classified)
@@ -260,22 +275,26 @@ def evaluate(data_eval, model, nsp_loss, mlm_loss, vocab_size, ctx):
                 mask_pred_list.append(decoded)
                 mask_weight_list.append(masked_weight)
 
-                local_mlm_loss += ls1.as_in_context(mx.cpu())
-                local_nsp_loss += ls2.as_in_context(mx.cpu())
-                local_num_tks += valid_length.sum().as_in_context(mx.cpu())
+                batch_mlm_loss += ls1.as_in_context(mx.cpu())
+                batch_nsp_loss += ls2.as_in_context(mx.cpu())
+                running_num_tks += valid_length.sum().as_in_context(mx.cpu())
+
+            running_mlm_loss += batch_mlm_loss
+            running_nsp_loss += batch_nsp_loss
+            total_mlm_loss += batch_mlm_loss
+            total_nsp_loss += batch_nsp_loss
+
             nsp_metric.update(ns_label_list, ns_pred_list)
             mlm_metric.update(mask_label_list, mask_pred_list, mask_weight_list)
 
-            # logging
+            # Log and reset running loss
             if (step_num + 1) % (args.log_interval) == 0:
-                total_mlm_loss += local_mlm_loss
-                total_nsp_loss += local_nsp_loss
-                log(begin_time, local_num_tks, local_mlm_loss, local_nsp_loss,
+                log(begin_time, running_num_tks, running_mlm_loss, running_nsp_loss,
                     step_num, mlm_metric, nsp_metric, None)
                 begin_time = time.time()
-                local_mlm_loss = local_nsp_loss = local_num_tks = 0
-                mlm_metric.reset_local()
-                nsp_metric.reset_local()
+                running_mlm_loss = running_nsp_loss = running_num_tks = 0
+                mlm_metric.reset_running()
+                nsp_metric.reset_running()
 
     mx.nd.waitall()
     eval_end_time = time.time()
@@ -286,17 +305,17 @@ def evaluate(data_eval, model, nsp_loss, mlm_loss, vocab_size, ctx):
                          total_nsp_loss.asscalar(), nsp_metric.get_global()[1] * 100))
     logging.info('Eval cost={:.1f}s'.format(eval_end_time - eval_begin_time))
 
-def log(begin_time, local_num_tks, local_mlm_loss, local_nsp_loss, step_num,
+def log(begin_time, running_num_tks, running_mlm_loss, running_nsp_loss, step_num,
         mlm_metric, nsp_metric, trainer):
     end_time = time.time()
     duration = end_time - begin_time
-    throughput = local_num_tks / duration / 1000.0
-    local_mlm_loss = local_mlm_loss / args.log_interval
-    local_nsp_loss = local_nsp_loss / args.log_interval
+    throughput = running_num_tks / duration / 1000.0
+    running_mlm_loss = running_mlm_loss / args.log_interval
+    running_nsp_loss = running_nsp_loss / args.log_interval
     lr = trainer.learning_rate if trainer else 0
     # pylint: disable=line-too-long
     logging.info('[step {}]\tmlm_loss={:.5f}\tmlm_acc={:.5f}\tnsp_loss={:.5f}\tnsp_acc={:.3f}\tthroughput={:.1f}K tks/s\tlr={:.7f} time={:.2f}'
-                 .format(step_num, local_mlm_loss.asscalar(), mlm_metric.get()[1] * 100, local_nsp_loss.asscalar(),
+                 .format(step_num, running_mlm_loss.asscalar(), mlm_metric.get()[1] * 100, running_nsp_loss.asscalar(),
                          nsp_metric.get()[1] * 100, throughput.asscalar(), lr, duration))
     # pylint: enable=line-too-long
 
@@ -326,7 +345,9 @@ def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx, store):
     fp16_trainer = FP16Trainer(trainer, dynamic_loss_scale=dynamic_loss_scale)
 
     if args.ckpt_dir and args.start_step:
-        trainer.load_states(os.path.join(args.ckpt_dir, '%07d.states'%args.start_step))
+        state_path = os.path.join(args.ckpt_dir, '%07d.states' % args.start_step)
+        logging.info('Loading trainer state from %s', state_path)
+        trainer.load_states(state_path)
 
     accumulate = args.accumulate
     num_train_steps = args.num_steps
@@ -433,10 +454,7 @@ if __name__ == '__main__':
     ctx = [mx.cpu()] if args.gpus is None or args.gpus == '' else \
           [mx.gpu(int(x)) for x in args.gpus.split(',')]
 
-    model, nsp_loss, mlm_loss, vocabulary = get_model(ctx)
-
-    lower = 'uncased' in args.dataset_name
-    tokenizer = BERTTokenizer(vocabulary, lower=lower)
+    model, nsp_loss, mlm_loss, vocabulary = load_model(ctx)
     store = mx.kv.create(args.kvstore)
 
     if args.ckpt_dir:
@@ -444,9 +462,13 @@ if __name__ == '__main__':
         if not os.path.exists(ckpt_dir):
             os.makedirs(ckpt_dir)
 
-    if args.data:
-        data_train = get_dataset(args.data, args.batch_size, len(ctx), True, store)
-        train(data_train, model, nsp_loss, mlm_loss, len(tokenizer.vocab), ctx, store)
+    if not args.eval_only:
+        if args.data:
+            logging.info('Using training data at {}'.format(args.data))
+            data_train = get_dataset(args.data, args.batch_size, len(ctx), True, store)
+            train(data_train, model, nsp_loss, mlm_loss, len(vocabulary), ctx, store)
+
     if args.data_eval:
+        logging.info('Using evaluation data at {}'.format(args.data_eval))
         data_eval = get_dataset(args.data_eval, args.batch_size_eval, len(ctx), False, store)
-        evaluate(data_eval, model, nsp_loss, mlm_loss, len(tokenizer.vocab), ctx)
+        evaluate(data_eval, model, nsp_loss, mlm_loss, len(vocabulary), ctx)
