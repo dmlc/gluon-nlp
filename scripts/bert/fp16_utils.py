@@ -120,8 +120,8 @@ class FP16Trainer(object):
           "tolerance" : 0.05, "verbose" : False"}` for `DynamicLossScaler`.
         See each `LossScaler` for a list of supported arguments'
     """
-    def __init__(self, trainer, dynamic_loss_scale=True, loss_scaler_params=None):
-        if trainer._kvstore_params['update_on_kvstore'] is not False:
+    def __init__(self, trainer, dynamic_loss_scale=True, loss_scaler_params=None, hvd=None):
+        if trainer._kvstore_params['update_on_kvstore'] is not False and trainer._kvstore:
             err = 'Only gluon.Trainer created with update_on_kvstore=False is supported.'
             raise NotImplementedError(err)
         self.fp32_trainer = trainer
@@ -131,6 +131,7 @@ class FP16Trainer(object):
         # if the optimizer supports NaN check, we can always defer the NaN check to the optimizer
         # TODO(haibin) this should be added via registry
         self._support_nan_check = trainer._optimizer.__class__.__name__ == 'BERTAdam'
+        self._hvd = hvd
 
     def backward(self, loss):
         """backward propagation with loss"""
@@ -176,7 +177,11 @@ class FP16Trainer(object):
                 overflow = self._scaler.has_overflow(self.fp32_trainer._params)
                 if not overflow:
                     self.fp32_trainer.update(step_size)
-
+        # broadcast overflow information
+        if self._hvd:
+            overflow_local = mx.nd.array([overflow], ctx=mx.gpu(self._hvd.local_rank()))
+            overflow_global = self._hvd.allreduce(overflow_local, average=False, name='overflow')
+            overflow = overflow_global.asscalar() > 0
         # update scale based on overflow information
         self._scaler.update_scale(overflow)
 
