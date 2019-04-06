@@ -141,12 +141,13 @@ def get_model(ctx):
 def get_dataset(data, batch_size, num_ctxes, is_train):
     """create dataset"""
     data = data
-    num_files = len(glob.glob(data))
+    num_files = len(glob.glob(os.path.expanduser(data)))
     assert num_files >= num_workers, \
         'Number of training files must be greater than the number of workers'
     split_sampler = nlp.data.SplitSampler(num_files, num_parts=num_workers,
                                           part_index=rank)
     stream = SimpleDatasetStream(NumpyDataset, data, split_sampler)
+    stream = nlp.data.PrefetchingStream(stream)
 
     def get_dataloader(dataset):
         """create data loader based on the dataset chunk"""
