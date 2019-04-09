@@ -41,16 +41,16 @@ import numpy as np
 
 import mxnet as mx
 from mxnet import gluon
-from mxnet.gluon.data import DataLoader
 
 import gluonnlp as nlp
 from gluonnlp.utils import Parallelizable, Parallel
 from gluonnlp.metric import MaskedAccuracy
-from gluonnlp.model import bert_12_768_12
+from gluonnlp.model import bert_12_768_12, bert_24_1024_16
 from gluonnlp.data.batchify import Tuple, Stack, Pad
 from gluonnlp.data import SimpleDatasetStream, FixedBucketSampler, NumpyDataset, BERTTokenizer
 from utils import profile
 from fp16_utils import FP16Trainer
+from dataset import get_pretrain_dataset
 
 parser = argparse.ArgumentParser(description='BERT pretraining example.')
 parser.add_argument('--num_steps', type=int, default=20, help='Number of optimization steps')
@@ -80,15 +80,20 @@ parser.add_argument('--warmup_ratio', type=float, default=0.1,
 parser.add_argument('--log_interval', type=int, default=10, help='Report interval')
 parser.add_argument('--ckpt_interval', type=int, default=250000, help='Checkpoint interval')
 parser.add_argument('--gpus', type=str, default='0', help='List of GPUs to use. e.g. 1,3')
+parser.add_argument('--max_len', type=int, default=512, help='Maximum sequence length for the dummy data batch')
 parser.add_argument('--kvstore', type=str, default='device', help='KVStore type')
 parser.add_argument('--seed', type=int, default=0, help='Random seed')
 parser.add_argument('--verbose', action='store_true', help='verbose logging')
-parser.add_argument('--profile', action='store_true', help='profile the program')
-parser.add_argument('--by-token', action='store_true',
-                    help='set batch size by the number of tokens in the batch')
+parser.add_argument('--large', action='store_true', help='use bert large')
+parser.add_argument('--profile', type=str, default=None,
+                    help='output profiling result to the target file')
+parser.add_argument('--use_avg_len', action='store_true',
+                    help='Use average length information for the bucket sampler. '
+                         'The batch size is now approximately the number of tokens in the batch')
 args = parser.parse_args()
 
 os.environ['MXNET_KVSTORE_USETREE'] = '1'
+os.environ['MXNET_GPU_MEM_POOL_TYPE'] = 'Round'
 
 # logging
 level = logging.DEBUG if args.verbose else logging.INFO
@@ -100,8 +105,9 @@ def get_model(ctx):
     # model
     pretrained = args.pretrained
     dataset = args.dataset_name
-    model, vocabulary = bert_12_768_12(dataset_name=dataset,
-                                       pretrained=pretrained, ctx=ctx)
+    bert_fn = bert_24_1024_16 if args.large else bert_12_768_12
+    model, vocabulary = bert_fn(dataset_name=dataset,
+                                pretrained=pretrained, ctx=ctx)
     if not pretrained:
         model.initialize(init=mx.init.Normal(0.02), ctx=ctx)
 
@@ -120,53 +126,6 @@ def get_model(ctx):
     mlm_loss.hybridize(static_alloc=True)
 
     return model, nsp_loss, mlm_loss, vocabulary
-
-def get_dataset(data, batch_size, num_ctxes, is_train, store):
-    """create dataset"""
-    data = data
-    split_sampler = nlp.data.SplitSampler(len(glob.glob(data)), num_parts=store.num_workers,
-                                          part_index=store.rank)
-    stream = nlp.data.PrefetchingStream(SimpleDatasetStream(NumpyDataset, data, split_sampler))
-
-    def get_dataloader(dataset):
-        """create data loader based on the dataset chunk"""
-        t0 = time.time()
-        lengths = dataset.get_field('valid_lengths')
-        logging.debug('Num samples = %d', len(lengths))
-        # A batch includes: input_id, masked_id, masked_position, masked_weight,
-        #                   next_sentence_label, segment_id, valid_length
-        batchify_fn = Tuple(Pad(), Pad(), Pad(), Pad(), Stack(), Pad(), Stack())
-        if args.by_token:
-            # sharded data loader
-            sampler = nlp.data.FixedBucketSampler(lengths=lengths,
-                                                  # batch_size per shard
-                                                  batch_size=batch_size,
-                                                  num_buckets=args.num_buckets,
-                                                  shuffle=is_train,
-                                                  use_average_length=True,
-                                                  num_shards=num_ctxes)
-            dataloader = nlp.data.ShardedDataLoader(dataset,
-                                                    batch_sampler=sampler,
-                                                    batchify_fn=batchify_fn,
-                                                    num_workers=num_ctxes)
-            logging.debug('Batch Sampler:\n%s', sampler.stats())
-        else:
-            sampler = FixedBucketSampler(lengths,
-                                         batch_size=batch_size * num_ctxes,
-                                         num_buckets=args.num_buckets,
-                                         ratio=0,
-                                         shuffle=is_train)
-            dataloader = DataLoader(dataset=dataset,
-                                    batch_sampler=sampler,
-                                    batchify_fn=batchify_fn,
-                                    num_workers=1)
-            logging.debug('Batch Sampler:\n%s', sampler.stats())
-        t1 = time.time()
-        logging.debug('Dataloader creation cost = %.2f s', t1 - t0)
-        return dataloader
-
-    stream = stream.transform(get_dataloader)
-    return stream
 
 def split_and_load(arrs, ctx):
     """split and load arrays to a list of contexts"""
@@ -295,9 +254,9 @@ def log(begin_time, local_num_tks, local_mlm_loss, local_nsp_loss, step_num,
     local_nsp_loss = local_nsp_loss / args.log_interval
     lr = trainer.learning_rate if trainer else 0
     # pylint: disable=line-too-long
-    logging.info('[step {}]\tmlm_loss={:.5f}\tmlm_acc={:.5f}\tnsp_loss={:.5f}\tnsp_acc={:.3f}\tthroughput={:.1f}K tks/s\tlr={:.7f} time={:.2f}'
-                 .format(step_num, local_mlm_loss.asscalar(), mlm_metric.get()[1] * 100, local_nsp_loss.asscalar(),
-                         nsp_metric.get()[1] * 100, throughput.asscalar(), lr, duration))
+    logging.info('[step {}]\tmlm_loss={:.5f}\tmlm_acc={:.5f}\tnsp_loss={:.5f}\tnsp_acc={:.3f}\tthroughput={:.1f}K tks/s\tlr={:.7f} time={:.2f}, latency={:.1f} ms/batch'
+                  .format(step_num, local_mlm_loss.asscalar(), mlm_metric.get()[1] * 100, local_nsp_loss.asscalar(),
+                         nsp_metric.get()[1] * 100, throughput.asscalar(), lr, duration, duration*1000/args.log_interval))
     # pylint: enable=line-too-long
 
 def save_params(step_num, args, model, trainer):
@@ -333,12 +292,14 @@ def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx, store):
     warmup_ratio = args.warmup_ratio
     num_warmup_steps = int(num_train_steps * warmup_ratio)
     params = [p for p in model.collect_params().values() if p.grad_req != 'null']
+    param_dict = model.collect_params()
 
     # Do not apply weight decay on LayerNorm and bias terms
     for _, v in model.collect_params('.*beta|.*gamma|.*bias').items():
         v.wd_mult = 0.0
-    for p in params:
-        p.grad_req = 'add'
+    if accumulate > 1:
+        for p in params:
+            p.grad_req = 'add'
 
     train_begin_time = time.time()
     begin_time = time.time()
@@ -357,13 +318,23 @@ def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx, store):
         for _, dataloader in enumerate(data_train):
             if step_num >= num_train_steps:
                 break
-            for _, data_batch in enumerate(dataloader):
+            data_iter = enumerate(dataloader)
+            _, data_batch = next(data_iter)
+            target_shape = (args.batch_size*num_ctxes, args.max_len)
+            logging.debug('Searching target batch shape: %s', target_shape)
+            while data_batch[0].shape != target_shape:
+                logging.debug(data_batch[0].shape)
+                _, data_batch = next(data_iter)
+            logging.debug('Found target batch')
+            # for _, data_batch in enumerate(dataloader):
+            while True:
                 if step_num >= num_train_steps:
                     break
                 if batch_num % accumulate == 0:
                     step_num += 1
-                    # zero grad
-                    model.collect_params().zero_grad()
+                    # if accumulate > 1, grad_req is set to 'add', and zero_grad is required
+                    if accumulate > 1:
+                        param_dict.zero_grad()
                     # update learning rate
                     if step_num <= num_warmup_steps:
                         new_lr = lr * step_num / num_warmup_steps
@@ -372,8 +343,8 @@ def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx, store):
                         new_lr = lr - offset
                     trainer.set_learning_rate(new_lr)
                     if args.profile:
-                        profile(step_num, 10, 12)
-                if args.by_token:
+                        profile(step_num, 10, 12, profile_name=args.profile)
+                if args.use_avg_len:
                     data_list = [[seq.as_in_context(context) for seq in shard]
                                  for context, shard in zip(ctx, data_batch)]
                 else:
@@ -445,8 +416,11 @@ if __name__ == '__main__':
             os.makedirs(ckpt_dir)
 
     if args.data:
-        data_train = get_dataset(args.data, args.batch_size, len(ctx), True, store)
+        data_train = get_pretrain_dataset(args.data, args.batch_size, len(ctx), False,
+                                          store.num_workers, store.rank, args.use_avg_len, args.num_buckets, prefetch=False)
         train(data_train, model, nsp_loss, mlm_loss, len(tokenizer.vocab), ctx, store)
     if args.data_eval:
-        data_eval = get_dataset(args.data_eval, args.batch_size_eval, len(ctx), False, store)
+        assert False
+        data_eval = get_dataset(args.data_eval, args.batch_size_eval, len(ctx), False,
+                                1, 0, False, 1)
         evaluate(data_eval, model, nsp_loss, mlm_loss, len(tokenizer.vocab), ctx)

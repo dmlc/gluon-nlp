@@ -33,7 +33,10 @@ from mxnet.gluon.block import HybridBlock
 from mxnet.gluon.model_zoo import model_store
 from gluonnlp.utils.parallel import Parallelizable
 from .seq2seq_encoder_decoder import Seq2SeqEncoder, Seq2SeqDecoder, _get_attention_cell
-from .block import GELU
+try:
+    from mxnet.gluon.nn import GELU
+except ImportError:
+    from .block import GELU
 from .translation import NMTModel
 from .utils import _load_vocab, _load_pretrained_params
 from ..base import get_home_dir
