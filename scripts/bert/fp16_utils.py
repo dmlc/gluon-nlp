@@ -74,8 +74,9 @@ def grad_global_norm(parameters, max_norm):
     def _norm(array):
         # TODO(haibin) norm operator does not support fp16 safe reduction.
         # Issue is tracked at: https://github.com/apache/incubator-mxnet/issues/14126
-        x = array.reshape((-1,)).astype('float32', copy=False)
+        x = nd.Cast(array.reshape((-1,)), 'float32')
         return nd.dot(x, x)
+
     norm_arrays = [_norm(arr) for arr in arrays]
 
     # group norm arrays by ctx
@@ -101,7 +102,7 @@ def grad_global_norm(parameters, max_norm):
     scale_or_one = nd.maximum(nd.ones((1,), dtype=dtype, ctx=ctx), scale)
     choices = nd.concat(scale, scale_or_one, dim=0)
     chosen_scale = choices.take(is_finite)
-    return total_norm, chosen_scale
+    return total_norm, chosen_scale, is_finite
 
 
 class FP16Trainer(object):
@@ -132,6 +133,7 @@ class FP16Trainer(object):
         # TODO(haibin) this should be added via registry
         self._support_nan_check = trainer._optimizer.__class__.__name__ == 'BERTAdam'
         self._hvd = hvd
+        self._hvd_size = hvd.size() if hvd else None
 
     def backward(self, loss):
         """backward propagation with loss"""
@@ -154,15 +156,16 @@ class FP16Trainer(object):
         max_norm : NDArray, optional, default is None
             max value for global 2-norm of gradients.
         """
-        self.fp32_trainer.allreduce_grads()
+        if not self._hvd or (self._hvd and self._hvd_size > 1):
+            self.fp32_trainer.allreduce_grads()
         step_size = batch_size * self._scaler.loss_scale
         if max_norm:
-            norm, ratio = grad_global_norm(self.fp32_trainer._params,
-                                           max_norm * self._scaler.loss_scale)
+            norm, ratio, is_finite = grad_global_norm(self.fp32_trainer._params,
+                                                      max_norm * self._scaler.loss_scale)
             step_size = ratio * step_size
             if self._support_nan_check:
                 self.fp32_trainer.update(step_size)
-                overflow = not np.isfinite(norm.asscalar())
+                overflow = is_finite.asscalar() < 1
             else:
                 overflow = not np.isfinite(norm.asscalar())
                 if not overflow:
@@ -177,11 +180,6 @@ class FP16Trainer(object):
                 overflow = self._scaler.has_overflow(self.fp32_trainer._params)
                 if not overflow:
                     self.fp32_trainer.update(step_size)
-        # broadcast overflow information
-        if self._hvd:
-            overflow_local = mx.nd.array([overflow], ctx=mx.gpu(self._hvd.local_rank()))
-            overflow_global = self._hvd.allreduce(overflow_local, average=False, name='overflow')
-            overflow = overflow_global.asscalar() > 0
         # update scale based on overflow information
         self._scaler.update_scale(overflow)
 

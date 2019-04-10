@@ -366,7 +366,7 @@ def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx):
                         new_lr = lr - offset
                     trainer.set_learning_rate(new_lr)
                     if args.profile:
-                        profile(step_num, 10, 12, profile_name=args.profile, skip=rank != 0)
+                        profile(step_num, 10, 14, profile_name=args.profile, skip=local_rank != 0)
                 if args.use_avg_len:
                     data_list = [[seq.as_in_context(context) for seq in shard]
                                  for context, shard in zip(ctx, data_batch)]
