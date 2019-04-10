@@ -112,7 +112,7 @@ parser.add_argument(
 parser.add_argument(
     '--pad',
     action='store_true',
-    help='whether to do padding when pre-processing dataset. Default is False.')
+    help='Whether to pad to maximum length when preparing data batches. Default is False.')
 parser.add_argument(
     '--seed', type=int, default=2, help='Random seed, default is 2')
 parser.add_argument(
@@ -440,7 +440,7 @@ def inference(metric):
 
     logging.info('Now we are doing BERT classification inference on {} !'.format(ctx))
     model = BERTClassifier(bert, dropout=0.1, num_classes=len(task.get_labels()))
-    model.hybridize()
+    model.hybridize(static_alloc=True)
     model.load_parameters(model_parameters, ctx=ctx)
 
     metric.reset()
