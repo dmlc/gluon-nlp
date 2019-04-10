@@ -362,7 +362,7 @@ class BERTModel(Block):
             self.decoder = self._get_decoder(units, vocab_size, self.word_embed[0], 'decoder_')
 
     def _get_classifier(self, prefix):
-        """ Construct a decoder for the masked language model task """
+        """ Construct a decoder for the next sentence prediction task """
         with self.name_scope():
             classifier = nn.Dense(2, prefix=prefix)
         return classifier

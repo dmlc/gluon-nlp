@@ -36,21 +36,39 @@ def test_bert_embedding_dataset():
 def test_bert_embedding_data_loader():
     sentence = u'is this jacksonville ?'
     bert = BertEmbedding(max_seq_length=10)
-    iter = bert.data_loader([sentence])
-    first_sentence = []
-    for i in iter:
+    first_sentence = None
+    for i in bert.data_loader([sentence]):
         first_sentence = i
         break
     assert len(first_sentence[0][0]) == 10
+
+
+def test_bert_embedding_data_loader_works_with_cased_data():
+    bert = BertEmbedding(dataset_name="book_corpus_wiki_en_cased")
+    assert bert.tokenizer.basic_tokenizer.lower == False
+
+
+def test_bert_embedding_data_loader_works_with_uncased_data():
+    bert = BertEmbedding(dataset_name="book_corpus_wiki_en_uncased")
+    assert bert.tokenizer.basic_tokenizer.lower == True
 
 
 @pytest.mark.serial
 @pytest.mark.remote_required
 @pytest.mark.gpu
 def test_bert_embedding():
-    process = subprocess.check_call(['python', './scripts/bert/embedding.py', '--gpu', '0',
+    process = subprocess.check_call(['python', './scripts/bert/embedding.py', '--gpu', '0', '--dtype', 'float32',
                                      '--model', 'bert_12_768_12', '--dataset_name', 'book_corpus_wiki_en_uncased',
                                      '--max_seq_length', '25', '--batch_size', '256',
                                      '--oov_way', 'avg', '--sentences', '"is this jacksonville ?"'])
     time.sleep(5)
+    
+    process = subprocess.check_call(['python', './scripts/bert/embedding.py', '--gpu', '0',
+                                     '--model', 'bert_12_768_12', '--dataset_name', 'book_corpus_wiki_en_uncased',
+                                     '--max_seq_length', '25', '--batch_size', '256',
+                                     '--params_path',
+                                     '~/.mxnet/models/bert_12_768_12_book_corpus_wiki_en_uncased-75cc780f.params',
+                                     '--oov_way', 'avg', '--sentences', '"is this jacksonville ?"', '--verbose'])
 
+
+    time.sleep(5)
