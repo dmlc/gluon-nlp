@@ -49,6 +49,7 @@ from gluonnlp.data import SimpleDatasetStream, FixedBucketSampler, NumpyDataset,
 
 from utils import profile
 from fp16_utils import FP16Trainer
+from pretraining_utils import get_model
 from dataset import get_pretrain_dataset
 
 parser = argparse.ArgumentParser(description='BERT pretraining example.')
@@ -67,6 +68,8 @@ parser.add_argument('--dataset_name', type=str, default='book_corpus_wiki_en_unc
                          'Default is book_corpus_wiki_en_uncased')
 parser.add_argument('--pretrained', action='store_true',
                     help='Load the pretrained model released by Google.')
+parser.add_argument('--model', type=str, default='bert_12_768_12',
+                    help='Model to run pre-training on. Options are bert_12_768_12, bert_24_1024_16')
 parser.add_argument('--data', type=str, default=None, help='Path to training data.')
 parser.add_argument('--data_eval', type=str, default=None, help='Path to evaluation data.')
 parser.add_argument('--ckpt_dir', type=str, required=True,
@@ -80,7 +83,6 @@ parser.add_argument('--log_interval', type=int, default=10, help='Report interva
 parser.add_argument('--ckpt_interval', type=int, default=250000, help='Checkpoint interval')
 parser.add_argument('--seed', type=int, default=0, help='Random seed')
 parser.add_argument('--max_len', type=int, default=512, help='Maximum sequence length for the dummy data batch')
-parser.add_argument('--large', action='store_true', help='use bert large')
 parser.add_argument('--verbose', action='store_true', help='verbose logging')
 parser.add_argument('--profile', type=str, default=None,
                     help='output profiling result to the target file')
@@ -111,36 +113,7 @@ if not args.use_avg_len and hvd.size() > 1:
                  'target number of tokens would help improve training throughput.')
 logging.debug('local_rank = %d, rank = %d, num_workers = %d',
               local_rank, rank, num_workers)
-
-def get_model(ctx):
-    """get model"""
-    # model
-    pretrained = args.pretrained
-    dataset = args.dataset_name
-    bert_fn = bert_24_1024_16 if args.large else bert_12_768_12
-    model, vocabulary = bert_fn(dataset_name=dataset,
-                                pretrained=pretrained, ctx=ctx)
-    if not pretrained:
-        model.initialize(init=mx.init.Normal(0.02), ctx=ctx)
-
-    if args.ckpt_dir and args.start_step:
-        param_path = os.path.join(args.ckpt_dir, '%07d.params'%args.start_step)
-        model.load_parameters(param_path, ctx=ctx)
-        logging.info('Loading step %d checkpoints from %s.', args.start_step, param_path)
-
-    model.cast(args.dtype)
-    hvd.broadcast_parameters(model.collect_params(), root_rank=0)
-    logging.debug('Broadcasting parameters to workers')
-
-    model.hybridize(static_alloc=True)
-
-    # losses
-    nsp_loss = gluon.loss.SoftmaxCELoss()
-    mlm_loss = gluon.loss.SoftmaxCELoss()
-    nsp_loss.hybridize(static_alloc=True)
-    mlm_loss.hybridize(static_alloc=True)
-
-    return model, nsp_loss, mlm_loss, vocabulary
+logging.info(nlp)
 
 def split_and_load(arrs, ctx):
     """split and load arrays to a list of contexts"""
@@ -285,6 +258,10 @@ def save_params(step_num, args, model, trainer):
 
 def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx):
     """Training function."""
+
+    hvd.broadcast_parameters(model.collect_params(), root_rank=0)
+    logging.debug('Broadcasting parameters to workers')
+
     mlm_metric = MaskedAccuracy()
     nsp_metric = MaskedAccuracy()
     mlm_metric.reset()
@@ -303,7 +280,7 @@ def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx):
         loss_scale_param = None
     trainer = hvd.DistributedTrainer(model.collect_params(), 'bertadam', optim_params)
     fp16_trainer = FP16Trainer(trainer, dynamic_loss_scale=dynamic_loss_scale,
-                               loss_scaler_params=loss_scale_param, hvd=hvd)
+                               loss_scaler_params=loss_scale_param)
 
     if args.ckpt_dir and args.start_step:
         trainer.load_states(os.path.join(args.ckpt_dir, '%07d.states'%args.start_step))
@@ -425,8 +402,10 @@ if __name__ == '__main__':
 
     ctx = [mx.gpu(local_rank)]
 
-    model, nsp_loss, mlm_loss, vocabulary = get_model(ctx)
-
+    model, nsp_loss, mlm_loss, vocabulary = get_model(ctx, args.model, args.pretrained,
+                                                      args.dataset_name, args.dtype,
+                                                      ckpt_dir=args.ckpt_dir,
+                                                      start_step=args.start_step)
     lower = 'uncased' in args.dataset_name
     tokenizer = BERTTokenizer(vocabulary, lower=lower)
 

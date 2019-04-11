@@ -75,7 +75,7 @@ def get_pretrain_dataset(data, batch_size, num_ctxes, shuffle,
             dataloader = DataLoader(dataset=dataset,
                                     batch_sampler=sampler,
                                     batchify_fn=batchify_fn,
-                                    num_parts=1)
+                                    num_workers=1)
         logging.debug('Batch Sampler:\n%s', sampler.stats())
         t1 = time.time()
         logging.debug('Dataloader creation cost = %.2f s', t1 - t0)
