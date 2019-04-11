@@ -49,6 +49,7 @@ from gluonnlp.data import SimpleDatasetStream, FixedBucketSampler, NumpyDataset,
 from utils import profile
 from fp16_utils import FP16Trainer
 from pretraining_utils import get_model, get_pretrain_dataset, get_dummy_dataloader
+from pretraining_utils import save_params, log
 
 parser = argparse.ArgumentParser(description='BERT pretraining example.')
 parser.add_argument('--num_steps', type=int, default=20, help='Number of optimization steps')
@@ -216,7 +217,7 @@ def evaluate(data_eval, model, nsp_loss, mlm_loss, vocab_size, ctx):
                 total_mlm_loss += local_mlm_loss
                 total_nsp_loss += local_nsp_loss
                 log(begin_time, local_num_tks, local_mlm_loss, local_nsp_loss,
-                    step_num, mlm_metric, nsp_metric, None)
+                    step_num, mlm_metric, nsp_metric, None, args.log_interval)
                 begin_time = time.time()
                 local_mlm_loss = local_nsp_loss = local_num_tks = 0
                 mlm_metric.reset_local()
@@ -230,29 +231,6 @@ def evaluate(data_eval, model, nsp_loss, mlm_loss, vocab_size, ctx):
                  .format(total_mlm_loss.asscalar(), mlm_metric.get_global()[1] * 100,
                          total_nsp_loss.asscalar(), nsp_metric.get_global()[1] * 100))
     logging.info('Eval cost={:.1f}s'.format(eval_end_time - eval_begin_time))
-
-def log(begin_time, local_num_tks, local_mlm_loss, local_nsp_loss, step_num,
-        mlm_metric, nsp_metric, trainer):
-    end_time = time.time()
-    duration = end_time - begin_time
-    throughput = local_num_tks / duration / 1000.0
-    local_mlm_loss = local_mlm_loss / args.log_interval
-    local_nsp_loss = local_nsp_loss / args.log_interval
-    lr = trainer.learning_rate if trainer else 0
-    # pylint: disable=line-too-long
-    logging.info('[step {}]\tmlm_loss={:.5f}\tmlm_acc={:.5f}\tnsp_loss={:.5f}\tnsp_acc={:.3f}\tthroughput={:.1f}K tks/s\tlr={:.7f} time={:.2f}, latency={:.1f} ms/batch'
-                 .format(step_num, local_mlm_loss.asscalar(), mlm_metric.get()[1] * 100, local_nsp_loss.asscalar(),
-                         nsp_metric.get()[1] * 100, throughput.asscalar(), lr, duration, duration*20))
-    # pylint: enable=line-too-long
-
-def save_params(step_num, args, model, trainer):
-    if local_rank == 0:
-        param_path = os.path.join(args.ckpt_dir, '%07d.params'%step_num)
-        trainer_path = os.path.join(args.ckpt_dir, '%07d.states'%step_num)
-        logging.info('[step %d] Saving checkpoints to %s, %s.',
-                     step_num, param_path, trainer_path)
-        model.save_parameters(param_path)
-        trainer.save_states(trainer_path)
 
 def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx):
     """Training function."""
@@ -372,7 +350,7 @@ def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx):
                 # logging
                 if (step_num + 1) % (args.log_interval) == 0 and (batch_num + 1) % accumulate == 0:
                     log(begin_time, local_num_tks, local_mlm_loss / accumulate,
-                        local_nsp_loss / accumulate, step_num, mlm_metric, nsp_metric, trainer)
+                        local_nsp_loss / accumulate, step_num, mlm_metric, nsp_metric, trainer, args.log_interval)
                     begin_time = time.time()
                     local_mlm_loss = local_nsp_loss = local_num_tks = 0
                     mlm_metric.reset_local()
@@ -380,10 +358,11 @@ def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx):
 
                 # saving checkpoints
                 if args.ckpt_dir and (step_num + 1) % (args.ckpt_interval) == 0 \
-                   and (batch_num + 1) % accumulate == 0:
-                    save_params(step_num, args, model, trainer)
+                   and (batch_num + 1) % accumulate == 0 and local_rank == 0:
+                    save_params(step_num, model, trainer, args.ckpt_dir)
                 batch_num += 1
-    save_params(step_num, args, model, trainer)
+    if local_rank == 0:
+        save_params(step_num, model, trainer, args.ckpt_dir)
     mx.nd.waitall()
     train_end_time = time.time()
     logging.info('Train cost={:.1f}s'.format(train_end_time - train_begin_time))

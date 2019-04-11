@@ -27,7 +27,7 @@ from mxnet.gluon.data import DataLoader
 import gluonnlp as nlp
 from gluonnlp.data.batchify import Tuple, Stack, Pad
 
-__all__ = ['get_model', 'get_pretrain_dataset', 'get_dummy_dataloader']
+__all__ = ['get_model', 'get_pretrain_dataset', 'get_dummy_dataloader', 'save_params']
 
 def get_model(ctx, model, pretrained, dataset_name, dtype, ckpt_dir=None, start_step=None):
     """Get model for pre-training."""
@@ -124,3 +124,26 @@ def get_dummy_dataloader(dataloader, target_shape):
                 yield self._batch
 
     return DummyIter(data_batch)
+
+def save_params(step_num, model, trainer, ckpt_dir):
+    param_path = os.path.join(ckpt_dir, '%07d.params'%step_num)
+    trainer_path = os.path.join(ckpt_dir, '%07d.states'%step_num)
+    logging.info('[step %d] Saving checkpoints to %s, %s.',
+                 step_num, param_path, trainer_path)
+    model.save_parameters(param_path)
+    trainer.save_states(trainer_path)
+
+def log(begin_time, local_num_tks, local_mlm_loss, local_nsp_loss, step_num,
+        mlm_metric, nsp_metric, trainer, log_interval):
+    end_time = time.time()
+    duration = end_time - begin_time
+    throughput = local_num_tks / duration / 1000.0
+    local_mlm_loss = local_mlm_loss / log_interval
+    local_nsp_loss = local_nsp_loss / log_interval
+    lr = trainer.learning_rate if trainer else 0
+    # pylint: disable=line-too-long
+    logging.info('[step {}]\tmlm_loss={:.5f}\tmlm_acc={:.5f}\tnsp_loss={:.5f}\tnsp_acc={:.3f}\tthroughput={:.1f}K tks/s\tlr={:.7f} time={:.2f}, latency={:.1f} ms/batch'
+                 .format(step_num, local_mlm_loss.asscalar(), mlm_metric.get()[1] * 100, local_nsp_loss.asscalar(),
+                         nsp_metric.get()[1] * 100, throughput.asscalar(), lr, duration, duration*1000/log_interval))
+    # pylint: enable=line-too-long
+

@@ -17,7 +17,7 @@
 __all__ = [
     'MRPCDataset', 'QQPDataset', 'QNLIDataset', 'RTEDataset', 'STSBDataset',
     'COLADataset', 'MNLIDataset', 'WNLIDataset', 'SSTDataset', 'BertEmbeddingDataset',
-    'BERTDatasetTransform', 'get_pretrain_dataset'
+    'BERTDatasetTransform'
 ]
 
 import os
