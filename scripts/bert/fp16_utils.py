@@ -55,10 +55,12 @@ def grad_global_norm(parameters, max_norm):
     Returns
     -------
     NDArray
-      Total norm.
+      Total norm. Shape is (1,)
     NDArray
       Ratio for rescaling gradients based on max_norm s.t. grad = grad / ratio.
-      If total norm is NaN, ratio will be NaN, too.
+      If total norm is NaN, ratio will be NaN, too. Shape is (1,)
+    NDArray
+      Whether the total norm is finite. Shape is (1,)
     """
     # collect gradient arrays
     arrays = []
@@ -74,7 +76,7 @@ def grad_global_norm(parameters, max_norm):
     def _norm(array):
         # TODO(haibin) norm operator does not support fp16 safe reduction.
         # Issue is tracked at: https://github.com/apache/incubator-mxnet/issues/14126
-        x = nd.Cast(array.reshape((-1,)), 'float32')
+        x = array.reshape((-1,)).astype('float32', copy=False)
         return nd.dot(x, x)
 
     norm_arrays = [_norm(arr) for arr in arrays]
@@ -121,8 +123,8 @@ class FP16Trainer(object):
           "tolerance" : 0.05, "verbose" : False"}` for `DynamicLossScaler`.
         See each `LossScaler` for a list of supported arguments'
     """
-    def __init__(self, trainer, dynamic_loss_scale=True, loss_scaler_params=None, hvd=None):
-        if trainer._kvstore_params['update_on_kvstore'] is not False and trainer._kvstore:
+    def __init__(self, trainer, dynamic_loss_scale=True, loss_scaler_params=None):
+        if trainer._kvstore_params['update_on_kvstore'] is not False and trainer._kvstore::
             err = 'Only gluon.Trainer created with update_on_kvstore=False is supported.'
             raise NotImplementedError(err)
         self.fp32_trainer = trainer
@@ -132,8 +134,6 @@ class FP16Trainer(object):
         # if the optimizer supports NaN check, we can always defer the NaN check to the optimizer
         # TODO(haibin) this should be added via registry
         self._support_nan_check = trainer._optimizer.__class__.__name__ == 'BERTAdam'
-        self._hvd = hvd
-        self._hvd_size = hvd.size() if hvd else None
 
     def backward(self, loss):
         """backward propagation with loss"""
@@ -156,8 +156,7 @@ class FP16Trainer(object):
         max_norm : NDArray, optional, default is None
             max value for global 2-norm of gradients.
         """
-        if not self._hvd or (self._hvd and self._hvd_size > 1):
-            self.fp32_trainer.allreduce_grads()
+        self.fp32_trainer.allreduce_grads()
         step_size = batch_size * self._scaler.loss_scale
         if max_norm:
             norm, ratio, is_finite = grad_global_norm(self.fp32_trainer._params,

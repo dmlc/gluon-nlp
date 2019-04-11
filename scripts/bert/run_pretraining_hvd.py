@@ -31,11 +31,9 @@ This example shows how to pre-train a BERT model with Gluon NLP Toolkit.
 # pylint:disable=redefined-outer-name,logging-format-interpolation
 
 import os
-
 import argparse
 import random
 import logging
-import glob
 import time
 import numpy as np
 
@@ -48,6 +46,7 @@ from gluonnlp.utils import Parallelizable, Parallel
 from gluonnlp.metric import MaskedAccuracy
 from gluonnlp.model import bert_12_768_12, bert_24_1024_16
 from gluonnlp.data import SimpleDatasetStream, FixedBucketSampler, NumpyDataset, BERTTokenizer
+
 from utils import profile
 from fp16_utils import FP16Trainer
 from dataset import get_pretrain_dataset

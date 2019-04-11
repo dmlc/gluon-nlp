@@ -26,6 +26,7 @@ import numpy as np
 import glob
 import os
 import time
+import logging
 from mxnet.metric import Accuracy, F1, MCC, PearsonCorrelation, CompositeEvalMetric
 from mxnet.gluon.data import Dataset, DataLoader
 import gluonnlp as nlp
@@ -34,19 +35,18 @@ from gluonnlp.data.registry import register
 from gluonnlp.data.batchify import Tuple, Stack, Pad
 
 def get_pretrain_dataset(data, batch_size, num_ctxes, shuffle,
-                         num_workers, rank, use_avg_len, num_buckets, prefetch=True):
+                         num_parts, part_idx, use_avg_len, num_buckets, prefetch=True):
     """create dataset for pretraining."""
     num_files = len(glob.glob(os.path.expanduser(data)))
-    assert num_files >= num_workers, \
-        'Number of training files must be greater than the number of workers'
-    split_sampler = nlp.data.SplitSampler(num_files, num_parts=num_workers, part_index=rank)
+    assert num_files >= num_parts, \
+        'Number of training files must be greater than the number of partitions'
+    split_sampler = nlp.data.SplitSampler(num_files, num_parts=num_parts, part_index=part_idx)
     stream = nlp.data.SimpleDatasetStream(nlp.data.NumpyDataset, data, split_sampler)
     if prefetch:
         stream = nlp.data.PrefetchingStream(stream)
 
     def get_dataloader(dataset):
         """create data loader based on the dataset chunk"""
-        import logging
         t0 = time.time()
         lengths = dataset.get_field('valid_lengths')
         logging.debug('Num samples = %d', len(lengths))
@@ -65,7 +65,7 @@ def get_pretrain_dataset(data, batch_size, num_ctxes, shuffle,
             dataloader = nlp.data.ShardedDataLoader(dataset,
                                                     batch_sampler=sampler,
                                                     batchify_fn=batchify_fn,
-                                                    num_workers=num_ctxes)
+                                                    num_parts=num_ctxes)
         else:
             sampler = nlp.data.FixedBucketSampler(lengths,
                                                   batch_size=batch_size * num_ctxes,
@@ -75,7 +75,7 @@ def get_pretrain_dataset(data, batch_size, num_ctxes, shuffle,
             dataloader = DataLoader(dataset=dataset,
                                     batch_sampler=sampler,
                                     batchify_fn=batchify_fn,
-                                    num_workers=1)
+                                    num_parts=1)
         logging.debug('Batch Sampler:\n%s', sampler.stats())
         t1 = time.time()
         logging.debug('Dataloader creation cost = %.2f s', t1 - t0)
