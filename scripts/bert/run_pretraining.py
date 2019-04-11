@@ -45,14 +45,12 @@ from mxnet import gluon
 import gluonnlp as nlp
 from gluonnlp.utils import Parallelizable, Parallel
 from gluonnlp.metric import MaskedAccuracy
-from gluonnlp.model import bert_12_768_12, bert_24_1024_16
 from gluonnlp.data.batchify import Tuple, Stack, Pad
 from gluonnlp.data import SimpleDatasetStream, FixedBucketSampler, NumpyDataset, BERTTokenizer
 
 from utils import profile
 from fp16_utils import FP16Trainer
-from pretraining_utils import get_model
-from dataset import get_pretrain_dataset
+from pretraining_utils import get_model, get_pretrain_dataset, get_dummy_dataloader
 
 parser = argparse.ArgumentParser(description='BERT pretraining example.')
 parser.add_argument('--num_steps', type=int, default=20, help='Number of optimization steps')
@@ -84,14 +82,15 @@ parser.add_argument('--warmup_ratio', type=float, default=0.1,
 parser.add_argument('--log_interval', type=int, default=10, help='Report interval')
 parser.add_argument('--ckpt_interval', type=int, default=250000, help='Checkpoint interval')
 parser.add_argument('--gpus', type=str, default='0', help='List of GPUs to use. e.g. 1,3')
-parser.add_argument('--max_len', type=int, default=512, help='Maximum sequence length for the dummy data batch')
+parser.add_argument('--dummy_data_len', type=int, default=None,
+                    help='If provided, a data batch of target sequence length is repeatedly used')
 parser.add_argument('--kvstore', type=str, default='device', help='KVStore type')
 parser.add_argument('--seed', type=int, default=0, help='Random seed')
 parser.add_argument('--verbose', action='store_true', help='verbose logging')
 parser.add_argument('--profile', type=str, default=None,
                     help='output profiling result to the target file')
 parser.add_argument('--use_avg_len', action='store_true',
-                    help='Use average length information for the bucket sampler. '
+                    help='Use average length information for the bucket sampler for training. '
                          'The batch size is now approximately the number of tokens in the batch')
 args = parser.parse_args()
 
@@ -294,16 +293,13 @@ def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx, store):
         for _, dataloader in enumerate(data_train):
             if step_num >= num_train_steps:
                 break
-            data_iter = enumerate(dataloader)
-            _, data_batch = next(data_iter)
-            target_shape = (args.batch_size*num_ctxes, args.max_len)
-            logging.debug('Searching target batch shape: %s', target_shape)
-            while data_batch[0].shape != target_shape:
-                logging.debug(data_batch[0].shape)
-                _, data_batch = next(data_iter)
-            logging.debug('Found target batch')
-            # for _, data_batch in enumerate(dataloader):
-            while True:
+
+            # create dummy data loader if needed
+            if args.dummy_data_len:
+                target_shape = (args.batch_size*num_ctxes, args.dummy_data_len)
+                dataloader = get_dummy_dataloader(dataloader, target_shape)
+
+            for _, data_batch in enumerate(dataloader):
                 if step_num >= num_train_steps:
                     break
                 if batch_num % accumulate == 0:
@@ -395,11 +391,12 @@ if __name__ == '__main__':
             os.makedirs(ckpt_dir)
 
     if args.data:
-        data_train = get_pretrain_dataset(args.data, args.batch_size, len(ctx), False,
-                                          store.num_workers, store.rank, args.use_avg_len, args.num_buckets, prefetch=False)
+        data_train = get_pretrain_dataset(args.data, args.batch_size, len(ctx), True,
+                                          args.use_avg_len, args.num_buckets,
+                                          num_parts=1 if args.dummy_data_len else num_workers,
+                                          part_idx=0 if args.dummy_data_len else rank,
+                                          prefetch=not args.dummy_data_len)
         train(data_train, model, nsp_loss, mlm_loss, len(tokenizer.vocab), ctx, store)
     if args.data_eval:
-        assert False
-        data_eval = get_dataset(args.data_eval, args.batch_size_eval, len(ctx), False,
-                                1, 0, False, 1)
+        data_eval = get_dataset(args.data_eval, args.batch_size_eval, len(ctx), False, False, 1)
         evaluate(data_eval, model, nsp_loss, mlm_loss, len(tokenizer.vocab), ctx)

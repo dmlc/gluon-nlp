@@ -23,66 +23,10 @@ __all__ = [
 import os
 import warnings
 import numpy as np
-import glob
-import os
-import time
-import logging
 from mxnet.metric import Accuracy, F1, MCC, PearsonCorrelation, CompositeEvalMetric
-from mxnet.gluon.data import Dataset, DataLoader
-import gluonnlp as nlp
+from mxnet.gluon.data import Dataset
 from gluonnlp.data import TSVDataset, BERTSentenceTransform
 from gluonnlp.data.registry import register
-from gluonnlp.data.batchify import Tuple, Stack, Pad
-
-def get_pretrain_dataset(data, batch_size, num_ctxes, shuffle,
-                         num_parts, part_idx, use_avg_len, num_buckets, prefetch=True):
-    """create dataset for pretraining."""
-    num_files = len(glob.glob(os.path.expanduser(data)))
-    assert num_files >= num_parts, \
-        'Number of training files must be greater than the number of partitions'
-    split_sampler = nlp.data.SplitSampler(num_files, num_parts=num_parts, part_index=part_idx)
-    stream = nlp.data.SimpleDatasetStream(nlp.data.NumpyDataset, data, split_sampler)
-    if prefetch:
-        stream = nlp.data.PrefetchingStream(stream)
-
-    def get_dataloader(dataset):
-        """create data loader based on the dataset chunk"""
-        t0 = time.time()
-        lengths = dataset.get_field('valid_lengths')
-        logging.debug('Num samples = %d', len(lengths))
-        # A batch includes: input_id, masked_id, masked_position, masked_weight,
-        #                   next_sentence_label, segment_id, valid_length
-        batchify_fn = Tuple(Pad(), Pad(), Pad(), Pad(), Stack(), Pad(), Stack())
-        if use_avg_len:
-            # sharded data loader
-            sampler = nlp.data.FixedBucketSampler(lengths=lengths,
-                                                  # batch_size per shard
-                                                  batch_size=batch_size,
-                                                  num_buckets=num_buckets,
-                                                  shuffle=shuffle,
-                                                  use_average_length=True,
-                                                  num_shards=num_ctxes)
-            dataloader = nlp.data.ShardedDataLoader(dataset,
-                                                    batch_sampler=sampler,
-                                                    batchify_fn=batchify_fn,
-                                                    num_parts=num_ctxes)
-        else:
-            sampler = nlp.data.FixedBucketSampler(lengths,
-                                                  batch_size=batch_size * num_ctxes,
-                                                  num_buckets=num_buckets,
-                                                  ratio=0,
-                                                  shuffle=shuffle)
-            dataloader = DataLoader(dataset=dataset,
-                                    batch_sampler=sampler,
-                                    batchify_fn=batchify_fn,
-                                    num_workers=1)
-        logging.debug('Batch Sampler:\n%s', sampler.stats())
-        t1 = time.time()
-        logging.debug('Dataloader creation cost = %.2f s', t1 - t0)
-        return dataloader
-
-    stream = stream.transform(get_dataloader)
-    return stream
 
 @register(segment=['train', 'dev', 'test'])
 class MRPCDataset(TSVDataset):
