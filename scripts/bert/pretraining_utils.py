@@ -26,8 +26,10 @@ from mxnet.gluon.data import DataLoader
 
 import gluonnlp as nlp
 from gluonnlp.data.batchify import Tuple, Stack, Pad
+from gluonnlp.metric import MaskedAccuracy
 
-__all__ = ['get_model', 'get_pretrain_dataset', 'get_dummy_dataloader', 'save_params']
+__all__ = ['get_model', 'get_pretrain_dataset', 'get_dummy_dataloader',
+           'save_params', 'eval', 'forward', 'split_and_load']
 
 def get_model(ctx, model, pretrained, dataset_name, dtype, ckpt_dir=None, start_step=None):
     """Get model for pre-training."""
@@ -147,3 +149,92 @@ def log(begin_time, local_num_tks, local_mlm_loss, local_nsp_loss, step_num,
                          nsp_metric.get()[1] * 100, throughput.asscalar(), lr, duration, duration*1000/log_interval))
     # pylint: enable=line-too-long
 
+def split_and_load(arrs, ctx):
+    """split and load arrays to a list of contexts"""
+    assert isinstance(arrs, (list, tuple))
+    if len(ctx) == 1:
+        return [[arr.as_in_context(ctx[0]) for arr in arrs]]
+    else:
+        # split and load
+        loaded_arrs = [gluon.utils.split_and_load(arr, ctx, even_split=False) for arr in arrs]
+        return zip(*loaded_arrs)
+
+
+def forward(data, model, mlm_loss, nsp_loss, vocab_size, dtype):
+    """forward computation for evaluation"""
+    (input_id, masked_id, masked_position, masked_weight, \
+     next_sentence_label, segment_id, valid_length) = data
+    num_masks = masked_weight.sum() + 1e-8
+    valid_length = valid_length.reshape(-1)
+    masked_id = masked_id.reshape(-1)
+    valid_length_typed = valid_length.astype(dtype, copy=False)
+    _, _, classified, decoded = model(input_id, segment_id, valid_length_typed,
+                                      masked_position)
+    decoded = decoded.reshape((-1, vocab_size))
+    ls1 = mlm_loss(decoded.astype('float32', copy=False),
+                   masked_id, masked_weight.reshape((-1, 1)))
+    ls2 = nsp_loss(classified.astype('float32', copy=False), next_sentence_label)
+    ls1 = ls1.sum() / num_masks
+    ls2 = ls2.mean()
+    ls = ls1 + ls2
+    return ls, next_sentence_label, classified, masked_id, decoded, \
+           masked_weight, ls1, ls2, valid_length.astype('float32', copy=False)
+
+
+def evaluate(data_eval, model, nsp_loss, mlm_loss, vocab_size, ctx, log_interval, dtype):
+    """Evaluation function."""
+    mlm_metric = MaskedAccuracy()
+    nsp_metric = MaskedAccuracy()
+    mlm_metric.reset()
+    nsp_metric.reset()
+
+    eval_begin_time = time.time()
+    begin_time = time.time()
+    step_num = 0
+    local_mlm_loss = local_nsp_loss = 0
+    total_mlm_loss = total_nsp_loss = 0
+    local_num_tks = 0
+    for _, dataloader in enumerate(data_eval):
+        for _, data in enumerate(dataloader):
+            step_num += 1
+
+            data_list = split_and_load(data, ctx)
+            loss_list = []
+            ns_label_list, ns_pred_list = [], []
+            mask_label_list, mask_pred_list, mask_weight_list = [], [], []
+            for data in data_list:
+                out = forward(data, model, mlm_loss, nsp_loss, vocab_size, dtype)
+                (ls, next_sentence_label, classified, masked_id,
+                 decoded, masked_weight, ls1, ls2, valid_length) = out
+                loss_list.append(ls)
+                ns_label_list.append(next_sentence_label)
+                ns_pred_list.append(classified)
+                mask_label_list.append(masked_id)
+                mask_pred_list.append(decoded)
+                mask_weight_list.append(masked_weight)
+
+                local_mlm_loss += ls1.as_in_context(mx.cpu())
+                local_nsp_loss += ls2.as_in_context(mx.cpu())
+                local_num_tks += valid_length.sum().as_in_context(mx.cpu())
+            nsp_metric.update(ns_label_list, ns_pred_list)
+            mlm_metric.update(mask_label_list, mask_pred_list, mask_weight_list)
+
+            # logging
+            if (step_num + 1) % (log_interval) == 0:
+                total_mlm_loss += local_mlm_loss
+                total_nsp_loss += local_nsp_loss
+                log(begin_time, local_num_tks, local_mlm_loss, local_nsp_loss,
+                    step_num, mlm_metric, nsp_metric, None, log_interval)
+                begin_time = time.time()
+                local_mlm_loss = local_nsp_loss = local_num_tks = 0
+                mlm_metric.reset_local()
+                nsp_metric.reset_local()
+
+    mx.nd.waitall()
+    eval_end_time = time.time()
+    total_mlm_loss /= step_num
+    total_nsp_loss /= step_num
+    logging.info('mlm_loss={:.3f}\tmlm_acc={:.1f}\tnsp_loss={:.3f}\tnsp_acc={:.1f}\t'
+                 .format(total_mlm_loss.asscalar(), mlm_metric.get_global()[1] * 100,
+                         total_nsp_loss.asscalar(), nsp_metric.get_global()[1] * 100))
+    logging.info('Eval cost={:.1f}s'.format(eval_end_time - eval_begin_time))
