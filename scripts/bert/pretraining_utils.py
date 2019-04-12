@@ -157,7 +157,7 @@ def split_and_load(arrs, ctx):
         return [[arr.as_in_context(ctx[0]) for arr in arrs]]
     else:
         # split and load
-        loaded_arrs = [gluon.utils.split_and_load(arr, ctx, even_split=False) for arr in arrs]
+        loaded_arrs = [mx.gluon.utils.split_and_load(arr, ctx, even_split=False) for arr in arrs]
         return zip(*loaded_arrs)
 
 
