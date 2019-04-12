@@ -49,7 +49,7 @@ from gluonnlp.data import SimpleDatasetStream, FixedBucketSampler, NumpyDataset,
 from utils import profile
 from fp16_utils import FP16Trainer
 from pretraining_utils import get_model, get_pretrain_dataset, get_dummy_dataloader
-from pretraining_utils import save_params, log, split_and_load, evaluate, forward
+from pretraining_utils import save_params, split_and_load, log, evaluate, forward
 
 parser = argparse.ArgumentParser(description='BERT pretraining example.')
 parser.add_argument('--num_steps', type=int, default=20, help='Number of optimization steps')
@@ -114,39 +114,8 @@ logging.debug('local_rank = %d, rank = %d, num_workers = %d',
               local_rank, rank, num_workers)
 logging.debug(nlp)
 
-class ParallelBERT(Parallelizable):
-    """Data parallel BERT model.
-
-    Parameters
-    ----------
-    model : Block
-        The BERT model.
-    """
-    def __init__(self, model, mlm_loss, nsp_loss, vocab_size, rescale_factor, trainer=None):
-        self._model = model
-        self._mlm_loss = mlm_loss
-        self._nsp_loss = nsp_loss
-        self._vocab_size = vocab_size
-        self._rescale_factor = rescale_factor
-        self._trainer = trainer
-
-    def forward_backward(self, x):
-        """forward backward implementation"""
-        with mx.autograd.record():
-            (ls, next_sentence_label, classified, masked_id, decoded, \
-             masked_weight, ls1, ls2, valid_length) = forward(x, self._model, self._mlm_loss,
-                                                              self._nsp_loss, self._vocab_size)
-            ls = ls / self._rescale_factor
-        if args.dtype == 'float16':
-            self._trainer.backward(ls)
-        else:
-            ls.backward()
-        return ls, next_sentence_label, classified, masked_id, decoded, \
-               masked_weight, ls1, ls2, valid_length
-
-def train(data_train, model, nsp_loss, mlm_loss, vocab_size):
+def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx):
     """Training function."""
-
     hvd.broadcast_parameters(model.collect_params(), root_rank=0)
     logging.debug('Broadcasting parameters to workers')
 
@@ -223,14 +192,20 @@ def train(data_train, model, nsp_loss, mlm_loss, vocab_size):
                     trainer.set_learning_rate(new_lr)
                     if args.profile:
                         profile(step_num, 10, 14, profile_name=args.profile, skip=local_rank != 0)
+
                 # load data
-                data = data_batch[0].as_in_context(ctx)
+                if args.use_avg_len:
+                    data_list = [[seq.as_in_context(context) for seq in shard]
+                                 for context, shard in zip(ctx, data_batch)]
+                else:
+                    data_list = split_and_load(data_batch, [ctx])
+                data = data_list[0]
 
                 # forward
                 with mx.autograd.record():
-                    (ls, next_sentence_label, classified, masked_id, decoded, \
-                     masked_weight, ls1, ls2, valid_length) = forward(data, model, mlm_loss,
-                                                                      nsp_loss, vocab_size)
+                    (ls, ns_label, classified, masked_id, decoded, \
+                     masked_weight, ls1, ls2, valid_len) = forward(data, model, mlm_loss,
+                                                                   nsp_loss, vocab_size, args.dtype)
                     ls = ls / accumulate
                     # backward
                     if args.dtype == 'float16':
@@ -240,19 +215,20 @@ def train(data_train, model, nsp_loss, mlm_loss, vocab_size):
 
                 local_mlm_loss += ls1.as_in_context(mx.cpu())
                 local_nsp_loss += ls2.as_in_context(mx.cpu())
-                local_num_tks += valid_length.sum().as_in_context(mx.cpu())
+                local_num_tks += valid_len.sum().as_in_context(mx.cpu())
 
                 # update
                 if (batch_num + 1) % accumulate == 0:
                     fp16_trainer.step(1, max_norm=1)
 
-                nsp_metric.update([next_sentence_label], [classified])
+                nsp_metric.update([ns_label], [classified])
                 mlm_metric.update([masked_id], [decoded], [masked_weight])
 
                 # logging
                 if (step_num + 1) % (args.log_interval) == 0 and (batch_num + 1) % accumulate == 0:
                     log(begin_time, local_num_tks, local_mlm_loss / accumulate,
-                        local_nsp_loss / accumulate, step_num, mlm_metric, nsp_metric, trainer, args.log_interval)
+                        local_nsp_loss / accumulate, step_num, mlm_metric, nsp_metric,
+                        trainer, args.log_interval)
                     begin_time = time.time()
                     local_mlm_loss = local_nsp_loss = local_num_tks = 0
                     mlm_metric.reset_local()
