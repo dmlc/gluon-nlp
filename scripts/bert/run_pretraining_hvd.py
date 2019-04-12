@@ -49,7 +49,7 @@ from gluonnlp.data import SimpleDatasetStream, FixedBucketSampler, NumpyDataset,
 from utils import profile
 from fp16_utils import FP16Trainer
 from pretraining_utils import get_model, get_pretrain_dataset, get_dummy_dataloader
-from pretraining_utils import save_params, log, split_and_load, evaluate
+from pretraining_utils import save_params, log, split_and_load, evaluate, forward
 
 parser = argparse.ArgumentParser(description='BERT pretraining example.')
 parser.add_argument('--num_steps', type=int, default=20, help='Number of optimization steps')
@@ -112,27 +112,7 @@ if not args.use_avg_len and hvd.size() > 1:
                  'target number of tokens would help improve training throughput.')
 logging.debug('local_rank = %d, rank = %d, num_workers = %d',
               local_rank, rank, num_workers)
-logging.info(nlp)
-
-def forward(data, model, mlm_loss, nsp_loss, vocab_size):
-    """forward computation for evaluation"""
-    (input_id, masked_id, masked_position, masked_weight, \
-     next_sentence_label, segment_id, valid_length) = data
-    num_masks = masked_weight.sum() + 1e-8
-    valid_length = valid_length.reshape(-1)
-    masked_id = masked_id.reshape(-1)
-    valid_length_typed = valid_length.astype(args.dtype, copy=False)
-    _, _, classified, decoded = model(input_id, segment_id, valid_length_typed,
-                                      masked_position)
-    decoded = decoded.reshape((-1, vocab_size))
-    ls1 = mlm_loss(decoded.astype('float32', copy=False),
-                   masked_id, masked_weight.reshape((-1, 1)))
-    ls2 = nsp_loss(classified.astype('float32', copy=False), next_sentence_label)
-    ls1 = ls1.sum() / num_masks
-    ls2 = ls2.mean()
-    ls = ls1 + ls2
-    return ls, next_sentence_label, classified, masked_id, decoded, \
-           masked_weight, ls1, ls2, valid_length.astype('float32', copy=False)
+logging.debug(nlp)
 
 class ParallelBERT(Parallelizable):
     """Data parallel BERT model.
@@ -164,7 +144,7 @@ class ParallelBERT(Parallelizable):
         return ls, next_sentence_label, classified, masked_id, decoded, \
                masked_weight, ls1, ls2, valid_length
 
-def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx):
+def train(data_train, model, nsp_loss, mlm_loss, vocab_size):
     """Training function."""
 
     hvd.broadcast_parameters(model.collect_params(), root_rank=0)
@@ -215,11 +195,6 @@ def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx):
     batch_num = 0
     step_num = args.start_step
 
-    parallel_model = ParallelBERT(model, mlm_loss, nsp_loss, vocab_size,
-                                  accumulate, trainer=fp16_trainer)
-    num_ctxes = len(ctx)
-    parallel = Parallel(num_ctxes, parallel_model)
-
     logging.debug('Training started')
     while step_num < num_train_steps:
         for _, dataloader in enumerate(data_train):
@@ -228,7 +203,7 @@ def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx):
 
             # create dummy data loader if needed
             if args.dummy_data_len:
-                target_shape = (args.batch_size*num_ctxes, args.dummy_data_len)
+                target_shape = (args.batch_size, args.dummy_data_len)
                 dataloader = get_dummy_dataloader(dataloader, target_shape)
 
             for _, data_batch in enumerate(dataloader):
@@ -248,37 +223,32 @@ def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx):
                     trainer.set_learning_rate(new_lr)
                     if args.profile:
                         profile(step_num, 10, 14, profile_name=args.profile, skip=local_rank != 0)
-                if args.use_avg_len:
-                    data_list = [[seq.as_in_context(context) for seq in shard]
-                                 for context, shard in zip(ctx, data_batch)]
-                else:
-                    if data_batch[0].shape[0] < len(ctx):
-                        continue
-                    data_list = split_and_load(data_batch, ctx)
+                # load data
+                data = data_batch[0].as_in_context(ctx)
 
-                ns_label_list, ns_pred_list = [], []
-                mask_label_list, mask_pred_list, mask_weight_list = [], [], []
+                # forward
+                with mx.autograd.record():
+                    (ls, next_sentence_label, classified, masked_id, decoded, \
+                     masked_weight, ls1, ls2, valid_length) = forward(data, model, mlm_loss,
+                                                                      nsp_loss, vocab_size)
+                    ls = ls / accumulate
+                    # backward
+                    if args.dtype == 'float16':
+                        fp16_trainer.backward(ls)
+                    else:
+                        ls.backward()
 
-                # parallel forward / backward
-                for data in data_list:
-                    parallel.put(data)
-                for _ in range(len(ctx)):
-                    (_, next_sentence_label, classified, masked_id,
-                     decoded, masked_weight, ls1, ls2, valid_length) = parallel.get()
-                    ns_label_list.append(next_sentence_label)
-                    ns_pred_list.append(classified)
-                    mask_label_list.append(masked_id)
-                    mask_pred_list.append(decoded)
-                    mask_weight_list.append(masked_weight)
-                    local_mlm_loss += ls1.as_in_context(mx.cpu()) / num_ctxes
-                    local_nsp_loss += ls2.as_in_context(mx.cpu()) / num_ctxes
-                    local_num_tks += valid_length.sum().as_in_context(mx.cpu())
+                local_mlm_loss += ls1.as_in_context(mx.cpu())
+                local_nsp_loss += ls2.as_in_context(mx.cpu())
+                local_num_tks += valid_length.sum().as_in_context(mx.cpu())
 
                 # update
                 if (batch_num + 1) % accumulate == 0:
                     fp16_trainer.step(1, max_norm=1)
-                nsp_metric.update(ns_label_list, ns_pred_list)
-                mlm_metric.update(mask_label_list, mask_pred_list, mask_weight_list)
+
+                nsp_metric.update([next_sentence_label], [classified])
+                mlm_metric.update([masked_id], [decoded], [masked_weight])
+
                 # logging
                 if (step_num + 1) % (args.log_interval) == 0 and (batch_num + 1) % accumulate == 0:
                     log(begin_time, local_num_tks, local_mlm_loss / accumulate,
@@ -292,7 +262,9 @@ def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx):
                 if args.ckpt_dir and (step_num + 1) % (args.ckpt_interval) == 0 \
                    and (batch_num + 1) % accumulate == 0 and local_rank == 0:
                     save_params(step_num, model, trainer, args.ckpt_dir)
+
                 batch_num += 1
+
     if local_rank == 0:
         save_params(step_num, model, trainer, args.ckpt_dir)
     mx.nd.waitall()
@@ -306,9 +278,9 @@ if __name__ == '__main__':
     random.seed(seed)
     mx.random.seed(seed)
 
-    ctx = [mx.gpu(local_rank)]
+    ctx = mx.gpu(local_rank)
 
-    model, nsp_loss, mlm_loss, vocabulary = get_model(ctx, args.model, args.pretrained,
+    model, nsp_loss, mlm_loss, vocabulary = get_model([ctx], args.model, args.pretrained,
                                                       args.dataset_name, args.dtype,
                                                       ckpt_dir=args.ckpt_dir,
                                                       start_step=args.start_step)
@@ -323,13 +295,13 @@ if __name__ == '__main__':
     if args.data:
         num_parts = 1 if args.dummy_data_len else num_workers
         part_idx = 0 if args.dummy_data_len else rank
-        data_train = get_pretrain_dataset(args.data, args.batch_size, len(ctx), True,
+        data_train = get_pretrain_dataset(args.data, args.batch_size, 1, True,
                                           args.use_avg_len, args.num_buckets,
                                           num_parts=num_parts, part_idx=part_idx,
                                           prefetch=not args.dummy_data_len)
         train(data_train, model, nsp_loss, mlm_loss, len(tokenizer.vocab), ctx)
     if args.data_eval:
-        data_eval = get_pretrain_dataset(args.data_eval, args.batch_size_eval, len(ctx),
+        data_eval = get_pretrain_dataset(args.data_eval, args.batch_size_eval, 1,
                                          False, False, 1)
-        evaluate(data_eval, model, nsp_loss, mlm_loss, len(tokenizer.vocab), ctx,
+        evaluate(data_eval, model, nsp_loss, mlm_loss, len(tokenizer.vocab), [ctx],
                  args.log_interval, args.dtype)
