@@ -21,6 +21,7 @@ import glob
 import time
 import os
 import logging
+import argparse
 import mxnet as mx
 from mxnet.gluon.data import DataLoader
 
@@ -29,7 +30,7 @@ from gluonnlp.data.batchify import Tuple, Stack, Pad
 from gluonnlp.metric import MaskedAccuracy
 
 __all__ = ['get_model', 'get_pretrain_dataset', 'get_dummy_dataloader',
-           'save_params', 'eval', 'forward', 'split_and_load']
+           'save_params', 'eval', 'forward', 'split_and_load', 'get_argparser']
 
 def get_model(ctx, model, pretrained, dataset_name, dtype, ckpt_dir=None, start_step=None):
     """Get model for pre-training."""
@@ -238,3 +239,44 @@ def evaluate(data_eval, model, nsp_loss, mlm_loss, vocab_size, ctx, log_interval
                  .format(total_mlm_loss.asscalar(), mlm_metric.get_global()[1] * 100,
                          total_nsp_loss.asscalar(), nsp_metric.get_global()[1] * 100))
     logging.info('Eval cost={:.1f}s'.format(eval_end_time - eval_begin_time))
+
+def get_argparser():
+    parser = argparse.ArgumentParser(description='BERT pretraining example.')
+    parser.add_argument('--num_steps', type=int, default=20, help='Number of optimization steps')
+    parser.add_argument('--num_buckets', type=int, default=1,
+                        help='Number of buckets for variable length sequence sampling')
+    parser.add_argument('--dtype', type=str, default='float32', help='data dtype')
+    parser.add_argument('--batch_size', type=int, default=8, help='Batch size per GPU.')
+    parser.add_argument('--accumulate', type=int, default=1,
+                        help='Number of batches for gradient accumulation.')
+    parser.add_argument('--batch_size_eval', type=int, default=8,
+                        help='Batch size per GPU for evaluation.')
+    parser.add_argument('--dataset_name', type=str, default='book_corpus_wiki_en_uncased',
+                        help='The dataset from which the vocabulary is created. '
+                             'Options include book_corpus_wiki_en_uncased, book_corpus_wiki_en_cased. '
+                             'Default is book_corpus_wiki_en_uncased')
+    parser.add_argument('--pretrained', action='store_true',
+                        help='Load the pretrained model released by Google.')
+    parser.add_argument('--model', type=str, default='bert_12_768_12',
+                        help='Model to run pre-training on. Options are bert_12_768_12, bert_24_1024_16')
+    parser.add_argument('--data', type=str, default=None, help='Path to training data.')
+    parser.add_argument('--data_eval', type=str, default=None, help='Path to evaluation data.')
+    parser.add_argument('--ckpt_dir', type=str, required=True,
+                        help='Path to checkpoint directory')
+    parser.add_argument('--start_step', type=int, default=0,
+                        help='Start optimization step from the checkpoint.')
+    parser.add_argument('--lr', type=float, default=1e-4, help='Learning rate')
+    parser.add_argument('--warmup_ratio', type=float, default=0.1,
+                        help='ratio of warmup steps used in NOAM\'s stepsize schedule')
+    parser.add_argument('--log_interval', type=int, default=10, help='Report interval')
+    parser.add_argument('--ckpt_interval', type=int, default=250000, help='Checkpoint interval')
+    parser.add_argument('--dummy_data_len', type=int, default=None,
+                        help='If provided, a data batch of target sequence length is repeatedly used')
+    parser.add_argument('--seed', type=int, default=0, help='Random seed')
+    parser.add_argument('--verbose', action='store_true', help='verbose logging')
+    parser.add_argument('--profile', type=str, default=None,
+                        help='output profiling result to the target file')
+    parser.add_argument('--use_avg_len', action='store_true',
+                        help='Use average length information for the bucket sampler. '
+                             'The batch size is now approximately the number of tokens in the batch')
+    return parser

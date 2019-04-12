@@ -31,8 +31,6 @@ This example shows how to pre-train a BERT model with Gluon NLP Toolkit.
 # pylint:disable=redefined-outer-name,logging-format-interpolation
 
 import os
-
-import argparse
 import random
 import logging
 import glob
@@ -51,48 +49,11 @@ from gluonnlp.data import SimpleDatasetStream, FixedBucketSampler, NumpyDataset,
 from utils import profile
 from fp16_utils import FP16Trainer
 from pretraining_utils import get_model, get_pretrain_dataset, get_dummy_dataloader
-from pretraining_utils import save_params, log, evaluate, forward, split_and_load
+from pretraining_utils import save_params, log, evaluate, forward, split_and_load, get_argparser
 
-parser = argparse.ArgumentParser(description='BERT pretraining example.')
-parser.add_argument('--num_steps', type=int, default=20, help='Number of optimization steps')
-parser.add_argument('--num_buckets', type=int, default=1,
-                    help='Number of buckets for variable length sequence sampling')
-parser.add_argument('--dtype', type=str, default='float32', help='data dtype')
-parser.add_argument('--batch_size', type=int, default=8, help='Batch size per GPU.')
-parser.add_argument('--accumulate', type=int, default=1,
-                    help='Number of batches for gradient accumulation.')
-parser.add_argument('--batch_size_eval', type=int, default=8,
-                    help='Batch size per GPU for evaluation.')
-parser.add_argument('--dataset_name', type=str, default='book_corpus_wiki_en_uncased',
-                    help='The dataset from which the vocabulary is created. '
-                         'Options include book_corpus_wiki_en_uncased, book_corpus_wiki_en_cased. '
-                         'Default is book_corpus_wiki_en_uncased')
-parser.add_argument('--pretrained', action='store_true',
-                    help='Load the pretrained model released by Google.')
-parser.add_argument('--model', type=str, default='bert_12_768_12',
-                    help='Model to run pre-training on. Options are bert_12_768_12, bert_24_1024_16')
-parser.add_argument('--data', type=str, default=None, help='Path to training data.')
-parser.add_argument('--data_eval', type=str, default=None, help='Path to evaluation data.')
-parser.add_argument('--ckpt_dir', type=str, required=True,
-                    help='Path to checkpoint directory')
-parser.add_argument('--start_step', type=int, default=0,
-                    help='Start optimization step from the checkpoint.')
-parser.add_argument('--lr', type=float, default=1e-4, help='Learning rate')
-parser.add_argument('--warmup_ratio', type=float, default=0.1,
-                    help='ratio of warmup steps used in NOAM\'s stepsize schedule')
-parser.add_argument('--log_interval', type=int, default=10, help='Report interval')
-parser.add_argument('--ckpt_interval', type=int, default=250000, help='Checkpoint interval')
+parser = get_argparser()
 parser.add_argument('--gpus', type=str, default='0', help='List of GPUs to use. e.g. 1,3')
-parser.add_argument('--dummy_data_len', type=int, default=None,
-                    help='If provided, a data batch of target sequence length is repeatedly used')
 parser.add_argument('--kvstore', type=str, default='device', help='KVStore type')
-parser.add_argument('--seed', type=int, default=0, help='Random seed')
-parser.add_argument('--verbose', action='store_true', help='verbose logging')
-parser.add_argument('--profile', type=str, default=None,
-                    help='output profiling result to the target file')
-parser.add_argument('--use_avg_len', action='store_true',
-                    help='Use average length information for the bucket sampler for training. '
-                         'The batch size is now approximately the number of tokens in the batch')
 args = parser.parse_args()
 
 os.environ['MXNET_KVSTORE_USETREE'] = '1'
