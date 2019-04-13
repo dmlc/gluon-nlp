@@ -89,7 +89,7 @@ def get_pretrain_dataset(data, batch_size, num_ctxes, shuffle, use_avg_len,
             dataloader = nlp.data.ShardedDataLoader(dataset,
                                                     batch_sampler=sampler,
                                                     batchify_fn=batchify_fn,
-                                                    num_parts=num_ctxes)
+                                                    num_workers=num_ctxes)
         else:
             sampler = nlp.data.FixedBucketSampler(lengths,
                                                   batch_size=batch_size * num_ctxes,

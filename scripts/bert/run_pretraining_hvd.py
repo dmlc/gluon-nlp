@@ -73,8 +73,7 @@ local_rank = hvd.local_rank()
 if not args.use_avg_len and hvd.size() > 1:
     logging.info('Specifying --use-avg-len and setting --batch_size with the '
                  'target number of tokens would help improve training throughput.')
-logging.debug('local_rank = %d, rank = %d, num_workers = %d',
-              local_rank, rank, num_workers)
+logging.debug('local_rank = %d, rank = %d, num_workers = %d', local_rank, rank, num_workers)
 logging.debug(nlp)
 
 def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx):
@@ -159,7 +158,7 @@ def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx):
                 # load data
                 if args.use_avg_len:
                     data_list = [[seq.as_in_context(context) for seq in shard]
-                                 for context, shard in zip(ctx, data_batch)]
+                                 for context, shard in zip([ctx], data_batch)]
                 else:
                     data_list = split_and_load(data_batch, [ctx])
                 data = data_list[0]
@@ -216,6 +215,7 @@ if __name__ == '__main__':
     np.random.seed(seed)
     random.seed(seed)
     mx.random.seed(seed)
+    logging.debug('Random seed set to %d', seed)
 
     ctx = mx.gpu(local_rank)
 
@@ -223,6 +223,7 @@ if __name__ == '__main__':
                                                       args.dataset_name, args.dtype,
                                                       ckpt_dir=args.ckpt_dir,
                                                       start_step=args.start_step)
+    logging.debug('Model created')
     lower = 'uncased' in args.dataset_name
     tokenizer = BERTTokenizer(vocabulary, lower=lower)
 
