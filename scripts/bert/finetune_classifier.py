@@ -226,11 +226,11 @@ else:
 # load checkpointing
 output_dir = args.output_dir
 if pretrained_bert_parameters:
-    logging.info('loading bert params from {0}'.format(pretrained_bert_parameters))
+    logging.info('loading bert params from %s', pretrained_bert_parameters)
     model.bert.load_parameters(pretrained_bert_parameters, ctx=ctx,
                                ignore_extra=True)
 if model_parameters:
-    logging.info('loading model params from {0}'.format(model_parameters))
+    logging.info('loading model params from %s', model_parameters)
     model.load_parameters(model_parameters, ctx=ctx)
 if not os.path.exists(output_dir):
     os.makedirs(output_dir)
@@ -333,7 +333,7 @@ def evaluate(dataloader_eval, metric):
 def train(metric):
     """Training function."""
 
-    logging.info('Now we are doing BERT classification training on {} !'.format(ctx))
+    logging.info('Now we are doing BERT classification training on %s!', ctx)
     optimizer_params = {'learning_rate': lr, 'epsilon': epsilon, 'wd': 0.01}
     try:
         trainer = gluon.Trainer(
@@ -429,7 +429,7 @@ def train(metric):
         params_saved = os.path.join(output_dir,
                                     'model_bert_{0}_{1}.params'.format(task.task_name, epoch_id))
         model.save_parameters(params_saved)
-        logging.info('params saved in : {0}'.format(params_saved))
+        logging.info('params saved in : %s', params_saved)
         toc = time.time()
         logging.info('Time cost=%.2fs', toc - tic)
         tic = toc
@@ -438,7 +438,7 @@ def train(metric):
 def inference(metric):
     """Inference function."""
 
-    logging.info('Now we are doing BERT classification inference on {} !'.format(ctx))
+    logging.info('Now we are doing BERT classification inference on %s!', ctx)
     model = BERTClassifier(bert, dropout=0.1, num_classes=len(task.get_labels()))
     model.hybridize(static_alloc=True)
     model.load_parameters(model_parameters, ctx=ctx)
@@ -462,18 +462,17 @@ def inference(metric):
             if not isinstance(metric_nm, list):
                 metric_nm = [metric_nm]
                 metric_val = [metric_val]
-            eval_str = '[Batch {}/{}] loss={:.4f}, metrics=' + \
-                ','.join([i + ':{:.4f}' for i in metric_nm])
-            logging.info(eval_str.format(batch_id + 1, len(dev_data), \
-                step_loss / args.log_interval, \
-                *metric_val))
+            eval_str = '[Batch %d/%d] loss=%.4f, metrics=' + \
+                ','.join([i + ':%.4f' for i in metric_nm])
+            logging.info(eval_str, batch_id + 1, len(dev_data), \
+                         step_loss / args.log_interval, *metric_val)
             step_loss = 0
 
     mx.nd.waitall()
     toc = time.time()
     total_num = dev_batch_size * len(dev_data)
-    logging.info('Time cost={:.2f} s throughput={:.2f} samples/s'.format(
-        toc - tic, total_num / (toc - tic)))
+    logging.info('Time cost=%.2fs, throughput=%.2fsamples/s', toc - tic, \
+                 total_num / (toc - tic))
 
 
 if __name__ == '__main__':
