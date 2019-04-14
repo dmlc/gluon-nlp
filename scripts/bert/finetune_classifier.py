@@ -330,6 +330,33 @@ def evaluate(dataloader_eval, metric):
     logging.info(metric_str, *metric_val)
 
 
+def log_train(batch_id, batch_num, metric, step_loss, log_interval, epoch_id, learning_rate):
+    metric_nm, metric_val = metric.get()
+    if not isinstance(metric_nm, list):
+        metric_nm = [metric_nm]
+        metric_val = [metric_val]
+
+    train_str = '[Epoch %d Batch %d/%d] loss=%.4f, lr=%.7f, metrics:' + \
+                ','.join([i + ':%.4f' for i in metric_nm])
+    logging.info(train_str, epoch_id + 1, batch_id + 1, batch_num, \
+                 step_loss / log_interval, \
+                 learning_rate, \
+                 *metric_val)
+
+
+def log_inference(batch_id, batch_num, metric, step_loss, log_interval):
+    metric_nm, metric_val = metric.get()
+    if not isinstance(metric_nm, list):
+        metric_nm = [metric_nm]
+        metric_val = [metric_val]
+        
+    eval_str = '[Batch %d/%d] loss=%.4f, metrics:' + \
+               ','.join([i + ':%.4f' for i in metric_nm])
+    logging.info(eval_str, batch_id + 1, batch_num, \
+                 step_loss / log_interval, \
+                 *metric_val)
+
+
 def train(metric):
     """Training function."""
 
@@ -406,15 +433,8 @@ def train(metric):
             step_loss += ls.asscalar()
             metric.update([label], [out])
             if (batch_id + 1) % (args.log_interval) == 0:
-                metric_nm, metric_val = metric.get()
-                if not isinstance(metric_nm, list):
-                    metric_nm = [metric_nm]
-                    metric_val = [metric_val]
-                eval_str = '[Epoch %d Batch %d/%d] loss=%.4f, lr=%.7f, metrics=' + \
-                    ','.join([i + ':%.4f' for i in metric_nm])
-                logging.info(eval_str, epoch_id + 1, batch_id + 1, len(train_data),
-                             step_loss / args.log_interval,
-                             trainer.learning_rate, *metric_val)
+                log_train(batch_id, len(train_data), metric, step_loss, args.log_interval,
+                          epoch_id, trainer.learning_rate)
                 step_loss = 0
         mx.nd.waitall()
         if task.task_name == 'MNLI':
@@ -458,14 +478,7 @@ def inference(metric):
         metric.update([label], [out])
 
         if (batch_id + 1) % (args.log_interval) == 0:
-            metric_nm, metric_val = metric.get()
-            if not isinstance(metric_nm, list):
-                metric_nm = [metric_nm]
-                metric_val = [metric_val]
-            eval_str = '[Batch %d/%d] loss=%.4f, metrics=' + \
-                ','.join([i + ':%.4f' for i in metric_nm])
-            logging.info(eval_str, batch_id + 1, len(dev_data), \
-                         step_loss / args.log_interval, *metric_val)
+            log_inference(batch_id, len(dev_data), metric, step_loss, args.log_interval)
             step_loss = 0
 
     mx.nd.waitall()
