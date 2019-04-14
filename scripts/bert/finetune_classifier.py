@@ -349,7 +349,7 @@ def log_inference(batch_id, batch_num, metric, step_loss, log_interval):
     if not isinstance(metric_nm, list):
         metric_nm = [metric_nm]
         metric_val = [metric_val]
-        
+
     eval_str = '[Batch %d/%d] loss=%.4f, metrics:' + \
                ','.join([i + ':%.4f' for i in metric_nm])
     logging.info(eval_str, batch_id + 1, batch_num, \
