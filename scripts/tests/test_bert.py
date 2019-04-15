@@ -10,7 +10,7 @@ import pytest
 def test_pretrain():
     # TODO(haibin) update test once MXNet 1.5 is released.
     try:
-        from mx.nd.contrib import mp_adamw_update
+        from mxnet.ndarray.contrib import mp_adamw_update
         process = subprocess.check_call(['python', './scripts/bert/create_pretraining_data.py',
                                          '--input_file', './scripts/bert/sample_text.txt',
                                          '--output_dir', 'test/bert/data',
