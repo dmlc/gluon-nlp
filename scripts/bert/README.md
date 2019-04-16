@@ -62,7 +62,7 @@ export DATA2='/home/ec2-user/generated-enwiki-feb-uncased-py3-512/train/part-0/p
 horovodrun -np 8 -H localhost:8 python run_pretraining_hvd.py --batch_size 32 --accumulate 1 --dummy_data_len 128 --lr 1e-4 --data $DATA1 --warmup_ratio 0.01 --num_steps 1000000 --log_interval=50 --ckpt_dir './ckpt' --ckpt_interval 25000 --num_buckets 10 --dtype float16 --profile profile_result.json --verbose
 # training with 32 GPUs
 mpirun -np 32 -H localhost:8,ip-172-31-11-207:8,ip-172-31-11-168:8,ip-172-31-9-146:8 --bind-to none --map-by slot -mca pml ob1 -mca btl ^openib -mca btl_tcp_if_exclude docker0,lo -x NCCL_MIN_NRINGS=4 -x MXNET_USE_OPERATOR_TUNING=0 -x HOROVOD_HIERARCHICAL_ALLREDUCE=1 python run_pretraining_hvd.py --batch_size 32 --accumulate 1 --dummy_data_len 512 --lr 1e-4 --data $DATA2 --warmup_ratio 0.01 --num_steps 30000 --log_interval=50 --ckpt_dir './ckpt' --ckpt_interval 25000 --num_buckets 10 --dtype float16
-# related env vars: HOROVOD_FUSION_THRESHOLD, HOROVOD_TIMELINE_MARK_CYCLES, HOROVOD_TIMELINE
+# related env vars: HOROVOD_FUSION_THRESHOLD, HOROVOD_TIMELINE_MARK_CYCLES, HOROVOD_TIMELINE, HOROVOD_CYCLE_TIME
 ```
 
 ## Parameter Server

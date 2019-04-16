@@ -223,7 +223,7 @@ class DynamicLossScaler(LossScaler):
     by 2x. On the other hand, if a NaN is not detected for a long time
     (e.g. 2000 steps), then the scale is increased (by default) by 2x."""
     def __init__(self, init_scale=2.**15, scale_factor=2., scale_window=2000,
-                 tolerance=0.05, verbose=False):
+                 tolerance=0.05, verbose=True):
         self.loss_scale = init_scale
         self.scale_factor = scale_factor
         self.scale_window = scale_window
@@ -232,7 +232,7 @@ class DynamicLossScaler(LossScaler):
         self._last_overflow_iter = -1
         self._last_rescale_iter = -1
         self._overflows_since_rescale = 0
-        self._verbose = verbose
+        self._logger = logging.info if verbose else logging.debug
 
     def update_scale(self, overflow):
         """dynamically update loss scale"""
@@ -246,8 +246,7 @@ class DynamicLossScaler(LossScaler):
                 self.loss_scale /= self.scale_factor
                 self._last_rescale_iter = self._num_steps
                 self._overflows_since_rescale = 0
-                if self._verbose:
-                    logging.info('overflow detected. set loss_scale = %s', self.loss_scale)
+                self._logger('overflow detected. set loss_scale = %s', self.loss_scale)
         elif (self._num_steps - self._last_overflow_iter) % self.scale_window == 0:
             self.loss_scale *= self.scale_factor
             self._last_rescale_iter = self._num_steps

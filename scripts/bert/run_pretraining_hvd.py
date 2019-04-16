@@ -153,7 +153,7 @@ def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx):
                         new_lr = lr - offset
                     trainer.set_learning_rate(new_lr)
                     if args.profile:
-                        profile(step_num, 10, 14, profile_name=args.profile, skip=local_rank != 0)
+                        profile(step_num, 10, 14, profile_name=args.profile + str(rank))
 
                 # load data
                 if args.use_avg_len:
