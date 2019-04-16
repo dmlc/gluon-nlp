@@ -344,19 +344,19 @@ class SST_2(SentimentDataset):
         super(SST_2, self).__init__(segment, root)
 
     def _data_file(self):
-        return {'train': ('train.json', '61f1f23888652e11fb683ac548ed0be8a87dddb1'),  
+        return {'train': ('train.json', '61f1f23888652e11fb683ac548ed0be8a87dddb1'),
                 'dev': ('dev.json', '655115875d83387b61f9701498143724147a1fc9'),
                 'test': ('test.json', 'a39c1db6ecc3be20bf2563bf2440c3c06887a2df')}
 
     def _repo_dir(self):
         return 'gluon/dataset/sst-2'
-    
+
 @register()
 class CR(SentimentDataset):
     """
     Customer reviews of various products (cameras, MP3s etc.). Task is to
     predict positive/negative reviews
-    
+
     From
     http://www.cs.uic.edu/∼liub/FBS/sentiment-analysis.html
 
@@ -376,12 +376,12 @@ class CR(SentimentDataset):
 
     def _repo_dir(self):
         return 'gluon/dataset/cr'
-    
+
 @register()
 class MPQA(SentimentDataset):
     """
     Opinion polarity detection subtask of the MPQA dataset
-    
+
     From
     http://www.cs.pitt.edu/mpqa/
 
