@@ -46,8 +46,8 @@ mx.random.seed(3435)
 
 parser = argparse.ArgumentParser(description='Sentiment analysis with the textCNN model on\
                                  various datasets.')
-parser.add_argument('--data_name', choices=['MR', 'SST-1', 'SST-2', 'Subj', 'TREC', 'CR', 'MPQA'], default='MR',
-                    help='name of the data set')
+parser.add_argument('--data_name', choices=['MR', 'SST-1', 'SST-2', 'Subj', 'TREC', 'CR', 'MPQA'],
+                    default='MR', help='name of the data set')
 parser.add_argument('--model_mode', choices=['rand', 'static', 'non-static', 'multichannel'],
                     default='multichannel', help='Variants of the textCNN model (see the paper:\
                     Convolutional Neural Networks for Sentence Classification).')
@@ -73,15 +73,15 @@ else:
     print('Use gpu%d' % args.gpu)
     context = mx.gpu(args.gpu)
 
-if args.data_name == 'MR' or args.data_name == 'Subj' or args.data_name == 'CR' or args.data_name == 'MPQA':
+if args.data_name in ('MR', 'Subj', 'CR', 'MPQA'):
     vocab, max_len, output_size, train_dataset, train_data_lengths \
     = process_data.load_dataset(args.data_name)
 elif args.data_name == 'TREC':
     vocab, max_len, output_size, train_dataset, train_data_lengths, \
     test_dataset, test_data_lengths = process_data.load_dataset(args.data_name)
 else:
-    vocab, max_len, output_size, train_dataset, train_data_lengths, \
-    test_dataset, test_data_lengths, dev_dataset, dev_data_lengths = process_data.load_dataset(args.data_name)
+    vocab, max_len, output_size, train_dataset, train_data_lengths, test_dataset, \
+    test_data_lengths, dev_dataset, dev_data_lengths = process_data.load_dataset(args.data_name)
 
 model = text_cnn.model(args.dropout, vocab, args.model_mode, output_size)
 print(model)
@@ -112,11 +112,11 @@ def evaluate(net, dataloader):
     acc = total_correct_num / float(total_sample_num)
     return avg_L, acc
 
-def train(net, train_data, test_data, dev_data= None):
+def train(net, train_data, test_data, dev_data = None):
     """Train textCNN model for sentiment analysis."""
     start_pipeline_time = time.time()
     net, trainer = text_cnn.init(net, vocab, args.model_mode, context, args.lr)
-    if dev_data==None:
+    if dev_data is None:
         random.shuffle(train_data)
         sp = len(train_data)//10
         train_dataloader = DataLoader(dataset=train_data[sp:],
@@ -182,12 +182,12 @@ def train(net, train_data, test_data, dev_data= None):
                   epoch, epoch_L / epoch_sent_num,
                   val_acc, val_avg_L,
                   epoch_wc / 1000 / (end_epoch_time - start_epoch_time)))
-        
+
         if val_acc >= best_val_acc:
             print('Observed Improvement.')
             best_val_acc = val_acc
             test_avg_L, test_acc = evaluate(net, test_dataloader)
-            
+
     print('Test loss %g, test acc %.4f'%(test_avg_L, test_acc))
     print('Total time cost %.2fs'%(time.time()-start_pipeline_time))
     return test_acc
@@ -200,7 +200,7 @@ def k_fold_cross_valid(k, net, all_dataset):
         test_data = all_dataset[test_i * fold_size: (test_i + 1) * fold_size]
         train_data = all_dataset[: test_i * fold_size] + all_dataset[(test_i + 1) * fold_size:]
         test_acc.append(train(net, train_data, test_data))
-    print('K-fold cross valid avg acc',sum(test_acc) / k)
+    print('K-fold cross valid avg acc', sum(test_acc) / k)
 
 if __name__ == '__main__':
     if args.data_name == 'TREC':
