@@ -40,13 +40,13 @@ def _load_file(data_name):
         output_size = 2
         return train_dataset, output_size
     elif data_name == 'SST-1':
-        train_dataset, test_dataset, dev_dataset = [nlp.data.SST_1(root='data/sst-1', segment=segment)
-                                       for segment in ('train', 'test', 'dev')]
+        train_dataset, test_dataset, dev_dataset = [nlp.data.SST_1(root='data/sst-1', segment=seg)
+                                                    for seg in ('train', 'test', 'dev')]
         output_size = 5
         return train_dataset, test_dataset, dev_dataset, output_size
     elif data_name == 'SST-2':
-        train_dataset, test_dataset, dev_dataset = [nlp.data.SST_2(root='data/sst-2', segment=segment)
-                                       for segment in ('train', 'test', 'dev')]
+        train_dataset, test_dataset, dev_dataset = [nlp.data.SST_2(root='data/sst-2', segment=seg)
+                                                    for seg in ('train', 'test', 'dev')]
         output_size = 2
         return train_dataset, test_dataset, dev_dataset, output_size
     elif data_name == 'Subj':
@@ -54,8 +54,8 @@ def _load_file(data_name):
         output_size = 2
         return train_dataset, output_size
     else:
-        train_dataset, test_dataset = [nlp.data.TREC(root='data/trec', segment=segment)
-                                       for segment in ('train', 'test')]
+        train_dataset, test_dataset = [nlp.data.TREC(root='data/trec', segment=seg)
+                                       for seg in ('train', 'test')]
         output_size = 6
         return train_dataset, test_dataset, output_size
 
