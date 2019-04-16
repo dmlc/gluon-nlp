@@ -28,7 +28,6 @@ import os
 
 from mxnet.gluon.data import SimpleDataset
 from mxnet.gluon.utils import download, check_sha1, _get_repo_file_url
-from mxnet.gluon.data import Dataset
 from .registry import register
 from ..base import get_home_dir
 
