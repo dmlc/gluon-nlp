@@ -21,17 +21,16 @@
 # pylint: disable=
 """Sentiment analysis datasets."""
 
-__all__ = ['IMDB', 'MR', 'TREC', 'SUBJ', 'SST_1', 'SST_2']
+__all__ = ['IMDB', 'MR', 'TREC', 'SUBJ', 'SST_1', 'SST_2', 'CR', 'MPQA']
 
 import json
 import os
 
 from mxnet.gluon.data import SimpleDataset
 from mxnet.gluon.utils import download, check_sha1, _get_repo_file_url
-
+from mxnet.gluon.data import Dataset
 from .registry import register
 from ..base import get_home_dir
-
 
 class SentimentDataset(SimpleDataset):
     """Base class for sentiment analysis data sets.
@@ -213,8 +212,8 @@ class TREC(SentimentDataset):
         super(TREC, self).__init__(segment, root)
 
     def _data_file(self):
-        return {'train': ('train.json', 'f764e8e052239c66e96e15133c8fc4028df34a84'),
-                'test': ('test.json', 'df8c6ffb90831e553617dbaab7119e0526b98f35')}
+        return {'train': ('train.json', '1776132fb2fc0ed2dc91b62f7817a4e071a3c7de'),
+                'test': ('test.json', 'ff9ad0ceb44d8904663fee561804a8dd0edc1b15')}
 
     def _repo_dir(self):
         return 'gluon/dataset/trec'
@@ -257,7 +256,7 @@ class SUBJ(SentimentDataset):
         return 'gluon/dataset/subj'
 
 
-@register(segment=['train', 'test'])
+@register(segment=['train', 'dev', 'test'])
 class SST_1(SentimentDataset):
     """Stanford Sentiment Treebank: an extension of the MR data set.
     However, train/dev/test splits are provided and labels are fine-grained
@@ -276,7 +275,7 @@ class SST_1(SentimentDataset):
     Parameters
     ----------
     segment : str, default 'train'
-        Dataset segment. Options are 'train' and 'test'.
+        Dataset segment. Options are 'train', 'test' and 'dev'.
     root : str, default '$MXNET_HOME/datasets/sst-1'
         Path to temp folder for storing data.
         MXNET_HOME defaults to '~/.mxnet'.
@@ -300,14 +299,15 @@ class SST_1(SentimentDataset):
         super(SST_1, self).__init__(segment, root)
 
     def _data_file(self):
-        return {'train': ('train.json', 'c369d7b1e46134e87e18eb5a1cadf0f2bfcd1787'),
-                'test': ('test.json', 'a6999ca5f3d51b61f63ee2ede03ff72e699ac20e')}
+        return {'train': ('train.json', '638f935251c0474e93d4aa50fda0c900faf02bba'),
+                'dev': ('dev.json', '820ac954b14b4f7d947e25f7a99249618d7962ee'),
+                'test': ('test.json', 'ab593ae9628f94af4f698654158ded1488b1de3b')}
 
     def _repo_dir(self):
         return 'gluon/dataset/sst-1'
 
 
-@register(segment=['train', 'test'])
+@register(segment=['train', 'dev', 'test'])
 class SST_2(SentimentDataset):
     """Stanford Sentiment Treebank: an extension of the MR data set.
     Same as the SST-1 data set except that neutral reviews are removed
@@ -321,7 +321,7 @@ class SST_2(SentimentDataset):
     Parameters
     ----------
     segment : str, default 'train'
-        Dataset segment. Options are 'train' and 'test'.
+        Dataset segment. Options are 'train', 'test' and 'dev'.
     root : str, default '$MXNET_HOME/datasets/sst-2'
         Path to temp folder for storing data.
         MXNET_HOME defaults to '~/.mxnet'.
@@ -345,8 +345,60 @@ class SST_2(SentimentDataset):
         super(SST_2, self).__init__(segment, root)
 
     def _data_file(self):
-        return {'train': ('train.json', '12f4fb2661ad8e39daa45a3369bedb0cd49ad1f4'),
-                'test': ('test.json', '34dfb27ef788599a0c424d05a97c1c4389f68c85')}
+        return {'train': ('train.json', '61f1f23888652e11fb683ac548ed0be8a87dddb1'),  
+                'dev': ('dev.json', '655115875d83387b61f9701498143724147a1fc9'),
+                'test': ('test.json', 'a39c1db6ecc3be20bf2563bf2440c3c06887a2df')}
 
     def _repo_dir(self):
         return 'gluon/dataset/sst-2'
+    
+@register()
+class CR(SentimentDataset):
+    """
+    Customer reviews of various products (cameras, MP3s etc.). Task is to
+    predict positive/negative reviews
+    
+    From
+    http://www.cs.uic.edu/∼liub/FBS/sentiment-analysis.html
+
+    Positive class has label value 1. Negative class has label value 0.
+
+    Parameters
+    ----------
+    root : str, default '$MXNET_HOME/datasets/cr'
+        Path to temp folder for storing data.
+        MXNET_HOME defaults to '~/.mxnet'.
+    """
+    def __init__(self, root=os.path.join(get_home_dir(), 'datasets', 'cr')):
+        super(CR, self).__init__('all', root)
+
+    def _data_file(self):
+        return {'all': ('all.json', '0c9633c695d29b18730eddff965c850425996edf')}
+
+    def _repo_dir(self):
+        return 'gluon/dataset/cr'
+    
+@register()
+class MPQA(SentimentDataset):
+    """
+    Opinion polarity detection subtask of the MPQA dataset
+    
+    From
+    http://www.cs.pitt.edu/mpqa/
+
+    Positive class has label value 1. Negative class has label value 0.
+
+    Parameters
+    ----------
+    root : str, default '$MXNET_HOME/datasets/mpqa'
+        Path to temp folder for storing data.
+        MXNET_HOME defaults to '~/.mxnet'.
+    """
+    def __init__(self, root=os.path.join(get_home_dir(), 'datasets', 'mpqa')):
+        super(MPQA, self).__init__('all', root)
+
+    def _data_file(self):
+        return {'all': ('all.json', 'bcbfeed8b8767a564bdc428486ef18c1ba4dc536')}
+
+    def _repo_dir(self):
+        return 'gluon/dataset/mpqa'
