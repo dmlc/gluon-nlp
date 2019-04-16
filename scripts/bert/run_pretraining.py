@@ -293,8 +293,8 @@ def evaluate(data_eval, model, nsp_loss, mlm_loss, vocab_size, ctx):
                     step_num, mlm_metric, nsp_metric, None)
                 begin_time = time.time()
                 running_mlm_loss = running_nsp_loss = running_num_tks = 0
-                mlm_metric.reset_running()
-                nsp_metric.reset_running()
+                mlm_metric.reset_local()
+                nsp_metric.reset_local()
 
     mx.nd.waitall()
     eval_end_time = time.time()
