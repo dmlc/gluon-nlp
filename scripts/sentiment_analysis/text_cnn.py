@@ -56,5 +56,5 @@ def init(textCNN, vocab, model_mode, context, lr):
     if model_mode == 'static' or model_mode == 'multichannel':
         # Parameters of textCNN.embedding are not updated during training.
         textCNN.embedding.collect_params().setattr('grad_req', 'null')
-    trainer = gluon.Trainer(textCNN.collect_params(), 'adam', {'learning_rate': lr})
+    trainer = gluon.Trainer(textCNN.collect_params(), 'adadelta', {'learning_rate': lr,'rho':0.95,'clip_gradient':3})
     return textCNN, trainer
