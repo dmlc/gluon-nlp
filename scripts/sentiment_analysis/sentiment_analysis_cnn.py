@@ -53,7 +53,7 @@ parser.add_argument('--model_mode', choices=['rand', 'static', 'non-static', 'mu
                     Convolutional Neural Networks for Sentence Classification).')
 parser.add_argument('--lr', type=float, default=1,
                     help='initial learning rate')
-parser.add_argument('--epochs', type=int, default=300,
+parser.add_argument('--epochs', type=int, default=200,
                     help='upper epoch limit')
 parser.add_argument('--batch_size', type=int, default=50, metavar='N',
                     help='batch size')
