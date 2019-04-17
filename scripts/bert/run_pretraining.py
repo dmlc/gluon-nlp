@@ -37,8 +37,7 @@ import time
 import numpy as np
 
 import mxnet as mx
-from mxnet import gluon
-from gluonnlp.utils import Parallelizable, Parallel
+import gluonnlp as nlp
 
 from utils import profile
 from fp16_utils import FP16Trainer
@@ -59,7 +58,7 @@ level = logging.DEBUG if args.verbose else logging.INFO
 logging.getLogger().setLevel(level)
 logging.info(args)
 
-class ParallelBERT(Parallelizable):
+class ParallelBERT(nlp.utils.Parallelizable):
     """Data parallel BERT model.
 
     Parameters
@@ -102,8 +101,8 @@ def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx, store):
     if args.dtype == 'float16':
         optim_params['multi_precision'] = True
 
-    trainer = gluon.Trainer(model.collect_params(), 'bertadam', optim_params,
-                            update_on_kvstore=False, kvstore=store)
+    trainer = mx.gluon.Trainer(model.collect_params(), 'bertadam', optim_params,
+                               update_on_kvstore=False, kvstore=store)
     dynamic_loss_scale = args.dtype == 'float16'
     fp16_trainer = FP16Trainer(trainer, dynamic_loss_scale=dynamic_loss_scale)
 
@@ -135,7 +134,7 @@ def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx, store):
     parallel_model = ParallelBERT(model, mlm_loss, nsp_loss, vocab_size,
                                   store.num_workers * accumulate, trainer=fp16_trainer)
     num_ctxes = len(ctx)
-    parallel = Parallel(num_ctxes if num_ctxes > 1 else 0, parallel_model)
+    parallel = nlp.utils.Parallel(num_ctxes if num_ctxes > 1 else 0, parallel_model)
 
     while step_num < num_train_steps:
         for _, dataloader in enumerate(data_train):

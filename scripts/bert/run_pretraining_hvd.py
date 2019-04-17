@@ -67,7 +67,6 @@ local_rank = hvd.local_rank()
 if not args.use_avg_len and hvd.size() > 1:
     logging.info('Specifying --use-avg-len and setting --batch_size with the '
                  'target number of tokens would help improve training throughput.')
-logging.debug('local_rank = %d, rank = %d, num_workers = %d', local_rank, rank, num_workers)
 
 def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx):
     """Training function."""
