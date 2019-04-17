@@ -195,10 +195,10 @@ def evaluate(data_eval, model, nsp_loss, mlm_loss, vocab_size, ctx, log_interval
     total_mlm_loss = total_nsp_loss = 0
     running_num_tks = 0
     for _, dataloader in enumerate(data_eval):
-        for _, data in enumerate(dataloader):
+        for _, data_batch in enumerate(dataloader):
             step_num += 1
 
-            data_list = split_and_load(data, ctx)
+            data_list = split_and_load(data_batch, ctx)
             loss_list = []
             ns_label_list, ns_pred_list = [], []
             mask_label_list, mask_pred_list, mask_weight_list = [], [], []
