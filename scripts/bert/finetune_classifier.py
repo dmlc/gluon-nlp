@@ -331,6 +331,8 @@ def evaluate(dataloader_eval, metric):
 
 
 def log_train(batch_id, batch_num, metric, step_loss, log_interval, epoch_id, learning_rate):
+    """Generate and print out the log message for training.
+    """
     metric_nm, metric_val = metric.get()
     if not isinstance(metric_nm, list):
         metric_nm = [metric_nm]
@@ -345,6 +347,8 @@ def log_train(batch_id, batch_num, metric, step_loss, log_interval, epoch_id, le
 
 
 def log_inference(batch_id, batch_num, metric, step_loss, log_interval):
+    """Generate and print out the log message for inference.
+    """
     metric_nm, metric_val = metric.get()
     if not isinstance(metric_nm, list):
         metric_nm = [metric_nm]
