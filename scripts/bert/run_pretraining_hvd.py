@@ -43,7 +43,7 @@ from mxnet.gluon.data import DataLoader
 import gluonnlp as nlp
 from gluonnlp.utils import Parallelizable, Parallel
 from gluonnlp.metric import MaskedAccuracy
-from gluonnlp.data import SimpleDatasetStream, FixedBucketSampler, NumpyDataset, BERTTokenizer
+from gluonnlp.data import SimpleDatasetStream, FixedBucketSampler, NumpyDataset
 
 from utils import profile
 from fp16_utils import FP16Trainer
@@ -118,9 +118,9 @@ def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx):
 
     train_begin_time = time.time()
     begin_time = time.time()
-    local_mlm_loss = 0
-    local_nsp_loss = 0
-    local_num_tks = 0
+    running_mlm_loss = 0
+    running_nsp_loss = 0
+    running_num_tks = 0
     batch_num = 0
     step_num = args.start_step
 
@@ -173,9 +173,9 @@ def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx):
                     else:
                         ls.backward()
 
-                local_mlm_loss += ls1.as_in_context(mx.cpu())
-                local_nsp_loss += ls2.as_in_context(mx.cpu())
-                local_num_tks += valid_len.sum().as_in_context(mx.cpu())
+                running_mlm_loss += ls1.as_in_context(mx.cpu())
+                running_nsp_loss += ls2.as_in_context(mx.cpu())
+                running_num_tks += valid_len.sum().as_in_context(mx.cpu())
 
                 # update
                 if (batch_num + 1) % accumulate == 0:
@@ -186,11 +186,11 @@ def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx):
 
                 # logging
                 if (step_num + 1) % (args.log_interval) == 0 and (batch_num + 1) % accumulate == 0:
-                    log(begin_time, local_num_tks, local_mlm_loss / accumulate,
-                        local_nsp_loss / accumulate, step_num, mlm_metric, nsp_metric,
+                    log(begin_time, running_num_tks, running_mlm_loss / accumulate,
+                        running_nsp_loss / accumulate, step_num, mlm_metric, nsp_metric,
                         trainer, args.log_interval)
                     begin_time = time.time()
-                    local_mlm_loss = local_nsp_loss = local_num_tks = 0
+                    running_mlm_loss = running_nsp_loss = running_num_tks = 0
                     mlm_metric.reset_local()
                     nsp_metric.reset_local()
 
@@ -217,13 +217,11 @@ if __name__ == '__main__':
 
     ctx = mx.gpu(local_rank)
 
-    model, nsp_loss, mlm_loss, vocabulary = get_model([ctx], args.model, args.pretrained,
-                                                      args.dataset_name, args.dtype,
-                                                      ckpt_dir=args.ckpt_dir,
-                                                      start_step=args.start_step)
+    model, nsp_loss, mlm_loss, vocab = get_model([ctx], args.model, args.pretrained,
+                                                 args.dataset_name, args.dtype,
+                                                 ckpt_dir=args.ckpt_dir,
+                                                 start_step=args.start_step)
     logging.debug('Model created')
-    lower = 'uncased' in args.dataset_name
-    tokenizer = BERTTokenizer(vocabulary, lower=lower)
 
     if args.ckpt_dir:
         ckpt_dir = os.path.expanduser(args.ckpt_dir)
@@ -237,9 +235,9 @@ if __name__ == '__main__':
                                           args.use_avg_len, args.num_buckets,
                                           num_parts=num_parts, part_idx=part_idx,
                                           prefetch=not args.dummy_data_len)
-        train(data_train, model, nsp_loss, mlm_loss, len(tokenizer.vocab), ctx)
+        train(data_train, model, nsp_loss, mlm_loss, len(vocab), ctx)
     if args.data_eval:
         data_eval = get_pretrain_dataset(args.data_eval, args.batch_size_eval, 1,
                                          False, False, 1)
-        evaluate(data_eval, model, nsp_loss, mlm_loss, len(tokenizer.vocab), [ctx],
+        evaluate(data_eval, model, nsp_loss, mlm_loss, len(vocab), [ctx],
                  args.log_interval, args.dtype)

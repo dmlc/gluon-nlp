@@ -41,13 +41,13 @@ def get_model(ctx, model, pretrained, dataset_name, dtype, ckpt_dir=None, start_
 
     if not pretrained:
         model.initialize(init=mx.init.Normal(0.02), ctx=ctx)
+    model.cast(dtype)
 
     if ckpt_dir and start_step:
         param_path = os.path.join(ckpt_dir, '%07d.params'%start_step)
         model.load_parameters(param_path, ctx=ctx)
         logging.info('Loading step %d checkpoints from %s.', start_step, param_path)
 
-    model.cast(dtype)
     model.hybridize(static_alloc=True)
 
     # losses
@@ -133,18 +133,18 @@ def save_params(step_num, model, trainer, ckpt_dir):
     model.save_parameters(param_path)
     trainer.save_states(trainer_path)
 
-def log(begin_time, local_num_tks, local_mlm_loss, local_nsp_loss, step_num,
+def log(begin_time, running_num_tks, running_mlm_loss, running_nsp_loss, step_num,
         mlm_metric, nsp_metric, trainer, log_interval):
     """Log training progress."""
     end_time = time.time()
     duration = end_time - begin_time
-    throughput = local_num_tks / duration / 1000.0
-    local_mlm_loss = local_mlm_loss / log_interval
-    local_nsp_loss = local_nsp_loss / log_interval
+    throughput = running_num_tks / duration / 1000.0
+    running_mlm_loss = running_mlm_loss / log_interval
+    running_nsp_loss = running_nsp_loss / log_interval
     lr = trainer.learning_rate if trainer else 0
     # pylint: disable=line-too-long
     logging.info('[step {}]\tmlm_loss={:.5f}\tmlm_acc={:.5f}\tnsp_loss={:.5f}\tnsp_acc={:.3f}\tthroughput={:.1f}K tks/s\tlr={:.7f} time={:.2f}, latency={:.1f} ms/batch'
-                 .format(step_num, local_mlm_loss.asscalar(), mlm_metric.get()[1] * 100, local_nsp_loss.asscalar(),
+                 .format(step_num, running_mlm_loss.asscalar(), mlm_metric.get()[1] * 100, running_nsp_loss.asscalar(),
                          nsp_metric.get()[1] * 100, throughput.asscalar(), lr, duration, duration*1000/log_interval))
     # pylint: enable=line-too-long
 
@@ -190,9 +190,9 @@ def evaluate(data_eval, model, nsp_loss, mlm_loss, vocab_size, ctx, log_interval
     eval_begin_time = time.time()
     begin_time = time.time()
     step_num = 0
-    local_mlm_loss = local_nsp_loss = 0
+    running_mlm_loss = running_nsp_loss = 0
     total_mlm_loss = total_nsp_loss = 0
-    local_num_tks = 0
+    running_num_tks = 0
     for _, dataloader in enumerate(data_eval):
         for _, data in enumerate(dataloader):
             step_num += 1
@@ -212,20 +212,20 @@ def evaluate(data_eval, model, nsp_loss, mlm_loss, vocab_size, ctx, log_interval
                 mask_pred_list.append(decoded)
                 mask_weight_list.append(masked_weight)
 
-                local_mlm_loss += ls1.as_in_context(mx.cpu())
-                local_nsp_loss += ls2.as_in_context(mx.cpu())
-                local_num_tks += valid_length.sum().as_in_context(mx.cpu())
+                running_mlm_loss += ls1.as_in_context(mx.cpu())
+                running_nsp_loss += ls2.as_in_context(mx.cpu())
+                running_num_tks += valid_length.sum().as_in_context(mx.cpu())
             nsp_metric.update(ns_label_list, ns_pred_list)
             mlm_metric.update(mask_label_list, mask_pred_list, mask_weight_list)
 
             # logging
             if (step_num + 1) % (log_interval) == 0:
-                total_mlm_loss += local_mlm_loss
-                total_nsp_loss += local_nsp_loss
-                log(begin_time, local_num_tks, local_mlm_loss, local_nsp_loss,
+                total_mlm_loss += running_mlm_loss
+                total_nsp_loss += running_nsp_loss
+                log(begin_time, running_num_tks, running_mlm_loss, running_nsp_loss,
                     step_num, mlm_metric, nsp_metric, None, log_interval)
                 begin_time = time.time()
-                local_mlm_loss = local_nsp_loss = local_num_tks = 0
+                running_mlm_loss = running_nsp_loss = running_num_tks = 0
                 mlm_metric.reset_local()
                 nsp_metric.reset_local()
 
@@ -262,8 +262,10 @@ def get_argparser():
                         help='Load the pretrained model released by Google.')
     parser.add_argument('--model', type=str, default='bert_12_768_12',
                         help='Model to run pre-training on. Options are bert_12_768_12, bert_24_1024_16')
-    parser.add_argument('--data', type=str, default=None, help='Path to training data.')
-    parser.add_argument('--data_eval', type=str, default=None, help='Path to evaluation data.')
+    parser.add_argument('--data', type=str, default=None,
+                        help='Path to training data. Training is skipped if not set.')
+    parser.add_argument('--data_eval', type=str, default=None,
+                        help='Path to evaluation data. Evaluation is skipped if not set.')
     parser.add_argument('--ckpt_dir', type=str, required=True,
                         help='Path to checkpoint directory')
     parser.add_argument('--start_step', type=int, default=0,
