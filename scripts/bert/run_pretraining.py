@@ -33,18 +33,13 @@ This example shows how to pre-train a BERT model with Gluon NLP Toolkit.
 import os
 import random
 import logging
-import glob
 import time
 import numpy as np
 
 import mxnet as mx
 from mxnet import gluon
-
-import gluonnlp as nlp
 from gluonnlp.utils import Parallelizable, Parallel
-from gluonnlp.metric import MaskedAccuracy
-from gluonnlp.data.batchify import Tuple, Stack, Pad
-from gluonnlp.data import SimpleDatasetStream, FixedBucketSampler, NumpyDataset
+
 from utils import profile
 from fp16_utils import FP16Trainer
 from pretraining_utils import get_model, get_pretrain_dataset, get_dummy_dataloader
@@ -97,8 +92,8 @@ class ParallelBERT(Parallelizable):
 
 def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx, store):
     """Training function."""
-    mlm_metric = MaskedAccuracy()
-    nsp_metric = MaskedAccuracy()
+    mlm_metric = nlp.metric.MaskedAccuracy()
+    nsp_metric = nlp.metric.MaskedAccuracy()
     mlm_metric.reset()
     nsp_metric.reset()
 
@@ -133,8 +128,7 @@ def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx, store):
 
     train_begin_time = time.time()
     begin_time = time.time()
-    total_mlm_loss, total_nsp_local = 0
-    running_mlm_loss, running_nsp_loss, running_num_tks = 0
+    running_mlm_loss = running_nsp_loss = running_num_tks = 0
     batch_num = 0
     step_num = args.start_step
 

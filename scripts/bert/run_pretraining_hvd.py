@@ -37,13 +37,7 @@ import time
 import numpy as np
 
 import mxnet as mx
-from mxnet import gluon
-from mxnet.gluon.data import DataLoader
-
 import gluonnlp as nlp
-from gluonnlp.utils import Parallelizable, Parallel
-from gluonnlp.metric import MaskedAccuracy
-from gluonnlp.data import SimpleDatasetStream, FixedBucketSampler, NumpyDataset
 
 from utils import profile
 from fp16_utils import FP16Trainer
@@ -79,8 +73,8 @@ def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx):
     """Training function."""
     hvd.broadcast_parameters(model.collect_params(), root_rank=0)
 
-    mlm_metric = MaskedAccuracy()
-    nsp_metric = MaskedAccuracy()
+    mlm_metric = nlp.metric.MaskedAccuracy()
+    nsp_metric = nlp.metric.MaskedAccuracy()
     mlm_metric.reset()
     nsp_metric.reset()
 
@@ -118,8 +112,7 @@ def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx):
 
     train_begin_time = time.time()
     begin_time = time.time()
-    running_mlm_loss = 0
-    running_nsp_loss = 0
+    running_mlm_loss, running_nsp_loss = 0, 0
     running_num_tks = 0
     batch_num = 0
     step_num = args.start_step

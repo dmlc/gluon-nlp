@@ -251,17 +251,18 @@ def get_argparser():
                              'The effective batch size = batch_size * accumulate.')
     parser.add_argument('--use_avg_len', action='store_true',
                         help='Use average length information for the bucket sampler. '
-                             'The batch size is now approximately the number of tokens in the batch')
+                             'The batch size is approximately the number of tokens in the batch')
     parser.add_argument('--batch_size_eval', type=int, default=8,
                         help='Batch size per GPU for evaluation.')
     parser.add_argument('--dataset_name', type=str, default='book_corpus_wiki_en_uncased',
-                        help='The dataset from which the vocabulary is created. '
-                             'Options include book_corpus_wiki_en_uncased, book_corpus_wiki_en_cased. '
+                        help='The dataset from which the vocabulary is created. Options include '
+                             'book_corpus_wiki_en_uncased, book_corpus_wiki_en_cased. '
                              'Default is book_corpus_wiki_en_uncased')
     parser.add_argument('--pretrained', action='store_true',
                         help='Load the pretrained model released by Google.')
     parser.add_argument('--model', type=str, default='bert_12_768_12',
-                        help='Model to run pre-training on. Options are bert_12_768_12, bert_24_1024_16')
+                        help='Model to run pre-training on. '
+                             'Options are bert_12_768_12, bert_24_1024_16')
     parser.add_argument('--data', type=str, default=None,
                         help='Path to training data. Training is skipped if not set.')
     parser.add_argument('--data_eval', type=str, default=None,
