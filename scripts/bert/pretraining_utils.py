@@ -63,6 +63,7 @@ def get_pretrain_dataset(data, batch_size, num_ctxes, shuffle, use_avg_len,
                          num_buckets, num_parts=1, part_idx=0, prefetch=True):
     """create dataset for pretraining."""
     num_files = len(glob.glob(os.path.expanduser(data)))
+    logging.debug('%d files found.', num_files)
     assert num_files >= num_parts, \
         'Number of training files must be greater than the number of partitions'
     split_sampler = nlp.data.SplitSampler(num_files, num_parts=num_parts, part_index=part_idx)
