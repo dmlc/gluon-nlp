@@ -16,7 +16,8 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-# pylint:disable=redefined-outer-name,logging-format-interpolation
+
+"""Utilities for pre-training."""
 import glob
 import time
 import os
@@ -30,7 +31,7 @@ from gluonnlp.data.batchify import Tuple, Stack, Pad
 from gluonnlp.metric import MaskedAccuracy
 
 __all__ = ['get_model', 'get_pretrain_dataset', 'get_dummy_dataloader',
-           'save_params', 'eval', 'forward', 'split_and_load', 'get_argparser']
+           'save_params', 'evaluate', 'forward', 'split_and_load', 'get_argparser']
 
 def get_model(ctx, model, pretrained, dataset_name, dtype, ckpt_dir=None, start_step=None):
     """Get model for pre-training."""

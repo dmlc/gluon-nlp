@@ -197,7 +197,8 @@ def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx, store):
                 # logging
                 if (step_num + 1) % (args.log_interval) == 0 and (batch_num + 1) % accumulate == 0:
                     log(begin_time, running_num_tks, running_mlm_loss / accumulate,
-                        running_nsp_loss / accumulate, step_num, mlm_metric, nsp_metric, trainer, args.log_interval)
+                        running_nsp_loss / accumulate, step_num, mlm_metric,
+                        nsp_metric, trainer, args.log_interval)
                     begin_time = time.time()
                     running_mlm_loss = running_nsp_loss = running_num_tks = 0
                     mlm_metric.reset_local()
