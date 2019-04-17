@@ -74,12 +74,10 @@ if not args.use_avg_len and hvd.size() > 1:
     logging.info('Specifying --use-avg-len and setting --batch_size with the '
                  'target number of tokens would help improve training throughput.')
 logging.debug('local_rank = %d, rank = %d, num_workers = %d', local_rank, rank, num_workers)
-logging.debug(nlp)
 
 def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx):
     """Training function."""
     hvd.broadcast_parameters(model.collect_params(), root_rank=0)
-    logging.debug('Broadcasting parameters to workers')
 
     mlm_metric = MaskedAccuracy()
     nsp_metric = MaskedAccuracy()
@@ -94,7 +92,7 @@ def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx):
 
     dynamic_loss_scale = args.dtype == 'float16'
     if dynamic_loss_scale:
-        loss_scale_param = {'scale_window': 2000 / num_workers, 'tolerance': 0.01}
+        loss_scale_param = {'scale_window': 2000 / num_workers}
     else:
         loss_scale_param = None
     trainer = hvd.DistributedTrainer(model.collect_params(), 'bertadam', optim_params)

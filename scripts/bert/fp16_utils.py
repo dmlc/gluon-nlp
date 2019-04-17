@@ -223,7 +223,7 @@ class DynamicLossScaler(LossScaler):
     by 2x. On the other hand, if a NaN is not detected for a long time
     (e.g. 2000 steps), then the scale is increased (by default) by 2x."""
     def __init__(self, init_scale=2.**15, scale_factor=2., scale_window=2000,
-                 tolerance=0.05, verbose=True):
+                 tolerance=0.01, verbose=True):
         self.loss_scale = init_scale
         self.scale_factor = scale_factor
         self.scale_window = scale_window

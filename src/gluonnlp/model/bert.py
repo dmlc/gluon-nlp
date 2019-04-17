@@ -28,10 +28,7 @@ from mxnet.gluon import nn
 from mxnet.gluon.model_zoo import model_store
 import mxnet as mx
 from .transformer import BasePositionwiseFFN, BaseTransformerEncoderCell, BaseTransformerEncoder
-try:
-    from mxnet.gluon.nn import GELU
-except ImportError:
-    from .block import GELU
+from .block import GELU
 from .utils import _load_vocab, _load_pretrained_params
 from ..base import get_home_dir
 

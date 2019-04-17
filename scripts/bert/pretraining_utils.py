@@ -71,9 +71,7 @@ def get_pretrain_dataset(data, batch_size, num_ctxes, shuffle, use_avg_len,
 
     def get_dataloader(dataset):
         """create data loader based on the dataset chunk"""
-        t0 = time.time()
         lengths = dataset.get_field('valid_lengths')
-        logging.debug('Num samples = %d', len(lengths))
         # A batch includes: input_id, masked_id, masked_position, masked_weight,
         #                   next_sentence_label, segment_id, valid_length
         batchify_fn = Tuple(Pad(), Pad(), Pad(), Pad(), Stack(), Pad(), Stack())
@@ -100,9 +98,7 @@ def get_pretrain_dataset(data, batch_size, num_ctxes, shuffle, use_avg_len,
                                     batch_sampler=sampler,
                                     batchify_fn=batchify_fn,
                                     num_workers=1)
-        logging.debug('Batch Sampler:\n%s', sampler.stats())
-        t1 = time.time()
-        logging.debug('Dataloader creation cost = %.2f s', t1 - t0)
+        logging.debug('Sampler created for a new dataset:\n%s', sampler.stats())
         return dataloader
 
     stream = stream.transform(get_dataloader)
@@ -129,6 +125,7 @@ def get_dummy_dataloader(dataloader, target_shape):
     return DummyIter(data_batch)
 
 def save_params(step_num, model, trainer, ckpt_dir):
+    """Save the model parameter, marked by step_num."""
     param_path = os.path.join(ckpt_dir, '%07d.params'%step_num)
     trainer_path = os.path.join(ckpt_dir, '%07d.states'%step_num)
     logging.info('[step %d] Saving checkpoints to %s, %s.',
@@ -138,6 +135,7 @@ def save_params(step_num, model, trainer, ckpt_dir):
 
 def log(begin_time, local_num_tks, local_mlm_loss, local_nsp_loss, step_num,
         mlm_metric, nsp_metric, trainer, log_interval):
+    """Log training progress."""
     end_time = time.time()
     duration = end_time - begin_time
     throughput = local_num_tks / duration / 1000.0
@@ -241,6 +239,7 @@ def evaluate(data_eval, model, nsp_loss, mlm_loss, vocab_size, ctx, log_interval
     logging.info('Eval cost={:.1f}s'.format(eval_end_time - eval_begin_time))
 
 def get_argparser():
+    """Argument parser"""
     parser = argparse.ArgumentParser(description='BERT pretraining example.')
     parser.add_argument('--num_steps', type=int, default=20, help='Number of optimization steps')
     parser.add_argument('--num_buckets', type=int, default=1,
@@ -248,7 +247,11 @@ def get_argparser():
     parser.add_argument('--dtype', type=str, default='float32', help='data dtype')
     parser.add_argument('--batch_size', type=int, default=8, help='Batch size per GPU.')
     parser.add_argument('--accumulate', type=int, default=1,
-                        help='Number of batches for gradient accumulation.')
+                        help='Number of batches for gradient accumulation. '
+                             'The effective batch size = batch_size * accumulate.')
+    parser.add_argument('--use_avg_len', action='store_true',
+                        help='Use average length information for the bucket sampler. '
+                             'The batch size is now approximately the number of tokens in the batch')
     parser.add_argument('--batch_size_eval', type=int, default=8,
                         help='Batch size per GPU for evaluation.')
     parser.add_argument('--dataset_name', type=str, default='book_corpus_wiki_en_uncased',
@@ -271,12 +274,10 @@ def get_argparser():
     parser.add_argument('--log_interval', type=int, default=10, help='Report interval')
     parser.add_argument('--ckpt_interval', type=int, default=250000, help='Checkpoint interval')
     parser.add_argument('--dummy_data_len', type=int, default=None,
-                        help='If provided, a data batch of target sequence length is repeatedly used')
+                        help='If provided, a data batch of target sequence length is '
+                             'used. For benchmarking purpuse only.')
     parser.add_argument('--seed', type=int, default=0, help='Random seed')
     parser.add_argument('--verbose', action='store_true', help='verbose logging')
     parser.add_argument('--profile', type=str, default=None,
                         help='output profiling result to the target file')
-    parser.add_argument('--use_avg_len', action='store_true',
-                        help='Use average length information for the bucket sampler. '
-                             'The batch size is now approximately the number of tokens in the batch')
     return parser

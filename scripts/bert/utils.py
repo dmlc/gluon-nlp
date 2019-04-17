@@ -106,21 +106,19 @@ def read_tf_checkpoint(path):
     return tensors
 
 def profile(curr_step, start_step, end_step, profile_name='profile.json',
-            early_exit=True, skip=False):
+            early_exit=True):
     """profile the program between [start_step, end_step)."""
     if curr_step == start_step:
         mx.nd.waitall()
-        if not skip:
-            mx.profiler.set_config(profile_memory=False, profile_symbolic=True,
-                                   profile_imperative=True, filename=profile_name,
-                                   aggregate_stats=True)
-            mx.profiler.set_state('run')
+        mx.profiler.set_config(profile_memory=False, profile_symbolic=True,
+                               profile_imperative=True, filename=profile_name,
+                               aggregate_stats=True)
+        mx.profiler.set_state('run')
     elif curr_step == end_step:
         mx.nd.waitall()
-        if not skip:
-            mx.profiler.set_state('stop')
-            logging.info(mx.profiler.dumps())
-            mx.profiler.dump()
+        mx.profiler.set_state('stop')
+        logging.info(mx.profiler.dumps())
+        mx.profiler.dump()
         if early_exit:
             exit()
 
