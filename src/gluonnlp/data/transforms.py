@@ -1090,7 +1090,7 @@ class BERTSPTokenizer(BERTTokenizer):
         return output_tokens
 
     def convert_tokens_to_ids(self, tokens):
-        """Converts a sequence of tokens into ids using the vocab."""
+        """Converts a sequence of tokens into ids using the vocab or sentencepiece model."""
         if self.vocab is None:
             if self.sentencepiece is None:
                 self._activate_sp()
