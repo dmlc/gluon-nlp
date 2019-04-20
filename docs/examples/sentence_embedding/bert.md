@@ -297,9 +297,9 @@ preprocess the data, automatically download the pre-trained model, and feed the
 transformed data into the model. For demonstration purpose, we skipped the
 warmup learning rate
 schedule and validation on dev dataset used in the original
-implementation. Please visit
-[here](../../model_zoo/bert/index.rst) for the
-complete fine-tuning scripts.
+implementation. Please visit the
+[BERT model zoo webpage](../../model_zoo/bert/index.rst), or the scripts/bert folder
+in the Github repository for complete fine-tuning scripts.
 
 ## References
 
