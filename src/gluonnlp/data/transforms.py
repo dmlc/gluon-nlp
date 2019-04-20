@@ -1011,6 +1011,95 @@ class BERTTokenizer(object):
         return self.vocab.to_indices(tokens)
 
 
+class BERTSPTokenizer(BERTTokenizer):
+    """End-to-end SentencePiece tokenization for BERT models.
+    It works best with BERTSentenceTransform()
+
+    Parameters
+    ----------
+    path : str
+        Path to the pre-trained subword tokenization model.
+    vocab : gluonnlp.Vocab or None, default None
+        Vocabulary for the corpus.
+        If vocab == None, then pre-trained subword tokenization model will be used for indexing.
+    num_best : int, default 0
+        A scalar for sampling subwords. If num_best = {0,1}, no sampling is performed.
+        If num_best > 1, then samples from the num_best results.
+        If num_best < 0, then assume that num_best is infinite and
+        samples from the all hypothesis (lattice) using forward-filtering-and-backward-sampling
+        algorithm.
+    alpha : float
+        A scalar for a smoothing parameter. Inverse temperature for probability rescaling.
+    lower : bool, default True
+        whether the text strips accents and convert to lower case.
+        If you use the BERT pre-training model,
+        lower is set to Flase when using the cased model,
+        otherwise it is set to True.
+    max_input_chars_per_word : int, default 200
+
+    Examples
+    --------
+    >>> url = 'http://repo.mxnet.io/gluon/dataset/vocab/test-0690baed.bpe'
+    >>> f = gluon.utils.download(url, overwrite=True)
+    -etc-
+    >>> sp_tokenizer = BERTSPTokenizer(f, lower=True)
+    >>> sentence = 'This is a very awesome, life-changing sentence.'
+    >>> sp_tokenizer(sentence)
+    ['▁This', '▁is', '▁a', '▁very', '▁awesome', ',', '▁life', '-', 'ch', 'anging', '▁sentence', '.']
+
+    """
+
+    def __init__(self,
+                 path,
+                 vocab=None,
+                 num_best=0,
+                 alpha=1.0,
+                 lower=True,
+                 max_input_chars_per_word=200):
+        super(BERTSPTokenizer, self).__init__(vocab, lower,
+                                              max_input_chars_per_word)
+        self._path = path
+        self._num_best = num_best
+        self._alpha = alpha
+        self.sentencepiece = None
+
+    def _activate_sp(self):
+        self.sentencepiece = SentencepieceTokenizer(
+            self._path, self._num_best, self._alpha)
+
+    def _tokenize_wordpiece(self, text):
+        """Tokenizes a piece of text into its word pieces.
+
+        This use Google's SentencePiece tokenizer model file
+
+        For example:
+          input = "unaffable"
+          output = ["▁un", "aff", "able"]
+
+        Args:
+          text: A single token or whitespace separated tokens. This should have
+            already been passed through `BERTBasicTokenizer.
+
+        Returns:
+          A list of sentencepieced tokens.
+        """
+        #Swig object can not be pickled when multiprocessing.
+        if self.sentencepiece is None:
+            self._activate_sp()
+        output_tokens = self.sentencepiece(text)
+        return output_tokens
+
+    def convert_tokens_to_ids(self, tokens):
+        """Converts a sequence of tokens into ids using the vocab."""
+        if self.vocab is None:
+            if self.sentencepiece is None:
+                self._activate_sp()
+            return self.sentencepiece._processor.encode_as_ids( #pylint: disable=protected-access
+                ' '.join(tokens))
+        else:
+            return self.vocab.to_indices(tokens)
+
+
 class BERTSentenceTransform(object):
     r"""BERT style data transformation.
 
