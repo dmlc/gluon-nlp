@@ -41,7 +41,7 @@ import gluonnlp as nlp
 
 from utils import profile
 from fp16_utils import FP16Trainer
-from pretraining_utils import get_model, get_pretrain_dataset, get_dummy_dataloader
+from pretraining_utils import get_model_loss, get_pretrain_dataset, get_dummy_dataloader
 from pretraining_utils import save_params, split_and_load, log, evaluate, forward, get_argparser
 
 # parser
@@ -209,10 +209,10 @@ if __name__ == '__main__':
 
     ctx = mx.gpu(local_rank)
 
-    model, nsp_loss, mlm_loss, vocab = get_model([ctx], args.model, args.pretrained,
-                                                 args.dataset_name, args.dtype,
-                                                 ckpt_dir=args.ckpt_dir,
-                                                 start_step=args.start_step)
+    model, nsp_loss, mlm_loss, vocab = get_model_loss([ctx], args.model, args.pretrained,
+                                                      args.dataset_name, args.dtype,
+                                                      ckpt_dir=args.ckpt_dir,
+                                                      start_step=args.start_step)
     logging.debug('Model created')
 
     if args.ckpt_dir:

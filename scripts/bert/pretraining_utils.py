@@ -30,10 +30,10 @@ import gluonnlp as nlp
 from gluonnlp.data.batchify import Tuple, Stack, Pad
 from gluonnlp.metric import MaskedAccuracy
 
-__all__ = ['get_model', 'get_pretrain_dataset', 'get_dummy_dataloader',
+__all__ = ['get_model_loss', 'get_pretrain_dataset', 'get_dummy_dataloader',
            'save_params', 'evaluate', 'forward', 'split_and_load', 'get_argparser']
 
-def get_model(ctx, model, pretrained, dataset_name, dtype, ckpt_dir=None, start_step=None):
+def get_model_loss(ctx, model, pretrained, dataset_name, dtype, ckpt_dir=None, start_step=None):
     """Get model for pre-training."""
     # model
     model, vocabulary = nlp.model.get_model(model,

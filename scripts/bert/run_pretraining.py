@@ -41,7 +41,7 @@ import gluonnlp as nlp
 
 from utils import profile
 from fp16_utils import FP16Trainer
-from pretraining_utils import get_model, get_pretrain_dataset, get_dummy_dataloader
+from pretraining_utils import get_model_loss, get_pretrain_dataset, get_dummy_dataloader
 from pretraining_utils import save_params, log, evaluate, forward, split_and_load, get_argparser
 
 # arg parser
@@ -224,10 +224,10 @@ if __name__ == '__main__':
     ctx = [mx.cpu()] if args.gpus is None or args.gpus == '' else \
           [mx.gpu(int(x)) for x in args.gpus.split(',')]
 
-    model, nsp_loss, mlm_loss, vocab = get_model(ctx, args.model, args.pretrained,
-                                                 args.dataset_name, args.dtype,
-                                                 ckpt_dir=args.ckpt_dir,
-                                                 start_step=args.start_step)
+    model, nsp_loss, mlm_loss, vocab = get_model_loss(ctx, args.model, args.pretrained,
+                                                      args.dataset_name, args.dtype,
+                                                      ckpt_dir=args.ckpt_dir,
+                                                      start_step=args.start_step)
 
     store = mx.kv.create(args.kvstore)
 
