@@ -168,6 +168,7 @@ on the labels. Given the batchify function, we can construct the dataloaders for
 .. code:: python
 
    >>> train_dataloader = gluon.data.DataLoader(dataset=train_dataset,
+   >>>                                          batch_size=batch_size,
    >>>                                          shuffle=True,
    >>>                                          batchify_fn=batchify_fn)
    >>> test_dataloader = gluon.data.DataLoader(dataset=test_dataset,
