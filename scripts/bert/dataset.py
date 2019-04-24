@@ -28,7 +28,6 @@ from mxnet.gluon.data import Dataset
 from gluonnlp.data import TSVDataset, BERTSentenceTransform
 from gluonnlp.data.registry import register
 
-
 @register(segment=['train', 'dev', 'test'])
 class MRPCDataset(TSVDataset):
     """The Microsoft Research Paraphrase Corpus dataset.

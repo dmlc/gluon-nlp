@@ -175,6 +175,9 @@ BERT Pre-training
 
 The scripts for masked language modeling and and next sentence prediction are also provided.
 
+Training Sample Generation
+++++++++++++++++++++++++++
+
 Data generation for pre-training on sample texts:
 
 .. code-block:: console
@@ -183,11 +186,14 @@ Data generation for pre-training on sample texts:
 
 The data generation script takes a file path as the input (could be one or more files by wildcard). Each file contains one or more documents separated by empty lines, and each document contains one line per sentence. You can perform sentence segmentation with an off-the-shelf NLP toolkit such as NLTK.
 
+Run Pre-training
+++++++++++++++++
+
 Run pre-training with generated data:
 
 .. code-block:: console
 
-    $ python run_pretraining.py --gpus 0 --batch_size 32 --lr 2e-5 --data 'out/*.npz' --warmup_ratio 0.5 --num_steps 20 --pretrained --log_interval=2 --data_eval 'out/*.npz' --batch_size_eval 8 --ckpt_dir ckpt
+    $ python run_pretraining.py --gpus 0 --batch_size 32 --lr 2e-5 --data 'out/*.npz' --warmup_ratio 0.5 --num_steps 20 --pretrained --log_interval=2 --data_eval 'out/*.npz' --batch_size_eval 8 --ckpt_dir ckpt --verbose
 
 With 20 steps of pre-training it easily reaches above 90% masked language model accuracy and 98% next sentence prediction accuracy on the training data.
 
@@ -195,9 +201,40 @@ To reproduce BERT pre-training with books corpus and English wikipedia datasets 
 
 .. code-block:: console
 
-    $ python run_pretraining.py --gpus 0,1,2,3,4,5,6,7 --batch_size 8 --lr 1e-4 --data '/path/to/generated/samples/train/*.npz' --warmup_ratio 0.01 --num_steps 1000000 --log_interval=250 --data_eval '/path/to/generated/samples/dev/*.npz' --batch_size_eval 8 --ckpt_dir ckpt --ckpt_interval 25000 --accumulate 4 --num_buckets 10 --dtype float16
+    $ python run_pretraining.py --gpus 0,1,2,3,4,5,6,7 --batch_size 8 --accumulate 4 --lr 1e-4 --data '/path/to/generated/samples/train/*.npz' --warmup_ratio 0.01 --num_steps 1000000 --log_interval=250 --data_eval '/path/to/generated/samples/dev/*.npz' --batch_size_eval 8 --ckpt_dir ckpt --ckpt_interval 25000 --num_buckets 10 --dtype float16
 
 The BERT base model produced by gluonnlp pre-training script (`log <https://raw.githubusercontent.com/dmlc/web-data/master/gluonnlp/logs/bert/bert_base_pretrain.log>`__) achieves 83.6% on MNLI-mm, 93% on SST-2, 87.99% on MRPC and 80.99/88.60 on SQuAD 1.1 validation set.
+
+Run Pre-training with Horovod
++++++++++++++++++++++++++++++
+
+Alternatively, you can install horovod for scalable multi-gpu multi-machine training. Our script assumes the master version of Horovod (i.e. horovod > v0.16.1).
+
+To install horovod, you need:
+
+- `NCCL <https://developer.nvidia.com/nccl>`__, and
+- `OpenMPI <https://www.open-mpi.org/software/ompi/v4.0/>`__
+
+Then you can install the master version of horovod:
+
+.. code-block:: console
+
+    $ git clone --recursive https://github.com/uber/horovod horovod;
+    $ cd horovd;
+    $ HOROVOD_GPU_ALLREDUCE=NCCL pip install . --user --no-cache-dir
+
+Verify Horovod installation:
+
+.. code-block:: console
+
+    $ horovodrun -np 1 -H localhost:1 python run_pretraining_hvd.py --batch_size 32 --lr 2e-5 --data 'out/*.npz' --warmup_ratio 0.5 --num_steps 20 --pretrained --log_interval=2 --data_eval 'out/*.npz' --batch_size_eval 8 --ckpt_dir ckpt --verbose
+
+Run pre-training with horovod:
+
+.. code-block:: console
+
+    $ horovodrun -np 8 -H localhost:8 python run_pretraining_hvd.py --data='/path/to/generated/samples/train/*.npz' --num_steps 1000000 --log_interval 250 --lr 1e-4 --batch_size 4096 --accumulate 4 --warmup_ratio 0.01 --ckpt_dir ./ckpt --ckpt_interval 25000 --num_buckets 10 --dtype float16 --use_avg_len --verbose
+    $ mpirun -np 16 -H node0:8,node1:8 -mca pml ob1 -mca btl ^openib -mca btl_tcp_if_exclude docker0,lo --map-by ppr:4:socket -x NCCL_MIN_NRINGS=8 -x NCCL_DEBUG=INFO python run_pretraining_hvd.py --batch_size 8192 --accumulate 1 --lr 1e-4 --data "/path/to/generated/samples/train/*.npz" --warmup_ratio 0.01 --num_steps 1000000 --log_interval=250 --ckpt_dir './ckpt' --ckpt_interval 25000 --num_buckets 10 --dtype float16 --use_avg_len --verbose
 
 BERT for Sentence or Tokens Embedding
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

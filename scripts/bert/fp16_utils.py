@@ -55,10 +55,12 @@ def grad_global_norm(parameters, max_norm):
     Returns
     -------
     NDArray
-      Total norm.
+      Total norm. Shape is (1,)
     NDArray
       Ratio for rescaling gradients based on max_norm s.t. grad = grad / ratio.
-      If total norm is NaN, ratio will be NaN, too.
+      If total norm is NaN, ratio will be NaN, too. Shape is (1,)
+    NDArray
+      Whether the total norm is finite. Shape is (1,)
     """
     # collect gradient arrays
     arrays = []
@@ -76,6 +78,7 @@ def grad_global_norm(parameters, max_norm):
         # Issue is tracked at: https://github.com/apache/incubator-mxnet/issues/14126
         x = array.reshape((-1,)).astype('float32', copy=False)
         return nd.dot(x, x)
+
     norm_arrays = [_norm(arr) for arr in arrays]
 
     # group norm arrays by ctx
@@ -101,7 +104,7 @@ def grad_global_norm(parameters, max_norm):
     scale_or_one = nd.maximum(nd.ones((1,), dtype=dtype, ctx=ctx), scale)
     choices = nd.concat(scale, scale_or_one, dim=0)
     chosen_scale = choices.take(is_finite)
-    return total_norm, chosen_scale
+    return total_norm, chosen_scale, is_finite
 
 
 class FP16Trainer(object):
@@ -116,12 +119,12 @@ class FP16Trainer(object):
       parameters using FP16.
     loss_scaler_params : dict
         Key-word arguments to be passed to loss scaler constructor. For example,
-        `{"init_scale" : 2.**15, "scale_window" : 2000,
-          "tolerance" : 0.05, "verbose" : False"}` for `DynamicLossScaler`.
+        `{"init_scale" : 2.**15, "scale_window" : 2000, "tolerance" : 0.05}`
+        for `DynamicLossScaler`.
         See each `LossScaler` for a list of supported arguments'
     """
     def __init__(self, trainer, dynamic_loss_scale=True, loss_scaler_params=None):
-        if trainer._kvstore_params['update_on_kvstore'] is not False:
+        if trainer._kvstore_params['update_on_kvstore'] is not False and trainer._kvstore:
             err = 'Only gluon.Trainer created with update_on_kvstore=False is supported.'
             raise NotImplementedError(err)
         self.fp32_trainer = trainer
@@ -156,12 +159,12 @@ class FP16Trainer(object):
         self.fp32_trainer.allreduce_grads()
         step_size = batch_size * self._scaler.loss_scale
         if max_norm:
-            norm, ratio = grad_global_norm(self.fp32_trainer._params,
-                                           max_norm * self._scaler.loss_scale)
+            norm, ratio, is_finite = grad_global_norm(self.fp32_trainer._params,
+                                                      max_norm * self._scaler.loss_scale)
             step_size = ratio * step_size
             if self._support_nan_check:
                 self.fp32_trainer.update(step_size)
-                overflow = not np.isfinite(norm.asscalar())
+                overflow = is_finite.asscalar() < 1
             else:
                 overflow = not np.isfinite(norm.asscalar())
                 if not overflow:
@@ -176,7 +179,6 @@ class FP16Trainer(object):
                 overflow = self._scaler.has_overflow(self.fp32_trainer._params)
                 if not overflow:
                     self.fp32_trainer.update(step_size)
-
         # update scale based on overflow information
         self._scaler.update_scale(overflow)
 
@@ -221,7 +223,7 @@ class DynamicLossScaler(LossScaler):
     by 2x. On the other hand, if a NaN is not detected for a long time
     (e.g. 2000 steps), then the scale is increased (by default) by 2x."""
     def __init__(self, init_scale=2.**15, scale_factor=2., scale_window=2000,
-                 tolerance=0.05, verbose=False):
+                 tolerance=0.01):
         self.loss_scale = init_scale
         self.scale_factor = scale_factor
         self.scale_window = scale_window
@@ -230,7 +232,6 @@ class DynamicLossScaler(LossScaler):
         self._last_overflow_iter = -1
         self._last_rescale_iter = -1
         self._overflows_since_rescale = 0
-        self._verbose = verbose
 
     def update_scale(self, overflow):
         """dynamically update loss scale"""
@@ -244,8 +245,8 @@ class DynamicLossScaler(LossScaler):
                 self.loss_scale /= self.scale_factor
                 self._last_rescale_iter = self._num_steps
                 self._overflows_since_rescale = 0
-                if self._verbose:
-                    logging.info('overflow detected. set loss_scale = %s', self.loss_scale)
+                logging.info('DynamicLossScaler: overflow detected. set loss_scale = %s',
+                             self.loss_scale)
         elif (self._num_steps - self._last_overflow_iter) % self.scale_window == 0:
             self.loss_scale *= self.scale_factor
             self._last_rescale_iter = self._num_steps
