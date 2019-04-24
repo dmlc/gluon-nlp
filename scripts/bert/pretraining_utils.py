@@ -153,12 +153,9 @@ def log(begin_time, running_num_tks, running_mlm_loss, running_nsp_loss, step_nu
 def split_and_load(arrs, ctx):
     """split and load arrays to a list of contexts"""
     assert isinstance(arrs, (list, tuple))
-    if len(ctx) == 1:
-        return [[arr.as_in_context(ctx[0]) for arr in arrs]]
-    else:
-        # split and load
-        loaded_arrs = [mx.gluon.utils.split_and_load(arr, ctx, even_split=False) for arr in arrs]
-        return zip(*loaded_arrs)
+    # split and load
+    loaded_arrs = [mx.gluon.utils.split_and_load(arr, ctx, even_split=False) for arr in arrs]
+    return zip(*loaded_arrs)
 
 
 def forward(data, model, mlm_loss, nsp_loss, vocab_size, dtype):

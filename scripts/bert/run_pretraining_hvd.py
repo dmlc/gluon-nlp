@@ -150,7 +150,7 @@ def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx):
                     data_list = [[seq.as_in_context(context) for seq in shard]
                                  for context, shard in zip([ctx], data_batch)]
                 else:
-                    data_list = split_and_load(data_batch, [ctx])
+                    data_list = list(split_and_load(data_batch, [ctx]))
                 data = data_list[0]
 
                 # forward
@@ -171,7 +171,11 @@ def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx):
 
                 # update
                 if (batch_num + 1) % accumulate == 0:
-                    fp16_trainer.step(1, max_norm=1)
+                    # step() performs 3 things:
+                    # 1. allreduce gradients from all workers
+                    # 2. checking the global_norm of gradients and clip them if necessary
+                    # 3. averaging the gradients and apply updates
+                    fp16_trainer.step(1, max_norm=1*num_workers)
 
                 nsp_metric.update([ns_label], [classified])
                 mlm_metric.update([masked_id], [decoded], [masked_weight])
