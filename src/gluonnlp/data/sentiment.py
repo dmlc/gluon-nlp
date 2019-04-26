@@ -30,7 +30,6 @@ import zipfile
 
 from mxnet.gluon.data import SimpleDataset
 from mxnet.gluon.utils import download, check_sha1, _get_repo_file_url
-from mxnet.gluon.data import Dataset
 from .registry import register
 from ..base import get_home_dir
 
@@ -91,7 +90,7 @@ class SentimentDataset(SimpleDataset):
 
 
 @register(segment=['train', 'test', 'unsup'])
-class IMDB(SentimentDataset):
+class IMDB(SimpleDataset):
     """IMDB reviews for sentiment analysis.
 
     From
@@ -397,9 +396,24 @@ class SST_2(SentimentDataset):
 
     def _repo_dir(self):
         return 'gluon/dataset/sst-2'
-    
+
 @register()
 class CR(SentimentDataset):
+    """
+    Customer reviews of various products (cameras, MP3s etc.). Task is to
+    predict positive/negative reviews
+    
+    From
+    http://www.cs.uic.edu/∼liub/FBS/sentiment-analysis.html
+
+    Positive class has label value 1. Negative class has label value 0.
+
+    Parameters
+    ----------
+    root : str, default '$MXNET_HOME/datasets/cr'
+        Path to temp folder for storing data.
+        MXNET_HOME defaults to '~/.mxnet'.
+    """
     def __init__(self, root=os.path.join(get_home_dir(), 'datasets', 'cr')):
         super(CR, self).__init__('all', root)
 
@@ -409,9 +423,23 @@ class CR(SentimentDataset):
 
     def _repo_dir(self):
         return 'gluon/dataset/cr'
-    
+
 @register()
 class MPQA(SentimentDataset):
+    """
+    Opinion polarity detection subtask of the MPQA dataset
+    
+    From
+    http://www.cs.pitt.edu/mpqa/
+
+    Positive class has label value 1. Negative class has label value 0.
+
+    Parameters
+    ----------
+    root : str, default '$MXNET_HOME/datasets/mpqa'
+        Path to temp folder for storing data.
+        MXNET_HOME defaults to '~/.mxnet'.
+    """
     def __init__(self, root=os.path.join(get_home_dir(), 'datasets', 'mpqa')):
         super(MPQA, self).__init__('all', root)
 
