@@ -112,7 +112,7 @@ def evaluate(net, dataloader):
     acc = total_correct_num / float(total_sample_num)
     return avg_L, acc
 
-def train(net, train_data, test_data, dev_data = None):
+def train(net, train_data, test_data, dev_data=None):
     """Train textCNN model for sentiment analysis."""
     start_pipeline_time = time.time()
     net, trainer = text_cnn.init(net, vocab, args.model_mode, context, args.lr)
