@@ -402,7 +402,7 @@ class CR(SentimentDataset):
     """
     Customer reviews of various products (cameras, MP3s etc.). Task is to
     predict positive/negative reviews
-    
+
     From
     http://www.cs.uic.edu/∼liub/FBS/sentiment-analysis.html
 
@@ -428,7 +428,7 @@ class CR(SentimentDataset):
 class MPQA(SentimentDataset):
     """
     Opinion polarity detection subtask of the MPQA dataset
-    
+
     From
     http://www.cs.pitt.edu/mpqa/
 
