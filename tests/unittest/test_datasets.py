@@ -120,12 +120,18 @@ def test_sst_1():
         root=os.path.join('tests', 'data', 'sst-1'), segment='train')
     test = nlp.data.SST_1(
         root=os.path.join('tests', 'data', 'sst-1'), segment='test')
-    assert len(train) == 237107, len(train)
-    assert len(test) == 2125, len(test)
+    dev = nlp.data.SST_1(
+        root=os.path.join('tests', 'data', 'sst-1'), segment='dev')
+    assert len(train) == 156817, len(train)
+    assert len(test) == 2210, len(test)
+    assert len(dev) == 1101, len(dev)
     for i, (data, label) in enumerate(train):
         assert isinstance(data, _str_types)
         assert label <= 4
     for i, (data, label) in enumerate(test):
+        assert isinstance(data, _str_types)
+        assert label <= 4
+    for i, (data, label) in enumerate(dev):
         assert isinstance(data, _str_types)
         assert label <= 4
 
@@ -136,12 +142,18 @@ def test_sst_2():
         root=os.path.join('tests', 'data', 'sst-2'), segment='train')
     test = nlp.data.SST_2(
         root=os.path.join('tests', 'data', 'sst-2'), segment='test')
-    assert len(train) == 118038, len(train)
-    assert len(test) == 1745, len(test)
+    dev = nlp.data.SST_2(
+        root=os.path.join('tests', 'data', 'sst-2'), segment='dev')
+    assert len(train) == 76961, len(train)
+    assert len(test) == 1821, len(test)
+    assert len(dev) == 872, len(dev)
     for i, (data, label) in enumerate(train):
         assert isinstance(data, _str_types)
         assert label <= 1
     for i, (data, label) in enumerate(test):
+        assert isinstance(data, _str_types)
+        assert label <= 1
+    for i, (data, label) in enumerate(dev):
         assert isinstance(data, _str_types)
         assert label <= 1
 
@@ -162,7 +174,7 @@ def test_trec():
         root=os.path.join('tests', 'data', 'trec'), segment='train')
     test = nlp.data.TREC(
         root=os.path.join('tests', 'data', 'trec'), segment='test')
-    assert len(train) == 11452, len(train)
+    assert len(train) == 5452, len(train)
     assert len(test) == 500, len(test)
     for i, (data, label) in enumerate(train):
         assert isinstance(data, _str_types)
@@ -170,6 +182,26 @@ def test_trec():
     for i, (data, label) in enumerate(test):
         assert isinstance(data, _str_types)
         assert label <= 5
+
+@pytest.mark.serial
+@pytest.mark.remote_required
+def test_cr():
+    all = nlp.data.CR(
+        root=os.path.join('tests', 'data', 'cr'))
+    assert len(all) == 3775, len(all)
+    for i, (data, label) in enumerate(all):
+        assert isinstance(data, _str_types)
+        assert label <= 1
+
+@pytest.mark.serial
+@pytest.mark.remote_required
+def test_mpqa():
+    all = nlp.data.MPQA(
+        root=os.path.join('tests', 'data', 'mpqa'))
+    assert len(all) == 10606, len(all)
+    for i, (data, label) in enumerate(all):
+        assert isinstance(data, _str_types)
+        assert label <= 1
 
 ###############################################################################
 # Word similarity and relatedness datasets
