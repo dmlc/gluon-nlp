@@ -655,3 +655,46 @@ def test_numpy_dataset():
     assert np.all(dataset[1][1] == b[1])
     dataset_b = dataset.get_field('b')
     assert np.all(dataset_b == b)
+
+@pytest.mark.parametrize('segment,length,fields', [
+    (nlp.data.GlueCoLA, 'cola', 'train', 8551, 2)
+    (nlp.data.GlueCoLA, 'cola', 'dev', 1043, 2)
+    (nlp.data.GlueCoLA, 'cola', 'test', 1063, 1)
+    # source: https://arxiv.org/pdf/1804.07461.pdf
+    (nlp.data.GlueSST2, 'sst', 'train', 67349, 2)
+    (nlp.data.GlueSST2, 'sst', 'dev', 872, 2)
+    (nlp.data.GlueSST2, 'sst', 'test', 1821, 1)
+    # source: http://ixa2.si.ehu.es/stswiki/index.php/STSbenchmark
+    (nlp.data.GlueSTSB, 'sts', 'train', 5749, 3)
+    (nlp.data.GlueSTSB, 'sts', 'dev', 1500, 3)
+    (nlp.data.GlueSTSB, 'sts', 'test', 1379, 2)
+    # source: https://data.quora.com/First-Quora-Dataset-Release-Question-Pairs
+    (nlp.data.GlueQQP, 'qqp', 'train', 363849, 3)
+    (nlp.data.GlueQQP, 'qqp', 'dev', 40430, 3)
+    (nlp.data.GlueQQP, 'qqp', 'test', 390965, 2)
+])
+@pytest.mark.serial
+@pytest.mark.remote_required
+def test_glue_data(cls, name, segment, length, fields):
+    dataset = cls(segment=segment, root=os.path.join(
+        'tests', 'externaldata', 'glue', name))
+    assert len(dataset) == length, len(dataset)
+
+    for i, x in enumerate(dataset):
+        assert len(x) == fields, x
+
+test_glue_data(nlp.data.GlueCoLA, 'cola', 'train', 8551, 2)
+test_glue_data(nlp.data.GlueCoLA, 'cola', 'dev', 1043, 2)
+test_glue_data(nlp.data.GlueCoLA, 'cola', 'test', 1063, 1)
+# source: https://arxiv.org/pdf/1804.07461.pdf
+test_glue_data(nlp.data.GlueSST2, 'sst', 'train', 67349, 2)
+test_glue_data(nlp.data.GlueSST2, 'sst', 'dev', 872, 2)
+test_glue_data(nlp.data.GlueSST2, 'sst', 'test', 1821, 1)
+# source: http://ixa2.si.ehu.es/stswiki/index.php/STSbenchmark
+test_glue_data(nlp.data.GlueSTSB, 'sts', 'train', 5749, 3)
+test_glue_data(nlp.data.GlueSTSB, 'sts', 'dev', 1500, 3)
+test_glue_data(nlp.data.GlueSTSB, 'sts', 'test', 1379, 2)
+# source: https://data.quora.com/First-Quora-Dataset-Release-Question-Pairs
+test_glue_data(nlp.data.GlueQQP, 'qqp', 'train', 363849, 3)
+test_glue_data(nlp.data.GlueQQP, 'qqp', 'dev', 40430, 3)
+test_glue_data(nlp.data.GlueQQP, 'qqp', 'test', 390965, 2)
