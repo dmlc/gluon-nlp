@@ -713,7 +713,7 @@ class SentencepieceDetokenizer(_SentencepieceProcessor):
         return self._processor.DecodePieces(sample)
 
 
-class BERTBasicTokenizer():
+class BERTBasicTokenizer(object):
     r"""Runs basic tokenization
 
     performs invalid character removal (e.g. control chars) and whitespace.

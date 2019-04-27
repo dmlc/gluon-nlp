@@ -327,7 +327,7 @@ def _load_vocab_file(file_path, cls):
         return cls.from_json(f.read())
 
 
-def _extract_archive(file, target_dir):
+def _extract_archive(file, target_dir):  # pylint: disable=redefined-builtin
     """Extract archive file
 
     Parameters

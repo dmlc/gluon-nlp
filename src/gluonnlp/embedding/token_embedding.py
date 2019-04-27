@@ -603,10 +603,11 @@ class TokenEmbedding(object):
 
         if self.allow_extend:
             # Add new / previously unknown tokens
-            for token in filter(lambda t: t not in self._token_to_idx, tokens):
-                idx = len(self._token_to_idx)
-                self._token_to_idx[token] = idx
-                self._idx_to_token.append(token)
+            for token in tokens:
+                if not token in self._token_to_idx:
+                    idx = len(self._token_to_idx)
+                    self._token_to_idx[token] = idx
+                    self._idx_to_token.append(token)
 
             num_extended = len(self._token_to_idx) - self.idx_to_vec.shape[0]
             if num_extended == 1:
