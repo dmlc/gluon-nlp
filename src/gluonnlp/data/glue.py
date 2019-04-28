@@ -24,6 +24,7 @@ __all__ = ['GlueCoLA', 'GlueSST2', 'GlueSTSB', 'GlueQQP', 'GlueRTE', 'GlueMNLI',
            'GlueQNLI', 'GlueWNLI']
 
 import zipfile
+import os
 
 from mxnet.gluon.utils import download, check_sha1, _get_repo_file_url
 
