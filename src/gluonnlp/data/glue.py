@@ -17,25 +17,17 @@
 # specific language governing permissions and limitations
 # under the License.
 
-# pylint: disable=
+# pylint: disable=line-too-long
 """CoNLL format corpora."""
 
 __all__ = ['GlueCoLA', 'GlueSST2', 'GlueSTSB', 'GlueQQP', 'GlueRTE', 'GlueMNLI',
            'GlueQNLI', 'GlueWNLI']
 
-import codecs
-import glob
-import gzip
 import zipfile
-import io
-import os
-import shutil
-import tarfile
 
-from .dataset import TSVDataset
 from mxnet.gluon.utils import download, check_sha1, _get_repo_file_url
 
-from .. import _constants as C
+from .dataset import TSVDataset
 from .registry import register
 from ..base import get_home_dir
 
@@ -130,7 +122,8 @@ class GlueCoLA(_GlueDataset):
             num_discard_samples = 1
 
         super(GlueCoLA, self).__init__(root, data_file,
-            num_discard_samples=num_discard_samples, field_indices=field_indices)
+                                       num_discard_samples=num_discard_samples,
+                                       field_indices=field_indices)
 
     def _repo_dir(self):
         return 'gluon/dataset/GLUE/CoLA'
@@ -140,14 +133,12 @@ class GlueSST2(_GlueDataset):
     """The Stanford Sentiment Treebank (Socher et al., 2013) consists of sentences from movie
     reviews and human annotations of their sentiment.
 
-    Each sample has three fields: word, POS tag, chunk label.
-
     From
     https://gluebenchmark.com/tasks
 
     Parameters
     ----------
-    segment : {'train', 'test'}, default 'train'
+    segment : {'train', 'dev', 'test'}, default 'train'
         Dataset segment.
     root : str, default '$MXNET_HOME/datasets/glue_sst'
         Path to temp folder for storing data.
@@ -194,23 +185,26 @@ class GlueSST2(_GlueDataset):
             num_discard_samples = 1
 
         super(GlueSST2, self).__init__(root, data_file,
-            num_discard_samples=num_discard_samples, field_indices=field_indices)
+                                       num_discard_samples=num_discard_samples,
+                                       field_indices=field_indices)
 
     def _repo_dir(self):
         return 'gluon/dataset/GLUE/SST-2'
 
 @register(segment=['train', 'dev', 'test'])
 class GlueSTSB(_GlueDataset):
-    """CoNLL2000 Part-of-speech (POS) tagging and chunking joint task dataset.
+    """The Semantic Textual Similarity Benchmark (Cer et al., 2017) is a collection of
+    sentence pairs drawn from news headlines, video and image captions, and natural
+    language inference data.
 
-    Each sample has three fields: word, POS tag, chunk label.
+    Each pair is human-annotated with a similarity score from 1 to 5.
 
     From
     https://gluebenchmark.com/tasks
 
     Parameters
     ----------
-    segment : {'train', 'test'}, default 'train'
+    segment : {'train', 'dev', 'test'}, default 'train'
         Dataset segment.
     root : str, default '$MXNET_HOME/datasets/glue_stsb'
         Path to temp folder for storing data.
@@ -257,23 +251,23 @@ class GlueSTSB(_GlueDataset):
             num_discard_samples = 1
 
         super(GlueSTSB, self).__init__(root, data_file,
-            num_discard_samples=num_discard_samples, field_indices=field_indices)
+                                       num_discard_samples=num_discard_samples,
+                                       field_indices=field_indices)
 
     def _repo_dir(self):
         return 'gluon/dataset/GLUE/STS-B'
 
 @register(segment=['train', 'dev', 'test'])
 class GlueQQP(_GlueDataset):
-    """CoNLL2000 Part-of-speech (POS) tagging and chunking joint task dataset.
-
-    Each sample has three fields: word, POS tag, chunk label.
+    """The Quora Question Pairs dataset is a collection of question pairs from the community
+    question-answering website Quora.
 
     From
     https://gluebenchmark.com/tasks
 
     Parameters
     ----------
-    segment : {'train', 'test'}, default 'train'
+    segment : {'train', 'dev', 'test'}, default 'train'
         Dataset segment.
     root : str, default '$MXNET_HOME/datasets/glue_qqp'
         Path to temp folder for storing data.
@@ -320,24 +314,23 @@ class GlueQQP(_GlueDataset):
             num_discard_samples = 1
         # QQP may include broken samples
         super(GlueQQP, self).__init__(root, data_file,
-            num_discard_samples=num_discard_samples, field_indices=field_indices,
-            allow_missing=True)
+                                      num_discard_samples=num_discard_samples,
+                                      field_indices=field_indices, allow_missing=True)
 
     def _repo_dir(self):
         return 'gluon/dataset/GLUE/QQP'
 
 @register(segment=['train', 'dev', 'test'])
 class GlueRTE(_GlueDataset):
-    """CoNLL2000 Part-of-speech (POS) tagging and chunking joint task dataset.
-
-    Each sample has three fields: word, POS tag, chunk label.
+    """The Recognizing Textual Entailment (RTE) datasets come from a series of annual textual
+    entailment challenges (RTE1, RTE2, RTE3, and RTE5).
 
     From
     https://gluebenchmark.com/tasks
 
     Parameters
     ----------
-    segment : {'train', 'test'}, default 'train'
+    segment : {'train', 'dev', 'test'}, default 'train'
         Dataset segment.
     root : str, default '$MXNET_HOME/datasets/glue_rte'
         Path to temp folder for storing data.
@@ -383,7 +376,8 @@ class GlueRTE(_GlueDataset):
             field_indices = [A_IDX, B_IDX] if not return_all_fields else None
             num_discard_samples = 1
         super(GlueRTE, self).__init__(root, data_file,
-            num_discard_samples=num_discard_samples, field_indices=field_indices)
+                                      num_discard_samples=num_discard_samples,
+                                      field_indices=field_indices)
 
     def _repo_dir(self):
         return 'gluon/dataset/GLUE/RTE'
@@ -391,16 +385,16 @@ class GlueRTE(_GlueDataset):
 @register(segment=['train', 'dev_matched', 'dev_mismatched',
                    'test_matched', 'test_mismatched'])
 class GlueMNLI(_GlueDataset):
-    """CoNLL2000 Part-of-speech (POS) tagging and chunking joint task dataset.
-
-    Each sample has three fields: word, POS tag, chunk label.
+    """The Multi-Genre Natural Language Inference Corpus (Williams et al., 2018)
+    is a crowdsourced collection of sentence pairs with textual entailment annotations.
 
     From
     https://gluebenchmark.com/tasks
 
     Parameters
     ----------
-    segment : {'train', 'test'}, default 'train'
+    segment : {'train', 'dev_matched', 'dev_mismatched', 'test_matched', 'dev_mismatched'},
+              default 'train'
         Dataset segment.
     root : str, default '$MXNET_HOME/datasets/glue_mnli'
         Path to temp folder for storing data.
@@ -458,24 +452,24 @@ class GlueMNLI(_GlueDataset):
             field_indices = [A_IDX, B_IDX] if not return_all_fields else None
             num_discard_samples = 1
         super(GlueMNLI, self).__init__(root, data_file,
-            num_discard_samples=num_discard_samples, field_indices=field_indices,
-            allow_missing=True)
+                                      num_discard_samples=num_discard_samples,
+                                      field_indices=field_indices)
 
     def _repo_dir(self):
         return 'gluon/dataset/GLUE/MNLI'
 
 @register(segment=['train', 'dev', 'test'])
 class GlueQNLI(_GlueDataset):
-    """CoNLL2000 Part-of-speech (POS) tagging and chunking joint task dataset.
-
-    Each sample has three fields: word, POS tag, chunk label.
+    """The Question-answering NLI dataset converted from Stanford Question Answering Dataset
+    (Rajpurkar et al. 2016).
 
     From
     https://gluebenchmark.com/tasks
 
     Parameters
     ----------
-    segment : {'train', 'test'}, default 'train'
+    segment : {'train', 'dev', 'test'}, default 'train'
+        Dataset segment.
         Dataset segment.
     root : str, default '$MXNET_HOME/datasets/glue_qnli'
         Path to temp folder for storing data.
@@ -521,23 +515,23 @@ class GlueQNLI(_GlueDataset):
             field_indices = [A_IDX, B_IDX] if not return_all_fields else None
             num_discard_samples = 1
         super(GlueQNLI, self).__init__(root, data_file,
-            num_discard_samples=num_discard_samples, field_indices=field_indices)
+                                       num_discard_samples=num_discard_samples,
+                                       field_indices=field_indices)
 
     def _repo_dir(self):
         return 'gluon/dataset/GLUE/QNLI'
 
 @register(segment=['train', 'dev', 'test'])
 class GlueWNLI(_GlueDataset):
-    """CoNLL2000 Part-of-speech (POS) tagging and chunking joint task dataset.
-
-    Each sample has three fields: word, POS tag, chunk label.
+    """The Winograd NLI dataset converted from the dataset in
+    Winograd Schema Challenge (Levesque et al., 2011).
 
     From
     https://gluebenchmark.com/tasks
 
     Parameters
     ----------
-    segment : {'train', 'test'}, default 'train'
+    segment : {'train', 'dev', 'test'}, default 'train'
         Dataset segment.
     root : str, default '$MXNET_HOME/datasets/glue_wnli'
         Path to temp folder for storing data.
@@ -583,7 +577,8 @@ class GlueWNLI(_GlueDataset):
             field_indices = [A_IDX, B_IDX] if not return_all_fields else None
             num_discard_samples = 1
         super(GlueWNLI, self).__init__(root, data_file,
-            num_discard_samples=num_discard_samples, field_indices=field_indices)
+                                       num_discard_samples=num_discard_samples,
+                                       field_indices=field_indices)
 
     def _repo_dir(self):
         return 'gluon/dataset/GLUE/WNLI'
