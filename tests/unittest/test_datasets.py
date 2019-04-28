@@ -656,7 +656,7 @@ def test_numpy_dataset():
     dataset_b = dataset.get_field('b')
     assert np.all(dataset_b == b)
 
-@pytest.mark.parametrize('segment,length,fields', [
+@pytest.mark.parametrize('cls,name,segment,length,fields', [
     (nlp.data.GlueCoLA, 'cola', 'train', 8551, 2),
     (nlp.data.GlueCoLA, 'cola', 'dev', 1043, 2),
     (nlp.data.GlueCoLA, 'cola', 'test', 1063, 1),

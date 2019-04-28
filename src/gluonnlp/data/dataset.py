@@ -114,6 +114,9 @@ class TSVDataset(SimpleDataset):
     field_indices : list of int or None, default None
         If set, for each sample, only fields with provided indices are selected as the output.
         Otherwise all fields are returned.
+    allow_missing : bool, default False
+        If set to True, no exception will be thrown if the number of fields is smaller than the
+        maximum field index provided.
     """
     def __init__(self, filename, encoding='utf8',
                  sample_splitter=line_splitter, field_separator=Splitter('\t'),
