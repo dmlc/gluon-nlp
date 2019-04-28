@@ -431,8 +431,8 @@ class GlueMNLI(_GlueDataset):
                                            '328cf527add50ee7bc20a862f97913800ba8a4b1',
                                            '7a38c5fb5ecc875f259e1d57662d58a984753b70'),
                            'dev_mismatched': ('dev_mismatched',
-                                            '9c5d6c6d2e3a676bfa19d929b32e2f9f233585c5',
-                                            '47470d91b594e767d80e5de2ef0be6a453c17be5'),
+                                              '9c5d6c6d2e3a676bfa19d929b32e2f9f233585c5',
+                                              '47470d91b594e767d80e5de2ef0be6a453c17be5'),
                            'test_matched': ('test_matched',
                                             '53877d9d554b6a6d402cc0e5f7e38366cd4f8e60',
                                             '00106769e11a43eac119975ad25c2de2c8d2dbe7'),
@@ -453,8 +453,8 @@ class GlueMNLI(_GlueDataset):
             field_indices = [A_IDX, B_IDX] if not return_all_fields else None
             num_discard_samples = 1
         super(GlueMNLI, self).__init__(root, data_file,
-                                      num_discard_samples=num_discard_samples,
-                                      field_indices=field_indices)
+                                       num_discard_samples=num_discard_samples,
+                                       field_indices=field_indices)
 
     def _repo_dir(self):
         return 'gluon/dataset/GLUE/MNLI'
