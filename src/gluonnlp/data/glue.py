@@ -20,7 +20,8 @@
 # pylint: disable=
 """CoNLL format corpora."""
 
-__all__ = ['GlueCoLA', 'GlueSST2', 'GlueSTSB', 'GlueQQP']
+__all__ = ['GlueCoLA', 'GlueSST2', 'GlueSTSB', 'GlueQQP', 'GlueRTE', 'GlueMNLI',
+           'GlueQNLI', 'GlueWNLI']
 
 import codecs
 import glob
@@ -71,30 +72,42 @@ class _GlueDataset(TSVDataset):
 
 @register(segment=['train', 'dev', 'test'])
 class GlueCoLA(_GlueDataset):
-    """CoNLL2000 Part-of-speech (POS) tagging and chunking joint task dataset.
+    """The Corpus of Linguistic Acceptability (Warstadt et al., 2018) consists of English
+    acceptability judgments drawn from books and journal articles on linguistic theory.
 
-    Each sample has three fields: word, POS tag, chunk label.
+    Each example is a sequence of words annotated with whether it is a grammatical
+    English sentence.
 
     From
-    https://www.clips.uantwerpen.be/cola2000/chunking/
+    https://gluebenchmark.com/tasks
 
     Parameters
     ----------
-    segment : {'train', 'test'}, default 'train'
+    segment : {'train', 'dev', 'test'}, default 'train'
         Dataset segment.
-    root : str, default '$MXNET_HOME/datasets/cola2000'
+    root : str, default '$MXNET_HOME/datasets/glue_cola'
         Path to temp folder for storing data.
         MXNET_HOME defaults to '~/.mxnet'.
+    return_all_fields : bool, default False
+        Return all fields available in the dataset.
 
     Examples
     --------
-    >>> cola = gluonnlp.data.GlueCoLA('test', root='./datasets/cola')
+    >>> cola_dev = gluonnlp.data.GlueCoLA('dev', root='./datasets/cola')
     -etc-
-    >>> len(cola)
+    >>> len(cola_dev)
+    1043
+    >>> len(cola_dev[0])
+    2
+    >>> cola_dev[0]
+    [u'The sailors rode the breeze clear of the rocks.', u'1']
+    >>> cola_test = gluonnlp.data.GlueCoLA('test', root='./datasets/cola')
+    -etc-
+    >>> len(cola_test)
     1063
-    >>> len(cola[0])
+    >>> len(cola_test[0])
     1
-    >>> cola[0][0]
+    >>> cola_test[0]
     ['Bill whistled past the house.']
     """
     def __init__(self, segment='train',
@@ -124,31 +137,42 @@ class GlueCoLA(_GlueDataset):
 
 @register(segment=['train', 'dev', 'test'])
 class GlueSST2(_GlueDataset):
-    """CoNLL2000 Part-of-speech (POS) tagging and chunking joint task dataset.
+    """The Stanford Sentiment Treebank (Socher et al., 2013) consists of sentences from movie
+    reviews and human annotations of their sentiment.
 
     Each sample has three fields: word, POS tag, chunk label.
 
     From
-    https://www.clips.uantwerpen.be/cola2000/chunking/
+    https://gluebenchmark.com/tasks
 
     Parameters
     ----------
     segment : {'train', 'test'}, default 'train'
         Dataset segment.
-    root : str, default '$MXNET_HOME/datasets/cola2000'
+    root : str, default '$MXNET_HOME/datasets/glue_sst'
         Path to temp folder for storing data.
         MXNET_HOME defaults to '~/.mxnet'.
+    return_all_fields : bool, default False
+        Return all fields available in the dataset.
 
     Examples
     --------
-    >>> cola = gluonnlp.data.GlueCoLA('test', root='./datasets/cola')
+    >>> sst_dev = gluonnlp.data.GlueSST2('dev', root='./datasets/sst')
     -etc-
-    >>> len(cola)
-    1063
-    >>> len(cola[0])
+    >>> len(sst_dev)
+    872
+    >>> len(sst_dev[0])
+    2
+    >>> sst_dev[0]
+    [u"it 's a charming and often affecting journey . ", u'1']
+    >>> sst_test = gluonnlp.data.GlueSST2('test', root='./datasets/sst')
+    -etc-
+    >>> len(sst_test)
+    1821
+    >>> len(sst_test[0])
     1
-    >>> cola[0][0]
-    ['Bill whistled past the house.']
+    >>> sst_test[0]
+    [u'uneasy mishmash of styles and genres .']
     """
     def __init__(self, segment='train',
                  root=os.path.join(get_home_dir(), 'datasets', 'glue_sst'),
@@ -182,29 +206,39 @@ class GlueSTSB(_GlueDataset):
     Each sample has three fields: word, POS tag, chunk label.
 
     From
-    https://www.clips.uantwerpen.be/cola2000/chunking/
+    https://gluebenchmark.com/tasks
 
     Parameters
     ----------
     segment : {'train', 'test'}, default 'train'
         Dataset segment.
-    root : str, default '$MXNET_HOME/datasets/cola2000'
+    root : str, default '$MXNET_HOME/datasets/glue_stsb'
         Path to temp folder for storing data.
         MXNET_HOME defaults to '~/.mxnet'.
+    return_all_fields : bool, default False
+        Return all fields available in the dataset.
 
     Examples
     --------
-    >>> cola = gluonnlp.data.GlueCoLA('test', root='./datasets/cola')
+    >>> stsb_dev = gluonnlp.data.GlueSTSB('dev', root='./datasets/stsb')
     -etc-
-    >>> len(cola)
-    1063
-    >>> len(cola[0])
-    1
-    >>> cola[0][0]
-    ['Bill whistled past the house.']
+    >>> len(stsb_dev)
+    1500
+    >>> len(stsb_dev[0])
+    3
+    >>> stsb_dev[0]
+    [u'A man with a hard hat is dancing.', u'A man wearing a hard hat is dancing.', u'5.000']
+    >>> stsb_test = gluonnlp.data.GlueSTSB('test', root='./datasets/stsb')
+    -etc-
+    >>> len(stsb_test)
+    1379
+    >>> len(stsb_test[0])
+    2
+    >>> stsb_test[0]
+    [u'A girl is styling her hair.', u'A girl is brushing her hair.']
     """
     def __init__(self, segment='train',
-                 root=os.path.join(get_home_dir(), 'datasets', 'glue_sst'),
+                 root=os.path.join(get_home_dir(), 'datasets', 'glue_stsb'),
                  return_all_fields=False):
         self._data_file = {'train': ('train', '9378bd341576810730a5c666ed03122e4c5ecc9f',
                                      '501e55248c6db2a3f416c75932a63693000a82bc'),
@@ -235,29 +269,39 @@ class GlueQQP(_GlueDataset):
     Each sample has three fields: word, POS tag, chunk label.
 
     From
-    https://www.clips.uantwerpen.be/cola2000/chunking/
+    https://gluebenchmark.com/tasks
 
     Parameters
     ----------
     segment : {'train', 'test'}, default 'train'
         Dataset segment.
-    root : str, default '$MXNET_HOME/datasets/cola2000'
+    root : str, default '$MXNET_HOME/datasets/glue_qqp'
         Path to temp folder for storing data.
         MXNET_HOME defaults to '~/.mxnet'.
+    return_all_fields : bool, default False
+        Return all fields available in the dataset.
 
     Examples
     --------
-    >>> cola = gluonnlp.data.GlueCoLA('test', root='./datasets/cola')
+    >>> qqp_dev = gluonnlp.data.GlueQQP('dev', root='./datasets/qqp')
     -etc-
-    >>> len(cola)
-    1063
-    >>> len(cola[0])
-    1
-    >>> cola[0][0]
-    ['Bill whistled past the house.']
+    >>> len(qqp_dev)
+    40430
+    >>> len(qqp_dev[0])
+    3
+    >>> qqp_dev[0]
+    [u'Why are African-Americans so beautiful?', u'Why are hispanics so beautiful?', u'0']
+    >>> qqp_test = gluonnlp.data.GlueQQP('test', root='./datasets/qqp')
+    -etc-
+    >>> len(qqp_test)
+    390965
+    >>> len(qqp_test[3])
+    2
+    >>> qqp_test[3]
+    [u'Is it safe to invest in social trade biz?', u'Is social trade geniune?']
     """
     def __init__(self, segment='train',
-                 root=os.path.join(get_home_dir(), 'datasets', 'glue_sst'),
+                 root=os.path.join(get_home_dir(), 'datasets', 'glue_qqp'),
                  return_all_fields=False):
         self._data_file = {'train': ('train', '494f280d651f168ad96d6cd05f8d4ddc6be73ce9',
                                      '95c01e711ac8dbbda8f67f3a4291e583a72b6988'),
@@ -281,3 +325,265 @@ class GlueQQP(_GlueDataset):
 
     def _repo_dir(self):
         return 'gluon/dataset/GLUE/QQP'
+
+@register(segment=['train', 'dev', 'test'])
+class GlueRTE(_GlueDataset):
+    """CoNLL2000 Part-of-speech (POS) tagging and chunking joint task dataset.
+
+    Each sample has three fields: word, POS tag, chunk label.
+
+    From
+    https://gluebenchmark.com/tasks
+
+    Parameters
+    ----------
+    segment : {'train', 'test'}, default 'train'
+        Dataset segment.
+    root : str, default '$MXNET_HOME/datasets/glue_rte'
+        Path to temp folder for storing data.
+        MXNET_HOME defaults to '~/.mxnet'.
+    return_all_fields : bool, default False
+        Return all fields available in the dataset.
+
+    Examples
+    --------
+    >>> rte_dev = gluonnlp.data.GlueRTE('dev', root='./datasets/rte')
+    -etc-
+    >>> len(rte)
+    277
+    >>> len(rte[0])
+    3
+    >>> rte[0]
+    [u'Dana Reeve, the widow of the actor Christopher Reeve, has died of lung cancer at age 44, according to the Christopher Reeve Foundation.', u'Christopher Reeve had an accident.', u'not_entailment']
+    >>> rte_test = gluonnlp.data.GlueRTE('test', root='./datasets/rte')
+    -etc-
+    >>> len(rte_test)
+    3000
+    >>> len(rte_test[16])
+    2
+    >>> rte_test[16]
+    [u'United failed to progress beyond the group stages of the Champions League and trail in the Premiership title race, sparking rumours over its future.', u'United won the Champions League.']
+    """
+    def __init__(self, segment='train',
+                 root=os.path.join(get_home_dir(), 'datasets', 'glue_rte'),
+                 return_all_fields=False):
+        self._data_file = {'train': ('train', 'a23b0633f4f4dfa866c672af2e94f7e07344888f',
+                                     'ec2b246745bb5c9d92aee0800684c08902742730'),
+                           'dev': ('dev', 'a6cde090d12a10744716304008cf33dd3f0dbfcb',
+                                   'ade75e0673862dcac9c653efb9f59f51be2749aa'),
+                           'test': ('test', '7e4e58a6fa80b1f05e603b4e220524be7976b488',
+                                    'ddda5c967fb5a4934b429bb52aaa144e70900000')}
+        data_file = self._data_file[segment]
+        if segment in ['train', 'dev']:
+            A_IDX, B_IDX, LABEL_IDX = 1, 2, 3
+            field_indices = [A_IDX, B_IDX, LABEL_IDX] if not return_all_fields else None
+            num_discard_samples = 1
+        elif segment == 'test':
+            A_IDX, B_IDX, = 1, 2
+            field_indices = [A_IDX, B_IDX] if not return_all_fields else None
+            num_discard_samples = 1
+        super(GlueRTE, self).__init__(root, data_file,
+            num_discard_samples=num_discard_samples, field_indices=field_indices)
+
+    def _repo_dir(self):
+        return 'gluon/dataset/GLUE/RTE'
+
+@register(segment=['train', 'dev_matched', 'dev_mismatched',
+                   'test_matched', 'test_mismatched'])
+class GlueMNLI(_GlueDataset):
+    """CoNLL2000 Part-of-speech (POS) tagging and chunking joint task dataset.
+
+    Each sample has three fields: word, POS tag, chunk label.
+
+    From
+    https://gluebenchmark.com/tasks
+
+    Parameters
+    ----------
+    segment : {'train', 'test'}, default 'train'
+        Dataset segment.
+    root : str, default '$MXNET_HOME/datasets/glue_mnli'
+        Path to temp folder for storing data.
+        MXNET_HOME defaults to '~/.mxnet'.
+    return_all_fields : bool, default False
+        Return all fields available in the dataset.
+
+    Examples
+    --------
+    >>> mnli_dev = gluonnlp.data.GlueMNLI('dev', root='./datasets/mnli')
+    -etc-
+    >>> len(mnli_dev)
+    9815
+    >>> len(mnli_dev[0])
+    3
+    >>> mnli_dev[0]
+    [u'The new rights are nice enough', u'Everyone really likes the newest benefits ', u'neutral']
+    >>> mnli_test = gluonnlp.data.GlueCoLA('test', root='./datasets/mnli')
+    -etc-
+    >>> len(mnli_test)
+    9796
+    >>> len(mnli_test[0])
+    2
+    >>> mnli_test[0]
+    [u'Hierbas, ans seco, ans dulce, and frigola are just a few names worth keeping a look-out for.', u'Hierbas is a name worth looking out for.']
+    """
+    def __init__(self, segment='train',
+                 root=os.path.join(get_home_dir(), 'datasets', 'glue_mnli'),
+                 return_all_fields=False):
+        self._data_file = {'train': ('train', 'aa235064ab3ce47d48caa17c553561d84fdf5bf2',
+                                     '1e74055bc91e260323574bfe63186acb9420fa13'),
+                           'dev_matched': ('dev_matched',
+                                           '328cf527add50ee7bc20a862f97913800ba8a4b1',
+                                           '7a38c5fb5ecc875f259e1d57662d58a984753b70'),
+                           'dev_mismatched': ('dev_mismatched',
+                                            '9c5d6c6d2e3a676bfa19d929b32e2f9f233585c5',
+                                            '47470d91b594e767d80e5de2ef0be6a453c17be5'),
+                           'test_matched': ('test_matched',
+                                            '53877d9d554b6a6d402cc0e5f7e38366cd4f8e60',
+                                            '00106769e11a43eac119975ad25c2de2c8d2dbe7'),
+                           'test_mismatched': ('test_mismatched',
+                                               '82b03d3cc9f4a59c74beab06c141bc0c5bf74a55',
+                                               '5a31abf92f045f127dbb2e3d2e0ef8ddea04c237')}
+        data_file = self._data_file[segment]
+        if segment in ['train']:
+            A_IDX, B_IDX, LABEL_IDX = 8, 9, 11
+            field_indices = [A_IDX, B_IDX, LABEL_IDX] if not return_all_fields else None
+            num_discard_samples = 1
+        elif segment in ['dev_matched', 'dev_mismatched']:
+            A_IDX, B_IDX, LABEL_IDX = 8, 9, 15
+            field_indices = [A_IDX, B_IDX, LABEL_IDX] if not return_all_fields else None
+            num_discard_samples = 1
+        elif segment in ['test_matched', 'test_mismatched']:
+            A_IDX, B_IDX, = 8, 9
+            field_indices = [A_IDX, B_IDX] if not return_all_fields else None
+            num_discard_samples = 1
+        super(GlueMNLI, self).__init__(root, data_file,
+            num_discard_samples=num_discard_samples, field_indices=field_indices,
+            allow_missing=True)
+
+    def _repo_dir(self):
+        return 'gluon/dataset/GLUE/MNLI'
+
+@register(segment=['train', 'dev', 'test'])
+class GlueQNLI(_GlueDataset):
+    """CoNLL2000 Part-of-speech (POS) tagging and chunking joint task dataset.
+
+    Each sample has three fields: word, POS tag, chunk label.
+
+    From
+    https://gluebenchmark.com/tasks
+
+    Parameters
+    ----------
+    segment : {'train', 'test'}, default 'train'
+        Dataset segment.
+    root : str, default '$MXNET_HOME/datasets/glue_qnli'
+        Path to temp folder for storing data.
+        MXNET_HOME defaults to '~/.mxnet'.
+    return_all_fields : bool, default False
+        Return all fields available in the dataset.
+
+    Examples
+    --------
+    >>> qnli_dev = gluonnlp.data.GlueQNLI('dev', root='./datasets/qnli')
+    -etc-
+    >>> len(qnli_dev)
+    5732
+    >>> len(qnli_dev[0])
+    3
+    >>> qnli_dev[0]
+    [u'Which NFL team represented the AFC at Super Bowl 50?', u'The American Football Conference (AFC) champion Denver Broncos defeated the National Football Conference (NFC) champion Carolina Panthers 24\u201310 to earn their third Super Bowl title.', u'entailment']
+    >>> qnli_test = gluonnlp.data.GlueQNLI('test', root='./datasets/qnli')
+    -etc-
+    >>> len(qnli_test)
+    5740
+    >>> len(qnli_test[0])
+    2
+    >>> qnli_test[0]
+    [u'What is the seldom used force unit equal to one thousand newtons?', u'Other arcane units of force include the sth\xe8ne, which is equivalent to 1000 N, and the kip, which is equivalent to 1000 lbf.']
+    """
+    def __init__(self, segment='train',
+                 root=os.path.join(get_home_dir(), 'datasets', 'glue_qnli'),
+                 return_all_fields=False):
+        self._data_file = {'train': ('train', '95fae96fb1ffa6a2804192c9036d3435e63b48e8',
+                                     'd90a84eb40c6ba32bc2b34284ceaa962c46f8753'),
+                           'dev': ('dev', '5652b9d4d5c8d115c080bcf64101927ea2b3a1e0',
+                                   'd14a61290301c2a9d26459c4cd036742e8591428'),
+                           'test': ('test', '23dfb2f38adb14d3e792dbaecb7f5fd5dfa8db7e',
+                                    'f3da1a2e471ebfee81d91574b42e0f5d39153c59')}
+        data_file = self._data_file[segment]
+        if segment in ['train', 'dev']:
+            A_IDX, B_IDX, LABEL_IDX = 1, 2, 3
+            field_indices = [A_IDX, B_IDX, LABEL_IDX] if not return_all_fields else None
+            num_discard_samples = 1
+        elif segment == 'test':
+            A_IDX, B_IDX, = 1, 2
+            field_indices = [A_IDX, B_IDX] if not return_all_fields else None
+            num_discard_samples = 1
+        super(GlueQNLI, self).__init__(root, data_file,
+            num_discard_samples=num_discard_samples, field_indices=field_indices)
+
+    def _repo_dir(self):
+        return 'gluon/dataset/GLUE/QNLI'
+
+@register(segment=['train', 'dev', 'test'])
+class GlueWNLI(_GlueDataset):
+    """CoNLL2000 Part-of-speech (POS) tagging and chunking joint task dataset.
+
+    Each sample has three fields: word, POS tag, chunk label.
+
+    From
+    https://gluebenchmark.com/tasks
+
+    Parameters
+    ----------
+    segment : {'train', 'test'}, default 'train'
+        Dataset segment.
+    root : str, default '$MXNET_HOME/datasets/glue_wnli'
+        Path to temp folder for storing data.
+        MXNET_HOME defaults to '~/.mxnet'.
+    return_all_fields : bool, default False
+        Return all fields available in the dataset.
+
+    Examples
+    --------
+    >>> wnli_dev = gluonnlp.data.GlueWNLI('dev', root='./datasets/wnli')
+    -etc-
+    >>> len(wnli_dev)
+    71
+    >>> len(wnli_dev[0])
+    3
+    >>> wnli_dev[0]
+    [u'The drain is clogged with hair. It has to be cleaned.', u'The hair has to be cleaned.', u'0']
+    >>> wnli_test = gluonnlp.data.GlueWNLI('test', root='./datasets/wnli')
+    -etc-
+    >>> len(wnli_test)
+    146
+    >>> len(wnli_test[0])
+    2
+    >>> wnli_test[0]
+    [u'Maude and Dora had seen the trains rushing across the prairie, with long, rolling puffs of black smoke streaming back from the engine. Their roars and their wild, clear whistles could be heard from far away. Horses ran away when they came in sight.', u'Horses ran away when Maude and Dora came in sight.']
+    """
+    def __init__(self, segment='train',
+                 root=os.path.join(get_home_dir(), 'datasets', 'glue_wnli'),
+                 return_all_fields=False):
+        self._data_file = {'train': ('train', '8db0004d0e58640751a9f2875dd66c8000504ddb',
+                                     'b497281c1d848b619ea8fe427b3a6e4dc8e7fa92'),
+                           'dev': ('dev', 'd54834960555073fb497cf2766edb77fb62c3646',
+                                   '6bbdb866d0cccaac57c3a2505cf53103789b69a9'),
+                           'test': ('test', '431e596a1c6627fb168e7741b3e32ef681da3c7b',
+                                    '6ba8fcf3e5b451c101a3902fb4ba3fc1dea42e50')}
+        data_file = self._data_file[segment]
+        if segment in ['train', 'dev']:
+            A_IDX, B_IDX, LABEL_IDX = 1, 2, 3
+            field_indices = [A_IDX, B_IDX, LABEL_IDX] if not return_all_fields else None
+            num_discard_samples = 1
+        elif segment == 'test':
+            A_IDX, B_IDX, = 1, 2
+            field_indices = [A_IDX, B_IDX] if not return_all_fields else None
+            num_discard_samples = 1
+        super(GlueWNLI, self).__init__(root, data_file,
+            num_discard_samples=num_discard_samples, field_indices=field_indices)
+
+    def _repo_dir(self):
+        return 'gluon/dataset/GLUE/WNLI'
