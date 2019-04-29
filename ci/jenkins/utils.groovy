@@ -87,11 +87,11 @@ def get_repo_url() {
 }
 
 def update_github_commit_status(state, message) {
-  node(NODE_UTILITY) {
+  node {
     // NOTE: https://issues.jenkins-ci.org/browse/JENKINS-39482
-    //The GitHubCommitStatusSetter requires that the Git Server is defined under 
-    //*Manage Jenkins > Configure System > GitHub > GitHub Servers*. 
-    //Otherwise the GitHubCommitStatusSetter is not able to resolve the repository name 
+    //The GitHubCommitStatusSetter requires that the Git Server is defined under
+    //*Manage Jenkins > Configure System > GitHub > GitHub Servers*.
+    //Otherwise the GitHubCommitStatusSetter is not able to resolve the repository name
     //properly and you would see an empty list of repos:
     //[Set GitHub commit status (universal)] PENDING on repos [] (sha:xxxxxxx) with context:test/mycontext
     //See https://cwiki.apache.org/confluence/display/MXNET/Troubleshooting#Troubleshooting-GitHubcommit/PRstatusdoesnotgetpublished
@@ -103,7 +103,7 @@ def update_github_commit_status(state, message) {
 
     commitSha = get_git_commit_hash()
     echo "commitSha=${commitSha}"
-    
+
     context = get_github_context()
     echo "context=${context}"
 
@@ -171,7 +171,7 @@ def assign_node_labels(args) {
   //    users from just copy&pasting something into an existing Jenkinsfile without
   //    knowing about the limitations.
   NODE_LINUX_GPU = args.linux_gpu
-  NODE_UTILITY = args.utility
+  NODE_LINUX_CPU = args.linux_cpu
 }
 
 def main_wrapper(args) {
@@ -191,14 +191,14 @@ def main_wrapper(args) {
     currentBuild.result = "SUCCESS"
     update_github_commit_status('SUCCESS', 'Job succeeded')
   } catch (caughtError) {
-    node(NODE_UTILITY) {
+    node {
       sh "echo caught ${caughtError}"
       err = caughtError
       currentBuild.result = "FAILURE"
       update_github_commit_status('FAILURE', 'Job failed')
     }
   } finally {
-    node(NODE_UTILITY) {
+    node {
       // Call failure handler
       args['failure_handler']()
 
