@@ -35,7 +35,7 @@ from mxnet.gluon.utils import download, check_sha1
 
 from .. import _constants as C
 from .registry import register
-from .utils import _get_home_dir
+from ..base import get_home_dir
 
 
 class _CoNLLSequenceTagging(SimpleDataset):
@@ -115,9 +115,24 @@ class CoNLL2000(_CoNLLSequenceTagging):
     root : str, default '$MXNET_HOME/datasets/conll2000'
         Path to temp folder for storing data.
         MXNET_HOME defaults to '~/.mxnet'.
+
+    Examples
+    --------
+    >>> conll = gluonnlp.data.CoNLL2000('test', root='./datasets/conll2000')
+    -etc-
+    >>> len(conll)
+    2012
+    >>> len(conll[0])
+    3
+    >>> conll[8][0]
+    ['SHEARSON', 'LEHMAN', 'HUTTON', 'Inc', '.']
+    >>> conll[8][1]
+    ['NNP', 'NNP', 'NNP', 'NNP', '.']
+    >>> conll[8][2]
+    ['B-NP', 'I-NP', 'I-NP', 'I-NP', 'O']
     """
     def __init__(self, segment='train',
-                 root=os.path.join(_get_home_dir(), 'datasets', 'conll2000')):
+                 root=os.path.join(get_home_dir(), 'datasets', 'conll2000')):
         self._data_file = {'train': ('train.txt.gz',
                                      '9f31cf936554cebf558d07cce923dca0b7f31864'),
                            'test': ('test.txt.gz',
@@ -146,9 +161,26 @@ class CoNLL2001(_CoNLLSequenceTagging):
     root : str, default '$MXNET_HOME/datasets/conll2001'
         Path to temp folder for storing data.
         MXNET_HOME defaults to '~/.mxnet'.
+
+    Examples
+    --------
+    >>> conll = gluonnlp.data.CoNLL2001(1, 'testa', root='./datasets/conll2001')
+    -etc-
+    >>> len(conll)
+    2012
+    >>> len(conll[0])
+    4
+    >>> conll[8][0]
+    ['SHEARSON', 'LEHMAN', 'HUTTON', 'Inc', '.']
+    >>> conll[8][1]
+    ['NNP', 'NNP', 'NNP', 'NNP', '.']
+    >>> conll[8][2]
+    ['B-NP', 'I-NP', 'I-NP', 'I-NP', 'O']
+    >>> conll[8][3]
+    ['X', 'X', 'X', 'X', 'X']
     """
     def __init__(self, part, segment='train',
-                 root=os.path.join(_get_home_dir(), 'datasets', 'conll2001')):
+                 root=os.path.join(get_home_dir(), 'datasets', 'conll2001')):
         self._part = part
         self._data_file = [
             {'train': ('train1',
@@ -205,9 +237,22 @@ class CoNLL2002(_CoNLLSequenceTagging):
     root : str, default '$MXNET_HOME/datasets/conll2002'
         Path to temp folder for storing data.
         MXNET_HOME defaults to '~/.mxnet'.
+
+    Examples
+    --------
+    >>> conll = gluonnlp.data.CoNLL2002('esp', 'testa', root='./datasets/conll2002')
+    -etc-
+    >>> len(conll)
+    1915
+    >>> len(conll[0])
+    2
+    >>> conll[0][0]
+    ['Sao', 'Paulo', '(', 'Brasil', ')', ',', '23', 'may', '(', 'EFECOM', ')', '.']
+    >>> conll[0][1]
+    ['B-LOC', 'I-LOC', 'O', 'B-LOC', 'O', 'O', 'O', 'O', 'O', 'B-ORG', 'O', 'O']
     """
     def __init__(self, lang, segment='train',
-                 root=os.path.join(_get_home_dir(), 'datasets', 'conll2002')):
+                 root=os.path.join(get_home_dir(), 'datasets', 'conll2002')):
         self._lang = lang
         self._data_file = {
             'esp': {'train': ('esp.train.gz',
@@ -242,7 +287,7 @@ class CoNLL2002(_CoNLLSequenceTagging):
 class CoNLL2004(_CoNLLSequenceTagging):
     """CoNLL2004 Semantic Role Labeling (SRL) task dataset.
 
-    Each sample has seven or more fields: word, POS tag, chunk label, clause tag, NER label,
+    Each sample has six or more fields: word, POS tag, chunk label, clause tag, NER label,
     target verbs, and sense labels (of variable number per sample).
 
     From
@@ -255,9 +300,30 @@ class CoNLL2004(_CoNLLSequenceTagging):
     root : str, default '$MXNET_HOME/datasets/conll2004'
         Path to temp folder for storing data.
         MXNET_HOME defaults to '~/.mxnet'.
+
+    Examples
+    --------
+    >>> conll = gluonnlp.data.CoNLL2004('dev', root='./datasets/conll2004')
+    -etc-
+    >>> len(conll)
+    2012
+    >>> len(conll[8])
+    6
+    >>> conll[8][0]
+    ['SHEARSON', 'LEHMAN', 'HUTTON', 'Inc', '.']
+    >>> conll[8][1]
+    ['NNP', 'NNP', 'NNP', 'NNP', '.']
+    >>> conll[8][2]
+    ['B-NP', 'I-NP', 'I-NP', 'I-NP', 'O']
+    >>> conll[8][3]
+    ['*', '*', '*', '*', '*']
+    >>> conll[8][4]
+    ['B-ORG', 'I-ORG', 'I-ORG', 'I-ORG', 'O']
+    >>> conll[8][5]
+    ['-', '-', '-', '-', '-']
     """
     def __init__(self, segment='train',
-                 root=os.path.join(_get_home_dir(), 'datasets', 'conll2004')):
+                 root=os.path.join(get_home_dir(), 'datasets', 'conll2004')):
         self._archive_file = ('conll04st-release.tar.gz',
                               '09ef957d908d34fa0abd745cbe43e279414f076c')
         self._data_file = {
@@ -332,9 +398,38 @@ class UniversalDependencies21(_CoNLLSequenceTagging):
     root : str, default '$MXNET_HOME/datasets/ud2.1'
         Path to temp folder for storing data.
         MXNET_HOME defaults to '~/.mxnet'.
+
+    Examples
+    --------
+    >>> ud = gluonnlp.data.UniversalDependencies21('en', 'dev', root='./datasets/ud21')
+    -etc-
+    >>> len(ud)
+    2002
+    >>> len(ud[0])
+    10
+    >>> ud[0][0]
+    ['1', '2', '3', '4', '5', '6', '7']
+    >>> ud[0][1]
+    ['From', 'the', 'AP', 'comes', 'this', 'story', ':']
+    >>> ud[0][2]
+    ['from', 'the', 'AP', 'come', 'this', 'story', ':']
+    >>> ud[0][3]
+    ['ADP', 'DET', 'PROPN', 'VERB', 'DET', 'NOUN', 'PUNCT']
+    >>> ud[0][4]
+    ['IN', 'DT', 'NNP', 'VBZ', 'DT', 'NN', ':']
+    >>> ud[0][5][:3]
+    ['_', 'Definite=Def|PronType=Art', 'Number=Sing']
+    >>> ud[0][6]
+    ['3', '3', '4', '0', '6', '4', '4']
+    >>> ud[0][7]
+    ['case', 'det', 'obl', 'root', 'det', 'nsubj', 'punct']
+    >>> ud[0][8]
+    ['3:case', '3:det', '4:obl', '0:root', '6:det', '4:nsubj', '4:punct']
+    >>> ud[0][9]
+    ['_', '_', '_', '_', '_', '_', '_']
     """
     def __init__(self, lang='en', segment='train',
-                 root=os.path.join(_get_home_dir(), 'datasets', 'ud2.1')):
+                 root=os.path.join(get_home_dir(), 'datasets', 'ud2.1')):
         self._archive_file = ('ud-treebanks-v2.1.tgz',
                               '77657b897951e21d2eca6b29958e663964eb57ae')
         self._lang = lang
@@ -347,12 +442,12 @@ class UniversalDependencies21(_CoNLLSequenceTagging):
 
     def _get_data_file_hash(self):
         assert self._lang in self._data_file, \
-                'Language "{}" is not available. Options are {}.'.format(self._lang,
-                                                                         self._data_file.values())
+                'Language "{}" is not available. Options are {}.'.format(
+                    self._lang, list(self._data_file.keys()))
         available_segments = self._data_file[self._lang].keys()
         assert self._segment in available_segments, \
                 'Segment "{}" is not available for language "{}". ' \
-                'Options are: {}.'.format(self._segment, self._lang, available_segments)
+                'Options are: {}.'.format(self._segment, self._lang, list(available_segments))
         return [self._data_file[self._lang][self._segment]]
 
     def _get_data_archive_hash(self):

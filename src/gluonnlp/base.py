@@ -20,7 +20,10 @@
 # pylint: disable=abstract-method
 """Helper functions."""
 
-__all__ = ['_str_types', 'numba_njit', 'numba_prange', 'numba_jitclass', 'numba_types']
+import os
+
+__all__ = ['_str_types', 'numba_njit', 'numba_prange', 'numba_jitclass', 'numba_types',
+           'get_home_dir']
 
 try:
     _str_types = (str, unicode)
@@ -60,3 +63,11 @@ except ImportError:
     numba_types = NumbaTypes()
     numba_njit = identity
     numba_prange = range
+
+
+def get_home_dir():
+    """Get home directory for storing datasets/models/pre-trained word embeddings"""
+    _home_dir = os.environ.get('MXNET_HOME', os.path.join('~', '.mxnet'))
+    # expand ~ to actual path
+    _home_dir = os.path.expanduser(_home_dir)
+    return _home_dir

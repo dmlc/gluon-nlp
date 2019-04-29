@@ -35,7 +35,7 @@ from ... import _constants as C
 from ...vocab import Vocab
 from ..stream import SimpleDatasetStream
 from ..dataset import CorpusDataset
-from ..utils import _get_home_dir
+from ...base import get_home_dir
 
 
 class _GBWStream(SimpleDatasetStream):
@@ -133,7 +133,7 @@ class GBWStream(_GBWStream):
         MXNET_HOME defaults to '~/.mxnet'.
     """
     def __init__(self, segment='train', skip_empty=True, bos=None, eos=C.EOS_TOKEN,
-                 root=os.path.join(_get_home_dir(), 'datasets', 'gbw')):
+                 root=os.path.join(get_home_dir(), 'datasets', 'gbw')):
         self._archive_data = ('1-billion-word-language-modeling-benchmark-r13output.tar.gz',
                               '4df859766482e12264a5a9d9fb7f0e276020447d')
         self._archive_vocab = ('gbw-ebb1a287.zip',

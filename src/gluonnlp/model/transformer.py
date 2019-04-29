@@ -18,6 +18,7 @@
 # under the License.
 # pylint: disable=too-many-lines
 """Encoder and decoder usded in sequence-to-sequence learning."""
+
 __all__ = ['TransformerEncoder', 'PositionwiseFFN', 'TransformerEncoderCell',
            'transformer_en_de_512']
 
@@ -35,6 +36,7 @@ from .seq2seq_encoder_decoder import Seq2SeqEncoder, Seq2SeqDecoder, _get_attent
 from .block import GELU
 from .translation import NMTModel
 from .utils import _load_vocab, _load_pretrained_params
+from ..base import get_home_dir
 
 
 ###############################################################################
@@ -96,6 +98,7 @@ class BasePositionwiseFFN(HybridBlock):
         self._hidden_size = hidden_size
         self._units = units
         self._use_residual = use_residual
+        self._dropout = dropout
         with self.name_scope():
             self.ffn_1 = nn.Dense(units=hidden_size, flatten=False,
                                   weight_initializer=weight_initializer,
@@ -106,7 +109,8 @@ class BasePositionwiseFFN(HybridBlock):
                                   weight_initializer=weight_initializer,
                                   bias_initializer=bias_initializer,
                                   prefix='ffn_2_')
-            self.dropout_layer = nn.Dropout(dropout)
+            if dropout:
+                self.dropout_layer = nn.Dropout(rate=dropout)
             self.layer_norm = _get_layer_norm(use_bert_layer_norm, units)
 
     def _get_activation(self, act):
@@ -137,7 +141,8 @@ class BasePositionwiseFFN(HybridBlock):
         if self.activation:
             outputs = self.activation(outputs)
         outputs = self.ffn_2(outputs)
-        outputs = self.dropout_layer(outputs)
+        if self._dropout:
+            outputs = self.dropout_layer(outputs)
         if self._use_residual:
             outputs = outputs + inputs
         outputs = self.layer_norm(outputs)
@@ -201,7 +206,8 @@ class BaseTransformerEncoderCell(HybridBlock):
         self._use_residual = use_residual
         self._output_attention = output_attention
         with self.name_scope():
-            self.dropout_layer = nn.Dropout(dropout)
+            if dropout:
+                self.dropout_layer = nn.Dropout(rate=dropout)
             self.attention_cell = _get_attention_cell(attention_cell,
                                                       units=units,
                                                       num_heads=num_heads,
@@ -249,7 +255,8 @@ class BaseTransformerEncoderCell(HybridBlock):
         outputs, attention_weights =\
             self.attention_cell(inputs, inputs, inputs, mask)
         outputs = self.proj(outputs)
-        outputs = self.dropout_layer(outputs)
+        if self._dropout:
+            outputs = self.dropout_layer(outputs)
         if self._use_residual:
             outputs = outputs + inputs
         outputs = self.layer_norm(outputs)
@@ -284,8 +291,10 @@ class BaseTransformerEncoder(HybridBlock, Seq2SeqEncoder):
     dropout : float
         Dropout probability of the attention probabilities.
     use_residual : bool
-    output_attention: bool
+    output_attention: bool, default False
         Whether to output the attention weights
+    output_all_encodings: bool, default False
+        Whether to output encodings of all encoder's cells, or only the last one
     weight_initializer : str or Initializer
         Initializer for the input weights matrix, used for the linear
         transformation of the inputs.
@@ -311,7 +320,7 @@ class BaseTransformerEncoder(HybridBlock, Seq2SeqEncoder):
     def __init__(self, attention_cell='multi_head', num_layers=2,
                  units=512, hidden_size=2048, max_length=50,
                  num_heads=4, scaled=True, dropout=0.0,
-                 use_residual=True, output_attention=False,
+                 use_residual=True, output_attention=False, output_all_encodings=False,
                  weight_initializer=None, bias_initializer='zeros',
                  positional_weight='sinusoidal', use_bert_encoder=False,
                  use_layer_norm_before_dropout=False, scale_embed=True,
@@ -327,13 +336,15 @@ class BaseTransformerEncoder(HybridBlock, Seq2SeqEncoder):
         self._units = units
         self._hidden_size = hidden_size
         self._output_attention = output_attention
+        self._output_all_encodings = output_all_encodings
         self._dropout = dropout
         self._use_residual = use_residual
         self._scaled = scaled
         self._use_layer_norm_before_dropout = use_layer_norm_before_dropout
         self._scale_embed = scale_embed
         with self.name_scope():
-            self.dropout_layer = nn.Dropout(dropout)
+            if dropout:
+                self.dropout_layer = nn.Dropout(rate=dropout)
             self.layer_norm = _get_layer_norm(use_bert_encoder, units)
             self.position_weight = self._get_positional(positional_weight, max_length, units,
                                                         weight_initializer)
@@ -416,8 +427,9 @@ class BaseTransformerEncoder(HybridBlock, Seq2SeqEncoder):
         """
         length = inputs.shape[1]
         if valid_length is not None:
+            arange = mx.nd.arange(length, ctx=valid_length.context, dtype=valid_length.dtype)
             mask = mx.nd.broadcast_lesser(
-                mx.nd.arange(length, ctx=valid_length.context).reshape((1, -1)),
+                arange.reshape((1, -1)),
                 valid_length.reshape((-1, 1)))
             mask = mx.nd.broadcast_axes(mx.nd.expand_dims(mask, axis=1), axis=1, size=length)
             if states is None:
@@ -452,8 +464,10 @@ class BaseTransformerEncoder(HybridBlock, Seq2SeqEncoder):
 
         Returns
         -------
-        outputs : NDArray or Symbol
-            The output of the encoder. Shape is (batch_size, length, C_out)
+        outputs : NDArray or Symbol, or List[NDArray] or List[Symbol]
+            If output_all_encodings flag is False, then the output of the last encoder.
+            If output_all_encodings flag is True, then the list of all outputs of all encoders.
+            In both cases, shape of the tensor(s) is/are (batch_size, length, C_out)
         additional_outputs : list
             Either be an empty list or contains the attention weights in this step.
             The attention weights will have shape (batch_size, length, length) or
@@ -465,27 +479,43 @@ class BaseTransformerEncoder(HybridBlock, Seq2SeqEncoder):
             # Positional Encoding
             positional_embed = F.Embedding(steps, position_weight, self._max_length, self._units)
             inputs = F.broadcast_add(inputs, F.expand_dims(positional_embed, axis=0))
-        if self._use_layer_norm_before_dropout:
-            inputs = self.layer_norm(inputs)
-            inputs = self.dropout_layer(inputs)
+        if self._dropout:
+            if self._use_layer_norm_before_dropout:
+                inputs = self.layer_norm(inputs)
+                inputs = self.dropout_layer(inputs)
+            else:
+                inputs = self.dropout_layer(inputs)
+                inputs = self.layer_norm(inputs)
         else:
-            inputs = self.dropout_layer(inputs)
             inputs = self.layer_norm(inputs)
         outputs = inputs
         if valid_length is not None:
             mask = states[-2]
         else:
             mask = None
+
+        all_encodings_outputs = []
         additional_outputs = []
         for cell in self.transformer_cells:
             outputs, attention_weights = cell(inputs, mask)
             inputs = outputs
+            if self._output_all_encodings:
+                if valid_length is not None:
+                    outputs = F.SequenceMask(outputs, sequence_length=valid_length,
+                                             use_sequence_length=True, axis=1)
+                all_encodings_outputs.append(outputs)
+
             if self._output_attention:
                 additional_outputs.append(attention_weights)
+
         if valid_length is not None:
             outputs = F.SequenceMask(outputs, sequence_length=valid_length,
                                      use_sequence_length=True, axis=1)
-        return outputs, additional_outputs
+
+        if self._output_all_encodings:
+            return all_encodings_outputs, additional_outputs
+        else:
+            return outputs, additional_outputs
 
 ###############################################################################
 #                                ENCODER                                      #
@@ -713,7 +743,8 @@ class TransformerDecoderCell(HybridBlock):
         self._output_attention = output_attention
         self._scaled = scaled
         with self.name_scope():
-            self.dropout_layer = nn.Dropout(dropout)
+            if dropout:
+                self.dropout_layer = nn.Dropout(rate=dropout)
             self.attention_cell_in = _get_attention_cell(attention_cell,
                                                          units=units,
                                                          num_heads=num_heads,
@@ -770,7 +801,8 @@ class TransformerDecoderCell(HybridBlock):
         outputs, attention_in_outputs =\
             self.attention_cell_in(inputs, inputs, inputs, mask)
         outputs = self.proj_in(outputs)
-        outputs = self.dropout_layer(outputs)
+        if self._dropout:
+            outputs = self.dropout_layer(outputs)
         if self._use_residual:
             outputs = outputs + inputs
         outputs = self.layer_norm_in(outputs)
@@ -778,7 +810,8 @@ class TransformerDecoderCell(HybridBlock):
         outputs, attention_inter_outputs = \
             self.attention_cell_inter(inputs, mem_value, mem_value, mem_mask)
         outputs = self.proj_inter(outputs)
-        outputs = self.dropout_layer(outputs)
+        if self._dropout:
+            outputs = self.dropout_layer(outputs)
         if self._use_residual:
             outputs = outputs + inputs
         outputs = self.layer_norm_inter(outputs)
@@ -848,7 +881,8 @@ class TransformerDecoder(HybridBlock, Seq2SeqDecoder):
         self._scaled = scaled
         self._scale_embed = scale_embed
         with self.name_scope():
-            self.dropout_layer = nn.Dropout(dropout)
+            if dropout:
+                self.dropout_layer = nn.Dropout(rate=dropout)
             self.layer_norm = nn.LayerNorm()
             encoding = _position_encoding_init(max_length, units)
             self.position_weight = self.params.get_constant('const', encoding)
@@ -888,8 +922,10 @@ class TransformerDecoder(HybridBlock, Seq2SeqDecoder):
         decoder_states = [mem_value]
         mem_length = mem_value.shape[1]
         if encoder_valid_length is not None:
+            dtype = encoder_valid_length.dtype
+            ctx = encoder_valid_length.context
             mem_masks = mx.nd.broadcast_lesser(
-                mx.nd.arange(mem_length, ctx=encoder_valid_length.context).reshape((1, -1)),
+                mx.nd.arange(mem_length, ctx=ctx, dtype=dtype).reshape((1, -1)),
                 encoder_valid_length.reshape((-1, 1)))
             decoder_states.append(mem_masks)
         self._encoder_valid_length = encoder_valid_length
@@ -922,13 +958,14 @@ class TransformerDecoder(HybridBlock, Seq2SeqDecoder):
         """
         batch_size = inputs.shape[0]
         length = inputs.shape[1]
-        length_array = mx.nd.arange(length, ctx=inputs.context)
+        length_array = mx.nd.arange(length, ctx=inputs.context, dtype=inputs.dtype)
         mask = mx.nd.broadcast_lesser_equal(
             length_array.reshape((1, -1)),
             length_array.reshape((-1, 1)))
         if valid_length is not None:
+            arange = mx.nd.arange(length, ctx=valid_length.context, dtype=valid_length.dtype)
             batch_mask = mx.nd.broadcast_lesser(
-                mx.nd.arange(length, ctx=valid_length.context).reshape((1, -1)),
+                arange.reshape((1, -1)),
                 valid_length.reshape((-1, 1)))
             mask = mx.nd.broadcast_mul(mx.nd.expand_dims(batch_mask, -1),
                                        mx.nd.expand_dims(mask, 0))
@@ -999,7 +1036,8 @@ class TransformerDecoder(HybridBlock, Seq2SeqDecoder):
                 .broadcast_axes(axis=1, size=step_input.shape[1])
             states[-1] = augmented_mem_mask
         if mask is None:
-            length_array = mx.nd.arange(step_input.shape[1], ctx=step_input.context)
+            length_array = mx.nd.arange(step_input.shape[1], ctx=step_input.context,
+                                        dtype=step_input.dtype)
             mask = mx.nd.broadcast_lesser_equal(
                 length_array.reshape((1, -1)),
                 length_array.reshape((-1, 1)))
@@ -1055,7 +1093,8 @@ class TransformerDecoder(HybridBlock, Seq2SeqDecoder):
                                                                self._max_length,
                                                                self._units),
                                                    axis=0))
-        step_input = self.dropout_layer(step_input)
+        if self._dropout:
+            step_input = self.dropout_layer(step_input)
         step_input = self.layer_norm(step_input)
         inputs = step_input
         outputs = inputs
@@ -1159,7 +1198,7 @@ def _get_transformer_model(model_cls, model_name, dataset_name, src_vocab, tgt_v
 
 
 def transformer_en_de_512(dataset_name=None, src_vocab=None, tgt_vocab=None, pretrained=False,
-                          ctx=cpu(), root=os.path.join('~', '.mxnet', 'models'), **kwargs):
+                          ctx=cpu(), root=os.path.join(get_home_dir(), 'models'), **kwargs):
     r"""Transformer pretrained model.
 
     Embedding size is 400, and hidden layer size is 1150.
@@ -1173,8 +1212,9 @@ def transformer_en_de_512(dataset_name=None, src_vocab=None, tgt_vocab=None, pre
         Whether to load the pretrained weights for model.
     ctx : Context, default CPU
         The context in which to load the pretrained weights.
-    root : str, default '~/.mxnet/models'
+    root : str, default '$MXNET_HOME/models'
         Location for keeping the model parameters.
+        MXNET_HOME defaults to '~/.mxnet'.
 
     Returns
     -------

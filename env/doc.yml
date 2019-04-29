@@ -10,6 +10,7 @@ dependencies:
   - sphinx_rtd_theme
   - nbsphinx>=0.3.4,<0.4
   - nbconvert=5.4.0
+  - tornado=5.1.1
   - recommonmark
   - spacy
   - nltk
@@ -19,7 +20,7 @@ dependencies:
   - openjdk=8.0.152
   - pip:
     - https://github.com/mli/mx-theme/archive/0.3.1.tar.gz
-    - mxnet-cu92mkl>=1.3.0
+    - mxnet-cu92mkl>=1.4.0
     - sacremoses
     - seaborn
     - sentencepiece<0.2

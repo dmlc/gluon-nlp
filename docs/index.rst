@@ -27,7 +27,7 @@ computes the cosine similarity between two words.
      demo.allowtransparency = true;
      demo.allowfullscreen = true;
      demo.seamless = true;
-     demo.sandbox = "allow-forms allow-pointer-lock allow-popups allow-same-origin allow-scripts allow-modals";
+     demo.sandbox = "allow-forms allow-pointer-lock allow-same-origin allow-scripts allow-modals";
      demo_div = document.getElementById("frontpage-demo");
      while (demo_div.firstChild) {
        demo_div.removeChild(demo_div.firstChild);
@@ -51,7 +51,7 @@ command installs the latest version of MXNet.
 
 .. code-block:: console
 
-   pip install --upgrade mxnet>=1.3.0
+   pip install --upgrade mxnet>=1.4.0
 
 .. note::
 
@@ -87,7 +87,7 @@ About GluonNLP
 GluonNLP provides implementations of the state-of-the-art (SOTA) deep learning
 models in NLP, and build blocks for text data pipelines and models.
 It is designed for engineers, researchers, and students to fast prototype
-research ideas and products based on these models. This toolkit offers four main features:
+research ideas and products based on these models. This toolkit offers five main features:
 
 1. Training scripts to reproduce SOTA results reported in research papers.
 2. Pre-trained models for common NLP tasks.
@@ -97,8 +97,10 @@ research ideas and products based on these models. This toolkit offers four main
 
 This toolkit assumes that users have basic knowledge about deep learning and
 NLP. Otherwise, please refer to an introductory course such as
-`Dive into Deep Learning <http://en.diveintodeeplearning.org/>`_ or
+`Dive into Deep Learning <https://www.d2l.ai/>`_ or
 `Stanford CS224n <http://web.stanford.edu/class/cs224n/>`_.
+If you are not familiar with Gluon, check out the
+`60-min Gluon crash course <http://beta.mxnet.io/guide/crash-course/index.html>`_.
 
 
 .. toctree::

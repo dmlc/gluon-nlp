@@ -21,41 +21,43 @@
 # pylint: disable=wrong-import-position, wrong-import-order, wildcard-import
 
 import sys
+import os
 import argparse
 import numpy as np
 import mxnet as mx
 import gluonnlp as nlp
-from gluonnlp.data import TSVDataset
-from gluonnlp.data import BERTTokenizer
-from gluon.data import BERTSentenceTransform
 
 parser = argparse.ArgumentParser(description='Comparison script for BERT model in Tensorflow'
-                                             'and that in Gluon')
+                                             'and that in Gluon. This script works with '
+                                             'google/bert@f39e881b')
 parser.add_argument('--input_file', type=str, default='input.txt',
-                    help='sample input file for testing')
+                    help='sample input file for testing. Default is input.txt')
 parser.add_argument('--tf_bert_repo_dir', type=str,
-                    default='/home/ubuntu/bert/',
+                    default='~/bert/',
                     help='path to the original Tensorflow bert repository. '
-                         'e.g. /home/ubuntu/bert/')
+                         'The repo should be at f39e881b. '
+                         'Default is ~/bert/')
 parser.add_argument('--tf_model_dir', type=str,
-                    default='/home/ubuntu/uncased_L-12_H-768_A-12/',
+                    default='~/uncased_L-12_H-768_A-12/',
                     help='path to the original Tensorflow bert checkpoint directory. '
-                         'e.g. /home/ubuntu/uncased_L-12_H-768_A-12/')
+                         'Default is ~/uncased_L-12_H-768_A-12/')
 parser.add_argument('--cased', action='store_true',
                     help='if not set, inputs are converted to lower case')
 parser.add_argument('--gluon_dataset', type=str, default='book_corpus_wiki_en_uncased',
-                    help='gluon dataset name. e.g. book_corpus_wiki_en_uncased')
+                    help='gluon dataset name. Default is book_corpus_wiki_en_uncased')
 parser.add_argument('--gluon_model', type=str, default='bert_12_768_12',
-                    help='gluon model name. e.g. bert_12_768_12')
+                    help='gluon model name. Default is bert_12_768_12')
+parser.add_argument('--gluon_parameter_file', type=str, default=None,
+                    help='gluon parameter file name.')
 
 args = parser.parse_args()
 
-input_file = args.input_file
-tf_bert_repo_dir = args.tf_bert_repo_dir
-tf_model_dir = args.tf_model_dir
-vocab_file = tf_model_dir + 'vocab.txt'
-bert_config_file = tf_model_dir + 'bert_config.json'
-init_checkpoint = tf_model_dir + 'bert_model.ckpt'
+input_file = os.path.expanduser(args.input_file)
+tf_bert_repo_dir = os.path.expanduser(args.tf_bert_repo_dir)
+tf_model_dir = os.path.expanduser(args.tf_model_dir)
+vocab_file = os.path.join(tf_model_dir, 'vocab.txt')
+bert_config_file = os.path.join(tf_model_dir, 'bert_config.json')
+init_checkpoint = os.path.join(tf_model_dir, 'bert_model.ckpt')
 do_lower_case = not args.cased
 max_length = 128
 
@@ -79,10 +81,6 @@ examples = read_examples(input_file)
 
 features = convert_examples_to_features(
     examples=examples, seq_length=max_length, tokenizer=tokenizer)
-
-unique_id_to_feature = {}
-for feature in features:
-    unique_id_to_feature[feature.unique_id] = feature
 
 is_per_host = tf.contrib.tpu.InputPipelineConfig.PER_HOST_V2
 run_config = tf.contrib.tpu.RunConfig(
@@ -109,10 +107,7 @@ input_fn = input_fn_builder(
 
 tensorflow_all_out = []
 for result in estimator.predict(input_fn, yield_single_examples=True):
-    unique_id = int(result['unique_id'])
-    feature = unique_id_to_feature[unique_id]
     output_json = collections.OrderedDict()
-    output_json['linex_index'] = unique_id
     tensorflow_all_out_features = []
     all_layers = []
     for (j, layer_index) in enumerate(layer_indexes):
@@ -136,13 +131,24 @@ tf_outputs = [tensorflow_all_out[0]['features'][0]['layers'][t]['values'] for t 
 
 bert, vocabulary = nlp.model.get_model(args.gluon_model,
                                        dataset_name=args.gluon_dataset,
-                                       pretrained=True, use_pooler=False,
-                                       use_decoder=False, use_classifier=False)
-print(bert)
-tokenizer = BERTTokenizer(vocabulary, lower=do_lower_case)
-dataset = TSVDataset(input_file, field_separator=nlp.data.Splitter(' ||| '))
+                                       pretrained=not args.gluon_parameter_file,
+                                       use_pooler=False,
+                                       use_decoder=False,
+                                       use_classifier=False)
+if args.gluon_parameter_file:
+    try:
+        bert.cast('float16')
+        bert.load_parameters(args.gluon_parameter_file, ignore_extra=True)
+        bert.cast('float32')
+    except AssertionError:
+        bert.cast('float32')
+        bert.load_parameters(args.gluon_parameter_file, ignore_extra=True)
 
-trans = BERTSentenceTransform(tokenizer, max_length)
+print(bert)
+tokenizer = nlp.data.BERTTokenizer(vocabulary, lower=do_lower_case)
+dataset = nlp.data.TSVDataset(input_file, field_separator=nlp.data.Splitter(' ||| '))
+
+trans = nlp.data.BERTSentenceTransform(tokenizer, max_length)
 dataset = dataset.transform(trans)
 
 bert_dataloader = mx.gluon.data.DataLoader(dataset, batch_size=1,
@@ -158,7 +164,5 @@ for i, seq in enumerate(bert_dataloader):
     b = out[0][:length].asnumpy()
 
     print('stdev = %s' % (np.std(a - b)))
-    mx.test_utils.assert_almost_equal(a, b, atol=1e-4, rtol=1e-4)
-    mx.test_utils.assert_almost_equal(a, b, atol=1e-5, rtol=1e-5)
     mx.test_utils.assert_almost_equal(a, b, atol=5e-6, rtol=5e-6)
     break

@@ -18,13 +18,14 @@
 # under the License.
 """Utility functions for BERT."""
 
+import logging
 import collections
 import hashlib
 import io
 import json
 
 import gluonnlp
-from tensorflow.python import pywrap_tensorflow
+import mxnet as mx
 
 __all__ = ['convert_vocab']
 
@@ -95,6 +96,7 @@ def get_hash(filename):
 
 def read_tf_checkpoint(path):
     """read tensorflow checkpoint"""
+    from tensorflow.python import pywrap_tensorflow
     tensors = {}
     reader = pywrap_tensorflow.NewCheckpointReader(path)
     var_to_shape_map = reader.get_variable_to_shape_map()
@@ -103,6 +105,22 @@ def read_tf_checkpoint(path):
         tensors[key] = tensor
     return tensors
 
+def profile(curr_step, start_step, end_step, profile_name='profile.json',
+            early_exit=True):
+    """profile the program between [start_step, end_step)."""
+    if curr_step == start_step:
+        mx.nd.waitall()
+        mx.profiler.set_config(profile_memory=False, profile_symbolic=True,
+                               profile_imperative=True, filename=profile_name,
+                               aggregate_stats=True)
+        mx.profiler.set_state('run')
+    elif curr_step == end_step:
+        mx.nd.waitall()
+        mx.profiler.set_state('stop')
+        logging.info(mx.profiler.dumps())
+        mx.profiler.dump()
+        if early_exit:
+            exit()
 
 def load_vocab(vocab_file):
     """Loads a vocabulary file into a dictionary."""
