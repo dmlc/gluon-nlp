@@ -31,7 +31,7 @@ from mxnet.gluon.utils import _get_repo_file_url, check_sha1, download
 from ... import _constants as C
 from ..dataset import CorpusDataset
 from ..registry import register
-from ..utils import _get_home_dir
+from ...base import get_home_dir
 
 
 class _WikiText(CorpusDataset):
@@ -79,7 +79,7 @@ class WikiText2(_WikiText):
     WikiText2 is implemented as CorpusDataset with the default flatten=True.
 
     From
-    https://einstein.ai/research/the-wikitext-long-term-dependency-language-modeling-dataset
+    https://www.salesforce.com/products/einstein/ai-research/the-wikitext-dependency-language-modeling-dataset/
 
     License: Creative Commons Attribution-ShareAlike
 
@@ -101,6 +101,31 @@ class WikiText2(_WikiText):
     root : str, default '$MXNET_HOME/datasets/wikitext-2'
         Path to temp folder for storing data.
         MXNET_HOME defaults to '~/.mxnet'.
+
+    Examples
+    --------
+    >>> wikitext2 = gluonnlp.data.WikiText2('val', root='./datasets/wikitext2')
+    -etc-
+    >>> len(wikitext2)
+    216347
+    >>> wikitext2[0]
+    '='
+    >>> wikitext2 = gluonnlp.data.WikiText2('val', flatten=False,
+    ...                                     root='./datasets/wikitext2')
+    >>> len(wikitext2)
+    2461
+    >>> wikitext2[0]
+    ['=', 'Homarus', 'gammarus', '=', '<eos>']
+    >>> wikitext2 = gluonnlp.data.WikiText2('val', flatten=False, bos='<bos>', eos=None,
+    ...                                     root='./datasets/wikitext2')
+    >>> wikitext2[0]
+    ['<bos>', '=', 'Homarus', 'gammarus', '=']
+    >>> wikitext2 = gluonnlp.data.WikiText2('val', flatten=False, bos='<bos>', eos=None,
+    ...                                     skip_empty=False, root='./datasets/wikitext2')
+    >>> len(wikitext2)
+    3760
+    >>> wikitext2[0]
+    ['<bos>']
     """
 
     def __init__(self,
@@ -110,7 +135,7 @@ class WikiText2(_WikiText):
                  tokenizer=lambda s: s.split(),
                  bos=None,
                  eos=C.EOS_TOKEN,
-                 root=os.path.join(_get_home_dir(), 'datasets', 'wikitext-2'),
+                 root=os.path.join(get_home_dir(), 'datasets', 'wikitext-2'),
                  **kwargs):
         self._archive_file = ('wikitext-2-v1.zip',
                               '3c914d17d80b1459be871a5039ac23e752a53cbe')
@@ -141,7 +166,7 @@ class WikiText103(_WikiText):
     WikiText103 is implemented as CorpusDataset with the default flatten=True.
 
     From
-    https://einstein.ai/research/the-wikitext-long-term-dependency-language-modeling-dataset
+    https://www.salesforce.com/products/einstein/ai-research/the-wikitext-dependency-language-modeling-dataset/
 
     License: Creative Commons Attribution-ShareAlike
 
@@ -163,6 +188,31 @@ class WikiText103(_WikiText):
     root : str, default '$MXNET_HOME/datasets/wikitext-103'
         Path to temp folder for storing data.
         MXNET_HOME defaults to '~/.mxnet'.
+
+    Examples
+    --------
+    >>> wikitext103 = gluonnlp.data.WikiText103('val', root='./datasets/wikitext103')
+    -etc-
+    >>> len(wikitext103)
+    216347
+    >>> wikitext103[0]
+    '='
+    >>> wikitext103 = gluonnlp.data.WikiText103('val', flatten=False,
+    ...                                         root='./datasets/wikitext103')
+    >>> len(wikitext103)
+    2461
+    >>> wikitext103[0]
+    ['=', 'Homarus', 'gammarus', '=', '<eos>']
+    >>> wikitext103 = gluonnlp.data.WikiText103('val', flatten=False, bos='<bos>', eos=None,
+    ...                                         root='./datasets/wikitext103')
+    >>> wikitext103[0]
+    ['<bos>', '=', 'Homarus', 'gammarus', '=']
+    >>> wikitext103 = gluonnlp.data.WikiText103('val', flatten=False, bos='<bos>', eos=None,
+    ...                                         skip_empty=False, root='./datasets/wikitext103')
+    >>> len(wikitext103)
+    3760
+    >>> wikitext103[0]
+    ['<bos>']
     """
 
     def __init__(self,
@@ -172,7 +222,7 @@ class WikiText103(_WikiText):
                  tokenizer=lambda s: s.split(),
                  bos=None,
                  eos=C.EOS_TOKEN,
-                 root=os.path.join(_get_home_dir(), 'datasets',
+                 root=os.path.join(get_home_dir(), 'datasets',
                                    'wikitext-103'),
                  **kwargs):
         self._archive_file = ('wikitext-103-v1.zip',
@@ -228,6 +278,28 @@ class WikiText2Raw(_WikiText):
     root : str, default '$MXNET_HOME/datasets/wikitext-2'
         Path to temp folder for storing data.
         MXNET_HOME defaults to '~/.mxnet'.
+
+    Examples
+    --------
+    >>> wikitext2 = gluonnlp.data.WikiText2Raw('val', root='./datasets/wikitext2')
+    -etc-
+    >>> len(wikitext2)
+    1136862
+    >>> wikitext2[0]
+    61
+    >>> type(wikitext2[0])
+    <class 'int'>
+    >>> wikitext2 = gluonnlp.data.WikiText2Raw('val', flatten=False,
+    ...                                        tokenizer=None, root='./datasets/wikitext2')
+    >>> len(wikitext2)
+    2461
+    >>> wikitext2[0]
+    '= Homarus gammarus ='
+    >>> wikitext2 = gluonnlp.data.WikiText2Raw('val', flatten=False, bos='<bos>', eos=None,
+    ...                                        tokenizer=lambda s: s.split(),
+    ...                                        root='./datasets/wikitext2')
+    >>> wikitext2[0]
+    ['<bos>', '=', 'Homarus', 'gammarus', '=']
     """
 
     def __init__(self,
@@ -237,7 +309,7 @@ class WikiText2Raw(_WikiText):
                  bos=None,
                  eos=None,
                  tokenizer=lambda s: s.encode('utf-8'),
-                 root=os.path.join(_get_home_dir(), 'datasets', 'wikitext-2'),
+                 root=os.path.join(get_home_dir(), 'datasets', 'wikitext-2'),
                  **kwargs):
         self._archive_file = ('wikitext-2-raw-v1.zip',
                               '3b6993c138fc61c95f7fffd900fef68f8411371d')
@@ -293,6 +365,25 @@ class WikiText103Raw(_WikiText):
     root : str, default '$MXNET_HOME/datasets/wikitext-103'
         Path to temp folder for storing data.
         MXNET_HOME defaults to '~/.mxnet'.
+
+    Examples
+    --------
+    >>> wikitext103 = gluonnlp.data.WikiText103Raw('val', root='./datasets/wikitext103')
+    -etc-
+    >>> len(wikitext103)
+    1136862
+    >>> wikitext103[0]
+    61
+    >>> wikitext103 = gluonnlp.data.WikiText103Raw('val', flatten=False,
+    ...                                            root='./datasets/wikitext103')
+    >>> len(wikitext103)
+    2461
+    >>> wikitext103[0]
+    [61, 32, 72, 111, 109, 97, 114, 117, 115, 32, 103, 97, 109, 109, 97, 114, 117, 115, 32, 61]
+    >>> wikitext103 = gluonnlp.data.WikiText103Raw('val', flatten=False, tokenizer=None,
+    ...                                            root='./datasets/wikitext103')
+    >>> wikitext103[0]
+    '= Homarus gammarus ='
     """
 
     def __init__(self,
@@ -302,7 +393,7 @@ class WikiText103Raw(_WikiText):
                  tokenizer=lambda s: s.encode('utf-8'),
                  bos=None,
                  eos=None,
-                 root=os.path.join(_get_home_dir(), 'datasets',
+                 root=os.path.join(get_home_dir(), 'datasets',
                                    'wikitext-103'),
                  **kwargs):
         self._archive_file = ('wikitext-103-raw-v1.zip',

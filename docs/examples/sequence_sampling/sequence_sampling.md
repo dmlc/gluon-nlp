@@ -171,7 +171,7 @@ created to sample sequences based on the same inputs used previously.
 generate_sequences(seq_sampler, inputs, begin_states, 5)
 ```
 
-### Practice
+## Practice
 
 - Tweak alpha and K in BeamSearchScorer, how are the results
 changed?

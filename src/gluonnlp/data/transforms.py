@@ -38,7 +38,8 @@ import unicodedata
 import numpy as np
 import mxnet as mx
 from mxnet.gluon.utils import download, check_sha1
-from .utils import _get_home_dir, _extract_archive
+from .utils import _extract_archive
+from ..base import get_home_dir
 
 
 class ClipSequence(object):
@@ -524,8 +525,8 @@ class NLTKStanfordSegmenter(object):
 
     """
 
-    def __init__(self, segmenter_root=os.path.join(_get_home_dir(), 'stanford-segmenter'),
-                 slf4j_root=os.path.join(_get_home_dir(), 'slf4j'),
+    def __init__(self, segmenter_root=os.path.join(get_home_dir(), 'stanford-segmenter'),
+                 slf4j_root=os.path.join(get_home_dir(), 'slf4j'),
                  java_class='edu.stanford.nlp.ie.crf.CRFClassifier'):
         is_java_exist = os.system('java -version')
         assert is_java_exist == 0, 'Java is not installed. You must install Java 8.0' \

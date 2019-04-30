@@ -32,11 +32,11 @@ parser.add_argument('--model', type=str, default='bert_12_768_12',
                     help='BERT model name. options are bert_12_768_12 and bert_24_1024_16.'
                          'Default is bert_12_768_12')
 parser.add_argument('--tf_checkpoint_dir', type=str,
-                    default='/home/ubuntu/cased_L-12_H-768_A-12/',
+                    default=os.path.join('~', 'cased_L-12_H-768_A-12/'),
                     help='Path to Tensorflow checkpoint folder. '
                          'Default is /home/ubuntu/cased_L-12_H-768_A-12/')
 parser.add_argument('--out_dir', type=str,
-                    default='/home/ubuntu/output/',
+                    default=os.path.join('~', 'output'),
                     help='Path to output folder. The folder must exist. '
                          'Default is /home/ubuntu/output/')
 parser.add_argument('--debug', action='store_true', help='debugging mode')
@@ -49,17 +49,18 @@ vocab_path = os.path.join(args.tf_checkpoint_dir, 'vocab.txt')
 vocab, reserved_token_idx_map = convert_vocab(vocab_path)
 
 # vocab serialization
-tmp_file_path = os.path.join(args.out_dir, 'tmp')
+tmp_file_path = os.path.expanduser(os.path.join(args.out_dir, 'tmp'))
 with open(tmp_file_path, 'w') as f:
     f.write(vocab.to_json())
 hash_full, hash_short = get_hash(tmp_file_path)
-gluon_vocab_path = os.path.join(args.out_dir, hash_short + '.vocab')
+gluon_vocab_path = os.path.expanduser(os.path.join(args.out_dir, hash_short + '.vocab'))
 with open(gluon_vocab_path, 'w') as f:
     f.write(vocab.to_json())
     logging.info('vocab file saved to %s. hash = %s', gluon_vocab_path, hash_full)
 
 # load tf model
-tf_checkpoint_file = os.path.join(args.tf_checkpoint_dir, 'bert_model.ckpt')
+tf_checkpoint_file = os.path.expanduser(
+    os.path.join(args.tf_checkpoint_dir, 'bert_model.ckpt'))
 logging.info('loading Tensorflow checkpoint %s ...', tf_checkpoint_file)
 tf_tensors = read_tf_checkpoint(tf_checkpoint_file)
 tf_names = sorted(tf_tensors.keys())
@@ -177,7 +178,7 @@ for name in mx_tensors:
 # param serialization
 bert.save_parameters(tmp_file_path)
 hash_full, hash_short = get_hash(tmp_file_path)
-gluon_param_path = os.path.join(args.out_dir, hash_short + '.params')
+gluon_param_path = os.path.expanduser(os.path.join(args.out_dir, hash_short + '.params'))
 logging.info('param saved to %s. hash = %s', gluon_param_path, hash_full)
 bert.save_parameters(gluon_param_path)
 mx.nd.waitall()
