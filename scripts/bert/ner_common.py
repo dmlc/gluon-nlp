@@ -1,25 +1,26 @@
-import mxnet as mx
-import gluonnlp as nlp
 import argparse
 import pickle
 from collections import namedtuple
+
+import mxnet as mx
+import gluonnlp as nlp
 
 
 BERTModelMetadata = namedtuple('BERTModelMetadata', ['config', 'tag_vocab'])
 
 
 def _metadata_file_path(checkpoint_prefix):
-    return checkpoint_prefix + "_metadata.pkl"
+    return checkpoint_prefix + '_metadata.pkl'
 
 
 def dump_metadata(config, tag_vocab):
     metadata = BERTModelMetadata(config=config, tag_vocab=tag_vocab)
-    with open(_metadata_file_path(config.save_checkpoint_prefix), "wb") as ofp:
+    with open(_metadata_file_path(config.save_checkpoint_prefix), 'wb') as ofp:
         pickle.dump(metadata, ofp)
 
 
 def load_metadata(checkpoint_prefix):
-    with open(_metadata_file_path(checkpoint_prefix), "rb") as ifp:
+    with open(_metadata_file_path(checkpoint_prefix), 'rb') as ifp:
         metadata = pickle.load(ifp)
         return metadata.config, metadata.tag_vocab
 
@@ -81,5 +82,3 @@ def get_bert_model(bert_model, cased, ctx, dropout_prob):
         use_classifier=False,
         dropout=dropout_prob,
         embed_dropout=dropout_prob)
-
-

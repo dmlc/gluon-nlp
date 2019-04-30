@@ -27,16 +27,18 @@ def bio_bioes(tokens):
     """
     ret = []
     for index, token in enumerate(tokens):
-        if token.tag == "O":
+        if token.tag == 'O':
             ret.append(token)
-        elif token.tag.startswith("B"):
-            # if a B-tag is continued by other tokens with the same entity, then it is still a B-tag
+        elif token.tag.startswith('B'):
+            # if a B-tag is continued by other tokens with the same entity,
+            # then it is still a B-tag
             if index + 1 < len(tokens) and tokens[index + 1].tag.startswith("I"):
                 ret.append(token)
             else:
                 ret.append(TaggedToken(text=token.text, tag="S" + token.tag[1:]))
-        elif token.tag.startswith("I"):
-            # if an I-tag is continued by other tokens with the same entity, then it is still an I-tag
+        elif token.tag.startswith('I'):
+            # if an I-tag is continued by other tokens with the same entity,
+            # then it is still an I-tag
             if index + 1 < len(tokens) and tokens[index + 1].tag.startswith("I"):
                 ret.append(token)
             else:
@@ -45,7 +47,7 @@ def bio_bioes(tokens):
 
 
 def read_bio_as_bio2(data_path):
-    """Read CoNLL-formatted text file in BIO scheme in given path as list of TaggedToken sentences in BIO2 scheme.
+    """Read CoNLL-formatted text file in BIO scheme in given path as sentences in BIO2 scheme.
 
     Parameters
     ----------
@@ -61,17 +63,17 @@ def read_bio_as_bio2(data_path):
     with open(data_path, 'r') as ifp:
         sentence_list = []
         current_sentence = []
-        prev_tag = "O"
+        prev_tag = 'O'
 
         for line in ifp:
             if len(line.strip()) > 0:
                 word, _, _, tag = line.rstrip().split(" ")
                 # convert BIO tag to BIO2 tag
-                if tag == "O":
-                    bio2_tag = "O"
+                if tag == 'O':
+                    bio2_tag = 'O'
                 else:
-                    if prev_tag == "O" or tag[2:] != prev_tag[2:]:
-                        bio2_tag = "B" + tag[1:]
+                    if prev_tag == 'O' or tag[2:] != prev_tag[2:]:
+                        bio2_tag = 'B' + tag[1:]
                     else:
                         bio2_tag = tag
                 current_sentence.append(TaggedToken(text=word, tag=bio2_tag))
@@ -80,7 +82,7 @@ def read_bio_as_bio2(data_path):
                 # the sentence was completed if an empty line occurred; flush the current sentence.
                 sentence_list.append(current_sentence)
                 current_sentence = []
-                prev_tag = "O"
+                prev_tag = 'O"
 
         # check if there is a remaining token. in most CoNLL data files, this does not happen.
         if len(current_sentence) > 0:
@@ -104,7 +106,7 @@ def remove_docstart_sentence(sentences):
     for sentence in sentences:
         current_sentence = []
         for token in sentence:
-            if token.text != "-DOCSTART-":
+            if token.text != '-DOCSTART-':
                 current_sentence.append(token)
         if len(current_sentence) > 0:
             ret.append(current_sentence)
@@ -153,12 +155,12 @@ def load_segment(file_path, bert_tokenizer):
     -------
     List[List[TaggedToken]]: List of sentences, each of which is the list of `TaggedToken`s.
     """
-    logging.info("Loading sentences in {}...".format(file_path))
+    logging.info('Loading sentences in {}...'.format(file_path))
     bio2_sentences = remove_docstart_sentence(read_bio_as_bio2(file_path))
     bioes_sentences = [bio_bioes(sentence) for sentence in bio2_sentences]
     subword_sentences = [bert_tokenize_sentence(sentence, bert_tokenizer) for sentence in bioes_sentences]
 
-    logging.info("load {}, its max seq len: {}".format(file_path, max(len(sentence) for sentence in subword_sentences)))
+    logging.info('load {}, its max seq len: {}'.format(file_path, max(len(sentence) for sentence in subword_sentences)))
 
     return subword_sentences
 
@@ -194,7 +196,7 @@ class BERTTaggingDataset(object):
         all_sentences = train_sentences + dev_sentences + test_sentences
 
         if tag_vocab is None:
-            logging.info("Indexing tags...")
+            logging.info('Indexing tags...')
             tag_counter = nlp.data.count_tokens(token.tag for sentence in all_sentences for token in sentence)
             self.tag_vocab = nlp.Vocab(tag_counter, padding_token=NULL_TAG,
                                        bos_token=None, eos_token=None, unknown_token=None)
@@ -203,7 +205,7 @@ class BERTTaggingDataset(object):
         self.null_tag_index = self.tag_vocab[NULL_TAG]
 
         if len(test_sentences) > 0:
-            logging.info("example test sentences:")
+            logging.info('example test sentences:')
             for i in range(10):
                 logging.info("{}".format(test_sentences[i]))
 
@@ -232,7 +234,7 @@ class BERTTaggingDataset(object):
         """
         # check whether the given sequence can be fit into `seq_len`.
         assert len(sentence) <= self.seq_len - 2, \
-            "the number of tokens {} should not be larger than {} - 2. offending sentence: {}".format(
+            'the number of tokens {} should not be larger than {} - 2. offending sentence: {}'.format(
                 len(sentence), self.seq_len, sentence)
 
         text_tokens = ([self.text_vocab.cls_token] + [token.text for token in sentence] +
@@ -261,8 +263,7 @@ class BERTTaggingDataset(object):
                 np.array(token_types, dtype='int32'),
                 np.array(valid_length, dtype='int32'),
                 np_tag_ids,
-                flag_nonnull_tag
-                )
+                flag_nonnull_tag)
 
     @staticmethod
     def _get_data_loader(inputs, shuffle, batch_size):

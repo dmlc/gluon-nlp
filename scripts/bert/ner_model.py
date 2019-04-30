@@ -1,6 +1,7 @@
+from contextlib import ExitStack
+
 import mxnet as mx
 from mxnet.gluon import Block, nn
-from contextlib import ExitStack
 
 
 class BERTTagger(Block):
@@ -66,10 +67,11 @@ def attach_prediction(data_loader, net, ctx, is_train):
 
     Returns
     -------
-        All fields from `bert_model.BERTTaggingDataset._encode_as_input`, as well as the prediction of the model.
+        All fields from `bert_model.BERTTaggingDataset._encode_as_input`,
+        as well as the prediction of the model.
 
     """
-    for batch_id, data in enumerate(data_loader):
+    for data in data_loader:
         text_ids, token_types, valid_length, tag_ids, flag_nonnull_tag = \
             [x.astype('float32').as_in_context(ctx) for x in data]
 
