@@ -330,7 +330,7 @@ class SST_1(SentimentDataset):
     >>> type(sst_1[0][0]), type(sst_1[0][1])
     (<class 'str'>, <class 'int'>)
     >>> sst_1[0][0][:73]
-    "no movement , no yuks , not much of anything ."
+    'no movement , no yuks , not much of anything .'
     >>> sst_1[0][1]
     1
     """
@@ -379,7 +379,7 @@ class SST_2(SentimentDataset):
     >>> type(sst_2[0][0]), type(sst_2[0][1])
     (<class 'str'>, <class 'int'>)
     >>> sst_2[0][0][:65]
-    "no movement , no yuks , not much of anything ."
+    'no movement , no yuks , not much of anything .'
     >>> sst_2[0][1]
     0
     """
