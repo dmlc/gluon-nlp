@@ -11,7 +11,7 @@ stage("Unit Test") {
   capture_flag = env.BRANCH_NAME.startsWith('PR-')?'':'--capture=no'
   cov_flag = env.BRANCH_NAME.startsWith('PR-')?('PR'+env.CHANGE_ID):env.BRANCH_NAME
   parallel 'Python 2': {
-    node {
+    node('linux-gpu') {
       withCredentials([string(credentialsId: 'GluonNLPCodeCov', variable: 'CODECOV_TOKEN')]) {
         ws('workspace/gluon-nlp-py2') {
           checkout scm
@@ -21,7 +21,7 @@ stage("Unit Test") {
     }
   },
   'Python 3': {
-    node {
+    node('linux-gpu') {
       withCredentials([string(credentialsId: 'GluonNLPCodeCov', variable: 'CODECOV_TOKEN')]) {
         ws('workspace/gluon-nlp-py3') {
           checkout scm
@@ -31,7 +31,7 @@ stage("Unit Test") {
     }
   },
   'Python 3 Master': {
-    node {
+    node('linux-gpu') {
       withCredentials([string(credentialsId: 'GluonNLPCodeCov', variable: 'CODECOV_TOKEN')]) {
         ws('workspace/gluon-nlp-py3-master') {
           checkout scm
@@ -41,7 +41,7 @@ stage("Unit Test") {
     }
   },
   'DocTest': {
-    node {
+    node('linux-gpu') {
       ws('workspace/gluon-nlp-doctest') {
         checkout scm
         sh("ci/step_doc_test.sh")
@@ -49,7 +49,7 @@ stage("Unit Test") {
     }
   },
   'Documentation': {
-    node {
+    node('linux-gpu') {
       ws('workspace/gluon-nlp-docs') {
         checkout scm
         if (env.BRANCH_NAME.startsWith("PR-")) {
