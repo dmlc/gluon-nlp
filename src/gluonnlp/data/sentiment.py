@@ -413,6 +413,21 @@ class CR(SentimentDataset):
     root : str, default '$MXNET_HOME/datasets/cr'
         Path to temp folder for storing data.
         MXNET_HOME defaults to '~/.mxnet'.
+
+    Examples
+    --------
+    >>> cr = gluonnlp.data.CR(root='./datasets/cr')
+    -etc-
+    >>> len(cr)
+    3775
+    >>> len(cr[3])
+    2
+    >>> type(cr[3][0]), type(cr[3][1])
+    (<class 'str'>, <class 'int'>)
+    >>> cr[3][0][:55]
+    'i know the saying is " you get what you pay for " but a'
+    >>> cr[3][1]
+    0
     """
     def __init__(self, root=os.path.join(get_home_dir(), 'datasets', 'cr')):
         super(CR, self).__init__('all', root)
