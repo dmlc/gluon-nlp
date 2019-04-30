@@ -35,7 +35,7 @@ stage("Unit Test") {
       withCredentials([string(credentialsId: 'GluonNLPCodeCov', variable: 'CODECOV_TOKEN')]) {
         ws('workspace/gluon-nlp-py3-master') {
           checkout scm
-          sh("ci/step_unit_test.sh py3-master ${cov_flag} ${capture_flag}")
+          sh("ci/step_unit_test_master.sh py3-master ${cov_flag} ${capture_flag}")
         }
       }
     }
