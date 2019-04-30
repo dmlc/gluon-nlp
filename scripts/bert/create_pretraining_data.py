@@ -480,7 +480,7 @@ def main():
     for i, file_split in enumerate(file_splits):
         out = os.path.join(output_dir, 'part-{}.{}'.format(str(i).zfill(3), suffix))
         count += len(file_split)
-        packed_args.append((file_split, None) + fixed_args)
+        packed_args.append((file_split, out) + fixed_args)
 
     # sanity check
     assert count == len(input_files)
