@@ -195,6 +195,9 @@ def create_training_instances(packed_arguments):
                 if tokens:
                     all_documents[-1].append(tokens)
 
+    if not all_documents[-1]:
+        all_documents = all_documents[:-1]
+
     instances = []
     for _ in range(dupe_factor):
         for document_index in range(len(all_documents)):
