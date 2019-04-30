@@ -146,7 +146,7 @@ class TSVDataset(SimpleDataset):
         try:
             result = [fields[i] for i in self._field_indices]
         except IndexError as e:
-            raise(IndexError('%s. Fields = %s'%(e.message, str(fields))))
+            raise(IndexError('%s. Fields = %s'%(str(e), str(fields))))
         return result
 
     def _read(self):
