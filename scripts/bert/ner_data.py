@@ -82,7 +82,7 @@ def read_bio_as_bio2(data_path):
                 # the sentence was completed if an empty line occurred; flush the current sentence.
                 sentence_list.append(current_sentence)
                 current_sentence = []
-                prev_tag = 'O"
+                prev_tag = 'O'
 
         # check if there is a remaining token. in most CoNLL data files, this does not happen.
         if len(current_sentence) > 0:
