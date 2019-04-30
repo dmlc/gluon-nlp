@@ -240,9 +240,9 @@ class TREC(SentimentDataset):
     >>> type(trec[0][0]), type(trec[0][1])
     (<class 'str'>, <class 'int'>)
     >>> trec[0][0]
-    'ind Who was the first US President to ride in an automobile to his inauguration ?'
+    'How far is it from Denver to Aspen ?'
     >>> (trec[0][1], trec[0][0].split()[0])
-    (3, 'ind')
+    (5, 'How')
     """
     def __init__(self, segment='train', root=os.path.join(get_home_dir(), 'datasets', 'trec')):
         super(TREC, self).__init__(segment, root)
@@ -324,15 +324,15 @@ class SST_1(SentimentDataset):
     >>> sst_1 = gluonnlp.data.SST_1('test', root='./datasets/sst_1')
     -etc-
     >>> len(sst_1)
-    2125
+    2210
     >>> len(sst_1[0])
     2
     >>> type(sst_1[0][0]), type(sst_1[0][1])
     (<class 'str'>, <class 'int'>)
     >>> sst_1[0][0][:73]
-    "I 've heard that the fans of the first Men in Black have come away hating"
+    "no movement , no yuks , not much of anything ."
     >>> sst_1[0][1]
-    2
+    1
     """
     def __init__(self, segment='train', root=os.path.join(get_home_dir(), 'datasets', 'sst-1')):
         super(SST_1, self).__init__(segment, root)
@@ -373,15 +373,15 @@ class SST_2(SentimentDataset):
     >>> sst_2 = gluonnlp.data.SST_2('test', root='./datasets/sst_2')
     -etc-
     >>> len(sst_2)
-    1745
+    1821
     >>> len(sst_2[0])
     2
     >>> type(sst_2[0][0]), type(sst_2[0][1])
     (<class 'str'>, <class 'int'>)
     >>> sst_2[0][0][:65]
-    "Here 's a British flick gleefully unconcerned with plausibility ,"
+    "no movement , no yuks , not much of anything ."
     >>> sst_2[0][1]
-    1
+    0
     """
     def __init__(self, segment='train', root=os.path.join(get_home_dir(), 'datasets', 'sst-2')):
         super(SST_2, self).__init__(segment, root)
