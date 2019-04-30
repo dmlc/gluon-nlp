@@ -34,104 +34,6 @@ import gluonnlp as nlp
 from gluonnlp.data import BERTTokenizer
 
 
-parser = argparse.ArgumentParser(
-    description='Pre-training data generator for BERT')
-
-parser.add_argument(
-    '--input_file',
-    type=str,
-    default=None,
-    help='input file(s). For example, "~/data/*.txt"')
-
-parser.add_argument(
-    '--output_dir',
-    type=str,
-    default=None,
-    help='Output directory.')
-
-parser.add_argument(
-    '--format',
-    type=str,
-    default='numpy',
-    choices=['numpy', 'recordio'],
-    help='Output file format. If set to "numpy", examples are serialized as a single "npz" file.'
-         'If set to "recordio", examples are serialized using IndexedRecordIO format. '
-         'Default is numpy.')
-
-parser.add_argument(
-    '--vocab',
-    type=str,
-    default=None,
-    choices=['book_corpus_wiki_en_uncased', 'book_corpus_wiki_en_cased',
-             'wiki_multilingual_uncased', 'wiki_multilingual_cased', 'wiki_cn_cased'],
-    help='The dataset name for the vocab file BERT model was trained on. For example, '
-         '"book_corpus_wiki_en_uncased"')
-
-parser.add_argument(
-    '--max_seq_length', type=int, default=128, help='Maximum sequence length. Default is 128.')
-
-parser.add_argument(
-    '--max_predictions_per_seq',
-    type=int,
-    default=20,
-    help='Maximum number of masked LM predictions per sequence. Default is 20.')
-
-parser.add_argument(
-    '--random_seed',
-    type=int,
-    default=12345,
-    help='Random seed for data generation.')
-
-parser.add_argument(
-    '--dupe_factor',
-    type=int,
-    default=10,
-    help='Number of times to duplicate the input data (with different masks). Default is 10.')
-
-parser.add_argument(
-    '--masked_lm_prob',
-    type=float,
-    default=0.15,
-    help='Masked LM probability. Default is 0.15')
-
-parser.add_argument(
-    '--short_seq_prob',
-    type=float,
-    default=0.1,
-    help='Probability of creating sequences which are shorter than the '
-    'maximum length. Default is 0.1')
-
-parser.add_argument(
-    '--verbose',
-    action='store_true',
-    help='Print debug information')
-
-parser.add_argument(
-    '--num_workers',
-    type=int,
-    default=1,
-    help='Number of workers for parallel processing, where each worker generates an output file.'
-         ' Default is 1')
-
-parser.add_argument(
-    '--num_outputs',
-    type=int,
-    default=1,
-    help='Number of desired output files, where each one is processed independently by a worker.'
-         'Default is 1')
-
-parser.add_argument(
-    '--tokenized',
-    action='store_true',
-    help='Use --tokenized to indicate that the input data is already tokenized. '
-         'Hence tokenization will be skipped when generating training samples. '
-         'Setting this may accelerate the generation speed')
-
-args = parser.parse_args()
-logging.getLogger().setLevel(logging.DEBUG if args.verbose else logging.INFO)
-logging.info(args)
-
-
 class TrainingInstance(object):
     """A single training instance (sentence pair)."""
 
@@ -269,7 +171,7 @@ def write_to_files_rec(instances, tokenizer, max_seq_length,
 def create_training_instances(x):
     """Create `TrainingInstance`s from raw text."""
     (input_files, out, tokenizer, max_seq_length, dupe_factor,
-     short_seq_prob, masked_lm_prob, max_predictions_per_seq, rng) = x
+     short_seq_prob, masked_lm_prob, max_predictions_per_seq, rng, tokenized) = x
     time_start = time.time()
     logging.info('Processing %s', input_files)
     all_documents = [[]]
@@ -291,7 +193,7 @@ def create_training_instances(x):
                 # Empty lines are used as document delimiters
                 if not line:
                     all_documents.append([])
-                tokens = tokenizer(line) if not args.tokenized else line.split(' ')
+                tokens = tokenizer(line) if not tokenized else line.split(' ')
                 if tokens:
                     all_documents[-1].append(tokens)
 
@@ -331,24 +233,30 @@ def create_training_instances(x):
             np.ascontiguousarray(feature['masked_lm_weights'], dtype='float32'))
         next_sentence_labels.append(feature['next_sentence_labels'][0])
         valid_lengths.append(feature['valid_lengths'][0])
-        if inst_index < 20:
+        if inst_index < 1:
             print_example(instance, feature)
 
-    features = (input_ids, segment_ids, masked_lm_positions, masked_lm_ids, \
-                masked_lm_weights, next_sentence_labels, valid_lengths)
+    # write output to files. Used when pre-generating files
+    if out is not None:
+        features = (input_ids, segment_ids, masked_lm_positions, masked_lm_ids, \
+                    masked_lm_weights, next_sentence_labels, valid_lengths)
+        logging.info('*** Writing to output file %s ***', out)
+        if args.format == 'numpy':
+            write_to_files_np(features, tokenizer, args.max_seq_length,
+                              args.max_predictions_per_seq, [out])
+        elif args.format == 'recordio':
+            write_to_files_rec(instances, tokenizer, args.max_seq_length,
+                               args.max_predictions_per_seq, [out])
+        else:
+            raise ValueError('unsupported format: %s'%args.format)
 
-    logging.info('*** Writing to output file %s ***', out)
-    if args.format == 'numpy':
-        write_to_files_np(features, tokenizer, args.max_seq_length,
-                          args.max_predictions_per_seq, [out])
-    elif args.format == 'recordio':
-        write_to_files_rec(instances, tokenizer, args.max_seq_length,
-                           args.max_predictions_per_seq, [out])
     else:
-        raise ValueError('unsupported format: %s'%args.format)
-
+        # return feature vectors. Used when generating samples online
+        features = (input_ids, masked_lm_ids, masked_lm_positions, masked_lm_weights,
+                    next_sentence_labels, segment_ids, valid_lengths)
     time_end = time.time()
     logging.info('Process %d files took %.1f s', len(input_files), time_end - time_start)
+    return features
 
 
 def create_instances_from_document(
@@ -586,7 +494,7 @@ def main():
     map_args = []
     pool_args = (tokenizer, args.max_seq_length, args.dupe_factor,\
                  args.short_seq_prob, args.masked_lm_prob,
-                 args.max_predictions_per_seq, rng)
+                 args.max_predictions_per_seq, rng, args.tokenized)
     for i, file_split in enumerate(file_splits):
         out = os.path.join(output_dir, 'part-{}.{}'.format(str(i).zfill(3), suffix))
         count += len(file_split)
@@ -607,4 +515,100 @@ def main():
     logging.info('Time cost=%.1f', time_end - time_start)
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser(
+        description='Pre-training data generator for BERT')
+
+    parser.add_argument(
+        '--input_file',
+        type=str,
+        default=None,
+        help='input file(s). For example, "~/data/*.txt"')
+
+    parser.add_argument(
+        '--output_dir',
+        type=str,
+        default=None,
+        help='Output directory.')
+
+    parser.add_argument(
+        '--format',
+        type=str,
+        default='numpy',
+        choices=['numpy', 'recordio'],
+        help='Output file format. If set to "numpy", examples are serialized as a single "npz" file.'
+             'If set to "recordio", examples are serialized using IndexedRecordIO format. '
+             'Default is numpy.')
+
+    parser.add_argument(
+        '--vocab',
+        type=str,
+        default=None,
+        choices=['book_corpus_wiki_en_uncased', 'book_corpus_wiki_en_cased',
+                 'wiki_multilingual_uncased', 'wiki_multilingual_cased', 'wiki_cn_cased'],
+        help='The dataset name for the vocab file BERT model was trained on. For example, '
+             '"book_corpus_wiki_en_uncased"')
+
+    parser.add_argument(
+        '--max_seq_length', type=int, default=128, help='Maximum sequence length. Default is 128.')
+
+    parser.add_argument(
+        '--max_predictions_per_seq',
+        type=int,
+        default=20,
+        help='Maximum number of masked LM predictions per sequence. Default is 20.')
+
+    parser.add_argument(
+        '--random_seed',
+        type=int,
+        default=12345,
+        help='Random seed for data generation.')
+
+    parser.add_argument(
+        '--dupe_factor',
+        type=int,
+        default=10,
+        help='Number of times to duplicate the input data (with different masks). Default is 10.')
+
+    parser.add_argument(
+        '--masked_lm_prob',
+        type=float,
+        default=0.15,
+        help='Masked LM probability. Default is 0.15')
+
+    parser.add_argument(
+        '--short_seq_prob',
+        type=float,
+        default=0.1,
+        help='Probability of creating sequences which are shorter than the '
+        'maximum length. Default is 0.1')
+
+    parser.add_argument(
+        '--verbose',
+        action='store_true',
+        help='Print debug information')
+
+    parser.add_argument(
+        '--num_workers',
+        type=int,
+        default=1,
+        help='Number of workers for parallel processing, where each worker generates an output file.'
+             ' Default is 1')
+
+    parser.add_argument(
+        '--num_outputs',
+        type=int,
+        default=1,
+        help='Number of desired output files, where each one is processed independently by a worker.'
+             'Default is 1')
+
+    parser.add_argument(
+        '--tokenized',
+        action='store_true',
+        help='Use --tokenized to indicate that the input data is already tokenized. '
+             'Hence tokenization will be skipped when generating training samples. '
+             'Setting this may accelerate the generation speed')
+
+    args = parser.parse_args()
+    logging.getLogger().setLevel(logging.DEBUG if args.verbose else logging.INFO)
+    logging.info(args)
     main()
