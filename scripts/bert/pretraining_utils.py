@@ -72,6 +72,7 @@ class BERTPretrainDataset(mx.gluon.data.ArrayDataset):
     """
     def __init__(self, filename, tokenizer, max_seq_length, short_seq_prob,
                  masked_lm_prob, max_predictions_per_seq, vocab):
+        logging.debug('started loading %s...', filename)
         output_npz = None
         dup_factor = 1
         instances = create_training_instances(([filename], output_npz, tokenizer, max_seq_length,
@@ -80,7 +81,9 @@ class BERTPretrainDataset(mx.gluon.data.ArrayDataset):
         super(BERTPretrainDataset, self).__init__(*instances)
 
 def get_online_pretrain_dataset(data, batch_size, num_ctxes, shuffle, use_avg_len,
-                                num_buckets, vocabulary=None, num_parts=1, part_idx=0, prefetch=True):
+                                num_buckets, vocab, max_seq_length, short_seq_prob,
+                                masked_lm_prob, max_predictions_per_seq,
+                                num_parts=1, part_idx=0, prefetch=True):
     """create dataset for pretraining."""
     num_files = len(glob.glob(os.path.expanduser(data)))
     logging.debug('%d files found.', num_files)
@@ -88,17 +91,11 @@ def get_online_pretrain_dataset(data, batch_size, num_ctxes, shuffle, use_avg_le
         'Number of training files must be greater than the number of partitions'
 
     split_sampler = nlp.data.SplitSampler(num_files, num_parts=num_parts, part_index=part_idx)
-    vocab = nlp.data.utils._load_pretrained_vocab('book_corpus_wiki_en_uncased')
-    tokenizer = nlp.data.BERTTokenizer(
-        vocab=vocab, lower=True)
+
+    tokenizer = nlp.data.BERTTokenizer(vocab=vocab, lower=True)
 
     input_files = glob.glob(os.path.expanduser(data))
     tokenizer = tokenizer
-    max_seq_length = 512
-    short_seq_prob = 0.1
-    masked_lm_prob = 0.15
-    max_predictions_per_seq = 78
-
     dataset_cls = functools.partial(BERTPretrainDataset, tokenizer=tokenizer,
                   max_seq_length=max_seq_length, short_seq_prob=short_seq_prob,
                   masked_lm_prob=masked_lm_prob, max_predictions_per_seq=max_predictions_per_seq,
@@ -106,7 +103,7 @@ def get_online_pretrain_dataset(data, batch_size, num_ctxes, shuffle, use_avg_le
 
     stream = nlp.data.SimpleDatasetStream(dataset_cls, data, split_sampler)
     if prefetch:
-        stream = nlp.data.PrefetchingStream(stream)
+        stream = nlp.data.PrefetchingStream(stream, worker_type='process')
 
     def get_dataloader(dataset):
         """create data loader based on the dataset chunk"""
@@ -146,7 +143,6 @@ def get_online_pretrain_dataset(data, batch_size, num_ctxes, shuffle, use_avg_le
         return dataloader
 
     stream = stream.transform(get_dataloader)
-    #import pdb; pdb.set_trace()
     return stream
 
 def get_pretrain_dataset(data, batch_size, num_ctxes, shuffle, use_avg_len,

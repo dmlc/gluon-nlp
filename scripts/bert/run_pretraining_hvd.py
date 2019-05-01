@@ -33,6 +33,7 @@ This example shows how to pre-train a BERT model with Gluon NLP Toolkit.
 import os
 import random
 import logging
+import functools
 import time
 import numpy as np
 
@@ -43,9 +44,18 @@ from utils import profile
 from fp16_utils import FP16Trainer
 from pretraining_utils import get_model_loss, get_pretrain_dataset, get_dummy_dataloader
 from pretraining_utils import save_params, split_and_load, log, evaluate, forward, get_argparser
+from pretraining_utils import get_online_pretrain_dataset
 
 # parser
 parser = get_argparser()
+parser.add_argument('--raw', action='store_true',
+                    help='Input raw text files instead of pre-processed npz files')
+parser.add_argument('--max_seq_length', default=512, help='Maximum input sequence length.')
+parser.add_argument('--short_seq_prob', default=0.1, help='Probability for short sequences.')
+parser.add_argument('--masked_lm_prob', default=0.15, help='Probability for masks.')
+parser.add_argument('--max_predictions_per_seq', default=78,
+                    help='Maximum number of predictions per sequence.')
+
 args = parser.parse_args()
 
 # logging
@@ -224,16 +234,26 @@ if __name__ == '__main__':
         if not os.path.exists(ckpt_dir):
             os.makedirs(ckpt_dir)
 
+    if args.raw:
+        get_dataset_fn = functools.partial(get_online_pretrain_dataset,
+                                           max_seq_length=args.max_seq_length,
+                                           short_seq_prob=args.short_seq_prob,
+                                           masked_lm_prob=args.masked_lm_prob,
+                                           max_predictions_per_seq=args.max_predictions_per_seq,
+                                           vocab=vocab)
+    else:
+        get_dataset_fn = get_pretrain_dataset
+
     if args.data:
         num_parts = 1 if args.dummy_data_len else num_workers
         part_idx = 0 if args.dummy_data_len else rank
-        data_train = get_pretrain_dataset(args.data, args.batch_size, 1, True,
-                                          args.use_avg_len, args.num_buckets,
-                                          num_parts=num_parts, part_idx=part_idx,
-                                          prefetch=not args.dummy_data_len)
+        data_train = get_dataset_fn(args.data, args.batch_size, 1, True,
+                                    args.use_avg_len, args.num_buckets,
+                                    num_parts=num_parts, part_idx=part_idx,
+                                    prefetch=not args.dummy_data_len)
         train(data_train, model, nsp_loss, mlm_loss, len(vocab), ctx)
     if args.data_eval:
-        data_eval = get_pretrain_dataset(args.data_eval, args.batch_size_eval, 1,
-                                         False, False, 1)
+        data_eval = get_dataset_fn(args.data_eval, args.batch_size_eval, 1,
+                                   False, False, 1)
         evaluate(data_eval, model, nsp_loss, mlm_loss, len(vocab), [ctx],
                  args.log_interval, args.dtype)

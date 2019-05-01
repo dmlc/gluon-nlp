@@ -168,7 +168,7 @@ def create_training_instances(packed_arguments):
      masked_lm_prob, max_predictions_per_seq, int_inputs, vocab) = packed_arguments
 
     time_start = time.time()
-    logging.info('Processing %s', input_files)
+    logging.debug('Processing %s', input_files)
     all_documents = [[]]
 
     # Input file format:
@@ -242,7 +242,7 @@ def create_training_instances(packed_arguments):
         features = (input_ids, masked_lm_ids, masked_lm_positions, masked_lm_weights,
                     next_sentence_labels, segment_ids, valid_lengths)
     time_end = time.time()
-    logging.info('Process %d files took %.1f s', len(input_files), time_end - time_start)
+    logging.debug('Process %d files took %.1f s', len(input_files), time_end - time_start)
     return features
 
 
