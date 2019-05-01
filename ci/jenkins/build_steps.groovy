@@ -48,8 +48,6 @@ def test_unittest(workspace_name, conda_env_name, test_path, cov_path, mark, thr
         utils.init_git()
         sh """
             set -ex
-            export LD_LIBRARY_PATH=/usr/local/cuda/lib64
-            export CUDA_VISIBLE_DEVICES=\$EXECUTOR_NUMBER
             source ci/prepare_clean_env.sh ${conda_env_name}
             pytest -v ${capture_flag} -n ${threads} -m '${mark}' --durations=30 ${test_path} --cov ${cov_path}
             set +ex
