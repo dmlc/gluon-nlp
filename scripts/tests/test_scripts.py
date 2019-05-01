@@ -60,6 +60,7 @@ def test_glove():
     time.sleep(5)
 
 
+@pytest.mark.skip_master
 @pytest.mark.serial
 @pytest.mark.remote_required
 @pytest.mark.gpu
@@ -102,18 +103,15 @@ def test_embedding_evaluate_from_path(evaluateanalogies, maxvocabsize):
 @pytest.mark.serial
 @pytest.mark.remote_required
 @pytest.mark.gpu
-def test_sentiment_analysis_finetune():
-    process = subprocess.check_call(['python', './scripts/sentiment_analysis/finetune_lm.py',
-                                     '--gpu', '0', '--batch_size', '32', '--bucket_type', 'fixed',
-                                     '--epochs', '1', '--dropout', '0', '--no_pretrained',
-                                     '--lr', '0.005', '--valid_ratio', '0.1',
-                                     '--save-prefix', 'imdb_lstm_200'])
-    time.sleep(5)
-    process = subprocess.check_call(['python', './scripts/sentiment_analysis/finetune_lm.py',
-                                     '--gpu', '0', '--batch_size', '32', '--bucket_type', 'fixed',
-                                     '--epochs', '1', '--dropout', '0',
-                                     '--lr', '0.005', '--valid_ratio', '0.1',
-                                     '--save-prefix', 'imdb_lstm_200'])
+@pytest.mark.parametrize('use_pretrained', [True, False])
+def test_sentiment_analysis_finetune(use_pretrained):
+    args = ['--gpu', '0', '--batch_size', '32', '--bucket_type', 'fixed',
+            '--epochs', '1', '--dropout', '0',
+            '--lr', '0.005', '--valid_ratio', '0.1',
+            '--save-prefix', 'imdb_lstm_200']
+    if not use_pretrained:
+        args.append('--no_pretrained')
+    process = subprocess.check_call(['python', './scripts/sentiment_analysis/finetune_lm.py']+args)
     time.sleep(5)
 
 @pytest.mark.serial
@@ -126,18 +124,21 @@ def test_sentiment_analysis_textcnn():
                                      '--data_name', 'MR', '--save-prefix', 'sa-model'])
     time.sleep(5)
 
+@pytest.mark.skip_master
 @pytest.mark.remote_required
-def test_sampling():
-    process = subprocess.check_call(['python', './scripts/text_generation/sequence_sampling.py',
-                                     '--use-beam-search', '--bos', 'I love it', '--beam_size', '2',
-                                     '--print_num', '1'])
-    time.sleep(5)
-    process = subprocess.check_call(['python', './scripts/text_generation/sequence_sampling.py',
-                                     '--use-sampling', '--bos', 'I love it', '--beam_size', '2',
-                                     '--print_num', '1', '--temperature', '1.0'])
+@pytest.mark.parametrize('method', ['beam_search', 'sampling'])
+def test_sampling(method):
+    args = ['--bos', 'I love it', '--beam_size', '2', '--print_num', '1']
+    if method == 'beam_search':
+        args.append('--use-beam-search')
+    if method == 'sampling':
+        args.extend(['--use-sampling', '--temperature', '1.0'])
+    process = subprocess.check_call(['python', './scripts/text_generation/sequence_sampling.py']
+                                     + args)
     time.sleep(5)
 
 
+@pytest.mark.skip_master
 @pytest.mark.serial
 @pytest.mark.remote_required
 @pytest.mark.gpu
@@ -153,23 +154,16 @@ def test_gnmt():
 @pytest.mark.serial
 @pytest.mark.remote_required
 @pytest.mark.gpu
-def test_transformer():
-    process = subprocess.check_call(['python', './scripts/machine_translation/train_transformer.py',
-                                     '--dataset', 'TOY', '--src_lang', 'en', '--tgt_lang', 'de',
-                                     '--batch_size', '32', '--optimizer', 'adam',
-                                     '--num_accumulated', '1', '--lr', '1.0',
-                                     '--warmup_steps', '2000', '--save_dir', 'test',
-                                     '--epochs', '1', '--gpus', '0', '--scaled', '--average_start',
-                                     '1', '--num_buckets', '5', '--bleu', 'tweaked', '--num_units',
-                                     '32', '--hidden_size', '64', '--num_layers', '2',
-                                     '--num_heads', '4', '--test_batch_size', '32'])
-    process = subprocess.check_call(['python', './scripts/machine_translation/train_transformer.py',
-                                     '--dataset', 'TOY', '--src_lang', 'en', '--tgt_lang', 'de',
-                                     '--batch_size', '32', '--optimizer', 'adam',
-                                     '--num_accumulated', '1', '--lr', '1.0',
-                                     '--warmup_steps', '2000', '--save_dir', 'test',
-                                     '--epochs', '1', '--gpus', '0', '--scaled', '--average_start',
-                                     '1', '--num_buckets', '5', '--bleu', '13a', '--num_units',
-                                     '32', '--hidden_size', '64', '--num_layers', '2',
-                                     '--num_heads', '4', '--test_batch_size', '32'])
+@pytest.mark.parametrize('bleu', ['tweaked', '13a'])
+def test_transformer(bleu):
+    args = ['--dataset', 'TOY', '--src_lang', 'en', '--tgt_lang', 'de',
+            '--batch_size', '32', '--optimizer', 'adam',
+            '--num_accumulated', '1', '--lr', '1.0',
+            '--warmup_steps', '2000', '--save_dir', 'test',
+            '--epochs', '1', '--gpus', '0', '--scaled', '--average_start',
+            '1', '--num_buckets', '5', '--bleu', bleu, '--num_units',
+            '32', '--hidden_size', '64', '--num_layers', '2',
+            '--num_heads', '4', '--test_batch_size', '32']
+    process = subprocess.check_call(['python', './scripts/machine_translation/train_transformer.py']
+                                    +args)
     time.sleep(5)
