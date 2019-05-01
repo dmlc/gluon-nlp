@@ -38,8 +38,8 @@ core_logic: {
   ])
 
   utils.parallel_stage('Tests', [
-    build_steps.test_unittest('gluon-nlp-py2', 'py2', 'tests/unittest', 'src/gluonnlp', 'gpu and not serial', 4),
-    build_steps.test_unittest('gluon-nlp-py2', 'py2', 'tests/unittest', 'src/gluonnlp', 'gpu and serial', 0)
+    build_steps.test_unittest('gluon-nlp-py2', 'py2', 'tests/unittest', 'src/gluonnlp', 'gpu and not serial', 4, true),
+    build_steps.test_unittest('gluon-nlp-py2', 'py2', 'tests/unittest', 'src/gluonnlp', 'gpu and serial', 0, true)
   ])
 }
 ,
