@@ -454,6 +454,21 @@ class MPQA(SentimentDataset):
     root : str, default '$MXNET_HOME/datasets/mpqa'
         Path to temp folder for storing data.
         MXNET_HOME defaults to '~/.mxnet'.
+
+    Examples
+    --------
+    >>> mpqa = gluonnlp.data.MPQA(root='./datasets/mpqa')
+    -etc-
+    >>> len(mpqa)
+    10606
+    >>> len(mpqa[3])
+    2
+    >>> type(mpqa[3][0]), type(mpqa[3][1])
+    (<class 'str'>, <class 'int'>)
+    >>> mpqa[3][0][:15]
+    'many years of decay'
+    >>> mpqa[3][1]
+    0
     """
     def __init__(self, root=os.path.join(get_home_dir(), 'datasets', 'mpqa')):
         super(MPQA, self).__init__('all', root)
