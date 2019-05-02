@@ -89,7 +89,7 @@ class BERTPretrainDataset(mx.gluon.data.ArrayDataset):
         dup_factor = 1
         instances = create_training_instances(([filename], output_npz, tokenizer, max_seq_length,
                                               dup_factor, short_seq_prob, masked_lm_prob,
-                                              max_predictions_per_seq, False, vocab))
+                                              max_predictions_per_seq, vocab))
         super(BERTPretrainDataset, self).__init__(*instances)
 
 def get_online_pretrain_dataset(data, batch_size, num_ctxes, shuffle, use_avg_len,

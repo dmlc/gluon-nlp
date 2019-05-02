@@ -67,7 +67,7 @@ class TrainingInstance(object):
     def __repr__(self):
         return self.__str__()
 
-def transform(instance, vocab, max_seq_length, max_predictions_per_seq, int_inputs):
+def transform(instance, vocab, max_seq_length, max_predictions_per_seq):
     """Transform instance to inputs for MLM and NSP."""
     input_ids = instance.tokens
     assert len(input_ids) <= max_seq_length
@@ -145,13 +145,11 @@ def create_training_instances(packed_arguments):
         The probability of replacing texts with masks/random words/original words.
     max_predictions_per_seq : int
         The hard limit of the number of predictions for masked words
-    int_inputs : bool
-        Whether the inputs are stored as integers (ids in the vocabulary).
     vocab : BERTVocab
         The BERTVocab
     """
     (input_files, output_file, tokenizer, max_seq_length, dupe_factor, short_seq_prob,
-     masked_lm_prob, max_predictions_per_seq, int_inputs, vocab) = packed_arguments
+     masked_lm_prob, max_predictions_per_seq, vocab) = packed_arguments
 
     time_start = time.time()
     logging.debug('Processing %s', input_files)
@@ -174,10 +172,7 @@ def create_training_instances(packed_arguments):
                 # Empty lines are used as document delimiters
                 if not line and all_documents[-1]:
                     all_documents.append([])
-                if int_inputs:
-                    tokens = [int(x) for x in line.split()]
-                else:
-                    tokens = vocab[tokenizer(line)]
+                tokens = vocab[tokenizer(line)]
                 if tokens:
                     all_documents[-1].append(tokens)
 
@@ -201,7 +196,7 @@ def create_training_instances(packed_arguments):
     valid_lengths = []
 
     for inst_index, instance in enumerate(instances):
-        feature = transform(instance, vocab, max_seq_length, max_predictions_per_seq, int_inputs)
+        feature = transform(instance, vocab, max_seq_length, max_predictions_per_seq)
         input_ids.append(
             np.ascontiguousarray(feature['input_ids'], dtype='int32'))
         segment_ids.append(
@@ -468,15 +463,9 @@ def main():
     count = 0
     packed_args = []
 
-    # TODO(haibin) support --int-inputs in arguments.
-    # Use --int-inputs to indicate that the input tokens are already stored as integers.
-    # Tokenization and vocabulary lookup will be skipped when generating training
-    # samples. Enabling this will accelerate the generation speed
-    int_inputs = False
-
     fixed_args = (tokenizer, args.max_seq_length, args.dupe_factor,\
                   args.short_seq_prob, args.masked_lm_prob,
-                  args.max_predictions_per_seq, int_inputs, vocab)
+                  args.max_predictions_per_seq, vocab)
     for i, file_split in enumerate(file_splits):
         out = os.path.join(output_dir, 'part-{}.{}'.format(str(i).zfill(3), suffix))
         count += len(file_split)
@@ -573,6 +562,11 @@ if __name__ == '__main__':
         default=1,
         help='Number of desired output files, where each one is processed independently by a worker.'
              'Default is 1')
+
+    # TODO(haibin) support --int-inputs in arguments.
+    # Use --int-inputs to indicate that the input tokens are already stored as integers.
+    # Tokenization and vocabulary lookup will be skipped when generating training
+    # samples. Enabling this will accelerate the generation speed
 
     args = parser.parse_args()
     logging.getLogger().setLevel(logging.DEBUG if args.verbose else logging.INFO)
