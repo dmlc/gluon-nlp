@@ -50,11 +50,16 @@ from pretraining_utils import get_online_pretrain_dataset
 parser = get_argparser()
 parser.add_argument('--raw', action='store_true',
                     help='Input raw text files instead of pre-processed npz files')
-parser.add_argument('--max_seq_length', default=512, help='Maximum input sequence length.')
-parser.add_argument('--short_seq_prob', default=0.1, help='Probability for short sequences.')
-parser.add_argument('--masked_lm_prob', default=0.15, help='Probability for masks.')
-parser.add_argument('--max_predictions_per_seq', default=78,
+parser.add_argument('--max_seq_length', type=int, default=None,
+                    help='Maximum input sequence length.')
+parser.add_argument('--short_seq_prob', type=float, default=None,
+                    help='Probability for short sequences.')
+parser.add_argument('--masked_lm_prob', type=float, default=None,
+                    help='Probability for masks.')
+parser.add_argument('--max_predictions_per_seq', type=int, default=None,
                     help='Maximum number of predictions per sequence.')
+parser.add_argument('--cased', action='store_true',
+                    help='whether to tokenize with cased characters')
 
 args = parser.parse_args()
 
@@ -234,17 +239,27 @@ if __name__ == '__main__':
         if not os.path.exists(ckpt_dir):
             os.makedirs(ckpt_dir)
 
-    if args.raw:
-        get_dataset_fn = functools.partial(get_online_pretrain_dataset,
-                                           max_seq_length=args.max_seq_length,
-                                           short_seq_prob=args.short_seq_prob,
-                                           masked_lm_prob=args.masked_lm_prob,
-                                           max_predictions_per_seq=args.max_predictions_per_seq,
-                                           vocab=vocab)
-    else:
-        get_dataset_fn = get_pretrain_dataset
 
     if args.data:
+        if args.raw:
+            get_dataset_fn = functools.partial(get_online_pretrain_dataset,
+                                               max_seq_length=args.max_seq_length,
+                                               short_seq_prob=args.short_seq_prob,
+                                               masked_lm_prob=args.masked_lm_prob,
+                                               max_predictions_per_seq=args.max_predictions_per_seq,
+                                               vocab=vocab, cased=args.cased)
+        else:
+            get_dataset_fn = get_pretrain_dataset
+            if args.cased:
+                raise UserWarning('argument cased is valid only when --raw is set')
+            if args.max_seq_length:
+                raise UserWarning('argument max_seq_length is valid only when --raw is set')
+            if args.short_seq_prob:
+                raise UserWarning('argument short_seq_prob is valid only when --raw is set')
+            if args.masked_lm_prob:
+                raise UserWarning('argument masked_lm_prob is valid only when --raw is set')
+            if args.max_predictions_per_seq:
+                raise UserWarning('argument max_predictions_per_seq is valid only when --raw is set')
         num_parts = 1 if args.dummy_data_len else num_workers
         part_idx = 0 if args.dummy_data_len else rank
         data_train = get_dataset_fn(args.data, args.batch_size, 1, True,
@@ -253,7 +268,8 @@ if __name__ == '__main__':
                                     prefetch=not args.dummy_data_len)
         train(data_train, model, nsp_loss, mlm_loss, len(vocab), ctx)
     if args.data_eval:
-        data_eval = get_dataset_fn(args.data_eval, args.batch_size_eval, 1,
-                                   False, False, 1)
+        # eval data is always based on a fixed npz file.
+        data_eval = get_pretrain_dataset(args.data_eval, args.batch_size_eval, 1,
+                                         False, False, 1)
         evaluate(data_eval, model, nsp_loss, mlm_loss, len(vocab), [ctx],
                  args.log_interval, args.dtype)

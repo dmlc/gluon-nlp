@@ -95,6 +95,23 @@ def test_pretrain_hvd():
                                          '--data_eval', './test/bert/data/*.npz',
                                          '--batch_size_eval', '8',
                                          '--ckpt_dir', './test/bert/ckpt'])
+        # test training with raw data
+        process = subprocess.check_call(['python', './scripts/bert/run_pretraining_hvd.py',
+                                         '--raw',
+                                         '--max_seq_length', '128',
+                                         '--max_predictions_per_seq', '20',
+                                         '--masked_lm_prob', '0.15',
+                                         '--short_seq_prob', '0.1',
+                                         '--data', './scripts/bert/sample_text.txt',
+                                         '--batch_size', '32',
+                                         '--lr', '2e-5',
+                                         '--warmup_ratio', '0.5',
+                                         '--num_steps', '20',
+                                         '--pretrained',
+                                         '--log_interval', '2',
+                                         '--data_eval', './test/bert/data/*.npz',
+                                         '--batch_size_eval', '8',
+                                         '--ckpt_dir', './test/bert/ckpt'])
         # test evaluation
         process = subprocess.check_call(['python', './scripts/bert/run_pretraining_hvd.py',
                                          '--num_steps', '20',
