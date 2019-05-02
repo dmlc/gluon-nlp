@@ -24,6 +24,7 @@ from __future__ import print_function
 import sys
 import os
 import pytest
+import time
 
 sys.path.append(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'machine_translation'))
 
