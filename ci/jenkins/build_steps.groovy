@@ -90,7 +90,7 @@ def create_website(workspace_name, conda_env_name) {
     path = env.BRANCH_NAME
   }
   return ["${conda_env_name}: website'": {
-    node(NODE_LINUX_CPU) {
+    node(NODE_LINUX_GPU) {
       ws("workspace/${workspace_name}") {
         utils.init_git()
         sh """

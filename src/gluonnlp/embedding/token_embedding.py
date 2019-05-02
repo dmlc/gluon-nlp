@@ -59,7 +59,7 @@ def register(embedding_cls):
     ...         pass
     >>> embed = gluonnlp.embedding.create('MyTextEmbed')
     >>> print(type(embed))
-    <class 'MyTextEmbed'>
+    <class 'gluonnlp.embedding.token_embedding.MyTextEmbed'>
     """
 
     register_text_embedding = registry.get_register_func(TokenEmbedding, 'token embedding')
@@ -814,6 +814,7 @@ class GloVe(TokenEmbedding):
         >>> import warnings; warnings.filterwarnings('ignore');
         >>> import gluonnlp as nlp
         >>> nlp.embedding.list_sources('GloVe')
+        -etc-
 
     Parameters
     ----------
@@ -892,6 +893,7 @@ class FastText(TokenEmbedding):
         >>> import warnings; warnings.filterwarnings('ignore');
         >>> import gluonnlp as nlp
         >>> nlp.embedding.list_sources('FastText')
+        -etc-
 
 
     Parameters
@@ -992,6 +994,7 @@ class Word2Vec(TokenEmbedding):
         >>> import warnings; warnings.filterwarnings('ignore');
         >>> import gluonnlp as nlp
         >>> nlp.embedding.list_sources('Word2Vec')
+        -etc-
 
     Parameters
     ----------

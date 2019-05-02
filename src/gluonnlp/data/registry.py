@@ -60,7 +60,7 @@ def register(class_=None, **kwargs):
     ...         pass
     >>> my_dataset = gluonnlp.data.create('MyDataset')
     >>> print(type(my_dataset))
-    <class 'MyDataset'>
+    <class 'gluonnlp.data.registry.MyDataset'>
 
     """
 
