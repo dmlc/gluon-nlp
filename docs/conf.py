@@ -61,15 +61,6 @@ extensions = [
     'sphinx_autorun',
 ]
 
-doctest_global_setup = '''
-import gluonnlp
-import mxnet as mx
-from mxnet import gluon
-import numpy as np
-import doctest
-doctest.ELLIPSIS_MARKER = '-etc-'
-'''
-
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
 

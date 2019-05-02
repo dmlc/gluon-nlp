@@ -34,7 +34,7 @@ def test_sanity_gpu_serial():
 
 @pytest.mark.gpu
 @pytest.mark.integration
-def test_sanity_gpu_serial():
+def test_sanity_gpu_integ():
     # sanity test that makes sure every marker combination has at least 1 test.
     # due to https://github.com/pytest-dev/pytest/issues/812
     import gluonnlp as nlp
