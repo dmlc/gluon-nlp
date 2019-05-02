@@ -403,9 +403,6 @@ class CR(SentimentDataset):
     Customer reviews of various products (cameras, MP3s etc.). Task is to
     predict positive/negative reviews
 
-    From
-    http://www.cs.uic.edu/∼liub/FBS/sentiment-analysis.html
-
     Positive class has label value 1. Negative class has label value 0.
 
     Parameters
@@ -465,7 +462,7 @@ class MPQA(SentimentDataset):
     2
     >>> type(mpqa[3][0]), type(mpqa[3][1])
     (<class 'str'>, <class 'int'>)
-    >>> mpqa[3][0][:15]
+    >>> mpqa[3][0][:25]
     'many years of decay'
     >>> mpqa[3][1]
     0
