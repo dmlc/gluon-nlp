@@ -25,13 +25,16 @@ def test_skipgram_cbow(model, fasttext):
     time.sleep(5)
 
 
+@pytest.mark.serial
+@pytest.mark.gpu
+@pytest.mark.integration
 def test_glove():
     path = os.path.dirname(os.path.abspath(os.path.expanduser(__file__)))
     vocab = os.path.join(path, 'word_embeddings/glove/vocab.txt')
     cooccur = os.path.join(path, 'word_embeddings/glove/cooccurrences.npz')
     cmd = [
         sys.executable, './scripts/word_embeddings/train_glove.py', cooccur, vocab,
-        '--batch-size', '2', '--epochs', '2']
+        '--batch-size', '2', '--epochs', '2', '--gpu', '0']
     subprocess.check_call(cmd)
     time.sleep(5)
 
@@ -106,10 +109,11 @@ def test_sentiment_analysis_textcnn():
 
 @pytest.mark.skip_master
 @pytest.mark.remote_required
+@pytest.mark.gpu
 @pytest.mark.integration
 @pytest.mark.parametrize('method', ['beam_search', 'sampling'])
 def test_sampling(method):
-    args = ['--bos', 'I love it', '--beam_size', '2', '--print_num', '1']
+    args = ['--bos', 'I love it', '--beam_size', '2', '--print_num', '1', '--gpu', '0']
     if method == 'beam_search':
         args.append('--use-beam-search')
     if method == 'sampling':
@@ -178,7 +182,7 @@ def test_bert_embedding(use_pretrained):
 @pytest.mark.integration
 def test_pretrain():
     # test data creation
-    process = subprocess.check_call(['python', './scripts/bert/create_pretraining_data.py',
+    process = subprocess.check_call([sys.executable, './scripts/bert/create_pretraining_data.py',
                                      '--input_file', './scripts/bert/sample_text.txt',
                                      '--output_dir', 'test/bert/data',
                                      '--vocab', 'book_corpus_wiki_en_uncased',
@@ -192,7 +196,7 @@ def test_pretrain():
         # TODO(haibin) update test once MXNet 1.5 is released.
         from mxnet.ndarray.contrib import adamw_update
         # test training
-        process = subprocess.check_call(['python', './scripts/bert/run_pretraining.py',
+        process = subprocess.check_call([sys.executable, './scripts/bert/run_pretraining.py',
                                          '--gpus', '0',
                                          '--data', './test/bert/data/*.npz',
                                          '--batch_size', '32',
@@ -205,7 +209,7 @@ def test_pretrain():
                                          '--batch_size_eval', '8',
                                          '--ckpt_dir', './test/bert/ckpt'])
         # test evaluation
-        process = subprocess.check_call(['python', './scripts/bert/run_pretraining.py',
+        process = subprocess.check_call([sys.executable, './scripts/bert/run_pretraining.py',
                                          '--gpus', '0',
                                          '--num_steps', '20',
                                          '--pretrained',
@@ -216,7 +220,7 @@ def test_pretrain():
 
         # test mixed precision training and use-avg-len
         from mxnet.ndarray.contrib import mp_adamw_update
-        process = subprocess.check_call(['python', './scripts/bert/run_pretraining.py',
+        process = subprocess.check_call([sys.executable, './scripts/bert/run_pretraining.py',
                                          '--gpus', '0',
                                          '--dtype', 'float16',
                                          '--data', './test/bert/data/*.npz',
@@ -241,7 +245,7 @@ def test_pretrain():
 @pytest.mark.integration
 def test_pretrain_hvd():
     # test data creation
-    process = subprocess.check_call(['python', './scripts/bert/create_pretraining_data.py',
+    process = subprocess.check_call([sys.executable, './scripts/bert/create_pretraining_data.py',
                                      '--input_file', './scripts/bert/sample_text.txt',
                                      '--output_dir', 'test/bert/data',
                                      '--vocab', 'book_corpus_wiki_en_uncased',
@@ -256,7 +260,7 @@ def test_pretrain_hvd():
         from mxnet.ndarray.contrib import adamw_update
         import horovod.mxnet as hvd
         # test training
-        process = subprocess.check_call(['python', './scripts/bert/run_pretraining_hvd.py',
+        process = subprocess.check_call([sys.executable, './scripts/bert/run_pretraining_hvd.py',
                                          '--data', './test/bert/data/*.npz',
                                          '--batch_size', '32',
                                          '--lr', '2e-5',
@@ -268,7 +272,7 @@ def test_pretrain_hvd():
                                          '--batch_size_eval', '8',
                                          '--ckpt_dir', './test/bert/ckpt'])
         # test evaluation
-        process = subprocess.check_call(['python', './scripts/bert/run_pretraining_hvd.py',
+        process = subprocess.check_call([sys.executable, './scripts/bert/run_pretraining_hvd.py',
                                          '--num_steps', '20',
                                          '--pretrained',
                                          '--log_interval', '2',
@@ -278,7 +282,7 @@ def test_pretrain_hvd():
 
         # test mixed precision training and use-avg-len
         from mxnet.ndarray.contrib import mp_adamw_update
-        process = subprocess.check_call(['python', './scripts/bert/run_pretraining_hvd.py',
+        process = subprocess.check_call([sys.executable, './scripts/bert/run_pretraining_hvd.py',
                                          '--dtype', 'float16',
                                          '--data', './test/bert/data/*.npz',
                                          '--batch_size', '4096',
