@@ -18,7 +18,6 @@
 # under the License.
 
 """Test BERTEmbedding."""
-import subprocess
 import time
 
 import pytest
