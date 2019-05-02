@@ -24,6 +24,7 @@ __all__ = ['TextLineDataset', 'CorpusDataset', 'ConcatDataset', 'TSVDataset', 'N
 
 import io
 import os
+import warnings
 import bisect
 import numpy as np
 
@@ -113,10 +114,13 @@ class TSVDataset(SimpleDataset):
     field_indices : list of int or None, default None
         If set, for each sample, only fields with provided indices are selected as the output.
         Otherwise all fields are returned.
+    allow_missing : bool, default False
+        If set to True, no exception will be thrown if the number of fields is smaller than the
+        maximum field index provided.
     """
     def __init__(self, filename, encoding='utf8',
                  sample_splitter=line_splitter, field_separator=Splitter('\t'),
-                 num_discard_samples=0, field_indices=None):
+                 num_discard_samples=0, field_indices=None, allow_missing=False):
         assert sample_splitter, 'sample_splitter must be specified.'
 
         if not isinstance(filename, (tuple, list)):
@@ -128,6 +132,7 @@ class TSVDataset(SimpleDataset):
         self._field_separator = field_separator
         self._num_discard_samples = num_discard_samples
         self._field_indices = field_indices
+        self._allow_missing = allow_missing
         super(TSVDataset, self).__init__(self._read())
 
     def _should_discard(self):
@@ -138,7 +143,11 @@ class TSVDataset(SimpleDataset):
     def _field_selector(self, fields):
         if not self._field_indices:
             return fields
-        return [fields[i] for i in self._field_indices]
+        try:
+            result = [fields[i] for i in self._field_indices]
+        except IndexError as e:
+            raise(IndexError('%s. Fields = %s'%(str(e), str(fields))))
+        return result
 
     def _read(self):
         all_samples = []
@@ -147,7 +156,20 @@ class TSVDataset(SimpleDataset):
                 content = fin.read()
             samples = (s for s in self._sample_splitter(content) if not self._should_discard())
             if self._field_separator:
-                samples = [self._field_selector(self._field_separator(s)) for s in samples]
+                if not self._allow_missing:
+                    samples = [self._field_selector(self._field_separator(s)) for s in samples]
+                else:
+                    selected_samples = []
+                    num_missing = 0
+                    for s in samples:
+                        try:
+                            fields = self._field_separator(s)
+                            selected_samples.append(self._field_selector(fields))
+                        except IndexError:
+                            num_missing += 1
+                    if num_missing > 0:
+                        warnings.warn('%d incomplete samples in %s'%(num_missing, filename))
+                    samples = selected_samples
             all_samples += samples
         return all_samples
 
