@@ -18,20 +18,6 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-PREFER_INT = False
-PREFER_INT = True
-
-_PAD_TOKEN = '[PAD]'
-_CLS_TOKEN = '[CLS]'
-_SEP_TOKEN = '[SEP]'
-_MASK_TOKEN = '[MASK]'
-
-if PREFER_INT:
-    _PAD_TOKEN = 1
-    _CLS_TOKEN = 2
-    _SEP_TOKEN = 3
-    _MASK_TOKEN = 4
-
 import argparse
 import logging
 import io
@@ -83,13 +69,13 @@ class TrainingInstance(object):
 
 def transform(instance, vocab, max_seq_length, max_predictions_per_seq, int_inputs):
     """Transform instance to inputs for MLM and NSP."""
-    input_ids = vocab[instance.tokens] if not PREFER_INT else instance.tokens
+    input_ids = instance.tokens
     assert len(input_ids) <= max_seq_length
     segment_ids = instance.segment_ids
     masked_lm_positions = instance.masked_lm_positions
     valid_lengths = len(input_ids)
 
-    masked_lm_ids = vocab[instance.masked_lm_labels] if not PREFER_INT else instance.masked_lm_labels
+    masked_lm_ids = instance.masked_lm_labels
     masked_lm_weights = [1.0] * len(masked_lm_ids)
 
     next_sentence_label = 1 if instance.is_random_next else 0
@@ -191,7 +177,7 @@ def create_training_instances(packed_arguments):
                 if int_inputs:
                     tokens = [int(x) for x in line.split()]
                 else:
-                    tokens = vocab[tokenizer(line)] if PREFER_INT else tokenizer(line)
+                    tokens = vocab[tokenizer(line)]
                 if tokens:
                     all_documents[-1].append(tokens)
 
@@ -251,6 +237,10 @@ def create_instances_from_document(
         masked_lm_prob, max_predictions_per_seq, vocab):
     """Creates `TrainingInstance`s for a single document."""
     document = all_documents[document_index]
+    _MASK_TOKEN = vocab[vocab.mask_token]
+    _CLS_TOKEN = vocab[vocab.cls_token]
+    _SEP_TOKEN = vocab[vocab.sep_token]
+
 
     # Account for [CLS], [SEP], [SEP]
     max_num_tokens = max_seq_length - 3
@@ -345,14 +335,15 @@ def create_instances_from_document(
 
                 (tokens, masked_lm_positions,
                  masked_lm_labels) = create_masked_lm_predictions(
-                     tokens, masked_lm_prob, max_predictions_per_seq, vocab)
+                     tokens, masked_lm_prob, max_predictions_per_seq,
+                     len(vocab), _MASK_TOKEN, _CLS_TOKEN, _SEP_TOKEN)
                 instance = TrainingInstance(
                     tokens=tokens,
                     segment_ids=segment_ids,
                     is_random_next=is_random_next,
                     masked_lm_positions=masked_lm_positions,
                     masked_lm_labels=masked_lm_labels,
-                    vocab=vocab if PREFER_INT else None)
+                    vocab=vocab)
                 instances.append(instance)
             current_chunk = []
             current_length = 0
@@ -366,9 +357,9 @@ MaskedLmInstance = collections.namedtuple('MaskedLmInstance',
 
 
 def create_masked_lm_predictions(tokens, masked_lm_prob,
-                                 max_predictions_per_seq, vocab):
+                                 max_predictions_per_seq, vocab_size,
+                                 _MASK_TOKEN, _CLS_TOKEN, _SEP_TOKEN):
     """Creates the predictions for the masked LM objective."""
-
     cand_indexes = []
     for (i, token) in enumerate(tokens):
         if token in [_CLS_TOKEN, _SEP_TOKEN]:
@@ -402,8 +393,7 @@ def create_masked_lm_predictions(tokens, masked_lm_prob,
             # 10% of the time, replace with random word
             else:
                 # generate a random word in [0, vocab_size - 1]
-                word_idx = random.randint(0, len(vocab) - 1)
-                masked_token = vocab.idx_to_token[word_idx] if not PREFER_INT else word_idx
+                masked_token = random.randint(0, vocab_size - 1)
 
         output_tokens[index] = masked_token
 
@@ -447,7 +437,7 @@ def main():
 
     # vocabulary
     logging.info('loading vocab file from dataset: %s', args.vocab)
-    vocab = nlp.data.utils._load_pretrained_vocab(args.vocab)
+    vocab = nlp.data.utils._load_pretrained_vocab(args.vocab, cls=nlp.vocab.BERTVocab)
     tokenizer = BERTTokenizer(
         vocab=vocab, lower='uncased' in args.vocab)
 
@@ -477,9 +467,16 @@ def main():
     suffix = 'npz'
     count = 0
     packed_args = []
+
+    # TODO(haibin) support --int-inputs in arguments.
+    # Use --int-inputs to indicate that the input tokens are already stored as integers.
+    # Tokenization and vocabulary lookup will be skipped when generating training
+    # samples. Enabling this will accelerate the generation speed
+    int_inputs = False
+
     fixed_args = (tokenizer, args.max_seq_length, args.dupe_factor,\
                   args.short_seq_prob, args.masked_lm_prob,
-                  args.max_predictions_per_seq, args.int_inputs and PREFER_INT, vocab)
+                  args.max_predictions_per_seq, int_inputs, vocab)
     for i, file_split in enumerate(file_splits):
         out = os.path.join(output_dir, 'part-{}.{}'.format(str(i).zfill(3), suffix))
         count += len(file_split)
@@ -576,13 +573,6 @@ if __name__ == '__main__':
         default=1,
         help='Number of desired output files, where each one is processed independently by a worker.'
              'Default is 1')
-
-    parser.add_argument(
-        '--int-inputs',
-        action='store_true',
-        help='Use --int-inputs to indicate that the input tokens are already stored as integers. '
-             'Tokenization and vocabulary lookup will be skipped when generating training '
-             'samples. Enabling this will accelerate the generation speed')
 
     args = parser.parse_args()
     logging.getLogger().setLevel(logging.DEBUG if args.verbose else logging.INFO)
