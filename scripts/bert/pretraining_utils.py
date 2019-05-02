@@ -88,8 +88,8 @@ class BERTPretrainDataset(mx.gluon.data.ArrayDataset):
         output_npz = None
         dup_factor = 1
         instances = create_training_instances(([filename], output_npz, tokenizer, max_seq_length,
-                                              dup_factor, short_seq_prob, masked_lm_prob,
-                                              max_predictions_per_seq, vocab))
+                                               dup_factor, short_seq_prob, masked_lm_prob,
+                                               max_predictions_per_seq, vocab))
         super(BERTPretrainDataset, self).__init__(*instances)
 
 def get_online_pretrain_dataset(data, batch_size, num_ctxes, shuffle, use_avg_len,
@@ -102,12 +102,13 @@ def get_online_pretrain_dataset(data, batch_size, num_ctxes, shuffle, use_avg_le
     assert num_files >= num_parts, \
         'Number of training files must be greater than the number of partitions'
 
-    input_files = glob.glob(os.path.expanduser(data))
     tokenizer = nlp.data.BERTTokenizer(vocab=vocab, lower=not cased)
     dataset_cls = functools.partial(BERTPretrainDataset, tokenizer=tokenizer,
-                  max_seq_length=max_seq_length, short_seq_prob=short_seq_prob,
-                  masked_lm_prob=masked_lm_prob, max_predictions_per_seq=max_predictions_per_seq,
-                  vocab=vocab)
+                                    max_seq_length=max_seq_length,
+                                    short_seq_prob=short_seq_prob,
+                                    masked_lm_prob=masked_lm_prob,
+                                    max_predictions_per_seq=max_predictions_per_seq,
+                                    vocab=vocab)
 
     split_sampler = nlp.data.SplitSampler(num_files, num_parts=num_parts, part_index=part_idx)
     stream = nlp.data.SimpleDatasetStream(dataset_cls, data, split_sampler)

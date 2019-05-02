@@ -259,7 +259,8 @@ if __name__ == '__main__':
             if args.masked_lm_prob:
                 raise UserWarning('argument masked_lm_prob is valid only when --raw is set')
             if args.max_predictions_per_seq:
-                raise UserWarning('argument max_predictions_per_seq is valid only when --raw is set')
+                raise UserWarning('argument max_predictions_per_seq is valid only when '
+                                  '--raw is set')
         num_parts = 1 if args.dummy_data_len else num_workers
         part_idx = 0 if args.dummy_data_len else rank
         data_train = get_dataset_fn(args.data, args.batch_size, 1, True,

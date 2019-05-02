@@ -22,14 +22,12 @@ import argparse
 import logging
 import io
 import os
-import json
 import glob
 import collections
 import random
 import time
 from multiprocessing import Pool
 import numpy as np
-import mxnet as mx
 import gluonnlp as nlp
 from gluonnlp.data import BERTTokenizer
 
@@ -47,12 +45,8 @@ class TrainingInstance(object):
         self.vocab = vocab
 
     def __str__(self):
-        if self.vocab is not None:
-           tks = self.vocab.to_tokens(self.tokens)
-           mask_tks = self.vocab.to_tokens(self.masked_lm_labels)
-        else:
-           tks = self.tokens
-           mask_tks = self.masked_lm_labels
+        tks = self.vocab.to_tokens(self.tokens)
+        mask_tks = self.vocab.to_tokens(self.masked_lm_labels)
         s = ''
         s += 'tokens: %s\n' % (' '.join(tks))
         s += 'segment_ids: %s\n' % (' '.join(
@@ -67,7 +61,7 @@ class TrainingInstance(object):
     def __repr__(self):
         return self.__str__()
 
-def transform(instance, vocab, max_seq_length, max_predictions_per_seq):
+def transform(instance, max_seq_length):
     """Transform instance to inputs for MLM and NSP."""
     input_ids = instance.tokens
     assert len(input_ids) <= max_seq_length
@@ -196,7 +190,7 @@ def create_training_instances(packed_arguments):
     valid_lengths = []
 
     for inst_index, instance in enumerate(instances):
-        feature = transform(instance, vocab, max_seq_length, max_predictions_per_seq)
+        feature = transform(instance, max_seq_length)
         input_ids.append(
             np.ascontiguousarray(feature['input_ids'], dtype='int32'))
         segment_ids.append(
@@ -553,14 +547,14 @@ if __name__ == '__main__':
         '--num_workers',
         type=int,
         default=1,
-        help='Number of workers for parallel processing, where each worker generates an output file.'
+        help='Number of workers for parallel processing, where each generates an output file.'
              ' Default is 1')
 
     parser.add_argument(
         '--num_outputs',
         type=int,
         default=1,
-        help='Number of desired output files, where each one is processed independently by a worker.'
+        help='Number of desired output files, where each is processed independently by a worker.'
              'Default is 1')
 
     # TODO(haibin) support --int-inputs in arguments.
