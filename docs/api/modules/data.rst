@@ -97,7 +97,7 @@ Sentiment Analysis: TREC
     
 Sentiment Analysis: CR
 ~~~~~~~~~~~~~~~~~~~~~~~~
-`CR <http://www.cs.uic.edu/∼liub/FBS/sentiment-analysis.html>`_ is an austomer reviews of various products (cameras, MP3s etc.). Sentences labeled with respect to their overall sentiment polarity (positive or negative).
+CR is an austomer reviews of various products (cameras, MP3s etc.). Sentences labeled with respect to their overall sentiment polarity (positive or negative).
 
 .. autosummary::
     :nosignatures:
