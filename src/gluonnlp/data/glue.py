@@ -461,7 +461,7 @@ class GlueMNLI(_GlueDataset):
 
 @register(segment=['train', 'dev', 'test'])
 class GlueQNLI(_GlueDataset):
-    """The Question-answering NLI dataset converted from Stanford Question Answering Dataset
+    r"""The Question-answering NLI dataset converted from Stanford Question Answering Dataset
     (Rajpurkar et al. 2016).
 
     From
