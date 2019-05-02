@@ -16,48 +16,50 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+"""CoNLL format template."""
 
 from collections import Counter
+import numpy as np
 
 import gluonnlp
-import numpy as np
 from scripts.parsing.common.k_means import KMeans
 
 from .savable import Savable
 
 
 class ConllWord(object):
-    def __init__(self, id, form, lemma=None, cpos=None, pos=None, feats=None, head=None, relation=None, phead=None,
-                 pdeprel=None):
-        """CoNLL format template, see http://anthology.aclweb.org/W/W06/W06-2920.pdf
+    """CoNLL format template, see http://anthology.aclweb.org/W/W06/W06-2920.pdf
 
-        Parameters
-        ----------
-        id : int
-            Token counter, starting at 1 for each new sentence.
-        form : str
-            Word form or punctuation symbol.
-        lemma : str
-            Lemma or stem (depending on the particular treebank) of word form, or an underscore if not available.
-        cpos : str
-            Coarse-grained part-of-speech tag, where the tagset depends on the treebank.
-        pos : str
-            Fine-grained part-of-speech tag, where the tagset depends on the treebank.
-        feats : str
-            Unordered set of syntactic and/or morphological features (depending on the particular treebank),
-            or an underscore if not available.
-        head : int
-            Head of the current token, which is either a value of ID,
-            or zero (’0’) if the token links to the virtual root node of the sentence.
-        relation : str
-            Dependency relation to the HEAD.
-        phead : int
-            Projective head of current token, which is either a value of ID or zero (’0’),
-            or an underscore if not available.
-        pdeprel : str
-            Dependency relation to the PHEAD, or an underscore if not available.
-        """
-        self.id = id
+    Parameters
+    ----------
+    id : int
+        Token counter, starting at 1 for each new sentence.
+    form : str
+        Word form or punctuation symbol.
+    lemma : str
+        Lemma or stem (depending on the particular treebank) of word form,
+        or an underscore if not available.
+    cpos : str
+        Coarse-grained part-of-speech tag, where the tagset depends on the treebank.
+    pos : str
+        Fine-grained part-of-speech tag, where the tagset depends on the treebank.
+    feats : str
+        Unordered set of syntactic and/or morphological features
+        (depending on the particular treebank), or an underscore if not available.
+    head : int
+        Head of the current token, which is either a value of ID,
+        or zero (’0’) if the token links to the virtual root node of the sentence.
+    relation : str
+        Dependency relation to the HEAD.
+    phead : int
+        Projective head of current token, which is either a value of ID or zero (’0’),
+        or an underscore if not available.
+    pdeprel : str
+        Dependency relation to the PHEAD, or an underscore if not available.
+    """
+    def __init__(self, idx, form, lemma=None, cpos=None, pos=None, feats=None,
+                 head=None, relation=None, phead=None, pdeprel=None):
+        self.idx = idx
         self.form = form
         self.cpos = cpos
         self.pos = pos
@@ -69,20 +71,20 @@ class ConllWord(object):
         self.pdeprel = pdeprel
 
     def __str__(self):
-        values = [str(self.id), self.form, self.lemma, self.cpos, self.pos, self.feats, str(self.head), self.relation,
-                  self.phead, self.pdeprel]
+        values = [str(self.idx), self.form, self.lemma, self.cpos, self.pos, self.feats,
+                  str(self.head), self.relation, self.phead, self.pdeprel]
         return '\t'.join(['_' if v is None else v for v in values])
 
 
 class ConllSentence(object):
-    def __init__(self, words):
-        """A list of ConllWord
+    """A list of ConllWord
 
-        Parameters
-        ----------
-        words : ConllWord
-            words of a sentence
-        """
+    Parameters
+    ----------
+    words : ConllWord
+        words of a sentence
+    """
+    def __init__(self, words):
         super().__init__()
         self.words = words
 
@@ -100,23 +102,21 @@ class ConllSentence(object):
 
 
 class ParserVocabulary(Savable):
-    PAD, ROOT, UNK = 0, 1, 2
-    """Padding, Root, Unknown"""
+    """Vocabulary, holds word, tag and relation along with their id.
 
+    Load from conll file
+    Adopted from https://github.com/jcyk/Dynet-Biaffine-dependency-parser with some modifications
+
+    Parameters
+    ----------
+    input_file : str
+        conll file
+    pret_embeddings : tuple
+        (embedding_name, source), used for gluonnlp.embedding.create(embedding_name, source)
+    min_occur_count : int
+        threshold of word frequency, those words with smaller frequency will be replaced by UNK
+    """
     def __init__(self, input_file, pret_embeddings=None, min_occur_count=2):
-        """Vocabulary, holds word, tag and relation along with their id.
-            Load from conll file
-            Adopted from https://github.com/jcyk/Dynet-Biaffine-dependency-parser with some modifications
-
-        Parameters
-        ----------
-        input_file : str
-            conll file
-        pret_embeddings : tuple
-            (embedding_name, source), used for gluonnlp.embedding.create(embedding_name, source)
-        min_occur_count : int
-            threshold of word frequency, those words with smaller frequency will be replaced by UNK
-        """
         super().__init__()
         word_counter = Counter()
         tag_set = set()
@@ -127,12 +127,11 @@ class ParserVocabulary(Savable):
                 info = line.strip().split()
                 if info:
                     if len(info) == 10:
-                        arc_offset = 6
                         rel_offset = 7
                     elif len(info) == 8:
-                        arc_offset = 5
                         rel_offset = 6
-                    word, tag, head, rel = info[1].lower(), info[3], int(info[arc_offset]), info[rel_offset]
+                    word, tag = info[1].lower(), info[3]
+                    rel = info[rel_offset]
                     word_counter[word] += 1
                     tag_set.add(tag)
                     if rel != 'root':
@@ -141,14 +140,16 @@ class ParserVocabulary(Savable):
         self._id2word = ['<pad>', '<root>', '<unk>']
         self._id2tag = ['<pad>', '<root>', '<unk>']
         self._id2rel = ['<pad>', 'root']
-        reverse = lambda x: dict(list(zip(x, list(range(len(x))))))
+
+        def reverse(x):
+            return dict(list(zip(x, list(range(len(x))))))
+
         for word, count in word_counter.most_common():
             if count > min_occur_count:
                 self._id2word.append(word)
 
         self._pret_embeddings = pret_embeddings
         self._words_in_train_data = len(self._id2word)
-        # print('#words in training set:', self._words_in_train_data)
         if pret_embeddings:
             self._add_pret_words(pret_embeddings)
         self._id2tag += list(tag_set)
@@ -157,7 +158,8 @@ class ParserVocabulary(Savable):
         self._word2id = reverse(self._id2word)
         self._tag2id = reverse(self._id2tag)
         self._rel2id = reverse(self._id2rel)
-        # print("Vocab info: #words %d, #tags %d #rels %d" % (self.vocab_size, self.tag_size, self.rel_size))
+
+    PAD, ROOT, UNK = 0, 1, 2 # Padding, Root, Unknown
 
     def log_info(self, logger):
         """Print statistical information via the provided logger
@@ -167,8 +169,9 @@ class ParserVocabulary(Savable):
         logger : logging.Logger
             logger created using logging.getLogger()
         """
-        logger.info('#words in training set: %d' % self._words_in_train_data)
-        logger.info("Vocab info: #words %d, #tags %d #rels %d" % (self.vocab_size, self.tag_size, self.rel_size))
+        logger.info('#words in training set: %d', self._words_in_train_data)
+        logger.info('Vocab info: #words %d, #tags %d #rels %d',
+                    self.vocab_size, self.tag_size, self.rel_size)
 
     def _add_pret_words(self, pret_embeddings):
         """Read pre-trained embedding file for extending vocabulary
@@ -181,7 +184,7 @@ class ParserVocabulary(Savable):
         words_in_train_data = set(self._id2word)
         pret_embeddings = gluonnlp.embedding.create(pret_embeddings[0], source=pret_embeddings[1])
 
-        for idx, token in enumerate(pret_embeddings.idx_to_token):
+        for token in pret_embeddings.idx_to_token:
             if token not in words_in_train_data:
                 self._id2word.append(token)
 
@@ -190,8 +193,7 @@ class ParserVocabulary(Savable):
 
         Returns
         -------
-        bool
-            Whether this vocabulary contains words from pre-trained embeddings
+        bool : Whether this vocabulary contains words from pre-trained embeddings
         """
         return self._pret_embeddings is not None
 
@@ -202,13 +204,15 @@ class ParserVocabulary(Savable):
         ----------
         word_dims : int or None
             vector size. Use `None` for auto-infer
+
         Returns
         -------
         numpy.ndarray
             T x C numpy NDArray
         """
-        assert (self._pret_embeddings is not None), "No pretrained file provided."
-        pret_embeddings = gluonnlp.embedding.create(self._pret_embeddings[0], source=self._pret_embeddings[1])
+        assert self._pret_embeddings is not None, 'No pretrained file provided.'
+        pret_embeddings = gluonnlp.embedding.create(self._pret_embeddings[0],
+                                                    source=self._pret_embeddings[1])
         embs = [None] * len(self._id2word)
         for idx, vec in enumerate(pret_embeddings.idx_to_vec):
             embs[idx] = vec.asnumpy()
@@ -221,7 +225,8 @@ class ParserVocabulary(Savable):
         return pret_embs / np.std(pret_embs)
 
     def get_word_embs(self, word_dims):
-        """Get randomly initialized embeddings when pre-trained embeddings are used, otherwise zero vectors
+        """Get randomly initialized embeddings when pre-trained embeddings are used,
+        otherwise zero vectors.
 
         Parameters
         ----------
@@ -364,20 +369,18 @@ class DataLoader(object):
     """
     Load CoNLL data
     Adopted from https://github.com/jcyk/Dynet-Biaffine-dependency-parser with some modifications
+
+    Parameters
+    ----------
+    input_file : str
+        path to CoNLL file
+    n_bkts : int
+        number of buckets
+    vocab : ParserVocabulary
+        vocabulary object
     """
 
     def __init__(self, input_file, n_bkts, vocab):
-        """Create a data loader for a data set
-
-        Parameters
-        ----------
-        input_file : str
-            path to CoNLL file
-        n_bkts : int
-            number of buckets
-        vocab : ParserVocabulary
-            vocabulary object
-        """
         self.vocab = vocab
         sents = []
         sent = [[ParserVocabulary.ROOT, ParserVocabulary.ROOT, 0, ParserVocabulary.ROOT]]
@@ -390,15 +393,14 @@ class DataLoader(object):
                     if len(info) == 10:
                         arc_offset = 6
                         rel_offset = 7
-                    # else:
-                    #     raise RuntimeError('Illegal line: %s' % line)
                     assert info[rel_offset] in vocab._rel2id, 'Relation OOV: %s' % line
-                    word, tag, head, rel = vocab.word2id(info[1].lower()), vocab.tag2id(info[3]), int(
-                        info[arc_offset]), vocab.rel2id(info[rel_offset])
+                    word, tag = vocab.word2id(info[1].lower()), vocab.tag2id(info[3])
+                    head, rel = int(info[arc_offset]), vocab.rel2id(info[rel_offset])
                     sent.append([word, tag, head, rel])
                 else:
                     sents.append(sent)
-                    sent = [[ParserVocabulary.ROOT, ParserVocabulary.ROOT, 0, ParserVocabulary.ROOT]]
+                    sent = [[ParserVocabulary.ROOT, ParserVocabulary.ROOT, 0,
+                             ParserVocabulary.ROOT]]
             if len(sent) > 1:  # last sent in file without '\n'
                 sents.append(sent)
 
@@ -408,11 +410,12 @@ class DataLoader(object):
             len_counter[len(sent)] += 1
         self._bucket_lengths = KMeans(n_bkts, len_counter).splits
         self._buckets = [[] for i in range(n_bkts)]
-        """bkt_idx x length x sent_idx x 4"""
+        # bkt_idx x length x sent_idx x 4
         len2bkt = {}
         prev_length = -1
         for bkt_idx, length in enumerate(self._bucket_lengths):
-            len2bkt.update(list(zip(list(range(prev_length + 1, length + 1)), [bkt_idx] * (length - prev_length))))
+            len2bkt.update(list(zip(list(range(prev_length + 1, length + 1)),
+                                    [bkt_idx] * (length - prev_length))))
             prev_length = length
 
         self._record = []
