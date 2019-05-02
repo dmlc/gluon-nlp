@@ -52,7 +52,7 @@ def test_unittest(workspace_name, conda_env_name, test_path, cov_path, mark, thr
             pytest -v ${capture_flag} -n ${threads} -m '${mark}' --durations=30 ${test_path} --cov ${cov_path}
             set +ex
         """
-        utils.publish_test_coverage()
+        utils.publish_test_coverage('GluonNLPCodeCov')
       }
     }
   }]

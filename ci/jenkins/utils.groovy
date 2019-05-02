@@ -50,10 +50,10 @@ def get_git_commit_hash() {
   } else {
       git_commit_hash = sh (script: "git rev-parse @", returnStdout: true)
   }
-  return git_commit_hash
+  return git_commit_hash.trim()
 }
 
-def publish_test_coverage() {
+def publish_test_coverage(codecov_credential) {
     // CodeCovs auto detection has trouble with our CIs PR validation due the merging strategy
     git_commit_hash = get_git_commit_hash()
 
@@ -67,15 +67,8 @@ def publish_test_coverage() {
 
     // To make sure we never fail because test coverage reporting is not available
     // Fall back to our own copy of the bash helper if it failed to download the public version
-    sh "(curl --retry 10 -s https://codecov.io/bash | bash -s - ${codecovArgs}) || (curl --retry 10 -s https://s3-us-west-2.amazonaws.com/mxnet-ci-prod-slave-data/codecov-bash.txt | bash -s - ${codecovArgs}) || true"
-}
-
-def collect_test_results_unix(original_file_name, new_file_name) {
-    if (fileExists(original_file_name)) {
-        // Rename file to make it distinguishable. Unfortunately, it's not possible to get STAGE_NAME in a parallel stage
-        // Thus, we have to pick a name manually and rename the files so that they can be stored separately.
-        sh 'cp ' + original_file_name + ' ' + new_file_name
-        archiveArtifacts artifacts: new_file_name
+    withCredentials([string(credentialsId: codecov_credential, variable: 'CODECOV_TOKEN')]) {
+      sh "(curl --retry 10 -s https://codecov.io/bash | bash -s - ${codecovArgs}) || (curl --retry 10 -s https://s3-us-west-2.amazonaws.com/mxnet-ci-prod-slave-data/codecov-bash.txt | bash -s - ${codecovArgs}) || true"
     }
 }
 
