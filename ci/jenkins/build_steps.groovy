@@ -38,7 +38,10 @@ def sanity_lint(workspace_name, conda_env_name, path) {
   }]
 }
 
-def test_unittest(workspace_name, conda_env_name, test_path, cov_path, mark, threads, gpu) {
+def test_unittest(workspace_name, conda_env_name,
+                  test_path, cov_path,
+                  mark,
+                  threads, gpu, skip_report) {
   capture_flag = env.BRANCH_NAME.startsWith('PR-')?'':'--capture=no'
   cov_flag = env.BRANCH_NAME.startsWith('PR-')?('PR'+env.CHANGE_ID):env.BRANCH_NAME
   node_type = gpu?NODE_LINUX_GPU:NODE_LINUX_CPU
@@ -52,7 +55,7 @@ def test_unittest(workspace_name, conda_env_name, test_path, cov_path, mark, thr
             pytest -v ${capture_flag} -n ${threads} -m '${mark}' --durations=30 ${test_path} --cov ${cov_path}
             set +ex
         """
-        utils.publish_test_coverage('GluonNLPCodeCov')
+        if (!skip_report) utils.publish_test_coverage('GluonNLPCodeCov')
       }
     }
   }]

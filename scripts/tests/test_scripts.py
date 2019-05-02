@@ -9,6 +9,7 @@ import pytest
 @pytest.mark.serial
 @pytest.mark.remote_required
 @pytest.mark.gpu
+@pytest.mark.integration
 @pytest.mark.parametrize('model', ['skipgram', 'cbow'])
 @pytest.mark.parametrize('fasttext', [True, False])
 def test_skipgram_cbow(model, fasttext):
@@ -39,6 +40,7 @@ def test_glove():
 @pytest.mark.serial
 @pytest.mark.remote_required
 @pytest.mark.gpu
+@pytest.mark.integration
 @pytest.mark.parametrize('fasttextloadngrams', [True, False])
 def test_embedding_evaluate_pretrained(fasttextloadngrams):
     cmd = [
@@ -56,6 +58,7 @@ def test_embedding_evaluate_pretrained(fasttextloadngrams):
 @pytest.mark.serial
 @pytest.mark.remote_required
 @pytest.mark.gpu
+@pytest.mark.integration
 @pytest.mark.parametrize('evaluateanalogies', [True, False])
 @pytest.mark.parametrize('maxvocabsize', [None, 16])
 def test_embedding_evaluate_from_path(evaluateanalogies, maxvocabsize):
@@ -78,6 +81,7 @@ def test_embedding_evaluate_from_path(evaluateanalogies, maxvocabsize):
 @pytest.mark.serial
 @pytest.mark.remote_required
 @pytest.mark.gpu
+@pytest.mark.integration
 @pytest.mark.parametrize('use_pretrained', [True, False])
 def test_sentiment_analysis_finetune(use_pretrained):
     args = ['--gpu', '0', '--batch_size', '32', '--bucket_type', 'fixed',
@@ -92,6 +96,7 @@ def test_sentiment_analysis_finetune(use_pretrained):
 @pytest.mark.serial
 @pytest.mark.remote_required
 @pytest.mark.gpu
+@pytest.mark.integration
 def test_sentiment_analysis_textcnn():
     process = subprocess.check_call([sys.executable, './scripts/sentiment_analysis/sentiment_analysis_cnn.py',
                                      '--gpu', '0', '--batch_size', '50', '--epochs', '1',
@@ -101,6 +106,7 @@ def test_sentiment_analysis_textcnn():
 
 @pytest.mark.skip_master
 @pytest.mark.remote_required
+@pytest.mark.integration
 @pytest.mark.parametrize('method', ['beam_search', 'sampling'])
 def test_sampling(method):
     args = ['--bos', 'I love it', '--beam_size', '2', '--print_num', '1']
@@ -117,6 +123,7 @@ def test_sampling(method):
 @pytest.mark.serial
 @pytest.mark.remote_required
 @pytest.mark.gpu
+@pytest.mark.integration
 def test_gnmt():
     process = subprocess.check_call([sys.executable, './scripts/machine_translation/train_gnmt.py', '--dataset', 'TOY',
                                      '--src_lang', 'en', '--tgt_lang', 'de', '--batch_size', '32',
@@ -129,6 +136,7 @@ def test_gnmt():
 @pytest.mark.serial
 @pytest.mark.remote_required
 @pytest.mark.gpu
+@pytest.mark.integration
 @pytest.mark.parametrize('bleu', ['tweaked', '13a'])
 def test_transformer(bleu):
     args = ['--dataset', 'TOY', '--src_lang', 'en', '--tgt_lang', 'de',
@@ -141,4 +149,24 @@ def test_transformer(bleu):
             '--num_heads', '4', '--test_batch_size', '32']
     process = subprocess.check_call([sys.executable, './scripts/machine_translation/train_transformer.py']
                                     +args)
+    time.sleep(5)
+
+
+@pytest.mark.serial
+@pytest.mark.remote_required
+@pytest.mark.gpu
+@pytest.mark.integration
+@pytest.mark.parametrize('use_pretrained', [True, False])
+def test_bert_embedding(use_pretrained):
+    args = ['--gpu', '0', '--model', 'bert_12_768_12',
+            '--dataset_name', 'book_corpus_wiki_en_uncased',
+            '--max_seq_length', '25', '--batch_size', '256',
+            '--oov_way', 'avg', '--sentences', '"is this jacksonville ?"',
+            '--verbose']
+    if use_pretrained:
+        args.extend(['--dtype', 'float32'])
+    else:
+        args.extend(['--params_path',
+                     '~/.mxnet/models/bert_12_768_12_book_corpus_wiki_en_uncased-75cc780f.params'])
+    process = subprocess.check_call([sys.executable, './scripts/bert/embedding.py'] + args)
     time.sleep(5)
