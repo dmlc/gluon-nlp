@@ -254,9 +254,10 @@ def preprocess_data(tokenizer, task, batch_size, dev_batch_size, max_len, pad=Fa
 
     # transformation for data train and dev
     label_dtype = 'float32' if not task.class_labels else 'int32'
-    trans = BERTDatasetTransform(tokenizer, max_len, labels=task.class_labels,
+    trans = BERTDatasetTransform(tokenizer, max_len,
+                                 class_labels=task.class_labels,
                                  pad=pad, pair=task.is_pair,
-                                 label_dtype=label_dtype)
+                                 has_label=True)
 
     # data train
     # task.dataset_train returns (segment_name, dataset)
@@ -300,9 +301,10 @@ def preprocess_data(tokenizer, task, batch_size, dev_batch_size, max_len, pad=Fa
         nlp.data.batchify.Pad(axis=0), nlp.data.batchify.Stack(),
         nlp.data.batchify.Pad(axis=0))
     # transform for data test
-    test_trans = BERTDatasetTransform(tokenizer, max_len, labels=None,
+    test_trans = BERTDatasetTransform(tokenizer, max_len,
+                                      class_labels=None,
                                       pad=pad, pair=task.is_pair,
-                                      label_dtype=None)
+                                      has_label=False)
 
     # data test. For MNLI, more than one test set is available
     test_tsv = task.dataset_test()
