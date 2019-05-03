@@ -335,7 +335,7 @@ def test(loader_test, segment):
     tic = time.time()
     value_list = []
     index_list = []
-    for batch_id, seqs in enumerate(loader_test):
+    for _, seqs in enumerate(loader_test):
         input_ids, valid_length, type_ids = seqs
         out = model(input_ids.as_in_context(ctx),
                     type_ids.as_in_context(ctx),

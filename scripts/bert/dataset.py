@@ -21,7 +21,6 @@ __all__ = [
 ]
 
 import os
-import warnings
 import numpy as np
 from mxnet.metric import Accuracy, F1, MCC, PearsonCorrelation, CompositeEvalMetric
 from mxnet.gluon.data import Dataset
@@ -65,7 +64,7 @@ class GlueTask(object):
     is_pair : bool
         Whether the task deals with sentence pairs or single sentences.
     """
-    def __init__(self, class_labels, metrics, is_pair, dev_set=[], ):
+    def __init__(self, class_labels, metrics, is_pair):
         self.class_labels = class_labels
         self.metrics = metrics
         self.is_pair = is_pair
