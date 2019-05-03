@@ -161,6 +161,10 @@ parser.add_argument(
     default='./output_dir',
     help='The output directory where the model params will be written.'
     ' default is ./output_dir')
+parser.add_argument(
+    '--only_inference',
+    action='store_true',
+    help='If set, we skip training and only perform inference on dev and test data.')
 
 args = parser.parse_args()
 
@@ -189,10 +193,14 @@ ctx = mx.cpu() if not args.gpu else mx.gpu()
 task = tasks[task_name]
 
 # model and loss
+only_inference = args.only_inference
 model_name = args.bert_model
 dataset = args.bert_dataset
 pretrained_bert_parameters = args.pretrained_bert_parameters
 model_parameters = args.model_parameters
+if only_inference and not model_parameters:
+    warnings.warn('model_parameters is not set. '
+                  'Randomly initialized model will be used for inference.')
 
 get_pretrained = not (pretrained_bert_parameters is not None
                       or model_parameters is not None)
@@ -274,12 +282,10 @@ def preprocess_data(tokenizer, task, batch_size, dev_batch_size, max_len, pad=Fa
         batch_sampler=batch_sampler,
         batchify_fn=batchify_fn)
 
-    # data dev and test. For MNLI, more than one dev set is available
-    data_dev, data_test = task.dataset_dev(), task.dataset_test()
+    # data dev. For MNLI, more than one dev set is available
+    data_dev = task.dataset_dev()
     data_dev_list = data_dev if isinstance(data_dev, list) else [data_dev]
-    data_test_list = data_test if isinstance(data_test, list) else [data_test]
-    loader_dev_list, loader_test_list = [], []
-
+    loader_dev_list = []
     for segment, data in data_dev_list:
         data_dev = data.transform(trans, lazy=False)
         loader_dev = mx.gluon.data.DataLoader(
@@ -290,6 +296,16 @@ def preprocess_data(tokenizer, task, batch_size, dev_batch_size, max_len, pad=Fa
             batchify_fn=batchify_fn)
         loader_dev_list.append((segment, loader_dev))
 
+    # batchify for data test
+    test_batchify_fn = nlp.data.batchify.Tuple(
+        nlp.data.batchify.Pad(axis=0),
+        nlp.data.batchify.Stack(),
+        nlp.data.batchify.Pad(axis=0))
+
+    # data test. For MNLI, more than one test set is available
+    data_test = task.dataset_test()
+    data_test_list = data_test if isinstance(data_test, list) else [data_test]
+    loader_test_list = []
     for segment, data in data_test_list:
         data_test = data.transform(test_trans, lazy=False)
         loader_test = mx.gluon.data.DataLoader(
@@ -297,7 +313,7 @@ def preprocess_data(tokenizer, task, batch_size, dev_batch_size, max_len, pad=Fa
             batch_size=dev_batch_size,
             num_workers=1,
             shuffle=False,
-            batchify_fn=batchify_fn)
+            batchify_fn=test_batchify_fn)
         loader_test_list.append((segment, loader_test))
     return loader_train, loader_dev_list, loader_test_list, len(data_train)
 
@@ -308,23 +324,27 @@ train_data, dev_data_list, test_data_list, num_train_examples = preprocess_data(
     bert_tokenizer, task, batch_size, dev_batch_size, args.max_len, args.pad)
 
 
-#def test(loader_test, metric, segment):
-#    """Inference function on the test dataset."""
-#    logging.info('Now we are doing testing on %s with %s.', segment, ctx)
-#
-#    metric.reset()
-#    tic = time.time()
-#    for batch_id, seqs in enumerate(loader_test):
-#        input_ids, valid_length, type_ids = seqs
-#        out = model(input_ids.as_in_context(ctx),
-#                    type_ids.as_in_context(ctx),
-#                    valid_length.astype('float32').as_in_context(ctx))
-#        values, indices = mx.nd.topk(out, k=1, ret_typ='both')
-#    # TODO(haibin) write result to a file.
-#    mx.nd.waitall()
-#    toc = time.time()
-#    logging.info('Time cost=%.2fs, throughput=%.2f samples/s', toc - tic,
-#                 dev_batch_size * len(loader_test) / (toc - tic))
+def test(loader_test, segment):
+    """Inference function on the test dataset."""
+    logging.info('Now we are doing testing on %s with %s.', segment, ctx)
+
+    tic = time.time()
+    value_list = []
+    index_list = []
+    for batch_id, seqs in enumerate(loader_test):
+        input_ids, valid_length, type_ids = seqs
+        out = model(input_ids.as_in_context(ctx),
+                    type_ids.as_in_context(ctx),
+                    valid_length.astype('float32').as_in_context(ctx))
+        values, indices = mx.nd.topk(out, k=1, ret_typ='both')
+        value_list.extend(values.asnumpy().reshape(-1).tolist())
+        index_list.extend(indices.asnumpy().reshape(-1).tolist())
+
+    mx.nd.waitall()
+    toc = time.time()
+    logging.info('Time cost=%.2fs, throughput=%.2f samples/s', toc - tic,
+                 dev_batch_size * len(loader_test) / (toc - tic))
+    # write result to a file.
 
 
 def evaluate(loader_dev, metric, segment):
@@ -344,8 +364,14 @@ def evaluate(loader_dev, metric, segment):
         metric.update([label], [out])
 
         if (batch_id + 1) % (args.log_interval) == 0:
-            log_eval(batch_id, len(dev_data), metric, step_loss, args.log_interval)
+            log_eval(batch_id, len(loader_dev), metric, step_loss, args.log_interval)
             step_loss = 0
+
+    metric_nm, metric_val = metric.get()
+    if not isinstance(metric_nm, list):
+        metric_nm, metric_val = [metric_nm], [metric_val]
+    metric_str = 'validation metrics:' + ','.join([i + ':%.4f' for i in metric_nm])
+    logging.info(metric_str, *metric_val)
 
     mx.nd.waitall()
     toc = time.time()
@@ -357,8 +383,7 @@ def log_train(batch_id, batch_num, metric, step_loss, log_interval, epoch_id, le
     """Generate and print out the log message for training. """
     metric_nm, metric_val = metric.get()
     if not isinstance(metric_nm, list):
-        metric_nm = [metric_nm]
-        metric_val = [metric_val]
+        metric_nm, metric_val = [metric_nm], [metric_val]
 
     train_str = '[Epoch %d Batch %d/%d] loss=%.4f, lr=%.7f, metrics:' + \
                 ','.join([i + ':%.4f' for i in metric_nm])
@@ -370,8 +395,7 @@ def log_eval(batch_id, batch_num, metric, step_loss, log_interval):
     """Generate and print out the log message for inference. """
     metric_nm, metric_val = metric.get()
     if not isinstance(metric_nm, list):
-        metric_nm = [metric_nm]
-        metric_val = [metric_val]
+        metric_nm, metric_val = [metric_nm], [metric_val]
 
     eval_str = '[Batch %d/%d] loss=%.4f, metrics:' + \
                ','.join([i + ':%.4f' for i in metric_nm])
@@ -381,7 +405,8 @@ def log_eval(batch_id, batch_num, metric, step_loss, log_interval):
 
 def train(metric):
     """Training function."""
-    logging.info('Now we are doing BERT classification training on %s!', ctx)
+    if not only_inference:
+        logging.info('Now we are doing BERT classification training on %s!', ctx)
 
     all_model_params = model.collect_params()
     optimizer_params = {'learning_rate': lr, 'epsilon': epsilon, 'wd': 0.01}
@@ -415,58 +440,65 @@ def train(metric):
 
     tic = time.time()
     for epoch_id in range(args.epochs):
-        metric.reset()
-        step_loss = 0
-        tic = time.time()
-        all_model_params.zero_grad()
+        if not only_inference:
+            metric.reset()
+            step_loss = 0
+            tic = time.time()
+            all_model_params.zero_grad()
 
-        for batch_id, seqs in enumerate(train_data):
-            # learning rate schedule
-            if step_num < num_warmup_steps:
-                new_lr = lr * step_num / num_warmup_steps
-            else:
-                non_warmup_steps = step_num - num_warmup_steps
-                offset = non_warmup_steps / (num_train_steps - num_warmup_steps)
-                new_lr = lr - offset * lr
-            trainer.set_learning_rate(new_lr)
+            for batch_id, seqs in enumerate(train_data):
+                # learning rate schedule
+                if step_num < num_warmup_steps:
+                    new_lr = lr * step_num / num_warmup_steps
+                else:
+                    non_warmup_steps = step_num - num_warmup_steps
+                    offset = non_warmup_steps / (num_train_steps - num_warmup_steps)
+                    new_lr = lr - offset * lr
+                trainer.set_learning_rate(new_lr)
 
-            # forward and backward
-            with mx.autograd.record():
-                input_ids, valid_length, type_ids, label = seqs
-                out = model(
-                    input_ids.as_in_context(ctx), type_ids.as_in_context(ctx),
-                    valid_length.astype('float32').as_in_context(ctx))
-                ls = loss_function(out, label.as_in_context(ctx)).mean()
-            ls.backward()
+                # forward and backward
+                with mx.autograd.record():
+                    input_ids, valid_length, type_ids, label = seqs
+                    out = model(
+                        input_ids.as_in_context(ctx), type_ids.as_in_context(ctx),
+                        valid_length.astype('float32').as_in_context(ctx))
+                    ls = loss_function(out, label.as_in_context(ctx)).mean()
+                ls.backward()
 
-            # update
-            if not accumulate or (batch_id + 1) % accumulate == 0:
-                trainer.allreduce_grads()
-                nlp.utils.clip_grad_global_norm(params, 1)
-                trainer.update(accumulate if accumulate else 1)
-                # set grad to zero for gradient accumulation
-                all_model_params.zero_grad()
-                step_num += 1
+                # update
+                if not accumulate or (batch_id + 1) % accumulate == 0:
+                    trainer.allreduce_grads()
+                    nlp.utils.clip_grad_global_norm(params, 1)
+                    trainer.update(accumulate if accumulate else 1)
+                    # set grad to zero for gradient accumulation
+                    all_model_params.zero_grad()
+                    step_num += 1
 
-            step_loss += ls.asscalar()
-            metric.update([label], [out])
-            if (batch_id + 1) % (args.log_interval) == 0:
-                log_train(batch_id, len(train_data), metric, step_loss, args.log_interval,
-                          epoch_id, trainer.learning_rate)
-                step_loss = 0
+                step_loss += ls.asscalar()
+                metric.update([label], [out])
+                if (batch_id + 1) % (args.log_interval) == 0:
+                    log_train(batch_id, len(train_data), metric, step_loss, args.log_interval,
+                              epoch_id, trainer.learning_rate)
+                    step_loss = 0
+            mx.nd.waitall()
 
-        mx.nd.waitall()
+        # inference on dev data
         for segment, dev_data in dev_data_list:
             evaluate(dev_data, metric, segment)
 
-        # save params
-        params_saved = os.path.join(output_dir,
-                                    'model_bert_{0}_{1}.params'.format(task_name, epoch_id))
-        model.save_parameters(params_saved)
-        logging.info('params saved in: %s', params_saved)
-        toc = time.time()
-        logging.info('Time cost=%.2fs', toc - tic)
-        tic = toc
+        if not only_inference:
+            # save params
+            params_saved = os.path.join(output_dir,
+                                        'model_bert_{0}_{1}.params'.format(task_name, epoch_id))
+            model.save_parameters(params_saved)
+            logging.info('params saved in: %s', params_saved)
+            toc = time.time()
+            logging.info('Time cost=%.2fs', toc - tic)
+            tic = toc
+
+    # inference on test data
+    for segment, test_data in test_data_list:
+        test(test_data, segment)
 
 
 if __name__ == '__main__':
