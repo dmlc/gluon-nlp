@@ -18,7 +18,7 @@
 # under the License.
 
 # pylint: disable=line-too-long
-"""CoNLL format corpora."""
+"""GLUEBenchmark corpora."""
 
 __all__ = ['GlueCoLA', 'GlueSST2', 'GlueSTSB', 'GlueQQP', 'GlueRTE', 'GlueMNLI',
            'GlueQNLI', 'GlueWNLI']
@@ -39,8 +39,8 @@ class _GlueDataset(TSVDataset):
         root = os.path.expanduser(root)
         if not os.path.isdir(root):
             os.makedirs(root)
-        self._root = root
         segment, zip_hash, data_hash = data_file
+        self._root = root
         filename = os.path.join(self._root, '%s.tsv' % segment)
         self._get_data(segment, zip_hash, data_hash, filename)
         super(_GlueDataset, self).__init__(filename, **kwargs)
