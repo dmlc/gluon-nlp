@@ -18,6 +18,7 @@ dependencies:
   - pandoc=1.19.2
   - notedown
   - numba>=v0.40.0
+  - sphinx-gallery
   - nbsphinx>=0.3.4,<0.4
   - nbconvert=5.4.0
   - tornado=5.1.1

@@ -81,11 +81,9 @@ def test_doctest(workspace_name, conda_env_name,
 
 def create_website(workspace_name, conda_env_name) {
   if (env.BRANCH_NAME.startsWith('PR-')){
-    enforce_linkcheck = 'false'
     bucket = 'gluon-nlp-staging'
     path = env.BRANCH_NAME+'/'+env.BUILD_NUMBER
   } else {
-    enforce_linkcheck = 'true'
     bucket = 'gluon-nlp'
     path = env.BRANCH_NAME
   }
@@ -97,14 +95,30 @@ def create_website(workspace_name, conda_env_name) {
         set -ex
         source ci/prepare_clean_env.sh ${conda_env_name}
         make docs
+
+        ci/upload_doc.sh ${bucket} ${path}
+        set +ex
+        """
+      }
+    }
+  }]
+}
+
+def website_linkcheck(workspace_name, conda_env_name) {
+  enforce_linkcheck = env.BRANCH_NAME.startsWith('PR-')?'false':'true'
+  return ["${conda_env_name}: website link check'": {
+    node(NODE_LINUX_CPU) {
+      ws("workspace/${workspace_name}") {
+        utils.init_git()
+        sh """
+        set -ex
+        source ci/prepare_clean_env.sh ${conda_env_name}
         if [[ ${enforce_linkcheck} == true ]]; then
             make -C docs linkcheck SPHINXOPTS=-W
         else
-            set +ex
+            set +e
             make -C docs linkcheck
         fi;
-
-        ci/upload_doc.sh ${bucket} ${path}
         set +ex
         """
       }
