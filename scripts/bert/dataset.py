@@ -315,8 +315,8 @@ class MNLITask(GlueTask):
         -------
         list of TSVDataset : the dataset of the dev segment.
         """
-        return ['dev_matched', self.get_dataset(segment='dev_matched'),
-                'dev_mismatched', self.get_dataset(segment='dev_mismatched')]
+        return [('dev_matched', self.get_dataset(segment='dev_matched')),
+                ('dev_mismatched', self.get_dataset(segment='dev_mismatched'))]
 
     def dataset_test(self):
         """Get the test segment of the dataset for the task.
@@ -325,8 +325,8 @@ class MNLITask(GlueTask):
         -------
         list of TSVDataset : the dataset of the test segment.
         """
-        return ['test_matched', self.get_dataset(segment='test_matched'),
-                'test_mismatched', self.get_dataset(segment='test_mismatched')]
+        return [('test_matched', self.get_dataset(segment='test_matched')),
+                ('test_mismatched', self.get_dataset(segment='test_mismatched'))]
 
 
 class BERTDatasetTransform(object):

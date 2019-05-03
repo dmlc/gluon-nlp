@@ -40,6 +40,7 @@ import argparse
 import random
 import logging
 import warnings
+import multiprocessing
 import numpy as np
 import mxnet as mx
 from mxnet import gluon
@@ -121,7 +122,7 @@ parser.add_argument(
     help='The number of batches for gradients accumulation to simulate large batch size. '
          'Default is None')
 parser.add_argument(
-    '--gpu', action='store_true', help='whether to use gpu for finetuning')
+    '--gpu', type=int, default=None, help='Which gpu for finetuning. By default cpu is used.')
 parser.add_argument(
     '--task_name',
     type=str,
@@ -188,7 +189,7 @@ np.random.seed(args.seed)
 random.seed(args.seed)
 mx.random.seed(args.seed)
 
-ctx = mx.cpu() if not args.gpu else mx.gpu()
+ctx = mx.cpu() if args.gpu is None else mx.gpu(args.gpu)
 
 task = tasks[task_name]
 
@@ -249,26 +250,24 @@ bert_tokenizer = BERTTokenizer(vocabulary, lower=do_lower_case)
 
 def preprocess_data(tokenizer, task, batch_size, dev_batch_size, max_len, pad=False):
     """Train/eval Data preparation function."""
+    pool = multiprocessing.Pool()
 
-    # transformation
+    # transformation for data train and dev
     label_dtype = 'float32' if not task.class_labels else 'int32'
     trans = BERTDatasetTransform(tokenizer, max_len, labels=task.class_labels,
                                  pad=pad, pair=task.is_pair,
                                  label_dtype=label_dtype)
-    test_trans = BERTDatasetTransform(tokenizer, max_len, labels=None,
-                                      pad=pad, pair=task.is_pair,
-                                      label_dtype=None)
+
     # data train
     # task.dataset_train returns (segment_name, dataset)
-    data_train = task.dataset_train()[1].transform(trans, lazy=True)
+    train_tsv = task.dataset_train()[1]
+    data_train = mx.gluon.data.SimpleDataset(pool.map(trans, train_tsv))
     data_train_len = data_train.transform(
-        lambda input_id, length, segment_id, label_id: length)
+        lambda input_id, length, segment_id, label_id: length, lazy=False)
     # bucket sampler for training
     batchify_fn = nlp.data.batchify.Tuple(
-        nlp.data.batchify.Pad(axis=0),
-        nlp.data.batchify.Stack(),
-        nlp.data.batchify.Pad(axis=0),
-        nlp.data.batchify.Stack(label_dtype))
+        nlp.data.batchify.Pad(axis=0), nlp.data.batchify.Stack(),
+        nlp.data.batchify.Pad(axis=0), nlp.data.batchify.Stack(label_dtype))
     batch_sampler = nlp.data.sampler.FixedBucketSampler(
         data_train_len,
         batch_size=batch_size,
@@ -283,11 +282,11 @@ def preprocess_data(tokenizer, task, batch_size, dev_batch_size, max_len, pad=Fa
         batchify_fn=batchify_fn)
 
     # data dev. For MNLI, more than one dev set is available
-    data_dev = task.dataset_dev()
-    data_dev_list = data_dev if isinstance(data_dev, list) else [data_dev]
+    dev_tsv = task.dataset_dev()
+    dev_tsv_list = dev_tsv if isinstance(dev_tsv, list) else [dev_tsv]
     loader_dev_list = []
-    for segment, data in data_dev_list:
-        data_dev = data.transform(trans, lazy=False)
+    for segment, data in dev_tsv_list:
+        data_dev = mx.gluon.data.SimpleDataset(pool.map(trans, data))
         loader_dev = mx.gluon.data.DataLoader(
             data_dev,
             batch_size=dev_batch_size,
@@ -298,16 +297,19 @@ def preprocess_data(tokenizer, task, batch_size, dev_batch_size, max_len, pad=Fa
 
     # batchify for data test
     test_batchify_fn = nlp.data.batchify.Tuple(
-        nlp.data.batchify.Pad(axis=0),
-        nlp.data.batchify.Stack(),
+        nlp.data.batchify.Pad(axis=0), nlp.data.batchify.Stack(),
         nlp.data.batchify.Pad(axis=0))
+    # transform for data test
+    test_trans = BERTDatasetTransform(tokenizer, max_len, labels=None,
+                                      pad=pad, pair=task.is_pair,
+                                      label_dtype=None)
 
     # data test. For MNLI, more than one test set is available
-    data_test = task.dataset_test()
-    data_test_list = data_test if isinstance(data_test, list) else [data_test]
+    test_tsv = task.dataset_test()
+    test_tsv_list = test_tsv if isinstance(test_tsv, list) else [test_tsv]
     loader_test_list = []
-    for segment, data in data_test_list:
-        data_test = data.transform(test_trans, lazy=False)
+    for segment, data in test_tsv_list:
+        data_test = mx.gluon.data.SimpleDataset(pool.map(test_trans, data))
         loader_test = mx.gluon.data.DataLoader(
             data_test,
             batch_size=dev_batch_size,
@@ -346,37 +348,6 @@ def test(loader_test, segment):
                  dev_batch_size * len(loader_test) / (toc - tic))
     # write result to a file.
 
-
-def evaluate(loader_dev, metric, segment):
-    """Evaluate the model on validation dataset."""
-    logging.info('Now we are doing evaluation on %s with %s.', segment, ctx)
-    metric.reset()
-    step_loss = 0
-    tic = time.time()
-    for batch_id, seqs in enumerate(loader_dev):
-        input_ids, valid_len, type_ids, label = seqs
-        out = model(
-            input_ids.as_in_context(ctx), type_ids.as_in_context(ctx),
-            valid_len.astype('float32').as_in_context(ctx))
-        ls = loss_function(out, label.as_in_context(ctx)).mean()
-
-        step_loss += ls.asscalar()
-        metric.update([label], [out])
-
-        if (batch_id + 1) % (args.log_interval) == 0:
-            log_eval(batch_id, len(loader_dev), metric, step_loss, args.log_interval)
-            step_loss = 0
-
-    metric_nm, metric_val = metric.get()
-    if not isinstance(metric_nm, list):
-        metric_nm, metric_val = [metric_nm], [metric_val]
-    metric_str = 'validation metrics:' + ','.join([i + ':%.4f' for i in metric_nm])
-    logging.info(metric_str, *metric_val)
-
-    mx.nd.waitall()
-    toc = time.time()
-    logging.info('Time cost=%.2fs, throughput=%.2f samples/s', toc - tic,
-                 dev_batch_size * len(loader_dev) / (toc - tic))
 
 
 def log_train(batch_id, batch_num, metric, step_loss, log_interval, epoch_id, learning_rate):
@@ -499,6 +470,38 @@ def train(metric):
     # inference on test data
     for segment, test_data in test_data_list:
         test(test_data, segment)
+
+def evaluate(loader_dev, metric, segment):
+    """Evaluate the model on validation dataset."""
+    logging.info('Now we are doing evaluation on %s with %s.', segment, ctx)
+    metric.reset()
+    step_loss = 0
+    tic = time.time()
+    for batch_id, seqs in enumerate(loader_dev):
+        input_ids, valid_len, type_ids, label = seqs
+        out = model(
+            input_ids.as_in_context(ctx), type_ids.as_in_context(ctx),
+            valid_len.astype('float32').as_in_context(ctx))
+        ls = loss_function(out, label.as_in_context(ctx)).mean()
+
+        step_loss += ls.asscalar()
+        metric.update([label], [out])
+
+        if (batch_id + 1) % (args.log_interval) == 0:
+            log_eval(batch_id, len(loader_dev), metric, step_loss, args.log_interval)
+            step_loss = 0
+
+    metric_nm, metric_val = metric.get()
+    if not isinstance(metric_nm, list):
+        metric_nm, metric_val = [metric_nm], [metric_val]
+    metric_str = 'validation metrics:' + ','.join([i + ':%.4f' for i in metric_nm])
+    logging.info(metric_str, *metric_val)
+
+    mx.nd.waitall()
+    toc = time.time()
+    logging.info('Time cost=%.2fs, throughput=%.2f samples/s', toc - tic,
+                 dev_batch_size * len(loader_dev) / (toc - tic))
+
 
 
 if __name__ == '__main__':
