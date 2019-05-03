@@ -16,7 +16,7 @@
 
 __all__ = [
     'MRPCTask', 'QQPTask', 'QNLITask', 'RTETask', 'STSBTask',
-    'COLATask', 'MNLITask', 'WNLITask', 'SSTTask', 'BertEmbeddingDataset',
+    'CoLATask', 'MNLITask', 'WNLITask', 'SSTTask', 'BertEmbeddingDataset',
     'BERTDatasetTransform'
 ]
 

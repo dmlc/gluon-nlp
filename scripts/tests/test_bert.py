@@ -134,7 +134,7 @@ def test_finetune():
                                      '--epsilon', '1e-8',
                                      '--gpu', '0'])
 
-    # MNLI inference
+    # MNLI inference (multiple dev sets)
     process = subprocess.check_call(['python', './scripts/bert/finetune_classifier.py',
                                      '--gpus', '0',
                                      '--task_name', 'MNLI',
@@ -143,7 +143,7 @@ def test_finetune():
                                      '--epsilon', '1e-8',
                                      '--gpu', '0',
                                      '--only_inference'])
-    # STS-B inference
+    # STS-B inference (regression task)
     process = subprocess.check_call(['python', './scripts/bert/finetune_classifier.py',
                                      '--gpus', '0',
                                      '--task_name', 'STS-B',
