@@ -127,11 +127,13 @@ def website_linkcheck(workspace_name, conda_env_name) {
 }
 
 def post_website_link() {
-  if (env.BRANCH_NAME.startsWith("PR-")) {
+  return ["Deploy: ": {
     node {
-      pullRequest.comment("Job ${env.BRANCH_NAME}/${env.BUILD_NUMBER} is complete. \nDocs are uploaded to http://gluon-nlp-staging.s3-accelerate.dualstack.amazonaws.com/${env.BRANCH_NAME}/${env.BUILD_NUMBER}/index.html")
+      if (env.BRANCH_NAME.startsWith("PR-")) {
+          pullRequest.comment("Job ${env.BRANCH_NAME}/${env.BUILD_NUMBER} is complete. \nDocs are uploaded to http://gluon-nlp-staging.s3-accelerate.dualstack.amazonaws.com/${env.BRANCH_NAME}/${env.BUILD_NUMBER}/index.html")
+      }
     }
-  }
+  }]
 }
 
 return this
