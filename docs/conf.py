@@ -61,15 +61,6 @@ extensions = [
     'sphinx_autorun',
 ]
 
-doctest_global_setup = '''
-import gluonnlp
-import mxnet as mx
-from mxnet import gluon
-import numpy as np
-import doctest
-doctest.ELLIPSIS_MARKER = '-etc-'
-'''
-
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
 
@@ -134,7 +125,8 @@ html_favicon = '_static/gluon.ico'
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
-exclude_patterns = ['_build', '**.ipynb_checkpoints', 'examples/*/*/**.rst', 'model_zoo/*/*/**.rst']
+exclude_patterns = ['_build', '**.ipynb_checkpoints', 'examples/*/*/**.rst', 'model_zoo/*/*/**.rst',
+                    'model_zoo/word_embeddings/tools/extern/*/**.md']
 
 # The reST default role (used for this markup: `text`) to use for all
 # documents.

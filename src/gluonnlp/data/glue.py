@@ -93,7 +93,7 @@ class GlueCoLA(_GlueDataset):
     >>> len(cola_dev[0])
     2
     >>> cola_dev[0]
-    [u'The sailors rode the breeze clear of the rocks.', u'1']
+    ['The sailors rode the breeze clear of the rocks.', '1']
     >>> cola_test = gluonnlp.data.GlueCoLA('test', root='./datasets/cola')
     -etc-
     >>> len(cola_test)
@@ -156,7 +156,7 @@ class GlueSST2(_GlueDataset):
     >>> len(sst_dev[0])
     2
     >>> sst_dev[0]
-    [u"it 's a charming and often affecting journey . ", u'1']
+    ["it 's a charming and often affecting journey . ", '1']
     >>> sst_test = gluonnlp.data.GlueSST2('test', root='./datasets/sst')
     -etc-
     >>> len(sst_test)
@@ -164,7 +164,7 @@ class GlueSST2(_GlueDataset):
     >>> len(sst_test[0])
     1
     >>> sst_test[0]
-    [u'uneasy mishmash of styles and genres .']
+    ['uneasy mishmash of styles and genres .']
     """
     def __init__(self, segment='train',
                  root=os.path.join(get_home_dir(), 'datasets', 'glue_sst'),
@@ -222,7 +222,7 @@ class GlueSTSB(_GlueDataset):
     >>> len(stsb_dev[0])
     3
     >>> stsb_dev[0]
-    [u'A man with a hard hat is dancing.', u'A man wearing a hard hat is dancing.', u'5.000']
+    ['A man with a hard hat is dancing.', 'A man wearing a hard hat is dancing.', '5.000']
     >>> stsb_test = gluonnlp.data.GlueSTSB('test', root='./datasets/stsb')
     -etc-
     >>> len(stsb_test)
@@ -230,7 +230,7 @@ class GlueSTSB(_GlueDataset):
     >>> len(stsb_test[0])
     2
     >>> stsb_test[0]
-    [u'A girl is styling her hair.', u'A girl is brushing her hair.']
+    ['A girl is styling her hair.', 'A girl is brushing her hair.']
     """
     def __init__(self, segment='train',
                  root=os.path.join(get_home_dir(), 'datasets', 'glue_stsb'),
@@ -285,7 +285,7 @@ class GlueQQP(_GlueDataset):
     >>> len(qqp_dev[0])
     3
     >>> qqp_dev[0]
-    [u'Why are African-Americans so beautiful?', u'Why are hispanics so beautiful?', u'0']
+    ['Why are African-Americans so beautiful?', 'Why are hispanics so beautiful?', '0']
     >>> qqp_test = gluonnlp.data.GlueQQP('test', root='./datasets/qqp')
     -etc-
     >>> len(qqp_test)
@@ -293,7 +293,7 @@ class GlueQQP(_GlueDataset):
     >>> len(qqp_test[3])
     2
     >>> qqp_test[3]
-    [u'Is it safe to invest in social trade biz?', u'Is social trade geniune?']
+    ['Is it safe to invest in social trade biz?', 'Is social trade geniune?']
     """
     def __init__(self, segment='train',
                  root=os.path.join(get_home_dir(), 'datasets', 'glue_qqp'),
@@ -343,12 +343,12 @@ class GlueRTE(_GlueDataset):
     --------
     >>> rte_dev = gluonnlp.data.GlueRTE('dev', root='./datasets/rte')
     -etc-
-    >>> len(rte)
+    >>> len(rte_dev)
     277
-    >>> len(rte[0])
+    >>> len(rte_dev[0])
     3
-    >>> rte[0]
-    [u'Dana Reeve, the widow of the actor Christopher Reeve, has died of lung cancer at age 44, according to the Christopher Reeve Foundation.', u'Christopher Reeve had an accident.', u'not_entailment']
+    >>> rte_dev[0]
+    ['Dana Reeve, the widow of the actor Christopher Reeve, has died of lung cancer at age 44, according to the Christopher Reeve Foundation.', 'Christopher Reeve had an accident.', 'not_entailment']
     >>> rte_test = gluonnlp.data.GlueRTE('test', root='./datasets/rte')
     -etc-
     >>> len(rte_test)
@@ -356,7 +356,7 @@ class GlueRTE(_GlueDataset):
     >>> len(rte_test[16])
     2
     >>> rte_test[16]
-    [u'United failed to progress beyond the group stages of the Champions League and trail in the Premiership title race, sparking rumours over its future.', u'United won the Champions League.']
+    ['United failed to progress beyond the group stages of the Champions League and trail in the Premiership title race, sparking rumours over its future.', 'United won the Champions League.']
     """
     def __init__(self, segment='train',
                  root=os.path.join(get_home_dir(), 'datasets', 'glue_rte'),
@@ -394,7 +394,7 @@ class GlueMNLI(_GlueDataset):
 
     Parameters
     ----------
-    segment : {'train', 'dev_matched', 'dev_mismatched', 'test_matched', 'dev_mismatched'},
+    segment : {'train', 'dev_matched', 'dev_mismatched', 'test_matched', 'test_mismatched'},
               default 'train'
         Dataset segment.
     root : str, default '$MXNET_HOME/datasets/glue_mnli'
@@ -405,22 +405,22 @@ class GlueMNLI(_GlueDataset):
 
     Examples
     --------
-    >>> mnli_dev = gluonnlp.data.GlueMNLI('dev', root='./datasets/mnli')
+    >>> mnli_dev = gluonnlp.data.GlueMNLI('dev_matched', root='./datasets/mnli')
     -etc-
     >>> len(mnli_dev)
     9815
     >>> len(mnli_dev[0])
     3
     >>> mnli_dev[0]
-    [u'The new rights are nice enough', u'Everyone really likes the newest benefits ', u'neutral']
-    >>> mnli_test = gluonnlp.data.GlueCoLA('test', root='./datasets/mnli')
+    ['The new rights are nice enough', 'Everyone really likes the newest benefits ', 'neutral']
+    >>> mnli_test = gluonnlp.data.GlueMNLI('test_matched', root='./datasets/mnli')
     -etc-
     >>> len(mnli_test)
     9796
     >>> len(mnli_test[0])
     2
     >>> mnli_test[0]
-    [u'Hierbas, ans seco, ans dulce, and frigola are just a few names worth keeping a look-out for.', u'Hierbas is a name worth looking out for.']
+    ['Hierbas, ans seco, ans dulce, and frigola are just a few names worth keeping a look-out for.', 'Hierbas is a name worth looking out for.']
     """
     def __init__(self, segment='train',
                  root=os.path.join(get_home_dir(), 'datasets', 'glue_mnli'),
@@ -461,7 +461,7 @@ class GlueMNLI(_GlueDataset):
 
 @register(segment=['train', 'dev', 'test'])
 class GlueQNLI(_GlueDataset):
-    """The Question-answering NLI dataset converted from Stanford Question Answering Dataset
+    r"""The Question-answering NLI dataset converted from Stanford Question Answering Dataset
     (Rajpurkar et al. 2016).
 
     From
@@ -487,7 +487,7 @@ class GlueQNLI(_GlueDataset):
     >>> len(qnli_dev[0])
     3
     >>> qnli_dev[0]
-    [u'Which NFL team represented the AFC at Super Bowl 50?', u'The American Football Conference (AFC) champion Denver Broncos defeated the National Football Conference (NFC) champion Carolina Panthers 24\u201310 to earn their third Super Bowl title.', u'entailment']
+    ['Which NFL team represented the AFC at Super Bowl 50?', 'The American Football Conference (AFC) champion Denver Broncos defeated the National Football Conference (NFC) champion Carolina Panthers 24\u201310 to earn their third Super Bowl title.', 'entailment']
     >>> qnli_test = gluonnlp.data.GlueQNLI('test', root='./datasets/qnli')
     -etc-
     >>> len(qnli_test)
@@ -495,7 +495,7 @@ class GlueQNLI(_GlueDataset):
     >>> len(qnli_test[0])
     2
     >>> qnli_test[0]
-    [u'What is the seldom used force unit equal to one thousand newtons?', u'Other arcane units of force include the sth\xe8ne, which is equivalent to 1000 N, and the kip, which is equivalent to 1000 lbf.']
+    ['What seldom used term of a unit of force equal to 1000 pound s of force?', 'Other arcane units of force include the sthène, which is equivalent to 1000 N, and the kip, which is equivalent to 1000 lbf.']
     """
     def __init__(self, segment='train',
                  root=os.path.join(get_home_dir(), 'datasets', 'glue_qnli'),
@@ -549,7 +549,7 @@ class GlueWNLI(_GlueDataset):
     >>> len(wnli_dev[0])
     3
     >>> wnli_dev[0]
-    [u'The drain is clogged with hair. It has to be cleaned.', u'The hair has to be cleaned.', u'0']
+    ['The drain is clogged with hair. It has to be cleaned.', 'The hair has to be cleaned.', '0']
     >>> wnli_test = gluonnlp.data.GlueWNLI('test', root='./datasets/wnli')
     -etc-
     >>> len(wnli_test)
@@ -557,7 +557,7 @@ class GlueWNLI(_GlueDataset):
     >>> len(wnli_test[0])
     2
     >>> wnli_test[0]
-    [u'Maude and Dora had seen the trains rushing across the prairie, with long, rolling puffs of black smoke streaming back from the engine. Their roars and their wild, clear whistles could be heard from far away. Horses ran away when they came in sight.', u'Horses ran away when Maude and Dora came in sight.']
+    ['Maude and Dora had seen the trains rushing across the prairie, with long, rolling puffs of black smoke streaming back from the engine. Their roars and their wild, clear whistles could be heard from far away. Horses ran away when they came in sight.', 'Horses ran away when Maude and Dora came in sight.']
     """
     def __init__(self, segment='train',
                  root=os.path.join(get_home_dir(), 'datasets', 'glue_wnli'),

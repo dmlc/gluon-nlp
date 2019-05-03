@@ -20,9 +20,8 @@
 # pylint: disable=wildcard-import
 """NLP training model."""
 
-import gluonnlp as nlp
-
 import mxnet as mx
+import gluonnlp as nlp
 
 from . import cache, embedding, language_model
 from .cache import *
