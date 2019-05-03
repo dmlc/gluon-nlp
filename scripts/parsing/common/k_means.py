@@ -2,18 +2,20 @@
 # -*- coding: UTF-8 -*-
 
 # Copyright 2016 Timothy Dozat
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""KMeans utility."""
+
 from collections import Counter
 
 import numpy as np
@@ -22,18 +24,15 @@ import numpy as np
 class KMeans(object):
     """
     Cluster sentences by their lengths
+
+    Parameters
+    ----------
+    k : int
+        number of clusters
+    len_cntr : Counter
+        length counter
     """
-
     def __init__(self, k, len_cntr):
-        """Do clustering
-
-        Parameters
-        ----------
-        k : int
-            number of clusters
-        len_cntr : Counter
-            length counter
-        """
         # Error checking
         if len(len_cntr) < k:
             raise ValueError('Trying to sort %d data points into %d buckets' % (len(len_cntr), k))
@@ -56,7 +55,6 @@ class KMeans(object):
         lengths.sort()
         unique_length.sort()
         self._splits = [np.max(split) for split in np.array_split(lengths, self._k)]
-        """Length of sentences"""
 
         i = len(self._splits) - 1
         while i > 0:
@@ -119,8 +117,8 @@ class KMeans(object):
             # Try shifting the centroid to the left
             if len_idx > 0 and self._lengths[len_idx - 1] not in self._split_cntr:
                 new_split = self._lengths[len_idx - 1]
-                left_delta = self._len_cntr[split] * (right_split - new_split) - self._split_cntr[split] * (
-                        split - new_split)
+                left_delta = (self._len_cntr[split] * (right_split - new_split)
+                              - self._split_cntr[split] * (split - new_split))
                 if left_delta < 0:
                     self._splits[split_idx] = new_split
                     self._split2len_idx[new_split] = len_idx - 1
@@ -131,10 +129,11 @@ class KMeans(object):
                     del self._split_cntr[split]
 
             # Try shifting the centroid to the right
-            elif len_idx < len(self._lengths) - 2 and self._lengths[len_idx + 1] not in self._split_cntr:
+            elif len_idx < len(self._lengths) - 2 \
+                and self._lengths[len_idx + 1] not in self._split_cntr:
                 new_split = self._lengths[len_idx + 1]
-                right_delta = self._split_cntr[split] * (new_split - split) - self._len_cntr[split] * (
-                        new_split - split)
+                right_delta = (self._split_cntr[split] * (new_split - split)
+                               - self._len_cntr[split] * (new_split - split))
                 if right_delta <= 0:
                     self._splits[split_idx] = new_split
                     self._split2len_idx[new_split] = len_idx + 1
@@ -152,7 +151,8 @@ class KMeans(object):
         last_split = -1
         for split_idx, split in enumerate(self._splits):
             self._len2split_idx.update(
-                dict(list(zip(list(range(last_split + 1, split)), [split_idx] * (split - (last_split + 1))))))
+                dict(list(zip(list(range(last_split + 1, split)),
+                              [split_idx] * (split - (last_split + 1))))))
 
     def __len__(self):
         return self._k

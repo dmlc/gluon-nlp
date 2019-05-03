@@ -153,10 +153,10 @@ class NLTKMosesTokenizer(object):
     Examples
     --------
     >>> tokenizer = gluonnlp.data.NLTKMosesTokenizer()
-    >>> tokenizer("Gluon NLP toolkit provides a suite of text processing tools.")
+    >>> tokenizer('Gluon NLP toolkit provides a suite of text processing tools.')
     ['Gluon', 'NLP', 'toolkit', 'provides', 'a', 'suite', 'of', 'text', 'processing', 'tools', '.']
-    >>> tokenizer("Das Gluon NLP-Toolkit stellt eine Reihe von Textverarbeitungstools "
-    ...           "zur Verfügung.")
+    >>> tokenizer('Das Gluon NLP-Toolkit stellt eine Reihe von Textverarbeitungstools '
+    ...           'zur Verfügung.')
     ['Das', 'Gluon', 'NLP-Toolkit', 'stellt', 'eine', 'Reihe', 'von', 'Textverarbeitungstools', \
 'zur', 'Verf\xfcgung', '.']
     """
@@ -215,10 +215,10 @@ class SacreMosesTokenizer(object):
     Examples
     --------
     >>> tokenizer = gluonnlp.data.SacreMosesTokenizer()
-    >>> tokenizer("Gluon NLP toolkit provides a suite of text processing tools.")
+    >>> tokenizer('Gluon NLP toolkit provides a suite of text processing tools.')
     ['Gluon', 'NLP', 'toolkit', 'provides', 'a', 'suite', 'of', 'text', 'processing', 'tools', '.']
-    >>> tokenizer("Das Gluon NLP-Toolkit stellt eine Reihe von Textverarbeitungstools "
-    ...           "zur Verfügung.")
+    >>> tokenizer('Das Gluon NLP-Toolkit stellt eine Reihe von Textverarbeitungstools '
+    ...           'zur Verfügung.')
     ['Das', 'Gluon', 'NLP-Toolkit', 'stellt', 'eine', 'Reihe', 'von', 'Textverarbeitungstools', \
 'zur', 'Verf\xfcgung', '.']
     """
@@ -275,17 +275,17 @@ class SpacyTokenizer(object):
     Parameters
     ----------
     lang : str
-        The language to tokenize. Default is "en", i.e, English.
+        The language to tokenize. Default is 'en', i.e, English.
         You may refer to https://spacy.io/usage/models for supported languages.
 
     Examples
     --------
     >>> tokenizer = gluonnlp.data.SpacyTokenizer()
-    >>> tokenizer(u"Gluon NLP toolkit provides a suite of text processing tools.")
+    >>> tokenizer('Gluon NLP toolkit provides a suite of text processing tools.')
     ['Gluon', 'NLP', 'toolkit', 'provides', 'a', 'suite', 'of', 'text', 'processing', 'tools', '.']
     >>> tokenizer = gluonnlp.data.SpacyTokenizer('de')
-    >>> tokenizer(u"Das Gluon NLP-Toolkit stellt eine Reihe von Textverarbeitungstools"
-    ...            " zur Verfügung.")
+    >>> tokenizer('Das Gluon NLP-Toolkit stellt eine Reihe von Textverarbeitungstools'
+    ...           ' zur Verfügung.')
     ['Das', 'Gluon', 'NLP-Toolkit', 'stellt', 'eine', 'Reihe', 'von', 'Textverarbeitungstools', \
 'zur', 'Verf\xfcgung', '.']
     """
@@ -463,9 +463,9 @@ class JiebaTokenizer(object):
     Examples
     --------
     >>> tokenizer = gluonnlp.data.JiebaTokenizer()
-    >>> tokenizer(u"我来到北京清华大学")
+    >>> tokenizer('我来到北京清华大学')
     ['我', '来到', '北京', '清华大学']
-    >>> tokenizer(u"小明硕士毕业于中国科学院计算所，后在日本京都大学深造")
+    >>> tokenizer('小明硕士毕业于中国科学院计算所，后在日本京都大学深造')
     ['小明', '硕士', '毕业', '于', '中国科学院', '计算所', '，', '后', '在', '日本京都大学', '深造']
 
     """
@@ -518,9 +518,9 @@ class NLTKStanfordSegmenter(object):
     Examples
     --------
     >>> tokenizer = gluonnlp.data.NLTKStanfordSegmenter() #doctest:+SKIP
-    >>> tokenizer(u"我来到北京清华大学")
+    >>> tokenizer('我来到北京清华大学') #doctest:+SKIP
     ['我', '来到', '北京', '清华大学']
-    >>> tokenizer(u"小明硕士毕业于中国科学院计算所，后在日本京都大学深造")
+    >>> tokenizer('小明硕士毕业于中国科学院计算所，后在日本京都大学深造') #doctest:+SKIP
     ['小明', '硕士', '毕业', '于', '中国科学院', '计算所', '，', '后', '在', '日本京都大学', '深造']
 
     """
@@ -713,7 +713,7 @@ class SentencepieceDetokenizer(_SentencepieceProcessor):
         return self._processor.DecodePieces(sample)
 
 
-class BERTBasicTokenizer():
+class BERTBasicTokenizer(object):
     r"""Runs basic tokenization
 
     performs invalid character removal (e.g. control chars) and whitespace.
@@ -729,10 +729,10 @@ class BERTBasicTokenizer():
     Examples
     --------
     >>> tokenizer = gluonnlp.data.BERTBasicTokenizer(lower=True)
-    >>> tokenizer(u" \tHeLLo!how  \n Are yoU?  ")
+    >>> tokenizer(' \tHeLLo!how  \n Are yoU?  ')
     ['hello', '!', 'how', 'are', 'you', '?']
     >>> tokenizer = gluonnlp.data.BERTBasicTokenizer(lower=False)
-    >>> tokenizer(u" \tHeLLo!how  \n Are yoU?  ")
+    >>> tokenizer(' \tHeLLo!how  \n Are yoU?  ')
     ['HeLLo', '!', 'how', 'Are', 'yoU', '?']
 
     """
@@ -923,7 +923,7 @@ class BERTTokenizer(object):
     ...                                          pretrained=False, root='./model')
     -etc-
     >>> tokenizer = gluonnlp.data.BERTTokenizer(vocab=vocab)
-    >>> tokenizer(u"gluonnlp: 使NLP变得简单。")
+    >>> tokenizer('gluonnlp: 使NLP变得简单。')
     ['gl', '##uo', '##nn', '##lp', ':', '使', 'nl', '##p', '变', '得', '简', '单', '。']
 
     """

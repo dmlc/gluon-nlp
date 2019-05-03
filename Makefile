@@ -19,17 +19,17 @@ ROOTDIR = $(CURDIR)
 MD2IPYNB = $(ROOTDIR)/docs/md2ipynb.py
 
 flake8:
-	flake8 . --exclude conda --count --select=E901,E999,F821,F822,F823 --show-source --statistics
+	flake8 --exclude conda,test_*.py,scripts/word_embeddings/tools/extern --count --select=E901,E999,F821,F822,F823 --show-source --statistics $(lintdir)
 
 pylint:
-	pylint --rcfile=$(ROOTDIR)/.pylintrc src/gluonnlp scripts/*/*.py
+	pylint --rcfile=$(ROOTDIR)/.pylintrc $(lintdir)
 
 restruc:
 	python setup.py check --restructuredtext --strict
 
 lint:
-	make flake8
-	make pylint
+	make lintdir=$(lintdir) flake8
+	make lintdir=$(lintdir) pylint
 	make restruc
 
 docs: release

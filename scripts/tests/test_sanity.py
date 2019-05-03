@@ -16,43 +16,25 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-"""Utility base class for saving objects."""
 
-import pickle
+import pytest
 
+@pytest.mark.gpu
+def test_sanity_gpu():
+    # sanity test that makes sure every marker combination has at least 1 test.
+    # due to https://github.com/pytest-dev/pytest/issues/812
+    import gluonnlp as nlp
 
-class Savable(object):
-    """
-    A super class for save/load operations.
-    """
+@pytest.mark.gpu
+@pytest.mark.serial
+def test_sanity_gpu_serial():
+    # sanity test that makes sure every marker combination has at least 1 test.
+    # due to https://github.com/pytest-dev/pytest/issues/812
+    import gluonnlp as nlp
 
-    def __init__(self):
-        super().__init__()
-
-    def save(self, path):
-        """Save to path
-
-        Parameters
-        ----------
-        path : str
-            file path
-        """
-        with open(path, 'wb') as f:
-            pickle.dump(self, f)
-
-    @staticmethod
-    def load(path):
-        """Load from path
-
-        Parameters
-        ----------
-        path : str
-            file path
-
-        Returns
-        -------
-        Savable
-            An object
-        """
-        with open(path, 'rb') as f:
-            return pickle.load(f)
+@pytest.mark.gpu
+@pytest.mark.integration
+def test_sanity_gpu_integ():
+    # sanity test that makes sure every marker combination has at least 1 test.
+    # due to https://github.com/pytest-dev/pytest/issues/812
+    import gluonnlp as nlp
