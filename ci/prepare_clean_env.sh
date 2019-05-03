@@ -3,6 +3,7 @@ env_name=$1
 
 export LD_LIBRARY_PATH=/usr/local/cuda/lib64
 export CUDA_VISIBLE_DEVICES=$EXECUTOR_NUMBER
+export CONDA_ENVS_PATH=$PWD/conda
 
 make clean
 conda env update --prune -p conda/${env_name} -f env/${env_name}.yml
