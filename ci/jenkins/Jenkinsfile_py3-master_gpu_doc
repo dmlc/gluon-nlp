@@ -34,12 +34,12 @@ utils.assign_node_labels(linux_gpu: 'linux-gpu', linux_cpu: 'linux-cpu')
 utils.main_wrapper(
 core_logic: {
   utils.parallel_stage('Doc Test', [
-    build_steps.test_doctest('gluon-nlp-gpu-py3-master', 'gpu/py3-master',
+    build_steps.test_doctest('gluon-nlp-cpu-py3', 'cpu/py3',
                              'src/gluonnlp', 'src/gluonnlp', 4)
   ])
 
   utils.parallel_stage('Documentation', [
-    build_steps.create_website('gluon-nlp-gpu-py3-master', 'gpu/py3-master')
+    build_steps.create_website('gluon-nlp-gpu-py3', 'gpu/py3')
   ])
 
   utils.parallel_stage('Deploy', [
