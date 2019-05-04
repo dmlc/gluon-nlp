@@ -13,7 +13,7 @@ dependencies:
   - flaky<4
   - pytest-cov=2.6.0
   - mock<3
-  - pytest-xdist<2
+  - pytest-xdist<1.28
   - recommonmark
   - pandoc=1.19.2
   - notedown

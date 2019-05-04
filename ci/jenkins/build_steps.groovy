@@ -51,7 +51,7 @@ def test_unittest(workspace_name, conda_env_name,
         sh """
         set -ex
         source ci/prepare_clean_env.sh ${conda_env_name}
-        pytest -v ${capture_flag} -n ${threads} -m '${mark}' --durations=30 --cov ${cov_path} ${test_path}
+        pytest -v ${capture_flag} -n ${threads} -m '${mark}' --durations=30 --cov ${cov_path} --cov-report=term --cov-report xml ${test_path}
         set +ex
         """
         if (!skip_report) utils.publish_test_coverage('GluonNLPCodeCov')
@@ -70,7 +70,7 @@ def test_doctest(workspace_name, conda_env_name,
         sh """
         set -ex
         source ci/prepare_clean_env.sh ${conda_env_name}
-        pytest -v ${capture_flag} -n ${threads} --durations=30 --cov ${cov_path} --doctest-modules ${test_path}
+        pytest -v ${capture_flag} -n ${threads} --durations=30 --cov ${cov_path} --cov-report=term --cov-report xml --doctest-modules ${test_path}
         set +ex
         """
         utils.publish_test_coverage('GluonNLPCodeCov')
