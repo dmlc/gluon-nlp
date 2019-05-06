@@ -211,8 +211,8 @@ def evaluate(data_eval, model, nsp_loss, mlm_loss, vocab_size, ctx, log_interval
                 mask_pred_list.append(decoded)
                 mask_weight_list.append(masked_weight)
 
-                running_mlm_loss += ls1.as_in_context(mx.cpu()).astype('float32')
-                running_nsp_loss += ls2.as_in_context(mx.cpu()).astype('float32')
+                running_mlm_loss += ls1.as_in_context(mx.cpu())
+                running_nsp_loss += ls2.as_in_context(mx.cpu())
                 running_num_tks += valid_length.sum().as_in_context(mx.cpu())
             nsp_metric.update(ns_label_list, ns_pred_list)
             mlm_metric.update(mask_label_list, mask_pred_list, mask_weight_list)
