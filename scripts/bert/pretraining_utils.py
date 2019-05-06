@@ -230,6 +230,7 @@ def evaluate(data_eval, model, nsp_loss, mlm_loss, vocab_size, ctx, log_interval
 
     mx.nd.waitall()
     eval_end_time = time.time()
+    # accumulate losses from last few batches, too
     if running_mlm_loss != 0:
         total_mlm_loss += running_mlm_loss
         total_nsp_loss += running_nsp_loss
