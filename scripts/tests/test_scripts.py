@@ -306,7 +306,6 @@ def test_pretrain_hvd():
 def test_finetune():
     # WNLI training
     process = subprocess.check_call(['python', './scripts/bert/finetune_classifier.py',
-                                     '--gpus', '0',
                                      '--task_name', 'WNLI',
                                      '--log_interval', '100',
                                      '--epsilon', '1e-8',
@@ -314,7 +313,6 @@ def test_finetune():
 
     # MNLI inference (multiple dev sets)
     process = subprocess.check_call(['python', './scripts/bert/finetune_classifier.py',
-                                     '--gpus', '0',
                                      '--task_name', 'MNLI',
                                      '--max_len', '80',
                                      '--log_interval', '100',
@@ -323,7 +321,6 @@ def test_finetune():
                                      '--only_inference'])
     # STS-B inference (regression task)
     process = subprocess.check_call(['python', './scripts/bert/finetune_classifier.py',
-                                     '--gpus', '0',
                                      '--task_name', 'STS-B',
                                      '--max_len', '80',
                                      '--log_interval', '100',

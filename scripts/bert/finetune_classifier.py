@@ -34,6 +34,7 @@ sentence pair classification, with Gluon NLP Toolkit.
 # under the License.
 # pylint:disable=redefined-outer-name,logging-format-interpolation
 
+import io
 import os
 import time
 import argparse
@@ -349,7 +350,10 @@ def test(loader_test, segment):
     logging.info('Time cost=%.2fs, throughput=%.2f samples/s', toc - tic,
                  dev_batch_size * len(loader_test) / (toc - tic))
     # write result to a file.
-
+    test_path = os.path.join(args.output_dir, 'result.csv')
+    with io.open(test_path, 'w', encoding='utf-8') as f:
+        for v, i in zip(value_list, index_list):
+            f.write(u'%.5f\t%d\n'%(v, i))
 
 
 def log_train(batch_id, batch_num, metric, step_loss, log_interval, epoch_id, learning_rate):
