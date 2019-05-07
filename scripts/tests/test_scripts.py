@@ -308,14 +308,14 @@ def test_finetune():
         # TODO(haibin) update test once MXNet 1.5 is released.
         from mxnet.ndarray.contrib import adamw_update
         # WNLI training with bert_adam
-        process = subprocess.check_call(['python', './scripts/bert/finetune_classifier.py',
+        process = subprocess.check_call([sys.executable, './scripts/bert/finetune_classifier.py',
                                          '--task_name', 'WNLI',
                                          '--log_interval', '100',
                                          '--epsilon', '1e-8',
                                          '--gpu', '0'])
     except ImportError:
         # WNLI training with adam
-        process = subprocess.check_call(['python', './scripts/bert/finetune_classifier.py',
+        process = subprocess.check_call([sys.executable, './scripts/bert/finetune_classifier.py',
                                          '--task_name', 'WNLI',
                                          '--log_interval', '100',
                                          '--epsilon', '1e-8',
@@ -323,7 +323,7 @@ def test_finetune():
                                          '--gpu', '0'])
 
     # MNLI inference (multiple dev sets)
-    process = subprocess.check_call(['python', './scripts/bert/finetune_classifier.py',
+    process = subprocess.check_call([sys.executable, './scripts/bert/finetune_classifier.py',
                                      '--task_name', 'MNLI',
                                      '--max_len', '80',
                                      '--log_interval', '100',
@@ -331,7 +331,7 @@ def test_finetune():
                                      '--gpu', '0',
                                      '--only_inference'])
     # STS-B inference (regression task)
-    process = subprocess.check_call(['python', './scripts/bert/finetune_classifier.py',
+    process = subprocess.check_call([sys.executable, './scripts/bert/finetune_classifier.py',
                                      '--task_name', 'STS-B',
                                      '--max_len', '80',
                                      '--log_interval', '100',
