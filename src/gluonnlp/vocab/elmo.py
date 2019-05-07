@@ -22,7 +22,7 @@
 
 __all__ = ['ELMoCharVocab']
 
-class ELMoCharVocab:
+class ELMoCharVocab(object):
     r"""ELMo special character vocabulary
 
     The vocab aims to map individual tokens to sequences of character ids, compatible with ELMo.

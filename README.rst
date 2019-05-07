@@ -137,7 +137,7 @@ Load the Wikitext-2 dataset, for example:
 
     >>> import gluonnlp as nlp
     >>> train = nlp.data.WikiText2(segment='train')
-    >>> train[0][0:5]
+    >>> train[0:5]
     ['=', 'Valkyria', 'Chronicles', 'III', '=']
 
 `Vocabulary Construction <http://gluon-nlp.mxnet.io/master/api/modules/vocab.html>`__

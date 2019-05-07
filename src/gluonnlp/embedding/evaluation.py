@@ -79,7 +79,7 @@ def register(class_):
     >>> similarity_function = gluonnlp.embedding.evaluation.create('similarity',
     ...                                                            'MySimilarityFunction')
     >>> print(type(similarity_function))
-    <class 'MySimilarityFunction'>
+    <class 'gluonnlp.embedding.evaluation.MySimilarityFunction'>
 
     >>> @gluonnlp.embedding.evaluation.register
     ... class MyAnalogyFunction(gluonnlp.embedding.evaluation.WordEmbeddingAnalogyFunction):
@@ -87,7 +87,7 @@ def register(class_):
     ...         pass
     >>> analogy_function = gluonnlp.embedding.evaluation.create('analogy', 'MyAnalogyFunction')
     >>> print(type(analogy_function))
-    <class 'MyAnalogyFunction'>
+    <class 'gluonnlp.embedding.evaluation.MyAnalogyFunction'>
 
     """
 

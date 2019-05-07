@@ -102,8 +102,8 @@ class UnigramCandidateSampler(mx.gluon.HybridBlock):
         return s.format(block_name=self.__class__.__name__, len_weights=self.N,
                         dtype=self._dtype)
 
+    # pylint: disable=arguments-differ, unused-argument
     def hybrid_forward(self, F, candidates_like, prob, alias):
-        # pylint: disable=unused-argument
         """Draw samples from uniform distribution and return sampled candidates.
 
         Parameters

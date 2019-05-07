@@ -1,20 +1,3 @@
-"""
-SQuAD with Static Bidirectional Encoder Representations from Transformers (BERT)
-
-=========================================================================================
-
-This example shows how to finetune a model with pre-trained BERT parameters with static shape for
-SQuAD, with Gluon NLP Toolkit.
-
-@article{devlin2018bert,
-  title={BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding},
-  author={Devlin, Jacob and Chang, Ming- \
-      Wei and Lee, Kenton and Toutanova, Kristina},
-  journal={arXiv preprint arXiv:1810.04805},
-  year={2018}
-}
-"""
-
 # coding=utf-8
 
 # Licensed to the Apache Software Foundation (ASF) under one
@@ -34,7 +17,22 @@ SQuAD, with Gluon NLP Toolkit.
 # specific language governing permissions and limitations
 # under the License.
 # pylint:disable=redefined-outer-name,logging-format-interpolation
+"""
+SQuAD with Static Bidirectional Encoder Representations from Transformers (BERT)
 
+=========================================================================================
+
+This example shows how to finetune a model with pre-trained BERT parameters with static shape for
+SQuAD, with Gluon NLP Toolkit.
+
+@article{devlin2018bert,
+  title={BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding},
+  author={Devlin, Jacob and Chang, Ming- \
+      Wei and Lee, Kenton and Toutanova, Kristina},
+  journal={arXiv preprint arXiv:1810.04805},
+  year={2018}
+}
+"""
 import argparse
 import collections
 import json
@@ -43,20 +41,20 @@ import os
 import random
 import time
 import warnings
+import sys
 
 import numpy as np
 import mxnet as mx
 from mxnet import gluon, nd
 
-import sys
-sys.path.append("..")
-
 import gluonnlp as nlp
-from gluonnlp.data import SQuAD
+
 from static_bert_qa_model import BertForQALoss, StaticBertForQA
 from bert_qa_dataset import (SQuADTransform, preprocess_dataset)
 from bert_qa_evaluate import get_F1_EM, predictions
 from static_bert import get_model
+
+sys.path.append('..')
 
 np.random.seed(6)
 random.seed(6)
@@ -302,9 +300,9 @@ def train():
     """Training function."""
     log.info('Loader Train data...')
     if version_2:
-        train_data = SQuAD('train', version='2.0')
+        train_data = nlp.data.SQuAD('train', version='2.0')
     else:
-        train_data = SQuAD('train', version='1.1')
+        train_data = nlp.data.SQuAD('train', version='1.1')
     log.info('Number of records in Train data:{}'.format(len(train_data)))
 
     train_data_transform, _ = preprocess_dataset(
@@ -410,11 +408,11 @@ def train():
 
             if (batch_id + 1) % log_interval == 0:
                 toc = time.time()
-                log.info(
-                    'Epoch: {}, Batch: {}/{}, Loss={:.4f}, lr={:.7f} Time cost={:.1f} Thoughput={:.2f} samples/s'  # pylint: disable=line-too-long
-                        .format(epoch_id, batch_id, len(train_dataloader),
-                                step_loss / log_interval,
-                                trainer.learning_rate, toc - tic, log_num / (toc - tic)))
+                log.info('Epoch: %d, Batch: %d/%d, Loss=%.4f, lr=%.7f '
+                         'Time cost=%.1f Thoughput=%.2f samples/s',
+                         epoch_id, batch_id, len(train_dataloader),
+                         step_loss / log_interval,
+                         trainer.learning_rate, toc - tic, log_num / (toc - tic))
                 tic = time.time()
                 step_loss = 0.0
                 log_num = 0
@@ -431,9 +429,9 @@ def evaluate():
     """
     log.info('Loader dev data...')
     if version_2:
-        dev_data = SQuAD('dev', version='2.0')
+        dev_data = nlp.data.SQuAD('dev', version='2.0')
     else:
-        dev_data = SQuAD('dev', version='1.1')
+        dev_data = nlp.data.SQuAD('dev', version='1.1')
     log.info('Number of records in Train data:{}'.format(len(dev_data)))
 
     dev_dataset = dev_data.transform(

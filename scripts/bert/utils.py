@@ -24,8 +24,8 @@ import hashlib
 import io
 import json
 
-import gluonnlp
 import mxnet as mx
+import gluonnlp
 
 __all__ = ['convert_vocab']
 
