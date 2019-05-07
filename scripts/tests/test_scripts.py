@@ -304,12 +304,23 @@ def test_pretrain_hvd():
 @pytest.mark.remote_required
 @pytest.mark.integration
 def test_finetune():
-    # WNLI training
-    process = subprocess.check_call(['python', './scripts/bert/finetune_classifier.py',
-                                     '--task_name', 'WNLI',
-                                     '--log_interval', '100',
-                                     '--epsilon', '1e-8',
-                                     '--gpu', '0'])
+    try:
+        # TODO(haibin) update test once MXNet 1.5 is released.
+        from mxnet.ndarray.contrib import adamw_update
+        # WNLI training with bert_adam
+        process = subprocess.check_call(['python', './scripts/bert/finetune_classifier.py',
+                                         '--task_name', 'WNLI',
+                                         '--log_interval', '100',
+                                         '--epsilon', '1e-8',
+                                         '--gpu', '0'])
+    except ImportError:
+        # WNLI training with adam
+        process = subprocess.check_call(['python', './scripts/bert/finetune_classifier.py',
+                                         '--task_name', 'WNLI',
+                                         '--log_interval', '100',
+                                         '--epsilon', '1e-8',
+                                         '--optimizer', 'adam',
+                                         '--gpu', '0'])
 
     # MNLI inference (multiple dev sets)
     process = subprocess.check_call(['python', './scripts/bert/finetune_classifier.py',
