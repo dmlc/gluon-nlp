@@ -222,7 +222,7 @@ transform = dataset.BERTDatasetTransform(bert_tokenizer, max_len,
 data_train = data_train_raw.transform(transform)
 
 print('vocabulary used for tokenization = \n%s'%vocabulary)
-print('%s token id = %s'%('[PAD]'vocabulary.padding_token, vocabulary[vocabulary.padding_token]))
+print('%s token id = %s'%('[PAD]', vocabulary[vocabulary.padding_token]))
 print('%s token id = %s'%(vocabulary.cls_token, vocabulary[vocabulary.cls_token]))
 print('%s token id = %s'%(vocabulary.sep_token, vocabulary[vocabulary.sep_token]))
 print('token ids = \n%s'%data_train[sample_id][0])
