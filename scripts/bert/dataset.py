@@ -15,439 +15,318 @@
 """BERT datasets."""
 
 __all__ = [
-    'MRPCDataset', 'QQPDataset', 'QNLIDataset', 'RTEDataset', 'STSBDataset',
-    'COLADataset', 'MNLIDataset', 'WNLIDataset', 'SSTDataset', 'BertEmbeddingDataset',
+    'MRPCTask', 'QQPTask', 'QNLITask', 'RTETask', 'STSBTask',
+    'CoLATask', 'MNLITask', 'WNLITask', 'SSTTask', 'BertEmbeddingDataset',
     'BERTDatasetTransform'
 ]
 
 import os
-import warnings
 import numpy as np
 from mxnet.metric import Accuracy, F1, MCC, PearsonCorrelation, CompositeEvalMetric
 from mxnet.gluon.data import Dataset
-from gluonnlp.data import TSVDataset, BERTSentenceTransform
+from gluonnlp.data import TSVDataset, BERTSentenceTransform, GlueCoLA, GlueSST2, GlueSTSB
+from gluonnlp.data import GlueQQP, GlueRTE, GlueMNLI, GlueQNLI, GlueWNLI
 from gluonnlp.data.registry import register
 
 @register(segment=['train', 'dev', 'test'])
 class MRPCDataset(TSVDataset):
     """The Microsoft Research Paraphrase Corpus dataset.
+
     Parameters
     ----------
-    segment : str or list of str, default 'train'
-        Dataset segment. Options are 'train', 'dev', 'test' or their combinations.
+    segment : str, default 'train'
+        Dataset segment. Options are 'train', 'dev', 'test'.
     root : str, default '$GLUE_DIR/MRPC'
         Path to the folder which stores the MRPC dataset.
         The datset can be downloaded by the following script:
         https://gist.github.com/W4ngatang/60c2bdb54d156a41194446737ce03e2e
     """
-    task_name = 'MRPC'
-    is_pair = True
-
     def __init__(self,
                  segment='train',
-                 root=os.path.join(
-                     os.getenv('GLUE_DIR', 'glue_data'), task_name)):
-        self._supported_segments = ['train', 'dev', 'test']
-        assert segment in self._supported_segments, 'Unsupported segment: %s' % segment
+                 root=os.path.join(os.getenv('GLUE_DIR', 'glue_data'), 'MRPC')):
+        assert segment in ['train', 'dev', 'test'], 'Unsupported segment: %s' % segment
         path = os.path.join(root, '%s.tsv' % segment)
         A_IDX, B_IDX, LABEL_IDX = 3, 4, 0
         fields = [A_IDX, B_IDX, LABEL_IDX]
         super(MRPCDataset, self).__init__(
             path, num_discard_samples=1, field_indices=fields)
 
-    @staticmethod
-    def get_labels():
-        """Get classification label ids of the dataset."""
-        return ['0', '1']
 
-    @staticmethod
-    def get_metric():
-        """Get metrics Accuracy and F1"""
-        metric = CompositeEvalMetric()
-        for child_metric in [Accuracy(), F1()]:
-            metric.add(child_metric)
-        return metric
-
-
-class GLUEDataset(TSVDataset):
-    """GLUEDataset class"""
-
-    def __init__(self, path, num_discard_samples, fields):
-        self.fields = fields
-        super(GLUEDataset, self).__init__(
-            path, num_discard_samples=num_discard_samples)
-
-    def _read(self):
-        all_samples = super(GLUEDataset, self)._read()
-        largest_field = max(self.fields)
-        # to filter out error records
-        final_samples = [[s[f] for f in self.fields] for s in all_samples
-                         if len(s) >= largest_field + 1]
-        residuals = len(all_samples) - len(final_samples)
-        if residuals > 0:
-            warnings.warn(
-                '{} samples have been filtered out due to parsing error.'.
-                format(residuals))
-        return final_samples
-
-
-@register(segment=['train', 'dev', 'test'])
-class QQPDataset(GLUEDataset):
-    """Dataset for Quora Question Pairs.
+class GlueTask(object):
+    """Abstract GLUE task class.
 
     Parameters
     ----------
-    segment : str or list of str, default 'train'
-        Dataset segment. Options are 'train', 'dev', 'test' or their combinations.
-    root : str, default '$GLUE_DIR/QQP'
-        Path to the folder which stores the QQP dataset.
-        The datset can be downloaded by the following script:
-        https://gist.github.com/W4ngatang/60c2bdb54d156a41194446737ce03e2e
+    class_labels : list of str, or None
+        Classification labels of the task.
+        Set to None for regression tasks with continuous real values.
+    metrics : list of EValMetric
+        Evaluation metrics of the task.
+    is_pair : bool
+        Whether the task deals with sentence pairs or single sentences.
     """
-    task_name = 'QQP'
-    is_pair = True
+    def __init__(self, class_labels, metrics, is_pair):
+        self.class_labels = class_labels
+        self.metrics = metrics
+        self.is_pair = is_pair
 
-    def __init__(self,
-                 segment='train',
-                 root=os.path.join(
-                     os.getenv('GLUE_DIR', 'glue_data'), task_name)):
-        self._supported_segments = ['train', 'dev', 'test']
-        assert segment in self._supported_segments, 'Unsupported segment: %s' % segment
-        path = os.path.join(root, '%s.tsv' % segment)
-        if segment in ['train', 'dev']:
-            A_IDX, B_IDX, LABEL_IDX = 3, 4, 5
-            fields = [A_IDX, B_IDX, LABEL_IDX]
-        elif segment == 'test':
-            A_IDX, B_IDX = 1, 2
-            fields = [A_IDX, B_IDX]
-        super(QQPDataset, self).__init__(
-            path, num_discard_samples=1, fields=fields)
+    def get_dataset(self, segment='train', root=None):
+        """Get the corresponding dataset for the task.
 
-    @staticmethod
-    def get_labels():
-        """Get classification label ids of the dataset."""
-        return ['0', '1']
+        Parameters
+        ----------
+        segment : str, default 'train'
+            Dataset segments.
+        root : str
+            Path to the folder which stores the dataset.
 
-    @staticmethod
-    def get_metric():
-        """Get metrics Accuracy and F1"""
-        metric = CompositeEvalMetric()
-        for child_metric in [Accuracy(), F1()]:
-            metric.add(child_metric)
-        return metric
-
-
-@register(segment=['train', 'dev', 'test'])
-class RTEDataset(GLUEDataset):
-    """Task class for Recognizing Textual Entailment
-
-    Parameters
-    ----------
-    segment : str or list of str, default 'train'
-        Dataset segment. Options are 'train', 'dev', 'test' or their combinations.
-    root : str, default '$GLUE_DIR/RTE'
-        Path to the folder which stores the RTE dataset.
-        The datset can be downloaded by the following script:
-        https://gist.github.com/W4ngatang/60c2bdb54d156a41194446737ce03e2e
-    """
-    task_name = 'RTE'
-    is_pair = True
-
-    def __init__(self,
-                 segment='train',
-                 root=os.path.join(
-                     os.getenv('GLUE_DIR', 'glue_data'), task_name)):
-        self._supported_segments = ['train', 'dev', 'test']
-        assert segment in self._supported_segments, 'Unsupported segment: %s' % segment
-        path = os.path.join(root, '%s.tsv' % segment)
-        if segment in ['train', 'dev']:
-            A_IDX, B_IDX, LABEL_IDX = 1, 2, 3
-            fields = [A_IDX, B_IDX, LABEL_IDX]
-        elif segment == 'test':
-            A_IDX, B_IDX = 1, 2
-            fields = [A_IDX, B_IDX]
-        super(RTEDataset, self).__init__(
-            path, num_discard_samples=1, fields=fields)
-
-    @staticmethod
-    def get_labels():
-        """Get classification label ids of the dataset."""
-        return ['not_entailment', 'entailment']
-
-    @staticmethod
-    def get_metric():
-        """Get metrics Accuracy"""
-        return Accuracy()
-
-
-@register(segment=['train', 'dev', 'test'])
-class QNLIDataset(GLUEDataset):
-    """Task class for SQuAD NLI
-
-    Parameters
-    ----------
-    segment : str or list of str, default 'train'
-        Dataset segment. Options are 'train', 'dev', 'test' or their combinations.
-    root : str, default '$GLUE_DIR/QNLI'
-        Path to the folder which stores the QNLI dataset.
-        The datset can be downloaded by the following script:
-        https://gist.github.com/W4ngatang/60c2bdb54d156a41194446737ce03e2e
-    """
-    task_name = 'QNLI'
-    is_pair = True
-
-    def __init__(self,
-                 segment='train',
-                 root=os.path.join(
-                     os.getenv('GLUE_DIR', 'glue_data'), task_name)):
-        self._supported_segments = ['train', 'dev', 'test']
-        assert segment in self._supported_segments, 'Unsupported segment: %s' % segment
-        path = os.path.join(root, '%s.tsv' % segment)
-        if segment in ['train', 'dev']:
-            A_IDX, B_IDX, LABEL_IDX = 1, 2, 3
-            fields = [A_IDX, B_IDX, LABEL_IDX]
-        elif segment == 'test':
-            A_IDX, B_IDX = 1, 2
-            fields = [A_IDX, B_IDX]
-        super(QNLIDataset, self).__init__(
-            path, num_discard_samples=1, fields=fields)
-
-    @staticmethod
-    def get_labels():
-        """Get classification label ids of the dataset."""
-        return ['not_entailment', 'entailment']
-
-    @staticmethod
-    def get_metric():
-        """Get metrics Accuracy"""
-        return Accuracy()
-
-
-@register(segment=['train', 'dev', 'test'])
-class STSBDataset(GLUEDataset):
-    """Task class for Sentence Textual Similarity Benchmark.
-
-    Parameters
-    ----------
-    segment : str or list of str, default 'train'
-        Dataset segment. Options are 'train', 'dev', 'test' or their combinations.
-    root : str, default '$GLUE_DIR/STS-B'
-        Path to the folder which stores the STS dataset.
-        The datset can be downloaded by the following script:
-        https://gist.github.com/W4ngatang/60c2bdb54d156a41194446737ce03e2e
-    """
-    task_name = 'STS-B'
-    is_pair = True
-
-    def __init__(self,
-                 segment='train',
-                 root=os.path.join(
-                     os.getenv('GLUE_DIR', 'glue_data'), task_name)):
-        self._supported_segments = ['train', 'dev', 'test']
-        assert segment in self._supported_segments, 'Unsupported segment: %s' % segment
-        path = os.path.join(root, '%s.tsv' % segment)
-        if segment in ['train', 'dev']:
-            A_IDX, B_IDX, LABEL_IDX = 7, 8, 9
-            fields = [A_IDX, B_IDX, LABEL_IDX]
-        elif segment == 'test':
-            A_IDX, B_IDX = 7, 8
-            fields = [A_IDX, B_IDX]
-        super(STSBDataset, self).__init__(
-            path, num_discard_samples=1, fields=fields)
-
-    @staticmethod
-    def get_metric():
+        Returns
+        -------
+        TSVDataset : the dataset of target segment.
         """
-        Get metrics Accuracy
+        raise NotImplementedError()
+
+    def dataset_train(self):
+        """Get the training segment of the dataset for the task.
+
+        Returns
+        -------
+        tuple of str, TSVDataset : the segment name, and the dataset.
         """
-        return PearsonCorrelation()
+        return 'train', self.get_dataset(segment='train')
 
-    @staticmethod
-    def get_labels():
-        """Get classification label ids of the dataset."""
-        return None
+    def dataset_dev(self):
+        """Get the dev segment of the dataset for the task.
 
+        Returns
+        -------
+        tuple of (str, TSVDataset), or list of tuple : the segment name, and the dataset.
+        """
+        return 'dev', self.get_dataset(segment='dev')
 
-@register(segment=['train', 'dev', 'test'])
-class COLADataset(GLUEDataset):
-    """Class for Warstdadt acceptability task
+    def dataset_test(self):
+        """Get the test segment of the dataset for the task.
 
-    Parameters
-    ----------
-    segment : str or list of str, default 'train'
-        Dataset segment. Options are 'train', 'dev', 'test' or their combinations.
-    root : str, default '$GLUE_DIR/CoLA
-        Path to the folder which stores the CoLA dataset.
-        The datset can be downloaded by the following script:
-        https://gist.github.com/W4ngatang/60c2bdb54d156a41194446737ce03e2e
-    """
-    task_name = 'CoLA'
-    is_pair = False
+        Returns
+        -------
+        tuple of (str, TSVDataset), or list of tuple : the segment name, and the dataset.
+        """
+        return 'test', self.get_dataset(segment='test')
 
-    def __init__(self,
-                 segment='train',
-                 root=os.path.join(
-                     os.getenv('GLUE_DIR', 'glue_data'), task_name)):
-        self._supported_segments = ['train', 'dev', 'test']
-        assert segment in self._supported_segments, 'Unsupported segment: %s' % segment
-        path = os.path.join(root, '%s.tsv' % segment)
-        if segment in ['train', 'dev']:
-            A_IDX, LABEL_IDX = 3, 1
-            fields = [A_IDX, LABEL_IDX]
-            super(COLADataset, self).__init__(
-                path, num_discard_samples=0, fields=fields)
-        elif segment == 'test':
-            A_IDX = 3
-            fields = [A_IDX]
-            super(COLADataset, self).__init__(
-                path, num_discard_samples=1, fields=fields)
+class MRPCTask(GlueTask):
+    """The MRPC task on GlueBenchmark."""
+    def __init__(self):
+        is_pair = True
+        class_labels = ['0', '1']
+        metric = CompositeEvalMetric()
+        metric.add(Accuracy())
+        metric.add(F1())
+        super(MRPCTask, self).__init__(class_labels, metric, is_pair)
 
-    @staticmethod
-    def get_metric():
-        """Get metrics  Matthews Correlation Coefficient"""
-        return MCC(average='micro')
+    def get_dataset(self, segment='train',
+                    root=os.path.join(os.getenv('GLUE_DIR', 'glue_data'), 'MRPC')):
+        """Get the corresponding dataset for MRPC.
 
-    @staticmethod
-    def get_labels():
-        """Get classification label ids of the dataset."""
-        return ['0', '1']
+        Parameters
+        ----------
+        segment : str, default 'train'
+            Dataset segments. Options are 'train', 'dev', 'test'.
+        root : str, default $GLUE_DIR/MRPC
+            Path to the folder which stores the dataset.
+        """
+        return MRPCDataset(segment=segment, root=root)
 
+class QQPTask(GlueTask):
+    """The Quora Question Pairs task on GlueBenchmark."""
+    def __init__(self):
+        is_pair = True
+        class_labels = ['0', '1']
+        metric = CompositeEvalMetric()
+        metric.add(Accuracy())
+        metric.add(F1())
+        super(QQPTask, self).__init__(class_labels, metric, is_pair)
 
-@register(segment=['train', 'dev', 'test'])
-class SSTDataset(GLUEDataset):
-    """Task class for Stanford Sentiment Treebank.
+    def get_dataset(self, segment='train',
+                    root=os.path.join(os.getenv('GLUE_DIR', 'glue_data'), 'QQP')):
+        """Get the corresponding dataset for QQP.
 
-    Parameters
-    ----------
-    segment : str or list of str, default 'train'
-        Dataset segment. Options are 'train', 'dev', 'test' or their combinations.
-    root : str, default '$GLUE_DIR/SST-2
-        Path to the folder which stores the SST-2 dataset.
-        The datset can be downloaded by the following script:
-        https://gist.github.com/W4ngatang/60c2bdb54d156a41194446737ce03e2e
-    """
-    task_name = 'SST'
-    is_pair = False
-
-    def __init__(self,
-                 segment='train',
-                 root=os.path.join(
-                     os.getenv('GLUE_DIR', 'glue_data'), 'SST-2')):
-        self._supported_segments = ['train', 'dev', 'test']
-        assert segment in self._supported_segments, 'Unsupported segment: %s' % segment
-        path = os.path.join(root, '%s.tsv' % segment)
-        if segment in ['train', 'dev']:
-            A_IDX, LABEL_IDX = 0, 1
-            fields = [A_IDX, LABEL_IDX]
-        elif segment == 'test':
-            A_IDX = 1
-            fields = [A_IDX]
-        super(SSTDataset, self).__init__(
-            path, num_discard_samples=1, fields=fields)
-
-    @staticmethod
-    def get_metric():
-        """Get metrics Accuracy"""
-        return Accuracy()
-
-    @staticmethod
-    def get_labels():
-        """Get classification label ids of the dataset."""
-        return ['0', '1']
+        Parameters
+        ----------
+        segment : str, default 'train'
+            Dataset segments. Options are 'train', 'dev', 'test'.
+        root : str, default $GLUE_DIR/QQP
+            Path to the folder which stores the dataset.
+        """
+        return GlueQQP(segment=segment, root=root)
 
 
-@register(segment=[
-    'dev_matched', 'dev_mismatched', 'test_matched', 'test_mismatched',
-    'train'
-])  # pylint: disable=c0301
-class MNLIDataset(GLUEDataset):
-    """Task class for Multi-Genre Natural Language Inference
-    Parameters
-    ----------
-    segment : str or list of str, default 'train'
-        Dataset segment. Options are 'dev_matched', 'dev_mismatched',
-        'test_matched', 'test_mismatched', 'train' or their combinations.
-    root : str, default '$GLUE_DIR/MNLI'
-        Path to the folder which stores the MNLI dataset.
-        The datset can be downloaded by the following script:
-        https://gist.github.com/W4ngatang/60c2bdb54d156a41194446737ce03e2e
-    """
+class RTETask(GlueTask):
+    """The Recognizing Textual Entailment task on GlueBenchmark."""
+    def __init__(self):
+        is_pair = True
+        class_labels = ['not_entailment', 'entailment']
+        metric = Accuracy()
+        super(RTETask, self).__init__(class_labels, metric, is_pair)
 
-    task_name = 'MNLI'
-    is_pair = True
+    def get_dataset(self, segment='train',
+                    root=os.path.join(os.getenv('GLUE_DIR', 'glue_data'), 'RTE')):
+        """Get the corresponding dataset for RTE.
 
-    def __init__(self,
-                 segment='train',
-                 root=os.path.join(os.getenv('GLUE_DIR', 'glue_data'),
-                                   'MNLI')):  # pylint: disable=c0330
-        self._supported_segments = [
-            'train', 'dev_matched', 'dev_mismatched',
-            'test_matched', 'test_mismatched',
-        ]
-        assert segment in self._supported_segments, 'Unsupported segment: %s' % segment
-        path = os.path.join(root, '%s.tsv' % segment)
-        if segment in ['train', 'dev_matched', 'dev_mismatched']:
-            A_IDX, B_IDX = 8, 9
-            LABEL_IDX = 11 if segment == 'train' else 15
-            fields = [A_IDX, B_IDX, LABEL_IDX]
-        elif segment in ['test_matched', 'test_mismatched']:
-            A_IDX, B_IDX = 8, 9
-            fields = [A_IDX, B_IDX]
-        super(MNLIDataset, self).__init__(
-            path, num_discard_samples=1, fields=fields)
+        Parameters
+        ----------
+        segment : str, default 'train'
+            Dataset segments. Options are 'train', 'dev', 'test'.
+        root : str, default $GLUE_DIR/RTE
+            Path to the folder which stores the dataset.
+        """
+        return GlueRTE(segment=segment, root=root)
 
-    @staticmethod
-    def get_labels():
-        """Get classification label ids of the dataset."""
-        return ['neutral', 'entailment', 'contradiction']
+class QNLITask(GlueTask):
+    """The SQuAD NLI task on GlueBenchmark."""
+    def __init__(self):
+        is_pair = True
+        class_labels = ['not_entailment', 'entailment']
+        metric = Accuracy()
+        super(QNLITask, self).__init__(class_labels, metric, is_pair)
 
-    @staticmethod
-    def get_metric():
-        """Get metrics Accuracy"""
-        return Accuracy()
+    def get_dataset(self, segment='train',
+                    root=os.path.join(os.getenv('GLUE_DIR', 'glue_data'), 'QNLI')):
+        """Get the corresponding dataset for QNLI.
 
+        Parameters
+        ----------
+        segment : str, default 'train'
+            Dataset segments. Options are 'train', 'dev', 'test'.
+        root : str, default $GLUE_DIR/QNLI
+            Path to the folder which stores the dataset.
+        """
+        return GlueQNLI(segment=segment, root=root)
 
-@register(segment=['train', 'dev', 'test'])
-class WNLIDataset(GLUEDataset):
-    """Class for Winograd NLI task
+class STSBTask(GlueTask):
+    """The Sentence Textual Similarity Benchmark task on GlueBenchmark."""
+    def __init__(self):
+        is_pair = True
+        class_labels = None
+        metric = PearsonCorrelation()
+        super(STSBTask, self).__init__(class_labels, metric, is_pair)
 
-    Parameters
-    ----------
-    segment : str or list of str, default 'train'
-        Dataset segment. Options are 'train', 'val', 'test' or their combinations.
-    root : str, default '$GLUE_DIR/WNLI'
-        Path to the folder which stores the WNLI dataset.
-        The datset can be downloaded by the following script:
-        https://gist.github.com/W4ngatang/60c2bdb54d156a41194446737ce03e2e
-    """
-    task_name = 'WNLI'
-    is_pair = True
+    def get_dataset(self, segment='train',
+                    root=os.path.join(os.getenv('GLUE_DIR', 'glue_data'), 'STS-B')):
+        """Get the corresponding dataset for STSB
 
-    def __init__(self,
-                 segment='train',
-                 root=os.path.join(
-                     os.getenv('GLUE_DIR', 'glue_data'), task_name)):
-        self._supported_segments = ['train', 'dev', 'test']
-        assert segment in self._supported_segments, 'Unsupported segment: %s' % segment
-        path = os.path.join(root, '%s.tsv' % segment)
-        if segment in ['train', 'dev']:
-            A_IDX, B_IDX, LABEL_IDX = 1, 2, 3
-            fields = [A_IDX, B_IDX, LABEL_IDX]
-        elif segment == 'test':
-            A_IDX, B_IDX = 1, 2
-            fields = [A_IDX, B_IDX]
-        super(WNLIDataset, self).__init__(
-            path, num_discard_samples=1, fields=fields)
+        Parameters
+        ----------
+        segment : str, default 'train'
+            Dataset segments. Options are 'train', 'dev', 'test'.
+        root : str, default $GLUE_DIR/STS-B
+            Path to the folder which stores the dataset.
+        """
+        return GlueSTSB(segment=segment, root=root)
 
-    @staticmethod
-    def get_labels():
-        """Get classification label ids of the dataset."""
-        return ['0', '1']
+class CoLATask(GlueTask):
+    """The Warstdadt acceptability task on GlueBenchmark."""
+    def __init__(self):
+        is_pair = False
+        class_labels = ['0', '1']
+        metric = MCC(average='micro')
+        super(CoLATask, self).__init__(class_labels, metric, is_pair)
 
-    @staticmethod
-    def get_metric():
-        """Get metrics Accuracy"""
-        return Accuracy()
+    def get_dataset(self, segment='train',
+                    root=os.path.join(os.getenv('GLUE_DIR', 'glue_data'), 'CoLA')):
+        """Get the corresponding dataset for CoLA
+
+        Parameters
+        ----------
+        segment : str, default 'train'
+            Dataset segments. Options are 'train', 'dev', 'test'.
+        root : str, default $GLUE_DIR/CoLA
+            Path to the folder which stores the dataset.
+        """
+        return GlueCoLA(segment=segment, root=root)
+
+class SSTTask(GlueTask):
+    """The Stanford Sentiment Treebank task on GlueBenchmark."""
+    def __init__(self):
+        is_pair = False
+        class_labels = ['0', '1']
+        metric = Accuracy()
+        super(SSTTask, self).__init__(class_labels, metric, is_pair)
+
+    def get_dataset(self, segment='train',
+                    root=os.path.join(os.getenv('GLUE_DIR', 'glue_data'), 'SST')):
+        """Get the corresponding dataset for SST
+
+        Parameters
+        ----------
+        segment : str, default 'train'
+            Dataset segments. Options are 'train', 'dev', 'test'.
+        root : str, default $GLUE_DIR/SST
+            Path to the folder which stores the dataset.
+        """
+        return GlueSST2(segment=segment, root=root)
+
+class WNLITask(GlueTask):
+    """The Winograd NLI task on GlueBenchmark."""
+    def __init__(self):
+        is_pair = True
+        class_labels = ['0', '1']
+        metric = Accuracy()
+        super(WNLITask, self).__init__(class_labels, metric, is_pair)
+
+    def get_dataset(self, segment='train',
+                    root=os.path.join(os.getenv('GLUE_DIR', 'glue_data'), 'WNLI')):
+        """Get the corresponding dataset for WNLI
+
+        Parameters
+        ----------
+        segment : str, default 'train'
+            Dataset segments. Options are 'dev', 'test', 'train'
+        root : str, default $GLUE_DIR/WNLI
+            Path to the folder which stores the dataset.
+        """
+        return GlueWNLI(segment=segment, root=root)
+
+class MNLITask(GlueTask):
+    """The Multi-Genre Natural Language Inference task on GlueBenchmark."""
+    def __init__(self):
+        is_pair = True
+        class_labels = ['neutral', 'entailment', 'contradiction']
+        metric = Accuracy()
+        super(MNLITask, self).__init__(class_labels, metric, is_pair)
+
+    def get_dataset(self, segment='train',
+                    root=os.path.join(os.getenv('GLUE_DIR', 'glue_data'), 'MNLI')):
+        """Get the corresponding dataset for MNLI
+
+        Parameters
+        ----------
+        segment : str, default 'train'
+            Dataset segments. Options are 'dev_matched', 'dev_mismatched', 'test_matched',
+            'test_mismatched', 'train'
+        root : str, default $GLUE_DIR/MNLI
+            Path to the folder which stores the dataset.
+        """
+        return GlueMNLI(segment=segment, root=root)
+
+    def dataset_dev(self):
+        """Get the dev segment of the dataset for the task.
+
+        Returns
+        -------
+        list of TSVDataset : the dataset of the dev segment.
+        """
+        return [('dev_matched', self.get_dataset(segment='dev_matched')),
+                ('dev_mismatched', self.get_dataset(segment='dev_mismatched'))]
+
+    def dataset_test(self):
+        """Get the test segment of the dataset for the task.
+
+        Returns
+        -------
+        list of TSVDataset : the dataset of the test segment.
+        """
+        return [('test_matched', self.get_dataset(segment='test_matched')),
+                ('test_mismatched', self.get_dataset(segment='test_mismatched'))]
 
 
 class BERTDatasetTransform(object):
@@ -474,15 +353,16 @@ class BERTDatasetTransform(object):
     def __init__(self,
                  tokenizer,
                  max_seq_length,
-                 labels=None,
+                 class_labels=None,
                  pad=True,
                  pair=True,
-                 label_dtype='float32'):
-        self.label_dtype = label_dtype
-        self.labels = labels
-        if self.labels:
+                 has_label=True):
+        self.class_labels = class_labels
+        self.has_label = has_label
+        self._label_dtype = 'int32' if class_labels else 'float32'
+        if has_label and class_labels:
             self._label_map = {}
-            for (i, label) in enumerate(labels):
+            for (i, label) in enumerate(class_labels):
                 self._label_map[label] = i
         self._bert_xform = BERTSentenceTransform(
             tokenizer, max_seq_length, pad=pad, pair=pair)
@@ -540,14 +420,16 @@ class BERTDatasetTransform(object):
         np.array: classification task: label id in 'int32', shape (batch_size, 1),
             regression task: label in 'float32', shape (batch_size, 1)
         """
-        input_ids, valid_length, segment_ids = self._bert_xform(line[:-1])
-
-        label = line[-1]
-        if self.labels:  # for classification task
-            label = self._label_map[label]
-        label = np.array([label], dtype=self.label_dtype)
-
-        return input_ids, valid_length, segment_ids, label
+        if self.has_label:
+            input_ids, valid_length, segment_ids = self._bert_xform(line[:-1])
+            label = line[-1]
+            # map to int if class labels are available
+            if self.class_labels:
+                label = self._label_map[label]
+            label = np.array([label], dtype=self._label_dtype)
+            return input_ids, valid_length, segment_ids, label
+        else:
+            return self._bert_xform(line)
 
 
 class BertEmbeddingDataset(Dataset):
@@ -568,7 +450,7 @@ class BertEmbeddingDataset(Dataset):
         ----------
         sentences : List[str].
             Sentences for embeddings.
-    transform : BERTDatasetTransform, default None.
+        transform : BERTDatasetTransform, default None.
             transformer for BERT input format
         """
         self.sentences = sentences

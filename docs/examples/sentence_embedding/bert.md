@@ -211,18 +211,20 @@ max_len = 128
 all_labels = ["0", "1"]
 # whether to transform the data as sentence pairs.
 # for single sentence classification, set pair=False
+# for regression task, set class_labels=None
+# for inference without label available, set has_label=False
 pair = True
 transform = dataset.BERTDatasetTransform(bert_tokenizer, max_len,
-                                         labels=all_labels,
-                                         label_dtype='int32',
+                                         class_labels=all_labels,
+                                         has_label=True,
                                          pad=True,
                                          pair=pair)
 data_train = data_train_raw.transform(transform)
 
 print('vocabulary used for tokenization = \n%s'%vocabulary)
-print('[PAD] token id = %s'%(vocabulary['[PAD]']))
-print('[CLS] token id = %s'%(vocabulary['[CLS]']))
-print('[SEP] token id = %s'%(vocabulary['[SEP]']))
+print('%s token id = %s'%('[PAD]', vocabulary[vocabulary.padding_token]))
+print('%s token id = %s'%(vocabulary.cls_token, vocabulary[vocabulary.cls_token]))
+print('%s token id = %s'%(vocabulary.sep_token, vocabulary[vocabulary.sep_token]))
 print('token ids = \n%s'%data_train[sample_id][0])
 print('valid length = \n%s'%data_train[sample_id][1])
 print('segment ids = \n%s'%data_train[sample_id][2])
