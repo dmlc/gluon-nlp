@@ -34,6 +34,9 @@ def clip_grad_global_norm(parameters, max_norm, check_isfinite=True):
     .. note::
 
         This function is only for use when `update_on_kvstore` is set to False in trainer.
+        In cases where training happens on multiple contexts, this method should be used in
+        conjunction with ``trainer.allreduce_grads()`` and ``trainer.update()``.
+        (**not** ``trainer.step()``)
 
     Example::
 

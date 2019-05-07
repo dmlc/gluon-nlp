@@ -18,8 +18,8 @@ import multiprocessing as mp
 import time
 from functools import partial
 
-from gluonnlp.data.utils import whitespace_splitter
 from mxnet.gluon.data import SimpleDataset
+from gluonnlp.data.utils import whitespace_splitter
 
 
 class SquadExample(object):

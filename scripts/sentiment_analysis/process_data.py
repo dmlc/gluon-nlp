@@ -22,8 +22,8 @@
 import re
 import time
 
-import gluonnlp as nlp
 from mxnet import nd, gluon
+import gluonnlp as nlp
 
 
 def _load_file(data_name):

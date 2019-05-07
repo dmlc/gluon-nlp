@@ -655,3 +655,48 @@ def test_numpy_dataset():
     assert np.all(dataset[1][1] == b[1])
     dataset_b = dataset.get_field('b')
     assert np.all(dataset_b == b)
+
+@pytest.mark.parametrize('cls,name,segment,length,fields', [
+    (nlp.data.GlueCoLA, 'cola', 'train', 8551, 2),
+    (nlp.data.GlueCoLA, 'cola', 'dev', 1043, 2),
+    (nlp.data.GlueCoLA, 'cola', 'test', 1063, 1),
+    # source: https://arxiv.org/pdf/1804.07461.pdf
+    (nlp.data.GlueSST2, 'sst', 'train', 67349, 2),
+    (nlp.data.GlueSST2, 'sst', 'dev', 872, 2),
+    (nlp.data.GlueSST2, 'sst', 'test', 1821, 1),
+    # source: http://ixa2.si.ehu.es/stswiki/index.php/STSbenchmark
+    (nlp.data.GlueSTSB, 'sts', 'train', 5749, 3),
+    (nlp.data.GlueSTSB, 'sts', 'dev', 1500, 3),
+    (nlp.data.GlueSTSB, 'sts', 'test', 1379, 2),
+    # source: https://data.quora.com/First-Quora-Dataset-Release-Question-Pairs
+    (nlp.data.GlueQQP, 'qqp', 'train', 363849, 3),
+    (nlp.data.GlueQQP, 'qqp', 'dev', 40430, 3),
+    (nlp.data.GlueQQP, 'qqp', 'test', 390965, 2),
+    # source: http://www.nyu.edu/projects/bowman/multinli/paper.pdf
+    (nlp.data.GlueMNLI, 'mnli', 'train', 392702, 3),
+    (nlp.data.GlueMNLI, 'mnli', 'dev_matched', 9815, 3),
+    (nlp.data.GlueMNLI, 'mnli', 'dev_mismatched', 9832, 3),
+    (nlp.data.GlueMNLI, 'mnli', 'test_matched', 9796, 2),
+    (nlp.data.GlueMNLI, 'mnli', 'test_mismatched', 9847, 2),
+    # source: https://arxiv.org/pdf/1804.07461.pdf
+    (nlp.data.GlueRTE, 'rte', 'train', 2490, 3),
+    (nlp.data.GlueRTE, 'rte', 'dev', 277, 3),
+    (nlp.data.GlueRTE, 'rte', 'test', 3000, 2),
+    # source: https://arxiv.org/pdf/1804.07461.pdf
+    (nlp.data.GlueQNLI, 'qnli', 'train', 108436, 3),
+    (nlp.data.GlueQNLI, 'qnli', 'dev', 5732, 3),
+    (nlp.data.GlueQNLI, 'qnli', 'test', 5740, 2),
+    # source: https://arxiv.org/pdf/1804.07461.pdf
+    (nlp.data.GlueWNLI, 'wnli', 'train', 635, 3),
+    (nlp.data.GlueWNLI, 'wnli', 'dev', 71, 3),
+    (nlp.data.GlueWNLI, 'wnli', 'test', 146, 2),
+])
+@pytest.mark.serial
+@pytest.mark.remote_required
+def test_glue_data(cls, name, segment, length, fields):
+    dataset = cls(segment=segment, root=os.path.join(
+        'tests', 'externaldata', 'glue', name))
+    assert len(dataset) == length, len(dataset)
+
+    for i, x in enumerate(dataset):
+        assert len(x) == fields, x
