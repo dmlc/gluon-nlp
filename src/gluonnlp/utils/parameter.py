@@ -18,9 +18,12 @@
 # under the License.
 """Utility functions for parameters."""
 
-__all__ = ['clip_grad_global_norm']
+__all__ = ['clip_grad_global_norm', 'save_parameters']
 
 import warnings
+import os
+import tempfile
+import logging
 
 import numpy as np
 from mxnet import nd
@@ -98,3 +101,52 @@ def clip_grad_global_norm(parameters, max_norm, check_isfinite=True):
             for arr in p.list_grad():
                 arr *= scale.as_in_context(arr.context)
     return total_norm
+
+def save_parameters(model, filename):
+    """Save parameters to file.
+
+    Saved parameters can only be loaded with `Block.load_parameters`. Note that this
+    method only saves parameters, not model structure.
+
+    Both local file system path and S3 URI are supported.
+    For example, 's3://mybucket/folder/net.params', './folder/net.params'.
+
+    Parameters
+    ----------
+    model : mx.gluon.Block
+        The model to save.
+    uri : str
+        Path to file.
+    """
+    S3_PREFIX = 's3://'
+    if S3_PREFIX in filename:
+        try:
+            import boto3
+        except ImportError:
+            raise ImportError('boto3 is required to support s3 URI. Please install'
+                              'boto3 via `pip install boto3`')
+        # create temp dir
+        temp_dir = os.path.join(tempfile.gettempdir(), str(hash(os.times())))
+        if not os.path.exists(temp_dir):
+            os.makedirs(temp_dir)
+        temp_path = os.path.join(temp_dir, str(hash(os.times())))
+        # save model
+        params = model._collect_params_with_prefix()
+        arg_dict = {key : val._reduce() for key, val in params.items()}
+        nd.save(temp_path, arg_dict)
+
+        # parse s3 uri
+        prefix_len = len(S3_PREFIX)
+        bucket_idx = filename[prefix_len:].index('/') + prefix_len
+        bucket_name = filename[prefix_len:bucket_idx]
+        # filename after the bucket, excluding '/'
+        s3_filename = filename[bucket_idx + 1:]
+        # record previous logging level. boto is quite verbose
+        log_level = logging.getLogger().getEffectiveLevel()
+        logging.getLogger().setLevel(logging.INFO)
+        # upload to s3
+        s3 = boto3.client('s3')
+        s3.upload_file(temp_path, bucket_name, s3_filename)
+        logging.getLogger().setLevel(log_level)
+    else:
+        model.save_parameters(filename)

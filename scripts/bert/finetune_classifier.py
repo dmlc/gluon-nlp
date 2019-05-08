@@ -465,9 +465,11 @@ def train(metric):
 
         if not only_inference:
             # save params
+
             params_saved = os.path.join(output_dir,
                                         'model_bert_{0}_{1}.params'.format(task_name, epoch_id))
-            model.save_parameters(params_saved)
+
+            nlp.utils.save_parameters(model, params_saved)
             logging.info('params saved in: %s', params_saved)
             toc = time.time()
             logging.info('Time cost=%.2fs', toc - tic)

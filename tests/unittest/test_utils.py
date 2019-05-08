@@ -95,3 +95,9 @@ def test_clip_grad_norm(max_norm, check_isfinite):
         else:
             assert net.weight.grad(ctx).reshape(-1) < 2
             assert net.bias.grad(ctx).reshape(-1) < 2
+
+@pytest.mark.parametrize('filename', ['net.params', './net.params'])
+def test_save_parameters(filename):
+    net = mx.gluon.nn.Dense(1, in_units=1)
+    net.initialize()
+    nlp.utils.save_parameters(net, filename)
