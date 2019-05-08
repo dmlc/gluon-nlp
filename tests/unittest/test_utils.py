@@ -1,4 +1,5 @@
 import pytest
+import os
 import numpy as np
 import mxnet as mx
 import gluonnlp as nlp
@@ -101,3 +102,12 @@ def test_save_parameters(filename):
     net = mx.gluon.nn.Dense(1, in_units=1)
     net.initialize()
     nlp.utils.save_parameters(net, filename)
+
+@pytest.mark.parametrize('filename', ['net.states', './net.states'])
+def test_save_states(filename):
+    net = mx.gluon.nn.Dense(1, in_units=1)
+    net.initialize()
+    trainer = mx.gluon.Trainer(net.collect_params(), 'sgd',
+                               update_on_kvstore=False)
+    nlp.utils.save_states(trainer, filename)
+    assert os.path.isfile(filename)
