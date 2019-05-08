@@ -52,6 +52,7 @@ environment.
 import warnings
 warnings.filterwarnings('ignore')
 
+import io
 import random
 import numpy as np
 import mxnet as mx
@@ -142,13 +143,15 @@ metric = mx.metric.Accuracy()
 For demonstration purpose, we use
 the dev set of the
 Microsoft Research Paraphrase Corpus dataset. The file is
-named 'dev.tsv'. Let's take a look at the raw dataset.
+named 'dev.tsv'. Let's take a look at the first few lines of the raw dataset.
 
-```{.bash .input}
-head -n 5 dev.tsv
+```{.python .input}
+tsv_file = io.open('dev.tsv', encoding='utf-8')
+for i in range(5):
+    print(tsv_file.readline())
 ```
 
-The file contains 5 columns, separated by tabs (i.e. '\t').
+The file contains 5 columns, separated by tabs.
 The first line of
 the file explains each of these columns:
 0. the label indicating whether the two
@@ -222,7 +225,7 @@ transform = dataset.BERTDatasetTransform(bert_tokenizer, max_len,
 data_train = data_train_raw.transform(transform)
 
 print('vocabulary used for tokenization = \n%s'%vocabulary)
-print('%s token id = %s'%('[PAD]', vocabulary[vocabulary.padding_token]))
+print('%s token id = %s'%(vocabulary.padding_token, vocabulary[vocabulary.padding_token]))
 print('%s token id = %s'%(vocabulary.cls_token, vocabulary[vocabulary.cls_token]))
 print('%s token id = %s'%(vocabulary.sep_token, vocabulary[vocabulary.sep_token]))
 print('token ids = \n%s'%data_train[sample_id][0])
