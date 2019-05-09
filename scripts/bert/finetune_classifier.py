@@ -238,8 +238,7 @@ if pretrained_bert_parameters:
 if model_parameters:
     logging.info('loading model params from %s', model_parameters)
     model.load_parameters(model_parameters, ctx=ctx)
-if not os.path.exists(output_dir):
-    os.makedirs(output_dir)
+nlp.utils.mkdir(output_dir)
 
 logging.info(model)
 model.hybridize(static_alloc=True)

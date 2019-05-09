@@ -40,6 +40,8 @@ LARGE_NEGATIVE_FLOAT = -LARGE_POSITIVE_FLOAT
 
 INT_TYPES = mx.base.integer_types
 
+S3_PREFIX = 's3://'
+
 GLOVE_NPZ_SHA1 = \
     {'glove.42B.300d': ('glove.42B.300d.npz',
                         '7deee8f4860744db53ed9e50892effe9883e6d89'),

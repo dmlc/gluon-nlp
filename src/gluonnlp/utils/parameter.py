@@ -27,6 +27,7 @@ import logging
 
 import numpy as np
 from mxnet import nd
+from .. import _constants as C
 
 def clip_grad_global_norm(parameters, max_norm, check_isfinite=True):
     """Rescales gradients of parameters so that the sum of their 2-norm is smaller than `max_norm`.
@@ -118,8 +119,7 @@ def save_parameters(model, filename):
     uri : str
         Path to file.
     """
-    S3_PREFIX = 's3://'
-    if S3_PREFIX in filename:
+    if C.S3_PREFIX in filename:
         # create temp dir
         temp_dir = os.path.join(tempfile.gettempdir(), str(hash(os.times())))
         if not os.path.exists(temp_dir):
@@ -139,9 +139,9 @@ def _upload_file(filename, s3_filename):
     except ImportError:
         raise ImportError('boto3 is required to support s3 URI. Please install'
                           'boto3 via `pip install boto3`')
-    S3_PREFIX = 's3://'
+    C.S3_PREFIX = 's3://'
     # parse s3 uri
-    prefix_len = len(S3_PREFIX)
+    prefix_len = len(C.S3_PREFIX)
     bucket_idx = s3_filename[prefix_len:].index('/') + prefix_len
     bucket_name = s3_filename[prefix_len:bucket_idx]
 
@@ -173,8 +173,8 @@ def save_states(trainer, fname):
     `optimizer.param_dict`, which contains Parameter information (such as
     `lr_mult` and `wd_mult`) will not be saved.
     """
-    S3_PREFIX = 's3://'
-    if S3_PREFIX in fname:
+    C.S3_PREFIX = 's3://'
+    if C.S3_PREFIX in fname:
         # create temp dir
         temp_dir = os.path.join(tempfile.gettempdir(), str(hash(os.times())))
         if not os.path.exists(temp_dir):

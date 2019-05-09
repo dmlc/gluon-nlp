@@ -92,7 +92,7 @@ def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx):
     fp16_trainer = FP16Trainer(trainer, dynamic_loss_scale=dynamic_loss_scale,
                                loss_scaler_params=loss_scale_param)
 
-    if args.ckpt_dir and args.start_step:
+    if args.start_step:
         trainer.load_states(os.path.join(args.ckpt_dir, '%07d.states'%args.start_step))
 
     accumulate = args.accumulate
@@ -191,7 +191,7 @@ def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx):
                     nsp_metric.reset_local()
 
                 # saving checkpoints
-                if args.ckpt_dir and (step_num + 1) % (args.ckpt_interval) == 0 \
+                if (step_num + 1) % args.ckpt_interval == 0 \
                    and (batch_num + 1) % accumulate == 0 and local_rank == 0:
                     save_params(step_num, model, trainer, args.ckpt_dir)
 
@@ -211,6 +211,7 @@ if __name__ == '__main__':
     mx.random.seed(seed)
     logging.debug('Random seed set to %d', seed)
 
+    nlp.utils.mkdir(args.ckpt_dir)
     ctx = mx.gpu(local_rank)
 
     model, nsp_loss, mlm_loss, vocab = get_model_loss([ctx], args.model, args.pretrained,
@@ -218,11 +219,6 @@ if __name__ == '__main__':
                                                       ckpt_dir=args.ckpt_dir,
                                                       start_step=args.start_step)
     logging.debug('Model created')
-
-    if args.ckpt_dir:
-        ckpt_dir = os.path.expanduser(args.ckpt_dir)
-        if not os.path.exists(ckpt_dir):
-            os.makedirs(ckpt_dir)
 
     if args.data:
         num_parts = 1 if args.dummy_data_len else num_workers

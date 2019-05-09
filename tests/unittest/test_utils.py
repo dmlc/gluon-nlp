@@ -111,3 +111,8 @@ def test_save_states(filename):
                                update_on_kvstore=False)
     nlp.utils.save_states(trainer, filename)
     assert os.path.isfile(filename)
+
+@pytest.mark.parametrize('dirname', ['~/dir1', '~/dir1/dir2'])
+def test_mkdir(dirname):
+    nlp.utils.mkdir(dirname)
+    assert os.path.isdir(os.path.expanduser(dirname))
