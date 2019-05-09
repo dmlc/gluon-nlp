@@ -238,7 +238,7 @@ def train_valid_split(dataset, valid_ratio=0.05):
 
     Parameters
     ----------
-    train : list
+    dataset : list
         A list of training samples.
     valid_ratio : float, default 0.05
         Proportion of training samples to use for validation set

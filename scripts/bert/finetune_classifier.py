@@ -72,8 +72,7 @@ parser.add_argument(
     '--batch_size',
     type=int,
     default=32,
-    help='Batch size. Number of examples per gpu in a minibatch, default is 32'
-)
+    help='Batch size. Number of examples per gpu in a minibatch, default is 32')
 parser.add_argument(
     '--dev_batch_size',
     type=int,
@@ -111,6 +110,10 @@ parser.add_argument(
     default=128,
     help='Maximum length of the sentence pairs, default is 128')
 parser.add_argument(
+    '--pad',
+    action='store_true',
+    help='Whether to pad to maximum length when preparing data batches. Default is False.')
+parser.add_argument(
     '--seed', type=int, default=2, help='Random seed, default is 2')
 parser.add_argument(
     '--accumulate',
@@ -139,29 +142,30 @@ parser.add_argument(
     'Options include \'book_corpus_wiki_en_cased\', \'book_corpus_wiki_en_uncased\''
     'for both bert_24_1024_16 and bert_12_768_12.'
     '\'wiki_cn_cased\', \'wiki_multilingual_uncased\' and \'wiki_multilingual_cased\''
-    'for bert_12_768_12 only.'
-)
+    'for bert_12_768_12 only.')
 parser.add_argument(
     '--pretrained_bert_parameters',
     type=str,
     default=None,
-    help='Pre-trained bert model parameter file. default is None'
-)
+    help='Pre-trained bert model parameter file. default is None')
 parser.add_argument(
     '--model_parameters',
     type=str,
     default=None,
     help='A parameter file for the model that is loaded into the model'
     ' before training/inference. It is different from the parameter'
-    ' file written after the model is trained. default is None'
-)
+    ' file written after the model is trained. default is None')
 parser.add_argument(
     '--output_dir',
     type=str,
     default='./output_dir',
     help='The output directory where the model params will be written.'
-    ' default is ./output_dir'
-)
+    ' default is ./output_dir')
+parser.add_argument(
+    '--only_inference',
+    action='store_true',
+    help='whether to do inference only on dev data. '
+    'If true, will load params from --model_parameters.')
 
 args = parser.parse_args()
 
@@ -192,6 +196,7 @@ task = tasks[task_name]
 # model and loss
 model_name = args.bert_model
 dataset = args.bert_dataset
+only_inference = args.only_inference
 pretrained_bert_parameters = args.pretrained_bert_parameters
 model_parameters = args.model_parameters
 
@@ -221,11 +226,11 @@ else:
 # load checkpointing
 output_dir = args.output_dir
 if pretrained_bert_parameters:
-    logging.info('loading bert params from {0}'.format(pretrained_bert_parameters))
+    logging.info('loading bert params from %s', pretrained_bert_parameters)
     model.bert.load_parameters(pretrained_bert_parameters, ctx=ctx,
                                ignore_extra=True)
 if model_parameters:
-    logging.info('loading model params from {0}'.format(model_parameters))
+    logging.info('loading model params from %s', model_parameters)
     model.load_parameters(model_parameters, ctx=ctx)
 if not os.path.exists(output_dir):
     os.makedirs(output_dir)
@@ -239,14 +244,14 @@ do_lower_case = 'uncased' in dataset
 bert_tokenizer = BERTTokenizer(vocabulary, lower=do_lower_case)
 
 
-def preprocess_data(tokenizer, task, batch_size, dev_batch_size, max_len):
+def preprocess_data(tokenizer, task, batch_size, dev_batch_size, max_len, pad=False):
     """Data preparation function."""
     # transformation
     trans = BERTDatasetTransform(
         tokenizer,
         max_len,
         labels=task.get_labels(),
-        pad=False,
+        pad=pad,
         pair=task.is_pair,
         label_dtype='float32' if not task.get_labels() else 'int32')
 
@@ -300,10 +305,10 @@ def preprocess_data(tokenizer, task, batch_size, dev_batch_size, max_len):
 logging.info('processing dataset...')
 if task.task_name == 'MNLI':
     train_data, dev_data_matched, dev_data_mismatched, num_train_examples = preprocess_data(
-        bert_tokenizer, task, batch_size, dev_batch_size, args.max_len)
+        bert_tokenizer, task, batch_size, dev_batch_size, args.max_len, args.pad)
 else:
     train_data, dev_data, num_train_examples = preprocess_data(
-        bert_tokenizer, task, batch_size, dev_batch_size, args.max_len)
+        bert_tokenizer, task, batch_size, dev_batch_size, args.max_len, args.pad)
 
 
 def evaluate(dataloader_eval, metric):
@@ -325,8 +330,41 @@ def evaluate(dataloader_eval, metric):
     logging.info(metric_str, *metric_val)
 
 
+def log_train(batch_id, batch_num, metric, step_loss, log_interval, epoch_id, learning_rate):
+    """Generate and print out the log message for training.
+    """
+    metric_nm, metric_val = metric.get()
+    if not isinstance(metric_nm, list):
+        metric_nm = [metric_nm]
+        metric_val = [metric_val]
+
+    train_str = '[Epoch %d Batch %d/%d] loss=%.4f, lr=%.7f, metrics:' + \
+                ','.join([i + ':%.4f' for i in metric_nm])
+    logging.info(train_str, epoch_id + 1, batch_id + 1, batch_num, \
+                 step_loss / log_interval, \
+                 learning_rate, \
+                 *metric_val)
+
+
+def log_inference(batch_id, batch_num, metric, step_loss, log_interval):
+    """Generate and print out the log message for inference.
+    """
+    metric_nm, metric_val = metric.get()
+    if not isinstance(metric_nm, list):
+        metric_nm = [metric_nm]
+        metric_val = [metric_val]
+
+    eval_str = '[Batch %d/%d] loss=%.4f, metrics:' + \
+               ','.join([i + ':%.4f' for i in metric_nm])
+    logging.info(eval_str, batch_id + 1, batch_num, \
+                 step_loss / log_interval, \
+                 *metric_val)
+
+
 def train(metric):
     """Training function."""
+
+    logging.info('Now we are doing BERT classification training on %s!', ctx)
     optimizer_params = {'learning_rate': lr, 'epsilon': epsilon, 'wd': 0.01}
     try:
         trainer = gluon.Trainer(
@@ -399,15 +437,8 @@ def train(metric):
             step_loss += ls.asscalar()
             metric.update([label], [out])
             if (batch_id + 1) % (args.log_interval) == 0:
-                metric_nm, metric_val = metric.get()
-                if not isinstance(metric_nm, list):
-                    metric_nm = [metric_nm]
-                    metric_val = [metric_val]
-                eval_str = '[Epoch %d Batch %d/%d] loss=%.4f, lr=%.7f, metrics=' + \
-                    ','.join([i + ':%.4f' for i in metric_nm])
-                logging.info(eval_str, epoch_id + 1, batch_id + 1, len(train_data),
-                             step_loss / args.log_interval,
-                             trainer.learning_rate, *metric_val)
+                log_train(batch_id, len(train_data), metric, step_loss, args.log_interval,
+                          epoch_id, trainer.learning_rate)
                 step_loss = 0
         mx.nd.waitall()
         if task.task_name == 'MNLI':
@@ -422,10 +453,43 @@ def train(metric):
         params_saved = os.path.join(output_dir,
                                     'model_bert_{0}_{1}.params'.format(task.task_name, epoch_id))
         model.save_parameters(params_saved)
-        logging.info('params saved in : {0}'.format(params_saved))
+        logging.info('params saved in : %s', params_saved)
         toc = time.time()
-        logging.info('Time cost=%.1fs', toc - tic)
+        logging.info('Time cost=%.2fs', toc - tic)
         tic = toc
+
+
+def inference(metric):
+    """Inference function."""
+
+    logging.info('Now we are doing BERT classification inference on %s!', ctx)
+    model = BERTClassifier(bert, dropout=0.1, num_classes=len(task.get_labels()))
+    model.hybridize(static_alloc=True)
+    model.load_parameters(model_parameters, ctx=ctx)
+
+    metric.reset()
+    step_loss = 0
+    tic = time.time()
+    for batch_id, seqs in enumerate(dev_data):
+        input_ids, valid_length, type_ids, label = seqs
+        out = model(input_ids.as_in_context(ctx),
+                    type_ids.as_in_context(ctx),
+                    valid_length.astype('float32').as_in_context(ctx))
+
+        ls = loss_function(out, label.as_in_context(ctx)).mean()
+
+        step_loss += ls.asscalar()
+        metric.update([label], [out])
+
+        if (batch_id + 1) % (args.log_interval) == 0:
+            log_inference(batch_id, len(dev_data), metric, step_loss, args.log_interval)
+            step_loss = 0
+
+    mx.nd.waitall()
+    toc = time.time()
+    total_num = dev_batch_size * len(dev_data)
+    logging.info('Time cost=%.2fs, throughput=%.2fsamples/s', toc - tic, \
+                 total_num / (toc - tic))
 
 
 if __name__ == '__main__':
@@ -435,4 +499,9 @@ if __name__ == '__main__':
             'Setting MXNET_GPU_MEM_POOL_TYPE="Round" may lead to higher memory '
             'usage and faster speed. If you encounter OOM errors, please unset '
             'this environment variable.')
-    train(task.get_metric())
+    if not args.only_inference:
+        train(task.get_metric())
+    elif model_parameters:
+        inference(task.get_metric())
+    else:
+        logging.info('For inference, please provide model parameters through --model_parameters')
