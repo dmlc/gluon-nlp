@@ -282,7 +282,7 @@ def create_instances_from_document(
 
                     # randomly choose a document other than itself
                     random_document_index = random.randint(0, len(all_documents) - 2)
-                    random_document_index >= document_index:
+                    if random_document_index >= document_index:
                         random_document_index += 1
 
                     random_document = all_documents[random_document_index]
