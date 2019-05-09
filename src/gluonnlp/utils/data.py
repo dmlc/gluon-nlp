@@ -16,14 +16,32 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+# pylint:disable=redefined-outer-name,logging-format-interpolation
+"""Utility functions for data."""
 
-# pylint: disable=wildcard-import, arguments-differ
-"""Module for utility functions."""
+__all__ = ['mkdir']
 
-from . import (parallel, parameter, data)
+import os
+import warnings
+from .. import _constants as C
 
-from .parallel import *
-from .parameter import *
-from .data import *
+def mkdir(dirname):
+    """Create directory.
 
-__all__ = parallel.__all__ + parameter.__all__ + data.__all__
+    Parameters
+    ----------
+    dirname : str
+        The name of the target directory to create.
+    """
+    if C.S3_PREFIX in dirname:
+        warnings.warn('%s directory is not created as it contains %s'
+                      %(dirname, C.S3_PREFIX))
+        return
+    dirname = os.path.expanduser(dirname)
+    if not os.path.exists(dirname):
+        try:
+            os.makedirs(dirname)
+        except OSError as e:
+            # errno 17 means the file already exists
+            if e.errno != 17:
+                raise e

@@ -215,8 +215,8 @@ def save_params(step_num, model, trainer, ckpt_dir):
     trainer_path = os.path.join(ckpt_dir, '%07d.states'%step_num)
     logging.info('[step %d] Saving checkpoints to %s, %s.',
                  step_num, param_path, trainer_path)
-    model.save_parameters(param_path)
-    trainer.save_states(trainer_path)
+    nlp.utils.save_parameters(model, param_path)
+    nlp.utils.save_states(trainer, trainer_path)
 
 def log(begin_time, running_num_tks, running_mlm_loss, running_nsp_loss, step_num,
         mlm_metric, nsp_metric, trainer, log_interval):
@@ -313,6 +313,10 @@ def evaluate(data_eval, model, nsp_loss, mlm_loss, vocab_size, ctx, log_interval
 
     mx.nd.waitall()
     eval_end_time = time.time()
+    # accumulate losses from last few batches, too
+    if running_mlm_loss != 0:
+        total_mlm_loss += running_mlm_loss
+        total_nsp_loss += running_nsp_loss
     total_mlm_loss /= step_num
     total_nsp_loss /= step_num
     logging.info('mlm_loss={:.3f}\tmlm_acc={:.1f}\tnsp_loss={:.3f}\tnsp_acc={:.1f}\t'

@@ -16,14 +16,22 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+"""conftest.py contains configuration for pytest."""
 
-# pylint: disable=wildcard-import, arguments-differ
-"""Module for utility functions."""
+import os
 
-from . import (parallel, parameter, data)
+import pytest
 
-from .parallel import *
-from .parameter import *
-from .data import *
+import gluonnlp as nlp
+from ..question_answering.data_processing import VocabProvider
 
-__all__ = parallel.__all__ + parameter.__all__ + data.__all__
+
+###############################################################################
+# Datasets
+###############################################################################
+@pytest.fixture(scope='session')
+def squad_dev_and_vocab_provider():
+    path = os.path.join('tests', 'data', 'squad')
+    dataset = nlp.data.SQuAD(segment='dev', version='1.1', root=path)
+    vocab_provider = VocabProvider(dataset)
+    return dataset, vocab_provider

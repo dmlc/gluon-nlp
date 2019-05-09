@@ -18,12 +18,16 @@
 # under the License.
 """Utility functions for parameters."""
 
-__all__ = ['clip_grad_global_norm']
+__all__ = ['clip_grad_global_norm', 'save_parameters', 'save_states']
 
 import warnings
+import os
+import tempfile
+import logging
 
 import numpy as np
 from mxnet import nd
+from .. import _constants as C
 
 def clip_grad_global_norm(parameters, max_norm, check_isfinite=True):
     """Rescales gradients of parameters so that the sum of their 2-norm is smaller than `max_norm`.
@@ -98,3 +102,84 @@ def clip_grad_global_norm(parameters, max_norm, check_isfinite=True):
             for arr in p.list_grad():
                 arr *= scale.as_in_context(arr.context)
     return total_norm
+
+def save_parameters(model, filename):
+    """Save parameters to file.
+
+    Saved parameters can only be loaded with `Block.load_parameters`. Note that this
+    method only saves parameters, not model structure.
+
+    Both local file system path and S3 URI are supported.
+    For example, 's3://mybucket/folder/net.params', './folder/net.params'.
+
+    Parameters
+    ----------
+    model : mx.gluon.Block
+        The model to save.
+    uri : str
+        Path to file.
+    """
+    if C.S3_PREFIX in filename:
+        # create temp dir
+        temp_dir = os.path.join(tempfile.gettempdir(), str(hash(os.times())))
+        if not os.path.exists(temp_dir):
+            os.makedirs(temp_dir)
+        temp_path = os.path.join(temp_dir, str(hash(os.times())))
+        # save model
+        model.save_parameters(temp_path)
+        _upload_file(temp_path, filename)
+        os.remove(temp_path)
+    else:
+        model.save_parameters(filename)
+
+def _upload_file(filename, s3_filename):
+    """Upload file to S3."""
+    try:
+        import boto3
+    except ImportError:
+        raise ImportError('boto3 is required to support s3 URI. Please install'
+                          'boto3 via `pip install boto3`')
+    # parse s3 uri
+    prefix_len = len(C.S3_PREFIX)
+    bucket_idx = s3_filename[prefix_len:].index('/') + prefix_len
+    bucket_name = s3_filename[prefix_len:bucket_idx]
+
+    # filename after the bucket, excluding '/'
+    s3_target_file = s3_filename[bucket_idx + 1:]
+
+    log_level = logging.getLogger().getEffectiveLevel()
+    logging.getLogger().setLevel(logging.INFO)
+    # upload to s3
+    s3 = boto3.client('s3')
+    s3.upload_file(filename, bucket_name, s3_target_file)
+    logging.getLogger().setLevel(log_level)
+
+def save_states(trainer, fname):
+    """Saves trainer states (e.g. optimizer, momentum) to a file.
+
+    Both local file system path and S3 URI are supported.
+    For example, 's3://mybucket/folder/net.states', './folder/net.states'.
+
+    Parameters
+    ----------
+    trainer : mxnet.gluon.Trainer
+        The trainer whose states will be saved.
+    fname : str
+        Path to output states file.
+
+    Note
+    ----
+    `optimizer.param_dict`, which contains Parameter information (such as
+    `lr_mult` and `wd_mult`) will not be saved.
+    """
+    if C.S3_PREFIX in fname:
+        # create temp dir
+        temp_dir = os.path.join(tempfile.gettempdir(), str(hash(os.times())))
+        if not os.path.exists(temp_dir):
+            os.makedirs(temp_dir)
+        temp_path = os.path.join(temp_dir, str(hash(os.times())))
+        trainer.save_states(temp_path)
+        _upload_file(temp_path, fname)
+        os.remove(temp_path)
+    else:
+        trainer.save_states(fname)
