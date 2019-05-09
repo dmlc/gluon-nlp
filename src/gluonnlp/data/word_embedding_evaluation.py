@@ -156,6 +156,7 @@ class WordSim353(WordSimilarityEvaluationDataset):
     ['Arafat', 'Jackson', 2.5]
     """
     _url = 'http://alfonseca.org/pubs/ws353simrel.tar.gz'
+    _namespace = 'gluon/dataset/ws353'
     _archive_file = ('ws353simrel.tar.gz',
                      '1b9ca7f4d61682dea0004acbd48ce74275d5bfff')
     _checksums = {
