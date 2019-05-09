@@ -74,7 +74,7 @@ class BERTPretrainDataset(mx.gluon.data.ArrayDataset):
     max_seq_length : int
         The hard limit of maximum sequence length of sentence pairs
     short_seq_prob : float
-        The probability of producing short sequences.
+        The probability of sampling sequences shorter than the max_seq_length.
     masked_lm_prob : float
         The probability of replacing texts with masks/random words/original words.
     max_predictions_per_seq : int

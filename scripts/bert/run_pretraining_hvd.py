@@ -53,7 +53,7 @@ parser.add_argument('--raw', action='store_true',
 parser.add_argument('--max_seq_length', type=int, default=None,
                     help='Maximum input sequence length.')
 parser.add_argument('--short_seq_prob', type=float, default=None,
-                    help='Probability for short sequences.')
+                    help='The probability of producing sequences shorter than max_seq_length.')
 parser.add_argument('--masked_lm_prob', type=float, default=None,
                     help='Probability for masks.')
 parser.add_argument('--max_predictions_per_seq', type=int, default=None,

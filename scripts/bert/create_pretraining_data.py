@@ -121,6 +121,14 @@ def write_to_files_np(features, tokenizer, max_seq_length,
 def create_training_instances(packed_arguments):
     """Create `TrainingInstance`s from raw text.
 
+    The expected input file format is the following:
+
+    (1) One sentence per line. These should ideally be actual sentences, not
+    entire paragraphs or arbitrary spans of text. (Because we use the
+    sentence boundaries for the "next sentence prediction" task).
+    (2) Blank lines between documents. Document boundaries are needed so
+    that the "next sentence prediction" task doesn't span between documents.
+
     Parameters
     ----------
     input_files : list of str
@@ -134,7 +142,7 @@ def create_training_instances(packed_arguments):
     dupe_factor : int
         Duplication factor.
     short_seq_prob : float
-        The probability of producing short sequences.
+        The probability of sampling sequences shorter than the max_seq_length.
     masked_lm_prob : float
         The probability of replacing texts with masks/random words/original words.
     max_predictions_per_seq : int
@@ -149,12 +157,6 @@ def create_training_instances(packed_arguments):
     logging.debug('Processing %s', input_files)
     all_documents = [[]]
 
-    # Input file format:
-    # (1) One sentence per line. These should ideally be actual sentences, not
-    # entire paragraphs or arbitrary spans of text. (Because we use the
-    # sentence boundaries for the "next sentence prediction" task).
-    # (2) Blank lines between documents. Document boundaries are needed so
-    # that the "next sentence prediction" task doesn't span between documents.
     for input_file in input_files:
         with io.open(input_file, 'r', encoding='utf-8') as reader:
             while True:
@@ -234,6 +236,7 @@ def create_instances_from_document(
     # Account for [CLS], [SEP], [SEP]
     max_num_tokens = max_seq_length - 3
 
+    # According to the original tensorflow implementation:
     # We *usually* want to fill up the entire sequence since we are padding
     # to `max_seq_length` anyways, so short sequences are generally wasted
     # computation. However, we *sometimes*
@@ -277,14 +280,10 @@ def create_instances_from_document(
                     is_random_next = True
                     target_b_length = target_seq_length - len(tokens_a)
 
-                    # This should rarely go for more than one iteration for large
-                    # corpora. However, just to be careful, we try to make sure that
-                    # the random document is not the same as the document
-                    # we're processing.
-                    for _ in range(10):
-                        random_document_index = random.randint(0, len(all_documents) - 1)
-                        if random_document_index != document_index:
-                            break
+                    # randomly choose a document other than itself
+                    random_document_index = random.randint(0, len(all_documents) - 2)
+                    random_document_index >= document_index:
+                        random_document_index += 1
 
                     random_document = all_documents[random_document_index]
                     random_start = random.randint(0, len(random_document) - 1)
