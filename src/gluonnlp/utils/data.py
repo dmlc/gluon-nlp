@@ -34,7 +34,7 @@ def mkdir(dirname):
         The name of the target directory to create.
     """
     if C.S3_PREFIX in dirname:
-        warnings.warn('%d directory is not created as it contains %s'
+        warnings.warn('%s directory is not created as it contains %s'
                       %(dirname, C.S3_PREFIX))
         return
     dirname = os.path.expanduser(dirname)
