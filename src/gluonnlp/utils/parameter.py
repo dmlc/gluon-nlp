@@ -139,7 +139,6 @@ def _upload_file(filename, s3_filename):
     except ImportError:
         raise ImportError('boto3 is required to support s3 URI. Please install'
                           'boto3 via `pip install boto3`')
-    C.S3_PREFIX = 's3://'
     # parse s3 uri
     prefix_len = len(C.S3_PREFIX)
     bucket_idx = s3_filename[prefix_len:].index('/') + prefix_len
@@ -173,7 +172,6 @@ def save_states(trainer, fname):
     `optimizer.param_dict`, which contains Parameter information (such as
     `lr_mult` and `wd_mult`) will not be saved.
     """
-    C.S3_PREFIX = 's3://'
     if C.S3_PREFIX in fname:
         # create temp dir
         temp_dir = os.path.join(tempfile.gettempdir(), str(hash(os.times())))
