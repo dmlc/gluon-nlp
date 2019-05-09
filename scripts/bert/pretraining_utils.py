@@ -132,8 +132,8 @@ def save_params(step_num, model, trainer, ckpt_dir):
     trainer_path = os.path.join(ckpt_dir, '%07d.states'%step_num)
     logging.info('[step %d] Saving checkpoints to %s, %s.',
                  step_num, param_path, trainer_path)
-    model.save_parameters(param_path)
-    trainer.save_states(trainer_path)
+    nlp.utils.save_parameters(model, param_path)
+    nlp.utils.save_states(trainer, trainer_path)
 
 def log(begin_time, running_num_tks, running_mlm_loss, running_nsp_loss, step_num,
         mlm_metric, nsp_metric, trainer, log_interval):

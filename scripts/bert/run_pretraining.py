@@ -106,7 +106,7 @@ def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx, store):
     dynamic_loss_scale = args.dtype == 'float16'
     fp16_trainer = FP16Trainer(trainer, dynamic_loss_scale=dynamic_loss_scale)
 
-    if args.ckpt_dir and args.start_step:
+    if args.start_step:
         state_path = os.path.join(args.ckpt_dir, '%07d.states' % args.start_step)
         logging.info('Loading trainer state from %s', state_path)
         trainer.load_states(state_path)
@@ -205,7 +205,7 @@ def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx, store):
                     nsp_metric.reset_local()
 
                 # saving checkpoints
-                if args.ckpt_dir and (step_num + 1) % (args.ckpt_interval) == 0 \
+                if (step_num + 1) % args.ckpt_interval == 0 \
                    and (batch_num + 1) % accumulate == 0:
                     save_params(step_num, model, trainer, args.ckpt_dir)
                 batch_num += 1
@@ -230,11 +230,7 @@ if __name__ == '__main__':
                                                       start_step=args.start_step)
 
     store = mx.kv.create(args.kvstore)
-
-    if args.ckpt_dir:
-        ckpt_dir = os.path.expanduser(args.ckpt_dir)
-        if not os.path.exists(ckpt_dir):
-            os.makedirs(ckpt_dir)
+    nlp.utils.mkdir(args.ckpt_dir)
 
     if args.data:
         logging.info('Using training data at {}'.format(args.data))
