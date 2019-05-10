@@ -20,10 +20,10 @@
 # pylint: disable=wildcard-import, arguments-differ
 """Module for utility functions."""
 
-from . import (parallel, parameter, file)
+from . import (parallel, parameter, files)
 
 from .parallel import *
 from .parameter import *
-from .file import *
+from .files import *
 
-__all__ = parallel.__all__ + parameter.__all__ + file.__all__
+__all__ = parallel.__all__ + parameter.__all__ + files.__all__
