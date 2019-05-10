@@ -22,7 +22,6 @@ __all__ = ['clip_grad_global_norm', 'save_parameters',
            'save_states', 'load_parameters', 'load_states']
 
 import warnings
-import os
 
 import numpy as np
 from mxnet import nd
