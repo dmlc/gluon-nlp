@@ -17,7 +17,6 @@
 # under the License.
 
 """Trainer for mixed precision training."""
-import logging
 import warnings
 import collections
 import numpy as np
