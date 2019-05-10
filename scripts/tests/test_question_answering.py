@@ -63,6 +63,7 @@ def test_data_loader_able_to_read(squad_dev_and_vocab_provider):
 
 
 @pytest.mark.remote_required
+@pytest.mark.serial
 def test_load_vocabs(squad_dev_and_vocab_provider):
     dataset, vocab_provider = squad_dev_and_vocab_provider
 
