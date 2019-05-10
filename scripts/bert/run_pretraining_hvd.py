@@ -43,7 +43,7 @@ from utils import profile
 from fp16_utils import FP16Trainer
 from pretraining_utils import get_model_loss, get_pretrain_dataset, get_dummy_dataloader
 from pretraining_utils import split_and_load, log, evaluate, forward, get_argparser
-from pretraining_utils import save_params, save_states
+from pretraining_utils import save_parameters, save_states
 
 # parser
 parser = get_argparser()
@@ -199,14 +199,14 @@ def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx):
                     if is_master_node:
                         save_states(step_num, trainer, args.ckpt_dir, local_rank)
                         if local_rank == 0:
-                            save_params(step_num, model, args.ckpt_dir)
+                            save_parameters(step_num, model, args.ckpt_dir)
 
                 batch_num += 1
 
     if is_master_node:
         save_states(step_num, trainer, args.ckpt_dir, local_rank)
         if local_rank == 0:
-            save_params(step_num, model, args.ckpt_dir)
+            save_parameters(step_num, model, args.ckpt_dir)
     mx.nd.waitall()
     train_end_time = time.time()
     logging.info('Train cost={:.1f}s'.format(train_end_time - train_begin_time))

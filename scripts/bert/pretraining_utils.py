@@ -31,7 +31,7 @@ from gluonnlp.data.batchify import Tuple, Stack, Pad
 from gluonnlp.metric import MaskedAccuracy
 
 __all__ = ['get_model_loss', 'get_pretrain_dataset', 'get_dummy_dataloader',
-           'save_params', 'save_states', 'evaluate', 'forward', 'split_and_load',
+           'save_parameters', 'save_states', 'evaluate', 'forward', 'split_and_load',
            'get_argparser']
 
 def get_model_loss(ctx, model, pretrained, dataset_name, dtype, ckpt_dir=None, start_step=None):
@@ -127,7 +127,7 @@ def get_dummy_dataloader(dataloader, target_shape):
 
     return DummyIter(data_batch)
 
-def save_params(step_num, model, ckpt_dir):
+def save_parameters(step_num, model, ckpt_dir):
     """Save the model parameter, marked by step_num."""
     param_path = os.path.join(ckpt_dir, '%07d.params'%step_num)
     logging.info('[step %d] Saving model params to %s.', step_num, param_path)

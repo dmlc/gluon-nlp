@@ -43,7 +43,7 @@ from utils import profile
 from fp16_utils import FP16Trainer
 from pretraining_utils import get_model_loss, get_pretrain_dataset, get_dummy_dataloader
 from pretraining_utils import log, evaluate, forward, split_and_load, get_argparser
-from pretraining_utils import save_params, save_states
+from pretraining_utils import save_parameters, save_states
 
 # arg parser
 parser = get_argparser()
@@ -209,11 +209,11 @@ def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx, store):
                 if (step_num + 1) % args.ckpt_interval == 0 \
                    and (batch_num + 1) % accumulate == 0 and store.rank == 0:
                     save_states(step_num, trainer, args.ckpt_dir)
-                    save_params(step_num, model, args.ckpt_dir)
+                    save_parameters(step_num, model, args.ckpt_dir)
                 batch_num += 1
     if store.rank == 0:
         save_states(step_num, trainer, args.ckpt_dir)
-        save_params(step_num, model, args.ckpt_dir)
+        save_parameters(step_num, model, args.ckpt_dir)
     mx.nd.waitall()
     train_end_time = time.time()
     logging.info('Train cost={:.1f}s'.format(train_end_time - train_begin_time))
