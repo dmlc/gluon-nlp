@@ -231,12 +231,12 @@ class TempFilePath(object):
     """
     def __init__(self):
         self.temp_dir = os.path.join(tempfile.gettempdir(), str(hash(os.times())))
-        if not os.path.exists(temp_dir):
-            os.makedirs(temp_dir)
+        if not os.path.exists(self.temp_dir):
+            os.makedirs(self.temp_dir)
 
     def __enter__(self):
-        self.temp_path = os.path.join(temp_dir, str(hash(os.times())))
+        self.temp_path = os.path.join(self.temp_dir, str(hash(os.times())))
         return self.temp_path
 
     def __exit__(self, type, value, traceback):
-        os.remove(temp_path)
+        os.remove(self.temp_path)

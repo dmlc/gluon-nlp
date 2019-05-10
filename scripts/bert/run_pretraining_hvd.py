@@ -97,7 +97,7 @@ def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx):
     if args.start_step:
         state_path = os.path.join(args.ckpt_dir, '%07d.states.%02d'%(args.start_step, local_rank))
         logging.info('Loading trainer state from %s', state_path)
-        trainer.load_states(state_path)
+        nlp.utils.load_states(trainer, state_path)
 
     accumulate = args.accumulate
     num_train_steps = args.num_steps

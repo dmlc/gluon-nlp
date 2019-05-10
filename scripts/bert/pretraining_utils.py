@@ -47,7 +47,7 @@ def get_model_loss(ctx, model, pretrained, dataset_name, dtype, ckpt_dir=None, s
 
     if ckpt_dir and start_step:
         param_path = os.path.join(ckpt_dir, '%07d.params'%start_step)
-        model.load_parameters(param_path, ctx=ctx)
+        nlp.utils.load_parameters(model, param_path, ctx=ctx)
         logging.info('Loading step %d checkpoints from %s.', start_step, param_path)
 
     model.hybridize(static_alloc=True)
