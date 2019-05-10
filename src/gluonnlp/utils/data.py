@@ -23,6 +23,7 @@ __all__ = ['mkdir']
 
 import os
 import warnings
+import logging
 from .. import _constants as C
 
 def mkdir(dirname):
@@ -45,3 +46,44 @@ def mkdir(dirname):
             # errno 17 means the file already exists
             if e.errno != 17:
                 raise e
+
+class _TempFilePath(object):
+    """A TempFilePath that provides a path to a temporarily file, and automatically
+    cleans up the temp file at exit.
+    """
+    def __init__(self):
+        self.temp_dir = os.path.join(tempfile.gettempdir(), str(hash(os.times())))
+        if not os.path.exists(self.temp_dir):
+            os.makedirs(self.temp_dir)
+
+    def __enter__(self):
+        self.temp_path = os.path.join(self.temp_dir, str(hash(os.times())))
+        return self.temp_path
+
+    def __exit__(self, exec_type, exec_value, traceback):
+        os.remove(self.temp_path)
+
+def _transfer_file_s3(filename, s3_filename, upload=True):
+    """Transfer a file between S3 and local file system."""
+    try:
+        import boto3
+    except ImportError:
+        raise ImportError('boto3 is required to support s3 URI. Please install'
+                          'boto3 via `pip install boto3`')
+    # parse s3 uri
+    prefix_len = len(C.S3_PREFIX)
+    bucket_idx = s3_filename[prefix_len:].index('/') + prefix_len
+    bucket_name = s3_filename[prefix_len:bucket_idx]
+
+    # filename after the bucket, excluding '/'
+    key_name = s3_filename[bucket_idx + 1:]
+
+    log_level = logging.getLogger().getEffectiveLevel()
+    logging.getLogger().setLevel(logging.INFO)
+    # upload to s3
+    s3 = boto3.client('s3')
+    if upload:
+        s3.upload_file(filename, bucket_name, key_name)
+    else:
+        s3.download_file(bucket_name, key_name, filename)
+    logging.getLogger().setLevel(log_level)
