@@ -102,6 +102,7 @@ def test_save_parameters(filename):
     net = mx.gluon.nn.Dense(1, in_units=1)
     net.initialize()
     nlp.utils.save_parameters(net, filename)
+    nlp.utils.load_parameters(net, filename)
 
 @pytest.mark.parametrize('filename', ['net.states', './net.states'])
 def test_save_states(filename):
@@ -111,6 +112,7 @@ def test_save_states(filename):
                                update_on_kvstore=False)
     nlp.utils.save_states(trainer, filename)
     assert os.path.isfile(filename)
+    nlp.utils.load_states(trainer, filename)
 
 @pytest.mark.parametrize('dirname', ['~/dir1', '~/dir1/dir2'])
 def test_mkdir(dirname):
