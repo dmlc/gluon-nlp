@@ -31,7 +31,8 @@ from gluonnlp.data.batchify import Tuple, Stack, Pad
 from gluonnlp.metric import MaskedAccuracy
 
 __all__ = ['get_model_loss', 'get_pretrain_dataset', 'get_dummy_dataloader',
-           'save_params', 'evaluate', 'forward', 'split_and_load', 'get_argparser']
+           'save_parameters', 'save_states', 'evaluate', 'forward', 'split_and_load',
+           'get_argparser']
 
 def get_model_loss(ctx, model, pretrained, dataset_name, dtype, ckpt_dir=None, start_step=None):
     """Get model for pre-training."""
@@ -46,7 +47,7 @@ def get_model_loss(ctx, model, pretrained, dataset_name, dtype, ckpt_dir=None, s
 
     if ckpt_dir and start_step:
         param_path = os.path.join(ckpt_dir, '%07d.params'%start_step)
-        model.load_parameters(param_path, ctx=ctx)
+        nlp.utils.load_parameters(model, param_path, ctx=ctx)
         logging.info('Loading step %d checkpoints from %s.', start_step, param_path)
 
     model.hybridize(static_alloc=True)
@@ -126,13 +127,16 @@ def get_dummy_dataloader(dataloader, target_shape):
 
     return DummyIter(data_batch)
 
-def save_params(step_num, model, trainer, ckpt_dir):
+def save_parameters(step_num, model, ckpt_dir):
     """Save the model parameter, marked by step_num."""
     param_path = os.path.join(ckpt_dir, '%07d.params'%step_num)
-    trainer_path = os.path.join(ckpt_dir, '%07d.states'%step_num)
-    logging.info('[step %d] Saving checkpoints to %s, %s.',
-                 step_num, param_path, trainer_path)
+    logging.info('[step %d] Saving model params to %s.', step_num, param_path)
     nlp.utils.save_parameters(model, param_path)
+
+def save_states(step_num, trainer, ckpt_dir, local_rank=0):
+    """Save the trainer states, marked by step_num."""
+    trainer_path = os.path.join(ckpt_dir, '%07d.states.%02d'%(step_num, local_rank))
+    logging.info('[step %d] Saving trainer states to %s.', step_num, trainer_path)
     nlp.utils.save_states(trainer, trainer_path)
 
 def log(begin_time, running_num_tks, running_mlm_loss, running_nsp_loss, step_num,

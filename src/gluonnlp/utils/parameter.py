@@ -16,18 +16,17 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-"""Utility functions for parameters."""
+"""Utility functions for trainer and parameters."""
 
-__all__ = ['clip_grad_global_norm', 'save_parameters', 'save_states']
+__all__ = ['clip_grad_global_norm', 'save_parameters',
+           'save_states', 'load_parameters', 'load_states']
 
 import warnings
-import os
-import tempfile
-import logging
 
 import numpy as np
 from mxnet import nd
 from .. import _constants as C
+from .files import _TempFilePath, _transfer_file_s3
 
 def clip_grad_global_norm(parameters, max_norm, check_isfinite=True):
     """Rescales gradients of parameters so that the sum of their 2-norm is smaller than `max_norm`.
@@ -103,6 +102,44 @@ def clip_grad_global_norm(parameters, max_norm, check_isfinite=True):
                 arr *= scale.as_in_context(arr.context)
     return total_norm
 
+def _s3_compatible_save_load(is_save, save_load_method, filename, *args, **kwargs):
+    """Dispatch function for save load with s3."""
+    if C.S3_PREFIX in filename:
+        # create temp dir
+        with _TempFilePath() as temp_path:
+            if is_save:
+                # save model
+                save_load_method(temp_path, *args, **kwargs)
+                _transfer_file_s3(temp_path, filename, upload=is_save)
+            else:
+                # load model
+                _transfer_file_s3(temp_path, filename, upload=is_save)
+                save_load_method(temp_path, *args, **kwargs)
+    else:
+        save_load_method(filename, *args, **kwargs)
+
+def load_parameters(model, filename, ctx=None, allow_missing=False,
+                    ignore_extra=False):
+    """Load parameters from file previously saved by `save_parameters`.
+
+    Both local file system path and S3 URI are supported.
+    For example, 's3://mybucket/folder/net.params', './folder/net.params'.
+
+    Parameters
+    ----------
+    filename : str
+        Path to parameter file.
+    ctx : Context or list of Context, default cpu()
+        Context(s) to initialize loaded parameters on.
+    allow_missing : bool, default False
+        Whether to silently skip loading parameters not represents in the file.
+    ignore_extra : bool, default False
+        Whether to silently ignore parameters from the file that are not
+        present in this Block.
+    """
+    _s3_compatible_save_load(False, model.load_parameters, filename, ctx=ctx,
+                             allow_missing=allow_missing, ignore_extra=ignore_extra)
+
 def save_parameters(model, filename):
     """Save parameters to file.
 
@@ -119,40 +156,29 @@ def save_parameters(model, filename):
     uri : str
         Path to file.
     """
-    if C.S3_PREFIX in filename:
-        # create temp dir
-        temp_dir = os.path.join(tempfile.gettempdir(), str(hash(os.times())))
-        if not os.path.exists(temp_dir):
-            os.makedirs(temp_dir)
-        temp_path = os.path.join(temp_dir, str(hash(os.times())))
-        # save model
-        model.save_parameters(temp_path)
-        _upload_file(temp_path, filename)
-        os.remove(temp_path)
-    else:
-        model.save_parameters(filename)
+    _s3_compatible_save_load(True, model.save_parameters, filename)
 
-def _upload_file(filename, s3_filename):
-    """Upload file to S3."""
-    try:
-        import boto3
-    except ImportError:
-        raise ImportError('boto3 is required to support s3 URI. Please install'
-                          'boto3 via `pip install boto3`')
-    # parse s3 uri
-    prefix_len = len(C.S3_PREFIX)
-    bucket_idx = s3_filename[prefix_len:].index('/') + prefix_len
-    bucket_name = s3_filename[prefix_len:bucket_idx]
 
-    # filename after the bucket, excluding '/'
-    s3_target_file = s3_filename[bucket_idx + 1:]
+def load_states(trainer, fname):
+    """Loads trainer states (e.g. optimizer, momentum) from a file.
 
-    log_level = logging.getLogger().getEffectiveLevel()
-    logging.getLogger().setLevel(logging.INFO)
-    # upload to s3
-    s3 = boto3.client('s3')
-    s3.upload_file(filename, bucket_name, s3_target_file)
-    logging.getLogger().setLevel(log_level)
+    Both local file system path and S3 URI are supported.
+    For example, 's3://mybucket/folder/net.states', './folder/net.states'.
+
+    Parameters
+    ----------
+    trainer : mxnet.gluon.Trainer
+        The trainer whose states will be loaded.
+    fname : str
+        Path to input states file.
+
+    Note
+    ----
+    `optimizer.param_dict`, which contains Parameter information (such as
+    `lr_mult` and `wd_mult`) will not be loaded from the file, but rather set
+    based on current Trainer's parameters.
+    """
+    _s3_compatible_save_load(False, trainer.load_states, fname)
 
 def save_states(trainer, fname):
     """Saves trainer states (e.g. optimizer, momentum) to a file.
@@ -172,14 +198,4 @@ def save_states(trainer, fname):
     `optimizer.param_dict`, which contains Parameter information (such as
     `lr_mult` and `wd_mult`) will not be saved.
     """
-    if C.S3_PREFIX in fname:
-        # create temp dir
-        temp_dir = os.path.join(tempfile.gettempdir(), str(hash(os.times())))
-        if not os.path.exists(temp_dir):
-            os.makedirs(temp_dir)
-        temp_path = os.path.join(temp_dir, str(hash(os.times())))
-        trainer.save_states(temp_path)
-        _upload_file(temp_path, fname)
-        os.remove(temp_path)
-    else:
-        trainer.save_states(fname)
+    _s3_compatible_save_load(True, trainer.save_states, fname)

@@ -42,7 +42,8 @@ import gluonnlp as nlp
 from utils import profile
 from fp16_utils import FP16Trainer
 from pretraining_utils import get_model_loss, get_pretrain_dataset, get_dummy_dataloader
-from pretraining_utils import save_params, split_and_load, log, evaluate, forward, get_argparser
+from pretraining_utils import split_and_load, log, evaluate, forward, get_argparser
+from pretraining_utils import save_parameters, save_states
 
 # parser
 parser = get_argparser()
@@ -64,6 +65,7 @@ store = None
 num_workers = hvd.size()
 rank = hvd.rank()
 local_rank = hvd.local_rank()
+is_master_node = rank == local_rank
 if not args.use_avg_len and hvd.size() > 1:
     logging.info('Specifying --use-avg-len and setting --batch_size with the '
                  'target number of tokens would help improve training throughput.')
@@ -93,7 +95,9 @@ def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx):
                                loss_scaler_params=loss_scale_param)
 
     if args.start_step:
-        trainer.load_states(os.path.join(args.ckpt_dir, '%07d.states'%args.start_step))
+        state_path = os.path.join(args.ckpt_dir, '%07d.states.%02d'%(args.start_step, local_rank))
+        logging.info('Loading trainer state from %s', state_path)
+        nlp.utils.load_states(trainer, state_path)
 
     accumulate = args.accumulate
     num_train_steps = args.num_steps
@@ -191,14 +195,18 @@ def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx):
                     nsp_metric.reset_local()
 
                 # saving checkpoints
-                if (step_num + 1) % args.ckpt_interval == 0 \
-                   and (batch_num + 1) % accumulate == 0 and local_rank == 0:
-                    save_params(step_num, model, trainer, args.ckpt_dir)
+                if (step_num + 1) % args.ckpt_interval == 0 and (batch_num + 1) % accumulate == 0:
+                    if is_master_node:
+                        save_states(step_num, trainer, args.ckpt_dir, local_rank)
+                        if local_rank == 0:
+                            save_parameters(step_num, model, args.ckpt_dir)
 
                 batch_num += 1
 
-    if local_rank == 0:
-        save_params(step_num, model, trainer, args.ckpt_dir)
+    if is_master_node:
+        save_states(step_num, trainer, args.ckpt_dir, local_rank)
+        if local_rank == 0:
+            save_parameters(step_num, model, args.ckpt_dir)
     mx.nd.waitall()
     train_end_time = time.time()
     logging.info('Train cost={:.1f}s'.format(train_end_time - train_begin_time))
