@@ -17,13 +17,14 @@
 # specific language governing permissions and limitations
 # under the License.
 # pylint:disable=redefined-outer-name,logging-format-interpolation
-"""Utility functions for data."""
+"""Utility functions for files."""
 
 __all__ = ['mkdir']
 
 import os
 import warnings
 import logging
+import tempfile
 from .. import _constants as C
 
 def mkdir(dirname):

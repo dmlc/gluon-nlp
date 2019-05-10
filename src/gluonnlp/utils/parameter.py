@@ -23,12 +23,11 @@ __all__ = ['clip_grad_global_norm', 'save_parameters',
 
 import warnings
 import os
-import tempfile
 
 import numpy as np
 from mxnet import nd
 from .. import _constants as C
-from .data import _TempFilePath, _transfer_file_s3
+from .file import _TempFilePath, _transfer_file_s3
 
 def clip_grad_global_norm(parameters, max_norm, check_isfinite=True):
     """Rescales gradients of parameters so that the sum of their 2-norm is smaller than `max_norm`.
