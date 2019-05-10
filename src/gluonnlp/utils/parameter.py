@@ -18,7 +18,8 @@
 # under the License.
 """Utility functions for trainer and parameters."""
 
-__all__ = ['clip_grad_global_norm', 'save_parameters', 'save_states', 'load_parameters', 'load_states']
+__all__ = ['clip_grad_global_norm', 'save_parameters',
+           'save_states', 'load_parameters', 'load_states']
 
 import warnings
 import os
@@ -238,5 +239,5 @@ class TempFilePath(object):
         self.temp_path = os.path.join(self.temp_dir, str(hash(os.times())))
         return self.temp_path
 
-    def __exit__(self, type, value, traceback):
+    def __exit__(self, exec_type, exec_value, traceback):
         os.remove(self.temp_path)
