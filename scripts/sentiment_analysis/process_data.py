@@ -90,16 +90,6 @@ def _build_vocab(data_name, train_dataset, test_dataset, dev_dataset):
             line = _clean_str(line[0], data_name).split()
             max_len = max_len if max_len > len(line) else len(line)
             all_token.extend(line)
-#     for i, line in enumerate(dev_dataset):
-#         dev_dataset[i][0] = _clean_str(line[0], data_name)
-#         line = dev_dataset[i][0].split()
-#         max_len = max_len if max_len > len(line) else len(line)
-#         all_token.extend(line)
-#     for i, line in enumerate(test_dataset):
-#         test_dataset[i][0] = _clean_str(line[0], data_name)
-#         line = test_dataset[i][0].split()
-#         max_len = max_len if max_len > len(line) else len(line)
-#         all_token.extend(line)
     vocab = nlp.Vocab(nlp.data.count_tokens(all_token))
     vocab.set_embedding(nlp.embedding.create('Word2Vec', source='GoogleNews-vectors-negative300'))
     for word in vocab.embedding._idx_to_token:
