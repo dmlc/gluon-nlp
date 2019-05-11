@@ -51,8 +51,6 @@ parser.add_argument('--data_name', choices=['MR', 'SST-1', 'SST-2', 'Subj', 'TRE
 parser.add_argument('--model_mode', choices=['rand', 'static', 'non-static', 'multichannel'],
                     default='multichannel', help='Variants of the textCNN model (see the paper:\
                     Convolutional Neural Networks for Sentence Classification).')
-parser.add_argument('--lr', type=float, default=1,
-                    help='initial learning rate')
 parser.add_argument('--epochs', type=int, default=200,
                     help='upper epoch limit')
 parser.add_argument('--batch_size', type=int, default=50, metavar='N',
@@ -115,7 +113,7 @@ def evaluate(net, dataloader):
 def train(net, train_data, test_data, dev_data=None):
     """Train textCNN model for sentiment analysis."""
     start_pipeline_time = time.time()
-    net, trainer = text_cnn.init(net, vocab, args.model_mode, context, args.lr)
+    net, trainer = text_cnn.init(net, vocab, args.model_mode, context)
     if dev_data is None:
         random.shuffle(train_data)
         sp = len(train_data) // 10

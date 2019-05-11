@@ -45,7 +45,7 @@ def model(dropout, vocab, model_mode, output_size):
     textCNN.hybridize()
     return textCNN
 
-def init(textCNN, vocab, model_mode, context, lr):
+def init(textCNN, vocab, model_mode, context):
     """Initialize parameters."""
 
     textCNN.initialize(mx.init.Xavier(), ctx=context, force_reinit=True)

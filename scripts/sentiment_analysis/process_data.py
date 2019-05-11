@@ -86,7 +86,7 @@ def _build_vocab(data_name, train_dataset, test_dataset, dev_dataset):
     all_token = []
     max_len = 0
     for dataset in (train_dataset, dev_dataset, test_dataset):
-        for i, line in enumerate(dataset):
+        for line in dataset:
             line = _clean_str(line[0], data_name).split()
             max_len = max_len if max_len > len(line) else len(line)
             all_token.extend(line)
