@@ -53,9 +53,8 @@ class SentimentDataset(SimpleDataset):
         super(SentimentDataset, self).__init__(self._read_data())
 
     def _get_data(self):
-        """Load data from the file. Does nothing if data was loaded before.
+        """Load data from the file. Do nothing if data was loaded before.
         """
-        print()
         (data_archive_name, archive_hash), (data_name, data_hash) \
             = self._data_file()[self._segment]
         data_path = os.path.join(self._root, data_name)
@@ -67,16 +66,13 @@ class SentimentDataset(SimpleDataset):
             with zipfile.ZipFile(file_path, 'r') as zf:
                 for member in zf.namelist():
                     filename = os.path.basename(member)
-
                     if filename:
                         dest = os.path.join(self._root, filename)
-
                         with zf.open(member) as source, open(dest, 'wb') as target:
                             shutil.copyfileobj(source, target)
 
     def _read_data(self):
-        (_, _), (data_file_name, _) \
-            = self._data_file()[self._segment]
+        (_, _), (data_file_name, _) = self._data_file()[self._segment]
 
         with open(os.path.join(self._root, data_file_name)) as f:
             samples = json.load(f)
@@ -400,8 +396,8 @@ class SST_2(SentimentDataset):
 @register()
 class CR(SentimentDataset):
     """
-    Customer reviews of various products (cameras, MP3s etc.). Task is to
-    predict positive/negative reviews
+    Customer reviews of various products (cameras, MP3s etc.). The task is to
+    predict positive/negative reviews.
 
     Positive class has label value 1. Negative class has label value 0.
 
@@ -439,7 +435,7 @@ class CR(SentimentDataset):
 @register()
 class MPQA(SentimentDataset):
     """
-    Opinion polarity detection subtask of the MPQA dataset
+    Opinion polarity detection subtask of the MPQA dataset.
 
     From
     http://www.cs.pitt.edu/mpqa/

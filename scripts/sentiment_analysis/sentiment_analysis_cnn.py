@@ -118,7 +118,7 @@ def train(net, train_data, test_data, dev_data=None):
     net, trainer = text_cnn.init(net, vocab, args.model_mode, context, args.lr)
     if dev_data is None:
         random.shuffle(train_data)
-        sp = len(train_data)//10
+        sp = len(train_data) // 10
         train_dataloader = DataLoader(dataset=train_data[sp:],
                                       batch_size=args.batch_size,
                                       shuffle=True)

@@ -97,7 +97,7 @@ Sentiment Analysis: TREC
     
 Sentiment Analysis: CR
 ~~~~~~~~~~~~~~~~~~~~~~~~
-CR is an austomer reviews of various products (cameras, MP3s etc.). Sentences labeled with respect to their overall sentiment polarity (positive or negative).
+CR is an customer reviews of various products (cameras, MP3s etc.). Sentences are labeled with respect to their overall sentiment polarities (positive or negative).
 
 .. autosummary::
     :nosignatures:
@@ -106,7 +106,7 @@ CR is an austomer reviews of various products (cameras, MP3s etc.). Sentences la
     
 Sentiment Analysis: MPQA
 ~~~~~~~~~~~~~~~~~~~~~~~~
-`MPQA <http://www.cs.pitt.edu/mpqa/>`_ is an Opinion polarity detection subtask. Sentences labeled with respect to their overall sentiment polarity (positive or negative).
+`MPQA <http://www.cs.pitt.edu/mpqa/>`_ is an opinion polarity detection subtask. Sentences are labeled with respect to their overall sentiment polarities (positive or negative).
 
 .. autosummary::
     :nosignatures:
