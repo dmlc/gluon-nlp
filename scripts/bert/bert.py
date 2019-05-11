@@ -23,7 +23,6 @@ __all__ = ['BERTClassifier', 'BERTRegression']
 from mxnet.gluon import Block
 from mxnet.gluon import nn
 
-
 class BERTRegression(Block):
     """Model for sentence (pair) regression task with BERT.
 

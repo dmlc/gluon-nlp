@@ -27,6 +27,8 @@ def test_beam_search_score(length, alpha, K):
     lp = (K + length) ** alpha / (K + 1) ** alpha
     assert_allclose(scores.asnumpy(), sum_log_probs.asnumpy() / lp, 1E-5, 1E-5)
 
+@pytest.mark.skip_master
+@pytest.mark.serial
 def test_sequence_sampler():
     vocab_size = np.random.randint(5, 20)
     batch_size = 1000

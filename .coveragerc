@@ -3,6 +3,7 @@
 omit =
     tests/*
     conda/*
+    scripts/tests/*
 concurrency =
     multiprocessing
     thread

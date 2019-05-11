@@ -61,6 +61,7 @@ setup(
             'numba>=0.40.1',
             'jieba',
             'sentencepiece',
+            'boto3',
         ],
         'dev': [
             'pytest',

@@ -95,13 +95,13 @@ class BERTAdam(Optimizer):
     def _update_impl(self, indices, weight, grad, state, multi_precision=False):
         """update function"""
         try:
-            from mxnet.ndarray.contrib import adamw_update, mp_adamw_update
+            from mxnet.ndarray.contrib import adamw_update
         except ImportError:
-            raise ImportError('Failed to import nd.contrib.adamw_update and '
-                              'nd.contrib.mp_adamw_update from MXNet. '
+            raise ImportError('Failed to import nd.contrib.adamw_update from MXNet. '
                               'BERTAdam optimizer requires mxnet>=1.5.0b20190220. '
                               'Please upgrade your MXNet version. For example: '
-                              'pip uninstall mxnet-cu90 -y; pip install mxnet-cu90 --pre')
+                              'pip install mxnet-cu90 --pre. Otherwise, please consider '
+                              'Adam optimizer with different hyper-parameters.')
         self._update_count(indices)
         lr = self._get_lr(indices)
         wd = self._get_wd(indices)
@@ -121,6 +121,15 @@ class BERTAdam(Optimizer):
             adamw_update(weight, grad, mean, var, out=weight,
                          lr=1, wd=wd, eta=lr, **kwargs)
         else:
+            try:
+                from mxnet.ndarray.contrib import mp_adamw_update
+            except ImportError:
+                raise ImportError('Failed to import '
+                                  'nd.contrib.mp_adamw_update from MXNet. '
+                                  'BERTAdam optimizer requires mxnet>=1.5.0b20190220. '
+                                  'Please upgrade your MXNet version. For example: '
+                                  'pip install mxnet-cu90 --pre. Otherwise, please consider '
+                                  'Adam optimizer with different hyper-parameters.')
             mean, var = state[0]
             mp_adamw_update(weight, grad, mean, var, state[1], out=weight,
                             lr=1, wd=wd, eta=lr, **kwargs)

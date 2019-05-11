@@ -214,12 +214,12 @@ class MaskedAccuracy(EvalMetric):
     >>> masks    = [mx.nd.array([1, 1, 0])]
     >>> acc = MaskedAccuracy()
     >>> acc.update(preds=predicts, labels=labels, masks=masks)
-    >>> print acc.get()
-    ('accuracy', 0.5)
+    >>> acc.get()
+    ('masked-accuracy', 0.5)
     >>> acc2 = MaskedAccuracy()
     >>> acc2.update(preds=predicts, labels=labels)
-    >>> print acc2.get()
-    ('accuracy', 0.6666667)
+    >>> acc2.get()
+    ('masked-accuracy', 0.6666666666666666)
     """
     def __init__(self, axis=1, name='masked-accuracy',
                  output_names=None, label_names=None):

@@ -16,19 +16,52 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+"""Deep Biaffine Parser Model."""
 
-import mxnet as mx
 import numpy as np
+import mxnet as mx
 from mxnet import nd, ndarray, autograd
-from mxnet.gluon import nn
-from mxnet.gluon.loss import SoftmaxCrossEntropyLoss
+from mxnet.gluon import nn, loss
 
-from scripts.parsing.common.utils import orthonormal_VanillaLSTMBuilder, bilinear, reshape_fortran, arc_argmax, \
-    rel_argmax, leaky_relu, biLSTM, orthonormal_initializer
+from scripts.parsing.common import utils
 from gluonnlp.model import apply_weight_drop
 
 
 class BiaffineParser(nn.Block):
+    """A MXNet replicate of biaffine parser, see following paper
+    Dozat, T., & Manning, C. D. (2016). Deep biaffine attention for neural dependency parsing.
+    arXiv:1611.01734.
+
+    It's a re-implementation of DyNet version
+    https://github.com/jcyk/Dynet-Biaffine-dependency-parser
+
+    Parameters
+    ----------
+    vocab : ParserVocabulary
+        built from a data set
+    word_dims : int
+        word vector dimension
+    tag_dims : int
+        tag vector dimension
+    dropout_dim : int
+        keep rate of word dropout (drop out entire embedding)
+    lstm_layers : int
+        number of lstm layers
+    lstm_hiddens : int
+        size of lstm hidden states
+    dropout_lstm_input : float
+        dropout on x in variational RNN
+    dropout_lstm_hidden : float
+        dropout on h in variational RNN
+    mlp_arc_size : int
+        output size of MLP for arc feature extraction
+    mlp_rel_size : int
+        output size of MLP for rel feature extraction
+    dropout_mlp : int
+        dropout on the output of LSTM
+    debug : bool
+        debug mode
+    """
     def __init__(self, vocab,
                  word_dims,
                  tag_dims,
@@ -40,43 +73,12 @@ class BiaffineParser(nn.Block):
                  mlp_arc_size,
                  mlp_rel_size,
                  dropout_mlp,
-                 debug=False
-                 ):
-        """A MXNet replicate of biaffine parser, see following paper
-        Dozat, T., & Manning, C. D. (2016). Deep biaffine attention for neural dependency parsing. arXiv:1611.01734.
-        It's a re-implementation of DyNet version https://github.com/jcyk/Dynet-Biaffine-dependency-parser
-
-        Parameters
-        ----------
-        vocab : ParserVocabulary
-            built from a data set
-        word_dims : int
-            word vector dimension
-        tag_dims : int
-            tag vector dimension
-        dropout_dim : int
-            keep rate of word dropout (drop out entire embedding)
-        lstm_layers : int
-            number of lstm layers
-        lstm_hiddens : int
-            size of lstm hidden states
-        dropout_lstm_input : float
-            dropout on x in variational RNN
-        dropout_lstm_hidden : float
-            dropout on h in variational RNN
-        mlp_arc_size : int
-            output size of MLP for arc feature extraction
-        mlp_rel_size : int
-            output size of MLP for rel feature extraction
-        dropout_mlp : int
-            dropout on the output of LSTM
-        debug : bool
-            debug mode
-        """
+                 debug=False):
         super(BiaffineParser, self).__init__()
 
         def embedding_from_numpy(_we, trainable=True):
-            word_embs = nn.Embedding(_we.shape[0], _we.shape[1], weight_initializer=mx.init.Constant(_we))
+            word_embs = nn.Embedding(_we.shape[0], _we.shape[1],
+                                     weight_initializer=mx.init.Constant(_we))
             apply_weight_drop(word_embs, 'weight', dropout_dim, axes=(1,))
             if not trainable:
                 word_embs.collect_params().setattr('grad_req', 'null')
@@ -85,25 +87,33 @@ class BiaffineParser(nn.Block):
         self._vocab = vocab
         self.word_embs = embedding_from_numpy(vocab.get_word_embs(word_dims))
         self.pret_word_embs = embedding_from_numpy(vocab.get_pret_embs(),
-                                                   trainable=False) if vocab.has_pret_embs() else None
+                                                   trainable=False) if vocab.has_pret_embs() \
+                              else None
         self.tag_embs = embedding_from_numpy(vocab.get_tag_embs(tag_dims))
 
         self.f_lstm = nn.Sequential()
         self.b_lstm = nn.Sequential()
-        self.f_lstm.add(orthonormal_VanillaLSTMBuilder(1, word_dims + tag_dims, lstm_hiddens, dropout_lstm_input,
-                                                       dropout_lstm_hidden, debug))
-        self.b_lstm.add(orthonormal_VanillaLSTMBuilder(1, word_dims + tag_dims, lstm_hiddens, dropout_lstm_input,
-                                                       dropout_lstm_hidden, debug))
-        for i in range(lstm_layers - 1):
-            self.f_lstm.add(orthonormal_VanillaLSTMBuilder(1, 2 * lstm_hiddens, lstm_hiddens, dropout_lstm_input,
-                                                           dropout_lstm_hidden, debug))
-            self.b_lstm.add(orthonormal_VanillaLSTMBuilder(1, 2 * lstm_hiddens, lstm_hiddens, dropout_lstm_input,
-                                                           dropout_lstm_hidden, debug))
+        self.f_lstm.add(utils.orthonormal_VanillaLSTMBuilder(1, word_dims + tag_dims,
+                                                             lstm_hiddens,
+                                                             dropout_lstm_hidden, debug))
+        self.b_lstm.add(
+            utils.orthonormal_VanillaLSTMBuilder(1, word_dims + tag_dims,
+                                                 lstm_hiddens,
+                                                 dropout_lstm_hidden, debug))
+        for _ in range(lstm_layers - 1):
+            self.f_lstm.add(
+                utils.orthonormal_VanillaLSTMBuilder(1, 2 * lstm_hiddens,
+                                                     lstm_hiddens,
+                                                     dropout_lstm_hidden, debug))
+            self.b_lstm.add(
+                utils.orthonormal_VanillaLSTMBuilder(1, 2 * lstm_hiddens,
+                                                     lstm_hiddens,
+                                                     dropout_lstm_hidden, debug))
         self.dropout_lstm_input = dropout_lstm_input
         self.dropout_lstm_hidden = dropout_lstm_hidden
 
         mlp_size = mlp_arc_size + mlp_rel_size
-        W = orthonormal_initializer(mlp_size, 2 * lstm_hiddens, debug)
+        W = utils.orthonormal_initializer(mlp_size, 2 * lstm_hiddens, debug)
         self.mlp_dep_W = self.parameter_from_numpy('mlp_dep_W', W)
         self.mlp_head_W = self.parameter_from_numpy('mlp_head_W', W)
         self.mlp_dep_b = self.parameter_init('mlp_dep_b', (mlp_size,), mx.init.Zero())
@@ -112,10 +122,12 @@ class BiaffineParser(nn.Block):
         self.mlp_rel_size = mlp_rel_size
         self.dropout_mlp = dropout_mlp
 
-        self.arc_W = self.parameter_init('arc_W', (mlp_arc_size, mlp_arc_size + 1), init=mx.init.Zero())
-        self.rel_W = self.parameter_init('rel_W', (vocab.rel_size * (mlp_rel_size + 1), mlp_rel_size + 1),
+        self.arc_W = self.parameter_init('arc_W', (mlp_arc_size, mlp_arc_size + 1),
                                          init=mx.init.Zero())
-        self.softmax_loss = SoftmaxCrossEntropyLoss(axis=0, batch_axis=-1)
+        self.rel_W = self.parameter_init('rel_W', (vocab.rel_size * (mlp_rel_size + 1),
+                                                   mlp_rel_size + 1),
+                                         init=mx.init.Zero())
+        self.softmax_loss = loss.SoftmaxCrossEntropyLoss(axis=0, batch_axis=-1)
 
         self.initialize()
 
@@ -158,6 +170,7 @@ class BiaffineParser(nn.Block):
         return p
 
     def forward(self, word_inputs, tag_inputs, arc_targets=None, rel_targets=None):
+        # pylint: disable=arguments-differ
         """Run decoding
 
         Parameters
@@ -173,18 +186,17 @@ class BiaffineParser(nn.Block):
         Returns
         -------
         tuple
-            (arc_accuracy, rel_accuracy, overall_accuracy, loss) when training, else if given gold target
-        then return arc_accuracy, rel_accuracy, overall_accuracy, outputs, otherwise return outputs, where outputs is a
-        list of (arcs, rels).
+            (arc_accuracy, rel_accuracy, overall_accuracy, loss) when training,
+            else if given gold target
+            then return arc_accuracy, rel_accuracy, overall_accuracy, outputs,
+            otherwise return outputs, where outputs is a list of (arcs, rels).
         """
-        is_train = autograd.is_training()
-
-        def flatten_numpy(ndarray):
+        def flatten_numpy(arr):
             """Flatten nd-array to 1-d column vector
 
             Parameters
             ----------
-            ndarray : numpy.ndarray
+            arr : numpy.ndarray
                 input tensor
 
             Returns
@@ -193,8 +205,9 @@ class BiaffineParser(nn.Block):
                 A column vector
 
             """
-            return np.reshape(ndarray, (-1,), 'F')
+            return np.reshape(arr, (-1,), 'F')
 
+        is_train = autograd.is_training()
         batch_size = word_inputs.shape[1]
         seq_len = word_inputs.shape[0]
         mask = np.greater(word_inputs, self._vocab.ROOT).astype(np.float32)
@@ -204,7 +217,8 @@ class BiaffineParser(nn.Block):
             mask_1D = flatten_numpy(mask)
             mask_1D_tensor = nd.array(mask_1D)
 
-        unked_words = np.where(word_inputs < self._vocab.words_in_train, word_inputs, self._vocab.UNK)
+        unked_words = np.where(word_inputs < self._vocab.words_in_train,
+                               word_inputs, self._vocab.UNK)
         word_embs = self.word_embs(nd.array(unked_words, dtype='int'))
         if self.pret_word_embs:
             word_embs = word_embs + self.pret_word_embs(nd.array(word_inputs))
@@ -213,25 +227,26 @@ class BiaffineParser(nn.Block):
         # Dropout
         emb_inputs = nd.concat(word_embs, tag_embs, dim=2)  # seq_len x batch_size
 
-        top_recur = biLSTM(self.f_lstm, self.b_lstm, emb_inputs, batch_size,
-                           dropout_x=self.dropout_lstm_input if is_train else 0)
+        top_recur = utils.biLSTM(self.f_lstm, self.b_lstm, emb_inputs,
+                                 dropout_x=self.dropout_lstm_input)
         top_recur = nd.Dropout(data=top_recur, axes=[0], p=self.dropout_mlp)
 
         W_dep, b_dep = self.mlp_dep_W.data(), self.mlp_dep_b.data()
         W_head, b_head = self.mlp_head_W.data(), self.mlp_head_b.data()
-        dep, head = leaky_relu(nd.dot(top_recur, W_dep.T) + b_dep), leaky_relu(nd.dot(top_recur, W_head.T) + b_head)
-        dep, head = nd.Dropout(data=dep, axes=[0], p=self.dropout_mlp), nd.Dropout(data=head, axes=[0],
-                                                                                       p=self.dropout_mlp)
+        dep = nd.Dropout(data=utils.leaky_relu(nd.dot(top_recur, W_dep.T) + b_dep),
+                         axes=[0], p=self.dropout_mlp)
+        head = nd.Dropout(data=utils.leaky_relu(nd.dot(top_recur, W_head.T) + b_head),
+                          axes=[0], p=self.dropout_mlp)
         dep, head = nd.transpose(dep, axes=[2, 0, 1]), nd.transpose(head, axes=[2, 0, 1])
         dep_arc, dep_rel = dep[:self.mlp_arc_size], dep[self.mlp_arc_size:]
         head_arc, head_rel = head[:self.mlp_arc_size], head[self.mlp_arc_size:]
 
         W_arc = self.arc_W.data()
-        arc_logits = bilinear(dep_arc, W_arc, head_arc, self.mlp_arc_size, seq_len, batch_size, num_outputs=1,
-                              bias_x=True, bias_y=False)
+        arc_logits = utils.bilinear(dep_arc, W_arc, head_arc, self.mlp_arc_size,
+                                    seq_len, batch_size, num_outputs=1, bias_x=True, bias_y=False)
         # (#head x #dep) x batch_size
 
-        flat_arc_logits = reshape_fortran(arc_logits, (seq_len, seq_len * batch_size))
+        flat_arc_logits = utils.reshape_fortran(arc_logits, (seq_len, seq_len * batch_size))
         # (#head ) x (#dep x batch_size)
 
         arc_preds = arc_logits.argmax(0)
@@ -247,19 +262,25 @@ class BiaffineParser(nn.Block):
 
         if not is_train:
             arc_probs = np.transpose(
-                np.reshape(nd.softmax(flat_arc_logits, axis=0).asnumpy(), (seq_len, seq_len, batch_size), 'F'))
+                np.reshape(nd.softmax(flat_arc_logits, axis=0).asnumpy(),
+                           (seq_len, seq_len, batch_size), 'F'))
         # #batch_size x #dep x #head
 
         W_rel = self.rel_W.data()
-        rel_logits = bilinear(dep_rel, W_rel, head_rel, self.mlp_rel_size, seq_len, batch_size,
-                              num_outputs=self._vocab.rel_size, bias_x=True, bias_y=True)
+        rel_logits = utils.bilinear(dep_rel, W_rel, head_rel, self.mlp_rel_size,
+                                    seq_len, batch_size, num_outputs=self._vocab.rel_size,
+                                    bias_x=True, bias_y=True)
         # (#head x rel_size x #dep) x batch_size
 
-        flat_rel_logits = reshape_fortran(rel_logits, (seq_len, self._vocab.rel_size, seq_len * batch_size))
+        flat_rel_logits = utils.reshape_fortran(rel_logits, (seq_len, self._vocab.rel_size,
+                                                             seq_len * batch_size))
         # (#head x rel_size) x (#dep x batch_size)
 
-        _target_vec = nd.array(targets_1D if is_train else flatten_numpy(arc_preds.asnumpy())).reshape(
-            seq_len * batch_size, 1)
+        if is_train: # pylint: disable=using-constant-test
+            _target_vec = targets_1D
+        else:
+            _target_vec = flatten_numpy(arc_preds.asnumpy())
+        _target_vec = nd.array(_target_vec).reshape(seq_len * batch_size, 1)
         _target_mat = _target_vec * nd.ones((1, self._vocab.rel_size))
 
         partial_rel_logits = nd.pick(flat_rel_logits, _target_mat.T, axis=0)
@@ -274,17 +295,19 @@ class BiaffineParser(nn.Block):
             rel_loss = nd.sum(losses * mask_1D_tensor) / num_tokens
 
         if not is_train:
-            rel_probs = np.transpose(np.reshape(nd.softmax(flat_rel_logits.transpose([1, 0, 2]), axis=0).asnumpy(),
-                                                (self._vocab.rel_size, seq_len, seq_len, batch_size), 'F'))
+            rel_probs = np.transpose(np.reshape(nd.softmax(flat_rel_logits.transpose([1, 0, 2]),
+                                                           axis=0).asnumpy(),
+                                                (self._vocab.rel_size, seq_len,
+                                                 seq_len, batch_size), 'F'))
         # batch_size x #dep x #head x #nclasses
 
         if is_train or arc_targets is not None:
-            loss = arc_loss + rel_loss
+            l = arc_loss + rel_loss
             correct = rel_correct * flatten_numpy(arc_correct)
             overall_accuracy = np.sum(correct) / num_tokens
 
-        if is_train:
-            return arc_accuracy, rel_accuracy, overall_accuracy, loss
+        if is_train: # pylint: disable=using-constant-test
+            return arc_accuracy, rel_accuracy, overall_accuracy, l
 
         outputs = []
 
@@ -292,9 +315,9 @@ class BiaffineParser(nn.Block):
             # parse sentences one by one
             msk[0] = 1.
             sent_len = int(np.sum(msk))
-            arc_pred = arc_argmax(arc_prob, sent_len, msk)
+            arc_pred = utils.arc_argmax(arc_prob, sent_len, msk)
             rel_prob = rel_prob[np.arange(len(arc_pred)), arc_pred]
-            rel_pred = rel_argmax(rel_prob, sent_len)
+            rel_pred = utils.rel_argmax(rel_prob, sent_len)
             outputs.append((arc_pred[1:sent_len], rel_pred[1:sent_len]))
 
         if arc_targets is not None:

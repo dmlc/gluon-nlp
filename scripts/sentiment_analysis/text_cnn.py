@@ -1,9 +1,9 @@
 """textCNN model."""
 
-import gluonnlp as nlp
 import mxnet as mx
 from mxnet import gluon
 from mxnet.gluon import HybridBlock
+import gluonnlp as nlp
 
 class SentimentNet(HybridBlock):
     """Network for sentiment analysis."""

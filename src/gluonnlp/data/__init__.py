@@ -26,6 +26,7 @@ from . import (batchify, candidate_sampler, conll, corpora, dataloader,
                word_embedding_evaluation)
 from .candidate_sampler import *
 from .conll import *
+from .glue import *
 from .corpora import *
 from .dataloader import *
 from .dataset import *
