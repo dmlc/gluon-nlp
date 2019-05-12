@@ -42,7 +42,8 @@ import gluonnlp as nlp
 from utils import profile
 from fp16_utils import FP16Trainer
 from pretraining_utils import get_model_loss, get_pretrain_dataset, get_dummy_dataloader
-from pretraining_utils import save_params, log, evaluate, forward, split_and_load, get_argparser
+from pretraining_utils import log, evaluate, forward, split_and_load, get_argparser
+from pretraining_utils import save_parameters, save_states
 
 # arg parser
 parser = get_argparser()
@@ -107,9 +108,9 @@ def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx, store):
     fp16_trainer = FP16Trainer(trainer, dynamic_loss_scale=dynamic_loss_scale)
 
     if args.start_step:
-        state_path = os.path.join(args.ckpt_dir, '%07d.states' % args.start_step)
+        state_path = os.path.join(args.ckpt_dir, '%07d.states.%02d'%(args.start_step, 0))
         logging.info('Loading trainer state from %s', state_path)
-        trainer.load_states(state_path)
+        nlp.utils.load_states(trainer, state_path)
 
     accumulate = args.accumulate
     num_train_steps = args.num_steps
@@ -206,10 +207,13 @@ def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx, store):
 
                 # saving checkpoints
                 if (step_num + 1) % args.ckpt_interval == 0 \
-                   and (batch_num + 1) % accumulate == 0:
-                    save_params(step_num, model, trainer, args.ckpt_dir)
+                   and (batch_num + 1) % accumulate == 0 and store.rank == 0:
+                    save_states(step_num, trainer, args.ckpt_dir)
+                    save_parameters(step_num, model, args.ckpt_dir)
                 batch_num += 1
-    save_params(step_num, model, trainer, args.ckpt_dir)
+    if store.rank == 0:
+        save_states(step_num, trainer, args.ckpt_dir)
+        save_parameters(step_num, model, args.ckpt_dir)
     mx.nd.waitall()
     train_end_time = time.time()
     logging.info('Train cost={:.1f}s'.format(train_end_time - train_begin_time))
