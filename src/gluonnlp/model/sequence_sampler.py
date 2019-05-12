@@ -73,7 +73,7 @@ class BeamSearchScorer(HybridBlock):
         """
         return super(BeamSearchScorer, self).__call__(outputs, scores, step)
 
-    def hybrid_forward(self, F, outputs, scores, step):
+    def hybrid_forward(self, F, outputs, scores, step): # pylint: disable=arguments-differ
         if not self._from_logits:
             outputs = outputs.log_softmax()
         prev_lp = (self._K + step - 1) ** self._alpha / (self._K + 1) ** self._alpha

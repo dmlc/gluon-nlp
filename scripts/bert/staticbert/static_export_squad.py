@@ -214,9 +214,10 @@ def evaluate(data_source):
     tic = time.time()
     for batch in data_source:
         inputs, token_types, valid_length = batch
-        out = net(inputs.astype('float32').as_in_context(ctx),
-                  token_types.astype('float32').as_in_context(ctx),
-                  valid_length.astype('float32').as_in_context(ctx))
+        net(inputs.astype('float32').as_in_context(ctx),
+            token_types.astype('float32').as_in_context(ctx),
+            valid_length.astype('float32').as_in_context(ctx))
+    mx.nd.waitall()
     toc = time.time()
     log.info('Inference time cost={:.2f} s, Thoughput={:.2f} samples/s'
              .format(toc - tic,

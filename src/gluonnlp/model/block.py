@@ -113,7 +113,7 @@ class GELU(HybridBlock):
             warnings.warn('`erf` operator support is not found. '
                           'Please consider upgrading to mxnet >= 1.4')
 
-    def hybrid_forward(self, F, x):
+    def hybrid_forward(self, F, x): # pylint: disable=arguments-differ
         if self._support_erf:
             return x * 0.5 * (1.0 + F.erf(x / math.sqrt(2.0)))
         else:

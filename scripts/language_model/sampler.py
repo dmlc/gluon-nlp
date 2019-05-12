@@ -63,7 +63,7 @@ class LogUniformSampler(gluon.block.Block):
     def _prob_helper(self, num_tries, prob):
         return (num_tries.astype('float64') * (-prob).log1p()).expm1() * -1
 
-    def forward(self, true_classes):
+    def forward(self, true_classes): # pylint: disable=arguments-differ
         """Draw samples from log uniform distribution and returns sampled candidates,
         expected count for true classes and sampled classes.
 

@@ -370,6 +370,14 @@ trained by a normal BERTQA Block, and export the HybridBlock to json format.
 
 Besides, Where seq_length stands for the sequence length of the input, input_size represents the embedding size of the input.
 
+To load and export the BERT base pretrained model that that is suitable for fine tuning, use the following:
+
+.. code-block:: console
+
+    $ cd staticbert
+    $ python static_export_base.py --model_parameters --seq_length 128
+
+
 
 Example Usage of Finetuning Hybridizable BERT
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

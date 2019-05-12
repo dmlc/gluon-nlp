@@ -16,6 +16,7 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+"""Evaluation method using the official perl script."""
 
 import os
 import tempfile
@@ -25,9 +26,9 @@ from functools import reduce
 from scripts.parsing.common.data import DataLoader
 
 
-def evaluate_official_script(parser, vocab, num_buckets_test, test_batch_size, test_file, output_file,
-                             debug=False):
-    """Evaluate parser on a data set
+def evaluate_official_script(parser, vocab, num_buckets_test, test_batch_size, test_file,
+                             output_file, debug=False):
+    """Evaluate parser on a data set.
 
     Parameters
     ----------
@@ -93,7 +94,8 @@ def evaluate_official_script(parser, vocab, num_buckets_test, test_batch_size, t
                     fo.write('\n')
 
     os.system('perl %s -q -b -g %s -s %s -o tmp' % (
-        os.path.join(os.path.dirname(os.path.realpath(__file__)), 'eval.pl'), test_file, output_file))
+        os.path.join(os.path.dirname(os.path.realpath(__file__)), 'eval.pl'),
+        test_file, output_file))
     os.system('tail -n 3 tmp > score_tmp')
     LAS, UAS = [float(line.strip().split()[-2]) for line in open('score_tmp').readlines()[:2]]
     # print('UAS %.2f, LAS %.2f' % (UAS, LAS))

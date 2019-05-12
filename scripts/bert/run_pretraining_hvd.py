@@ -42,7 +42,8 @@ import gluonnlp as nlp
 from utils import profile
 from fp16_utils import FP16Trainer
 from pretraining_utils import get_model_loss, get_pretrain_dataset, get_dummy_dataloader
-from pretraining_utils import save_params, split_and_load, log, evaluate, forward, get_argparser
+from pretraining_utils import split_and_load, log, evaluate, forward, get_argparser
+from pretraining_utils import save_parameters, save_states
 
 # parser
 parser = get_argparser()
@@ -64,6 +65,7 @@ store = None
 num_workers = hvd.size()
 rank = hvd.rank()
 local_rank = hvd.local_rank()
+is_master_node = rank == local_rank
 if not args.use_avg_len and hvd.size() > 1:
     logging.info('Specifying --use-avg-len and setting --batch_size with the '
                  'target number of tokens would help improve training throughput.')
@@ -92,8 +94,10 @@ def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx):
     fp16_trainer = FP16Trainer(trainer, dynamic_loss_scale=dynamic_loss_scale,
                                loss_scaler_params=loss_scale_param)
 
-    if args.ckpt_dir and args.start_step:
-        trainer.load_states(os.path.join(args.ckpt_dir, '%07d.states'%args.start_step))
+    if args.start_step:
+        state_path = os.path.join(args.ckpt_dir, '%07d.states.%02d'%(args.start_step, local_rank))
+        logging.info('Loading trainer state from %s', state_path)
+        nlp.utils.load_states(trainer, state_path)
 
     accumulate = args.accumulate
     num_train_steps = args.num_steps
@@ -191,14 +195,18 @@ def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx):
                     nsp_metric.reset_local()
 
                 # saving checkpoints
-                if args.ckpt_dir and (step_num + 1) % (args.ckpt_interval) == 0 \
-                   and (batch_num + 1) % accumulate == 0 and local_rank == 0:
-                    save_params(step_num, model, trainer, args.ckpt_dir)
+                if (step_num + 1) % args.ckpt_interval == 0 and (batch_num + 1) % accumulate == 0:
+                    if is_master_node:
+                        save_states(step_num, trainer, args.ckpt_dir, local_rank)
+                        if local_rank == 0:
+                            save_parameters(step_num, model, args.ckpt_dir)
 
                 batch_num += 1
 
-    if local_rank == 0:
-        save_params(step_num, model, trainer, args.ckpt_dir)
+    if is_master_node:
+        save_states(step_num, trainer, args.ckpt_dir, local_rank)
+        if local_rank == 0:
+            save_parameters(step_num, model, args.ckpt_dir)
     mx.nd.waitall()
     train_end_time = time.time()
     logging.info('Train cost={:.1f}s'.format(train_end_time - train_begin_time))
@@ -211,6 +219,7 @@ if __name__ == '__main__':
     mx.random.seed(seed)
     logging.debug('Random seed set to %d', seed)
 
+    nlp.utils.mkdir(args.ckpt_dir)
     ctx = mx.gpu(local_rank)
 
     model, nsp_loss, mlm_loss, vocab = get_model_loss([ctx], args.model, args.pretrained,
@@ -218,11 +227,6 @@ if __name__ == '__main__':
                                                       ckpt_dir=args.ckpt_dir,
                                                       start_step=args.start_step)
     logging.debug('Model created')
-
-    if args.ckpt_dir:
-        ckpt_dir = os.path.expanduser(args.ckpt_dir)
-        if not os.path.exists(ckpt_dir):
-            os.makedirs(ckpt_dir)
 
     if args.data:
         num_parts = 1 if args.dummy_data_len else num_workers

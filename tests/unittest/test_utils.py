@@ -1,4 +1,5 @@
 import pytest
+import os
 import numpy as np
 import mxnet as mx
 import gluonnlp as nlp
@@ -95,3 +96,25 @@ def test_clip_grad_norm(max_norm, check_isfinite):
         else:
             assert net.weight.grad(ctx).reshape(-1) < 2
             assert net.bias.grad(ctx).reshape(-1) < 2
+
+@pytest.mark.parametrize('filename', ['net.params', './net.params'])
+def test_save_parameters(filename):
+    net = mx.gluon.nn.Dense(1, in_units=1)
+    net.initialize()
+    nlp.utils.save_parameters(net, filename)
+    nlp.utils.load_parameters(net, filename)
+
+@pytest.mark.parametrize('filename', ['net.states', './net.states'])
+def test_save_states(filename):
+    net = mx.gluon.nn.Dense(1, in_units=1)
+    net.initialize()
+    trainer = mx.gluon.Trainer(net.collect_params(), 'sgd',
+                               update_on_kvstore=False)
+    nlp.utils.save_states(trainer, filename)
+    assert os.path.isfile(filename)
+    nlp.utils.load_states(trainer, filename)
+
+@pytest.mark.parametrize('dirname', ['~/dir1', '~/dir1/dir2'])
+def test_mkdir(dirname):
+    nlp.utils.mkdir(dirname)
+    assert os.path.isdir(os.path.expanduser(dirname))
