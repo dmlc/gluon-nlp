@@ -94,8 +94,8 @@ def _build_vocab(data_name, train_dataset, test_dataset, dev_dataset):
     vocab.set_embedding(nlp.embedding.create('Word2Vec', source='GoogleNews-vectors-negative300'))
     for word in vocab.embedding._idx_to_token:
         if (vocab.embedding[word] == nd.zeros(300)).sum() == 300:
-            vocab.embedding[word] = nd.random.uniform(-0.02, 0.02, 300)
-    vocab.embedding['<unk>'] = nd.random.uniform(-0.02, 0.02, 300)
+            vocab.embedding[word] = nd.random.uniform(0, 0.05, 300)
+    vocab.embedding['<unk>'] = nd.random.uniform(0, 0.05, 300)
     vocab.embedding['<pad>'] = nd.zeros(300)
     vocab.embedding['<bos>'] = nd.zeros(300)
     vocab.embedding['<eos>'] = nd.zeros(300)

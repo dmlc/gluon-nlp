@@ -97,7 +97,7 @@ Sentiment Analysis: TREC
     
 Sentiment Analysis: CR
 ~~~~~~~~~~~~~~~~~~~~~~~~
-CR is an customer reviews of various products (cameras, MP3s etc.). Sentences are labeled with respect to their overall sentiment polarities (positive or negative).
+CR is customer reviews of various products (cameras, MP3s etc.). Sentences are labeled with respect to their overall sentiment polarities (positive or negative).
 
 .. autosummary::
     :nosignatures:
