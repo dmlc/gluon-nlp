@@ -1,4 +1,23 @@
 # coding: utf-8
+
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+"""Data utilities for the named entity recognition task."""
+
 import logging
 from collections import namedtuple
 
@@ -32,17 +51,17 @@ def bio_bioes(tokens):
         elif token.tag.startswith('B'):
             # if a B-tag is continued by other tokens with the same entity,
             # then it is still a B-tag
-            if index + 1 < len(tokens) and tokens[index + 1].tag.startswith("I"):
+            if index + 1 < len(tokens) and tokens[index + 1].tag.startswith('I'):
                 ret.append(token)
             else:
-                ret.append(TaggedToken(text=token.text, tag="S" + token.tag[1:]))
+                ret.append(TaggedToken(text=token.text, tag='S' + token.tag[1:]))
         elif token.tag.startswith('I'):
             # if an I-tag is continued by other tokens with the same entity,
             # then it is still an I-tag
-            if index + 1 < len(tokens) and tokens[index + 1].tag.startswith("I"):
+            if index + 1 < len(tokens) and tokens[index + 1].tag.startswith('I'):
                 ret.append(token)
             else:
-                ret.append(TaggedToken(text=token.text, tag="E" + token.tag[1:]))
+                ret.append(TaggedToken(text=token.text, tag='E' + token.tag[1:]))
     return ret
 
 
@@ -96,11 +115,13 @@ def remove_docstart_sentence(sentences):
     Parameters
     ----------
     sentences: List[List[TaggedToken]]
-        List of sentences, each of which is a List of TaggedTokens; this list may contain DOCSTART sentences.
+        List of sentences, each of which is a List of TaggedTokens.
+        This list may contain DOCSTART sentences.
 
     Returns
     -------
-        List of sentences, each of which is a List of TaggedTokens; this list does not contain DOCSTART sentences.
+        List of sentences, each of which is a List of TaggedTokens.
+        This list does not contain DOCSTART sentences.
     """
     ret = []
     for sentence in sentences:
@@ -143,7 +164,8 @@ def bert_tokenize_sentence(sentence, bert_tokenizer):
 def load_segment(file_path, bert_tokenizer):
     """Load CoNLL format NER datafile with BIO-scheme tags.
 
-    Tagging scheme is converted into BIOES, and words are tokenized into wordpieces using `bert_tokenizer`
+    Tagging scheme is converted into BIOES, and words are tokenized into wordpieces
+    using `bert_tokenizer`.
 
     Parameters
     ----------
@@ -155,12 +177,14 @@ def load_segment(file_path, bert_tokenizer):
     -------
     List[List[TaggedToken]]: List of sentences, each of which is the list of `TaggedToken`s.
     """
-    logging.info('Loading sentences in {}...'.format(file_path))
+    logging.info('Loading sentences in %s...', file_path)
     bio2_sentences = remove_docstart_sentence(read_bio_as_bio2(file_path))
     bioes_sentences = [bio_bioes(sentence) for sentence in bio2_sentences]
-    subword_sentences = [bert_tokenize_sentence(sentence, bert_tokenizer) for sentence in bioes_sentences]
+    subword_sentences = [bert_tokenize_sentence(sentence, bert_tokenizer)
+                         for sentence in bioes_sentences]
 
-    logging.info('load {}, its max seq len: {}'.format(file_path, max(len(sentence) for sentence in subword_sentences)))
+    logging.info('load %s, its max seq len: %d',
+                 file_path, max(len(sentence) for sentence in subword_sentences))
 
     return subword_sentences
 
@@ -184,20 +208,23 @@ class BERTTaggingDataset(object):
         Whether to use cased model.
     """
 
-    def __init__(self, text_vocab, train_path, dev_path, test_path, seq_len, is_cased, tag_vocab=None):
+    def __init__(self, text_vocab, train_path, dev_path, test_path, seq_len, is_cased,
+                 tag_vocab=None):
         self.text_vocab = text_vocab
         self.seq_len = seq_len
 
         self.bert_tokenizer = nlp.data.BERTTokenizer(vocab=text_vocab, lower=not is_cased)
 
-        train_sentences = [] if train_path is None else load_segment(train_path, self.bert_tokenizer)
+        train_sentences = [] if train_path is None else load_segment(train_path,
+                                                                     self.bert_tokenizer)
         dev_sentences = [] if dev_path is None else load_segment(dev_path, self.bert_tokenizer)
         test_sentences = [] if test_path is None else load_segment(test_path, self.bert_tokenizer)
         all_sentences = train_sentences + dev_sentences + test_sentences
 
         if tag_vocab is None:
             logging.info('Indexing tags...')
-            tag_counter = nlp.data.count_tokens(token.tag for sentence in all_sentences for token in sentence)
+            tag_counter = nlp.data.count_tokens(token.tag
+                                                for sentence in all_sentences for token in sentence)
             self.tag_vocab = nlp.Vocab(tag_counter, padding_token=NULL_TAG,
                                        bos_token=None, eos_token=None, unknown_token=None)
         else:
@@ -207,13 +234,13 @@ class BERTTaggingDataset(object):
         if len(test_sentences) > 0:
             logging.info('example test sentences:')
             for i in range(10):
-                logging.info("{}".format(test_sentences[i]))
+                logging.info(str(test_sentences[i]))
 
         self.train_inputs = [self._encode_as_input(sentence) for sentence in train_sentences]
         self.dev_inputs = [self._encode_as_input(sentence) for sentence in dev_sentences]
         self.test_inputs = [self._encode_as_input(sentence) for sentence in test_sentences]
 
-        logging.info("tag_vocab: {}".format(self.tag_vocab))
+        logging.info('tag_vocab: %s', self.tag_vocab)
 
     def _encode_as_input(self, sentence):
         """Enocde a single sentence into numpy arrays as input to the BERTTagger model.
@@ -226,21 +253,24 @@ class BERTTaggingDataset(object):
         Returns
         -------
         np.array: token text ids (batch_size, seq_len)
-        np.array: token types (batch_size, seq_len), which is all zero because we have only one sentence for tagging
+        np.array: token types (batch_size, seq_len),
+                which is all zero because we have only one sentence for tagging.
         np.array: valid_length (batch_size,) the number of tokens until [SEP] token
         np.array: tag_ids (batch_size, seq_len)
-        np.array: flag_nonnull_tag (batch_size, seq_len), which is simply tag_ids != self.null_tag_index
+        np.array: flag_nonnull_tag (batch_size, seq_len),
+                which is simply tag_ids != self.null_tag_index
 
         """
         # check whether the given sequence can be fit into `seq_len`.
         assert len(sentence) <= self.seq_len - 2, \
-            'the number of tokens {} should not be larger than {} - 2. offending sentence: {}'.format(
-                len(sentence), self.seq_len, sentence)
+            'the number of tokens {} should not be larger than {} - 2. offending sentence: {}' \
+            .format(len(sentence), self.seq_len, sentence)
 
         text_tokens = ([self.text_vocab.cls_token] + [token.text for token in sentence] +
                        [self.text_vocab.sep_token])
         padded_text_ids = (self.text_vocab.to_indices(text_tokens)
-                           + [self.text_vocab[self.text_vocab.padding_token]] * (self.seq_len - len(text_tokens)))
+                           + ([self.text_vocab[self.text_vocab.padding_token]]
+                              * (self.seq_len - len(text_tokens))))
 
         tags = [NULL_TAG] + [token.tag for token in sentence] + [NULL_TAG]
         padded_tag_ids = (self.tag_vocab.to_indices(tags)
@@ -267,7 +297,8 @@ class BERTTaggingDataset(object):
 
     @staticmethod
     def _get_data_loader(inputs, shuffle, batch_size):
-        return mx.gluon.data.DataLoader(inputs, batch_size=batch_size, shuffle=shuffle, last_batch='keep')
+        return mx.gluon.data.DataLoader(inputs, batch_size=batch_size, shuffle=shuffle,
+                                        last_batch='keep')
 
     def get_train_data_loader(self, batch_size):
         return self._get_data_loader(self.train_inputs, shuffle=True, batch_size=batch_size)
@@ -289,7 +320,8 @@ class BERTTaggingDataset(object):
         return len(self.tag_vocab)
 
 
-def convert_arrays_to_text(text_vocab, tag_vocab, np_text_ids, np_true_tags, np_pred_tags, np_valid_length):
+def convert_arrays_to_text(text_vocab, tag_vocab,
+                           np_text_ids, np_true_tags, np_pred_tags, np_valid_length):
     """Convert numpy array data into text
 
     Parameters
@@ -316,9 +348,11 @@ def convert_arrays_to_text(text_vocab, tag_vocab, np_text_ids, np_true_tags, np_
             if true_tag == NULL_TAG:
                 last_entry = entries[-1]
                 entries[-1] = PredictedToken(text=last_entry.text + token_text,
-                                             true_tag=last_entry.true_tag, pred_tag=last_entry.pred_tag)
+                                             true_tag=last_entry.true_tag,
+                                             pred_tag=last_entry.pred_tag)
             else:
-                entries.append(PredictedToken(text=token_text, true_tag=true_tag, pred_tag=pred_tag))
+                entries.append(PredictedToken(text=token_text,
+                                              true_tag=true_tag, pred_tag=pred_tag))
 
         predictions.append(entries)
     return predictions
