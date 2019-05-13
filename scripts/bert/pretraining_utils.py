@@ -32,9 +32,9 @@ import gluonnlp as nlp
 from gluonnlp.data.batchify import Tuple, Stack, Pad
 from gluonnlp.metric import MaskedAccuracy
 
-__all__ = ['get_model_loss', 'get_pretrain_dataset', 'get_dummy_dataloader',
+__all__ = ['get_model_loss', 'get_pretrain_data_npz', 'get_dummy_dataloader',
            'save_parameters', 'save_states', 'evaluate', 'forward', 'split_and_load',
-           'get_argparser', 'get_online_pretrain_dataset']
+           'get_argparser', 'get_pretrain_data_text']
 
 def get_model_loss(ctx, model, pretrained, dataset_name, dtype, ckpt_dir=None, start_step=None):
     """Get model for pre-training."""
@@ -83,20 +83,20 @@ class BERTPretrainDataset(mx.gluon.data.ArrayDataset):
         The BERTVocab
     """
     def __init__(self, filename, tokenizer, max_seq_length, short_seq_prob,
-                 masked_lm_prob, max_predictions_per_seq, vocab):
-        logging.debug('started loading %s ...', filename)
-        output_npz = None
-        dup_factor = 1
-        instances = create_training_instances(([filename], output_npz, tokenizer, max_seq_length,
-                                               dup_factor, short_seq_prob, masked_lm_prob,
-                                               max_predictions_per_seq, vocab))
+                 masked_lm_prob, max_predictions_per_seq, vocab, num_workers):
+        logging.debug('start to load file %s ...', filename)
+        instances = create_training_instances([filename], tokenizer, max_seq_length,
+                                              short_seq_prob, masked_lm_prob,
+                                              max_predictions_per_seq, vocab,
+                                              nworker=num_workers)
         super(BERTPretrainDataset, self).__init__(*instances)
 
-def get_online_pretrain_dataset(data, batch_size, num_ctxes, shuffle, use_avg_len,
-                                num_buckets, vocab, max_seq_length, short_seq_prob,
-                                masked_lm_prob, max_predictions_per_seq,
-                                cased, num_parts=1, part_idx=0, prefetch=True):
-    """create dataset for pretraining."""
+def get_pretrain_data_text(data, batch_size, num_ctxes, shuffle, use_avg_len,
+                           num_buckets, vocab, max_seq_length, short_seq_prob,
+                           masked_lm_prob, max_predictions_per_seq,
+                           cased, num_workers, num_parts=1, part_idx=0,
+                           prefetch=True):
+    """create dataset for pretraining based on raw texts"""
     num_files = len(glob.glob(os.path.expanduser(data)))
     logging.debug('%d files found.', num_files)
     assert num_files >= num_parts, \
@@ -108,7 +108,7 @@ def get_online_pretrain_dataset(data, batch_size, num_ctxes, shuffle, use_avg_le
                                     short_seq_prob=short_seq_prob,
                                     masked_lm_prob=masked_lm_prob,
                                     max_predictions_per_seq=max_predictions_per_seq,
-                                    vocab=vocab)
+                                    vocab=vocab, num_workers=num_workers)
 
     split_sampler = nlp.data.SplitSampler(num_files, num_parts=num_parts, part_index=part_idx)
     stream = nlp.data.SimpleDatasetStream(dataset_cls, data, split_sampler)
@@ -171,9 +171,9 @@ class BERTLoaderTransform(object):
         logging.debug('Sampler created for a new dataset:\n%s', sampler.stats())
         return dataloader
 
-def get_pretrain_dataset(data, batch_size, num_ctxes, shuffle, use_avg_len,
-                         num_buckets, num_parts=1, part_idx=0, prefetch=True):
-    """create dataset for pretraining."""
+def get_pretrain_data_npz(data, batch_size, num_ctxes, shuffle, use_avg_len,
+                          num_buckets, num_parts=1, part_idx=0, prefetch=True):
+    """create dataset for pretraining based on pre-processed npz files."""
     num_files = len(glob.glob(os.path.expanduser(data)))
     logging.debug('%d files found.', num_files)
     assert num_files >= num_parts, \

@@ -118,7 +118,28 @@ def write_to_files_np(features, tokenizer, max_seq_length,
     np.savez_compressed(output_file, **outputs)
     logging.info('Wrote %d total instances', total_written)
 
-def create_training_instances(packed_arguments):
+def tokenize_lines_fn(x):
+    """Worker function to tokenize lines based on the tokenizer, and perform vocabulary lookup."""
+    lines, tokenizer, vocab = x
+    results = []
+    for line in lines:
+        if not line:
+            break
+        line = line.strip()
+        # Empty lines are used as document delimiters
+        if not line:
+            results.append([])
+        else:
+            tokens = vocab[tokenizer(line)]
+            if tokens:
+                results.append(tokens)
+    return results
+
+def create_training_instances(input_files, tokenizer,
+                              max_seq_length, short_seq_prob,
+                              masked_lm_prob, max_predictions_per_seq, vocab,
+                              dupe_factor=1, nworker=1,
+                              num_outputs=1, output_dir=None, pool=None):
     """Create `TrainingInstance`s from raw text.
 
     The expected input file format is the following:
@@ -150,74 +171,91 @@ def create_training_instances(packed_arguments):
     vocab : BERTVocab
         The BERTVocab
     """
-    (input_files, output_file, tokenizer, max_seq_length, dupe_factor, short_seq_prob,
-     masked_lm_prob, max_predictions_per_seq, vocab) = packed_arguments
-
     time_start = time.time()
-    logging.debug('Processing %s', input_files)
-    all_documents = [[]]
+    pool = Pool(nworker)
 
-    for input_file in input_files:
-        with io.open(input_file, 'r', encoding='utf-8') as reader:
-            while True:
-                line = reader.readline()
-                if not line:
-                    break
-                line = line.strip()
+    # calculate the number of inputs per output
+    num_inputs = len(input_files)
+    num_inputs_per_output = (num_inputs + num_outputs - 1) // num_outputs
 
-                # Empty lines are used as document delimiters
-                if not line and all_documents[-1]:
-                    all_documents.append([])
-                tokens = vocab[tokenizer(line)]
-                if tokens:
-                    all_documents[-1].append(tokens)
+    for output_idx in range(num_outputs):
+        input_start = output_idx * num_inputs_per_output
+        input_end = min((output_idx + 1) * num_inputs_per_output, len(input_files))
 
-    if not all_documents[-1]:
-        all_documents = all_documents[:-1]
+        all_documents = [[]]
 
-    instances = []
-    for _ in range(dupe_factor):
-        for document_index in range(len(all_documents)):
-            instances.extend(
-                create_instances_from_document(
-                    all_documents, document_index, max_seq_length, short_seq_prob,
-                    masked_lm_prob, max_predictions_per_seq, vocab))
+        for input_file in input_files[input_start:input_end]:
+            with io.open(input_file, 'r', encoding='utf-8') as reader:
+                lines = reader.readlines()
+                num_lines = len(lines)
+                num_lines_per_worker = (num_lines + nworker - 1) // nworker
+                process_args = []
 
-    input_ids = []
-    segment_ids = []
-    masked_lm_positions = []
-    masked_lm_ids = []
-    masked_lm_weights = []
-    next_sentence_labels = []
-    valid_lengths = []
+                # tokenize in parallel
+                for worker_idx in range(nworker):
+                    start = worker_idx * num_lines_per_worker
+                    end = min((worker_idx + 1) * num_lines_per_worker, num_lines)
+                    process_args.append((lines[start:end], tokenizer, vocab))
 
-    for inst_index, instance in enumerate(instances):
-        feature = transform(instance, max_seq_length)
-        input_ids.append(
-            np.ascontiguousarray(feature['input_ids'], dtype='int32'))
-        segment_ids.append(
-            np.ascontiguousarray(feature['segment_ids'], dtype='int32'))
-        masked_lm_positions.append(
-            np.ascontiguousarray(feature['masked_lm_positions'], dtype='int32'))
-        masked_lm_ids.append(np.ascontiguousarray(feature['masked_lm_ids'], dtype='int32'))
-        masked_lm_weights.append(
-            np.ascontiguousarray(feature['masked_lm_weights'], dtype='float32'))
-        next_sentence_labels.append(feature['next_sentence_labels'][0])
-        valid_lengths.append(feature['valid_lengths'][0])
-        if inst_index < 1:
-            print_example(instance, feature)
+                tokenized_results = pool.map(tokenize_lines_fn, process_args)
 
-    # write output to files. Used when pre-generating files
-    if output_file is not None:
-        features = (input_ids, segment_ids, masked_lm_positions, masked_lm_ids, \
-                    masked_lm_weights, next_sentence_labels, valid_lengths)
-        logging.info('*** Writing to output file %s ***', output_file)
-        write_to_files_np(features, tokenizer, args.max_seq_length,
-                          args.max_predictions_per_seq, [output_file])
-    else:
-        # return feature vectors. Used when generating samples online
-        features = (input_ids, masked_lm_ids, masked_lm_positions, masked_lm_weights,
-                    next_sentence_labels, segment_ids, valid_lengths)
+                for tokenized_result in tokenized_results:
+                    for line in tokenized_result:
+                        if not line:
+                            if all_documents[-1]:
+                                all_documents.append([])
+                        else:
+                            all_documents[-1].append(line)
+        # remove the last empty document if any
+        if not all_documents[-1]:
+            all_documents = all_documents[:-1]
+
+        instances = []
+        parallel_args = []
+        for _ in range(dupe_factor):
+            for document_index in range(len(all_documents)):
+                instances.extend(
+                    create_instances_from_document(
+                        all_documents, document_index, max_seq_length, short_seq_prob,
+                        masked_lm_prob, max_predictions_per_seq, vocab))
+
+        input_ids = []
+        segment_ids = []
+        masked_lm_positions = []
+        masked_lm_ids = []
+        masked_lm_weights = []
+        next_sentence_labels = []
+        valid_lengths = []
+
+        for inst_index, instance in enumerate(instances):
+            feature = transform(instance, max_seq_length)
+            input_ids.append(
+                np.ascontiguousarray(feature['input_ids'], dtype='int32'))
+            segment_ids.append(
+                np.ascontiguousarray(feature['segment_ids'], dtype='int32'))
+            masked_lm_positions.append(
+                np.ascontiguousarray(feature['masked_lm_positions'], dtype='int32'))
+            masked_lm_ids.append(np.ascontiguousarray(feature['masked_lm_ids'], dtype='int32'))
+            masked_lm_weights.append(
+                np.ascontiguousarray(feature['masked_lm_weights'], dtype='float32'))
+            next_sentence_labels.append(feature['next_sentence_labels'][0])
+            valid_lengths.append(feature['valid_lengths'][0])
+            if inst_index < 1:
+                print_example(instance, feature)
+
+        # write output to files. Used when pre-generating files
+        if output_dir:
+            part_name = 'part-{}.{}'.format(str(output_idx).zfill(3), 'npz')
+            output_file = os.path.join(output_dir, part_name)
+            features = (input_ids, segment_ids, masked_lm_positions, masked_lm_ids,
+                        masked_lm_weights, next_sentence_labels, valid_lengths)
+            logging.debug('*** Writing to output file %s ***', output_file)
+            write_to_files_np(features, tokenizer, args.max_seq_length,
+                              args.max_predictions_per_seq, [output_file])
+        else:
+            # return feature vectors. Used when generating samples online
+            features = (input_ids, masked_lm_ids, masked_lm_positions, masked_lm_weights,
+                        next_sentence_labels, segment_ids, valid_lengths)
     time_end = time.time()
     logging.debug('Process %d files took %.1f s', len(input_files), time_end - time_start)
     return features
@@ -426,8 +464,7 @@ def main():
     # vocabulary
     logging.info('loading vocab file from dataset: %s', args.vocab)
     vocab = nlp.data.utils._load_pretrained_vocab(args.vocab, cls=nlp.vocab.BERTVocab)
-    tokenizer = BERTTokenizer(
-        vocab=vocab, lower='uncased' in args.vocab)
+    tokenizer = BERTTokenizer(vocab=vocab, lower='uncased' in args.vocab)
 
     # count the number of input files
     input_files = []
@@ -436,44 +473,18 @@ def main():
     logging.info('*** Reading from %d input files ***', len(input_files))
     for input_file in input_files:
         logging.info('\t%s', input_file)
-    num_outputs = min(args.num_outputs, len(input_files))
 
     # create output dir
+    num_outputs = min(args.num_outputs, len(input_files))
     output_dir = os.path.expanduser(args.output_dir)
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
-    # calculate the number of splits
-    nworker = args.num_workers
-    file_splits = []
-    split_size = (len(input_files) + num_outputs - 1) // num_outputs
-    for i in range(num_outputs - 1):
-        file_splits.append(input_files[i*split_size:(i+1)*split_size])
-    file_splits.append(input_files[(num_outputs-1)*split_size:])
-
-    # prepare workload
-    suffix = 'npz'
-    count = 0
-    packed_args = []
-
-    fixed_args = (tokenizer, args.max_seq_length, args.dupe_factor,\
-                  args.short_seq_prob, args.masked_lm_prob,
-                  args.max_predictions_per_seq, vocab)
-    for i, file_split in enumerate(file_splits):
-        out = os.path.join(output_dir, 'part-{}.{}'.format(str(i).zfill(3), suffix))
-        count += len(file_split)
-        packed_args.append((file_split, out) + fixed_args)
-
-    # sanity check
-    assert count == len(input_files)
-
-    # dispatch to workers
-    if nworker > 1:
-        pool = Pool(nworker)
-        pool.map(create_training_instances, packed_args)
-    else:
-        for packed_arg in packed_args:
-            create_training_instances(packed_arg)
+    create_training_instances(input_files, tokenizer, args.max_seq_length,
+                              args.short_seq_prob, args.masked_lm_prob,
+                              args.max_predictions_per_seq, vocab,
+                              args.dupe_factor, args.num_workers,
+                              num_outputs=num_outputs, output_dir=output_dir)
 
     time_end = time.time()
     logging.info('Time cost=%.1f', time_end - time_start)
@@ -486,7 +497,7 @@ if __name__ == '__main__':
         '--input_file',
         type=str,
         default=None,
-        help='input file(s). For example, "~/data/*.txt"')
+        help='Input files, separated by comma. For example, "~/data/*.txt"')
 
     parser.add_argument(
         '--output_dir',
@@ -555,11 +566,6 @@ if __name__ == '__main__':
         default=1,
         help='Number of desired output files, where each is processed independently by a worker.'
              'Default is 1')
-
-    # TODO(haibin) support --int-inputs in arguments.
-    # Use --int-inputs to indicate that the input tokens are already stored as integers.
-    # Tokenization and vocabulary lookup will be skipped when generating training
-    # samples. Enabling this will accelerate the generation speed
 
     args = parser.parse_args()
     logging.getLogger().setLevel(logging.DEBUG if args.verbose else logging.INFO)

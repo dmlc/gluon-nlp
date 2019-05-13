@@ -26,6 +26,7 @@ from __future__ import print_function
 
 import glob
 import multiprocessing
+import multiprocessing.pool
 import os
 import random
 import sys
@@ -298,7 +299,21 @@ class _Prefetcher(object):
         return self.__next__()
 
 
-class _ProcessPrefetcher(_Prefetcher, multiprocessing.Process):
+class _NoDaemonProcess(multiprocessing.Process):
+    """Internal multi-processing process without daemon mode,
+    which allows creation of process pools within the process.
+    """
+    def _get_daemon(self):
+        """Make 'daemon' attribute always return False"""
+        return False
+
+    def _set_daemon(self, value):
+        """Never set daemon."""
+        pass
+
+    daemon = property(_get_daemon, _set_daemon)
+
+class _ProcessPrefetcher(_Prefetcher, _NoDaemonProcess):
     """Internal multi-processing prefetcher."""
 
     def __init__(self, *args, **kwargs):
@@ -309,6 +324,10 @@ class _ProcessPrefetcher(_Prefetcher, multiprocessing.Process):
         self.daemon = True
         self.start()
         self._check_start()
+
+    def __del__(self):
+        self.join()
+        super(_ProcessPrefetcher, self).__del__()
 
 
 class _ThreadPrefetcher(_Prefetcher, threading.Thread):

@@ -41,7 +41,7 @@ import gluonnlp as nlp
 
 from utils import profile
 from fp16_utils import FP16Trainer
-from pretraining_utils import get_model_loss, get_pretrain_dataset, get_dummy_dataloader
+from pretraining_utils import get_model_loss, get_pretrain_data_npz, get_dummy_dataloader
 from pretraining_utils import log, evaluate, forward, split_and_load, get_argparser
 from pretraining_utils import save_parameters, save_states
 
@@ -240,14 +240,14 @@ if __name__ == '__main__':
         logging.info('Using training data at {}'.format(args.data))
         num_parts = 1 if args.dummy_data_len else store.num_workers
         part_idx = 0 if args.dummy_data_len else store.rank
-        data_train = get_pretrain_dataset(args.data, args.batch_size, len(ctx), True,
-                                          args.use_avg_len, args.num_buckets,
-                                          num_parts=num_parts, part_idx=part_idx,
-                                          prefetch=not args.dummy_data_len)
+        data_train = get_pretrain_data_npz(args.data, args.batch_size, len(ctx), True,
+                                           args.use_avg_len, args.num_buckets,
+                                           num_parts=num_parts, part_idx=part_idx,
+                                           prefetch=not args.dummy_data_len)
         train(data_train, model, nsp_loss, mlm_loss, len(vocab), ctx, store)
     if args.data_eval:
         logging.info('Using evaluation data at {}'.format(args.data_eval))
-        data_eval = get_pretrain_dataset(args.data_eval, args.batch_size_eval, len(ctx),
-                                         False, False, 1)
+        data_eval = get_pretrain_data_npz(args.data_eval, args.batch_size_eval, len(ctx),
+                                          False, False, 1)
         evaluate(data_eval, model, nsp_loss, mlm_loss, len(vocab), ctx,
                  args.log_interval, args.dtype)

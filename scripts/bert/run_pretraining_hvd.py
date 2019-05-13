@@ -31,6 +31,7 @@ This example shows how to pre-train a BERT model with Gluon NLP Toolkit.
 # pylint:disable=redefined-outer-name,logging-format-interpolation
 
 import os
+import sys
 import random
 import logging
 import functools
@@ -42,22 +43,28 @@ import gluonnlp as nlp
 
 from utils import profile
 from fp16_utils import FP16Trainer
-from pretraining_utils import get_model_loss, get_pretrain_dataset, get_dummy_dataloader
+from pretraining_utils import get_model_loss, get_pretrain_data_npz, get_dummy_dataloader
 from pretraining_utils import split_and_load, log, evaluate, forward, get_argparser
-from pretraining_utils import save_parameters, save_states, get_online_pretrain_dataset
+from pretraining_utils import save_parameters, save_states, get_pretrain_data_text
 
 # parser
 parser = get_argparser()
 parser.add_argument('--raw', action='store_true',
                     help='Input raw text files instead of pre-processed npz files')
 parser.add_argument('--max_seq_length', type=int, default=None,
+                    required='--raw' in sys.argv,
                     help='Maximum input sequence length.')
 parser.add_argument('--short_seq_prob', type=float, default=None,
+                    required='--raw' in sys.argv,
                     help='The probability of producing sequences shorter than max_seq_length.')
 parser.add_argument('--masked_lm_prob', type=float, default=None,
+                    required='--raw' in sys.argv,
                     help='Probability for masks.')
 parser.add_argument('--max_predictions_per_seq', type=int, default=None,
+                    required='--raw' in sys.argv,
                     help='Maximum number of predictions per sequence.')
+parser.add_argument('--num_workers', type=int, default=4,
+                    help='The number of processes used for data processing.')
 parser.add_argument('--cased', action='store_true',
                     help='whether to tokenize with cased characters')
 
@@ -244,14 +251,15 @@ if __name__ == '__main__':
 
     if args.data:
         if args.raw:
-            get_dataset_fn = functools.partial(get_online_pretrain_dataset,
+            get_dataset_fn = functools.partial(get_pretrain_data_text,
                                                max_seq_length=args.max_seq_length,
                                                short_seq_prob=args.short_seq_prob,
                                                masked_lm_prob=args.masked_lm_prob,
                                                max_predictions_per_seq=args.max_predictions_per_seq,
-                                               vocab=vocab, cased=args.cased)
+                                               vocab=vocab, cased=args.cased,
+                                               num_workers=args.num_workers)
         else:
-            get_dataset_fn = get_pretrain_dataset
+            get_dataset_fn = get_pretrain_data_npz
             if args.cased:
                 raise UserWarning('argument cased is valid only when --raw is set')
             if args.max_seq_length:
@@ -272,7 +280,7 @@ if __name__ == '__main__':
         train(data_train, model, nsp_loss, mlm_loss, len(vocab), ctx)
     if args.data_eval:
         # eval data is always based on a fixed npz file.
-        data_eval = get_pretrain_dataset(args.data_eval, args.batch_size_eval, 1,
+        data_eval = get_pretrain_data_npz(args.data_eval, args.batch_size_eval, 1,
                                          False, False, 1)
         evaluate(data_eval, model, nsp_loss, mlm_loss, len(vocab), [ctx],
                  args.log_interval, args.dtype)
