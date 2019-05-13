@@ -281,6 +281,6 @@ if __name__ == '__main__':
     if args.data_eval:
         # eval data is always based on a fixed npz file.
         data_eval = get_pretrain_data_npz(args.data_eval, args.batch_size_eval, 1,
-                                         False, False, 1)
+                                          False, False, 1)
         evaluate(data_eval, model, nsp_loss, mlm_loss, len(vocab), [ctx],
                  args.log_interval, args.dtype)

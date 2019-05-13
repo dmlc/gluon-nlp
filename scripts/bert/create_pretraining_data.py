@@ -211,7 +211,6 @@ def create_training_instances(input_files, tokenizer,
             all_documents = all_documents[:-1]
 
         instances = []
-        parallel_args = []
         for _ in range(dupe_factor):
             for document_index in range(len(all_documents)):
                 instances.extend(
