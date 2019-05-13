@@ -36,8 +36,7 @@ classification.
 
 To run this tutorial locally, please:
 
--
-[install gluonnlp](http://gluon-nlp.mxnet.io/#installation), and
+- [install gluonnlp](http://gluon-nlp.mxnet.io/#installation), and
 - click the
 download button at the top of the tutorial page to get all related code.
 
