@@ -55,7 +55,7 @@ def get_context(gpu_index):
     return context
 
 
-def str2bool(v: str):
+def str2bool(v):
     """Utility function for parsing boolean in argparse
 
     https://stackoverflow.com/questions/15008758/parsing-boolean-values-with-argparse
