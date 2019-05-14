@@ -1086,8 +1086,8 @@ class BERTSPTokenizer(BERTTokenizer):
     --------
     >>> url = 'http://repo.mxnet.io/gluon/dataset/vocab/test-682b5d15.bpe'
     >>> f = gluon.utils.download(url, overwrite=True)
-    >>> bert_vocab = gluonnlp.vocab.BERTVocab.from_sentencepiece(f)
     -etc-
+    >>> bert_vocab = gluonnlp.vocab.BERTVocab.from_sentencepiece(f)
     >>> sp_tokenizer = BERTSPTokenizer(f, bert_vocab, lower=True)
     >>> sentence = 'This is a very awesome, life-changing sentence.'
     >>> sp_tokenizer(sentence)
