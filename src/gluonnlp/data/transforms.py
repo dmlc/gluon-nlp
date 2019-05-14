@@ -1065,9 +1065,8 @@ class BERTSPTokenizer(BERTTokenizer):
     ----------
     path : str
         Path to the pre-trained subword tokenization model.
-    vocab : gluonnlp.Vocab or None, default None
+    vocab : gluonnlp.Vocab
         Vocabulary for the corpus.
-        If vocab == None, then pre-trained subword tokenization model will be used for indexing.
     num_best : int, default 0
         A scalar for sampling subwords. If num_best = {0,1}, no sampling is performed.
         If num_best > 1, then samples from the num_best results.
@@ -1085,19 +1084,20 @@ class BERTSPTokenizer(BERTTokenizer):
 
     Examples
     --------
-    >>> url = 'http://repo.mxnet.io/gluon/dataset/vocab/test-0690baed.bpe'
+    >>> url = 'http://repo.mxnet.io/gluon/dataset/vocab/test-682b5d15.bpe'
     >>> f = gluon.utils.download(url, overwrite=True)
+    >>> bert_vocab = gluonnlp.vocab.BERTVocab.from_sentencepiece(f)
     -etc-
-    >>> sp_tokenizer = BERTSPTokenizer(f, lower=True)
+    >>> sp_tokenizer = BERTSPTokenizer(f, bert_vocab, lower=True)
     >>> sentence = 'This is a very awesome, life-changing sentence.'
     >>> sp_tokenizer(sentence)
-    ['▁this', '▁is', '▁a', '▁very', '▁awesome', '▁,', '▁life', '▁-', '▁changing', '▁sentence', '▁.']
+    ['▁this', '▁is', '▁a', '▁very', '▁a', 'w', 'es', 'om', 'e', '▁', ',', '▁life', '▁', '-', '▁c', 'hang', 'ing', '▁sentence', '▁', '.']
 
     """
 
     def __init__(self,
                  path,
-                 vocab=None,
+                 vocab,
                  num_best=0,
                  alpha=1.0,
                  lower=True,
@@ -1134,16 +1134,6 @@ class BERTSPTokenizer(BERTTokenizer):
             self._activate_sp()
         output_tokens = self.sentencepiece(text)
         return output_tokens
-
-    def convert_tokens_to_ids(self, tokens):
-        """Converts a sequence of tokens into ids using the vocab or sentencepiece model."""
-        if self.vocab is None:
-            if self.sentencepiece is None:
-                self._activate_sp()
-            return self.sentencepiece._processor.encode_as_ids(  #pylint: disable=protected-access
-                ' '.join(tokens))
-        else:
-            return self.vocab.to_indices(tokens)
 
 
 class BERTSentenceTransform(object):

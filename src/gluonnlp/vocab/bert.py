@@ -20,16 +20,18 @@
 # pylint: disable=consider-iterating-dictionary
 
 """Vocabulary class used in the BERT."""
-from __future__ import absolute_import
-from __future__ import print_function
-
-__all__ = ['BERTVocab']
+from __future__ import absolute_import, print_function
 
 import json
 import warnings
 
-from .vocab import Vocab
+from ..data.transforms import SentencepieceTokenizer
 from ..data.utils import DefaultLookupDict
+from .vocab import Vocab
+
+__all__ = ['BERTVocab']
+
+
 
 
 class BERTVocab(Vocab):
@@ -200,4 +202,61 @@ class BERTVocab(Vocab):
         bert_vocab._sep_token = vocab_dict.get('sep_token')
         bert_vocab._cls_token = vocab_dict.get('cls_token')
 
+        return bert_vocab
+
+    @classmethod
+    def from_sentencepiece(cls,
+                           path,
+                           mask_token=MASK_TOKEN,
+                           sep_token=SEP_TOKEN,
+                           cls_token=CLS_TOKEN,
+                           unknown_token=UNKNOWN_TOKEN,
+                           padding_token=PADDING_TOKEN,
+                           reserved_tokens=None):
+        """BERTVocab from pre-trained sentencepiece Tokenizer
+
+        Parameters
+        ----------
+        path : str
+            Path to the pre-trained subword tokenization model.
+        mask_token : hashable object or None, default '[MASK]'
+            The representation for the special token of mask token for BERT
+        sep_token : hashable object or None, default '[SEP]'
+            a token used to separate sentence pairs for BERT.
+        cls_token : hashable object or None, default '[CLS]'
+        unknown_token : hashable object or None, default '[UNK]'
+            The representation for any unknown token. In other words,
+            any unknown token will be indexed as the same representation.
+        padding_token : hashable object or None, default '[PAD]'
+            The representation for padding token.
+        reserved_tokens : list of strs or None, optional
+            A list of reserved tokens that will always be indexed.
+
+        Returns
+        -------
+        BERTVocab
+        """
+        sp = SentencepieceTokenizer(path)
+        token_to_idx = {t: i for i, t in enumerate(sp.tokens)}
+        special_tokens = [
+            token for token in
+            [mask_token, sep_token, cls_token, unknown_token, padding_token]
+            if token is not None
+        ]
+        if reserved_tokens:
+            special_tokens.extend(reserved_tokens)
+
+        #check exist special token
+        for token in special_tokens:
+            if token not in token_to_idx:
+                raise ValueError('Token `{}` is not in `{}`.'.format(
+                    token, path))
+
+        bert_vocab = cls(mask_token=mask_token,
+                         sep_token=sep_token,
+                         cls_token=cls_token,
+                         unknown_token=unknown_token,
+                         padding_token=padding_token)
+        bert_vocab._idx_to_token = sp.tokens
+        bert_vocab._token_to_idx = token_to_idx
         return bert_vocab
