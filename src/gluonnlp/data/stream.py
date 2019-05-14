@@ -326,6 +326,7 @@ class _ProcessPrefetcher(_Prefetcher, _NoDaemonProcess):
         self._check_start()
 
     def __del__(self):
+        self.terminate()
         self.join()
         super(_ProcessPrefetcher, self).__del__()
 

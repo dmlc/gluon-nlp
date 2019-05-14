@@ -255,6 +255,8 @@ def create_training_instances(input_files, tokenizer,
             # return feature vectors. Used when generating samples online
             features = (input_ids, masked_lm_ids, masked_lm_positions, masked_lm_weights,
                         next_sentence_labels, segment_ids, valid_lengths)
+    pool.close()
+    pool.join()
     time_end = time.time()
     logging.debug('Process %d files took %.1f s', len(input_files), time_end - time_start)
     return features
