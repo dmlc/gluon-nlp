@@ -3,7 +3,7 @@ Export the BERT Model for Deployment
 
 ====================================
 
-This script exports the BERT model to a static model suitable for use with MXNet Module API.
+This script exports the BERT model to a hybrid model suitable for use with MXNet Module API.
 
 @article{devlin2018bert,
   title={BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding},
@@ -42,9 +42,10 @@ import time
 
 import mxnet as mx
 import gluonnlp as nlp
-from static_bert import get_model
+from hybrid_bert import get_hybrid_model
+from hybrid_bert import HybridBERTClassifier, HybridBERTRegression, HybridBERTForQA
 
-parser = argparse.ArgumentParser(description='Export static BERT base model.')
+parser = argparse.ArgumentParser(description='Export hybrid BERT base model.')
 
 parser.add_argument('--model_parameters',
                     type=str,
@@ -59,11 +60,10 @@ parser.add_argument('--model_name',
 
 parser.add_argument('--task',
                     type=str,
-                    default=None,
-                    choices=['classification', 'regression', 'qa'],
-                    help='Task to export. Options are "classification", "regression", "qa". '
-                         'If not set, the model for masked language model and next sentence '
-                         'prediction will be exported.')
+                    choices=['classification', 'regression', 'question_answering'],
+                    required=True,
+                    help='Task to export. Options are "classification", "regression", '
+                         '"question_answering"')
 
 parser.add_argument('--dataset_name',
                     type=str,
@@ -89,18 +89,26 @@ parser.add_argument('--seq_length',
                          'Sequences longer than this needs to be truncated, and sequences shorter '
                          'than this needs to be padded. Default is 384')
 
+parser.add_argument('--dropout',
+                    type=float,
+                    default=0.1,
+                    help='The dropout probability for the classification/regression head.')
+
 args = parser.parse_args()
 
 # create output dir
 output_dir = args.output_dir
 nlp.utils.mkdir(output_dir)
 
-# logging
+###############################################################################
+#                                Logging                                      #
+###############################################################################
+
 log = logging.getLogger('gluonnlp')
 log.setLevel(logging.DEBUG)
 formatter = logging.Formatter(fmt='%(levelname)s:%(name)s:%(asctime)s %(message)s',
                               datefmt='%H:%M:%S')
-fh = logging.FileHandler(os.path.join(args.output_dir, 'static_export_bert.log'), mode='w')
+fh = logging.FileHandler(os.path.join(args.output_dir, 'hybrid_export_bert.log'), mode='w')
 fh.setLevel(logging.INFO)
 fh.setFormatter(formatter)
 console = logging.StreamHandler()
@@ -108,65 +116,99 @@ console.setLevel(logging.INFO)
 console.setFormatter(formatter)
 log.addHandler(console)
 log.addHandler(fh)
-
 log.info(args)
 
-model_parameters = args.model_parameters
+###############################################################################
+#                              Hybridize the model                            #
+###############################################################################
+
 seq_length = args.seq_length
-test_batch_size = 1
-ctx = mx.cpu()
+
+if args.task == 'classification':
+    bert, _ = get_hybrid_model(
+        name=args.model_name,
+        dataset_name=args.dataset_name,
+        pretrained=False,
+        use_pooler=True,
+        use_decoder=False,
+        use_classifier=False,
+        seq_length=args.seq_length)
+    net = HybridBERTClassifier(bert, num_classes=2, dropout=args.dropout)
+elif args.task == 'regression':
+    bert, _ = get_hybrid_model(
+        name=args.model_name,
+        dataset_name=args.dataset_name,
+        pretrained=False,
+        use_pooler=True,
+        use_decoder=False,
+        use_classifier=False,
+        seq_length=args.seq_length)
+    net = HybridBERTRegression(bert, dropout=args.dropout)
+elif args.task == 'question_answering':
+    bert, _ = get_hybrid_model(
+        name=args.model_name,
+        dataset_name=args.dataset_name,
+        pretrained=False,
+        use_pooler=False,
+        use_decoder=False,
+        use_classifier=False,
+        seq_length=args.seq_length)
+    net = HybridBERTForQA(bert)
+else:
+    raise ValueError('unknown task: %s'%args.task)
+
+if args.model_parameters:
+    net.load_parameters(args.model_parameters)
+else:
+    net.initialize()
+    warnings.warn('--model_parameters is not provided. The parameter checkpoint (.params) '
+                  'file will be created based on default parameter intialization.')
+
+net.hybridize(static_alloc=True, static_shape=True)
 
 ###############################################################################
-#                              Prepare dummy input data                       #
+#                            Prepare dummy input data                         #
 ###############################################################################
+
+test_batch_size = 1
 
 inputs = mx.nd.arange(test_batch_size * seq_length)
 inputs = inputs.reshape(shape=(test_batch_size, seq_length))
 token_types = mx.nd.zeros_like(inputs)
 valid_length = mx.nd.arange(test_batch_size)
 batch = inputs, token_types, valid_length
-num_batch = 10
-sample_dataset = [batch for _ in range(10)]
 
-bert, vocab = get_model(
-    name=args.model_name,
-    dataset_name=args.dataset_name,
-    pretrained=True,
-    ctx=ctx,
-    use_pooler=False,
-    use_decoder=False,
-    use_classifier=False,
-    seq_length=args.seq_length)
+def export(batch, prefix):
+    """Export the model."""
+    log.info('Exporting the model ... ')
+    inputs, token_types, valid_length = batch
+    net(inputs, token_types, valid_length)
+    net.export(prefix, epoch=0)
+    assert os.path.isfile(prefix + '-symbol.json')
+    assert os.path.isfile(prefix + '-0000.params')
 
-
-###############################################################################
-#                              Hybridize the model                            #
-###############################################################################
-net = bert
-if args.task == 'classification':
-    net = StaticBERTClassifier(net, num_classes=2)
-
-if model_parameters:
-    bert.load_parameters(model_parameters, ctx=ctx)
-else:
-    warnings.warn('using random initialization')
-
-net.hybridize(static_alloc=True, static_shape=True)
-
-def evaluate(data_source):
+def infer(batch, prefix):
     """Evaluate the model on a mini-batch."""
-    log.info('start predicting ... ')
+    log.info('Start inference ... ')
     tic = time.time()
-    for inputs, token_types, valid_length in data_source:
-        net(inputs.as_in_context(ctx), token_types.as_in_context(ctx),
-            valid_length.as_in_context(ctx))
+    # import with SymbolBlock. Alternatively, you can use Module.load APIs.
+    inputs, token_types, valid_length = batch
+    num_trials = 10
+    imported_net = mx.gluon.nn.SymbolBlock.imports(prefix + '-symbol.json',
+                                                   ['data0','data1','data2'],
+                                                   prefix + '-0000.params')
+    for _ in range(num_trials):
+        net(inputs, token_types, valid_length)
+    mx.nd.waitall()
     toc = time.time()
     log.info('Inference time cost={:.2f} s, Thoughput={:.2f} samples/s'
-             .format(toc - tic, len(data_source) / (toc - tic)))
+             .format(toc - tic, num_trials / (toc - tic)))
+
 
 ###############################################################################
 #                              Export the model                               #
 ###############################################################################
 if __name__ == '__main__':
-    evaluate(sample_dataset)
-    net.export(os.path.join(args.output_dir, 'static_bert_base_net'), epoch=0)
+    prefix = os.path.join(args.output_dir, args.task)
+    export(batch, prefix)
+    infer(batch, prefix)
