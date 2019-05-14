@@ -328,7 +328,6 @@ class _ProcessPrefetcher(_Prefetcher, _NoDaemonProcess):
     def __del__(self):
         self.terminate()
         self.join()
-        super(_ProcessPrefetcher, self).__del__()
 
 
 class _ThreadPrefetcher(_Prefetcher, threading.Thread):
