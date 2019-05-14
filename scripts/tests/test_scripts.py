@@ -343,3 +343,10 @@ def test_finetune_train(dataset):
         process = subprocess.check_call([sys.executable, './scripts/bert/finetune_classifier.py',
                                          '--task_name', dataset,
                                          '--optimizer', 'adam'] + arguments)
+
+@pytest.mark.serial
+@pytest.mark.integration
+@pytest.mark.parametrize('task', ['classification', 'regression', 'question_answering'])
+def test_export(task):
+    process = subprocess.check_call([sys.executable, './scripts/bert/export/export.py',
+                                     '--task', task])

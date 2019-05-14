@@ -322,57 +322,11 @@ Command line interface
 Export BERT for Deployment
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The BERTModel class is a subclass of Block, rather than HybridBlock.
-To support exporting BERT model to json format for deployment, we introduce the StaticBERT class.
-Specifically, by exporting hybridizable BERT, we mean the BERT with fixed input embedding size and sequence length can be exported through
-a static shape based implementation of hybridblock based BERT. By using this, we can export a block based BERT model.
-
-Please follow the steps below for exporting the model.
-
-
-Step 1: create a hybridizable task guided model using BERT:
-
-.. code-block:: python
-
-    class StaticBertForQA(HybridBlock)
-
-An example can be found in 'staticbert/static_bert_for_qa_model.py'.
-
-
-Step 2: hybridize the model in the script:
-
-.. code-block:: python
-
-    net = StaticBertForQA(bert=bert)
-    net.hybridize(static_alloc=True, static_shape=True)
-
-An example can be found in 'staticbert/static_export_squad.py'.
-
-
-Step 3: export trained model:
-
-.. code-block:: python
-
-    net.export(os.path.join(args.output_dir, 'static_net'), epoch=args.epochs)
-
-To export the model, in 'staticbert/static_export_squad.py', set export=True.
-
-To run the example, if you would like to export the Block parameters
-and test the HybridBlock on your datasets with the specified input size and sequence length,
+Current export/export.py support exporting BERT models. Supported values for --task argument include classification, regression and question_answering.
 
 .. code-block:: console
 
-    $ cd staticbert
-    $ python static_export_squad.py --model_parameters output_dir/net.params --export --evaluate --seq_length 384 --input_size 768 --gpu 0
+    $ python export/export.py --task classification --model_parameters /path/to/saved/ckpt.params --output_dir /path/to/output/dir/ --seq_length 256
 
-This will load the the StaticBERTQA HybridBlock with parameter (requirement: output_dir/net.params should exist)
-trained by a normal BERTQA Block, and export the HybridBlock to json format.
-
-Besides, Where seq_length stands for the sequence length of the input, input_size represents the embedding size of the input.
-
-To load and export the BERT base pretrained model that that is suitable for fine tuning, use the following:
-
-.. code-block:: console
-
-    $ cd staticbert
-    $ python static_export_base.py --model_parameters --seq_length 128
+This will export the BERT model for classification to a symbol.json file, saved to the directory specified by --output_dir.
+The --model_parameters argument is optional. If not set, the .params file saved in the output directory will be randomly intialized parameters.

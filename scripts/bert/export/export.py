@@ -3,7 +3,8 @@ Export the BERT Model for Deployment
 
 ====================================
 
-This script exports the BERT model to a hybrid model suitable for use with MXNet Module API.
+This script exports the BERT model to a hybrid model serialized as a symbol.json file,
+which is suitable for deployment, or use with MXNet Module API.
 
 @article{devlin2018bert,
   title={BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding},
@@ -191,12 +192,14 @@ def infer(batch, prefix):
     """Evaluate the model on a mini-batch."""
     log.info('Start inference ... ')
     tic = time.time()
+
     # import with SymbolBlock. Alternatively, you can use Module.load APIs.
-    inputs, token_types, valid_length = batch
-    num_trials = 10
     imported_net = mx.gluon.nn.SymbolBlock.imports(prefix + '-symbol.json',
                                                    ['data0','data1','data2'],
                                                    prefix + '-0000.params')
+    # run forward inference
+    inputs, token_types, valid_length = batch
+    num_trials = 10
     for _ in range(num_trials):
         net(inputs, token_types, valid_length)
     mx.nd.waitall()

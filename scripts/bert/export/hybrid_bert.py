@@ -19,7 +19,7 @@
 """Hybrid BERT models."""
 
 __all__ = ['HybridBERTModel', 'HybridBERTEncoder',
-           'get_hybrid_model', 'hybrid_bert_12_768_12', 'hybrid_bert_24_1024_16',
+           'get_hybrid_model', 'bert_12_768_12', 'bert_24_1024_16',
            'get_hybrid_bert_model',
            'HybridBERTForQA', 'HybridBERTClassifier', 'HybridBERTRegression']
 
