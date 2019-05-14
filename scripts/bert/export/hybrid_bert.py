@@ -23,16 +23,14 @@ __all__ = ['HybridBERTModel', 'HybridBERTEncoder',
            'get_hybrid_bert_model',
            'HybridBERTForQA', 'HybridBERTClassifier', 'HybridBERTRegression']
 
-from mxnet.gluon import HybridBlock, loss, nn
-from mxnet.gluon.loss import Loss
-
 import os
 import math
 import warnings
 
+import mxnet as mx
 from mxnet.gluon import Block, HybridBlock
 from mxnet.gluon import nn
-import mxnet as mx
+
 from gluonnlp.model.block import GELU
 from gluonnlp.model.bert import BERTLayerNorm, BERTEncoderCell, _load_vocab
 from gluonnlp.model.bert import _load_pretrained_params, bert_hparams
@@ -936,4 +934,3 @@ class HybridBERTRegression(HybridBlock):
         """
         _, pooler_out = self.bert(inputs, token_types, valid_length)
         return self.regression(pooler_out)
-

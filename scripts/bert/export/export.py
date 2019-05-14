@@ -195,13 +195,13 @@ def infer(batch, prefix):
 
     # import with SymbolBlock. Alternatively, you can use Module.load APIs.
     imported_net = mx.gluon.nn.SymbolBlock.imports(prefix + '-symbol.json',
-                                                   ['data0','data1','data2'],
+                                                   ['data0', 'data1', 'data2'],
                                                    prefix + '-0000.params')
     # run forward inference
     inputs, token_types, valid_length = batch
     num_trials = 10
     for _ in range(num_trials):
-        net(inputs, token_types, valid_length)
+        imported_net(inputs, token_types, valid_length)
     mx.nd.waitall()
     toc = time.time()
     log.info('Inference time cost={:.2f} s, Thoughput={:.2f} samples/s'
