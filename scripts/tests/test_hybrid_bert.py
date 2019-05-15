@@ -30,7 +30,7 @@ import gluonnlp as nlp
 import pytest
 
 
-from ..bert.export.hybrid_bert import get_model
+from ..bert.export.hybrid_bert import get_hybrid_model
 
 
 @pytest.mark.serial
@@ -109,10 +109,10 @@ def test_hybrid_bert_models():
 
         for kwarg, expected_shape in zip(kwargs, expected_shapes):
             expected_shape = infer_shape(expected_shape, unit)
-            model, _ = get_model(model_name, dataset_name=dataset,
-                                 pretrained=False, root='tests/data/model/',
-                                 seq_length=seq_len, input_size=unit,
-                                 **kwarg)
+            model, _ = get_hybrid_model(model_name, dataset_name=dataset,
+                                        pretrained=False, root='tests/data/model/',
+                                        seq_length=seq_len, input_size=unit,
+                                        **kwarg)
             model.initialize()
             if kwarg['use_decoder']:
                 # position tensor is required for decoding
