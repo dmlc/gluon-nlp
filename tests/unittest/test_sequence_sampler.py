@@ -45,10 +45,11 @@ def test_sequence_sampler():
         emp_dist[i] = freq[i] / N
     assert_allclose(dist.softmax().asnumpy(), np.array(emp_dist), atol=0.01, rtol=0.1)
 
+# temporarily disabled model.HybridBeamSearchSampler test
+# due to https://github.com/dmlc/gluon-nlp/issues/706
 @pytest.mark.seed(1)
 @pytest.mark.parametrize('hybridize', [False, True])
-@pytest.mark.parametrize('sampler_cls', [model.HybridBeamSearchSampler,
-                                         model.BeamSearchSampler])
+@pytest.mark.parametrize('sampler_cls', [model.BeamSearchSampler])
 def test_beam_search(hybridize, sampler_cls):
     def _get_new_states(states, state_info, sel_beam_ids):
         assert not state_info or isinstance(state_info, (type(states), dict)), \
