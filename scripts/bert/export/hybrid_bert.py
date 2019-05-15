@@ -531,7 +531,7 @@ class HybridBERTModel(HybridBlock):
 
         This is used for pre-training or fine-tuning a BERT model.
         """
-        outputs = sequence.slice(begin=(None, 0, None), end=(None, 1, None))
+        outputs = sequence.slice(begin=(None, 0, None), end=(None, 1, None)).squeeze(axis=1)
         return self.pooler(outputs)
 
     def _decode(self, sequence, masked_positions):
