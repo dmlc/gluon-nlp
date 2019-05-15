@@ -1091,8 +1091,8 @@ class BERTSPTokenizer(BERTTokenizer):
     >>> sp_tokenizer = BERTSPTokenizer(f, bert_vocab, lower=True)
     >>> sentence = 'This is a very awesome, life-changing sentence.'
     >>> sp_tokenizer(sentence)
-    ['▁this', '▁is', '▁a', '▁very', '▁a', 'w', 'es', 'om', 'e', '▁', ',', '▁life', '▁', '-', '▁c', 'hang', 'ing', '▁sentence', '▁', '.']
-
+    ['▁this', '▁is', '▁a', '▁very', '▁a', 'w', 'es', 'om', 'e', '▁',
+    ',', '▁life', '▁', '-', '▁c', 'hang', 'ing', '▁sentence', '▁', '.']
     """
 
     def __init__(self,
