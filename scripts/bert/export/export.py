@@ -191,12 +191,12 @@ def export(batch, prefix):
 def infer(batch, prefix):
     """Evaluate the model on a mini-batch."""
     log.info('Start inference ... ')
-    tic = time.time()
 
     # import with SymbolBlock. Alternatively, you can use Module.load APIs.
     imported_net = mx.gluon.nn.SymbolBlock.imports(prefix + '-symbol.json',
                                                    ['data0', 'data1', 'data2'],
                                                    prefix + '-0000.params')
+    tic = time.time()
     # run forward inference
     inputs, token_types, valid_length = batch
     num_trials = 10
