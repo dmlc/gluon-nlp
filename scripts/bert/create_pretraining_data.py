@@ -170,9 +170,15 @@ def create_training_instances(input_files, tokenizer,
         The hard limit of the number of predictions for masked words
     vocab : BERTVocab
         The BERTVocab
+
+    Returns
+    -------
+    A tuple of np.ndarray : input_ids, masked_lm_ids, masked_lm_positions, masked_lm_weights
+                            next_sentence_labels, segment_ids, valid_lengths
     """
     time_start = time.time()
-    pool = Pool(nworker)
+    if nworker > 1:
+        pool = Pool(nworker)
 
     # calculate the number of inputs per output
     num_inputs = len(input_files)
@@ -197,7 +203,10 @@ def create_training_instances(input_files, tokenizer,
                     end = min((worker_idx + 1) * num_lines_per_worker, num_lines)
                     process_args.append((lines[start:end], tokenizer, vocab))
 
-                tokenized_results = pool.map(tokenize_lines_fn, process_args)
+                if nworker > 1:
+                    tokenized_results = pool.map(tokenize_lines_fn, process_args)
+                else:
+                    tokenized_results = [tokenize_lines_fn(process_args[0])]
 
                 for tokenized_result in tokenized_results:
                     for line in tokenized_result:
@@ -206,6 +215,7 @@ def create_training_instances(input_files, tokenizer,
                                 all_documents.append([])
                         else:
                             all_documents[-1].append(line)
+
         # remove the last empty document if any
         if not all_documents[-1]:
             all_documents = all_documents[:-1]
@@ -255,8 +265,9 @@ def create_training_instances(input_files, tokenizer,
             # return feature vectors. Used when generating samples online
             features = (input_ids, masked_lm_ids, masked_lm_positions, masked_lm_weights,
                         next_sentence_labels, segment_ids, valid_lengths)
-    pool.close()
-    pool.join()
+    if nworker > 1:
+        pool.close()
+        pool.join()
     time_end = time.time()
     logging.debug('Process %d files took %.1f s', len(input_files), time_end - time_start)
     return features

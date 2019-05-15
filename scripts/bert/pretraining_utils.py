@@ -65,6 +65,9 @@ def get_model_loss(ctx, model, pretrained, dataset_name, dtype, ckpt_dir=None, s
 class BERTPretrainDataset(mx.gluon.data.ArrayDataset):
     """Dataset for BERT pre-training.
 
+    Each record contains the following numpy ndarrays: input_ids, masked_lm_ids,
+    masked_lm_positions, masked_lm_weights, next_sentence_labels, segment_ids, valid_lengths.
+
     Parameters
     ----------
     filename : str
@@ -83,18 +86,18 @@ class BERTPretrainDataset(mx.gluon.data.ArrayDataset):
         The BERTVocab
     """
     def __init__(self, filename, tokenizer, max_seq_length, short_seq_prob,
-                 masked_lm_prob, max_predictions_per_seq, vocab, num_workers):
+                 masked_lm_prob, max_predictions_per_seq, vocab):
         logging.debug('start to load file %s ...', filename)
         instances = create_training_instances([filename], tokenizer, max_seq_length,
                                               short_seq_prob, masked_lm_prob,
                                               max_predictions_per_seq, vocab,
-                                              nworker=num_workers)
+                                              nworker=1)
         super(BERTPretrainDataset, self).__init__(*instances)
 
 def get_pretrain_data_text(data, batch_size, num_ctxes, shuffle, use_avg_len,
                            num_buckets, vocab, max_seq_length, short_seq_prob,
                            masked_lm_prob, max_predictions_per_seq,
-                           cased, num_workers, num_parts=1, part_idx=0,
+                           cased, num_parts=1, part_idx=0,
                            prefetch=True):
     """create dataset for pretraining based on raw texts"""
     num_files = len(glob.glob(os.path.expanduser(data)))
@@ -108,7 +111,7 @@ def get_pretrain_data_text(data, batch_size, num_ctxes, shuffle, use_avg_len,
                                     short_seq_prob=short_seq_prob,
                                     masked_lm_prob=masked_lm_prob,
                                     max_predictions_per_seq=max_predictions_per_seq,
-                                    vocab=vocab, num_workers=num_workers)
+                                    vocab=vocab)
 
     split_sampler = nlp.data.SplitSampler(num_files, num_parts=num_parts, part_index=part_idx)
     stream = nlp.data.SimpleDatasetStream(dataset_cls, data, split_sampler)
