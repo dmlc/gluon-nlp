@@ -31,8 +31,10 @@ This example shows how to pre-train a BERT model with Gluon NLP Toolkit.
 # pylint:disable=redefined-outer-name,logging-format-interpolation
 
 import os
+import sys
 import random
 import logging
+import functools
 import time
 import numpy as np
 
@@ -41,12 +43,29 @@ import gluonnlp as nlp
 
 from utils import profile
 from fp16_utils import FP16Trainer
-from pretraining_utils import get_model_loss, get_pretrain_dataset, get_dummy_dataloader
+from pretraining_utils import get_model_loss, get_pretrain_data_npz, get_dummy_dataloader
 from pretraining_utils import split_and_load, log, evaluate, forward, get_argparser
-from pretraining_utils import save_parameters, save_states
+from pretraining_utils import save_parameters, save_states, get_pretrain_data_text
 
 # parser
 parser = get_argparser()
+parser.add_argument('--raw', action='store_true',
+                    help='Input raw text files instead of pre-processed npz files')
+parser.add_argument('--max_seq_length', type=int, default=None,
+                    required='--raw' in sys.argv,
+                    help='Maximum input sequence length.')
+parser.add_argument('--short_seq_prob', type=float, default=None,
+                    required='--raw' in sys.argv,
+                    help='The probability of producing sequences shorter than max_seq_length.')
+parser.add_argument('--masked_lm_prob', type=float, default=None,
+                    required='--raw' in sys.argv,
+                    help='Probability for masks.')
+parser.add_argument('--max_predictions_per_seq', type=int, default=None,
+                    required='--raw' in sys.argv,
+                    help='Maximum number of predictions per sequence.')
+parser.add_argument('--cased', action='store_true',
+                    help='whether to tokenize with cased characters')
+
 args = parser.parse_args()
 
 # logging
@@ -229,15 +248,36 @@ if __name__ == '__main__':
     logging.debug('Model created')
 
     if args.data:
+        if args.raw:
+            get_dataset_fn = functools.partial(get_pretrain_data_text,
+                                               max_seq_length=args.max_seq_length,
+                                               short_seq_prob=args.short_seq_prob,
+                                               masked_lm_prob=args.masked_lm_prob,
+                                               max_predictions_per_seq=args.max_predictions_per_seq,
+                                               vocab=vocab, cased=args.cased)
+        else:
+            get_dataset_fn = get_pretrain_data_npz
+            if args.cased:
+                raise UserWarning('argument cased is valid only when --raw is set')
+            if args.max_seq_length:
+                raise UserWarning('argument max_seq_length is valid only when --raw is set')
+            if args.short_seq_prob:
+                raise UserWarning('argument short_seq_prob is valid only when --raw is set')
+            if args.masked_lm_prob:
+                raise UserWarning('argument masked_lm_prob is valid only when --raw is set')
+            if args.max_predictions_per_seq:
+                raise UserWarning('argument max_predictions_per_seq is valid only when '
+                                  '--raw is set')
         num_parts = 1 if args.dummy_data_len else num_workers
         part_idx = 0 if args.dummy_data_len else rank
-        data_train = get_pretrain_dataset(args.data, args.batch_size, 1, True,
-                                          args.use_avg_len, args.num_buckets,
-                                          num_parts=num_parts, part_idx=part_idx,
-                                          prefetch=not args.dummy_data_len)
+        data_train = get_dataset_fn(args.data, args.batch_size, 1, True,
+                                    args.use_avg_len, args.num_buckets,
+                                    num_parts=num_parts, part_idx=part_idx,
+                                    prefetch=not args.dummy_data_len)
         train(data_train, model, nsp_loss, mlm_loss, len(vocab), ctx)
     if args.data_eval:
-        data_eval = get_pretrain_dataset(args.data_eval, args.batch_size_eval, 1,
-                                         False, False, 1)
+        # eval data is always based on a fixed npz file.
+        data_eval = get_pretrain_data_npz(args.data_eval, args.batch_size_eval, 1,
+                                          False, False, 1)
         evaluate(data_eval, model, nsp_loss, mlm_loss, len(vocab), [ctx],
                  args.log_interval, args.dtype)

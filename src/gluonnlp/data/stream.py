@@ -26,6 +26,7 @@ from __future__ import print_function
 
 import glob
 import multiprocessing
+import multiprocessing.pool
 import os
 import random
 import sys
@@ -296,7 +297,6 @@ class _Prefetcher(object):
 
     def next(self):
         return self.__next__()
-
 
 class _ProcessPrefetcher(_Prefetcher, multiprocessing.Process):
     """Internal multi-processing prefetcher."""
