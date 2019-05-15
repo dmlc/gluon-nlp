@@ -1089,10 +1089,9 @@ class BERTSPTokenizer(BERTTokenizer):
     -etc-
     >>> bert_vocab = gluonnlp.vocab.BERTVocab.from_sentencepiece(f)
     >>> sp_tokenizer = BERTSPTokenizer(f, bert_vocab, lower=True)
-    >>> sentence = 'This is a very awesome, life-changing sentence.'
+    >>> sentence = 'Better is to bow than break.'
     >>> sp_tokenizer(sentence)
-    ['▁this', '▁is', '▁a', '▁very', '▁a', 'w', 'es', 'om', 'e', '▁',
-    ',', '▁life', '▁', '-', '▁c', 'hang', 'ing', '▁sentence', '▁', '.']
+    ['▁better', '▁is', '▁to', '▁b', 'ow', '▁than', '▁brea', 'k', '▁', '.']
     """
 
     def __init__(self,
