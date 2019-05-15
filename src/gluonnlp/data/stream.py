@@ -298,22 +298,7 @@ class _Prefetcher(object):
     def next(self):
         return self.__next__()
 
-
-class _NoDaemonProcess(multiprocessing.Process):
-    """Internal multi-processing process without daemon mode,
-    which allows creation of process pools within the process.
-    """
-    def _get_daemon(self):
-        """Make 'daemon' attribute always return False"""
-        return False
-
-    def _set_daemon(self, value):
-        """Never set daemon."""
-        pass
-
-    daemon = property(_get_daemon, _set_daemon)
-
-class _ProcessPrefetcher(_Prefetcher, _NoDaemonProcess):
+class _ProcessPrefetcher(_Prefetcher, multiprocessing.Process):
     """Internal multi-processing prefetcher."""
 
     def __init__(self, *args, **kwargs):
@@ -324,10 +309,6 @@ class _ProcessPrefetcher(_Prefetcher, _NoDaemonProcess):
         self.daemon = True
         self.start()
         self._check_start()
-
-    def __del__(self):
-        self.terminate()
-        self.join()
 
 
 class _ThreadPrefetcher(_Prefetcher, threading.Thread):
