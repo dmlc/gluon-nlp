@@ -47,7 +47,10 @@ class MRPCDataset(TSVDataset):
         assert segment in ['train', 'dev', 'test'], 'Unsupported segment: %s' % segment
         path = os.path.join(root, '%s.tsv' % segment)
         A_IDX, B_IDX, LABEL_IDX = 3, 4, 0
-        fields = [A_IDX, B_IDX, LABEL_IDX]
+        if segment == 'test':
+            fields = [A_IDX, B_IDX]
+        else:
+            fields = [A_IDX, B_IDX, LABEL_IDX]
         super(MRPCDataset, self).__init__(
             path, num_discard_samples=1, field_indices=fields)
 
