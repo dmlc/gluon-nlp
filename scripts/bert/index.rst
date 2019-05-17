@@ -326,7 +326,7 @@ Current export/export.py support exporting BERT models. Supported values for --t
 
 .. code-block:: console
 
-    $ python export/export.py --task classification --model_parameters /path/to/saved/ckpt.params --output_dir /path/to/output/dir/ --seq_length 256
+    $ python export/export.py --task classification --model_parameters /path/to/saved/ckpt.params --output_dir /path/to/output/dir/ --seq_length 128
 
 This will export the BERT model for classification to a symbol.json file, saved to the directory specified by --output_dir.
 The --model_parameters argument is optional. If not set, the .params file saved in the output directory will be randomly intialized parameters.
