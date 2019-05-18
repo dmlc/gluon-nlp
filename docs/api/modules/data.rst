@@ -95,6 +95,24 @@ Sentiment Analysis: TREC
 
     TREC
     
+Sentiment Analysis: CR
+~~~~~~~~~~~~~~~~~~~~~~~~
+CR is customer reviews of various products (cameras, MP3s etc.). Sentences are labeled with respect to their overall sentiment polarities (positive or negative).
+
+.. autosummary::
+    :nosignatures:
+
+    CR
+    
+Sentiment Analysis: MPQA
+~~~~~~~~~~~~~~~~~~~~~~~~
+`MPQA <http://www.cs.pitt.edu/mpqa/>`_ is an opinion polarity detection subtask. Sentences are labeled with respect to their overall sentiment polarities (positive or negative).
+
+.. autosummary::
+    :nosignatures:
+
+    MPQA
+    
 Word Embedding Evaluation Datasets
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 There are a number of commonly used datasets for intrinsic evaluation for word embeddings.

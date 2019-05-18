@@ -33,18 +33,17 @@ Kim, Y. (2014). Convolutional neural networks for sentence classification. arXiv
 
 epoch:
 
-+----------------+--------+---------+---------+--------+--------+
-|                | MR     | SST-1   | SST-2   | Subj   | TREC   |
-+================+========+=========+=========+========+========+
-| rand           |   60   |   40    |   40    |   40   |   40   |
-+----------------+--------+---------+---------+--------+--------+
-| static         |   60   |   40    |   40    |   40   |   40   |
-+----------------+--------+---------+---------+--------+--------+
-| non-static     |   60   |   40    |   40    |   40   |   40   |
-+----------------+--------+---------+---------+--------+--------+
-| multichannel   |   60   |   40    |   40    |   40   |   40   |
-+----------------+--------+---------+---------+--------+--------+
-
++----------------+--------+---------+---------+--------+--------+--------+--------+
+|                | MR     | SST-1   | SST-2   | Subj   | TREC   |   CR   |  MPQA  |
++================+========+=========+=========+========+========+========+========+
+| rand           |   200  |   200   |   200   |   200  |   200  |   200  |   200  |
++----------------+--------+---------+---------+--------+--------+--------+--------+
+| static         |   200  |   200   |   200   |   200  |   200  |   200  |   200  |
++----------------+--------+---------+---------+--------+--------+--------+--------+
+| non-static     |   200  |   200   |   200   |   200  |   200  |   200  |   200  |
++----------------+--------+---------+---------+--------+--------+--------+--------+
+| multichannel   |   200  |   200   |   200   |   200  |   200  |   200  |   200  |
++----------------+--------+---------+---------+--------+--------+--------+--------+
 
 log:
 
@@ -62,140 +61,187 @@ log:
 +----------------+----------------------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------+
 
 
-test accuracy (SST-1, SST-2, and TREC) or cross-validation accuracy (MR and Subj):
+test accuracy (SST-1, SST-2, and TREC) or cross-validation accuracy (MR, Subj, CR and MPQA):
 
-
-+----------------+----------+-----------+-----------+----------+----------+
-|                |   MR     |   SST-1   |   SST-2   |   Subj   |   TREC   |
-+================+==========+===========+===========+==========+==========+
-| rand           | 0.7683   | 0.5412    | 0.9358    | 0.8984   | 0.9780   |
-+----------------+----------+-----------+-----------+----------+----------+
-| static         | 0.7927   | 0.5421    | 0.9450    | 0.9226   | 0.9840   |
-+----------------+----------+-----------+-----------+----------+----------+
-| non-static     | 0.7960   | 0.5534    | 0.9387    | 0.9206   | 0.9800   |
-+----------------+----------+-----------+-----------+----------+----------+
-| multichannel   | 0.7999   | 0.5581    | 0.9393    | 0.9249   | 0.9900   |
-+----------------+----------+-----------+-----------+----------+----------+
++----------------+----------+-----------+-----------+----------+----------+----------+----------+
+|                |   MR     |   SST-1   |   SST-2   |   Subj   |   TREC   |    CR    |   MPQA   |
++================+==========+===========+===========+==========+==========+==========+==========+
+| rand           |   76.0   |   44.9    |   82.0    |   89.4   |   90.0   |   79.1   |   85.4   |
++----------------+----------+-----------+-----------+----------+----------+----------+----------+
+| static         |   79.9   |   46.6    |   86.9    |   92.0   |   91.4   |   82.9   |   89.4   |
++----------------+----------+-----------+-----------+----------+----------+----------+----------+
+| non-static     |   80.2   |   46.1    |   86.5    |   92.4   |   92.4   |   83.4   |   89.4   |
++----------------+----------+-----------+-----------+----------+----------+----------+----------+
+| multichannel   |   80.2   |   47.9    |   86.0    |   92.9   |   92.8   |   83.6   |   89.8   |
++----------------+----------+-----------+-----------+----------+----------+----------+----------+
 
 [1]:
 
 .. code-block:: console
 
-   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 60 --dropout 0.5 --lr 0.0001 --model_mode rand --data_name MR
+   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 200 --dropout 0.5 --model_mode rand --data_name MR
 
 [2]:
 
 .. code-block:: console
 
-   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 60 --dropout 0.5 --lr 0.0001 --model_mode static --data_name MR
+   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 200 --dropout 0.5 --model_mode static --data_name MR
 
 
 [3]:
 
 .. code-block:: console
 
-   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 60 --dropout 0.5 --lr 0.0001 --model_mode non-static --data_name MR
+   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 200 --dropout 0.5 --model_mode non-static --data_name MR
 
 
 [4]:
 
 .. code-block:: console
 
-   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 60 --dropout 0.5 --lr 0.0001 --model_mode multichannel --data_name MR
+   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 200 --dropout 0.5 --model_mode multichannel --data_name MR
 
 [5]:
 
 .. code-block:: console
 
-   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 40 --dropout 0.5 --lr 0.0001 --model_mode rand --data_name SST-1
+   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 200 --dropout 0.5 --model_mode rand --data_name SST-1
 
 [6]:
 
 .. code-block:: console
 
-   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 40 --dropout 0.5 --lr 0.0001 --model_mode static --data_name SST-1
+   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 200 --dropout 0.5 --model_mode static --data_name SST-1
 
 [7]:
 
 .. code-block:: console
 
-   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 40 --dropout 0.5 --lr 0.0001 --model_mode non-static --data_name SST-1
+   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 200 --dropout 0.5 --model_mode non-static --data_name SST-1
 
 [8]:
 
 .. code-block:: console
 
-   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 40 --dropout 0.5 --lr 0.0001 --model_mode multichannel --data_name SST-1
+   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 200 --dropout 0.5 --model_mode multichannel --data_name SST-1
 
 [9]:
 
 .. code-block:: console
 
-   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 40 --dropout 0.5 --lr 0.0001 --model_mode rand --data_name SST-2
+   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 200 --dropout 0.5 --model_mode rand --data_name SST-2
 
 [10]:
 
 .. code-block:: console
 
-   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 40 --dropout 0.5 --lr 0.0001 --model_mode static --data_name SST-2
+   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 200 --dropout 0.5 --model_mode static --data_name SST-2
 
 [11]:
 
 .. code-block:: console
 
-   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 40 --dropout 0.5 --lr 0.0001 --model_mode non-static --data_name SST-2
+   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 200 --dropout 0.5 --model_mode non-static --data_name SST-2
 
 [12]:
 
 .. code-block:: console
 
-   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 40 --dropout 0.5 --lr 0.0001 --model_mode multichannel --data_name SST-2
+   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 200 --dropout 0.5 --model_mode multichannel --data_name SST-2
 
 [13]:
 
 .. code-block:: console
 
-   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 40 --dropout 0.5 --lr 0.0001 --model_mode rand --data_name Subj
+   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 200 --dropout 0.5 --model_mode rand --data_name Subj
 
 [14]:
 
 .. code-block:: console
 
-   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 40 --dropout 0.5 --lr 0.0001 --model_mode static --data_name Subj
+   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 200 --dropout 0.5 --model_mode static --data_name Subj
 
 [15]:
 
 .. code-block:: console
 
-   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 40 --dropout 0.5 --lr 0.0001 --model_mode non-static --data_name Subj
+   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 200 --dropout 0.5 --model_mode non-static --data_name Subj
 
 [16]:
 
 .. code-block:: console
 
-   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 40 --dropout 0.5 --lr 0.0001 --model_mode multichannel --data_name Subj
+   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 200 --dropout 0.5 --model_mode multichannel --data_name Subj
 
 [17]:
 
 .. code-block:: console
 
-   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 40 --dropout 0.5 --lr 0.0001 --model_mode rand --data_name TREC
+   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 200 --dropout 0.5 --model_mode rand --data_name TREC
 
 [18]:
 
 .. code-block:: console
 
-   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 40 --dropout 0.5 --lr 0.0001 --model_mode static --data_name TREC
+   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 200 --dropout 0.5 --model_mode static --data_name TREC
 
 [19]:
 
 .. code-block:: console
 
-   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 40 --dropout 0.5 --lr 0.0001 --model_mode non-static --data_name TREC
+   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 200 --dropout 0.5 --model_mode non-static --data_name TREC
 
 [20]:
 
 .. code-block:: console
 
-   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 40 --dropout 0.5 --lr 0.0001 --model_mode multichannel --data_name TREC
+   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 200 --dropout 0.5 --model_mode multichannel --data_name TREC
+   
+[21]:
+
+.. code-block:: console
+
+   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 200 --dropout 0.5 --model_mode rand --data_name CR
+
+[22]:
+
+.. code-block:: console
+
+   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 200 --dropout 0.5 --model_mode static --data_name CR
+
+[23]:
+
+.. code-block:: console
+
+   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 200 --dropout 0.5 --model_mode non-static --data_name CR
+
+[24]:
+
+.. code-block:: console
+
+   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 200 --dropout 0.5 --model_mode multichannel --data_name CR
+   
+[25]:
+
+.. code-block:: console
+
+   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 200 --dropout 0.5 --model_mode rand --data_name MPQA
+
+[26]:
+
+.. code-block:: console
+
+   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 200 --dropout 0.5 --model_mode static --data_name MPQA
+
+[27]:
+
+.. code-block:: console
+
+   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 200 --dropout 0.5 --model_mode non-static --data_name MPQA
+
+[28]:
+
+.. code-block:: console
+
+   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 200 --dropout 0.5 --model_mode multichannel --data_name MPQA
 

@@ -46,14 +46,12 @@ mx.random.seed(3435)
 
 parser = argparse.ArgumentParser(description='Sentiment analysis with the textCNN model on\
                                  various datasets.')
-parser.add_argument('--data_name', choices=['MR', 'SST-1', 'SST-2', 'Subj', 'TREC'], default='MR',
-                    help='name of the data set')
+parser.add_argument('--data_name', choices=['MR', 'SST-1', 'SST-2', 'Subj', 'TREC', 'CR', 'MPQA'],
+                    default='MR', help='name of the data set')
 parser.add_argument('--model_mode', choices=['rand', 'static', 'non-static', 'multichannel'],
                     default='multichannel', help='Variants of the textCNN model (see the paper:\
                     Convolutional Neural Networks for Sentence Classification).')
-parser.add_argument('--lr', type=float, default=2.5E-3,
-                    help='initial learning rate')
-parser.add_argument('--epochs', type=int, default=20,
+parser.add_argument('--epochs', type=int, default=200,
                     help='upper epoch limit')
 parser.add_argument('--batch_size', type=int, default=50, metavar='N',
                     help='batch size')
@@ -61,8 +59,6 @@ parser.add_argument('--dropout', type=float, default=.5,
                     help='dropout applied to layers (0 = no dropout)')
 parser.add_argument('--log-interval', type=int, default=30, metavar='N',
                     help='report interval')
-parser.add_argument('--save-prefix', type=str, default='sa-model',
-                    help='path to save the final model')
 parser.add_argument('--gpu', type=int, default=None,
                     help='id of the gpu to use. Set it to empty means to use cpu.')
 args = parser.parse_args()
@@ -75,12 +71,15 @@ else:
     print('Use gpu%d' % args.gpu)
     context = mx.gpu(args.gpu)
 
-if args.data_name == 'MR' or args.data_name == 'Subj':
+if args.data_name in ('MR', 'Subj', 'CR', 'MPQA'):
     vocab, max_len, output_size, train_dataset, train_data_lengths \
     = process_data.load_dataset(args.data_name)
-else:
+elif args.data_name == 'TREC':
     vocab, max_len, output_size, train_dataset, train_data_lengths, \
     test_dataset, test_data_lengths = process_data.load_dataset(args.data_name)
+else:
+    vocab, max_len, output_size, train_dataset, train_data_lengths, test_dataset, \
+    test_data_lengths, dev_dataset, dev_data_lengths = process_data.load_dataset(args.data_name)
 
 model = text_cnn.model(args.dropout, vocab, args.model_mode, output_size)
 print(model)
@@ -111,18 +110,26 @@ def evaluate(net, dataloader):
     acc = total_correct_num / float(total_sample_num)
     return avg_L, acc
 
-def train(net, train_data, test_data):
+def train(net, train_data, test_data, dev_data=None):
     """Train textCNN model for sentiment analysis."""
     start_pipeline_time = time.time()
-    net, trainer = text_cnn.init(net, vocab, args.model_mode, context, args.lr)
-    random.shuffle(train_data)
-    sp = int(len(train_data)*0.9)
-    train_dataloader = DataLoader(dataset=train_data[:sp],
-                                  batch_size=args.batch_size,
-                                  shuffle=True)
-    val_dataloader = DataLoader(dataset=train_data[sp:],
-                                batch_size=args.batch_size,
-                                shuffle=False)
+    net, trainer = text_cnn.init(net, vocab, args.model_mode, context)
+    if dev_data is None:
+        random.shuffle(train_data)
+        sp = len(train_data) // 10
+        train_dataloader = DataLoader(dataset=train_data[sp:],
+                                      batch_size=args.batch_size,
+                                      shuffle=True)
+        val_dataloader = DataLoader(dataset=train_data[:sp],
+                                    batch_size=args.batch_size,
+                                    shuffle=False)
+    else:
+        train_dataloader = DataLoader(dataset=train_data,
+                                      batch_size=args.batch_size,
+                                      shuffle=True)
+        val_dataloader = DataLoader(dataset=dev_data,
+                                    batch_size=args.batch_size,
+                                    shuffle=False)
     test_dataloader = DataLoader(dataset=test_data,
                                  batch_size=args.batch_size,
                                  shuffle=False)
@@ -153,7 +160,7 @@ def train(net, train_data, test_data):
                 L = loss(output, label).mean()
             L.backward()
             # Update parameter.
-            trainer.step(1)
+            trainer.step(args.batch_size)
             log_interval_L += L.asscalar()
             epoch_L += L.asscalar()
             if (i + 1) % args.log_interval == 0:
@@ -169,7 +176,7 @@ def train(net, train_data, test_data):
         end_epoch_time = time.time()
         val_avg_L, val_acc = evaluate(net, val_dataloader)
         print('[Epoch %d] train avg loss %g, '
-              'test acc %.4f, test avg loss %g, throughput %gK wps' % (
+              'dev acc %.4f, dev avg loss %g, throughput %gK wps' % (
                   epoch, epoch_L / epoch_sent_num,
                   val_acc, val_avg_L,
                   epoch_wc / 1000 / (end_epoch_time - start_epoch_time)))
@@ -190,12 +197,13 @@ def k_fold_cross_valid(k, net, all_dataset):
     for test_i in range(10):
         test_data = all_dataset[test_i * fold_size: (test_i + 1) * fold_size]
         train_data = all_dataset[: test_i * fold_size] + all_dataset[(test_i + 1) * fold_size:]
-        print(len(train_data), len(test_data))
         test_acc.append(train(net, train_data, test_data))
-    print(sum(test_acc) / k)
+    print('K-fold cross valid avg acc', sum(test_acc) / k)
 
 if __name__ == '__main__':
-    if args.data_name != 'MR' and args.data_name != 'Subj':
+    if args.data_name == 'TREC':
         train(model, train_dataset, test_dataset)
+    elif args.data_name == 'SST-1' or args.data_name == 'SST-2':
+        train(model, train_dataset, test_dataset, dev_dataset)
     else:
         k_fold_cross_valid(10, model, train_dataset)
