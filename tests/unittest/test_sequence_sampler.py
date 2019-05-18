@@ -49,7 +49,7 @@ def test_sequence_sampler():
 # due to https://github.com/dmlc/gluon-nlp/issues/706
 @pytest.mark.seed(1)
 @pytest.mark.parametrize('hybridize', [False, True])
-@pytest.mark.parametrize('sampler_cls', [model.BeamSearchSampler])
+@pytest.mark.parametrize('sampler_cls', [model.BeamSearchSampler, model.HybridBeamSearchSampler])
 def test_beam_search(hybridize, sampler_cls):
     def _get_new_states(states, state_info, sel_beam_ids):
         assert not state_info or isinstance(state_info, (type(states), dict)), \
@@ -171,8 +171,8 @@ def test_beam_search(hybridize, sampler_cls):
             self._vocab_size = vocab_size
             with self.name_scope():
                 self._embed = nn.Embedding(input_dim=vocab_size, output_dim=hidden_size)
-                self._rnn = rnn.RNNCell(hidden_size=hidden_size)
-                self._map_to_vocab = nn.Dense(vocab_size)
+                self._rnn = rnn.RNNCell(input_size=hidden_size, hidden_size=hidden_size)
+                self._map_to_vocab = nn.Dense(vocab_size, in_units=hidden_size)
 
         def begin_state(self, batch_size):
             return self._rnn.begin_state(batch_size=batch_size,
@@ -190,9 +190,9 @@ def test_beam_search(hybridize, sampler_cls):
             self._use_tuple = use_tuple
             with self.name_scope():
                 self._embed = nn.Embedding(input_dim=vocab_size, output_dim=hidden_size)
-                self._rnn1 = rnn.RNNCell(hidden_size=hidden_size)
-                self._rnn2 = rnn.RNNCell(hidden_size=hidden_size)
-                self._map_to_vocab = nn.Dense(vocab_size)
+                self._rnn1 = rnn.RNNCell(input_size=hidden_size, hidden_size=hidden_size)
+                self._rnn2 = rnn.RNNCell(input_size=hidden_size, hidden_size=hidden_size)
+                self._map_to_vocab = nn.Dense(vocab_size, in_units=hidden_size)
 
         def begin_state(self, batch_size):
             ret = [self._rnn1.begin_state(batch_size=batch_size,
@@ -224,8 +224,8 @@ def test_beam_search(hybridize, sampler_cls):
             self._vocab_size = vocab_size
             with self.name_scope():
                 self._embed = nn.Embedding(input_dim=vocab_size, output_dim=hidden_size)
-                self._rnn = rnn.RNN(hidden_size=hidden_size, num_layers=1, activation='tanh')
-                self._map_to_vocab = nn.Dense(vocab_size, flatten=False)
+                self._rnn = rnn.RNN(input_size=hidden_size, hidden_size=hidden_size, num_layers=1, activation='tanh')
+                self._map_to_vocab = nn.Dense(vocab_size, flatten=False, in_units=hidden_size)
 
         def begin_state(self, batch_size):
             return self._rnn.begin_state(batch_size=batch_size,
