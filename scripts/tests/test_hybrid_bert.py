@@ -17,7 +17,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-"""Test static bert models."""
+"""Test hybrid bert models."""
 
 from __future__ import print_function
 
@@ -30,12 +30,12 @@ import gluonnlp as nlp
 import pytest
 
 
-from ..bert.staticbert.static_bert import get_model
+from ..bert.export.hybrid_bert import get_hybrid_model
 
 
 @pytest.mark.serial
 @pytest.mark.remote_required
-def test_static_bert_models():
+def test_hybrid_bert_models():
     models = ['bert_12_768_12', 'bert_24_1024_16']
     layers = [12, 24]
     attention_heads = [12, 16]
@@ -109,10 +109,10 @@ def test_static_bert_models():
 
         for kwarg, expected_shape in zip(kwargs, expected_shapes):
             expected_shape = infer_shape(expected_shape, unit)
-            model, _ = get_model(model_name, dataset_name=dataset,
-                                 pretrained=False, root='tests/data/model/',
-                                 seq_length=seq_len, input_size=unit,
-                                 **kwarg)
+            model, _ = get_hybrid_model(model_name, dataset_name=dataset,
+                                        pretrained=False, root='tests/data/model/',
+                                        seq_length=seq_len, input_size=unit,
+                                        **kwarg)
             model.initialize()
             if kwarg['use_decoder']:
                 # position tensor is required for decoding

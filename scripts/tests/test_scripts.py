@@ -176,16 +176,6 @@ def test_bert_embedding(use_pretrained):
 
 
 @pytest.mark.serial
-@pytest.mark.remote_required
-@pytest.mark.gpu
-@pytest.mark.integration
-def test_bert_static_base_export():
-    args = ['--gpu', '0', '--seq_length', '128']
-    process = subprocess.check_call([sys.executable, './scripts/bert/staticbert/static_export_base.py'] + args)
-    time.sleep(5)
-
-
-@pytest.mark.serial
 @pytest.mark.gpu
 @pytest.mark.remote_required
 @pytest.mark.integration
@@ -327,3 +317,10 @@ def test_finetune_train(dataset):
         process = subprocess.check_call([sys.executable, './scripts/bert/finetune_classifier.py',
                                          '--task_name', dataset,
                                          '--optimizer', 'adam'] + arguments)
+
+@pytest.mark.serial
+@pytest.mark.integration
+@pytest.mark.parametrize('task', ['classification', 'regression', 'question_answering'])
+def test_export(task):
+    process = subprocess.check_call([sys.executable, './scripts/bert/export/export.py',
+                                     '--task', task])
