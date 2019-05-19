@@ -432,7 +432,7 @@ def convert_to_unicode(text):
     elif six.PY2:
         if isinstance(text, str):
             return text.decode('utf-8', 'ignore')
-        elif isinstance(text, unicode):  # pylint: disable=disable=E0602, E0603
+        elif isinstance(text, unicode):  # noqa: F821
             return text
         else:
             raise ValueError('Unsupported string type: %s' % (type(text)))
