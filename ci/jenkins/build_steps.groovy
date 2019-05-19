@@ -113,6 +113,7 @@ def website_linkcheck(workspace_name, conda_env_name) {
         sh """
         set -ex
         source ci/prepare_clean_env.sh ${conda_env_name}
+        make distribute
         if [[ ${enforce_linkcheck} == true ]]; then
             make -C docs linkcheck SPHINXOPTS=-W
         else
