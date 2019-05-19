@@ -24,9 +24,10 @@ from __future__ import absolute_import, print_function
 
 import json
 import warnings
+import os
 
 from ..data.transforms import SentencepieceTokenizer
-from ..data.utils import DefaultLookupDict
+from ..data.utils import DefaultLookupDict, convert_to_unicode
 from .vocab import Vocab
 
 __all__ = ['BERTVocab']
@@ -212,6 +213,8 @@ class BERTVocab(Vocab):
                            cls_token=CLS_TOKEN,
                            unknown_token=UNKNOWN_TOKEN,
                            padding_token=PADDING_TOKEN,
+                           bos_token=None,
+                           eos_token=None,
                            reserved_tokens=None):
         """BERTVocab from pre-trained sentencepiece Tokenizer
 
@@ -236,27 +239,35 @@ class BERTVocab(Vocab):
         -------
         BERTVocab
         """
-        sp = SentencepieceTokenizer(path)
-        token_to_idx = {t: i for i, t in enumerate(sp.tokens)}
-        special_tokens = [
-            token for token in
-            [mask_token, sep_token, cls_token, unknown_token, padding_token]
-            if token is not None
-        ]
+        sp = SentencepieceTokenizer(os.path.expanduser(path))
+        token_to_idx = {
+            convert_to_unicode(t): i
+            for i, t in enumerate(sp.tokens)
+        }
+        special_tokens_dic = {
+            k: convert_to_unicode(token) if token is not None else None
+            for k, token in zip(['mask', 'sep', 'cls', 'unk', 'pad', 'bos', 'eos'], [
+                mask_token, sep_token, cls_token, unknown_token, padding_token, bos_token, eos_token
+            ])
+        }
+        special_tokens = special_tokens_dic.values()
         if reserved_tokens:
-            special_tokens.extend(reserved_tokens)
+            special_tokens.extend(
+                [convert_to_unicode(token) for token in reserved_tokens])
 
-        #check exist special token
-        for token in special_tokens:
+        #check if exist special tokens
+        for token in [t for t in special_tokens if t is not None]:
             if token not in token_to_idx:
                 raise ValueError('Token `{}` is not in `{}`.'.format(
                     token, path))
 
-        bert_vocab = cls(mask_token=mask_token,
-                         sep_token=sep_token,
-                         cls_token=cls_token,
-                         unknown_token=unknown_token,
-                         padding_token=padding_token)
+        bert_vocab = cls(mask_token=special_tokens_dic['mask'],
+                         sep_token=special_tokens_dic['sep'],
+                         cls_token=special_tokens_dic['cls'],
+                         unknown_token=special_tokens_dic['unk'],
+                         padding_token=special_tokens_dic['pad'],
+                         bos_token=special_tokens_dic['bos'],
+                         eos_token=special_tokens_dic['eos'])
         bert_vocab._idx_to_token = sp.tokens
         bert_vocab._token_to_idx = token_to_idx
         return bert_vocab

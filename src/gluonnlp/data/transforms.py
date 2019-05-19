@@ -1076,9 +1076,9 @@ class BERTSPTokenizer(BERTTokenizer):
     alpha : float
         A scalar for a smoothing parameter. Inverse temperature for probability rescaling.
     lower : bool, default True
-        whether the text strips accents and convert to lower case.
+        Whether the text strips accents and convert to lower case.
         If you use the BERT pre-training model,
-        lower is set to Flase when using the cased model,
+        lower is set to False when using the cased model,
         otherwise it is set to True.
     max_input_chars_per_word : int, default 200
 

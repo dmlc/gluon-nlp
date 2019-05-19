@@ -23,13 +23,14 @@ from __future__ import print_function
 
 __all__ = [
     'Counter', 'count_tokens', 'concat_sequence', 'slice_sequence', 'train_valid_split',
-    'line_splitter', 'whitespace_splitter', 'Splitter'
+    'line_splitter', 'whitespace_splitter', 'Splitter', 'convert_to_unicode'
 ]
 
 import os
 import collections
 import zipfile
 import tarfile
+import six
 import numpy as np
 
 from mxnet.gluon.data import SimpleDataset
@@ -407,3 +408,35 @@ class Splitter(object):
             List of strings. Obtained by calling s.split(separator).
         """
         return s.split(self._separator)
+
+
+def convert_to_unicode(text):
+    """Converts `text` to Unicode.
+
+
+    Parameters
+    ----------
+    text : str or bytes
+        text to be converted to unicode
+
+    Returns
+    -------
+    str
+        unicode string
+    """
+    if six.PY3:
+        if isinstance(text, str):
+            return text
+        elif isinstance(text, bytes):
+            return text.decode('utf-8', 'ignore')
+        else:
+            raise ValueError('Unsupported string type: %s' % (type(text)))
+    elif six.PY2:
+        if isinstance(text, str):
+            return text.decode('utf-8', 'ignore')
+        elif isinstance(text, unicode):
+            return text
+        else:
+            raise ValueError('Unsupported string type: %s' % (type(text)))
+    else:
+        raise ValueError('Not running on Python2 or Python 3?')

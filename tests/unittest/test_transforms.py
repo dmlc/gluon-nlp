@@ -16,7 +16,7 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-
+#%%
 from __future__ import print_function
 
 import os
@@ -271,7 +271,7 @@ def test_bert_sentencepiece_sentences_transform():
     bert_tokenizer = t.BERTSPTokenizer(f, bert_vocab, lower=True)
     max_len = 36
     data_train_raw = SimpleDataset(
-        [['This is a very awesome, life-changing sentence.']])
+        [[u'This is a very awesome, life-changing sentence.']])
     transform = t.BERTSentenceTransform(bert_tokenizer,
                                         max_len,
                                         pad=True,
@@ -286,8 +286,8 @@ def test_bert_sentencepiece_sentences_transform():
     processed = list(data_train)[0]
 
     tokens = [
-        '▁this', '▁is', '▁a', '▁very', '▁a', 'w', 'es', 'om', 'e', '▁', ',',
-        '▁life', '▁', '-', '▁c', 'hang', 'ing', '▁sentence', '▁', '.'
+        u'▁this', u'▁is', u'▁a', u'▁very', u'▁a', u'w', u'es', u'om', u'e', u'▁', u',',
+        u'▁life', u'▁', u'-', u'▁c', u'hang', u'ing', u'▁sentence', u'▁', u'.'
     ]
     token_ids = [bert_vocab[bert_vocab.cls_token]
                  ] + bert_tokenizer.convert_tokens_to_ids(tokens) + [
