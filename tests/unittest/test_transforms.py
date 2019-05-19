@@ -16,7 +16,6 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-#%%
 from __future__ import print_function
 
 import os
@@ -26,13 +25,14 @@ import warnings
 import mxnet as mx
 import numpy as np
 import pytest
+from mxnet.gluon.data import SimpleDataset
+from mxnet.gluon.utils import download
+from numpy.testing import assert_allclose
+
 from gluonnlp.data import count_tokens
 from gluonnlp.data import transforms as t
 from gluonnlp.model.utils import _load_vocab
 from gluonnlp.vocab import BERTVocab, Vocab
-from mxnet.gluon.data import SimpleDataset
-from mxnet.gluon.utils import download
-from numpy.testing import assert_allclose
 
 
 def test_clip_sequence():

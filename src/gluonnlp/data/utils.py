@@ -18,27 +18,25 @@
 # under the License.
 
 """Utility classes and functions. They help organize and keep statistics of datasets."""
-from __future__ import absolute_import
-from __future__ import print_function
+from __future__ import absolute_import, print_function
+
+import collections
+import os
+import tarfile
+import zipfile
+
+import numpy as np
+import six
+from mxnet.gluon.data import SimpleDataset
+from mxnet.gluon.utils import _get_repo_url, check_sha1, download
+
+from .. import _constants as C
+from ..base import get_home_dir
 
 __all__ = [
     'Counter', 'count_tokens', 'concat_sequence', 'slice_sequence', 'train_valid_split',
     'line_splitter', 'whitespace_splitter', 'Splitter', 'convert_to_unicode'
 ]
-
-import os
-import collections
-import zipfile
-import tarfile
-import six
-import numpy as np
-
-from mxnet.gluon.data import SimpleDataset
-from mxnet.gluon.utils import _get_repo_url, download, check_sha1
-
-from .. import _constants as C
-from ..base import get_home_dir
-
 
 class Counter(collections.Counter):  # pylint: disable=abstract-method
     """Counter class for keeping token frequencies."""

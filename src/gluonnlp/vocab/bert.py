@@ -23,8 +23,8 @@
 from __future__ import absolute_import, print_function
 
 import json
-import warnings
 import os
+import warnings
 
 from ..data.transforms import SentencepieceTokenizer
 from ..data.utils import DefaultLookupDict, convert_to_unicode
