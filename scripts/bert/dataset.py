@@ -68,6 +68,11 @@ class GlueTask(object):
         Evaluation metrics of the task.
     is_pair : bool
         Whether the task deals with sentence pairs or single sentences.
+    label_alias : dict
+        label alias dict, some different labels in dataset actually means
+        the same. e.g.: {'contradictory':'contradiction'} means contradictory
+        and contradiction label means the same in dataset, they will get
+        the same class id.
     """
     def __init__(self, class_labels, metrics, is_pair, label_alias=None):
         self.class_labels = class_labels
