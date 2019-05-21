@@ -257,7 +257,7 @@ def preprocess_data(tokenizer, task, batch_size, dev_batch_size, max_len, pad=Fa
     label_dtype = 'float32' if not task.class_labels else 'int32'
     trans = BERTDatasetTransform(tokenizer, max_len,
                                  class_labels=task.class_labels,
-                                 label_project=task.label_project,
+                                 label_alias=task.label_alias,
                                  pad=pad, pair=task.is_pair,
                                  has_label=True)
 

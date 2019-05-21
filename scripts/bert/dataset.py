@@ -69,11 +69,11 @@ class GlueTask(object):
     is_pair : bool
         Whether the task deals with sentence pairs or single sentences.
     """
-    def __init__(self, class_labels, metrics, is_pair, label_project=None):
+    def __init__(self, class_labels, metrics, is_pair, label_alias=None):
         self.class_labels = class_labels
         self.metrics = metrics
         self.is_pair = is_pair
-        self.label_project = label_project
+        self.label_alias = label_alias
 
     def get_dataset(self, segment='train', root=None):
         """Get the corresponding dataset for the task.
@@ -339,7 +339,7 @@ class XNLITask(GlueTask):
         is_pair = True
         class_labels = ['neutral', 'entailment', 'contradiction']
         metric = Accuracy()
-        super(XNLITask, self).__init__(class_labels, metric, is_pair, label_project={'contradictory':'contradiction'})
+        super(XNLITask, self).__init__(class_labels, metric, is_pair, label_alias={'contradictory':'contradiction'})
 
     def get_dataset(self, segment='train',
                     root=os.path.join(os.getenv('BAIDU_ERNIE_DATA_DIR', 'ernie_data'), 'xnli')):
@@ -380,7 +380,7 @@ class BERTDatasetTransform(object):
                  tokenizer,
                  max_seq_length,
                  class_labels=None,
-                 label_project=None,
+                 label_alias=None,
                  pad=True,
                  pair=True,
                  has_label=True):
@@ -391,9 +391,9 @@ class BERTDatasetTransform(object):
             self._label_map = {}
             for (i, label) in enumerate(class_labels):
                 self._label_map[label] = i
-            if label_project:
-                for key in label_project:
-                    self._label_map[key] = self._label_map[label_project[key]]
+            if label_alias:
+                for key in label_alias:
+                    self._label_map[key] = self._label_map[label_alias[key]]
         self._bert_xform = BERTSentenceTransform(
             tokenizer, max_seq_length, pad=pad, pair=pair)
 
