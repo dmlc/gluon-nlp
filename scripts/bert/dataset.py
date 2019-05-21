@@ -27,6 +27,7 @@ from mxnet.gluon.data import Dataset
 from gluonnlp.data import TSVDataset, BERTSentenceTransform, GlueCoLA, GlueSST2, GlueSTSB
 from gluonnlp.data import GlueQQP, GlueRTE, GlueMNLI, GlueQNLI, GlueWNLI
 from gluonnlp.data.registry import register
+from baidu_ernie_data import BaiduErnieXNLI
 
 @register(segment=['train', 'dev', 'test'])
 class MRPCDataset(TSVDataset):
@@ -68,10 +69,11 @@ class GlueTask(object):
     is_pair : bool
         Whether the task deals with sentence pairs or single sentences.
     """
-    def __init__(self, class_labels, metrics, is_pair):
+    def __init__(self, class_labels, metrics, is_pair, label_project=None):
         self.class_labels = class_labels
         self.metrics = metrics
         self.is_pair = is_pair
+        self.label_project = label_project
 
     def get_dataset(self, segment='train', root=None):
         """Get the corresponding dataset for the task.
@@ -331,6 +333,27 @@ class MNLITask(GlueTask):
         return [('test_matched', self.get_dataset(segment='test_matched')),
                 ('test_mismatched', self.get_dataset(segment='test_mismatched'))]
 
+class XNLITask(GlueTask):
+    """The XNLI task."""
+    def __init__(self):
+        is_pair = True
+        class_labels = ['neutral', 'entailment', 'contradiction']
+        metric = Accuracy()
+        super(XNLITask, self).__init__(class_labels, metric, is_pair, label_project={'contradictory':'contradiction'})
+
+    def get_dataset(self, segment='train',
+                    root=os.path.join(os.getenv('BAIDU_ERNIE_DATA_DIR', 'ernie_data'), 'xnli')):
+        """Get the corresponding dataset for XNLI
+
+        Parameters
+        ----------
+        segment : str, default 'train'
+            Dataset segments. Options are 'dev', 'test', 'train'
+        root : str, default $BAIDU_ERNIE_DATA_DIR/xnli
+            Path to the folder which stores the dataset.
+        """
+        return BaiduErnieXNLI(segment, root=root)
+
 
 class BERTDatasetTransform(object):
     """Dataset Transformation for BERT-style Sentence Classification or Regression.
@@ -357,6 +380,7 @@ class BERTDatasetTransform(object):
                  tokenizer,
                  max_seq_length,
                  class_labels=None,
+                 label_project=None,
                  pad=True,
                  pair=True,
                  has_label=True):
@@ -367,6 +391,9 @@ class BERTDatasetTransform(object):
             self._label_map = {}
             for (i, label) in enumerate(class_labels):
                 self._label_map[label] = i
+            if label_project:
+                for key in label_project:
+                    self._label_map[key] = self._label_map[label_project[key]]
         self._bert_xform = BERTSentenceTransform(
             tokenizer, max_seq_length, pad=pad, pair=pair)
 
