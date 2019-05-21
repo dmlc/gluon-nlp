@@ -55,7 +55,17 @@ def _masked_softmax(F, att_score, mask, dtype):
     return att_weights
 
 def _generate_relative_positions_matrix(self, F, seq_length, max_relative_position):
-    """Generates matrix of relative positions between inputs."""
+    """Generates matrix of relative positions between inputs.
+    Row i corresponds to the i-th word and the columns represent word j in the input sequence.
+    E.g. if max_relative_position=3, seq_length=6
+    matrix:
+        3,4,5,6,6,6
+        2,3,4,5,6,6
+        1,2,3,4,5,6
+        0,1,2,3,4,5
+        0,0,1,2,3,4
+        0,0,0,1,2,3
+    """
     range_vec = F.arange(seq_length)
     range_mat = F.tile(range_vec, [seq_length]).reshape([seq_length, seq_length])
     distance_mat = range_mat - F.transpose(range_mat)
@@ -573,8 +583,8 @@ class MultiHeadAttentionRelativePosCell(HybridBlock):
 
 
     def hybrid_forward(self, F, query, key, value, position_matrix, mask=None):  # pylint: disable=arguments-differ
-        key_embeddings = self.key_embedding(mx.symbol.BlockGrad(position_matrix))
-        value_embeddings = self.value_embedding(mx.symbol.BlockGrad(position_matrix))
+        key_embeddings = self.key_embedding(F.BlockGrad(position_matrix))
+        value_embeddings = self.value_embedding(F.BlockGrad(position_matrix))
         att_weights = self._compute_weight(F, query, key, key_embeddings, mask)
         context_vec = self._read_by_weight(F, att_weights, value, value_embeddings)
         return context_vec, att_weights
