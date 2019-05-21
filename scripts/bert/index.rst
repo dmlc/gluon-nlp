@@ -84,6 +84,9 @@ For all model settings above, we set learing rate = 2e-5 and optimizer = bertada
     $ python3 download_glue_data.py --data_dir glue_data --tasks MNLI
     $ GLUE_DIR=glue_data python finetune_classifier.py --task_name MNLI --max_len 80 --log_interval 100 --epsilon 1e-8 --gpu
 
+[5] XNLI chinese
+    $ BAIDU_ERNIE_DATA_DIR=baidu_ernie_data python finetune_classifier.py --seed 3 --task_name XNLI --batch_size 32 --optimizer bertadam --epochs 3 --lr 2e-5 --bert_dataset wiki_cn_cased --gpu 6
+
 Some other tasks can be modeled with `--task_name` parameter.
 
 BERT for Question Answering on SQuAD
