@@ -22,8 +22,14 @@
 
 __all__ = ['BaiduErnieXNLI']
 
-import zipfile
 import os
+import sys
+import tarfile
+if sys.version_info[0] >= 3:
+    from urllib.request import urlretrieve
+else:
+    from urllib import urlretrieve
+
 
 from mxnet.gluon.utils import download, check_sha1, _get_repo_file_url
 
@@ -31,17 +37,21 @@ from gluonnlp.data.dataset import TSVDataset
 from gluonnlp.data.registry import register
 from gluonnlp.base import get_home_dir
 
-_glue_s3_uri = 's3://apache-mxnet/gluon/dataset/Glue/'
+_baidu_ernie_data_url = 'https://ernie.bj.bcebos.com/task_data.tgz'
 
 class _BaiduErnieDataset(TSVDataset):
-    def __init__(self, root, segment, **kwargs):
+    def __init__(self, root, dataset_name, segment, **kwargs):
         root = os.path.expanduser(root)
         if not os.path.isdir(root):
             os.makedirs(root)
         self._root = root
-        filename = os.path.join(self._root, '%s.tsv' % segment)
+        download_data_path = os.path.join(root, 'task_data.tgz')
+        if not os.path.exists(download_data_path):
+            urlretrieve(_baidu_ernie_data_url, download_data_path)
+            tar_file = tarfile.open(download_data_path, mode='r:gz')
+            tar_file.extractall(root)
+        filename = os.path.join(self._root, 'task_data', dataset_name, '%s.tsv' % segment)
         super(_BaiduErnieDataset, self).__init__(filename, **kwargs)
-        pass
 
 
 @register(segment=['train', 'dev', 'test'])
@@ -78,7 +88,7 @@ class BaiduErnieXNLI(_BaiduErnieDataset):
     ['Bill whistled past the house.']
     """
     def __init__(self, segment='train',
-                 root=os.path.join(get_home_dir(), 'datasets', 'xnli'),
+                 root=os.path.join(get_home_dir(), 'datasets'),
                  return_all_fields=False):
         A_IDX, B_IDX, LABEL_IDX = 0, 1, 2
         if segment in ['train', 'dev']:
@@ -88,7 +98,7 @@ class BaiduErnieXNLI(_BaiduErnieDataset):
             field_indices = [A_IDX, B_IDX] if not return_all_fields else None
             num_discard_samples = 1
 
-        super(BaiduErnieXNLI, self).__init__(root, segment,
+        super(BaiduErnieXNLI, self).__init__(root, 'xnli', segment,
                                        num_discard_samples=num_discard_samples,
                                        field_indices=field_indices)
 
