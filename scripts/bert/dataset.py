@@ -122,8 +122,8 @@ class MRPCTask(GlueTask):
         is_pair = True
         class_labels = ['0', '1']
         metric = CompositeEvalMetric()
-        metric.add(Accuracy())
         metric.add(F1())
+        metric.add(Accuracy())
         super(MRPCTask, self).__init__(class_labels, metric, is_pair)
 
     def get_dataset(self, segment='train',
@@ -145,8 +145,8 @@ class QQPTask(GlueTask):
         is_pair = True
         class_labels = ['0', '1']
         metric = CompositeEvalMetric()
-        metric.add(Accuracy())
         metric.add(F1())
+        metric.add(Accuracy())
         super(QQPTask, self).__init__(class_labels, metric, is_pair)
 
     def get_dataset(self, segment='train',
