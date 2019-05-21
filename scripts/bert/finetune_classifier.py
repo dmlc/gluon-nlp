@@ -484,7 +484,7 @@ def train(metric):
         ckpt_name = 'model_bert_{0}_{1}.params'.format(task_name, epoch_id)
         params_saved = os.path.join(output_dir, ckpt_name)
         nlp.utils.load_parameters(model, params_saved)
-        metric_str = 'Best model at epoch %d. Validation metrics:'%epoch_id
+        metric_str = 'Best model at epoch {}. Validation metrics:'.format(epoch_id)
         metric_str += ','.join([i + ':%.4f' for i in metric_nm])
         logging.info(metric_str, *metric_val)
 
