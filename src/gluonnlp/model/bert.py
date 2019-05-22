@@ -50,24 +50,9 @@ class BERTLayerNorm(nn.LayerNorm):
     def __init__(self, epsilon=1e-12, in_channels=0, prefix=None, params=None):
         super(BERTLayerNorm, self).__init__(epsilon=epsilon, in_channels=in_channels,
                                             prefix=prefix, params=params)
-        self._dtype = None
-
-    def cast(self, dtype):
-        self._dtype = dtype
-        super(BERTLayerNorm, self).cast('float32')
-
     def hybrid_forward(self, F, data, gamma, beta):
         """forward computation."""
-        # TODO(haibin): LayerNorm does not support fp16 safe reduction. Issue is tracked at:
-        # https://github.com/apache/incubator-mxnet/issues/14073
-        if self._dtype:
-            data = data.astype('float32')
-            gamma = gamma.astype('float32')
-            beta = beta.astype('float32')
-        norm_data = F.LayerNorm(data, gamma=gamma, beta=beta, axis=self._axis, eps=self._epsilon)
-        if self._dtype:
-            norm_data = norm_data.astype(self._dtype)
-        return norm_data
+        return F.LayerNorm(data, gamma=gamma, beta=beta, axis=self._axis, eps=self._epsilon)
 
 
 class BERTPositionwiseFFN(BasePositionwiseFFN):
