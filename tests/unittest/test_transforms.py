@@ -296,9 +296,11 @@ def test_bert_sentencepiece_sentences_transform():
     token_ids += [bert_vocab[bert_vocab.padding_token]
                   ] * (max_len - len(token_ids))
 
-    #token ids
+    # token ids
     assert all(processed[0] == np.array(token_ids, dtype='int32'))
-    #sequence length
+    # sequence length
     assert np.asscalar(processed[1]) == len(tokens) + 2
-    #segment id
+    # segment id
     assert all(processed[2] == np.array([0] * max_len, dtype='int32'))
+
+test_bert_sentencepiece_sentences_transform()
