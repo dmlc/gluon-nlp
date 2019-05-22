@@ -339,7 +339,8 @@ class MNLITask(GlueTask):
                 ('test_mismatched', self.get_dataset(segment='test_mismatched'))]
 
 class XNLITask(GlueTask):
-    """The XNLI task."""
+    """The XNLI task using the dataset released from Baidu
+    <https://github.com/PaddlePaddle/LARK/tree/develop/ERNIE>."""
     def __init__(self):
         is_pair = True
         class_labels = ['neutral', 'entailment', 'contradiction']
@@ -354,7 +355,7 @@ class XNLITask(GlueTask):
         ----------
         segment : str, default 'train'
             Dataset segments. Options are 'dev', 'test', 'train'
-        root : str, default $BAIDU_ERNIE_DATA_DIR/xnli
+        root : str, default $BAIDU_ERNIE_DATA_DIR/
             Path to the folder which stores the dataset.
         """
         return BaiduErnieXNLI(segment, root=root)
