@@ -20,16 +20,19 @@
 # pylint: disable=consider-iterating-dictionary
 
 """Vocabulary class used in the BERT."""
-from __future__ import absolute_import
-from __future__ import print_function
+from __future__ import absolute_import, print_function
+
+import json
+import os
+import warnings
+
+from ..data.transforms import SentencepieceTokenizer
+from ..data.utils import DefaultLookupDict, _convert_to_unicode
+from .vocab import Vocab
 
 __all__ = ['BERTVocab']
 
-import json
-import warnings
 
-from .vocab import Vocab
-from ..data.utils import DefaultLookupDict
 
 
 class BERTVocab(Vocab):
@@ -200,4 +203,112 @@ class BERTVocab(Vocab):
         bert_vocab._sep_token = vocab_dict.get('sep_token')
         bert_vocab._cls_token = vocab_dict.get('cls_token')
 
+        return bert_vocab
+
+    @classmethod
+    def from_sentencepiece(cls,
+                           path,
+                           mask_token=MASK_TOKEN,
+                           sep_token=SEP_TOKEN,
+                           cls_token=CLS_TOKEN,
+                           unknown_token=None,
+                           padding_token=None,
+                           bos_token=None,
+                           eos_token=None,
+                           reserved_tokens=None):
+        """BERTVocab from pre-trained sentencepiece Tokenizer
+
+        Parameters
+        ----------
+        path : str
+            Path to the pre-trained subword tokenization model.
+        mask_token : hashable object or None, default '[MASK]'
+            The representation for the special token of mask token for BERT
+        sep_token : hashable object or None, default '[SEP]'
+            a token used to separate sentence pairs for BERT.
+        cls_token : hashable object or None, default '[CLS]'
+        unknown_token : hashable object or None, default None
+            The representation for any unknown token. In other words,
+            any unknown token will be indexed as the same representation.
+            If set to None, it is set to the token corresponding to the unk_id()
+            in the loaded sentencepiece model.
+        padding_token : hashable object or None, default '[PAD]'
+            The representation for padding token.
+        bos_token : hashable object or None, default None
+            The representation for the begin of sentence token.
+            If set to None, it is set to the token corresponding to the bos_id()
+            in the loaded sentencepiece model.
+        eos_token : hashable object or None, default None
+            The representation for the end of sentence token.
+            If set to None, it is set to the token corresponding to the bos_id()
+            in the loaded sentencepiece model.
+        reserved_tokens : list of strs or None, optional
+            A list of reserved tokens that will always be indexed.
+
+        Returns
+        -------
+        BERTVocab
+        """
+        sp = SentencepieceTokenizer(os.path.expanduser(path))
+        processor = sp._processor
+
+        # we manually construct token_to_idx, idx_to_token and relevant fields for a BERT vocab.
+        token_to_idx = {
+            _convert_to_unicode(t): i
+            for i, t in enumerate(sp.tokens)
+        }
+        idx_to_token = list(sp.tokens)
+
+        def _check_consistency(processor, token_id, provided_token):
+            """Check if provided_token is consistent with the special token inferred
+            from the loaded sentencepiece vocab."""
+            provided_token = _convert_to_unicode(provided_token) if provided_token else None
+            if token_id >= 0:
+                # sentencepiece contains this special token.
+                token = _convert_to_unicode(processor.IdToPiece(token_id))
+                if provided_token:
+                    assert provided_token == token
+                provided_token = token
+            return provided_token
+
+        def _register_token(token, token_to_idx, idx_to_token):
+            """Register reserved tokens based on sentencepiece vocab"""
+            token = _convert_to_unicode(token)
+            if token not in token_to_idx:
+                # Append the new token to the end of the vocab.
+                # We append it to the end of the list,
+                # instead of inserting it to the beginning,
+                # because we want to retain the same id/order for words in the vocab.
+                token_to_idx[token] = len(token_to_idx)
+                idx_to_token.append(token)
+
+        unknown_token = _check_consistency(processor, processor.unk_id(), unknown_token)
+        bos_token = _check_consistency(processor, processor.bos_id(), bos_token)
+        eos_token = _check_consistency(processor, processor.eos_id(), eos_token)
+        padding_token = _check_consistency(processor, processor.pad_id(), padding_token)
+
+        # construct reserved_tokens list
+        reserved_tokens = reserved_tokens if reserved_tokens else []
+        for token in [mask_token, sep_token, cls_token, bos_token, eos_token, padding_token]:
+            if token and token not in reserved_tokens:
+                reserved_tokens.append(token)
+        if unknown_token:
+            _register_token(unknown_token, token_to_idx, idx_to_token)
+        for token in reserved_tokens:
+            _register_token(token, token_to_idx, idx_to_token)
+        reserved_tokens = reserved_tokens if reserved_tokens else None
+
+        bert_vocab_dict = {}
+        bert_vocab_dict['idx_to_token'] = idx_to_token
+        bert_vocab_dict['token_to_idx'] = token_to_idx
+        bert_vocab_dict['reserved_tokens'] = reserved_tokens
+        bert_vocab_dict['unknown_token'] = unknown_token
+        bert_vocab_dict['padding_token'] = padding_token
+        bert_vocab_dict['bos_token'] = bos_token
+        bert_vocab_dict['eos_token'] = eos_token
+        bert_vocab_dict['mask_token'] = mask_token
+        bert_vocab_dict['sep_token'] = sep_token
+        bert_vocab_dict['cls_token'] = cls_token
+        json_str = json.dumps(bert_vocab_dict)
+        bert_vocab = cls.from_json(json_str)
         return bert_vocab
