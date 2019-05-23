@@ -180,7 +180,8 @@ def get_pretrain_data_npz(data, batch_size, num_ctxes, shuffle, use_avg_len,
     num_files = len(glob.glob(os.path.expanduser(data)))
     logging.debug('%d files found.', num_files)
     assert num_files >= num_parts, \
-        'Number of training files must be greater than the number of partitions'
+        'Number of training files must be greater than the number of partitions. ' \
+        'Only found %d files at %s'%(num_files, data)
     split_sampler = nlp.data.SplitSampler(num_files, num_parts=num_parts, part_index=part_idx)
     stream = nlp.data.SimpleDatasetStream(nlp.data.NumpyDataset, data, split_sampler)
     if prefetch:
@@ -270,6 +271,7 @@ def forward(data, model, mlm_loss, nsp_loss, vocab_size, dtype):
 
 def evaluate(data_eval, model, nsp_loss, mlm_loss, vocab_size, ctx, log_interval, dtype):
     """Evaluation function."""
+    logging.info('Running evaluation ... ')
     mlm_metric = MaskedAccuracy()
     nsp_metric = MaskedAccuracy()
     mlm_metric.reset()
@@ -325,7 +327,7 @@ def evaluate(data_eval, model, nsp_loss, mlm_loss, vocab_size, ctx, log_interval
         total_nsp_loss += running_nsp_loss
     total_mlm_loss /= step_num
     total_nsp_loss /= step_num
-    logging.info('mlm_loss={:.3f}\tmlm_acc={:.1f}\tnsp_loss={:.3f}\tnsp_acc={:.1f}\t'
+    logging.info('Eval mlm_loss={:.3f}\tmlm_acc={:.1f}\tnsp_loss={:.3f}\tnsp_acc={:.1f}\t'
                  .format(total_mlm_loss.asscalar(), mlm_metric.get_global()[1] * 100,
                          total_nsp_loss.asscalar(), nsp_metric.get_global()[1] * 100))
     logging.info('Eval cost={:.1f}s'.format(eval_end_time - eval_begin_time))
