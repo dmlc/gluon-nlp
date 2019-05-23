@@ -25,6 +25,7 @@ ready for training and evaluation."""
 from __future__ import print_function
 
 import glob
+import signal
 import multiprocessing
 import multiprocessing.pool
 import os
@@ -47,6 +48,7 @@ __all__ = [
     'DataStream', 'SimpleDataStream', 'DatasetStream', 'SimpleDatasetStream',
     'PrefetchingStream']
 
+_managed_processes = []
 
 class DataStream(object):
     """Abstract Data Stream Interface.
@@ -361,10 +363,20 @@ class PrefetchingStream(DataStream):
         np_seed = np.random.randint(0, 2**32)
         mx_seed = int(mx.nd.random.uniform(0, 2**32).asscalar())
         if self._multiprocessing:
-            return _ProcessPrefetcher(self._stream, self._num_prefetch,
-                                      seed=seed, np_seed=np_seed,
-                                      mx_seed=mx_seed)
+            process = _ProcessPrefetcher(self._stream, self._num_prefetch,
+                                         seed=seed, np_seed=np_seed,
+                                         mx_seed=mx_seed)
+            global _managed_processes
+            _managed_processes.append(process)
+            return process
         else:
             return _ThreadPrefetcher(self._stream, self._num_prefetch,
                                      seed=seed, np_seed=np_seed,
                                      mx_seed=mx_seed)
+
+def _signal_term_handler(signal, frame):
+    for process in _managed_processes:
+        process.terminate()
+    sys.exit(signal.SIGTERM)
+
+signal.signal(signal.SIGTERM, signal_term_handler)
