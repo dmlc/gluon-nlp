@@ -1128,7 +1128,7 @@ class BERTSPTokenizer(BERTTokenizer):
         Returns:
           A list of sentencepieced tokens.
         """
-        #Swig object can not be pickled when multiprocessing.
+        # Swig object can not be pickled when multiprocessing.
         if self.sentencepiece is None:
             self._activate_sp()
         output_tokens = self.sentencepiece(text)

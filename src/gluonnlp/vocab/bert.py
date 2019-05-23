@@ -27,7 +27,7 @@ import os
 import warnings
 
 from ..data.transforms import SentencepieceTokenizer
-from ..data.utils import DefaultLookupDict, convert_to_unicode
+from ..data.utils import DefaultLookupDict, _convert_to_unicode
 from .vocab import Vocab
 
 __all__ = ['BERTVocab']
@@ -254,7 +254,7 @@ class BERTVocab(Vocab):
 
         # we manually construct token_to_idx, idx_to_token and relevant fields for a BERT vocab.
         token_to_idx = {
-            convert_to_unicode(t): i
+            _convert_to_unicode(t): i
             for i, t in enumerate(sp.tokens)
         }
         idx_to_token = list(sp.tokens)
@@ -262,10 +262,10 @@ class BERTVocab(Vocab):
         def _check_consistency(processor, token_id, provided_token):
             """Check if provided_token is consistent with the special token inferred
             from the loaded sentencepiece vocab."""
-            provided_token = convert_to_unicode(provided_token) if provided_token else None
+            provided_token = _convert_to_unicode(provided_token) if provided_token else None
             if token_id >= 0:
                 # sentencepiece contains this special token.
-                token = convert_to_unicode(processor.IdToPiece(token_id))
+                token = _convert_to_unicode(processor.IdToPiece(token_id))
                 if provided_token:
                     assert provided_token == token
                 provided_token = token
@@ -273,7 +273,7 @@ class BERTVocab(Vocab):
 
         def _register_token(token, token_to_idx, idx_to_token):
             """Register reserved tokens based on sentencepiece vocab"""
-            token = convert_to_unicode(token)
+            token = _convert_to_unicode(token)
             if token not in token_to_idx:
                 # Append the new token to the end of the vocab.
                 # We append it to the end of the list,

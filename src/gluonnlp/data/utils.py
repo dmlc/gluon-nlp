@@ -22,11 +22,11 @@ from __future__ import absolute_import, print_function
 
 import collections
 import os
+import sys
 import tarfile
 import zipfile
 
 import numpy as np
-import six
 from mxnet.gluon.data import SimpleDataset
 from mxnet.gluon.utils import _get_repo_url, check_sha1, download
 
@@ -35,7 +35,7 @@ from ..base import get_home_dir
 
 __all__ = [
     'Counter', 'count_tokens', 'concat_sequence', 'slice_sequence', 'train_valid_split',
-    'line_splitter', 'whitespace_splitter', 'Splitter', 'convert_to_unicode'
+    'line_splitter', 'whitespace_splitter', 'Splitter'
 ]
 
 class Counter(collections.Counter):  # pylint: disable=abstract-method
@@ -408,9 +408,8 @@ class Splitter(object):
         return s.split(self._separator)
 
 
-def convert_to_unicode(text):
+def _convert_to_unicode(text):
     """Converts `text` to Unicode.
-
 
     Parameters
     ----------
@@ -422,14 +421,15 @@ def convert_to_unicode(text):
     str
         unicode string
     """
-    if six.PY3:
+    py_version = sys.version_info[0]
+    if py_version == 3:
         if isinstance(text, str):
             return text
         elif isinstance(text, bytes):
             return text.decode('utf-8', 'ignore')
         else:
             raise ValueError('Unsupported string type: %s' % (type(text)))
-    elif six.PY2:
+    elif py_version == 2:
         if isinstance(text, str):
             return text.decode('utf-8', 'ignore')
         elif isinstance(text, unicode):  # noqa: F821
