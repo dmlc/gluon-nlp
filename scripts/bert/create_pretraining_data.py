@@ -24,6 +24,7 @@ import io
 import os
 import glob
 import collections
+import warnings
 import random
 import time
 from multiprocessing import Pool
@@ -475,10 +476,19 @@ def main():
     # random seed
     random.seed(args.random_seed)
 
-    # vocabulary
-    logging.info('loading vocab file from dataset: %s', args.vocab)
-    vocab = nlp.data.utils._load_pretrained_vocab(args.vocab, cls=nlp.vocab.BERTVocab)
-    tokenizer = BERTTokenizer(vocab=vocab, lower='uncased' in args.vocab)
+    # vocabulary and tokenizer
+    if args.sentencepiece:
+        logging.info('loading vocab file from sentence piece model: %s', args.sentencepiece)
+        if args.dataset_name:
+            warnings.warn('Both --dataset_name and --sentencepiece are provided. '
+                          'The vocabulary will be loaded based on --sentencepiece.')
+        vocab = nlp.vocab.BERTVocab.from_sentencepiece(args.sentencepiece)
+        tokenizer = nlp.data.BERTSPTokenizer(args.sentencepiece, vocab, lower=not args.cased)
+    else:
+        logging.info('loading vocab file from pre-defined dataset: %s', args.dataset_name)
+        vocab = nlp.data.utils._load_pretrained_vocab(args.dataset_name, cls=nlp.vocab.BERTVocab)
+        tokenizer = BERTTokenizer(vocab=vocab, lower='uncased' in args.dataset_name)
+
 
     # count the number of input files
     input_files = []
@@ -520,13 +530,24 @@ if __name__ == '__main__':
         help='Output directory.')
 
     parser.add_argument(
-        '--vocab',
+        '--dataset_name',
         type=str,
         default=None,
         choices=['book_corpus_wiki_en_uncased', 'book_corpus_wiki_en_cased',
                  'wiki_multilingual_uncased', 'wiki_multilingual_cased', 'wiki_cn_cased'],
         help='The dataset name for the vocab file BERT model was trained on. For example, '
              '"book_corpus_wiki_en_uncased"')
+
+    parser.add_argument(
+        '--sentencepiece',
+        type=str,
+        default=None,
+        help='Path to the sentencepiece .model file for both tokenization and vocab.')
+
+    parser.add_argument(
+        '--cased',
+        action='store_true',
+        help='Effective only if --sentencepiece is set')
 
     parser.add_argument(
         '--max_seq_length', type=int, default=128, help='Maximum sequence length. Default is 128.')

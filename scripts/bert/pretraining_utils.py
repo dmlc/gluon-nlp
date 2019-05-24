@@ -36,11 +36,10 @@ __all__ = ['get_model_loss', 'get_pretrain_data_npz', 'get_dummy_dataloader',
            'save_parameters', 'save_states', 'evaluate', 'forward', 'split_and_load',
            'get_argparser', 'get_pretrain_data_text']
 
-def get_model_loss(ctx, model, pretrained, dataset_name, dtype, ckpt_dir=None, start_step=None):
+def get_model_loss(ctx, model, pretrained, dataset_name, vocab, dtype, ckpt_dir=None, start_step=None):
     """Get model for pre-training."""
     # model
-    model, vocabulary = nlp.model.get_model(model,
-                                            dataset_name=dataset_name,
+    model, vocabulary = nlp.model.get_model(model, dataset_name=dataset_name, vocab=vocab,
                                             pretrained=pretrained, ctx=ctx)
 
     if not pretrained:
@@ -95,17 +94,15 @@ class BERTPretrainDataset(mx.gluon.data.ArrayDataset):
         super(BERTPretrainDataset, self).__init__(*instances)
 
 def get_pretrain_data_text(data, batch_size, num_ctxes, shuffle, use_avg_len,
-                           num_buckets, vocab, max_seq_length, short_seq_prob,
+                           num_buckets, vocab, tokenizer, max_seq_length, short_seq_prob,
                            masked_lm_prob, max_predictions_per_seq,
                            cased, num_parts=1, part_idx=0,
                            prefetch=True, num_workers=1):
     """create dataset for pretraining based on raw texts"""
-    num_files = len(glob.glob(os.path.expanduser(data)))
+    num_files = sum([len(glob.glob(os.path.expanduser(d.strip()))) for d in data.split(',')])
     logging.debug('%d files found.', num_files)
     assert num_files >= num_parts, \
         'Number of training files must be greater than the number of partitions'
-
-    tokenizer = nlp.data.BERTTokenizer(vocab=vocab, lower=not cased)
     # import multiprocessing
     # pool = multiprocessing.Pool(num_workers)
     pool = None
@@ -352,9 +349,11 @@ def get_argparser():
     parser.add_argument('--batch_size_eval', type=int, default=8,
                         help='Batch size per GPU for evaluation.')
     parser.add_argument('--dataset_name', type=str, default='book_corpus_wiki_en_uncased',
-                        help='The dataset from which the vocabulary is created. Options include '
-                             'book_corpus_wiki_en_uncased, book_corpus_wiki_en_cased. '
-                             'Default is book_corpus_wiki_en_uncased')
+                        choices=['book_corpus_wiki_en_uncased', 'book_corpus_wiki_en_cased',
+                                 'wiki_multilingual_uncased', 'wiki_multilingual_cased',
+                                 'wiki_cn_cased'],
+                        help='The pre-defined dataset from which the vocabulary is created. '
+                             'Default is book_corpus_wiki_en_uncased.')
     parser.add_argument('--pretrained', action='store_true',
                         help='Load the pretrained model released by Google.')
     parser.add_argument('--model', type=str, default='bert_12_768_12',

@@ -30,7 +30,7 @@ __all__ = [
     'SpacyTokenizer', 'SacreMosesDetokenizer', 'NLTKMosesDetokenizer',
     'JiebaTokenizer', 'NLTKStanfordSegmenter', 'SentencepieceTokenizer',
     'SentencepieceDetokenizer', 'BERTBasicTokenizer', 'BERTTokenizer',
-    'BERTSentenceTransform'
+    'BERTSentenceTransform', 'BERTSPTokenizer'
 ]
 
 import os
