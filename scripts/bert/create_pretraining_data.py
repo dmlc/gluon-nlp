@@ -178,7 +178,7 @@ def create_training_instances(input_files, tokenizer,
     """
     time_start = time.time()
     if nworker > 1:
-        pool = Pool(nworker)
+        pool = pool if pool else Pool(nworker)
 
     # calculate the number of inputs per output
     num_inputs = len(input_files)
@@ -196,26 +196,29 @@ def create_training_instances(input_files, tokenizer,
                 num_lines = len(lines)
                 num_lines_per_worker = (num_lines + nworker - 1) // nworker
                 process_args = []
-
                 # tokenize in parallel
                 for worker_idx in range(nworker):
                     start = worker_idx * num_lines_per_worker
                     end = min((worker_idx + 1) * num_lines_per_worker, num_lines)
                     process_args.append((lines[start:end], tokenizer, vocab))
 
+                def _process_result(tokenized_results):
+                    for tokenized_result in tokenized_results:
+                        for line in tokenized_result:
+                            if not line:
+                                if all_documents[-1]:
+                                    all_documents.append([])
+                            else:
+                                all_documents[-1].append(line)
+                    return all_documents
+
                 if nworker > 1:
                     tokenized_results = pool.map(tokenize_lines_fn, process_args)
+                    # all_documents = pool.map(_process_result, [tokenized_results])
                 else:
                     tokenized_results = [tokenize_lines_fn(process_args[0])]
 
-                for tokenized_result in tokenized_results:
-                    for line in tokenized_result:
-                        if not line:
-                            if all_documents[-1]:
-                                all_documents.append([])
-                        else:
-                            all_documents[-1].append(line)
-
+                _process_result(tokenized_results)
         # remove the last empty document if any
         if not all_documents[-1]:
             all_documents = all_documents[:-1]
@@ -227,7 +230,6 @@ def create_training_instances(input_files, tokenizer,
                     create_instances_from_document(
                         all_documents, document_index, max_seq_length, short_seq_prob,
                         masked_lm_prob, max_predictions_per_seq, vocab))
-
         input_ids = []
         segment_ids = []
         masked_lm_positions = []

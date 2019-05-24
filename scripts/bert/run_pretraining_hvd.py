@@ -65,6 +65,8 @@ parser.add_argument('--max_predictions_per_seq', type=int, default=None,
                     help='Maximum number of predictions per sequence.')
 parser.add_argument('--cased', action='store_true',
                     help='whether to tokenize with cased characters')
+parser.add_argument('--num_data_workers', type=int, default=8,
+                    help='Number of workers to pre-process data.')
 
 args = parser.parse_args()
 
@@ -254,7 +256,8 @@ if __name__ == '__main__':
                                                short_seq_prob=args.short_seq_prob,
                                                masked_lm_prob=args.masked_lm_prob,
                                                max_predictions_per_seq=args.max_predictions_per_seq,
-                                               vocab=vocab, cased=args.cased)
+                                               vocab=vocab, cased=args.cased,
+                                               num_workers=args.num_data_workers)
         else:
             get_dataset_fn = get_pretrain_data_npz
             if args.cased:

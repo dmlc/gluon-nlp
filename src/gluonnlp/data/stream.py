@@ -308,7 +308,7 @@ class _ProcessPrefetcher(_Prefetcher, multiprocessing.Process):
         self._dataq = multiprocessing.Queue(self.num_prefetch)
         self._controlq = multiprocessing.Queue()
         self._errorq = multiprocessing.Queue(self.num_prefetch)
-        self.daemon = True
+        self.daemon = False
         self.start()
         self._check_start()
 
@@ -374,9 +374,11 @@ class PrefetchingStream(DataStream):
                                      seed=seed, np_seed=np_seed,
                                      mx_seed=mx_seed)
 
-def _signal_term_handler(signal, frame):
+def _signal_term_handler(sig, frame):
+    import logging
+    logging.info('shutting down ... ')
     for process in _managed_processes:
         process.terminate()
     sys.exit(signal.SIGTERM)
 
-signal.signal(signal.SIGTERM, signal_term_handler)
+signal.signal(signal.SIGTERM, _signal_term_handler)
