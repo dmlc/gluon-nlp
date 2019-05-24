@@ -385,4 +385,4 @@ def _signal_term_handler(sig, frame):
         process.terminate()
     sys.exit(signal.SIGTERM)
 
-signal.signal(signal.SIGTERM, _signal_term_handler)
+# signal.signal(signal.SIGTERM, _signal_term_handler)
