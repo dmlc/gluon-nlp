@@ -19,4 +19,4 @@
 
 # pylint: disable=wildcard-import
 """BERT example."""
-from . import bert, dataset, baidu_ernie_data
+from . import bert, baidu_ernie_data, dataset
