@@ -81,7 +81,7 @@ For all model settings above, we set learing rate = 2e-5 and optimizer = bertada
 
 .. code-block:: console
 
-    $ BAIDU_ERNIE_DATA_DIR=baidu_ernie_data python finetune_classifier.py --seed 3 --task_name XNLI --batch_size 32 --optimizer bertadam --epochs 3 --lr 2e-5 --bert_dataset wiki_cn_cased --gpu
+    $ BAIDU_ERNIE_DATA_DIR=baidu_ernie_data python finetune_classifier.py --seed 3 --task_name XNLI --batch_size 32 --optimizer bertadam --epochs 3 --lr 2e-5 --bert_dataset wiki_cn_cased --gpu 0
 
 Some other tasks can be modeled with `--task_name` parameter.
 
