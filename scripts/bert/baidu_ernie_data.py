@@ -18,7 +18,7 @@
 # under the License.
 
 # pylint: disable=line-too-long
-"""GLUEBenchmark corpora."""
+"""Baidu ernie data, contains XNLI."""
 
 __all__ = ['BaiduErnieXNLI']
 
@@ -70,7 +70,7 @@ class BaiduErnieXNLI(_BaiduErnieDataset):
 
     Examples
     --------
-    >>> xnli_dev = gluonnlp.data.BaiduErnieXNLI('dev', root='./datasets/baidu_ernie_task_data/')
+    >>> xnli_dev = BaiduErnieXNLI('dev', root='./datasets/baidu_ernie_task_data/')
     -etc-
     >>> len(xnli_dev)
     2490
@@ -78,7 +78,7 @@ class BaiduErnieXNLI(_BaiduErnieDataset):
     3
     >>> xnli_dev[0]
     ['他说，妈妈，我回来了。', '校车把他放下后，他立即给他妈妈打了电话。', 'neutral']
-    >>> xnli_test = gluonnlp.data.BaiduErnieXNLI('test', root='./datasets/baidu_ernie_task_data/')
+    >>> xnli_test = BaiduErnieXNLI('test', root='./datasets/baidu_ernie_task_data/')
     -etc-
     >>> len(xnli_test)
     5010
