@@ -483,7 +483,8 @@ def main():
             warnings.warn('Both --dataset_name and --sentencepiece are provided. '
                           'The vocabulary will be loaded based on --sentencepiece.')
         vocab = nlp.vocab.BERTVocab.from_sentencepiece(args.sentencepiece)
-        tokenizer = nlp.data.BERTSPTokenizer(args.sentencepiece, vocab, lower=not args.cased)
+        tokenizer = nlp.data.BERTSPTokenizer(args.sentencepiece, vocab, num_best=args.sp_nbest,
+                                             alpha=args.sp_alpha,lower=not args.cased)
     else:
         logging.info('loading vocab file from pre-defined dataset: %s', args.dataset_name)
         vocab = nlp.data.utils._load_pretrained_vocab(args.dataset_name, cls=nlp.vocab.BERTVocab)
@@ -549,14 +550,20 @@ if __name__ == '__main__':
         action='store_true',
         help='Effective only if --sentencepiece is set')
 
+    parser.add_argument('--sp_nbest', type=int, default=0,
+                        help='Number of best candidates for sampling subwords with sentencepiece. ')
+
+    parser.add_argument('--sp_alpha', type=float, default=1.0,
+                        help='Inverse temperature for probability rescaling for sentencepiece sampling')
+
     parser.add_argument(
-        '--max_seq_length', type=int, default=128, help='Maximum sequence length. Default is 128.')
+        '--max_seq_length', type=int, default=512, help='Maximum sequence length. Default is 128.')
 
     parser.add_argument(
         '--max_predictions_per_seq',
         type=int,
-        default=20,
-        help='Maximum number of masked LM predictions per sequence. Default is 20.')
+        default=80,
+        help='Maximum number of masked LM predictions per sequence. Default is 80.')
 
     parser.add_argument(
         '--random_seed',
@@ -567,8 +574,8 @@ if __name__ == '__main__':
     parser.add_argument(
         '--dupe_factor',
         type=int,
-        default=10,
-        help='Number of times to duplicate the input data (with different masks). Default is 10.')
+        default=1,
+        help='Number of times to duplicate the input data (with different masks). Default is 1.')
 
     parser.add_argument(
         '--masked_lm_prob',

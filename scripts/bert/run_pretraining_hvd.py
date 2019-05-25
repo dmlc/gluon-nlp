@@ -69,6 +69,10 @@ parser.add_argument('--cased', action='store_true',
                     help='Whether to tokenize with cased characters')
 parser.add_argument('--sentencepiece', default=None, type=str,
                     help='Path to the sentencepiece .model file for both tokenization and vocab.')
+parser.add_argument('--sp_nbest', type=int, default=0,
+                    help='Number of best candidates for sampling subwords with sentencepiece. ')
+parser.add_argument('--sp_alpha', type=float, default=1.0,
+                    help='Inverse temperature for probability rescaling for sentencepiece sampling')
 parser.add_argument('--num_data_workers', type=int, default=8,
                     help='Number of workers to pre-process data.')
 
@@ -272,7 +276,9 @@ if __name__ == '__main__':
         lower = not args.cased
         if args.raw:
             if args.sentencepiece:
-                tokenizer = nlp.data.BERTSPTokenizer(args.sentencepiece, vocab, lower=lower)
+                tokenizer = nlp.data.BERTSPTokenizer(args.sentencepiece, vocab,
+                                                     num_best=args.sp_nbest,
+                                                     alpha=args.sp_alpha, lower=lower)
             else:
                 tokenizer = nlp.data.BERTTokenizer(vocab=vocab, lower=lower)
             get_dataset_fn = functools.partial(get_pretrain_data_text,
