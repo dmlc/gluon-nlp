@@ -348,7 +348,7 @@ class XNLITask(GlueTask):
         super(XNLITask, self).__init__(class_labels, metric, is_pair, label_alias={'contradictory':'contradiction'})
 
     def get_dataset(self, segment='train',
-                    root=os.getenv('BAIDU_ERNIE_DATA_DIR')):
+                    root=os.path.join(os.getenv('BAIDU_ERNIE_DATA_DIR', 'baidu_ernie_data'))):
         """Get the corresponding dataset for XNLI
 
         Parameters

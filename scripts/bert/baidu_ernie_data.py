@@ -88,7 +88,7 @@ class BaiduErnieXNLI(_BaiduErnieDataset):
     ['嗯，我根本没想过，但是我很沮丧，最后我又和他说话了。', '我还没有和他再次谈论。']
     """
     def __init__(self, segment='train',
-                 root=os.path.join(get_home_dir(), 'datasets'),
+                 root=os.path.join(get_home_dir(), 'datasets', 'baidu_ernie_data'),
                  return_all_fields=False):
         A_IDX, B_IDX, LABEL_IDX = 0, 1, 2
         if segment in ['train', 'dev']:
