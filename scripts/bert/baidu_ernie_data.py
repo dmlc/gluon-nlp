@@ -25,17 +25,13 @@ __all__ = ['BaiduErnieXNLI']
 import os
 import sys
 import tarfile
+from gluonnlp.data.dataset import TSVDataset
+from gluonnlp.data.registry import register
+from gluonnlp.base import get_home_dir
 if sys.version_info[0] >= 3:
     from urllib.request import urlretrieve
 else:
     from urllib import urlretrieve
-
-
-from mxnet.gluon.utils import download, check_sha1, _get_repo_file_url
-
-from gluonnlp.data.dataset import TSVDataset
-from gluonnlp.data.registry import register
-from gluonnlp.base import get_home_dir
 
 _baidu_ernie_data_url = 'https://ernie.bj.bcebos.com/task_data.tgz'
 
@@ -99,6 +95,5 @@ class BaiduErnieXNLI(_BaiduErnieDataset):
             num_discard_samples = 1
 
         super(BaiduErnieXNLI, self).__init__(root, 'xnli', segment,
-                                       num_discard_samples=num_discard_samples,
-                                       field_indices=field_indices)
-
+                                             num_discard_samples=num_discard_samples,
+                                             field_indices=field_indices)
