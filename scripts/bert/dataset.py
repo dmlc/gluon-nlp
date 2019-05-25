@@ -14,6 +14,8 @@
 # limitations under the License.
 """BERT datasets."""
 
+from __future__ import absolute_import
+
 __all__ = [
     'MRPCTask', 'QQPTask', 'QNLITask', 'RTETask', 'STSBTask',
     'CoLATask', 'MNLITask', 'WNLITask', 'SSTTask', 'BertEmbeddingDataset',
@@ -27,7 +29,7 @@ from mxnet.gluon.data import Dataset
 from gluonnlp.data import TSVDataset, BERTSentenceTransform, GlueCoLA, GlueSST2, GlueSTSB
 from gluonnlp.data import GlueQQP, GlueRTE, GlueMNLI, GlueQNLI, GlueWNLI
 from gluonnlp.data.registry import register
-from baidu_ernie_data import BaiduErnieXNLI
+from .baidu_ernie_data import BaiduErnieXNLI
 
 @register(segment=['train', 'dev', 'test'])
 class MRPCDataset(TSVDataset):

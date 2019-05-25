@@ -51,7 +51,7 @@ from gluonnlp.data import BERTTokenizer
 
 from bert import BERTClassifier, BERTRegression
 from dataset import MRPCTask, QQPTask, RTETask, STSBTask, \
-    QNLITask, CoLATask, MNLITask, WNLITask, SSTTask,XNLITask, BERTDatasetTransform
+    QNLITask, CoLATask, MNLITask, WNLITask, SSTTask, XNLITask, BERTDatasetTransform
 
 tasks = {
     'MRPC': MRPCTask(),
