@@ -43,9 +43,9 @@ class Net(nn.HybridBlock):
             self.dense1 = nn.Dense(max_sequence_length*2,activation='relu')
             self.dense2 = nn.Dense(1)
     def hybrid_forward(self, F, seq):
-        region_radius = region_size/2
-        aligned_seq = map(lambda i: F.slice(seq, begin=[None, i-region_radius], end=[None, i-region_radius+region_size]).asnumpy(), \
-                    range(region_radius, seq.shape[1] - region_radius))
+        region_radius = region_size//2
+        aligned_seq = list(map(lambda i: F.slice(seq, begin=[None, i-region_radius], end=[None, i-region_radius+region_size]).asnumpy(), \
+                    range(region_radius, seq.shape[1] - region_radius)))
         aligned_seq = nd.array(aligned_seq)
         region_aligned_seq = aligned_seq.transpose((1, 0, 2))
         region_aligned_emb = self.embedding_region(region_aligned_seq).reshape((batch_size,-1,region_size,emb_size))
