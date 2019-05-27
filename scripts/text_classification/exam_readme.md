@@ -1,5 +1,5 @@
 # AAAI_2019_EXAM
-Official implementation of "Explicit Interaction Model towards Text Classification".
+Official implementation of "Explicit Interaction Model towards Text Classification" in AAAI 2019.
 
 
 # Code Instruction
@@ -8,14 +8,17 @@ Dependency:
 - python 3.5
 - MXNet  1.2
 - One Titan XP
-# Experiment Instruction
 
-# Datasets Instruction
-Use the dataloader to clean the datasets.
+## 2.Results
 
-# Acknowledgement
 
-We want to thanks Mr. Li (Yongqi Li AKA ASS LEE) who prepare the zhihu dataset for us, really appreciate for what he did.
+|Datasets| Accuracy(%)|
+| :-- | :--: |
+|Yahoo Answer|74.8|
+|Amazon Polarity|95.5|
+|Amazon Full|61.9|
+|Ag news| 92.88|
+|DBPedia|99.0|
 
 # Citation
 
