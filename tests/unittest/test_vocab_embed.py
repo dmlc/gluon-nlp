@@ -20,6 +20,7 @@
 from __future__ import absolute_import
 from __future__ import print_function
 
+import random
 import re
 import os
 import sys
@@ -1371,3 +1372,73 @@ def test_vocab_identifiers_to_tokens(unknown_token, padding_token,
 
     assert getattr(vocab, 'unknown_token') == unknown_token
     assert getattr(vocab, 'padding_token') == padding_token
+
+
+@pytest.mark.parametrize('unknown_token', ['<unk>', None])
+@pytest.mark.parametrize('padding_token', ['<pad>', None])
+@pytest.mark.parametrize('identifiers_to_tokens', [{'mytoken': '<tok>'}, None])
+def test_vocab_token_to_idx(unknown_token, padding_token, identifiers_to_tokens,
+                            counter):
+    reserved_tokens = ['<tok>']
+    Vocab = functools.partial(nlp.Vocab,
+                              counter,
+                              max_size=None,
+                              min_freq=1,
+                              unknown_token=unknown_token,
+                              padding_token=padding_token,
+                              bos_token=None,
+                              eos_token=None,
+                              reserved_tokens=reserved_tokens)
+    tokens = set(counter)
+    if unknown_token is not None:
+        tokens.add(unknown_token)
+    if padding_token is not None:
+        tokens.add(padding_token)
+    if isinstance(reserved_tokens, dict):
+        tokens.update(reserved_tokens.values())
+    elif isinstance(reserved_tokens, list):
+        tokens.update(reserved_tokens)
+
+    # Test sanity-checks
+    valid_token = next(counter.elements())
+    invalid_token = 'token_that_does_not_occur_in_vocab'
+    assert invalid_token not in counter
+    with pytest.raises(ValueError):
+        Vocab(token_to_idx={invalid_token: 0})
+    with pytest.raises(ValueError):
+        Vocab(token_to_idx={valid_token: -1})
+    with pytest.raises(ValueError):
+        Vocab(token_to_idx={valid_token: len(tokens)})
+
+    def token_idx_check(token, idx):
+        assert v[token] == idx
+        assert v.token_to_idx[token] == idx
+        assert v.idx_to_token[idx] == token
+
+    def consistency_check(v):
+        assert set(v.idx_to_token) == set(v.token_to_idx.keys())
+        assert set(v.token_to_idx.keys()) == set(tokens)
+        assert set(v.token_to_idx.values()) == set(range(len(tokens)))
+
+    # Manual checks with special tokens
+    if unknown_token:
+        v = Vocab(token_to_idx={unknown_token: len(tokens) - 1})
+        consistency_check(v)
+        token_idx_check(unknown_token, len(tokens) -1)
+    if padding_token:
+        v = Vocab(token_to_idx={padding_token: len(tokens) - 1})
+        consistency_check(v)
+        token_idx_check(padding_token, len(tokens) -1)
+
+    # Test 10 random user-specified indices for a subset of tokens
+    for i in range(10):
+        k = random.randint(0, len(tokens) - 1)
+        token_to_idx = {
+            k: v
+            for k, v in zip(random.sample(tokens, k), random.sample(
+                range(k), k))
+        }
+        v = Vocab(token_to_idx=token_to_idx)
+        consistency_check(v)
+        for token, idx in token_to_idx.items():
+            token_idx_check(token, idx)

@@ -78,6 +78,13 @@ class Vocab(object):
         expose each of the tokens specified as individual attributes. For
         example `reserved_tokens = {'my_special_token': '<special>'}` results
         in a vocabulary object with attribute `v.my_special_token == '<special>'`
+    token_to_idx : dict mapping tokens (hashable objects) to int or None, default None
+        Optionally specifies the indices of tokens to be used by the
+        vocabulary. Each token in `token_to_index` must be part of the Vocab
+        and each index can only be associated with a single token.
+        `token_to_idx` is not required to contain a mapping for all tokens. For
+        example, it is valid to only set the `unknown_token` index to 10 (instead
+        of the default of 0) with `token_to_idx = {'<unk>': 10}`.
 
     Attributes
     ----------
@@ -149,7 +156,7 @@ class Vocab(object):
 
     def __init__(self, counter=None, max_size=None, min_freq=1, unknown_token=C.UNK_TOKEN,
                  padding_token=C.PAD_TOKEN, bos_token=C.BOS_TOKEN, eos_token=C.EOS_TOKEN,
-                 reserved_tokens=None, identifiers_to_tokens=None):
+                 reserved_tokens=None, identifiers_to_tokens=None, token_to_idx=None):
 
         # Sanity checks.
         assert min_freq > 0, '`min_freq` must be set to a positive value.'
@@ -171,9 +178,9 @@ class Vocab(object):
             if unknown_token:
                 assert unknown_token not in special_token_set, \
                     '`reserved_token` cannot contain `unknown_token`.'
-            if len(special_token_set) != len(special_tokens):
-                raise ValueError('`reserved_tokens` cannot contain '
-                    'duplicate reserved tokens or other special tokens.')
+            assert len(special_token_set) == len(special_tokens), \
+                '`reserved_tokens` cannot contain duplicate reserved tokens or ' \
+                'other special tokens.'
         self._index_special_tokens(unknown_token, special_tokens)
 
         if counter:
@@ -182,6 +189,9 @@ class Vocab(object):
         self._identifiers_to_tokens = identifiers_to_tokens
         if identifiers_to_tokens:
             self._expose_tokens_as_attributes(identifiers_to_tokens)
+
+        if token_to_idx:
+            self._sort_index_according_to_user_specification(token_to_idx)
 
         self._embedding = None
 
@@ -245,6 +255,27 @@ class Vocab(object):
                                  'Please choose a different identifier for token {}'
                                  .format(identifier, token))
             setattr(self, identifier, token)
+
+    def _sort_index_according_to_user_specification(self, token_to_idx):
+        # Sanity checks
+        if not set(token_to_idx.keys()).issubset(self.token_to_idx.keys()):
+            raise ValueError('User-specified token_to_idx mapping can only contain '
+                             'tokens that will be part of the vocabulary.')
+        if len(set(token_to_idx.values())) != len(token_to_idx):
+            raise ValueError('User-specified indices must not contain duplicates.')
+        if min(token_to_idx.values()) < 0 or max(token_to_idx.values()) >= len(self.token_to_idx):
+            raise ValueError('User-specified indices must not be < 0 or >= the number of tokens '
+                             'that will be in the vocabulary.')
+
+        # Update index ordering
+        for token, new_idx in token_to_idx.items():
+            old_idx = self.token_to_idx[token]
+            ousted_token = self.idx_to_token[new_idx]
+
+            self.token_to_idx[token] = new_idx
+            self.token_to_idx[ousted_token] = old_idx
+            self.idx_to_token[old_idx] = ousted_token
+            self.idx_to_token[new_idx] = token
 
     @property
     def embedding(self):
@@ -397,8 +428,7 @@ class Vocab(object):
         for idx in indices:
             if not isinstance(idx, int) or idx > max_idx:
                 raise ValueError('Token index {} in the provided `indices` is invalid.'.format(idx))
-            else:
-                tokens.append(self._idx_to_token[idx])
+            tokens.append(self._idx_to_token[idx])
 
         return tokens[0] if to_reduce else tokens
 
