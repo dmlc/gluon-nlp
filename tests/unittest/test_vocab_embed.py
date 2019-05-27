@@ -38,6 +38,11 @@ else:
     _str_types = (str, unicode)
 
 
+@pytest.fixture
+def counter():
+    return nlp.data.utils.Counter( ['a', 'b', 'b', 'c', 'c', 'c',
+                                    'some_word$'])
+
 def _get_test_str_of_tokens(token_delim, seq_delim):
     seq1 = token_delim + token_delim.join(['Life', 'is', 'great', '!']) + token_delim + seq_delim
     seq2 = token_delim + token_delim.join(['life', 'is', 'good', '.']) + token_delim + seq_delim
@@ -80,9 +85,7 @@ def test_count_tokens():
     _test_count_tokens('IS', 'LIFE')
 
 
-def test_vocabulary_getitem():
-    counter = nlp.data.utils.Counter(['a', 'b', 'b', 'c', 'c', 'c', 'some_word$'])
-
+def test_vocabulary_getitem(counter):
     vocab = nlp.Vocab(counter, max_size=None, min_freq=1, unknown_token='<unk>',
                       bos_token=None, eos_token=None, reserved_tokens=None)
 
@@ -115,9 +118,7 @@ def test_vocabulary_getitem():
             no_unk_vocab.to_indices(words)
 
 
-def test_vocabulary_to_tokens():
-    counter = nlp.data.utils.Counter(['a', 'b', 'b', 'c', 'c', 'c', 'some_word$'])
-
+def test_vocabulary_to_tokens(counter):
     vocab = nlp.Vocab(counter, max_size=None, min_freq=1,unknown_token='<unknown>',
                       bos_token=None, eos_token=None, reserved_tokens=None)
     i1 = vocab.to_tokens(2)
@@ -137,9 +138,7 @@ def test_vocabulary_to_tokens():
             vocab.to_tokens(indices)
 
 
-def test_vocabulary():
-    counter = nlp.data.utils.Counter(['a', 'b', 'b', 'c', 'c', 'c', 'some_word$'])
-
+def test_vocabulary(counter):
     v1 = nlp.Vocab(counter, max_size=None, min_freq=1, unknown_token='<unk>',
                    padding_token=None, bos_token=None, eos_token=None, reserved_tokens=None)
     assert len(v1) == 5
@@ -477,7 +476,7 @@ def test_embedding_get_and_pretrain_file_names():
 
 
 @pytest.mark.parametrize('allow_extend', [True, False])
-def test_vocab_set_embedding_with_one_custom_embedding(tmpdir, allow_extend):
+def test_vocab_set_embedding_with_one_custom_embedding(tmpdir, allow_extend, counter):
     embed_root = str(tmpdir)
     embed_name = 'my_embed'
     elem_delim = '\t'
@@ -488,8 +487,6 @@ def test_vocab_set_embedding_with_one_custom_embedding(tmpdir, allow_extend):
     _mk_my_pretrain_file(os.path.join(embed_root, embed_name), elem_delim, pretrain_file)
 
     pretrain_file_path = os.path.join(embed_root, embed_name, pretrain_file)
-
-    counter = nlp.data.utils.Counter(['a', 'b', 'b', 'c', 'c', 'c', 'some_word$'])
 
     v1 = nlp.Vocab(counter, max_size=None, min_freq=1, unknown_token='<unk>',
                    padding_token=None, bos_token=None, eos_token=None, reserved_tokens=['<pad>'])
@@ -617,7 +614,7 @@ def test_vocab_set_embedding_with_one_custom_embedding(tmpdir, allow_extend):
 
 
 @pytest.mark.parametrize('allow_extend', [True, False])
-def test_vocab_set_embedding_with_two_custom_embeddings(tmpdir, allow_extend):
+def test_vocab_set_embedding_with_two_custom_embeddings(tmpdir, allow_extend, counter):
     embed_root = str(tmpdir)
     embed_name = 'my_embed'
     elem_delim = '\t'
@@ -634,8 +631,6 @@ def test_vocab_set_embedding_with_two_custom_embeddings(tmpdir, allow_extend):
 
     my_embed1 = from_file(pretrain_file_path1, elem_delim, init_unknown_vec=nd.ones)
     my_embed2 = from_file(pretrain_file_path2, elem_delim)
-
-    counter = nlp.data.utils.Counter(['a', 'b', 'b', 'c', 'c', 'c', 'some_word$'])
 
     v1 = nlp.Vocab(counter, max_size=None, min_freq=1, unknown_token='<unk>',
                    padding_token=None, bos_token=None, eos_token=None, reserved_tokens=None)
