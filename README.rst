@@ -147,7 +147,7 @@ Build vocabulary based on the above dataset, for example:
 
 .. code:: python
 
-    >>> vocab = nlp.Vocab(counter=nlp.data.Counter(train[0]))
+    >>> vocab = nlp.Vocab(counter=nlp.data.Counter(train))
     >>> vocab
     Vocab(size=33280, unk="<unk>", reserved="['<pad>', '<bos>', '<eos>']")
 
