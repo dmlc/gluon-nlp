@@ -30,7 +30,7 @@ import warnings
 
 from mxnet import nd
 
-from ..data.utils import DefaultLookupDict
+from ..data.utils import DefaultLookupDict, count_tokens
 from .. import _constants as C
 from .. import embedding as emb
 
@@ -65,11 +65,19 @@ class Vocab(object):
     eos_token : hashable object or None, default '<eos>'
         The representation for the special token of end-of-sequence token.
     reserved_tokens : list of hashable objects or None, default None
-        A list of reserved tokens (excluding `unknown_token`) that will always be indexed, such as
-        special symbols representing padding, beginning of sentence, and end of sentence. It cannot
-        contain `unknown_token` or duplicate reserved tokens. Keys of `counter`, `unknown_token`,
-        and values of `reserved_tokens` must be of the same hashable type. Examples: str, int, and
-        tuple.
+        A list specifying additional reserved tokens that will always be
+        indexed similar to `padding_token`, `bos_token` or `eos_token`.
+        `reserved_tokens` cannot contain `unknown_token` or duplicate reserved
+        tokens.
+        Keys of `counter`, `unknown_token`, and values of `reserved_tokens`
+        must be of the same hashable type. Examples of hashable types are str,
+        int, and tuple.
+    identifiers_to_tokens : dict mapping elements of reserved_tokens to str or None, default None
+        If `identifiers_to_tokens` is a dictionary, it specifies a mapping from
+        identifiers `name` to tokens part of the resulting Vocab `v`. `v` will
+        expose each of the tokens specified as individual attributes. For
+        example `reserved_tokens = {'my_special_token': '<special>'}` results
+        in a vocabulary object with attribute `v.my_special_token == '<special>'`
 
     Attributes
     ----------
@@ -128,9 +136,20 @@ class Vocab(object):
     <NDArray 2x5 @cpu(0)>
     """
 
+    # Declare internal attributes; if not declared, property getters will raise
+    # before internals are set, eg. in hasattr(self, identifier) checks
+    _embedding = None
+    _idx_to_token = None
+    _reserved_tokens = None
+    _token_to_idx = None
+    _unknown_token = None
+    _padding_token = None
+    _bos_token = None
+    _eos_token = None
+
     def __init__(self, counter=None, max_size=None, min_freq=1, unknown_token=C.UNK_TOKEN,
                  padding_token=C.PAD_TOKEN, bos_token=C.BOS_TOKEN, eos_token=C.EOS_TOKEN,
-                 reserved_tokens=None):
+                 reserved_tokens=None, identifiers_to_tokens=None):
 
         # Sanity checks.
         assert min_freq > 0, '`min_freq` must be set to a positive value.'
@@ -146,19 +165,23 @@ class Vocab(object):
         self._eos_token = eos_token
         if eos_token and eos_token not in special_tokens:
             special_tokens.append(eos_token)
-        if reserved_tokens:
+        if reserved_tokens is not None:
             special_tokens.extend(reserved_tokens)
             special_token_set = set(special_tokens)
             if unknown_token:
                 assert unknown_token not in special_token_set, \
                     '`reserved_token` cannot contain `unknown_token`.'
-            assert len(special_token_set) == len(special_tokens), \
-                '`reserved_tokens` cannot contain duplicate reserved tokens or ' \
-                'other special tokens.'
+            if len(special_token_set) != len(special_tokens):
+                raise ValueError('`reserved_tokens` cannot contain '
+                    'duplicate reserved tokens or other special tokens.')
         self._index_special_tokens(unknown_token, special_tokens)
 
         if counter:
             self._index_counter_keys(counter, unknown_token, special_tokens, max_size, min_freq)
+
+        self._identifiers_to_tokens = identifiers_to_tokens
+        if identifiers_to_tokens:
+            self._expose_tokens_as_attributes(identifiers_to_tokens)
 
         self._embedding = None
 
@@ -205,6 +228,23 @@ class Vocab(object):
             if token not in unknown_and_special_tokens:
                 self._idx_to_token.append(token)
                 self._token_to_idx[token] = len(self._idx_to_token) - 1
+
+    def _expose_tokens_as_attributes(self, identifiers_to_tokens):
+        for identifier, token in identifiers_to_tokens.items():
+            if token not in self:
+                raise ValueError(
+                    '\'{}\' is not part of the vocabulary. '
+                    '\'{}\' cannot identify a non-existing token.'.format(
+                        token, identifier))
+            if identifier.startswith('_'):
+                raise ValueError('It is not allowed to use identifiers starting with '
+                                 'underscore. In Python identifier names beginning with '
+                                 'underscore are internal.')
+            if hasattr(self, identifier):
+                raise ValueError('vocab.{} already exists. '
+                                 'Please choose a different identifier for token {}'
+                                 .format(identifier, token))
+            setattr(self, identifier, token)
 
     @property
     def embedding(self):
@@ -420,6 +460,7 @@ class Vocab(object):
         vocab_dict['padding_token'] = self._padding_token
         vocab_dict['bos_token'] = self._bos_token
         vocab_dict['eos_token'] = self._eos_token
+        vocab_dict['identifiers_to_tokens'] = self._identifiers_to_tokens
         return json.dumps(vocab_dict)
 
     @classmethod
@@ -437,16 +478,26 @@ class Vocab(object):
         Vocab
         """
         vocab_dict = json.loads(json_str)
-
+        token_to_idx = vocab_dict.get('token_to_idx')
         unknown_token = vocab_dict.get('unknown_token')
-        vocab = cls(unknown_token=unknown_token)
-        vocab._idx_to_token = vocab_dict.get('idx_to_token')
-        vocab._token_to_idx = vocab_dict.get('token_to_idx')
-        if unknown_token:
-            vocab._token_to_idx = DefaultLookupDict(vocab._token_to_idx[unknown_token],
-                                                    vocab._token_to_idx)
-        vocab._reserved_tokens = vocab_dict.get('reserved_tokens')
-        vocab._padding_token = vocab_dict.get('padding_token')
-        vocab._bos_token = vocab_dict.get('bos_token')
-        vocab._eos_token = vocab_dict.get('eos_token')
+        padding_token = vocab_dict.get('padding_token')
+        bos_token = vocab_dict.get('bos_token')
+        eos_token = vocab_dict.get('eos_token')
+        special_tokens = [unknown_token, padding_token, bos_token, eos_token]
+        reserved_tokens = vocab_dict.get('reserved_tokens')
+
+        # workaround reserved and special tokens being serialized together
+        reserved_tokens = [
+            t for t in reserved_tokens if t not in special_tokens
+        ]
+
+        vocab = cls(
+            counter=count_tokens(token_to_idx.keys()),
+            unknown_token=vocab_dict.get('unknown_token'),
+            padding_token=vocab_dict.get('padding_token'),
+            bos_token=vocab_dict.get('bos_token'),
+            eos_token=vocab_dict.get('eos_token'),
+            reserved_tokens=reserved_tokens,
+            token_to_idx=token_to_idx,
+            identifiers_to_tokens=vocab_dict.get('identifiers_to_tokens'))
         return vocab
