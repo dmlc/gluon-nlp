@@ -31,7 +31,7 @@ from gluonnlp.data import GlueQQP, GlueRTE, GlueMNLI, GlueQNLI, GlueWNLI
 from gluonnlp.data.registry import register
 try:
     from .baidu_ernie_data import BaiduErnieXNLI
-except:
+except ImportError:
     from baidu_ernie_data import BaiduErnieXNLI
 
 @register(segment=['train', 'dev', 'test'])
