@@ -30,10 +30,6 @@ EOS_TOKEN = '<eos>'
 
 PAD_TOKEN = '<pad>'
 
-UNK_IDX = 0   # This should not be changed as long as serialized token
-              # embeddings redistributed on S3 contain an unknown token.
-              # Blame this code change and see commit for more context.
-
 LARGE_POSITIVE_FLOAT = 1e18
 
 LARGE_NEGATIVE_FLOAT = -LARGE_POSITIVE_FLOAT

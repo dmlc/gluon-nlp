@@ -34,6 +34,8 @@ from ..data.utils import DefaultLookupDict, count_tokens
 from .. import _constants as C
 from .. import embedding as emb
 
+UNK_IDX = 0
+
 
 class Vocab(object):
     """Indexing and embedding attachment for text tokens.
@@ -207,7 +209,7 @@ class Vocab(object):
             self._idx_to_token.extend(special_tokens)
 
         if unknown_token:
-            self._token_to_idx = DefaultLookupDict(C.UNK_IDX)
+            self._token_to_idx = DefaultLookupDict(UNK_IDX)
         else:
             self._token_to_idx = {}
         self._token_to_idx.update((token, idx) for idx, token in enumerate(self._idx_to_token))
