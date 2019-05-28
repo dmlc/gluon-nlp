@@ -1265,11 +1265,13 @@ class ParallelTransformer(Parallelizable):
     rescale_loss : float
         The scale to which the loss is rescaled to avoid gradient explosion.
     """
-    def __init__(self, model, label_smoothing, loss_function, rescale_loss):
+    def __init__(self, model, label_smoothing, loss_function, rescale_loss, amp=None, trainer=None):
         self._model = model
         self._label_smoothing = label_smoothing
         self._loss = loss_function
         self._rescale_loss = rescale_loss
+        self._amp = amp
+        self._trainer = trainer
 
     def forward_backward(self, x):
         """Perform forward and backward computation for a batch of src seq and dst seq"""
@@ -1280,5 +1282,10 @@ class ParallelTransformer(Parallelizable):
             smoothed_label = self._label_smoothing(tgt_seq[:, 1:])
             ls = self._loss(out, smoothed_label, tgt_valid_length - 1).sum()
             ls = (ls * (tgt_seq.shape[1] - 1)) / batch_size / self._rescale_loss
+            if self._amp is not None:
+                with self._amp.scale_loss(ls, self._trainer) as scaled_loss:
+                    mx.autograd.backward(scaled_loss)
+                    return scaled_loss
         ls.backward()
         return ls
+        
