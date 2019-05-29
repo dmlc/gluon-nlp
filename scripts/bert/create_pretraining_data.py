@@ -136,42 +136,39 @@ def tokenize_lines_fn(x):
                 results.append(tokens)
     return results
 
-class FeatureFn(object):
-    @staticmethod
-    def fn(all_documents, dupe_factor, max_seq_length, short_seq_prob, masked_lm_prob, max_predictions_per_seq, vocab):
-        #all_documents, dupe_factor, max_seq_length = x
-        instances = []
-        for _ in range(dupe_factor):
-            for document_index in range(len(all_documents)):
-                instances.extend(
-                    create_instances_from_document(
-                        all_documents, document_index, max_seq_length, short_seq_prob,
-                        masked_lm_prob, max_predictions_per_seq, vocab))
-        input_ids = []
-        segment_ids = []
-        masked_lm_positions = []
-        masked_lm_ids = []
-        masked_lm_weights = []
-        next_sentence_labels = []
-        valid_lengths = []
+def feature_fn(all_documents, dupe_factor, max_seq_length, short_seq_prob, masked_lm_prob, max_predictions_per_seq, vocab):
+    instances = []
+    for _ in range(dupe_factor):
+        for document_index in range(len(all_documents)):
+            instances.extend(
+                create_instances_from_document(
+                    all_documents, document_index, max_seq_length, short_seq_prob,
+                    masked_lm_prob, max_predictions_per_seq, vocab))
+    input_ids = []
+    segment_ids = []
+    masked_lm_positions = []
+    masked_lm_ids = []
+    masked_lm_weights = []
+    next_sentence_labels = []
+    valid_lengths = []
 
-        for inst_index, instance in enumerate(instances):
-            feature = transform(instance, max_seq_length)
-            input_ids.append(
-                np.ascontiguousarray(feature['input_ids'], dtype='int32'))
-            segment_ids.append(
-                np.ascontiguousarray(feature['segment_ids'], dtype='int32'))
-            masked_lm_positions.append(
-                np.ascontiguousarray(feature['masked_lm_positions'], dtype='int32'))
-            masked_lm_ids.append(np.ascontiguousarray(feature['masked_lm_ids'], dtype='int32'))
-            masked_lm_weights.append(
-                np.ascontiguousarray(feature['masked_lm_weights'], dtype='float32'))
-            next_sentence_labels.append(feature['next_sentence_labels'][0])
-            valid_lengths.append(feature['valid_lengths'][0])
-            if inst_index < 1:
-                print_example(instance, feature)
-        return input_ids, masked_lm_ids, masked_lm_positions, masked_lm_weights,\
-               next_sentence_labels, segment_ids, valid_lengths
+    for inst_index, instance in enumerate(instances):
+        feature = transform(instance, max_seq_length)
+        input_ids.append(
+            np.ascontiguousarray(feature['input_ids'], dtype='int32'))
+        segment_ids.append(
+            np.ascontiguousarray(feature['segment_ids'], dtype='int32'))
+        masked_lm_positions.append(
+            np.ascontiguousarray(feature['masked_lm_positions'], dtype='int32'))
+        masked_lm_ids.append(np.ascontiguousarray(feature['masked_lm_ids'], dtype='int32'))
+        masked_lm_weights.append(
+            np.ascontiguousarray(feature['masked_lm_weights'], dtype='float32'))
+        next_sentence_labels.append(feature['next_sentence_labels'][0])
+        valid_lengths.append(feature['valid_lengths'][0])
+        if inst_index < 1:
+            print_example(instance, feature)
+    return input_ids, masked_lm_ids, masked_lm_positions, masked_lm_weights,\
+           next_sentence_labels, segment_ids, valid_lengths
 
 def create_training_instances(input_files, tokenizer,
                               max_seq_length, short_seq_prob,
@@ -223,7 +220,6 @@ def create_training_instances(input_files, tokenizer,
     num_inputs = len(input_files)
     num_inputs_per_output = (num_inputs + num_outputs - 1) // num_outputs
 
-    # TODO multi-output is incorrect
     for output_idx in range(num_outputs):
         input_start = output_idx * num_inputs_per_output
         input_end = min((output_idx + 1) * num_inputs_per_output, len(input_files))
@@ -256,12 +252,15 @@ def create_training_instances(input_files, tokenizer,
                 else:
                     tokenized_results = [tokenize_lines_fn(process_args[0])]
                 _process_result(tokenized_results)
+
         # remove the last empty document if any
         if not all_documents[-1]:
             all_documents = all_documents[:-1]
+        res = pool.apply_async(feature_fn, (all_documents, dupe_factor, max_seq_length, \
+                                            short_seq_prob, masked_lm_prob, max_predictions_per_seq, vocab))
         (input_ids, masked_lm_ids, masked_lm_positions, masked_lm_weights,
-         next_sentence_labels, segment_ids, valid_lengths) = pool.apply(FeatureFn.fn, (all_documents, dupe_factor, max_seq_length, \
-                                                                                       short_seq_prob, masked_lm_prob, max_predictions_per_seq, vocab))
+         next_sentence_labels, segment_ids, valid_lengths) = res.get()
+
         # write output to files. Used when pre-generating files
         if output_dir:
             part_name = 'part-{}.{}'.format(str(output_idx).zfill(3), 'npz')
@@ -272,6 +271,7 @@ def create_training_instances(input_files, tokenizer,
             write_to_files_np(features, tokenizer, args.max_seq_length,
                               args.max_predictions_per_seq, [output_file])
         else:
+            assert num_outputs == 1
             features = (input_ids, masked_lm_ids, masked_lm_positions, masked_lm_weights,
                         next_sentence_labels, segment_ids, valid_lengths)
 
