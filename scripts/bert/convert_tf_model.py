@@ -71,6 +71,15 @@ tf_checkpoint_file = os.path.expanduser(
 logging.info('loading Tensorflow checkpoint %s ...', tf_checkpoint_file)
 tf_tensors = read_tf_checkpoint(tf_checkpoint_file)
 tf_names = sorted(tf_tensors.keys())
+
+tf_names = filter(lambda name: not name.endswith('adam_m'), tf_names)
+tf_names = filter(lambda name: not name.endswith('adam_v'), tf_names)
+tf_names = filter(lambda name: name != 'global_step', tf_names)
+tf_names = list(tf_names)
+if len(tf_tensors) != len(tf_names):
+    logging.info('Tensorflow model was saved with Optimizer parameters. '
+                 'Ignoring them.')
+
 for name in tf_names:
     logging.debug('%s: %s', name, tf_tensors[name].shape)
 
@@ -127,7 +136,7 @@ for source_idx, dst_idx in reserved_token_idx_map:
     dst = embedding[dst_idx].copy()
     embedding[source_idx][:] = dst
     embedding[dst_idx][:] = source
-logging.info('total number of tf parameters = %d', len(tf_tensors))
+logging.info('total number of tf parameters = %d', len(tf_names))
 logging.info(
     'total number of mx parameters = %d (including decoder param for weight tying)',
     len(mx_tensors))
