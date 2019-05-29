@@ -104,9 +104,8 @@ def get_pretrain_data_text(data, batch_size, num_ctxes, shuffle, use_avg_len,
     assert num_files >= num_parts, \
         'Number of training files must be greater than the number of partitions. ' \
         'Only found %d files at %s'%(num_files, data)
-    # import multiprocessing
-    # pool = multiprocessing.Pool(num_workers)
-    pool = None
+    import multiprocessing
+    pool = multiprocessing.Pool(num_workers)
     dataset_cls = functools.partial(BERTPretrainDataset, tokenizer=tokenizer,
                                     max_seq_length=max_seq_length,
                                     short_seq_prob=short_seq_prob,
@@ -117,7 +116,7 @@ def get_pretrain_data_text(data, batch_size, num_ctxes, shuffle, use_avg_len,
     split_sampler = nlp.data.SplitSampler(num_files, num_parts=num_parts, part_index=part_idx)
     stream = nlp.data.SimpleDatasetStream(dataset_cls, data, split_sampler)
     if prefetch:
-        stream = nlp.data.PrefetchingStream(stream, worker_type='process')
+        stream = nlp.data.PrefetchingStream(stream, worker_type='thread')
     # create data loader based on the dataset
     dataloader_xform = BERTLoaderTransform(use_avg_len, batch_size,
                                            shuffle, num_ctxes, num_buckets)
