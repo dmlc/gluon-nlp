@@ -525,10 +525,10 @@ class Vocab(object):
 
         vocab = cls(
             counter=count_tokens(token_to_idx.keys()),
-            unknown_token=vocab_dict.get('unknown_token'),
-            padding_token=vocab_dict.get('padding_token'),
-            bos_token=vocab_dict.get('bos_token'),
-            eos_token=vocab_dict.get('eos_token'),
+            unknown_token=unknown_token,
+            padding_token=padding_token,
+            bos_token=bos_token,
+            eos_token=eos_token,
             reserved_tokens=reserved_tokens,
             token_to_idx=token_to_idx,
             identifiers_to_tokens=vocab_dict.get('identifiers_to_tokens'))
