@@ -27,18 +27,21 @@ from gluonnlp.model import BERTEncoder, BERTModel
 from gluonnlp.model.bert import bert_hparams
 from utils import convert_vocab, get_hash, read_tf_checkpoint
 
-parser = argparse.ArgumentParser(description='Conversion script for Tensorflow BERT model')
-parser.add_argument('--model', type=str, default='bert_12_768_12',
-                    help='BERT model name. options are bert_12_768_12 and bert_24_1024_16.'
-                         'Default is bert_12_768_12')
-parser.add_argument('--tf_checkpoint_dir', type=str,
-                    default=os.path.join('~', 'cased_L-12_H-768_A-12/'),
-                    help='Path to Tensorflow checkpoint folder. '
-                         'Default is /home/ubuntu/cased_L-12_H-768_A-12/')
-parser.add_argument('--out_dir', type=str,
+parser = argparse.ArgumentParser(
+    description='Conversion script for Tensorflow BERT model',
+    formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+parser.add_argument('--model',
+                    type=str,
+                    default='bert_12_768_12',
+                    choices=['bert_12_768_12', 'bert_24_1024_16'],
+                    help='BERT model name')
+parser.add_argument('--tf_checkpoint_dir',
+                    type=str,
+                    help='Path to Tensorflow checkpoint folder.')
+parser.add_argument('--out_dir',
+                    type=str,
                     default=os.path.join('~', 'output'),
-                    help='Path to output folder. The folder must exist. '
-                         'Default is /home/ubuntu/output/')
+                    help='Path to output folder. The folder must exist.')
 parser.add_argument('--debug', action='store_true', help='debugging mode')
 args = parser.parse_args()
 logging.getLogger().setLevel(logging.DEBUG if args.debug else logging.INFO)

@@ -29,24 +29,29 @@ import gluonnlp as nlp
 
 parser = argparse.ArgumentParser(description='Comparison script for BERT model in Tensorflow'
                                              'and that in Gluon. This script works with '
-                                             'google/bert@f39e881b')
+                                             'google/bert@f39e881b',
+                                 formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument('--input_file', type=str, default='input.txt',
-                    help='sample input file for testing. Default is input.txt')
+                    help='sample input file for testing')
 parser.add_argument('--tf_bert_repo_dir', type=str,
                     default='~/bert/',
                     help='path to the original Tensorflow bert repository. '
-                         'The repo should be at f39e881b. '
-                         'Default is ~/bert/')
+                         'The repo should be at f39e881b.')
 parser.add_argument('--tf_model_dir', type=str,
                     default='~/uncased_L-12_H-768_A-12/',
-                    help='path to the original Tensorflow bert checkpoint directory. '
-                         'Default is ~/uncased_L-12_H-768_A-12/')
+                    help='path to the original Tensorflow bert checkpoint directory.')
+parser.add_argument('--tf_model_prefix', type=str,
+                    default='bert_model.ckpt',
+                    help='name of bert checkpoint file.')
+parser.add_argument('--tf_config_name', type=str,
+                    default='bert_config.json',
+                    help='Name of Bert config file')
 parser.add_argument('--cased', action='store_true',
                     help='if not set, inputs are converted to lower case')
 parser.add_argument('--gluon_dataset', type=str, default='book_corpus_wiki_en_uncased',
-                    help='gluon dataset name. Default is book_corpus_wiki_en_uncased')
+                    help='gluon dataset name')
 parser.add_argument('--gluon_model', type=str, default='bert_12_768_12',
-                    help='gluon model name. Default is bert_12_768_12')
+                    help='gluon model name')
 parser.add_argument('--gluon_parameter_file', type=str, default=None,
                     help='gluon parameter file name.')
 
@@ -56,8 +61,8 @@ input_file = os.path.expanduser(args.input_file)
 tf_bert_repo_dir = os.path.expanduser(args.tf_bert_repo_dir)
 tf_model_dir = os.path.expanduser(args.tf_model_dir)
 vocab_file = os.path.join(tf_model_dir, 'vocab.txt')
-bert_config_file = os.path.join(tf_model_dir, 'bert_config.json')
-init_checkpoint = os.path.join(tf_model_dir, 'bert_model.ckpt')
+bert_config_file = os.path.join(tf_model_dir, args.tf_config_name)
+init_checkpoint = os.path.join(tf_model_dir, args.tf_model_prefix)
 do_lower_case = not args.cased
 max_length = 128
 
