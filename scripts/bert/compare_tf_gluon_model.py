@@ -27,6 +27,8 @@ import numpy as np
 import mxnet as mx
 import gluonnlp as nlp
 
+from utils import tf_vocab_to_gluon_vocab
+
 parser = argparse.ArgumentParser(description='Comparison script for BERT model in Tensorflow'
                                              'and that in Gluon. This script works with '
                                              'google/bert@f39e881b',
@@ -134,8 +136,10 @@ tf_outputs = [tensorflow_all_out[0]['features'][0]['layers'][t]['values'] for t 
 #                               Gluon MODEL                                   #
 ###############################################################################
 
+vocabulary = tf_vocab_to_gluon_vocab(tokenizer.vocab)
 bert, vocabulary = nlp.model.get_model(args.gluon_model,
-                                       dataset_name=args.gluon_dataset,
+                                       dataset_name=None,
+                                       vocab=vocabulary,
                                        pretrained=not args.gluon_parameter_file,
                                        use_pooler=False,
                                        use_decoder=False,
