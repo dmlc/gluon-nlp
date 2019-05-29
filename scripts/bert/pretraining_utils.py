@@ -100,9 +100,10 @@ def get_pretrain_data_text(data, batch_size, num_ctxes, shuffle, use_avg_len,
                            prefetch=True, num_workers=1):
     """create dataset for pretraining based on raw texts"""
     num_files = sum([len(glob.glob(os.path.expanduser(d.strip()))) for d in data.split(',')])
-    logging.debug('%d files found.', num_files)
+    logging.info('%d files found.', num_files)
     assert num_files >= num_parts, \
-        'Number of training files must be greater than the number of partitions'
+        'Number of training files must be greater than the number of partitions. ' \
+        'Only found %d files at %s'%(num_files, data)
     # import multiprocessing
     # pool = multiprocessing.Pool(num_workers)
     pool = None
@@ -177,8 +178,8 @@ class BERTLoaderTransform(object):
 def get_pretrain_data_npz(data, batch_size, num_ctxes, shuffle, use_avg_len,
                           num_buckets, num_parts=1, part_idx=0, prefetch=True):
     """create dataset for pretraining based on pre-processed npz files."""
-    num_files = len(glob.glob(os.path.expanduser(data)))
-    logging.debug('%d files found.', num_files)
+    num_files = sum([len(glob.glob(os.path.expanduser(d.strip()))) for d in data.split(',')])
+    logging.info('%d files found.', num_files)
     assert num_files >= num_parts, \
         'Number of training files must be greater than the number of partitions. ' \
         'Only found %d files at %s'%(num_files, data)
