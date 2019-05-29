@@ -19,9 +19,10 @@
 # pylint:disable=redefined-outer-name,logging-format-interpolation
 """ Script for converting TF Model to Gluon. """
 
-import os
-import logging
 import argparse
+import json
+import logging
+import os
 import mxnet as mx
 from gluonnlp.model import BERTEncoder, BERTModel
 from gluonnlp.model.bert import bert_hparams
@@ -38,6 +39,9 @@ parser.add_argument('--model',
 parser.add_argument('--tf_checkpoint_dir',
                     type=str,
                     help='Path to Tensorflow checkpoint folder.')
+parser.add_argument('--tf_config_name', type=str,
+                    default='bert_config.json',
+                    help='Name of Bert config file')
 parser.add_argument('--out_dir',
                     type=str,
                     default=os.path.join('~', 'output'),
@@ -124,11 +128,32 @@ for source_idx, dst_idx in reserved_token_idx_map:
     embedding[source_idx][:] = dst
     embedding[dst_idx][:] = source
 logging.info('total number of tf parameters = %d', len(tf_tensors))
-logging.info('total number of mx parameters = %d (including decoder param for weight tying)',
-             len(mx_tensors))
+logging.info(
+    'total number of mx parameters = %d (including decoder param for weight tying)',
+    len(mx_tensors))
 
-# XXX assume no changes in BERT configs
+# BERT config
+tf_config_names_to_gluon_config_names = {
+    'attention_probs_dropout_prob': 'embed_dropout',
+    'hidden_act': None,
+    'hidden_dropout_prob': 'dropout',
+    'hidden_size': 'units',
+    'initializer_range': None,
+    'intermediate_size': 'hidden_size',
+    'max_position_embeddings': 'max_length',
+    'num_attention_heads': 'num_heads',
+    'num_hidden_layers': 'num_layers',
+    'type_vocab_size': 'token_type_vocab_size',
+    'vocab_size': None
+}
 predefined_args = bert_hparams[args.model]
+with open(os.path.join(args.tf_checkpoint_dir, args.tf_config_name), 'r') as f:
+    tf_config = json.load(f)
+    assert len(tf_config) == len(tf_config_names_to_gluon_config_names)
+    for tf_name, gluon_name in tf_config_names_to_gluon_config_names.items():
+        if tf_name is None or gluon_name is None:
+            continue
+        assert tf_config[tf_name] == predefined_args[gluon_name]
 
 # BERT encoder
 encoder = BERTEncoder(attention_cell=predefined_args['attention_cell'],
