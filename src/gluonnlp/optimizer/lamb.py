@@ -27,11 +27,21 @@ __all__ = ['LAMB']
 
 @register
 class LAMB(Optimizer):
-    """The LAMB optimizer: 
-    It has been proposed in `Reducing BERT Pre-Training Time from 3 Days to 76 Minutes`.
-    https://arxiv.org/abs/1904.00962
+    """The LAMB optimizer proposed in
+    `Reducing BERT Pre-Training Time from 3 Days to 76 Minutes <https://arxiv.org/abs/1904.00962>`_.
 
     Updates are applied by::
+    if use_latest:
+        grad = clip(grad * rescale_grad, clip_gradient)
+        m = beta1 * m + (1 - beta1) * grad
+        v = beta2 * v + (1 - beta2) * (grad**2)
+        r1 = minimum(maximum(w.norm(), self.lower_bound), self.upper_bound)
+        g = m / (sqrt(v_hat) + epsilon) + wd * w
+        r2 = g.norm()
+        r = if r1 == 0. or r2 == 0. else r1/r2
+        lr = r * lr
+        w = w - lr * g
+    else:
         grad = clip(grad * rescale_grad, clip_gradient)
         m = beta1 * m + (1 - beta1) * grad
         v = beta2 * v + (1 - beta2) * (grad**2)
@@ -40,8 +50,7 @@ class LAMB(Optimizer):
         r1 = w.norm()
         g = m_hat / (sqrt(v_hat + epsilon)) + wd * w
         r2 = g.norm()
-        r = if r1 == 0. or r2 == 0. else minimum(
-            maximum(r1 / r2, self.lower_bound), self.upper_bound)
+        r = if r1 == 0. or r2 == 0. else r1/r2
         lr = r * lr
         w = w - lr * g
 
@@ -54,13 +63,18 @@ class LAMB(Optimizer):
     epsilon : float, optional, default is 1e-6
         Small value to avoid division by 0.
     lower_bound : float, optional, default is 1e-3
-        Lower limit of lamb_trust_ratio
+        Lower limit of norm of weight
     upper_bound : float, optional, default is 10.0
-        Upper limit of lamb_trust_ratio
+        Upper limit of norm of weight
+    use_latest : bool, optional, default is True
+        Whether to use the latest version of LAMB. The new version of LAMB
+        has some differences from the old version,
+        such as the bias correction was removed in the new version
     """
 
     def __init__(self, learning_rate=0.001, beta1=0.9, beta2=0.999, epsilon=1e-6,
-                 lower_bound=1e-3, upper_bound=10.0, lazy_update=False, **kwargs):
+                 lower_bound=1e-3, upper_bound=10.0, use_latest=True,
+                 lazy_update=False, **kwargs):
         super(LAMB, self).__init__(learning_rate=learning_rate, **kwargs)
         self.beta1 = beta1
         self.beta2 = beta2
@@ -68,6 +82,7 @@ class LAMB(Optimizer):
         self.lower_bound = lower_bound
         self.upper_bound = upper_bound
         self.lazy_update = lazy_update
+        self.use_latest = use_latest
 
     def create_state(self, index, weight):
         stype = weight.stype if self.lazy_update else 'default'
@@ -93,17 +108,21 @@ class LAMB(Optimizer):
         mean[:] = self.beta1 * mean + (1. - self.beta1) * grad
         var[:] = self.beta2 * var + (1. - self.beta2) * square(grad)
 
-        # execution bias correction
-        mean_hat = mean / (1. - power(self.beta1, t))
-        var_hat = var / (1. - power(self.beta2, t))
-
         r1 = weight.norm()
-        g = mean_hat / sqrt(var_hat + self.epsilon) + wd * weight
+        if self.use_latest:
+            r1 = minimum(maximum(r1, self.lower_bound), self.upper_bound)
+            g = mean / (sqrt(var) + self.epsilon) + wd * weight
+
+        else:
+            # execution bias correction
+            mean_hat = mean / (1. - power(self.beta1, t))
+            var_hat = var / (1. - power(self.beta2, t))
+            g = mean_hat / sqrt(var_hat + self.epsilon) + wd * weight
+
         r2 = g.norm()
 
         # calculate lamb_trust_ratio
-        r = 1. if r1 == 0. or r2 == 0. else minimum(
-            maximum(r1 / r2, self.lower_bound), self.upper_bound)
+        r = 1. if r1 == 0. or r2 == 0. else r1 / r2
         lr *= r
 
         # update weight

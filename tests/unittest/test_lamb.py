@@ -14,7 +14,7 @@ def test_lamb_for_fashion_mnist():
     batch_size = 512
     transformer = gdata.vision.transforms.ToTensor()
     if sys.platform.startswith('win'):
-        num_workers = 0  # 0表示不用额外的进程来加速读取数据
+        num_workers = 0  # 0 disables multi-processing.
     else:
         num_workers = 4
 
