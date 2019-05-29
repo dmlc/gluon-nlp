@@ -96,14 +96,14 @@ __all__ = language_model.__all__ + sequence_sampler.__all__ + attention_cell.__a
           seq2seq_encoder_decoder.__all__ + transformer.__all__ + bert.__all__
 
 
-def get_model(name, dataset_name='wikitext-2', **kwargs):
+def get_model(name, **kwargs):
     """Returns a pre-defined model by name.
 
     Parameters
     ----------
     name : str
         Name of the model.
-    dataset_name : str or None, default 'wikitext-2'.
+    dataset_name : str or None, default None
         The dataset name on which the pre-trained model is trained.
         For language model, options are 'wikitext-2'.
         For ELMo, Options are 'gbw' and '5bw'.
@@ -147,5 +147,4 @@ def get_model(name, dataset_name='wikitext-2', **kwargs):
         raise ValueError(
             'Model %s is not supported. Available options are\n\t%s'%(
                 name, '\n\t'.join(sorted(models.keys()))))
-    kwargs['dataset_name'] = dataset_name
     return models[name](**kwargs)
