@@ -26,7 +26,7 @@ import os
 import mxnet as mx
 from gluonnlp.model import BERTEncoder, BERTModel
 from gluonnlp.model.bert import bert_hparams
-from utils import convert_vocab, get_hash, read_tf_checkpoint
+from utils import load_tf_vocab, tf_vocab_to_gluon_vocab, get_hash, read_tf_checkpoint
 
 parser = argparse.ArgumentParser(
     description='Conversion script for Tensorflow BERT model',
@@ -53,7 +53,7 @@ logging.info(args)
 
 # convert vocabulary
 vocab_path = os.path.join(args.tf_checkpoint_dir, 'vocab.txt')
-vocab, reserved_token_idx_map = convert_vocab(vocab_path)
+vocab = tf_vocab_to_gluon_vocab(load_tf_vocab(vocab_path))
 
 # vocab serialization
 tmp_file_path = os.path.expanduser(os.path.join(args.out_dir, 'tmp'))
@@ -128,14 +128,7 @@ for source_name in tf_names:
 
 # post processings for parameters:
 # - handle tied decoder weight
-# - update word embedding for reserved tokens
 mx_tensors['decoder.3.weight'] = mx_tensors['word_embed.0.weight']
-embedding = mx_tensors['word_embed.0.weight']
-for source_idx, dst_idx in reserved_token_idx_map:
-    source = embedding[source_idx].copy()
-    dst = embedding[dst_idx].copy()
-    embedding[source_idx][:] = dst
-    embedding[dst_idx][:] = source
 logging.info('total number of tf parameters = %d', len(tf_names))
 logging.info(
     'total number of mx parameters = %d (including decoder param for weight tying)',
