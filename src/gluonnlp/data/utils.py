@@ -309,7 +309,14 @@ def _load_pretrained_vocab(name, root=os.path.join(get_home_dir(), 'models'), cl
              overwrite=True)
     with zipfile.ZipFile(zip_file_path) as zf:
         zf.extractall(root)
-    os.remove(zip_file_path)
+    try:
+        os.remove(zip_file_path)
+    except OSError as e:
+        # file has already been removed.
+        if e.errno == 2:
+            pass
+        else:
+            raise e
 
     if check_sha1(file_path, sha1_hash):
         return _load_vocab_file(file_path, cls)
