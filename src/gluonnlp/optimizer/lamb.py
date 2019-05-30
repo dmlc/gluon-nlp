@@ -38,7 +38,7 @@ class LAMB(Optimizer):
         r1 = minimum(maximum(w.norm(), self.lower_bound), self.upper_bound)
         g = m / (sqrt(v_hat) + epsilon) + wd * w
         r2 = g.norm()
-        r = if r1 == 0. or r2 == 0. else r1/r2
+        r = 1. if r1 == 0. or r2 == 0. else r1/r2
         lr = r * lr
         w = w - lr * g
     else:
@@ -50,7 +50,7 @@ class LAMB(Optimizer):
         r1 = w.norm()
         g = m_hat / (sqrt(v_hat + epsilon)) + wd * w
         r2 = g.norm()
-        r = if r1 == 0. or r2 == 0. else r1/r2
+        r = 1. if r1 == 0. or r2 == 0. else r1/r2
         lr = r * lr
         w = w - lr * g
 
