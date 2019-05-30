@@ -123,7 +123,7 @@ def get_model(name, dataset_name='wikitext-2', **kwargs):
         Whether to load the pre-trained weights for model.
     ctx : Context, default CPU
         The context in which to load the pre-trained weights.
-    root : str, default '~/.mxnet/models'
+    root : str, default '$MXNET_HOME/models' with MXNET_HOME defaults to '~/.mxnet'
         Location for keeping the model parameters.
 
     Returns

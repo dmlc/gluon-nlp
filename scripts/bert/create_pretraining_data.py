@@ -473,9 +473,15 @@ def main():
     # random seed
     random.seed(args.random_seed)
 
+    # create output dir
+    output_dir = os.path.expanduser(args.output_dir)
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
     # vocabulary
     logging.info('loading vocab file from dataset: %s', args.vocab)
-    vocab = nlp.data.utils._load_pretrained_vocab(args.vocab, cls=nlp.vocab.BERTVocab)
+    vocab = nlp.data.utils._load_pretrained_vocab(args.vocab, root=output_dir,
+                                                  cls=nlp.vocab.BERTVocab)
     tokenizer = BERTTokenizer(vocab=vocab, lower='uncased' in args.vocab)
 
     # count the number of input files
@@ -485,12 +491,7 @@ def main():
     logging.info('*** Reading from %d input files ***', len(input_files))
     for input_file in input_files:
         logging.info('\t%s', input_file)
-
-    # create output dir
     num_outputs = min(args.num_outputs, len(input_files))
-    output_dir = os.path.expanduser(args.output_dir)
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
 
     create_training_instances(input_files, tokenizer, args.max_seq_length,
                               args.short_seq_prob, args.masked_lm_prob,

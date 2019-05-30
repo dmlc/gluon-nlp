@@ -109,6 +109,7 @@ def test_sentiment_analysis_textcnn():
 @pytest.mark.skip_master
 @pytest.mark.remote_required
 @pytest.mark.gpu
+@pytest.mark.serial
 @pytest.mark.integration
 @pytest.mark.parametrize('method', ['beam_search', 'sampling'])
 def test_sampling(method):
