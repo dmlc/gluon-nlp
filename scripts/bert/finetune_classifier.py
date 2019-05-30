@@ -51,7 +51,7 @@ from gluonnlp.data import BERTTokenizer
 
 from bert import BERTClassifier, BERTRegression
 from dataset import MRPCTask, QQPTask, RTETask, STSBTask, \
-    QNLITask, CoLATask, MNLITask, WNLITask, SSTTask, BERTDatasetTransform
+    QNLITask, CoLATask, MNLITask, WNLITask, SSTTask, XNLITask, BERTDatasetTransform
 
 tasks = {
     'MRPC': MRPCTask(),
@@ -62,7 +62,8 @@ tasks = {
     'CoLA': CoLATask(),
     'MNLI': MNLITask(),
     'WNLI': WNLITask(),
-    'SST': SSTTask()
+    'SST': SSTTask(),
+    'XNLI': XNLITask()
 }
 
 parser = argparse.ArgumentParser(
@@ -256,6 +257,7 @@ def preprocess_data(tokenizer, task, batch_size, dev_batch_size, max_len, pad=Fa
     label_dtype = 'float32' if not task.class_labels else 'int32'
     trans = BERTDatasetTransform(tokenizer, max_len,
                                  class_labels=task.class_labels,
+                                 label_alias=task.label_alias,
                                  pad=pad, pair=task.is_pair,
                                  has_label=True)
 
@@ -413,6 +415,8 @@ def train(metric):
     if accumulate:
         for p in params:
             p.grad_req = 'add'
+    # track best eval score
+    metric_history = []
 
     tic = time.time()
     for epoch_id in range(args.epochs):
@@ -460,19 +464,31 @@ def train(metric):
 
         # inference on dev data
         for segment, dev_data in dev_data_list:
-            evaluate(dev_data, metric, segment)
+            metric_nm, metric_val = evaluate(dev_data, metric, segment)
+            metric_history.append((epoch_id, metric_nm, metric_val))
 
         if not only_inference:
             # save params
-
-            params_saved = os.path.join(output_dir,
-                                        'model_bert_{0}_{1}.params'.format(task_name, epoch_id))
+            ckpt_name = 'model_bert_{0}_{1}.params'.format(task_name, epoch_id)
+            params_saved = os.path.join(output_dir, ckpt_name)
 
             nlp.utils.save_parameters(model, params_saved)
             logging.info('params saved in: %s', params_saved)
             toc = time.time()
             logging.info('Time cost=%.2fs', toc - tic)
             tic = toc
+
+    if not only_inference:
+        # we choose the best model based on metric[0],
+        # assuming higher score stands for better model quality
+        metric_history.sort(key=lambda x: x[2][0], reverse=True)
+        epoch_id, metric_nm, metric_val = metric_history[0]
+        ckpt_name = 'model_bert_{0}_{1}.params'.format(task_name, epoch_id)
+        params_saved = os.path.join(output_dir, ckpt_name)
+        nlp.utils.load_parameters(model, params_saved)
+        metric_str = 'Best model at epoch {}. Validation metrics:'.format(epoch_id)
+        metric_str += ','.join([i + ':%.4f' for i in metric_nm])
+        logging.info(metric_str, *metric_val)
 
     # inference on test data
     for segment, test_data in test_data_list:
@@ -508,7 +524,7 @@ def evaluate(loader_dev, metric, segment):
     toc = time.time()
     logging.info('Time cost=%.2fs, throughput=%.2f samples/s', toc - tic,
                  dev_batch_size * len(loader_dev) / (toc - tic))
-
+    return metric_nm, metric_val
 
 
 if __name__ == '__main__':

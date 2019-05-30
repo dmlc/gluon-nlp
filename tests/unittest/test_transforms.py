@@ -16,21 +16,23 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-
 from __future__ import print_function
 
 import os
 import sys
 import warnings
-import numpy as np
-from numpy.testing import assert_allclose
-import pytest
+
 import mxnet as mx
+import numpy as np
+import pytest
+from mxnet.gluon.data import SimpleDataset
 from mxnet.gluon.utils import download
-from gluonnlp.data import transforms as t
+from numpy.testing import assert_allclose
+
 from gluonnlp.data import count_tokens
+from gluonnlp.data import transforms as t
 from gluonnlp.model.utils import _load_vocab
-from gluonnlp.vocab import Vocab, BERTVocab
+from gluonnlp.vocab import BERTVocab, Vocab
 
 
 def test_clip_sequence():
@@ -259,3 +261,46 @@ def test_bert_sentences_transform():
     assert all(token_ids == valid_token_ids)
     assert length == len(vocab_tokens) + 3
     assert all(type_ids == valid_type_ids)
+
+
+@pytest.mark.remote_required
+def test_bert_sentencepiece_sentences_transform():
+    url = 'http://repo.mxnet.io/gluon/dataset/vocab/test-682b5d15.bpe'
+    f = download(url, overwrite=True)
+    bert_vocab = BERTVocab.from_sentencepiece(f)
+    bert_tokenizer = t.BERTSPTokenizer(f, bert_vocab, lower=True)
+    max_len = 36
+    data_train_raw = SimpleDataset(
+        [[u'This is a very awesome, life-changing sentence.']])
+    transform = t.BERTSentenceTransform(bert_tokenizer,
+                                        max_len,
+                                        pad=True,
+                                        pair=False)
+    try:
+        data_train = data_train_raw.transform(transform)
+    except ImportError:
+        warnings.warn(
+            "Sentencepiece not installed, skip test_bert_sentencepiece_sentences_transform()."
+        )
+        return
+    processed = list(data_train)[0]
+
+    tokens = [
+        u'▁this', u'▁is', u'▁a', u'▁very', u'▁a', u'w', u'es', u'om', u'e', u'▁', u',',
+        u'▁life', u'▁', u'-', u'▁c', u'hang', u'ing', u'▁sentence', u'▁', u'.'
+    ]
+    token_ids = [bert_vocab[bert_vocab.cls_token]
+                 ] + bert_tokenizer.convert_tokens_to_ids(tokens) + [
+                     bert_vocab[bert_vocab.sep_token]
+                 ]
+    token_ids += [bert_vocab[bert_vocab.padding_token]
+                  ] * (max_len - len(token_ids))
+
+    # token ids
+    assert all(processed[0] == np.array(token_ids, dtype='int32'))
+    # sequence length
+    assert np.asscalar(processed[1]) == len(tokens) + 2
+    # segment id
+    assert all(processed[2] == np.array([0] * max_len, dtype='int32'))
+
+test_bert_sentencepiece_sentences_transform()

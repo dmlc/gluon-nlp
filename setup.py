@@ -69,6 +69,7 @@ setup(
             'sphinx-gallery',
             'sphinx_rtd_theme',
             'nbsphinx',
+            'flaky',
         ],
     },
 )
