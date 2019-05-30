@@ -173,19 +173,19 @@ class SQuADDataPipeline:
         tokenizer = SQuADDataTokenizer(base_tokenizer)
 
         tic = time.time()
-        print("Train examples [{}] transformation started.".format(len(train_dataset)))
+        print('Train examples [{}] transformation started.'.format(len(train_dataset)))
         train_examples = list(tqdm.tqdm(
             pool.imap(tokenizer.tokenize_one_example, train_dataset),
             total=len(train_dataset)))
-        print("Train examples transformed [{}/{}] in {:.3f} sec".format(len(train_examples),
+        print('Train examples transformed [{}/{}] in {:.3f} sec'.format(len(train_examples),
                                                                         len(train_dataset),
                                                                         time.time() - tic))
         tic = time.time()
-        print("Dev examples [{}] transformation started.".format(len(dev_dataset)))
+        print('Dev examples [{}] transformation started.'.format(len(dev_dataset)))
         dev_examples = list(tqdm.tqdm(
             pool.imap(tokenizer.tokenize_one_example, dev_dataset),
             total=len(dev_dataset)))
-        print("Dev examples transformed [{}/{}] in {:.3f} sec".format(len(dev_examples),
+        print('Dev examples transformed [{}/{}] in {:.3f} sec'.format(len(dev_examples),
                                                                       len(dev_dataset),
                                                                       time.time() - tic))
         return train_examples, dev_examples
@@ -219,16 +219,16 @@ class SQuADDataPipeline:
 
         """
         tic = time.time()
-        print("Train examples [{}] featurization started.".format(len(train_examples)))
+        print('Train examples [{}] featurization started.'.format(len(train_examples)))
         train_ready = [train_featurizer.build_features(example)
                        for example in tqdm.tqdm(train_examples, total=len(train_examples))]
-        print("Train examples featurized [{}] in {:.3f} sec".format(len(train_examples),
+        print('Train examples featurized [{}] in {:.3f} sec'.format(len(train_examples),
                                                                     time.time() - tic))
         tic = time.time()
-        print("Dev examples [{}] featurization started.".format(len(dev_examples)))
+        print('Dev examples [{}] featurization started.'.format(len(dev_examples)))
         dev_ready = [dev_featuarizer.build_features(example)
                      for example in tqdm.tqdm(dev_examples, total=len(dev_examples))]
-        print("Dev examples featurized [{}] in {:.3f} sec".format(len(dev_examples),
+        print('Dev examples featurized [{}] in {:.3f} sec'.format(len(dev_examples),
                                                                   time.time() - tic))
         return train_ready, dev_ready
 
@@ -255,16 +255,16 @@ class SQuADDataPipeline:
             Char-level vocabulary
         """
         tic = time.time()
-        print("Word counters receiving started.")
+        print('Word counters receiving started.')
         mapper = MapReduce(SQuADDataPipeline._split_into_words, SQuADDataPipeline._count_tokens)
         word_counts = mapper(itertools.chain(train_examples, dev_examples), pool)
-        print("Word counters received in {:.3f} sec".format(time.time() - tic))
+        print('Word counters received in {:.3f} sec'.format(time.time() - tic))
 
         tic = time.time()
-        print("Char counters receiving started.")
+        print('Char counters receiving started.')
         mapper = MapReduce(SQuADDataPipeline._split_into_chars, SQuADDataPipeline._count_tokens)
         char_counts = mapper(itertools.chain(train_examples, dev_examples), pool)
-        print("Char counters received in {:.3f} sec".format(time.time() - tic))
+        print('Char counters received in {:.3f} sec'.format(time.time() - tic))
 
         word_vocab = Vocab({item[0]: item[1] for item in word_counts},
                            bos_token=None, eos_token=None)
@@ -564,7 +564,23 @@ class SQuADDataFilter:
 
 
 class SQuADDataFeaturizer:
+    """Class that converts tokenized examples into featurized"""
     def __init__(self, word_vocab, char_vocab, para_limit, ques_limit, char_limit):
+        """Init SQuADDataFeaturizer object
+
+        Parameters
+        ----------
+        word_vocab : Vocab
+            Word-level vocabulary
+        char_vocab : Vocab
+            Char-level vocabulary
+        para_limit : int
+            Maximum characters in a paragraph
+        ques_limit : int
+            Maximum characters in a question
+        char_limit : int
+            Maximum characters in a token
+        """
         self._para_limit = para_limit
         self._ques_limit = ques_limit
         self._char_limit = char_limit
@@ -573,17 +589,42 @@ class SQuADDataFeaturizer:
         self._char_vocab = char_vocab
 
     def _get_word(self, word):
+        """Maps a word to an index using word-level vocabulary
+
+        Parameters
+        ----------
+        word : str
+            Token to map
+
+        Returns
+        -------
+        ret : int
+            Token index from vocabulary or unknown token index if not found
+
+        """
         for token in (word, word.lower(), word.capitalize(), word.upper()):
             if token in self._word_vocab:
                 return self._word_vocab[token]
 
-        return self._word_vocab[self._word_vocab.padding_token]
+        return self._word_vocab[self._word_vocab.unknown_token]
 
     def _get_char(self, char):
+        """Maps a character to an index using character-level vocabulary
+
+        Parameters
+        ----------
+        char : str
+            A character to map
+
+        Returns
+        -------
+        ret : int
+            Character index from vocabulary or unknown token index if character is not found
+        """
         if char in self._char_vocab:
             return self._char_vocab[char]
 
-        return self._char_vocab[self._char_vocab.padding_token]
+        return self._char_vocab[self._char_vocab.unknown_token]
 
     def build_features(self, example):
         """Generate features for a given example
@@ -650,12 +691,12 @@ class SQuADDataFeaturizer:
 class SQuADQADataset(Dataset):
     """Dataset that wraps the featurized examples with standard Gluon API Dataset format. It allows
     to fetch a record by question id for the evaluation"""
-    def __init__(self, data):
+    def __init__(self, records):
         super().__init__()
-        self._data = data
+        self._data = records
         self._record_idx_to_record = {}
 
-        for record in data:
+        for record in records:
             self._record_idx_to_record[record[1]] = {'q_id': record[0], 'rec': record}
 
     def __getitem__(self, idx):
@@ -720,13 +761,13 @@ class SQuADDataLoaderTransformer:
         """Init SQuADDataLoaderTransformer object"""
         pass
 
-    def __call__(self, id, record_idx, ctx_idxs, ques_idxs, ctx_chars_idxs, ques_char_idxs,
+    def __call__(self, q_id, record_idx, ctx_idxs, ques_idxs, ctx_chars_idxs, ques_char_idxs,
                  start, end, context, spans):
         """Return the same record with non-numeric values removed from the output
 
         Parameters
         ----------
-        id : str
+        q_id : str
             Question Id
         record_idx : int
             Record index
