@@ -23,7 +23,7 @@ import os
 import pytest
 
 import gluonnlp as nlp
-from ..question_answering.data_processing import VocabProvider
+from ..question_answering.data_pipeline import SQuADDataPipeline
 
 
 ###############################################################################
@@ -32,6 +32,5 @@ from ..question_answering.data_processing import VocabProvider
 @pytest.fixture(scope='session')
 def squad_dev_and_vocab_provider():
     path = os.path.join('tests', 'data', 'squad')
-    dataset = nlp.data.SQuAD(segment='dev', version='1.1', root=path)
-    vocab_provider = VocabProvider(dataset)
-    return dataset, vocab_provider
+    pipeline = SQuADDataPipeline(400, 50, 1000, 100, 30, 16, 300)
+    return pipeline.get_processed_data(squad_data_root=path)

@@ -84,7 +84,7 @@ class SQuADDataPipeline:
         self._word_vocab_file_name = 'word_vocab.bin'
         self._char_vocab_file_name = 'char_vocab.bin'
 
-    def get_processed_data(self, base_tokenizer=None):
+    def get_processed_data(self, base_tokenizer=None, squad_data_root=None):
         """Main method to start data processing
 
         Parameters
@@ -92,7 +92,8 @@ class SQuADDataPipeline:
         base_tokenizer : Callable
             Tokenizer to split a string into tokens. By default uses Spacy, but can be
             overridden by a specified `base_tokenizer`
-
+        squad_data_root : str, default None
+            Data path to store downloaded original SQuAD data
         Returns
         -------
         train_json_data : dict
@@ -112,8 +113,10 @@ class SQuADDataPipeline:
         if self._save_load_data and self._has_processed_data():
             return self._load_processed_data()
 
-        train_dataset = SQuAD(segment='train')
-        dev_dataset = SQuAD(segment='dev')
+        train_dataset = SQuAD(segment='train', root=squad_data_root) \
+            if squad_data_root else SQuAD(segment='train')
+        dev_dataset = SQuAD(segment='dev', root=squad_data_root) \
+            if squad_data_root else SQuAD(segment='dev')
 
         with mp.Pool() as pool:
             train_examples, dev_examples = self._tokenize_data(train_dataset, dev_dataset,
@@ -528,6 +531,7 @@ class SQuADDataTokenizer:
 
 class SQuADDataFilter:
     """Filter an example based on the specified conditions"""
+
     def __init__(self, para_limit, ques_limit, ans_limit):
         """Init SQuADDataFilter object
 
@@ -565,6 +569,7 @@ class SQuADDataFilter:
 
 class SQuADDataFeaturizer:
     """Class that converts tokenized examples into featurized"""
+
     def __init__(self, word_vocab, char_vocab, para_limit, ques_limit, char_limit):
         """Init SQuADDataFeaturizer object
 
@@ -691,6 +696,7 @@ class SQuADDataFeaturizer:
 class SQuADQADataset(Dataset):
     """Dataset that wraps the featurized examples with standard Gluon API Dataset format. It allows
     to fetch a record by question id for the evaluation"""
+
     def __init__(self, records):
         super().__init__()
         self._data = records
@@ -757,6 +763,7 @@ class SQuADQADataset(Dataset):
 class SQuADDataLoaderTransformer:
     """Thin wrapper on SQuADQADataset that removed non-numeric values from the record. The output of
     that transformer can be provided to a DataLoader"""
+
     def __init__(self):
         """Init SQuADDataLoaderTransformer object"""
         pass
