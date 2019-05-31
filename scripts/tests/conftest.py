@@ -22,7 +22,6 @@ import os
 
 import pytest
 
-import gluonnlp as nlp
 from ..question_answering.data_pipeline import SQuADDataPipeline
 
 
