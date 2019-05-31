@@ -19,6 +19,7 @@
 
 # pylint: disable=
 """SQuAD data data preprocessing pipeline."""
+import contextlib
 import itertools
 import json
 import multiprocessing as mp
@@ -118,7 +119,7 @@ class SQuADDataPipeline:
         dev_dataset = SQuAD(segment='dev', root=squad_data_root) \
             if squad_data_root else SQuAD(segment='dev')
 
-        with mp.Pool() as pool:
+        with contextlib.closing(mp.Pool()) as pool:
             train_examples, dev_examples = self._tokenize_data(train_dataset, dev_dataset,
                                                                base_tokenizer, pool)
             word_vocab, char_vocab = self._get_vocabs(train_examples, dev_examples, self._emb_size,

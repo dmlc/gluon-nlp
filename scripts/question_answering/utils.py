@@ -19,6 +19,7 @@
 
 """Various utility methods for Question Answering"""
 import collections
+import contextlib
 import itertools
 import math
 import multiprocessing as mp
@@ -82,7 +83,7 @@ class MapReduce:
         if pool:
             map_responses = pool.map(self._map_func, inputs)
         else:
-            with mp.Pool(self._num_workers) as p:
+            with contextlib.closing(mp.Pool(self._num_workers)) as p:
                 map_responses = p.map(self._map_func, inputs)
 
         partitions = self._partition(
@@ -92,7 +93,7 @@ class MapReduce:
         if pool:
             reduced_values = pool.map(self._reduce_func, partitions)
         else:
-            with mp.Pool(self._num_workers) as p:
+            with contextlib.closing(mp.Pool(self._num_workers)) as p:
                 reduced_values = p.map(self._reduce_func, partitions)
 
         return reduced_values
