@@ -51,7 +51,7 @@ from gluonnlp.data import BERTTokenizer
 
 from bert import BERTClassifier, BERTRegression
 from dataset import MRPCTask, QQPTask, RTETask, STSBTask, \
-    QNLITask, CoLATask, MNLITask, WNLITask, SSTTask, BERTDatasetTransform
+    QNLITask, CoLATask, MNLITask, WNLITask, SSTTask, XNLITask, BERTDatasetTransform
 
 tasks = {
     'MRPC': MRPCTask(),
@@ -62,7 +62,8 @@ tasks = {
     'CoLA': CoLATask(),
     'MNLI': MNLITask(),
     'WNLI': WNLITask(),
-    'SST': SSTTask()
+    'SST': SSTTask(),
+    'XNLI': XNLITask()
 }
 
 parser = argparse.ArgumentParser(
@@ -256,6 +257,7 @@ def preprocess_data(tokenizer, task, batch_size, dev_batch_size, max_len, pad=Fa
     label_dtype = 'float32' if not task.class_labels else 'int32'
     trans = BERTDatasetTransform(tokenizer, max_len,
                                  class_labels=task.class_labels,
+                                 label_alias=task.label_alias,
                                  pad=pad, pair=task.is_pair,
                                  has_label=True)
 
