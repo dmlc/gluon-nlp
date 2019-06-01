@@ -25,7 +25,7 @@ utils = load('ci/jenkins/utils.groovy')
 def sanity_lint(workspace_name, conda_env_name, path) {
   return ['Lint': {
     node {
-      ws("workspace/${workspace_name}") {
+      ws(workspace_name) {
         utils.init_git()
         sh """
         set -ex
@@ -46,7 +46,7 @@ def test_unittest(workspace_name, conda_env_name,
   node_type = gpu?NODE_LINUX_GPU:NODE_LINUX_CPU
   return ["${conda_env_name}: ${test_path} -m '${mark}'": {
     node(node_type) {
-      ws("workspace/${workspace_name}") {
+      ws(workspace_name) {
         utils.init_git()
         sh """
         set -ex
@@ -65,7 +65,7 @@ def test_doctest(workspace_name, conda_env_name,
   capture_flag = env.BRANCH_NAME.startsWith('PR-')?'':'--capture=no'
   return ["${conda_env_name}: doctest ${test_path}'": {
     node(NODE_LINUX_CPU) {
-      ws("workspace/${workspace_name}") {
+      ws(workspace_name) {
         utils.init_git()
         sh """
         set -ex
@@ -89,7 +89,7 @@ def create_website(workspace_name, conda_env_name) {
   }
   return ["${conda_env_name}: website'": {
     node(NODE_LINUX_GPU) {
-      ws("workspace/${workspace_name}") {
+      ws(workspace_name) {
         utils.init_git()
         sh """
         set -ex
@@ -108,7 +108,7 @@ def website_linkcheck(workspace_name, conda_env_name) {
   enforce_linkcheck = env.BRANCH_NAME.startsWith('PR-')?'false':'true'
   return ["${conda_env_name}: website link check'": {
     node(NODE_LINUX_CPU) {
-      ws("workspace/${workspace_name}") {
+      ws(workspace_name) {
         utils.init_git()
         sh """
         set -ex

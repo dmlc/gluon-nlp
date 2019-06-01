@@ -21,6 +21,7 @@
 from __future__ import absolute_import, print_function
 
 import collections
+import errno
 import os
 import sys
 import tarfile
@@ -31,7 +32,6 @@ from mxnet.gluon.data import SimpleDataset
 from mxnet.gluon.utils import _get_repo_url, check_sha1, download
 
 from .. import _constants as C
-from ..base import get_home_dir
 
 __all__ = [
     'Counter', 'count_tokens', 'concat_sequence', 'slice_sequence', 'train_valid_split',
@@ -267,16 +267,15 @@ def short_hash(name):
     return _vocab_sha1[name][:8]
 
 
-def _load_pretrained_vocab(name, root=os.path.join(get_home_dir(), 'models'), cls=None):
+def _load_pretrained_vocab(name, root, cls=None):
     """Load the accompanying vocabulary object for pre-trained model.
 
     Parameters
     ----------
     name : str
         Name of the vocabulary, usually the name of the dataset.
-    root : str, default '$MXNET_HOME/models'
-        Location for keeping the model parameters.
-        MXNET_HOME defaults to '~/.mxnet'.
+    root : str
+        Location for keeping the model vocabulary.
     cls : nlp.Vocab or nlp.vocab.BERTVocab, default nlp.Vocab
 
     Returns
@@ -298,7 +297,13 @@ def _load_pretrained_vocab(name, root=os.path.join(get_home_dir(), 'models'), cl
         print('Vocab file is not found. Downloading.')
 
     if not os.path.exists(root):
-        os.makedirs(root)
+        try:
+            os.makedirs(root)
+        except OSError as e:
+            if e.errno == errno.EEXIST and os.path.isdir(root):
+                pass
+            else:
+                raise e
 
     zip_file_path = os.path.join(root, file_name + '.zip')
     repo_url = _get_repo_url()

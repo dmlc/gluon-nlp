@@ -34,7 +34,8 @@ def test_bert_embedding_dataset():
 
 def test_bert_embedding_data_loader():
     sentence = u'is this jacksonville ?'
-    bert = BertEmbedding(max_seq_length=10)
+    bert = BertEmbedding(dataset_name='wiki_multilingual_uncased',
+                         max_seq_length=10)
     first_sentence = None
     for i in bert.data_loader([sentence]):
         first_sentence = i
