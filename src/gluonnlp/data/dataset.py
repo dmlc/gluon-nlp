@@ -20,7 +20,8 @@
 # pylint: disable=undefined-all-variable
 """NLP Toolkit Dataset API. It allows easy and customizable loading of corpora and dataset files.
 Files can be loaded into formats that are immediately ready for training and evaluation."""
-__all__ = ['TextLineDataset', 'CorpusDataset', 'ConcatDataset', 'TSVDataset', 'NumpyDataset']
+__all__ = ['TextLineDataset', 'CorpusDataset', 'ConcatDataset', 'TSVDataset', 'NumpyDataset',
+           'Filter', 'RangeFilter', 'SplitFilter']
 
 import io
 import os
@@ -70,9 +71,61 @@ class Filter(object):
         """
         raise NotImplementedError()
 
+class RangeFilter(Filter):
+    """RangeFilter filters the data samples based on the range [start_idx, end_idx)
+    from the dataset. Only data samples within the range passes the filter.
+
+    Parameters
+    ----------
+    start_idx : int
+        The start index (included).
+    end_idx : int or None
+        The end index (excluded). If set to None, it is set to infinity.
+
+    Example
+    -------
+    >>> data =  "a,b,c\n"
+    >>> data += "d,e,f\n"
+    >>> data += "g,h,i\n"
+    >>> data += "j,k,l\n"
+    >>> data += "m,n,o\n"
+    >>> with open('test_range_filter.txt', 'w') as fout:
+    >>>     fout.write(data)
+    >>>
+    >>> # create 2 partitions, and read partition 0 only
+    >>> filter_fn = nlp.data.RangeFilter(1, 3)
+    >>> dataset = nlp.data.TextLineDataset('test_range_filter.txt', filter_fn=filter_fn)
+    >>> len(dataset)
+    2
+    >>> dataset[0]
+    "d,e,f"
+    >>> dataset[1]
+    "g,h,i"
+    """
+    def __init__(self, start_idx, end_idx):
+        self.start = start_idx
+        self.end = end_idx
+        if end_idx is not None:
+            assert self.start < self.end, 'end_idx must be greater than start_idx'
+
+    def __call__(self, index, data):
+        """Check if the data sample passes the filter.
+
+        Parameters
+        ----------
+        index : int
+            The original dataset index before filtering is applied.
+        sample : object
+            The original data sample object at the provided index.
+        """
+        if self.end is not None:
+            return index >= self.start and index < self.end
+        else:
+            return index >= self.start
+
 class SplitFilter(Filter):
     """SplitFilter filters the data samples based on the number of partitions
-    and partition index of the dataset. Only the data sample for the target
+    and partition index of the dataset. Only data samples for the target
     partition index passes the filter.
 
     Parameters
@@ -89,12 +142,12 @@ class SplitFilter(Filter):
     >>> data += "g,h,i\n"
     >>> data += "j,k,l\n"
     >>> data += "m,n,o\n"
-    >>> with open('test_filter.txt', 'w') as fout:
+    >>> with open('test_split_filter.txt', 'w') as fout:
     >>>     fout.write(data)
     >>>
     >>> # create 2 partitions, and read partition 0 only
-    >>> filter_fn = nlp.data.dataset.SplitFilter(2, 0)
-    >>> dataset = nlp.data.TextLineDataset('test_filter.txt', filter_fn=filter_fn)
+    >>> filter_fn = nlp.data.SplitFilter(2, 0)
+    >>> dataset = nlp.data.TextLineDataset('test_split_filter.txt', filter_fn=filter_fn)
     >>> len(dataset)
     3
     >>> dataset[0]

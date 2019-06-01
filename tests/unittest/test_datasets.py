@@ -656,25 +656,46 @@ def test_numpy_dataset():
     dataset_b = dataset.get_field('b')
     assert np.all(dataset_b == b)
 
-def test_filter():
+def test_split_filter():
     data =  "a,b,c\n"
     data += "d,e,f\n"
     data += "g,h,i\n"
     data += "j,k,l\n"
     data += "m,n,o\n"
-    with open('test_filter.txt', 'w') as fout:
+    with open('test_split_filter.txt', 'w') as fout:
         fout.write(data)
-    filter_fn = nlp.data.dataset.SplitFilter(2, 0)
-    dataset = nlp.data.TextLineDataset('test_filter.txt', filter_fn=filter_fn)
+    filter_fn = nlp.data.SplitFilter(2, 0)
+    dataset = nlp.data.TextLineDataset('test_split_filter.txt', filter_fn=filter_fn)
     assert len(dataset) == 3
     assert dataset[0] == "a,b,c"
     assert dataset[1] == "g,h,i"
     assert dataset[2] == "m,n,o"
 
-    filter_fn = nlp.data.dataset.SplitFilter(2, 1)
-    dataset = nlp.data.TextLineDataset('test_filter.txt', filter_fn=filter_fn)
+    filter_fn = nlp.data.SplitFilter(2, 1)
+    dataset = nlp.data.TextLineDataset('test_split_filter.txt', filter_fn=filter_fn)
     assert len(dataset) == 2
     assert dataset[0] == "d,e,f"
     assert dataset[1] == "j,k,l"
 
-test_filter()
+def test_range_filter():
+    data =  "a,b,c\n"
+    data += "d,e,f\n"
+    data += "g,h,i\n"
+    data += "j,k,l\n"
+    data += "m,n,o\n"
+    with open('test_range_filter.txt', 'w') as fout:
+        fout.write(data)
+    filter_fn = nlp.data.RangeFilter(1, 3)
+    dataset = nlp.data.TextLineDataset('test_range_filter.txt', filter_fn=filter_fn)
+    assert len(dataset) == 2
+    assert dataset[0] == "d,e,f"
+    assert dataset[1] == "g,h,i"
+
+    filter_fn = nlp.data.RangeFilter(3, None)
+    dataset = nlp.data.TextLineDataset('test_range_filter.txt', filter_fn=filter_fn)
+    assert len(dataset) == 2, len(dataset)
+    assert dataset[0] == "j,k,l"
+    assert dataset[1] == "m,n,o"
+
+test_split_filter()
+test_range_filter()
