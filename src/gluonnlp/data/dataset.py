@@ -52,6 +52,70 @@ class ConcatDataset(Dataset):
     def __len__(self):
         return self.cum_sizes[-1]
 
+class Filter(object):
+    """Abstract Filter class for Dataset creation."""
+    def __call__(self, index, data):
+        """Check if the data sample passes the filter.
+
+        Parameters
+        ----------
+        index : int
+            The original dataset index before filtering is applied.
+        sample : object
+            The original data sample object at the provided index.
+        """
+        raise NotImplementedError()
+
+class SplitFilter(Filter):
+    """SplitFilter filters the data samples based on the number of partitions
+    and partition index of the dataset. Only the data sample for the target
+    partition index passes the filter.
+
+    Parameters
+    ----------
+    num_parts : int
+        The number of partitions.
+    part_idx : int
+        The target partition index that will pass the filter.
+
+    Example
+    -------
+    >>> data =  "a,b,c\n"
+    >>> data += "d,e,f\n"
+    >>> data += "g,h,i\n"
+    >>> data += "j,k,l\n"
+    >>> data += "m,n,o\n"
+    >>> with open('test_filter.txt', 'w') as fout:
+    >>>     fout.write(data)
+    >>>
+    >>> # create 2 partitions, and read partition 0 only
+    >>> filter_fn = nlp.data.dataset.SplitFilter(2, 0)
+    >>> dataset = nlp.data.TextLineDataset('test_filter.txt', filter_fn=filter_fn)
+    >>> len(dataset)
+    3
+    >>> dataset[0]
+    "a,b,c"
+    >>> dataset[1]
+    "g,h,i"
+    >>> dataset[2]
+    "m,n,o"
+    """
+    def __init__(self, num_parts, part_idx):
+        self.num_parts = num_parts
+        self.part_idx = part_idx
+        assert self.part_idx < self.num_parts, 'part_idx should be less than num_parts'
+
+    def __call__(self, index, data):
+        """Check if the data sample passes the filter.
+
+        Parameters
+        ----------
+        index : int
+            The original dataset index before filtering is applied.
+        sample : object
+            The original data sample object at the provided index.
+        """
+        return index % self.num_parts == self.part_idx
 
 class TextLineDataset(SimpleDataset):
     """Dataset that comprises lines in a file. Each line will be stripped.
@@ -62,12 +126,18 @@ class TextLineDataset(SimpleDataset):
         Path to the input text file.
     encoding : str, default 'utf8'
         File encoding format.
+    filter_fn : Filter, default None
+        Filter function to decide if the line should be kept or discarded.
     """
-    def __init__(self, filename, encoding='utf8'):
+    def __init__(self, filename, encoding='utf8', filter_fn=None):
         lines = []
         with io.open(filename, 'r', encoding=encoding) as in_file:
-            for line in in_file:
-                lines.append(line.strip())
+            for idx, line in enumerate(in_file):
+                line = line.strip()
+                # check if the line should be filtered out
+                if filter_fn and not filter_fn(idx, line):
+                    continue
+                lines.append(line)
         super(TextLineDataset, self).__init__(lines)
 
 

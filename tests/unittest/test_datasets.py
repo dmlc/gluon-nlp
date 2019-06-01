@@ -655,3 +655,26 @@ def test_numpy_dataset():
     assert np.all(dataset[1][1] == b[1])
     dataset_b = dataset.get_field('b')
     assert np.all(dataset_b == b)
+
+def test_filter():
+    data =  "a,b,c\n"
+    data += "d,e,f\n"
+    data += "g,h,i\n"
+    data += "j,k,l\n"
+    data += "m,n,o\n"
+    with open('test_filter.txt', 'w') as fout:
+        fout.write(data)
+    filter_fn = nlp.data.dataset.SplitFilter(2, 0)
+    dataset = nlp.data.TextLineDataset('test_filter.txt', filter_fn=filter_fn)
+    assert len(dataset) == 3
+    assert dataset[0] == "a,b,c"
+    assert dataset[1] == "g,h,i"
+    assert dataset[2] == "m,n,o"
+
+    filter_fn = nlp.data.dataset.SplitFilter(2, 1)
+    dataset = nlp.data.TextLineDataset('test_filter.txt', filter_fn=filter_fn)
+    assert len(dataset) == 2
+    assert dataset[0] == "d,e,f"
+    assert dataset[1] == "j,k,l"
+
+test_filter()
