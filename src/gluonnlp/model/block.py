@@ -22,7 +22,6 @@ __all__ = ['RNNCellLayer', 'L2Normalization', 'GELU']
 
 import math
 import warnings
-import mxnet as mx
 from mxnet import ndarray
 from mxnet.gluon import Block, HybridBlock
 

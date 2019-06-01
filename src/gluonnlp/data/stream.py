@@ -182,7 +182,6 @@ class SimpleDatasetStream(DatasetStream):
         if not isinstance(file_pattern, str):
             raise TypeError('file_pattern must be str, but got %s'%type(file_pattern))
         self._dataset = dataset
-        file_pattern_list = file_pattern.split(',')
         self._files = []
         for pattern in file_pattern.split(','):
             self._files.extend(glob.glob(os.path.expanduser(pattern.strip())))
