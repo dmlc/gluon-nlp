@@ -177,13 +177,16 @@ The scripts for masked language modeling and and next sentence prediction are al
 Training Sample Generation
 ++++++++++++++++++++++++++
 
-Data generation for pre-training on sample texts:
+The `create_pretraining_data.py` file generates pre-training data from raw text documents, stored as npz files. They are also required if you want to evaluate your pre-trained BERT model during pre-training.
 
 .. code-block:: console
 
+    $ # create pre-training data using the vocabulary released by Google
     $ python create_pretraining_data.py --input_file sample_text.txt --output_dir out --dataset_name book_corpus_wiki_en_uncased --max_seq_length 512 --max_predictions_per_seq 80 --dupe_factor 1 --masked_lm_prob 0.15 --short_seq_prob 0.1 --num_workers 1 --verbose
+    $ # create pre-training data using a sentencepiece vocabulary
+    $ python create_pretraining_data.py --input_file sample_text.txt --output_dir out --max_seq_length 512 --max_predictions_per_seq 80 --dupe_factor 1 --masked_lm_prob 0.15 --short_seq_prob 0.1 --num_workers 1 --sentencepiece /path/to/sentencepiece.model --verbose
 
-The data generation script takes a file path as the input (could be one or more files by wildcard). Each file contains one or more documents separated by empty lines, and each document contains one line per sentence. You can perform sentence segmentation with an off-the-shelf NLP toolkit such as NLTK.
+The data generation script takes a file path as the input (could be one or more files by wildcard). Each file contains one or more documents separated by empty lines, and each document contains one line per sentence. You can perform sentence segmentation with an off-the-shelf NLP toolkit such as NLTK. See "sample_text.txt" as an example input file.
 
 Run Pre-training
 ++++++++++++++++

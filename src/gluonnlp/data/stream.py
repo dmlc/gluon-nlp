@@ -25,7 +25,6 @@ ready for training and evaluation."""
 from __future__ import print_function
 
 import glob
-import signal
 import multiprocessing
 import multiprocessing.pool
 import os
@@ -47,8 +46,6 @@ except ImportError:
 __all__ = [
     'DataStream', 'SimpleDataStream', 'DatasetStream', 'SimpleDatasetStream',
     'PrefetchingStream']
-
-_managed_processes = []
 
 class DataStream(object):
     """Abstract Data Stream Interface.
@@ -312,7 +309,7 @@ class _ProcessPrefetcher(_Prefetcher, multiprocessing.Process):
         self._dataq = multiprocessing.Queue(self.num_prefetch)
         self._controlq = multiprocessing.Queue()
         self._errorq = multiprocessing.Queue(self.num_prefetch)
-        self.daemon = False
+        self.daemon = True
         self.start()
         self._check_start()
 
@@ -367,22 +364,10 @@ class PrefetchingStream(DataStream):
         np_seed = np.random.randint(0, 2**32)
         mx_seed = int(mx.nd.random.uniform(0, 2**32).asscalar())
         if self._multiprocessing:
-            process = _ProcessPrefetcher(self._stream, self._num_prefetch,
-                                         seed=seed, np_seed=np_seed,
-                                         mx_seed=mx_seed)
-            global _managed_processes
-            _managed_processes.append(process)
-            return process
+            return _ProcessPrefetcher(self._stream, self._num_prefetch,
+                                      seed=seed, np_seed=np_seed,
+                                      mx_seed=mx_seed)
         else:
             return _ThreadPrefetcher(self._stream, self._num_prefetch,
                                      seed=seed, np_seed=np_seed,
                                      mx_seed=mx_seed)
-
-def _signal_term_handler(sig, frame):
-    import logging
-    logging.info('shutting down ... ')
-    for process in _managed_processes:
-        process.terminate()
-    sys.exit(signal.SIGTERM)
-
-# signal.signal(signal.SIGTERM, _signal_term_handler)
