@@ -53,7 +53,11 @@ class ConcatDataset(Dataset):
         return self.cum_sizes[-1]
 
 class Filter(object):
-    """Abstract Filter class for Dataset creation."""
+    """Abstract Filter class for Dataset creation.
+
+    A Filter can be used during Dataset construction time to reduce the number
+    of samples to hold in memory (and subsequent transformations).
+    """
     def __call__(self, index, data):
         """Check if the data sample passes the filter.
 
