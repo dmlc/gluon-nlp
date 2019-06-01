@@ -523,18 +523,19 @@ def main():
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
-        description='Pre-training data generator for BERT')
+        description='Pre-training data generator for BERT',
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     parser.add_argument(
         '--input_file',
         type=str,
-        default=None,
+        required=True,
         help='Input files, separated by comma. For example, "~/data/*.txt"')
 
     parser.add_argument(
         '--output_dir',
         type=str,
-        default=None,
+        required=True,
         help='Output directory.')
 
     parser.add_argument(
@@ -564,13 +565,13 @@ if __name__ == '__main__':
                         help='Inverse temperature for probability rescaling for sentencepiece sampling')
 
     parser.add_argument(
-        '--max_seq_length', type=int, default=512, help='Maximum sequence length. Default is 128.')
+        '--max_seq_length', type=int, default=512, help='Maximum sequence length.')
 
     parser.add_argument(
         '--max_predictions_per_seq',
         type=int,
         default=80,
-        help='Maximum number of masked LM predictions per sequence. Default is 80.')
+        help='Maximum number of masked LM predictions per sequence. ')
 
     parser.add_argument(
         '--random_seed',
@@ -582,20 +583,20 @@ if __name__ == '__main__':
         '--dupe_factor',
         type=int,
         default=1,
-        help='Number of times to duplicate the input data (with different masks). Default is 1.')
+        help='Number of times to duplicate the input data (with different masks).')
 
     parser.add_argument(
         '--masked_lm_prob',
         type=float,
         default=0.15,
-        help='Masked LM probability. Default is 0.15')
+        help='Masked LM probability.')
 
     parser.add_argument(
         '--short_seq_prob',
         type=float,
         default=0.1,
         help='Probability of creating sequences which are shorter than the '
-        'maximum length. Default is 0.1')
+        'maximum length. ')
 
     parser.add_argument(
         '--verbose',
@@ -605,16 +606,14 @@ if __name__ == '__main__':
     parser.add_argument(
         '--num_workers',
         type=int,
-        default=1,
-        help='Number of workers for parallel processing, where each generates an output file.'
-             ' Default is 1')
+        default=8,
+        help='Number of workers for parallel processing, where each generates an output file.')
 
     parser.add_argument(
         '--num_outputs',
         type=int,
         default=1,
-        help='Number of desired output files, where each is processed independently by a worker.'
-             'Default is 1')
+        help='Number of desired output files, where each is processed independently by a worker.')
 
     args = parser.parse_args()
     logging.getLogger().setLevel(logging.DEBUG if args.verbose else logging.INFO)
