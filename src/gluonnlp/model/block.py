@@ -109,20 +109,14 @@ class GELU(HybridBlock):
     def __init__(self, **kwargs):
         super(GELU, self).__init__(**kwargs)
         self._support_erf = False
-        self._support_gelu = mx.__version__ >= '1.5.0'
         try:
             self._support_erf = True if ndarray.erf else False
         except AttributeError:
             warnings.warn('`erf` operator support is not found. '
                           'Please consider upgrading to mxnet >= 1.4')
-        if not self._support_gelu:
-            warnings.warn('`nn.GELU` support is not found. '
-                          'Please consider upgrading to mxnet >= 1.5')
 
     def hybrid_forward(self, F, x): # pylint: disable=arguments-differ
-        if self._support_gelu:
-            return F.LeakyReLU(x, act_type='gelu', name='gelu_fwd')
-        elif self._support_erf:
+        if self._support_erf:
             return x * 0.5 * (1.0 + F.erf(x / math.sqrt(2.0)))
         else:
             # approximate GELU if erf is not supported
