@@ -24,8 +24,8 @@ import logging
 import os
 
 import mxnet as mx
-from ner_common import get_bert_model, get_bert_dataset_name, get_context
-from ner_common import dump_metadata, load_metadata
+from ner_common import get_bert_model, get_context
+from ner_common import load_metadata
 from ner_data import BERTTaggingDataset, convert_arrays_to_text
 from ner_model import BERTTagger
 
@@ -64,7 +64,7 @@ def parse_args():
                             help='The length of the sequence input to BERT.'
                                  ' An exception will raised if this is not large enough.')
     arg_parser.add_argument('--load-checkpoint-prefix', type=str, required=False, default=None,
-                            help="Prefix of model checkpoint file")
+                            help='Prefix of model checkpoint file')
 
     arg_parser.add_argument('--gpu', type=int,
                             help='Number (index) of GPU to run on, e.g. 0. '
@@ -98,6 +98,7 @@ def main(config):
 
     # TODO(bikestra): make it not redundant between train and predict
     def evaluate(data_loader):
+        """Eval function"""
         predictions = []
 
         for batch_id, data in enumerate(data_loader):
