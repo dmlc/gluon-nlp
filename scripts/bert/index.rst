@@ -210,20 +210,18 @@ The BERT base model produced by gluonnlp pre-training script (`log <https://raw.
 Run Pre-training with Horovod
 +++++++++++++++++++++++++++++
 
-Alternatively, you can install horovod for scalable multi-gpu multi-machine training. Our script assumes the master version of Horovod (i.e. horovod > v0.16.1).
+Alternatively, you can install horovod for scalable multi-gpu multi-machine training.
 
 To install horovod, you need:
 
 - `NCCL <https://developer.nvidia.com/nccl>`__, and
 - `OpenMPI <https://www.open-mpi.org/software/ompi/v4.0/>`__
 
-Then you can install the master version of horovod:
+Then you can install horovod v0.16.2 via the following command:
 
 .. code-block:: console
 
-    $ git clone --recursive https://github.com/uber/horovod horovod;
-    $ cd horovd;
-    $ HOROVOD_GPU_ALLREDUCE=NCCL pip install . --user --no-cache-dir
+    $ HOROVOD_GPU_ALLREDUCE=NCCL pip install horovod --user --no-cache-dir
 
 Verify Horovod installation:
 

@@ -568,7 +568,8 @@ if __name__ == '__main__':
                         help='Number of best candidates for sampling subwords with sentencepiece. ')
 
     parser.add_argument('--sp_alpha', type=float, default=1.0,
-                        help='Inverse temperature for probability rescaling for sentencepiece sampling')
+                        help='Inverse temperature for probability rescaling for sentencepiece '
+                             'unigram sampling')
 
     parser.add_argument(
         '--max_seq_length', type=int, default=512, help='Maximum sequence length.')
