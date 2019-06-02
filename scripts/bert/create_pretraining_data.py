@@ -75,8 +75,15 @@ def transform(instance, max_seq_length):
 
     next_sentence_label = 1 if instance.is_random_next else 0
 
-    return input_ids, segment_ids, masked_lm_positions, masked_lm_ids, \
-           masked_lm_weights, next_sentence_label, valid_lengths
+    features = {}
+    features['input_ids'] = input_ids
+    features['segment_ids'] = segment_ids
+    features['masked_lm_positions'] = masked_lm_positions
+    features['masked_lm_ids'] = masked_lm_ids
+    features['masked_lm_weights'] = masked_lm_weights
+    features['next_sentence_labels'] = [next_sentence_label]
+    features['valid_lengths'] = [valid_lengths]
+    return features
 
 def print_example(instance, features):
     logging.debug('*** Example Instance ***')
@@ -148,13 +155,18 @@ def create_samples_npz(all_documents, dupe_factor, max_seq_length, short_seq_pro
     valid_lengths = []
 
     for inst_index, instance in enumerate(instances):
-        (input_id, segment_id, masked_lm_position, masked_lm_id,
-         masked_lm_weight, next_sentence_label, valid_length) = transform(instance, max_seq_length)
+        features = transform(instance, max_seq_length)
+        input_id = features['input_ids']
+        segment_id = features['segment_ids']
+        masked_lm_position = features['masked_lm_positions']
+        masked_lm_id = features['masked_lm_ids']
+        masked_lm_weight = features['masked_lm_weights']
+        next_sentence_label = features['next_sentence_labels'][0]
+        valid_length = features['valid_lengths'][0]
 
         input_ids.append(np.ascontiguousarray(input_id, dtype='int32'))
         segment_ids.append(np.ascontiguousarray(segment_id, dtype='int32'))
-        masked_lm_positions.append(
-            np.ascontiguousarray(masked_lm_position, dtype='int32'))
+        masked_lm_positions.append(np.ascontiguousarray(masked_lm_position, dtype='int32'))
         masked_lm_ids.append(np.ascontiguousarray(masked_lm_id, dtype='int32'))
         masked_lm_weights.append(np.ascontiguousarray(masked_lm_weight, dtype='float32'))
         next_sentence_labels.append(next_sentence_label)
