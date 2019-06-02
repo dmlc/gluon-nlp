@@ -16,34 +16,35 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-"""Static BERT models."""
+"""Hybrid BERT models."""
 
-__all__ = ['StaticBERTModel', 'StaticBERTEncoder',
-           'get_model', 'bert_12_768_12', 'bert_24_1024_16', 'get_static_bert_model']
+__all__ = ['HybridBERTModel', 'HybridBERTEncoder',
+           'get_hybrid_model', 'bert_12_768_12', 'bert_24_1024_16',
+           'get_hybrid_bert_model',
+           'HybridBERTForQA', 'HybridBERTClassifier', 'HybridBERTRegression']
 
 import os
 import math
 import warnings
 
+import mxnet as mx
 from mxnet.gluon import Block, HybridBlock
 from mxnet.gluon import nn
-import mxnet as mx
+
 from gluonnlp.model.block import GELU
-from gluonnlp.model.bert import BERTLayerNorm, BERTEncoderCell, _load_vocab, \
-    _load_pretrained_params, bert_hparams
-from gluonnlp.model.transformer import TransformerEncoderCell, _get_layer_norm, \
-    _position_encoding_init
+from gluonnlp.model.bert import BERTLayerNorm, BERTEncoderCell, _load_vocab
+from gluonnlp.model.bert import _load_pretrained_params, bert_hparams
+from gluonnlp.model.transformer import TransformerEncoderCell, _get_layer_norm
+from gluonnlp.model.transformer import _position_encoding_init
 from gluonnlp.vocab import BERTVocab
 from gluonnlp.base import get_home_dir
-
 
 ###############################################################################
 #                              COMPONENTS                                     #
 ###############################################################################
 
-
-class StaticBaseTransformerEncoder(HybridBlock):
-    """Base Structure of the Static Transformer Encoder.
+class HybridBaseTransformerEncoder(HybridBlock):
+    """Base Structure of the Hybrid Transformer Encoder.
 
     Parameters
     ----------
@@ -105,7 +106,7 @@ class StaticBaseTransformerEncoder(HybridBlock):
                  positional_weight='sinusoidal', use_bert_encoder=False,
                  use_layer_norm_before_dropout=False, scale_embed=True, input_size=None,
                  seq_length=None, prefix=None, params=None):
-        super(StaticBaseTransformerEncoder, self).__init__(prefix=prefix, params=params)
+        super(HybridBaseTransformerEncoder, self).__init__(prefix=prefix, params=params)
         assert units % num_heads == 0, \
             'In TransformerEncoder, The units should be divided exactly ' \
             'by the number of heads. Received units={}, num_heads={}' \
@@ -249,11 +250,11 @@ class StaticBaseTransformerEncoder(HybridBlock):
             return outputs, additional_outputs
 
 
-class StaticBERTEncoder(StaticBaseTransformerEncoder):
-    """Structure of the Static BERT Encoder.
+class HybridBERTEncoder(HybridBaseTransformerEncoder):
+    """Structure of the Hybrid BERT Encoder.
 
     Different from the original encoder for transformer,
-    `StaticBERTEncoder` uses learnable positional embedding, `BERTPositionwiseFFN`
+    `HybridBERTEncoder` uses learnable positional embedding, `BERTPositionwiseFFN`
     and `BERTLayerNorm`.
 
     Parameters
@@ -314,7 +315,7 @@ class StaticBERTEncoder(StaticBaseTransformerEncoder):
                  use_residual=True, output_attention=False, output_all_encodings=False,
                  weight_initializer=None, bias_initializer='zeros', input_size=None,
                  seq_length=None, prefix=None, params=None):
-        super(StaticBERTEncoder, self).__init__(attention_cell=attention_cell,
+        super(HybridBERTEncoder, self).__init__(attention_cell=attention_cell,
                                                 num_layers=num_layers, units=units,
                                                 hidden_size=hidden_size, max_length=max_length,
                                                 num_heads=num_heads, scaled=scaled, dropout=dropout,
@@ -337,12 +338,12 @@ class StaticBERTEncoder(StaticBaseTransformerEncoder):
 #                                FULL MODEL                                   #
 ###############################################################################
 
-class StaticBERTModel(HybridBlock):
-    """Static Model for BERT (Bidirectional Encoder Representations from Transformers).
+class HybridBERTModel(HybridBlock):
+    """Hybrid Model for BERT (Bidirectional Encoder Representations from Transformers).
 
     Parameters
     ----------
-    encoder : StaticBERTEncoder
+    encoder : HybridBERTEncoder
         Bidirectional encoder that encodes the input sentence.
     vocab_size : int or None, default None
         The size of the vocabulary.
@@ -392,7 +393,7 @@ class StaticBERTModel(HybridBlock):
             layer of the Encoder, or a list of all sequence encodings of all layers.
             In both cases shape of the tensor(s) is/are (batch_size, seq_length, units).
         - **attention_outputs**: output list of all intermediate encodings per layer
-            Returned only if StaticBERTEncoder.output_attention is True.
+            Returned only if HybridBERTEncoder.output_attention is True.
             List of num_layers length of tensors of shape
             (num_masks, num_attention_heads, seq_length, seq_length)
         - **pooled_output**: output tensor of pooled representation of the first tokens.
@@ -408,7 +409,7 @@ class StaticBERTModel(HybridBlock):
                  embed_size=None, embed_dropout=0.0, embed_initializer=None,
                  word_embed=None, token_type_embed=None, use_pooler=True, use_decoder=True,
                  use_classifier=True, prefix=None, params=None):
-        super(StaticBERTModel, self).__init__(prefix=prefix, params=params)
+        super(HybridBERTModel, self).__init__(prefix=prefix, params=params)
         self._use_decoder = use_decoder
         self._use_classifier = use_classifier
         self._use_pooler = use_pooler
@@ -483,7 +484,7 @@ class StaticBERTModel(HybridBlock):
         # pylint: disable=unused-argument
         """Generate the representation given the inputs.
 
-        This is used in training or fine-tuning a static (hybridized) BERT model.
+        This is used in training or fine-tuning a hybrid (hybridized) BERT model.
         """
         outputs = []
         seq_out, attention_out = self._encode_sequence(F, inputs, token_types, valid_length)
@@ -515,7 +516,7 @@ class StaticBERTModel(HybridBlock):
         # pylint: disable=unused-argument
         """Generate the representation given the input sequences.
 
-        This is used for pre-training or fine-tuning a static (hybridized) BERT model.
+        This is used for pre-training or fine-tuning a hybrid (hybridized) BERT model.
         """
         # embedding
         word_embedding = self.word_embed(inputs)
@@ -530,7 +531,7 @@ class StaticBERTModel(HybridBlock):
 
         This is used for pre-training or fine-tuning a BERT model.
         """
-        outputs = sequence[:, 0, :]
+        outputs = sequence.slice(begin=(None, 0, None), end=(None, 1, None)).squeeze(axis=1)
         return self.pooler(outputs)
 
     def _decode(self, sequence, masked_positions):
@@ -569,8 +570,8 @@ class StaticBERTModel(HybridBlock):
 #                               GET MODEL                                     #
 ###############################################################################
 
-def get_model(name, dataset_name='wikitext-2', **kwargs):
-    """Returns a pre-defined model by name.
+def get_hybrid_model(name, dataset_name='wikitext-2', **kwargs):
+    """Returns a pre-defined hybrid model by name.
 
     Parameters
     ----------
@@ -592,7 +593,7 @@ def get_model(name, dataset_name='wikitext-2', **kwargs):
 
     Returns
     -------
-    gluon.Block, gluonnlp.Vocab, (optional) gluonnlp.Vocab
+    gluon.HybridBlock, BERTVocab
     """
     models = {'bert_12_768_12': bert_12_768_12,
               'bert_24_1024_16': bert_24_1024_16}
@@ -609,7 +610,7 @@ def bert_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
                    root=os.path.join(get_home_dir(), 'models'), use_pooler=True,
                    use_decoder=True, use_classifier=True, input_size=None, seq_length=None,
                    **kwargs):
-    """Static BERT BASE model.
+    """Hybrid BERT BASE model.
 
     The number of layers (L) is 12, number of units (H) is 768, and the
     number of self-attention heads (A) is 12.
@@ -643,9 +644,9 @@ def bert_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
 
     Returns
     -------
-    StaticBERTModel, gluonnlp.vocab.BERTVocab
+    HybridBERTModel, gluonnlp.vocab.BERTVocab
     """
-    return get_static_bert_model(model_name='bert_12_768_12', vocab=vocab,
+    return get_hybrid_bert_model(model_name='bert_12_768_12', vocab=vocab,
                                  dataset_name=dataset_name, pretrained=pretrained, ctx=ctx,
                                  use_pooler=use_pooler, use_decoder=use_decoder,
                                  use_classifier=use_classifier, root=root, input_size=input_size,
@@ -656,7 +657,7 @@ def bert_24_1024_16(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu()
                     use_pooler=True, use_decoder=True, use_classifier=True,
                     root=os.path.join(get_home_dir(), 'models'), input_size=None, seq_length=None,
                     **kwargs):
-    """Static BERT LARGE model.
+    """Hybrid BERT LARGE model.
 
     The number of layers (L) is 24, number of units (H) is 1024, and the
     number of self-attention heads (A) is 16.
@@ -689,22 +690,22 @@ def bert_24_1024_16(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu()
 
     Returns
     -------
-    StaticBERTModel, gluonnlp.vocab.BERTVocab
+    HybridBERTModel, gluonnlp.vocab.BERTVocab
     """
-    return get_static_bert_model(model_name='bert_24_1024_16', vocab=vocab,
+    return get_hybrid_bert_model(model_name='bert_24_1024_16', vocab=vocab,
                                  dataset_name=dataset_name, pretrained=pretrained,
                                  ctx=ctx, use_pooler=use_pooler,
                                  use_decoder=use_decoder, use_classifier=use_classifier,
                                  root=root, input_size=input_size, seq_length=seq_length, **kwargs)
 
 
-def get_static_bert_model(model_name=None, dataset_name=None, vocab=None,
+def get_hybrid_bert_model(model_name=None, dataset_name=None, vocab=None,
                           pretrained=True, ctx=mx.cpu(),
                           use_pooler=True, use_decoder=True, use_classifier=True,
                           output_attention=False, output_all_encodings=False,
                           root=os.path.join(get_home_dir(), 'models'), input_size=None,
                           seq_length=None, **kwargs):
-    """Any Static BERT pretrained model.
+    """Any Hybrid BERT pretrained model.
 
     Parameters
     ----------
@@ -743,7 +744,7 @@ def get_static_bert_model(model_name=None, dataset_name=None, vocab=None,
 
     Returns
     -------
-    StaticBERTModel, gluonnlp.vocab.BERTVocab
+    HybridBERTModel, gluonnlp.vocab.BERTVocab
     """
     predefined_args = bert_hparams[model_name]
     mutable_args = ['use_residual', 'dropout', 'embed_dropout', 'word_embed']
@@ -752,7 +753,7 @@ def get_static_bert_model(model_name=None, dataset_name=None, vocab=None,
         'Cannot override predefined model settings.'
     predefined_args.update(kwargs)
     # encoder
-    encoder = StaticBERTEncoder(attention_cell=predefined_args['attention_cell'],
+    encoder = HybridBERTEncoder(attention_cell=predefined_args['attention_cell'],
                                 num_layers=predefined_args['num_layers'],
                                 units=predefined_args['units'],
                                 hidden_size=predefined_args['hidden_size'],
@@ -770,7 +771,7 @@ def get_static_bert_model(model_name=None, dataset_name=None, vocab=None,
                       ' Please use wiki_cn_cased/wiki_multilingual_uncased instead.')
     bert_vocab = _load_vocab(dataset_name, vocab, root, cls=BERTVocab)
     # BERT
-    net = StaticBERTModel(encoder, len(bert_vocab),
+    net = HybridBERTModel(encoder, len(bert_vocab),
                           token_type_vocab_size=predefined_args['token_type_vocab_size'],
                           units=predefined_args['units'],
                           embed_size=predefined_args['embed_size'],
@@ -783,3 +784,153 @@ def get_static_bert_model(model_name=None, dataset_name=None, vocab=None,
         _load_pretrained_params(net, model_name, dataset_name, root, ctx,
                                 ignore_extra=ignore_extra)
     return net, bert_vocab
+
+class HybridBERTForQA(HybridBlock):
+    """Hybridizable Model for SQuAD task with BERT.
+
+    The model feeds token ids and token type ids into BERT to get the
+    pooled BERT sequence representation, then apply a Dense layer for QA task.
+
+    Parameters
+    ----------
+    bert: BERTModel
+        Bidirectional encoder with transformer.
+    prefix : str or None
+        See document of `mx.gluon.HybridBlock`.
+    params : ParameterDict or None
+        See document of `mx.gluon.HybridBlock`.
+    """
+
+    def __init__(self, bert, prefix=None, params=None):
+        super(HybridBERTForQA, self).__init__(prefix=prefix, params=params)
+        self.bert = bert
+        with self.name_scope():
+            self.span_classifier = nn.Dense(units=2, flatten=False)
+
+    def hybrid_forward(self, F, inputs, token_types, valid_length=None):
+        # pylint: disable=arguments-differ
+        """Generate the unnormalized score for the given the input sequences.
+
+        Parameters
+        ----------
+        inputs : NDArray, shape (batch_size, seq_length)
+            Input words for the sequences.
+        token_types : NDArray, shape (batch_size, seq_length)
+            Token types for the sequences, used to indicate whether the word belongs to the
+            first sentence or the second one.
+        valid_length : NDArray or None, shape (batch_size,)
+            Valid length of the sequence. This is used to mask the padded tokens.
+
+        Returns
+        -------
+        outputs : NDArray
+            Shape (batch_size, seq_length, 2)
+        """
+        bert_output = self.bert(inputs, token_types, valid_length)
+        output = self.span_classifier(bert_output)
+        return output
+
+class HybridBERTClassifier(HybridBlock):
+    """Model for sentence (pair) classification task with BERT.
+
+    The model feeds token ids and token type ids into BERT to get the
+    pooled BERT sequence representation, then apply a Dense layer for
+    classification.
+
+    Parameters
+    ----------
+    bert: BERTModel
+        Bidirectional encoder with transformer.
+    num_classes : int, default is 2
+        The number of target classes.
+    dropout : float or None, default 0.0.
+        Dropout probability for the bert output.
+    prefix : str or None
+        See document of `mx.gluon.Block`.
+    params : ParameterDict or None
+        See document of `mx.gluon.Block`.
+    """
+
+    def __init__(self,
+                 bert,
+                 num_classes=2,
+                 dropout=0.0,
+                 prefix=None,
+                 params=None):
+        super(HybridBERTClassifier, self).__init__(prefix=prefix, params=params)
+        self.bert = bert
+        with self.name_scope():
+            self.classifier = nn.HybridSequential(prefix=prefix)
+            if dropout:
+                self.classifier.add(nn.Dropout(rate=dropout))
+            self.classifier.add(nn.Dense(units=num_classes))
+
+    def hybrid_forward(self, F, inputs, token_types, valid_length=None):  # pylint: disable=arguments-differ
+        """Generate the unnormalized score for the given the input sequences.
+
+        Parameters
+        ----------
+        inputs : NDArray, shape (batch_size, seq_length)
+            Input words for the sequences.
+        token_types : NDArray, shape (batch_size, seq_length)
+            Token types for the sequences, used to indicate whether the word belongs to the
+            first sentence or the second one.
+        valid_length : NDArray or None, shape (batch_size)
+            Valid length of the sequence. This is used to mask the padded tokens.
+
+        Returns
+        -------
+        outputs : NDArray
+            Shape (batch_size, num_classes)
+        """
+        _, pooler_out = self.bert(inputs, token_types, valid_length)
+        return self.classifier(pooler_out)
+
+class HybridBERTRegression(HybridBlock):
+    """Model for sentence (pair) regression task with BERT.
+
+    The model feeds token ids and token type ids into BERT to get the
+    pooled BERT sequence representation, then apply a Dense layer for
+    regression.
+
+    Parameters
+    ----------
+    bert: BERTModel
+        Bidirectional encoder with transformer.
+    dropout : float or None, default 0.0.
+        Dropout probability for the bert output.
+    prefix : str or None
+        See document of `mx.gluon.Block`.
+    params : ParameterDict or None
+        See document of `mx.gluon.Block`.
+    """
+
+    def __init__(self, bert, dropout=0.0, prefix=None, params=None):
+        super(HybridBERTRegression, self).__init__(prefix=prefix, params=params)
+        self.bert = bert
+        with self.name_scope():
+            self.regression = nn.HybridSequential(prefix=prefix)
+            if dropout:
+                self.regression.add(nn.Dropout(rate=dropout))
+            self.regression.add(nn.Dense(1))
+
+    def hybrid_forward(self, _, inputs, token_types, valid_length=None):  # pylint: disable=arguments-differ
+        """Generate the unnormalized score for the given the input sequences.
+
+        Parameters
+        ----------
+        inputs : NDArray, shape (batch_size, seq_length)
+            Input words for the sequences.
+        token_types : NDArray, shape (batch_size, seq_length)
+            Token types for the sequences, used to indicate whether the word belongs to the
+            first sentence or the second one.
+        valid_length : NDArray or None, shape (batch_size)
+            Valid length of the sequence. This is used to mask the padded tokens.
+
+        Returns
+        -------
+        outputs : NDArray
+            Shape (batch_size, num_classes)
+        """
+        _, pooler_out = self.bert(inputs, token_types, valid_length)
+        return self.regression(pooler_out)

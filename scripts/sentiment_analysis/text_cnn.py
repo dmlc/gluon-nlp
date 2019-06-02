@@ -1,9 +1,9 @@
 """textCNN model."""
 
-import gluonnlp as nlp
 import mxnet as mx
 from mxnet import gluon
 from mxnet.gluon import HybridBlock
+import gluonnlp as nlp
 
 class SentimentNet(HybridBlock):
     """Network for sentiment analysis."""
@@ -45,7 +45,7 @@ def model(dropout, vocab, model_mode, output_size):
     textCNN.hybridize()
     return textCNN
 
-def init(textCNN, vocab, model_mode, context, lr):
+def init(textCNN, vocab, model_mode, context):
     """Initialize parameters."""
 
     textCNN.initialize(mx.init.Xavier(), ctx=context, force_reinit=True)
@@ -56,5 +56,5 @@ def init(textCNN, vocab, model_mode, context, lr):
     if model_mode == 'static' or model_mode == 'multichannel':
         # Parameters of textCNN.embedding are not updated during training.
         textCNN.embedding.collect_params().setattr('grad_req', 'null')
-    trainer = gluon.Trainer(textCNN.collect_params(), 'adam', {'learning_rate': lr})
+    trainer = gluon.Trainer(textCNN.collect_params(), 'adadelta', {'rho':0.95, 'clip_gradient':3})
     return textCNN, trainer

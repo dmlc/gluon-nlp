@@ -41,8 +41,9 @@ import gluonnlp as nlp
 
 from utils import profile
 from fp16_utils import FP16Trainer
-from pretraining_utils import get_model_loss, get_pretrain_dataset, get_dummy_dataloader
-from pretraining_utils import save_params, log, evaluate, forward, split_and_load, get_argparser
+from pretraining_utils import get_model_loss, get_pretrain_data_npz, get_dummy_dataloader
+from pretraining_utils import log, evaluate, forward, split_and_load, get_argparser
+from pretraining_utils import save_parameters, save_states
 
 # arg parser
 parser = get_argparser()
@@ -106,10 +107,10 @@ def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx, store):
     dynamic_loss_scale = args.dtype == 'float16'
     fp16_trainer = FP16Trainer(trainer, dynamic_loss_scale=dynamic_loss_scale)
 
-    if args.ckpt_dir and args.start_step:
-        state_path = os.path.join(args.ckpt_dir, '%07d.states' % args.start_step)
+    if args.start_step:
+        state_path = os.path.join(args.ckpt_dir, '%07d.states.%02d'%(args.start_step, 0))
         logging.info('Loading trainer state from %s', state_path)
-        trainer.load_states(state_path)
+        nlp.utils.load_states(trainer, state_path)
 
     accumulate = args.accumulate
     num_train_steps = args.num_steps
@@ -205,11 +206,14 @@ def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx, store):
                     nsp_metric.reset_local()
 
                 # saving checkpoints
-                if args.ckpt_dir and (step_num + 1) % (args.ckpt_interval) == 0 \
-                   and (batch_num + 1) % accumulate == 0:
-                    save_params(step_num, model, trainer, args.ckpt_dir)
+                if (step_num + 1) % args.ckpt_interval == 0 \
+                   and (batch_num + 1) % accumulate == 0 and store.rank == 0:
+                    save_states(step_num, trainer, args.ckpt_dir)
+                    save_parameters(step_num, model, args.ckpt_dir)
                 batch_num += 1
-    save_params(step_num, model, trainer, args.ckpt_dir)
+    if store.rank == 0:
+        save_states(step_num, trainer, args.ckpt_dir)
+        save_parameters(step_num, model, args.ckpt_dir)
     mx.nd.waitall()
     train_end_time = time.time()
     logging.info('Train cost={:.1f}s'.format(train_end_time - train_begin_time))
@@ -230,24 +234,20 @@ if __name__ == '__main__':
                                                       start_step=args.start_step)
 
     store = mx.kv.create(args.kvstore)
-
-    if args.ckpt_dir:
-        ckpt_dir = os.path.expanduser(args.ckpt_dir)
-        if not os.path.exists(ckpt_dir):
-            os.makedirs(ckpt_dir)
+    nlp.utils.mkdir(args.ckpt_dir)
 
     if args.data:
         logging.info('Using training data at {}'.format(args.data))
         num_parts = 1 if args.dummy_data_len else store.num_workers
         part_idx = 0 if args.dummy_data_len else store.rank
-        data_train = get_pretrain_dataset(args.data, args.batch_size, len(ctx), True,
-                                          args.use_avg_len, args.num_buckets,
-                                          num_parts=num_parts, part_idx=part_idx,
-                                          prefetch=not args.dummy_data_len)
+        data_train = get_pretrain_data_npz(args.data, args.batch_size, len(ctx), True,
+                                           args.use_avg_len, args.num_buckets,
+                                           num_parts=num_parts, part_idx=part_idx,
+                                           prefetch=not args.dummy_data_len)
         train(data_train, model, nsp_loss, mlm_loss, len(vocab), ctx, store)
     if args.data_eval:
         logging.info('Using evaluation data at {}'.format(args.data_eval))
-        data_eval = get_pretrain_dataset(args.data_eval, args.batch_size_eval, len(ctx),
-                                         False, False, 1)
+        data_eval = get_pretrain_data_npz(args.data_eval, args.batch_size_eval, len(ctx),
+                                          False, False, 1)
         evaluate(data_eval, model, nsp_loss, mlm_loss, len(vocab), ctx,
                  args.log_interval, args.dtype)

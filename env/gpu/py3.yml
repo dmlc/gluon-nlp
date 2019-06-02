@@ -1,0 +1,35 @@
+channels:
+  - conda-forge
+dependencies:
+  - python=3.6
+  - pip=18.1
+  - perl
+  - pylint=1.9.2
+  - flake8
+  - sphinx=1.7.7
+  - spacy
+  - nltk
+  - pytest=4.5.0
+  - flaky=3.5.3
+  - pytest-cov=2.7.1
+  - mock<3
+  - pytest-xdist<2
+  - recommonmark
+  - pandoc=1.19.2
+  - notedown
+  - numba>=v0.40.0
+  - sphinx-gallery
+  - nbsphinx>=0.3.4,<0.4
+  - nbconvert=5.4.0
+  - tornado=5.1.1
+  - ipython
+  - ipykernel
+  - pip:
+    - pylint-quotes<0.2
+    - mxnet-cu92mkl>=1.4.0
+    - sacremoses
+    - sentencepiece<0.2
+    - https://github.com/mli/mx-theme/archive/0.3.1.tar.gz
+    - seaborn
+    - jieba
+    - sphinx-autorun

@@ -22,8 +22,8 @@
 import re
 import time
 
-import gluonnlp as nlp
 from mxnet import nd, gluon
+import gluonnlp as nlp
 
 
 def _load_file(data_name):
@@ -31,23 +31,31 @@ def _load_file(data_name):
         train_dataset = nlp.data.MR(root='data/mr')
         output_size = 2
         return train_dataset, output_size
-    elif data_name == 'SST-1':
-        train_dataset, test_dataset = [nlp.data.SST_1(root='data/sst-1', segment=segment)
-                                       for segment in ('train', 'test')]
-        output_size = 5
-        return train_dataset, test_dataset, output_size
-    elif data_name == 'SST-2':
-        train_dataset, test_dataset = [nlp.data.SST_2(root='data/sst-2', segment=segment)
-                                       for segment in ('train', 'test')]
+    elif data_name == 'CR':
+        train_dataset = nlp.data.CR(root='data/cr')
         output_size = 2
-        return train_dataset, test_dataset, output_size
+        return train_dataset, output_size
+    elif data_name == 'MPQA':
+        train_dataset = nlp.data.MPQA(root='data/mpqa')
+        output_size = 2
+        return train_dataset, output_size
+    elif data_name == 'SST-1':
+        train_dataset, test_dataset, dev_dataset = [nlp.data.SST_1(root='data/sst-1', segment=seg)
+                                                    for seg in ('train', 'test', 'dev')]
+        output_size = 5
+        return train_dataset, test_dataset, dev_dataset, output_size
+    elif data_name == 'SST-2':
+        train_dataset, test_dataset, dev_dataset = [nlp.data.SST_2(root='data/sst-2', segment=seg)
+                                                    for seg in ('train', 'test', 'dev')]
+        output_size = 2
+        return train_dataset, test_dataset, dev_dataset, output_size
     elif data_name == 'Subj':
         train_dataset = nlp.data.SUBJ(root='data/Subj')
         output_size = 2
         return train_dataset, output_size
     else:
-        train_dataset, test_dataset = [nlp.data.TREC(root='data/trec', segment=segment)
-                                       for segment in ('train', 'test')]
+        train_dataset, test_dataset = [nlp.data.TREC(root='data/trec', segment=seg)
+                                       for seg in ('train', 'test')]
         output_size = 6
         return train_dataset, test_dataset, output_size
 
@@ -74,25 +82,20 @@ def _clean_str(string, data_name):
         return string.strip() if data_name == 'TREC' else string.strip().lower()
 
 
-def _build_vocab(data_name, train_dataset, test_dataset):
+def _build_vocab(data_name, train_dataset, test_dataset, dev_dataset):
     all_token = []
     max_len = 0
-    for i, line in enumerate(train_dataset):
-        train_dataset[i][0] = _clean_str(line[0], data_name)
-        line = train_dataset[i][0].split()
-        max_len = max_len if max_len > len(line) else len(line)
-        all_token.extend(line)
-    for i, line in enumerate(test_dataset):
-        test_dataset[i][0] = _clean_str(line[0], data_name)
-        line = test_dataset[i][0].split()
-        max_len = max_len if max_len > len(line) else len(line)
-        all_token.extend(line)
+    for dataset in (train_dataset, dev_dataset, test_dataset):
+        for line in dataset:
+            line = _clean_str(line[0], data_name).split()
+            max_len = max_len if max_len > len(line) else len(line)
+            all_token.extend(line)
     vocab = nlp.Vocab(nlp.data.count_tokens(all_token))
     vocab.set_embedding(nlp.embedding.create('Word2Vec', source='GoogleNews-vectors-negative300'))
     for word in vocab.embedding._idx_to_token:
         if (vocab.embedding[word] == nd.zeros(300)).sum() == 300:
-            vocab.embedding[word] = nd.random.normal(-1.0, 1.0, 300)
-    vocab.embedding['<unk>'] = nd.zeros(300)
+            vocab.embedding[word] = nd.random.uniform(0, 0.05, 300)
+    vocab.embedding['<unk>'] = nd.random.uniform(0, 0.05, 300)
     vocab.embedding['<pad>'] = nd.zeros(300)
     vocab.embedding['<bos>'] = nd.zeros(300)
     vocab.embedding['<eos>'] = nd.zeros(300)
@@ -104,7 +107,7 @@ def _build_vocab(data_name, train_dataset, test_dataset):
 def _preprocess(x, vocab, max_len):
     data, label = x
     data = vocab[data.split()]
-    data = data[:max_len] + [0] * (max_len - len(data[:max_len]))
+    data = data[:max_len] + [1] * (max_len - len(data[:max_len]))
     return data, label
 
 
@@ -119,15 +122,23 @@ def _preprocess_dataset(dataset, vocab, max_len):
 
 def load_dataset(data_name):
     """Load sentiment dataset."""
-    if data_name == 'MR' or data_name == 'Subj':
+    if data_name == 'MR' or data_name == 'Subj' or data_name == 'CR' or data_name == 'MPQA':
         train_dataset, output_size = _load_file(data_name)
-        vocab, max_len = _build_vocab(data_name, train_dataset, [])
+        vocab, max_len = _build_vocab(data_name, train_dataset, [], [])
         train_dataset, train_data_lengths = _preprocess_dataset(train_dataset, vocab, max_len)
         return vocab, max_len, output_size, train_dataset, train_data_lengths
-    else:
+    elif data_name == 'TREC':
         train_dataset, test_dataset, output_size = _load_file(data_name)
-        vocab, max_len = _build_vocab(data_name, train_dataset, test_dataset)
+        vocab, max_len = _build_vocab(data_name, train_dataset, test_dataset, [])
         train_dataset, train_data_lengths = _preprocess_dataset(train_dataset, vocab, max_len)
         test_dataset, test_data_lengths = _preprocess_dataset(test_dataset, vocab, max_len)
         return vocab, max_len, output_size, train_dataset, train_data_lengths, test_dataset, \
                test_data_lengths
+    else:
+        train_dataset, test_dataset, dev_dataset, output_size = _load_file(data_name)
+        vocab, max_len = _build_vocab(data_name, train_dataset, test_dataset, dev_dataset)
+        train_dataset, train_data_lengths = _preprocess_dataset(train_dataset, vocab, max_len)
+        test_dataset, test_data_lengths = _preprocess_dataset(test_dataset, vocab, max_len)
+        dev_dataset, dev_data_lengths = _preprocess_dataset(dev_dataset, vocab, max_len)
+        return vocab, max_len, output_size, train_dataset, train_data_lengths, test_dataset, \
+               test_data_lengths, dev_dataset, dev_data_lengths

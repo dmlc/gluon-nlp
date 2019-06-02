@@ -199,11 +199,11 @@ def _get_rnn_cell(mode, num_layers, input_size, hidden_size,
         Only available when the mode=lstmpc.
     """
 
-    assert mode == 'lstmpc' and proj_size is not None, \
+    assert mode == 'lstmpc' or proj_size is None, \
         'proj_size takes effect only when mode is lstmpc'
-    assert mode == 'lstmpc' and cell_clip is not None, \
+    assert mode == 'lstmpc' or cell_clip is None, \
         'cell_clip takes effect only when mode is lstmpc'
-    assert mode == 'lstmpc' and proj_clip is not None, \
+    assert mode == 'lstmpc' or proj_clip is None, \
         'proj_clip takes effect only when mode is lstmpc'
 
     rnn_cell = rnn.HybridSequentialRNNCell()

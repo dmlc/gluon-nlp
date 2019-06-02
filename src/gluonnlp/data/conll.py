@@ -31,7 +31,7 @@ import shutil
 import tarfile
 
 from mxnet.gluon.data import SimpleDataset
-from mxnet.gluon.utils import download, check_sha1
+from mxnet.gluon.utils import download, check_sha1, _get_repo_file_url
 
 from .. import _constants as C
 from .registry import register
@@ -66,9 +66,12 @@ class _CoNLLSequenceTagging(SimpleDataset):
         for data_file_name, data_hash in self._get_data_file_hash():
             root = self._root
             path = os.path.join(root, data_file_name)
+            if hasattr(self, 'namespace'):
+                url = _get_repo_file_url(self.namespace, archive_file_name)
+            else:
+                url = self.base_url + archive_file_name
             if not os.path.exists(path) or not check_sha1(path, data_hash):
-                download(self.base_url + archive_file_name,
-                         path=root, sha1_hash=archive_hash)
+                download(url, path=root, sha1_hash=archive_hash)
                 self._extract_archive()
             paths.append(path)
         return paths
@@ -355,6 +358,7 @@ class CoNLL2004(_CoNLLSequenceTagging):
         super(CoNLL2004, self).__init__(segment, root)
 
     base_url = 'http://www.cs.upc.edu/~srlconll/st04/'
+    namespace = 'gluon/dataset/conll'
     codec = 'utf-8'
 
     def _get_data_file_hash(self):

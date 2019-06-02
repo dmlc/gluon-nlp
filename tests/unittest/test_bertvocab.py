@@ -30,27 +30,32 @@ def test_bertvocab():
     bert_base1, vocab1 = nlp.model.get_model('bert_12_768_12',
                                              dataset_name='book_corpus_wiki_en_cased',
                                              pretrained=True, ctx=ctx, use_pooler=True,
-                                             use_decoder=False, use_classifier=False)
+                                             use_decoder=False, use_classifier=False,
+                                             root='tests/data/model/')
 
     bert_base2, vocab2 = nlp.model.get_model('bert_12_768_12',
                                              dataset_name='book_corpus_wiki_en_uncased',
                                              pretrained=True, ctx=ctx, use_pooler=True,
-                                             use_decoder=False, use_classifier=False)
+                                             use_decoder=False, use_classifier=False,
+                                             root='tests/data/model/')
 
     bert_base3, vocab3 = nlp.model.get_model('bert_12_768_12',
                                              dataset_name='wiki_multilingual_cased',
                                              pretrained=True, ctx=ctx, use_pooler=True,
-                                             use_decoder=False, use_classifier=False)
+                                             use_decoder=False, use_classifier=False,
+                                             root='tests/data/model/')
 
     bert_base4, vocab4 = nlp.model.get_model('bert_12_768_12',
                                              dataset_name='wiki_multilingual_uncased',
                                              pretrained=True, ctx=ctx, use_pooler=True,
-                                             use_decoder=False, use_classifier=False)
+                                             use_decoder=False, use_classifier=False,
+                                             root='tests/data/model/')
 
     bert_base5, vocab5 = nlp.model.get_model('bert_12_768_12',
                                              dataset_name='wiki_cn_cased',
                                              pretrained=True, ctx=ctx, use_pooler=True,
-                                             use_decoder=False, use_classifier=False)
+                                             use_decoder=False, use_classifier=False,
+                                             root='tests/data/model/')
 
     assert nlp.vocab.BERTVocab.CLS_TOKEN == '[CLS]'
     assert nlp.vocab.BERTVocab.SEP_TOKEN == '[SEP]'

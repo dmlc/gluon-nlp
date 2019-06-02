@@ -1,18 +1,20 @@
 channels:
   - conda-forge
 dependencies:
-  - python=3.6
+  - python=2.7
   - pip=18.1
   - perl
+  - pylint=1.9.2
+  - flake8
   - sphinx=1.7.7
   - spacy
   - nltk
-  - pytest<4
-  - flaky<4
-  - pytest-cov=2.6.0
+  - pytest=4.5.0
+  - flaky=3.5.3
+  - pytest-cov=2.7.1
   - mock<3
   - pytest-xdist<2
   - pip:
-    - mxnet-cu92mkl>=1.4.0
-    - sacremoses
+    - pylint-quotes<0.2
+    - mxnet-mkl>=1.4.0
     - sentencepiece<0.2

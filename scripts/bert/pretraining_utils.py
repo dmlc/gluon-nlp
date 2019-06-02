@@ -21,17 +21,20 @@
 import glob
 import time
 import os
+import functools
 import logging
 import argparse
 import mxnet as mx
 from mxnet.gluon.data import DataLoader
+from create_pretraining_data import create_training_instances
 
 import gluonnlp as nlp
 from gluonnlp.data.batchify import Tuple, Stack, Pad
 from gluonnlp.metric import MaskedAccuracy
 
-__all__ = ['get_model_loss', 'get_pretrain_dataset', 'get_dummy_dataloader',
-           'save_params', 'evaluate', 'forward', 'split_and_load', 'get_argparser']
+__all__ = ['get_model_loss', 'get_pretrain_data_npz', 'get_dummy_dataloader',
+           'save_parameters', 'save_states', 'evaluate', 'forward', 'split_and_load',
+           'get_argparser', 'get_pretrain_data_text']
 
 def get_model_loss(ctx, model, pretrained, dataset_name, dtype, ckpt_dir=None, start_step=None):
     """Get model for pre-training."""
@@ -46,7 +49,7 @@ def get_model_loss(ctx, model, pretrained, dataset_name, dtype, ckpt_dir=None, s
 
     if ckpt_dir and start_step:
         param_path = os.path.join(ckpt_dir, '%07d.params'%start_step)
-        model.load_parameters(param_path, ctx=ctx)
+        nlp.utils.load_parameters(model, param_path, ctx=ctx)
         logging.info('Loading step %d checkpoints from %s.', start_step, param_path)
 
     model.hybridize(static_alloc=True)
@@ -59,43 +62,111 @@ def get_model_loss(ctx, model, pretrained, dataset_name, dtype, ckpt_dir=None, s
 
     return model, nsp_loss, mlm_loss, vocabulary
 
-def get_pretrain_dataset(data, batch_size, num_ctxes, shuffle, use_avg_len,
-                         num_buckets, num_parts=1, part_idx=0, prefetch=True):
-    """create dataset for pretraining."""
+class BERTPretrainDataset(mx.gluon.data.ArrayDataset):
+    """Dataset for BERT pre-training.
+
+    Each record contains the following numpy ndarrays: input_ids, masked_lm_ids,
+    masked_lm_positions, masked_lm_weights, next_sentence_labels, segment_ids, valid_lengths.
+
+    Parameters
+    ----------
+    filename : str
+        Path to the input text file.
+    tokenizer : BERTTokenizer
+        The BERTTokenizer
+    max_seq_length : int
+        The hard limit of maximum sequence length of sentence pairs
+    short_seq_prob : float
+        The probability of sampling sequences shorter than the max_seq_length.
+    masked_lm_prob : float
+        The probability of replacing texts with masks/random words/original words.
+    max_predictions_per_seq : int
+        The hard limit of the number of predictions for masked words
+    vocab : BERTVocab
+        The BERTVocab
+    """
+    def __init__(self, filename, tokenizer, max_seq_length, short_seq_prob,
+                 masked_lm_prob, max_predictions_per_seq, vocab):
+        logging.debug('start to load file %s ...', filename)
+        instances = create_training_instances([filename], tokenizer, max_seq_length,
+                                              short_seq_prob, masked_lm_prob,
+                                              max_predictions_per_seq, vocab,
+                                              nworker=1)
+        super(BERTPretrainDataset, self).__init__(*instances)
+
+def get_pretrain_data_text(data, batch_size, num_ctxes, shuffle, use_avg_len,
+                           num_buckets, vocab, max_seq_length, short_seq_prob,
+                           masked_lm_prob, max_predictions_per_seq,
+                           cased, num_parts=1, part_idx=0,
+                           prefetch=True):
+    """create dataset for pretraining based on raw texts"""
     num_files = len(glob.glob(os.path.expanduser(data)))
     logging.debug('%d files found.', num_files)
     assert num_files >= num_parts, \
         'Number of training files must be greater than the number of partitions'
-    split_sampler = nlp.data.SplitSampler(num_files, num_parts=num_parts, part_index=part_idx)
-    stream = nlp.data.SimpleDatasetStream(nlp.data.NumpyDataset, data, split_sampler)
-    if prefetch:
-        stream = nlp.data.PrefetchingStream(stream)
 
-    def get_dataloader(dataset):
+    tokenizer = nlp.data.BERTTokenizer(vocab=vocab, lower=not cased)
+    dataset_cls = functools.partial(BERTPretrainDataset, tokenizer=tokenizer,
+                                    max_seq_length=max_seq_length,
+                                    short_seq_prob=short_seq_prob,
+                                    masked_lm_prob=masked_lm_prob,
+                                    max_predictions_per_seq=max_predictions_per_seq,
+                                    vocab=vocab)
+
+    split_sampler = nlp.data.SplitSampler(num_files, num_parts=num_parts, part_index=part_idx)
+    stream = nlp.data.SimpleDatasetStream(dataset_cls, data, split_sampler)
+    if prefetch:
+        stream = nlp.data.PrefetchingStream(stream, worker_type='process')
+    # create data loader based on the dataset
+    dataloader_xform = BERTLoaderTransform(use_avg_len, batch_size,
+                                           shuffle, num_ctxes, num_buckets)
+    stream = stream.transform(dataloader_xform)
+    return stream
+
+class BERTLoaderTransform(object):
+    """Create dataloader for a BERT dataset. """
+
+    def __init__(self, use_avg_len, batch_size, shuffle, num_ctxes, num_buckets):
+        self._use_avg_len = use_avg_len
+        self._batch_size = batch_size
+        self._shuffle = shuffle
+        self._num_ctxes = num_ctxes
+        self._num_buckets = num_buckets
+
+    def __call__(self, dataset):
         """create data loader based on the dataset chunk"""
-        lengths = dataset.get_field('valid_lengths')
+        if isinstance(dataset, nlp.data.NumpyDataset):
+            lengths = dataset.get_field('valid_lengths')
+        elif isinstance(dataset, BERTPretrainDataset):
+            lengths = dataset.transform(lambda input_ids, segment_ids, masked_lm_positions, \
+                                               masked_lm_ids, masked_lm_weights, \
+                                               next_sentence_labels, valid_lengths: \
+                                               valid_lengths, lazy=False)
+        else:
+            raise ValueError('unexpected dataset type: %s'%str(dataset))
+
         # A batch includes: input_id, masked_id, masked_position, masked_weight,
         #                   next_sentence_label, segment_id, valid_length
         batchify_fn = Tuple(Pad(), Pad(), Pad(), Pad(), Stack(), Pad(), Stack())
-        if use_avg_len:
+        if self._use_avg_len:
             # sharded data loader
             sampler = nlp.data.FixedBucketSampler(lengths=lengths,
                                                   # batch_size per shard
-                                                  batch_size=batch_size,
-                                                  num_buckets=num_buckets,
-                                                  shuffle=shuffle,
+                                                  batch_size=self._batch_size,
+                                                  num_buckets=self._num_buckets,
+                                                  shuffle=self._shuffle,
                                                   use_average_length=True,
-                                                  num_shards=num_ctxes)
+                                                  num_shards=self._num_ctxes)
             dataloader = nlp.data.ShardedDataLoader(dataset,
                                                     batch_sampler=sampler,
                                                     batchify_fn=batchify_fn,
-                                                    num_workers=num_ctxes)
+                                                    num_workers=self._num_ctxes)
         else:
             sampler = nlp.data.FixedBucketSampler(lengths,
-                                                  batch_size=batch_size * num_ctxes,
-                                                  num_buckets=num_buckets,
+                                                  batch_size=self._batch_size * self._num_ctxes,
+                                                  num_buckets=self._num_buckets,
                                                   ratio=0,
-                                                  shuffle=shuffle)
+                                                  shuffle=self._shuffle)
             dataloader = DataLoader(dataset=dataset,
                                     batch_sampler=sampler,
                                     batchify_fn=batchify_fn,
@@ -103,7 +174,23 @@ def get_pretrain_dataset(data, batch_size, num_ctxes, shuffle, use_avg_len,
         logging.debug('Sampler created for a new dataset:\n%s', sampler.stats())
         return dataloader
 
-    stream = stream.transform(get_dataloader)
+def get_pretrain_data_npz(data, batch_size, num_ctxes, shuffle, use_avg_len,
+                          num_buckets, num_parts=1, part_idx=0, prefetch=True):
+    """create dataset for pretraining based on pre-processed npz files."""
+    num_files = len(glob.glob(os.path.expanduser(data)))
+    logging.debug('%d files found.', num_files)
+    assert num_files >= num_parts, \
+        'Number of training files must be greater than the number of partitions. ' \
+        'Only found %d files at %s'%(num_files, data)
+    split_sampler = nlp.data.SplitSampler(num_files, num_parts=num_parts, part_index=part_idx)
+    stream = nlp.data.SimpleDatasetStream(nlp.data.NumpyDataset, data, split_sampler)
+    if prefetch:
+        stream = nlp.data.PrefetchingStream(stream)
+
+    # create data loader based on the dataset
+    dataloader_xform = BERTLoaderTransform(use_avg_len, batch_size,
+                                           shuffle, num_ctxes, num_buckets)
+    stream = stream.transform(dataloader_xform)
     return stream
 
 def get_dummy_dataloader(dataloader, target_shape):
@@ -126,14 +213,17 @@ def get_dummy_dataloader(dataloader, target_shape):
 
     return DummyIter(data_batch)
 
-def save_params(step_num, model, trainer, ckpt_dir):
+def save_parameters(step_num, model, ckpt_dir):
     """Save the model parameter, marked by step_num."""
     param_path = os.path.join(ckpt_dir, '%07d.params'%step_num)
-    trainer_path = os.path.join(ckpt_dir, '%07d.states'%step_num)
-    logging.info('[step %d] Saving checkpoints to %s, %s.',
-                 step_num, param_path, trainer_path)
-    model.save_parameters(param_path)
-    trainer.save_states(trainer_path)
+    logging.info('[step %d] Saving model params to %s.', step_num, param_path)
+    nlp.utils.save_parameters(model, param_path)
+
+def save_states(step_num, trainer, ckpt_dir, local_rank=0):
+    """Save the trainer states, marked by step_num."""
+    trainer_path = os.path.join(ckpt_dir, '%07d.states.%02d'%(step_num, local_rank))
+    logging.info('[step %d] Saving trainer states to %s.', step_num, trainer_path)
+    nlp.utils.save_states(trainer, trainer_path)
 
 def log(begin_time, running_num_tks, running_mlm_loss, running_nsp_loss, step_num,
         mlm_metric, nsp_metric, trainer, log_interval):
@@ -181,6 +271,7 @@ def forward(data, model, mlm_loss, nsp_loss, vocab_size, dtype):
 
 def evaluate(data_eval, model, nsp_loss, mlm_loss, vocab_size, ctx, log_interval, dtype):
     """Evaluation function."""
+    logging.info('Running evaluation ... ')
     mlm_metric = MaskedAccuracy()
     nsp_metric = MaskedAccuracy()
     mlm_metric.reset()
@@ -230,9 +321,13 @@ def evaluate(data_eval, model, nsp_loss, mlm_loss, vocab_size, ctx, log_interval
 
     mx.nd.waitall()
     eval_end_time = time.time()
+    # accumulate losses from last few batches, too
+    if running_mlm_loss != 0:
+        total_mlm_loss += running_mlm_loss
+        total_nsp_loss += running_nsp_loss
     total_mlm_loss /= step_num
     total_nsp_loss /= step_num
-    logging.info('mlm_loss={:.3f}\tmlm_acc={:.1f}\tnsp_loss={:.3f}\tnsp_acc={:.1f}\t'
+    logging.info('Eval mlm_loss={:.3f}\tmlm_acc={:.1f}\tnsp_loss={:.3f}\tnsp_acc={:.1f}\t'
                  .format(total_mlm_loss.asscalar(), mlm_metric.get_global()[1] * 100,
                          total_nsp_loss.asscalar(), nsp_metric.get_global()[1] * 100))
     logging.info('Eval cost={:.1f}s'.format(eval_end_time - eval_begin_time))

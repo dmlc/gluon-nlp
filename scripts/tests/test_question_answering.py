@@ -21,7 +21,6 @@ import pytest
 
 from mxnet.gluon.data import DataLoader, SimpleDataset
 
-from gluonnlp.data import SQuAD
 from ..question_answering.data_processing import SQuADTransform, VocabProvider
 
 question_max_length = 30
@@ -29,9 +28,9 @@ context_max_length = 256
 
 
 @pytest.mark.remote_required
-def test_transform_to_nd_array():
-    dataset = SQuAD(segment='dev', version='1.1', root='tests/data/squad')
-    vocab_provider = VocabProvider(dataset)
+@pytest.mark.serial
+def test_transform_to_nd_array(squad_dev_and_vocab_provider):
+    dataset, vocab_provider = squad_dev_and_vocab_provider
     transformer = SQuADTransform(
         vocab_provider, question_max_length, context_max_length)
     record = dataset[0]
@@ -42,9 +41,9 @@ def test_transform_to_nd_array():
 
 
 @pytest.mark.remote_required
-def test_data_loader_able_to_read():
-    dataset = SQuAD(segment='dev', root='tests/data/squad')
-    vocab_provider = VocabProvider(dataset)
+@pytest.mark.serial
+def test_data_loader_able_to_read(squad_dev_and_vocab_provider):
+    dataset, vocab_provider = squad_dev_and_vocab_provider
     transformer = SQuADTransform(
         vocab_provider, question_max_length, context_max_length)
     record = dataset[0]
@@ -66,9 +65,9 @@ def test_data_loader_able_to_read():
 
 
 @pytest.mark.remote_required
-def test_load_vocabs():
-    dataset = SQuAD(segment='dev', root='tests/data/squad')
-    vocab_provider = VocabProvider(dataset)
+@pytest.mark.serial
+def test_load_vocabs(squad_dev_and_vocab_provider):
+    dataset, vocab_provider = squad_dev_and_vocab_provider
 
     assert vocab_provider.get_word_level_vocab() is not None
     assert vocab_provider.get_char_level_vocab() is not None

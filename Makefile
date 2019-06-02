@@ -19,20 +19,20 @@ ROOTDIR = $(CURDIR)
 MD2IPYNB = $(ROOTDIR)/docs/md2ipynb.py
 
 flake8:
-	flake8 . --exclude conda --count --select=E901,E999,F821,F822,F823 --show-source --statistics
+	flake8 --exclude conda,*tests*,test_*.py,scripts/word_embeddings/tools/extern --count --select=E901,E999,F821,F822,F823 --show-source --statistics $(lintdir)
 
 pylint:
-	pylint --rcfile=$(ROOTDIR)/.pylintrc src/gluonnlp scripts/*/*.py
+	pylint --rcfile=$(ROOTDIR)/.pylintrc $(lintdir)
 
 restruc:
 	python setup.py check --restructuredtext --strict
 
 lint:
-	make flake8
-	make pylint
+	make lintdir=$(lintdir) flake8
+	make lintdir=$(lintdir) pylint
 	make restruc
 
-docs: release
+docs: compile_notebooks distribute
 	make -C docs html SPHINXOPTS=-W
 	for f in $(shell find docs/examples -type f -name '*.md' -print) ; do \
 		FILE=`echo $$f | sed 's/docs\///g'` ; \
@@ -71,12 +71,12 @@ dist_scripts:
 	cd scripts && \
 	find * -type d -prune | grep -v 'tests\|__pycache__' | xargs -t -n 1 -I{} zip -r {}.zip {}
 
-dist_notebooks: compile_notebooks
+dist_notebooks:
 	cd docs/examples && \
 	find * -type d -prune | grep -v 'tests\|__pycache__' | xargs -t -n 1 -I{} zip -r {}.zip {} -x "*.md" -x "__pycache__" -x "*.pyc" -x "*.txt" -x "*.log" -x "*.params" -x "*.npz" -x "*.json"
 
 test:
 	py.test -v --capture=no --durations=0  tests/unittest scripts
 
-release: dist_scripts dist_notebooks
+distribute: dist_scripts dist_notebooks
 	python setup.py sdist

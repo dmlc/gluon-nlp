@@ -99,6 +99,7 @@ class Vocab(object):
     >>> counter = gluonnlp.data.count_tokens(text_data)
     >>> my_vocab = gluonnlp.Vocab(counter)
     >>> fasttext = gluonnlp.embedding.create('fasttext', source='wiki.simple')
+    -etc-
     >>> my_vocab.set_embedding(fasttext)
     >>> my_vocab.embedding[['hello', 'world']][:, :5]
     <BLANKLINE>
@@ -118,6 +119,7 @@ class Vocab(object):
      [ 0.10444  -0.10858   0.27212   0.13299  -0.33165 ]]
     <NDArray 2x5 @cpu(0)>
     >>> glove = gluonnlp.embedding.create('glove', source='glove.6B.50d')
+    -etc-
     >>> my_vocab.set_embedding(glove)
     >>> my_vocab.embedding[['hello', 'world']][:, :5]
     <BLANKLINE>

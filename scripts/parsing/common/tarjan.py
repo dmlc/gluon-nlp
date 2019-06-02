@@ -2,41 +2,41 @@
 # -*- coding: UTF-8 -*-
 
 # Copyright 2016 Timothy Dozat
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Tarjan's algorithm for strongly connected components."""
+
 from collections import defaultdict
 
 
 # ***************************************************************
 class Tarjan:
     """
-      Computes Tarjan's algorithm for finding strongly connected components (cycles) of a graph
+    Computes Tarjan's algorithm for finding strongly connected components (cycles) of a graph
 
-      Attributes:
-        edges: dictionary of edges such that edges[dep] = head
-        vertices: set of dependents
-        SCCs: list of sets of strongly connected components. Non-singleton sets are cycles.
+    Attributes:
+      edges: dictionary of edges such that edges[dep] = head
+      vertices: set of dependents
+      SCCs: list of sets of strongly connected components. Non-singleton sets are cycles.
+
+    Parameters
+    ----------
+    prediction : numpy.ndarray
+        a predicted dependency tree where prediction[dep_idx] = head_idx
+    tokens : numpy.ndarray
+        the tokens we care about (i.e. exclude _GO, _EOS, and _PAD)
     """
     def __init__(self, prediction, tokens):
-        """
-
-        Parameters
-        ----------
-        prediction : numpy.ndarray
-            a predicted dependency tree where prediction[dep_idx] = head_idx
-        tokens : numpy.ndarray
-            the tokens we care about (i.e. exclude _GO, _EOS, and _PAD)
-        """
         self._edges = defaultdict(set)
         self._vertices = set((0,))
         for dep, head in enumerate(prediction[tokens]):
@@ -55,7 +55,7 @@ class Tarjan:
 
     # =============================================================
     def strongconnect(self, v, index, stack):
-        """"""
+        """Find strongly connected components."""
 
         self._indices[v] = index
         self._lowlinks[v] = index

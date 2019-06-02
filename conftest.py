@@ -31,6 +31,7 @@ import random
 
 import numpy as np
 import mxnet as mx
+import gluonnlp
 import pytest
 
 
@@ -149,7 +150,7 @@ def function_scope_seed(request):
 
     """
 
-    seed = request.node.get_marker('seed')
+    seed = request.node.get_closest_marker('seed')
     env_seed_str = os.getenv('MXNET_TEST_SEED')
 
     if seed is not None:
@@ -187,3 +188,12 @@ def function_scope_seed(request):
 @pytest.fixture(params=[True, False])
 def hybridize(request):
     return request.param
+
+@pytest.fixture(autouse=True)
+def doctest(doctest_namespace):
+    doctest_namespace['np'] = np
+    doctest_namespace['gluonnlp'] = gluonnlp
+    doctest_namespace['mx'] = mx
+    doctest_namespace['gluon'] = mx.gluon
+    import doctest
+    doctest.ELLIPSIS_MARKER = '-etc-'

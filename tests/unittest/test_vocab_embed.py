@@ -1199,3 +1199,27 @@ def test_subword_function_ngramhashes():
     assert 1669484008 % num_subwords == next(iter(sf.subwords_to_indices(['<te'])))
     assert 1669484008 % num_subwords == next(iter(sf.subwords_to_indices([u'<te'])))
     assert 2688791429 % num_subwords == next(iter(sf.subwords_to_indices([u'<τε'])))
+
+@pytest.mark.remote_required
+def test_bert_vocab_from_sentencepiece():
+    # the downloaded bpe vocab includes tokens for unk and padding, but without bos/eos.
+    url = 'http://repo.mxnet.io/gluon/dataset/vocab/test-682b5d15.bpe'
+    f = download(url, overwrite=True)
+    bert_vocab = nlp.vocab.BERTVocab.from_sentencepiece(f, eos_token=u'<eos>')
+
+    import sentencepiece
+    spm = sentencepiece.SentencePieceProcessor()
+    spm.Load(f)
+
+    # check special tokens
+    from gluonnlp.data.utils import _convert_to_unicode
+    assert _convert_to_unicode(spm.IdToPiece(spm.unk_id())) == bert_vocab.unknown_token
+    assert _convert_to_unicode(spm.IdToPiece(spm.pad_id())) == bert_vocab.padding_token
+    assert None == bert_vocab.bos_token
+    assert u'<eos>' == bert_vocab.eos_token
+    assert u'<eos>' in bert_vocab
+    assert [u'[MASK]', u'[SEP]', u'[CLS]', u'<eos>', u'[PAD]'] == bert_vocab.reserved_tokens
+    num_tokens = len(spm)
+    for i in range(num_tokens):
+        token = _convert_to_unicode(spm.IdToPiece(i))
+        assert bert_vocab[token] == i

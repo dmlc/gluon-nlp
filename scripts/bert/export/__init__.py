@@ -18,5 +18,5 @@
 # under the License.
 
 # pylint: disable=wildcard-import
-"""static BERT example."""
-from . import static_bert, static_bert_qa_model
+"""Hybrid BERT for deployment."""
+from . import hybrid_bert

@@ -25,11 +25,13 @@ from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import division
 
-__all__ = ['ClipSequence', 'PadSequence', 'SacreMosesTokenizer', 'NLTKMosesTokenizer',
-           'SpacyTokenizer', 'SacreMosesDetokenizer', 'NLTKMosesDetokenizer', 'JiebaTokenizer',
-           'NLTKStanfordSegmenter', 'SentencepieceTokenizer',
-           'SentencepieceDetokenizer', 'BERTBasicTokenizer', 'BERTTokenizer',
-           'BERTSentenceTransform']
+__all__ = [
+    'ClipSequence', 'PadSequence', 'SacreMosesTokenizer', 'NLTKMosesTokenizer',
+    'SpacyTokenizer', 'SacreMosesDetokenizer', 'NLTKMosesDetokenizer',
+    'JiebaTokenizer', 'NLTKStanfordSegmenter', 'SentencepieceTokenizer',
+    'SentencepieceDetokenizer', 'BERTBasicTokenizer', 'BERTTokenizer',
+    'BERTSentenceTransform'
+]
 
 import os
 import warnings
@@ -126,21 +128,28 @@ class PadSequence(object):
             if isinstance(sample, mx.nd.NDArray):
                 # TODO(sxjscience) Use this trick for padding because mx.pad currently only supports
                 # 4D/5D inputs
-                new_sample_shape = (self._length,) + sample.shape[1:]
-                ret = mx.nd.full(shape=new_sample_shape, val=self._pad_val, ctx=sample.context,
+                new_sample_shape = (self._length, ) + sample.shape[1:]
+                ret = mx.nd.full(shape=new_sample_shape,
+                                 val=self._pad_val,
+                                 ctx=sample.context,
                                  dtype=sample.dtype)
                 ret[:sample_length] = sample
                 return ret
             elif isinstance(sample, np.ndarray):
                 pad_width = [(0, self._length - sample_length)] +\
                             [(0, 0) for _ in range(sample.ndim - 1)]
-                return np.pad(sample, mode='constant', constant_values=self._pad_val,
+                return np.pad(sample,
+                              mode='constant',
+                              constant_values=self._pad_val,
                               pad_width=pad_width)
             elif isinstance(sample, list):
-                return sample + [self._pad_val for _ in range(self._length - sample_length)]
+                return sample + [
+                    self._pad_val for _ in range(self._length - sample_length)
+                ]
             else:
-                raise NotImplementedError('The input must be 1) list or 2) numpy.ndarray or 3) '
-                                          'mxnet.NDArray, received type=%s' % str(type(sample)))
+                raise NotImplementedError(
+                    'The input must be 1) list or 2) numpy.ndarray or 3) '
+                    'mxnet.NDArray, received type=%s' % str(type(sample)))
 
 
 class NLTKMosesTokenizer(object):
@@ -153,10 +162,10 @@ class NLTKMosesTokenizer(object):
     Examples
     --------
     >>> tokenizer = gluonnlp.data.NLTKMosesTokenizer()
-    >>> tokenizer("Gluon NLP toolkit provides a suite of text processing tools.")
+    >>> tokenizer('Gluon NLP toolkit provides a suite of text processing tools.')
     ['Gluon', 'NLP', 'toolkit', 'provides', 'a', 'suite', 'of', 'text', 'processing', 'tools', '.']
-    >>> tokenizer("Das Gluon NLP-Toolkit stellt eine Reihe von Textverarbeitungstools "
-    ...           "zur Verfügung.")
+    >>> tokenizer('Das Gluon NLP-Toolkit stellt eine Reihe von Textverarbeitungstools '
+    ...           'zur Verfügung.')
     ['Das', 'Gluon', 'NLP-Toolkit', 'stellt', 'eine', 'Reihe', 'von', 'Textverarbeitungstools', \
 'zur', 'Verf\xfcgung', '.']
     """
@@ -165,23 +174,26 @@ class NLTKMosesTokenizer(object):
         try:
             from nltk.tokenize.moses import MosesTokenizer
         except ImportError:
-            warnings.warn('NLTK or relevant packages are not installed. '
-                          'Due to the LGPL 2.1+, moses has been deprecated in NLTK since 3.3.0. '
-                          'You must install NLTK <= 3.2.5 in order to use the '
-                          'NLTKMosesTokenizer. You can refer to the official '
-                          'installation guide in https://www.nltk.org/install.html .'
-                          ' Now try SacreMosesTokenizer using sacremoses ...')
+            warnings.warn(
+                'NLTK or relevant packages are not installed. '
+                'Due to the LGPL 2.1+, moses has been deprecated in NLTK since 3.3.0. '
+                'You must install NLTK <= 3.2.5 in order to use the '
+                'NLTKMosesTokenizer. You can refer to the official '
+                'installation guide in https://www.nltk.org/install.html .'
+                ' Now try SacreMosesTokenizer using sacremoses ...')
             try:
                 from sacremoses import MosesTokenizer
             except ImportError:
-                raise ImportError('sacremoses is also not installed. '
-                                  'Please use sacremoses or older nltk version, e.g. 3.2.5. '
-                                  'To install sacremoses, use pip install -U sacremoses')
+                raise ImportError(
+                    'sacremoses is also not installed. '
+                    'Please use sacremoses or older nltk version, e.g. 3.2.5. '
+                    'To install sacremoses, use pip install -U sacremoses')
         try:
             self._tokenizer = MosesTokenizer()
         except ValueError:
-            raise ValueError('The instantiation of MosesTokenizer in sacremoses is'
-                             ' currently only supported in python3.')
+            raise ValueError(
+                'The instantiation of MosesTokenizer in sacremoses is'
+                ' currently only supported in python3.')
 
     def __call__(self, sample, return_str=False):
         """
@@ -215,10 +227,10 @@ class SacreMosesTokenizer(object):
     Examples
     --------
     >>> tokenizer = gluonnlp.data.SacreMosesTokenizer()
-    >>> tokenizer("Gluon NLP toolkit provides a suite of text processing tools.")
+    >>> tokenizer('Gluon NLP toolkit provides a suite of text processing tools.')
     ['Gluon', 'NLP', 'toolkit', 'provides', 'a', 'suite', 'of', 'text', 'processing', 'tools', '.']
-    >>> tokenizer("Das Gluon NLP-Toolkit stellt eine Reihe von Textverarbeitungstools "
-    ...           "zur Verfügung.")
+    >>> tokenizer('Das Gluon NLP-Toolkit stellt eine Reihe von Textverarbeitungstools '
+    ...           'zur Verfügung.')
     ['Das', 'Gluon', 'NLP-Toolkit', 'stellt', 'eine', 'Reihe', 'von', 'Textverarbeitungstools', \
 'zur', 'Verf\xfcgung', '.']
     """
@@ -229,21 +241,25 @@ class SacreMosesTokenizer(object):
             self._tokenizer = MosesTokenizer()
         except (ImportError, TypeError) as err:
             if isinstance(err, TypeError):
-                warnings.warn('The instantiation of MosesTokenizer in sacremoses is'
-                              ' currently only supported in python3.'
-                              ' Now try NLTKMosesTokenizer using NLTK ...')
+                warnings.warn(
+                    'The instantiation of MosesTokenizer in sacremoses is'
+                    ' currently only supported in python3.'
+                    ' Now try NLTKMosesTokenizer using NLTK ...')
             else:
-                warnings.warn('sacremoses is not installed. '
-                              'To install sacremoses, use pip install -U sacremoses'
-                              ' Now try NLTKMosesTokenizer using NLTK ...')
+                warnings.warn(
+                    'sacremoses is not installed. '
+                    'To install sacremoses, use pip install -U sacremoses'
+                    ' Now try NLTKMosesTokenizer using NLTK ...')
             try:
                 from nltk.tokenize.moses import MosesTokenizer
                 self._tokenizer = MosesTokenizer()
             except ImportError:
-                raise ImportError('NLTK is also not installed. '
-                                  'You must install NLTK <= 3.2.5 in order to use the '
-                                  'NLTKMosesTokenizer. You can refer to the official '
-                                  'installation guide in https://www.nltk.org/install.html .')
+                raise ImportError(
+                    'NLTK is also not installed. '
+                    'You must install NLTK <= 3.2.5 in order to use the '
+                    'NLTKMosesTokenizer. You can refer to the official '
+                    'installation guide in https://www.nltk.org/install.html .'
+                )
 
     def __call__(self, sample, return_str=False):
         """
@@ -275,17 +291,17 @@ class SpacyTokenizer(object):
     Parameters
     ----------
     lang : str
-        The language to tokenize. Default is "en", i.e, English.
+        The language to tokenize. Default is 'en', i.e, English.
         You may refer to https://spacy.io/usage/models for supported languages.
 
     Examples
     --------
     >>> tokenizer = gluonnlp.data.SpacyTokenizer()
-    >>> tokenizer(u"Gluon NLP toolkit provides a suite of text processing tools.")
+    >>> tokenizer('Gluon NLP toolkit provides a suite of text processing tools.')
     ['Gluon', 'NLP', 'toolkit', 'provides', 'a', 'suite', 'of', 'text', 'processing', 'tools', '.']
     >>> tokenizer = gluonnlp.data.SpacyTokenizer('de')
-    >>> tokenizer(u"Das Gluon NLP-Toolkit stellt eine Reihe von Textverarbeitungstools"
-    ...            " zur Verfügung.")
+    >>> tokenizer('Das Gluon NLP-Toolkit stellt eine Reihe von Textverarbeitungstools'
+    ...           ' zur Verfügung.')
     ['Das', 'Gluon', 'NLP-Toolkit', 'stellt', 'eine', 'Reihe', 'von', 'Textverarbeitungstools', \
 'zur', 'Verf\xfcgung', '.']
     """
@@ -297,16 +313,19 @@ class SpacyTokenizer(object):
             assert parse_version(spacy.__version__) >= parse_version('2.0.0'),\
                 'We only support spacy>=2.0.0'
         except ImportError:
-            raise ImportError('spaCy is not installed. You must install spaCy in order to use the '
-                              'SpacyTokenizer. You can refer to the official installation guide '
-                              'in https://spacy.io/usage/.')
+            raise ImportError(
+                'spaCy is not installed. You must install spaCy in order to use the '
+                'SpacyTokenizer. You can refer to the official installation guide '
+                'in https://spacy.io/usage/.')
         try:
             self._nlp = spacy.load(lang, disable=['parser', 'tagger', 'ner'])
         except IOError:
-            raise IOError('SpaCy Model for the specified language="{lang}" has not been '
-                          'downloaded. You need to check the installation guide in '
-                          'https://spacy.io/usage/models. Usually, the installation command '
-                          'should be `python -m spacy download {lang}`.'.format(lang=lang))
+            raise IOError(
+                'SpaCy Model for the specified language="{lang}" has not been '
+                'downloaded. You need to check the installation guide in '
+                'https://spacy.io/usage/models. Usually, the installation command '
+                'should be `python -m spacy download {lang}`.'.format(
+                    lang=lang))
 
     def __call__(self, sample):
         """
@@ -346,23 +365,26 @@ class NLTKMosesDetokenizer(object):
         try:
             from nltk.tokenize.moses import MosesDetokenizer
         except ImportError:
-            warnings.warn('NLTK or relevant packages are not installed. '
-                          'Due to the LGPL 2.1+, moses has been deprecated in NLTK since 3.3.0. '
-                          'You must install NLTK <= 3.2.5 in order to use the '
-                          'NLTKMosesDetokenizer. You can refer to the official '
-                          'installation guide in https://www.nltk.org/install.html .'
-                          ' Now try SacreMosesDetokenizer using sacremoses ...')
+            warnings.warn(
+                'NLTK or relevant packages are not installed. '
+                'Due to the LGPL 2.1+, moses has been deprecated in NLTK since 3.3.0. '
+                'You must install NLTK <= 3.2.5 in order to use the '
+                'NLTKMosesDetokenizer. You can refer to the official '
+                'installation guide in https://www.nltk.org/install.html .'
+                ' Now try SacreMosesDetokenizer using sacremoses ...')
             try:
                 from sacremoses import MosesDetokenizer
             except ImportError:
-                raise ImportError('sacremoses is also not installed. '
-                                  'Please use sacremoses or older nltk version, e.g. 3.2.5. '
-                                  'To install sacremoses, use pip install -U sacremoses')
+                raise ImportError(
+                    'sacremoses is also not installed. '
+                    'Please use sacremoses or older nltk version, e.g. 3.2.5. '
+                    'To install sacremoses, use pip install -U sacremoses')
         try:
             self._detokenizer = MosesDetokenizer()
         except ValueError:
-            raise ValueError('The instantiation of MosesDetokenizer in sacremoses is'
-                             ' currently only supported in python3.')
+            raise ValueError(
+                'The instantiation of MosesDetokenizer in sacremoses is'
+                ' currently only supported in python3.')
 
     def __call__(self, sample, return_str=False):
         """
@@ -410,13 +432,15 @@ class SacreMosesDetokenizer(object):
             self._detokenizer = MosesDetokenizer()
         except (ImportError, TypeError) as err:
             if isinstance(err, TypeError):
-                warnings.warn('The instantiation of MosesDetokenizer in sacremoses is'
-                              ' currently only supported in python3.'
-                              ' Now try NLTKMosesDetokenizer using NLTK ...')
+                warnings.warn(
+                    'The instantiation of MosesDetokenizer in sacremoses is'
+                    ' currently only supported in python3.'
+                    ' Now try NLTKMosesDetokenizer using NLTK ...')
             else:
-                warnings.warn('sacremoses is not installed. '
-                              'To install sacremoses, use pip install -U sacremoses'
-                              ' Now try NLTKMosesDetokenizer using NLTK ...')
+                warnings.warn(
+                    'sacremoses is not installed. '
+                    'To install sacremoses, use pip install -U sacremoses'
+                    ' Now try NLTKMosesDetokenizer using NLTK ...')
             try:
                 import nltk
                 try:
@@ -426,10 +450,12 @@ class SacreMosesDetokenizer(object):
                 from nltk.tokenize.moses import MosesDetokenizer
                 self._detokenizer = MosesDetokenizer()
             except ImportError:
-                raise ImportError('NLTK is not installed. '
-                                  'You must install NLTK <= 3.2.5 in order to use the '
-                                  'NLTKMosesDetokenizer. You can refer to the official '
-                                  'installation guide in https://www.nltk.org/install.html .')
+                raise ImportError(
+                    'NLTK is not installed. '
+                    'You must install NLTK <= 3.2.5 in order to use the '
+                    'NLTKMosesDetokenizer. You can refer to the official '
+                    'installation guide in https://www.nltk.org/install.html .'
+                )
 
     def __call__(self, sample, return_str=False):
         """
@@ -463,9 +489,9 @@ class JiebaTokenizer(object):
     Examples
     --------
     >>> tokenizer = gluonnlp.data.JiebaTokenizer()
-    >>> tokenizer(u"我来到北京清华大学")
+    >>> tokenizer('我来到北京清华大学')
     ['我', '来到', '北京', '清华大学']
-    >>> tokenizer(u"小明硕士毕业于中国科学院计算所，后在日本京都大学深造")
+    >>> tokenizer('小明硕士毕业于中国科学院计算所，后在日本京都大学深造')
     ['小明', '硕士', '毕业', '于', '中国科学院', '计算所', '，', '后', '在', '日本京都大学', '深造']
 
     """
@@ -474,9 +500,10 @@ class JiebaTokenizer(object):
         try:
             import jieba
         except ImportError:
-            raise ImportError('jieba is not installed. You must install jieba in order to use the '
-                              'JiebaTokenizer. You can refer to the official installation guide '
-                              'in https://github.com/fxsjy/jieba')
+            raise ImportError(
+                'jieba is not installed. You must install jieba in order to use the '
+                'JiebaTokenizer. You can refer to the official installation guide '
+                'in https://github.com/fxsjy/jieba')
         self._tokenizer = jieba
 
     def __call__(self, sample):
@@ -494,7 +521,10 @@ class JiebaTokenizer(object):
             List of tokens
         """
         # we use default cutting mode provided by jieba, i.e., accurate mode
-        return [tok for tok in self._tokenizer.cut(sample) if tok != ' ' and tok != '']
+        return [
+            tok for tok in self._tokenizer.cut(sample)
+            if tok != ' ' and tok != ''
+        ]
 
 
 class NLTKStanfordSegmenter(object):
@@ -518,14 +548,16 @@ class NLTKStanfordSegmenter(object):
     Examples
     --------
     >>> tokenizer = gluonnlp.data.NLTKStanfordSegmenter() #doctest:+SKIP
-    >>> tokenizer(u"我来到北京清华大学")
+    >>> tokenizer('我来到北京清华大学') #doctest:+SKIP
     ['我', '来到', '北京', '清华大学']
-    >>> tokenizer(u"小明硕士毕业于中国科学院计算所，后在日本京都大学深造")
+    >>> tokenizer('小明硕士毕业于中国科学院计算所，后在日本京都大学深造') #doctest:+SKIP
     ['小明', '硕士', '毕业', '于', '中国科学院', '计算所', '，', '后', '在', '日本京都大学', '深造']
 
     """
 
-    def __init__(self, segmenter_root=os.path.join(get_home_dir(), 'stanford-segmenter'),
+    def __init__(self,
+                 segmenter_root=os.path.join(get_home_dir(),
+                                             'stanford-segmenter'),
                  slf4j_root=os.path.join(get_home_dir(), 'slf4j'),
                  java_class='edu.stanford.nlp.ie.crf.CRFClassifier'):
         is_java_exist = os.system('java -version')
@@ -534,20 +566,26 @@ class NLTKStanfordSegmenter(object):
         try:
             from nltk.tokenize import StanfordSegmenter
         except ImportError:
-            raise ImportError('NLTK or relevant packages are not installed. You must install NLTK '
-                              'in order to use the NLTKStanfordSegmenter. You can refer to the '
-                              'official installation guide in https://www.nltk.org/install.html.')
-        path_to_jar = os.path.join(segmenter_root, 'stanford-segmenter-2018-02-27',
+            raise ImportError(
+                'NLTK or relevant packages are not installed. You must install NLTK '
+                'in order to use the NLTKStanfordSegmenter. You can refer to the '
+                'official installation guide in https://www.nltk.org/install.html.'
+            )
+        path_to_jar = os.path.join(segmenter_root,
+                                   'stanford-segmenter-2018-02-27',
                                    'stanford-segmenter-3.9.1.jar')
-        path_to_model = os.path.join(segmenter_root, 'stanford-segmenter-2018-02-27',
-                                     'data', 'pku.gz')
-        path_to_dict = os.path.join(segmenter_root, 'stanford-segmenter-2018-02-27',
-                                    'data', 'dict-chris6.ser.gz')
-        path_to_sihan_corpora_dict = os.path.join(segmenter_root,
-                                                  'stanford-segmenter-2018-02-27', 'data')
+        path_to_model = os.path.join(segmenter_root,
+                                     'stanford-segmenter-2018-02-27', 'data',
+                                     'pku.gz')
+        path_to_dict = os.path.join(segmenter_root,
+                                    'stanford-segmenter-2018-02-27', 'data',
+                                    'dict-chris6.ser.gz')
+        path_to_sihan_corpora_dict = os.path.join(
+            segmenter_root, 'stanford-segmenter-2018-02-27', 'data')
         segmenter_url = 'https://nlp.stanford.edu/software/stanford-segmenter-2018-02-27.zip'
         segmenter_sha1 = 'aa27a6433704b7b4c6a14be1c126cb4b14b8f57b'
-        stanford_segmenter = os.path.join(segmenter_root, 'stanford-segmenter-2018-02-27.zip')
+        stanford_segmenter = os.path.join(segmenter_root,
+                                          'stanford-segmenter-2018-02-27.zip')
         if not os.path.exists(path_to_jar) or \
                 not os.path.exists(path_to_model) or \
                 not os.path.exists(path_to_dict) or \
@@ -556,10 +594,14 @@ class NLTKStanfordSegmenter(object):
             # automatically download the files from the website and place them to stanford_root
             if not os.path.exists(segmenter_root):
                 os.mkdir(segmenter_root)
-            download(url=segmenter_url, path=segmenter_root, sha1_hash=segmenter_sha1)
-            _extract_archive(file=stanford_segmenter, target_dir=segmenter_root)
+            download(url=segmenter_url,
+                     path=segmenter_root,
+                     sha1_hash=segmenter_sha1)
+            _extract_archive(file=stanford_segmenter,
+                             target_dir=segmenter_root)
 
-        path_to_slf4j = os.path.join(slf4j_root, 'slf4j-1.7.25', 'slf4j-api-1.7.25.jar')
+        path_to_slf4j = os.path.join(slf4j_root, 'slf4j-1.7.25',
+                                     'slf4j-api-1.7.25.jar')
         slf4j_url = 'https://www.slf4j.org/dist/slf4j-1.7.25.zip'
         slf4j_sha1 = '89ea41ad6ebe1b190139421bb7c8d981e9df1625'
         slf4j = os.path.join(slf4j_root, 'slf4j-1.7.25.zip')
@@ -570,10 +612,13 @@ class NLTKStanfordSegmenter(object):
                 os.mkdir(slf4j_root)
             download(url=slf4j_url, path=slf4j_root, sha1_hash=slf4j_sha1)
             _extract_archive(file=slf4j, target_dir=slf4j_root)
-        self._tokenizer = StanfordSegmenter(java_class=java_class, path_to_jar=path_to_jar,
-                                            path_to_slf4j=path_to_slf4j, path_to_dict=path_to_dict,
-                                            path_to_sihan_corpora_dict=path_to_sihan_corpora_dict,
-                                            path_to_model=path_to_model)
+        self._tokenizer = StanfordSegmenter(
+            java_class=java_class,
+            path_to_jar=path_to_jar,
+            path_to_slf4j=path_to_slf4j,
+            path_to_dict=path_to_dict,
+            path_to_sihan_corpora_dict=path_to_sihan_corpora_dict,
+            path_to_model=path_to_model)
 
     def __call__(self, sample):
         """
@@ -597,10 +642,11 @@ class _SentencepieceProcessor(object):
         try:
             import sentencepiece
         except ImportError:
-            raise ImportError('sentencepiece is not installed. You must install sentencepiece '
-                              'in order to use the Sentencepiece tokenizer and detokenizer. '
-                              'You can refer to the official installation guide '
-                              'in https://github.com/google/sentencepiece#installation')
+            raise ImportError(
+                'sentencepiece is not installed. You must install sentencepiece '
+                'in order to use the Sentencepiece tokenizer and detokenizer. '
+                'You can refer to the official installation guide '
+                'in https://github.com/google/sentencepiece#installation')
         self._processor = sentencepiece.SentencePieceProcessor()
         self._processor.Load(path)
 
@@ -666,7 +712,8 @@ class SentencepieceTokenizer(_SentencepieceProcessor):
         ret : list of strs
             List of tokens
         """
-        return self._processor.SampleEncodeAsPieces(sample, self._nbest, self._alpha)
+        return self._processor.SampleEncodeAsPieces(sample, self._nbest,
+                                                    self._alpha)
 
 
 class SentencepieceDetokenizer(_SentencepieceProcessor):
@@ -713,7 +760,7 @@ class SentencepieceDetokenizer(_SentencepieceProcessor):
         return self._processor.DecodePieces(sample)
 
 
-class BERTBasicTokenizer():
+class BERTBasicTokenizer(object):
     r"""Runs basic tokenization
 
     performs invalid character removal (e.g. control chars) and whitespace.
@@ -729,10 +776,10 @@ class BERTBasicTokenizer():
     Examples
     --------
     >>> tokenizer = gluonnlp.data.BERTBasicTokenizer(lower=True)
-    >>> tokenizer(u" \tHeLLo!how  \n Are yoU?  ")
+    >>> tokenizer(' \tHeLLo!how  \n Are yoU?  ')
     ['hello', '!', 'how', 'are', 'you', '?']
     >>> tokenizer = gluonnlp.data.BERTBasicTokenizer(lower=False)
-    >>> tokenizer(u" \tHeLLo!how  \n Are yoU?  ")
+    >>> tokenizer(' \tHeLLo!how  \n Are yoU?  ')
     ['HeLLo', '!', 'how', 'Are', 'yoU', '?']
 
     """
@@ -824,8 +871,7 @@ class BERTBasicTokenizer():
         # as is Japanese Hiragana and Katakana. Those alphabets are used to write
         # space-separated words, so they are not treated specially and handled
         # like the all of the other languages.
-        if ((cp >= 0x4E00 and cp <= 0x9FFF)
-                or (cp >= 0x3400 and cp <= 0x4DBF)
+        if ((cp >= 0x4E00 and cp <= 0x9FFF) or (cp >= 0x3400 and cp <= 0x4DBF)
                 or (cp >= 0x20000 and cp <= 0x2A6DF)
                 or (cp >= 0x2A700 and cp <= 0x2B73F)
                 or (cp >= 0x2B740 and cp <= 0x2B81F)
@@ -923,7 +969,7 @@ class BERTTokenizer(object):
     ...                                          pretrained=False, root='./model')
     -etc-
     >>> tokenizer = gluonnlp.data.BERTTokenizer(vocab=vocab)
-    >>> tokenizer(u"gluonnlp: 使NLP变得简单。")
+    >>> tokenizer('gluonnlp: 使NLP变得简单。')
     ['gl', '##uo', '##nn', '##lp', ':', '使', 'nl', '##p', '变', '得', '简', '单', '。']
 
     """
@@ -1009,6 +1055,84 @@ class BERTTokenizer(object):
     def convert_tokens_to_ids(self, tokens):
         """Converts a sequence of tokens into ids using the vocab."""
         return self.vocab.to_indices(tokens)
+
+
+class BERTSPTokenizer(BERTTokenizer):
+    r"""End-to-end SentencePiece tokenization for BERT models.
+    It works best with BERTSentenceTransform()
+
+    Parameters
+    ----------
+    path : str
+        Path to the pre-trained subword tokenization model.
+    vocab : gluonnlp.Vocab
+        Vocabulary for the corpus.
+    num_best : int, default 0
+        A scalar for sampling subwords. If num_best = {0,1}, no sampling is performed.
+        If num_best > 1, then samples from the num_best results.
+        If num_best < 0, then assume that num_best is infinite and
+        samples from the all hypothesis (lattice) using forward-filtering-and-backward-sampling
+        algorithm.
+    alpha : float
+        A scalar for a smoothing parameter. Inverse temperature for probability rescaling.
+    lower : bool, default True
+        Whether the text strips accents and convert to lower case.
+        If you use the BERT pre-training model,
+        lower is set to False when using the cased model,
+        otherwise it is set to True.
+    max_input_chars_per_word : int, default 200
+
+    Examples
+    --------
+    >>> url = 'http://repo.mxnet.io/gluon/dataset/vocab/test-682b5d15.bpe'
+    >>> f = gluon.utils.download(url, overwrite=True)
+    -etc-
+    >>> bert_vocab = gluonnlp.vocab.BERTVocab.from_sentencepiece(f)
+    >>> sp_tokenizer = BERTSPTokenizer(f, bert_vocab, lower=True)
+    >>> sentence = 'Better is to bow than break.'
+    >>> sp_tokenizer(sentence)
+    ['▁better', '▁is', '▁to', '▁b', 'ow', '▁than', '▁brea', 'k', '▁', '.']
+    """
+
+    def __init__(self,
+                 path,
+                 vocab,
+                 num_best=0,
+                 alpha=1.0,
+                 lower=True,
+                 max_input_chars_per_word=200):
+        super(BERTSPTokenizer, self).__init__(vocab, lower,
+                                              max_input_chars_per_word)
+        self._path = path
+        self._num_best = num_best
+        self._alpha = alpha
+        self.sentencepiece = None
+
+    def _activate_sp(self):
+        self.sentencepiece = SentencepieceTokenizer(self._path, self._num_best,
+                                                    self._alpha)
+
+    def _tokenize_wordpiece(self, text):
+        """Tokenizes a piece of text into its word pieces.
+
+        This use Google's SentencePiece tokenizer model file
+
+        For example:
+          input = "unaffable"
+          output = ["▁un", "aff", "able"]
+
+        Args:
+          text: A single token or whitespace separated tokens. This should have
+            already been passed through `BERTBasicTokenizer.
+
+        Returns:
+          A list of sentencepieced tokens.
+        """
+        # Swig object can not be pickled when multiprocessing.
+        if self.sentencepiece is None:
+            self._activate_sp()
+        output_tokens = self.sentencepiece(text)
+        return output_tokens
 
 
 class BERTSentenceTransform(object):
@@ -1099,7 +1223,8 @@ class BERTSentenceTransform(object):
             # Modifies `tokens_a` and `tokens_b` in place so that the total
             # length is less than the specified length.
             # Account for [CLS], [SEP], [SEP] with "- 3"
-            self._truncate_seq_pair(tokens_a, tokens_b, self._max_seq_length - 3)
+            self._truncate_seq_pair(tokens_a, tokens_b,
+                                    self._max_seq_length - 3)
         else:
             # Account for [CLS] and [SEP] with "- 2"
             if len(tokens_a) > self._max_seq_length - 2:

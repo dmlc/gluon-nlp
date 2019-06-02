@@ -16,23 +16,25 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+"""Learning rate schedule for parser training."""
+
 from mxnet.lr_scheduler import LRScheduler
 
 
 class ExponentialScheduler(LRScheduler):
-    def __init__(self, base_lr=0.01, decay_rate=0.5, decay_every=1):
-        """A simple learning rate decay scheduler
-            lr = base_lr * decay_rate ^ (num_update / decay_every)
+    """A simple learning rate decay scheduler
+        lr = base_lr * decay_rate ^ (num_update / decay_every)
 
-        Parameters
-        ----------
-        base_lr : float
-            the initial learning rate.
-        decay_rate : float
-            what percentage does the learning rate decreases to in every decay compared to last one
-        decay_every : float
-            how often does the decay occurs
-        """
+    Parameters
+    ----------
+    base_lr : float
+        the initial learning rate.
+    decay_rate : float
+        what percentage does the learning rate decreases to in every decay compared to last one
+    decay_every : float
+        how often does the decay occurs
+    """
+    def __init__(self, base_lr=0.01, decay_rate=0.5, decay_every=1):
         super().__init__(base_lr)
         self.decay_rate = decay_rate
         self.decay_every = decay_every
