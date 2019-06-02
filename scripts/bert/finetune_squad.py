@@ -51,7 +51,7 @@ from mxnet import gluon, nd
 import gluonnlp as nlp
 from gluonnlp.data import SQuAD
 from model.qa import BertForQALoss, BertForQA
-from bert_qa_dataset import (SQuADTransform, preprocess_dataset)
+from data.qa import (SQuADTransform, preprocess_dataset)
 from bert_qa_evaluate import get_F1_EM, predictions
 
 np.random.seed(6)
@@ -415,7 +415,7 @@ def train():
 def evaluate():
     """Evaluate the model on validation dataset.
     """
-    log.info('Loader dev data...')
+    log.info('Loading dev data...')
     if version_2:
         dev_data = SQuAD('dev', version='2.0')
     else:

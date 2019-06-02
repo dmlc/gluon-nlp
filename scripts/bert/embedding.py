@@ -13,10 +13,7 @@ import gluonnlp
 from gluonnlp.data import BERTTokenizer, BERTSentenceTransform
 from gluonnlp.base import get_home_dir
 
-try:
-    from dataset import BertEmbeddingDataset
-except ImportError:
-    from .dataset import BertEmbeddingDataset
+from data.embedding import BertEmbeddingDataset
 
 try:
     unicode
