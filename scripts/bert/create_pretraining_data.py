@@ -173,7 +173,7 @@ def create_samples_npz(all_documents, dupe_factor, max_seq_length, short_seq_pro
         valid_lengths.append(valid_length)
         # debugging information
         if inst_index < 1:
-            print_example(instance, feature)
+            print_example(instance, features)
     return input_ids, masked_lm_ids, masked_lm_positions, masked_lm_weights,\
            next_sentence_labels, segment_ids, valid_lengths
 
