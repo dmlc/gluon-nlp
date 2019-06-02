@@ -236,7 +236,7 @@ def create_training_instances(input_files, tokenizer,
                     end = min((worker_idx + 1) * num_lines_per_worker, num_lines)
                     process_args.append((lines[start:end], tokenizer, vocab))
 
-                def _process_result(tokenized_results):
+                def _process_result(tokenized_results, all_documents):
                     for tokenized_result in tokenized_results:
                         for line in tokenized_result:
                             if not line:
@@ -249,7 +249,7 @@ def create_training_instances(input_files, tokenizer,
                     tokenized_results = worker_pool.map(tokenize_lines_fn, process_args)
                 else:
                     tokenized_results = [tokenize_lines_fn(process_args[0])]
-                _process_result(tokenized_results)
+                _process_result(tokenized_results, all_documents)
         # remove the last empty document if any
         if not all_documents[-1]:
             all_documents = all_documents[:-1]
@@ -502,7 +502,7 @@ def main():
                           'The vocabulary will be loaded based on --sentencepiece.')
         vocab = nlp.vocab.BERTVocab.from_sentencepiece(args.sentencepiece)
         tokenizer = nlp.data.BERTSPTokenizer(args.sentencepiece, vocab, num_best=args.sp_nbest,
-                                             alpha=args.sp_alpha,lower=not args.cased)
+                                             alpha=args.sp_alpha, lower=not args.cased)
     else:
         logging.info('loading vocab file from pre-defined dataset: %s', args.dataset_name)
         vocab = nlp.data.utils._load_pretrained_vocab(args.dataset_name, root=output_dir,

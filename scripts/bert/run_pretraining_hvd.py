@@ -31,7 +31,6 @@ This example shows how to pre-train a BERT model with Gluon NLP Toolkit.
 # pylint:disable=redefined-outer-name,logging-format-interpolation
 
 import os
-import io
 import sys
 import random
 import warnings
@@ -273,20 +272,19 @@ if __name__ == '__main__':
     logging.debug('Model created')
 
     if args.data:
-        lower = not args.cased
         if args.raw:
             if args.sentencepiece:
                 tokenizer = nlp.data.BERTSPTokenizer(args.sentencepiece, vocab,
                                                      num_best=args.sp_nbest,
-                                                     alpha=args.sp_alpha, lower=lower)
+                                                     alpha=args.sp_alpha, lower=not args.cased)
             else:
-                tokenizer = nlp.data.BERTTokenizer(vocab=vocab, lower=lower)
+                tokenizer = nlp.data.BERTTokenizer(vocab=vocab, lower=not args.cased)
             get_dataset_fn = functools.partial(get_pretrain_data_text,
                                                max_seq_length=args.max_seq_length,
                                                short_seq_prob=args.short_seq_prob,
                                                masked_lm_prob=args.masked_lm_prob,
                                                max_predictions_per_seq=args.max_predictions_per_seq,
-                                               vocab=vocab, tokenizer=tokenizer, cased=args.cased,
+                                               vocab=vocab, tokenizer=tokenizer,
                                                num_workers=args.num_data_workers)
         else:
             get_dataset_fn = get_pretrain_data_npz

@@ -38,7 +38,8 @@ __all__ = ['get_model_loss', 'get_pretrain_data_npz', 'get_dummy_dataloader',
            'save_parameters', 'save_states', 'evaluate', 'forward', 'split_and_load',
            'get_argparser', 'get_pretrain_data_text']
 
-def get_model_loss(ctx, model, pretrained, dataset_name, vocab, dtype, ckpt_dir=None, start_step=None):
+def get_model_loss(ctx, model, pretrained, dataset_name, vocab, dtype,
+                   ckpt_dir=None, start_step=None):
     """Get model for pre-training.
 
     Parameters
@@ -55,7 +56,8 @@ def get_model_loss(ctx, model, pretrained, dataset_name, vocab, dtype, ckpt_dir=
         'book_corpus_wiki_en_cased', 'wiki_multilingual_uncased', 'wiki_multilingual_cased',
         'wiki_cn_cased'.
     vocab : BERTVocab or None
-        The vocabulary for the model. If not provided, The vocabulary will be constructed based on dataset_name.
+        The vocabulary for the model. If not provided, The vocabulary will be constructed
+        based on dataset_name.
     dtype : float
         Data type of the model for training.
     ckpt_dir : str
@@ -133,7 +135,7 @@ class BERTPretrainDataset(mx.gluon.data.ArrayDataset):
 def get_pretrain_data_text(data, batch_size, num_ctxes, shuffle, use_avg_len,
                            num_buckets, vocab, tokenizer, max_seq_length, short_seq_prob,
                            masked_lm_prob, max_predictions_per_seq,
-                           cased, num_parts=1, part_idx=0,
+                           num_parts=1, part_idx=0,
                            prefetch=True, num_workers=1):
     """Get data iterators from raw text documents.
 
@@ -156,8 +158,6 @@ def get_pretrain_data_text(data, batch_size, num_ctxes, shuffle, use_avg_len,
         The probability of replacing texts with masks/random words/original words.
     max_predictions_per_seq : int
         The hard limit of the number of predictions for masked words
-    cased : bool
-        If set to False, texts are converted to lower cases during tokenization.
     num_parts : int
         The number of partitions for the dataset.
     part_idx : int
