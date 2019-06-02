@@ -49,7 +49,7 @@ import gluonnlp as nlp
 from gluonnlp.model import get_bert_model
 from gluonnlp.data import BERTTokenizer
 
-from bert import BERTClassifier, BERTRegression
+from model.classification import BERTClassifier, BERTRegression
 from dataset import MRPCTask, QQPTask, RTETask, STSBTask, \
     QNLITask, CoLATask, MNLITask, WNLITask, SSTTask, XNLITask, BERTDatasetTransform
 

@@ -117,13 +117,13 @@ BERT BASE on SQuAD 1.1
 
 .. code-block:: console
 
-    $ python finetune_squad.py --optimizer adam --batch_size 12 --lr 3e-5 --epochs 2 --gpu
+    $ python finetune_squad.py --optimizer adam --batch_size 12 --lr 3e-5 --epochs 2 --gpu 0
  
 Note that this requires about 12G of GPU memory. If your GPU memory is less than 12G, you can use the following command to achieve a similar effect. This will require approximately no more than 8G of GPU memory. If your GPU memory is too small, please adjust *accumulate* and *batch_size* arguments accordingly.
 
 .. code-block:: console
 
-    $ python finetune_squad.py --optimizer adam --accumulate 2 --batch_size 6 --lr 3e-5 --epochs 2 --gpu
+    $ python finetune_squad.py --optimizer adam --accumulate 2 --batch_size 6 --lr 3e-5 --epochs 2 --gpu 0
 
 
 BERT LARGE on SQuAD 1.1
@@ -133,7 +133,7 @@ BERT LARGE on SQuAD 1.1
 
 .. code-block:: console
 
-    $ python finetune_squad.py --bert_model bert_24_1024_16 --optimizer adam --accumulate 6 --batch_size 4 --lr 3e-5 --epochs 2 --gpu
+    $ python finetune_squad.py --bert_model bert_24_1024_16 --optimizer adam --accumulate 6 --batch_size 4 --lr 3e-5 --epochs 2 --gpu 0
     
 Note that this requires about 14G of GPU memory.
 
@@ -147,7 +147,7 @@ For SQuAD 2.0, you need to specify the parameter *version_2* and specify the par
 
 .. code-block:: console
 
-    $ python finetune_squad.py --bert_model bert_24_1024_16 --optimizer adam --accumulate 8 --batch_size 4 --lr 3e-5 --epochs 2 --gpu --null_score_diff_threshold -2.0 --version_2
+    $ python finetune_squad.py --bert_model bert_24_1024_16 --optimizer adam --accumulate 8 --batch_size 4 --lr 3e-5 --epochs 2 --gpu 0 --null_score_diff_threshold -2.0 --version_2
 
 To get the score of the dev data, you need to download the dev dataset (`dev-v2.0.json <https://rajpurkar.github.io/SQuAD-explorer/dataset/dev-v2.0.json>`_) and the evaluate script (`evaluate-2.0.py <https://worksheets.codalab.org/rest/bundles/0x6b567e1cf2e041ec80d7098f031c5c9e/contents/blob/>`_). Then use the following command to get the score of the dev dataset.
 

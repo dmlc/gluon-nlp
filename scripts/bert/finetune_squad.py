@@ -50,7 +50,7 @@ from mxnet import gluon, nd
 
 import gluonnlp as nlp
 from gluonnlp.data import SQuAD
-from bert_qa_model import BertForQALoss, BertForQA
+from model.qa import BertForQALoss, BertForQA
 from bert_qa_dataset import (SQuADTransform, preprocess_dataset)
 from bert_qa_evaluate import get_F1_EM, predictions
 
@@ -187,8 +187,9 @@ parser.add_argument('--null_score_diff_threshold',
                     'Typical values are between -1.0 and -5.0. default is 0.0')
 
 parser.add_argument('--gpu',
-                    action='store_true',
-                    help='whether to use gpu for finetuning')
+                    type=int,
+                    default=None,
+                    help='which gpu to use for finetuning. CPU is used if not set.')
 
 args = parser.parse_args()
 
@@ -219,7 +220,7 @@ epochs = args.epochs
 batch_size = args.batch_size
 test_batch_size = args.test_batch_size
 lr = args.lr
-ctx = mx.cpu() if not args.gpu else mx.gpu()
+ctx = mx.cpu() if args.gpu is None else mx.gpu(args.gpu)
 
 accumulate = args.accumulate
 log_interval = args.log_interval * accumulate if accumulate else args.log_interval
