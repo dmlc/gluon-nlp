@@ -136,16 +136,8 @@ def tokenize_lines_fn(x):
                 results.append(tokens)
     return results
 
-def create_samples_npz(all_documents, dupe_factor, max_seq_length, short_seq_prob,
-                       masked_lm_prob, max_predictions_per_seq, vocab):
+def convert_to_npz(instances, max_seq_length):
     """Create masked language model and next sentence prediction samples as numpy arrays."""
-    instances = []
-    for _ in range(dupe_factor):
-        for document_index in range(len(all_documents)):
-            instances.extend(
-                create_instances_from_document(
-                    all_documents, document_index, max_seq_length, short_seq_prob,
-                    masked_lm_prob, max_predictions_per_seq, vocab))
     input_ids = []
     segment_ids = []
     masked_lm_positions = []
@@ -258,12 +250,21 @@ def create_training_instances(input_files, tokenizer,
                 else:
                     tokenized_results = [tokenize_lines_fn(process_args[0])]
                 _process_result(tokenized_results)
-
         # remove the last empty document if any
         if not all_documents[-1]:
             all_documents = all_documents[:-1]
-        res = worker_pool.apply_async(create_samples_npz, (all_documents, dupe_factor, max_seq_length, \
-                                      short_seq_prob, masked_lm_prob, max_predictions_per_seq, vocab))
+
+        instances = []
+        process_args = []
+        for document_index in range(len(all_documents)):
+            process_args.append((all_documents, document_index, max_seq_length, short_seq_prob,
+                                 masked_lm_prob, max_predictions_per_seq, vocab))
+        for _ in range(dupe_factor):
+            instances_results = worker_pool.map(create_instances_from_document, process_args)
+            for instances_result in instances_results:
+                instances.extend(instances_result)
+
+        res = worker_pool.apply_async(convert_to_npz, (instances, max_seq_length))
         (input_ids, masked_lm_ids, masked_lm_positions, masked_lm_weights,
          next_sentence_labels, segment_ids, valid_lengths) = res.get()
 
@@ -289,10 +290,10 @@ def create_training_instances(input_files, tokenizer,
     return features
 
 
-def create_instances_from_document(
-        all_documents, document_index, max_seq_length, short_seq_prob,
-        masked_lm_prob, max_predictions_per_seq, vocab):
+def create_instances_from_document(x):
     """Creates `TrainingInstance`s for a single document."""
+    (all_documents, document_index, max_seq_length, short_seq_prob,
+     masked_lm_prob, max_predictions_per_seq, vocab) = x
     document = all_documents[document_index]
     _MASK_TOKEN = vocab[vocab.mask_token]
     _CLS_TOKEN = vocab[vocab.cls_token]
@@ -512,9 +513,9 @@ def main():
     input_files = []
     for input_pattern in args.input_file.split(','):
         input_files.extend(glob.glob(os.path.expanduser(input_pattern)))
-    logging.info('*** Reading from %d input files ***', len(input_files))
     for input_file in input_files:
         logging.info('\t%s', input_file)
+    logging.info('*** Reading from %d input files ***', len(input_files))
     num_outputs = min(args.num_outputs, len(input_files))
 
     create_training_instances(input_files, tokenizer, args.max_seq_length,
