@@ -23,7 +23,9 @@ import argparse
 import logging
 import os
 
-from ner_common import get_bert_model, get_bert_dataset_name, get_context, dump_metadata
+import mxnet as mx
+from ner_common import get_bert_model, get_bert_dataset_name, get_context
+from ner_common import dump_metadata, load_metadata
 from ner_data import BERTTaggingDataset, convert_arrays_to_text
 from ner_model import BERTTagger
 
