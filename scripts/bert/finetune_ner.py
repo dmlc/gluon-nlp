@@ -137,11 +137,12 @@ def main(config):
         dump_metadata(config, tag_vocab=dataset.tag_vocab)
 
     def train(data_loader, start_step_num):
+        """Training loop."""
         step_num = start_step_num
-        logging.info('current starting step num: {}'.format(step_num))
-        for batch_id, (text_ids, token_types, valid_length, tag_ids, flag_nonnull_tag, out) in \
+        logging.info('current starting step num: %d', step_num)
+        for batch_id, (_, _, _, tag_ids, flag_nonnull_tag, out) in \
                 enumerate(attach_prediction(data_loader, net, ctx, is_train=True)):
-            logging.info('training on batch index: {}/{}'.format(batch_id, len(data_loader)))
+            logging.info('training on batch index: %d/%d', batch_id, len(data_loader))
 
             # step size adjustments
             step_num += 1
@@ -171,9 +172,10 @@ def main(config):
         return step_num
 
     def evaluate(data_loader):
+        """Eval loop."""
         predictions = []
 
-        for batch_id, (text_ids, token_types, valid_length, tag_ids, flag_nonnull_tag, out) in \
+        for batch_id, (text_ids, _, valid_length, tag_ids, _, out) in \
                 enumerate(attach_prediction(data_loader, net, ctx, is_train=False)):
             logging.info('evaluating on batch index: %d/%d', batch_id, len(data_loader))
 

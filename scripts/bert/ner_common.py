@@ -25,28 +25,32 @@ from collections import namedtuple
 import mxnet as mx
 import gluonnlp as nlp
 
+__all__ = ['get_bert_model', 'get_bert_dataset_name', 'get_context',
+           'dump_metadata']
 
 BERTModelMetadata = namedtuple('BERTModelMetadata', ['config', 'tag_vocab'])
 
-
 def _metadata_file_path(checkpoint_prefix):
+    """Gets the file path for meta data"""
     return checkpoint_prefix + '_metadata.pkl'
 
 
 def dump_metadata(config, tag_vocab):
+    """Dumps meta-data to the configured path"""
     metadata = BERTModelMetadata(config=config, tag_vocab=tag_vocab)
     with open(_metadata_file_path(config.save_checkpoint_prefix), 'wb') as ofp:
         pickle.dump(metadata, ofp)
 
 
 def load_metadata(checkpoint_prefix):
+    """Loads meta-data to the configured path"""
     with open(_metadata_file_path(checkpoint_prefix), 'rb') as ifp:
         metadata = pickle.load(ifp)
         return metadata.config, metadata.tag_vocab
 
 
 def get_context(gpu_index):
-    """ This method gets context of execution"""
+    """This method gets context of execution"""
     context = None
     if gpu_index is None or gpu_index == '':
         context = mx.cpu()
@@ -59,6 +63,7 @@ def str2bool(v):
     """Utility function for parsing boolean in argparse
 
     https://stackoverflow.com/questions/15008758/parsing-boolean-values-with-argparse
+
     :param v: value of the argument
     :return:
     """
@@ -90,6 +95,7 @@ def get_bert_dataset_name(is_cased):
 
 
 def get_bert_model(bert_model, cased, ctx, dropout_prob):
+    """Get pre-trained BERT model."""
     bert_dataset_name = get_bert_dataset_name(cased)
 
     return nlp.model.get_bert_model(

@@ -48,7 +48,7 @@ class BERTTagger(Block):
             self.tag_classifier = nn.Dense(units=num_tag_types, flatten=False)
             self.dropout = nn.Dropout(rate=dropout_prob)
 
-    def forward(self, token_ids, token_types, valid_length):
+    def forward(self, token_ids, token_types, valid_length): # pylint: disable=arguments-differ
         """Generate an unnormalized score for the tag of each token
 
         Parameters

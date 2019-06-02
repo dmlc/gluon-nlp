@@ -28,8 +28,7 @@ import gluonnlp as nlp
 TaggedToken = namedtuple('TaggedToken', ['text', 'tag'])
 PredictedToken = namedtuple('PredictedToken', ['text', 'true_tag', 'pred_tag'])
 
-NULL_TAG = "X"
-
+NULL_TAG = 'X'
 
 def bio_bioes(tokens):
     """Convert a list of TaggedTokens in BIO(2) scheme to BIOES scheme.
@@ -86,7 +85,7 @@ def read_bio_as_bio2(data_path):
 
         for line in ifp:
             if len(line.strip()) > 0:
-                word, _, _, tag = line.rstrip().split(" ")
+                word, _, _, tag = line.rstrip().split(' ')
                 # convert BIO tag to BIO2 tag
                 if tag == 'O':
                     bio2_tag = 'O'

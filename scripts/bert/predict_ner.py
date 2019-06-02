@@ -1,19 +1,43 @@
 #!/usr/bin/env python
 # coding: utf-8
+
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+"""Script for NER prediction."""
+
 import argparse
 import logging
-
 import os
 
-from ner_common import *
+from ner_common import get_bert_model, get_bert_dataset_name, get_context, dump_metadata
 from ner_data import BERTTaggingDataset, convert_arrays_to_text
 from ner_model import BERTTagger
 
-# TODO: currently, our evaluation is dependent on this package. figure out whether to take actual dependency on it.
-import seqeval.metrics
+# TODO(bikestra): Currently, our evaluation is dependent on this package.
+# Figure out whether to take actual dependency on it.
+try:
+    import seqeval.metrics
+except ImportError:
+    raise ImportError('seqeval is required to run NER on BERT. Please '
+                      'install it via pip3 install seqeval --user')
 
 
 def _find_model_file_from_checkpoint(checkpoint_prefix: str):
+    """Load model checkpoint"""
     dirname, file_prefix = os.path.split(checkpoint_prefix)
     # find checkpoint file names and sort by name to find the most recent one.
     checkpoint_filenames = ([f for f in os.listdir(dirname)
@@ -37,12 +61,13 @@ def parse_args():
     arg_parser.add_argument('--seq-len', type=int, default=200,
                             help='The length of the sequence input to BERT.'
                                  ' An exception will raised if this is not large enough.')
-    arg_parser.add_argument("--load-checkpoint-prefix", type=str, required=False, default=None,
+    arg_parser.add_argument('--load-checkpoint-prefix', type=str, required=False, default=None,
                             help="Prefix of model checkpoint file")
 
-    arg_parser.add_argument("--gpu", type=int,
-                            help='Number (index) of GPU to run on, e.g. 0.  If not specified, uses CPU.')
-    arg_parser.add_argument("--batch-size", type=int, default=32, help="Batch size for training")
+    arg_parser.add_argument('--gpu', type=int,
+                            help='Number (index) of GPU to run on, e.g. 0. '
+                                 'If not specified, CPU context is used.')
+    arg_parser.add_argument('--batch-size', type=int, default=32, help='Batch size for training')
     args = arg_parser.parse_args()
     return args
 
@@ -52,7 +77,8 @@ def main(config):
     train_config, tag_vocab = load_metadata(config.load_checkpoint_prefix)
 
     ctx = get_context(config.gpu)
-    bert_model, text_vocab = get_bert_model(train_config.bert_model, train_config.cased, ctx, train_config.dropout_prob)
+    bert_model, text_vocab = get_bert_model(train_config.bert_model, train_config.cased, ctx,
+                                            train_config.dropout_prob)
 
     dataset = BERTTaggingDataset(text_vocab, None, None, config.test_path,
                                  config.seq_len, train_config.cased, tag_vocab=tag_vocab)
@@ -68,13 +94,13 @@ def main(config):
     loss_function = mx.gluon.loss.SoftmaxCrossEntropyLoss()
     loss_function.hybridize(static_alloc=True)
 
-    # TODO: make it not redundant between train and predict
+    # TODO(bikestra): make it not redundant between train and predict
     def evaluate(data_loader):
         predictions = []
 
         for batch_id, data in enumerate(data_loader):
-            logging.info('evaluating on batch index: {}/{}'.format(batch_id, len(data_loader)))
-            text_ids, token_types, valid_length, tag_ids, flag_nonnull_tag = \
+            logging.info('evaluating on batch index: %d/%d', batch_id, len(data_loader))
+            text_ids, token_types, valid_length, tag_ids, _ = \
                 [x.astype('float32').as_in_context(ctx) for x in data]
             out = net(text_ids, token_types, valid_length)
 
