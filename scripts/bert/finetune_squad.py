@@ -191,6 +191,10 @@ parser.add_argument('--gpu',
                     default=None,
                     help='which gpu to use for finetuning. CPU is used if not set.')
 
+parser.add_argument('--test_mode',
+                    action='store_true',
+                    help='Run the example in test mode for sanity checks')
+
 args = parser.parse_args()
 
 output_dir = args.output_dir
@@ -280,11 +284,12 @@ loss_function.hybridize(static_alloc=True)
 
 def train():
     """Training function."""
-    log.info('Loader Train data...')
+    segment = 'train' if not args.test_mode else 'dev'
+    log.info('Loader %s data...', segment)
     if version_2:
-        train_data = SQuAD('train', version='2.0')
+        train_data = SQuAD(segment, version='2.0')
     else:
-        train_data = SQuAD('train', version='1.1')
+        train_data = SQuAD(segment, version='1.1')
     log.info('Number of records in Train data:{}'.format(len(train_data)))
 
     train_data_transform, _ = preprocess_dataset(
@@ -397,6 +402,9 @@ def train():
                 tic = time.time()
                 step_loss = 0.0
                 log_num = 0
+                if args.test_mode:
+                    log.info('Exit early in test mode')
+                    break
         epoch_toc = time.time()
         log.info('Time cost={:.2f} s, Thoughput={:.2f} samples/s'.format(
             epoch_toc - epoch_tic, total_num/(epoch_toc - epoch_tic)))
@@ -464,6 +472,9 @@ def evaluate():
                 all_results[example_id] = []
             all_results[example_id].append(
                 _Result(example_id, start.tolist(), end.tolist()))
+        if args.test_mode:
+            log.info('Exit early in test mode')
+            break
     epoch_toc = time.time()
     log.info('Time cost={:.2f} s, Thoughput={:.2f} samples/s'.format(
         epoch_toc - epoch_tic, total_num/(epoch_toc - epoch_tic)))
@@ -476,7 +487,8 @@ def evaluate():
         max_answer_length=max_answer_length,
         null_score_diff_threshold=null_score_diff_threshold,
         n_best_size=n_best_size,
-        version_2=version_2)
+        version_2=version_2,
+        test_mode=args.test_mode)
 
     with open(os.path.join(output_dir, 'predictions.json'),
               'w', encoding='utf-8') as all_predictions_write:

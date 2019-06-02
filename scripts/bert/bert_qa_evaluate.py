@@ -126,7 +126,8 @@ def predictions(dev_dataset,
                 max_answer_length=64,
                 null_score_diff_threshold=0.0,
                 n_best_size=10,
-                version_2=False):
+                version_2=False,
+                test_mode=False):
     """Get prediction results
 
     Parameters
@@ -154,6 +155,8 @@ def predictions(dev_dataset,
     scores_diff_json: dict
         Record the difference between null score and the score of best non-null.
         when version_2 is True.
+    test_mode : bool
+        Run prediction in test mode for sanity checks, instead of the full function.
     """
 
     _PrelimPrediction = namedtuple('PrelimPrediction',
@@ -320,6 +323,9 @@ def predictions(dev_dataset,
                 all_predictions[example_qas_id] = best_non_null_entry.text
 
         all_nbest_json[example_qas_id] = nbest_json
+        if test_mode:
+            print('Exit early in test mode')
+            break
     return all_predictions, all_nbest_json, scores_diff_json
 
 
