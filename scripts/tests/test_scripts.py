@@ -334,4 +334,5 @@ def test_finetune_squad():
     arguments = ['--optimizer', 'adam', '--batch_size', '12',
                  '--gpu', '0', '--epochs', '2', '--test_mode']
     process = subprocess.check_call([sys.executable, './scripts/bert/finetune_squad.py']
+                                    + arguments)
     time.sleep(5)

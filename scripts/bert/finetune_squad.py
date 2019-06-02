@@ -285,7 +285,7 @@ loss_function.hybridize(static_alloc=True)
 def train():
     """Training function."""
     segment = 'train' if not args.test_mode else 'dev'
-    log.info('Loader %s data...', segment)
+    log.info('Loading %s data...', segment)
     if version_2:
         train_data = SQuAD(segment, version='2.0')
     else:
