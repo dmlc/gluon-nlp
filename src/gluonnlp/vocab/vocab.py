@@ -25,7 +25,9 @@ from __future__ import print_function
 
 __all__ = ['Vocab']
 
+import collections
 import json
+import uuid
 import warnings
 
 from mxnet import nd
@@ -550,6 +552,34 @@ class Vocab(object):
             t for t in reserved_tokens if t not in special_tokens
         ]
 
+        # Backward compatiblity code to deserialize corrupted vocabularies
+        # created without bugfix https://github.com/dmlc/gluon-nlp/pull/749
+        corrected_token_to_idx = collections.defaultdict(list)
+        idx_to_token = vocab_dict.get('idx_to_token')
+        if len(idx_to_token) > len(token_to_idx):  # Index is corrupt
+            warnings.warn(
+                'Detected a corrupted index in the deserialize vocabulary. '
+                'For versions before GluonNLP v0.7 the index is corrupted '
+                'by specifying the same token for different special purposes, '
+                'for example eos_token == padding_token. '
+                'Deserializing the vocabulary nevertheless.'
+            )
+            for token, count in collections.Counter(idx_to_token).items():
+                if count == 1:
+                    continue
+                # Introduce new tokens to avoid invalid duplicates
+                idx = -1
+                while count > 0:
+                    count -= 1
+                    idx = idx_to_token.index(token, idx + 1)
+                    if idx == token_to_idx[token]:
+                        # Valid idx
+                        continue
+                    else:
+                        # Introduce temporary token
+                        token_to_idx.update({str(uuid.uuid4()): idx})
+                        corrected_token_to_idx[token].append(idx)
+
         vocab = cls(
             counter=count_tokens(token_to_idx.keys()),
             unknown_token=unknown_token,
@@ -559,4 +589,13 @@ class Vocab(object):
             reserved_tokens=reserved_tokens,
             token_to_idx=token_to_idx,
             identifiers_to_tokens=vocab_dict.get('identifiers_to_tokens'))
+
+        # Backward compatiblity code to deserialize corrupted vocabularies
+        # created without bugfix https://github.com/dmlc/gluon-nlp/pull/749
+        for token, corrected_idxs in corrected_token_to_idx.items():
+            for idx in corrected_idxs:
+                # delete temporary tokens
+                del vocab._token_to_idx[vocab._idx_to_token[idx]]
+                vocab._idx_to_token[idx] = token
+
         return vocab

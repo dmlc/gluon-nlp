@@ -1449,3 +1449,20 @@ def test_vocab_duplicate_special_tokens(unknown_token, padding_token,
         with pytest.raises(AssertionError):
             Vocab(reserved_tokens=reserved_tokens + [eos_token])
 
+
+def test_vocab_backwards_compatibility_prior_v0_7_corrupted_index_bug():
+    with open('tests/data/vocab/backward_compat_0_7_corrupted_index', 'r') as f:
+        v = nlp.Vocab.from_json(f.read())
+
+    assert len(set(v.idx_to_token)) == len(v.token_to_idx)
+    assert v['<unk>'] == 0
+    assert v['<bos>'] == 2
+    assert v['<eos>'] == 3
+    assert v['token'] == 4
+
+    assert v.idx_to_token[0] == '<unk>'
+    assert v.idx_to_token[1] == '<eos>'  # corruption preserved for backward
+                                         # compatibility
+    assert v.idx_to_token[2] == '<bos>'
+    assert v.idx_to_token[3] == '<eos>'
+    assert v.idx_to_token[4] == 'token'
