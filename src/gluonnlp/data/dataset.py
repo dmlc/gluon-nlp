@@ -192,7 +192,7 @@ class TextLineDataset(SimpleDataset):
             for idx, line in enumerate(in_file):
                 line = line.strip()
                 # check if the line should be filtered out
-                if filter_fn and not filter_fn(idx, line):
+                if filter_fn is not None and not filter_fn(idx, line):
                     continue
                 lines.append(line)
         super(TextLineDataset, self).__init__(lines)
