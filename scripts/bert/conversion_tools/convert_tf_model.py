@@ -23,10 +23,18 @@ import argparse
 import json
 import logging
 import os
+import sys
+
 import mxnet as mx
+
 from gluonnlp.model import BERTEncoder, BERTModel
 from gluonnlp.model.bert import bert_hparams
-from utils import load_tf_vocab, tf_vocab_to_gluon_vocab, get_hash, read_tf_checkpoint
+
+sys.path.insert(0, os.path.abspath(os.path.join(__file__, os.pardir, os.pardir)))
+
+from utils import (get_hash, load_tf_vocab, read_tf_checkpoint,
+                   tf_vocab_to_gluon_vocab)
+
 
 parser = argparse.ArgumentParser(
     description='Conversion script for Tensorflow BERT model',

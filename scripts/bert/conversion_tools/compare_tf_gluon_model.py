@@ -22,11 +22,13 @@
 
 import sys
 import os
+# import os.path
 import argparse
 import numpy as np
 import mxnet as mx
 import gluonnlp as nlp
 
+sys.path.insert(0, os.path.abspath(os.path.join(__file__, os.pardir, os.pardir)))
 from utils import tf_vocab_to_gluon_vocab
 
 parser = argparse.ArgumentParser(description='Comparison script for BERT model in Tensorflow'
