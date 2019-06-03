@@ -15,6 +15,8 @@
 """BERT embedding datasets."""
 from mxnet.gluon.data import Dataset
 
+__all__ = ['BertEmbeddingDataset']
+
 class BertEmbeddingDataset(Dataset):
     """Dataset for BERT Embedding
 
