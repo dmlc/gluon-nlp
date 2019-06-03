@@ -30,20 +30,19 @@ class LAMB(Optimizer):
     """The LAMB optimizer proposed in
     `Reducing BERT Pre-Training Time from 3 Days to 76 Minutes <https://arxiv.org/abs/1904.00962>`_.
 
-    Updates are applied by::
-    if not bias_correction:
+    If bias_correction is set to False, updates are applied by::
 
         grad = clip(grad * rescale_grad, clip_gradient)
         m = beta1 * m + (1 - beta1) * grad
         v = beta2 * v + (1 - beta2) * (grad**2)
-        r1 = minimum(maximum(w.norm(), self.lower_bound), self.upper_bound)
+        r1 = min(max(w.norm(), lower_bound), upper_bound)
         g = m / (sqrt(v_hat) + epsilon) + wd * w
         r2 = g.norm()
-        r = 1. if r1 == 0. or r2 == 0. else r1/r2
+        r = 1. if r1 == 0. or r2 == 0. else r1 / r2
         lr = r * lr
         w = w - lr * g
 
-    else:
+    Otherwise, updates are applied by::
 
         grad = clip(grad * rescale_grad, clip_gradient)
         m = beta1 * m + (1 - beta1) * grad
@@ -53,7 +52,7 @@ class LAMB(Optimizer):
         r1 = w.norm()
         g = m_hat / (sqrt(v_hat + epsilon)) + wd * w
         r2 = g.norm()
-        r = 1. if r1 == 0. or r2 == 0. else r1/r2
+        r = 1. if r1 == 0. or r2 == 0. else r1 / r2
         lr = r * lr
         w = w - lr * g
 
