@@ -31,7 +31,8 @@ class LAMB(Optimizer):
     `Reducing BERT Pre-Training Time from 3 Days to 76 Minutes <https://arxiv.org/abs/1904.00962>`_.
 
     Updates are applied by::
-    if use_latest:
+    if not bias_correction:
+
         grad = clip(grad * rescale_grad, clip_gradient)
         m = beta1 * m + (1 - beta1) * grad
         v = beta2 * v + (1 - beta2) * (grad**2)
@@ -41,7 +42,9 @@ class LAMB(Optimizer):
         r = 1. if r1 == 0. or r2 == 0. else r1/r2
         lr = r * lr
         w = w - lr * g
+
     else:
+
         grad = clip(grad * rescale_grad, clip_gradient)
         m = beta1 * m + (1 - beta1) * grad
         v = beta2 * v + (1 - beta2) * (grad**2)
