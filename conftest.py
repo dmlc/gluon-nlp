@@ -177,7 +177,12 @@ def function_scope_seed(request):
 
     yield  # run the test
 
-    if request.node.rep_call.outcome == 'failed':
+    if request.node.rep_setup.failed:
+        logging.info("Setting up a test failed: {}", request.node.nodeid)
+    elif request.node.rep_call.outcome == 'failed':
+        # Either request.node.rep_setup.failed or request.node.rep_setup.passed
+        # should be True
+        assert request.node.rep_setup.passed
         # On failure also log seed on INFO log level
         logging.info(seed_message)
 
