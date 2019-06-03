@@ -143,6 +143,32 @@ class Vocab(object):
     [[-0.38497   0.80092   0.064106 -0.28355  -0.026759]
      [-0.41486   0.71848  -0.3045    0.87445   0.22441 ]]
     <NDArray 2x5 @cpu(0)>
+
+    With the `identifiers_to_tokens` argument the `Vocab` object can be
+    configured to expose specified tokens as attributes.
+
+    >>> id2tok = {'special_token': '<special>'}
+    >>> my_vocab2 = gluonnlp.Vocab(counter, identifiers_to_tokens=id2tok)
+    >>> # <special> is exposed as my_vocab2.special_token
+    >>> print(my_vocab2.special_token)
+    <special>
+
+    With the `token_to_idx` argument the order of the `Vocab`'s index can be
+    adapted. It is not necessary to specify the complete order but sufficient
+    to specify only the indices of tokens for a which a specific index is
+    desired. For example: By default `Vocab` assigns the index `0` to the
+    `unknown_token`. With the `token_to_idx` argument, the default can be
+    overwritten. Here we assign index `3` to the `unknown_token`.
+
+    >>> tok2idx = {'unknown_token': 3}
+    >>> my_vocab3 = gluonnlp.Vocab(counter, token_to_idx=tok2idx)
+    >>> my_vocab3.unknown_token
+    <unk>
+    >>> my_vocab3[my_vocab3.unknown_token]
+    3
+    >>> my_vocab[my_vocab.unknown_token]
+    0
+
     """
 
     # Declare internal attributes; if not declared, property getters will raise
@@ -267,7 +293,8 @@ class Vocab(object):
             raise ValueError('User-specified indices must not contain duplicates.')
         if min(token_to_idx.values()) < 0 or max(token_to_idx.values()) >= len(self.token_to_idx):
             raise ValueError('User-specified indices must not be < 0 or >= the number of tokens '
-                             'that will be in the vocabulary.')
+                             'that will be in the vocabulary. The current vocab contains {}'
+                             'tokens.'.format(len(self.token_to_idx)))
 
         # Update index ordering
         for token, new_idx in token_to_idx.items():

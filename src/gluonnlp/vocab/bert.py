@@ -145,14 +145,15 @@ class BERTVocab(Vocab):
         if identifiers_to_tokens is None:
             identifiers_to_tokens = dict()
 
+        if any(t in identifiers_to_tokens
+               for t in ('mask_token', 'sep_token', 'cls_token')):
+            raise ValueError('"mask_token", "sep_token" and "cls_token" '
+                             'cannot be specified in identifiers_to_tokens for BERTVocab')
         if mask_token:
-            assert mask_token not in identifiers_to_tokens
             identifiers_to_tokens.update(mask_token=mask_token)
-        if mask_token:
-            assert sep_token not in identifiers_to_tokens
+        if sep_token:
             identifiers_to_tokens.update(sep_token=sep_token)
-        if mask_token:
-            assert cls_token not in identifiers_to_tokens
+        if cls_token:
             identifiers_to_tokens.update(cls_token=cls_token)
 
         super(BERTVocab, self).__init__(counter=counter, max_size=max_size,
@@ -165,17 +166,17 @@ class BERTVocab(Vocab):
 
     @classmethod
     def from_json(cls, json_str):
-        """Deserialize Vocab object from json string.
+        """Deserialize BERTVocab object from json string.
 
         Parameters
         ----------
         json_str : str
-            Serialized json string of a Vocab object.
+            Serialized json string of a BERTVocab object.
 
 
         Returns
         -------
-        Vocab
+        BERTVocab
         """
         vocab_dict = json.loads(json_str)
         token_to_idx = vocab_dict.get('token_to_idx')

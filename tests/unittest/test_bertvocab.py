@@ -17,12 +17,19 @@
 # specific language governing permissions and limitations
 # under the License.
 
+import functools
+
 import mxnet as mx
-import gluonnlp as nlp
 import pytest
-
-
 from mxnet.test_utils import *
+
+import gluonnlp as nlp
+
+
+@pytest.fixture
+def counter():
+    return nlp.data.utils.Counter( ['a', 'b', 'b', 'c', 'c', 'c',
+                                    'some_word$'])
 
 
 @pytest.mark.serial
@@ -74,6 +81,32 @@ def test_bertvocab():
 
     assert vocab1.unknown_token == vocab2.unknown_token == vocab3.unknown_token == \
         vocab4.unknown_token == vocab5.unknown_token == nlp.vocab.bert.UNKNOWN_TOKEN
+
+
+def test_bertvocab_special_bert_tokens(counter):
+    Vocab = functools.partial(nlp.vocab.BERTVocab,
+                              counter,
+                              max_size=None,
+                              min_freq=1,
+                              unknown_token=None,
+                              bos_token=None,
+                              eos_token=None)
+
+    # Double specification of special bert tokens
+    with pytest.raises(ValueError):
+        Vocab(identifiers_to_tokens={'mask_token': '[MASK2]'})
+    with pytest.raises(ValueError):
+        Vocab(identifiers_to_tokens={'sep_token': '[SEP2]'})
+    with pytest.raises(ValueError):
+        Vocab(identifiers_to_tokens={'cls_token': '[CLS2]'})
+
+    # Specification of special bert token
+    with pytest.raises(ValueError):
+        Vocab(identifiers_to_tokens={'mask_token': '[MASK2]'}, mask_token=None)
+    with pytest.raises(ValueError):
+        Vocab(identifiers_to_tokens={'sep_token': '[SEP2]'}, sep_token=None)
+    with pytest.raises(ValueError):
+        Vocab(identifiers_to_tokens={'cls_token': '[CLS2]'}, cls_token=None)
 
 
 @pytest.mark.remote_required
