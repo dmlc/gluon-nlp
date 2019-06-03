@@ -19,4 +19,4 @@
 
 # pylint: disable=wildcard-import
 """BERT model."""
-from . import classification
+from . import classification, ner, qa

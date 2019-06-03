@@ -235,6 +235,46 @@ Run pre-training with horovod:
     $ horovodrun -np 8 -H localhost:8 python run_pretraining_hvd.py --data='/path/to/generated/samples/train/*.npz' --num_steps 1000000 --log_interval 250 --lr 1e-4 --batch_size 4096 --accumulate 4 --warmup_ratio 0.01 --ckpt_dir ./ckpt --ckpt_interval 25000 --num_buckets 10 --dtype float16 --use_avg_len --verbose
     $ mpirun -np 16 -H node0:8,node1:8 -mca pml ob1 -mca btl ^openib -mca btl_tcp_if_exclude docker0,lo --map-by ppr:4:socket -x NCCL_MIN_NRINGS=8 -x NCCL_DEBUG=INFO python run_pretraining_hvd.py --batch_size 8192 --accumulate 1 --lr 1e-4 --data "/path/to/generated/samples/train/*.npz" --warmup_ratio 0.01 --num_steps 1000000 --log_interval=250 --ckpt_dir './ckpt' --ckpt_interval 25000 --num_buckets 10 --dtype float16 --use_avg_len --verbose
 
+BERT for Named Entity Recognition
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+GluonNLP provides training and prediction script for named entity recognition models.
+
+The training script for NER requires python3 and the seqeval package:
+
+.. code-block:: console
+
+    $ pip3 install seqeval --user
+
+Dataset should be formatted in `CoNLL-2003 shared task format <https://www.clips.uantwerpen.be/conll2003/ner/>`_.
+Assuming data files are located in `${DATA_DIR}`, below command trains BERT model for
+named entity recognition, and saves model artifacts to `${MODEL_DIR}` with `large_bert`
+prefix in file names:
+
+.. code-block:: console
+
+    $ python3 finetune_ner.py \
+        --train-path ${DATA_DIR}/train.txt \
+        --dev-path ${DATA_DIR}/dev.txt \
+        --test-path ${DATA_DIR}/test.txt
+        --gpu 0 --learning-rate 1e-5 --dropout-prob 0.1 --num-epochs 100 --batch-size 8 \
+        --optimizer bertadam --bert-model bert_24_1024_16 \
+        --save-checkpoint-prefix ${MODEL_DIR}/large_bert --seed 13531
+
+This achieves Test F1 from `91.5` to `92.2`.
+
+Export BERT for Deployment
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Current export/export.py support exporting BERT models. Supported values for --task argument include classification, regression and question_answering.
+
+.. code-block:: console
+
+    $ python export/export.py --task classification --model_parameters /path/to/saved/ckpt.params --output_dir /path/to/output/dir/ --seq_length 128
+
+This will export the BERT model for classification to a symbol.json file, saved to the directory specified by --output_dir.
+The --model_parameters argument is optional. If not set, the .params file saved in the output directory will be randomly intialized parameters.
+
 BERT for Sentence or Tokens Embedding
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -317,15 +357,3 @@ Command line interface
        -0.42823148, -0.48873612], dtype=float32), array([-0.6576557 , -0.09822252,  0.1121515 , ..., -0.21743725,
        -0.1820574 , -0.16115054], dtype=float32)]
 
-
-Export BERT for Deployment
-~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Current export/export.py support exporting BERT models. Supported values for --task argument include classification, regression and question_answering.
-
-.. code-block:: console
-
-    $ python export/export.py --task classification --model_parameters /path/to/saved/ckpt.params --output_dir /path/to/output/dir/ --seq_length 128
-
-This will export the BERT model for classification to a symbol.json file, saved to the directory specified by --output_dir.
-The --model_parameters argument is optional. If not set, the .params file saved in the output directory will be randomly intialized parameters.
