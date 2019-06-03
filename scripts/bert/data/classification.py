@@ -22,11 +22,9 @@ __all__ = [
 ]
 
 import os
-import numpy as np
 from mxnet.metric import Accuracy, F1, MCC, PearsonCorrelation, CompositeEvalMetric
-from mxnet.gluon.data import Dataset
 from gluonnlp.base import get_home_dir
-from gluonnlp.data import TSVDataset, BERTSentenceTransform, GlueCoLA, GlueSST2, GlueSTSB
+from gluonnlp.data import TSVDataset, GlueCoLA, GlueSST2, GlueSTSB
 from gluonnlp.data import GlueQQP, GlueRTE, GlueMNLI, GlueQNLI, GlueWNLI
 from gluonnlp.data.registry import register
 try:
