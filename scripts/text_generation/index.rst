@@ -1,7 +1,7 @@
 Text Generation
 ---------------
 
-:download:`[Download] </model_zoo/text_generation.zip>`
+:download:`zip </model_zoo/text_generation.zip>`
 
 Sampling a Language Model
 +++++++++++++++++++++++++
