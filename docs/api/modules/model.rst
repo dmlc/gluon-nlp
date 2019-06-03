@@ -9,7 +9,7 @@ all requested pre-trained weights are downloaded from public repo and stored in 
 Model Registry
 --------------
 
-The model registry provides an easy interface to obtain pre-defined models.
+The model registry provides an easy interface to obtain pre-defined and pre-trained models.
 
 .. autosummary::
     :nosignatures:
