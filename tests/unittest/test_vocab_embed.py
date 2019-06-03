@@ -1418,3 +1418,34 @@ def test_vocab_token_to_idx(unknown_token, padding_token, identifiers_to_tokens,
         consistency_check(v)
         for token, idx in token_to_idx.items():
             token_idx_check(token, idx)
+
+
+@pytest.mark.parametrize('unknown_token', ['<unk>', None])
+@pytest.mark.parametrize('padding_token', ['<pad>', '<eos>', None])
+@pytest.mark.parametrize('eos_token', ['<eos>', None])
+@pytest.mark.parametrize('reserved_tokens', [['<tok>'], []])
+def test_vocab_duplicate_special_tokens(unknown_token, padding_token,
+                                        eos_token, reserved_tokens, counter):
+    """Different special tokens are allowed to map to the same representations.
+
+    Special tokens are a subset of the reserved tokens. In general reserved
+    tokens must not contain duplicates; however, it is allowed that multiple
+    special tokens use the same reserved token.
+
+    """
+    Vocab = functools.partial(nlp.Vocab,counter,
+                  max_size=None,
+                  min_freq=1,
+                  unknown_token=unknown_token,
+                  padding_token=padding_token,
+                  bos_token=None,
+                  eos_token=eos_token
+                  )
+
+    v = Vocab(reserved_tokens=reserved_tokens)
+
+    # Specifying a special tokens as reserved tokens is counted as duplicate
+    if eos_token is not None:
+        with pytest.raises(AssertionError):
+            Vocab(reserved_tokens=reserved_tokens + [eos_token])
+
