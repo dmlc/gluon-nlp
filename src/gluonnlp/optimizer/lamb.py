@@ -66,26 +66,23 @@ class LAMB(Optimizer):
         Lower limit of norm of weight
     upper_bound : float, optional, default is 10.0
         Upper limit of norm of weight
-    use_latest : bool, optional, default is True
-        Whether to use the latest version of LAMB. The new version of LAMB
-        has some differences from the old version,
-        such as the bias correction was removed in the new version
+    bias_correction : bool, optional, default is False
+        Whether to use bias correction, in the latest version of the lamb, 
+        the bias correction was removed and some simple changes were made.
     """
 
     def __init__(self, learning_rate=0.001, beta1=0.9, beta2=0.999, epsilon=1e-6,
-                 lower_bound=1e-3, upper_bound=10.0, use_latest=True,
-                 lazy_update=False, **kwargs):
+                 lower_bound=1e-3, upper_bound=10.0, bias_correction=False, **kwargs):
         super(LAMB, self).__init__(learning_rate=learning_rate, **kwargs)
         self.beta1 = beta1
         self.beta2 = beta2
         self.epsilon = epsilon
         self.lower_bound = lower_bound
         self.upper_bound = upper_bound
-        self.lazy_update = lazy_update
-        self.use_latest = use_latest
+        self.bias_correction = bias_correction
 
     def create_state(self, index, weight):
-        stype = weight.stype if self.lazy_update else 'default'
+        stype = weight.stype
         return (zeros(weight.shape, weight.context, dtype=weight.dtype,
                       stype=stype),  # mean
                 zeros(weight.shape, weight.context, dtype=weight.dtype,
@@ -109,7 +106,7 @@ class LAMB(Optimizer):
         var[:] = self.beta2 * var + (1. - self.beta2) * square(grad)
 
         r1 = weight.norm()
-        if self.use_latest:
+        if not self.bias_correction:
             r1 = minimum(maximum(r1, self.lower_bound), self.upper_bound)
             g = mean / (sqrt(var) + self.epsilon) + wd * weight
 
