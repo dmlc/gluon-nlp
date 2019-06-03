@@ -138,13 +138,13 @@ class Vocab(object):
         self._unknown_token = unknown_token
         special_tokens = []
         self._padding_token = padding_token
-        if padding_token:
+        if padding_token and padding_token not in special_tokens:
             special_tokens.append(padding_token)
         self._bos_token = bos_token
-        if bos_token:
+        if bos_token and bos_token not in special_tokens:
             special_tokens.append(bos_token)
         self._eos_token = eos_token
-        if eos_token:
+        if eos_token and eos_token not in special_tokens:
             special_tokens.append(eos_token)
         if reserved_tokens:
             special_tokens.extend(reserved_tokens)
@@ -170,6 +170,7 @@ class Vocab(object):
             self._reserved_tokens = None
         else:
             self._reserved_tokens = special_tokens[:]
+            assert len(special_tokens) == len(set(special_tokens))  # sanity check
             self._idx_to_token.extend(special_tokens)
 
         if unknown_token:
