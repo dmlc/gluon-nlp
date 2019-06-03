@@ -261,7 +261,7 @@ prefix in file names:
         --optimizer bertadam --bert-model bert_24_1024_16 \
         --save-checkpoint-prefix ${MODEL_DIR}/large_bert --seed 13531
 
-This achieves Test F1 from `91.5` to `92.2`.
+This achieves Test F1 from `91.5` to `92.2` (`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/bert/finetuned_conll2003.log>`_).
 
 Export BERT for Deployment
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
