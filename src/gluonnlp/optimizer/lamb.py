@@ -67,7 +67,7 @@ class LAMB(Optimizer):
     upper_bound : float, optional, default is 10.0
         Upper limit of norm of weight
     bias_correction : bool, optional, default is False
-        Whether to use bias correction, in the latest version of the lamb, 
+        Whether to use bias correction, in the latest version of the lamb,
         the bias correction was removed and some simple changes were made.
     """
 
