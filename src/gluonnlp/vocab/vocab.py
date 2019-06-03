@@ -544,10 +544,10 @@ class Vocab(object):
         padding_token = vocab_dict.get('padding_token')
         bos_token = vocab_dict.get('bos_token')
         eos_token = vocab_dict.get('eos_token')
-        special_tokens = [unknown_token, padding_token, bos_token, eos_token]
         reserved_tokens = vocab_dict.get('reserved_tokens')
 
         # workaround reserved and special tokens being serialized together
+        special_tokens = [unknown_token, padding_token, bos_token, eos_token]
         reserved_tokens = [
             t for t in reserved_tokens if t not in special_tokens
         ]

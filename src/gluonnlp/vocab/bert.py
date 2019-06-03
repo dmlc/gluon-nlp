@@ -184,35 +184,47 @@ class BERTVocab(Vocab):
         padding_token = vocab_dict.get('padding_token')
         bos_token = vocab_dict.get('bos_token')
         eos_token = vocab_dict.get('eos_token')
-        special_tokens = [unknown_token, padding_token, bos_token, eos_token]
         reserved_tokens = vocab_dict.get('reserved_tokens')
+        identifiers_to_tokens = vocab_dict.get('identifiers_to_tokens')
+
+
+        # GluonNLP < v0.7 serialized special bert tokens individually
+        mask_token = vocab_dict.get('mask_token')
+        sep_token = vocab_dict.get('sep_token')
+        cls_token = vocab_dict.get('cls_token')
+
+        # GluonNLP >= v0.7 uses identifiers_to_tokens to serialize special bert
+        # tokens to make the serialization format compatible with the nlp.Vocab
+        # class
+        if mask_token is None and sep_token is None and cls_token is None:
+            assert identifiers_to_tokens is not None
+            if 'mask_token' in identifiers_to_tokens:
+                mask_token = identifiers_to_tokens['mask_token']
+                del identifiers_to_tokens['mask_token']
+            if 'sep_token' in identifiers_to_tokens:
+                sep_token = identifiers_to_tokens['sep_token']
+                del identifiers_to_tokens['sep_token']
+            if 'cls_token' in identifiers_to_tokens:
+                cls_token = identifiers_to_tokens['cls_token']
+                del identifiers_to_tokens['cls_token']
 
         # workaround reserved and special tokens being serialized together
+        special_tokens = [
+            unknown_token, padding_token, bos_token, eos_token, mask_token,
+            sep_token, cls_token
+        ]
         reserved_tokens = [
             t for t in reserved_tokens if t not in special_tokens
         ]
-
-        # Backwards compatibility with BERTVocab serialization in GluonNLP 0.7
-        identifiers_to_tokens = vocab_dict.get('identifiers_to_tokens')
-        bertidentifiers = ['mask_token', 'sep_token', 'cls_token']
-        if any(identifier in vocab_dict for identifier in bertidentifiers):
-            if identifiers_to_tokens is None:
-                identifiers_to_tokens = dict()
-            for identifier in bertidentifiers:
-                token = vocab_dict.get(identifier)
-                if token is not None:
-                    assert token in reserved_tokens
-                    assert identifier not in identifiers_to_tokens
-                    identifiers_to_tokens[identifier] = token
 
         return cls(counter=count_tokens(token_to_idx.keys()),
                    unknown_token=unknown_token,
                    padding_token=padding_token,
                    bos_token=bos_token,
                    eos_token=eos_token,
-                   mask_token=None,
-                   sep_token=None,
-                   cls_token=None,
+                   mask_token=mask_token,
+                   sep_token=sep_token,
+                   cls_token=cls_token,
                    reserved_tokens=reserved_tokens,
                    token_to_idx=token_to_idx,
                    identifiers_to_tokens=identifiers_to_tokens)

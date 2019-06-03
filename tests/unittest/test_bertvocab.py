@@ -134,3 +134,27 @@ def test_bert_vocab_from_sentencepiece():
     for i in range(num_tokens):
         token = _convert_to_unicode(spm.IdToPiece(i))
         assert bert_vocab[token] == i
+
+
+@pytest.mark.parametrize('unknown_token', ['<unk>', None])
+def test_bert_vocab_serialization(unknown_token):
+    def check(vocab):
+        assert vocab.mask_token == '[MASK]'
+        assert vocab.sep_token == '[SEP]'
+        assert vocab.cls_token == '[CLS]'
+
+        if not unknown_token:
+            with pytest.raises(KeyError):
+                vocab['hello']
+        else:
+            vocab['hello']
+
+    vocab = nlp.vocab.BERTVocab(unknown_token=unknown_token)
+    check(vocab)
+
+    loaded_vocab = nlp.vocab.BERTVocab.from_json(vocab.to_json())
+    check(loaded_vocab)
+
+    # Interoperability of serialization format with nlp.Vocab
+    loaded_vocab = nlp.Vocab.from_json(vocab.to_json())
+    check(loaded_vocab)
