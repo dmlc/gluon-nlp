@@ -215,11 +215,11 @@ all_labels = ["0", "1"]
 # for regression task, set class_labels=None
 # for inference without label available, set has_label=False
 pair = True
-transform = data.trainsform.BERTDatasetTransform(bert_tokenizer, max_len,
-                                                 class_labels=all_labels,
-                                                 has_label=True,
-                                                 pad=True,
-                                                 pair=pair)
+transform = data.transform.BERTDatasetTransform(bert_tokenizer, max_len,
+                                                class_labels=all_labels,
+                                                has_label=True,
+                                                pad=True,
+                                                pair=pair)
 data_train = data_train_raw.transform(transform)
 
 print('vocabulary used for tokenization = \n%s'%vocabulary)
