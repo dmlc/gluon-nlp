@@ -151,7 +151,7 @@ class Vocab(object):
 
     >>> id2tok = {'special_token': 'hi'}
     >>> my_vocab2 = gluonnlp.Vocab(counter, identifiers_to_tokens=id2tok)
-    >>> # <special> is exposed as my_vocab2.special_token
+    >>> # 'hi' is exposed as my_vocab2.special_token
     >>> print(my_vocab2.special_token)
     hi
 
@@ -160,7 +160,8 @@ class Vocab(object):
     to specify only the indices of tokens for a which a specific index is
     desired. For example: By default `Vocab` assigns the index `0` to the
     `unknown_token`. With the `token_to_idx` argument, the default can be
-    overwritten. Here we assign index `3` to the `unknown_token`.
+    overwritten. Here we assign index `3` to the unknown token representation
+    `<unk>`.
 
     >>> tok2idx = {'<unk>': 3}
     >>> my_vocab3 = gluonnlp.Vocab(counter, token_to_idx=tok2idx)
