@@ -169,11 +169,7 @@ def convert_to_npz(instances, max_seq_length):
     return input_ids, masked_lm_ids, masked_lm_positions, masked_lm_weights,\
            next_sentence_labels, segment_ids, valid_lengths
 
-def create_training_instances(input_files, tokenizer,
-                              max_seq_length, short_seq_prob,
-                              masked_lm_prob, max_predictions_per_seq, vocab,
-                              dupe_factor=1, nworker=1,
-                              num_outputs=1, output_dir=None, pool=None):
+def create_training_instances(x):
     """Create `TrainingInstance`s from raw text.
 
     The expected input file format is the following:
@@ -184,12 +180,12 @@ def create_training_instances(input_files, tokenizer,
     (2) Blank lines between documents. Document boundaries are needed so
     that the "next sentence prediction" task doesn't span between documents.
 
+    The function expect arguments packed in a tuple as described below.
+
     Parameters
     ----------
     input_files : list of str
         List of paths to input text files.
-    output_file : str or None
-        Path to the output file. If None, the result is not serialized.
     tokenizer : BERTTokenizer
         The BERT tokenizer
     max_seq_length : int
@@ -204,57 +200,62 @@ def create_training_instances(input_files, tokenizer,
         The hard limit of the number of predictions for masked words
     vocab : BERTVocab
         The BERTVocab
+    nworker : int
+        The number of processes to help processing texts in parallel
+    worker_pool : multiprocessing.Pool
+        Must be provided if nworker > 1. The caller is responsible for the destruction of
+        the worker pool.
+    output_file : str or None
+        Path to the output file. If None, the result is not serialized. If provided,
+        results are  stored in the order of (input_ids, segment_ids, masked_lm_positions,
+        masked_lm_ids, masked_lm_weights, next_sentence_labels, valid_lengths).
 
     Returns
     -------
     A tuple of np.ndarray : input_ids, masked_lm_ids, masked_lm_positions, masked_lm_weights
                             next_sentence_labels, segment_ids, valid_lengths
     """
+    (input_files, tokenizer, max_seq_length, short_seq_prob,
+     masked_lm_prob, max_predictions_per_seq, vocab,
+     dupe_factor, nworker, worker_pool, output_file) = x
     time_start = time.time()
     if nworker > 1:
-        worker_pool = pool if pool else Pool(nworker)
+        assert worker_pool is not None
 
-    # calculate the number of inputs per output
-    num_inputs = len(input_files)
-    num_inputs_per_output = (num_inputs + num_outputs - 1) // num_outputs
+    all_documents = [[]]
 
-    for output_idx in range(num_outputs):
-        input_start = output_idx * num_inputs_per_output
-        input_end = min((output_idx + 1) * num_inputs_per_output, len(input_files))
+    for input_file in input_files:
+        with io.open(input_file, 'r', encoding='utf-8') as reader:
+            lines = reader.readlines()
+            num_lines = len(lines)
+            num_lines_per_worker = (num_lines + nworker - 1) // nworker
+            process_args = []
 
-        all_documents = [[]]
+            # tokenize in parallel
+            for worker_idx in range(nworker):
+                start = worker_idx * num_lines_per_worker
+                end = min((worker_idx + 1) * num_lines_per_worker, num_lines)
+                process_args.append((lines[start:end], tokenizer, vocab))
+            if worker_pool:
+                tokenized_results = worker_pool.map(tokenize_lines_fn, process_args)
+            else:
+                tokenized_results = [tokenize_lines_fn(process_args[0])]
 
-        for input_file in input_files[input_start:input_end]:
-            with io.open(input_file, 'r', encoding='utf-8') as reader:
-                lines = reader.readlines()
-                num_lines = len(lines)
-                num_lines_per_worker = (num_lines + nworker - 1) // nworker
-                process_args = []
-                # tokenize in parallel
-                for worker_idx in range(nworker):
-                    start = worker_idx * num_lines_per_worker
-                    end = min((worker_idx + 1) * num_lines_per_worker, num_lines)
-                    process_args.append((lines[start:end], tokenizer, vocab))
+            for tokenized_result in tokenized_results:
+                for line in tokenized_result:
+                    if not line:
+                        if all_documents[-1]:
+                            all_documents.append([])
+                    else:
+                        all_documents[-1].append(line)
 
-                def _process_result(tokenized_results, all_documents):
-                    for tokenized_result in tokenized_results:
-                        for line in tokenized_result:
-                            if not line:
-                                if all_documents[-1]:
-                                    all_documents.append([])
-                            else:
-                                all_documents[-1].append(line)
+    # remove the last empty document if any
+    if not all_documents[-1]:
+        all_documents = all_documents[:-1]
 
-                if nworker > 1:
-                    tokenized_results = worker_pool.map(tokenize_lines_fn, process_args)
-                else:
-                    tokenized_results = [tokenize_lines_fn(process_args[0])]
-                _process_result(tokenized_results, all_documents)
-        # remove the last empty document if any
-        if not all_documents[-1]:
-            all_documents = all_documents[:-1]
-
-        instances = []
+    # generate training instances
+    instances = []
+    if worker_pool:
         process_args = []
         for document_index in range(len(all_documents)):
             process_args.append((all_documents, document_index, max_seq_length, short_seq_prob,
@@ -263,32 +264,33 @@ def create_training_instances(input_files, tokenizer,
             instances_results = worker_pool.map(create_instances_from_document, process_args)
             for instances_result in instances_results:
                 instances.extend(instances_result)
+        npz_instances = worker_pool.apply(convert_to_npz, (instances, max_seq_length))
+    else:
+        for _ in range(dupe_factor):
+            for document_index in range(len(all_documents)):
+                instances.extend(
+                    create_instances_from_document(
+                        (all_documents, document_index, max_seq_length, short_seq_prob,
+                         masked_lm_prob, max_predictions_per_seq, vocab)))
+        npz_instances = convert_to_npz(instances, max_seq_length)
 
-        res = worker_pool.apply_async(convert_to_npz, (instances, max_seq_length))
-        (input_ids, masked_lm_ids, masked_lm_positions, masked_lm_weights,
-         next_sentence_labels, segment_ids, valid_lengths) = res.get()
+    ()input_ids, masked_lm_ids, masked_lm_positions, masked_lm_weights,
+     next_sentence_labels, segment_ids, valid_lengths) = npz_instances
 
-        # write output to files. Used when pre-generating files
-        if output_dir:
-            part_name = 'part-{}.{}'.format(str(output_idx).zfill(3), 'npz')
-            output_file = os.path.join(output_dir, part_name)
-            features = (input_ids, segment_ids, masked_lm_positions, masked_lm_ids,
-                        masked_lm_weights, next_sentence_labels, valid_lengths)
-            logging.debug('*** Writing to output file %s ***', output_file)
-            write_to_files_np(features, tokenizer, args.max_seq_length,
-                              args.max_predictions_per_seq, [output_file])
-        else:
-            assert num_outputs == 1, 'output_dir is required if num_outputs > 1'
-            features = (input_ids, masked_lm_ids, masked_lm_positions, masked_lm_weights,
-                        next_sentence_labels, segment_ids, valid_lengths)
-
-    if nworker > 1 and not pool:
-        worker_pool.close()
-        worker_pool.join()
+    # write output to files. Used when pre-generating files
+    if output_file:
+        features = (input_ids, segment_ids, masked_lm_positions, masked_lm_ids,
+                    masked_lm_weights, next_sentence_labels, valid_lengths)
+        logging.debug('*** Writing to output file %s ***', output_file)
+        write_to_files_np(features, tokenizer, args.max_seq_length,
+                          args.max_predictions_per_seq, [output_file])
+        features = None
+    else:
+        features = (input_ids, masked_lm_ids, masked_lm_positions, masked_lm_weights,
+                    next_sentence_labels, segment_ids, valid_lengths)
     time_end = time.time()
     logging.debug('Process %d files took %.1f s', len(input_files), time_end - time_start)
     return features
-
 
 def create_instances_from_document(x):
     """Creates `TrainingInstance`s for a single document."""
@@ -298,7 +300,6 @@ def create_instances_from_document(x):
     _MASK_TOKEN = vocab[vocab.mask_token]
     _CLS_TOKEN = vocab[vocab.cls_token]
     _SEP_TOKEN = vocab[vocab.sep_token]
-
 
     # Account for [CLS], [SEP], [SEP]
     max_num_tokens = max_seq_length - 3
@@ -515,14 +516,40 @@ def main():
         input_files.extend(glob.glob(os.path.expanduser(input_pattern)))
     for input_file in input_files:
         logging.info('\t%s', input_file)
-    logging.info('*** Reading from %d input files ***', len(input_files))
+    num_inputs = len(input_files)
     num_outputs = min(args.num_outputs, len(input_files))
+    logging.info('*** Reading from %d input files ***', num_inputs)
 
-    create_training_instances(input_files, tokenizer, args.max_seq_length,
-                              args.short_seq_prob, args.masked_lm_prob,
-                              args.max_predictions_per_seq, vocab,
-                              args.dupe_factor, args.num_workers,
-                              num_outputs=num_outputs, output_dir=output_dir)
+    # calculate the number of splits
+    file_splits = []
+    split_size = (num_inputs + num_outputs - 1) // num_outputs
+    for i in range(num_outputs):
+        split_start = i * split_size
+        split_end = min(num_inputs, (i + 1) * split_size)
+        file_splits.append(input_files[split_start:split_end])
+
+    # prepare workload
+    count = 0
+    process_args = []
+
+    for i, file_split in enumerate(file_splits):
+        output_file = os.path.join(output_dir, 'part-{}.npz'.format(str(i).zfill(3)))
+        count += len(file_split)
+        process_args.append((file_split, tokenizer, args.max_seq_length, args.short_seq_prob,
+                             args.masked_lm_prob, args.max_predictions_per_seq,
+                             vocab, args.dupe_factor, 1, None, output_file))
+
+    # sanity check
+    assert count == len(input_files)
+
+    # dispatch to workers
+    nworker = args.num_workers
+    if nworker > 1:
+        pool = Pool(nworker)
+        pool.map(create_training_instances, process_args)
+    else:
+        for process_arg in process_args:
+            create_training_instances(process_arg)
 
     time_end = time.time()
     logging.info('Time cost=%.1f', time_end - time_start)

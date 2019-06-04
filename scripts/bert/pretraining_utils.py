@@ -119,17 +119,18 @@ class BERTPretrainDataset(mx.gluon.data.ArrayDataset):
         The BERTVocab
     num_workers : int
         The number of worker processes for dataset contruction.
-    pool : multiprocessing.Pool
-        The worker process pool. If not provided, a worker pool will be created based on
-        num_workers.
+    worker_pool : multiprocessing.Pool
+        The worker process pool. Must be provided if num_workers > 1.
     """
     def __init__(self, filename, tokenizer, max_seq_length, short_seq_prob,
-                 masked_lm_prob, max_predictions_per_seq, vocab, num_workers=1, pool=None):
+                 masked_lm_prob, max_predictions_per_seq, vocab, num_workers=1, worker_pool=None):
         logging.debug('start to load file %s ...', filename)
-        instances = create_training_instances([filename], tokenizer, max_seq_length,
-                                              short_seq_prob, masked_lm_prob,
-                                              max_predictions_per_seq, vocab,
-                                              nworker=num_workers, pool=pool)
+        dupe_factor = 1
+        instances = create_training_instances(([filename], tokenizer, max_seq_length,
+                                               short_seq_prob, masked_lm_prob,
+                                               max_predictions_per_seq, vocab,
+                                               dupe_factor, num_workers,
+                                               worker_pool, None))
         super(BERTPretrainDataset, self).__init__(*instances)
 
 def get_pretrain_data_text(data, batch_size, num_ctxes, shuffle, use_avg_len,
@@ -179,7 +180,7 @@ def get_pretrain_data_text(data, batch_size, num_ctxes, shuffle, use_avg_len,
                                     short_seq_prob=short_seq_prob,
                                     masked_lm_prob=masked_lm_prob,
                                     max_predictions_per_seq=max_predictions_per_seq,
-                                    vocab=vocab, num_workers=num_workers, pool=pool)
+                                    vocab=vocab, num_workers=num_workers, worker_pool=worker_pool)
 
     split_sampler = nlp.data.SplitSampler(num_files, num_parts=num_parts, part_index=part_idx)
     stream = nlp.data.SimpleDatasetStream(dataset_cls, data, split_sampler)
