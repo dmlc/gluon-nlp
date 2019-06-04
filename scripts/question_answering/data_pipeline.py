@@ -92,13 +92,16 @@ class SQuADDataPipeline:
         self._word_vocab_file_name = 'word_vocab.bin'
         self._char_vocab_file_name = 'char_vocab.bin'
 
-    def get_processed_data(self, use_spacy=True, squad_data_root=None):
+    def get_processed_data(self, use_spacy=True, shrink_word_vocab=True, squad_data_root=None):
         """Main method to start data processing
 
         Parameters
         ----------
         use_spacy : bool, default True
             Shall use Spacy as a tokenizer. If not, uses NLTK
+        shrink_word_vocab : bool, default True
+            When True, only tokens that have embeddings in the embedding file are remained in the
+            word_vocab. Otherwise tokens with no embedding also stay
         squad_data_root : str, default None
             Data path to store downloaded original SQuAD data
         Returns
@@ -131,6 +134,7 @@ class SQuADDataPipeline:
                                                                             use_spacy, pool)
             word_vocab, char_vocab = SQuADDataPipeline._get_vocabs(train_examples, dev_examples,
                                                                    self._emb_size,
+                                                                   shrink_word_vocab,
                                                                    pool)
 
         filter_provider = SQuADDataFilter(self._train_para_limit,
@@ -246,7 +250,7 @@ class SQuADDataPipeline:
         return train_ready, dev_ready
 
     @staticmethod
-    def _get_vocabs(train_examples, dev_examples, emb_size, pool):
+    def _get_vocabs(train_examples, dev_examples, emb_size, shrink_word_vocab, pool):
         """Create both word-level and character-level vocabularies. Vocabularies are built using
         data from both train and dev datasets.
 
@@ -258,6 +262,9 @@ class SQuADDataPipeline:
             Tokenized dev examples
         emb_size : int
             Embedding size of the Glove embedding to load
+        shrink_word_vocab : bool
+            When True, only tokens that have embeddings in the embedding file are remained in the
+            word_vocab. Otherwise tokens with no embedding also stay
         pool : Pool
             Multiprocessing pool to use
 
@@ -294,10 +301,14 @@ class SQuADDataPipeline:
                                      total=len(char_partitioned)))
         print('Char counters received in {:.3f} sec'.format(time.time() - tic))
 
-        word_vocab = Vocab({item[0]: item[1] for item in word_counts},
+        embedding = nlp.embedding.create('glove', source='glove.6B.{}d'.format(emb_size))
+
+        # 6B.* embeddings are uncased: https://nlp.stanford.edu/projects/glove/
+        # we need to convert all words into lower case
+        word_vocab = Vocab({item[0].lower(): item[1] for item in word_counts if
+                            not shrink_word_vocab or item[0].lower() in embedding.token_to_idx},
                            bos_token=None, eos_token=None)
-        word_vocab.set_embedding(nlp.embedding.create('glove',
-                                                      source='glove.6B.{}d'.format(emb_size)))
+        word_vocab.set_embedding(embedding)
         char_vocab = Vocab({item[0]: item[1] for item in char_counts},
                            bos_token=None, eos_token=None)
 
@@ -450,13 +461,13 @@ class SQuADDataTokenizer:
 
         context = context.replace('\'\'', '\" ').replace(r'``', '\" ')
         context_tokens = SQuADDataTokenizer._word_tokenize_spacy(context) if self._use_spacy else \
-                         SQuADDataTokenizer._word_tokenize_nltk(context)
+            SQuADDataTokenizer._word_tokenize_nltk(context)
         context_chars = [list(token) for token in context_tokens]
         spans = SQuADDataTokenizer._get_token_spans(context, context_tokens)
 
         ques = question.replace('\'\'', '\" ').replace('``', '\" ')
         ques_tokens = SQuADDataTokenizer._word_tokenize_spacy(ques) if self._use_spacy else \
-                      SQuADDataTokenizer._word_tokenize_nltk(ques)
+            SQuADDataTokenizer._word_tokenize_nltk(ques)
         ques_chars = [list(token) for token in ques_tokens]
 
         y1s, y2s = [], []
@@ -707,44 +718,6 @@ class SQuADDataFeaturizer:
         self._word_vocab = word_vocab
         self._char_vocab = char_vocab
 
-    def _get_word(self, word):
-        """Maps a word to an index using word-level vocabulary
-
-        Parameters
-        ----------
-        word : str
-            Token to map
-
-        Returns
-        -------
-        ret : int
-            Token index from vocabulary or unknown token index if not found
-
-        """
-        for token in (word, word.lower(), word.capitalize(), word.upper()):
-            if token in self._word_vocab:
-                return self._word_vocab[token]
-
-        return self._word_vocab[self._word_vocab.unknown_token]
-
-    def _get_char(self, char):
-        """Maps a character to an index using character-level vocabulary
-
-        Parameters
-        ----------
-        char : str
-            A character to map
-
-        Returns
-        -------
-        ret : int
-            Character index from vocabulary or unknown token index if character is not found
-        """
-        if char in self._char_vocab:
-            return self._char_vocab[char]
-
-        return self._char_vocab[self._char_vocab.unknown_token]
-
     def build_features(self, example):
         """Generate features for a given example
 
@@ -778,10 +751,12 @@ class SQuADDataFeaturizer:
                                  dtype=np.float32)
 
         context_len = min(len(example['context_tokens']), self._para_limit)
-        context_idxs[:context_len] = self._word_vocab[example['context_tokens'][:context_len]]
+        context_idxs[:context_len] = self._word_vocab[[item.lower() for item
+                                                       in example['context_tokens'][:context_len]]]
 
         ques_len = min(len(example['ques_tokens']), self._ques_limit)
-        ques_idxs[:ques_len] = self._word_vocab[example['ques_tokens'][:ques_len]]
+        ques_idxs[:ques_len] = self._word_vocab[[item.lower() for item in
+                                                 example['ques_tokens'][:ques_len]]]
 
         for i in range(0, context_len):
             char_len = min(len(example['context_chars'][i]), self._char_limit)
