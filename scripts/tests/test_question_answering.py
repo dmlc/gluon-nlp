@@ -25,9 +25,12 @@ from ..question_answering.data_pipeline import SQuADDataLoaderTransformer
 
 @pytest.mark.remote_required
 @pytest.mark.serial
-def test_data_loader_able_to_read(squad_dev_and_vocab_provider):
-    _, _, train_dataset, dev_dataset, _, _ = squad_dev_and_vocab_provider
+def test_data_loader_able_to_read_spacy(squad_dev_and_vocab_spacy_provider):
+    _, _, train_dataset, dev_dataset, word_vocab, char_vocab = squad_dev_and_vocab_spacy_provider
     dataloader = DataLoader(train_dataset.transform(SQuADDataLoaderTransformer()), batch_size=1)
+
+    assert word_vocab is not None
+    assert char_vocab is not None
 
     for record_index, context, query, context_char, query_char, begin, end in dataloader:
         assert record_index is not None
@@ -40,10 +43,19 @@ def test_data_loader_able_to_read(squad_dev_and_vocab_provider):
         break
 
 
-@pytest.mark.remote_required
-@pytest.mark.serial
-def test_load_vocabs(squad_dev_and_vocab_provider):
-    _, _, _, _, word_vocab, char_vocab = squad_dev_and_vocab_provider
+def test_data_loader_able_to_read_nltk(squad_dev_and_vocab_nltk_provider):
+    _, _, train_dataset, dev_dataset, word_vocab, char_vocab = squad_dev_and_vocab_nltk_provider
+    dataloader = DataLoader(train_dataset.transform(SQuADDataLoaderTransformer()), batch_size=1)
 
     assert word_vocab is not None
     assert char_vocab is not None
+
+    for record_index, context, query, context_char, query_char, begin, end in dataloader:
+        assert record_index is not None
+        assert context is not None
+        assert query is not None
+        assert context_char is not None
+        assert query_char is not None
+        assert begin is not None
+        assert end is not None
+        break

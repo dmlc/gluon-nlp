@@ -19,14 +19,17 @@
 
 # pylint: disable=
 """SQuAD data data preprocessing pipeline."""
+import collections
 import contextlib
 import itertools
 import json
 import multiprocessing as mp
 import os
 import pickle
+import re
 import time
 
+import nltk
 import numpy as np
 import spacy
 import tqdm
@@ -35,7 +38,6 @@ from mxnet.gluon.data import Dataset
 import gluonnlp as nlp
 from gluonnlp import data, Vocab
 from gluonnlp.data import SQuAD
-from scripts.question_answering.utils import MapReduce
 
 
 class SQuADDataPipeline:
@@ -45,7 +47,8 @@ class SQuADDataPipeline:
     """
 
     def __init__(self, train_para_limit, train_ques_limit, dev_para_limit, dev_ques_limit,
-                 ans_limit, char_limit, emb_size, data_root_path='./data', save_load_data=False):
+                 ans_limit, char_limit, emb_size, num_workers=None, save_load_data=False,
+                 data_root_path='./data'):
         """Method that creates a new instance. If an example is longer that provided limits it will
         be truncated for the dev set and filtered out for the training set.
 
@@ -64,9 +67,12 @@ class SQuADDataPipeline:
         char_limit : int
             Maximum token (word) length of a paragraph, question or answer
         emb_size : int
-            Embedding size
+            Embedding size of GloVE embedding to use
+        num_workers : int, default None
+            Number of workers to use for multiprocessing. Default uses all available cores
         data_root_path : str
-            Path to store the processed data or load existing processed data
+            Path to store the processed data or load existing processed data, if needed (depends on
+            save_load_data flag)
         save_load_data : bool
             Shall save or load data from the ``data_root_path``
         """
@@ -77,22 +83,22 @@ class SQuADDataPipeline:
         self._ans_limit = ans_limit
         self._char_limit = char_limit
         self._emb_size = emb_size
-        self._data_root_path = data_root_path
+        self._num_workers = num_workers
         self._save_load_data = save_load_data
+        self._data_root_path = data_root_path
 
         self._processed_train_data_file_name = 'train_processed.json'
         self._processed_dev_data_file_name = 'dev_processed.json'
         self._word_vocab_file_name = 'word_vocab.bin'
         self._char_vocab_file_name = 'char_vocab.bin'
 
-    def get_processed_data(self, base_tokenizer=None, squad_data_root=None):
+    def get_processed_data(self, use_spacy=True, squad_data_root=None):
         """Main method to start data processing
 
         Parameters
         ----------
-        base_tokenizer : Callable
-            Tokenizer to split a string into tokens. By default uses Spacy, but can be
-            overridden by a specified `base_tokenizer`
+        use_spacy : bool, default True
+            Shall use Spacy as a tokenizer. If not, uses NLTK
         squad_data_root : str, default None
             Data path to store downloaded original SQuAD data
         Returns
@@ -119,11 +125,13 @@ class SQuADDataPipeline:
         dev_dataset = SQuAD(segment='dev', root=squad_data_root) \
             if squad_data_root else SQuAD(segment='dev')
 
-        with contextlib.closing(mp.Pool()) as pool:
-            train_examples, dev_examples = self._tokenize_data(train_dataset, dev_dataset,
-                                                               base_tokenizer, pool)
-            word_vocab, char_vocab = self._get_vocabs(train_examples, dev_examples, self._emb_size,
-                                                      pool)
+        with contextlib.closing(mp.Pool(processes=self._num_workers)) as pool:
+            train_examples, dev_examples = SQuADDataPipeline._tokenize_data(train_dataset,
+                                                                            dev_dataset,
+                                                                            use_spacy, pool)
+            word_vocab, char_vocab = SQuADDataPipeline._get_vocabs(train_examples, dev_examples,
+                                                                   self._emb_size,
+                                                                   pool)
 
         filter_provider = SQuADDataFilter(self._train_para_limit,
                                           self._train_ques_limit,
@@ -142,17 +150,19 @@ class SQuADDataPipeline:
                                               self._dev_ques_limit,
                                               self._char_limit)
 
-        train_examples, dev_examples = self._featurize_data(train_examples, dev_examples,
-                                                            train_featurizer, dev_featuarizer)
+        train_examples, dev_examples = SQuADDataPipeline._featurize_data(train_examples,
+                                                                         dev_examples,
+                                                                         train_featurizer,
+                                                                         dev_featuarizer)
 
         if self._save_load_data:
             self._save_processed_data(train_examples, dev_examples, word_vocab, char_vocab)
 
         return train_dataset._read_data(), dev_dataset._read_data(), \
-               SQuADQADataset(train_examples), SQuADQADataset(dev_examples), \
-               word_vocab, char_vocab
+               SQuADQADataset(train_examples), SQuADQADataset(dev_examples), word_vocab, char_vocab
 
-    def _tokenize_data(self, train_dataset, dev_dataset, base_tokenizer, pool):
+    @staticmethod
+    def _tokenize_data(train_dataset, dev_dataset, use_spacy, pool):
         """Tokenize incoming paragpraphs and questions in incoming datsets using provided
         tokenizer withing the processes of the provided multiprocessing pool
 
@@ -162,8 +172,8 @@ class SQuADDataPipeline:
             training dataset
         dev_dataset : SQuAD
             Dev dataset
-        base_tokenizer : Callable
-            Tokenizer to use for splitting strings into set of tokens
+        use_spacy : bool
+            Use Spacy as a tokenizer. Otherwise uses NLTK
         pool : Pool
             Multiprocessing pool to use for the tokenization
 
@@ -174,27 +184,26 @@ class SQuADDataPipeline:
         dev_examples : List[dict]
             List of tokenized dev examples
         """
-        tokenizer = SQuADDataTokenizer(base_tokenizer)
+        tokenizer = SQuADDataTokenizer(use_spacy)
 
         tic = time.time()
         print('Train examples [{}] transformation started.'.format(len(train_dataset)))
-        train_examples = list(tqdm.tqdm(
-            pool.imap(tokenizer.tokenize_one_example, train_dataset),
-            total=len(train_dataset)))
+        train_examples = list(tqdm.tqdm(tokenizer.run_async(pool, train_dataset),
+                                        total=len(train_dataset)))
         print('Train examples transformed [{}/{}] in {:.3f} sec'.format(len(train_examples),
                                                                         len(train_dataset),
                                                                         time.time() - tic))
         tic = time.time()
         print('Dev examples [{}] transformation started.'.format(len(dev_dataset)))
-        dev_examples = list(tqdm.tqdm(
-            pool.imap(tokenizer.tokenize_one_example, dev_dataset),
-            total=len(dev_dataset)))
+        dev_examples = list(tqdm.tqdm(tokenizer.run_async(pool, dev_dataset),
+                                      total=len(dev_dataset)))
         print('Dev examples transformed [{}/{}] in {:.3f} sec'.format(len(dev_examples),
                                                                       len(dev_dataset),
                                                                       time.time() - tic))
         return train_examples, dev_examples
 
-    def _featurize_data(self, train_examples, dev_examples, train_featurizer, dev_featuarizer):
+    @staticmethod
+    def _featurize_data(train_examples, dev_examples, train_featurizer, dev_featuarizer):
         """Create features from incoming datasets by replacing tokens with indices.
 
         Parameters
@@ -236,7 +245,8 @@ class SQuADDataPipeline:
                                                                   time.time() - tic))
         return train_ready, dev_ready
 
-    def _get_vocabs(self, train_examples, dev_examples, emb_size, pool):
+    @staticmethod
+    def _get_vocabs(train_examples, dev_examples, emb_size, pool):
         """Create both word-level and character-level vocabularies. Vocabularies are built using
         data from both train and dev datasets.
 
@@ -260,14 +270,28 @@ class SQuADDataPipeline:
         """
         tic = time.time()
         print('Word counters receiving started.')
-        mapper = MapReduce(SQuADDataPipeline._split_into_words, SQuADDataPipeline._count_tokens)
-        word_counts = mapper(itertools.chain(train_examples, dev_examples), pool)
+
+        word_mapper = SQuADAsyncVocabMapper()
+        word_reducer = SQuADAsyncVocabReducer()
+        word_mapped = list(
+            tqdm.tqdm(word_mapper.run_async(itertools.chain(train_examples, dev_examples), pool),
+                      total=len(train_examples) + len(dev_examples)))
+        word_partitioned = tqdm.tqdm(SQuADDataPipeline._partition(itertools.chain(*word_mapped)),
+                                     total=len(word_mapped))
+        word_counts = list(tqdm.tqdm(word_reducer.run_async(word_partitioned, pool),
+                                     total=len(word_partitioned)))
         print('Word counters received in {:.3f} sec'.format(time.time() - tic))
 
         tic = time.time()
         print('Char counters receiving started.')
-        mapper = MapReduce(SQuADDataPipeline._split_into_chars, SQuADDataPipeline._count_tokens)
-        char_counts = mapper(itertools.chain(train_examples, dev_examples), pool)
+        char_mapper = SQuADAsyncVocabMapper(iterate_over_example=True)
+        char_reducer = SQuADAsyncVocabReducer()
+        char_mapped = list(
+            tqdm.tqdm(char_mapper.run_async(itertools.chain(train_examples, dev_examples), pool),
+                      total=len(train_examples) + len(dev_examples)))
+        char_partitioned = SQuADDataPipeline._partition(itertools.chain(*char_mapped))
+        char_counts = list(tqdm.tqdm(char_reducer.run_async(char_partitioned, pool),
+                                     total=len(char_partitioned)))
         print('Char counters received in {:.3f} sec'.format(time.time() - tic))
 
         word_vocab = Vocab({item[0]: item[1] for item in word_counts},
@@ -365,77 +389,47 @@ class SQuADDataPipeline:
                     open(os.path.join(self._data_root_path, self._char_vocab_file_name), 'wb'))
 
     @staticmethod
-    def _split_into_words(example):
-        """Count tokens of context and question in each example. The data is assumed to be tokenized
+    def _partition(mapped_values):
+        """Groups items with same keys into a single partition
 
         Parameters
         ----------
-        example : dict
-            A data entry which has `context_tokens` and `ques_tokens` keys
+        mapped_values : List[Tuple]
+            List of mapped (key, value) tuples
 
         Returns
         -------
-        ret : List[Tuple]
-            List of (token, count) pairs
+        items: List[Tuple]
+            List of partitions, where each partition is (key, List[value])
         """
-        para_counter = data.count_tokens(example['context_tokens'])
-        ques_counter = data.count_tokens(example['ques_tokens'])
-        counter = para_counter + ques_counter
-        return list(counter.items())
+        partitioned_data = collections.defaultdict(list)
 
-    @staticmethod
-    def _split_into_chars(example):
-        """Count characters of context and question in each example. The data is assumed to be
-        tokenized before this usage
+        for key, value in mapped_values:
+            partitioned_data[key].append(value)
 
-        Parameters
-        ----------
-        example : dict
-            A data entry which has `context_tokens` and `ques_tokens` keys
-
-        Returns
-        -------
-        ret : List[Tuple]
-            List of (character, count) pairs
-        """
-        para_counter = data.count_tokens([c for tkn in example['context_tokens'] for c in tkn])
-        ques_counter = data.count_tokens([c for tkn in example['ques_tokens'] for c in tkn])
-        counter = para_counter + ques_counter
-        return list(counter.items())
-
-    @staticmethod
-    def _count_tokens(item):
-        """Sums up number of times a token was used
-
-        Parameters
-        ----------
-        item : Tuple
-            A tuple of (token, counts) format
-
-        Returns
-        -------
-        ret : Tuple
-            A tuple of (token, sum_of_counts)
-
-        """
-        token, counts = item
-        return token, sum(counts)
+        return partitioned_data.items()
 
 
 class SQuADDataTokenizer:
     """SQuAD data tokenizer, that encapsulate the splitting logic of each entry of SQuAD dataset"""
     tokenizer = spacy.blank('en')
 
-    def __init__(self, base_tokenizer=None):
+    def __init__(self, use_spacy=True):
         """Init new SQuADDataTokenizer object
-
         Parameters
         ----------
-        base_tokenizer : Callable, default None
-            An actual tokenizer to be used to get list of tokens from strings
+        use_spacy : bool, default True
+            Use Spacy as base tokenizer. Otherwise uses NLTK with some cleansing
         """
-        self._base_tokenizer = base_tokenizer if base_tokenizer is not None \
-            else SQuADDataTokenizer._word_tokenize
+        # self._base_tokenizer = base_tokenizer if base_tokenizer is not None \
+        #     else SQuADDataTokenizer._word_tokenize
+        self._use_spacy = use_spacy
+
+    def run_async(self, pool, dataset):
+        return pool.imap(self, dataset)
+
+    def __call__(self, example):
+        return self.tokenize_one_example(example)
 
     def tokenize_one_example(self, example):
         """Tokenize a single example
@@ -455,12 +449,14 @@ class SQuADDataTokenizer:
         index, q_id, question, context, answer_list, answer_start = example
 
         context = context.replace('\'\'', '\" ').replace(r'``', '\" ')
-        context_tokens = self._base_tokenizer(context)
+        context_tokens = SQuADDataTokenizer._word_tokenize_spacy(context) if self._use_spacy else \
+                         SQuADDataTokenizer._word_tokenize_nltk(context)
         context_chars = [list(token) for token in context_tokens]
         spans = SQuADDataTokenizer._get_token_spans(context, context_tokens)
 
         ques = question.replace('\'\'', '\" ').replace('``', '\" ')
-        ques_tokens = self._base_tokenizer(ques)
+        ques_tokens = SQuADDataTokenizer._word_tokenize_spacy(ques) if self._use_spacy else \
+                      SQuADDataTokenizer._word_tokenize_nltk(ques)
         ques_chars = [list(token) for token in ques_tokens]
 
         y1s, y2s = [], []
@@ -483,7 +479,7 @@ class SQuADDataTokenizer:
         return result
 
     @staticmethod
-    def _word_tokenize(sent):
+    def _word_tokenize_spacy(sent):
         """Default tokenization method that uses Spacy. Called only if not overridden by providing
         base_tokenizer to SQuADDataTokenizer.__init__
 
@@ -499,6 +495,34 @@ class SQuADDataTokenizer:
         """
         doc = SQuADDataTokenizer.tokenizer(sent)
         return [token.text for token in doc]
+
+    @staticmethod
+    def _word_tokenize_nltk(sent):
+        """Tokenization method that uses NLTK.
+
+        Parameters
+        ----------
+        sent : str
+            A text to tokenize
+
+        Returns
+        -------
+        tokens : List[str]
+            List of tokens
+        """
+        tokens = []
+        splitters = ('-', '\u2212', '\u2014', '\u2013', '/', '~', '"', '\'', '\u201C',
+                     '\u2019', '\u201D', '\u2018', '\u00B0')
+
+        sample = sent.replace('\n', ' ').replace(u'\u000A', '').replace(u'\u00A0', '')
+        temp_tokens = [token.replace('\'\'', '"').replace('``', '"') for token in
+                       nltk.word_tokenize(sample)]
+
+        for token in temp_tokens:
+            tokens.extend(re.split('([{}])'.format(''.join(splitters)), token))
+
+        tokens = [token for token in tokens if len(token) > 0]
+        return tokens
 
     @staticmethod
     def _get_token_spans(text, tokens):
@@ -566,6 +590,95 @@ class SQuADDataFilter:
         return len(example['context_tokens']) <= self._para_limit and \
                len(example['ques_tokens']) <= self._ques_limit and \
                (example['y2s'][0] - example['y1s'][0]) <= self._ans_limit
+
+
+class SQuADAsyncVocabMapper:
+    """A multiprocessing implementation of a Mapper for tokens counting"""
+
+    def __init__(self, iterate_over_example=False):
+        """Init MapReduce object
+
+        Parameters
+        ----------
+        iterate_over_example : bool, default False
+            Should use examples as is, or iterate over its content
+        """
+        self._iterate_over_example = iterate_over_example
+
+    def run_async(self, examples, pool):
+        """Run async processing over examples
+
+        Parameters
+        ----------
+        examples : List[dict]
+            List of dictionaries with context_tokens and ques_tokens keys
+        pool : Pool
+            Multiprocessing pool to use
+
+        Returns
+        -------
+        ret : List[Tuple]
+            List of tuples of tokens and counts: (str, int)
+        """
+        return pool.imap(self, examples)
+
+    def __call__(self, example):
+        """Maps examples into distinct tokens
+
+        Parameters
+        ----------
+        example : dict
+            Example to process with context_tokens and ques_tokens keys
+
+        Returns
+        -------
+        mapped_values : List[Tuple]
+            Result of mapping process. Each tuple of (token, count) format
+        """
+        para_counter = data.count_tokens(example['context_tokens'] if not self._iterate_over_example
+                                         else [c for tkn in example['context_tokens'] for c in tkn])
+        ques_counter = data.count_tokens(example['ques_tokens'] if not self._iterate_over_example
+                                         else [c for tkn in example['ques_tokens'] for c in tkn])
+        counter = para_counter + ques_counter
+        return list(counter.items())
+
+
+class SQuADAsyncVocabReducer:
+    """A multiprocessing implementation of a Reducing for tokens counting"""
+
+    def run_async(self, items, pool):
+        """Run async processing over examples
+
+        Parameters
+        ----------
+        items : List[Tuple]
+            List of tuples of (token, count) structure
+        pool : Pool
+            Multiprocessing pool to use
+
+        Returns
+        -------
+        ret : List[Tuple]
+            List of tuples of tokens and counts: (str, int)
+        """
+        return pool.imap(self, items)
+
+    def __call__(self, item):
+        """Sums up number of times a token was used
+
+        Parameters
+        ----------
+        item : Tuple
+            A tuple of (token, counts) format
+
+        Returns
+        -------
+        ret : Tuple
+            A tuple of (token, sum_of_counts)
+
+        """
+        token, counts = item
+        return token, sum(counts)
 
 
 class SQuADDataFeaturizer:
@@ -699,7 +812,7 @@ class SQuADQADataset(Dataset):
     to fetch a record by question id for the evaluation"""
 
     def __init__(self, records):
-        super().__init__()
+        super(SQuADQADataset, self).__init__()
         self._data = records
         self._record_idx_to_record = {}
 
@@ -764,10 +877,6 @@ class SQuADQADataset(Dataset):
 class SQuADDataLoaderTransformer:
     """Thin wrapper on SQuADQADataset that removed non-numeric values from the record. The output of
     that transformer can be provided to a DataLoader"""
-
-    def __init__(self):
-        """Init SQuADDataLoaderTransformer object"""
-        pass
 
     def __call__(self, q_id, record_idx, ctx_idxs, ques_idxs, ctx_chars_idxs, ques_char_idxs,
                  start, end, context, spans):

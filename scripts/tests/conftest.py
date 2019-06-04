@@ -29,7 +29,14 @@ from ..question_answering.data_pipeline import SQuADDataPipeline
 # Datasets
 ###############################################################################
 @pytest.fixture(scope='session')
-def squad_dev_and_vocab_provider():
+def squad_dev_and_vocab_spacy_provider():
     path = os.path.join('tests', 'data', 'squad')
     pipeline = SQuADDataPipeline(400, 50, 1000, 100, 30, 16, 300)
     return pipeline.get_processed_data(squad_data_root=path)
+
+
+@pytest.fixture(scope='session')
+def squad_dev_and_vocab_nltk_provider():
+    path = os.path.join('tests', 'data', 'squad')
+    pipeline = SQuADDataPipeline(400, 50, 1000, 100, 30, 16, 300)
+    return pipeline.get_processed_data(use_spacy=False, squad_data_root=path)
