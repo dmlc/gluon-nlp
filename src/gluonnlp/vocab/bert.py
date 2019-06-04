@@ -110,14 +110,14 @@ class BERTVocab(Vocab):
         A list of reserved tokens that will always be indexed.
     token_to_idx : dict mapping str to int
         A dict mapping each token to its index integer.
-    unknown_token : hashable object or None
+    unknown_token : hashable object or None, default '[UNK]'
         The representation for any unknown token. In other words, any unknown token will be indexed
         as the same representation.
-    padding_token : hashable object or None
+    padding_token : hashable object or None, default '[PAD]'
         The representation for padding token.
-    bos_token : hashable object or None
+    bos_token : hashable object or None, default None
         The representation for beginning-of-sentence token.
-    eos_token : hashable object or None
+    eos_token : hashable object or None, default None
         The representation for end-of-sentence token.
     mask_token : hashable object or None, default '[MASK]'
         The representation for the special token of mask token for BERT.
