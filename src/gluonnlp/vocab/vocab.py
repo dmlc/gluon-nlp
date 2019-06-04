@@ -149,11 +149,11 @@ class Vocab(object):
     With the `identifiers_to_tokens` argument the `Vocab` object can be
     configured to expose specified tokens as attributes.
 
-    >>> id2tok = {'special_token': '<special>'}
+    >>> id2tok = {'special_token': 'hi'}
     >>> my_vocab2 = gluonnlp.Vocab(counter, identifiers_to_tokens=id2tok)
     >>> # <special> is exposed as my_vocab2.special_token
     >>> print(my_vocab2.special_token)
-    <special>
+    hi
 
     With the `token_to_idx` argument the order of the `Vocab`'s index can be
     adapted. It is not necessary to specify the complete order but sufficient
@@ -162,10 +162,10 @@ class Vocab(object):
     `unknown_token`. With the `token_to_idx` argument, the default can be
     overwritten. Here we assign index `3` to the `unknown_token`.
 
-    >>> tok2idx = {'unknown_token': 3}
+    >>> tok2idx = {'<unk>': 3}
     >>> my_vocab3 = gluonnlp.Vocab(counter, token_to_idx=tok2idx)
     >>> my_vocab3.unknown_token
-    <unk>
+    '<unk>'
     >>> my_vocab3[my_vocab3.unknown_token]
     3
     >>> my_vocab[my_vocab.unknown_token]
