@@ -229,7 +229,7 @@ if __name__ == '__main__':
           [mx.gpu(int(x)) for x in args.gpus.split(',')]
 
     model, nsp_loss, mlm_loss, vocab = get_model_loss(ctx, args.model, args.pretrained,
-                                                      args.dataset_name, args.dtype,
+                                                      args.dataset_name, None, args.dtype,
                                                       ckpt_dir=args.ckpt_dir,
                                                       start_step=args.start_step)
 

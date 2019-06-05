@@ -47,7 +47,6 @@ __all__ = [
     'DataStream', 'SimpleDataStream', 'DatasetStream', 'SimpleDatasetStream',
     'PrefetchingStream']
 
-
 class DataStream(object):
     """Abstract Data Stream Interface.
 
@@ -183,8 +182,11 @@ class SimpleDatasetStream(DatasetStream):
         if not isinstance(file_pattern, str):
             raise TypeError('file_pattern must be str, but got %s'%type(file_pattern))
         self._dataset = dataset
-        file_pattern = os.path.expanduser(file_pattern)
-        self._files = sorted(glob.glob(file_pattern))
+        self._files = []
+        for pattern in file_pattern.split(','):
+            self._files.extend(glob.glob(os.path.expanduser(pattern.strip())))
+        self._files = sorted(self._files)
+
         if len(self._files) == 0:
             raise ValueError('Cannot find any file with path "%s"'%file_pattern)
         self._file_sampler = self._get_sampler(file_sampler)

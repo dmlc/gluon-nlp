@@ -481,3 +481,10 @@ def test_weight_drop():
         y.backward()
         for name, param in shared_net.collect_params().items():
             assert not mx.test_utils.almost_equal(grads[name].asnumpy(), param.grad().asnumpy())
+
+def test_gelu():
+    x = mx.random.uniform(shape=(3, 4, 5))
+    net = nlp.model.GELU()
+    y = net(x)
+    assert y.shape == x.shape
+    y.wait_to_read()

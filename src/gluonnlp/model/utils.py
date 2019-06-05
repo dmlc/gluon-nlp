@@ -265,7 +265,8 @@ def _get_rnn_layer(mode, num_layers, input_size, hidden_size, dropout, weight_dr
 def _load_vocab(dataset_name, vocab, root, cls=None):
     if dataset_name:
         if vocab is not None:
-            warnings.warn('Both dataset_name and vocab are specified. Loading vocab for dataset. '
+            warnings.warn('Both dataset_name and vocab are specified. '
+                          'Loading vocab based on dataset_name. '
                           'Input "vocab" argument will be ignored.')
         vocab = _load_pretrained_vocab(dataset_name, root, cls)
     else:

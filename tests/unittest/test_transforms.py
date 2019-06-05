@@ -302,4 +302,3 @@ def test_bert_sentencepiece_sentences_transform():
     assert np.asscalar(processed[1]) == len(tokens) + 2
     # segment id
     assert all(processed[2] == np.array([0] * max_len, dtype='int32'))
-

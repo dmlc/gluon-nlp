@@ -24,6 +24,7 @@ import io
 import os
 import glob
 import collections
+import warnings
 import random
 import time
 from multiprocessing import Pool
@@ -135,11 +136,40 @@ def tokenize_lines_fn(x):
                 results.append(tokens)
     return results
 
-def create_training_instances(input_files, tokenizer,
-                              max_seq_length, short_seq_prob,
-                              masked_lm_prob, max_predictions_per_seq, vocab,
-                              dupe_factor=1, nworker=1,
-                              num_outputs=1, output_dir=None, pool=None):
+def convert_to_npz(instances, max_seq_length):
+    """Create masked language model and next sentence prediction samples as numpy arrays."""
+    input_ids = []
+    segment_ids = []
+    masked_lm_positions = []
+    masked_lm_ids = []
+    masked_lm_weights = []
+    next_sentence_labels = []
+    valid_lengths = []
+
+    for inst_index, instance in enumerate(instances):
+        features = transform(instance, max_seq_length)
+        input_id = features['input_ids']
+        segment_id = features['segment_ids']
+        masked_lm_position = features['masked_lm_positions']
+        masked_lm_id = features['masked_lm_ids']
+        masked_lm_weight = features['masked_lm_weights']
+        next_sentence_label = features['next_sentence_labels'][0]
+        valid_length = features['valid_lengths'][0]
+
+        input_ids.append(np.ascontiguousarray(input_id, dtype='int32'))
+        segment_ids.append(np.ascontiguousarray(segment_id, dtype='int32'))
+        masked_lm_positions.append(np.ascontiguousarray(masked_lm_position, dtype='int32'))
+        masked_lm_ids.append(np.ascontiguousarray(masked_lm_id, dtype='int32'))
+        masked_lm_weights.append(np.ascontiguousarray(masked_lm_weight, dtype='float32'))
+        next_sentence_labels.append(next_sentence_label)
+        valid_lengths.append(valid_length)
+        # debugging information
+        if inst_index < 1:
+            print_example(instance, features)
+    return input_ids, masked_lm_ids, masked_lm_positions, masked_lm_weights,\
+           next_sentence_labels, segment_ids, valid_lengths
+
+def create_training_instances(x):
     """Create `TrainingInstance`s from raw text.
 
     The expected input file format is the following:
@@ -150,12 +180,12 @@ def create_training_instances(input_files, tokenizer,
     (2) Blank lines between documents. Document boundaries are needed so
     that the "next sentence prediction" task doesn't span between documents.
 
+    The function expect arguments packed in a tuple as described below.
+
     Parameters
     ----------
     input_files : list of str
         List of paths to input text files.
-    output_file : str or None
-        Path to the output file. If None, the result is not serialized.
     tokenizer : BERTTokenizer
         The BERT tokenizer
     max_seq_length : int
@@ -170,118 +200,106 @@ def create_training_instances(input_files, tokenizer,
         The hard limit of the number of predictions for masked words
     vocab : BERTVocab
         The BERTVocab
+    nworker : int
+        The number of processes to help processing texts in parallel
+    worker_pool : multiprocessing.Pool
+        Must be provided if nworker > 1. The caller is responsible for the destruction of
+        the worker pool.
+    output_file : str or None
+        Path to the output file. If None, the result is not serialized. If provided,
+        results are  stored in the order of (input_ids, segment_ids, masked_lm_positions,
+        masked_lm_ids, masked_lm_weights, next_sentence_labels, valid_lengths).
 
     Returns
     -------
     A tuple of np.ndarray : input_ids, masked_lm_ids, masked_lm_positions, masked_lm_weights
                             next_sentence_labels, segment_ids, valid_lengths
     """
+    (input_files, tokenizer, max_seq_length, short_seq_prob,
+     masked_lm_prob, max_predictions_per_seq, vocab,
+     dupe_factor, nworker, worker_pool, output_file) = x
     time_start = time.time()
     if nworker > 1:
-        pool = Pool(nworker)
+        assert worker_pool is not None
 
-    # calculate the number of inputs per output
-    num_inputs = len(input_files)
-    num_inputs_per_output = (num_inputs + num_outputs - 1) // num_outputs
+    all_documents = [[]]
 
-    for output_idx in range(num_outputs):
-        input_start = output_idx * num_inputs_per_output
-        input_end = min((output_idx + 1) * num_inputs_per_output, len(input_files))
+    for input_file in input_files:
+        with io.open(input_file, 'r', encoding='utf-8') as reader:
+            lines = reader.readlines()
+            num_lines = len(lines)
+            num_lines_per_worker = (num_lines + nworker - 1) // nworker
+            process_args = []
 
-        all_documents = [[]]
+            # tokenize in parallel
+            for worker_idx in range(nworker):
+                start = worker_idx * num_lines_per_worker
+                end = min((worker_idx + 1) * num_lines_per_worker, num_lines)
+                process_args.append((lines[start:end], tokenizer, vocab))
+            if worker_pool:
+                tokenized_results = worker_pool.map(tokenize_lines_fn, process_args)
+            else:
+                tokenized_results = [tokenize_lines_fn(process_args[0])]
 
-        for input_file in input_files[input_start:input_end]:
-            with io.open(input_file, 'r', encoding='utf-8') as reader:
-                lines = reader.readlines()
-                num_lines = len(lines)
-                num_lines_per_worker = (num_lines + nworker - 1) // nworker
-                process_args = []
+            for tokenized_result in tokenized_results:
+                for line in tokenized_result:
+                    if not line:
+                        if all_documents[-1]:
+                            all_documents.append([])
+                    else:
+                        all_documents[-1].append(line)
 
-                # tokenize in parallel
-                for worker_idx in range(nworker):
-                    start = worker_idx * num_lines_per_worker
-                    end = min((worker_idx + 1) * num_lines_per_worker, num_lines)
-                    process_args.append((lines[start:end], tokenizer, vocab))
+    # remove the last empty document if any
+    if not all_documents[-1]:
+        all_documents = all_documents[:-1]
 
-                if nworker > 1:
-                    tokenized_results = pool.map(tokenize_lines_fn, process_args)
-                else:
-                    tokenized_results = [tokenize_lines_fn(process_args[0])]
-
-                for tokenized_result in tokenized_results:
-                    for line in tokenized_result:
-                        if not line:
-                            if all_documents[-1]:
-                                all_documents.append([])
-                        else:
-                            all_documents[-1].append(line)
-
-        # remove the last empty document if any
-        if not all_documents[-1]:
-            all_documents = all_documents[:-1]
-
-        instances = []
+    # generate training instances
+    instances = []
+    if worker_pool:
+        process_args = []
+        for document_index in range(len(all_documents)):
+            process_args.append((all_documents, document_index, max_seq_length, short_seq_prob,
+                                 masked_lm_prob, max_predictions_per_seq, vocab))
+        for _ in range(dupe_factor):
+            instances_results = worker_pool.map(create_instances_from_document, process_args)
+            for instances_result in instances_results:
+                instances.extend(instances_result)
+        npz_instances = worker_pool.apply(convert_to_npz, (instances, max_seq_length))
+    else:
         for _ in range(dupe_factor):
             for document_index in range(len(all_documents)):
                 instances.extend(
                     create_instances_from_document(
-                        all_documents, document_index, max_seq_length, short_seq_prob,
-                        masked_lm_prob, max_predictions_per_seq, vocab))
+                        (all_documents, document_index, max_seq_length, short_seq_prob,
+                         masked_lm_prob, max_predictions_per_seq, vocab)))
+        npz_instances = convert_to_npz(instances, max_seq_length)
 
-        input_ids = []
-        segment_ids = []
-        masked_lm_positions = []
-        masked_lm_ids = []
-        masked_lm_weights = []
-        next_sentence_labels = []
-        valid_lengths = []
+    (input_ids, masked_lm_ids, masked_lm_positions, masked_lm_weights,
+     next_sentence_labels, segment_ids, valid_lengths) = npz_instances
 
-        for inst_index, instance in enumerate(instances):
-            feature = transform(instance, max_seq_length)
-            input_ids.append(
-                np.ascontiguousarray(feature['input_ids'], dtype='int32'))
-            segment_ids.append(
-                np.ascontiguousarray(feature['segment_ids'], dtype='int32'))
-            masked_lm_positions.append(
-                np.ascontiguousarray(feature['masked_lm_positions'], dtype='int32'))
-            masked_lm_ids.append(np.ascontiguousarray(feature['masked_lm_ids'], dtype='int32'))
-            masked_lm_weights.append(
-                np.ascontiguousarray(feature['masked_lm_weights'], dtype='float32'))
-            next_sentence_labels.append(feature['next_sentence_labels'][0])
-            valid_lengths.append(feature['valid_lengths'][0])
-            if inst_index < 1:
-                print_example(instance, feature)
-
-        # write output to files. Used when pre-generating files
-        if output_dir:
-            part_name = 'part-{}.{}'.format(str(output_idx).zfill(3), 'npz')
-            output_file = os.path.join(output_dir, part_name)
-            features = (input_ids, segment_ids, masked_lm_positions, masked_lm_ids,
-                        masked_lm_weights, next_sentence_labels, valid_lengths)
-            logging.debug('*** Writing to output file %s ***', output_file)
-            write_to_files_np(features, tokenizer, args.max_seq_length,
-                              args.max_predictions_per_seq, [output_file])
-        else:
-            # return feature vectors. Used when generating samples online
-            features = (input_ids, masked_lm_ids, masked_lm_positions, masked_lm_weights,
-                        next_sentence_labels, segment_ids, valid_lengths)
-    if nworker > 1:
-        pool.close()
-        pool.join()
+    # write output to files. Used when pre-generating files
+    if output_file:
+        features = (input_ids, segment_ids, masked_lm_positions, masked_lm_ids,
+                    masked_lm_weights, next_sentence_labels, valid_lengths)
+        logging.debug('*** Writing to output file %s ***', output_file)
+        write_to_files_np(features, tokenizer, args.max_seq_length,
+                          args.max_predictions_per_seq, [output_file])
+        features = None
+    else:
+        features = (input_ids, masked_lm_ids, masked_lm_positions, masked_lm_weights,
+                    next_sentence_labels, segment_ids, valid_lengths)
     time_end = time.time()
     logging.debug('Process %d files took %.1f s', len(input_files), time_end - time_start)
     return features
 
-
-def create_instances_from_document(
-        all_documents, document_index, max_seq_length, short_seq_prob,
-        masked_lm_prob, max_predictions_per_seq, vocab):
+def create_instances_from_document(x):
     """Creates `TrainingInstance`s for a single document."""
+    (all_documents, document_index, max_seq_length, short_seq_prob,
+     masked_lm_prob, max_predictions_per_seq, vocab) = x
     document = all_documents[document_index]
     _MASK_TOKEN = vocab[vocab.mask_token]
     _CLS_TOKEN = vocab[vocab.cls_token]
     _SEP_TOKEN = vocab[vocab.sep_token]
-
 
     # Account for [CLS], [SEP], [SEP]
     max_num_tokens = max_seq_length - 3
@@ -475,51 +493,86 @@ def main():
 
     # create output dir
     output_dir = os.path.expanduser(args.output_dir)
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
+    nlp.utils.mkdir(output_dir)
 
-    # vocabulary
-    logging.info('loading vocab file from dataset: %s', args.vocab)
-    vocab = nlp.data.utils._load_pretrained_vocab(args.vocab, root=output_dir,
-                                                  cls=nlp.vocab.BERTVocab)
-    tokenizer = BERTTokenizer(vocab=vocab, lower='uncased' in args.vocab)
+    # vocabulary and tokenizer
+    if args.sentencepiece:
+        logging.info('loading vocab file from sentence piece model: %s', args.sentencepiece)
+        if args.dataset_name:
+            warnings.warn('Both --dataset_name and --sentencepiece are provided. '
+                          'The vocabulary will be loaded based on --sentencepiece.')
+        vocab = nlp.vocab.BERTVocab.from_sentencepiece(args.sentencepiece)
+        tokenizer = nlp.data.BERTSPTokenizer(args.sentencepiece, vocab, num_best=args.sp_nbest,
+                                             alpha=args.sp_alpha, lower=not args.cased)
+    else:
+        logging.info('loading vocab file from pre-defined dataset: %s', args.dataset_name)
+        vocab = nlp.data.utils._load_pretrained_vocab(args.dataset_name, root=output_dir,
+                                                      cls=nlp.vocab.BERTVocab)
+        tokenizer = BERTTokenizer(vocab=vocab, lower='uncased' in args.dataset_name)
 
     # count the number of input files
     input_files = []
     for input_pattern in args.input_file.split(','):
         input_files.extend(glob.glob(os.path.expanduser(input_pattern)))
-    logging.info('*** Reading from %d input files ***', len(input_files))
     for input_file in input_files:
         logging.info('\t%s', input_file)
+    num_inputs = len(input_files)
     num_outputs = min(args.num_outputs, len(input_files))
+    logging.info('*** Reading from %d input files ***', num_inputs)
 
-    create_training_instances(input_files, tokenizer, args.max_seq_length,
-                              args.short_seq_prob, args.masked_lm_prob,
-                              args.max_predictions_per_seq, vocab,
-                              args.dupe_factor, args.num_workers,
-                              num_outputs=num_outputs, output_dir=output_dir)
+    # calculate the number of splits
+    file_splits = []
+    split_size = (num_inputs + num_outputs - 1) // num_outputs
+    for i in range(num_outputs):
+        split_start = i * split_size
+        split_end = min(num_inputs, (i + 1) * split_size)
+        file_splits.append(input_files[split_start:split_end])
+
+    # prepare workload
+    count = 0
+    process_args = []
+
+    for i, file_split in enumerate(file_splits):
+        output_file = os.path.join(output_dir, 'part-{}.npz'.format(str(i).zfill(3)))
+        count += len(file_split)
+        process_args.append((file_split, tokenizer, args.max_seq_length, args.short_seq_prob,
+                             args.masked_lm_prob, args.max_predictions_per_seq,
+                             vocab, args.dupe_factor, 1, None, output_file))
+
+    # sanity check
+    assert count == len(input_files)
+
+    # dispatch to workers
+    nworker = args.num_workers
+    if nworker > 1:
+        pool = Pool(nworker)
+        pool.map(create_training_instances, process_args)
+    else:
+        for process_arg in process_args:
+            create_training_instances(process_arg)
 
     time_end = time.time()
     logging.info('Time cost=%.1f', time_end - time_start)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
-        description='Pre-training data generator for BERT')
+        description='Pre-training data generator for BERT',
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     parser.add_argument(
         '--input_file',
         type=str,
-        default=None,
+        required=True,
         help='Input files, separated by comma. For example, "~/data/*.txt"')
 
     parser.add_argument(
         '--output_dir',
         type=str,
-        default=None,
+        required=True,
         help='Output directory.')
 
     parser.add_argument(
-        '--vocab',
+        '--dataset_name',
         type=str,
         default=None,
         choices=['book_corpus_wiki_en_uncased', 'book_corpus_wiki_en_cased',
@@ -528,13 +581,31 @@ if __name__ == '__main__':
              '"book_corpus_wiki_en_uncased"')
 
     parser.add_argument(
-        '--max_seq_length', type=int, default=128, help='Maximum sequence length. Default is 128.')
+        '--sentencepiece',
+        type=str,
+        default=None,
+        help='Path to the sentencepiece .model file for both tokenization and vocab.')
+
+    parser.add_argument(
+        '--cased',
+        action='store_true',
+        help='Effective only if --sentencepiece is set')
+
+    parser.add_argument('--sp_nbest', type=int, default=0,
+                        help='Number of best candidates for sampling subwords with sentencepiece. ')
+
+    parser.add_argument('--sp_alpha', type=float, default=1.0,
+                        help='Inverse temperature for probability rescaling for sentencepiece '
+                             'unigram sampling')
+
+    parser.add_argument(
+        '--max_seq_length', type=int, default=512, help='Maximum sequence length.')
 
     parser.add_argument(
         '--max_predictions_per_seq',
         type=int,
-        default=20,
-        help='Maximum number of masked LM predictions per sequence. Default is 20.')
+        default=80,
+        help='Maximum number of masked LM predictions per sequence. ')
 
     parser.add_argument(
         '--random_seed',
@@ -545,21 +616,21 @@ if __name__ == '__main__':
     parser.add_argument(
         '--dupe_factor',
         type=int,
-        default=10,
-        help='Number of times to duplicate the input data (with different masks). Default is 10.')
+        default=1,
+        help='Number of times to duplicate the input data (with different masks).')
 
     parser.add_argument(
         '--masked_lm_prob',
         type=float,
         default=0.15,
-        help='Masked LM probability. Default is 0.15')
+        help='Masked LM probability.')
 
     parser.add_argument(
         '--short_seq_prob',
         type=float,
         default=0.1,
         help='Probability of creating sequences which are shorter than the '
-        'maximum length. Default is 0.1')
+        'maximum length. ')
 
     parser.add_argument(
         '--verbose',
@@ -569,16 +640,14 @@ if __name__ == '__main__':
     parser.add_argument(
         '--num_workers',
         type=int,
-        default=1,
-        help='Number of workers for parallel processing, where each generates an output file.'
-             ' Default is 1')
+        default=8,
+        help='Number of workers for parallel processing, where each generates an output file.')
 
     parser.add_argument(
         '--num_outputs',
         type=int,
         default=1,
-        help='Number of desired output files, where each is processed independently by a worker.'
-             'Default is 1')
+        help='Number of desired output files, where each is processed independently by a worker.')
 
     args = parser.parse_args()
     logging.getLogger().setLevel(logging.DEBUG if args.verbose else logging.INFO)

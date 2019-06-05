@@ -177,13 +177,16 @@ The scripts for masked language modeling and and next sentence prediction are al
 Training Sample Generation
 ++++++++++++++++++++++++++
 
-Data generation for pre-training on sample texts:
+The `create_pretraining_data.py` file generates pre-training data from raw text documents, stored as npz files. They are also required if you want to evaluate your pre-trained BERT model during pre-training.
 
 .. code-block:: console
 
-    $ python create_pretraining_data.py --input_file sample_text.txt --output_dir out --vocab book_corpus_wiki_en_uncased --max_seq_length 128 --max_predictions_per_seq 20 --dupe_factor 5 --masked_lm_prob 0.15 --short_seq_prob 0.1 --verbose
+    $ # create pre-training data using the vocabulary released by Google
+    $ python create_pretraining_data.py --input_file sample_text.txt --output_dir out --dataset_name book_corpus_wiki_en_uncased --max_seq_length 512 --max_predictions_per_seq 80 --dupe_factor 1 --masked_lm_prob 0.15 --short_seq_prob 0.1 --num_workers 1 --verbose
+    $ # create pre-training data using a sentencepiece vocabulary
+    $ python create_pretraining_data.py --input_file sample_text.txt --output_dir out --max_seq_length 512 --max_predictions_per_seq 80 --dupe_factor 1 --masked_lm_prob 0.15 --short_seq_prob 0.1 --num_workers 1 --sentencepiece /path/to/sentencepiece.model --verbose
 
-The data generation script takes a file path as the input (could be one or more files by wildcard). Each file contains one or more documents separated by empty lines, and each document contains one line per sentence. You can perform sentence segmentation with an off-the-shelf NLP toolkit such as NLTK.
+The data generation script takes a file path as the input (could be one or more files by wildcard). Each file contains one or more documents separated by empty lines, and each document contains one line per sentence. You can perform sentence segmentation with an off-the-shelf NLP toolkit such as NLTK. See "sample_text.txt" as an example input file.
 
 Run Pre-training
 ++++++++++++++++
@@ -207,20 +210,18 @@ The BERT base model produced by gluonnlp pre-training script (`log <https://raw.
 Run Pre-training with Horovod
 +++++++++++++++++++++++++++++
 
-Alternatively, you can install horovod for scalable multi-gpu multi-machine training. Our script assumes the master version of Horovod (i.e. horovod > v0.16.1).
+Alternatively, you can install horovod for scalable multi-gpu multi-machine training.
 
 To install horovod, you need:
 
 - `NCCL <https://developer.nvidia.com/nccl>`__, and
 - `OpenMPI <https://www.open-mpi.org/software/ompi/v4.0/>`__
 
-Then you can install the master version of horovod:
+Then you can install horovod v0.16.2 via the following command:
 
 .. code-block:: console
 
-    $ git clone --recursive https://github.com/uber/horovod horovod;
-    $ cd horovd;
-    $ HOROVOD_GPU_ALLREDUCE=NCCL pip install . --user --no-cache-dir
+    $ HOROVOD_WITH_MXNET=1 HOROVOD_GPU_ALLREDUCE=NCCL pip install horovod --user --no-cache-dir
 
 Verify Horovod installation:
 
@@ -228,12 +229,17 @@ Verify Horovod installation:
 
     $ horovodrun -np 1 -H localhost:1 python run_pretraining_hvd.py --batch_size 32 --lr 2e-5 --data 'out/*.npz' --warmup_ratio 0.5 --num_steps 20 --pretrained --log_interval=2 --data_eval 'out/*.npz' --batch_size_eval 8 --ckpt_dir ckpt --verbose
 
-Run pre-training with horovod:
+Run pre-training with horovod on a single node with multiple GPUs:
 
 .. code-block:: console
 
     $ horovodrun -np 8 -H localhost:8 python run_pretraining_hvd.py --data='/path/to/generated/samples/train/*.npz' --num_steps 1000000 --log_interval 250 --lr 1e-4 --batch_size 4096 --accumulate 4 --warmup_ratio 0.01 --ckpt_dir ./ckpt --ckpt_interval 25000 --num_buckets 10 --dtype float16 --use_avg_len --verbose
-    $ mpirun -np 16 -H node0:8,node1:8 -mca pml ob1 -mca btl ^openib -mca btl_tcp_if_exclude docker0,lo --map-by ppr:4:socket -x NCCL_MIN_NRINGS=8 -x NCCL_DEBUG=INFO python run_pretraining_hvd.py --batch_size 8192 --accumulate 1 --lr 1e-4 --data "/path/to/generated/samples/train/*.npz" --warmup_ratio 0.01 --num_steps 1000000 --log_interval=250 --ckpt_dir './ckpt' --ckpt_interval 25000 --num_buckets 10 --dtype float16 --use_avg_len --verbose
+
+Run pre-training with horovod on node0 and node1, with 8 GPUs each:
+
+.. code-block:: console
+
+    $ mpirun -np 16 -H node0:8,node1:8 -mca pml ob1 -mca btl ^openib -mca btl_tcp_if_exclude docker0,lo --map-by ppr:4:socket -x NCCL_MIN_NRINGS=8 -x NCCL_DEBUG=WARNING -x HOROVOD_HIERARCHICAL_ALLREDUCE=1 --tag-output python run_pretraining_hvd.py --batch_size 8192 --accumulate 1 --lr 1e-4 --data "/path/to/generated/samples/train/*.npz" --warmup_ratio 0.01 --num_steps 1000000 --log_interval=250 --ckpt_dir './ckpt' --ckpt_interval 25000 --num_buckets 10 --dtype float16 --use_avg_len --verbose
 
 BERT for Named Entity Recognition
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
