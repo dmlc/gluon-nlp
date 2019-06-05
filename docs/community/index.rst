@@ -7,7 +7,7 @@ Community
    :link: https://www.apache.org/foundation/policies/conduct
 
    Welcome to GluonNLP community. We strive to foster a collaborative and welcoming community. We
-   expect all members to follow the `code of conduct <https://www.apache.org/foundation/policies/conduct>`__.
+   expect all members to follow the `code of conduct <https://github.com/dmlc/gluon-nlp/tree/master/CODE_OF_CONDUCT.md>`__.
 
 
 .. container:: cards

@@ -303,4 +303,3 @@ def test_bert_sentencepiece_sentences_transform():
     # segment id
     assert all(processed[2] == np.array([0] * max_len, dtype='int32'))
 
-test_bert_sentencepiece_sentences_transform()
