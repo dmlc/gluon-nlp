@@ -221,7 +221,7 @@ Then you can install horovod v0.16.2 via the following command:
 
 .. code-block:: console
 
-    $ HOROVOD_GPU_ALLREDUCE=NCCL pip install horovod --user --no-cache-dir
+    $ HOROVOD_WITH_MXNET=1 HOROVOD_GPU_ALLREDUCE=NCCL pip install horovod --user --no-cache-dir
 
 Verify Horovod installation:
 

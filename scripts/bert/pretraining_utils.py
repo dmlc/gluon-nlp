@@ -174,7 +174,7 @@ def get_pretrain_data_text(data, batch_size, num_ctxes, shuffle, use_avg_len,
     assert num_files >= num_parts, \
         'Number of training files must be greater than the number of partitions. ' \
         'Only found %d files at %s'%(num_files, data)
-    pool = multiprocessing.Pool(num_workers)
+    worker_pool = multiprocessing.Pool(num_workers)
     dataset_cls = functools.partial(BERTPretrainDataset, tokenizer=tokenizer,
                                     max_seq_length=max_seq_length,
                                     short_seq_prob=short_seq_prob,

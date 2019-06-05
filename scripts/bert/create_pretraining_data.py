@@ -274,7 +274,7 @@ def create_training_instances(x):
                          masked_lm_prob, max_predictions_per_seq, vocab)))
         npz_instances = convert_to_npz(instances, max_seq_length)
 
-    ()input_ids, masked_lm_ids, masked_lm_positions, masked_lm_weights,
+    (input_ids, masked_lm_ids, masked_lm_positions, masked_lm_weights,
      next_sentence_labels, segment_ids, valid_lengths) = npz_instances
 
     # write output to files. Used when pre-generating files
