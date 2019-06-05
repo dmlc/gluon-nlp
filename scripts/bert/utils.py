@@ -22,7 +22,6 @@ import logging
 import collections
 import hashlib
 import io
-import json
 
 import mxnet as mx
 import gluonnlp as nlp
