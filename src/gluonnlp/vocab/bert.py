@@ -79,19 +79,21 @@ class BERTVocab(Vocab):
     cls_token : hashable object or None, default '[CLS]'
         Classification symbol for BERT.
     reserved_tokens : list of hashable objects or None, default None
-        A list specifying additional reserved tokens that will always be
-        indexed similar to `padding_token`, `bos_token` or `eos_token`.
+        A list specifying additional tokens to be added to the vocabulary.
         `reserved_tokens` cannot contain `unknown_token` or duplicate reserved
         tokens.
         Keys of `counter`, `unknown_token`, and values of `reserved_tokens`
         must be of the same hashable type. Examples of hashable types are str,
         int, and tuple.
-    identifiers_to_tokens : dict mapping elements of reserved_tokens to str or None, default None
-        If `identifiers_to_tokens` is a dictionary, it specifies a mapping from
-        identifiers `name` to tokens part of the resulting Vocab `v`. `v` will
-        expose each of the tokens specified as individual attributes. For
-        example `reserved_tokens = {'my_special_token': '<special>'}` results
-        in a vocabulary object with attribute `v.my_special_token == '<special>'`
+    identifiers_to_tokens : dict mapping str used as identifier to tokens or None, default None
+        `identifiers_to_tokens` specifies a mapping from identifiers `name` to
+        tokens part of the resulting Vocab `v`. `v` will expose each of the
+        tokens specified as individual attributes. For example `reserved_tokens
+        = {'my_special_token': '<special>'}` results in a vocabulary object
+        with attribute `v.my_special_token == '<special>'` assuming that
+        '<special>' is part of the vocabulary. The `reserved_tokens` argument
+        can be used to add arbitrary tokens to the vocabulary. Raises
+        ValueError if a specified token is not part of the vocabulary.
     token_to_idx : dict mapping tokens (hashable objects) to int or None, default None
         Optionally specifies the indices of tokens to be used by the
         vocabulary. Each token in `token_to_index` must be part of the Vocab
