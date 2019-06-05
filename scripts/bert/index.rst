@@ -81,7 +81,7 @@ For all model settings above, we set learing rate = 2e-5 and optimizer = bertada
 
 .. code-block:: console
 
-    $ BAIDU_ERNIE_DATA_DIR=baidu_ernie_data python finetune_classifier.py --seed 6 --task_name XNLI --batch_size 32 --optimizer bertadam --epochs 4 --lr 2e-5 --bert_dataset wiki_cn_cased --gpu 0
+    $ python finetune_classifier.py --seed 6 --task_name XNLI --batch_size 32 --epochs 4 --lr 2e-5 --bert_dataset wiki_cn_cased --gpu 0
 
 Some other tasks can be modeled with `--task_name` parameter.
 
@@ -117,13 +117,13 @@ BERT BASE on SQuAD 1.1
 
 .. code-block:: console
 
-    $ python finetune_squad.py --optimizer adam --batch_size 12 --lr 3e-5 --epochs 2 --gpu
+    $ python finetune_squad.py --optimizer adam --batch_size 12 --lr 3e-5 --epochs 2 --gpu 0
  
 Note that this requires about 12G of GPU memory. If your GPU memory is less than 12G, you can use the following command to achieve a similar effect. This will require approximately no more than 8G of GPU memory. If your GPU memory is too small, please adjust *accumulate* and *batch_size* arguments accordingly.
 
 .. code-block:: console
 
-    $ python finetune_squad.py --optimizer adam --accumulate 2 --batch_size 6 --lr 3e-5 --epochs 2 --gpu
+    $ python finetune_squad.py --optimizer adam --accumulate 2 --batch_size 6 --lr 3e-5 --epochs 2 --gpu 0
 
 
 BERT LARGE on SQuAD 1.1
@@ -133,7 +133,7 @@ BERT LARGE on SQuAD 1.1
 
 .. code-block:: console
 
-    $ python finetune_squad.py --bert_model bert_24_1024_16 --optimizer adam --accumulate 6 --batch_size 4 --lr 3e-5 --epochs 2 --gpu
+    $ python finetune_squad.py --bert_model bert_24_1024_16 --optimizer adam --accumulate 6 --batch_size 4 --lr 3e-5 --epochs 2 --gpu 0
     
 Note that this requires about 14G of GPU memory.
 
@@ -147,7 +147,7 @@ For SQuAD 2.0, you need to specify the parameter *version_2* and specify the par
 
 .. code-block:: console
 
-    $ python finetune_squad.py --bert_model bert_24_1024_16 --optimizer adam --accumulate 8 --batch_size 4 --lr 3e-5 --epochs 2 --gpu --null_score_diff_threshold -2.0 --version_2
+    $ python finetune_squad.py --bert_model bert_24_1024_16 --optimizer adam --accumulate 8 --batch_size 4 --lr 3e-5 --epochs 2 --gpu 0 --null_score_diff_threshold -2.0 --version_2
 
 To get the score of the dev data, you need to download the dev dataset (`dev-v2.0.json <https://rajpurkar.github.io/SQuAD-explorer/dataset/dev-v2.0.json>`_) and the evaluate script (`evaluate-2.0.py <https://worksheets.codalab.org/rest/bundles/0x6b567e1cf2e041ec80d7098f031c5c9e/contents/blob/>`_). Then use the following command to get the score of the dev dataset.
 
@@ -177,13 +177,16 @@ The scripts for masked language modeling and and next sentence prediction are al
 Training Sample Generation
 ++++++++++++++++++++++++++
 
-Data generation for pre-training on sample texts:
+The `create_pretraining_data.py` file generates pre-training data from raw text documents, stored as npz files. They are also required if you want to evaluate your pre-trained BERT model during pre-training.
 
 .. code-block:: console
 
-    $ python create_pretraining_data.py --input_file sample_text.txt --output_dir out --vocab book_corpus_wiki_en_uncased --max_seq_length 128 --max_predictions_per_seq 20 --dupe_factor 5 --masked_lm_prob 0.15 --short_seq_prob 0.1 --verbose
+    $ # create pre-training data using the vocabulary released by Google
+    $ python create_pretraining_data.py --input_file sample_text.txt --output_dir out --dataset_name book_corpus_wiki_en_uncased --max_seq_length 512 --max_predictions_per_seq 80 --dupe_factor 1 --masked_lm_prob 0.15 --short_seq_prob 0.1 --num_workers 1 --verbose
+    $ # create pre-training data using a sentencepiece vocabulary
+    $ python create_pretraining_data.py --input_file sample_text.txt --output_dir out --max_seq_length 512 --max_predictions_per_seq 80 --dupe_factor 1 --masked_lm_prob 0.15 --short_seq_prob 0.1 --num_workers 1 --sentencepiece /path/to/sentencepiece.model --verbose
 
-The data generation script takes a file path as the input (could be one or more files by wildcard). Each file contains one or more documents separated by empty lines, and each document contains one line per sentence. You can perform sentence segmentation with an off-the-shelf NLP toolkit such as NLTK.
+The data generation script takes a file path as the input (could be one or more files by wildcard). Each file contains one or more documents separated by empty lines, and each document contains one line per sentence. You can perform sentence segmentation with an off-the-shelf NLP toolkit such as NLTK. See "sample_text.txt" as an example input file.
 
 Run Pre-training
 ++++++++++++++++
@@ -207,20 +210,18 @@ The BERT base model produced by gluonnlp pre-training script (`log <https://raw.
 Run Pre-training with Horovod
 +++++++++++++++++++++++++++++
 
-Alternatively, you can install horovod for scalable multi-gpu multi-machine training. Our script assumes the master version of Horovod (i.e. horovod > v0.16.1).
+Alternatively, you can install horovod for scalable multi-gpu multi-machine training.
 
 To install horovod, you need:
 
 - `NCCL <https://developer.nvidia.com/nccl>`__, and
 - `OpenMPI <https://www.open-mpi.org/software/ompi/v4.0/>`__
 
-Then you can install the master version of horovod:
+Then you can install horovod v0.16.2 via the following command:
 
 .. code-block:: console
 
-    $ git clone --recursive https://github.com/uber/horovod horovod;
-    $ cd horovd;
-    $ HOROVOD_GPU_ALLREDUCE=NCCL pip install . --user --no-cache-dir
+    $ HOROVOD_WITH_MXNET=1 HOROVOD_GPU_ALLREDUCE=NCCL pip install horovod --user --no-cache-dir
 
 Verify Horovod installation:
 
@@ -228,12 +229,17 @@ Verify Horovod installation:
 
     $ horovodrun -np 1 -H localhost:1 python run_pretraining_hvd.py --batch_size 32 --lr 2e-5 --data 'out/*.npz' --warmup_ratio 0.5 --num_steps 20 --pretrained --log_interval=2 --data_eval 'out/*.npz' --batch_size_eval 8 --ckpt_dir ckpt --verbose
 
-Run pre-training with horovod:
+Run pre-training with horovod on a single node with multiple GPUs:
 
 .. code-block:: console
 
     $ horovodrun -np 8 -H localhost:8 python run_pretraining_hvd.py --data='/path/to/generated/samples/train/*.npz' --num_steps 1000000 --log_interval 250 --lr 1e-4 --batch_size 4096 --accumulate 4 --warmup_ratio 0.01 --ckpt_dir ./ckpt --ckpt_interval 25000 --num_buckets 10 --dtype float16 --use_avg_len --verbose
-    $ mpirun -np 16 -H node0:8,node1:8 -mca pml ob1 -mca btl ^openib -mca btl_tcp_if_exclude docker0,lo --map-by ppr:4:socket -x NCCL_MIN_NRINGS=8 -x NCCL_DEBUG=INFO python run_pretraining_hvd.py --batch_size 8192 --accumulate 1 --lr 1e-4 --data "/path/to/generated/samples/train/*.npz" --warmup_ratio 0.01 --num_steps 1000000 --log_interval=250 --ckpt_dir './ckpt' --ckpt_interval 25000 --num_buckets 10 --dtype float16 --use_avg_len --verbose
+
+Run pre-training with horovod on node0 and node1, with 8 GPUs each:
+
+.. code-block:: console
+
+    $ mpirun -np 16 -H node0:8,node1:8 -mca pml ob1 -mca btl ^openib -mca btl_tcp_if_exclude docker0,lo --map-by ppr:4:socket -x NCCL_MIN_NRINGS=8 -x NCCL_DEBUG=WARNING -x HOROVOD_HIERARCHICAL_ALLREDUCE=1 --tag-output python run_pretraining_hvd.py --batch_size 8192 --accumulate 1 --lr 1e-4 --data "/path/to/generated/samples/train/*.npz" --warmup_ratio 0.01 --num_steps 1000000 --log_interval=250 --ckpt_dir './ckpt' --ckpt_interval 25000 --num_buckets 10 --dtype float16 --use_avg_len --verbose
 
 BERT for Named Entity Recognition
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -261,7 +267,7 @@ prefix in file names:
         --optimizer bertadam --bert-model bert_24_1024_16 \
         --save-checkpoint-prefix ${MODEL_DIR}/large_bert --seed 13531
 
-This achieves Test F1 from `91.5` to `92.2`.
+This achieves Test F1 from `91.5` to `92.2` (`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/bert/finetuned_conll2003.log>`_).
 
 Export BERT for Deployment
 ~~~~~~~~~~~~~~~~~~~~~~~~~~

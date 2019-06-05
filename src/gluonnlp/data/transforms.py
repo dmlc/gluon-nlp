@@ -30,7 +30,7 @@ __all__ = [
     'SpacyTokenizer', 'SacreMosesDetokenizer', 'NLTKMosesDetokenizer',
     'JiebaTokenizer', 'NLTKStanfordSegmenter', 'SentencepieceTokenizer',
     'SentencepieceDetokenizer', 'BERTBasicTokenizer', 'BERTTokenizer',
-    'BERTSentenceTransform'
+    'BERTSentenceTransform', 'BERTSPTokenizer'
 ]
 
 import os
@@ -676,7 +676,7 @@ class SentencepieceTokenizer(_SentencepieceProcessor):
         If num_best < 0, then assume that num_best is infinite and
         samples from the all hypothesis (lattice) using forward-filtering-and-backward-sampling
         algorithm.
-    alpha : float
+    alpha : float, default 1.0
         A scalar for a smoothing parameter. Inverse temperature for probability rescaling.
 
     Examples

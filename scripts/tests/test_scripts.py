@@ -185,7 +185,7 @@ def test_pretrain():
     process = subprocess.check_call([sys.executable, './scripts/bert/create_pretraining_data.py',
                                      '--input_file', './scripts/bert/sample_text.txt',
                                      '--output_dir', 'test/bert/data',
-                                     '--vocab', 'book_corpus_wiki_en_uncased',
+                                     '--dataset_name', 'book_corpus_wiki_en_uncased',
                                      '--max_seq_length', '128',
                                      '--max_predictions_per_seq', '20',
                                      '--dupe_factor', '5',
@@ -233,7 +233,7 @@ def test_pretrain_hvd():
     process = subprocess.check_call([sys.executable, './scripts/bert/create_pretraining_data.py',
                                      '--input_file', './scripts/bert/sample_text.txt',
                                      '--output_dir', 'test/bert/data',
-                                     '--vocab', 'book_corpus_wiki_en_uncased',
+                                     '--dataset_name', 'book_corpus_wiki_en_uncased',
                                      '--max_seq_length', '128',
                                      '--max_predictions_per_seq', '20',
                                      '--dupe_factor', '5',
@@ -325,3 +325,14 @@ def test_finetune_train(dataset):
 def test_export(task):
     process = subprocess.check_call([sys.executable, './scripts/bert/export/export.py',
                                      '--task', task])
+
+@pytest.mark.serial
+@pytest.mark.gpu
+@pytest.mark.remote_required
+@pytest.mark.integration
+def test_finetune_squad():
+    arguments = ['--optimizer', 'adam', '--batch_size', '12',
+                 '--gpu', '0', '--epochs', '2', '--test_mode']
+    process = subprocess.check_call([sys.executable, './scripts/bert/finetune_squad.py']
+                                    + arguments)
+    time.sleep(5)

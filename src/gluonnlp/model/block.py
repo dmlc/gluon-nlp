@@ -94,6 +94,7 @@ class L2Normalization(HybridBlock):
 
 class GELU(HybridBlock):
     r"""Gaussian Error Linear Unit.
+
     This is a smoother version of the RELU.
     https://arxiv.org/abs/1606.08415
 

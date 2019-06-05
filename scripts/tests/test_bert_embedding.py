@@ -23,7 +23,7 @@ import time
 import pytest
 
 from ..bert.embedding import BertEmbedding
-from ..bert.dataset import BertEmbeddingDataset
+from ..bert.data.embedding import BertEmbeddingDataset
 
 
 def test_bert_embedding_dataset():

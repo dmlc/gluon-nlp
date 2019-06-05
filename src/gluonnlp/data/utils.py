@@ -26,6 +26,7 @@ import os
 import sys
 import tarfile
 import zipfile
+import time
 
 import numpy as np
 from mxnet.gluon.data import SimpleDataset
@@ -305,7 +306,8 @@ def _load_pretrained_vocab(name, root, cls=None):
             else:
                 raise e
 
-    zip_file_path = os.path.join(root, file_name + '.zip')
+    prefix = str(time.time())
+    zip_file_path = os.path.join(root, prefix + file_name + '.zip')
     repo_url = _get_repo_url()
     if repo_url[-1] != '/':
         repo_url = repo_url + '/'
@@ -313,8 +315,16 @@ def _load_pretrained_vocab(name, root, cls=None):
              path=zip_file_path,
              overwrite=True)
     with zipfile.ZipFile(zip_file_path) as zf:
-        zf.extractall(root)
-    os.remove(zip_file_path)
+        if not os.path.exists(file_path):
+            zf.extractall(root)
+    try:
+        os.remove(zip_file_path)
+    except OSError as e:
+        # file has already been removed.
+        if e.errno == 2:
+            pass
+        else:
+            raise e
 
     if check_sha1(file_path, sha1_hash):
         return _load_vocab_file(file_path, cls)

@@ -33,6 +33,7 @@ This example shows how to pre-train a BERT model with Gluon NLP Toolkit.
 import os
 import sys
 import random
+import warnings
 import logging
 import functools
 import time
@@ -64,7 +65,15 @@ parser.add_argument('--max_predictions_per_seq', type=int, default=None,
                     required='--raw' in sys.argv,
                     help='Maximum number of predictions per sequence.')
 parser.add_argument('--cased', action='store_true',
-                    help='whether to tokenize with cased characters')
+                    help='Whether to tokenize with cased characters')
+parser.add_argument('--sentencepiece', default=None, type=str,
+                    help='Path to the sentencepiece .model file for both tokenization and vocab.')
+parser.add_argument('--sp_nbest', type=int, default=0,
+                    help='Number of best candidates for sampling subwords with sentencepiece. ')
+parser.add_argument('--sp_alpha', type=float, default=1.0,
+                    help='Inverse temperature for probability rescaling for sentencepiece sampling')
+parser.add_argument('--num_data_workers', type=int, default=8,
+                    help='Number of workers to pre-process data.')
 
 args = parser.parse_args()
 
@@ -247,20 +256,36 @@ if __name__ == '__main__':
     nlp.utils.mkdir(args.ckpt_dir)
     ctx = mx.gpu(local_rank)
 
+    dataset_name, vocab = args.dataset_name, None
+    if args.sentencepiece:
+        logging.info('loading vocab file from sentence piece model: %s', args.sentencepiece)
+        if args.dataset_name:
+            warnings.warn('Both --dataset_name and --sentencepiece are provided. '
+                          'The vocabulary will be loaded based on --sentencepiece')
+            dataset_name = None
+        vocab = nlp.vocab.BERTVocab.from_sentencepiece(args.sentencepiece)
+
     model, nsp_loss, mlm_loss, vocab = get_model_loss([ctx], args.model, args.pretrained,
-                                                      args.dataset_name, args.dtype,
+                                                      dataset_name, vocab, args.dtype,
                                                       ckpt_dir=args.ckpt_dir,
                                                       start_step=args.start_step)
     logging.debug('Model created')
 
     if args.data:
         if args.raw:
+            if args.sentencepiece:
+                tokenizer = nlp.data.BERTSPTokenizer(args.sentencepiece, vocab,
+                                                     num_best=args.sp_nbest,
+                                                     alpha=args.sp_alpha, lower=not args.cased)
+            else:
+                tokenizer = nlp.data.BERTTokenizer(vocab=vocab, lower=not args.cased)
             get_dataset_fn = functools.partial(get_pretrain_data_text,
                                                max_seq_length=args.max_seq_length,
                                                short_seq_prob=args.short_seq_prob,
                                                masked_lm_prob=args.masked_lm_prob,
                                                max_predictions_per_seq=args.max_predictions_per_seq,
-                                               vocab=vocab, cased=args.cased)
+                                               vocab=vocab, tokenizer=tokenizer,
+                                               num_workers=args.num_data_workers)
         else:
             get_dataset_fn = get_pretrain_data_npz
             if args.cased:

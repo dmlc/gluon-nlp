@@ -24,7 +24,7 @@ import numpy as np
 from gluonnlp.vocab import BERTVocab
 from gluonnlp.data import count_tokens, BERTTokenizer
 
-from ..bert.dataset import BERTDatasetTransform
+from ..bert.data.transform import BERTDatasetTransform
 
 
 def test_bert_dataset_transform():
