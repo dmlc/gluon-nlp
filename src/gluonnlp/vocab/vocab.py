@@ -99,6 +99,7 @@ class Vocab(object):
     >>> counter = gluonnlp.data.count_tokens(text_data)
     >>> my_vocab = gluonnlp.Vocab(counter)
     >>> fasttext = gluonnlp.embedding.create('fasttext', source='wiki.simple')
+    -etc-
     >>> my_vocab.set_embedding(fasttext)
     >>> my_vocab.embedding[['hello', 'world']][:, :5]
     <BLANKLINE>
@@ -118,6 +119,7 @@ class Vocab(object):
      [ 0.10444  -0.10858   0.27212   0.13299  -0.33165 ]]
     <NDArray 2x5 @cpu(0)>
     >>> glove = gluonnlp.embedding.create('glove', source='glove.6B.50d')
+    -etc-
     >>> my_vocab.set_embedding(glove)
     >>> my_vocab.embedding[['hello', 'world']][:, :5]
     <BLANKLINE>
@@ -136,13 +138,13 @@ class Vocab(object):
         self._unknown_token = unknown_token
         special_tokens = []
         self._padding_token = padding_token
-        if padding_token:
+        if padding_token and padding_token not in special_tokens:
             special_tokens.append(padding_token)
         self._bos_token = bos_token
-        if bos_token:
+        if bos_token and bos_token not in special_tokens:
             special_tokens.append(bos_token)
         self._eos_token = eos_token
-        if eos_token:
+        if eos_token and eos_token not in special_tokens:
             special_tokens.append(eos_token)
         if reserved_tokens:
             special_tokens.extend(reserved_tokens)
@@ -168,6 +170,7 @@ class Vocab(object):
             self._reserved_tokens = None
         else:
             self._reserved_tokens = special_tokens[:]
+            assert len(special_tokens) == len(set(special_tokens))  # sanity check
             self._idx_to_token.extend(special_tokens)
 
         if unknown_token:

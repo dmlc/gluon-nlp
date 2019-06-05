@@ -19,4 +19,4 @@
 
 # pylint: disable=wildcard-import
 """BERT example."""
-from . import bert, dataset
+from . import bert, dataset, ner_common, ner_data, ner_model

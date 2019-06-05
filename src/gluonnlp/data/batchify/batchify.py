@@ -20,7 +20,7 @@
 into batches for fast processing."""
 __all__ = ['Stack', 'Pad', 'Tuple']
 
-import logging
+import warnings
 
 import numpy as np
 import mxnet as mx
@@ -223,6 +223,12 @@ class Pad(object):
         self._dtype = dtype
         self._warned = False
 
+        if pad_val == 0:
+            warnings.warn(
+                'Padding value 0 is used in data.batchify.Pad(). '
+                'Please check whether this is intended '
+                '(e.g. value of padding index in the vocabulary).')
+
     def __call__(self, data):
         """Batchify the input data.
 
@@ -251,7 +257,7 @@ class Pad(object):
 
         if isinstance(data[0], mx.nd.NDArray) and not self._warned:
             self._warned = True
-            logging.warning(
+            warnings.warn(
                 'Using Pad with NDArrays is discouraged for speed reasons. '
                 'Instead you should pad your data while it is still a list '
                 'and before converting to an NDArray. '

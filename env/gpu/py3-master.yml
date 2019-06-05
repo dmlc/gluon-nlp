@@ -9,9 +9,9 @@ dependencies:
   - sphinx=1.7.7
   - spacy
   - nltk
-  - pytest<4
-  - flaky<4
-  - pytest-cov=2.6.0
+  - pytest=4.5.0
+  - flaky=3.5.3
+  - pytest-cov=2.7.1
   - mock<3
   - pytest-xdist<2
   - recommonmark
