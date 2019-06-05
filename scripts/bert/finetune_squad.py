@@ -50,8 +50,8 @@ from mxnet import gluon, nd
 
 import gluonnlp as nlp
 from gluonnlp.data import SQuAD
-from bert_qa_model import BertForQALoss, BertForQA
-from bert_qa_dataset import (SQuADTransform, preprocess_dataset)
+from model.qa import BertForQALoss, BertForQA
+from data.qa import (SQuADTransform, preprocess_dataset)
 from bert_qa_evaluate import get_F1_EM, predictions
 
 np.random.seed(6)
@@ -187,8 +187,13 @@ parser.add_argument('--null_score_diff_threshold',
                     'Typical values are between -1.0 and -5.0. default is 0.0')
 
 parser.add_argument('--gpu',
+                    type=int,
+                    default=None,
+                    help='which gpu to use for finetuning. CPU is used if not set.')
+
+parser.add_argument('--test_mode',
                     action='store_true',
-                    help='whether to use gpu for finetuning')
+                    help='Run the example in test mode for sanity checks')
 
 args = parser.parse_args()
 
@@ -219,7 +224,7 @@ epochs = args.epochs
 batch_size = args.batch_size
 test_batch_size = args.test_batch_size
 lr = args.lr
-ctx = mx.cpu() if not args.gpu else mx.gpu()
+ctx = mx.cpu() if args.gpu is None else mx.gpu(args.gpu)
 
 accumulate = args.accumulate
 log_interval = args.log_interval * accumulate if accumulate else args.log_interval
@@ -279,11 +284,12 @@ loss_function.hybridize(static_alloc=True)
 
 def train():
     """Training function."""
-    log.info('Loader Train data...')
+    segment = 'train' if not args.test_mode else 'dev'
+    log.info('Loading %s data...', segment)
     if version_2:
-        train_data = SQuAD('train', version='2.0')
+        train_data = SQuAD(segment, version='2.0')
     else:
-        train_data = SQuAD('train', version='1.1')
+        train_data = SQuAD(segment, version='1.1')
     log.info('Number of records in Train data:{}'.format(len(train_data)))
 
     train_data_transform, _ = preprocess_dataset(
@@ -396,6 +402,9 @@ def train():
                 tic = time.time()
                 step_loss = 0.0
                 log_num = 0
+                if args.test_mode:
+                    log.info('Exit early in test mode')
+                    break
         epoch_toc = time.time()
         log.info('Time cost={:.2f} s, Thoughput={:.2f} samples/s'.format(
             epoch_toc - epoch_tic, total_num/(epoch_toc - epoch_tic)))
@@ -406,7 +415,7 @@ def train():
 def evaluate():
     """Evaluate the model on validation dataset.
     """
-    log.info('Loader dev data...')
+    log.info('Loading dev data...')
     if version_2:
         dev_data = SQuAD('dev', version='2.0')
     else:
@@ -463,6 +472,9 @@ def evaluate():
                 all_results[example_id] = []
             all_results[example_id].append(
                 _Result(example_id, start.tolist(), end.tolist()))
+        if args.test_mode:
+            log.info('Exit early in test mode')
+            break
     epoch_toc = time.time()
     log.info('Time cost={:.2f} s, Thoughput={:.2f} samples/s'.format(
         epoch_toc - epoch_tic, total_num/(epoch_toc - epoch_tic)))
@@ -475,7 +487,8 @@ def evaluate():
         max_answer_length=max_answer_length,
         null_score_diff_threshold=null_score_diff_threshold,
         n_best_size=n_best_size,
-        version_2=version_2)
+        version_2=version_2,
+        test_mode=args.test_mode)
 
     with open(os.path.join(output_dir, 'predictions.json'),
               'w', encoding='utf-8') as all_predictions_write:

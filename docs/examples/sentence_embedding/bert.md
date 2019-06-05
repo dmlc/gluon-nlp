@@ -55,9 +55,8 @@ import io
 import random
 import numpy as np
 import mxnet as mx
-from mxnet import gluon
 import gluonnlp as nlp
-from bert import *
+from bert import data, model
 ```
 
 ### Set Environment
@@ -122,13 +121,13 @@ The `BERTClassifier` class uses a BERT base model to encode sentence
 representation, followed by a `nn.Dense` layer for classification.
 
 ```{.python .input}
-model = bert.BERTClassifier(bert_base, num_classes=2, dropout=0.1)
+model = model.classification.BERTClassifier(bert_base, num_classes=2, dropout=0.1)
 # only need to initialize the classifier layer.
 model.classifier.initialize(init=mx.init.Normal(0.02), ctx=ctx)
 model.hybridize(static_alloc=True)
 
 # softmax cross entropy loss for classification
-loss_function = gluon.loss.SoftmaxCELoss()
+loss_function = mx.gluon.loss.SoftmaxCELoss()
 loss_function.hybridize(static_alloc=True)
 
 metric = mx.metric.Accuracy()
@@ -216,11 +215,11 @@ all_labels = ["0", "1"]
 # for regression task, set class_labels=None
 # for inference without label available, set has_label=False
 pair = True
-transform = dataset.BERTDatasetTransform(bert_tokenizer, max_len,
-                                         class_labels=all_labels,
-                                         has_label=True,
-                                         pad=True,
-                                         pair=pair)
+transform = data.transform.BERTDatasetTransform(bert_tokenizer, max_len,
+                                                class_labels=all_labels,
+                                                has_label=True,
+                                                pad=True,
+                                                pair=pair)
 data_train = data_train_raw.transform(transform)
 
 print('vocabulary used for tokenization = \n%s'%vocabulary)
@@ -247,8 +246,8 @@ train_sampler = nlp.data.FixedBucketSampler(lengths=[int(item[1]) for item in da
                                             shuffle=True)
 bert_dataloader = mx.gluon.data.DataLoader(data_train, batch_sampler=train_sampler)
 
-trainer = gluon.Trainer(model.collect_params(), 'adam',
-                        {'learning_rate': lr, 'epsilon': 1e-9})
+trainer = mx.gluon.Trainer(model.collect_params(), 'adam',
+                           {'learning_rate': lr, 'epsilon': 1e-9})
 
 # collect all differentiable parameters
 # grad_req == 'null' indicates no gradients are calculated (e.g. constant parameters)

@@ -24,10 +24,10 @@ import logging
 import os
 
 import mxnet as mx
-from ner_common import get_bert_model, get_context
-from ner_common import load_metadata
-from ner_data import BERTTaggingDataset, convert_arrays_to_text
-from ner_model import BERTTagger
+from ner_utils import get_bert_model, get_context
+from ner_utils import load_metadata
+from data.ner import BERTTaggingDataset, convert_arrays_to_text
+from model.ner import BERTTagger
 
 # TODO(bikestra): Currently, our evaluation is dependent on this package.
 # Figure out whether to take actual dependency on it.

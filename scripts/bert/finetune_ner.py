@@ -29,9 +29,9 @@ import mxnet as mx
 
 import gluonnlp as nlp
 
-from ner_common import get_context, get_bert_model, dump_metadata, str2bool
-from ner_data import BERTTaggingDataset, convert_arrays_to_text
-from ner_model import BERTTagger, attach_prediction
+from ner_utils import get_context, get_bert_model, dump_metadata, str2bool
+from data.ner import BERTTaggingDataset, convert_arrays_to_text
+from model.ner import BERTTagger, attach_prediction
 
 # seqeval is a dependency that is specific to named entity recognition.
 import seqeval.metrics

@@ -325,3 +325,14 @@ def test_finetune_train(dataset):
 def test_export(task):
     process = subprocess.check_call([sys.executable, './scripts/bert/export/export.py',
                                      '--task', task])
+
+@pytest.mark.serial
+@pytest.mark.gpu
+@pytest.mark.remote_required
+@pytest.mark.integration
+def test_finetune_squad():
+    arguments = ['--optimizer', 'adam', '--batch_size', '12',
+                 '--gpu', '0', '--epochs', '2', '--test_mode']
+    process = subprocess.check_call([sys.executable, './scripts/bert/finetune_squad.py']
+                                    + arguments)
+    time.sleep(5)
