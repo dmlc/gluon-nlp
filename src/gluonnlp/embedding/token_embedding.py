@@ -42,6 +42,9 @@ from ..base import get_home_dir
 from ..data.utils import DefaultLookupDict
 from ..model.train import FasttextEmbeddingModel
 
+UNK_IDX = 0   # This should not be changed as long as serialized token
+              # embeddings redistributed on S3 contain an unknown token. Commit
+              # 46eb28ffcf542ab8ed801a727a45404a73adbce3 has more context.
 
 def register(embedding_cls):
     """Registers a new token embedding.
@@ -188,7 +191,7 @@ class TokenEmbedding(object):
         self._unknown_lookup = unknown_lookup
         self._idx_to_token = [unknown_token] if unknown_token else []
         if unknown_token:
-            self._token_to_idx = DefaultLookupDict(C.UNK_IDX)
+            self._token_to_idx = DefaultLookupDict(UNK_IDX)
         else:
             self._token_to_idx = {}
         self._token_to_idx.update((token, idx) for idx, token in enumerate(self._idx_to_token))
@@ -316,9 +319,9 @@ class TokenEmbedding(object):
 
         if self.unknown_token:
             if loaded_unknown_vec is None:
-                self._idx_to_vec[C.UNK_IDX] = self._init_unknown_vec(shape=vec_len)
+                self._idx_to_vec[UNK_IDX] = self._init_unknown_vec(shape=vec_len)
             else:
-                self._idx_to_vec[C.UNK_IDX] = nd.array(loaded_unknown_vec)
+                self._idx_to_vec[UNK_IDX] = nd.array(loaded_unknown_vec)
 
     def _load_embedding_serialized(self, pretrained_file_path):
         """Load embedding vectors from a pre-trained token embedding file.
@@ -334,23 +337,23 @@ class TokenEmbedding(object):
         deserialized_embedding = TokenEmbedding.deserialize(pretrained_file_path)
         if deserialized_embedding.unknown_token:
             # Some .npz files on S3 may contain an unknown token and its
-            # respective embedding. As a workaround, we assume that C.UNK_IDX
+            # respective embedding. As a workaround, we assume that UNK_IDX
             # is the same now as it was when the .npz was generated. Under this
             # assumption we can safely overwrite the respective token and
             # vector from the npz.
             if deserialized_embedding.unknown_token:
                 idx_to_token = deserialized_embedding.idx_to_token
                 idx_to_vec = deserialized_embedding.idx_to_vec
-                idx_to_token[C.UNK_IDX] = self.unknown_token
+                idx_to_token[UNK_IDX] = self.unknown_token
                 if self._init_unknown_vec:
                     vec_len = idx_to_vec.shape[1]
-                    idx_to_vec[C.UNK_IDX] = self._init_unknown_vec(shape=vec_len)
+                    idx_to_vec[UNK_IDX] = self._init_unknown_vec(shape=vec_len)
             else:
                 # If the TokenEmbedding shall not have an unknown token, we
                 # just delete the one in the npz.
-                assert C.UNK_IDX == 0
-                idx_to_token = deserialized_embedding.idx_to_token[C.UNK_IDX + 1:]
-                idx_to_vec = deserialized_embedding.idx_to_vec[C.UNK_IDX + 1:]
+                assert UNK_IDX == 0
+                idx_to_token = deserialized_embedding.idx_to_token[UNK_IDX + 1:]
+                idx_to_vec = deserialized_embedding.idx_to_vec[UNK_IDX + 1:]
         else:
             idx_to_token = deserialized_embedding.idx_to_token
             idx_to_vec = deserialized_embedding.idx_to_vec
@@ -363,10 +366,10 @@ class TokenEmbedding(object):
             try:
                 unknown_token_idx = deserialized_embedding.idx_to_token.index(
                     self.unknown_token)
-                idx_to_token[C.UNK_IDX], idx_to_token[
+                idx_to_token[UNK_IDX], idx_to_token[
                     unknown_token_idx] = idx_to_token[
-                        unknown_token_idx], idx_to_token[C.UNK_IDX]
-                idxs = [C.UNK_IDX, unknown_token_idx]
+                        unknown_token_idx], idx_to_token[UNK_IDX]
+                idxs = [UNK_IDX, unknown_token_idx]
                 idx_to_vec[idxs] = idx_to_vec[idxs[::-1]]
             except ValueError:
                 vec_len = idx_to_vec.shape[1]
@@ -595,7 +598,7 @@ class TokenEmbedding(object):
         if ((self.allow_extend or all(t in self.token_to_idx for t in tokens))
                 and self._idx_to_vec is None):
             # Initialize self._idx_to_vec
-            assert C.UNK_IDX == 0
+            assert UNK_IDX == 0
             self._idx_to_vec = self._init_unknown_vec(
                 shape=(1, new_embedding.shape[-1]))
 
@@ -632,7 +635,7 @@ class TokenEmbedding(object):
                     raise KeyError(('Token "{}" is unknown. To update the embedding vector for an'
                                     ' unknown token, please explicitly include "{}" as the '
                                     '`unknown_token` in `tokens`. This is to avoid unintended '
-                                    'updates.').format(token, self._idx_to_token[C.UNK_IDX]))
+                                    'updates.').format(token, self._idx_to_token[UNK_IDX]))
                 else:
                     raise KeyError(('Token "{}" is unknown. Updating the embedding vector for an '
                                     'unknown token is not allowed because `unknown_token` is not '
@@ -727,7 +730,7 @@ class TokenEmbedding(object):
         if not unknown_token:  # Store empty string instead of None
             unknown_token = ''
         else:
-            assert unknown_token == idx_to_token[C.UNK_IDX]
+            assert unknown_token == idx_to_token[UNK_IDX]
 
         if not compress:
             np.savez(file=file_path, unknown_token=unknown_token,
@@ -773,8 +776,8 @@ class TokenEmbedding(object):
 
         embedding = cls(unknown_token=unknown_token, **kwargs)
         if unknown_token:
-            assert unknown_token == idx_to_token[C.UNK_IDX]
-            embedding._token_to_idx = DefaultLookupDict(C.UNK_IDX)
+            assert unknown_token == idx_to_token[UNK_IDX]
+            embedding._token_to_idx = DefaultLookupDict(UNK_IDX)
         else:
             embedding._token_to_idx = {}
 
@@ -1049,7 +1052,7 @@ class Word2Vec(TokenEmbedding):
         """
         self._idx_to_token = [self.unknown_token] if self.unknown_token else []
         if self.unknown_token:
-            self._token_to_idx = DefaultLookupDict(C.UNK_IDX)
+            self._token_to_idx = DefaultLookupDict(UNK_IDX)
         else:
             self._token_to_idx = {}
         self._token_to_idx.update((token, idx) for idx, token in enumerate(self._idx_to_token))
@@ -1109,9 +1112,9 @@ class Word2Vec(TokenEmbedding):
 
         if self.unknown_token:
             if loaded_unknown_vec is None:
-                self._idx_to_vec[C.UNK_IDX] = self._init_unknown_vec(shape=vec_len)
+                self._idx_to_vec[UNK_IDX] = self._init_unknown_vec(shape=vec_len)
             else:
-                self._idx_to_vec[C.UNK_IDX] = nd.array(loaded_unknown_vec)
+                self._idx_to_vec[UNK_IDX] = nd.array(loaded_unknown_vec)
 
     @classmethod
     def from_w2v_binary(cls, pretrained_file_path, encoding='utf8'):

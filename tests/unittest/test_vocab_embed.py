@@ -20,6 +20,7 @@
 from __future__ import absolute_import
 from __future__ import print_function
 
+import random
 import re
 import os
 import sys
@@ -37,6 +38,11 @@ if sys.version_info[0] == 3:
 else:
     _str_types = (str, unicode)
 
+
+@pytest.fixture
+def counter():
+    return nlp.data.utils.Counter( ['a', 'b', 'b', 'c', 'c', 'c',
+                                    'some_word$'])
 
 def _get_test_str_of_tokens(token_delim, seq_delim):
     seq1 = token_delim + token_delim.join(['Life', 'is', 'great', '!']) + token_delim + seq_delim
@@ -80,9 +86,7 @@ def test_count_tokens():
     _test_count_tokens('IS', 'LIFE')
 
 
-def test_vocabulary_getitem():
-    counter = nlp.data.utils.Counter(['a', 'b', 'b', 'c', 'c', 'c', 'some_word$'])
-
+def test_vocabulary_getitem(counter):
     vocab = nlp.Vocab(counter, max_size=None, min_freq=1, unknown_token='<unk>',
                       bos_token=None, eos_token=None, reserved_tokens=None)
 
@@ -115,9 +119,7 @@ def test_vocabulary_getitem():
             no_unk_vocab.to_indices(words)
 
 
-def test_vocabulary_to_tokens():
-    counter = nlp.data.utils.Counter(['a', 'b', 'b', 'c', 'c', 'c', 'some_word$'])
-
+def test_vocabulary_to_tokens(counter):
     vocab = nlp.Vocab(counter, max_size=None, min_freq=1,unknown_token='<unknown>',
                       bos_token=None, eos_token=None, reserved_tokens=None)
     i1 = vocab.to_tokens(2)
@@ -137,9 +139,7 @@ def test_vocabulary_to_tokens():
             vocab.to_tokens(indices)
 
 
-def test_vocabulary():
-    counter = nlp.data.utils.Counter(['a', 'b', 'b', 'c', 'c', 'c', 'some_word$'])
-
+def test_vocabulary(counter):
     v1 = nlp.Vocab(counter, max_size=None, min_freq=1, unknown_token='<unk>',
                    padding_token=None, bos_token=None, eos_token=None, reserved_tokens=None)
     assert len(v1) == 5
@@ -477,7 +477,7 @@ def test_embedding_get_and_pretrain_file_names():
 
 
 @pytest.mark.parametrize('allow_extend', [True, False])
-def test_vocab_set_embedding_with_one_custom_embedding(tmpdir, allow_extend):
+def test_vocab_set_embedding_with_one_custom_embedding(tmpdir, allow_extend, counter):
     embed_root = str(tmpdir)
     embed_name = 'my_embed'
     elem_delim = '\t'
@@ -488,8 +488,6 @@ def test_vocab_set_embedding_with_one_custom_embedding(tmpdir, allow_extend):
     _mk_my_pretrain_file(os.path.join(embed_root, embed_name), elem_delim, pretrain_file)
 
     pretrain_file_path = os.path.join(embed_root, embed_name, pretrain_file)
-
-    counter = nlp.data.utils.Counter(['a', 'b', 'b', 'c', 'c', 'c', 'some_word$'])
 
     v1 = nlp.Vocab(counter, max_size=None, min_freq=1, unknown_token='<unk>',
                    padding_token=None, bos_token=None, eos_token=None, reserved_tokens=['<pad>'])
@@ -617,7 +615,7 @@ def test_vocab_set_embedding_with_one_custom_embedding(tmpdir, allow_extend):
 
 
 @pytest.mark.parametrize('allow_extend', [True, False])
-def test_vocab_set_embedding_with_two_custom_embeddings(tmpdir, allow_extend):
+def test_vocab_set_embedding_with_two_custom_embeddings(tmpdir, allow_extend, counter):
     embed_root = str(tmpdir)
     embed_name = 'my_embed'
     elem_delim = '\t'
@@ -634,8 +632,6 @@ def test_vocab_set_embedding_with_two_custom_embeddings(tmpdir, allow_extend):
 
     my_embed1 = from_file(pretrain_file_path1, elem_delim, init_unknown_vec=nd.ones)
     my_embed2 = from_file(pretrain_file_path2, elem_delim)
-
-    counter = nlp.data.utils.Counter(['a', 'b', 'b', 'c', 'c', 'c', 'some_word$'])
 
     v1 = nlp.Vocab(counter, max_size=None, min_freq=1, unknown_token='<unk>',
                    padding_token=None, bos_token=None, eos_token=None, reserved_tokens=None)
@@ -1200,30 +1196,6 @@ def test_subword_function_ngramhashes():
     assert 1669484008 % num_subwords == next(iter(sf.subwords_to_indices([u'<te'])))
     assert 2688791429 % num_subwords == next(iter(sf.subwords_to_indices([u'<τε'])))
 
-@pytest.mark.remote_required
-def test_bert_vocab_from_sentencepiece():
-    # the downloaded bpe vocab includes tokens for unk and padding, but without bos/eos.
-    url = 'http://repo.mxnet.io/gluon/dataset/vocab/test-682b5d15.bpe'
-    f = download(url, overwrite=True)
-    bert_vocab = nlp.vocab.BERTVocab.from_sentencepiece(f, eos_token=u'<eos>')
-
-    import sentencepiece
-    spm = sentencepiece.SentencePieceProcessor()
-    spm.Load(f)
-
-    # check special tokens
-    from gluonnlp.data.utils import _convert_to_unicode
-    assert _convert_to_unicode(spm.IdToPiece(spm.unk_id())) == bert_vocab.unknown_token
-    assert _convert_to_unicode(spm.IdToPiece(spm.pad_id())) == bert_vocab.padding_token
-    assert None == bert_vocab.bos_token
-    assert u'<eos>' == bert_vocab.eos_token
-    assert u'<eos>' in bert_vocab
-    assert [u'[MASK]', u'[SEP]', u'[CLS]', u'<eos>', u'[PAD]'] == bert_vocab.reserved_tokens
-    num_tokens = len(spm)
-    for i in range(num_tokens):
-        token = _convert_to_unicode(spm.IdToPiece(i))
-        assert bert_vocab[token] == i
-
 
 @pytest.mark.parametrize('unknown_token', ['<unk>', None])
 @pytest.mark.parametrize('padding_token', ['<pad>', '<eos>', None])  # padding_token == eos_token
@@ -1268,3 +1240,191 @@ def test_vocab_duplicate_special_tokens(unknown_token, padding_token,
     if eos_token is not None:
         with pytest.raises(AssertionError):
             Vocab(reserved_tokens=reserved_tokens + [eos_token])
+
+
+@pytest.mark.parametrize('unknown_token', ['<unk>', None])
+@pytest.mark.parametrize('padding_token', ['<pad>', None])
+def test_vocab_identifiers_to_tokens_sanity_checks(unknown_token,
+                                                   padding_token, counter):
+    Vocab = functools.partial(nlp.Vocab,
+                              counter,
+                              max_size=None,
+                              min_freq=1,
+                              unknown_token=unknown_token,
+                              bos_token=None,
+                              eos_token=None)
+    # Special tokens are automatically added
+    v = Vocab(my_token='<does_not_exist_yet>')
+    assert v.my_token == '<does_not_exist_yet>'
+
+    # Special token names must end in _token
+    with pytest.raises(ValueError):
+        Vocab(special_tok='<token>')
+
+    # Cannot set internals
+    with pytest.raises(ValueError):
+        Vocab(_private_token='<token>')
+
+    # Enforces uniqueness requirement of reserved_tokens argument
+    with pytest.raises(AssertionError):
+        Vocab(reserved_tokens=['<token>'], special_token='<token>')
+
+    # Many-to-one mapping is allowed
+    v = Vocab(first_name_of_token='<token>', second_name_of_token='<token>')
+    assert v.first_name_of_token == '<token>'
+    assert v.second_name_of_token == '<token>'
+    if unknown_token:
+        v = Vocab(unk_token=unknown_token)
+        assert v.unk_token == unknown_token
+        assert v.unk_token == v.unknown_token
+    if padding_token:
+        v = Vocab(pad_token=padding_token)
+        assert v.pad_token == padding_token
+        assert v.pad_token == v.padding_token
+
+
+@pytest.mark.parametrize('unknown_token', ['<unk>', None])
+@pytest.mark.parametrize('padding_token', ['<pad>', None])
+@pytest.mark.parametrize('identifiers_to_tokens', [{
+    'important_token': '<imp>'
+}, {}])
+@pytest.mark.parametrize('test_serialization', [True, False])
+def test_vocab_identifiers_to_tokens(unknown_token, padding_token,
+                                     identifiers_to_tokens, test_serialization,
+                                     counter):
+    vocab = nlp.Vocab(counter,
+                      max_size=None,
+                      min_freq=1,
+                      unknown_token=unknown_token,
+                      padding_token=padding_token,
+                      bos_token=None,
+                      eos_token=None,
+                      **identifiers_to_tokens)
+
+    if test_serialization:
+        vocab = nlp.Vocab.from_json(vocab.to_json())
+
+    if identifiers_to_tokens:
+        for identifier, token in identifiers_to_tokens.items():
+            assert hasattr(vocab, identifier)
+            assert getattr(vocab, identifier) == token
+            assert token in vocab.reserved_tokens
+
+    assert getattr(vocab, 'unknown_token') == unknown_token
+    assert getattr(vocab, 'padding_token') == padding_token
+
+
+@pytest.mark.parametrize('unknown_token', ['<unk>', None])
+@pytest.mark.parametrize('padding_token', ['<pad>', None])
+def test_vocab_token_to_idx(unknown_token, padding_token, counter):
+    reserved_tokens = ['<tok>']
+    Vocab = functools.partial(nlp.Vocab,
+                              counter,
+                              max_size=None,
+                              min_freq=1,
+                              unknown_token=unknown_token,
+                              padding_token=padding_token,
+                              bos_token=None,
+                              eos_token=None,
+                              reserved_tokens=reserved_tokens)
+    tokens = set(counter)
+    if unknown_token is not None:
+        tokens.add(unknown_token)
+    if padding_token is not None:
+        tokens.add(padding_token)
+    if isinstance(reserved_tokens, dict):
+        tokens.update(reserved_tokens.values())
+    elif isinstance(reserved_tokens, list):
+        tokens.update(reserved_tokens)
+
+    # Test sanity-checks
+    valid_token = next(counter.elements())
+    invalid_token = 'token_that_does_not_occur_in_vocab'
+    assert invalid_token not in counter
+    with pytest.raises(ValueError):
+        Vocab(token_to_idx={invalid_token: 0})
+    with pytest.raises(ValueError):
+        Vocab(token_to_idx={valid_token: -1})
+    with pytest.raises(ValueError):
+        Vocab(token_to_idx={valid_token: len(tokens)})
+
+    def token_idx_check(token, idx):
+        assert v[token] == idx
+        assert v.token_to_idx[token] == idx
+        assert v.idx_to_token[idx] == token
+
+    def consistency_check(v):
+        assert set(v.idx_to_token) == set(v.token_to_idx.keys())
+        assert set(v.token_to_idx.keys()) == set(tokens)
+        assert set(v.token_to_idx.values()) == set(range(len(tokens)))
+
+    # Manual checks with special tokens
+    if unknown_token:
+        v = Vocab(token_to_idx={unknown_token: len(tokens) - 1})
+        consistency_check(v)
+        token_idx_check(unknown_token, len(tokens) -1)
+    if padding_token:
+        v = Vocab(token_to_idx={padding_token: len(tokens) - 1})
+        consistency_check(v)
+        token_idx_check(padding_token, len(tokens) -1)
+
+    # Test 10 random user-specified indices for a subset of tokens
+    for i in range(10):
+        k = random.randint(0, len(tokens) - 1)
+        token_to_idx = {
+            k: v
+            for k, v in zip(random.sample(tokens, k), random.sample(
+                range(k), k))
+        }
+        v = Vocab(token_to_idx=token_to_idx)
+        consistency_check(v)
+        for token, idx in token_to_idx.items():
+            token_idx_check(token, idx)
+
+
+@pytest.mark.parametrize('unknown_token', ['<unk>', None])
+@pytest.mark.parametrize('padding_token', ['<pad>', '<eos>', None])
+@pytest.mark.parametrize('eos_token', ['<eos>', None])
+@pytest.mark.parametrize('reserved_tokens', [['<tok>'], []])
+def test_vocab_duplicate_special_tokens(unknown_token, padding_token,
+                                        eos_token, reserved_tokens, counter):
+    """Different special tokens are allowed to map to the same representations.
+
+    Special tokens are a subset of the reserved tokens. In general reserved
+    tokens must not contain duplicates; however, it is allowed that multiple
+    special tokens use the same reserved token.
+
+    """
+    Vocab = functools.partial(nlp.Vocab,counter,
+                  max_size=None,
+                  min_freq=1,
+                  unknown_token=unknown_token,
+                  padding_token=padding_token,
+                  bos_token=None,
+                  eos_token=eos_token
+                  )
+
+    v = Vocab(reserved_tokens=reserved_tokens)
+
+    # Specifying a special tokens as reserved tokens is counted as duplicate
+    if eos_token is not None:
+        with pytest.raises(AssertionError):
+            Vocab(reserved_tokens=reserved_tokens + [eos_token])
+
+
+def test_vocab_backwards_compatibility_prior_v0_7_corrupted_index_bug():
+    with open('tests/data/vocab/backward_compat_0_7_corrupted_index', 'r') as f:
+        v = nlp.Vocab.from_json(f.read())
+
+    assert len(set(v.idx_to_token)) == len(v.token_to_idx)
+    assert v['<unk>'] == 0
+    assert v['<bos>'] == 2
+    assert v['<eos>'] == 3
+    assert v['token'] == 4
+
+    assert v.idx_to_token[0] == '<unk>'
+    assert v.idx_to_token[1] == '<eos>'  # corruption preserved for backward
+                                         # compatibility
+    assert v.idx_to_token[2] == '<bos>'
+    assert v.idx_to_token[3] == '<eos>'
+    assert v.idx_to_token[4] == 'token'

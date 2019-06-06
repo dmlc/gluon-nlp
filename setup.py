@@ -65,6 +65,9 @@ setup(
         ],
         'dev': [
             'pytest',
+            'pylint',
+            'pylint_quotes',
+            'flake8',
             'recommonmark',
             'sphinx-gallery',
             'sphinx_rtd_theme',
