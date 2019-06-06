@@ -1253,77 +1253,45 @@ def test_vocab_identifiers_to_tokens_sanity_checks(unknown_token,
                               unknown_token=unknown_token,
                               bos_token=None,
                               eos_token=None)
-    # Registered token must exist
-    with pytest.raises(ValueError):
-        Vocab(identifiers_to_tokens={'my_token': '<does_not_exist>'})
+    # Special tokens are automatically added
+    v = Vocab(my_token='<does_not_exist_yet>')
+    assert v.my_token == '<does_not_exist_yet>'
 
-    # Cannot overwrite properties
+    # Special token names must end in _token
     with pytest.raises(ValueError):
-        Vocab(identifiers_to_tokens={'unknown_token': '<unk>'})
-    with pytest.raises(ValueError):
-        Vocab(identifiers_to_tokens={'padding_token': '<pad>'})
-    with pytest.raises(ValueError):
-        Vocab(identifiers_to_tokens={'bos_token': '<bos>'})
-    with pytest.raises(ValueError):
-        Vocab(identifiers_to_tokens={'eos_token': '<eos>'})
-
-    # Cannot overwrite other attributes
-    with pytest.raises(ValueError):
-        Vocab(identifiers_to_tokens={'embedding': '1'})
-    with pytest.raises(ValueError):
-        Vocab(identifiers_to_tokens={'set_embedding': '1'})
-    with pytest.raises(ValueError):
-        Vocab(identifiers_to_tokens={'token_to_idx': '1'})
-    with pytest.raises(ValueError):
-        Vocab(identifiers_to_tokens={'reserved_tokens': '1'})
+        Vocab(special_tok='<token>')
 
     # Cannot set internals
     with pytest.raises(ValueError):
-        Vocab(identifiers_to_tokens={'__len__': '1'})
-    with pytest.raises(ValueError):
-        Vocab(identifiers_to_tokens={
-            '__does_not_exist_but_starts_with_underscore__': '1'
-        })
-    with pytest.raises(ValueError):
-        Vocab(identifiers_to_tokens={
-            '_does_not_exist_but_starts_with_underscore_': '1'
-        })
+        Vocab(_private_token='<token>')
 
-    # Must raise, even if some specified reserved tokens are valid
-    with pytest.raises(ValueError):
-        Vocab(reserved_tokens=['<1>', '<2>'],
-              identifiers_to_tokens={
-                  'valid1': '<1>',
-                  'eos_token': '<eos>',
-                  'valid2': '<2>',
-              })
+    # Enforces uniqueness requirement of reserved_tokens argument
+    with pytest.raises(AssertionError):
+        Vocab(reserved_tokens=['<token>'], special_token='<token>')
 
     # Many-to-one mapping is allowed
-    v = Vocab(reserved_tokens=['<valid>'],
-              identifiers_to_tokens={
-                  'valid1': '<valid>',
-                  'valid2': '<valid>'
-              })
-    assert v.valid1 == '<valid>'
-    assert v.valid2 == '<valid>'
+    v = Vocab(first_name_of_token='<token>', second_name_of_token='<token>')
+    assert v.first_name_of_token == '<token>'
+    assert v.second_name_of_token == '<token>'
     if unknown_token:
-        v = Vocab(identifiers_to_tokens={'unk': unknown_token})
-        assert v.unk == unknown_token
+        v = Vocab(unk_token=unknown_token)
+        assert v.unk_token == unknown_token
+        assert v.unk_token == v.unknown_token
     if padding_token:
-        v = Vocab(identifiers_to_tokens={'pad': padding_token})
-        assert v.pad == padding_token
+        v = Vocab(pad_token=padding_token)
+        assert v.pad_token == padding_token
+        assert v.pad_token == v.padding_token
 
 
 @pytest.mark.parametrize('unknown_token', ['<unk>', None])
 @pytest.mark.parametrize('padding_token', ['<pad>', None])
 @pytest.mark.parametrize('identifiers_to_tokens', [{
     'important_token': '<imp>'
-}, None])
+}, {}])
 @pytest.mark.parametrize('test_serialization', [True, False])
 def test_vocab_identifiers_to_tokens(unknown_token, padding_token,
                                      identifiers_to_tokens, test_serialization,
                                      counter):
-    reserved_tokens = ['<imp>']
     vocab = nlp.Vocab(counter,
                       max_size=None,
                       min_freq=1,
@@ -1331,14 +1299,10 @@ def test_vocab_identifiers_to_tokens(unknown_token, padding_token,
                       padding_token=padding_token,
                       bos_token=None,
                       eos_token=None,
-                      reserved_tokens=reserved_tokens,
-                      identifiers_to_tokens=identifiers_to_tokens)
+                      **identifiers_to_tokens)
 
     if test_serialization:
         vocab = nlp.Vocab.from_json(vocab.to_json())
-
-    for token in reserved_tokens:
-        assert token in vocab.reserved_tokens
 
     if identifiers_to_tokens:
         for identifier, token in identifiers_to_tokens.items():
@@ -1352,9 +1316,7 @@ def test_vocab_identifiers_to_tokens(unknown_token, padding_token,
 
 @pytest.mark.parametrize('unknown_token', ['<unk>', None])
 @pytest.mark.parametrize('padding_token', ['<pad>', None])
-@pytest.mark.parametrize('identifiers_to_tokens', [{'mytoken': '<tok>'}, None])
-def test_vocab_token_to_idx(unknown_token, padding_token, identifiers_to_tokens,
-                            counter):
+def test_vocab_token_to_idx(unknown_token, padding_token, counter):
     reserved_tokens = ['<tok>']
     Vocab = functools.partial(nlp.Vocab,
                               counter,

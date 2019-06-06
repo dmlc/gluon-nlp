@@ -85,15 +85,6 @@ class BERTVocab(Vocab):
         Keys of `counter`, `unknown_token`, and values of `reserved_tokens`
         must be of the same hashable type. Examples of hashable types are str,
         int, and tuple.
-    identifiers_to_tokens : dict mapping str used as identifier to tokens or None, default None
-        `identifiers_to_tokens` specifies a mapping from identifiers `name` to
-        tokens part of the resulting Vocab `v`. `v` will expose each of the
-        tokens specified as individual attributes. For example `reserved_tokens
-        = {'my_special_token': '<special>'}` results in a vocabulary object
-        with attribute `v.my_special_token == '<special>'` assuming that
-        '<special>' is part of the vocabulary. The `reserved_tokens` argument
-        can be used to add arbitrary tokens to the vocabulary. Raises
-        ValueError if a specified token is not part of the vocabulary.
     token_to_idx : dict mapping tokens (hashable objects) to int or None, default None
         Optionally specifies the indices of tokens to be used by the
         vocabulary. Each token in `token_to_index` must be part of the Vocab
@@ -129,41 +120,15 @@ class BERTVocab(Vocab):
 
     """
 
-    def __init__(self, counter=None, max_size=None, min_freq=1,
-                 unknown_token=UNKNOWN_TOKEN, padding_token=PADDING_TOKEN,
-                 bos_token=None, eos_token=None, mask_token=MASK_TOKEN,
-                 sep_token=SEP_TOKEN, cls_token=CLS_TOKEN,
-                 reserved_tokens=None, identifiers_to_tokens=None,
-                 token_to_idx=None):
+    def __init__(self, counter=None, max_size=None, min_freq=1, unknown_token=UNKNOWN_TOKEN,
+                 padding_token=PADDING_TOKEN, bos_token=None, eos_token=None, mask_token=MASK_TOKEN,
+                 sep_token=SEP_TOKEN, cls_token=CLS_TOKEN, reserved_tokens=None, token_to_idx=None):
 
-        special_bert_tokens = [
-            t for t in [mask_token, sep_token, cls_token] if t is not None
-        ]
-        if reserved_tokens:
-            reserved_tokens.extend(special_bert_tokens)
-        else:
-            reserved_tokens = special_bert_tokens
-
-        if identifiers_to_tokens is None:
-            identifiers_to_tokens = dict()
-
-        if any(t in identifiers_to_tokens
-               for t in ('mask_token', 'sep_token', 'cls_token')):
-            raise ValueError('"mask_token", "sep_token" and "cls_token" '
-                             'cannot be specified in identifiers_to_tokens for BERTVocab')
-        if mask_token:
-            identifiers_to_tokens.update(mask_token=mask_token)
-        if sep_token:
-            identifiers_to_tokens.update(sep_token=sep_token)
-        if cls_token:
-            identifiers_to_tokens.update(cls_token=cls_token)
-
-        super(BERTVocab, self).__init__(counter=counter, max_size=max_size,
-                                        min_freq=min_freq, unknown_token=unknown_token,
-                                        padding_token=padding_token, bos_token=bos_token,
-                                        eos_token=eos_token,
-                                        reserved_tokens=reserved_tokens,
-                                        identifiers_to_tokens=identifiers_to_tokens,
+        super(BERTVocab, self).__init__(counter=counter, max_size=max_size, min_freq=min_freq,
+                                        unknown_token=unknown_token, padding_token=padding_token,
+                                        bos_token=bos_token, eos_token=eos_token,
+                                        reserved_tokens=reserved_tokens, cls_token=cls_token,
+                                        sep_token=sep_token, mask_token=mask_token,
                                         token_to_idx=token_to_idx)
 
     @classmethod
@@ -183,53 +148,36 @@ class BERTVocab(Vocab):
         vocab_dict = json.loads(json_str)
         token_to_idx = vocab_dict.get('token_to_idx')
         unknown_token = vocab_dict.get('unknown_token')
-        padding_token = vocab_dict.get('padding_token')
-        bos_token = vocab_dict.get('bos_token')
-        eos_token = vocab_dict.get('eos_token')
         reserved_tokens = vocab_dict.get('reserved_tokens')
-        identifiers_to_tokens = vocab_dict.get('identifiers_to_tokens')
+        identifiers_to_tokens = vocab_dict.get('identifiers_to_tokens', dict())
 
+        special_tokens = {unknown_token}
 
-        # GluonNLP < v0.7 serialized special bert tokens individually
-        mask_token = vocab_dict.get('mask_token')
-        sep_token = vocab_dict.get('sep_token')
-        cls_token = vocab_dict.get('cls_token')
-
-        # GluonNLP >= v0.7 uses identifiers_to_tokens to serialize special bert
-        # tokens to make the serialization format compatible with the nlp.Vocab
-        # class
-        if mask_token is None and sep_token is None and cls_token is None:
-            assert identifiers_to_tokens is not None
-            if 'mask_token' in identifiers_to_tokens:
-                mask_token = identifiers_to_tokens['mask_token']
-                del identifiers_to_tokens['mask_token']
-            if 'sep_token' in identifiers_to_tokens:
-                sep_token = identifiers_to_tokens['sep_token']
-                del identifiers_to_tokens['sep_token']
-            if 'cls_token' in identifiers_to_tokens:
-                cls_token = identifiers_to_tokens['cls_token']
-                del identifiers_to_tokens['cls_token']
-
-        # workaround reserved and special tokens being serialized together
-        special_tokens = [
-            unknown_token, padding_token, bos_token, eos_token, mask_token,
-            sep_token, cls_token
+        # Backward compatibility for explicit serialization of padding_token,
+        # bos_token, eos_token, mask_token, sep_token, cls_token handling in
+        # the json string as done in older versions of GluonNLP.
+        deprecated_arguments = [
+            'padding_token', 'bos_token', 'eos_token', 'mask_token', 'sep_token', 'cls_token'
         ]
-        reserved_tokens = [
-            t for t in reserved_tokens if t not in special_tokens
-        ]
+        for token_name in deprecated_arguments:
+            token = vocab_dict.get(token_name)
+            if token is not None:
+                assert token_name not in identifiers_to_tokens, 'Invalid json string. ' \
+                    '{} was serialized twice.'.format(token_name)
+                identifiers_to_tokens[token_name] = token
+
+        # Separate reserved from special tokens
+        special_tokens.update(identifiers_to_tokens.values())
+        if reserved_tokens is not None:
+            reserved_tokens = [
+                t for t in reserved_tokens if t not in special_tokens
+            ]
 
         return cls(counter=count_tokens(token_to_idx.keys()),
                    unknown_token=unknown_token,
-                   padding_token=padding_token,
-                   bos_token=bos_token,
-                   eos_token=eos_token,
-                   mask_token=mask_token,
-                   sep_token=sep_token,
-                   cls_token=cls_token,
                    reserved_tokens=reserved_tokens,
                    token_to_idx=token_to_idx,
-                   identifiers_to_tokens=identifiers_to_tokens)
+                   **identifiers_to_tokens)
 
     @classmethod
     def from_sentencepiece(cls,

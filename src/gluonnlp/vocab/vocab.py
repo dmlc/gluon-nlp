@@ -60,8 +60,10 @@ class Vocab(object):
     min_freq : int, default 1
         The minimum frequency required for a token in the keys of `counter` to be indexed.
     unknown_token : hashable object or None, default '<unk>'
-        The representation for any unknown token. In other words, any unknown token will be indexed
-        as the same representation. If None, looking up an unknown token will result in KeyError.
+        The representation for any unknown token. If `unknown_token` is not
+        `None`, looking up any token that is not part of the vocabulary and
+        thus considered unknown will return the index of `unknown_token`. If
+        None, looking up an unknown token will result in `KeyError`.
     padding_token : hashable object or None, default '<pad>'
         The representation for the special token of padding token.
     bos_token : hashable object or None, default '<bos>'
@@ -70,27 +72,28 @@ class Vocab(object):
         The representation for the special token of end-of-sequence token.
     reserved_tokens : list of hashable objects or None, default None
         A list specifying additional tokens to be added to the vocabulary.
-        `reserved_tokens` cannot contain `unknown_token` or duplicate reserved
-        tokens.
-        Keys of `counter`, `unknown_token`, and values of `reserved_tokens`
-        must be of the same hashable type. Examples of hashable types are str,
-        int, and tuple.
-    identifiers_to_tokens : dict mapping str used as identifier to tokens or None, default None
-        `identifiers_to_tokens` specifies a mapping from identifiers `name` to
-        tokens part of the resulting Vocab `v`. `v` will expose each of the
-        tokens specified as individual attributes. For example `reserved_tokens
-        = {'my_special_token': '<special>'}` results in a vocabulary object
-        with attribute `v.my_special_token == '<special>'` assuming that
-        '<special>' is part of the vocabulary. The `reserved_tokens` argument
-        can be used to add arbitrary tokens to the vocabulary. Raises
-        ValueError if a specified token is not part of the vocabulary.
+        `reserved_tokens` must not contain the value of `unknown_token` or
+        duplicate tokens. It must neither contain special tokens specified via
+        keyword arguments.
     token_to_idx : dict mapping tokens (hashable objects) to int or None, default None
-        Optionally specifies the indices of tokens to be used by the
+        If not `None`, specifies the indices of tokens to be used by the
         vocabulary. Each token in `token_to_index` must be part of the Vocab
         and each index can only be associated with a single token.
         `token_to_idx` is not required to contain a mapping for all tokens. For
-        example, it is valid to only set the `unknown_token` index to 10 (instead
-        of the default of 0) with `token_to_idx = {'<unk>': 10}`.
+        example, it is valid to only set the `unknown_token` index to 10
+        (instead of the default of 0) with `token_to_idx = {'<unk>': 10}`,
+        assuming that there are at least 10 tokens in the vocabulary.
+    **kwargs
+        Keyword arguments of the format `xxx_token` can be used to specify
+        further special tokens that will be exposed as attribute of the
+        vocabulary and associated with an index.
+        For example, specifying `mask_token='<mask>` as additional keyword
+        argument when constructing a vocabulary `v` leads to `v.mask_token`
+        exposing the value of the special token: `<mask>`.
+        If the specified token is not part of the Vocabulary, it will be added,
+        just as if it was listed in the `reserved_tokens` argument. The
+        specified tokens are listed together with reserved tokens in the
+        `reserved_tokens` attribute of the vocabulary object.
 
     Attributes
     ----------
@@ -148,20 +151,16 @@ class Vocab(object):
      [-0.41486   0.71848  -0.3045    0.87445   0.22441 ]]
     <NDArray 2x5 @cpu(0)>
 
-    With the `identifiers_to_tokens` argument the `Vocab` object can be
-    configured to expose specified tokens as attributes.
+    Extra keyword arguments of the format `xxx_token` are used to expose
+    specified tokens as attributes.
 
-    >>> id2tok = {'special_token': 'hi'}
-    >>> my_vocab2 = gluonnlp.Vocab(counter, identifiers_to_tokens=id2tok)
-    >>> # 'hi' is exposed as my_vocab2.special_token
-    >>> print(my_vocab2.special_token)
-    hi
+    >>> my_vocab2 = gluonnlp.Vocab(counter, special_token='hi')
+    >>> my_vocab2.special_token
+    'hi'
 
     With the `token_to_idx` argument the order of the `Vocab`'s index can be
-    adapted. It is not necessary to specify the complete order but sufficient
-    to specify only the indices of tokens for a which a specific index is
-    desired. For example: By default `Vocab` assigns the index `0` to the
-    `unknown_token`. With the `token_to_idx` argument, the default can be
+    adapted. For example, `Vocab` assigns the index `0` to the `unknown_token`
+    by default. With the `token_to_idx` argument, the default can be
     overwritten. Here we assign index `3` to the unknown token representation
     `<unk>`.
 
@@ -176,35 +175,37 @@ class Vocab(object):
 
     """
 
-    # Declare internal attributes; if not declared, property getters will raise
-    # before internals are set, eg. in hasattr(self, identifier) checks
-    _embedding = None
-    _idx_to_token = None
-    _reserved_tokens = None
-    _token_to_idx = None
-    _unknown_token = None
-    _padding_token = None
-    _bos_token = None
-    _eos_token = None
-
     def __init__(self, counter=None, max_size=None, min_freq=1, unknown_token=C.UNK_TOKEN,
                  padding_token=C.PAD_TOKEN, bos_token=C.BOS_TOKEN, eos_token=C.EOS_TOKEN,
-                 reserved_tokens=None, identifiers_to_tokens=None, token_to_idx=None):
+                 reserved_tokens=None, token_to_idx=None, **kwargs):
 
         # Sanity checks.
         assert min_freq > 0, '`min_freq` must be set to a positive value.'
 
+        # Set up idx_to_token and token_to_idx based on presence of unknown token
         self._unknown_token = unknown_token
+        self._idx_to_token = [unknown_token] if unknown_token else []
+        if unknown_token:
+            self._token_to_idx = DefaultLookupDict(UNK_IDX)
+        else:
+            self._token_to_idx = {}
+
+        kwargs['padding_token'] = padding_token
+        kwargs['bos_token'] = bos_token
+        kwargs['eos_token'] = eos_token
+
+        # Handle special tokens
         special_tokens = []
-        self._padding_token = padding_token
-        if padding_token and padding_token not in special_tokens:
-            special_tokens.append(padding_token)
-        self._bos_token = bos_token
-        if bos_token and bos_token not in special_tokens:
-            special_tokens.append(bos_token)
-        self._eos_token = eos_token
-        if eos_token and eos_token not in special_tokens:
-            special_tokens.append(eos_token)
+        for special_token_name, special_token in kwargs.items():
+            # Test if kwarg specifies a special token
+            if not special_token_name.endswith('_token'):
+                raise ValueError('{} is invalid. Only keyword arguments '
+                                 'that end in \'_token\' are supported '
+                                 'to declare special tokens.'.format(special_token_name))
+
+            if special_token is not None and special_token not in special_tokens:
+                special_tokens.append(special_token)
+
         if reserved_tokens is not None:
             special_tokens.extend(reserved_tokens)
             special_token_set = set(special_tokens)
@@ -214,36 +215,26 @@ class Vocab(object):
             assert len(special_token_set) == len(special_tokens), \
                 '`reserved_tokens` cannot contain duplicate reserved tokens or ' \
                 'other special tokens.'
-        self._index_special_tokens(unknown_token, special_tokens)
-
-        if counter:
-            self._index_counter_keys(counter, unknown_token, special_tokens, max_size, min_freq)
-
-        self._identifiers_to_tokens = identifiers_to_tokens
-        if identifiers_to_tokens:
-            self._expose_tokens_as_attributes(identifiers_to_tokens)
-
-        if token_to_idx:
-            self._sort_index_according_to_user_specification(token_to_idx)
-
-        self._embedding = None
-
-    def _index_special_tokens(self, unknown_token, special_tokens):
-        """Indexes unknown and reserved tokens."""
-        self._idx_to_token = [unknown_token] if unknown_token else []
 
         if not special_tokens:
             self._reserved_tokens = None
         else:
-            self._reserved_tokens = special_tokens[:]
-            assert len(special_tokens) == len(set(special_tokens))  # sanity check
+            self._reserved_tokens = special_tokens
             self._idx_to_token.extend(special_tokens)
 
-        if unknown_token:
-            self._token_to_idx = DefaultLookupDict(UNK_IDX)
-        else:
-            self._token_to_idx = {}
         self._token_to_idx.update((token, idx) for idx, token in enumerate(self._idx_to_token))
+        self._embedding = None
+
+        if counter:
+            self._index_counter_keys(counter, unknown_token, special_tokens, max_size, min_freq)
+
+        self._identifiers_to_tokens = kwargs
+        if kwargs:
+            self._expose_tokens_as_attributes(kwargs)
+
+        if token_to_idx:
+            self._sort_index_according_to_user_specification(token_to_idx)
+
 
     def _index_counter_keys(self, counter, unknown_token, special_tokens, max_size,
                             min_freq):
@@ -273,12 +264,13 @@ class Vocab(object):
                 self._token_to_idx[token] = len(self._idx_to_token) - 1
 
     def _expose_tokens_as_attributes(self, identifiers_to_tokens):
+        # This method must not be called before internal attributes accessed by
+        # @properties getters are set. Otherwise the @properties may raise
+        # during the hasattr(self, identifier) check
+
         for identifier, token in identifiers_to_tokens.items():
-            if token not in self:
-                raise ValueError(
-                    '\'{}\' is not part of the vocabulary. '
-                    '\'{}\' cannot identify a non-existing token.'.format(
-                        token, identifier))
+            # Special tokens are automatically added to the vocab; assert, just to be sure
+            assert token is None or token in self
             if identifier.startswith('_'):
                 raise ValueError('It is not allowed to use identifiers starting with '
                                  'underscore. In Python identifier names beginning with '
@@ -330,18 +322,6 @@ class Vocab(object):
     @property
     def unknown_token(self):
         return self._unknown_token
-
-    @property
-    def padding_token(self):
-        return self._padding_token
-
-    @property
-    def bos_token(self):
-        return self._bos_token
-
-    @property
-    def eos_token(self):
-        return self._eos_token
 
     def __contains__(self, token):
         """Checks whether a text token exists in the vocabulary.
@@ -521,9 +501,6 @@ class Vocab(object):
         vocab_dict['token_to_idx'] = dict(self._token_to_idx)
         vocab_dict['reserved_tokens'] = self._reserved_tokens
         vocab_dict['unknown_token'] = self._unknown_token
-        vocab_dict['padding_token'] = self._padding_token
-        vocab_dict['bos_token'] = self._bos_token
-        vocab_dict['eos_token'] = self._eos_token
         vocab_dict['identifiers_to_tokens'] = self._identifiers_to_tokens
         return json.dumps(vocab_dict)
 
@@ -544,16 +521,28 @@ class Vocab(object):
         vocab_dict = json.loads(json_str)
         token_to_idx = vocab_dict.get('token_to_idx')
         unknown_token = vocab_dict.get('unknown_token')
-        padding_token = vocab_dict.get('padding_token')
-        bos_token = vocab_dict.get('bos_token')
-        eos_token = vocab_dict.get('eos_token')
         reserved_tokens = vocab_dict.get('reserved_tokens')
+        identifiers_to_tokens = vocab_dict.get('identifiers_to_tokens', dict())
 
-        # workaround reserved and special tokens being serialized together
-        special_tokens = [unknown_token, padding_token, bos_token, eos_token]
-        reserved_tokens = [
-            t for t in reserved_tokens if t not in special_tokens
-        ]
+        special_tokens = {unknown_token}
+
+        # Backward compatibility for explicit serialization of padding_token,
+        # bos_token, eos_token handling in the json string as done in older
+        # versions of GluonNLP.
+        deprecated_arguments = ['padding_token', 'bos_token', 'eos_token']
+        for token_name in deprecated_arguments:
+            if token_name in vocab_dict:
+                token = vocab_dict[token_name]
+                assert token_name not in identifiers_to_tokens, 'Invalid json string. ' \
+                    '{} was serialized twice.'.format(token_name)
+                identifiers_to_tokens[token_name] = token
+
+        # Separate reserved from special tokens
+        special_tokens.update(identifiers_to_tokens.values())
+        if reserved_tokens is not None:
+            reserved_tokens = [
+                t for t in reserved_tokens if t not in special_tokens
+            ]
 
         # Backward compatiblity code to deserialize corrupted vocabularies
         # created without bugfix https://github.com/dmlc/gluon-nlp/pull/749
@@ -586,12 +575,9 @@ class Vocab(object):
         vocab = cls(
             counter=count_tokens(token_to_idx.keys()),
             unknown_token=unknown_token,
-            padding_token=padding_token,
-            bos_token=bos_token,
-            eos_token=eos_token,
             reserved_tokens=reserved_tokens,
             token_to_idx=token_to_idx,
-            identifiers_to_tokens=vocab_dict.get('identifiers_to_tokens'))
+            **identifiers_to_tokens)
 
         # Backward compatiblity code to deserialize corrupted vocabularies
         # created without bugfix https://github.com/dmlc/gluon-nlp/pull/749
