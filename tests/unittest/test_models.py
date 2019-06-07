@@ -107,7 +107,7 @@ def test_pretrained_bert_models(disable_missing_parameters):
             'wiki_multilingual_cased', 'wiki_cn_cased',
             'scibert_scivocab_uncased', 'scibert_scivocab_cased', 'scibert_basevocab_uncased',
             'scibert_basevocab_cased', 'biobert_v1.0_pmc', 'biobert_v1.0_pubmed',
-            'biobert_v1.0_pubmed_pmc', 'biobert_v1.1_pubmed'
+            'biobert_v1.0_pubmed_pmc', 'biobert_v1.1_pubmed', 'clinicalbert'
         ],
         'bert_24_1024_16': ['book_corpus_wiki_en_uncased', 'book_corpus_wiki_en_cased']
     }
@@ -123,7 +123,8 @@ def test_pretrained_bert_models(disable_missing_parameters):
                   'biobert_v1.0_pubmed': 28996,
                   'biobert_v1.0_pmc': 28996,
                   'biobert_v1.0_pubmed_pmc': 28996,
-                  'biobert_v1.1_pubmed': 28996}
+                  'biobert_v1.1_pubmed': 28996,
+                  'clinicalbert': 30522}
     special_tokens = ['[UNK]', '[PAD]', '[SEP]', '[CLS]', '[MASK]']
     ones = mx.nd.ones((2, 10))
     valid_length = mx.nd.ones((2,))

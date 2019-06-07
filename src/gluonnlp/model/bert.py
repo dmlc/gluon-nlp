@@ -498,6 +498,7 @@ model_store._model_sha1.update(
         ('280ad1cc487db90489f86189e045e915b35e7489', 'bert_12_768_12_biobert_v1.0_pubmed'),
         ('8a8c75441f028a6b928b11466f3d30f4360dfff5', 'bert_12_768_12_biobert_v1.0_pubmed_pmc'),
         ('55f15c5d23829f6ee87622b68711b15fef50e55b', 'bert_12_768_12_biobert_v1.1_pubmed'),
+        ('60281c98ba3572dfdaac75131fa96e2136d70d5c', 'bert_12_768_12_clinicalbert'),
     ]})
 
 bert_12_768_12_hparams = {
@@ -558,7 +559,8 @@ def bert_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
         'scibert_scivocab_uncased', 'scibert_scivocab_cased',
         'scibert_basevocab_uncased','scibert_basevocab_cased',
         'biobert_v1.0_pmc', 'biobert_v1.0_pubmed', 'biobert_v1.0_pubmed_pmc',
-        'biobert_v1.1_pubmed'
+        'biobert_v1.1_pubmed',
+        'clinicalbert'
     vocab : gluonnlp.vocab.BERTVocab or None, default None
         Vocabulary for the dataset. Must be provided if dataset_name is not
         specified. Ignored if dataset_name is specified.
@@ -577,7 +579,8 @@ def bert_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
         Whether to include the decoder for masked language model prediction.
         Note that
         'biobert_v1.0_pmc', 'biobert_v1.0_pubmed', 'biobert_v1.0_pubmed_pmc',
-        'biobert_v1.1_pubmed'
+        'biobert_v1.1_pubmed',
+        'clinicalbert'
         do not include these parameters.
     use_classifier : bool, default True
         Whether to include the classifier for next sentence classification.
@@ -683,7 +686,8 @@ def get_bert_model(model_name=None, dataset_name=None, vocab=None, pretrained=Tr
         'scibert_scivocab_uncased', 'scibert_scivocab_cased',
         'scibert_basevocab_uncased','scibert_basevocab_cased',
         'biobert_v1.0_pmc', 'biobert_v1.0_pubmed', 'biobert_v1.0_pubmed_pmc',
-        'biobert_v1.1_pubmed'
+        'biobert_v1.1_pubmed',
+        'clinicalbert'
          are additionally supported.
     vocab : gluonnlp.vocab.BERTVocab or None, default None
         Vocabulary for the dataset. Must be provided if dataset_name is not
@@ -703,7 +707,8 @@ def get_bert_model(model_name=None, dataset_name=None, vocab=None, pretrained=Tr
         Whether to include the decoder for masked language model prediction.
         Note that
         'biobert_v1.0_pmc', 'biobert_v1.0_pubmed', 'biobert_v1.0_pubmed_pmc',
-        'biobert_v1.1_pubmed'
+        'biobert_v1.1_pubmed',
+        'clinicalbert'
         do not include these parameters.
     use_classifier : bool, default True
         Whether to include the classifier for next sentence classification.
