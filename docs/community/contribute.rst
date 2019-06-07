@@ -41,10 +41,15 @@ Make changes
 ------------
 
 Our package uses continuous integration and code coverage tools for verifying pull requests. Before
-submitting, contributor should perform the following checks:
+submitting, contributor should ensure that the following checks do not fail:
 
-- `Lint (code style) check <https://github.com/dmlc/gluon-nlp/blob/master/Jenkinsfile#L5>`__.
-- `Py2 <https://github.com/dmlc/gluon-nlp/blob/master/Jenkinsfile#L18>`__ and `Py3 <https://github.com/dmlc/gluon-nlp/blob/master/Jenkinsfile#L28>`__ tests.
+- Lint (code style)
+- Unittest (running under Python 2 and Python 3)
+- Doctest (running under Python 2 and Python 3)
+
+The commands executed by the continuous integration server to perform the tests
+are listed in the `build_steps.groovy file
+<https://github.com/dmlc/gluon-nlp/blob/master/ci/jenkins/build_steps.groovy>`__.
 
 Contribute to model zoo
 -----------------------
