@@ -28,7 +28,6 @@ import mxnet as mx
 import gluonnlp as nlp
 
 sys.path.insert(0, os.path.abspath(os.path.join(__file__, os.pardir, os.pardir)))
-from utils import tf_vocab_to_gluon_vocab
 
 parser = argparse.ArgumentParser(description='Comparison script for BERT model in Tensorflow'
                                              'and that in Gluon. This script works with '
@@ -57,6 +56,8 @@ parser.add_argument('--gluon_model', type=str, default='bert_12_768_12',
                     help='gluon model name')
 parser.add_argument('--gluon_parameter_file', type=str, default=None,
                     help='gluon parameter file name.')
+parser.add_argument('--gluon_vocab_file', type=str, default=None,
+                    help='gluon vocab file corresponding to --gluon_parameter_file.')
 
 args = parser.parse_args()
 
@@ -137,15 +138,18 @@ tf_outputs = [tensorflow_all_out[0]['features'][0]['layers'][t]['values'] for t 
 #                               Gluon MODEL                                   #
 ###############################################################################
 
-vocabulary = tf_vocab_to_gluon_vocab(tokenizer.vocab)
-bert, vocabulary = nlp.model.get_model(args.gluon_model,
-                                       dataset_name=None,
-                                       vocab=vocabulary,
-                                       pretrained=not args.gluon_parameter_file,
-                                       use_pooler=False,
-                                       use_decoder=False,
-                                       use_classifier=False)
 if args.gluon_parameter_file:
+    assert args.gluon_vocab_file, \
+        'Must specify --gluon_vocab_file when specifying --gluon_parameter_file'
+    with open(args.gluon_vocab_file, 'r') as f:
+        vocabulary = nlp.Vocab.from_json(f.read())
+    bert, vocabulary = nlp.model.get_model(args.gluon_model,
+                                           dataset_name=None,
+                                           vocab=vocabulary,
+                                           pretrained=not args.gluon_parameter_file,
+                                           use_pooler=False,
+                                           use_decoder=False,
+                                           use_classifier=False)
     try:
         bert.cast('float16')
         bert.load_parameters(args.gluon_parameter_file, ignore_extra=True)
@@ -153,6 +157,15 @@ if args.gluon_parameter_file:
     except AssertionError:
         bert.cast('float32')
         bert.load_parameters(args.gluon_parameter_file, ignore_extra=True)
+else:
+    assert not args.gluon_vocab_file, \
+        'Cannot specify --gluon_vocab_file without specifying --gluon_parameter_file'
+    bert, vocabulary = nlp.model.get_model(args.gluon_model,
+                                           dataset_name=args.gluon_dataset,
+                                           pretrained=not args.gluon_parameter_file,
+                                           use_pooler=False,
+                                           use_decoder=False,
+                                           use_classifier=False)
 
 print(bert)
 tokenizer = nlp.data.BERTTokenizer(vocabulary, lower=do_lower_case)
