@@ -21,5 +21,7 @@
 """NLP loss."""
 
 from .activation_regularizer import *
+from .loss import *
+from .label_smoothing import *
 
-__all__ = activation_regularizer.__all__
+__all__ = activation_regularizer.__all__ + loss.__all__ + label_smoothing.__all__
