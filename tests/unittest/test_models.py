@@ -132,7 +132,7 @@ def test_pretrained_bert_models(disable_missing_parameters):
     for model_name in models:
         pretrained_datasets = pretrained.get(model_name)
         for dataset in pretrained_datasets:
-            has_missing_params = 'biobert' in dataset
+            has_missing_params = any(n in dataset for n in ('biobert', 'clinicalbert'))
             if not has_missing_params and disable_missing_parameters:
                 # No parameters to disable for models pretrained on this dataset
                 continue
@@ -154,16 +154,23 @@ def test_pretrained_bert_models(disable_missing_parameters):
                                                        pretrained=True,
                                                        root='tests/data/model/',
                                                        pretrained_allow_missing=True)
-                else:
-                    # Biobert specific test case; needs to be adapted in case
-                    # of other datasets with missing parameters
-                    assert 'biobert' in dataset
+                elif 'biobert' in dataset:
+                    # Biobert specific test case
                     model, vocab = nlp.model.get_model(model_name, dataset_name=dataset,
                                                        pretrained=True,
                                                        root='tests/data/model/',
                                                        pretrained_allow_missing=True,
                                                        use_decoder=False,
                                                        use_classifier=False)
+                elif 'clinicalbert' in dataset:
+                    # Clinicalbert specific test case
+                    model, vocab = nlp.model.get_model(model_name, dataset_name=dataset,
+                                                       pretrained=True,
+                                                       root='tests/data/model/',
+                                                       pretrained_allow_missing=True,
+                                                       use_decoder=False)
+                else:
+                    assert False, "Testcase needs to be adapted."
 
             assert len(vocab) == vocab_size[dataset]
             for token in special_tokens:
