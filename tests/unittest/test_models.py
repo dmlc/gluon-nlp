@@ -101,15 +101,23 @@ def test_transformer_models():
 def test_pretrained_bert_models():
     models = ['bert_12_768_12', 'bert_24_1024_16']
     pretrained = {
-        'bert_12_768_12':
-        ['book_corpus_wiki_en_cased', 'book_corpus_wiki_en_uncased',
-         'wiki_multilingual_uncased', 'wiki_multilingual_cased', 'wiki_cn_cased'],
-        'bert_24_1024_16': ['book_corpus_wiki_en_uncased', 'book_corpus_wiki_en_cased']}
+        'bert_12_768_12': [
+            'book_corpus_wiki_en_cased', 'book_corpus_wiki_en_uncased', 'wiki_multilingual_uncased',
+            'wiki_multilingual_cased', 'wiki_cn_cased',
+            'scibert_scivocab_uncased', 'scibert_scivocab_cased', 'scibert_basevocab_uncased',
+            'scibert_basevocab_cased'
+        ],
+        'bert_24_1024_16': ['book_corpus_wiki_en_uncased', 'book_corpus_wiki_en_cased']
+    }
     vocab_size = {'book_corpus_wiki_en_cased': 28996,
                   'book_corpus_wiki_en_uncased': 30522,
                   'wiki_multilingual_cased': 119547,
                   'wiki_cn_cased': 21128,
-                  'wiki_multilingual_uncased': 105879}
+                  'wiki_multilingual_uncased': 105879,
+                  'scibert_scivocab_uncased': 31090,
+                  'scibert_scivocab_cased': 31116,
+                  'scibert_basevocab_uncased': 30522,
+                  'scibert_basevocab_cased': 28996}
     special_tokens = ['[UNK]', '[PAD]', '[SEP]', '[CLS]', '[MASK]']
     ones = mx.nd.ones((2, 10))
     valid_length = mx.nd.ones((2,))

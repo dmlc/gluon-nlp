@@ -489,7 +489,11 @@ model_store._model_sha1.update(
         ('885ebb9adc249a170c5576e90e88cfd1bbd98da6', 'bert_12_768_12_wiki_cn'),
         ('885ebb9adc249a170c5576e90e88cfd1bbd98da6', 'bert_12_768_12_wiki_cn_cased'),
         ('4e685a966f8bf07d533bd6b0e06c04136f23f620', 'bert_24_1024_16_book_corpus_wiki_en_cased'),
-        ('24551e1446180e045019a87fc4ffbf714d99c0b5', 'bert_24_1024_16_book_corpus_wiki_en_uncased')
+        ('24551e1446180e045019a87fc4ffbf714d99c0b5', 'bert_24_1024_16_book_corpus_wiki_en_uncased'),
+        ('6c82d963fc8fa79c35dd6cb3e1725d1e5b6aa7d7', 'bert_12_768_12_scibert_scivocab_uncased'),
+        ('adf9c81e72ac286a37b9002da8df9e50a753d98b', 'bert_12_768_12_scibert_scivocab_cased'),
+        ('75acea8e8386890120533d6c0032b0b3fcb2d536', 'bert_12_768_12_scibert_basevocab_uncased'),
+        ('8e86e5de55d6dae99123312cd8cdd8183a75e057', 'bert_12_768_12_scibert_basevocab_cased'),
     ]})
 
 bert_12_768_12_hparams = {
@@ -541,10 +545,17 @@ def bert_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
     Parameters
     ----------
     dataset_name : str or None, default None
-        Options include 'book_corpus_wiki_en_cased', 'book_corpus_wiki_en_uncased',
-        'wiki_cn_cased', 'wiki_multilingual_uncased' and 'wiki_multilingual_cased'.
+        If not None, the dataset name is used to load a vocabulary for the
+        dataset. If the `pretrained` argument is set to True, the dataset name
+        is further used to select the pretrained parameters to load.
+        The supported datasets are 'book_corpus_wiki_en_cased',
+        'book_corpus_wiki_en_uncased', 'wiki_cn_cased',
+        'wiki_multilingual_uncased', 'wiki_multilingual_cased',
+        'scibert_scivocab_uncased', 'scibert_scivocab_cased',
+        'scibert_basevocab_uncased','scibert_basevocab_cased'.
     vocab : gluonnlp.vocab.BERTVocab or None, default None
-        Vocabulary for the dataset. Must be provided if dataset is not specified.
+        Vocabulary for the dataset. Must be provided if dataset_name is not
+        specified. Ignored if dataset_name is specified.
     pretrained : bool, default True
         Whether to load the pretrained weights for model.
     ctx : Context, default CPU
@@ -582,9 +593,13 @@ def bert_24_1024_16(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu()
     Parameters
     ----------
     dataset_name : str or None, default None
+        If not None, the dataset name is used to load a vocabulary for the
+        dataset. If the `pretrained` argument is set to True, the dataset name
+        is further used to select the pretrained parameters to load.
         Options include 'book_corpus_wiki_en_uncased' and 'book_corpus_wiki_en_cased'.
     vocab : gluonnlp.vocab.BERTVocab or None, default None
-        Vocabulary for the dataset. Must be provided if dataset is not specified.
+        Vocabulary for the dataset. Must be provided if dataset_name is not
+        specified. Ignored if dataset_name is specified.
     pretrained : bool, default True
         Whether to load the pretrained weights for model.
     ctx : Context, default CPU
@@ -624,12 +639,20 @@ def get_bert_model(model_name=None, dataset_name=None, vocab=None,
     model_name : str or None, default None
         Options include 'bert_24_1024_16' and 'bert_12_768_12'.
     dataset_name : str or None, default None
-        Options include 'book_corpus_wiki_en_cased', 'book_corpus_wiki_en_uncased'
-        for both bert_24_1024_16 and bert_12_768_12.
-        'wiki_cn_cased', 'wiki_multilingual_uncased' and 'wiki_multilingual_cased'
-        for bert_12_768_12 only.
+        If not None, the dataset name is used to load a vocabulary for the
+        dataset. If the `pretrained` argument is set to True, the dataset name
+        is further used to select the pretrained parameters to load.
+        The supported datasets for model_name of either bert_24_1024_16 and
+        bert_12_768_12 are 'book_corpus_wiki_en_cased',
+        'book_corpus_wiki_en_uncased'.
+        For model_name bert_12_768_12 'wiki_cn_cased',
+        'wiki_multilingual_uncased', 'wiki_multilingual_cased',
+        'scibert_scivocab_uncased', 'scibert_scivocab_cased',
+        'scibert_basevocab_uncased','scibert_basevocab_cased' are additionally
+        supported.
     vocab : gluonnlp.vocab.BERTVocab or None, default None
-        Vocabulary for the dataset. Must be provided if dataset is not specified.
+        Vocabulary for the dataset. Must be provided if dataset_name is not
+        specified. Ignored if dataset_name is specified.
     pretrained : bool, default True
         Whether to load the pretrained weights for model.
     ctx : Context, default CPU
