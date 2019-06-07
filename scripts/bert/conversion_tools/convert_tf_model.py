@@ -47,6 +47,9 @@ parser.add_argument('--model',
 parser.add_argument('--tf_checkpoint_dir',
                     type=str,
                     help='Path to Tensorflow checkpoint folder.')
+parser.add_argument('--tf_model_prefix', type=str,
+                    default='bert_model.ckpt',
+                    help='name of bert checkpoint file.')
 parser.add_argument('--tf_config_name', type=str,
                     default='bert_config.json',
                     help='Name of Bert config file')
@@ -75,7 +78,7 @@ with open(gluon_vocab_path, 'w') as f:
 
 # load tf model
 tf_checkpoint_file = os.path.expanduser(
-    os.path.join(args.tf_checkpoint_dir, 'bert_model.ckpt'))
+    os.path.join(args.tf_checkpoint_dir, args.tf_model_prefix))
 logging.info('loading Tensorflow checkpoint %s ...', tf_checkpoint_file)
 tf_tensors = read_tf_checkpoint(tf_checkpoint_file)
 tf_names = sorted(tf_tensors.keys())
@@ -134,14 +137,6 @@ for source_name in tf_names:
         logging.info('warning: %s has symmetric shape %s', target_name, target.shape)
     logging.debug('%s: %s', target_name, target.shape)
 
-# post processings for parameters:
-# - handle tied decoder weight
-mx_tensors['decoder.3.weight'] = mx_tensors['word_embed.0.weight']
-logging.info('total number of tf parameters = %d', len(tf_names))
-logging.info(
-    'total number of mx parameters = %d (including decoder param for weight tying)',
-    len(mx_tensors))
-
 # BERT config
 tf_config_names_to_gluon_config_names = {
     'attention_probs_dropout_prob': 'embed_dropout',
@@ -176,6 +171,26 @@ encoder = BERTEncoder(attention_cell=predefined_args['attention_cell'],
                       dropout=predefined_args['dropout'],
                       use_residual=predefined_args['use_residual'])
 
+# Infer enabled BERTModel components
+use_pooler = any('pooler' in n for n in mx_tensors)
+use_decoder = any('decoder.0' in n for n in mx_tensors)
+use_classifier = any('classifier.weight' in n for n in mx_tensors)
+
+logging.info('Inferred that the tensorflow model provides the following parameters:')
+logging.info('- use_pooler = {}'.format(use_pooler))
+logging.info('- use_decoder = {}'.format(use_decoder))
+logging.info('- use_classifier = {}'.format(use_classifier))
+
+# post processings for parameters:
+# - handle tied decoder weight
+logging.info('total number of tf parameters = %d', len(tf_names))
+if use_decoder:
+    mx_tensors['decoder.3.weight'] = mx_tensors['word_embed.0.weight']
+    logging.info('total number of mx parameters = %d'
+                 '(including decoder param for weight tying)', len(mx_tensors))
+else:
+    logging.info('total number of mx parameters = %d', len(mx_tensors))
+
 # BERT model
 bert = BERTModel(encoder, len(vocab),
                  token_type_vocab_size=predefined_args['token_type_vocab_size'],
@@ -183,14 +198,19 @@ bert = BERTModel(encoder, len(vocab),
                  embed_size=predefined_args['embed_size'],
                  embed_dropout=predefined_args['embed_dropout'],
                  word_embed=predefined_args['word_embed'],
-                 use_pooler=True, use_decoder=True,
-                 use_classifier=True)
+                 use_pooler=use_pooler, use_decoder=use_decoder,
+                 use_classifier=use_classifier)
 
 bert.initialize(init=mx.init.Normal(0.02))
 
 ones = mx.nd.ones((2, 8))
 out = bert(ones, ones, mx.nd.array([5, 6]), mx.nd.array([[1], [2]]))
 params = bert._collect_params_with_prefix()
+if len(params) != len(mx_tensors):
+    raise RuntimeError('The Gluon BERTModel comprises {} parameter arrays, '
+                       'but {} have been extracted from the tf model. '
+                       'Most likely the BERTModel hyperparameters do not match '
+                       'the hyperparameters of the tf model.'.format(len(params), len(mx_tensors)))
 
 # set parameter data
 loaded_params = {}
