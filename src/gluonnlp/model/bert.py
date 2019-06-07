@@ -688,7 +688,7 @@ def get_bert_model(model_name=None, dataset_name=None, vocab=None, pretrained=Tr
         'biobert_v1.0_pmc', 'biobert_v1.0_pubmed', 'biobert_v1.0_pubmed_pmc',
         'biobert_v1.1_pubmed',
         'clinicalbert'
-         are additionally supported.
+        are additionally supported.
     vocab : gluonnlp.vocab.BERTVocab or None, default None
         Vocabulary for the dataset. Must be provided if dataset_name is not
         specified. Ignored if dataset_name is specified.

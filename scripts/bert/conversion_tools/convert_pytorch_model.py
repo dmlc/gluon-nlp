@@ -162,9 +162,7 @@ for name in params:
 
     arr = mx.nd.array(pytorch_parameters[pytorch_name])
 
-    if arr.shape != params[name].shape:
-        breakpoint()
-
+    assert arr.shape == params[name].shape
     params[name].set_data(arr)
     loaded_params[name] = True
 
