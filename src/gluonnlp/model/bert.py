@@ -496,7 +496,8 @@ model_store._model_sha1.update(
         ('8e86e5de55d6dae99123312cd8cdd8183a75e057', 'bert_12_768_12_scibert_basevocab_cased'),
         ('a07780385add682f609772e81ec64aca77c9fb05', 'bert_12_768_12_biobert_v1.0_pmc_cased'),
         ('280ad1cc487db90489f86189e045e915b35e7489', 'bert_12_768_12_biobert_v1.0_pubmed_cased'),
-        ('8a8c75441f028a6b928b11466f3d30f4360dfff5', 'bert_12_768_12_biobert_v1.0_pubmed_pmc_cased'),
+        ('8a8c75441f028a6b928b11466f3d30f4360dfff5',
+         'bert_12_768_12_biobert_v1.0_pubmed_pmc_cased'),
         ('55f15c5d23829f6ee87622b68711b15fef50e55b', 'bert_12_768_12_biobert_v1.1_pubmed_cased'),
         ('60281c98ba3572dfdaac75131fa96e2136d70d5c', 'bert_12_768_12_clinicalbert_uncased'),
     ]})
