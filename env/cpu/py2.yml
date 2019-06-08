@@ -6,7 +6,7 @@ dependencies:
   - perl
   - pylint<2
   - flake8
-  - sphinx=2.1.0
+  - sphinx<2
   - spacy
   - nltk
   - pytest=4.5.0
