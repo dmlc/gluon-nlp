@@ -32,7 +32,7 @@ from gluonnlp.model import BERTEncoder, BERTModel
 from gluonnlp.model.bert import bert_hparams
 
 sys.path.insert(0, os.path.abspath(os.path.join(__file__, os.pardir, os.pardir)))
-from utils import get_hash, load_tf_vocab, tf_vocab_to_gluon_vocab
+from utils import get_hash, load_text_vocab, tf_vocab_to_gluon_vocab
 
 parser = argparse.ArgumentParser(description='Conversion script for PyTorch BERT model',
                                  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -52,7 +52,7 @@ logging.getLogger().setLevel(logging.DEBUG if args.debug else logging.INFO)
 logging.info(args)
 
 # convert vocabulary
-vocab = tf_vocab_to_gluon_vocab(load_tf_vocab(args.vocab_file))
+vocab = tf_vocab_to_gluon_vocab(load_text_vocab(args.vocab_file))
 
 # vocab serialization
 tmp_file_path = os.path.expanduser(os.path.join(args.out_dir, 'tmp'))

@@ -26,7 +26,7 @@ import io
 import mxnet as mx
 import gluonnlp as nlp
 
-__all__ = ['tf_vocab_to_gluon_vocab', 'load_tf_vocab']
+__all__ = ['tf_vocab_to_gluon_vocab', 'load_text_vocab']
 
 
 def tf_vocab_to_gluon_vocab(tf_vocab):
@@ -76,7 +76,7 @@ def profile(curr_step, start_step, end_step, profile_name='profile.json',
         if early_exit:
             exit()
 
-def load_tf_vocab(vocab_file):
+def load_text_vocab(vocab_file):
     """Loads a vocabulary file into a dictionary."""
     vocab = collections.OrderedDict()
     index = 0

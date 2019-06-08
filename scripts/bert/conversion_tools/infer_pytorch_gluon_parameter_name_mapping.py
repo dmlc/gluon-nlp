@@ -35,7 +35,7 @@ import gluonnlp as nlp
 import torch
 
 sys.path.insert(0, os.path.abspath(os.path.join(__file__, os.pardir, os.pardir)))
-from utils import load_tf_vocab, tf_vocab_to_gluon_vocab
+from utils import load_text_vocab, tf_vocab_to_gluon_vocab
 
 parser = argparse.ArgumentParser(description='Pytorch BERT Naming Convention',
                                  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -53,9 +53,7 @@ logging.getLogger().setLevel(logging.DEBUG if args.debug else logging.INFO)
 logging.info(args)
 
 # Load Gluon Model
-# TODO root is only set until parameters are uploaded to S3
-bert, vocab = nlp.model.get_model(args.model, dataset_name=args.dataset_name, pretrained=True,
-                                  root='/home/ubuntu/projects/gluon-nlp/tests/data/model/')
+bert, vocab = nlp.model.get_model(args.model, dataset_name=args.dataset_name, pretrained=True)
 parameters = bert._collect_params_with_prefix()
 parameters = {k: v.data().asnumpy() for k, v in parameters.items()}
 
@@ -63,7 +61,7 @@ parameters = {k: v.data().asnumpy() for k, v in parameters.items()}
 pytorch_parameters = torch.load(os.path.join(args.pytorch_checkpoint_dir, 'pytorch_model.bin'),
                                 map_location=lambda storage, loc: storage)
 pytorch_vocab = tf_vocab_to_gluon_vocab(
-    load_tf_vocab(os.path.join(args.pytorch_checkpoint_dir, 'vocab.txt')))
+    load_text_vocab(os.path.join(args.pytorch_checkpoint_dir, 'vocab.txt')))
 pytorch_parameters = {k: v.numpy() for k, v in pytorch_parameters.items()}
 
 # Assert that vocabularies are equal

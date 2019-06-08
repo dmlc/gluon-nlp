@@ -32,7 +32,7 @@ from gluonnlp.model.bert import bert_hparams
 
 sys.path.insert(0, os.path.abspath(os.path.join(__file__, os.pardir, os.pardir)))
 
-from utils import (get_hash, load_tf_vocab, read_tf_checkpoint,
+from utils import (get_hash, load_text_vocab, read_tf_checkpoint,
                    tf_vocab_to_gluon_vocab)
 
 
@@ -64,7 +64,7 @@ logging.info(args)
 
 # convert vocabulary
 vocab_path = os.path.join(args.tf_checkpoint_dir, 'vocab.txt')
-vocab = tf_vocab_to_gluon_vocab(load_tf_vocab(vocab_path))
+vocab = tf_vocab_to_gluon_vocab(load_text_vocab(vocab_path))
 
 # vocab serialization
 tmp_file_path = os.path.expanduser(os.path.join(args.out_dir, 'tmp'))
