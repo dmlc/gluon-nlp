@@ -227,7 +227,16 @@ _vocab_sha1 = {'wikitext-2': 'be36dc5238c2e7d69720881647ab72eb506d0131',
                'wiki_cn_cased': 'ddebd8f3867bca5a61023f73326fb125cf12b4f5',
                'wiki_cn': 'ddebd8f3867bca5a61023f73326fb125cf12b4f5',
                'wiki_multilingual_uncased': '2b2514cc539047b9179e9d98a4e68c36db05c97a',
-               'wiki_multilingual': '2b2514cc539047b9179e9d98a4e68c36db05c97a'}
+               'wiki_multilingual': '2b2514cc539047b9179e9d98a4e68c36db05c97a',
+               'scibert_scivocab_uncased': '2d2566bfc416790ab2646ab0ada36ba628628d60',
+               'scibert_scivocab_cased': '2c714475b521ab8542cb65e46259f6bfeed8041b',
+               'scibert_basevocab_uncased': '80ef760a6bdafec68c99b691c94ebbb918c90d02',
+               'scibert_basevocab_cased': 'a4ff6fe1f85ba95f3010742b9abc3a818976bb2c',
+               'biobert_v1.0_pmc_cased': 'a4ff6fe1f85ba95f3010742b9abc3a818976bb2c',
+               'biobert_v1.0_pubmed_cased': 'a4ff6fe1f85ba95f3010742b9abc3a818976bb2c',
+               'biobert_v1.0_pubmed_pmc_cased': 'a4ff6fe1f85ba95f3010742b9abc3a818976bb2c',
+               'biobert_v1.1_pubmed_cased': 'a4ff6fe1f85ba95f3010742b9abc3a818976bb2c',
+               'clinicalbert_uncased': '80ef760a6bdafec68c99b691c94ebbb918c90d02'}
 
 
 _url_format = '{repo_url}gluon/dataset/vocab/{file_name}.zip'

@@ -489,7 +489,17 @@ model_store._model_sha1.update(
         ('885ebb9adc249a170c5576e90e88cfd1bbd98da6', 'bert_12_768_12_wiki_cn'),
         ('885ebb9adc249a170c5576e90e88cfd1bbd98da6', 'bert_12_768_12_wiki_cn_cased'),
         ('4e685a966f8bf07d533bd6b0e06c04136f23f620', 'bert_24_1024_16_book_corpus_wiki_en_cased'),
-        ('24551e1446180e045019a87fc4ffbf714d99c0b5', 'bert_24_1024_16_book_corpus_wiki_en_uncased')
+        ('24551e1446180e045019a87fc4ffbf714d99c0b5', 'bert_24_1024_16_book_corpus_wiki_en_uncased'),
+        ('6c82d963fc8fa79c35dd6cb3e1725d1e5b6aa7d7', 'bert_12_768_12_scibert_scivocab_uncased'),
+        ('adf9c81e72ac286a37b9002da8df9e50a753d98b', 'bert_12_768_12_scibert_scivocab_cased'),
+        ('75acea8e8386890120533d6c0032b0b3fcb2d536', 'bert_12_768_12_scibert_basevocab_uncased'),
+        ('8e86e5de55d6dae99123312cd8cdd8183a75e057', 'bert_12_768_12_scibert_basevocab_cased'),
+        ('a07780385add682f609772e81ec64aca77c9fb05', 'bert_12_768_12_biobert_v1.0_pmc_cased'),
+        ('280ad1cc487db90489f86189e045e915b35e7489', 'bert_12_768_12_biobert_v1.0_pubmed_cased'),
+        ('8a8c75441f028a6b928b11466f3d30f4360dfff5',
+         'bert_12_768_12_biobert_v1.0_pubmed_pmc_cased'),
+        ('55f15c5d23829f6ee87622b68711b15fef50e55b', 'bert_12_768_12_biobert_v1.1_pubmed_cased'),
+        ('60281c98ba3572dfdaac75131fa96e2136d70d5c', 'bert_12_768_12_clinicalbert_uncased'),
     ]})
 
 bert_12_768_12_hparams = {
@@ -531,8 +541,8 @@ bert_hparams = {
 
 
 def bert_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
-                   root=os.path.join(get_home_dir(), 'models'), use_pooler=True,
-                   use_decoder=True, use_classifier=True, **kwargs):
+                   root=os.path.join(get_home_dir(), 'models'), use_pooler=True, use_decoder=True,
+                   use_classifier=True, pretrained_allow_missing=False, **kwargs):
     """Generic BERT BASE model.
 
     The number of layers (L) is 12, number of units (H) is 768, and the
@@ -541,10 +551,20 @@ def bert_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
     Parameters
     ----------
     dataset_name : str or None, default None
-        Options include 'book_corpus_wiki_en_cased', 'book_corpus_wiki_en_uncased',
-        'wiki_cn_cased', 'wiki_multilingual_uncased' and 'wiki_multilingual_cased'.
+        If not None, the dataset name is used to load a vocabulary for the
+        dataset. If the `pretrained` argument is set to True, the dataset name
+        is further used to select the pretrained parameters to load.
+        The supported datasets are 'book_corpus_wiki_en_cased',
+        'book_corpus_wiki_en_uncased', 'wiki_cn_cased',
+        'wiki_multilingual_uncased', 'wiki_multilingual_cased',
+        'scibert_scivocab_uncased', 'scibert_scivocab_cased',
+        'scibert_basevocab_uncased','scibert_basevocab_cased',
+        'biobert_v1.0_pmc', 'biobert_v1.0_pubmed', 'biobert_v1.0_pubmed_pmc',
+        'biobert_v1.1_pubmed',
+        'clinicalbert'
     vocab : gluonnlp.vocab.BERTVocab or None, default None
-        Vocabulary for the dataset. Must be provided if dataset is not specified.
+        Vocabulary for the dataset. Must be provided if dataset_name is not
+        specified. Ignored if dataset_name is specified.
     pretrained : bool, default True
         Whether to load the pretrained weights for model.
     ctx : Context, default CPU
@@ -558,22 +578,42 @@ def bert_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
         for for segment level classification task.
     use_decoder : bool, default True
         Whether to include the decoder for masked language model prediction.
+        Note that
+        'biobert_v1.0_pmc', 'biobert_v1.0_pubmed', 'biobert_v1.0_pubmed_pmc',
+        'biobert_v1.1_pubmed',
+        'clinicalbert'
+        do not include these parameters.
     use_classifier : bool, default True
         Whether to include the classifier for next sentence classification.
+        Note that
+        'biobert_v1.0_pmc', 'biobert_v1.0_pubmed', 'biobert_v1.0_pubmed_pmc',
+        'biobert_v1.1_pubmed'
+        do not include these parameters.
+    pretrained_allow_missing : bool, default False
+        Whether to ignore if any parameters for the BERTModel are missing in
+        the pretrained weights for model.
+        Some BERTModels for example do not provide decoder or classifier
+        weights. In that case it is still possible to construct a BERTModel
+        with use_decoder=True and/or use_classifier=True, but the respective
+        parameters will be missing from the pretrained file.
+        If pretrained_allow_missing=True, this will be ignored and the
+        parameters will be left uninitialized. Otherwise AssertionError is
+        raised.
 
     Returns
     -------
     BERTModel, gluonnlp.vocab.BERTVocab
     """
-    return get_bert_model(model_name='bert_12_768_12', vocab=vocab,
-                          dataset_name=dataset_name, pretrained=pretrained, ctx=ctx,
-                          use_pooler=use_pooler, use_decoder=use_decoder,
-                          use_classifier=use_classifier, root=root, **kwargs)
+    return get_bert_model(model_name='bert_12_768_12', vocab=vocab, dataset_name=dataset_name,
+                          pretrained=pretrained, ctx=ctx, use_pooler=use_pooler,
+                          use_decoder=use_decoder, use_classifier=use_classifier, root=root,
+                          pretrained_allow_missing=pretrained_allow_missing, **kwargs)
 
 
-def bert_24_1024_16(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
-                    use_pooler=True, use_decoder=True, use_classifier=True,
-                    root=os.path.join(get_home_dir(), 'models'), **kwargs):
+def bert_24_1024_16(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(), use_pooler=True,
+                    use_decoder=True, use_classifier=True,
+                    root=os.path.join(get_home_dir(), 'models'),
+                    pretrained_allow_missing=False, **kwargs):
     """Generic BERT LARGE model.
 
     The number of layers (L) is 24, number of units (H) is 1024, and the
@@ -582,9 +622,13 @@ def bert_24_1024_16(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu()
     Parameters
     ----------
     dataset_name : str or None, default None
+        If not None, the dataset name is used to load a vocabulary for the
+        dataset. If the `pretrained` argument is set to True, the dataset name
+        is further used to select the pretrained parameters to load.
         Options include 'book_corpus_wiki_en_uncased' and 'book_corpus_wiki_en_cased'.
     vocab : gluonnlp.vocab.BERTVocab or None, default None
-        Vocabulary for the dataset. Must be provided if dataset is not specified.
+        Vocabulary for the dataset. Must be provided if dataset_name is not
+        specified. Ignored if dataset_name is specified.
     pretrained : bool, default True
         Whether to load the pretrained weights for model.
     ctx : Context, default CPU
@@ -600,23 +644,31 @@ def bert_24_1024_16(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu()
         Whether to include the decoder for masked language model prediction.
     use_classifier : bool, default True
         Whether to include the classifier for next sentence classification.
+    pretrained_allow_missing : bool, default False
+        Whether to ignore if any parameters for the BERTModel are missing in
+        the pretrained weights for model.
+        Some BERTModels for example do not provide decoder or classifier
+        weights. In that case it is still possible to construct a BERTModel
+        with use_decoder=True and/or use_classifier=True, but the respective
+        parameters will be missing from the pretrained file.
+        If pretrained_allow_missing=True, this will be ignored and the
+        parameters will be left uninitialized. Otherwise AssertionError is
+        raised.
 
     Returns
     -------
     BERTModel, gluonnlp.vocab.BERTVocab
     """
-    return get_bert_model(model_name='bert_24_1024_16', vocab=vocab,
-                          dataset_name=dataset_name, pretrained=pretrained,
-                          ctx=ctx, use_pooler=use_pooler,
-                          use_decoder=use_decoder, use_classifier=use_classifier,
-                          root=root, **kwargs)
+    return get_bert_model(model_name='bert_24_1024_16', vocab=vocab, dataset_name=dataset_name,
+                          pretrained=pretrained, ctx=ctx, use_pooler=use_pooler,
+                          use_decoder=use_decoder, use_classifier=use_classifier, root=root,
+                          pretrained_allow_missing=pretrained_allow_missing, **kwargs)
 
 
-def get_bert_model(model_name=None, dataset_name=None, vocab=None,
-                   pretrained=True, ctx=mx.cpu(),
-                   use_pooler=True, use_decoder=True, use_classifier=True,
-                   output_attention=False, output_all_encodings=False,
-                   root=os.path.join(get_home_dir(), 'models'), **kwargs):
+def get_bert_model(model_name=None, dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
+                   use_pooler=True, use_decoder=True, use_classifier=True, output_attention=False,
+                   output_all_encodings=False, root=os.path.join(get_home_dir(), 'models'),
+                   pretrained_allow_missing=False, **kwargs):
     """Any BERT pretrained model.
 
     Parameters
@@ -624,12 +676,23 @@ def get_bert_model(model_name=None, dataset_name=None, vocab=None,
     model_name : str or None, default None
         Options include 'bert_24_1024_16' and 'bert_12_768_12'.
     dataset_name : str or None, default None
-        Options include 'book_corpus_wiki_en_cased', 'book_corpus_wiki_en_uncased'
-        for both bert_24_1024_16 and bert_12_768_12.
-        'wiki_cn_cased', 'wiki_multilingual_uncased' and 'wiki_multilingual_cased'
-        for bert_12_768_12 only.
+        If not None, the dataset name is used to load a vocabulary for the
+        dataset. If the `pretrained` argument is set to True, the dataset name
+        is further used to select the pretrained parameters to load.
+        The supported datasets for model_name of either bert_24_1024_16 and
+        bert_12_768_12 are 'book_corpus_wiki_en_cased',
+        'book_corpus_wiki_en_uncased'.
+        For model_name bert_12_768_12 'wiki_cn_cased',
+        'wiki_multilingual_uncased', 'wiki_multilingual_cased',
+        'scibert_scivocab_uncased', 'scibert_scivocab_cased',
+        'scibert_basevocab_uncased','scibert_basevocab_cased',
+        'biobert_v1.0_pmc', 'biobert_v1.0_pubmed', 'biobert_v1.0_pubmed_pmc',
+        'biobert_v1.1_pubmed',
+        'clinicalbert'
+        are additionally supported.
     vocab : gluonnlp.vocab.BERTVocab or None, default None
-        Vocabulary for the dataset. Must be provided if dataset is not specified.
+        Vocabulary for the dataset. Must be provided if dataset_name is not
+        specified. Ignored if dataset_name is specified.
     pretrained : bool, default True
         Whether to load the pretrained weights for model.
     ctx : Context, default CPU
@@ -643,12 +706,31 @@ def get_bert_model(model_name=None, dataset_name=None, vocab=None,
         for for segment level classification task.
     use_decoder : bool, default True
         Whether to include the decoder for masked language model prediction.
+        Note that
+        'biobert_v1.0_pmc', 'biobert_v1.0_pubmed', 'biobert_v1.0_pubmed_pmc',
+        'biobert_v1.1_pubmed',
+        'clinicalbert'
+        do not include these parameters.
     use_classifier : bool, default True
         Whether to include the classifier for next sentence classification.
+        Note that
+        'biobert_v1.0_pmc', 'biobert_v1.0_pubmed', 'biobert_v1.0_pubmed_pmc',
+        'biobert_v1.1_pubmed'
+        do not include these parameters.
     output_attention : bool, default False
         Whether to include attention weights of each encoding cell to the output.
     output_all_encodings : bool, default False
         Whether to output encodings of all encoder cells.
+    pretrained_allow_missing : bool, default False
+        Whether to ignore if any parameters for the BERTModel are missing in
+        the pretrained weights for model.
+        Some BERTModels for example do not provide decoder or classifier
+        weights. In that case it is still possible to construct a BERTModel
+        with use_decoder=True and/or use_classifier=True, but the respective
+        parameters will be missing from the pretrained file.
+        If pretrained_allow_missing=True, this will be ignored and the
+        parameters will be left uninitialized. Otherwise AssertionError is
+        raised.
 
     Returns
     -------
@@ -689,6 +771,6 @@ def get_bert_model(model_name=None, dataset_name=None, vocab=None,
                     use_classifier=use_classifier)
     if pretrained:
         ignore_extra = not (use_pooler and use_decoder and use_classifier)
-        _load_pretrained_params(net, model_name, dataset_name, root, ctx,
-                                ignore_extra=ignore_extra)
+        _load_pretrained_params(net, model_name, dataset_name, root, ctx, ignore_extra=ignore_extra,
+                                allow_missing=pretrained_allow_missing)
     return net, bert_vocab
