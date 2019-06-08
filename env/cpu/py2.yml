@@ -4,9 +4,9 @@ dependencies:
   - python=2.7
   - pip=18.1
   - perl
-  - pylint=1.9.2
+  - pylint<2
   - flake8
-  - sphinx=1.7.7
+  - sphinx<2
   - spacy
   - nltk
   - pytest=4.5.0
@@ -15,6 +15,6 @@ dependencies:
   - mock<3
   - pytest-xdist<2
   - pip:
-    - pylint-quotes<0.2
+    - pylint-quotes<0.3
     - mxnet-mkl>=1.4.0
     - sentencepiece<0.2
