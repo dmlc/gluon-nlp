@@ -246,7 +246,8 @@ class BaseTransformerEncoderCell(HybridBlock):
         positionwise_ffn = BERTPositionwiseFFN if use_bert else PositionwiseFFN
         ffn_params = {'units':units, 'hidden_size':hidden_size, 'dropout':dropout,
                       'use_residual':use_residual,
-                      'weight_initializer': weight_initializer, 'bias_initializer': bias_initializer}
+                      'weight_initializer': weight_initializer,
+                      'bias_initializer': bias_initializer}
         if layer_norm_eps:
             ffn_params['layer_norm_eps'] = layer_norm_eps
         if activation:
@@ -369,7 +370,8 @@ class BaseTransformerEncoder(HybridBlock, Seq2SeqEncoder):
         with self.name_scope():
             if dropout:
                 self.dropout_layer = nn.Dropout(rate=dropout)
-            self.layer_norm = _get_layer_norm(use_bert_encoder, units, layer_norm_eps=layer_norm_eps)
+            self.layer_norm = _get_layer_norm(use_bert_encoder, units,
+                                              layer_norm_eps=layer_norm_eps)
             self.position_weight = self._get_positional(positional_weight, max_length, units,
                                                         weight_initializer)
             self.transformer_cells = nn.HybridSequential()
