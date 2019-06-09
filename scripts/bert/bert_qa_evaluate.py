@@ -21,6 +21,7 @@ from collections import Counter, namedtuple, OrderedDict
 import six
 from mxnet import nd
 
+PredResult = collections.namedtuple('PredResult', ['start', 'end'])
 
 def _get_best_indexes(logits, n_best_size):
     """Get the n-best logits from a list."""

@@ -21,9 +21,7 @@ from functools import partial
 from mxnet.gluon.data import SimpleDataset
 from gluonnlp.data.utils import whitespace_splitter
 
-__all__ = ['SQuADTransform', 'preprocess_dataset', 'PredResult']
-
-PredResult = collections.namedtuple('PredResult', ['start', 'end'])
+__all__ = ['SQuADTransform', 'preprocess_dataset']
 
 class SquadExample(object):
     """A single training/test example for SQuAD question.

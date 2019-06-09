@@ -48,13 +48,12 @@ import collections
 
 import numpy as np
 import mxnet as mx
-from mxnet import gluon, nd
 
 import gluonnlp as nlp
 from gluonnlp.data import SQuAD
 from model.qa import BertForQALoss, BertForQA
 from data.qa import SQuADTransform, preprocess_dataset, PredResult
-from bert_qa_evaluate import get_F1_EM, predict
+from bert_qa_evaluate import get_F1_EM, predict, PredResult
 
 np.random.seed(6)
 random.seed(6)
@@ -313,14 +312,14 @@ def train():
 
     optimizer_params = {'learning_rate': lr}
     try:
-        trainer = gluon.Trainer(net.collect_params(), optimizer,
-                                optimizer_params, update_on_kvstore=False)
+        trainer = mx.gluon.Trainer(net.collect_params(), optimizer,
+                                   optimizer_params, update_on_kvstore=False)
     except ValueError as e:
         print(e)
         warnings.warn('AdamW optimizer is not found. Please consider upgrading to '
                       'mxnet>=1.5.0. Now the original Adam optimizer is used instead.')
-        trainer = gluon.Trainer(net.collect_params(), 'adam',
-                                optimizer_params, update_on_kvstore=False)
+        trainer = mx.gluon.Trainer(net.collect_params(), 'adam',
+                                   optimizer_params, update_on_kvstore=False)
 
     num_train_examples = len(train_data_transform)
     step_size = batch_size * accumulate if accumulate else batch_size
@@ -466,7 +465,7 @@ def evaluate():
                   token_types.astype('float32').as_in_context(ctx),
                   valid_length.astype('float32').as_in_context(ctx))
 
-        output = nd.split(out, axis=2, num_outputs=2)
+        output = mx.nd.split(out, axis=2, num_outputs=2)
         example_ids = example_ids.asnumpy().tolist()
         pred_start = output[0].reshape((0, -3)).asnumpy()
         pred_end = output[1].reshape((0, -3)).asnumpy()
