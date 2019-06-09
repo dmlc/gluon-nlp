@@ -170,7 +170,8 @@ class TokenEmbedding(object):
         not specified.
     init_unknown_vec : callback, default nd.zeros
         The callback used to initialize the embedding vector for the unknown
-        token. Only used if `unknown_token` is not None.
+        token. Only used if `unknown_token` is not None and `idx_to_token` is
+        not None and does not contain `unknown_vec`.
     allow_extend : bool, default False
         If True, embedding vectors for previously unknown words can be added
         via token_embedding[tokens] = vecs. If False, only vectors for known
@@ -180,6 +181,24 @@ class TokenEmbedding(object):
         automatically from `unknown_lookup[unknown_tokens]`. For example, in a
         FastText model, embeddings for unknown tokens can be computed from the
         subword information.
+    idx_to_token : list of str or None, default None
+        If not None, a list of tokens for which the `idx_to_vec` argument
+        provides embeddings. The list indices and the indices of `idx_to_vec`
+        must be aligned.
+        If `idx_to_token` is not None, `idx_to_vec` must not be None either.
+        If `idx_to_token` is None, an empty TokenEmbedding object is created.
+        If `allow_extend` is True, tokens and their embeddings can be added to
+        the TokenEmbedding at a later stage.
+    idx_to_vec : mxnet.ndarray.NDArray or None, default None
+        If not None, a NDArray containing embeddings for the tokens specified
+        in `idx_to_token`. The first dimension of `idx_to_vec` must be aligned
+        with `idx_to_token`.
+        If `idx_to_vec` is not None, `idx_to_token` must not be None either.
+        If `idx_to_vec` is None, an empty TokenEmbedding object is created.
+        If `allow_extend` is True, tokens and their embeddings can be added to
+        the TokenEmbedding at a later stage.
+        No copy of the idx_to_vec array is made as long as unknown_token is
+        None or an embedding for unknown_token is specified in `idx_to_vec`.
 
     """
 
