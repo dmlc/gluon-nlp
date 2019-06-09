@@ -19,7 +19,7 @@
 """BERT models."""
 
 __all__ = ['BERTModel', 'BERTEncoder', 'BERTEncoderCell', 'BERTPositionwiseFFN',
-           'BERTLayerNorm', 'bert_12_768_12', 'bert_24_1024_16', 'get_bert_model']
+           'BERTLayerNorm', 'bert_12_768_12', 'bert_24_1024_16', 'get_bert_model', 'ernie_12_768_12']
 
 import os
 import warnings
@@ -82,6 +82,10 @@ class BERTPositionwiseFFN(BasePositionwiseFFN):
         Prefix for name of `Block`s (and name of weight if params is `None`).
     params : Parameter or None
         Container for weight sharing between cells. Created if `None`.
+    activation : str, default None
+        Activation methods in PositionwiseFFN
+    layer_norm_eps : float, default None
+        Epsilon for layer_norm
 
     Inputs:
         - **inputs** : input sequence of shape (batch_size, length, C_in).
@@ -92,15 +96,16 @@ class BERTPositionwiseFFN(BasePositionwiseFFN):
 
     def __init__(self, units=512, hidden_size=2048, dropout=0.0, use_residual=True,
                  weight_initializer=None, bias_initializer='zeros',
-                 prefix=None, params=None):
+                 prefix=None, params=None, activation=None, layer_norm_eps=None):
         super(BERTPositionwiseFFN, self).__init__(units=units, hidden_size=hidden_size,
                                                   dropout=dropout, use_residual=use_residual,
                                                   weight_initializer=weight_initializer,
                                                   bias_initializer=bias_initializer,
                                                   prefix=prefix, params=params,
                                                   # extra configurations for BERT
-                                                  activation='gelu',
-                                                  use_bert_layer_norm=True)
+                                                  activation=activation,
+                                                  use_bert_layer_norm=True,
+                                                  layer_norm_eps=layer_norm_eps)
 
 
 class BERTEncoder(BaseTransformerEncoder):
@@ -144,6 +149,10 @@ class BERTEncoder(BaseTransformerEncoder):
         Prefix for name of `Block`s. (and name of weight if params is `None`).
     params : Parameter or None
         Container for weight sharing between cells. Created if `None`.
+    activation : str, default None
+        Activation methods in PositionwiseFFN
+    layer_norm_eps : float, default None
+        Epsilon for layer_norm
 
     Inputs:
         - **inputs** : input sequence of shape (batch_size, length, C_in)
@@ -163,7 +172,7 @@ class BERTEncoder(BaseTransformerEncoder):
                  num_heads=4, scaled=True, dropout=0.0,
                  use_residual=True, output_attention=False, output_all_encodings=False,
                  weight_initializer=None, bias_initializer='zeros',
-                 prefix=None, params=None):
+                 prefix=None, params=None, activation=None, layer_norm_eps=None):
         super(BERTEncoder, self).__init__(attention_cell=attention_cell,
                                           num_layers=num_layers, units=units,
                                           hidden_size=hidden_size, max_length=max_length,
@@ -178,7 +187,9 @@ class BERTEncoder(BaseTransformerEncoder):
                                           positional_weight='learned',
                                           use_bert_encoder=True,
                                           use_layer_norm_before_dropout=False,
-                                          scale_embed=False)
+                                          scale_embed=False,
+                                          activation=activation,
+                                          layer_norm_eps=layer_norm_eps)
 
 
 class BERTEncoderCell(BaseTransformerEncoderCell):
@@ -216,6 +227,10 @@ class BERTEncoderCell(BaseTransformerEncoderCell):
         Prefix for name of `Block`s. (and name of weight if params is `None`).
     params : Parameter or None
         Container for weight sharing between cells. Created if `None`.
+    activation : str, default None
+        Activation methods in PositionwiseFFN
+    layer_norm_eps : float, default None
+        Epsilon for layer_norm
 
     Inputs:
         - **inputs** : input sequence. Shape (batch_size, length, C_in)
@@ -231,7 +246,7 @@ class BERTEncoderCell(BaseTransformerEncoderCell):
                  hidden_size=512, num_heads=4, scaled=True,
                  dropout=0.0, use_residual=True, output_attention=False,
                  weight_initializer=None, bias_initializer='zeros',
-                 prefix=None, params=None):
+                 prefix=None, params=None, activation=None, layer_norm_eps=None):
         super(BERTEncoderCell, self).__init__(attention_cell=attention_cell,
                                               units=units, hidden_size=hidden_size,
                                               num_heads=num_heads, scaled=scaled,
@@ -244,7 +259,9 @@ class BERTEncoderCell(BaseTransformerEncoderCell):
                                               attention_use_bias=True,
                                               attention_proj_use_bias=True,
                                               use_bert_layer_norm=True,
-                                              use_bert_ffn=True)
+                                              use_bert_ffn=True,
+                                              activation=activation,
+                                              layer_norm_eps=layer_norm_eps)
 
 ###############################################################################
 #                                FULL MODEL                                   #
@@ -534,9 +551,28 @@ bert_24_1024_16_hparams = {
     'word_embed': None,
 }
 
+ernie_12_768_12_hparams = {
+    'attention_cell': 'multi_head',
+    'num_layers': 12,
+    'units': 768,
+    'hidden_size': 3072,
+    'max_length': 513,
+    'num_heads': 12,
+    'scaled': True,
+    'dropout': 0.1,
+    'use_residual': True,
+    'embed_size': 768,
+    'embed_dropout': 0.1,
+    'token_type_vocab_size': 2,
+    'word_embed': None,
+    'activation': 'relu',
+    'layer_norm_eps': 1e-5
+}
+
 bert_hparams = {
     'bert_12_768_12': bert_12_768_12_hparams,
     'bert_24_1024_16': bert_24_1024_16_hparams,
+    'ernie_12_768_12': ernie_12_768_12_hparams
 }
 
 
@@ -665,6 +701,61 @@ def bert_24_1024_16(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu()
                           pretrained_allow_missing=pretrained_allow_missing, **kwargs)
 
 
+def ernie_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
+                   root=os.path.join(get_home_dir(), 'models'), use_pooler=True, use_decoder=True,
+                   use_classifier=True, pretrained_allow_missing=False, **kwargs):
+    """baidu ERNIE model.
+
+    The number of layers (L) is 12, number of units (H) is 768, and the
+    number of self-attention heads (A) is 12.
+
+    Parameters
+    ----------
+    dataset_name : str or None, default None
+        If not None, the dataset name is used to load a vocabulary for the
+        dataset. If the `pretrained` argument is set to True, the dataset name
+        is further used to select the pretrained parameters to load.
+        The supported datasets are 'ernie'
+        :TODO add dataset
+    vocab : gluonnlp.vocab.BERTVocab or None, default None
+        Vocabulary for the dataset. Must be provided if dataset_name is not
+        specified. Ignored if dataset_name is specified.
+    pretrained : bool, default True
+        Whether to load the pretrained weights for model.
+    ctx : Context, default CPU
+        The context in which to load the pretrained weights.
+    root : str, default '$MXNET_HOME/models'
+        Location for keeping the model parameters.
+        MXNET_HOME defaults to '~/.mxnet'.
+    use_pooler : bool, default True
+        Whether to include the pooler which converts the encoded sequence tensor of shape
+        (batch_size, seq_length, units) to a tensor of shape (batch_size, units)
+        for for segment level classification task.
+    use_decoder : bool, default True
+        Whether to include the decoder for masked language model prediction.
+    use_classifier : bool, default True
+        Whether to include the classifier for next sentence classification.
+    pretrained_allow_missing : bool, default False
+        Whether to ignore if any parameters for the BERTModel are missing in
+        the pretrained weights for model.
+        Some BERTModels for example do not provide decoder or classifier
+        weights. In that case it is still possible to construct a BERTModel
+        with use_decoder=True and/or use_classifier=True, but the respective
+        parameters will be missing from the pretrained file.
+        If pretrained_allow_missing=True, this will be ignored and the
+        parameters will be left uninitialized. Otherwise AssertionError is
+        raised.
+
+    Returns
+    -------
+    BERTModel, gluonnlp.vocab.BERTVocab
+    """
+    return get_bert_model(model_name='ernie_12_768_12', vocab=vocab, dataset_name=dataset_name,
+                          pretrained=pretrained, ctx=ctx, use_pooler=use_pooler,
+                          use_decoder=use_decoder, use_classifier=use_classifier, root=root,
+                          pretrained_allow_missing=pretrained_allow_missing, **kwargs)
+
+
 def get_bert_model(model_name=None, dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
                    use_pooler=True, use_decoder=True, use_classifier=True, output_attention=False,
                    output_all_encodings=False, root=os.path.join(get_home_dir(), 'models'),
@@ -731,6 +822,10 @@ def get_bert_model(model_name=None, dataset_name=None, vocab=None, pretrained=Tr
         If pretrained_allow_missing=True, this will be ignored and the
         parameters will be left uninitialized. Otherwise AssertionError is
         raised.
+    activation : str, default None
+        Activation methods in PositionwiseFFN
+    layer_norm_eps : float, default None
+        Epsilon for layer_norm
 
     Returns
     -------
@@ -753,7 +848,9 @@ def get_bert_model(model_name=None, dataset_name=None, vocab=None, pretrained=Tr
                           dropout=predefined_args['dropout'],
                           output_attention=output_attention,
                           output_all_encodings=output_all_encodings,
-                          use_residual=predefined_args['use_residual'])
+                          use_residual=predefined_args['use_residual'],
+                          activation=predefined_args.get('activation', None),
+                          layer_norm_eps=predefined_args.get('layer_norm_eps', None))
     # bert_vocab
     from ..vocab import BERTVocab
     if dataset_name in ['wiki_cn', 'wiki_multilingual']:
