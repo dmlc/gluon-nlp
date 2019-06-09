@@ -203,33 +203,34 @@ class TokenEmbedding(object):
     """
 
     def __init__(self, unknown_token=C.UNK_TOKEN, init_unknown_vec=INIT_UNKNOWN_VEC,
-                 allow_extend=False, unknown_lookup=None, idx_to_vec=None,
-                 idx_to_token=None):
+                 allow_extend=False, unknown_lookup=None, idx_to_token=None,
+                 idx_to_vec=None):
         unknown_index = None
 
         # With pre-specified tokens and vectors
         if idx_to_vec is not None or idx_to_token is not None:
+            idx_to_token = idx_to_token.copy()
+
             # Sanity checks
             if idx_to_vec is None or idx_to_token is None:
                 raise ValueError('Must specify either none or both of '
                                  'idx_to_token and idx_to_vec.')
-            if len(idx_to_vec) != len(idx_to_token):
-                raise ValueError(
-                    'idx_to_token and idx_to_vec must be of equal length.')
+            if idx_to_vec.shape[0] != len(idx_to_token):
+                raise ValueError('idx_to_token and idx_to_vec must contain '
+                                 'the same number of tokens and embeddings respectively.')
             if init_unknown_vec is not None:
-                raise ValueError('Must not specify init_unknown_vec '
-                                 'when specifying idx_to_vec')
+                logging.info('Ignoring init_unknown_vec as idx_to_vec is specified')
             if unknown_token is not None:
                 try:
                     unknown_index = idx_to_token.index(unknown_token)
                 except ValueError:
-                    raise ValueError(
-                        'unknown_token \'{}\' must be part of idx_to_token'.
-                        format(unknown_token))
+                    idx_to_token.insert(0, unknown_token)
+                    idx_to_vec = nd.concat(init_unknown_vec((1, idx_to_vec.shape[1])), idx_to_vec,
+                                           dim=0)
+                    unknown_index = 0
 
             # Initialization
             self._unknown_token = unknown_token
-            assert init_unknown_vec is None
             self._init_unknown_vec = init_unknown_vec
             self._allow_extend = allow_extend
             self._unknown_lookup = unknown_lookup

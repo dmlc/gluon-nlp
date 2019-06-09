@@ -17,26 +17,21 @@
 # specific language governing permissions and limitations
 # under the License.
 
-from __future__ import absolute_import
-from __future__ import print_function
+from __future__ import absolute_import, print_function
 
+import functools
+import os
 import random
 import re
-import os
 import sys
-import functools
 
+import numpy as np
 import pytest
-
-import gluonnlp as nlp
 from mxnet import ndarray as nd
 from mxnet.test_utils import *
-import numpy as np
 
-if sys.version_info[0] == 3:
-    _str_types = (str, )
-else:
-    _str_types = (str, unicode)
+import gluonnlp as nlp
+from gluonnlp.base import _str_types
 
 
 @pytest.fixture
