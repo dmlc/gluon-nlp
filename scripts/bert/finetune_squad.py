@@ -484,7 +484,7 @@ def evaluate():
         results = all_results[features[0].example_id]
         example_qas_id = features[0].qas_id
 
-        prediction, nbest = predict(
+        prediction, _ = predict(
             features=features,
             results=results,
             tokenizer=nlp.data.BERTBasicTokenizer(lower=lower),
