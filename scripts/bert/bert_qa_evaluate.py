@@ -291,8 +291,22 @@ def predict(features,
     probs = nd.softmax(nd.array(total_scores)).asnumpy()
 
     nbest_json = []
+
     for (i, entry) in enumerate(nbest):
         nbest_json.append((entry.text, float(probs[i])))
+
+    if not version_2:
+        prediction = nbest_json[0][0]
+    else:
+        # predict '' iff the null score - the score of best non-null > threshold
+        score_diff = score_null - best_non_null_entry.pred_start - \
+            best_non_null_entry.pred_end
+
+        if score_diff > null_score_diff_threshold:
+            prediction = ''
+        else:
+            prediction = best_non_null_entry.text
+
     prediction = nbest_json[0][0]
     return prediction, nbest_json
 

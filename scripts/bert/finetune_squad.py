@@ -44,7 +44,6 @@ import io
 import random
 import time
 import warnings
-import collections
 
 import numpy as np
 import mxnet as mx
