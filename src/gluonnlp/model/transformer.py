@@ -118,7 +118,8 @@ class BasePositionwiseFFN(HybridBlock):
                                   prefix='ffn_2_')
             if dropout:
                 self.dropout_layer = nn.Dropout(rate=dropout)
-            self.layer_norm = _get_layer_norm(use_bert_layer_norm, units, layer_norm_eps=layer_norm_eps)
+            self.layer_norm = _get_layer_norm(use_bert_layer_norm, units,
+                                              layer_norm_eps=layer_norm_eps)
 
     def _get_activation(self, act):
         """Get activation block based on the name. """
@@ -235,13 +236,16 @@ class BaseTransformerEncoderCell(HybridBlock):
                                                   use_residual, weight_initializer,
                                                   bias_initializer, activation=activation,
                                                   layer_norm_eps=layer_norm_eps)
-            self.layer_norm = _get_layer_norm(use_bert_layer_norm, units, layer_norm_eps=layer_norm_eps)
+            self.layer_norm = _get_layer_norm(use_bert_layer_norm, units,
+                                              layer_norm_eps=layer_norm_eps)
 
     def _get_positionwise_ffn(self, use_bert, units, hidden_size, dropout, use_residual,
-                              weight_initializer, bias_initializer, activation=None, layer_norm_eps=None):
+                              weight_initializer, bias_initializer, activation=None,
+                              layer_norm_eps=None):
         from .bert import BERTPositionwiseFFN
         positionwise_ffn = BERTPositionwiseFFN if use_bert else PositionwiseFFN
-        ffn_params = {'units':units, 'hidden_size':hidden_size, 'dropout':dropout, 'use_residual':use_residual,
+        ffn_params = {'units':units, 'hidden_size':hidden_size, 'dropout':dropout,
+                      'use_residual':use_residual,
                       'weight_initializer': weight_initializer, 'bias_initializer': bias_initializer}
         if layer_norm_eps:
             ffn_params['layer_norm_eps'] = layer_norm_eps
