@@ -19,7 +19,8 @@
 """BERT models."""
 
 __all__ = ['BERTModel', 'BERTEncoder', 'BERTEncoderCell', 'BERTPositionwiseFFN',
-           'BERTLayerNorm', 'bert_12_768_12', 'bert_24_1024_16', 'get_bert_model', 'ernie_12_768_12']
+           'BERTLayerNorm', 'bert_12_768_12', 'bert_24_1024_16', 'get_bert_model',
+           'ernie_12_768_12']
 
 import os
 import warnings
@@ -702,8 +703,8 @@ def bert_24_1024_16(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu()
 
 
 def ernie_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
-                   root=os.path.join(get_home_dir(), 'models'), use_pooler=True, use_decoder=True,
-                   use_classifier=True, pretrained_allow_missing=False, **kwargs):
+                    root=os.path.join(get_home_dir(), 'models'), use_pooler=True, use_decoder=True,
+                    use_classifier=True, pretrained_allow_missing=False, **kwargs):
     """baidu ERNIE model.
 
     The number of layers (L) is 12, number of units (H) is 768, and the
