@@ -454,7 +454,7 @@ def evaluate():
 
     log.info('start prediction')
 
-    all_results = {}
+    all_results = collections.defaultdict(list)
 
     epoch_tic = time.time()
     total_num = 0
@@ -471,8 +471,6 @@ def evaluate():
         pred_end = output[1].reshape((0, -3)).asnumpy()
 
         for example_id, start, end in zip(example_ids, pred_start, pred_end):
-            if example_id not in all_results:
-                all_results[example_id] = []
             all_results[example_id].append(PredResult(start=start, end=end))
 
     epoch_toc = time.time()
