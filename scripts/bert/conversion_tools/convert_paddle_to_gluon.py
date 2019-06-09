@@ -1,5 +1,9 @@
 #!/usr/bin/env python
 # encoding: utf-8
+from __future__ import unicode_literals
+from __future__ import absolute_import
+from __future__ import print_function
+
 import collections
 import os
 import sys
@@ -46,26 +50,28 @@ def build_weight_map():
 
     def add_one_encoder_layer(layer_number):
         # attention
-        add_w_and_b(f"encoder_layer_{layer_number}_multi_head_att_query_fc",
-                    f"encoder.transformer_cells.{layer_number}.attention_cell.proj_query")
-        add_w_and_b(f"encoder_layer_{layer_number}_multi_head_att_key_fc",
-                    f"encoder.transformer_cells.{layer_number}.attention_cell.proj_key")
-        add_w_and_b(f"encoder_layer_{layer_number}_multi_head_att_value_fc",
-                    f"encoder.transformer_cells.{layer_number}.attention_cell.proj_value")
-        add_w_and_b(f"encoder_layer_{layer_number}_multi_head_att_output_fc",
-                    f"encoder.transformer_cells.{layer_number}.proj")
-        weight_map[f"encoder_layer_{layer_number}_post_att_layer_norm_bias"] = \
-            f"encoder.transformer_cells.{layer_number}.layer_norm.beta"
-        weight_map[f"encoder_layer_{layer_number}_post_att_layer_norm_scale"] = \
-            f"encoder.transformer_cells.{layer_number}.layer_norm.gamma"
+        add_w_and_b("encoder_layer_{}_multi_head_att_query_fc".format(layer_number),
+                    "encoder.transformer_cells.{}.attention_cell.proj_query".format(layer_number))
+        add_w_and_b("encoder_layer_{}_multi_head_att_key_fc".format(layer_number),
+                    "encoder.transformer_cells.{}.attention_cell.proj_key".format(layer_number))
+        add_w_and_b("encoder_layer_{}_multi_head_att_value_fc".format(layer_number),
+                    "encoder.transformer_cells.{}.attention_cell.proj_value".format(layer_number))
+        add_w_and_b("encoder_layer_{}_multi_head_att_output_fc".format(layer_number),
+                    "encoder.transformer_cells.{}.proj".format(layer_number))
+        weight_map["encoder_layer_{}_post_att_layer_norm_bias".format(layer_number)] = \
+            "encoder.transformer_cells.{}.layer_norm.beta".format(layer_number)
+        weight_map["encoder_layer_{}_post_att_layer_norm_scale".format(layer_number)] = \
+            "encoder.transformer_cells.{}.layer_norm.gamma".format(layer_number)
         # intermediate
-        add_w_and_b(f"encoder_layer_{layer_number}_ffn_fc_0", f"encoder.transformer_cells.{layer_number}.ffn.ffn_1")
+        add_w_and_b("encoder_layer_{}_ffn_fc_0".format(layer_number),
+                    "encoder.transformer_cells.{}.ffn.ffn_1".format(layer_number))
         # output
-        add_w_and_b(f"encoder_layer_{layer_number}_ffn_fc_1", f"encoder.transformer_cells.{layer_number}.ffn.ffn_2")
-        weight_map[f"encoder_layer_{layer_number}_post_ffn_layer_norm_bias"] = \
-            f"encoder.transformer_cells.{layer_number}.ffn.layer_norm.beta"
-        weight_map[f"encoder_layer_{layer_number}_post_ffn_layer_norm_scale"] = \
-            f"encoder.transformer_cells.{layer_number}.ffn.layer_norm.gamma"
+        add_w_and_b("encoder_layer_{}_ffn_fc_1".format(layer_number),
+                    "encoder.transformer_cells.{}.ffn.ffn_2".format(layer_number))
+        weight_map["encoder_layer_{}_post_ffn_layer_norm_bias".format(layer_number)] = \
+            "encoder.transformer_cells.{}.ffn.layer_norm.beta".format(layer_number)
+        weight_map["encoder_layer_{}_post_ffn_layer_norm_scale".format(layer_number)] = \
+            "encoder.transformer_cells.{}.ffn.layer_norm.gamma".format(layer_number)
 
     for i in range(12):
         add_one_encoder_layer(i)
