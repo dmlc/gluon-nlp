@@ -52,7 +52,7 @@ import mxnet as mx
 import gluonnlp as nlp
 from gluonnlp.data import SQuAD
 from model.qa import BertForQALoss, BertForQA
-from data.qa import SQuADTransform, preprocess_dataset, PredResult
+from data.qa import SQuADTransform, preprocess_dataset
 from bert_qa_evaluate import get_F1_EM, predict, PredResult
 
 np.random.seed(6)

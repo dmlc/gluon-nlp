@@ -18,10 +18,9 @@ import re
 import string
 from collections import Counter, namedtuple, OrderedDict
 
-import six
 from mxnet import nd
 
-PredResult = collections.namedtuple('PredResult', ['start', 'end'])
+PredResult = namedtuple('PredResult', ['start', 'end'])
 
 def _get_best_indexes(logits, n_best_size):
     """Get the n-best logits from a list."""
@@ -96,7 +95,8 @@ def get_final_text(pred_text, orig_text, tokenizer):
     # We then project the characters in `pred_text` back to `orig_text` using
     # the character-to-character alignment.
     tok_s_to_ns_map = {}
-    for (i, tok_index) in six.iteritems(tok_ns_to_s_map):
+    for i in tok_ns_to_s_map.keys():
+        tok_index = tok_ns_to_s_map[i]
         tok_s_to_ns_map[tok_index] = i
 
     orig_start_position = None
