@@ -14,7 +14,7 @@ parser.add_argument('--input_file', type=str, default='input_cn.txt',
                     help='sample input file for testing')
 parser.add_argument('--cased', action='store_true',
                     help='if not set, inputs are converted to lower case')
-parser.add_argument('--gluon_dataset', type=str, default=None,
+parser.add_argument('--gluon_dataset', type=str, default='baidu_ernie_uncased',
                     help='gluon dataset name')
 parser.add_argument('--gluon_model', type=str, default='ernie_12_768_12',
                     help='gluon model name')
@@ -35,7 +35,7 @@ if not args.gluon_dataset:
 else:
     vocab = None
 bert, vocabulary = nlp.model.get_model(args.gluon_model,
-                                       dataset=args.gluon_dataset,
+                                       dataset_name=args.gluon_dataset,
                                        vocab=vocab,
                                        pretrained=not args.gluon_parameter_file,
                                        use_pooler=False,

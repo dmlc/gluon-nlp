@@ -517,7 +517,7 @@ model_store._model_sha1.update(
         ('8a8c75441f028a6b928b11466f3d30f4360dfff5',
          'bert_12_768_12_biobert_v1.0_pubmed_pmc_cased'),
         ('55f15c5d23829f6ee87622b68711b15fef50e55b', 'bert_12_768_12_biobert_v1.1_pubmed_cased'),
-        ('60281c98ba3572dfdaac75131fa96e2136d70d5c', 'bert_12_768_12_clinicalbert_uncased'),
+        ('f869f3f89e4237a769f1b7edcbdfe8298b480052', 'ernie_12_768_12_baidu_ernie_uncased'),
     ]})
 
 bert_12_768_12_hparams = {
@@ -716,8 +716,7 @@ def ernie_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu()
         If not None, the dataset name is used to load a vocabulary for the
         dataset. If the `pretrained` argument is set to True, the dataset name
         is further used to select the pretrained parameters to load.
-        The supported datasets are 'ernie'
-        :TODO add dataset
+        The supported datasets are 'baidu_ernie'
     vocab : gluonnlp.vocab.BERTVocab or None, default None
         Vocabulary for the dataset. Must be provided if dataset_name is not
         specified. Ignored if dataset_name is specified.
