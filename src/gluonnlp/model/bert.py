@@ -704,7 +704,7 @@ def bert_24_1024_16(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu()
 
 def ernie_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
                     root=os.path.join(get_home_dir(), 'models'), use_pooler=True, use_decoder=True,
-                    use_classifier=True, pretrained_allow_missing=False, **kwargs):
+                    use_classifier=True, **kwargs):
     """baidu ERNIE model.
 
     The number of layers (L) is 12, number of units (H) is 768, and the
@@ -735,16 +735,6 @@ def ernie_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu()
         Whether to include the decoder for masked language model prediction.
     use_classifier : bool, default True
         Whether to include the classifier for next sentence classification.
-    pretrained_allow_missing : bool, default False
-        Whether to ignore if any parameters for the BERTModel are missing in
-        the pretrained weights for model.
-        Some BERTModels for example do not provide decoder or classifier
-        weights. In that case it is still possible to construct a BERTModel
-        with use_decoder=True and/or use_classifier=True, but the respective
-        parameters will be missing from the pretrained file.
-        If pretrained_allow_missing=True, this will be ignored and the
-        parameters will be left uninitialized. Otherwise AssertionError is
-        raised.
 
     Returns
     -------
@@ -753,7 +743,7 @@ def ernie_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu()
     return get_bert_model(model_name='ernie_12_768_12', vocab=vocab, dataset_name=dataset_name,
                           pretrained=pretrained, ctx=ctx, use_pooler=use_pooler,
                           use_decoder=use_decoder, use_classifier=use_classifier, root=root,
-                          pretrained_allow_missing=pretrained_allow_missing, **kwargs)
+                          pretrained_allow_missing=False, **kwargs)
 
 
 def get_bert_model(model_name=None, dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
