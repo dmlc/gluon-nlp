@@ -97,7 +97,7 @@ class BERTPositionwiseFFN(BasePositionwiseFFN):
 
     def __init__(self, units=512, hidden_size=2048, dropout=0.0, use_residual=True,
                  weight_initializer=None, bias_initializer='zeros',
-                 prefix=None, params=None, activation=None, layer_norm_eps=None):
+                 prefix=None, params=None, activation='gelu', layer_norm_eps=None):
         super(BERTPositionwiseFFN, self).__init__(units=units, hidden_size=hidden_size,
                                                   dropout=dropout, use_residual=use_residual,
                                                   weight_initializer=weight_initializer,

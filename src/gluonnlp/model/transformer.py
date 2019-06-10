@@ -248,10 +248,11 @@ class BaseTransformerEncoderCell(HybridBlock):
                       'use_residual':use_residual,
                       'weight_initializer': weight_initializer,
                       'bias_initializer': bias_initializer}
-        if layer_norm_eps:
-            ffn_params['layer_norm_eps'] = layer_norm_eps
-        if activation:
-            ffn_params['activation'] = activation
+        if use_bert:
+            if layer_norm_eps:
+                ffn_params['layer_norm_eps'] = layer_norm_eps
+            if activation:
+                ffn_params['activation'] = activation
         return positionwise_ffn(**ffn_params)
 
     def hybrid_forward(self, F, inputs, mask=None):  # pylint: disable=arguments-differ
