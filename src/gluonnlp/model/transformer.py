@@ -623,6 +623,10 @@ class TransformerEncoderCell(BaseTransformerEncoderCell):
         Prefix for name of `Block`s. (and name of weight if params is `None`).
     params : Parameter or None
         Container for weight sharing between cells. Created if `None`.
+    activation : str, default None
+        Activation methods in PositionwiseFFN
+    layer_norm_eps : float, default None
+        Epsilon for layer_norm
 
     Inputs:
         - **inputs** : input sequence. Shape (batch_size, length, C_in)
@@ -637,7 +641,7 @@ class TransformerEncoderCell(BaseTransformerEncoderCell):
                  hidden_size=512, num_heads=4, scaled=True,
                  dropout=0.0, use_residual=True, output_attention=False,
                  weight_initializer=None, bias_initializer='zeros',
-                 prefix=None, params=None):
+                 prefix=None, params=None, activation=None, layer_norm_eps=None):
         super(TransformerEncoderCell, self).__init__(attention_cell=attention_cell,
                                                      units=units, hidden_size=hidden_size,
                                                      num_heads=num_heads, scaled=scaled,
@@ -650,7 +654,9 @@ class TransformerEncoderCell(BaseTransformerEncoderCell):
                                                      attention_use_bias=False,
                                                      attention_proj_use_bias=False,
                                                      use_bert_layer_norm=False,
-                                                     use_bert_ffn=False)
+                                                     use_bert_ffn=False,
+                                                     activation=activation,
+                                                     layer_norm_eps=layer_norm_eps)
 
 class TransformerEncoder(BaseTransformerEncoder):
     """Structure of the Transformer Encoder.
