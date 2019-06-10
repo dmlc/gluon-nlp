@@ -209,7 +209,7 @@ class TokenEmbedding(object):
 
         # With pre-specified tokens and vectors
         if idx_to_vec is not None or idx_to_token is not None:
-            idx_to_token = idx_to_token.copy()
+            idx_to_token = idx_to_token[:]
 
             # Sanity checks
             if idx_to_vec is None or idx_to_token is None:
