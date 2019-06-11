@@ -309,10 +309,10 @@ class SQuADDataPipeline(object):
         embedding = nlp.embedding.create('glove', source=emb_file_name)
 
         if is_cased_embedding:
-            word_counts = itertools.chain([[(item[0], item[1]),
-                                            (item[0].lower(), item[1]),
-                                            (item[0].capitalize(), item[1]),
-                                            (item[0].upper(), item[1])] for item in word_counts])
+            word_counts = itertools.chain(*[[(item[0], item[1]),
+                                             (item[0].lower(), item[1]),
+                                             (item[0].capitalize(), item[1]),
+                                             (item[0].upper(), item[1])] for item in word_counts])
         else:
             word_counts = [(item[0].lower(), item[1]) for item in word_counts]
 
