@@ -742,7 +742,7 @@ def ernie_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu()
 
     Returns
     -------
-    BERTModel, gluonnlp.vocab.BERTVocab
+    (BERTModel, gluonnlp.vocab.BERTVocab)
     """
     return get_bert_model(model_name='ernie_12_768_12', vocab=vocab, dataset_name=dataset_name,
                           pretrained=pretrained, ctx=ctx, use_pooler=use_pooler,
