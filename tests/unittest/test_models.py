@@ -107,7 +107,7 @@ def test_pretrained_bert_models(disable_missing_parameters):
             'wiki_multilingual_cased', 'wiki_cn_cased', 'scibert_scivocab_uncased',
             'scibert_scivocab_cased', 'scibert_basevocab_uncased', 'scibert_basevocab_cased',
             'biobert_v1.0_pmc_cased', 'biobert_v1.0_pubmed_cased', 'biobert_v1.0_pubmed_pmc_cased',
-            'biobert_v1.1_pubmed_cased', 'clinicalbert_uncased'
+            'biobert_v1.1_pubmed_cased', 'clinicalbert_uncased', 'wiki_multilingual', 'wiki_cn'
         ],
         'bert_24_1024_16': ['book_corpus_wiki_en_uncased', 'book_corpus_wiki_en_cased']
     }
@@ -115,7 +115,9 @@ def test_pretrained_bert_models(disable_missing_parameters):
                   'book_corpus_wiki_en_uncased': 30522,
                   'wiki_multilingual_cased': 119547,
                   'wiki_cn_cased': 21128,
+                  'wiki_cn': 21128,
                   'wiki_multilingual_uncased': 105879,
+                  'wiki_multilingual': 105879,
                   'scibert_scivocab_uncased': 31090,
                   'scibert_scivocab_cased': 31116,
                   'scibert_basevocab_uncased': 30522,
