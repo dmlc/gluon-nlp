@@ -395,10 +395,6 @@ class Vocab(object):
             'Either all or none of the TokenEmbeddings must have an ' \
             'unknown_token set.'
 
-        new_embedding = emb.TokenEmbedding(self.unknown_token, allow_extend=False)
-        new_embedding._token_to_idx = self.token_to_idx
-        new_embedding._idx_to_token = self.idx_to_token
-
         new_vec_len = sum(embs.idx_to_vec.shape[1] for embs in embeddings)
         new_idx_to_vec = nd.zeros(shape=(len(self), new_vec_len))
 
@@ -412,8 +408,11 @@ class Vocab(object):
                 new_idx_to_vec[1:, col_start:col_end] = embs[self._idx_to_token[1:]]
                 col_start = col_end
 
-        new_embedding._idx_to_vec = new_idx_to_vec
-        self._embedding = new_embedding
+        self._embedding = emb.TokenEmbedding(self.unknown_token,
+                                             init_unknown_vec=None,
+                                             allow_extend=False,
+                                             idx_to_token=self.idx_to_token,
+                                             idx_to_vec=new_idx_to_vec)
 
     def to_tokens(self, indices):
         """Converts token indices to tokens according to the vocabulary.
