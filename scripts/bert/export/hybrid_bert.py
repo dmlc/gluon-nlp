@@ -25,7 +25,6 @@ __all__ = ['HybridBERTModel', 'HybridBERTEncoder',
 
 import os
 import math
-import warnings
 
 import mxnet as mx
 from mxnet.gluon import Block, HybridBlock
