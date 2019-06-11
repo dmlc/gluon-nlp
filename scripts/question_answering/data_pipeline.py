@@ -25,13 +25,11 @@ import itertools
 import json
 import multiprocessing as mp
 import os
-import pickle
 import re
 import time
 
 import nltk
 import numpy as np
-import spacy
 import tqdm
 from mxnet.gluon.data import Dataset
 
@@ -40,7 +38,7 @@ from gluonnlp import data, Vocab
 from gluonnlp.data import SQuAD
 
 
-class SQuADDataPipeline:
+class SQuADDataPipeline(object):
     """Main data processing pipeline class, which encapsulate all preprocessing logic. The class
     process the data in multiprocessing mode using Pool. It can save/load the result of processing,
     but since it happens in a single thread, it is usually faster to just process data from scratch.
@@ -358,11 +356,11 @@ class SQuADDataPipeline:
         with open(os.path.join(self._data_root_path, self._processed_dev_data_file_name), 'r') as f:
             dev_examples = json.load(f)
 
-        word_vocab = pickle.load(
-            open(os.path.join(self._data_root_path, self._word_vocab_file_name), 'rb'))
+        with open(os.path.join(self._data_root_path, self._word_vocab_file_name), 'r') as f:
+            word_vocab = Vocab.from_json(json.load(f))
 
-        char_vocab = pickle.load(
-            open(os.path.join(self._data_root_path, self._char_vocab_file_name), 'rb'))
+        with open(os.path.join(self._data_root_path, self._char_vocab_file_name), 'r') as f:
+            char_vocab = Vocab.from_json(json.load(f))
 
         return train_examples, dev_examples, word_vocab, char_vocab
 
@@ -393,11 +391,11 @@ class SQuADDataPipeline:
         with open(os.path.join(self._data_root_path, self._processed_dev_data_file_name), 'w') as f:
             json.dump(dev_examples, f)
 
-        pickle.dump(word_vocab,
-                    open(os.path.join(self._data_root_path, self._word_vocab_file_name), 'wb'))
+        with open(os.path.join(self._data_root_path, self._word_vocab_file_name), 'w') as f:
+            f.write(word_vocab.to_json())
 
-        pickle.dump(char_vocab,
-                    open(os.path.join(self._data_root_path, self._char_vocab_file_name), 'wb'))
+        with open(os.path.join(self._data_root_path, self._char_vocab_file_name), 'w') as f:
+            f.write(char_vocab.to_json())
 
     @staticmethod
     def _partition(mapped_values):
@@ -421,9 +419,9 @@ class SQuADDataPipeline:
         return partitioned_data.items()
 
 
-class SQuADDataTokenizer:
+class SQuADDataTokenizer(object):
     """SQuAD data tokenizer, that encapsulate the splitting logic of each entry of SQuAD dataset"""
-    tokenizer = spacy.blank('en')
+    spacy_tokenizer = nlp.data.SpacyTokenizer()
 
     def __init__(self, use_spacy=True):
         """Init new SQuADDataTokenizer object
@@ -504,8 +502,8 @@ class SQuADDataTokenizer:
         tokens : List[str]
             List of tokens
         """
-        doc = SQuADDataTokenizer.tokenizer(sent)
-        return [token.text for token in doc]
+        tokens = SQuADDataTokenizer.spacy_tokenizer(sent)
+        return tokens
 
     @staticmethod
     def _word_tokenize_nltk(sent):
@@ -565,7 +563,7 @@ class SQuADDataTokenizer:
         return spans
 
 
-class SQuADDataFilter:
+class SQuADDataFilter(object):
     """Filter an example based on the specified conditions"""
 
     def __init__(self, para_limit, ques_limit, ans_limit):
@@ -603,7 +601,7 @@ class SQuADDataFilter:
                (example['y2s'][0] - example['y1s'][0]) <= self._ans_limit
 
 
-class SQuADAsyncVocabMapper:
+class SQuADAsyncVocabMapper(object):
     """A multiprocessing implementation of a Mapper for tokens counting"""
 
     def __init__(self, iterate_over_example=False):
@@ -654,7 +652,7 @@ class SQuADAsyncVocabMapper:
         return list(counter.items())
 
 
-class SQuADAsyncVocabReducer:
+class SQuADAsyncVocabReducer(object):
     """A multiprocessing implementation of a Reducing for tokens counting"""
 
     def run_async(self, items, pool):
@@ -692,7 +690,7 @@ class SQuADAsyncVocabReducer:
         return token, sum(counts)
 
 
-class SQuADDataFeaturizer:
+class SQuADDataFeaturizer(object):
     """Class that converts tokenized examples into featurized"""
 
     def __init__(self, word_vocab, char_vocab, para_limit, ques_limit, char_limit):
@@ -849,7 +847,7 @@ class SQuADQADataset(Dataset):
         return self._record_idx_to_record[rec_idx]['rec']
 
 
-class SQuADDataLoaderTransformer:
+class SQuADDataLoaderTransformer(object):
     """Thin wrapper on SQuADQADataset that removed non-numeric values from the record. The output of
     that transformer can be provided to a DataLoader"""
 
