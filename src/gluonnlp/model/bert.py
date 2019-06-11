@@ -706,7 +706,7 @@ def bert_24_1024_16(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu()
 def ernie_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
                     root=os.path.join(get_home_dir(), 'models'), use_pooler=True, use_decoder=True,
                     use_classifier=True, **kwargs):
-    """baidu ERNIE model.
+    """Baidu ERNIE model.
 
     Reference:
     https://arxiv.org/pdf/1904.09223.pdf

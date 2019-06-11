@@ -19,12 +19,22 @@ from gluonnlp.model import BERTEncoder, BERTModel
 from gluonnlp.model.bert import bert_hparams
 from utils import get_hash, tf_vocab_to_gluon_vocab, load_text_vocab
 
+parser = argparse.ArgumentParser()
+parser.add_argument("--gluon_bert_model_base", default='ernie_12_768_12', type=str, help=".")
+parser.add_argument("--init_pretraining_params", default='./ERNIE_stable-1.0.1/params',
+                    type=str, help=".")
+parser.add_argument("--ernie_config_path", default='./ERNIE_stable-1.0.1/ernie_config.json',
+                    type=str, help=".")
+parser.add_argument("--ernie_vocab_path", default='./ERNIE_stable-1.0.1/vocab.txt',
+                    type=str, help=".")
+parser.add_argument("--out_dir", default='./ernie_gluon_model2', type=str, help=".")
+parser.add_argument("--baidu_lark_repo_dir", default='../../../../LARK', type=str,
+                    help='path to the original baidu lark repository. '
+                         'The repo should be at f97e3c8581e36dc1979560d62f75df862acd9585.'
+                         '(https://github.com/PaddlePaddle/LARK.git)')
+args = parser.parse_args()
 
-BAIDU_LARK_PATH = '../../../../LARK'
-if not os.path.exists(BAIDU_LARK_PATH):
-    os.system('git clone https://github.com/PaddlePaddle/LARK.git ' + BAIDU_LARK_PATH)
-# tested with commit hash f97e3c8581e36dc1979560d62f75df862acd9585
-sys.path = [os.path.join(BAIDU_LARK_PATH,'ERNIE')] + sys.path
+sys.path = [os.path.join(args.baidu_lark_repo_dir,'ERNIE')] + sys.path
 try:
     from model.ernie import ErnieConfig
     from finetune.classifier import create_model
@@ -228,12 +238,5 @@ def save_model(new_gluon_parameters, output_dir):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--gluon_bert_model_base", default='ernie_12_768_12', type=str, help=".")
-    parser.add_argument("--init_pretraining_params", default='./ERNIE_stable-1.0.1/params', type=str, help=".")
-    parser.add_argument("--ernie_config_path", default='./ERNIE_stable-1.0.1/ernie_config.json', type=str, help=".")
-    parser.add_argument("--ernie_vocab_path", default='./ERNIE_stable-1.0.1/vocab.txt', type=str, help=".")
-    parser.add_argument("--out_dir", default='./ernie_gluon_model', type=str, help=".")
-    args = parser.parse_args()
     state_dict = extract_weights(args)
     save_model(state_dict, args.out_dir)
