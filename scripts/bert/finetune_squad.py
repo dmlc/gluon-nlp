@@ -40,19 +40,19 @@ import collections
 import json
 import logging
 import os
+import io
 import random
 import time
 import warnings
 
 import numpy as np
 import mxnet as mx
-from mxnet import gluon, nd
 
 import gluonnlp as nlp
 from gluonnlp.data import SQuAD
 from model.qa import BertForQALoss, BertForQA
-from data.qa import (SQuADTransform, preprocess_dataset)
-from bert_qa_evaluate import get_F1_EM, predictions
+from data.qa import SQuADTransform, preprocess_dataset
+from bert_qa_evaluate import get_F1_EM, predict, PredResult
 
 np.random.seed(6)
 random.seed(6)
@@ -191,7 +191,7 @@ parser.add_argument('--gpu',
                     default=None,
                     help='which gpu to use for finetuning. CPU is used if not set.')
 
-parser.add_argument('--test_mode',
+parser.add_argument('--debug',
                     action='store_true',
                     help='Run the example in test mode for sanity checks')
 
@@ -284,7 +284,7 @@ loss_function.hybridize(static_alloc=True)
 
 def train():
     """Training function."""
-    segment = 'train' if not args.test_mode else 'dev'
+    segment = 'train' if not args.debug else 'dev'
     log.info('Loading %s data...', segment)
     if version_2:
         train_data = SQuAD(segment, version='2.0')
@@ -311,14 +311,14 @@ def train():
 
     optimizer_params = {'learning_rate': lr}
     try:
-        trainer = gluon.Trainer(net.collect_params(), optimizer,
-                                optimizer_params, update_on_kvstore=False)
+        trainer = mx.gluon.Trainer(net.collect_params(), optimizer,
+                                   optimizer_params, update_on_kvstore=False)
     except ValueError as e:
         print(e)
         warnings.warn('AdamW optimizer is not found. Please consider upgrading to '
                       'mxnet>=1.5.0. Now the original Adam optimizer is used instead.')
-        trainer = gluon.Trainer(net.collect_params(), 'adam',
-                                optimizer_params, update_on_kvstore=False)
+        trainer = mx.gluon.Trainer(net.collect_params(), 'adam',
+                                   optimizer_params, update_on_kvstore=False)
 
     num_train_examples = len(train_data_transform)
     step_size = batch_size * accumulate if accumulate else batch_size
@@ -402,7 +402,7 @@ def train():
                 tic = time.time()
                 step_loss = 0.0
                 log_num = 0
-                if args.test_mode:
+                if args.debug:
                     log.info('Exit early in test mode')
                     break
         epoch_toc = time.time()
@@ -420,7 +420,10 @@ def evaluate():
         dev_data = SQuAD('dev', version='2.0')
     else:
         dev_data = SQuAD('dev', version='1.1')
-    log.info('Number of records in Train data:{}'.format(len(dev_data)))
+    if args.debug:
+        sampled_data = [dev_data[0], dev_data[1], dev_data[2]]
+        dev_data = mx.gluon.data.SimpleDataset(sampled_data)
+    log.info('Number of records in dev data:{}'.format(len(dev_data)))
 
     dev_dataset = dev_data.transform(
         SQuADTransform(
@@ -429,7 +432,7 @@ def evaluate():
             doc_stride=doc_stride,
             max_query_length=max_query_length,
             is_pad=False,
-            is_training=False)._transform)
+            is_training=False)._transform, lazy=False)
 
     dev_data_transform, _ = preprocess_dataset(
         dev_data, SQuADTransform(
@@ -445,13 +448,12 @@ def evaluate():
     dev_dataloader = mx.gluon.data.DataLoader(
         dev_data_transform,
         batchify_fn=batchify_fn,
-        num_workers=4, batch_size=test_batch_size, shuffle=False, last_batch='keep')
+        num_workers=4, batch_size=test_batch_size,
+        shuffle=False, last_batch='keep')
 
-    log.info('Start predict')
+    log.info('start prediction')
 
-    _Result = collections.namedtuple(
-        '_Result', ['example_id', 'start_logits', 'end_logits'])
-    all_results = {}
+    all_results = collections.defaultdict(list)
 
     epoch_tic = time.time()
     total_num = 0
@@ -462,48 +464,47 @@ def evaluate():
                   token_types.astype('float32').as_in_context(ctx),
                   valid_length.astype('float32').as_in_context(ctx))
 
-        output = nd.split(out, axis=2, num_outputs=2)
-        start_logits = output[0].reshape((0, -3)).asnumpy()
-        end_logits = output[1].reshape((0, -3)).asnumpy()
+        output = mx.nd.split(out, axis=2, num_outputs=2)
+        example_ids = example_ids.asnumpy().tolist()
+        pred_start = output[0].reshape((0, -3)).asnumpy()
+        pred_end = output[1].reshape((0, -3)).asnumpy()
 
-        for example_id, start, end in zip(example_ids, start_logits, end_logits):
-            example_id = example_id.asscalar()
-            if example_id not in all_results:
-                all_results[example_id] = []
-            all_results[example_id].append(
-                _Result(example_id, start.tolist(), end.tolist()))
-        if args.test_mode:
-            log.info('Exit early in test mode')
-            break
+        for example_id, start, end in zip(example_ids, pred_start, pred_end):
+            all_results[example_id].append(PredResult(start=start, end=end))
+
     epoch_toc = time.time()
     log.info('Time cost={:.2f} s, Thoughput={:.2f} samples/s'.format(
         epoch_toc - epoch_tic, total_num/(epoch_toc - epoch_tic)))
+
     log.info('Get prediction results...')
 
-    all_predictions, all_nbest_json, scores_diff_json = predictions(
-        dev_dataset=dev_dataset,
-        all_results=all_results,
-        tokenizer=nlp.data.BERTBasicTokenizer(lower=lower),
-        max_answer_length=max_answer_length,
-        null_score_diff_threshold=null_score_diff_threshold,
-        n_best_size=n_best_size,
-        version_2=version_2,
-        test_mode=args.test_mode)
+    all_predictions = collections.OrderedDict()
 
-    with open(os.path.join(output_dir, 'predictions.json'),
-              'w', encoding='utf-8') as all_predictions_write:
-        all_predictions_write.write(json.dumps(all_predictions))
+    for features in dev_dataset:
+        results = all_results[features[0].example_id]
+        example_qas_id = features[0].qas_id
 
-    with open(os.path.join(output_dir, 'nbest_predictions.json'),
-              'w', encoding='utf-8') as all_predictions_write:
-        all_predictions_write.write(json.dumps(all_nbest_json))
+        prediction, _ = predict(
+            features=features,
+            results=results,
+            tokenizer=nlp.data.BERTBasicTokenizer(lower=lower),
+            max_answer_length=max_answer_length,
+            null_score_diff_threshold=null_score_diff_threshold,
+            n_best_size=n_best_size,
+            version_2=version_2)
+
+        all_predictions[example_qas_id] = prediction
+
+    with io.open(os.path.join(output_dir, 'predictions.json'),
+                 'w', encoding='utf-8') as fout:
+        data = json.dumps(all_predictions, ensure_ascii=False)
+        fout.write(data)
 
     if version_2:
-        with open(os.path.join(output_dir, 'null_odds.json'),
-                  'w', encoding='utf-8') as all_predictions_write:
-            all_predictions_write.write(json.dumps(scores_diff_json))
+        log.info('Please run evaluate-v2.0.py to get evaluation results for SQuAD 2.0')
     else:
-        log.info(get_F1_EM(dev_data, all_predictions))
+        F1_EM = get_F1_EM(dev_data, all_predictions)
+        log.info(F1_EM)
 
 
 if __name__ == '__main__':
