@@ -191,6 +191,11 @@ parser.add_argument('--gpu',
                     default=None,
                     help='which gpu to use for finetuning. CPU is used if not set.')
 
+parser.add_argument('--sentencepiece',
+                    type=str,
+                    default=None,
+                    help='Path to the sentencepiece .model file for both tokenization and vocab.')
+
 parser.add_argument('--test_mode',
                     action='store_true',
                     help='Run the example in test mode for sanity checks')
@@ -249,9 +254,23 @@ if max_seq_length <= max_query_length + 3:
     raise ValueError('The max_seq_length (%d) must be greater than max_query_length '
                      '(%d) + 3' % (max_seq_length, max_query_length))
 
+# vocabulary and tokenizer
+if args.sentencepiece:
+    logging.info('loading vocab file from sentence piece model: %s', args.sentencepiece)
+    if dataset_name:
+        warnings.warn('Both --dataset_name and --sentencepiece are provided. '
+                      'The vocabulary will be loaded based on --sentencepiece.')
+    vocab = nlp.vocab.BERTVocab.from_sentencepiece(args.sentencepiece)
+    berttoken = nlp.data.BERTSPTokenizer(args.sentencepiece, vocab, lower=lower)
+    dataset_name = None
+else:
+    berttoken = nlp.data.BERTTokenizer(vocab=vocab, lower=lower)
+    vocab = None
+
 bert, vocab = nlp.model.get_model(
     name=model_name,
     dataset_name=dataset_name,
+    vocab=vocab,
     pretrained=not model_parameters and not pretrained_bert_parameters,
     ctx=ctx,
     use_pooler=False,
@@ -266,16 +285,14 @@ batchify_fn = nlp.data.batchify.Tuple(
     nlp.data.batchify.Stack('float32'),
     nlp.data.batchify.Stack('float32'))
 
-berttoken = nlp.data.BERTTokenizer(vocab=vocab, lower=lower)
-
 net = BertForQA(bert=bert)
 if pretrained_bert_parameters and not model_parameters:
     bert.load_parameters(pretrained_bert_parameters, ctx=ctx,
-                         ignore_extra=True)
+                         ignore_extra=True, cast_dtype=True)
 if not model_parameters:
     net.span_classifier.initialize(init=mx.init.Normal(0.02), ctx=ctx)
 else:
-    net.load_parameters(model_parameters, ctx=ctx)
+    net.load_parameters(model_parameters, ctx=ctx, cast_dtype=True)
 net.hybridize(static_alloc=True)
 
 loss_function = BertForQALoss()
