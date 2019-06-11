@@ -18,10 +18,10 @@
 # under the License.
 
 import functools
+import os
 
 import mxnet as mx
 import pytest
-from pathlib import Path
 
 import gluonnlp as nlp
 from gluonnlp.base import _str_types
@@ -64,7 +64,7 @@ def test_token_embedding_constructor(unknown_token, init_unknown_vec, allow_exte
         idx_to_token=idx_to_token, idx_to_vec=idx_to_vec)
 
     def test_serialization(emb, tmp_path=tmp_path):
-        emb_path = Path(tmp_path, "emb.npz")
+        emb_path = os.path.join(str(tmp_path), "emb.npz")
         emb.serialize(emb_path)
         loaded_emb = nlp.embedding.TokenEmbedding.deserialize(emb_path)
         assert loaded_emb == emb
