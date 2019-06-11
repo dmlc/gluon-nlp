@@ -26,7 +26,7 @@ import os
 import sys
 
 import mxnet as mx
-
+import gluonnlp as nlp
 from gluonnlp.model import BERTEncoder, BERTModel
 from gluonnlp.model.bert import bert_hparams
 
@@ -67,11 +67,13 @@ vocab_path = os.path.join(args.tf_checkpoint_dir, 'vocab.txt')
 vocab = tf_vocab_to_gluon_vocab(load_text_vocab(vocab_path))
 
 # vocab serialization
-tmp_file_path = os.path.expanduser(os.path.join(args.out_dir, 'tmp'))
+out_dir = os.path.expanduser(args.out_dir)
+nlp.utils.mkdir(out_dir)
+tmp_file_path = os.path.join(out_dir, 'tmp')
 with open(tmp_file_path, 'w') as f:
     f.write(vocab.to_json())
 hash_full, hash_short = get_hash(tmp_file_path)
-gluon_vocab_path = os.path.expanduser(os.path.join(args.out_dir, hash_short + '.vocab'))
+gluon_vocab_path = os.path.join(out_dir, hash_short + '.vocab')
 with open(gluon_vocab_path, 'w') as f:
     f.write(vocab.to_json())
     logging.info('vocab file saved to %s. hash = %s', gluon_vocab_path, hash_full)
@@ -236,7 +238,7 @@ for name in mx_tensors:
 # param serialization
 bert.save_parameters(tmp_file_path)
 hash_full, hash_short = get_hash(tmp_file_path)
-gluon_param_path = os.path.expanduser(os.path.join(args.out_dir, hash_short + '.params'))
+gluon_param_path = os.path.join(out_dir, hash_short + '.params')
 logging.info('param saved to %s. hash = %s', gluon_param_path, hash_full)
 bert.save_parameters(gluon_param_path)
 mx.nd.waitall()

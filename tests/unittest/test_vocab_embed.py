@@ -17,26 +17,21 @@
 # specific language governing permissions and limitations
 # under the License.
 
-from __future__ import absolute_import
-from __future__ import print_function
+from __future__ import absolute_import, print_function
 
+import functools
+import os
 import random
 import re
-import os
 import sys
-import functools
 
+import numpy as np
 import pytest
-
-import gluonnlp as nlp
 from mxnet import ndarray as nd
 from mxnet.test_utils import *
-import numpy as np
 
-if sys.version_info[0] == 3:
-    _str_types = (str, )
-else:
-    _str_types = (str, unicode)
+import gluonnlp as nlp
+from gluonnlp.base import _str_types
 
 
 @pytest.fixture
@@ -820,12 +815,20 @@ def test_download_embed():
             source = 'embedding_test'
             Test._check_source(self.source_file_hash, source)
 
-            super(Test, self).__init__(**kwargs)
-
             file_path = Test._get_file_path(self.source_file_hash,
                                             embedding_root, source)
+            unknown_token = kwargs.pop('unknown_token', '<unk>')
+            idx_to_token, idx_to_vec, unknown_token = self._load_embedding(
+                file_path,
+                elem_delim=' ',
+                unknown_token=unknown_token,
+                init_unknown_vec=init_unknown_vec)
 
-            self._load_embedding(file_path, ' ')
+            return super(Test, self).__init__(unknown_token=unknown_token,
+                                              init_unknown_vec=None,
+                                              idx_to_token=idx_to_token,
+                                              idx_to_vec=idx_to_vec,
+                                              **kwargs)
 
     test_embed = nlp.embedding.create('test', embedding_root='tests/data/embedding')
     assert_almost_equal(test_embed['hello'].asnumpy(), (nd.arange(5) + 1).asnumpy())
@@ -1050,12 +1053,23 @@ def test_token_embedding_serialization():
             source = 'embedding_test'
             Test._check_source(self.source_file_hash, source)
 
-            super(Test, self).__init__(**kwargs)
-
             file_path = Test._get_file_path(self.source_file_hash,
                                             embedding_root, source)
 
-            self._load_embedding(file_path, ' ')
+            unknown_token = kwargs.pop('unknown_token', '<unk>')
+            init_unknown_vec = kwargs.pop('init_unknown_vec', nd.zeros)
+            idx_to_token, idx_to_vec, unknown_token = self._load_embedding(
+                file_path,
+                elem_delim=' ',
+                unknown_token=unknown_token,
+                init_unknown_vec=init_unknown_vec)
+
+            super(Test, self).__init__(unknown_token=unknown_token,
+                                       init_unknown_vec=None,
+                                       idx_to_token=idx_to_token,
+                                       idx_to_vec=idx_to_vec,
+                                       **kwargs)
+
 
     emb = nlp.embedding.create('test', embedding_root='tests/data/embedding')
 
