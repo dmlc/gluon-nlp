@@ -87,8 +87,6 @@ class BasePositionwiseFFN(HybridBlock):
     params : Parameter or None
         Container for weight sharing between cells.
         Created if `None`.
-    activation : str, default 'relu'
-        Activation methods in PositionwiseFFN
     layer_norm_eps : float, default None
         Epsilon for layer_norm
 
@@ -211,7 +209,7 @@ class BaseTransformerEncoderCell(HybridBlock):
                  weight_initializer=None, bias_initializer='zeros',
                  attention_use_bias=False, attention_proj_use_bias=False,
                  use_bert_layer_norm=False, use_bert_ffn=False, prefix=None, params=None,
-                 activation=None, layer_norm_eps=None):
+                 activation='relu', layer_norm_eps=None):
         super(BaseTransformerEncoderCell, self).__init__(prefix=prefix, params=params)
         self._units = units
         self._num_heads = num_heads
@@ -240,20 +238,14 @@ class BaseTransformerEncoderCell(HybridBlock):
                                               layer_norm_eps=layer_norm_eps)
 
     def _get_positionwise_ffn(self, use_bert, units, hidden_size, dropout, use_residual,
-                              weight_initializer, bias_initializer, activation=None,
+                              weight_initializer, bias_initializer, activation='relu',
                               layer_norm_eps=None):
         from .bert import BERTPositionwiseFFN
         positionwise_ffn = BERTPositionwiseFFN if use_bert else PositionwiseFFN
-        ffn_params = {'units':units, 'hidden_size':hidden_size, 'dropout':dropout,
-                      'use_residual':use_residual,
-                      'weight_initializer': weight_initializer,
-                      'bias_initializer': bias_initializer}
-        if use_bert:
-            if layer_norm_eps:
-                ffn_params['layer_norm_eps'] = layer_norm_eps
-            if activation:
-                ffn_params['activation'] = activation
-        return positionwise_ffn(**ffn_params)
+        return positionwise_ffn(units=units, hidden_size=hidden_size, dropout=dropout,
+                                use_residual=use_residual, weight_initializer=weight_initializer,
+                                bias_initializer=bias_initializer, activation=activation,
+                                layer_norm_eps=layer_norm_eps)
 
     def hybrid_forward(self, F, inputs, mask=None):  # pylint: disable=arguments-differ
         # pylint: disable=unused-argument
@@ -338,7 +330,7 @@ class BaseTransformerEncoder(HybridBlock, Seq2SeqEncoder):
     params : Parameter or None
         Container for weight sharing between cells.
         Created if `None`.
-    activation : str, default None
+    activation : str, default 'relu'
         Activation methods in PositionwiseFFN
     layer_norm_eps : float, default None
         Epsilon for layer_norm
@@ -350,7 +342,7 @@ class BaseTransformerEncoder(HybridBlock, Seq2SeqEncoder):
                  weight_initializer=None, bias_initializer='zeros',
                  positional_weight='sinusoidal', use_bert_encoder=False,
                  use_layer_norm_before_dropout=False, scale_embed=True,
-                 prefix=None, params=None, activation=None, layer_norm_eps=None):
+                 prefix=None, params=None, activation='relu', layer_norm_eps=None):
         super(BaseTransformerEncoder, self).__init__(prefix=prefix, params=params)
         assert units % num_heads == 0,\
             'In TransformerEncoder, The units should be divided exactly ' \
@@ -396,7 +388,7 @@ class BaseTransformerEncoder(HybridBlock, Seq2SeqEncoder):
 
     def _get_encoder_cell(self, use_bert, units, hidden_size, num_heads, attention_cell,
                           weight_initializer, bias_initializer, dropout, use_residual,
-                          scaled, output_attention, i, activation=None, layer_norm_eps=None):
+                          scaled, output_attention, i, activation='relu', layer_norm_eps=None):
         from .bert import BERTEncoderCell
         cell = BERTEncoderCell if use_bert else TransformerEncoderCell
         return cell(units=units, hidden_size=hidden_size,
@@ -576,6 +568,10 @@ class PositionwiseFFN(BasePositionwiseFFN):
         Prefix for name of `Block`s (and name of weight if params is `None`).
     params : Parameter or None
         Container for weight sharing between cells. Created if `None`.
+    activation : str, default 'relu'
+        Activation methods in PositionwiseFFN
+    layer_norm_eps : float, default None
+        Epsilon for layer_norm
 
     Inputs:
         - **inputs** : input sequence of shape (batch_size, length, C_in).
@@ -585,14 +581,15 @@ class PositionwiseFFN(BasePositionwiseFFN):
     """
     def __init__(self, units=512, hidden_size=2048, dropout=0.0, use_residual=True,
                  weight_initializer=None, bias_initializer='zeros',
-                 prefix=None, params=None):
+                 prefix=None, params=None, activation='relu', layer_norm_eps=None):
         super(PositionwiseFFN, self).__init__(units=units, hidden_size=hidden_size,
                                               dropout=dropout, use_residual=use_residual,
                                               weight_initializer=weight_initializer,
                                               bias_initializer=bias_initializer,
                                               prefix=prefix, params=params,
                                               # extra configurations for transformer
-                                              activation='relu', use_bert_layer_norm=False)
+                                              activation=activation, use_bert_layer_norm=False,
+                                              layer_norm_eps=layer_norm_eps)
 
 class TransformerEncoderCell(BaseTransformerEncoderCell):
     """Structure of the Transformer Encoder Cell.
@@ -642,7 +639,7 @@ class TransformerEncoderCell(BaseTransformerEncoderCell):
                  hidden_size=512, num_heads=4, scaled=True,
                  dropout=0.0, use_residual=True, output_attention=False,
                  weight_initializer=None, bias_initializer='zeros',
-                 prefix=None, params=None, activation=None, layer_norm_eps=None):
+                 prefix=None, params=None, activation='relu', layer_norm_eps=None):
         super(TransformerEncoderCell, self).__init__(attention_cell=attention_cell,
                                                      units=units, hidden_size=hidden_size,
                                                      num_heads=num_heads, scaled=scaled,

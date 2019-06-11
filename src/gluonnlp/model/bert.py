@@ -83,7 +83,7 @@ class BERTPositionwiseFFN(BasePositionwiseFFN):
         Prefix for name of `Block`s (and name of weight if params is `None`).
     params : Parameter or None
         Container for weight sharing between cells. Created if `None`.
-    activation : str, default None
+    activation : str, default 'gelu'
         Activation methods in PositionwiseFFN
     layer_norm_eps : float, default None
         Epsilon for layer_norm
@@ -150,7 +150,7 @@ class BERTEncoder(BaseTransformerEncoder):
         Prefix for name of `Block`s. (and name of weight if params is `None`).
     params : Parameter or None
         Container for weight sharing between cells. Created if `None`.
-    activation : str, default None
+    activation : str, default 'gelu'
         Activation methods in PositionwiseFFN
     layer_norm_eps : float, default None
         Epsilon for layer_norm
@@ -173,7 +173,7 @@ class BERTEncoder(BaseTransformerEncoder):
                  num_heads=4, scaled=True, dropout=0.0,
                  use_residual=True, output_attention=False, output_all_encodings=False,
                  weight_initializer=None, bias_initializer='zeros',
-                 prefix=None, params=None, activation=None, layer_norm_eps=None):
+                 prefix=None, params=None, activation='gelu', layer_norm_eps=None):
         super(BERTEncoder, self).__init__(attention_cell=attention_cell,
                                           num_layers=num_layers, units=units,
                                           hidden_size=hidden_size, max_length=max_length,
@@ -228,7 +228,7 @@ class BERTEncoderCell(BaseTransformerEncoderCell):
         Prefix for name of `Block`s. (and name of weight if params is `None`).
     params : Parameter or None
         Container for weight sharing between cells. Created if `None`.
-    activation : str, default None
+    activation : str, default 'gelu'
         Activation methods in PositionwiseFFN
     layer_norm_eps : float, default None
         Epsilon for layer_norm
@@ -247,7 +247,7 @@ class BERTEncoderCell(BaseTransformerEncoderCell):
                  hidden_size=512, num_heads=4, scaled=True,
                  dropout=0.0, use_residual=True, output_attention=False,
                  weight_initializer=None, bias_initializer='zeros',
-                 prefix=None, params=None, activation=None, layer_norm_eps=None):
+                 prefix=None, params=None, activation='gelu', layer_norm_eps=None):
         super(BERTEncoderCell, self).__init__(attention_cell=attention_cell,
                                               units=units, hidden_size=hidden_size,
                                               num_heads=num_heads, scaled=scaled,
@@ -708,6 +708,9 @@ def ernie_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu()
                     use_classifier=True, **kwargs):
     """baidu ERNIE model.
 
+    Reference:
+    https://arxiv.org/pdf/1904.09223.pdf
+
     The number of layers (L) is 12, number of units (H) is 768, and the
     number of self-attention heads (A) is 12.
 
@@ -813,10 +816,6 @@ def get_bert_model(model_name=None, dataset_name=None, vocab=None, pretrained=Tr
         If pretrained_allow_missing=True, this will be ignored and the
         parameters will be left uninitialized. Otherwise AssertionError is
         raised.
-    activation : str, default None
-        Activation methods in PositionwiseFFN
-    layer_norm_eps : float, default None
-        Epsilon for layer_norm
 
     Returns
     -------
@@ -840,7 +839,7 @@ def get_bert_model(model_name=None, dataset_name=None, vocab=None, pretrained=Tr
                           output_attention=output_attention,
                           output_all_encodings=output_all_encodings,
                           use_residual=predefined_args['use_residual'],
-                          activation=predefined_args.get('activation', None),
+                          activation=predefined_args.get('activation', 'gelu'),
                           layer_norm_eps=predefined_args.get('layer_norm_eps', None))
     # bert_vocab
     from ..vocab import BERTVocab
