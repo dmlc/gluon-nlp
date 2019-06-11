@@ -45,7 +45,7 @@ class SQuADDataPipeline(object):
     """
 
     def __init__(self, train_para_limit, train_ques_limit, dev_para_limit, dev_ques_limit,
-                 ans_limit, char_limit, emb_size, num_workers=None, save_load_data=False,
+                 ans_limit, char_limit, emb_file_name, num_workers=None, save_load_data=False,
                  data_root_path='./data'):
         """Method that creates a new instance. If an example is longer that provided limits it will
         be truncated for the dev set and filtered out for the training set.
@@ -64,8 +64,8 @@ class SQuADDataPipeline(object):
             Maximum characters of an answer
         char_limit : int
             Maximum token (word) length of a paragraph, question or answer
-        emb_size : int
-            Embedding size of GloVE embedding to use
+        emb_file_name : str
+            Glove embedding file name
         num_workers : int, default None
             Number of workers to use for multiprocessing. Default uses all available cores
         data_root_path : str
@@ -80,7 +80,8 @@ class SQuADDataPipeline(object):
         self._dev_ques_limit = dev_ques_limit
         self._ans_limit = ans_limit
         self._char_limit = char_limit
-        self._emb_size = emb_size
+        self._emb_file_name = emb_file_name
+        self._is_cased_embedding = emb_file_name.startswith('glove.840')
         self._num_workers = num_workers
         self._save_load_data = save_load_data
         self._data_root_path = data_root_path
@@ -131,7 +132,8 @@ class SQuADDataPipeline(object):
                                                                             dev_dataset,
                                                                             use_spacy, pool)
             word_vocab, char_vocab = SQuADDataPipeline._get_vocabs(train_examples, dev_examples,
-                                                                   self._emb_size,
+                                                                   self._emb_file_name,
+                                                                   self._is_cased_embedding,
                                                                    shrink_word_vocab,
                                                                    pool)
 
@@ -144,13 +146,15 @@ class SQuADDataPipeline(object):
                                                char_vocab,
                                                self._train_para_limit,
                                                self._train_ques_limit,
-                                               self._char_limit)
+                                               self._char_limit,
+                                               self._is_cased_embedding)
 
         dev_featuarizer = SQuADDataFeaturizer(word_vocab,
                                               char_vocab,
                                               self._dev_para_limit,
                                               self._dev_ques_limit,
-                                              self._char_limit)
+                                              self._char_limit,
+                                              self._is_cased_embedding)
 
         train_examples, dev_examples = SQuADDataPipeline._featurize_data(train_examples,
                                                                          dev_examples,
@@ -248,7 +252,8 @@ class SQuADDataPipeline(object):
         return train_ready, dev_ready
 
     @staticmethod
-    def _get_vocabs(train_examples, dev_examples, emb_size, shrink_word_vocab, pool):
+    def _get_vocabs(train_examples, dev_examples, emb_file_name, is_cased_embedding,
+                    shrink_word_vocab, pool):
         """Create both word-level and character-level vocabularies. Vocabularies are built using
         data from both train and dev datasets.
 
@@ -258,8 +263,10 @@ class SQuADDataPipeline(object):
             Tokenized training examples
         dev_examples : List[dict]
             Tokenized dev examples
-        emb_size : int
-            Embedding size of the Glove embedding to load
+        emb_file_name : str
+            Glove embedding file name
+        is_cased_embedding : bool
+            When True, provided embedding file is cased, uncased otherwise
         shrink_word_vocab : bool
             When True, only tokens that have embeddings in the embedding file are remained in the
             word_vocab. Otherwise tokens with no embedding also stay
@@ -299,12 +306,18 @@ class SQuADDataPipeline(object):
                                      total=len(char_partitioned)))
         print('Char counters received in {:.3f} sec'.format(time.time() - tic))
 
-        embedding = nlp.embedding.create('glove', source='glove.6B.{}d'.format(emb_size))
+        embedding = nlp.embedding.create('glove', source=emb_file_name)
 
-        # 6B.* embeddings are uncased: https://nlp.stanford.edu/projects/glove/
-        # we need to convert all words into lower case
-        word_vocab = Vocab({item[0].lower(): item[1] for item in word_counts if
-                            not shrink_word_vocab or item[0].lower() in embedding.token_to_idx},
+        if is_cased_embedding:
+            word_counts = itertools.chain([[(item[0], item[1]),
+                                            (item[0].lower(), item[1]),
+                                            (item[0].capitalize(), item[1]),
+                                            (item[0].upper(), item[1])] for item in word_counts])
+        else:
+            word_counts = [(item[0].lower(), item[1]) for item in word_counts]
+
+        word_vocab = Vocab({item[0]: item[1] for item in word_counts if
+                            not shrink_word_vocab or item[0] in embedding.token_to_idx},
                            bos_token=None, eos_token=None)
         word_vocab.set_embedding(embedding)
         char_vocab = Vocab({item[0]: item[1] for item in char_counts},
@@ -693,7 +706,8 @@ class SQuADAsyncVocabReducer(object):
 class SQuADDataFeaturizer(object):
     """Class that converts tokenized examples into featurized"""
 
-    def __init__(self, word_vocab, char_vocab, para_limit, ques_limit, char_limit):
+    def __init__(self, word_vocab, char_vocab, para_limit, ques_limit, char_limit,
+                 is_cased_embedding):
         """Init SQuADDataFeaturizer object
 
         Parameters
@@ -708,6 +722,8 @@ class SQuADDataFeaturizer(object):
             Maximum characters in a question
         char_limit : int
             Maximum characters in a token
+        is_cased_embedding: bool
+            Is underlying embedding is cased or uncased
         """
         self._para_limit = para_limit
         self._ques_limit = ques_limit
@@ -715,6 +731,39 @@ class SQuADDataFeaturizer(object):
 
         self._word_vocab = word_vocab
         self._char_vocab = char_vocab
+
+        self._is_cased_embedding = is_cased_embedding
+
+    def _get_words_emb(self, words):
+        """Get embedding for the words
+
+        Parameters
+        ----------
+        words : list[str]
+            Words to embed
+
+        Returns
+        -------
+        ret : np.array
+            Array of embeddings for words
+        """
+
+        if not self._is_cased_embedding:
+            return self._word_vocab[[word.lower() for word in words]]
+
+        result = np.full([len(words)], fill_value=0, dtype=np.float32)
+        word_emb_matrix = np.full([len(words), 4], fill_value=0, dtype=np.float32)
+
+        for i, w in enumerate(words):
+            word_emb_matrix[i, :] = self._word_vocab[[w, w.lower(), w.capitalize(), w.upper()]]
+
+        mask = word_emb_matrix != 0
+        first_non_zero_embeddings_indices = np.where(mask.any(axis=1), mask.argmax(axis=1), -1)
+
+        for i, index in enumerate(first_non_zero_embeddings_indices):
+            result[i] = word_emb_matrix[i, index]
+
+        return result
 
     def build_features(self, example):
         """Generate features for a given example
@@ -749,12 +798,10 @@ class SQuADDataFeaturizer(object):
                                  dtype=np.float32)
 
         context_len = min(len(example['context_tokens']), self._para_limit)
-        context_idxs[:context_len] = self._word_vocab[[item.lower() for item
-                                                       in example['context_tokens'][:context_len]]]
+        context_idxs[:context_len] = self._get_words_emb(example['context_tokens'][:context_len])
 
         ques_len = min(len(example['ques_tokens']), self._ques_limit)
-        ques_idxs[:ques_len] = self._word_vocab[[item.lower() for item in
-                                                 example['ques_tokens'][:ques_len]]]
+        ques_idxs[:ques_len] = self._get_words_emb(example['ques_tokens'][:ques_len])
 
         for i in range(0, context_len):
             char_len = min(len(example['context_chars'][i]), self._char_limit)
