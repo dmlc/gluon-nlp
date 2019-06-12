@@ -302,3 +302,24 @@ def test_bert_sentencepiece_sentences_transform():
     assert np.asscalar(processed[1]) == len(tokens) + 2
     # segment id
     assert all(processed[2] == np.array([0] * max_len, dtype='int32'))
+
+
+@pytest.mark.remote_required
+@pytest.mark.py3_only
+def test_gpt2_transformer():
+    tokenizer = t.GPT2BPETokenizer()
+    detokenizer = t.GPT2BPEDetokenizer()
+    vocab = _load_vocab('openai_webtext', None, root=os.path.join('tests', 'data', 'models'))
+    s = ' natural language processing tools such as gluonnlp and torchtext'
+    subwords = tokenizer(s)
+    indices = vocab[subwords]
+    gt_gpt2_subword = ['Ġnatural', 'Ġlanguage', 'Ġprocessing', 'Ġtools', 'Ġsuch', 'Ġas', 'Ġgl', 'u', 'on',
+                       'nl', 'p', 'Ġand', 'Ġtorch', 'text']
+    gt_gpt2_idx = [3288, 3303, 7587, 4899, 884, 355, 1278, 84, 261, 21283, 79, 290, 28034, 5239]
+    for lhs, rhs in zip(subwords, gt_gpt2_subword):
+        assert lhs == rhs
+    for lhs, rhs in zip(indices, gt_gpt2_idx):
+        assert lhs == rhs
+
+    recovered_sentence = detokenizer([vocab.idx_to_token[i] for i in indices])
+    assert recovered_sentence == s

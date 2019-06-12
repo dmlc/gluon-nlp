@@ -9,7 +9,6 @@ from model import GPT2_117M, GPT2_345M
 
 
 def read_tf_checkpoint(path):
-    """read tensorflow checkpoint"""
     from tensorflow.python import pywrap_tensorflow
     tensors = {}
     reader = pywrap_tensorflow.NewCheckpointReader(path)
@@ -90,9 +89,12 @@ def convert_tf_param(gluon_model, tf_ckpt_path, gluon_param_save_path):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument("--src_dir", help="Source path of the model directory in openai/gpt-2", type=str, required=True)
-    parser.add_argument("--dst_dir", help="Destination path of the model directory of gluonnlp", type=str, required=True)
-    parser.add_argument('--model', help='The specific model we need to convert', type=str, choices=['117M', '345M'])
+    parser.add_argument('--src_dir', help='Source path of the model directory in openai/gpt-2',
+                        type=str, required=True)
+    parser.add_argument('--dst_dir', help='Destination path of the model directory of gluonnlp',
+                        type=str, required=True)
+    parser.add_argument('--model', help='The specific model we need to convert', type=str,
+                        choices=['117M', '345M'])
 
     args = parser.parse_args()
     print('Convert {} to {}'.format(os.path.join(args.src_dir, args.model),

@@ -24,6 +24,7 @@ dependencies:
   - tornado=5.1.1
   - ipython
   - ipykernel
+  - regex
   - pip:
     - pylint-quotes<0.3
     - mxnet-cu92mkl>=1.4.0
