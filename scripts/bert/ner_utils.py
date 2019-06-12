@@ -99,7 +99,7 @@ def get_bert_model(bert_model, cased, ctx, dropout_prob):
     bert_dataset_name = get_bert_dataset_name(cased)
 
     return nlp.model.get_model(
-        model_name=bert_model,
+        name=bert_model,
         dataset_name=bert_dataset_name,
         pretrained=True,
         ctx=ctx,
