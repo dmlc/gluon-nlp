@@ -117,6 +117,7 @@ def website_linkcheck(workspace_name, conda_env_name) {
         if [[ ${enforce_linkcheck} == true ]]; then
             make -C docs linkcheck SPHINXOPTS=-W
         else
+            set +e
             make -C docs linkcheck
         fi;
         set +ex

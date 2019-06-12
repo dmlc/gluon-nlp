@@ -107,7 +107,7 @@ def test_pretrained_bert_models(disable_missing_parameters):
             'wiki_multilingual_cased', 'wiki_cn_cased', 'scibert_scivocab_uncased',
             'scibert_scivocab_cased', 'scibert_basevocab_uncased', 'scibert_basevocab_cased',
             'biobert_v1.0_pmc_cased', 'biobert_v1.0_pubmed_cased', 'biobert_v1.0_pubmed_pmc_cased',
-            'biobert_v1.1_pubmed_cased', 'clinicalbert_uncased'
+            'biobert_v1.1_pubmed_cased', 'clinicalbert_uncased',
         ],
         'bert_24_1024_16': ['book_corpus_wiki_en_uncased', 'book_corpus_wiki_en_cased']
     }
@@ -546,3 +546,22 @@ def test_gelu():
     y = net(x)
     assert y.shape == x.shape
     y.wait_to_read()
+
+def test_transformer_encoder():
+    batch_size = 2
+    seq_length = 5
+    units = 768
+    inputs = mx.random.uniform(shape=(batch_size, seq_length, units))
+    mask = mx.nd.ones([batch_size, seq_length, seq_length])
+    cell = nlp.model.TransformerEncoderCell(units=768, hidden_size=3072,num_heads=12,
+                                            attention_cell='multi_head',dropout=0.0,
+                                            use_residual=True, scaled=True,
+                                            output_attention=False,
+                                            prefix='transformer_cell')
+    cell.collect_params().initialize()
+    cell.hybridize()
+    outputs, attention_weights = cell(inputs, mask)
+    outputs.wait_to_read()
+    mx.nd.waitall()
+    assert outputs.shape == (batch_size, seq_length, units)
+
