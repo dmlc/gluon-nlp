@@ -4,7 +4,7 @@ import sys
 import time
 
 import pytest
-
+import mxnet as mx
 
 @pytest.mark.serial
 @pytest.mark.remote_required
@@ -330,9 +330,16 @@ def test_export(task):
 @pytest.mark.gpu
 @pytest.mark.remote_required
 @pytest.mark.integration
-def test_finetune_squad():
+@pytest.mark.parametrize('sentencepiece', [False, True])
+def test_finetune_squad(sentencepiece):
     arguments = ['--optimizer', 'adam', '--batch_size', '12',
                  '--gpu', '0', '--epochs', '2', '--debug']
+    if sentencepiece:
+        # the downloaded bpe vocab
+        url = 'http://repo.mxnet.io/gluon/dataset/vocab/test-682b5d15.bpe'
+        f = mx.test_utils.download(url, overwrite=True)
+        arguments += ['--sentencepiece', f]
+
     process = subprocess.check_call([sys.executable, './scripts/bert/finetune_squad.py']
                                     + arguments)
     time.sleep(5)

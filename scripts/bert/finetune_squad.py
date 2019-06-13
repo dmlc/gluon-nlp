@@ -41,6 +41,7 @@ import json
 import logging
 import os
 import io
+import copy
 import random
 import time
 import warnings
@@ -223,6 +224,9 @@ dataset_name = args.bert_dataset
 only_predict = args.only_predict
 model_parameters = args.model_parameters
 pretrained_bert_parameters = args.pretrained_bert_parameters
+if pretrained_bert_parameters and model_parameters:
+    raise ValueError('Cannot provide both pre-trained BERT parameters and '
+                     'BertForQA model parameters.')
 lower = args.uncased
 
 epochs = args.epochs
@@ -265,11 +269,12 @@ if args.sentencepiece:
 else:
     vocab = None
 
+pretrained = not model_parameters and not pretrained_bert_parameters and not args.sentencepiece
 bert, vocab = nlp.model.get_model(
     name=model_name,
     dataset_name=dataset_name,
     vocab=vocab,
-    pretrained=not model_parameters and not pretrained_bert_parameters,
+    pretrained=pretrained,
     ctx=ctx,
     use_pooler=False,
     use_decoder=False,
@@ -289,13 +294,21 @@ batchify_fn = nlp.data.batchify.Tuple(
     nlp.data.batchify.Stack('float32'))
 
 net = BertForQA(bert=bert)
-if pretrained_bert_parameters and not model_parameters:
+if model_parameters:
+    # load complete BertForQA parameters
+    net.load_parameters(model_parameters, ctx=ctx, cast_dtype=True)
+elif pretrained_bert_parameters:
+    # only load BertModel parameters
     bert.load_parameters(pretrained_bert_parameters, ctx=ctx,
                          ignore_extra=True, cast_dtype=True)
-if not model_parameters:
+    net.span_classifier.initialize(init=mx.init.Normal(0.02), ctx=ctx)
+elif pretrained:
+    # only load BertModel parameters
     net.span_classifier.initialize(init=mx.init.Normal(0.02), ctx=ctx)
 else:
-    net.load_parameters(model_parameters, ctx=ctx, cast_dtype=True)
+    # no checkpoint is loaded
+    net.initialize(init=mx.init.Normal(0.02), ctx=ctx)
+
 net.hybridize(static_alloc=True)
 
 loss_function = BertForQALoss()
@@ -310,11 +323,14 @@ def train():
         train_data = SQuAD(segment, version='2.0')
     else:
         train_data = SQuAD(segment, version='1.1')
+    if args.debug:
+        sampled_data = [train_data[i] for i in range(1000)]
+        train_data = mx.gluon.data.SimpleDataset(sampled_data)
     log.info('Number of records in Train data:{}'.format(len(train_data)))
 
     train_data_transform, _ = preprocess_dataset(
         train_data, SQuADTransform(
-            tokenizer,
+            copy.copy(tokenizer),
             max_seq_length=max_seq_length,
             doc_stride=doc_stride,
             max_query_length=max_query_length,
@@ -422,9 +438,6 @@ def train():
                 tic = time.time()
                 step_loss = 0.0
                 log_num = 0
-                if args.debug:
-                    log.info('Exit early in test mode')
-                    break
         epoch_toc = time.time()
         log.info('Time cost={:.2f} s, Thoughput={:.2f} samples/s'.format(
             epoch_toc - epoch_tic, total_num/(epoch_toc - epoch_tic)))
@@ -447,7 +460,7 @@ def evaluate():
 
     dev_dataset = dev_data.transform(
         SQuADTransform(
-            tokenizer,
+            copy.copy(tokenizer),
             max_seq_length=max_seq_length,
             doc_stride=doc_stride,
             max_query_length=max_query_length,
@@ -456,7 +469,7 @@ def evaluate():
 
     dev_data_transform, _ = preprocess_dataset(
         dev_data, SQuADTransform(
-            tokenizer,
+            copy.copy(tokenizer),
             max_seq_length=max_seq_length,
             doc_stride=doc_stride,
             max_query_length=max_query_length,
