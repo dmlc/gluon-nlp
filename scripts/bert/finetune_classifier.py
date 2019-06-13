@@ -46,7 +46,7 @@ import numpy as np
 import mxnet as mx
 from mxnet import gluon
 import gluonnlp as nlp
-from gluonnlp.model import get_bert_model
+from gluonnlp.model import get_model
 from gluonnlp.data import BERTTokenizer
 
 from model.classification import BERTClassifier, BERTRegression
@@ -208,8 +208,8 @@ if only_inference and not model_parameters:
 
 get_pretrained = not (pretrained_bert_parameters is not None
                       or model_parameters is not None)
-bert, vocabulary = get_bert_model(
-    model_name=model_name,
+bert, vocabulary = get_model(
+    name=model_name,
     dataset_name=dataset,
     pretrained=get_pretrained,
     ctx=ctx,
