@@ -116,7 +116,7 @@ def test_sampling(method):
     args = ['--bos', 'I love it', '--beam-size', '2', '--print-num', '1', '--gpu', '0']
     if method == 'beam_search':
         args.insert(0, 'beam-search')
-        args.extend(['--use-top-k', '50'])
+        args.extend(['--k', '50'])
     if method == 'sampling':
         args.insert(0, 'random-sample')
         args.extend(['--temperature', '1.0'])
