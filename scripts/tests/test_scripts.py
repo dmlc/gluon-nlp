@@ -113,11 +113,13 @@ def test_sentiment_analysis_textcnn():
 @pytest.mark.integration
 @pytest.mark.parametrize('method', ['beam_search', 'sampling'])
 def test_sampling(method):
-    args = ['--bos', 'I love it', '--beam_size', '2', '--print_num', '1', '--gpu', '0']
+    args = ['--bos', 'I love it', '--beam-size', '2', '--print-num', '1', '--gpu', '0']
     if method == 'beam_search':
-        args.append('--use-beam-search')
+        args.insert(0, 'beam-search')
+        args.extend(['--use-top-k', '50'])
     if method == 'sampling':
-        args.extend(['--use-sampling', '--temperature', '1.0'])
+        args.insert(0, 'random-sample')
+        args.extend(['--temperature', '1.0'])
     process = subprocess.check_call([sys.executable, './scripts/text_generation/sequence_sampling.py']
                                      + args)
     time.sleep(5)

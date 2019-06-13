@@ -30,7 +30,6 @@ from gluonnlp.data.transforms import GPT2BPETokenizer, GPT2BPEDetokenizer
 from ..text_generation.model import get_model
 
 @pytest.mark.remote_required
-@pytest.mark.py3_only
 @pytest.mark.parametrize('model_name', ['gpt2_117m', 'gpt2_345m'])
 def test_pretrained_gpt2(model_name):
     sentence = ' natural language processing tools such as gluonnlp and torchtext'

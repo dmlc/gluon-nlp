@@ -41,7 +41,6 @@ import time
 import unicodedata
 import warnings
 import zipfile
-import regex as re
 
 import numpy as np
 import mxnet as mx
@@ -421,6 +420,12 @@ class SacreMosesDetokenizer(object):
     .. note::
         sacremoses carries an LGPL 2.1+ license.
 
+    Parameters
+    ----------
+    return_str: bool, default False
+        True: return a single string
+        False: return a list of words
+
     Examples
     --------
     >>> detokenizer = gluonnlp.data.SacreMosesDetokenizer()
@@ -432,7 +437,8 @@ class SacreMosesDetokenizer(object):
     'Das Gluon NLP-Toolkit stellt eine Reihe von Textverarbeitungstools zur Verfügung.'
     """
 
-    def __init__(self):
+    def __init__(self, return_str=True):
+        self._return_str = return_str
         try:
             from sacremoses import MosesDetokenizer
             self._detokenizer = MosesDetokenizer()
@@ -463,23 +469,25 @@ class SacreMosesDetokenizer(object):
                     'installation guide in https://www.nltk.org/install.html .'
                 )
 
-    def __call__(self, sample, return_str=False):
+    def __call__(self, sample, return_str=None):
         """
 
         Parameters
         ----------
         sample: list(str)
             The sentence to detokenize
-        return_str: bool, default False
+        return_str: bool or None, default False
             True: return a single string
             False: return a list of words
+            None: use constructor setting
 
         Returns
         -------
         ret : list of strs or str
             List of words or detokenized text
         """
-        return self._detokenizer.detokenize(sample, return_str=return_str)
+        ret_str = self._return_str if return_str is None else return_str
+        return self._detokenizer.detokenize(sample, return_str=ret_str)
 
 
 class JiebaTokenizer(object):
@@ -1288,15 +1296,21 @@ class BERTSentenceTransform(object):
                 tokens_b.pop()
 
 class _GPT2BPE(object):
+    """Base class for GPT-2 BPE tokenizer and detokenizer."""
     def __init__(self):
         codes = list(range(ord(u'!'), ord(u'~') + 1)) +\
                 list(range(ord(u'¡'), ord(u'¬') + 1)) +\
                 list(range(ord(u'®'), ord(u'ÿ') + 1))
-        byte_encoder = {code: chr(code) for code in codes}
+        chr_fn = chr
+        try:
+            chr_fn(256)
+        except ValueError:
+            chr_fn = unichr # noqa: F821
+        byte_encoder = {code: chr_fn(code) for code in codes}
         shift = 0
         for code in range(2 ** 8):
             if code not in byte_encoder:
-                byte_encoder[code] = chr(2 ** 8 + shift)
+                byte_encoder[code] = chr_fn(2 ** 8 + shift)
                 shift += 1
         self._byte_encoder = byte_encoder
 
@@ -1315,17 +1329,21 @@ class GPT2BPETokenizer(_GPT2BPE):
     bpe_ranks_archive_hash = ('openai_webtext_bpe_ranks-396d4d8e.zip',
                               '1a770728fd102bc9dc332f322e6bfb294767a685')
     def __init__(self, root=os.path.join(get_home_dir(), 'models')):
+        try:
+            import regex as re
+        except ImportError:
+            raise ImportError(
+                'GPT2BPETokenizer requires regex. '
+                'To install regex, use pip install -U regex')
         super(GPT2BPETokenizer, self).__init__()
         root = os.path.expanduser(root)
         file_name, sha1_hash = self.bpe_ranks_file_hash
         file_path = os.path.join(root, file_name)
-        if os.path.exists(file_path):
-            if check_sha1(file_path, sha1_hash):
-                self._read_bpe_ranks(file_path)
-            else:
+        if not os.path.exists(file_path) or not check_sha1(file_path, sha1_hash):
+            if os.path.exists(file_path):
                 print('Detected mismatch in the content of BPE rank file. Downloading again.')
-        else:
-            print('BPE rank file is not found. Downloading.')
+            else:
+                print('BPE rank file is not found. Downloading.')
             if not os.path.exists(root):
                 try:
                     os.makedirs(root)
@@ -1358,10 +1376,9 @@ class GPT2BPETokenizer(_GPT2BPE):
                 else:
                     raise e
 
-            if check_sha1(file_path, sha1_hash):
-                self._read_bpe_ranks(file_path)
-            else:
+            if not check_sha1(file_path, sha1_hash):
                 raise ValueError('Downloaded file has different hash. Please try again.')
+        self._read_bpe_ranks(file_path)
         self._cache = {}
         self._token_pattern = re.compile(
             r'\'s|\'t|\'re|\'ve|\'m|\'ll|\'d| ?\p{L}+'
@@ -1425,6 +1442,7 @@ class GPT2BPETokenizer(_GPT2BPE):
         -------
         ret : list(str)
         """
+        import regex as re
         ret = []
         for word_token in re.findall(self._token_pattern, sample):
             word_token = bytearray(word_token.encode('utf-8'))

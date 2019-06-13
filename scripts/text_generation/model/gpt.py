@@ -309,8 +309,7 @@ gpt2_hparams = {
 }
 
 def gpt2_117m(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
-              root=os.path.join(get_home_dir(), 'models'),
-              pretrained_allow_missing=False, **kwargs):
+              root=os.path.join(get_home_dir(), 'models'), **kwargs):
     """Generic GPT-2 model.
 
     The number of layers (L) is 12, number of units (H) is 768, and the
@@ -333,16 +332,6 @@ def gpt2_117m(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
     root : str, default '$MXNET_HOME/models'
         Location for keeping the model parameters.
         MXNET_HOME defaults to '~/.mxnet'.
-    pretrained_allow_missing : bool, default False
-        Whether to ignore if any parameters for the BERTModel are missing in
-        the pretrained weights for model.
-        Some BERTModels for example do not provide decoder or classifier
-        weights. In that case it is still possible to construct a BERTModel
-        with use_decoder=True and/or use_classifier=True, but the respective
-        parameters will be missing from the pretrained file.
-        If pretrained_allow_missing=True, this will be ignored and the
-        parameters will be left uninitialized. Otherwise AssertionError is
-        raised.
 
     Returns
     -------
@@ -350,13 +339,11 @@ def gpt2_117m(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
     """
     return _get_gpt2_model('gpt2_117m', dataset_name=dataset_name, vocab=vocab,
                            pretrained=pretrained, ctx=ctx, root=root,
-                           pretrained_allow_missing=pretrained_allow_missing,
                            **kwargs)
 
 
 def gpt2_345m(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
-              root=os.path.join(get_home_dir(), 'models'),
-              pretrained_allow_missing=False, **kwargs):
+              root=os.path.join(get_home_dir(), 'models'), **kwargs):
     """Generic GPT-2 model.
 
     The number of layers (L) is 24, number of units (H) is 1024, and the
@@ -379,16 +366,6 @@ def gpt2_345m(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
     root : str, default '$MXNET_HOME/models'
         Location for keeping the model parameters.
         MXNET_HOME defaults to '~/.mxnet'.
-    pretrained_allow_missing : bool, default False
-        Whether to ignore if any parameters for the BERTModel are missing in
-        the pretrained weights for model.
-        Some BERTModels for example do not provide decoder or classifier
-        weights. In that case it is still possible to construct a BERTModel
-        with use_decoder=True and/or use_classifier=True, but the respective
-        parameters will be missing from the pretrained file.
-        If pretrained_allow_missing=True, this will be ignored and the
-        parameters will be left uninitialized. Otherwise AssertionError is
-        raised.
 
     Returns
     -------
@@ -396,13 +373,11 @@ def gpt2_345m(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
     """
     return _get_gpt2_model('gpt2_345m', dataset_name=dataset_name, vocab=vocab,
                            pretrained=pretrained, ctx=ctx, root=root,
-                           pretrained_allow_missing=pretrained_allow_missing,
                            **kwargs)
 
 
 def _get_gpt2_model(model_name=None, dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
-                    root=os.path.join(get_home_dir(), 'models'),
-                    pretrained_allow_missing=False, **kwargs):
+                    root=os.path.join(get_home_dir(), 'models'), **kwargs):
     """Any predefined GPT-2 model.
 
     Parameters
@@ -425,16 +400,6 @@ def _get_gpt2_model(model_name=None, dataset_name=None, vocab=None, pretrained=T
     root : str, default '$MXNET_HOME/models'
         Location for keeping the model parameters.
         MXNET_HOME defaults to '~/.mxnet'.
-    pretrained_allow_missing : bool, default False
-        Whether to ignore if any parameters for the BERTModel are missing in
-        the pretrained weights for model.
-        Some BERTModels for example do not provide decoder or classifier
-        weights. In that case it is still possible to construct a BERTModel
-        with use_decoder=True and/or use_classifier=True, but the respective
-        parameters will be missing from the pretrained file.
-        If pretrained_allow_missing=True, this will be ignored and the
-        parameters will be left uninitialized. Otherwise AssertionError is
-        raised.
 
     Returns
     -------
@@ -456,8 +421,7 @@ def _get_gpt2_model(model_name=None, dataset_name=None, vocab=None, pretrained=T
                     dropout=predefined_args['dropout'],
                     **kwargs)
     if pretrained:
-        _load_pretrained_params(net, model_name, dataset_name, root, ctx, ignore_extra=False,
-                                allow_missing=pretrained_allow_missing)
+        _load_pretrained_params(net, model_name, dataset_name, root, ctx)
     for i in range(net._num_layers):
         net._ffn_layers[i]._act._support_erf = False
     return net, vocab

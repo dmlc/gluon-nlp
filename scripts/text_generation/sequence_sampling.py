@@ -39,8 +39,9 @@ parser = argparse.ArgumentParser(description='Generate sentences by beam search.
                                              'WikiText as our encoder.')
 
 # beam search sampler options
-subparsers = parser.add_subparsers(help='Sequence generation methods.', required=True,
+subparsers = parser.add_subparsers(help='Sequence generation methods.',
                                    dest='command')
+subparsers.required = True
 beam_search_parser = subparsers.add_parser('beam-search', help='Use beam search for decoding.')
 beam_search_parser.add_argument('--alpha', type=float, default=0.0,
                                 help='Alpha in the length penalty term.')
@@ -121,7 +122,7 @@ def get_tokenizer(lm_model):
     if lm_model.startswith('gpt2'):
         return nlp.data.GPT2BPETokenizer(), nlp.data.GPT2BPEDetokenizer()
     else:
-        return lambda x: x.split(), ' '.join # pylint: disable=unnecessary-lambda
+        return nlp.data.SacreMosesTokenizer(), nlp.data.SacreMosesDetokenizer(return_str=True)
 
 def get_initial_input_state(decoder, bos_ids):
     if isinstance(decoder, GPT2Decoder):
