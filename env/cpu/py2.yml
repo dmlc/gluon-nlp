@@ -14,6 +14,7 @@ dependencies:
   - pytest-cov=2.7.1
   - mock<3
   - pytest-xdist<2
+  - regex
   - pip:
     - pylint-quotes<0.3
     - mxnet-mkl>=1.4.0

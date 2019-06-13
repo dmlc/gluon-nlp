@@ -252,8 +252,7 @@ def evaluate(data_loader, context=ctx[0]):
         if args.bleu == 'tweaked':
             real_translation_out[ind] = sentence
         elif args.bleu == '13a' or args.bleu == 'intl':
-            real_translation_out[ind] = detokenizer(_bpe_to_words(sentence),
-                                                    return_str=True)
+            real_translation_out[ind] = detokenizer(_bpe_to_words(sentence))
         else:
             raise NotImplementedError
     return avg_loss, real_translation_out

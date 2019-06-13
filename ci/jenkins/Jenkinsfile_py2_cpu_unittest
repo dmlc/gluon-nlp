@@ -40,19 +40,19 @@ core_logic: {
   utils.parallel_stage('Tests', [
     build_steps.test_unittest('gluon-nlp-cpu-py2', 'cpu/py2',
                               'tests/unittest', 'src/gluonnlp',
-                              'not (gpu or serial)',
+                              'not (gpu or serial or py3_only)',
                               4, false, false),
     build_steps.test_unittest('gluon-nlp-cpu-py2', 'cpu/py2',
                               'tests/unittest', 'src/gluonnlp',
-                              '(not gpu) and serial',
+                              '(not (gpu or py3_only)) and serial',
                               0, false, false),
     build_steps.test_unittest('gluon-nlp-cpu-py2', 'cpu/py2',
                               'scripts/tests', 'src/gluonnlp',
-                              'not (gpu or serial or integration)',
+                              'not (gpu or serial or integration or py3_only)',
                               4, false, false),
     build_steps.test_unittest('gluon-nlp-cpu-py2', 'cpu/py2',
                               'scripts/tests', 'src/gluonnlp',
-                              '(not (gpu or integration)) and serial',
+                              '(not (gpu or integration or py3_only)) and serial',
                               0, false, false)
   ])
 }

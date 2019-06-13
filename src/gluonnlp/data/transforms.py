@@ -30,16 +30,21 @@ __all__ = [
     'SpacyTokenizer', 'SacreMosesDetokenizer', 'NLTKMosesDetokenizer',
     'JiebaTokenizer', 'NLTKStanfordSegmenter', 'SentencepieceTokenizer',
     'SentencepieceDetokenizer', 'BERTBasicTokenizer', 'BERTTokenizer',
-    'BERTSentenceTransform', 'BERTSPTokenizer'
+    'BERTSentenceTransform', 'BERTSPTokenizer',
+    'GPT2BPETokenizer', 'GPT2BPEDetokenizer'
 ]
 
+import errno
+import io
 import os
-import warnings
+import time
 import unicodedata
+import warnings
+import zipfile
 
 import numpy as np
 import mxnet as mx
-from mxnet.gluon.utils import download, check_sha1
+from mxnet.gluon.utils import _get_repo_url, check_sha1, download
 from .utils import _extract_archive
 from ..base import get_home_dir
 
@@ -415,6 +420,12 @@ class SacreMosesDetokenizer(object):
     .. note::
         sacremoses carries an LGPL 2.1+ license.
 
+    Parameters
+    ----------
+    return_str: bool, default False
+        True: return a single string
+        False: return a list of words
+
     Examples
     --------
     >>> detokenizer = gluonnlp.data.SacreMosesDetokenizer()
@@ -426,7 +437,8 @@ class SacreMosesDetokenizer(object):
     'Das Gluon NLP-Toolkit stellt eine Reihe von Textverarbeitungstools zur Verfügung.'
     """
 
-    def __init__(self):
+    def __init__(self, return_str=True):
+        self._return_str = return_str
         try:
             from sacremoses import MosesDetokenizer
             self._detokenizer = MosesDetokenizer()
@@ -457,23 +469,25 @@ class SacreMosesDetokenizer(object):
                     'installation guide in https://www.nltk.org/install.html .'
                 )
 
-    def __call__(self, sample, return_str=False):
+    def __call__(self, sample, return_str=None):
         """
 
         Parameters
         ----------
         sample: list(str)
             The sentence to detokenize
-        return_str: bool, default False
+        return_str: bool or None, default False
             True: return a single string
             False: return a list of words
+            None: use constructor setting
 
         Returns
         -------
         ret : list of strs or str
             List of words or detokenized text
         """
-        return self._detokenizer.detokenize(sample, return_str=return_str)
+        ret_str = self._return_str if return_str is None else return_str
+        return self._detokenizer.detokenize(sample, return_str=ret_str)
 
 
 class JiebaTokenizer(object):
@@ -1280,3 +1294,181 @@ class BERTSentenceTransform(object):
                 tokens_a.pop()
             else:
                 tokens_b.pop()
+
+class _GPT2BPE(object):
+    """Base class for GPT-2 BPE tokenizer and detokenizer."""
+    def __init__(self):
+        codes = list(range(ord(u'!'), ord(u'~') + 1)) +\
+                list(range(ord(u'¡'), ord(u'¬') + 1)) +\
+                list(range(ord(u'®'), ord(u'ÿ') + 1))
+        chr_fn = chr
+        try:
+            chr_fn(256)
+        except ValueError:
+            chr_fn = unichr # noqa: F821
+        byte_encoder = {code: chr_fn(code) for code in codes}
+        shift = 0
+        for code in range(2 ** 8):
+            if code not in byte_encoder:
+                byte_encoder[code] = chr_fn(2 ** 8 + shift)
+                shift += 1
+        self._byte_encoder = byte_encoder
+
+
+class GPT2BPETokenizer(_GPT2BPE):
+    """BPE tokenizer used in OpenAI GPT-2 model.
+
+    Parameters
+    ----------
+    root : str, default '$MXNET_HOME/models'
+        Location for keeping the BPE rank file.
+        MXNET_HOME defaults to '~/.mxnet'.
+    """
+    bpe_ranks_file_hash = ('openai_webtext_bpe_ranks-396d4d8e.json',
+                           '396d4d8ec90cb02f4d56e049e0e4add868bcd943')
+    bpe_ranks_archive_hash = ('openai_webtext_bpe_ranks-396d4d8e.zip',
+                              '1a770728fd102bc9dc332f322e6bfb294767a685')
+    def __init__(self, root=os.path.join(get_home_dir(), 'models')):
+        try:
+            import regex as re
+        except ImportError:
+            raise ImportError(
+                'GPT2BPETokenizer requires regex. '
+                'To install regex, use pip install -U regex')
+        super(GPT2BPETokenizer, self).__init__()
+        root = os.path.expanduser(root)
+        file_name, sha1_hash = self.bpe_ranks_file_hash
+        file_path = os.path.join(root, file_name)
+        if not os.path.exists(file_path) or not check_sha1(file_path, sha1_hash):
+            if os.path.exists(file_path):
+                print('Detected mismatch in the content of BPE rank file. Downloading again.')
+            else:
+                print('BPE rank file is not found. Downloading.')
+            if not os.path.exists(root):
+                try:
+                    os.makedirs(root)
+                except OSError as e:
+                    if e.errno == errno.EEXIST and os.path.isdir(root):
+                        pass
+                    else:
+                        raise e
+
+            prefix = str(time.time())
+            zip_file_path = os.path.join(root, prefix + file_name)
+            repo_url = _get_repo_url()
+            if repo_url[-1] != '/':
+                repo_url = repo_url + '/'
+            archive_name, archive_hash = self.bpe_ranks_archive_hash
+            _url_format = '{repo_url}gluon/dataset/vocab/{file_name}'
+            download(_url_format.format(repo_url=repo_url, file_name=archive_name),
+                     path=zip_file_path,
+                     sha1_hash=archive_hash,
+                     overwrite=True)
+            with zipfile.ZipFile(zip_file_path) as zf:
+                if not os.path.exists(file_path):
+                    zf.extractall(root)
+            try:
+                os.remove(zip_file_path)
+            except OSError as e:
+                # file has already been removed.
+                if e.errno == 2:
+                    pass
+                else:
+                    raise e
+
+            if not check_sha1(file_path, sha1_hash):
+                raise ValueError('Downloaded file has different hash. Please try again.')
+        self._read_bpe_ranks(file_path)
+        self._cache = {}
+        self._token_pattern = re.compile(
+            r'\'s|\'t|\'re|\'ve|\'m|\'ll|\'d| ?\p{L}+'
+            r'| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+')
+
+    def _read_bpe_ranks(self, file_path):
+        with io.open(file_path, 'r', encoding='utf-8') as f:
+            bpe_data = f.read()
+            self._bpe_ranks = {
+                tuple(merge_str.split()): i for i, merge_str
+                in enumerate(bpe_data.split('\n')[1:-1])}
+
+    def get_bpe_subword(self, token):
+        """ Encode the word token into BPE subwords
+
+        Parameters
+        ----------
+        token : str
+
+        Returns
+        -------
+        chars : list(str)
+        """
+        if token in self._cache:
+            return self._cache[token]
+        chars = list(token)
+        while len(chars) > 0:
+            min_pair, min_rank = None, float('inf')
+            # Find the pair with the minimum rank
+            for i in range(1, len(chars)):
+                pair = (chars[i - 1], chars[i])
+                rank = self._bpe_ranks.get(pair, float('inf'))
+                if rank < min_rank:
+                    min_rank = rank
+                    min_pair = pair
+            if min_pair is None or min_pair not in self._bpe_ranks:
+                break
+            # Merge the pair
+            last, tail = chars[0], 1
+            for index in range(1, len(chars)):
+                if (last, chars[index]) == min_pair:
+                    chars[tail - 1] = last + chars[index]
+                    last = last + chars[index]
+                else:
+                    chars[tail - 1] = last
+                    tail += 1
+                    last = chars[index]
+            chars[tail - 1] = last
+            chars = chars[:tail]
+        self._cache[token] = chars
+        return chars
+
+    def __call__(self, sample):
+        """
+
+        Parameters
+        ----------
+        sample : str
+
+        Returns
+        -------
+        ret : list(str)
+        """
+        import regex as re
+        ret = []
+        for word_token in re.findall(self._token_pattern, sample):
+            word_token = bytearray(word_token.encode('utf-8'))
+            word_token = ''.join(self._byte_encoder[code] for code in word_token)
+            ret.extend(self.get_bpe_subword(word_token))
+        return ret
+
+
+class GPT2BPEDetokenizer(_GPT2BPE):
+    """BPE detokenizer used in OpenAI GPT-2 model."""
+    def __init__(self):
+        super(GPT2BPEDetokenizer, self).__init__()
+        self._byte_decoder = {v: k for k, v in self._byte_encoder.items()}
+
+    def __call__(self, sample):
+        """
+
+        Parameters
+        ----------
+        sample : list(str)
+
+        Returns
+        -------
+        ret : str
+        """
+        text = ''.join(sample)
+        ret = bytearray(
+            [self._byte_decoder[byte] for byte in text]).decode('utf-8', errors='replace')
+        return ret
