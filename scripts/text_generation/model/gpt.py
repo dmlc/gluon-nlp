@@ -278,6 +278,9 @@ class GPT2Model(Block):
         logits = self._logits_proj(out)
         return logits, new_states
 
+    def state_info(self, *args, **kwargs): # pylint: disable=unused-argument
+        return None
+
 model_store._model_sha1.update(
     {name: checksum for checksum, name in [
         ('26416f2ec2ab0c5f37e74dcec801f3e659546e03', 'gpt2_117m_openai_webtext'),
