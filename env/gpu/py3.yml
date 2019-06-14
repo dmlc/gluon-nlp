@@ -29,7 +29,7 @@ dependencies:
     - mxnet-cu92mkl>=1.4.0
     - sacremoses
     - sentencepiece<0.2
-    - https://github.com/mli/mx-theme/archive/0.3.1.tar.gz
+    - https://github.com/szha/mx-theme/tarball/theme_fix
     - seaborn
     - jieba
     - sphinx-autorun

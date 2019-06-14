@@ -1,7 +1,7 @@
 Dependency Parsing
 ---------------------------------
 
-:download:`zip </model_zoo/parsing.zip>`
+:download:`Download scripts </model_zoo/parsing.zip>`
 
 Deep Biaffine Dependency Parser
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

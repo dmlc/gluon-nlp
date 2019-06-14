@@ -84,7 +84,7 @@ nbsphinx_prolog = """
 
 .. only:: html
 
-    :download:`zip <{{ "../%s.zip"|format(paths[1]) }}>`
+    :download:`Download this tutorial <{{ "../%s.zip"|format(paths[1]) }}>`
 """
 
 # The suffix(es) of source filenames.
