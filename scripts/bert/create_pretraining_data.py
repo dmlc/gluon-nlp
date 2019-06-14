@@ -621,9 +621,9 @@ if __name__ == '__main__':
                              'unigram sampling')
 
     parser.add_argument(
-        "--do_whole_word_mask", 
-        action="store_true",
-        help="Whether to use whole word masking rather than per-subword masking.")
+        '--do_whole_word_mask', 
+        action='store_true',
+        help='Whether to use whole word masking rather than per-subword masking.')
 
     parser.add_argument(
         '--max_seq_length', type=int, default=512, help='Maximum sequence length.')
