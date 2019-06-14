@@ -21,10 +21,8 @@
 
 __all__ = ['LabelSmoothing']
 
-import numpy as np
 import mxnet as mx
 from mxnet.gluon import HybridBlock
-
 
 # pylint: disable=unused-argument
 class _SmoothingWithDim(mx.operator.CustomOp):
@@ -102,7 +100,7 @@ class LabelSmoothing(HybridBlock):
 
         Parameters
         ----------
-        F
+        F: mx.sym or mx.nd
         inputs : Symbol or NDArray
             Shape (batch_size, length) or (batch_size, length, V)
         units : int or None

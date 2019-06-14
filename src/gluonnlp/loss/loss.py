@@ -22,31 +22,69 @@
 __all__ = ['SoftmaxCEMaskedLoss']
 
 import numpy as np
-import mxnet as mx
-from mxnet.gluon import HybridBlock
 from mxnet.gluon.loss import SoftmaxCELoss
 
 class SoftmaxCEMaskedLoss(SoftmaxCELoss):
-    """Wrapper of the SoftmaxCELoss that supports valid_length as the input
+    r"""Wrapper of the SoftmaxCELoss that supports valid_length as the input
 
+    If `sparse_label` is `True` (default), label should contain integer
+    category indicators:
+
+    .. math::
+
+        \DeclareMathOperator{softmax}{softmax}
+
+        p = \softmax({pred})
+
+        L = -\sum_i \log p_{i,{label}_i}
+
+    `label`'s shape should be `pred`'s shape with the channel dimension removed.
+    i.e. for `pred` with shape (1,2,3) `label`'s shape should
+    be (1,2).
+
+    If `sparse_label` is `False`, `label` should contain probability distribution
+    and `label`'s shape should be the same with `pred`:
+
+    .. math::
+
+        p = \softmax({pred})
+
+        L = -\sum_i \sum_j {label}_j \log p_{ij}
+
+    Parameters
+    ----------
+    sparse_label : bool, default True
+        Whether label is an integer array instead of probability distribution.
+    from_logits : bool, default False
+        Whether input is a log probability (usually from log_softmax) instead
+        of unnormalized numbers.
+    weight : float or None
+        Global scalar weight for loss.
+
+    Inputs:
+        - **pred**: the prediction tensor, shape should be (N, T, C)
+        - **label**: the truth tensor. When `sparse_label` is True, `label`'s
+          shape should be `pred`'s shape with the channel dimension C removed.
+          i.e. for `pred` with shape (1,2,3) `label`'s shape should be (1,2)
+          and values should be integers between 0 and 2.
+          If `sparse_label` is False, `label`'s shape must be the same as `pred`
+          and values should be floats in the range `[0, 1]`.
+        - **valid_length**: valid length of each sequence, of shape (batch_size, )
+          predictions elements longer than their valid_length are masked out
+
+    Outputs:
+        - **loss**: loss tensor with shape (batch_size,). Dimensions other than
+          batch_axis are averaged out.
     """
-    def hybrid_forward(self, F, pred, label, valid_length): # pylint: disable=arguments-differ
-        """
+    def __init__(self, sparse_label=True, from_logits=False, weight=None,
+                 **kwargs):
+        # The current technique only works with NTC data
+        axis = -1
+        batch_axis = 0
+        super(SoftmaxCEMaskedLoss, self).__init__(axis, sparse_label, from_logits,
+            weight, batch_axis, **kwargs)
 
-        Parameters
-        ----------
-        F
-        pred : Symbol or NDArray
-            Shape (batch_size, length, V)
-        label : Symbol or NDArray
-            Shape (batch_size, length)
-        valid_length : Symbol or NDArray
-            Shape (batch_size, )
-        Returns
-        -------
-        loss : Symbol or NDArray
-            Shape (batch_size,)
-        """
+    def hybrid_forward(self, F, pred, label, valid_length):
         if self._sparse_label:
             sample_weight = F.cast(F.expand_dims(F.ones_like(label), axis=-1), dtype=np.float32)
         else:
@@ -56,4 +94,3 @@ class SoftmaxCEMaskedLoss(SoftmaxCELoss):
                                        use_sequence_length=True,
                                        axis=1)
         return super(SoftmaxCEMaskedLoss, self).hybrid_forward(F, pred, label, sample_weight)
-
