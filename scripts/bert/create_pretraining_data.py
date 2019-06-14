@@ -431,7 +431,7 @@ def create_masked_lm_predictions(tokens, masked_lm_prob, max_predictions_per_seq
         # at all -- we still predict each subword independently, softmaxed
         # over the entire vocabulary.
         if (do_whole_word_mask and len(cand_indexes) >= 1
-            and vocab.idx_to_token[token].startswith('##')):
+                and vocab.idx_to_token[token].startswith('##')):
             cand_indexes[-1].append(i)
         else:
             cand_indexes.append([i])
