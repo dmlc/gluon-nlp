@@ -216,7 +216,7 @@ def create_training_instances(x):
                             next_sentence_labels, segment_ids, valid_lengths
     """
     (input_files, tokenizer, max_seq_length, short_seq_prob,
-     masked_lm_prob, max_predictions_per_seq, vocab,
+     masked_lm_prob, max_predictions_per_seq, do_whole_word_mask, vocab,
      dupe_factor, nworker, worker_pool, output_file) = x
     time_start = time.time()
     if nworker > 1:
@@ -259,7 +259,7 @@ def create_training_instances(x):
         process_args = []
         for document_index in range(len(all_documents)):
             process_args.append((all_documents, document_index, max_seq_length, short_seq_prob,
-                                 masked_lm_prob, max_predictions_per_seq, vocab))
+                                 masked_lm_prob, max_predictions_per_seq, do_whole_word_mask, vocab))
         for _ in range(dupe_factor):
             instances_results = worker_pool.map(create_instances_from_document, process_args)
             for instances_result in instances_results:
@@ -271,7 +271,7 @@ def create_training_instances(x):
                 instances.extend(
                     create_instances_from_document(
                         (all_documents, document_index, max_seq_length, short_seq_prob,
-                         masked_lm_prob, max_predictions_per_seq, vocab)))
+                         masked_lm_prob, max_predictions_per_seq, do_whole_word_mask, vocab)))
         npz_instances = convert_to_npz(instances, max_seq_length)
 
     (input_ids, masked_lm_ids, masked_lm_positions, masked_lm_weights,
@@ -295,7 +295,7 @@ def create_training_instances(x):
 def create_instances_from_document(x):
     """Creates `TrainingInstance`s for a single document."""
     (all_documents, document_index, max_seq_length, short_seq_prob,
-     masked_lm_prob, max_predictions_per_seq, vocab) = x
+     masked_lm_prob, max_predictions_per_seq, do_whole_word_mask, vocab) = x
     document = all_documents[document_index]
     _MASK_TOKEN = vocab[vocab.mask_token]
     _CLS_TOKEN = vocab[vocab.cls_token]
@@ -392,7 +392,7 @@ def create_instances_from_document(x):
                 (tokens, masked_lm_positions,
                  masked_lm_labels) = create_masked_lm_predictions(
                      tokens, masked_lm_prob, max_predictions_per_seq,
-                     len(vocab), _MASK_TOKEN, _CLS_TOKEN, _SEP_TOKEN)
+                     do_whole_word_mask, vocab, _MASK_TOKEN, _CLS_TOKEN, _SEP_TOKEN)
                 instance = TrainingInstance(
                     tokens=tokens,
                     segment_ids=segment_ids,
@@ -412,15 +412,27 @@ MaskedLmInstance = collections.namedtuple('MaskedLmInstance',
                                           ['index', 'label'])
 
 
-def create_masked_lm_predictions(tokens, masked_lm_prob,
-                                 max_predictions_per_seq, vocab_size,
+def create_masked_lm_predictions(tokens, masked_lm_prob, max_predictions_per_seq,
+                                 do_whole_word_mask, vocab,
                                  _MASK_TOKEN, _CLS_TOKEN, _SEP_TOKEN):
     """Creates the predictions for the masked LM objective."""
     cand_indexes = []
     for (i, token) in enumerate(tokens):
         if token in [_CLS_TOKEN, _SEP_TOKEN]:
             continue
-        cand_indexes.append(i)
+        # Whole Word Masking means that if we mask all of the subwords
+        # corresponding to an original word. When a word has been split into
+        # subwords, the first token does not have any marker and any subsequence
+        # tokens are prefixed with ##. So whenever we see the ## token, we
+        # append it to the previous set of word indexes.
+        #
+        # Note that Whole Word Masking does *not* change the training code
+        # at all -- we still predict each subword independently, softmaxed
+        # over the entire vocabulary.
+        if (do_whole_word_mask and len(cand_indexes) >= 1 and vocab.idx_to_token[token].startswith("##")):
+            cand_indexes[-1].append(i)
+        else:
+            cand_indexes.append([i])
 
     random.shuffle(cand_indexes)
 
@@ -431,30 +443,40 @@ def create_masked_lm_predictions(tokens, masked_lm_prob,
 
     masked_lms = []
     covered_indexes = set()
-    for index in cand_indexes:
+    for index_set in cand_indexes:
         if len(masked_lms) >= num_to_predict:
             break
-        if index in covered_indexes:
+        # If adding a whole-word mask would exceed the maximum number of
+        # predictions, then just skip this candidate.
+        if len(masked_lms) + len(index_set) > num_to_predict:
             continue
-        covered_indexes.add(index)
-
-        masked_token = None
-        # 80% of the time, replace with [MASK]
-        if random.random() < 0.8:
-            masked_token = _MASK_TOKEN
-        else:
-            # 10% of the time, keep original
-            if random.random() < 0.5:
-                masked_token = tokens[index]
-            # 10% of the time, replace with random word
+        is_any_index_covered = False
+        for index in index_set:
+            if index in covered_indexes:
+                is_any_index_covered = True
+                break
+        if is_any_index_covered:
+            continue
+        for index in index_set:
+            covered_indexes.add(index)
+        
+            masked_token = None
+            # 80% of the time, replace with [MASK]
+            if random.random() < 0.8:
+                masked_token = _MASK_TOKEN
             else:
-                # generate a random word in [0, vocab_size - 1]
-                masked_token = random.randint(0, vocab_size - 1)
+                # 10% of the time, keep original
+                if random.random() < 0.5:
+                    masked_token = tokens[index]
+                # 10% of the time, replace with random word
+                else:
+                    # generate a random word in [0, vocab_size - 1]
+                    masked_token = random.randint(0, len(vocab) - 1)
 
-        output_tokens[index] = masked_token
+            output_tokens[index] = masked_token
 
-        masked_lms.append(MaskedLmInstance(index=index, label=tokens[index]))
-
+            masked_lms.append(MaskedLmInstance(index=index, label=tokens[index]))
+    assert len(masked_lms) <= num_to_predict
     masked_lms = sorted(masked_lms, key=lambda x: x.index)
 
     masked_lm_positions = []
@@ -536,7 +558,7 @@ def main():
         output_file = os.path.join(output_dir, 'part-{}.npz'.format(str(i).zfill(3)))
         count += len(file_split)
         process_args.append((file_split, tokenizer, args.max_seq_length, args.short_seq_prob,
-                             args.masked_lm_prob, args.max_predictions_per_seq,
+                             args.masked_lm_prob, args.max_predictions_per_seq, args.do_whole_word_mask,
                              vocab, args.dupe_factor, 1, None, output_file))
 
     # sanity check
@@ -597,6 +619,11 @@ if __name__ == '__main__':
     parser.add_argument('--sp_alpha', type=float, default=1.0,
                         help='Inverse temperature for probability rescaling for sentencepiece '
                              'unigram sampling')
+
+    parser.add_argument(
+        "--do_whole_word_mask", 
+        action="store_true",
+        help="Whether to use whole word masking rather than per-subword masking.")
 
     parser.add_argument(
         '--max_seq_length', type=int, default=512, help='Maximum sequence length.')
