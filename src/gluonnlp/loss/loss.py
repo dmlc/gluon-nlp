@@ -82,7 +82,7 @@ class SoftmaxCEMaskedLoss(SoftmaxCELoss):
         axis = -1
         batch_axis = 0
         super(SoftmaxCEMaskedLoss, self).__init__(axis, sparse_label, from_logits,
-            weight, batch_axis, **kwargs)
+                                                  weight, batch_axis, **kwargs)
 
     def hybrid_forward(self, F, pred, label, valid_length):
         if self._sparse_label:
