@@ -259,7 +259,8 @@ def create_training_instances(x):
         process_args = []
         for document_index in range(len(all_documents)):
             process_args.append((all_documents, document_index, max_seq_length, short_seq_prob,
-                                 masked_lm_prob, max_predictions_per_seq, do_whole_word_mask, vocab))
+                                 masked_lm_prob, max_predictions_per_seq, do_whole_word_mask,
+                                 vocab))
         for _ in range(dupe_factor):
             instances_results = worker_pool.map(create_instances_from_document, process_args)
             for instances_result in instances_results:
@@ -429,7 +430,8 @@ def create_masked_lm_predictions(tokens, masked_lm_prob, max_predictions_per_seq
         # Note that Whole Word Masking does *not* change the training code
         # at all -- we still predict each subword independently, softmaxed
         # over the entire vocabulary.
-        if (do_whole_word_mask and len(cand_indexes) >= 1 and vocab.idx_to_token[token].startswith("##")):
+        if (do_whole_word_mask and len(cand_indexes) >= 1
+            and vocab.idx_to_token[token].startswith('##')):
             cand_indexes[-1].append(i)
         else:
             cand_indexes.append([i])
@@ -459,7 +461,6 @@ def create_masked_lm_predictions(tokens, masked_lm_prob, max_predictions_per_seq
             continue
         for index in index_set:
             covered_indexes.add(index)
-        
             masked_token = None
             # 80% of the time, replace with [MASK]
             if random.random() < 0.8:
@@ -558,7 +559,8 @@ def main():
         output_file = os.path.join(output_dir, 'part-{}.npz'.format(str(i).zfill(3)))
         count += len(file_split)
         process_args.append((file_split, tokenizer, args.max_seq_length, args.short_seq_prob,
-                             args.masked_lm_prob, args.max_predictions_per_seq, args.do_whole_word_mask,
+                             args.masked_lm_prob, args.max_predictions_per_seq,
+                             args.do_whole_word_mask,
                              vocab, args.dupe_factor, 1, None, output_file))
 
     # sanity check
@@ -621,7 +623,7 @@ if __name__ == '__main__':
                              'unigram sampling')
 
     parser.add_argument(
-        '--do_whole_word_mask', 
+        '--do_whole_word_mask',
         action='store_true',
         help='Whether to use whole word masking rather than per-subword masking.')
 
