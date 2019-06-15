@@ -722,6 +722,9 @@ def test_numpy_dataset():
     (nlp.data.GlueWNLI, 'wnli', 'train', 635, 3),
     (nlp.data.GlueWNLI, 'wnli', 'dev', 71, 3),
     (nlp.data.GlueWNLI, 'wnli', 'test', 146, 2),
+    (nlp.data.GlueMRPC, 'mrpc', 'train', 3668, 3),
+    (nlp.data.GlueMRPC, 'mrpc', 'dev', 408, 3),
+    (nlp.data.GlueMRPC, 'mrpc', 'test', 1725, 2),
 ])
 @pytest.mark.serial
 @pytest.mark.remote_required
