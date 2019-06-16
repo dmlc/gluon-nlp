@@ -292,7 +292,7 @@ def test_pretrain_hvd():
 @pytest.mark.integration
 # MNLI inference (multiple dev sets)
 # STS-B inference (regression task)
-@pytest.mark.parametrize('dataset', ['MNLI', 'STS-B', 'XNLI'])
+@pytest.mark.parametrize('dataset', ['MNLI', 'STS-B', 'XNLI', 'LCQMC', 'ChnSentiCorp'])
 def test_finetune_inference(dataset):
     arguments = ['--log_interval', '100', '--epsilon', '1e-8', '--optimizer',
                  'adam', '--gpu', '0', '--max_len', '80', '--only_inference']
