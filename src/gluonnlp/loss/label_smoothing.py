@@ -80,7 +80,7 @@ class LabelSmoothing(HybridBlock):
         Whether input is an integer array instead of one hot array.
     units : int or None
         Vocabulary size. If units is not given, it will be inferred from the input.
-    prefix : str, default 'rnn_'
+    prefix : str
         Prefix for name of `Block`s
         (and name of weight if params is `None`).
     params : Parameter or None
