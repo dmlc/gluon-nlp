@@ -111,3 +111,4 @@ If you are not familiar with Gluon, check out the
    examples/index
    api/index
    community/index
+   genindex
