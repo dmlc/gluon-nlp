@@ -17,9 +17,10 @@
 # specific language governing permissions and limitations
 # under the License.
 
+import gluonnlp as nlp
 import mxnet as mx
 from mxnet import gluon
-import gluonnlp as nlp
+import numpy as np
 
 def testActivationRegularizationLoss():
     ar = nlp.loss.ActivationRegularizationLoss(2)
