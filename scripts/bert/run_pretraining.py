@@ -102,7 +102,7 @@ def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx, store):
     if args.dtype == 'float16':
         optim_params['multi_precision'] = True
 
-    trainer = mx.gluon.Trainer(model.collect_params(), 'bertadam', optim_params,
+    trainer = mx.gluon.Trainer(model.collect_params(), args.optimizer, optim_params,
                                update_on_kvstore=False, kvstore=store)
     dynamic_loss_scale = args.dtype == 'float16'
     fp16_trainer = FP16Trainer(trainer, dynamic_loss_scale=dynamic_loss_scale)

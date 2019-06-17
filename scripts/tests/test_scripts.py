@@ -194,12 +194,21 @@ def test_pretrain():
                                      '--masked_lm_prob', '0.15',
                                      '--short_seq_prob', '0.1',
                                      '--verbose'])
+
+    arguments = ['--log_interval', '2', '--data_eval', './test/bert/data/*.npz',
+                 '--batch_size_eval', '8', '--ckpt_dir', './test/bert/ckpt', '--gpus', '0',
+                 '--num_steps', '20']
+    # test training with lamb
+    process = subprocess.check_call([sys.executable, './scripts/bert/run_pretraining.py',
+                                     '--data', './test/bert/data/*.npz',
+                                     '--batch_size', '32',
+                                     '--lr', '2e-5',
+                                     '--warmup_ratio', '0.5',
+                                     '--optimizer', 'lamb'] + arguments)
+
     try:
         # TODO(haibin) update test once MXNet 1.5 is released.
         from mxnet.ndarray.contrib import adamw_update
-        arguments = ['--log_interval', '2', '--data_eval', './test/bert/data/*.npz',
-                     '--batch_size_eval', '8', '--ckpt_dir', './test/bert/ckpt', '--gpus', '0',
-                     '--num_steps', '20']
         # test training
         process = subprocess.check_call([sys.executable, './scripts/bert/run_pretraining.py',
                                          '--data', './test/bert/data/*.npz',
