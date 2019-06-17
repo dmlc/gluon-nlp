@@ -46,7 +46,7 @@ def testMaskedSoftmaxCrossEntropyLoss():
     
 def testLabelSmoothing():
     # Testing that the label gets smoothed at the right location
-    labels = [0,1,2]
+    sparse_labels = [0,1,2]
     for epsilon, units in zip([0.1, 0.3, 0.5], [5, 10, 20]):
         smoother = nlp.loss.LabelSmoothing(epsilon=epsilon, units=units)
         smoothed_labels = smoother(mx.nd.array(sparse_labels))
