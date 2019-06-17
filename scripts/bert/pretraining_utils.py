@@ -404,7 +404,8 @@ def evaluate(data_eval, model, nsp_loss, mlm_loss, vocab_size, ctx, log_interval
 
 def get_argparser():
     """Argument parser"""
-    parser = argparse.ArgumentParser(description='BERT pretraining example.')
+    parser = argparse.ArgumentParser(description='BERT pretraining example.',
+                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--num_steps', type=int, default=20, help='Number of optimization steps')
     parser.add_argument('--num_buckets', type=int, default=1,
                         help='Number of buckets for variable length sequence sampling')
@@ -422,13 +423,12 @@ def get_argparser():
                         choices=['book_corpus_wiki_en_uncased', 'book_corpus_wiki_en_cased',
                                  'wiki_multilingual_uncased', 'wiki_multilingual_cased',
                                  'wiki_cn_cased'],
-                        help='The pre-defined dataset from which the vocabulary is created. '
-                             'Default is book_corpus_wiki_en_uncased.')
+                        help='The pre-defined dataset from which the vocabulary is created.')
     parser.add_argument('--pretrained', action='store_true',
                         help='Load the pretrained model released by Google.')
     parser.add_argument('--model', type=str, default='bert_12_768_12',
-                        help='Model to run pre-training on. '
-                             'Options are bert_12_768_12, bert_24_1024_16')
+                        choices=['bert_12_768_12', 'bert_24_1024_16'],
+                        help='Model to run pre-training on.')
     parser.add_argument('--data', type=str, default=None,
                         help='Path to training data. Training is skipped if not set.')
     parser.add_argument('--data_eval', type=str, default=None,
@@ -445,6 +445,8 @@ def get_argparser():
     parser.add_argument('--dummy_data_len', type=int, default=None,
                         help='If provided, a data batch of target sequence length is '
                              'used. For benchmarking purpuse only.')
+    parser.add_argument('--optimizer', type=str, default='bertadam',
+                        help='Optimization method. Options are bertadam and lamb.')
     parser.add_argument('--seed', type=int, default=0, help='Random seed')
     parser.add_argument('--verbose', action='store_true', help='verbose logging')
     parser.add_argument('--profile', type=str, default=None,

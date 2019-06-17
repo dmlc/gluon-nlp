@@ -244,11 +244,20 @@ def test_pretrain_hvd():
                                      '--verbose'])
     try:
         # TODO(haibin) update test once MXNet 1.5 is released.
-        from mxnet.ndarray.contrib import adamw_update
         import horovod.mxnet as hvd
         arguments = ['--log_interval', '2', '--data_eval', './test/bert/data/*.npz',
                      '--batch_size_eval', '8', '--ckpt_dir', './test/bert/ckpt',
                      '--num_steps', '20']
+
+        # test training with lamb
+        process = subprocess.check_call([sys.executable, './scripts/bert/run_pretraining_hvd.py',
+                                         '--data', './test/bert/data/*.npz',
+                                         '--batch_size', '32',
+                                         '--lr', '2e-5',
+                                         '--warmup_ratio', '0.5',
+                                         '--optimizer', 'lamb'] + arguments)
+
+        from mxnet.ndarray.contrib import adamw_update
         # test training
         process = subprocess.check_call([sys.executable, './scripts/bert/run_pretraining_hvd.py',
                                          '--data', './test/bert/data/*.npz',

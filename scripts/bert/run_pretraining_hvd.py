@@ -118,7 +118,7 @@ def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx):
         loss_scale_param = {'scale_window': 2000 / num_workers}
     else:
         loss_scale_param = None
-    trainer = hvd.DistributedTrainer(model.collect_params(), 'bertadam', optim_params)
+    trainer = hvd.DistributedTrainer(model.collect_params(), args.optimizer, optim_params)
     fp16_trainer = FP16Trainer(trainer, dynamic_loss_scale=dynamic_loss_scale,
                                loss_scaler_params=loss_scale_param)
 
