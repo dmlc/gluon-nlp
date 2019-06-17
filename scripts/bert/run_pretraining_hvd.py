@@ -66,6 +66,8 @@ parser.add_argument('--max_predictions_per_seq', type=int, default=None,
                     help='Maximum number of predictions per sequence.')
 parser.add_argument('--cased', action='store_true',
                     help='Whether to tokenize with cased characters')
+parser.add_argument('--do_whole_word_mask', action='store_true',
+                    help='Whether to use whole word masking rather than per-subword masking.')
 parser.add_argument('--sentencepiece', default=None, type=str,
                     help='Path to the sentencepiece .model file for both tokenization and vocab.')
 parser.add_argument('--sp_nbest', type=int, default=0,
@@ -284,6 +286,7 @@ if __name__ == '__main__':
                                                short_seq_prob=args.short_seq_prob,
                                                masked_lm_prob=args.masked_lm_prob,
                                                max_predictions_per_seq=args.max_predictions_per_seq,
+                                               do_whole_word_mask=args.do_whole_word_mask,
                                                vocab=vocab, tokenizer=tokenizer,
                                                num_workers=args.num_data_workers)
         else:
@@ -296,6 +299,9 @@ if __name__ == '__main__':
                 raise UserWarning('argument short_seq_prob is valid only when --raw is set')
             if args.masked_lm_prob:
                 raise UserWarning('argument masked_lm_prob is valid only when --raw is set')
+            if args.do_whole_word_mask:
+                raise UserWarning('argument do_whole_word_mask is valid only when '
+                                  '--raw is set')
             if args.max_predictions_per_seq:
                 raise UserWarning('argument max_predictions_per_seq is valid only when '
                                   '--raw is set')
