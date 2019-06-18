@@ -406,9 +406,9 @@ def get_argparser():
     """Argument parser"""
     parser = argparse.ArgumentParser(description='BERT pretraining example.')
     parser.add_argument('--num_steps', type=int, default=20, help='Number of optimization steps')
-    parser.add_argument('--num_buckets', type=int, default=1,
+    parser.add_argument('--num_buckets', type=int, default=10,
                         help='Number of buckets for variable length sequence sampling')
-    parser.add_argument('--dtype', type=str, default='float32', help='data dtype')
+    parser.add_argument('--dtype', type=str, default='float16', help='data dtype')
     parser.add_argument('--batch_size', type=int, default=8, help='Batch size per GPU.')
     parser.add_argument('--accumulate', type=int, default=1,
                         help='Number of batches for gradient accumulation. '
@@ -433,15 +433,15 @@ def get_argparser():
                         help='Path to training data. Training is skipped if not set.')
     parser.add_argument('--data_eval', type=str, default=None,
                         help='Path to evaluation data. Evaluation is skipped if not set.')
-    parser.add_argument('--ckpt_dir', type=str, required=True,
+    parser.add_argument('--ckpt_dir', type=str, default='./ckpt_dir',
                         help='Path to checkpoint directory')
     parser.add_argument('--start_step', type=int, default=0,
                         help='Start optimization step from the checkpoint.')
     parser.add_argument('--lr', type=float, default=1e-4, help='Learning rate')
-    parser.add_argument('--warmup_ratio', type=float, default=0.1,
+    parser.add_argument('--warmup_ratio', type=float, default=0.01,
                         help='ratio of warmup steps used in NOAM\'s stepsize schedule')
-    parser.add_argument('--log_interval', type=int, default=10, help='Report interval')
-    parser.add_argument('--ckpt_interval', type=int, default=250000, help='Checkpoint interval')
+    parser.add_argument('--log_interval', type=int, default=250, help='Report interval')
+    parser.add_argument('--ckpt_interval', type=int, default=25000, help='Checkpoint interval')
     parser.add_argument('--dummy_data_len', type=int, default=None,
                         help='If provided, a data batch of target sequence length is '
                              'used. For benchmarking purpuse only.')

@@ -106,7 +106,7 @@ BERT Pre-training
 
 We also provide scripts for pre-training BERT with masked language modeling and and next sentence prediction.
 
-The pre-training data format expects: (1) One sentence per line. These should ideally be actual sentences, not entire paragraphs or arbitrary spans of text for the "next sentence prediction" task. (2) Blank lines between documents. You can find a sample pre-training text with 3 documents `here <https://github.com/dmlc/gluon-nlp/blob/master/scripts/bert/sample_text.txt>`__.
+The pre-training data format expects: (1) One sentence per line. These should ideally be actual sentences, not entire paragraphs or arbitrary spans of text for the "next sentence prediction" task. (2) Blank lines between documents. You can find a sample pre-training text with 3 documents `here <https://github.com/dmlc/gluon-nlp/blob/master/scripts/bert/sample_text.txt>`__. You can perform sentence segmentation with an off-the-shelf NLP toolkit such as NLTK.
 
 Pre-requisite
 +++++++++++++
@@ -127,40 +127,55 @@ Then you can install horovod via the following command:
 Run Pre-training
 ++++++++++++++++
 
-You can use the following command to run pre-training with 8 GPUs:
+You can use the following command to run pre-training with 2 hosts, 8 GPUs each:
 
 .. code-block:: console
 
-    $ horovodrun -np 8 -H localhost:8 -x MXNET_SAFE_ACCUMULATION=1 python run_pretraining_hvd.py --data='folder1/*.txt,folder2/*.txt,' --num_steps 1000000 --log_interval 250 --lr 1e-4 --batch_size 4096 --accumulate 4 --warmup_ratio 0.01 --ckpt_dir ./ckpt --ckpt_interval 25000 --num_buckets 10 --dtype float16 --use_avg_len --verbose --raw --max_seq_length 512 --short_seq_prob 0.1 --masked_lm_prob 0.15 --max_predictions_per_seq 80
+    $ mpirun -np 16 -H host0_ip:8,host1_ip:8 -mca pml ob1 -mca btl ^openib \
+             -mca btl_tcp_if_exclude docker0,lo --map-by ppr:4:socket \
+             --mca plm_rsh_agent 'ssh -q -o StrictHostKeyChecking=no' \
+             -x NCCL_MIN_NRINGS=8 -x NCCL_DEBUG=INFO -x HOROVOD_HIERARCHICAL_ALLREDUCE=1 \
+             -x MXNET_SAFE_ACCUMULATION=1 --tag-output \
+             python run_pretraining_hvd.py --data='folder1/*.txt,folder2/*.txt,' --num_steps 1000000 \
+             --lr 1e-4 --batch_size 4096 --accumulate 4 --use_avg_len --raw
 
-Note that the --batch_size set the per-GPU batch size. 
+Note that the batch_size argument sets the per-GPU batch size. When multiple hosts are present, please make sure you can ssh to these nodes without password.
 
-To run pre-training with node0 and node1 with 8 GPUs each, you can run the following command:
+Custom Vocabulary
++++++++++++++++++
+
+The pre-training script supports subword tokenization with a custom vocabulary using `sentencepiece <https://github.com/google/sentencepiece>`__.
+
+To install sentencepiece, run:
 
 .. code-block:: console
 
-    $ mpirun -np 16 -H node0:8,node1:8 -mca pml ob1 -mca btl ^openib -mca btl_tcp_if_exclude docker0,lo --map-by ppr:4:socket --mca plm_rsh_agent 'ssh -q -o StrictHostKeyChecking=no' -x NCCL_MIN_NRINGS=8 -x NCCL_DEBUG=INFO -x HOROVOD_HIERARCHICAL_ALLREDUCE=1 -x MXNET_SAFE_ACCUMULATION=1 --tag-output python run_pretraining_hvd.py --data='folder1/*.txt,folder2/*.txt,' --num_steps 1000000 --log_interval 250 --lr 1e-4 --batch_size 4096 --accumulate 4 --warmup_ratio 0.01 --ckpt_dir ./ckpt --ckpt_interval 25000 --num_buckets 10 --dtype float16 --use_avg_len --verbose --raw --max_seq_length 512 --short_seq_prob 0.1 --masked_lm_prob 0.15 --max_predictions_per_seq 80
+    $ pip install sentencepiece==0.1.82 --user
 
-Please make sure you can ssh to these nodes without password.
+You can `train <//github.com/google/sentencepiece/tree/v0.1.82/python#model-training>`__ a custom sentencepiece vocabulary by specifying the vocabulary size:
+
+.. code-block:: python
+
+    $ import sentencepiece as spm
+    $ spm.SentencePieceTrainer.Train('--input=a.txt,b.txt --model_prefix=my_vocab --vocab_size=30000 --model_type BPE')
+
+To use sentencepiece vocab for pre-training, please set --sentencepiece=my_vocab.model when using run_pretraining_hvd.py.
 
 Improve Training Speed
 ++++++++++++++++++++++
 
-The `create_pretraining_data.py` file generates pre-training data from raw text documents, stored as npz files. They are also required if you want to evaluate your pre-trained BERT model during pre-training.
+The `create_pretraining_data.py` file generates pre-training data from raw text documents, stored as npz files. They help reduce data loading overhead and improves training speed.
 
 .. code-block:: console
 
-    $ # create pre-training data using the vocabulary released by Google
-    $ python create_pretraining_data.py --input_file sample_text.txt --output_dir out --dataset_name book_corpus_wiki_en_uncased --max_seq_length 512 --max_predictions_per_seq 80 --dupe_factor 1 --masked_lm_prob 0.15 --short_seq_prob 0.1 --num_workers 1 --verbose
-    $ # create pre-training data using a sentencepiece vocabulary
-    $ python create_pretraining_data.py --input_file sample_text.txt --output_dir out --max_seq_length 512 --max_predictions_per_seq 80 --dupe_factor 1 --masked_lm_prob 0.15 --short_seq_prob 0.1 --num_workers 1 --sentencepiece /path/to/sentencepiece.model --verbose
+    $ python create_pretraining_data.py --input_file folder1/*.txt,folder2/*.txt --output_dir out --dataset_name book_corpus_wiki_en_uncased --dupe_factor 1 --num_workers $(nproc)
 
-The data generation script takes a file path as the input (could be one or more files by wildcard). Each file contains one or more documents separated by empty lines, and each document contains one line per sentence. You can perform sentence segmentation with an off-the-shelf NLP toolkit such as NLTK. See "sample_text.txt" as an example input file.
+Optionally, if you are using a custom sentencepiece vocab to generate pre-training data, please set --sentencepiece=my_vocab.model.
 
-Run Without Horovod
+Run without Horovod
 +++++++++++++++++++
 
-Run pre-training with generated data:
+Alternatively, if horovod is not available, you could run pre-training with the MXNet native parameter server. Currently, the training script only supports pre-generated data.
 
 .. code-block:: console
 

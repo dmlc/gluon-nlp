@@ -51,29 +51,33 @@ from pretraining_utils import save_parameters, save_states, get_pretrain_data_te
 # parser
 parser = get_argparser()
 parser.add_argument('--raw', action='store_true',
-                    help='Input raw text files instead of pre-processed npz files')
-parser.add_argument('--max_seq_length', type=int, default=None,
-                    required='--raw' in sys.argv,
-                    help='Maximum input sequence length.')
-parser.add_argument('--short_seq_prob', type=float, default=None,
-                    required='--raw' in sys.argv,
-                    help='The probability of producing sequences shorter than max_seq_length.')
-parser.add_argument('--masked_lm_prob', type=float, default=None,
-                    required='--raw' in sys.argv,
-                    help='Probability for masks.')
-parser.add_argument('--max_predictions_per_seq', type=int, default=None,
-                    required='--raw' in sys.argv,
-                    help='Maximum number of predictions per sequence.')
+                    help='Input raw text files to generate training samples on-the-fly, '
+                          'instead of pre-processed npz files')
+parser.add_argument('--max_seq_length', type=int, default=512,
+                    help='Maximum input sequence length. Effective only if --raw is set.')
+parser.add_argument('--short_seq_prob', type=float, default=0.1,
+                    help='The probability of producing sequences shorter than max_seq_length. '
+                         'Effective only if --raw is set.')
+parser.add_argument('--masked_lm_prob', type=float, default=0.15,
+                    help='Probability for masks. Effective only if --raw is set.')
+parser.add_argument('--max_predictions_per_seq', type=int, default=80,
+                    help='Maximum number of predictions per sequence. '
+                         'Effective only if --raw is set.')
 parser.add_argument('--cased', action='store_true',
-                    help='Whether to tokenize with cased characters')
+                    help='Whether to tokenize with cased characters. '
+                         'Effective only if --raw is set.')
 parser.add_argument('--sentencepiece', default=None, type=str,
-                    help='Path to the sentencepiece .model file for both tokenization and vocab.')
+                    help='Path to the sentencepiece .model file for both tokenization and vocab. '
+                         'Effective only if --raw is set.')
 parser.add_argument('--sp_nbest', type=int, default=0,
-                    help='Number of best candidates for sampling subwords with sentencepiece. ')
+                    help='Number of best candidates for sampling subwords with sentencepiece. '
+                         'Effective only if --raw is set.')
 parser.add_argument('--sp_alpha', type=float, default=1.0,
-                    help='Inverse temperature for probability rescaling for sentencepiece sampling')
+                    help='Inverse temperature for probability rescaling for sentencepiece '
+                         'sampling. Effective only if --raw is set.')
 parser.add_argument('--num_data_workers', type=int, default=8,
-                    help='Number of workers to pre-process data.')
+                    help='Number of workers to pre-process data. '
+                         'Effective only if --raw is set.')
 
 args = parser.parse_args()
 
@@ -288,17 +292,6 @@ if __name__ == '__main__':
                                                num_workers=args.num_data_workers)
         else:
             get_dataset_fn = get_pretrain_data_npz
-            if args.cased:
-                raise UserWarning('argument cased is valid only when --raw is set')
-            if args.max_seq_length:
-                raise UserWarning('argument max_seq_length is valid only when --raw is set')
-            if args.short_seq_prob:
-                raise UserWarning('argument short_seq_prob is valid only when --raw is set')
-            if args.masked_lm_prob:
-                raise UserWarning('argument masked_lm_prob is valid only when --raw is set')
-            if args.max_predictions_per_seq:
-                raise UserWarning('argument max_predictions_per_seq is valid only when '
-                                  '--raw is set')
         num_parts = 1 if args.dummy_data_len else num_workers
         part_idx = 0 if args.dummy_data_len else rank
         data_train = get_dataset_fn(args.data, args.batch_size, 1, True,
