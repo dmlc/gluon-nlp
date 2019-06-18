@@ -2,27 +2,28 @@
 
 In this notebook, we'll demonstrate how to use pre-trained word embeddings.
 To see why word embeddings are useful, it's worth comparing them to the alternative.
-Without word embeddings, we might represent each word by a one-hot vector `[0, ...,0, 1, 0, ... 0]`,
-that takes value `1` at the index corresponding to the appropriate vocabulary word,
-and value `0` everywhere else.
+Without word embeddings, we may represent each word with a one-hot vector `[0, ...,0, 1, 0, ... 0]`,
+where at the index corresponding to the appropriate vocabulary word, `1` is placed,
+and the value `0` occurs everywhere else.
 The weight matrices connecting our word-level inputs to the network's hidden layers would each be $v \times h$,
 where $v$ is the size of the vocabulary and $h$ is the size of the hidden layer.
-With 100,000 words feeding into an LSTM layer with $1000$ nodes, we would need to learn
-$4$ different weight matrices (one for each of the LSTM gates), each with 100M weights, and thus 400 million parameters in total.
+With 100,000 words feeding into an LSTM layer with $1000$ nodes, the model would need to learn
+$4$ different weight matrices (one for each of the LSTM gates), each with 100 million weights, and thus 400 million parameters in total.
 
 Fortunately, it turns out that a number of efficient techniques
 can quickly discover broadly useful word embeddings in an *unsupervised* manner.
 These embeddings map each word onto a low-dimensional vector $w \in R^d$ with $d$ commonly chosen to be roughly $100$.
 Intuitively, these embeddings are chosen based on the contexts in which words appear.
-Words that appear in similar contexts (like "tennis" and "racquet") should have similar embeddings
-while words that do not like (like "rat" and "gourmet") should have dissimilar embeddings.
+Words that appear in similar contexts, like "tennis" and "racquet," should have similar embeddings
+while words that are not alike, like "rat" and "gourmet," should have dissimilar embeddings.
 
 Practitioners of deep learning for NLP typically initialize their models
-using *pretrained* word embeddings, bringing in outside information, and reducing the number of parameters that a neural network needs to learn from scratch.
+using *pre-trained* word embeddings, bringing in outside information, and reducing the number of parameters that a neural network needs to learn from scratch.
 
 
 Two popular word embeddings are GloVe and fastText.
-The following examples uses pre-trained word embeddings drawn from the following sources:
+
+The following examples use pre-trained word embeddings drawn from the following sources:
 
 * GloVe project website：https://nlp.stanford.edu/projects/glove/
 * fastText project website：https://fasttext.cc/
@@ -66,7 +67,9 @@ counter = nlp.data.count_tokens(simple_tokenize(text))
 The obtained `counter` behaves like a Python dictionary whose key-value pairs consist of words and their frequencies, respectively.
 We can then instantiate a `Vocab` object with a counter.
 Because `counter` tracks word frequencies, we are able to specify arguments
-such as `max_size` and `min_freq` to the `Vocab` constructor for restricting the size of the resulting vocabulary. Suppose that we want to build indices for all the keys in counter.
+such as `max_size` (maximum size) and `min_freq` (minimum frequency) to the `Vocab` constructor to restrict the size of the resulting vocabulary. 
+
+Suppose that we want to build indices for all the keys in counter.
 If we simply want to construct a  `Vocab` containing every word, then we can supply `counter`  the only argument.
 
 ```{.python .input}
@@ -80,7 +83,7 @@ for word in vocab.idx_to_token:
     print(word)
 ```
 
-In the opposite direction, we can grab an idex given a token using `vocab.token_to_idx`.
+Contrarily, we can also grab an index given a token using `vocab.token_to_idx`.
 
 ```{.python .input}
 print(vocab.token_to_idx["<unk>"])
@@ -98,7 +101,7 @@ specifying the embedding type (un-named argument) `fasttext` and the named argum
 fasttext_simple = nlp.embedding.create('fasttext', source='wiki.simple')
 ```
 
-To attach the newly loaded word embeddings `fasttext_simple` to indexed words in `vocab`, we simply call vocab's `set_embedding` method:
+To attach the newly loaded word embeddings `fasttext_simple` to indexed words in `vocab`, we can simply call vocab's `set_embedding` method:
 
 ```{.python .input}
 vocab.set_embedding(fasttext_simple)
@@ -119,8 +122,8 @@ len(vocab)
 ```
 
 By default, the vector of any token that is unknown to `vocab` is a zero vector.
-Its length is equal to the vector dimension of the fastText word embeddings:
-300.
+Its length is equal to the vector dimensions of the fastText word embeddings:
+(300,).
 
 ```{.python .input}
 vocab.embedding['beautiful'].shape
@@ -132,7 +135,7 @@ The first five elements of the vector of any unknown token are zeros.
 vocab.embedding['beautiful'][:5]
 ```
 
-Let us check the shape of the embedding of words 'hello' and 'world' from
+Let's check the shape of the embedding of words 'hello' and 'world' from
 `vocab`.
 
 ```{.python .input}
