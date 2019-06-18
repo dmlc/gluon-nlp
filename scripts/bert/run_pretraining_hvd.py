@@ -31,13 +31,11 @@ This example shows how to pre-train a BERT model with Gluon NLP Toolkit.
 # pylint:disable=redefined-outer-name,logging-format-interpolation
 
 import os
-import sys
 import random
 import warnings
 import logging
 import functools
 import time
-import numpy as np
 
 import mxnet as mx
 import gluonnlp as nlp
