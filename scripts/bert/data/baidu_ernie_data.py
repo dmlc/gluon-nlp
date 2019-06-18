@@ -52,8 +52,17 @@ class _BaiduErnieDataset(TSVDataset):
 
 @register(segment=['train', 'dev', 'test'])
 class BaiduErnieXNLI(_BaiduErnieDataset):
-    """ The XNLI dataset released from Baidu
+    """ The XNLI dataset redistributed by Baidu
     <https://github.com/PaddlePaddle/LARK/tree/develop/ERNIE>.
+
+    Original from: 
+    Conneau, Alexis, et al. "Xnli: Evaluating cross-lingual sentence representations." 
+        arXiv preprint arXiv:1809.05053 (2018).
+        https://github.com/facebookresearch/XNLI
+
+    Licensed under a Creative Commons Attribution-NonCommercial 4.0 International License. 
+        License details: https://creativecommons.org/licenses/by-nc/4.0/
+
     Parameters
     ----------
     segment : {'train', 'dev', 'test'}, default 'train'
@@ -100,8 +109,15 @@ class BaiduErnieXNLI(_BaiduErnieDataset):
 
 @register(segment=['train', 'dev', 'test'])
 class BaiduErnieLCQMC(_BaiduErnieDataset):
-    """ The LCQMC dataset released from Baidu
+    """ The LCQMC dataset redistributed by Baidu
     <https://github.com/PaddlePaddle/LARK/tree/develop/ERNIE>.
+    
+    Original from: 
+    Xin Liu, Qingcai Chen, Chong Deng, Huajun Zeng, Jing Chen, Dongfang Li, Buzhou Tang, 
+        LCQMC: A Large-scale Chinese Question Matching Corpus,COLING2018.
+    Licensed under a Creative Commons Attribution 4.0 International License. License details: 
+        http://creativecommons.org/licenses/by/4.0/
+    
     Parameters
     ----------
     segment : {'train', 'dev', 'test'}, default 'train'
@@ -143,14 +159,17 @@ class BaiduErnieLCQMC(_BaiduErnieDataset):
             num_discard_samples = 1
 
         super(BaiduErnieLCQMC, self).__init__(root, 'lcqmc', segment,
-                                             num_discard_samples=num_discard_samples,
-                                             field_indices=field_indices)
+                                              num_discard_samples=num_discard_samples,
+                                              field_indices=field_indices)
 
 
 @register(segment=['train', 'dev', 'test'])
 class BaiduErnieChnSentiCorp(_BaiduErnieDataset):
-    """ The ChnSentiCorp dataset released from Baidu
+    """ The ChnSentiCorp dataset redistributed by Baidu
     <https://github.com/PaddlePaddle/LARK/tree/develop/ERNIE>.
+
+    Original from Tan Songbo (Chinese Academy of Sciences, tansongbo@software.ict.ac.cn).
+
     Parameters
     ----------
     segment : {'train', 'dev', 'test'}, default 'train'
@@ -192,5 +211,5 @@ class BaiduErnieChnSentiCorp(_BaiduErnieDataset):
             num_discard_samples = 1
 
         super(BaiduErnieChnSentiCorp, self).__init__(root, 'chnsenticorp', segment,
-                                             num_discard_samples=num_discard_samples,
-                                             field_indices=field_indices)
+                                                     num_discard_samples=num_discard_samples,
+                                                     field_indices=field_indices)
