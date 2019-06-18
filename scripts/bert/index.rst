@@ -104,10 +104,47 @@ To get the score of the dev data, you need to download the dev dataset (`dev-v2.
 BERT Pre-training
 ~~~~~~~~~~~~~~~~~
 
-The scripts for masked language modeling and and next sentence prediction are also provided.
+We also provide scripts for pre-training BERT with masked language modeling and and next sentence prediction.
 
-Training Sample Generation
-++++++++++++++++++++++++++
+The pre-training data format expects: (1) One sentence per line. These should ideally be actual sentences, not entire paragraphs or arbitrary spans of text for the "next sentence prediction" task. (2) Blank lines between documents. You can find a sample pre-training text with 3 documents `here <https://github.com/dmlc/gluon-nlp/blob/master/scripts/bert/sample_text.txt>`__.
+
+Pre-requisite
++++++++++++++
+
+We recommend horovod for scalable multi-gpu multi-machine training.
+
+To install horovod, you need:
+
+- `NCCL <https://developer.nvidia.com/nccl>`__, and
+- `OpenMPI <https://www.open-mpi.org/software/ompi/v4.0/>`__
+
+Then you can install horovod via the following command:
+
+.. code-block:: console
+
+    $ HOROVOD_WITH_MXNET=1 HOROVOD_GPU_ALLREDUCE=NCCL pip install horovod==0.16.2 --user --no-cache-dir
+
+Run Pre-training
+++++++++++++++++
+
+You can use the following command to run pre-training with 8 GPUs:
+
+.. code-block:: console
+
+    $ horovodrun -np 8 -H localhost:8 -x MXNET_SAFE_ACCUMULATION=1 python run_pretraining_hvd.py --data='folder1/*.txt,folder2/*.txt,' --num_steps 1000000 --log_interval 250 --lr 1e-4 --batch_size 4096 --accumulate 4 --warmup_ratio 0.01 --ckpt_dir ./ckpt --ckpt_interval 25000 --num_buckets 10 --dtype float16 --use_avg_len --verbose --raw --max_seq_length 512 --short_seq_prob 0.1 --masked_lm_prob 0.15 --max_predictions_per_seq 80
+
+Note that the --batch_size set the per-GPU batch size. 
+
+To run pre-training with node0 and node1 with 8 GPUs each, you can run the following command:
+
+.. code-block:: console
+
+    $ mpirun -np 16 -H node0:8,node1:8 -mca pml ob1 -mca btl ^openib -mca btl_tcp_if_exclude docker0,lo --map-by ppr:4:socket --mca plm_rsh_agent 'ssh -q -o StrictHostKeyChecking=no' -x NCCL_MIN_NRINGS=8 -x NCCL_DEBUG=INFO -x HOROVOD_HIERARCHICAL_ALLREDUCE=1 -x MXNET_SAFE_ACCUMULATION=1 --tag-output python run_pretraining_hvd.py --data='folder1/*.txt,folder2/*.txt,' --num_steps 1000000 --log_interval 250 --lr 1e-4 --batch_size 4096 --accumulate 4 --warmup_ratio 0.01 --ckpt_dir ./ckpt --ckpt_interval 25000 --num_buckets 10 --dtype float16 --use_avg_len --verbose --raw --max_seq_length 512 --short_seq_prob 0.1 --masked_lm_prob 0.15 --max_predictions_per_seq 80
+
+Please make sure you can ssh to these nodes without password.
+
+Improve Training Speed
+++++++++++++++++++++++
 
 The `create_pretraining_data.py` file generates pre-training data from raw text documents, stored as npz files. They are also required if you want to evaluate your pre-trained BERT model during pre-training.
 
@@ -120,8 +157,8 @@ The `create_pretraining_data.py` file generates pre-training data from raw text 
 
 The data generation script takes a file path as the input (could be one or more files by wildcard). Each file contains one or more documents separated by empty lines, and each document contains one line per sentence. You can perform sentence segmentation with an off-the-shelf NLP toolkit such as NLTK. See "sample_text.txt" as an example input file.
 
-Run Pre-training
-++++++++++++++++
+Run Without Horovod
++++++++++++++++++++
 
 Run pre-training with generated data:
 
@@ -138,40 +175,6 @@ To reproduce BERT pre-training with books corpus and English wikipedia datasets 
     $ python run_pretraining.py --gpus 0,1,2,3,4,5,6,7 --batch_size 8 --accumulate 4 --lr 1e-4 --data '/path/to/generated/samples/train/*.npz' --warmup_ratio 0.01 --num_steps 1000000 --log_interval=250 --data_eval '/path/to/generated/samples/dev/*.npz' --batch_size_eval 8 --ckpt_dir ckpt --ckpt_interval 25000 --num_buckets 10 --dtype float16
 
 The BERT base model produced by gluonnlp pre-training script (`log <https://raw.githubusercontent.com/dmlc/web-data/master/gluonnlp/logs/bert/bert_base_pretrain.log>`__) achieves 83.6% on MNLI-mm, 93% on SST-2, 87.99% on MRPC and 80.99/88.60 on SQuAD 1.1 validation set.
-
-Run Pre-training with Horovod
-+++++++++++++++++++++++++++++
-
-Alternatively, you can install horovod for scalable multi-gpu multi-machine training.
-
-To install horovod, you need:
-
-- `NCCL <https://developer.nvidia.com/nccl>`__, and
-- `OpenMPI <https://www.open-mpi.org/software/ompi/v4.0/>`__
-
-Then you can install horovod v0.16.2 via the following command:
-
-.. code-block:: console
-
-    $ HOROVOD_WITH_MXNET=1 HOROVOD_GPU_ALLREDUCE=NCCL pip install horovod --user --no-cache-dir
-
-Verify Horovod installation:
-
-.. code-block:: console
-
-    $ horovodrun -np 1 -H localhost:1 python run_pretraining_hvd.py --batch_size 32 --lr 2e-5 --data 'out/*.npz' --warmup_ratio 0.5 --num_steps 20 --pretrained --log_interval=2 --data_eval 'out/*.npz' --batch_size_eval 8 --ckpt_dir ckpt --verbose
-
-Run pre-training with horovod on a single node with multiple GPUs:
-
-.. code-block:: console
-
-    $ horovodrun -np 8 -H localhost:8 python run_pretraining_hvd.py --data='/path/to/generated/samples/train/*.npz' --num_steps 1000000 --log_interval 250 --lr 1e-4 --batch_size 4096 --accumulate 4 --warmup_ratio 0.01 --ckpt_dir ./ckpt --ckpt_interval 25000 --num_buckets 10 --dtype float16 --use_avg_len --verbose
-
-Run pre-training with horovod on node0 and node1, with 8 GPUs each:
-
-.. code-block:: console
-
-    $ mpirun -np 16 -H node0:8,node1:8 -mca pml ob1 -mca btl ^openib -mca btl_tcp_if_exclude docker0,lo --map-by ppr:4:socket -x NCCL_MIN_NRINGS=8 -x NCCL_DEBUG=WARNING -x HOROVOD_HIERARCHICAL_ALLREDUCE=1 --tag-output python run_pretraining_hvd.py --batch_size 8192 --accumulate 1 --lr 1e-4 --data "/path/to/generated/samples/train/*.npz" --warmup_ratio 0.01 --num_steps 1000000 --log_interval=250 --ckpt_dir './ckpt' --ckpt_interval 25000 --num_buckets 10 --dtype float16 --use_avg_len --verbose
 
 BERT for Named Entity Recognition
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
