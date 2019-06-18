@@ -1073,7 +1073,14 @@ class BERTTokenizer(object):
 
 class BERTSPTokenizer(BERTTokenizer):
     r"""End-to-end SentencePiece tokenization for BERT models.
-    It works best with BERTSentenceTransform()
+
+    It works best with BERTSentenceTransform().
+
+    .. note::
+
+        BERTSPTokenizer depends on the sentencepiece library. For multi-processing
+        with BERTSPTokenizer, making an extra copy of the BERTSPTokenizer instance
+        is recommended before using it.
 
     Parameters
     ----------
