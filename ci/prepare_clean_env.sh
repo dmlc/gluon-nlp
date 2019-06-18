@@ -19,6 +19,4 @@ python -m spacy download de
 python -m nltk.downloader all
 
 pip uninstall horovod -y
-HOROVOD_WITHOUT_TENSORFLOW=1 HOROVOD_WITHOUT_PYTORCH=1 HOROVOD_WITH_MXNET=1
-LD_LIBRARY_PATH=/usr/local/cuda-9.2/lib64:$LD_LIBRARY_PATH
-pip install horovod==0.16.2 --no-cache-dir -U
+HOROVOD_WITHOUT_TENSORFLOW=1 HOROVOD_WITHOUT_PYTORCH=1 HOROVOD_WITH_MXNET=1 LD_LIBRARY_PATH=/usr/local/cuda-9.2/lib64:$LD_LIBRARY_PATH pip install horovod==0.16.2 --no-cache-dir -U
