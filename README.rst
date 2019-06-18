@@ -30,6 +30,7 @@ Language Processing (NLP) research.
 News
 ====
 
+- GluonNLP will be featured in KDD 2019 Alaska! Check out our tutorial: `From Shallow to Deep Language Representations: Pre-training, Fine-tuning, and Beyond <https://www.kdd.org/kdd2019/hands-on-tutorials>`__.
 - Tutorial proposal for GluonNLP is accepted at `EMNLP 2019 <https://www.emnlp-ijcnlp2019.org>`__, Hong Kong.
 
 - GluonNLP was featured in:
