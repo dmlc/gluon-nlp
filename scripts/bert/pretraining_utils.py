@@ -24,7 +24,10 @@ import os
 import functools
 import logging
 import argparse
+import random
 import multiprocessing
+
+import numpy as np
 
 import mxnet as mx
 from mxnet.gluon.data import DataLoader
@@ -36,7 +39,7 @@ from gluonnlp.metric import MaskedAccuracy
 
 __all__ = ['get_model_loss', 'get_pretrain_data_npz', 'get_dummy_dataloader',
            'save_parameters', 'save_states', 'evaluate', 'forward', 'split_and_load',
-           'get_argparser', 'get_pretrain_data_text']
+           'get_argparser', 'get_pretrain_data_text', 'generate_dev_set']
 
 def get_model_loss(ctx, model, pretrained, dataset_name, vocab, dtype,
                    ckpt_dir=None, start_step=None):
@@ -431,7 +434,7 @@ def get_argparser():
                              'Options are bert_12_768_12, bert_24_1024_16')
     parser.add_argument('--data', type=str, default=None,
                         help='Path to training data. Training is skipped if not set.')
-    parser.add_argument('--data_eval', type=str, default=None,
+    parser.add_argument('--data_eval', type=str, required=True,
                         help='Path to evaluation data. Evaluation is skipped if not set.')
     parser.add_argument('--ckpt_dir', type=str, default='./ckpt_dir',
                         help='Path to checkpoint directory')
@@ -445,8 +448,27 @@ def get_argparser():
     parser.add_argument('--dummy_data_len', type=int, default=None,
                         help='If provided, a data batch of target sequence length is '
                              'used. For benchmarking purpuse only.')
-    parser.add_argument('--seed', type=int, default=0, help='Random seed')
     parser.add_argument('--verbose', action='store_true', help='verbose logging')
     parser.add_argument('--profile', type=str, default=None,
                         help='output profiling result to the target file')
     return parser
+
+def generate_dev_set(tokenizer, vocab, cache_file, args):
+    """Generate validation set."""
+    # set random seed to generate dev data deterministically
+    np.random.seed(0)
+    random.seed(0)
+    mx.random.seed(0)
+
+    worker_pool = multiprocessing.Pool()
+    eval_files = glob.glob(os.path.expanduser(args.data_eval))
+    num_files = len(eval_files)
+    assert num_files > 0, 'Number of eval files must be greater than 0.' \
+                          'Only found %d files at %s'%(num_files, args.data_eval)
+    logging.info('Generating validation set from %d files on rank 0.', len(eval_files))
+    create_training_instances((eval_files, tokenizer, args.max_seq_length,
+                               args.short_seq_prob, args.masked_lm_prob,
+                               args.max_predictions_per_seq, vocab,
+                               1, args.num_data_workers,
+                               worker_pool, cache_file))
+    logging.info('Done generating validation set on rank 0.')

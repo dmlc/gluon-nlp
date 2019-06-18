@@ -136,7 +136,8 @@ You can use the following command to run pre-training with 2 hosts, 8 GPUs each:
              --mca plm_rsh_agent 'ssh -q -o StrictHostKeyChecking=no' \
              -x NCCL_MIN_NRINGS=8 -x NCCL_DEBUG=INFO -x HOROVOD_HIERARCHICAL_ALLREDUCE=1 \
              -x MXNET_SAFE_ACCUMULATION=1 --tag-output \
-             python run_pretraining_hvd.py --data='folder1/*.txt,folder2/*.txt,' --num_steps 1000000 \
+             python run_pretraining_hvd.py --data='folder1/*.txt,folder2/*.txt,' \
+             --data_eval='dev_folder/*.txt,' --num_steps 1000000 \
              --lr 1e-4 --batch_size 4096 --accumulate 4 --use_avg_len --raw
 
 Note that the batch_size argument sets the per-GPU batch size. When multiple hosts are present, please make sure you can ssh to these nodes without password.
@@ -168,28 +169,24 @@ The `create_pretraining_data.py` file generates pre-training data from raw text 
 
 .. code-block:: console
 
-    $ python create_pretraining_data.py --input_file folder1/*.txt,folder2/*.txt --output_dir out --dataset_name book_corpus_wiki_en_uncased --dupe_factor 1 --num_workers $(nproc)
+    $ python create_pretraining_data.py --input_file folder1/*.txt,folder2/*.txt --output_dir out --dataset_name book_corpus_wiki_en_uncased --dupe_factor 10 --num_workers $(nproc)
 
 Optionally, if you are using a custom sentencepiece vocab to generate pre-training data, please set --sentencepiece=my_vocab.model.
+
+To use the generated npz files for pre-training, remove the **--raw** argument, and update the argument for **--data** and **--data_eval** with the paths to the npz files when using run_pretraining_hvd.py.
 
 Run without Horovod
 +++++++++++++++++++
 
-Alternatively, if horovod is not available, you could run pre-training with the MXNet native parameter server. Currently, the training script only supports pre-generated data.
+Alternatively, if horovod is not available, you could run pre-training with the MXNet native parameter server. As of now, the training script only supports pre-generated data.
 
 .. code-block:: console
 
-    $ python run_pretraining.py --gpus 0 --batch_size 32 --lr 2e-5 --data 'out/*.npz' --warmup_ratio 0.5 --num_steps 20 --pretrained --log_interval=2 --data_eval 'out/*.npz' --batch_size_eval 8 --ckpt_dir ckpt --verbose
+    $ MXNET_SAFE_ACCUMULATION=1 python run_pretraining.py --gpus 0,1,2,3,4,5,6,7 --batch_size 4096 --accumulate 4 --lr 1e-4 \
+                                                          --data '/path/to/generated/train/*.npz' --num_steps 1000000 --use_avg_len \
+                                                          --log_interval=250 --data_eval '/path/to/generated/dev/*.npz'
 
-With 20 steps of pre-training it easily reaches above 90% masked language model accuracy and 98% next sentence prediction accuracy on the training data.
-
-To reproduce BERT pre-training with books corpus and English wikipedia datasets from scratch, we recommend using float16 for pre-training with gradient accumulation.
-
-.. code-block:: console
-
-    $ python run_pretraining.py --gpus 0,1,2,3,4,5,6,7 --batch_size 8 --accumulate 4 --lr 1e-4 --data '/path/to/generated/samples/train/*.npz' --warmup_ratio 0.01 --num_steps 1000000 --log_interval=250 --data_eval '/path/to/generated/samples/dev/*.npz' --batch_size_eval 8 --ckpt_dir ckpt --ckpt_interval 25000 --num_buckets 10 --dtype float16
-
-The BERT base model produced by gluonnlp pre-training script (`log <https://raw.githubusercontent.com/dmlc/web-data/master/gluonnlp/logs/bert/bert_base_pretrain.log>`__) achieves 83.6% on MNLI-mm, 93% on SST-2, 87.99% on MRPC and 80.99/88.60 on SQuAD 1.1 validation set.
+The BERT base model produced by gluonnlp pre-training script (`log <https://raw.githubusercontent.com/dmlc/web-data/master/gluonnlp/logs/bert/bert_base_pretrain.log>`__) achieves 83.6% on MNLI-mm, 93% on SST-2, 87.99% on MRPC and 80.99/88.60 on SQuAD 1.1 validation set on the books corpus and English wikipedia dataset.
 
 BERT for Named Entity Recognition
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -46,13 +46,14 @@ from utils import profile
 from fp16_utils import FP16Trainer
 from pretraining_utils import get_model_loss, get_pretrain_data_npz, get_dummy_dataloader
 from pretraining_utils import split_and_load, log, evaluate, forward, get_argparser
-from pretraining_utils import save_parameters, save_states, get_pretrain_data_text
+from pretraining_utils import save_parameters, save_states
+from pretraining_utils import get_pretrain_data_text, generate_dev_set
 
 # parser
 parser = get_argparser()
 parser.add_argument('--raw', action='store_true',
-                    help='Input raw text files to generate training samples on-the-fly, '
-                          'instead of pre-processed npz files')
+                    help='If set, both training and dev samples are generated on-the-fly '
+                         'from raw texts instead of pre-processed npz files. ')
 parser.add_argument('--max_seq_length', type=int, default=512,
                     help='Maximum input sequence length. Effective only if --raw is set.')
 parser.add_argument('--short_seq_prob', type=float, default=0.1,
@@ -78,6 +79,8 @@ parser.add_argument('--sp_alpha', type=float, default=1.0,
 parser.add_argument('--num_data_workers', type=int, default=8,
                     help='Number of workers to pre-process data. '
                          'Effective only if --raw is set.')
+parser.add_argument('--eval_use_npz', action='store_true',
+                    help='Set to True if --data_eval provides npz files instead of raw text files')
 
 args = parser.parse_args()
 
@@ -102,7 +105,7 @@ if not args.use_avg_len and hvd.size() > 1:
     logging.info('Specifying --use-avg-len and setting --batch_size with the '
                  'target number of tokens would help improve training throughput.')
 
-def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx):
+def train(data_train, data_eval, model, nsp_loss, mlm_loss, vocab_size, ctx):
     """Training function."""
     hvd.broadcast_parameters(model.collect_params(), root_rank=0)
 
@@ -232,11 +235,11 @@ def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx):
                         save_states(step_num, trainer, args.ckpt_dir, local_rank)
                         if local_rank == 0:
                             save_parameters(step_num, model, args.ckpt_dir)
-                    if args.data_eval:
+                    if data_eval:
                         # eval data is always based on a fixed npz file.
-                        data_eval = get_pretrain_data_npz(args.data_eval, args.batch_size_eval, 1,
-                                                          False, False, 1)
-                        evaluate(data_eval, model, nsp_loss, mlm_loss, len(vocab), [ctx],
+                        dataset_eval = get_pretrain_data_npz(data_eval, args.batch_size_eval, 1,
+                                                             False, False, 1)
+                        evaluate(dataset_eval, model, nsp_loss, mlm_loss, len(vocab), [ctx],
                                  args.log_interval, args.dtype)
 
                 batch_num += 1
@@ -250,13 +253,7 @@ def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx):
     logging.info('Train cost={:.1f}s'.format(train_end_time - train_begin_time))
 
 if __name__ == '__main__':
-    # random seed
-    seed = args.seed
-    np.random.seed(seed)
-    random.seed(seed)
-    mx.random.seed(seed)
-    logging.debug('Random seed set to %d', seed)
-
+    random_seed = random.randint(0, 1000)
     nlp.utils.mkdir(args.ckpt_dir)
     ctx = mx.gpu(local_rank)
 
@@ -274,15 +271,31 @@ if __name__ == '__main__':
                                                       ckpt_dir=args.ckpt_dir,
                                                       start_step=args.start_step)
     logging.debug('Model created')
+    data_eval = args.data_eval
+
+    if args.raw:
+        if args.sentencepiece:
+            tokenizer = nlp.data.BERTSPTokenizer(args.sentencepiece, vocab,
+                                                 num_best=args.sp_nbest,
+                                                 alpha=args.sp_alpha, lower=not args.cased)
+        else:
+            tokenizer = nlp.data.BERTTokenizer(vocab=vocab, lower=not args.cased)
+
+        cache_dir = os.path.join(args.ckpt_dir, 'data_eval_cache')
+        cache_file = os.path.join(cache_dir, 'part-000.npz')
+        nlp.utils.mkdir(cache_dir)
+
+        # generate dev dataset from the raw text if needed
+        if not args.eval_use_npz:
+            data_eval = cache_file
+            if not os.path.isfile(cache_file) and rank == 0:
+                generate_dev_set(tokenizer, vocab, cache_file, args)
+
+    logging.debug('Random seed set to %d', random_seed)
+    mx.random.seed(random_seed)
 
     if args.data:
         if args.raw:
-            if args.sentencepiece:
-                tokenizer = nlp.data.BERTSPTokenizer(args.sentencepiece, vocab,
-                                                     num_best=args.sp_nbest,
-                                                     alpha=args.sp_alpha, lower=not args.cased)
-            else:
-                tokenizer = nlp.data.BERTTokenizer(vocab=vocab, lower=not args.cased)
             get_dataset_fn = functools.partial(get_pretrain_data_text,
                                                max_seq_length=args.max_seq_length,
                                                short_seq_prob=args.short_seq_prob,
@@ -298,10 +311,10 @@ if __name__ == '__main__':
                                     args.use_avg_len, args.num_buckets,
                                     num_parts=num_parts, part_idx=part_idx,
                                     prefetch=not args.dummy_data_len)
-        train(data_train, model, nsp_loss, mlm_loss, len(vocab), ctx)
-    if args.data_eval:
+        train(data_train, data_eval, model, nsp_loss, mlm_loss, len(vocab), ctx)
+    if data_eval:
         # eval data is always based on a fixed npz file.
-        data_eval = get_pretrain_data_npz(args.data_eval, args.batch_size_eval, 1,
-                                          False, False, 1)
-        evaluate(data_eval, model, nsp_loss, mlm_loss, len(vocab), [ctx],
+        dataset_eval = get_pretrain_data_npz(data_eval, args.batch_size_eval, 1,
+                                             False, False, 1)
+        evaluate(dataset_eval, model, nsp_loss, mlm_loss, len(vocab), [ctx],
                  args.log_interval, args.dtype)
