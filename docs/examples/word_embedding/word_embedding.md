@@ -20,7 +20,6 @@ while words that are not alike, like "rat" and "gourmet," should have dissimilar
 Practitioners of deep learning for NLP typically initialize their models
 using *pre-trained* word embeddings, bringing in outside information, and reducing the number of parameters that a neural network needs to learn from scratch.
 
-
 Two popular word embeddings are GloVe and fastText.
 
 The following examples use pre-trained word embeddings drawn from the following sources:
