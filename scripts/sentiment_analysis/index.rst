@@ -1,7 +1,7 @@
 Sentiment Analysis
 ------------------
 
-:download:`[Download] </model_zoo/sentiment_analysis.zip>`
+:download:`Download scripts </model_zoo/sentiment_analysis.zip>`
 
 Through Fine-tuning Word Language Model
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

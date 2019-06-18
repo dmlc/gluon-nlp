@@ -1,7 +1,7 @@
 Natural Language Inference
 --------------------------
 
-:download:`[Download] </model_zoo/natural_language_inference.zip>`
+:download:`Download scripts </model_zoo/natural_language_inference.zip>`
 
 Replication of the model described in `A Decomposable Attention Model for Natural Language Inference <https://arxiv.org/abs/1606.01933>`_.
 
