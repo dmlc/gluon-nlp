@@ -24,9 +24,8 @@ __all__ = [
 import os
 from mxnet.metric import Accuracy, F1, MCC, PearsonCorrelation, CompositeEvalMetric
 from gluonnlp.base import get_home_dir
-from gluonnlp.data import TSVDataset, GlueCoLA, GlueSST2, GlueSTSB, GlueMRPC
+from gluonnlp.data import GlueCoLA, GlueSST2, GlueSTSB, GlueMRPC
 from gluonnlp.data import GlueQQP, GlueRTE, GlueMNLI, GlueQNLI, GlueWNLI
-from gluonnlp.data.registry import register
 try:
     from .baidu_ernie_data import BaiduErnieXNLI
 except ImportError:
