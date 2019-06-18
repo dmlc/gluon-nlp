@@ -69,7 +69,7 @@ training an embedding model.
 In this tutorial we train leveraging the SkipGram
 objective made popular by the following: [1].
 
-For SkipGram, we samplef pairs of co-occurring
+For SkipGram, we sample pairs of co-occurring
 words from the corpus.
 Two words are said to co-occur if they occur with
 distance less than a specified *window* size.
@@ -121,7 +121,7 @@ function which can be used to obtain the subwords of a given string
 representation of a token. We will take a closer look at the subword function
 farther on.
 
-You can find the transform_data_fasttext in `data.py` in the
+You can find the `transform_data_fasttext()` function in `data.py` in the
 archive that can be downloaded via the `Download` button at the top of this page.
 
 ```{.python .input}
@@ -159,9 +159,9 @@ Information" Transactions of the Association for Computational Linguistics 2017
 
 ## Subwords
 
-`GluonNLP` provides the concept of a Subword function which maps
+`GluonNLP` provides the concept of a subword function which maps
 words to a list of indices representing their subword.
-Possible Subword functions
+Possible subword functions
 include mapping a word to the sequence of it's characters/bytes or hashes of all
 its ngrams.
 
