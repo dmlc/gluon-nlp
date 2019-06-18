@@ -51,7 +51,8 @@ from gluonnlp.data import BERTTokenizer
 
 from model.classification import BERTClassifier, BERTRegression
 from data.classification import MRPCTask, QQPTask, RTETask, STSBTask, SSTTask
-from data.classification import QNLITask, CoLATask, MNLITask, WNLITask, XNLITask, LCQMCTask, ChnSentiCorpTask
+from data.classification import QNLITask, CoLATask, MNLITask, WNLITask, XNLITask,
+from data.classification import LCQMCTask, ChnSentiCorpTask
 from data.transform import BERTDatasetTransform
 
 tasks = {

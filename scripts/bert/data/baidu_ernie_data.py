@@ -55,12 +55,12 @@ class BaiduErnieXNLI(_BaiduErnieDataset):
     """ The XNLI dataset redistributed by Baidu
     <https://github.com/PaddlePaddle/LARK/tree/develop/ERNIE>.
 
-    Original from: 
-    Conneau, Alexis, et al. "Xnli: Evaluating cross-lingual sentence representations." 
+    Original from:
+    Conneau, Alexis, et al. "Xnli: Evaluating cross-lingual sentence representations."
         arXiv preprint arXiv:1809.05053 (2018).
         https://github.com/facebookresearch/XNLI
 
-    Licensed under a Creative Commons Attribution-NonCommercial 4.0 International License. 
+    Licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.
         License details: https://creativecommons.org/licenses/by-nc/4.0/
 
     Parameters
@@ -111,13 +111,13 @@ class BaiduErnieXNLI(_BaiduErnieDataset):
 class BaiduErnieLCQMC(_BaiduErnieDataset):
     """ The LCQMC dataset redistributed by Baidu
     <https://github.com/PaddlePaddle/LARK/tree/develop/ERNIE>.
-    
-    Original from: 
-    Xin Liu, Qingcai Chen, Chong Deng, Huajun Zeng, Jing Chen, Dongfang Li, Buzhou Tang, 
+
+    Original from:
+    Xin Liu, Qingcai Chen, Chong Deng, Huajun Zeng, Jing Chen, Dongfang Li, Buzhou Tang,
         LCQMC: A Large-scale Chinese Question Matching Corpus,COLING2018.
-    Licensed under a Creative Commons Attribution 4.0 International License. License details: 
+    Licensed under a Creative Commons Attribution 4.0 International License. License details:
         http://creativecommons.org/licenses/by/4.0/
-    
+
     Parameters
     ----------
     segment : {'train', 'dev', 'test'}, default 'train'
