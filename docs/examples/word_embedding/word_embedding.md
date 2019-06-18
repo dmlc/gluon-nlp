@@ -136,12 +136,7 @@ The first five elements of the vector of any unknown token are zeros.
 vocab.embedding['beautiful'][:5]
 ```
 
-<<<<<<< HEAD
-Let's check the shape of the embedding of words 'hello' and 'world' from
-=======
-Let us check the shape of the embedding of the words 'hello' and 'world' from
->>>>>>> patch-2
-`vocab`.
+Let us check the shape of the embedding of the words 'hello' and 'world' from `vocab`.
 
 ```{.python .input}
 vocab.embedding['hello', 'world'].shape
