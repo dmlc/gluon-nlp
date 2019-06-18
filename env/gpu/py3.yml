@@ -30,7 +30,7 @@ dependencies:
     - mxnet-cu92mkl>=1.4.1
     - sacremoses
     - sentencepiece<0.2
-    - https://github.com/szha/mx-theme/tarball/theme_fix
+    - https://github.com/mli/mx-theme/tarball/v0.3.9
     - seaborn
     - jieba
     - sphinx-autorun
