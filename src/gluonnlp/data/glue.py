@@ -702,4 +702,3 @@ class GlueMRPC(TSVDataset):
                     for idx, row in enumerate(data_fh):
                         label, id1, id2, s1, s2 = row.strip().split('\t')
                         test_fh.write(u'%d\t%s\t%s\t%s\t%s\n'%(idx, id1, id2, s1, s2))
-
