@@ -348,7 +348,7 @@ def test(loader_test, segment):
                 results.append('{:.3f}'.format(result))
         else:
             # classification task
-            indices = mx.nd.topk(out, k=1, ret_typ='indices').asnumpy()
+            indices = mx.nd.topk(out, k=1, ret_typ='indices', dtype='int32').asnumpy()
             for index in indices:
                 results.append(task.class_labels[int(index)])
 
