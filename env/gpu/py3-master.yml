@@ -34,4 +34,3 @@ dependencies:
     - seaborn
     - jieba
     - sphinx-autorun
-    - horovod==0.16.2

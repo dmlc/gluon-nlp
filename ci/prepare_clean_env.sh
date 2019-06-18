@@ -17,3 +17,6 @@ pip install -v -e .
 python -m spacy download en
 python -m spacy download de
 python -m nltk.downloader all
+
+export HOROVOD_WITH_MXNET=1
+pip install horovod==0.16.2 --user --no-cache-dir
