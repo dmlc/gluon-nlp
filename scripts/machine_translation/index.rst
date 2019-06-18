@@ -1,7 +1,7 @@
 Machine Translation
 -------------------
 
-:download:`[Download] </model_zoo/machine_translation.zip>`
+:download:`Download scripts </model_zoo/machine_translation.zip>`
 
 Google Neural Machine Translation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

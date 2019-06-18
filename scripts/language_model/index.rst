@@ -1,7 +1,7 @@
 Language Model
 --------------
 
-:download:`[Download] </model_zoo/language_model.zip>`
+:download:`Download scripts </model_zoo/language_model.zip>`
 
 Word Language Model
 ~~~~~~~~~~~~~~~~~~~~

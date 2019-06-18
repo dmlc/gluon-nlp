@@ -1,7 +1,7 @@
 Text Classification
 -------------------
 
-:download:`[Download] </model_zoo/text_classification.zip>`
+:download:`Download scripts </model_zoo/text_classification.zip>`
 
 Fast-text Word N-gram
 ~~~~~~~~~~~~~~~~~~~~~
