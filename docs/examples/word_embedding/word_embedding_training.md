@@ -69,7 +69,7 @@ training an embedding model.
 In this tutorial we train leveraging the SkipGram
 objective made popular by the following: [1].
 
-For SkipGram, we sample pairs of co-occurring
+For SkipGram, we samplef pairs of co-occurring
 words from the corpus.
 Two words are said to co-occur if they occur with
 distance less than a specified *window* size.
