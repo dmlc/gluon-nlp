@@ -157,8 +157,8 @@ You can `train <//github.com/google/sentencepiece/tree/v0.1.82/python#model-trai
 
 .. code-block:: python
 
-    $ import sentencepiece as spm
-    $ spm.SentencePieceTrainer.Train('--input=a.txt,b.txt --model_prefix=my_vocab --vocab_size=30000 --model_type BPE')
+    import sentencepiece as spm
+    spm.SentencePieceTrainer.Train('--input=a.txt,b.txt --model_prefix=my_vocab --vocab_size=30000 --model_type BPE')
 
 To use sentencepiece vocab for pre-training, please set --sentencepiece=my_vocab.model when using run_pretraining_hvd.py.
 
