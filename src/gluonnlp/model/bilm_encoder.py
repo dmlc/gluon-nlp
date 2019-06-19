@@ -97,7 +97,7 @@ class BiLMEncoder(gluon.HybridBlock):
                                                   proj_clip=self._proj_clip)
 
                     self.forward_layers.add(forward_layer)
-                    lstm_input_size = self._proj_size
+                    lstm_input_size = self._proj_size if self._proj_size else self._hidden_size
 
             lstm_input_size = self._input_size
             self.backward_layers = rnn.HybridSequentialRNNCell()
@@ -121,7 +121,7 @@ class BiLMEncoder(gluon.HybridBlock):
                                                    cell_clip=self._cell_clip,
                                                    proj_clip=self._proj_clip)
                     self.backward_layers.add(backward_layer)
-                    lstm_input_size = self._proj_size
+                    lstm_input_size = self._proj_size if self._proj_size else self._hidden_size
 
     def begin_state(self, func, **kwargs):
         return [self.forward_layers[0][0].begin_state(func=func, **kwargs)
