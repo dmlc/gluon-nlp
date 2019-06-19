@@ -21,10 +21,11 @@
 """GLUEBenchmark corpora."""
 
 __all__ = ['GlueCoLA', 'GlueSST2', 'GlueSTSB', 'GlueQQP', 'GlueRTE', 'GlueMNLI',
-           'GlueQNLI', 'GlueWNLI']
+           'GlueQNLI', 'GlueWNLI', 'GlueMRPC']
 
 import zipfile
 import os
+import io
 
 from mxnet.gluon.utils import download, check_sha1, _get_repo_file_url
 
@@ -583,3 +584,121 @@ class GlueWNLI(_GlueDataset):
 
     def _repo_dir(self):
         return 'gluon/dataset/GLUE/WNLI'
+
+@register(segment=['train', 'dev', 'test'])
+class GlueMRPC(TSVDataset):
+    """The Microsoft Research Paraphrase Corpus dataset.
+
+    From
+    https://gluebenchmark.com/tasks
+
+    Parameters
+    ----------
+    segment : {'train', 'dev', 'test'}, default 'train'
+        Dataset segment.
+    root : str, default '$MXNET_HOME/datasets/glue_mrpc'
+        Path to temp folder for storing data.
+        MXNET_HOME defaults to '~/.mxnet'.
+
+    Examples
+    --------
+    >>> mrpc_dev = gluonnlp.data.GlueMRPC('dev', root='./datasets/mrpc')
+    -etc-
+    >>> len(mrpc_dev)
+    408
+    >>> len(mrpc_dev[0])
+    3
+    >>> mrpc_dev[0]
+    ["He said the foodservice pie business doesn 't fit the company 's long-term growth strategy .", '" The foodservice pie business does not fit our long-term growth strategy .', '1']
+    >>> mrpc_test = gluonnlp.data.GlueMRPC('test', root='./datasets/mrpc')
+    -etc-
+    >>> len(mrpc_test)
+    1725
+    >>> len(mrpc_test[0])
+    2
+    >>> mrpc_test[0]
+    ["PCCW 's chief operating officer , Mike Butcher , and Alex Arena , the chief financial officer , will report directly to Mr So .", 'Current Chief Operating Officer Mike Butcher and Group Chief Financial Officer Alex Arena will report to So .']
+    """
+    def __init__(self,
+                 segment='train',
+                 root=os.path.join(get_home_dir(), 'datasets', 'glue_mrpc')):
+        self._root = root
+        assert segment in ['train', 'dev', 'test'], 'Unsupported segment: %s'%segment
+        self._data_file = {'train': ('msr_paraphrase_train.txt',
+                                     '716e0f67af962f08220b7e97d229b293077ef41f',
+                                     '131675ffd3d2f04f286049d31cca506c8acba69e'),
+                           'dev': ('msr_paraphrase_train.txt',
+                                   '716e0f67af962f08220b7e97d229b293077ef41f',
+                                   'e4486577c4cb2e5c2a3fd961eb24f03c623ea02d'),
+                           'test': ('msr_paraphrase_test.txt',
+                                    '4265196c15cf75620b0b592b8b921f543bda7e6c',
+                                    '3602b2ca26cf574e84183c14d6c0901669ee2d0a')}
+
+        self._generate(segment)
+        path = os.path.join(root, '%s.tsv' % segment)
+        A_IDX, B_IDX, LABEL_IDX = 3, 4, 0
+        if segment == 'test':
+            fields = [A_IDX, B_IDX]
+        else:
+            fields = [A_IDX, B_IDX, LABEL_IDX]
+        super(GlueMRPC, self).__init__(
+            path, num_discard_samples=1, field_indices=fields)
+
+    def _repo_dir(self):
+        return 'https://dl.fbaipublicfiles.com/senteval/senteval_data/'
+
+    def _generate(self, segment):
+        """Partition MRPC dataset into train, dev and test.
+        Adapted from https://gist.github.com/W4ngatang/60c2bdb54d156a41194446737ce03e2e
+        """
+        # download raw data
+        data_name = segment + '.tsv'
+        raw_name, raw_hash, data_hash = self._data_file[segment]
+        raw_path = os.path.join(self._root, raw_name)
+        download(self._repo_dir() + raw_name, path=raw_path, sha1_hash=raw_hash)
+        data_path = os.path.join(self._root, data_name)
+
+        if segment == 'train' or segment == 'dev':
+            if os.path.isfile(data_path) and check_sha1(data_path, data_hash):
+                return
+
+            # retrieve dev ids for train and dev set
+            DEV_ID_URL = 'https://firebasestorage.googleapis.com/v0/b/mtl-sentence-representations.appspot.com/o/data%2Fmrpc_dev_ids.tsv?alt=media&token=ec5c0836-31d5-48f4-b431-7480817f1adc'
+            DEV_ID_HASH = '506c7a1a5e0dd551ceec2f84070fa1a8c2bc4b41'
+            dev_id_name = 'dev_ids.tsv'
+            dev_id_path = os.path.join(self._root, dev_id_name)
+            download(DEV_ID_URL, path=dev_id_path, sha1_hash=DEV_ID_HASH)
+
+            # read dev data ids
+            dev_ids = []
+            with io.open(dev_id_path, encoding='utf8') as ids_fh:
+                for row in ids_fh:
+                    dev_ids.append(row.strip().split('\t'))
+
+            # generate train and dev set
+            train_path = os.path.join(self._root, 'train.tsv')
+            dev_path = os.path.join(self._root, 'dev.tsv')
+            with io.open(raw_path, encoding='utf8') as data_fh:
+                with io.open(train_path, 'w', encoding='utf8') as train_fh:
+                    with io.open(dev_path, 'w', encoding='utf8') as dev_fh:
+                        header = data_fh.readline()
+                        train_fh.write(header)
+                        dev_fh.write(header)
+                        for row in data_fh:
+                            label, id1, id2, s1, s2 = row.strip().split('\t')
+                            example = u'%s\t%s\t%s\t%s\t%s\n'%(label, id1, id2, s1, s2)
+                            if [id1, id2] in dev_ids:
+                                dev_fh.write(example)
+                            else:
+                                train_fh.write(example)
+        else:
+            # generate test set
+            if os.path.isfile(data_path) and check_sha1(data_path, data_hash):
+                return
+            with io.open(raw_path, encoding='utf8') as data_fh:
+                with io.open(data_path, 'w', encoding='utf8') as test_fh:
+                    header = data_fh.readline()
+                    test_fh.write(u'index\t#1 ID\t#2 ID\t#1 String\t#2 String\n')
+                    for idx, row in enumerate(data_fh):
+                        label, id1, id2, s1, s2 = row.strip().split('\t')
+                        test_fh.write(u'%d\t%s\t%s\t%s\t%s\n'%(idx, id1, id2, s1, s2))
