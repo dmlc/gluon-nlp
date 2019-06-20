@@ -16,6 +16,7 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+"""DRMM models."""
 
 from mxnet.gluon import nn
 import numpy as np
@@ -61,7 +62,7 @@ class DRMM(nn.HybridBlock):
                  vocab_size,
                  embed_size,
                  num_layers=2,
-                 hidden_sizes=[10, 1],
+                 hidden_sizes=(10, 1),
                  hist_size=30,
                  output_size=2,
                  pad_val=1,
@@ -73,14 +74,17 @@ class DRMM(nn.HybridBlock):
         if hist_type in ['LCH', 'NH']:
             self.hist_type = hist_type
         else:
-            raise ValueError('hist_type \'' + hist_type +
-                             '\' not understood. only \'LCH\',\'NH\' are supported.')
+            raise ValueError(
+                'hist_type \'' + hist_type +
+                '\' not understood. only \'LCH\',\'NH\' are supported.')
         with self.name_scope():
             self.ffw = nn.HybridSequential()
             with self.ffw.name_scope():
                 for i in range(num_layers):
                     self.ffw.add(
-                        nn.Dense(hidden_sizes[i], activation='tanh', flatten=False))
+                        nn.Dense(hidden_sizes[i],
+                                 activation='tanh',
+                                 flatten=False))
             self.embedding = nn.Embedding(vocab_size, embed_size)
             self.attentions = nn.Dense(1, use_bias=False, flatten=False)
             self.output = nn.Dense(output_size)
@@ -119,15 +123,15 @@ class DRMM(nn.HybridBlock):
 
         if self.hist_type == 'NH':
             matching_hist_sum = matching_hist.sum(axis=-1)
-            hist = F.broadcast_div(
-                matching_hist, F.expand_dims(matching_hist_sum, axis=2))
-            return hist
+            hist = F.broadcast_div(matching_hist,
+                                   F.expand_dims(matching_hist_sum, axis=2))
 
         if self.hist_type == 'LCH':
             hist = F.log(matching_hist)
-            return hist
 
-    def hybrid_forward(self, F, query, doc):
+        return hist
+
+    def hybrid_forward(self, F, query, doc):  # pylint: disable=arguments-differ
         """
         Parameters
         ----------
@@ -145,16 +149,17 @@ class DRMM(nn.HybridBlock):
         embed_doc = self.embedding(doc)
 
         # shape(batch_size, length, embed_size)
-        query_mask = F.where(query != self.pad_val, F.zeros_like(query), float('-inf')
-                             * F.ones_like(query)).astype('float32')
-        doc_mask = F.where(doc != self.pad_val, F.zeros_like(doc), float('-inf')
-                           * F.ones_like(doc)).astype('float32')
+        query_mask = F.where(query != self.pad_val, F.zeros_like(query),
+                             float('-inf') *
+                             F.ones_like(query)).astype('float32')
+        doc_mask = F.where(doc != self.pad_val, F.zeros_like(doc),
+                           float('-inf') * F.ones_like(doc)).astype('float32')
 
         # shape(batch_size, query_length, doc_length)
-        _mask = F.broadcast_add(F.expand_dims(
-            doc_mask, axis=1), F.expand_dims(query_mask, axis=2))
-        _mask = F.where(_mask == 0, F.zeros_like(_mask), float('-inf')
-                        * F.ones_like(_mask)).astype('float32')
+        _mask = F.broadcast_add(F.expand_dims(doc_mask, axis=1),
+                                F.expand_dims(query_mask, axis=2))
+        _mask = F.where(_mask == 0, F.zeros_like(_mask),
+                        float('-inf') * F.ones_like(_mask)).astype('float32')
 
         # shape(batch_size, query_length, hist_size)
         hist = self.hist_map(F, embed_query, embed_doc, _mask)
