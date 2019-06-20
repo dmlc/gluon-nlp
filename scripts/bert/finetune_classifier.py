@@ -68,56 +68,57 @@ tasks = {
 }
 
 parser = argparse.ArgumentParser(
-    description='BERT fine-tune examples for GLUE tasks.')
+    description='BERT fine-tune examples for classification/regression tasks.',
+    formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument(
-    '--epochs', type=int, default=3, help='number of epochs, default is 3')
+    '--epochs', type=int, default=3, help='number of epochs.')
 parser.add_argument(
     '--batch_size',
     type=int,
     default=32,
-    help='Batch size. Number of examples per gpu in a minibatch, default is 32')
+    help='Batch size. Number of examples per gpu in a minibatch.')
 parser.add_argument(
     '--dev_batch_size',
     type=int,
     default=8,
-    help='Batch size for dev set and test set, default is 8')
+    help='Batch size for dev set and test set')
 parser.add_argument(
     '--optimizer',
     type=str,
     default='bertadam',
-    help='Optimization algorithm, default is bertadam')
+    help='Optimization algorithm')
 parser.add_argument(
     '--lr',
     type=float,
     default=5e-5,
-    help='Initial learning rate, default is 5e-5')
+    help='Initial learning rate')
 parser.add_argument(
     '--epsilon',
     type=float,
-    default=1e-06,
-    help='Small value to avoid division by 0, default is 1e-06'
+    default=1e-6,
+    help='Small value to avoid division by 0'
 )
 parser.add_argument(
     '--warmup_ratio',
     type=float,
     default=0.1,
-    help='ratio of warmup steps used in NOAM\'s stepsize schedule, default is 0.1')
+    help='ratio of warmup steps used in NOAM\'s stepsize schedule')
 parser.add_argument(
     '--log_interval',
     type=int,
     default=10,
-    help='report interval, default is 10')
+    help='report interval')
 parser.add_argument(
     '--max_len',
     type=int,
     default=128,
-    help='Maximum length of the sentence pairs, default is 128')
+    help='Maximum length of the sentence pairs')
 parser.add_argument(
     '--pad',
     action='store_true',
     help='Whether to pad to maximum length when preparing data batches. Default is False.')
 parser.add_argument(
-    '--seed', type=int, default=2, help='Random seed, default is 2')
+    '--seed', type=int, default=2, help='Random seed')
 parser.add_argument(
     '--accumulate',
     type=int,
@@ -125,7 +126,7 @@ parser.add_argument(
     help='The number of batches for gradients accumulation to simulate large batch size. '
          'Default is None')
 parser.add_argument(
-    '--gpu', type=int, default=None, help='Which gpu for finetuning. By default cpu is used.')
+    '--gpu', type=int, default=None, help='Which gpu for finetuning.')
 parser.add_argument(
     '--task_name',
     type=str,
@@ -151,20 +152,19 @@ parser.add_argument(
     '--pretrained_bert_parameters',
     type=str,
     default=None,
-    help='Pre-trained bert model parameter file. default is None')
+    help='Pre-trained bert model parameter file.')
 parser.add_argument(
     '--model_parameters',
     type=str,
     default=None,
     help='A parameter file for the model that is loaded into the model'
     ' before training/inference. It is different from the parameter'
-    ' file written after the model is trained. default is None')
+    ' file written after the model is trained.')
 parser.add_argument(
     '--output_dir',
     type=str,
     default='./output_dir',
-    help='The output directory where the model params will be written.'
-    ' default is ./output_dir')
+    help='The output directory where the model params will be written.')
 parser.add_argument(
     '--only_inference',
     action='store_true',
@@ -235,11 +235,11 @@ else:
 output_dir = args.output_dir
 if pretrained_bert_parameters:
     logging.info('loading bert params from %s', pretrained_bert_parameters)
-    model.bert.load_parameters(pretrained_bert_parameters, ctx=ctx,
-                               ignore_extra=True)
+    nlp.utils.load_parameters(model.bert, pretrained_bert_parameters, ctx=ctx,
+                              ignore_extra=True, cast_dtype=True)
 if model_parameters:
     logging.info('loading model params from %s', model_parameters)
-    model.load_parameters(model_parameters, ctx=ctx)
+    nlp.utils.load_parameters(model, model_parameters, ctx=ctx, cast_dtype=True)
 nlp.utils.mkdir(output_dir)
 
 logging.debug(model)
@@ -420,7 +420,7 @@ def train(metric):
     params = [p for p in all_model_params.values() if p.grad_req != 'null']
 
     # Set grad_req if gradient accumulation is required
-    if accumulate:
+    if accumulate > 1:
         for p in params:
             p.grad_req = 'add'
     # track best eval score
@@ -458,9 +458,10 @@ def train(metric):
                     trainer.allreduce_grads()
                     nlp.utils.clip_grad_global_norm(params, 1)
                     trainer.update(accumulate if accumulate else 1)
-                    # set grad to zero for gradient accumulation
-                    all_model_params.zero_grad()
                     step_num += 1
+                    if accumulate > 1:
+                        # set grad to zero for gradient accumulation
+                        all_model_params.zero_grad()
 
                 step_loss += ls.asscalar()
                 metric.update([label], [out])
