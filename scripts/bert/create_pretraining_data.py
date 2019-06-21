@@ -395,7 +395,7 @@ def create_instances_from_document(x):
                 (tokens, masked_lm_positions,
                  masked_lm_labels) = create_masked_lm_predictions(
                      tokens, masked_lm_prob, max_predictions_per_seq,
-                     whole_word_mask, len(vocab), tokenizer,
+                     whole_word_mask, vocab, tokenizer,
                      _MASK_TOKEN, _CLS_TOKEN, _SEP_TOKEN)
                 instance = TrainingInstance(
                     tokens=tokens,
@@ -417,7 +417,7 @@ MaskedLmInstance = collections.namedtuple('MaskedLmInstance',
 
 
 def create_masked_lm_predictions(tokens, masked_lm_prob, max_predictions_per_seq,
-                                 whole_word_mask, vocab_size, tokenizer,
+                                 whole_word_mask, vocab, tokenizer,
                                  _MASK_TOKEN, _CLS_TOKEN, _SEP_TOKEN):
     """Creates the predictions for the masked LM objective."""
     cand_indexes = []
@@ -434,7 +434,7 @@ def create_masked_lm_predictions(tokens, masked_lm_prob, max_predictions_per_seq
         # at all -- we still predict each subword independently, softmaxed
         # over the entire vocabulary.
         if whole_word_mask and len(cand_indexes) >= 1 and \
-           not tokenizer.is_first_subword(token):
+           not tokenizer.is_first_subword(vocab.idx_to_token[token]):
             cand_indexes[-1].append(i)
         else:
             cand_indexes.append([i])
@@ -475,7 +475,7 @@ def create_masked_lm_predictions(tokens, masked_lm_prob, max_predictions_per_seq
                 # 10% of the time, replace with random word
                 else:
                     # generate a random word in [0, vocab_size - 1]
-                    masked_token = random.randint(0, vocab_size - 1)
+                    masked_token = random.randint(0, len(vocab) - 1)
 
             output_tokens[index] = masked_token
 
