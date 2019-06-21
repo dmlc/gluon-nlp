@@ -54,17 +54,21 @@ def _masked_softmax(F, att_score, mask, dtype):
         att_weights = F.softmax(att_score, axis=-1)
     return att_weights
 
-def _generate_relative_positions_matrix(self, F, seq_length, max_relative_position):
+def _generate_relative_positions_matrix(F, seq_length, max_relative_position):
     """Generates matrix of relative positions between inputs.
+    
     Row i corresponds to the i-th word and the columns represent word j in the input sequence.
-    E.g. if max_relative_position=3, seq_length=6
+    For example, if max_relative_position=3, seq_length=6
+
     matrix:
+
         3,4,5,6,6,6
         2,3,4,5,6,6
         1,2,3,4,5,6
         0,1,2,3,4,5
         0,0,1,2,3,4
         0,0,0,1,2,3
+
     """
     range_vec = F.arange(seq_length)
     range_mat = F.tile(range_vec, [seq_length]).reshape([seq_length, seq_length])
@@ -75,11 +79,14 @@ def _generate_relative_positions_matrix(self, F, seq_length, max_relative_positi
     final_mat = distance_mat_clipped + max_relative_position
     return final_mat
 
-# TODO(sxjscience) In the future, we should support setting mask/att_weights as sparse tensors
+# TODO(sxjscience) In the future, we should support setting
+# mask/att_weights as sparse tensors
 class AttentionCell(HybridBlock):
     """Abstract class for attention cells. Extend the class
      to implement your own attention method.
-     One typical usage is to define your own `_compute_weight()` function to calculate the weights::
+
+     One typical usage is to define your own `_compute_weight()` function to
+     calculate the weights::
 
         cell = AttentionCell()
         out = cell(query, key, value, mask)
@@ -508,14 +515,15 @@ class MultiHeadAttentionRelativePosCell(HybridBlock):
 
     In the MultiHeadAttentionCell, the input query/key/value will be linearly projected
     for `num_heads` times with different projection matrices. Each projected key, value, query
-    will be used to calculate the attention weights and values. The output of each head will be
-    concatenated to form the final output.
+    will be used to calculate the attention weights and values. The output of each head will
+    be concatenated to form the final output.
 
     The idea is first proposed in "[Arxiv2014] Neural Turing Machines" and
     is later adopted in "[NIPS2017] Attention is All You Need" to solve the
     Neural Machine Translation problem.
 
-    The idea of relative position is proposed in "Self-Attention with Relative Position Representations"
+    The idea of relative position is proposed in
+    "Self-Attention with Relative Position Representations"
 
     Parameters
     ----------
@@ -541,8 +549,9 @@ class MultiHeadAttentionRelativePosCell(HybridBlock):
     params : str or None, default None
         See document of `Block`.
     """
-    def __init__(self, query_units, key_units, value_units, num_heads, max_relative_position, dropout=0.0,
-                 use_bias=True, weight_initializer=None, bias_initializer='zeros', prefix=None, params=None):
+    def __init__(self, query_units, key_units, value_units, num_heads, max_relative_position,
+                 dropout=0.0, use_bias=True, weight_initializer=None, bias_initializer='zeros',
+                 prefix=None, params=None):
         super(MultiHeadAttentionRelativePosCell, self).__init__(prefix=prefix, params=params)
         self._query_units = query_units
         self._key_units = key_units
@@ -576,13 +585,15 @@ class MultiHeadAttentionRelativePosCell(HybridBlock):
             self.proj_value = nn.Dense(units=self._value_units, use_bias=self._use_bias,
                                        flatten=False, weight_initializer=weight_initializer,
                                        bias_initializer=bias_initializer, prefix='value_')
-            self.key_embedding = nn.Embedding(input_dim=self._max_relative_position, output_dim=self._embed_units)
-            self.value_embedding = nn.Embedding(input_dim=self._max_relative_position, output_dim=self._embed_units)
+            self.key_embedding = nn.Embedding(input_dim=self._max_relative_position,
+                                              output_dim=self._embed_units)
+            self.value_embedding = nn.Embedding(input_dim=self._max_relative_position,
+                                                output_dim=self._embed_units)
 
             self._dropout_layer = nn.Dropout(dropout)
 
-
-    def hybrid_forward(self, F, query, key, value, position_matrix, mask=None):  # pylint: disable=arguments-differ
+    # pylint: disable=arguments-differ
+    def hybrid_forward(self, F, query, key, value, position_matrix, mask=None):
         key_embeddings = self.key_embedding(F.BlockGrad(position_matrix))
         value_embeddings = self.value_embedding(F.BlockGrad(position_matrix))
         att_weights = self._compute_weight(F, query, key, key_embeddings, mask)
