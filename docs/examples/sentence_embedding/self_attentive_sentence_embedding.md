@@ -1,8 +1,8 @@
 # A Structured Self-attentive Sentence Embedding
 
-After word embedding is applied to the representation of words, natural language processing(NLP) has been effectively improved in many ways. Along with the widespread use of word embedding, many techniques have been developed to express the semantics of sentences by words, such as:
+After word embeddings are applied to create a new representation of words, natural language processing (NLP) has been effectively improved in many ways. Along with the widespread use of word embedding, many techniques have been developed to express the semantics of sentences by words, such as:
 1. The vector representation of multiple words in a sentence is concatenated or weighted to obtain a vector to represent the sentence.
-2. Convolution(CNN) and maximum pooling(MaxPooling) on the matrix of all the word vectors of the sentence, using the final result to represent the semantics of the sentence.
+2. Convolution(CNN) and maximum pooling (MaxPooling) on the matrix of all the word vectors of the sentence, using the final result to represent the semantics of the sentence.
 3. Unroll the sentence according to the time step of the word, input the vector representation of each word into a recurrent neural network(RNN), and use the output of the last time step of the RNN as the semantic representation of the sentence.
 
 The above method solves the problem of sentence meaning in a certain extent in many aspects. When concatenating is used in method one, if the word of the sentence is too long and the vector dimension of the word is slightly larger, then the vector dimension of the sentence will be particularly large, and the internal interaction between the words of the sentence is not taken into account. The use of weighted averaging is not accurate and does not adequately express the impact of each word on sentence semantics. Many useful word meanings may be lost in Method2. The third method selects the output of the last step. If the sentence is too long, the output of the last step does not accurately express the semantics of the sentence.
