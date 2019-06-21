@@ -70,6 +70,9 @@ class _SmoothingWithDimProp(mx.operator.CustomOpProp):
 class LabelSmoothing(HybridBlock):
     """Applies label smoothing. See https://arxiv.org/abs/1512.00567.
 
+    It changes the construction of the probability to (1 - epsilon) for the true class,
+    epsilon / (num_classes - 1) otherwise.
+
     Parameters
     ----------
     axis : int, default -1
