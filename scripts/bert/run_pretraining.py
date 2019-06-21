@@ -31,10 +31,8 @@ This example shows how to pre-train a BERT model with Gluon NLP Toolkit.
 # pylint:disable=redefined-outer-name,logging-format-interpolation
 
 import os
-import random
 import logging
 import time
-import numpy as np
 
 import mxnet as mx
 import gluonnlp as nlp
@@ -219,12 +217,6 @@ def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx, store):
     logging.info('Train cost={:.1f}s'.format(train_end_time - train_begin_time))
 
 if __name__ == '__main__':
-    # random seed
-    seed = args.seed
-    np.random.seed(seed)
-    random.seed(seed)
-    mx.random.seed(seed)
-
     ctx = [mx.cpu()] if args.gpus is None or args.gpus == '' else \
           [mx.gpu(int(x)) for x in args.gpus.split(',')]
 

@@ -282,8 +282,8 @@ def create_training_instances(x):
         features = (input_ids, segment_ids, masked_lm_positions, masked_lm_ids,
                     masked_lm_weights, next_sentence_labels, valid_lengths)
         logging.debug('*** Writing to output file %s ***', output_file)
-        write_to_files_np(features, tokenizer, args.max_seq_length,
-                          args.max_predictions_per_seq, [output_file])
+        write_to_files_np(features, tokenizer, max_seq_length,
+                          max_predictions_per_seq, [output_file])
         features = None
     else:
         features = (input_ids, masked_lm_ids, masked_lm_positions, masked_lm_weights,
