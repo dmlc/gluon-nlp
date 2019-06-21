@@ -1184,7 +1184,8 @@ class BERTSPTokenizer(BERTTokenizer):
 
     @staticmethod
     def is_first_subword(token):
-        """Check if a string token is a subword following a previous subword, instead of the beginning of a word.
+        """Check if a string token is a subword following a previous subword,
+        instead of the beginning of a word.
 
         Parameters
         ----------

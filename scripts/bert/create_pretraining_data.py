@@ -198,6 +198,8 @@ def create_training_instances(x):
         The probability of replacing texts with masks/random words/original words.
     max_predictions_per_seq : int
         The hard limit of the number of predictions for masked words
+    whole_word_mask : bool
+        Whether to do masking for whole words
     vocab : BERTVocab
         The BERTVocab
     nworker : int
