@@ -20,4 +20,10 @@ pip install -v -e .
 python -m spacy download en
 python -m spacy download de
 python -m nltk.downloader all
-python -m pip install http://github.com/horovod/horovod/tarball/v0.16.2 --no-cache-dir -U
+
+git clone  http://github.com/horovod/horovod horovod;
+cd horovod;
+git checkout v0.16.2;
+git submodule update --recursive --init;
+pip install . --no-cache-dir -U
+# python -m pip install http://github.com/horovod/horovod/tarball/v0.16.2 --no-cache-dir -U
