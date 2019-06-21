@@ -25,15 +25,14 @@ from gluonnlp.model import BiLMEncoder
 
 
 @pytest.mark.parametrize('hybridize', [False, True])
-@pytest.mark.parametrize('mode', ['lstm', 'gru', 'rnn_relu', 'rnn_tanh'])
-def test_bi_lm_encoder_output_shape_rnn_lstm_gru(hybridize, mode):
+def test_bilm_encoder_output_shape_lstm(hybridize):
     num_layers = 2
     seq_len = 7
     hidden_size = 100
     input_size = 100
     batch_size = 2
 
-    encoder = BiLMEncoder(mode=mode,
+    encoder = BiLMEncoder(mode='lstm',
                           num_layers=num_layers,
                           input_size=input_size,
                           hidden_size=hidden_size,
@@ -45,7 +44,7 @@ def test_bi_lm_encoder_output_shape_rnn_lstm_gru(hybridize, mode):
 
 
 @pytest.mark.parametrize('hybridize', [False, True])
-def test_bi_lm_encoder_output_shape_lstmpc(hybridize):
+def test_bilm_encoder_output_shape_lstmpc(hybridize):
     num_layers = 2
     seq_len = 7
     hidden_size = 100
@@ -66,15 +65,13 @@ def test_bi_lm_encoder_output_shape_lstmpc(hybridize):
 
 
 def run_bi_lm_encoding(encoder, batch_size, input_size, seq_len, hybridize):
-    print(encoder)
     encoder.initialize()
 
     if hybridize:
         encoder.hybridize()
 
     inputs = mx.random.uniform(shape=(seq_len, batch_size, input_size))
-    inputs_mask = mx.random.randint(0, 1, shape=(batch_size, seq_len))
-    print('testing forward for bi_lm_encoder')
+    inputs_mask = mx.random.uniform(-1, 1, shape=(batch_size, seq_len)) > 1
 
     state = encoder.begin_state(batch_size=batch_size, func=mx.ndarray.zeros)
     output, _ = encoder(inputs, state, inputs_mask)
