@@ -74,7 +74,7 @@ def test_embedding_evaluate_from_path(evaluateanalogies, maxvocabsize):
     if evaluateanalogies:
         cmd += ['--analogy-datasets', 'GoogleAnalogyTestSet']
     else:
-        cmd += ['--analogy-datasets']
+        cmd += ['--similarity-datasets', 'WordSim353']
     if maxvocabsize is not None:
         cmd += ['--analogy-max-vocab-size', str(maxvocabsize)]
     subprocess.check_call(cmd)
