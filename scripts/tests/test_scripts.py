@@ -17,6 +17,8 @@ def test_skipgram_cbow(model, fasttext):
         sys.executable, './scripts/word_embeddings/train_sg_cbow.py', '--gpu', '0',
         '--epochs', '2', '--model', model, '--data', 'toy', '--batch-size',
         '64']
+    cmd += ['--similarity-datasets', 'WordSim353']
+    cmd += ['--analogy-datasets', 'GoogleAnalogyTestSet']
     if fasttext:
         cmd += ['--ngram-buckets', '1000']
     else:
@@ -35,6 +37,8 @@ def test_glove():
     cmd = [
         sys.executable, './scripts/word_embeddings/train_glove.py', cooccur, vocab,
         '--batch-size', '2', '--epochs', '2', '--gpu', '0']
+    cmd += ['--similarity-datasets', 'WordSim353']
+    cmd += ['--analogy-datasets', 'GoogleAnalogyTestSet']
     subprocess.check_call(cmd)
     time.sleep(5)
 
@@ -51,6 +55,8 @@ def test_embedding_evaluate_pretrained(fasttextloadngrams):
         '--embedding-name', 'fasttext', '--embedding-source', 'wiki.simple',
         '--gpu', '0'
     ]
+    cmd += ['--similarity-datasets', 'WordSim353']
+    cmd += ['--analogy-datasets', 'GoogleAnalogyTestSet']
     if fasttextloadngrams:
         cmd.append('--fasttext-load-ngrams')
 
