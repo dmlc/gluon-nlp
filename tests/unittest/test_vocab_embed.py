@@ -1154,7 +1154,7 @@ def test_word_embedding_analogy_evaluation_models(analogy_function):
 
     dataset_coded = [[vocab[d[0]], vocab[d[1]], vocab[d[2]], vocab[d[3]]]
                      for d in dataset]
-    dataset_coded_nd = nd.array(dataset_coded)
+    dataset_coded_nd = nd.array(dataset_coded, dtype=np.int64)
 
     for k in [1, 3]:
         for exclude_question_words in [True, False]:
@@ -1167,17 +1167,17 @@ def test_word_embedding_analogy_evaluation_models(analogy_function):
             words1 = dataset_coded_nd[:, 0]
             words2 = dataset_coded_nd[:, 1]
             words3 = dataset_coded_nd[:, 2]
-            pred_idxs = evaluator(words1, words2, words3)
+            pred_idxs = evaluator(words1, words2, words3).astype(np.int64)
 
             # If we don't exclude inputs most predictions should be wrong
             words4 = dataset_coded_nd[:, 3]
-            accuracy = nd.mean(pred_idxs[:, 0] == nd.array(words4))
+            accuracy = (pred_idxs[:, 0] == words4).astype(np.float64).mean()
             accuracy = accuracy.asscalar()
             if not exclude_question_words:
                 assert accuracy <= 0.1
 
                 # Instead the model would predict W3 most of the time
-                accuracy_w3 = nd.mean(pred_idxs[:, 0] == nd.array(words3))
+                accuracy_w3 = (pred_idxs[:, 0] == words3).astype(np.float64).mean()
                 assert accuracy_w3.asscalar() >= 0.89
 
             else:
