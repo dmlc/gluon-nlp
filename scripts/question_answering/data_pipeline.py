@@ -443,8 +443,6 @@ class SQuADDataTokenizer(object):
         use_spacy : bool, default True
             Use Spacy as base tokenizer. Otherwise uses NLTK with some cleansing
         """
-        # self._base_tokenizer = base_tokenizer if base_tokenizer is not None \
-        #     else SQuADDataTokenizer._word_tokenize
         self._use_spacy = use_spacy
 
     def run_async(self, pool, dataset):
