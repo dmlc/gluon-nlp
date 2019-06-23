@@ -25,9 +25,9 @@ def warm_up_lr(base_lr, iteration, lr_warmup_steps):
     """Returns learning rate based on current iteration.
 
     This function is used to implement learning rate warm up technique.
-    
+
     math::
-    
+
       lr = min(base_lr, base_lr * (log(iteration) /  log(lr_warmup_steps)))
 
     Parameters
