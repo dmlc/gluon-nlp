@@ -427,7 +427,7 @@ print('Best test loss %.2f, test ppl %.2f'%(test_L, math.exp(test_L)))
 ```
 
 
-##### Citations
+## Citations
 
 [1] Merity, S., et al. “Regularizing and optimizing LSTM language models”. ICLR 2018
 
