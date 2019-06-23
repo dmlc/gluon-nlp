@@ -361,3 +361,15 @@ def test_finetune_squad(sentencepiece):
     process = subprocess.check_call([sys.executable, './scripts/bert/finetune_squad.py']
                                     + arguments)
     time.sleep(5)
+
+
+@pytest.mark.serial
+@pytest.mark.remote_required
+@pytest.mark.gpu
+def test_bertlm():
+    process = subprocess.check_call(['python', './scripts/language_model/transformer_language_model.py',
+                                     '--data', 'wikitext2', '--model', 'bert_lm_12_768_12_300_1150',
+                                     '--val_batch_size', '8', '--test_batch_size', '8',
+                                     '--bptt', '128', '--seed', '1882',
+                                     '--batch_size', '16', '--gpus', '0'])
+    time.sleep(5)
