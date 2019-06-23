@@ -32,7 +32,7 @@ import gluonnlp as nlp
 ctx = mx.cpu()
 lm_model, vocab = nlp.model.get_model(name='awd_lstm_lm_1150',
                                       dataset_name='wikitext-2',
-                                      pre-trained=True,
+                                      pretrained=True,
                                       ctx=ctx)
 ```
 
