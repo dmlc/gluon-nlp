@@ -304,7 +304,7 @@ implementation. Please visit the
 [BERT model zoo webpage](../../model_zoo/bert/index.rst), or the scripts/bert folder
 in the Github repository for the complete fine-tuning scripts.
 
-#### Citations
+## Citations
 
 [1] Devlin, Jacob, et al. "Bert:
 Pre-training of deep
