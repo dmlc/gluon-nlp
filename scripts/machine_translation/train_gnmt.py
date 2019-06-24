@@ -46,7 +46,7 @@ from mxnet import gluon
 import gluonnlp as nlp
 
 from gluonnlp.model.translation import NMTModel
-from gluonnlp.loss import SoftmaxCEMaskedLoss
+from gluonnlp.loss import MaskedSoftmaxCELoss
 from gnmt import get_gnmt_encoder_decoder
 from translation import BeamSearchTranslator
 from utils import logging_config
@@ -140,7 +140,7 @@ translator = BeamSearchTranslator(model=model, beam_size=args.beam_size,
 logging.info('Use beam_size={}, alpha={}, K={}'.format(args.beam_size, args.lp_alpha, args.lp_k))
 
 
-loss_function = SoftmaxCEMaskedLoss()
+loss_function = MaskedSoftmaxCELoss()
 loss_function.hybridize(static_alloc=static_alloc)
 
 

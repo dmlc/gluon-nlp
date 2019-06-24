@@ -33,18 +33,18 @@ def testTemporalActivationRegularizationLoss():
     print(tar)
     tar(*[mx.nd.arange(1000).reshape(10, 10, 10),
           mx.nd.arange(1000).reshape(10, 10, 10)])
-    
+
 def testMaskedSoftmaxCrossEntropyLoss():
-    loss_fn = nlp.loss.SoftmaxCEMaskedLoss()
+    loss_fn = nlp.loss.MaskedSoftmaxCELoss()
     pred = mx.nd.array([[[0,0,10],[10,0,0]]]) #N,T,C 1,2,3
     label = mx.nd.array([[2,2]])
-    valid_length = mx.nd.array([1,]) 
+    valid_length = mx.nd.array([1,])
     loss = loss_fn(pred, label, valid_length)
     assert loss < 0.1, "1st timestep prediction is correct"
-    valid_length = mx.nd.array([2,]) 
+    valid_length = mx.nd.array([2,])
     loss = loss_fn(pred, label, valid_length)
     assert loss > 1, "2nd timestep prediction is wrong, loss goes up"
-    
+
 def testLabelSmoothing():
     # Testing that the label gets smoothed at the right location
     sparse_labels = [0,1,2]

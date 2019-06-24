@@ -19,13 +19,14 @@
 
 """Loss functions."""
 
-__all__ = ['SoftmaxCEMaskedLoss']
+__all__ = ['MaskedSoftmaxCrossEntropyLoss', 'MaskedSoftmaxCELoss']
 
 import numpy as np
 from mxnet.gluon.loss import SoftmaxCELoss
 
-class SoftmaxCEMaskedLoss(SoftmaxCELoss):
+class MaskedSoftmaxCrossEntropyLoss(SoftmaxCELoss):
     r"""Wrapper of the SoftmaxCELoss that supports valid_length as the input
+    (alias: MaskedSoftmaxCELoss)
 
     If `sparse_label` is `True` (default), label should contain integer
     category indicators:
@@ -81,8 +82,8 @@ class SoftmaxCEMaskedLoss(SoftmaxCELoss):
         # The current technique only works with NTC data
         axis = -1
         batch_axis = 0
-        super(SoftmaxCEMaskedLoss, self).__init__(axis, sparse_label, from_logits,
-                                                  weight, batch_axis, **kwargs)
+        super(MaskedSoftmaxCrossEntropyLoss, self).__init__(axis, sparse_label, from_logits,
+                                                            weight, batch_axis, **kwargs)
 
     def hybrid_forward(self, F, pred, label, valid_length): # pylint: disable=arguments-differ
         if self._sparse_label:
@@ -93,4 +94,7 @@ class SoftmaxCEMaskedLoss(SoftmaxCELoss):
                                        sequence_length=valid_length,
                                        use_sequence_length=True,
                                        axis=1)
-        return super(SoftmaxCEMaskedLoss, self).hybrid_forward(F, pred, label, sample_weight)
+        return super(MaskedSoftmaxCrossEntropyLoss, self).hybrid_forward(
+            F, pred, label, sample_weight)
+
+MaskedSoftmaxCELoss = MaskedSoftmaxCrossEntropyLoss

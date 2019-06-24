@@ -103,10 +103,10 @@ class LabelSmoothing(HybridBlock):
 
         Parameters
         ----------
-        F: mx.sym or mx.nd
         inputs : Symbol or NDArray
             Shape (batch_size, length) or (batch_size, length, V)
         units : int or None
+
         Returns
         -------
         smoothed_label : Symbol or NDArray
