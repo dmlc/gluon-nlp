@@ -399,7 +399,7 @@ class ChnSentiCorpTask(GlueTask):
 
     """
     def __init__(self):
-        is_pair = True
+        is_pair = False
         class_labels = ['0', '1']
         metric = Accuracy()
         super(ChnSentiCorpTask, self).__init__(class_labels, metric, is_pair)
