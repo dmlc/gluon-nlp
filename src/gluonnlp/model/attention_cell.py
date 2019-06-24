@@ -47,7 +47,17 @@ def _masked_softmax(F, att_score, mask, dtype):
     """
     if mask is not None:
         # Fill in the masked scores with a very small value
-        neg = -1e4 if np.dtype(dtype) == np.float16 else -1e18
+        neg = -1e18
+        if np.dtype(dtype) == np.float16:
+            neg = -1e4
+        else:
+            try:
+                # if AMP (automatic mixed precision) is enabled, -1e18 will cause NaN.
+                from mxnet.contrib import amp
+                if amp.amp._amp_initialized:
+                    neg = -1e4
+            except ImportError:
+                pass
         att_score = F.where(mask, att_score, neg * F.ones_like(att_score))
         att_weights = F.softmax(att_score, axis=-1) * mask
     else:

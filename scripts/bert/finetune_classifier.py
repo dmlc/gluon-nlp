@@ -169,6 +169,12 @@ parser.add_argument(
     '--only_inference',
     action='store_true',
     help='If set, we skip training and only perform inference on dev and test data.')
+parser.add_argument(
+    '--dtype',
+    type=str,
+    default='float32',
+    choices=['float32', 'float16'],
+    help='The data type for training.')
 
 args = parser.parse_args()
 
@@ -195,6 +201,16 @@ mx.random.seed(args.seed)
 ctx = mx.cpu() if args.gpu is None else mx.gpu(args.gpu)
 
 task = tasks[task_name]
+
+# data type with mixed precision training
+if args.dtype == 'float16':
+    try:
+        from mxnet.contrib import amp
+        amp.init()
+    except ImportError:
+        logging.info('Mixed precision training with float16 requires MXNet >= '
+                     '1.5.0b20190521. Please consider upgrading your MXNet version.')
+        exit()
 
 # model and loss
 only_inference = args.only_inference
@@ -281,7 +297,7 @@ def preprocess_data(tokenizer, task, batch_size, dev_batch_size, max_len, pad=Fa
     # data loader for training
     loader_train = gluon.data.DataLoader(
         dataset=data_train,
-        num_workers=1,
+        num_workers=4,
         batch_sampler=batch_sampler,
         batchify_fn=batchify_fn)
 
@@ -294,7 +310,7 @@ def preprocess_data(tokenizer, task, batch_size, dev_batch_size, max_len, pad=Fa
         loader_dev = mx.gluon.data.DataLoader(
             data_dev,
             batch_size=dev_batch_size,
-            num_workers=1,
+            num_workers=4,
             shuffle=False,
             batchify_fn=batchify_fn)
         loader_dev_list.append((segment, loader_dev))
@@ -318,7 +334,7 @@ def preprocess_data(tokenizer, task, batch_size, dev_batch_size, max_len, pad=Fa
         loader_test = mx.gluon.data.DataLoader(
             data_test,
             batch_size=dev_batch_size,
-            num_workers=1,
+            num_workers=4,
             shuffle=False,
             batchify_fn=test_batchify_fn)
         loader_test_list.append((segment, loader_test))
@@ -406,6 +422,8 @@ def train(metric):
             'mxnet>=1.5.0. Now the original Adam optimizer is used instead.')
         trainer = gluon.Trainer(all_model_params, 'adam',
                                 optimizer_params, update_on_kvstore=False)
+    if args.dtype == 'float16':
+        amp.init_trainer(trainer)
 
     step_size = batch_size * accumulate if accumulate else batch_size
     num_train_steps = int(num_train_examples / step_size * args.epochs)
@@ -451,7 +469,11 @@ def train(metric):
                         input_ids.as_in_context(ctx), type_ids.as_in_context(ctx),
                         valid_length.astype('float32').as_in_context(ctx))
                     ls = loss_function(out, label.as_in_context(ctx)).mean()
-                ls.backward()
+                    if args.dtype == 'float16':
+                        with amp.scale_loss(ls, trainer) as scaled_loss:
+                            mx.autograd.backward(scaled_loss)
+                    else:
+                        ls.backward()
 
                 # update
                 if not accumulate or (batch_id + 1) % accumulate == 0:
