@@ -1,5 +1,6 @@
 import argparse
 from datetime import datetime
+import random
 import sys
 import time
 
@@ -9,6 +10,8 @@ from botocore.compat import total_seconds
 parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
 parser.add_argument('--profile', help='profile name of aws account.', type=str,
+                    default=None)
+parser.add_argument('--region', help='Default region when creating new connections', type=str,
                     default=None)
 parser.add_argument('--name', help='name of the job', type=str, default='dummy')
 parser.add_argument('--job-queue', help='name of the job queue to submit this job', type=str,
@@ -36,11 +39,13 @@ parser.add_argument('--command', help='command to run', type=str,
 parser.add_argument('--remote',
                     help='git repo address. https://github.com/dmlc/gluon-nlp',
                     type=str, default="https://github.com/dmlc/gluon-nlp")
-parser.add_argument('--wait', help='block wait until the job completes', action='store_true')
+parser.add_argument('--wait', help='block wait until the job completes. '
+                    'Non-zero exit code if job fails.', action='store_true')
+parser.add_argument('--timeout', help='job timeout in seconds', default=None, type=int)
 
 args = parser.parse_args()
 
-session = boto3.Session(profile_name=args.profile)
+session = boto3.Session(profile_name=args.profile, region_name=args.region)
 batch, cloudwatch = [session.client(service_name=sn) for sn in ['batch', 'logs']]
 
 def printLogs(logGroupName, logStreamName, startTime):
@@ -101,37 +106,45 @@ def main():
         'COMMAND': args.command,
         'REMOTE': args.remote
     }
-    submitJobResponse = batch.submit_job(
+    kwargs = dict(
         jobName=jobName,
         jobQueue=jobQueue,
         jobDefinition=jobDefinition,
-        parameters=parameters
+        parameters=parameters,
     )
+    if args.timeout is not None:
+        kwargs['timeout'] = {'attemptDurationSeconds': args.timeout}
+    submitJobResponse = batch.submit_job(**kwargs)
 
     jobId = submitJobResponse['jobId']
     print('Submitted job [{} - {}] to the job queue [{}]'.format(jobName, jobId, jobQueue))
 
     spinner = 0
     running = False
+    status_set = set()
     startTime = 0
 
     while wait:
-        time.sleep(1)
+        time.sleep(random.randint(5, 10))
         describeJobsResponse = batch.describe_jobs(jobs=[jobId])
         status = describeJobsResponse['jobs'][0]['status']
         if status == 'SUCCEEDED' or status == 'FAILED':
             print('=' * 80)
             print('Job [{} - {}] {}'.format(jobName, jobId, status))
-            break
+
+            sys.exit(status == 'FAILED')
+
         elif status == 'RUNNING':
             logStreamName = getLogStream(logGroupName, jobName, jobId)
-            if not running and logStreamName:
+            if not running:
                 running = True
                 print('\rJob [{} - {}] is RUNNING.'.format(jobName, jobId))
-                print('Output [{}]:\n {}'.format(logStreamName, '=' * 80))
+                if logStreamName:
+                    print('Output [{}]:\n {}'.format(logStreamName, '=' * 80))
             if logStreamName:
                 startTime = printLogs(logGroupName, logStreamName, startTime) + 1
-        else:
+        elif status not in status_set:
+            status_set.add(status)
             print('\rJob [%s - %s] is %-9s... %s' % (jobName, jobId, status, spin[spinner % len(spin)]),)
             sys.stdout.flush()
             spinner += 1
