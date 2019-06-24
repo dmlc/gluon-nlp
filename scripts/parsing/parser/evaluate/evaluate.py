@@ -16,18 +16,18 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+"""Evaluation module for parsing results."""
 
-import os
-import tempfile
 import time
 from functools import reduce
 
-from scripts.parsing.common.data import DataLoader
 import numpy as np
 
+from scripts.parsing.common.data import DataLoader
 
-def evaluate_official_script(parser, vocab, num_buckets_test, test_batch_size, test_file, output_file,
-                             debug=False):
+
+def evaluate_official_script(parser, vocab, num_buckets_test, test_batch_size,
+                             test_file, output_file, debug=False):
     """Evaluate parser on a data set
 
     Parameters
@@ -61,7 +61,8 @@ def evaluate_official_script(parser, vocab, num_buckets_test, test_batch_size, t
     for words, tags, arcs, rels in data_loader.get_batches(batch_size=test_batch_size,
                                                            shuffle=False):
         outputs = parser.forward(words, tags)
-        for output, gold_arc, gold_rel in zip(outputs, arcs.transpose([1, 0]), rels.transpose([1, 0])):
+        for output, gold_arc, gold_rel in zip(
+                outputs, arcs.transpose([1, 0]), rels.transpose([1, 0])):
             pred_arc = output[0]
             pred_rel = output[1]
             length = pred_arc.shape[0]
