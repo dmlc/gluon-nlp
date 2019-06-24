@@ -24,7 +24,10 @@ import os
 import functools
 import logging
 import argparse
+import random
 import multiprocessing
+
+import numpy as np
 
 import mxnet as mx
 from mxnet.gluon.data import DataLoader
@@ -36,7 +39,7 @@ from gluonnlp.metric import MaskedAccuracy
 
 __all__ = ['get_model_loss', 'get_pretrain_data_npz', 'get_dummy_dataloader',
            'save_parameters', 'save_states', 'evaluate', 'forward', 'split_and_load',
-           'get_argparser', 'get_pretrain_data_text']
+           'get_argparser', 'get_pretrain_data_text', 'generate_dev_set']
 
 def get_model_loss(ctx, model, pretrained, dataset_name, vocab, dtype,
                    ckpt_dir=None, start_step=None):
@@ -406,9 +409,9 @@ def get_argparser():
     """Argument parser"""
     parser = argparse.ArgumentParser(description='BERT pretraining example.')
     parser.add_argument('--num_steps', type=int, default=20, help='Number of optimization steps')
-    parser.add_argument('--num_buckets', type=int, default=1,
+    parser.add_argument('--num_buckets', type=int, default=10,
                         help='Number of buckets for variable length sequence sampling')
-    parser.add_argument('--dtype', type=str, default='float32', help='data dtype')
+    parser.add_argument('--dtype', type=str, default='float16', help='data dtype')
     parser.add_argument('--batch_size', type=int, default=8, help='Batch size per GPU.')
     parser.add_argument('--accumulate', type=int, default=1,
                         help='Number of batches for gradient accumulation. '
@@ -431,22 +434,41 @@ def get_argparser():
                              'Options are bert_12_768_12, bert_24_1024_16')
     parser.add_argument('--data', type=str, default=None,
                         help='Path to training data. Training is skipped if not set.')
-    parser.add_argument('--data_eval', type=str, default=None,
+    parser.add_argument('--data_eval', type=str, required=True,
                         help='Path to evaluation data. Evaluation is skipped if not set.')
-    parser.add_argument('--ckpt_dir', type=str, required=True,
+    parser.add_argument('--ckpt_dir', type=str, default='./ckpt_dir',
                         help='Path to checkpoint directory')
     parser.add_argument('--start_step', type=int, default=0,
                         help='Start optimization step from the checkpoint.')
     parser.add_argument('--lr', type=float, default=1e-4, help='Learning rate')
-    parser.add_argument('--warmup_ratio', type=float, default=0.1,
+    parser.add_argument('--warmup_ratio', type=float, default=0.01,
                         help='ratio of warmup steps used in NOAM\'s stepsize schedule')
-    parser.add_argument('--log_interval', type=int, default=10, help='Report interval')
-    parser.add_argument('--ckpt_interval', type=int, default=250000, help='Checkpoint interval')
+    parser.add_argument('--log_interval', type=int, default=250, help='Report interval')
+    parser.add_argument('--ckpt_interval', type=int, default=25000, help='Checkpoint interval')
     parser.add_argument('--dummy_data_len', type=int, default=None,
                         help='If provided, a data batch of target sequence length is '
                              'used. For benchmarking purpuse only.')
-    parser.add_argument('--seed', type=int, default=0, help='Random seed')
     parser.add_argument('--verbose', action='store_true', help='verbose logging')
     parser.add_argument('--profile', type=str, default=None,
                         help='output profiling result to the target file')
     return parser
+
+def generate_dev_set(tokenizer, vocab, cache_file, args):
+    """Generate validation set."""
+    # set random seed to generate dev data deterministically
+    np.random.seed(0)
+    random.seed(0)
+    mx.random.seed(0)
+
+    worker_pool = multiprocessing.Pool()
+    eval_files = glob.glob(os.path.expanduser(args.data_eval))
+    num_files = len(eval_files)
+    assert num_files > 0, 'Number of eval files must be greater than 0.' \
+                          'Only found %d files at %s'%(num_files, args.data_eval)
+    logging.info('Generating validation set from %d files on rank 0.', len(eval_files))
+    create_training_instances((eval_files, tokenizer, args.max_seq_length,
+                               args.short_seq_prob, args.masked_lm_prob,
+                               args.max_predictions_per_seq, vocab,
+                               1, args.num_data_workers,
+                               worker_pool, cache_file))
+    logging.info('Done generating validation set on rank 0.')

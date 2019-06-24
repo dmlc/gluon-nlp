@@ -59,6 +59,7 @@ class BiLMEncoder(gluon.HybridBlock):
     proj_clip : float
         Clip projection between [-projclip, projclip] in LSTMPCellWithClip cell
     """
+
     def __init__(self, mode, num_layers, input_size, hidden_size, dropout=0.0,
                  skip_connection=True, proj_size=None, cell_clip=None, proj_clip=None, **kwargs):
         super(BiLMEncoder, self).__init__(**kwargs)
@@ -97,7 +98,8 @@ class BiLMEncoder(gluon.HybridBlock):
                                                   proj_clip=self._proj_clip)
 
                     self.forward_layers.add(forward_layer)
-                    lstm_input_size = self._proj_size
+                    lstm_input_size = self._hidden_size \
+                        if self._proj_size is None else self._proj_size
 
             lstm_input_size = self._input_size
             self.backward_layers = rnn.HybridSequentialRNNCell()
@@ -121,7 +123,8 @@ class BiLMEncoder(gluon.HybridBlock):
                                                    cell_clip=self._cell_clip,
                                                    proj_clip=self._proj_clip)
                     self.backward_layers.add(backward_layer)
-                    lstm_input_size = self._proj_size
+                    lstm_input_size = self._hidden_size \
+                        if self._proj_size is None else self._proj_size
 
     def begin_state(self, func, **kwargs):
         return [self.forward_layers[0][0].begin_state(func=func, **kwargs)
@@ -170,7 +173,7 @@ class BiLMEncoder(gluon.HybridBlock):
             if layer_index == 0:
                 layer_inputs = inputs
             else:
-                layer_inputs = outputs_forward[layer_index-1]
+                layer_inputs = outputs_forward[layer_index - 1]
             output, states_forward[layer_index] = F.contrib.foreach(
                 self.forward_layers[layer_index],
                 layer_inputs,
@@ -180,7 +183,7 @@ class BiLMEncoder(gluon.HybridBlock):
             if layer_index == 0:
                 layer_inputs = inputs
             else:
-                layer_inputs = outputs_backward[layer_index-1]
+                layer_inputs = outputs_backward[layer_index - 1]
 
             if mask is not None:
                 layer_inputs = F.SequenceReverse(layer_inputs,
