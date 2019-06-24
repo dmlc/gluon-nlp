@@ -27,9 +27,9 @@ from gluonnlp.base import get_home_dir
 from gluonnlp.data import GlueCoLA, GlueSST2, GlueSTSB, GlueMRPC
 from gluonnlp.data import GlueQQP, GlueRTE, GlueMNLI, GlueQNLI, GlueWNLI
 try:
-    from .baidu_ernie_data import BaiduErnieXNLI
+    from .baidu_ernie_data import BaiduErnieXNLI, BaiduErnieLCQMC, BaiduErnieChnSentiCorp
 except ImportError:
-    from baidu_ernie_data import BaiduErnieXNLI
+    from baidu_ernie_data import BaiduErnieXNLI, BaiduErnieLCQMC, BaiduErnieChnSentiCorp
 
 
 class GlueTask(object):
@@ -339,3 +339,53 @@ class XNLITask(GlueTask):
             Path to the folder which stores the dataset.
         """
         return BaiduErnieXNLI(segment, root=root)
+
+class LCQMCTask(GlueTask):
+    """The LCQMC task using the dataset released from Baidu
+
+    <https://github.com/PaddlePaddle/LARK/tree/develop/ERNIE>.
+
+    """
+    def __init__(self):
+        is_pair = True
+        class_labels = ['0', '1']
+        metric = Accuracy()
+        super(LCQMCTask, self).__init__(class_labels, metric, is_pair)
+
+    def get_dataset(self, segment='train',
+                    root=os.path.join(get_home_dir(), 'datasets', 'baidu_ernie_data')):
+        """Get the corresponding dataset for LCQMC.
+
+        Parameters
+        ----------
+        segment : str, default 'train'
+            Dataset segments. Options are 'dev', 'test', 'train'
+        root : str, default $BAIDU_ERNIE_DATA_DIR/
+            Path to the folder which stores the dataset.
+        """
+        return BaiduErnieLCQMC(segment, root=root)
+
+class ChnSentiCorpTask(GlueTask):
+    """The ChnSentiCorp task using the dataset released from Baidu
+
+    <https://github.com/PaddlePaddle/LARK/tree/develop/ERNIE>.
+
+    """
+    def __init__(self):
+        is_pair = False
+        class_labels = ['0', '1']
+        metric = Accuracy()
+        super(ChnSentiCorpTask, self).__init__(class_labels, metric, is_pair)
+
+    def get_dataset(self, segment='train',
+                    root=os.path.join(get_home_dir(), 'datasets', 'baidu_ernie_data')):
+        """Get the corresponding dataset for ChnSentiCorp.
+
+        Parameters
+        ----------
+        segment : str, default 'train'
+            Dataset segments. Options are 'dev', 'test', 'train'
+        root : str, default $BAIDU_ERNIE_DATA_DIR/
+            Path to the folder which stores the dataset.
+        """
+        return BaiduErnieChnSentiCorp(segment, root=root)
