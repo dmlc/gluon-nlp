@@ -1090,7 +1090,7 @@ class BERTTokenizer(object):
         Examples
         --------
         >>> _, vocab = gluonnlp.model.bert_12_768_12(dataset_name='wiki_multilingual_uncased',
-        ...                                          pretrained=False, root='./model')
+        ...                                          pretrained=False, root='./bert_tokenizer')
         -etc-
         >>> tokenizer = gluonnlp.data.BERTTokenizer(vocab=vocab)
         >>> tokenizer('gluonnlp: 使NLP变得简单。')
