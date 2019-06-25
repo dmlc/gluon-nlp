@@ -30,8 +30,10 @@ pip install awscli
 
 cd $WORK_DIR
 /bin/bash -c "$COMMAND"
+COMMAND_EXIT_CODE=$?
 if [[ -f $SAVED_OUTPUT ]]; then
   aws s3 cp $SAVED_OUTPUT s3://gluon-nlp-staging/$SAVE_PATH;
 elif [[ -d $SAVED_OUTPUT ]]; then
   aws s3 cp --recursive $SAVED_OUTPUT s3://gluon-nlp-staging/$SAVE_PATH;
 fi;
+exit $COMMAND_EXIT_CODE
