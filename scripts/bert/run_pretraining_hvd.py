@@ -105,7 +105,7 @@ if not args.use_avg_len and hvd.size() > 1:
 logging.info('Using effective batch size = batch_size * accumulate * np = %d',
              args.batch_size * args.accumulate * num_workers)
 
-    
+
 def train(data_train, data_eval, model, nsp_loss, mlm_loss, vocab_size, ctx):
     """Training function."""
     hvd.broadcast_parameters(model.collect_params(), root_rank=0)
