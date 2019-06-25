@@ -51,7 +51,7 @@ command installs the latest version of MXNet.
 
 .. code-block:: console
 
-   pip install --upgrade mxnet>=1.4.0
+   pip install --upgrade mxnet>=1.4.1
 
 .. note::
 
@@ -112,3 +112,4 @@ You may find the 60-min Gluon crash course linked from there especially helpful.
    examples/index
    api/index
    community/index
+   genindex

@@ -17,5 +17,5 @@ dependencies:
   - regex
   - pip:
     - pylint-quotes<0.2
-    - mxnet-cu92mkl>=1.4.0
+    - mxnet-cu92mkl>=1.4.1
     - sentencepiece<0.2

@@ -4,7 +4,7 @@ import sys
 import time
 
 import pytest
-
+import mxnet as mx
 
 @pytest.mark.serial
 @pytest.mark.remote_required
@@ -17,6 +17,8 @@ def test_skipgram_cbow(model, fasttext):
         sys.executable, './scripts/word_embeddings/train_sg_cbow.py', '--gpu', '0',
         '--epochs', '2', '--model', model, '--data', 'toy', '--batch-size',
         '64']
+    cmd += ['--similarity-datasets', 'WordSim353']
+    cmd += ['--analogy-datasets', 'GoogleAnalogyTestSet']
     if fasttext:
         cmd += ['--ngram-buckets', '1000']
     else:
@@ -35,6 +37,8 @@ def test_glove():
     cmd = [
         sys.executable, './scripts/word_embeddings/train_glove.py', cooccur, vocab,
         '--batch-size', '2', '--epochs', '2', '--gpu', '0']
+    cmd += ['--similarity-datasets', 'WordSim353']
+    cmd += ['--analogy-datasets', 'GoogleAnalogyTestSet']
     subprocess.check_call(cmd)
     time.sleep(5)
 
@@ -51,6 +55,8 @@ def test_embedding_evaluate_pretrained(fasttextloadngrams):
         '--embedding-name', 'fasttext', '--embedding-source', 'wiki.simple',
         '--gpu', '0'
     ]
+    cmd += ['--similarity-datasets', 'WordSim353']
+    cmd += ['--analogy-datasets', 'GoogleAnalogyTestSet']
     if fasttextloadngrams:
         cmd.append('--fasttext-load-ngrams')
 
@@ -72,9 +78,11 @@ def test_embedding_evaluate_from_path(evaluateanalogies, maxvocabsize):
         sys.executable, './scripts/word_embeddings/evaluate_pretrained.py',
         '--embedding-path', path, '--gpu', '0']
     if evaluateanalogies:
+        cmd += ['--similarity-datasets=']
         cmd += ['--analogy-datasets', 'GoogleAnalogyTestSet']
     else:
-        cmd += ['--analogy-datasets']
+        cmd += ['--similarity-datasets', 'WordSim353']
+        cmd += ['--analogy-datasets=']
     if maxvocabsize is not None:
         cmd += ['--analogy-max-vocab-size', str(maxvocabsize)]
     subprocess.check_call(cmd)
@@ -199,9 +207,10 @@ def test_pretrain():
         from mxnet.ndarray.contrib import adamw_update
         arguments = ['--log_interval', '2', '--data_eval', './test/bert/data/*.npz',
                      '--batch_size_eval', '8', '--ckpt_dir', './test/bert/ckpt', '--gpus', '0',
-                     '--num_steps', '20']
+                     '--num_steps', '20', '--num_buckets', '1']
         # test training
         process = subprocess.check_call([sys.executable, './scripts/bert/run_pretraining.py',
+                                         '--dtype', 'float32',
                                          '--data', './test/bert/data/*.npz',
                                          '--batch_size', '32',
                                          '--lr', '2e-5',
@@ -209,12 +218,12 @@ def test_pretrain():
                                          '--pretrained'] + arguments)
         # test evaluation
         process = subprocess.check_call([sys.executable, './scripts/bert/run_pretraining.py',
+                                         '--dtype', 'float32',
                                          '--pretrained'] + arguments)
 
         # test mixed precision training and use-avg-len
         from mxnet.ndarray.contrib import mp_adamw_update
         process = subprocess.check_call([sys.executable, './scripts/bert/run_pretraining.py',
-                                         '--dtype', 'float16',
                                          '--data', './test/bert/data/*.npz',
                                          '--batch_size', '4096',
                                          '--use_avg_len',
@@ -246,37 +255,44 @@ def test_pretrain_hvd():
         # TODO(haibin) update test once MXNet 1.5 is released.
         from mxnet.ndarray.contrib import adamw_update
         import horovod.mxnet as hvd
-        arguments = ['--log_interval', '2', '--data_eval', './test/bert/data/*.npz',
+        arguments = ['--log_interval', '2',
                      '--batch_size_eval', '8', '--ckpt_dir', './test/bert/ckpt',
-                     '--num_steps', '20']
+                     '--num_steps', '20', '--num_buckets', '1']
         # test training
         process = subprocess.check_call([sys.executable, './scripts/bert/run_pretraining_hvd.py',
+                                         '--dtype', 'float32',
                                          '--data', './test/bert/data/*.npz',
+                                         '--data_eval', './test/bert/data/*.npz',
                                          '--batch_size', '32',
-                                         '--lr', '2e-5',
+                                         '--lr', '2e-5', '--eval_use_npz',
                                          '--warmup_ratio', '0.5',
                                          '--pretrained'] + arguments)
         # test training with raw data
         process = subprocess.check_call([sys.executable, './scripts/bert/run_pretraining_hvd.py',
+                                         '--dtype', 'float32',
                                          '--raw',
                                          '--max_seq_length', '128',
                                          '--max_predictions_per_seq', '20',
                                          '--masked_lm_prob', '0.15',
                                          '--short_seq_prob', '0.1',
                                          '--data', './scripts/bert/sample_text.txt',
+                                         '--data_eval', './scripts/bert/sample_text.txt',
                                          '--batch_size', '32',
                                          '--lr', '2e-5',
                                          '--warmup_ratio', '0.5',
                                          '--pretrained'] + arguments)
+
         # test evaluation
         process = subprocess.check_call([sys.executable, './scripts/bert/run_pretraining_hvd.py',
-                                         '--pretrained'] + arguments)
+                                         '--dtype', 'float32',
+                                         '--data_eval', './test/bert/data/*.npz',
+                                         '--eval_use_npz', '--pretrained'] + arguments)
 
         # test mixed precision training and use-avg-len
         from mxnet.ndarray.contrib import mp_adamw_update
         process = subprocess.check_call([sys.executable, './scripts/bert/run_pretraining_hvd.py',
-                                         '--dtype', 'float16',
                                          '--data', './test/bert/data/*.npz',
+                                         '--data_eval', './test/bert/data/*.npz',
                                          '--batch_size', '4096',
                                          '--use_avg_len',
                                          '--lr', '2e-5',
@@ -292,7 +308,7 @@ def test_pretrain_hvd():
 @pytest.mark.integration
 # MNLI inference (multiple dev sets)
 # STS-B inference (regression task)
-@pytest.mark.parametrize('dataset', ['MNLI', 'STS-B', 'XNLI'])
+@pytest.mark.parametrize('dataset', ['MNLI', 'STS-B', 'XNLI', 'LCQMC', 'ChnSentiCorp'])
 def test_finetune_inference(dataset):
     arguments = ['--log_interval', '100', '--epsilon', '1e-8', '--optimizer',
                  'adam', '--gpu', '0', '--max_len', '80', '--only_inference']
@@ -332,9 +348,16 @@ def test_export(task):
 @pytest.mark.gpu
 @pytest.mark.remote_required
 @pytest.mark.integration
-def test_finetune_squad():
+@pytest.mark.parametrize('sentencepiece', [False, True])
+def test_finetune_squad(sentencepiece):
     arguments = ['--optimizer', 'adam', '--batch_size', '12',
                  '--gpu', '0', '--epochs', '2', '--debug']
+    if sentencepiece:
+        # the downloaded bpe vocab
+        url = 'http://repo.mxnet.io/gluon/dataset/vocab/test-682b5d15.bpe'
+        f = mx.test_utils.download(url, overwrite=True)
+        arguments += ['--sentencepiece', f]
+
     process = subprocess.check_call([sys.executable, './scripts/bert/finetune_squad.py']
                                     + arguments)
     time.sleep(5)

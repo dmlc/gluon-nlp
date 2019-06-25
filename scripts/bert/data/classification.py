@@ -24,39 +24,12 @@ __all__ = [
 import os
 from mxnet.metric import Accuracy, F1, MCC, PearsonCorrelation, CompositeEvalMetric
 from gluonnlp.base import get_home_dir
-from gluonnlp.data import TSVDataset, GlueCoLA, GlueSST2, GlueSTSB
+from gluonnlp.data import GlueCoLA, GlueSST2, GlueSTSB, GlueMRPC
 from gluonnlp.data import GlueQQP, GlueRTE, GlueMNLI, GlueQNLI, GlueWNLI
-from gluonnlp.data.registry import register
 try:
-    from .baidu_ernie_data import BaiduErnieXNLI
+    from .baidu_ernie_data import BaiduErnieXNLI, BaiduErnieLCQMC, BaiduErnieChnSentiCorp
 except ImportError:
-    from baidu_ernie_data import BaiduErnieXNLI
-
-@register(segment=['train', 'dev', 'test'])
-class MRPCDataset(TSVDataset):
-    """The Microsoft Research Paraphrase Corpus dataset.
-
-    Parameters
-    ----------
-    segment : str, default 'train'
-        Dataset segment. Options are 'train', 'dev', 'test'.
-    root : str, default '$GLUE_DIR/MRPC'
-        Path to the folder which stores the MRPC dataset.
-        The datset can be downloaded by the following script:
-        https://gist.github.com/W4ngatang/60c2bdb54d156a41194446737ce03e2e
-    """
-    def __init__(self,
-                 segment='train',
-                 root=os.path.join(os.getenv('GLUE_DIR', 'glue_data'), 'MRPC')):
-        assert segment in ['train', 'dev', 'test'], 'Unsupported segment: %s' % segment
-        path = os.path.join(root, '%s.tsv' % segment)
-        A_IDX, B_IDX, LABEL_IDX = 3, 4, 0
-        if segment == 'test':
-            fields = [A_IDX, B_IDX]
-        else:
-            fields = [A_IDX, B_IDX, LABEL_IDX]
-        super(MRPCDataset, self).__init__(
-            path, num_discard_samples=1, field_indices=fields)
+    from baidu_ernie_data import BaiduErnieXNLI, BaiduErnieLCQMC, BaiduErnieChnSentiCorp
 
 
 class GlueTask(object):
@@ -147,7 +120,7 @@ class MRPCTask(GlueTask):
         root : str, default $GLUE_DIR/MRPC
             Path to the folder which stores the dataset.
         """
-        return MRPCDataset(segment=segment, root=root)
+        return GlueMRPC(segment=segment, root=root)
 
 class QQPTask(GlueTask):
     """The Quora Question Pairs task on GlueBenchmark."""
@@ -366,3 +339,53 @@ class XNLITask(GlueTask):
             Path to the folder which stores the dataset.
         """
         return BaiduErnieXNLI(segment, root=root)
+
+class LCQMCTask(GlueTask):
+    """The LCQMC task using the dataset released from Baidu
+
+    <https://github.com/PaddlePaddle/LARK/tree/develop/ERNIE>.
+
+    """
+    def __init__(self):
+        is_pair = True
+        class_labels = ['0', '1']
+        metric = Accuracy()
+        super(LCQMCTask, self).__init__(class_labels, metric, is_pair)
+
+    def get_dataset(self, segment='train',
+                    root=os.path.join(get_home_dir(), 'datasets', 'baidu_ernie_data')):
+        """Get the corresponding dataset for LCQMC.
+
+        Parameters
+        ----------
+        segment : str, default 'train'
+            Dataset segments. Options are 'dev', 'test', 'train'
+        root : str, default $BAIDU_ERNIE_DATA_DIR/
+            Path to the folder which stores the dataset.
+        """
+        return BaiduErnieLCQMC(segment, root=root)
+
+class ChnSentiCorpTask(GlueTask):
+    """The ChnSentiCorp task using the dataset released from Baidu
+
+    <https://github.com/PaddlePaddle/LARK/tree/develop/ERNIE>.
+
+    """
+    def __init__(self):
+        is_pair = False
+        class_labels = ['0', '1']
+        metric = Accuracy()
+        super(ChnSentiCorpTask, self).__init__(class_labels, metric, is_pair)
+
+    def get_dataset(self, segment='train',
+                    root=os.path.join(get_home_dir(), 'datasets', 'baidu_ernie_data')):
+        """Get the corresponding dataset for ChnSentiCorp.
+
+        Parameters
+        ----------
+        segment : str, default 'train'
+            Dataset segments. Options are 'dev', 'test', 'train'
+        root : str, default $BAIDU_ERNIE_DATA_DIR/
+            Path to the folder which stores the dataset.
+        """
+        return BaiduErnieChnSentiCorp(segment, root=root)

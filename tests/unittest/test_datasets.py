@@ -271,8 +271,6 @@ def test_verb130():
     _assert_similarity_dataset(data)
 
 
-@pytest.mark.skipif(datetime.date.today() < datetime.date(2018, 9, 10),
-                    reason='Disabled for 1 weeks due to server downtime.')
 @flaky(max_runs=2, min_passes=1)
 @pytest.mark.serial
 @pytest.mark.remote_required
@@ -296,6 +294,8 @@ def test_simlex999():
 @flaky(max_runs=2, min_passes=1)
 @pytest.mark.serial
 @pytest.mark.remote_required
+@pytest.mark.skipif(datetime.date.today() < datetime.date(2019, 7, 18),
+                    reason='Disabled for 4 weeks due to link move.')
 def test_simverb3500():
     data = nlp.data.SimVerb3500(
         root=os.path.join('tests', 'externaldata', 'simverb3500'))
@@ -306,8 +306,6 @@ def test_simverb3500():
 @flaky(max_runs=2, min_passes=1)
 @pytest.mark.serial
 @pytest.mark.remote_required
-@pytest.mark.skipif(datetime.date.today() < datetime.date(2018, 12, 10),
-                    reason='Disabled for 1 weeks due to server downtime.')
 def test_semeval17task2():
     for segment, length in [("trial", 18), ("test", 500)]:
         data = nlp.data.SemEval17Task2(
@@ -423,8 +421,6 @@ def test_conll2002_esp(segment, length):
         assert all(isinstance(n, _str_types) for n in ner), ner
 
 
-@pytest.mark.skipif(datetime.date.today() < datetime.date(2018, 8, 16),
-                    reason='Disabled for 1 weeks due to server downtime.')
 @flaky(max_runs=2, min_passes=1)
 @pytest.mark.parametrize('segment,length', [
     ('train', 8936),
@@ -722,6 +718,9 @@ def test_numpy_dataset():
     (nlp.data.GlueWNLI, 'wnli', 'train', 635, 3),
     (nlp.data.GlueWNLI, 'wnli', 'dev', 71, 3),
     (nlp.data.GlueWNLI, 'wnli', 'test', 146, 2),
+    (nlp.data.GlueMRPC, 'mrpc', 'train', 3668, 3),
+    (nlp.data.GlueMRPC, 'mrpc', 'dev', 408, 3),
+    (nlp.data.GlueMRPC, 'mrpc', 'test', 1725, 2),
 ])
 @pytest.mark.serial
 @pytest.mark.remote_required
