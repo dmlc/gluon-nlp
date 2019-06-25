@@ -40,10 +40,10 @@ def testMaskedSoftmaxCrossEntropyLoss():
     label = mx.nd.array([[2,2]])
     valid_length = mx.nd.array([1,])
     loss = loss_fn(pred, label, valid_length)
-    assert loss < 0.1, "1st timestep prediction is correct"
+    assert loss < 0.1, "1st timestep prediction is correct, but loss was high"
     valid_length = mx.nd.array([2,])
     loss = loss_fn(pred, label, valid_length)
-    assert loss > 1, "2nd timestep prediction is wrong, loss goes up"
+    assert loss > 1, "2nd timestep prediction was wrong, but loss did not go up"
 
 def testLabelSmoothing():
     # Testing that the label gets smoothed at the right location
