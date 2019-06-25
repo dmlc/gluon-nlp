@@ -102,7 +102,10 @@ is_master_node = rank == local_rank
 if not args.use_avg_len and hvd.size() > 1:
     logging.info('Specifying --use-avg-len and setting --batch_size with the '
                  'target number of tokens would help improve training throughput.')
+logging.info('Using effective batch size = batch_size * accumulate * np = %d',
+             args.batch_size * args.accumulate * num_workers)
 
+    
 def train(data_train, data_eval, model, nsp_loss, mlm_loss, vocab_size, ctx):
     """Training function."""
     hvd.broadcast_parameters(model.collect_params(), root_rank=0)
