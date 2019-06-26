@@ -124,9 +124,9 @@ class _MultiWorkerIter(object):
             assert not self._data_buffer, 'Data buffer should be empty at this moment'
             return None
 
-        assert self._rcvd_idx < self._sent_idx,
+        assert self._rcvd_idx < self._sent_idx, \
                'rcvd_idx must be smaller than sent_idx'
-        assert self._rcvd_idx in self._data_buffer,
+        assert self._rcvd_idx in self._data_buffer, \
                'fatal error with _next_dataset, rcvd_idx missing'
 
         ret = self._data_buffer.pop(self._rcvd_idx)
