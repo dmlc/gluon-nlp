@@ -21,19 +21,8 @@
 
 __all__ = ['DatasetLoader', 'SamplerFn', 'DatasetFn', 'DataLoaderFn']
 
-import io
-import pickle
 import multiprocessing
-import gluonnlp as nlp
-from multiprocessing.pool import ThreadPool
-from mxnet import context
-from mxnet.gluon.data.dataloader import ForkingPickler, _as_in_context
-from mxnet.gluon.data.dataloader import default_mp_batchify_fn, default_batchify_fn
-from mxnet.gluon.data import sampler as _sampler
 from gluonnlp.data.stream import _PathDataset
-
-
-from gluonnlp.data.batchify import Pad, Tuple
 
 class DatasetFn(object):
     """Callable object to generate a gluon.data.Dataset given a url.
@@ -93,7 +82,7 @@ class _MultiWorkerIter(object):
     def __init__(self, worker_pool, worker_fn, dataset, file_sampler,
                  dataset_fn, sampler_fn, dataloader_fn, prefetch):
         self._worker_pool = worker_pool
-        self._worker_fn =  worker_fn
+        self._worker_fn = worker_fn
         self._dataset = dataset
         self._dataset_fn = dataset_fn
         self._sampler_fn = sampler_fn
@@ -135,8 +124,10 @@ class _MultiWorkerIter(object):
             assert not self._data_buffer, 'Data buffer should be empty at this moment'
             return None
 
-        assert self._rcvd_idx < self._sent_idx, 'rcvd_idx must be smaller than sent_idx'
-        assert self._rcvd_idx in self._data_buffer, 'fatal error with _next_dataset, rcvd_idx missing'
+        assert self._rcvd_idx < self._sent_idx,
+               'rcvd_idx must be smaller than sent_idx'
+        assert self._rcvd_idx in self._data_buffer,
+               'fatal error with _next_dataset, rcvd_idx missing'
 
         ret = self._data_buffer.pop(self._rcvd_idx)
         dataset, sampler = ret.get()
@@ -146,7 +137,7 @@ class _MultiWorkerIter(object):
     def __next__(self):
         """Next mini-batch"""
         while True:
-            if self._dataloader_ref == None:
+            if self._dataloader_ref is None:
                 # load next dataset and create a data loader
                 self._push_next_dataset()
                 result = self._next_dataset()

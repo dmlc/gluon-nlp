@@ -304,8 +304,7 @@ if __name__ == '__main__':
         part_idx = 0 if args.dummy_data_len else rank
         data_train = get_dataset_fn(args.data, args.batch_size, 1, True,
                                     args.use_avg_len, args.num_buckets,
-                                    num_parts=num_parts, part_idx=part_idx,
-                                    prefetch=not args.dummy_data_len)
+                                    num_parts=num_parts, part_idx=part_idx)
         train(data_train, data_eval, model, nsp_loss, mlm_loss, len(vocab), ctx)
     if data_eval:
         # eval data is always based on a fixed npz file.

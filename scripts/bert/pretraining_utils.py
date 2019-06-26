@@ -140,8 +140,7 @@ class BERTPretrainDataset(mx.gluon.data.ArrayDataset):
 def get_pretrain_data_text(data, batch_size, num_ctxes, shuffle, use_avg_len,
                            num_buckets, vocab, tokenizer, max_seq_length, short_seq_prob,
                            masked_lm_prob, max_predictions_per_seq,
-                           num_parts=1, part_idx=0,
-                           prefetch=True, num_workers=1):
+                           num_parts=1, part_idx=0, num_workers=1):
     """Get data iterators from raw text documents.
 
     Parameters
@@ -167,8 +166,6 @@ def get_pretrain_data_text(data, batch_size, num_ctxes, shuffle, use_avg_len,
         The number of partitions for the dataset.
     part_idx : int
         The index of the partition to read.
-    prefetch : bool
-        If set to True, a separate thread helps prefetching the next mini-batch of data.
     num_workers : int
         The number of worker processes for dataset contruction.
     """
@@ -269,7 +266,7 @@ class BERTLoaderTransform(object):
         return dataloader
 
 def get_pretrain_data_npz(data, batch_size, num_ctxes, shuffle, use_avg_len,
-                          num_buckets, num_parts=1, part_idx=0, prefetch=True):
+                          num_buckets, num_parts=1, part_idx=0):
     """create dataset for pretraining based on pre-processed npz files."""
     # handle commas in the provided path
     num_files = sum([len(glob.glob(os.path.expanduser(d.strip()))) for d in data.split(',')])
@@ -279,8 +276,7 @@ def get_pretrain_data_npz(data, batch_size, num_ctxes, shuffle, use_avg_len,
         'Only found %d files at %s'%(num_files, data)
     split_sampler = nlp.data.SplitSampler(num_files, num_parts=num_parts, part_index=part_idx)
     stream = nlp.data.SimpleDatasetStream(nlp.data.NumpyDataset, data, split_sampler)
-    if prefetch:
-        stream = nlp.data.PrefetchingStream(stream)
+    stream = nlp.data.PrefetchingStream(stream, worker_type='process')
 
     # create data loader based on the dataset
     dataloader_xform = BERTLoaderTransform(use_avg_len, batch_size,
