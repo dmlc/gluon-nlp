@@ -27,10 +27,11 @@ import collections
 import warnings
 import random
 import time
+import re
 from multiprocessing import Pool
 import numpy as np
 import gluonnlp as nlp
-from gluonnlp.data import BERTTokenizer
+from gluonnlp.data import BERTTokenizer, JiebaTokenizer
 
 
 class TrainingInstance(object):
@@ -131,7 +132,7 @@ def tokenize_lines_fn(x):
         if not line:
             results.append([])
         else:
-            tokens = vocab[tokenizer(line)]
+            tokens = tokenizer(line)
             if tokens:
                 results.append(tokens)
     return results
@@ -380,18 +381,18 @@ def create_instances_from_document(x):
 
                 tokens = []
                 segment_ids = []
-                tokens.append(_CLS_TOKEN)
+                tokens.append(vocab.cls_token)
                 segment_ids.append(0)
                 for token in tokens_a:
                     tokens.append(token)
                     segment_ids.append(0)
-                tokens.append(_SEP_TOKEN)
+                tokens.append(vocab.sep_token)
                 segment_ids.append(0)
 
                 for token in tokens_b:
                     tokens.append(token)
                     segment_ids.append(1)
-                tokens.append(_SEP_TOKEN)
+                tokens.append(vocab.sep_token)
                 segment_ids.append(1)
 
                 (tokens, masked_lm_positions,
@@ -416,15 +417,51 @@ def create_instances_from_document(x):
 
 MaskedLmInstance = collections.namedtuple('MaskedLmInstance',
                                           ['index', 'label'])
+def find_chinese_whole_word(universal_tokenizer, tokens, chs_tokenizer=None):
+    """find chinese characters in tokenized results, and tag them in BIO format with chinese "
+       tokenizer, 
+        Parameters
+    ----------
+    tokenizer : BERTTokenizer
+    tokens : list of str
+        bert tokenized tokens: e.g.: ['你', '好', '12', '##3']
 
+    Returns
+    -------
+    A tuple of list: tokens, chs_token_bio; 
+        e.g.:   tokens = ['你', '好', '12', '##3']
+                chs_token_bio = ['B', 'I', 'O', 'O']
+    """
+    chs_token_bio = ['O']*len(tokens)
+    if isinstance(universal_tokenizer, BERTTokenizer) and chs_tokenizer is not None:
+        is_chinese_list = ['1' if len(token) == 1 and 
+                                universal_tokenizer.basic_tokenizer._is_chinese_char(ord(token)) 
+                           else '0' 
+                           for token in tokens ]
+        patten = ''.join(is_chinese_list)
+        for re_find in re.finditer('[1]{1,}', patten):
+            chs_start, chs_end = (re_find.start(), re_find.end())
+            cut_results = chs_tokenizer(''.join(tokens[chs_start: chs_end]))
+            idx = 0
+            for cut_token in cut_results:
+                for i,char in enumerate(cut_token):
+                    if i == 0:
+                        chs_token_bio[chs_start + idx]= 'B'
+                    else:
+                        chs_token_bio[chs_start + idx]= 'I'
+                    idx += 1
+        assert len(tokens) == len(chs_token_bio)
+    return tokens, chs_token_bio
 
 def create_masked_lm_predictions(tokens, masked_lm_prob, max_predictions_per_seq,
                                  whole_word_mask, vocab, tokenizer,
                                  _MASK_TOKEN, _CLS_TOKEN, _SEP_TOKEN):
     """Creates the predictions for the masked LM objective."""
     cand_indexes = []
+    chs_tokenizer = JiebaTokenizer()
+    tokens, chs_token_bio = find_chinese_whole_word(tokenizer, tokens, chs_tokenizer)
     for (i, token) in enumerate(tokens):
-        if token in [_CLS_TOKEN, _SEP_TOKEN]:
+        if token in [vocab.cls_token, vocab.sep_token]:
             continue
         # Whole Word Masking means that if we mask all of the subwords
         # corresponding to an original word. When a word has been split into
@@ -435,19 +472,18 @@ def create_masked_lm_predictions(tokens, masked_lm_prob, max_predictions_per_seq
         # Note that Whole Word Masking does *not* change the training code
         # at all -- we still predict each subword independently, softmaxed
         # over the entire vocabulary.
-        if whole_word_mask and len(cand_indexes) >= 1 and \
-           not tokenizer.is_first_subword(vocab.idx_to_token[token]):
+        if whole_word_mask and (len(cand_indexes) >= 1 and \
+           not tokenizer.is_first_subword(token) or chs_token_bio[i]=='I'):
             cand_indexes[-1].append(i)
         else:
             cand_indexes.append([i])
-
     random.shuffle(cand_indexes)
 
+    tokens = vocab[tokens]
     output_tokens = list(tokens)
 
     num_to_predict = min(max_predictions_per_seq,
                          max(1, int(round(len(tokens) * masked_lm_prob))))
-
     masked_lms = []
     covered_indexes = set()
     for index_set in cand_indexes:
