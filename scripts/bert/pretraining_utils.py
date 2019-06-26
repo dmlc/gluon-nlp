@@ -118,6 +118,8 @@ class BERTPretrainDataset(mx.gluon.data.ArrayDataset):
         The probability of replacing texts with masks/random words/original words.
     max_predictions_per_seq : int
         The hard limit of the number of predictions for masked words
+    whole_word_mask : bool
+        Whether to use whole word masking.
     vocab : BERTVocab
         The BERTVocab
     num_workers : int
@@ -126,19 +128,21 @@ class BERTPretrainDataset(mx.gluon.data.ArrayDataset):
         The worker process pool. Must be provided if num_workers > 1.
     """
     def __init__(self, filename, tokenizer, max_seq_length, short_seq_prob,
-                 masked_lm_prob, max_predictions_per_seq, vocab, num_workers=1, worker_pool=None):
+                 masked_lm_prob, max_predictions_per_seq, whole_word_mask,
+                 vocab, num_workers=1, worker_pool=None):
         logging.debug('start to load file %s ...', filename)
         dupe_factor = 1
         instances = create_training_instances(([filename], tokenizer, max_seq_length,
                                                short_seq_prob, masked_lm_prob,
-                                               max_predictions_per_seq, vocab,
+                                               max_predictions_per_seq,
+                                               whole_word_mask, vocab,
                                                dupe_factor, num_workers,
                                                worker_pool, None))
         super(BERTPretrainDataset, self).__init__(*instances)
 
 def get_pretrain_data_text(data, batch_size, num_ctxes, shuffle, use_avg_len,
                            num_buckets, vocab, tokenizer, max_seq_length, short_seq_prob,
-                           masked_lm_prob, max_predictions_per_seq,
+                           masked_lm_prob, max_predictions_per_seq, whole_word_mask,
                            num_parts=1, part_idx=0,
                            prefetch=True, num_workers=1):
     """Get data iterators from raw text documents.
@@ -162,6 +166,8 @@ def get_pretrain_data_text(data, batch_size, num_ctxes, shuffle, use_avg_len,
         The probability of replacing texts with masks/random words/original words.
     max_predictions_per_seq : int
         The hard limit of the number of predictions for masked words
+    whole_word_mask : bool
+        Whether to use whole word masking.
     num_parts : int
         The number of partitions for the dataset.
     part_idx : int
@@ -183,6 +189,7 @@ def get_pretrain_data_text(data, batch_size, num_ctxes, shuffle, use_avg_len,
                                     short_seq_prob=short_seq_prob,
                                     masked_lm_prob=masked_lm_prob,
                                     max_predictions_per_seq=max_predictions_per_seq,
+                                    whole_word_mask=whole_word_mask,
                                     vocab=vocab, num_workers=num_workers, worker_pool=worker_pool)
 
     split_sampler = nlp.data.SplitSampler(num_files, num_parts=num_parts, part_index=part_idx)

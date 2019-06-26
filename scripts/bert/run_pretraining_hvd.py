@@ -65,6 +65,9 @@ parser.add_argument('--max_predictions_per_seq', type=int, default=80,
 parser.add_argument('--cased', action='store_true',
                     help='Whether to tokenize with cased characters. '
                          'Effective only if --raw is set.')
+parser.add_argument('--whole_word_mask', action='store_true',
+                    help='Whether to use whole word masking rather than per-subword masking.'
+                         'Effective only if --raw is set.')
 parser.add_argument('--sentencepiece', default=None, type=str,
                     help='Path to the sentencepiece .model file for both tokenization and vocab. '
                          'Effective only if --raw is set.')
@@ -299,10 +302,12 @@ if __name__ == '__main__':
                                                short_seq_prob=args.short_seq_prob,
                                                masked_lm_prob=args.masked_lm_prob,
                                                max_predictions_per_seq=args.max_predictions_per_seq,
+                                               whole_word_mask=args.whole_word_mask,
                                                vocab=vocab, tokenizer=tokenizer,
                                                num_workers=args.num_data_workers)
         else:
             get_dataset_fn = get_pretrain_data_npz
+
         num_parts = 1 if args.dummy_data_len else num_workers
         part_idx = 0 if args.dummy_data_len else rank
         data_train = get_dataset_fn(args.data, args.batch_size, 1, True,
