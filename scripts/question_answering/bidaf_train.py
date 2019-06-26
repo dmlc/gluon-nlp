@@ -16,6 +16,7 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+# pylint:disable=redefined-outer-name
 
 """Main script to train BiDAF model"""
 
@@ -294,7 +295,7 @@ def is_fixed_embedding_layer(name):
     name : `str`
         Layer name to check
     """
-    return True if 'predefined_embedding_layer' in name else False
+    return 'predefined_embedding_layer' in name
 
 
 def execute_trainer_step(net, trainer, ctx, options):

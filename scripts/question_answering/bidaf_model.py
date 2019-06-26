@@ -16,14 +16,12 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-
 """Bidirectional attention flow model with all subblocks"""
 import numpy as np
 from mxnet import gluon
 from mxnet import initializer
 from mxnet.gluon import HybridBlock
 from mxnet.gluon import nn
-from mxnet.initializer import MSRAPrelu, Xavier
 
 from gluonnlp.model import ConvolutionalEncoder, Highway, BiLMEncoder
 
@@ -380,6 +378,7 @@ class BiDAFModel(HybridBlock):
 
     def hybrid_forward(self, F, qw, cw, qc, cc,
                        ctx_embedding_state, modeling_layer_state, end_index_state):
+        # pylint: disable=arguments-differ
         # Both masks can be None
         q_mask = qw != self._padding_token_idx
         ctx_mask = cw != self._padding_token_idx

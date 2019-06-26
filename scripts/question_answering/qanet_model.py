@@ -80,6 +80,7 @@ class MySoftmaxCrossEntropy(gluon.loss.Loss):
                                                        batch_axis=batch_axis)
 
     def forward(self, predict_begin, predict_end, label_begin, label_end):
+        # pylint: disable=arguments-differ
         r"""Implement forward computation.
 
         Parameters
@@ -105,6 +106,7 @@ class MySoftmaxCrossEntropy(gluon.loss.Loss):
         return self.loss(predict_begin, label_begin) + self.loss(predict_end, label_end)
 
     def hybrid_forward(self, F):
+        # pylint: disable=arguments-differ
         pass
 
 
@@ -230,6 +232,7 @@ class QANet(gluon.HybridBlock):
 
     def hybrid_forward(self, F, context, query, context_char, query_char,
                        context_mask, query_mask, y_begin, y_end):
+        # pylint: disable=arguments-differ
         r"""Implement forward computation.
 
         Parameters
@@ -368,6 +371,7 @@ class Encoder(gluon.HybridBlock):
                 sub_layer_idx += (conv_layers + 2)
 
     def hybrid_forward(self, F, x, mask):
+        # pylint: disable=arguments-differ,unused-argument,missing-docstring
         r"""Implement forward computation.
 
         Parameters
@@ -475,6 +479,7 @@ class OneEncoderBlock(gluon.HybridBlock):
             )
 
     def hybrid_forward(self, F, x, mask):
+        # pylint: disable=arguments-differ
         r"""Implement forward computation.
 
         Parameters
@@ -515,6 +520,7 @@ class StochasticDropoutLayer(gluon.HybridBlock):
             self.dropout_fn = gluon.nn.Dropout(dropout)
 
     def hybrid_forward(self, F, inputs):
+        # pylint: disable=arguments-differ
         if F.random.uniform().asscalar() < self.dropout:
             return F.zeros(shape=(1,))
         else:
@@ -544,6 +550,7 @@ class SelfAttention(gluon.HybridBlock):
             )
 
     def hybrid_forward(self, F, x, mask):
+        # pylint: disable=arguments-differ
         r"""Implement forward computation.
 
         Parameters
@@ -573,6 +580,7 @@ class PositionEncoder(gluon.HybridBlock):
             pass
 
     def hybrid_forward(self, F, x, min_timescale=1.0, max_timescale=1e4):
+        # pylint: disable=arguments-differ
         r"""Implement forward computation.
 
         Parameters
@@ -626,6 +634,7 @@ class DepthwiseConv(gluon.HybridBlock):
             )
 
     def hybrid_forward(self, F, inputs):
+        # pylint: disable=arguments-differ
         r"""Implement forward computation.
 
         Parameters
@@ -671,6 +680,7 @@ class CoAttention(gluon.HybridBlock):
 
     def hybrid_forward(self, F, context, query, context_mask, query_mask,
                        context_max_len, query_max_len, w4mlu, bias):
+        # pylint: disable=arguments-differ
         """Implement forward computation.
 
         Parameters
