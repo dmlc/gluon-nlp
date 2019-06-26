@@ -32,7 +32,7 @@ import numpy as np
 import mxnet as mx
 from mxnet.gluon.data import DataLoader
 from create_pretraining_data import create_training_instances
-from data.dataloader import DatasetLoader, SamplerFn, DataLoaderFn
+from data.dataloader import DatasetLoader, SamplerFn, DataLoaderFn, SimpleDatasetFn
 
 import gluonnlp as nlp
 from gluonnlp.data.batchify import Tuple, Stack, Pad
@@ -178,19 +178,17 @@ def get_pretrain_data_text(data, batch_size, num_ctxes, shuffle, use_avg_len,
     assert num_files >= num_parts, \
         'Number of training files must be greater than the number of partitions. ' \
         'Only found %d files at %s'%(num_files, data)
-    dataset_fn = functools.partial(BERTPretrainDataset, tokenizer=tokenizer,
-                                    max_seq_length=max_seq_length,
-                                    short_seq_prob=short_seq_prob,
-                                    masked_lm_prob=masked_lm_prob,
-                                    max_predictions_per_seq=max_predictions_per_seq,
-                                    vocab=vocab, num_workers=1, worker_pool=None)
 
-    split_sampler = nlp.data.SplitSampler(num_files, num_parts=num_parts, part_index=part_idx)
+    dataset_params = {'tokenizer': tokenizer, 'max_seq_length': max_seq_length,
+                      'short_seq_prob': short_seq_prob, 'masked_lm_prob': masked_lm_prob,
+                      'max_predictions_per_seq': max_predictions_per_seq, 'vocab':vocab}
+    dataset_fn = SimpleDatasetFn(BERTPretrainDataset, dataset_params)
     sampler_fn = BERTSamplerFn(use_avg_len, batch_size, shuffle, num_ctxes, num_buckets)
     dataloader_fn = BERTDataLoaderFn(use_avg_len, num_ctxes)
 
-    dataloader = DatasetLoader(data, split_sampler, dataset_fn,
-                 sampler_fn, dataloader_fn, num_dataset_workers=num_workers)
+    split_sampler = nlp.data.SplitSampler(num_files, num_parts=num_parts, part_index=part_idx)
+    dataloader = DatasetLoader(data, split_sampler, dataset_fn, sampler_fn, dataloader_fn,
+                               num_dataset_workers=num_workers)
 
     return dataloader
 

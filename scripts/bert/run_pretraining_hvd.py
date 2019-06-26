@@ -219,7 +219,6 @@ def train(data_train, data_eval, model, nsp_loss, mlm_loss, vocab_size, ctx):
                 log(begin_time, running_num_tks, running_mlm_loss / accumulate,
                     running_nsp_loss / accumulate, step_num, mlm_metric, nsp_metric,
                     trainer, args.log_interval)
-                logging.info('shape='+str(data[0].shape))
                 begin_time = time.time()
                 running_mlm_loss = running_nsp_loss = running_num_tks = 0
                 mlm_metric.reset_local()

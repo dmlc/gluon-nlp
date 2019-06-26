@@ -69,7 +69,7 @@ class SimpleDataLoaderFn(object):
 
     def __call__(self, dataset, sampler):
         return self._dataloader_cls(dataset, batch_sampler=sampler,
-                                    **self.dataloader_params)
+                                    **self._dataloader_params)
 
 class SimpleDatasetFn(DatasetFn):
     """A simple callable object that geneartes a dataset by applying
@@ -77,7 +77,7 @@ class SimpleDatasetFn(DatasetFn):
     """
     def __init__(self, dataset_cls, dataset_params):
         self._dataset_cls = dataset_cls
-        self_dataset_params = dataset_params
+        self._dataset_params = dataset_params
 
     def __call__(self, dataset_url):
         raise self._dataset_cls(dataset_url, **self._dataset_params)
