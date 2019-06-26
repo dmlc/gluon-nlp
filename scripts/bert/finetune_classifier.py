@@ -491,7 +491,7 @@ def train(metric):
                     nlp.utils.clip_grad_global_norm(params, 1)
                     trainer.update(accumulate if accumulate else 1)
                     step_num += 1
-                    if accumulate > 1:
+                    if accumulate and accumulate > 1:
                         # set grad to zero for gradient accumulation
                         all_model_params.zero_grad()
 
