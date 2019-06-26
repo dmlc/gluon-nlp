@@ -69,7 +69,7 @@ class SimpleDatasetFn(DatasetFn):
         self._dataset_params = dataset_params
 
     def __call__(self, dataset_url):
-        raise self._dataset_cls(dataset_url, **self._dataset_params)
+        return self._dataset_cls(dataset_url, **self._dataset_params)
 
 def _worker_fn(url, dataset_fn, sampler_fn):
     """Function to generate the dataset and sampler for each worker."""
