@@ -448,7 +448,7 @@ def train(metric):
     params = [p for p in all_model_params.values() if p.grad_req != 'null']
 
     # Set grad_req if gradient accumulation is required
-    if accumulate > 1:
+    if accumulate and accumulate > 1:
         for p in params:
             p.grad_req = 'add'
     # track best eval score
