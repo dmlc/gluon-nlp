@@ -68,7 +68,8 @@ class SimpleDataLoaderFn(object):
         self._dataloader_params = dataloader_params
 
     def __call__(self, dataset, sampler):
-        return self._dataloader_cls(dataset, batch_sampler=sampler, **dataloader_params)
+        return self._dataloader_cls(dataset, batch_sampler=sampler,
+                                    **self.dataloader_params)
 
 class SimpleDatasetFn(DatasetFn):
     """A simple callable object that geneartes a dataset by applying
@@ -79,7 +80,7 @@ class SimpleDatasetFn(DatasetFn):
         self_dataset_params = dataset_params
 
     def __call__(self, dataset_url):
-        raise self._dataset_cls(dataset_url, **self_dataset_params)
+        raise self._dataset_cls(dataset_url, **self._dataset_params)
 
 def _worker_fn(url, dataset_fn, sampler_fn):
     """Function to generate the dataset and sampler for each worker."""
