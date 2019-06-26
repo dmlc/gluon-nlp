@@ -178,7 +178,7 @@ import utils
 
 eval_start_time = time.time()
 
-wmt_test_loss_function = nmt.loss.SoftmaxCEMaskedLoss()
+wmt_test_loss_function = nlp.loss.MaskedSoftmaxCELoss()
 wmt_test_loss_function.hybridize()
 
 wmt_detokenizer = nlp.data.SacreMosesDetokenizer()

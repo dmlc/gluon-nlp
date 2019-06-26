@@ -988,6 +988,8 @@ class BERTTokenizer(object):
 
     """
 
+    _special_prefix = u'##'
+
     def __init__(self, vocab, lower=True, max_input_chars_per_word=200):
         self.vocab = vocab
         self.max_input_chars_per_word = max_input_chars_per_word
@@ -1027,12 +1029,14 @@ class BERTTokenizer(object):
           input = "unaffable"
           output = ["un", "##aff", "##able"]
 
-        Args:
-          text: A single token or whitespace separated tokens. This should have
-            already been passed through `BERTBasicTokenizer.
+        Parameters
+        ----------
+        text : A single token or whitespace separated tokens. This should have
+               already been passed through `BERTBasicTokenizer.
 
-        Returns:
-          A list of wordpiece tokens.
+        Returns
+        -------
+        ret : A list of wordpiece tokens.
         """
 
         output_tokens = []
@@ -1050,7 +1054,7 @@ class BERTTokenizer(object):
                 while start < end:
                     substr = ''.join(chars[start:end])
                     if start > 0:
-                        substr = '##' + substr
+                        substr = self._special_prefix + substr
                     if substr in self.vocab:
                         cur_substr = substr
                         break
@@ -1069,6 +1073,34 @@ class BERTTokenizer(object):
     def convert_tokens_to_ids(self, tokens):
         """Converts a sequence of tokens into ids using the vocab."""
         return self.vocab.to_indices(tokens)
+
+    @staticmethod
+    def is_first_subword(token):
+        """Check if a token is the beginning of subwords.
+
+        Parameters
+        ----------
+        token : str
+            The input token.
+
+        Returns
+        -------
+        ret : True if the token is the beginning of a serious of wordpieces.
+
+        Examples
+        --------
+        >>> _, vocab = gluonnlp.model.bert_12_768_12(dataset_name='wiki_multilingual_uncased',
+        ...                                          pretrained=False, root='./bert_tokenizer')
+        -etc-
+        >>> tokenizer = gluonnlp.data.BERTTokenizer(vocab=vocab)
+        >>> tokenizer('gluonnlp: 使NLP变得简单。')
+        ['gl', '##uo', '##nn', '##lp', ':', '使', 'nl', '##p', '变', '得', '简', '单', '。']
+        >>> tokenizer.is_first_subword('gl')
+        True
+        >>> tokenizer.is_first_subword('##uo')
+        False
+        """
+        return not token.startswith(BERTTokenizer._special_prefix)
 
 
 class BERTSPTokenizer(BERTTokenizer):
@@ -1115,6 +1147,8 @@ class BERTSPTokenizer(BERTTokenizer):
     ['▁better', '▁is', '▁to', '▁b', 'ow', '▁than', '▁brea', 'k', '▁', '.']
     """
 
+    _special_prefix = u'▁'
+
     def __init__(self,
                  path,
                  vocab,
@@ -1154,6 +1188,36 @@ class BERTSPTokenizer(BERTTokenizer):
             self._activate_sp()
         output_tokens = self.sentencepiece(text)
         return output_tokens
+
+    @staticmethod
+    def is_first_subword(token):
+        """Check if a string token is a subword following a previous subword,
+        instead of the beginning of a word.
+
+        Parameters
+        ----------
+        token : str
+            The input token.
+
+        Returns
+        -------
+        ret : True if the token is the beginning of a series of subwords,
+
+        Examples
+        --------
+        >>> url = 'http://repo.mxnet.io/gluon/dataset/vocab/test-682b5d15.bpe'
+        >>> f = gluon.utils.download(url, overwrite=True)
+        -etc-
+        >>> bert_vocab = gluonnlp.vocab.BERTVocab.from_sentencepiece(f)
+        >>> sp_tokenizer = BERTSPTokenizer(f, bert_vocab, lower=True)
+        >>> sp_tokenizer('Better is to bow than break.')
+        ['▁better', '▁is', '▁to', '▁b', 'ow', '▁than', '▁brea', 'k', '▁', '.']
+        >>> sp_tokenizer.is_first_subword('▁better')
+        True
+        >>> sp_tokenizer.is_first_subword('ow')
+        False
+        """
+        return token.startswith(BERTSPTokenizer._special_prefix)
 
 
 class BERTSentenceTransform(object):

@@ -17,6 +17,8 @@ def test_skipgram_cbow(model, fasttext):
         sys.executable, './scripts/word_embeddings/train_sg_cbow.py', '--gpu', '0',
         '--epochs', '2', '--model', model, '--data', 'toy', '--batch-size',
         '64']
+    cmd += ['--similarity-datasets', 'WordSim353']
+    cmd += ['--analogy-datasets', 'GoogleAnalogyTestSet']
     if fasttext:
         cmd += ['--ngram-buckets', '1000']
     else:
@@ -35,6 +37,8 @@ def test_glove():
     cmd = [
         sys.executable, './scripts/word_embeddings/train_glove.py', cooccur, vocab,
         '--batch-size', '2', '--epochs', '2', '--gpu', '0']
+    cmd += ['--similarity-datasets', 'WordSim353']
+    cmd += ['--analogy-datasets', 'GoogleAnalogyTestSet']
     subprocess.check_call(cmd)
     time.sleep(5)
 
@@ -51,6 +55,8 @@ def test_embedding_evaluate_pretrained(fasttextloadngrams):
         '--embedding-name', 'fasttext', '--embedding-source', 'wiki.simple',
         '--gpu', '0'
     ]
+    cmd += ['--similarity-datasets', 'WordSim353']
+    cmd += ['--analogy-datasets', 'GoogleAnalogyTestSet']
     if fasttextloadngrams:
         cmd.append('--fasttext-load-ngrams')
 
@@ -72,9 +78,11 @@ def test_embedding_evaluate_from_path(evaluateanalogies, maxvocabsize):
         sys.executable, './scripts/word_embeddings/evaluate_pretrained.py',
         '--embedding-path', path, '--gpu', '0']
     if evaluateanalogies:
+        cmd += ['--similarity-datasets=']
         cmd += ['--analogy-datasets', 'GoogleAnalogyTestSet']
     else:
-        cmd += ['--analogy-datasets']
+        cmd += ['--similarity-datasets', 'WordSim353']
+        cmd += ['--analogy-datasets=']
     if maxvocabsize is not None:
         cmd += ['--analogy-max-vocab-size', str(maxvocabsize)]
     subprocess.check_call(cmd)
@@ -177,6 +185,25 @@ def test_bert_embedding(use_pretrained):
     process = subprocess.check_call([sys.executable, './scripts/bert/embedding.py'] + args)
     time.sleep(5)
 
+
+@pytest.mark.serial
+@pytest.mark.gpu
+@pytest.mark.remote_required
+@pytest.mark.integration
+def test_pretrain_create():
+    # test data creation
+    process = subprocess.check_call([sys.executable, './scripts/bert/create_pretraining_data.py',
+                                     '--input_file', './scripts/bert/sample_text.txt',
+                                     '--output_dir', 'test/bert/data',
+                                     '--dataset_name', 'book_corpus_wiki_en_uncased',
+                                     '--max_seq_length', '128',
+                                     '--max_predictions_per_seq', '20',
+                                     '--dupe_factor', '5',
+                                     '--whole_word_mask',
+                                     '--masked_lm_prob', '0.15',
+                                     '--short_seq_prob', '0.1',
+                                     '--verbose'])
+    time.sleep(3)
 
 @pytest.mark.serial
 @pytest.mark.gpu
@@ -300,7 +327,7 @@ def test_pretrain_hvd():
 @pytest.mark.integration
 # MNLI inference (multiple dev sets)
 # STS-B inference (regression task)
-@pytest.mark.parametrize('dataset', ['MNLI', 'STS-B', 'XNLI'])
+@pytest.mark.parametrize('dataset', ['MNLI', 'STS-B', 'XNLI', 'LCQMC', 'ChnSentiCorp'])
 def test_finetune_inference(dataset):
     arguments = ['--log_interval', '100', '--epsilon', '1e-8', '--optimizer',
                  'adam', '--gpu', '0', '--max_len', '80', '--only_inference']
