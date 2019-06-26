@@ -190,6 +190,25 @@ def test_bert_embedding(use_pretrained):
 @pytest.mark.gpu
 @pytest.mark.remote_required
 @pytest.mark.integration
+def test_pretrain_create():
+    # test data creation
+    process = subprocess.check_call([sys.executable, './scripts/bert/create_pretraining_data.py',
+                                     '--input_file', './scripts/bert/sample_text.txt',
+                                     '--output_dir', 'test/bert/data',
+                                     '--dataset_name', 'book_corpus_wiki_en_uncased',
+                                     '--max_seq_length', '128',
+                                     '--max_predictions_per_seq', '20',
+                                     '--dupe_factor', '5',
+                                     '--whole_word_mask',
+                                     '--masked_lm_prob', '0.15',
+                                     '--short_seq_prob', '0.1',
+                                     '--verbose'])
+    time.sleep(3)
+
+@pytest.mark.serial
+@pytest.mark.gpu
+@pytest.mark.remote_required
+@pytest.mark.integration
 def test_pretrain():
     # test data creation
     process = subprocess.check_call([sys.executable, './scripts/bert/create_pretraining_data.py',
