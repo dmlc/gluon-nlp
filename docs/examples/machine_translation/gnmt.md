@@ -304,7 +304,7 @@ model.hybridize(static_alloc=static_alloc)
 logging.info(model)
 
 # Due to the paddings, we need to mask out the losses corresponding to padding tokens.
-loss_function = nmt.loss.SoftmaxCEMaskedLoss()
+loss_function = nlp.loss.MaskedSoftmaxCELoss()
 loss_function.hybridize(static_alloc=static_alloc)
 ```
 
