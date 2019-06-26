@@ -45,11 +45,12 @@ import mxnet as mx
 from mxnet import gluon
 import gluonnlp as nlp
 
+from gluonnlp.loss import MaskedSoftmaxCELoss, LabelSmoothing
 from gluonnlp.model.translation import NMTModel
 from gluonnlp.model.transformer import get_transformer_encoder_decoder, ParallelTransformer
 from gluonnlp.utils.parallel import Parallel
 from translation import BeamSearchTranslator
-from loss import SoftmaxCEMaskedLoss, LabelSmoothing
+
 from utils import logging_config
 from bleu import _bpe_to_words, compute_bleu
 import dataprocessor
@@ -196,10 +197,10 @@ logging.info('Use beam_size={}, alpha={}, K={}'.format(args.beam_size, args.lp_a
 label_smoothing = LabelSmoothing(epsilon=args.epsilon, units=len(tgt_vocab))
 label_smoothing.hybridize(static_alloc=static_alloc)
 
-loss_function = SoftmaxCEMaskedLoss(sparse_label=False)
+loss_function = MaskedSoftmaxCELoss(sparse_label=False)
 loss_function.hybridize(static_alloc=static_alloc)
 
-test_loss_function = SoftmaxCEMaskedLoss()
+test_loss_function = MaskedSoftmaxCELoss()
 test_loss_function.hybridize(static_alloc=static_alloc)
 
 rescale_loss = 100
