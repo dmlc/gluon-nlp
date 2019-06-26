@@ -208,9 +208,12 @@ class DatasetLoader(object):
         self._worker_pool = None
         if self._num_dataset_workers > 0:
             self._worker_pool = multiprocessing.Pool(self._num_dataset_workers)
-        assert self._num_dataset_workers >= 0, 'num_dataset_workers must be non-negative'
-        assert isinstance(sampler_fn, SamplerFn), 'sampler_fn must be an instance of SamplerFn'
-        assert isinstance(dataloader_fn, DataLoaderFn), 'dataloader_fn must be an instance of DataLoaderFn'
+        assert self._num_dataset_workers >= 0, \
+               'num_dataset_workers must be non-negative'
+        assert isinstance(sampler_fn, SamplerFn), \
+               'sampler_fn must be an instance of SamplerFn'
+        assert isinstance(dataloader_fn, DataLoaderFn), \
+               'dataloader_fn must be an instance of DataLoaderFn'
 
     def __iter__(self):
         if self._num_dataset_workers == 0:

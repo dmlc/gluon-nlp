@@ -21,7 +21,6 @@
 import glob
 import time
 import os
-import functools
 import logging
 import argparse
 import random
@@ -198,6 +197,7 @@ def get_pretrain_data_text(data, batch_size, num_ctxes, shuffle, use_avg_len,
 
 
 class BERTSamplerFn(SamplerFn):
+    """Callable object to create the sampler"""
     def __init__(self, use_avg_len, batch_size, shuffle, num_ctxes, num_buckets):
         self._use_avg_len = use_avg_len
         self._batch_size = batch_size
@@ -236,6 +236,7 @@ class BERTSamplerFn(SamplerFn):
         return sampler
 
 class BERTDataLoaderFn(DataLoaderFn):
+    """Callable object to create the data loader"""
     def __init__(self, use_avg_len, num_ctxes):
         self._use_avg_len = use_avg_len
         self._num_ctxes = num_ctxes
