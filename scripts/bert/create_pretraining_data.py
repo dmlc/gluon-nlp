@@ -419,7 +419,7 @@ MaskedLmInstance = collections.namedtuple('MaskedLmInstance',
                                           ['index', 'label'])
 def find_chinese_whole_word(universal_tokenizer, tokens, chs_tokenizer=None):
     """find chinese characters in tokenized results, and tag them in BIO format with chinese "
-       tokenizer, 
+       tokenizer.
     Parameters
     ----------
     tokenizer : BERTTokenizer
@@ -428,27 +428,27 @@ def find_chinese_whole_word(universal_tokenizer, tokens, chs_tokenizer=None):
 
     Returns
     -------
-    A tuple of list: tokens, chs_token_bio; 
+    A tuple of list: tokens, chs_token_bio;
         e.g.:   tokens = ['你', '好', '12', '##3']
                 chs_token_bio = ['B', 'I', 'O', 'O']
     """
     chs_token_bio = ['O']*len(tokens)
     if isinstance(universal_tokenizer, BERTTokenizer) and chs_tokenizer is not None:
-        is_chinese_list = ['1' if len(token) == 1 and 
-                                universal_tokenizer.basic_tokenizer._is_chinese_char(ord(token)) 
-                           else '0' 
-                           for token in tokens ]
+        is_chinese_list = ['1' if len(token) == 1 and
+                           universal_tokenizer.basic_tokenizer._is_chinese_char(ord(token))
+                           else '0'
+                           for token in tokens]
         patten = ''.join(is_chinese_list)
         for re_find in re.finditer('[1]{1,}', patten):
             chs_start, chs_end = (re_find.start(), re_find.end())
             cut_results = chs_tokenizer(''.join(tokens[chs_start: chs_end]))
             idx = 0
             for cut_token in cut_results:
-                for i,char in enumerate(cut_token):
+                for i, char in enumerate(cut_token):
                     if i == 0:
-                        chs_token_bio[chs_start + idx]= 'B'
+                        chs_token_bio[chs_start + idx] = 'B'
                     else:
-                        chs_token_bio[chs_start + idx]= 'I'
+                        chs_token_bio[chs_start + idx] = 'I'
                     idx += 1
         assert len(tokens) == len(chs_token_bio)
     return tokens, chs_token_bio
@@ -473,7 +473,7 @@ def create_masked_lm_predictions(tokens, masked_lm_prob, max_predictions_per_seq
         # at all -- we still predict each subword independently, softmaxed
         # over the entire vocabulary.
         if whole_word_mask and (len(cand_indexes) >= 1 and \
-           not tokenizer.is_first_subword(token) or chs_token_bio[i]=='I'):
+           not tokenizer.is_first_subword(token) or chs_token_bio[i] == 'I'):
             cand_indexes[-1].append(i)
         else:
             cand_indexes.append([i])
