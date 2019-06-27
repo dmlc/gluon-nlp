@@ -234,8 +234,7 @@ if __name__ == '__main__':
         part_idx = 0 if args.dummy_data_len else store.rank
         data_train = get_pretrain_data_npz(args.data, args.batch_size, len(ctx), True,
                                            args.use_avg_len, args.num_buckets,
-                                           num_parts=num_parts, part_idx=part_idx,
-                                           prefetch=not args.dummy_data_len)
+                                           num_parts=num_parts, part_idx=part_idx)
         train(data_train, model, nsp_loss, mlm_loss, len(vocab), ctx, store)
     if args.data_eval:
         logging.info('Using evaluation data at {}'.format(args.data_eval))

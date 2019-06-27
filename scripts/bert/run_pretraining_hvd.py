@@ -160,93 +160,90 @@ def train(data_train, data_eval, model, nsp_loss, mlm_loss, vocab_size, ctx):
     step_num = args.start_step
 
     logging.debug('Training started')
+
+    # create dummy data loader if needed
+    if args.dummy_data_len:
+        target_shape = (args.batch_size, args.dummy_data_len)
+        data_train = get_dummy_dataloader(data_train, target_shape)
+
     while step_num < num_train_steps:
-        for _, dataloader in enumerate(data_train):
+        for _, data_batch in enumerate(data_train):
             if step_num >= num_train_steps:
                 break
-
-            # create dummy data loader if needed
-            if args.dummy_data_len:
-                target_shape = (args.batch_size, args.dummy_data_len)
-                dataloader = get_dummy_dataloader(dataloader, target_shape)
-
-            for _, data_batch in enumerate(dataloader):
-                if step_num >= num_train_steps:
-                    break
-                if batch_num % accumulate == 0:
-                    step_num += 1
-                    # if accumulate > 1, grad_req is set to 'add', and zero_grad is required
-                    if accumulate > 1:
-                        param_dict.zero_grad()
-                    # update learning rate
-                    if step_num <= num_warmup_steps:
-                        new_lr = lr * step_num / num_warmup_steps
-                    else:
-                        offset = lr * step_num / num_train_steps
-                        new_lr = lr - offset
-                    trainer.set_learning_rate(new_lr)
-                    if args.profile:
-                        profile(step_num, 10, 14, profile_name=args.profile + str(rank))
-
-                # load data
-                if args.use_avg_len:
-                    data_list = [[seq.as_in_context(context) for seq in shard]
-                                 for context, shard in zip([ctx], data_batch)]
+            if batch_num % accumulate == 0:
+                step_num += 1
+                # if accumulate > 1, grad_req is set to 'add', and zero_grad is required
+                if accumulate > 1:
+                    param_dict.zero_grad()
+                # update learning rate
+                if step_num <= num_warmup_steps:
+                    new_lr = lr * step_num / num_warmup_steps
                 else:
-                    data_list = list(split_and_load(data_batch, [ctx]))
-                data = data_list[0]
+                    offset = lr * step_num / num_train_steps
+                    new_lr = lr - offset
+                trainer.set_learning_rate(new_lr)
+                if args.profile:
+                    profile(step_num, 10, 14, profile_name=args.profile + str(rank))
 
-                # forward
-                with mx.autograd.record():
-                    (ls, ns_label, classified, masked_id, decoded, \
-                     masked_weight, ls1, ls2, valid_len) = forward(data, model, mlm_loss,
-                                                                   nsp_loss, vocab_size, args.dtype)
-                    ls = ls / accumulate
-                    # backward
-                    if args.dtype == 'float16':
-                        fp16_trainer.backward(ls)
-                    else:
-                        ls.backward()
+            # load data
+            if args.use_avg_len:
+                data_list = [[seq.as_in_context(context) for seq in shard]
+                             for context, shard in zip([ctx], data_batch)]
+            else:
+                data_list = list(split_and_load(data_batch, [ctx]))
+            data = data_list[0]
 
-                running_mlm_loss += ls1.as_in_context(mx.cpu())
-                running_nsp_loss += ls2.as_in_context(mx.cpu())
-                running_num_tks += valid_len.sum().as_in_context(mx.cpu())
+            # forward
+            with mx.autograd.record():
+                (ls, ns_label, classified, masked_id, decoded, \
+                 masked_weight, ls1, ls2, valid_len) = forward(data, model, mlm_loss,
+                                                               nsp_loss, vocab_size, args.dtype)
+                ls = ls / accumulate
+                # backward
+                if args.dtype == 'float16':
+                    fp16_trainer.backward(ls)
+                else:
+                    ls.backward()
 
-                # update
-                if (batch_num + 1) % accumulate == 0:
-                    # step() performs 3 things:
-                    # 1. allreduce gradients from all workers
-                    # 2. checking the global_norm of gradients and clip them if necessary
-                    # 3. averaging the gradients and apply updates
-                    fp16_trainer.step(1, max_norm=1*num_workers)
+            running_mlm_loss += ls1.as_in_context(mx.cpu())
+            running_nsp_loss += ls2.as_in_context(mx.cpu())
+            running_num_tks += valid_len.sum().as_in_context(mx.cpu())
 
-                nsp_metric.update([ns_label], [classified])
-                mlm_metric.update([masked_id], [decoded], [masked_weight])
+            # update
+            if (batch_num + 1) % accumulate == 0:
+                # step() performs 3 things:
+                # 1. allreduce gradients from all workers
+                # 2. checking the global_norm of gradients and clip them if necessary
+                # 3. averaging the gradients and apply updates
+                fp16_trainer.step(1, max_norm=1*num_workers)
 
-                # logging
-                if (step_num + 1) % (args.log_interval) == 0 and (batch_num + 1) % accumulate == 0:
-                    log(begin_time, running_num_tks, running_mlm_loss / accumulate,
-                        running_nsp_loss / accumulate, step_num, mlm_metric, nsp_metric,
-                        trainer, args.log_interval)
-                    begin_time = time.time()
-                    running_mlm_loss = running_nsp_loss = running_num_tks = 0
-                    mlm_metric.reset_local()
-                    nsp_metric.reset_local()
+            nsp_metric.update([ns_label], [classified])
+            mlm_metric.update([masked_id], [decoded], [masked_weight])
 
-                # saving checkpoints
-                if (step_num + 1) % args.ckpt_interval == 0 and (batch_num + 1) % accumulate == 0:
-                    if is_master_node:
-                        save_states(step_num, trainer, args.ckpt_dir, local_rank)
-                        if local_rank == 0:
-                            save_parameters(step_num, model, args.ckpt_dir)
-                    if data_eval:
-                        # eval data is always based on a fixed npz file.
-                        dataset_eval = get_pretrain_data_npz(data_eval, args.batch_size_eval, 1,
-                                                             False, False, 1)
-                        evaluate(dataset_eval, model, nsp_loss, mlm_loss, len(vocab), [ctx],
-                                 args.log_interval, args.dtype)
+            # logging
+            if (step_num + 1) % (args.log_interval) == 0 and (batch_num + 1) % accumulate == 0:
+                log(begin_time, running_num_tks, running_mlm_loss / accumulate,
+                    running_nsp_loss / accumulate, step_num, mlm_metric, nsp_metric,
+                    trainer, args.log_interval)
+                begin_time = time.time()
+                running_mlm_loss = running_nsp_loss = running_num_tks = 0
+                mlm_metric.reset_local()
+                nsp_metric.reset_local()
 
-                batch_num += 1
+            # saving checkpoints
+            if (step_num + 1) % args.ckpt_interval == 0 and (batch_num + 1) % accumulate == 0:
+                if is_master_node:
+                    save_states(step_num, trainer, args.ckpt_dir, local_rank)
+                    if local_rank == 0:
+                        save_parameters(step_num, model, args.ckpt_dir)
+                if data_eval:
+                    # eval data is always based on a fixed npz file.
+                    dataset_eval = get_pretrain_data_npz(data_eval, args.batch_size_eval, 1,
+                                                         False, False, 1)
+                    evaluate(dataset_eval, model, nsp_loss, mlm_loss, len(vocab), [ctx],
+                             args.log_interval, args.dtype)
+
+            batch_num += 1
 
     if is_master_node:
         save_states(step_num, trainer, args.ckpt_dir, local_rank)
@@ -315,8 +312,7 @@ if __name__ == '__main__':
         part_idx = 0 if args.dummy_data_len else rank
         data_train = get_dataset_fn(args.data, args.batch_size, 1, True,
                                     args.use_avg_len, args.num_buckets,
-                                    num_parts=num_parts, part_idx=part_idx,
-                                    prefetch=not args.dummy_data_len)
+                                    num_parts=num_parts, part_idx=part_idx)
         train(data_train, data_eval, model, nsp_loss, mlm_loss, len(vocab), ctx)
     if data_eval:
         # eval data is always based on a fixed npz file.
