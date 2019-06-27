@@ -146,17 +146,6 @@ Separating the batchify_fn from the previous word-pair
 sampling is useful, as it allows parallelization of the CSR matrix construction over
 multiple CPU cores for separate batches.
 
-##### Citations:
-
-- [1] Mikolov, Tomas, et al. “Distributed representations of words and phrases
-and their compositionally.”
-   Advances in neural information processing
-systems. 2013.
-
-
-- [2] Bojanowski et al., "Enriching Word Vectors with Subword
-Information" Transactions of the Association for Computational Linguistics 2017
-
 ## Subwords
 
 `GluonNLP` provides the concept of a subword function which maps
@@ -188,7 +177,7 @@ For center words, subwords are
 taken into account while for context words only the token itself is taken into
 account.
 
-GluonNLP provides an `nlp.model.train.FasttextEmbeddingModel` Block
+GluonNLP provides an `nlp.model.train.FasttextEmbeddingModel` block
 which defines the fastText style embedding with subword support.
 It can be used
 for training, but also supports loading models trained with the original C++
@@ -202,7 +191,7 @@ the `model.py` script we provide a definition for the fastText model for the
 SkipGram objective.
 The model definition is a Gluon HybridBlock, meaning that
 the complete forward / backward pass are compiled and executed directly in the
-MXNet backend. Not only does the Block include the `FasttextEmbeddingModel` for
+MXNet backend. Not only does the block include the `FasttextEmbeddingModel` for
 the center words and a simple embedding matrix for the context words, but it
 also takes care of sampling a specified number of noise words for each center-
 context pair. These noise words are called negatives, as the resulting center-
@@ -284,7 +273,7 @@ def train_embedding(num_epochs):
         start_time = time.time()
         l_avg = 0
         log_wc = 0
-        
+
         print('Beginnign epoch %d and resampling data.' % epoch)
         for i, batch in enumerate(batches):
             batch = [array.as_in_context(context) for array in batch]
@@ -292,7 +281,7 @@ def train_embedding(num_epochs):
                 l = embedding(*batch)
             l.backward()
             trainer.step(1)
-            
+
             l_avg += l.mean()
             log_wc += l.shape[0]
             if i % log_interval == 0:
@@ -382,3 +371,14 @@ section on the Scripts / Model Zoo page. There you will find more thorough
 evaluation techniques and other embedding models. In fact, the `data.py` and
 `model.py` files used in this example are the same as the ones used in the
 script.
+
+## References
+
+- [1] Mikolov, Tomas, et al. “Distributed representations of words and phrases
+and their compositionally.”
+   Advances in neural information processing
+systems. 2013.
+
+
+- [2] Bojanowski et al., "Enriching Word Vectors with Subword
+Information" Transactions of the Association for Computational Linguistics 2017

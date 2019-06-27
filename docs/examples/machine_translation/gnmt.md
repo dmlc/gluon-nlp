@@ -75,10 +75,11 @@ nmt.utils.logging_config(save_dir)
 
 The following shows how to process the dataset and cache the processed dataset
 for future use. The processing steps include the following:
-1) Clipping the source and target sequences
-2) Splitting the string input to a list of tokens
-3) Mapping the string token onto its integer index in the vocabulary
-4) Appending the end-of-sentence (EOS) token to source sentence and adding BOS and EOS tokens to the target sentence
+
+1. Clipping the source and target sequences
+2. Splitting the string input to a list of tokens
+3. Mapping the string token onto its integer index in the vocabulary
+4. Appending the end-of-sentence (EOS) token to source sentence and adding BOS and EOS tokens to the target sentence
 
 
 Firstly, we load and cache the dataset with the two helper functions `cache_dataset` and `load_cached_dataset`. The functions are straightforward and well commented so no further explanation will be given.
@@ -268,10 +269,10 @@ data_test = gluon.data.SimpleDataset([(ele[0], ele[1], len(ele[0]), len(ele[1]),
                                       for i, ele in enumerate(data_test)])
 ```
 
-## Sampler and DataLoader construction
+## Sampler and `DataLoader` construction
 
 Now, we have obtained and stored all of the relevant data information. The next step
-is to construct the sampler and DataLoader. The first step is to use the `batchify`
+is to construct the sampler and `DataLoader`. The first step is to use the `batchify`
 function, which pads and stacks sequences to form mini-batches.
 
 ```{.python .input}
@@ -309,7 +310,7 @@ test_batch_sampler = nlp.data.FixedBucketSampler(lengths=data_test_lengths,
 logging.info('Test Batch Sampler:\n{}'.format(test_batch_sampler.stats()))
 ```
 
-Given the samplers, we can create a DataLoader, which is iterable. This simply is a data construct (an iterator) that can feed the model batches at a time. For more information refer to [this](https://mxnet.incubator.apache.org/versions/master/tutorials/gluon/datasets.html) page.
+Given the samplers, we can create a `DataLoader`, which is iterable. This simply is a data construct (an iterator) that can feed the model batches at a time. For more information refer to [this](https://mxnet.incubator.apache.org/versions/master/tutorials/gluon/datasets.html) page.
 
 ```{.python .input}
 train_data_loader = gluon.data.DataLoader(data_train,
@@ -528,5 +529,5 @@ In this notebook, we have shown how to train a GNMT model on the IWSLT 2015 Engl
 The complete training script can be found [here](https://github.com/dmlc/gluon-nlp/blob/master/scripts/machine_translation/train_gnmt.py).
 The code sequence to reproduce the results can be seen on the [machine translation page](http://gluon-nlp.mxnet.io/model_zoo/machine_translation/index.html).
 
-#### Citations
+## References
 [1] Papineni, Kishore, et al. "BLEU: a method for automatic evaluation of machine translation." Proceedings of the 40th annual meeting on association for computational linguistics. Association for Computational Linguistics, 2002.

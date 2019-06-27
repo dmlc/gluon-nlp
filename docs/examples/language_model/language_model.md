@@ -23,7 +23,7 @@ These days recurrent neural networks (RNNs) are the preferred method for languag
 (i) implement a typical LSTM language model architecture
 (ii) train the language model on a corpus of real data
 (iii) bring in your own dataset for training
-(iv) grab off-the-shelf pre-trained state-of-the-art language models (i.e. AWD language model) using GluonNLP.
+(iv) grab off-the-shelf pre-trained state-of-the-art language models (i.e., AWD language model) using GluonNLP.
 
 ## What is a language model (LM)?
 
@@ -61,7 +61,9 @@ from mxnet.gluon.utils import download
 import gluonnlp as nlp
 ```
 
-#### Setup the environment (note that we should change num_gpus according to how many NVIDIA GPUs are available on the target machine)
+#### Setup the environment
+
+Please note that we should change num_gpus according to how many NVIDIA GPUs are available on the target machine in the following code.
 
 ```{.python .input}
 num_gpus = 1
@@ -295,7 +297,8 @@ sherlockholmes_val = nlp.data.CorpusDataset(
 sherlockholmes_val_data = bptt_batchify(sherlockholmes_val)
 ```
 
-##### We setup the evaluation to see whether our previous model trained on the other dataset does well on the new dataset
+We setup the evaluation to see whether our previous model trained on the other dataset does well on the new dataset
+
 ```{.python .input}
 sherlockholmes_L = evaluate(model, sherlockholmes_val_data, batch_size,
                             context[0])
@@ -303,7 +306,8 @@ print('Best validation loss %.2f, test ppl %.2f' %
       (sherlockholmes_L, math.exp(sherlockholmes_L)))
 ```
 
-##### Or we have the option of training the model on the new dataset with just one line of code
+Or we have the option of training the model on the new dataset with just one line of code.
+
 ```{.python .input}
 train(
     model,
@@ -423,7 +427,7 @@ print('Best test loss %.2f, test ppl %.2f'%(test_L, math.exp(test_L)))
 ```
 
 
-##### Citations
+## References
 
 [1] Merity, S., et al. “Regularizing and optimizing LSTM language models”. ICLR 2018
 
