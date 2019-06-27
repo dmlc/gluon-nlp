@@ -278,8 +278,8 @@ download(
     "https://raw.githubusercontent.com/dmlc/web-data/master/mxnet/tinyshakespeare/input.txt",
     PREDICT_PATH,
     sha1_hash="04486597058d11dcc2c556b1d0433891eb639d2e")
-sherlockholmes_dataset = glob.glob("sherlockholmes.*.txt")
-print(sherlockholmes_dataset)
+
+print(glob.glob("sherlockholmes.*.txt"))
 ```
 
 ##### Then we specify the tokenizer as well as batchify the dataset
@@ -287,14 +287,18 @@ print(sherlockholmes_dataset)
 import nltk
 moses_tokenizer = nlp.data.SacreMosesTokenizer()
 
-sherlockholmes_val = nlp.data.CorpusDataset(
-    'sherlockholmes.valid.txt',
-    sample_splitter=nltk.tokenize.sent_tokenize,
-    tokenizer=moses_tokenizer,
-    flatten=True,
-    eos='<eos>')
+sherlockholmes_datasets = [
+    nlp.data.CorpusDataset(
+        'sherlockholmes.{}.txt'.format(name),
+        sample_splitter=nltk.tokenize.sent_tokenize,
+        tokenizer=moses_tokenizer,
+        flatten=True,
+        eos='<eos>') for name in ['train', 'valid', 'test']
+]
 
-sherlockholmes_val_data = bptt_batchify(sherlockholmes_val)
+sherlockholmes_train_data, sherlockholmes_val_data, sherlockholmes_test_data = [
+    bptt_batchify(dataset) for dataset in sherlockholmes_datasets
+]
 ```
 
 We setup the evaluation to see whether our previous model trained on the other dataset does well on the new dataset

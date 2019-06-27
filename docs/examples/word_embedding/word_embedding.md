@@ -47,6 +47,7 @@ and use such embeddings in Gluon.
 First, let's assign a unique ID and word vector to each word in the vocabulary
 in just a few lines of code.
 
+
 ### Creating Vocabulary from Data Sets
 
 To begin, suppose that we have a simple text data set consisting of newline-separated strings.
