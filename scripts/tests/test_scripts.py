@@ -2,6 +2,7 @@ import os
 import subprocess
 import sys
 import time
+import datetime
 
 import pytest
 import mxnet as mx
