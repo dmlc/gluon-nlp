@@ -63,7 +63,7 @@ def test_unittest(workspace_name, conda_env_name,
 def test_doctest(workspace_name, conda_env_name,
                  test_path, cov_path, threads) {
   capture_flag = env.BRANCH_NAME.startsWith('PR-')?'':'--capture=no'
-  return ["${conda_env_name}: doctest ${test_path}'": {
+  return ["${conda_env_name}: doctest ${test_path}": {
     node(NODE_LINUX_CPU) {
       ws(workspace_name) {
         utils.init_git()
@@ -79,34 +79,9 @@ def test_doctest(workspace_name, conda_env_name,
   }]
 }
 
-def create_website(workspace_name, conda_env_name) {
-  if (env.BRANCH_NAME.startsWith('PR-')){
-    bucket = 'gluon-nlp-staging'
-    path = env.BRANCH_NAME+'/'+env.BUILD_NUMBER
-  } else {
-    bucket = 'gluon-nlp'
-    path = env.BRANCH_NAME
-  }
-  return ["${conda_env_name}: website'": {
-    node(NODE_LINUX_GPU) {
-      ws(workspace_name) {
-        utils.init_git()
-        sh """
-        set -ex
-        source ci/prepare_clean_env.sh ${conda_env_name}
-        make docs
-
-        ci/upload_doc.sh ${bucket} ${path}
-        set +ex
-        """
-      }
-    }
-  }]
-}
-
 def website_linkcheck(workspace_name, conda_env_name) {
   enforce_linkcheck = env.BRANCH_NAME.startsWith('PR-')?'false':'true'
-  return ["${conda_env_name}: website link check'": {
+  return ["${conda_env_name}: website link check": {
     node(NODE_LINUX_CPU) {
       ws(workspace_name) {
         utils.init_git()
