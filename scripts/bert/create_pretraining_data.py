@@ -121,7 +121,7 @@ def write_to_files_np(features, tokenizer, max_seq_length,
     logging.info('Wrote %d total instances', total_written)
 
 def tokenize_lines_fn(x):
-    """Worker function to tokenize lines based on the tokenizer, and perform vocabulary lookup."""
+    """Worker function to tokenize lines based on the tokenizer."""
     lines, tokenizer, vocab = x
     results = []
     for line in lines:
@@ -420,7 +420,7 @@ MaskedLmInstance = collections.namedtuple('MaskedLmInstance',
 def find_chinese_whole_word(universal_tokenizer, tokens, chs_tokenizer=None):
     """find chinese characters in tokenized results, and tag them in BIO format with chinese "
        tokenizer, 
-        Parameters
+    Parameters
     ----------
     tokenizer : BERTTokenizer
     tokens : list of str
