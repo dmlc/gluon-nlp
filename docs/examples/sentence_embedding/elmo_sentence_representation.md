@@ -159,5 +159,6 @@ In this tutorial, we show how to generate sentence representation from the ELMo 
 In GluonNLP, this can be done with just a few simple steps: reuse of the data transformation from ELMo for preprocessing the data, automatically downloading the pre-trained model, and feeding the transformed data into the model.
 To see how to plug in the pre-trained models in your own model architecture and use fine-tuning to improve downstream tasks, check our [Sentiment Analysis tutorial](../sentiment_analysis/sentiment_analysis.ipynb).
 
-## Reference
+## References
+
 [1] Peters, Matthew E., et al. "Deep contextualized word representations." NAACL (2018).

@@ -551,7 +551,7 @@ Word embedding can effectively represent the semantic similarity between words, 
 
 GluonNLP provides us with an efficient and convenient toolbox to help us experiment quickly. This greatly simplifies the tedious work of many natural language processing tasks.
 
-#### Citations
+## References
 
 1. [A Structured Self-Attentive Sentence Embedding](https://arxiv.org/pdf/1703.03130.pdf)
 2. [Glove: Global vectors for word representation. In Proceedings of the 2014 conference on empirical methods in natural language processing](https://nlp.stanford.edu/pubs/glove.pdf)
