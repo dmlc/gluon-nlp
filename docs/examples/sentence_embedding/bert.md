@@ -99,7 +99,7 @@ bert_base, vocabulary = nlp.model.get_model('bert_12_768_12',
 print(bert_base)
 ```
 
-### Model Definition for Sentence Pair Classification
+### Transform the model for `SentencePair` classification
 
 Now that we have loaded
 the BERT model, we only need to attach an additional layer for classification.
@@ -119,9 +119,9 @@ loss_function.hybridize(static_alloc=True)
 metric = mx.metric.Accuracy()
 ```
 
-## Data Pre-processing for BERT
+## Data preprocessing for BERT
 
-For this tutorial, we need to do a bit of pre-processing before feeding our data introduced
+For this tutorial, we need to do a bit of preprocessing before feeding our data introduced
 the BERT model. Here we want to leverage the dataset included in the downloaded archive at the
 beginning of this tutorial.
 

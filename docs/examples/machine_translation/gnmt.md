@@ -3,13 +3,13 @@
 In this notebook, we are going to train Google NMT on IWSLT 2015 English-Vietnamese
 Dataset. The building process includes four key steps:
 
-1) Load and process the dataset
+1. Load and preprocess the dataset
 
-2) Create a sampler and DataLoader
+2. Create a sampler and `DataLoader`
 
-3) Build the actual model
+3. Build the actual model
 
-4) Write the training algorithm
+4. Write the training algorithm
 
 This tutorial will guide you through each of the steps and explain briefly how each works. Please remember to click the download button at the top of the page to download the necessary files to follow this tutorial.
 
@@ -327,7 +327,7 @@ test_data_loader = gluon.data.DataLoader(data_test,
                                          num_workers=4)
 ```
 
-## Building the GNMT Model
+## Building the GNMT model
 
 After obtaining the DataLoader, we can finally build the model. The GNMT encoder and decoder
 can be easily constructed by calling `get_gnmt_encoder_decoder` function. Then, we
@@ -524,7 +524,7 @@ for epoch_id in range(epochs):
         trainer.set_learning_rate(new_lr)
 ```
 
-## Summary
+## Conclusion
 In this notebook, we have shown how to train a GNMT model on the IWSLT 2015 English-Vietnamese dataset using the Gluon NLP toolkit.
 The complete training script can be found [here](https://github.com/dmlc/gluon-nlp/blob/master/scripts/machine_translation/train_gnmt.py).
 The code sequence to reproduce the results can be seen on the [machine translation page](http://gluon-nlp.mxnet.io/model_zoo/machine_translation/index.html).

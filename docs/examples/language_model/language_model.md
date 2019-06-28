@@ -44,7 +44,7 @@ language model using GluonNLP.
 We'll start by taking care of
 our basic dependencies and setting up our environment.
 
-#### Import the required modules for GluonNLP and the LM
+Firstly, we import the required modules for GluonNLP and the LM.
 
 ```{.python .input}
 import warnings
@@ -61,7 +61,7 @@ from mxnet.gluon.utils import download
 import gluonnlp as nlp
 ```
 
-#### Setup the environment
+Then we setup the environment for GluonNLP.
 
 Please note that we should change num_gpus according to how many NVIDIA GPUs are available on the target machine in the following code.
 
@@ -71,7 +71,7 @@ context = [mx.gpu(i) for i in range(num_gpus)] if num_gpus else [mx.cpu()]
 log_interval = 200
 ```
 
-#### Set the hyperparameters of the language model we are choosing
+Next we setup the hyperparameters for the LM we are using.
 
 Note that BPTT stands for "back propagation through time," and LR stands for learning rate. A link to more information on truncated BPTT can be found [here.](https://en.wikipedia.org/wiki/Backpropagation_through_time)
 
@@ -83,7 +83,9 @@ bptt = 35
 grad_clip = 0.25
 ```
 
-#### Load the dataset, extract the vocabulary, numericalize, and batchify in order to perform truncated BPTT
+### Loading the dataset
+
+Now, we load the dataset, extract the vocabulary, numericalize, and batchify in order to perform truncated BPTT.
 
 ```{.python .input}
 dataset_name = 'wikitext-2'
@@ -107,7 +109,7 @@ train_data, val_data, test_data = [
 ]
 ```
 
-#### Load the pre-defined language model architecture
+And then we load the pre-defined language model architecture as so:
 
 ```{.python .input}
 model_name = 'standard_lstm_lm_200'
@@ -133,7 +135,7 @@ loss = gluon.loss.SoftmaxCrossEntropyLoss()
 
 Now that everything is ready, we can start training the model.
 
-#### Helper function for detaching the gradients on specific states for easier truncated BPTT
+We first define a helper function for detaching the gradients on specific states for easier truncated BPTT.
 
 ```{.python .input}
 def detach(hidden):
@@ -144,7 +146,7 @@ def detach(hidden):
     return hidden
 ```
 
-#### Helper evaluation function
+And then a helper evaluation function.
 
 ```{.python .input}
 # Note that ctx is short for context
@@ -164,7 +166,7 @@ def evaluate(model, data_source, batch_size, ctx):
     return total_L / ntotal
 ```
 
-#### The Main Training Loop
+#### The main training loop
 
 Our loss function will be the standard cross-entropy loss function used for multi-class classification, applied at each time step to compare the model's predictions to the true next word in the sequence.
 We can calculate gradients with respect to our parameters using truncated BPTT.
@@ -243,20 +245,21 @@ def train(model, train_data, val_data, test_data, epochs, lr):
                             (time.time() - start_train_time)))
 ```
 
-#### We can now actually perform the training
+We can now actually perform the training
 
 ```{.python .input}
 train(model, train_data, val_data, test_data, epochs, lr)
 ```
 
-#### Using your own dataset
+### Using your own dataset
 
 When we train a language model, we fit to the statistics of a given dataset.
 While many papers focus on a few standard datasets, such as WikiText or the Penn Tree Bank, that's just to provide a standard benchmark for the purpose of comparing models against one another.
 In general, for any given use case, you'll want to train your own language model using a dataset of your own choice.
 Here, for demonstration, we'll grab some `.txt` files corresponding to Sherlock Holmes novels.
 
-##### We first download the new dataset
+We first download the new dataset.
+
 ```{.python .input}
 TRAIN_PATH = "./sherlockholmes.train.txt"
 VALID_PATH = "./sherlockholmes.valid.txt"
@@ -282,7 +285,8 @@ download(
 print(glob.glob("sherlockholmes.*.txt"))
 ```
 
-##### Then we specify the tokenizer as well as batchify the dataset
+Then we specify the tokenizer as well as batchify the dataset.
+
 ```{.python .input}
 import nltk
 moses_tokenizer = nlp.data.SacreMosesTokenizer()
@@ -301,7 +305,7 @@ sherlockholmes_train_data, sherlockholmes_val_data, sherlockholmes_test_data = [
 ]
 ```
 
-We setup the evaluation to see whether our previous model trained on the other dataset does well on the new dataset
+We setup the evaluation to see whether our previous model trained on the other dataset does well on the new dataset.
 
 ```{.python .input}
 sherlockholmes_L = evaluate(model, sherlockholmes_val_data, batch_size,
@@ -322,11 +326,11 @@ train(
     lr=20)
 ```
 
-## Using a pre-trained AWD LSTM language model
+### Using a pre-trained AWD LSTM language model
 
 AWD LSTM language model is the state-of-the-art RNN language model [1]. The main technique leveraged is to add weight-dropout on the recurrent hidden to hidden matrices to prevent overfitting on the recurrent connections.
 
-### Load the vocabulary and the pre-trained model
+#### Load the vocabulary and the pre-trained model
 
 ```{.python .input}
 awd_model_name = 'awd_lstm_lm_1150'
@@ -341,7 +345,7 @@ print(awd_model)
 print(vocab)
 ```
 
-### Evaluate the pre-trained model on the validation and test datasets
+#### Evaluate the pre-trained model on the validation and test datasets
 
 ```{.python .input}
 val_L = evaluate(awd_model, val_data, batch_size, context[0])
@@ -351,7 +355,7 @@ print('Best validation loss %.2f, val ppl %.2f' % (val_L, math.exp(val_L)))
 print('Best test loss %.2f, test ppl %.2f' % (test_L, math.exp(test_L)))
 ```
 
-## Using a cache LSTM LM
+### Using a cache LSTM LM
 
 Cache LSTM language model [2] adds a cache-like memory to neural network language models. It can be used in conjunction with the aforementioned AWD LSTM language model or other LSTM models.
 It exploits the hidden outputs to define a probability distribution over the words in the cache.
@@ -359,7 +363,7 @@ It generates  state-of-the-art results at inference time.
 
 <img src=cache_model.png width="500">
 
-### Load the pre-trained model and define the hyperparameters
+#### Load the pre-trained model and define the hyperparameters
 
 ```{.python .input}
 window = 2
@@ -376,7 +380,7 @@ cache_model = nlp.model.train.get_cache_model(name=awd_model_name,
 print(cache_model)
 ```
 
-### Define specific get_batch and evaluation helper functions for the cache model
+#### Define specific get_batch and evaluation helper functions for the cache model
 
 Note that these helper functions are very similar to the ones we defined above, but are slightly different.
 
@@ -420,7 +424,7 @@ def evaluate_cache(model, data_source, batch_size, ctx):
     return total_L / len(data_source)
 ```
 
-### Evaluate the pre-trained model on the validation and test datasets
+#### Evaluate the pre-trained model on the validation and test datasets
 
 ```{.python .input}
 val_L = evaluate_cache(cache_model, val_data, val_test_batch_size, context[0])

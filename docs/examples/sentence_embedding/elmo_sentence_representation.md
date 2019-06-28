@@ -28,7 +28,7 @@ from mxnet import gluon
 import gluonnlp as nlp
 ```
 
-## Preprocess Data
+## Preprocess the data
 
 The goal of pre-processing the data is to numericalize the text using the pre-processing steps that are consistent with training ELMo model.
 
@@ -85,7 +85,7 @@ print(dataset[2]) # print the same tokenized sentence as above
 ```
 
 
-#### Using Vocab from Pre-trained ELMo
+#### Using Vocab from pre-trained ELMo
 
 Numericalizing the dataset is as straightforward as using the ELMo-specific character-level
 vocabulary as transformation. For details on ELMo's vocabulary, see
