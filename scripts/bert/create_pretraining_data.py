@@ -122,7 +122,7 @@ def write_to_files_np(features, tokenizer, max_seq_length,
 
 def tokenize_lines_fn(x):
     """Worker function to tokenize lines based on the tokenizer."""
-    lines, tokenizer, vocab = x
+    lines, tokenizer = x
     results = []
     for line in lines:
         if not line:
@@ -239,7 +239,7 @@ def create_training_instances(x):
             for worker_idx in range(nworker):
                 start = worker_idx * num_lines_per_worker
                 end = min((worker_idx + 1) * num_lines_per_worker, num_lines)
-                process_args.append((lines[start:end], tokenizer, vocab))
+                process_args.append((lines[start:end], tokenizer))
             if worker_pool:
                 tokenized_results = worker_pool.map(tokenize_lines_fn, process_args)
             else:
@@ -444,7 +444,7 @@ def find_chinese_whole_word(universal_tokenizer, tokens, chs_tokenizer=None):
             cut_results = chs_tokenizer(''.join(tokens[chs_start: chs_end]))
             idx = 0
             for cut_token in cut_results:
-                for i, char in enumerate(cut_token):
+                for i in range(len(cut_token)):
                     if i == 0:
                         chs_token_bio[chs_start + idx] = 'B'
                     else:
