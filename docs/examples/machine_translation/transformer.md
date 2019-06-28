@@ -44,7 +44,7 @@ wmt_model_name = 'transformer_en_de_512'
 wmt_transformer_model, wmt_src_vocab, wmt_tgt_vocab = \
     nlp.model.get_model(wmt_model_name,
                         dataset_name='WMT2014',
-                        pre-trained=True,
+                        pretrained=True,
                         ctx=ctx)
 
 # we are using mixed vocab of EN-DE, so the source and target language vocab are the same
