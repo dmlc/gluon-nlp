@@ -214,6 +214,8 @@ def test_berttokenizer():
     assert tokenizer(u"unwanted running") == [
         "un", "##want", "##ed", "runn", "##ing"]
     assert tokenizer(u"unwantedX running") == ["[UNK]", "runn", "##ing"]
+    assert tokenizer.is_first_subword('un')
+    assert not tokenizer.is_first_subword('##want')
 
     # test BERTTokenizer
     vocab_tokens = ["[CLS]", "[SEP]", "want", "##want", "##ed", "wa", "un", "runn",
@@ -269,6 +271,8 @@ def test_bert_sentencepiece_sentences_transform():
     f = download(url, overwrite=True)
     bert_vocab = BERTVocab.from_sentencepiece(f)
     bert_tokenizer = t.BERTSPTokenizer(f, bert_vocab, lower=True)
+    assert bert_tokenizer.is_first_subword(u'▁this')
+    assert not bert_tokenizer.is_first_subword(u'this')
     max_len = 36
     data_train_raw = SimpleDataset(
         [[u'This is a very awesome, life-changing sentence.']])

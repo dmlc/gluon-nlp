@@ -17,11 +17,31 @@
 # specific language governing permissions and limitations
 # under the License.
 
-# pylint: disable=wildcard-import
-"""NLP loss."""
+"""Various utility methods for Question Answering"""
+import math
 
-from .activation_regularizer import *
-from .loss import *
-from .label_smoothing import *
 
-__all__ = activation_regularizer.__all__ + loss.__all__ + label_smoothing.__all__
+def warm_up_lr(base_lr, iteration, lr_warmup_steps):
+    """Returns learning rate based on current iteration.
+
+    This function is used to implement learning rate warm up technique.
+
+    math::
+
+      lr = min(base_lr, base_lr * (log(iteration) /  log(lr_warmup_steps)))
+
+    Parameters
+    ----------
+    base_lr : float
+        Initial learning rage
+    iteration : int
+        Current iteration number
+    lr_warmup_steps : int
+        Learning rate warm up steps
+
+    Returns
+    -------
+    learning_rate : float
+        Learning rate
+    """
+    return min(base_lr, base_lr * (math.log(iteration) / math.log(lr_warmup_steps)))

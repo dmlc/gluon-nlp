@@ -35,11 +35,84 @@ utils.main_wrapper(
 core_logic: {
   utils.parallel_stage('Doc Test', [
     build_steps.test_doctest('gluon-nlp-cpu-py3', 'cpu/py3',
-                             'src/gluonnlp', 'src/gluonnlp', 4)
+                 'src/gluonnlp', 'src/gluonnlp', 4)
   ])
 
+  // Compile example notebooks, Doctest & Create Website
+  node {  // Single node parallelism
+    ws('gluon-nlp-cpu-py3') {
+      stage("Prepare conda environment for website") {
+        utils.init_git()
+        // Require a full environment here due to sphinx build step
+        // after compiling and downloading the notebooks
+        sh 'source ci/prepare_clean_env.sh cpu/py3'
+      }
+
+      stage("Create Website") {
+        def tests = [:]
+        for (f in findFiles(glob: '**/docs/examples/*/*.md')) {
+          def md_file = f.toString()  // Convert FileWrapper to String
+          def short_name = md_file["docs/examples/".length()..-1]
+          tests[short_name] = { ->
+            def base_name = md_file[0..-4] + ''
+            def ipynb_file = base_name + '.ipynb'
+            def stdout_file = base_name + '.stdout.log'
+            def stderr_file = base_name + '.stderr.log'
+            stage(short_name) {  // remove common path from name
+              // Submit AWS Batch jobs for each example notebook
+              // The converted notebooks and the conversion logs are
+              // saved to S3 and retrieved on the CI server once the jobs
+              // finished.
+              sh """
+              conda activate ./conda/cpu/py3
+
+              python3 ci/batch/submit-job.py --region us-east-1 --wait \
+                --timeout 1800 --saved-output ./docs/examples --conda-env docker/py3 \
+                --name GluonNLP-${env.BRANCH_NAME}-${env.BUILD_NUMBER} \
+                --save-path batch/${env.BRANCH_NAME}/${env.BUILD_NUMBER}/docs/examples \
+                --work-dir . --source-ref refs/pull/${env.CHANGE_ID}/head \
+                --command \"python3 docs/md2ipynb.py ${md_file} > ${stdout_file} 2> ${stderr_file} \"
+              BATCH_EXIT_CODE=\$?
+
+              aws s3api wait object-exists --bucket gluon-nlp-staging \
+                --key batch/${env.BRANCH_NAME}/${env.BUILD_NUMBER}/${stderr_file}
+              aws s3 cp s3://gluon-nlp-staging/batch/${env.BRANCH_NAME}/${env.BUILD_NUMBER}/${stderr_file} ${stderr_file}
+              cat ${stderr_file}
+
+              aws s3api wait object-exists --bucket gluon-nlp-staging \
+                --key batch/${env.BRANCH_NAME}/${env.BUILD_NUMBER}/${stdout_file}
+              aws s3 cp s3://gluon-nlp-staging/batch/${env.BRANCH_NAME}/${env.BUILD_NUMBER}/${stdout_file} ${stdout_file}
+              cat ${stdout_file}
+
+              aws s3 cp s3://gluon-nlp-staging/batch/${env.BRANCH_NAME}/${env.BUILD_NUMBER}/${ipynb_file} ${ipynb_file}
+
+              exit \$BATCH_EXIT_CODE
+              """
+            }
+          }
+        }
+
+        parallel tests
+      }
+
+      stage("Upload Website") {
+        if (env.BRANCH_NAME.startsWith('PR-')){
+          bucket = 'gluon-nlp-staging'
+          path = env.BRANCH_NAME+'/'+env.BUILD_NUMBER
+        } else {
+          bucket = 'gluon-nlp'
+          path = env.BRANCH_NAME
+        }
+        sh """
+        conda activate ./conda/cpu/py3
+        make docs
+        ci/upload_doc.sh ${bucket} ${path}
+        """
+      }
+    }
+  }
+
   utils.parallel_stage('Documentation', [
-    build_steps.create_website('gluon-nlp-gpu-py3', 'gpu/py3'),
     build_steps.website_linkcheck('gluon-nlp-cpu-py3', 'cpu/py3')
   ])
 

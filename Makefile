@@ -60,11 +60,16 @@ clean:
 
 compile_notebooks:
 	for f in $(shell find docs/examples -type f -name '*.md' -print) ; do \
-		DIR=`dirname $$f` ; \
-		BASENAME=`basename $$f` ; \
-		echo $$DIR $$BASENAME ; \
+		DIR=$$(dirname $$f) ; \
+		BASENAME=$$(basename $$f) ; \
+		TARGETNAME=$${BASENAME%.md}.ipynb ; \
+		echo $$DIR $$BASENAME $$TARGETNAME; \
 		cd $$DIR ; \
-		python $(MD2IPYNB) $$BASENAME ; \
+		if [ -f $$TARGETNAME ]; then \
+			echo $$TARGETNAME exists. Skipping compilation of $$BASENAME in Makefile. ; \
+		else \
+			python $(MD2IPYNB) $$BASENAME ; \
+		fi ; \
 		cd - ; \
 	done;
 

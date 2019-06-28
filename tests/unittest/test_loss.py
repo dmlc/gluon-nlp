@@ -17,9 +17,10 @@
 # specific language governing permissions and limitations
 # under the License.
 
+import gluonnlp as nlp
 import mxnet as mx
 from mxnet import gluon
-import gluonnlp as nlp
+import numpy as np
 
 def testActivationRegularizationLoss():
     ar = nlp.loss.ActivationRegularizationLoss(2)
@@ -32,3 +33,33 @@ def testTemporalActivationRegularizationLoss():
     print(tar)
     tar(*[mx.nd.arange(1000).reshape(10, 10, 10),
           mx.nd.arange(1000).reshape(10, 10, 10)])
+
+def testMaskedSoftmaxCrossEntropyLoss():
+    loss_fn = nlp.loss.MaskedSoftmaxCELoss()
+    pred = mx.nd.array([[[0,0,10],[10,0,0]]]) #N,T,C 1,2,3
+    label = mx.nd.array([[2,2]])
+    valid_length = mx.nd.array([1,])
+    loss = loss_fn(pred, label, valid_length)
+    assert loss < 0.1, "1st timestep prediction is correct, but loss was high"
+    valid_length = mx.nd.array([2,])
+    loss = loss_fn(pred, label, valid_length)
+    assert loss > 1, "2nd timestep prediction was wrong, but loss did not go up"
+
+def testLabelSmoothing():
+    # Testing that the label gets smoothed at the right location
+    sparse_labels = [0,1,2]
+    for epsilon, units in zip([0.1, 0.3, 0.5], [5, 10, 20]):
+        smoother = nlp.loss.LabelSmoothing(epsilon=epsilon, units=units)
+        smoothed_labels = smoother(mx.nd.array(sparse_labels))
+        for i, label in enumerate(sparse_labels):
+            for k in range(units):
+                if k == label:
+                    mx.test_utils.assert_almost_equal(
+                        smoothed_labels[i,k].asnumpy(),
+                        np.array([1 - epsilon/units * (units-1)])
+                    )
+                else:
+                    mx.test_utils.assert_almost_equal(
+                        smoothed_labels[i,k].asnumpy(),
+                        np.array([epsilon/units])
+                    )
