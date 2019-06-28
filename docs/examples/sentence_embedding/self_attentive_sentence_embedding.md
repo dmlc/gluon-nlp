@@ -153,7 +153,7 @@ with mp.Pool() as pool:
 
 ```
 
-## Bucketing, mini-batches and the `DataLoader`
+## Bucketing, mini-batches, and the `DataLoader`
 Since each sentence may have a different length, we need to use `Pad` to fill the sentences in a mini-batch to equal lengths so that the data can be quickly tensored on the GPU. At the same time, we need to use `Stack` to stack the category tags of a batch of data. For convenience, we use `Tuple` to combine `Pad` and `Stack`.
 
 In order to make the length of the sentence pad in each mini-batch as small as possible, we should make the sentences with similar lengths in a batch as much as possible. In light of this, we consider constructing a sampler using `FixedBucketSampler`, which defines how the samples in a dataset will be iterated in a more economical way.
@@ -223,7 +223,7 @@ $$
 Here, W<sub>s1</sub> is a weight matrix with the shape: d<sub>a</sub>-by-2u, where d<sub>a</sub> is a hyperparameter.
 W<sub>s2</sub> is a weight matrix with the shape: r-by-d<sub>a</sub>, where r is the number of different attentions you want to use.
 
-When the attention matrix $$A$$ and the output $$H$$ of the LSTM are obtained, the final representation is obtained by $$M = AH$$.
+When the attention matrix `A` and the output `H` of the LSTM are obtained, the final representation is obtained by $$M = AH$$.
 
 We can first customize a layer of attention, specify the number of hidden nodes (`att_unit`) and the number of attention channels (`att_hops`).
 
@@ -360,13 +360,13 @@ model.embedding_layer.weight.set_data(vocab.embedding.idx_to_vec)
 model.embedding_layer.collect_params().setattr('grad_req', 'null')
 ```
 
-Using r attention can improve the representation of sentences with different semantics, but if the value of each line in the attention matrix $$A$$ (r-byn) is very close, that is, there is no difference between several attentions. Subsequently, in $$M = AH$$, the resulting $$M$$ will contain a lot of redundant information.
-So in order to solve this problem, we should try to force $$A$$ to ensure that the value of each line has obvious differences, that is, try to satisfy the diversity of attention. Therefore, a penalty can be used to achieve this goal.
+Using r attention can improve the representation of sentences with different semantics, but if the value of each line in the attention matrix `A` (r-byn) is very close, that is, there is no difference between several attentions. Subsequently, in $$M = AH$$, the resulting `M` will contain a lot of redundant information.
+So in order to solve this problem, we should try to force `A` to ensure that the value of each line has obvious differences, that is, try to satisfy the diversity of attention. Therefore, a penalty can be used to achieve this goal.
 
 $$ P = ||(AA^T-I)||_F^2 $$
 
 
-It can be seen from the above formula that if the value of each row of $$A$$ is more similar, the result of $$P$$ will be larger, and the value of $$A$$ is less similar for each row, and $$P$$ is smaller. This means that when the r-focused diversity of $$A$$ is larger, the smaller $$P$$ is. So by including this penalty item with the loss of the model, we can try to ensure the diversity of $$A$$.
+It can be seen from the above formula that if the value of each row of `A` is more similar, the result of `P` will be larger, and the value of `A` is less similar for each row, and `P` is smaller. This means that when the r-focused diversity of `A` is larger, the smaller `P` is. So by including this penalty item with the loss of the model, we can try to ensure the diversity of `A`.
 
 We incorporate these findings in the code below adding in the penalty coefficient along with the standard loss function.
 
