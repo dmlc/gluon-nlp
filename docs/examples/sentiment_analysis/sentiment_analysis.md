@@ -348,6 +348,6 @@ Indeed, we can feed in any sentence and determine the sentiment with relative ea
 
 We built a Sentiment Analysis by reusing the feature extractor from the pre-trained language model. The modular design of Gluon blocks makes it very easy to put together models for various needs. GluonNLP provides powerful building blocks that substantially simplify the process of constructing an efficient data pipeline and versatile models.
 
-#### More information
+### More information
 
 GluonNLP documentation is here along with more tutorials to provide you with the easiest experience in getting to know and use our tool: http://gluon-nlp.mxnet.io/index.html
