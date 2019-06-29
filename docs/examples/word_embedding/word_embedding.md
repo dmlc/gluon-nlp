@@ -2,27 +2,27 @@
 
 In this notebook, we'll demonstrate how to use pre-trained word embeddings.
 To see why word embeddings are useful, it's worth comparing them to the alternative.
-Without word embeddings, we might represent each word by a one-hot vector `[0, ...,0, 1, 0, ... 0]`,
-that takes value `1` at the index corresponding to the appropriate vocabulary word,
-and value `0` everywhere else.
+Without word embeddings, we may represent each word with a one-hot vector `[0, ...,0, 1, 0, ... 0]`,
+where at the index corresponding to the appropriate vocabulary word, `1` is placed,
+and the value `0` occurs everywhere else.
 The weight matrices connecting our word-level inputs to the network's hidden layers would each be $v \times h$,
 where $v$ is the size of the vocabulary and $h$ is the size of the hidden layer.
-With 100,000 words feeding into an LSTM layer with $1000$ nodes, we would need to learn
-$4$ different weight matrices (one for each of the LSTM gates), each with 100M weights, and thus 400 million parameters in total.
+With 100,000 words feeding into an LSTM layer with $1000$ nodes, the model would need to learn
+$4$ different weight matrices (one for each of the LSTM gates), each with 100 million weights, and thus 400 million parameters in total.
 
 Fortunately, it turns out that a number of efficient techniques
 can quickly discover broadly useful word embeddings in an *unsupervised* manner.
 These embeddings map each word onto a low-dimensional vector $w \in R^d$ with $d$ commonly chosen to be roughly $100$.
 Intuitively, these embeddings are chosen based on the contexts in which words appear.
-Words that appear in similar contexts (like "tennis" and "racquet") should have similar embeddings
-while words that do not like (like "rat" and "gourmet") should have dissimilar embeddings.
+Words that appear in similar contexts, like "tennis" and "racquet," should have similar embeddings
+while words that are not alike, like "rat" and "gourmet," should have dissimilar embeddings.
 
 Practitioners of deep learning for NLP typically initialize their models
-using *pretrained* word embeddings, bringing in outside information, and reducing the number of parameters that a neural network needs to learn from scratch.
-
+using *pre-trained* word embeddings, bringing in outside information, and reducing the number of parameters that a neural network needs to learn from scratch.
 
 Two popular word embeddings are GloVe and fastText.
-The following examples uses pre-trained word embeddings drawn from the following sources:
+
+The following examples use pre-trained word embeddings drawn from the following sources:
 
 * GloVe project website：https://nlp.stanford.edu/projects/glove/
 * fastText project website：https://fasttext.cc/
@@ -47,6 +47,7 @@ and use such embeddings in Gluon.
 First, let's assign a unique ID and word vector to each word in the vocabulary
 in just a few lines of code.
 
+
 ### Creating Vocabulary from Data Sets
 
 To begin, suppose that we have a simple text data set consisting of newline-separated strings.
@@ -66,7 +67,9 @@ counter = nlp.data.count_tokens(simple_tokenize(text))
 The obtained `counter` behaves like a Python dictionary whose key-value pairs consist of words and their frequencies, respectively.
 We can then instantiate a `Vocab` object with a counter.
 Because `counter` tracks word frequencies, we are able to specify arguments
-such as `max_size` and `min_freq` to the `Vocab` constructor for restricting the size of the resulting vocabulary. Suppose that we want to build indices for all the keys in counter.
+such as `max_size` (maximum size) and `min_freq` (minimum frequency) to the `Vocab` constructor to restrict the size of the resulting vocabulary. 
+
+Suppose that we want to build indices for all the keys in counter.
 If we simply want to construct a  `Vocab` containing every word, then we can supply `counter`  the only argument.
 
 ```{.python .input}
@@ -80,25 +83,27 @@ for word in vocab.idx_to_token:
     print(word)
 ```
 
-In the opposite direction, we can grab an idex given a token using `vocab.token_to_idx`.
+Contrarily, we can also grab an index given a token using `vocab.token_to_idx`.
 
 ```{.python .input}
 print(vocab.token_to_idx["<unk>"])
 print(vocab.token_to_idx["world"])
 ```
 
+In Gluon NLP, for each word, there are three representations: the index of where it occurred in the original input (idx), the embedding (or vector/vec), and the token (the actual word). At any point, we may use any of the following methods to switch between the three representations: `idx_to_vec`, `idx_to_token`, `token_to_idx`.
+
 ### Attaching word embeddings
 
 Our next step will be to attach word embeddings to the words indexed by `vocab`.
 In this example, we'll use *fastText* embeddings trained on the *wiki.simple* dataset.
 First, we'll want to create a word embedding instance by calling `nlp.embedding.create`,
-specifying the embedding type (un-named argument) `fasttext` and the named argument `source='wiki.simple'`.
+specifying the embedding type `fasttext` (an unnamed argument) and the source `source='wiki.simple'` (the named argument).
 
 ```{.python .input}
 fasttext_simple = nlp.embedding.create('fasttext', source='wiki.simple')
 ```
 
-To attach the newly loaded word embeddings `fasttext_simple` to indexed words in `vocab`, we simply call vocab's `set_embedding` method:
+To attach the newly loaded word embeddings `fasttext_simple` to indexed words in `vocab`, we can simply call vocab's `set_embedding` method:
 
 ```{.python .input}
 vocab.set_embedding(fasttext_simple)
@@ -119,8 +124,8 @@ len(vocab)
 ```
 
 By default, the vector of any token that is unknown to `vocab` is a zero vector.
-Its length is equal to the vector dimension of the fastText word embeddings:
-300.
+Its length is equal to the vector dimensions of the fastText word embeddings:
+(300,).
 
 ```{.python .input}
 vocab.embedding['beautiful'].shape
@@ -132,14 +137,13 @@ The first five elements of the vector of any unknown token are zeros.
 vocab.embedding['beautiful'][:5]
 ```
 
-Let us check the shape of the embedding of words 'hello' and 'world' from
-`vocab`.
+Let us check the shape of the embedding of the words 'hello' and 'world' from `vocab`.
 
 ```{.python .input}
 vocab.embedding['hello', 'world'].shape
 ```
 
-We can access the first five elements of the embedding of 'hello' and 'world'.
+We can access the first five elements of the embedding of 'hello' and 'world' and see that they are non-zero.
 
 ```{.python .input}
 vocab.embedding['hello', 'world'][:, :5]
@@ -148,7 +152,7 @@ vocab.embedding['hello', 'world'][:, :5]
 ### Using Pre-trained Word Embeddings in Gluon
 
 To demonstrate how to use pre-
-trained word embeddings in Gluon, let us first obtain indices of the words
+trained word embeddings in Gluon, let us first obtain the indices of the words
 'hello' and 'world'.
 
 ```{.python .input}
@@ -156,8 +160,8 @@ vocab['hello', 'world']
 ```
 
 We can obtain the vectors for the words 'hello' and 'world' by specifying their
-indices (2 and 1) and the weight matrix `vocab.embedding.idx_to_vec` in
-`gluon.nn.Embedding`.
+indices (5 and 4) and the weight or embedding matrix, which we get from calling `vocab.embedding.idx_to_vec` in
+`gluon.nn.Embedding`. We initialize a new layer and set the weights using the layer.weight.set_data method. Subsequently, we pull out the indices 5 and 4 from the weight vector and check their first five entries.
 
 ```{.python .input}
 input_dim, output_dim = vocab.embedding.idx_to_vec.shape
@@ -207,7 +211,7 @@ print(vocab.idx_to_token[71424])
 ## Applications of Word Embeddings
 
 To apply word embeddings, we need to define
-cosine similarity. It can compare similarity of two vectors.
+cosine similarity. Cosine similarity determines the similarity between two vectors.
 
 ```{.python .input}
 from mxnet import nd
@@ -215,8 +219,8 @@ def cos_sim(x, y):
     return nd.dot(x, y) / (nd.norm(x) * nd.norm(y))
 ```
 
-The range of cosine similarity between two vectors is between -1 and 1. The
-larger the value, the similarity between two vectors.
+The range of cosine similarity between two vectors can be between -1 and 1. The
+larger the value, the larger the similarity between the two vectors.
 
 ```{.python .input}
 x = nd.array([1, 2])
@@ -231,8 +235,12 @@ print(cos_sim(x, z))
 
 Given an input word, we can find the nearest $k$ words from
 the vocabulary (400,000 words excluding the unknown token) by similarity. The
-similarity between any pair of words can be represented by the cosine similarity
+similarity between any given pair of words can be represented by the cosine similarity
 of their vectors.
+
+We first must normalize each row, followed by taking the dot product of the entire
+vocabulary embedding matrix and the single word embedding (`dot_prod`). 
+We can then find the indices for which the dot product is greatest (`topk`), which happens to be the indices of the most similar words. 
 
 ```{.python .input}
 def norm_vecs_by_row(x):
@@ -248,32 +256,32 @@ def get_knn(vocab, k, word):
     return vocab.to_tokens(indices[1:])
 ```
 
-Let us find the 5 most similar words of 'baby' from the vocabulary (size:
+Let us find the 5 most similar words to 'baby' from the vocabulary (size:
 400,000 words).
 
 ```{.python .input}
 get_knn(vocab, 5, 'baby')
 ```
 
-We can verify the cosine similarity of vectors of 'baby' and 'babies'.
+We can verify the cosine similarity of the vectors of 'baby' and 'babies'.
 
 ```{.python .input}
 cos_sim(vocab.embedding['baby'], vocab.embedding['babies'])
 ```
 
-Let us find the 5 most similar words of 'computers' from the vocabulary.
+Let us find the 5 most similar words to 'computers' from the vocabulary.
 
 ```{.python .input}
 get_knn(vocab, 5, 'computers')
 ```
 
-Let us find the 5 most similar words of 'run' from the vocabulary.
+Let us find the 5 most similar words to 'run' from the given vocabulary.
 
 ```{.python .input}
 get_knn(vocab, 5, 'run')
 ```
 
-Let us find the 5 most similar words of 'beautiful' from the vocabulary.
+Let us find the 5 most similar words to 'beautiful' from the vocabulary.
 
 ```{.python .input}
 get_knn(vocab, 5, 'beautiful')
@@ -282,13 +290,15 @@ get_knn(vocab, 5, 'beautiful')
 ### Word Analogy
 
 We can also apply pre-trained word embeddings to the word
-analogy problem. For instance, "man : woman :: son : daughter" is an analogy.
-The word analogy completion problem is defined as: for analogy 'a : b :: c : d',
-given teh first three words 'a', 'b', 'c', find 'd'. The idea is to find the
+analogy problem. For example, "man : woman :: son : daughter" is an analogy.
+This sentence can also be read as "A man is to a woman as a son is to a daughter."
+
+The word analogy completion problem is defined concretely as: for analogy 'a : b :: c : d',
+given the first three words 'a', 'b', 'c', find 'd'. The idea is to find the
 most similar word vector for vec('c') + (vec('b')-vec('a')).
 
 In this example,
-we will find words by analogy from the 400,000 indexed words in `vocab`.
+we will find words that are analogous from the 400,000 indexed words in `vocab`.
 
 ```{.python .input}
 def get_top_k_by_analogy(vocab, k, word1, word2, word3):
@@ -301,14 +311,14 @@ def get_top_k_by_analogy(vocab, k, word1, word2, word3):
     return vocab.to_tokens(indices)
 ```
 
-Complete word analogy 'man : woman :: son :'.
+We leverage this method to find the word to complete the analogy 'man : woman :: son :'.
 
 ```{.python .input}
 get_top_k_by_analogy(vocab, 1, 'man', 'woman', 'son')
 ```
 
 Let us verify the cosine similarity between vec('son')+vec('woman')-vec('man')
-and vec('daughter')
+and vec('daughter').
 
 ```{.python .input}
 def cos_sim_word_analogy(vocab, word1, word2, word3, word4):
@@ -319,19 +329,19 @@ def cos_sim_word_analogy(vocab, word1, word2, word3, word4):
 cos_sim_word_analogy(vocab, 'man', 'woman', 'son', 'daughter')
 ```
 
-Complete word analogy 'beijing : china :: tokyo : '.
+And to perform some more tests, let's try the following analogy: 'beijing : china :: tokyo : '.
 
 ```{.python .input}
 get_top_k_by_analogy(vocab, 1, 'beijing', 'china', 'tokyo')
 ```
 
-Complete word analogy 'bad : worst :: big : '.
+And another word analogy: 'bad : worst :: big : '.
 
 ```{.python .input}
 get_top_k_by_analogy(vocab, 1, 'bad', 'worst', 'big')
 ```
 
-Complete word analogy 'do : did :: go :'.
+And the last analogy: 'do : did :: go :'.
 
 ```{.python .input}
 get_top_k_by_analogy(vocab, 1, 'do', 'did', 'go')
