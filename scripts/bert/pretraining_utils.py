@@ -485,16 +485,16 @@ def generate_dev_set(tokenizer, vocab, cache_file, args):
     np.random.seed(0)
     random.seed(0)
     mx.random.seed(0)
-
     worker_pool = multiprocessing.Pool()
-    eval_files = glob.glob(os.path.expanduser(args.data_eval))
+    eval_files = sum([glob.glob(os.path.expanduser(d.strip())) for d in args.data_eval.split(',')], [])
     num_files = len(eval_files)
     assert num_files > 0, 'Number of eval files must be greater than 0.' \
                           'Only found %d files at %s'%(num_files, args.data_eval)
     logging.info('Generating validation set from %d files on rank 0.', len(eval_files))
     create_training_instances((eval_files, tokenizer, args.max_seq_length,
                                args.short_seq_prob, args.masked_lm_prob,
-                               args.max_predictions_per_seq, vocab,
+                               args.max_predictions_per_seq,
+                               args.whole_word_mask, vocab,
                                1, args.num_data_workers,
                                worker_pool, cache_file))
     logging.info('Done generating validation set on rank 0.')
