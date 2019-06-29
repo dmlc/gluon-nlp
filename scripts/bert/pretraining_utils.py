@@ -18,7 +18,6 @@
 # under the License.
 
 """Utilities for pre-training."""
-import glob
 import time
 import os
 import logging
@@ -175,7 +174,7 @@ def get_pretrain_data_text(data, batch_size, num_ctxes, shuffle, use_avg_len,
         The number of worker processes for dataset contruction.
     """
     # handle commas in the provided path
-    num_files = sum([len(glob.glob(os.path.expanduser(d.strip()))) for d in data.split(',')])
+    num_files = len(nlp.utils.glob(data))
     logging.info('%d files found.', num_files)
     assert num_files >= num_parts, \
         'Number of training files must be greater than the number of partitions. ' \
@@ -276,7 +275,7 @@ def get_pretrain_data_npz(data, batch_size, num_ctxes, shuffle, use_avg_len,
                           num_buckets, num_parts=1, part_idx=0):
     """create dataset for pretraining based on pre-processed npz files."""
     # handle commas in the provided path
-    num_files = sum([len(glob.glob(os.path.expanduser(d.strip()))) for d in data.split(',')])
+    num_files = len(nlp.utils.glob(data))
     logging.info('%d files found.', num_files)
     assert num_files >= num_parts, \
         'Number of training files must be greater than the number of partitions. ' \
@@ -486,7 +485,7 @@ def generate_dev_set(tokenizer, vocab, cache_file, args):
     random.seed(0)
     mx.random.seed(0)
     worker_pool = multiprocessing.Pool()
-    eval_files = sum([glob.glob(os.path.expanduser(d.strip())) for d in args.data_eval.split(',')], [])
+    eval_files = nlp.utils.glob(args.data_eval)
     num_files = len(eval_files)
     assert num_files > 0, 'Number of eval files must be greater than 0.' \
                           'Only found %d files at %s'%(num_files, args.data_eval)
