@@ -128,3 +128,7 @@ conda
 
 # Mac
 .DS_Store
+
+# license checker
+ci/rat/apache-rat/
+ci/rat/apache-rat.jar
