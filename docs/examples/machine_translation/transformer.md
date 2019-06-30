@@ -1,8 +1,8 @@
-# Machine Translation with Transformer
+# Machine Translation with Transformers
 
-In this notebook, we will show how to use Transformer introduced in [1] and evaluate the pretrained model with GluonNLP. Transformer model is shown to be more accurate and easier to parallelize than previous seq2seq-based models such as Google Neural Machine Translation. We will use the state-of-the-art pretrained Transformer model, evaluate the pretrained Transformer model on newstest2014 and translate a few sentences ourselves with the `BeamSearchTranslator`;
+In this notebook, we will show how to use Transformer introduced in [1] and evaluate the pre-trained model with GluonNLP. Transformer model is shown to be more accurate and easier to parallelize than previous seq2seq-based models such as Google Neural Machine Translation. We will use the state-of-the-art pre-trained Transformer model, evaluate the pre-trained Transformer model on newstest2014 and translate a few sentences ourselves with the `BeamSearchTranslator`;
 
-## Preparation
+## Setup
 
 We start with some usual preparation such as importing libraries and setting the environment.
 
@@ -19,7 +19,7 @@ from mxnet import gluon
 import gluonnlp as nlp
 ```
 
-### Set Environment
+### Setup the environment
 
 ```{.python .input}
 np.random.seed(100)
@@ -28,13 +28,13 @@ mx.random.seed(10000)
 ctx = mx.gpu(0)
 ```
 
-## Use the Pretrained Transformer model
+## Using the pre-trained transformer model
 
-Next, we load the Transformer model in GluonNLP model zoo and use the full newstest2014 segment of WMT 2014 English-German test dataset, and evaluate the model on it.
+Next, we load the Transformer model in GluonNLP model zoo and use the full `newstest2014` segment of the WMT 2014 English-German test dataset, and evaluate the model on it.
 
-### Get the Transformer
+### Load the transformer
 
-We load the pretrained Transformer using the model API in GluonNLP, which returns the source and target vocabulary along with the model.
+We load the pre-trained Transformer using the model API in GluonNLP, which returns the source and target vocabulary along with the model.
 
 ```{.python .input}
 import nmt
@@ -55,9 +55,9 @@ The Transformer model architecture is shown as below:
 
 <div style="width: 500px;">![transformer](transformer.png)</div>
 
-### Load and Preprocess WMT 2014 Dataset
+### Load and preprocess the dataset
 
-We then load the newstest2014 segment in WMT 2014 English-German test dataset for evaluation purpose.
+We then load the `newstest2014` segment in the WMT 2014 English-German test dataset for evaluation purpose.
 
 The following shows how to process the dataset and cache the processed dataset
 for the future use. The processing steps include:
@@ -113,9 +113,9 @@ def get_length_index_fn():
 wmt_data_test_with_len = wmt_dataset_processed.transform(get_length_index_fn(), lazy=False)
 ```
 
-### Create Sampler and DataLoader for WMT 2014 Dataset
+### Create the sampler and `DataLoader`
 
-Now, we have obtained the transformed datasets. The next step is to construct sampler and DataLoader. First, we need to construct batchify function, which pads and stacks sequences to form mini-batch.
+Now, we have obtained the transformed datasets. The next step is to construct the sampler and `DataLoader`. First, we need to construct the batchify function, which pads and stacks sequences to form mini-batches.
 
 ```{.python .input}
 wmt_test_batchify_fn = nlp.data.batchify.Tuple(
@@ -127,8 +127,7 @@ wmt_test_batchify_fn = nlp.data.batchify.Tuple(
 ```
 
 In GluonNLP, all dataset items are tuples. In the preprocessed `wmt_data_test_with_len`, it includes
-`(src, tgt, len(src), len(tgt), idx)` elements. In order to express how we'd like to batchify them
-in GluonNLP, we use the built-in batchify functions.
+`(src, tgt, len(src), len(tgt), idx)` elements. In order to express how we'd like to batchify them, we use the built-in batchify functions.
 
 * [Tuple](../../api/modules/data.batchify.rst#gluonnlp.data.batchify.Tuple) is the GluonNLP way of applying different batchify functions to each element of a dataset item. In this case, we are applying `Pad` to `src` and `tgt`, `Stack` to `len(src)` and `len(tgt)` with conversion to float32, and simple `Stack` to `idx` without type conversion.
 * [Pad](../../api/modules/data.batchify.rst#gluonnlp.data.batchify.Pad) takes the elements from all dataset items in a batch, and pad them according to the item of maximum length to form a padded matrix/tensor.
@@ -147,7 +146,7 @@ wmt_test_batch_sampler = nlp.data.FixedBucketSampler(
 print(wmt_test_batch_sampler.stats())
 ```
 
-Given the samplers, we can use [DataLoader](https://mxnet.apache.org/versions/master/api/python/gluon/data.html#mxnet.gluon.data.DataLoader) to sample the datasets.
+Given the samplers, we can use a `[DataLoader]`(https://mxnet.apache.org/versions/master/api/python/gluon/data.html#mxnet.gluon.data.DataLoader) to sample the datasets.
 
 ```{.python .input}
 wmt_test_data_loader = gluon.data.DataLoader(
@@ -158,7 +157,7 @@ wmt_test_data_loader = gluon.data.DataLoader(
 len(wmt_test_data_loader)
 ```
 
-### Evaluate Transformer
+### Evaluating the transformer
 
 Next, we evaluate the performance of the model on the WMT test dataset. We first define the `BeamSearchTranslator` to generate the actual translations.
 
@@ -170,7 +169,7 @@ wmt_translator = nmt.translation.BeamSearchTranslator(
     max_length=200)
 ```
 
-Then we caculate the `loss` as well as the `bleu` score on the newstest2014 WMT 2014 English-German test dataset. This may take a while.
+Then we calculate the `loss` as well as the `bleu` score on the `newstest2014` WMT 2014 English-German test dataset. This may take a while.
 
 ```{.python .input}
 import time
@@ -218,7 +217,7 @@ for i in range(num_pairs):
 
 ### Translation Inference
 
-We herein show the actual translation example (EN-DE) when given a source language using the SOTA Transformer model.
+We now show the actual translation example (EN-DE) when given a source language using the SOTA Transformer model.
 
 ```{.python .input}
 import utils

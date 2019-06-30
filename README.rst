@@ -17,7 +17,7 @@ GluonNLP: Your Choice of Deep Learning for NLP
 
    <a href='http://ci.mxnet.io/job/gluon-nlp/job/master/'><img src='https://img.shields.io/badge/python-2.7%2C%203.6-blue.svg'></a>
    <a href='https://codecov.io/gh/dmlc/gluon-nlp'><img src='https://codecov.io/gh/dmlc/gluon-nlp/branch/master/graph/badge.svg'></a>
-   <a href='http://ci.mxnet.io/job/gluon-nlp/job/master/'><img src='http://ci.mxnet.io/job/gluon-nlp/job/master/badge/icon'></a>
+   <a href='http://ci.mxnet.io/job/gluonnlp-py3-master-gpu-doc/job/master/'><img src='http://ci.mxnet.io/buildStatus/icon?job=gluonnlp-py3-master-gpu-doc%2Fmaster'></a>
    <a href='https://pypi.org/project/gluonnlp/#history'><img src='https://img.shields.io/pypi/v/gluonnlp.svg'></a>
 
 GluonNLP is a toolkit that enables easy text preprocessing, datasets
