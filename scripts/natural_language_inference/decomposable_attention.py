@@ -27,7 +27,7 @@ from mxnet import gluon
 from mxnet.gluon import nn
 
 
-class NLIModel(gluon.HybridBlock):
+class DecomposableAttentionModel(gluon.HybridBlock):
     """
     A Decomposable Attention Model for Natural Language Inference
     using intra-sentence attention.
