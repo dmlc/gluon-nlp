@@ -910,7 +910,6 @@ class GloVe(TokenEmbedding):
 
     .. runblock:: pycon
 
-        >>> import warnings; warnings.filterwarnings('ignore');
         >>> import gluonnlp as nlp
         >>> nlp.embedding.list_sources('GloVe')
         -etc-
@@ -1002,7 +1001,6 @@ class FastText(TokenEmbedding):
 
     .. runblock:: pycon
 
-        >>> import warnings; warnings.filterwarnings('ignore');
         >>> import gluonnlp as nlp
         >>> nlp.embedding.list_sources('FastText')
         -etc-
@@ -1116,7 +1114,6 @@ class Word2Vec(TokenEmbedding):
 
     .. runblock:: pycon
 
-        >>> import warnings; warnings.filterwarnings('ignore');
         >>> import gluonnlp as nlp
         >>> nlp.embedding.list_sources('Word2Vec')
         -etc-
