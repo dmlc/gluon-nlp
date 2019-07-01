@@ -278,7 +278,7 @@ def create_training_instances(x):
                 instances.extend(
                     create_instances_from_document(
                         (all_documents, document_index, max_seq_length, short_seq_prob,
-                         masked_lm_prob, max_predictions_per_seq, whole_word_mask, 
+                         masked_lm_prob, max_predictions_per_seq, whole_word_mask,
                          cn_whole_word_mask, vocab, tokenizer)))
         npz_instances = convert_to_npz(instances, max_seq_length)
 
@@ -432,7 +432,7 @@ def find_chinese_whole_word(universal_tokenizer, tokens, cn_tokenizer=None):
     Returns
     -------
     A tuple of list: tokens, cn_token_bio;
-    
+
     Examples
     --------
     >>> find_chinese_whole_word(tokenizer, ['你', '好', '12', '##3'], JiebaTokenizer())
@@ -480,7 +480,8 @@ def create_masked_lm_predictions(tokens, masked_lm_prob, max_predictions_per_seq
         # at all -- we still predict each subword independently, softmaxed
         # over the entire vocabulary.
         if whole_word_mask and (len(cand_indexes) >= 1 and \
-           not tokenizer.is_first_subword(token) or (cn_whole_word_mask and cn_token_bio[i] == 'I')):
+           not tokenizer.is_first_subword(token) or \
+           (cn_whole_word_mask and cn_token_bio[i] == 'I')):
             cand_indexes[-1].append(i)
         else:
             cand_indexes.append([i])
