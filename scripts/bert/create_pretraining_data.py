@@ -201,6 +201,8 @@ def create_training_instances(x):
         The hard limit of the number of predictions for masked words
     whole_word_mask : bool
         Whether to do masking for whole words
+    cn_whole_word_mask : bool
+        Whether to do masking for chinese whole words
     vocab : BERTVocab
         The BERTVocab
     nworker : int
@@ -218,8 +220,8 @@ def create_training_instances(x):
     A tuple of np.ndarray : input_ids, masked_lm_ids, masked_lm_positions, masked_lm_weights
                             next_sentence_labels, segment_ids, valid_lengths
     """
-    (input_files, tokenizer, max_seq_length, short_seq_prob,
-     masked_lm_prob, max_predictions_per_seq, whole_word_mask, vocab,
+    (input_files, tokenizer, max_seq_length, short_seq_prob, masked_lm_prob,
+     max_predictions_per_seq, whole_word_mask, cn_whole_word_mask, vocab,
      dupe_factor, nworker, worker_pool, output_file) = x
 
     time_start = time.time()
@@ -264,7 +266,7 @@ def create_training_instances(x):
         for document_index in range(len(all_documents)):
             process_args.append((all_documents, document_index, max_seq_length, short_seq_prob,
                                  masked_lm_prob, max_predictions_per_seq, whole_word_mask,
-                                 vocab, tokenizer))
+                                 cn_whole_word_mask, vocab, tokenizer))
         for _ in range(dupe_factor):
             instances_results = worker_pool.map(create_instances_from_document, process_args)
             for instances_result in instances_results:
@@ -276,8 +278,8 @@ def create_training_instances(x):
                 instances.extend(
                     create_instances_from_document(
                         (all_documents, document_index, max_seq_length, short_seq_prob,
-                         masked_lm_prob, max_predictions_per_seq, whole_word_mask,
-                         vocab, tokenizer)))
+                         masked_lm_prob, max_predictions_per_seq, whole_word_mask, 
+                         cn_whole_word_mask, vocab, tokenizer)))
         npz_instances = convert_to_npz(instances, max_seq_length)
 
     (input_ids, masked_lm_ids, masked_lm_positions, masked_lm_weights,
@@ -301,7 +303,8 @@ def create_training_instances(x):
 def create_instances_from_document(x):
     """Creates `TrainingInstance`s for a single document."""
     (all_documents, document_index, max_seq_length, short_seq_prob,
-     masked_lm_prob, max_predictions_per_seq, whole_word_mask, vocab, tokenizer) = x
+     masked_lm_prob, max_predictions_per_seq, whole_word_mask,
+     cn_whole_word_mask, vocab, tokenizer) = x
     document = all_documents[document_index]
     _MASK_TOKEN = vocab[vocab.mask_token]
     _CLS_TOKEN = vocab[vocab.cls_token]
@@ -398,7 +401,7 @@ def create_instances_from_document(x):
                 (tokens, masked_lm_positions,
                  masked_lm_labels) = create_masked_lm_predictions(
                      tokens, masked_lm_prob, max_predictions_per_seq,
-                     whole_word_mask, vocab, tokenizer,
+                     whole_word_mask, cn_whole_word_mask, vocab, tokenizer,
                      _MASK_TOKEN, _CLS_TOKEN, _SEP_TOKEN)
                 instance = TrainingInstance(
                     tokens=tokens,
@@ -417,7 +420,7 @@ def create_instances_from_document(x):
 
 MaskedLmInstance = collections.namedtuple('MaskedLmInstance',
                                           ['index', 'label'])
-def find_chinese_whole_word(universal_tokenizer, tokens, chs_tokenizer=None):
+def find_chinese_whole_word(universal_tokenizer, tokens, cn_tokenizer=None):
     """find chinese characters in tokenized results, and tag them in BIO format with chinese "
        tokenizer.
     Parameters
@@ -428,38 +431,42 @@ def find_chinese_whole_word(universal_tokenizer, tokens, chs_tokenizer=None):
 
     Returns
     -------
-    A tuple of list: tokens, chs_token_bio;
-        e.g.:   tokens = ['你', '好', '12', '##3']
-                chs_token_bio = ['B', 'I', 'O', 'O']
+    A tuple of list: tokens, cn_token_bio;
+    
+    Examples
+    --------
+    >>> find_chinese_whole_word(tokenizer, ['你', '好', '12', '##3'], JiebaTokenizer())
+    ['你', '好', '12', '##3'], ['B', 'I', 'O', 'O']
     """
-    chs_token_bio = ['O']*len(tokens)
-    if isinstance(universal_tokenizer, BERTTokenizer) and chs_tokenizer is not None:
+    cn_token_bio = ['O']*len(tokens)
+    if isinstance(universal_tokenizer, BERTTokenizer) and cn_tokenizer is not None:
         is_chinese_list = ['1' if len(token) == 1 and
                            universal_tokenizer.basic_tokenizer._is_chinese_char(ord(token))
                            else '0'
                            for token in tokens]
         patten = ''.join(is_chinese_list)
         for re_find in re.finditer('[1]{1,}', patten):
-            chs_start, chs_end = (re_find.start(), re_find.end())
-            cut_results = chs_tokenizer(''.join(tokens[chs_start: chs_end]))
+            cn_start, cn_end = (re_find.start(), re_find.end())
+            cut_results = cn_tokenizer(''.join(tokens[cn_start: cn_end]))
             idx = 0
             for cut_token in cut_results:
                 for i in range(len(cut_token)):
                     if i == 0:
-                        chs_token_bio[chs_start + idx] = 'B'
+                        cn_token_bio[cn_start + idx] = 'B'
                     else:
-                        chs_token_bio[chs_start + idx] = 'I'
+                        cn_token_bio[cn_start + idx] = 'I'
                     idx += 1
-        assert len(tokens) == len(chs_token_bio)
-    return tokens, chs_token_bio
+        assert len(tokens) == len(cn_token_bio)
+    return cn_token_bio
 
 def create_masked_lm_predictions(tokens, masked_lm_prob, max_predictions_per_seq,
-                                 whole_word_mask, vocab, tokenizer,
+                                 whole_word_mask, cn_whole_word_mask, vocab, tokenizer,
                                  _MASK_TOKEN, _CLS_TOKEN, _SEP_TOKEN):
     """Creates the predictions for the masked LM objective."""
     cand_indexes = []
-    chs_tokenizer = JiebaTokenizer()
-    tokens, chs_token_bio = find_chinese_whole_word(tokenizer, tokens, chs_tokenizer)
+    if cn_whole_word_mask:
+        cn_token_bio = find_chinese_whole_word(tokenizer, tokens, JiebaTokenizer())
+
     for (i, token) in enumerate(tokens):
         if token in [vocab.cls_token, vocab.sep_token]:
             continue
@@ -473,7 +480,7 @@ def create_masked_lm_predictions(tokens, masked_lm_prob, max_predictions_per_seq
         # at all -- we still predict each subword independently, softmaxed
         # over the entire vocabulary.
         if whole_word_mask and (len(cand_indexes) >= 1 and \
-           not tokenizer.is_first_subword(token) or chs_token_bio[i] == 'I'):
+           not tokenizer.is_first_subword(token) or (cn_whole_word_mask and cn_token_bio[i] == 'I')):
             cand_indexes[-1].append(i)
         else:
             cand_indexes.append([i])
@@ -601,7 +608,7 @@ def main():
         count += len(file_split)
         process_args.append((file_split, tokenizer, args.max_seq_length, args.short_seq_prob,
                              args.masked_lm_prob, args.max_predictions_per_seq,
-                             args.whole_word_mask,
+                             args.whole_word_mask, args.cn_whole_word_mask,
                              vocab, args.dupe_factor, 1, None, output_file))
 
     # sanity check
@@ -667,6 +674,11 @@ if __name__ == '__main__':
         '--whole_word_mask',
         action='store_true',
         help='Whether to use whole word masking rather than per-subword masking.')
+
+    parser.add_argument(
+        '--cn_whole_word_mask',
+        action='store_true',
+        help='Whether to use whole word masking rather than per-subword masking for chinese words.')
 
     parser.add_argument(
         '--max_seq_length', type=int, default=512, help='Maximum sequence length.')
