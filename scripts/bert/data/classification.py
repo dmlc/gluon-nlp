@@ -21,9 +21,7 @@ __all__ = [
     'CoLATask', 'MNLITask', 'WNLITask', 'SSTTask', 'XNLITask'
 ]
 
-import os
 from mxnet.metric import Accuracy, F1, MCC, PearsonCorrelation, CompositeEvalMetric
-from gluonnlp.base import get_home_dir
 from gluonnlp.data import GlueCoLA, GlueSST2, GlueSTSB, GlueMRPC
 from gluonnlp.data import GlueQQP, GlueRTE, GlueMNLI, GlueQNLI, GlueWNLI
 try:
