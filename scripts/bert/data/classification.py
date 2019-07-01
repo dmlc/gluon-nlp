@@ -164,7 +164,7 @@ class QNLITask(GlueTask):
         metric = Accuracy()
         super(QNLITask, self).__init__(class_labels, metric, is_pair)
 
-    def get_dataset(self, segment='train')
+    def get_dataset(self, segment='train'):
         """Get the corresponding dataset for QNLI.
 
         Parameters
