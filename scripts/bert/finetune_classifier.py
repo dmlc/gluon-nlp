@@ -377,7 +377,10 @@ def test(loader_test, segment):
     logging.info('Time cost=%.2fs, throughput=%.2f samples/s', toc - tic,
                  dev_batch_size * len(loader_test) / (toc - tic))
     # write result to a file.
-    filename = args.task_name + segment.replace('test', '') + '.csv'
+    segment = segment.replace('_mismatched', '-mm')
+    segment = segment.replace('_matched', '-m')
+    segment = segment.replace('SST', 'SST-2')
+    filename = args.task_name + segment.replace('test', '') + '.tsv'
     test_path = os.path.join(args.output_dir, filename)
     with io.open(test_path, 'w', encoding='utf-8') as f:
         f.write(u'index\tprediction\n')
