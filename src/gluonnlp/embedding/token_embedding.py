@@ -912,6 +912,7 @@ class GloVe(TokenEmbedding):
 
         >>> import gluonnlp as nlp
         >>> nlp.embedding.list_sources('GloVe')
+        ['glove.42B.300d', 'glove.6B.100d', 'glove.6B.200d', -etc-]
 
     Parameters
     ----------
@@ -1002,6 +1003,7 @@ class FastText(TokenEmbedding):
 
         >>> import gluonnlp as nlp
         >>> nlp.embedding.list_sources('FastText')
+        ['crawl-300d-2M', -etc-, 'wiki.aa', -etc-, 'cc.af.300', -etc-]
 
 
     Parameters
@@ -1114,6 +1116,7 @@ class Word2Vec(TokenEmbedding):
 
         >>> import gluonnlp as nlp
         >>> nlp.embedding.list_sources('Word2Vec')
+        ['GoogleNews-vectors-negative300', 'freebase-vectors-skipgram1000-en', -etc-]
 
     Parameters
     ----------
