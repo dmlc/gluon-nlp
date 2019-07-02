@@ -19,7 +19,7 @@ ROOTDIR = $(CURDIR)
 MD2IPYNB = $(ROOTDIR)/docs/md2ipynb.py
 
 flake8:
-	flake8 --exclude conda,scripts/word_embeddings/tools/extern --count --select=E9,F63,F7,F82 --show-source --statistics .
+	python3 -m flake8 --exclude conda,scripts/word_embeddings/tools/extern --count --select=E9,F63,F7,F82 --show-source --statistics .
 
 pylint:
 	pylint --rcfile=$(ROOTDIR)/.pylintrc $(lintdir)
