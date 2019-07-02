@@ -912,7 +912,6 @@ class GloVe(TokenEmbedding):
 
         >>> import gluonnlp as nlp
         >>> nlp.embedding.list_sources('GloVe')
-        -etc-
 
     Parameters
     ----------
@@ -1003,7 +1002,6 @@ class FastText(TokenEmbedding):
 
         >>> import gluonnlp as nlp
         >>> nlp.embedding.list_sources('FastText')
-        -etc-
 
 
     Parameters
@@ -1116,7 +1114,6 @@ class Word2Vec(TokenEmbedding):
 
         >>> import gluonnlp as nlp
         >>> nlp.embedding.list_sources('Word2Vec')
-        -etc-
 
     Parameters
     ----------
