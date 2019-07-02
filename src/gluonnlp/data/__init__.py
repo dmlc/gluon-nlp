@@ -27,6 +27,7 @@ from . import (batchify, candidate_sampler, conll, corpora, dataloader,
 from .candidate_sampler import *
 from .conll import *
 from .glue import *
+from .super_glue import *
 from .corpora import *
 from .dataloader import *
 from .dataset import *
