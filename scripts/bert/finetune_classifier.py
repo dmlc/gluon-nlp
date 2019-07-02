@@ -209,18 +209,12 @@ task = tasks[task_name]
 if args.dtype == 'float16':
     try:
         from mxnet.contrib import amp # pylint: disable=ungrouped-imports
-        # monkey patch amp list since topk does not support fp16
-        amp.lists.symbol.FP32_FUNCS.append('topk')
-        amp.lists.symbol.FP16_FP32_FUNCS.remove('topk')
         amp.init()
     except ImportError:
         # amp is not available
         logging.info('Mixed precision training with float16 requires MXNet >= '
-                     '1.5.0b20190521. Please consider upgrading your MXNet version.')
+                     '1.5.0b20190627. Please consider upgrading your MXNet version.')
         exit()
-    except ValueError:
-        # topk is already in the FP32_FUNCS list
-        pass
 
 # model and loss
 only_inference = args.only_inference
@@ -383,7 +377,10 @@ def test(loader_test, segment):
     logging.info('Time cost=%.2fs, throughput=%.2f samples/s', toc - tic,
                  dev_batch_size * len(loader_test) / (toc - tic))
     # write result to a file.
-    filename = args.task_name + segment.replace('test', '') + '.csv'
+    segment = segment.replace('_mismatched', '-mm')
+    segment = segment.replace('_matched', '-m')
+    segment = segment.replace('SST', 'SST-2')
+    filename = args.task_name + segment.replace('test', '') + '.tsv'
     test_path = os.path.join(args.output_dir, filename)
     with io.open(test_path, 'w', encoding='utf-8') as f:
         f.write(u'index\tprediction\n')
