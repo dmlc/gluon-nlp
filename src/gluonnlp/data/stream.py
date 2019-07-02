@@ -398,8 +398,8 @@ class PrefetchingStream(DataStream):
                                      seed=seed, np_seed=np_seed,
                                      mx_seed=mx_seed)
 
-def _sigterm_handler(signal, frame):
-    "Handler for SIGTERM signal"""
+def _sigterm_handler(_, _):
+    """Handler for SIGTERM signal"""
     for process in _managed_processes:
         process.terminate()
     sys.exit(signal.SIGTERM)
