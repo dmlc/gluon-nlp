@@ -96,14 +96,14 @@ __all__ = language_model.__all__ + sequence_sampler.__all__ + attention_cell.__a
           seq2seq_encoder_decoder.__all__ + transformer.__all__ + bert.__all__
 
 
-def get_model(name, dataset_name='wikitext-2', **kwargs):
+def get_model(name, **kwargs):
     """Returns a pre-defined model by name.
 
     Parameters
     ----------
     name : str
         Name of the model.
-    dataset_name : str or None, default 'wikitext-2'.
+    dataset_name : str or None, default None
         The dataset name on which the pre-trained model is trained.
         For language model, options are 'wikitext-2'.
         For ELMo, Options are 'gbw' and '5bw'.
@@ -123,7 +123,7 @@ def get_model(name, dataset_name='wikitext-2', **kwargs):
         Whether to load the pre-trained weights for model.
     ctx : Context, default CPU
         The context in which to load the pre-trained weights.
-    root : str, default '~/.mxnet/models'
+    root : str, default '$MXNET_HOME/models' with MXNET_HOME defaults to '~/.mxnet'
         Location for keeping the model parameters.
 
     Returns
@@ -141,11 +141,11 @@ def get_model(name, dataset_name='wikitext-2', **kwargs):
               'elmo_2x4096_512_2048cnn_2xhighway': elmo_2x4096_512_2048cnn_2xhighway,
               'transformer_en_de_512': transformer_en_de_512,
               'bert_12_768_12'       : bert_12_768_12,
-              'bert_24_1024_16'      : bert_24_1024_16}
+              'bert_24_1024_16'      : bert_24_1024_16,
+              'ernie_12_768_12'      : ernie_12_768_12}
     name = name.lower()
     if name not in models:
         raise ValueError(
             'Model %s is not supported. Available options are\n\t%s'%(
                 name, '\n\t'.join(sorted(models.keys()))))
-    kwargs['dataset_name'] = dataset_name
     return models[name](**kwargs)

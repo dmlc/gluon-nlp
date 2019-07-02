@@ -18,5 +18,5 @@
 # under the License.
 
 # pylint: disable=wildcard-import
-"""BERT example."""
-from . import bert, dataset
+"""BERT Module."""
+from . import model, data

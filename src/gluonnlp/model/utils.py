@@ -265,7 +265,8 @@ def _get_rnn_layer(mode, num_layers, input_size, hidden_size, dropout, weight_dr
 def _load_vocab(dataset_name, vocab, root, cls=None):
     if dataset_name:
         if vocab is not None:
-            warnings.warn('Both dataset_name and vocab are specified. Loading vocab for dataset. '
+            warnings.warn('Both dataset_name and vocab are specified. '
+                          'Loading vocab based on dataset_name. '
                           'Input "vocab" argument will be ignored.')
         vocab = _load_pretrained_vocab(dataset_name, root, cls)
     else:
@@ -273,7 +274,8 @@ def _load_vocab(dataset_name, vocab, root, cls=None):
     return vocab
 
 
-def _load_pretrained_params(net, model_name, dataset_name, root, ctx, ignore_extra=False):
+def _load_pretrained_params(net, model_name, dataset_name, root, ctx, ignore_extra=False,
+                            allow_missing=False):
     path = '_'.join([model_name, dataset_name])
     model_file = model_store.get_model_file(path, root=root)
-    net.load_parameters(model_file, ctx=ctx, ignore_extra=ignore_extra)
+    net.load_parameters(model_file, ctx=ctx, ignore_extra=ignore_extra, allow_missing=allow_missing)

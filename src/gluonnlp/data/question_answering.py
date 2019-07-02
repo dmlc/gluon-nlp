@@ -30,7 +30,7 @@ import zipfile
 from mxnet.gluon.data import ArrayDataset
 from mxnet.gluon.utils import download, check_sha1, _get_repo_file_url
 from .registry import register
-
+from ..base import get_home_dir
 
 @register(segment=['train', 'dev'])
 class SQuAD(ArrayDataset):
@@ -58,7 +58,7 @@ class SQuAD(ArrayDataset):
     - answer_list:   All answers for this question. Stored as python list
     - start_indices: All answers' starting indices. Stored as python list.
       The position in this list is the same as the position of an answer in answer_list
-    - is_impossible: The question is unanswerable. if version is '2.0'.
+    - is_impossible: The question is unanswerable, if version is '2.0'.
       In SQuAd2.0, there are some unanswerable questions.
 
     Parameters
@@ -105,7 +105,7 @@ class SQuAD(ArrayDataset):
     """
 
     def __init__(self, segment='train', version='1.1',
-                 root=os.path.join('~', '.mxnet', 'datasets', 'squad')):
+                 root=os.path.join(get_home_dir(), 'datasets', 'squad')):
         self._data_file = {'1.1': {'train': (('train-v1.1.zip',
                                               '052a75bf8fdb3e843b8649971658eae8133f9b0e'),
                                              ('train-v1.1.json',
@@ -133,7 +133,7 @@ class SQuAD(ArrayDataset):
         self._version = version
         self._get_data()
 
-        super(SQuAD, self).__init__(self._read_data())
+        super(SQuAD, self).__init__(SQuAD._get_records(self._read_data()))
 
     def _get_data(self):
         """Load data from the file. Does nothing if data was loaded before.
@@ -171,9 +171,9 @@ class SQuAD(ArrayDataset):
             = self._data_file[self._version][self._segment]
 
         with open(os.path.join(self._root, data_file_name)) as f:
-            samples = json.load(f)
+            json_data = json.load(f)
 
-        return SQuAD._get_records(samples)
+        return json_data
 
     @staticmethod
     def _get_records(json_dict):

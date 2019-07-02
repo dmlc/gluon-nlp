@@ -22,65 +22,19 @@ import logging
 import collections
 import hashlib
 import io
-import json
 
 import mxnet as mx
-import gluonnlp
+import gluonnlp as nlp
 
-__all__ = ['convert_vocab']
+__all__ = ['tf_vocab_to_gluon_vocab', 'load_text_vocab']
 
 
-def convert_vocab(vocab_file):
-    """GluonNLP specific code to convert the original vocabulary to nlp.vocab.BERTVocab."""
-    original_vocab = load_vocab(vocab_file)
-    token_to_idx = dict(original_vocab)
-    num_tokens = len(token_to_idx)
-    idx_to_token = [None] * len(original_vocab)
-    for word in original_vocab:
-        idx = int(original_vocab[word])
-        idx_to_token[idx] = word
-
-    def swap(token, target_idx, token_to_idx, idx_to_token, swap_idx):
-        original_idx = token_to_idx[token]
-        original_token = idx_to_token[target_idx]
-        token_to_idx[token] = target_idx
-        token_to_idx[original_token] = original_idx
-        idx_to_token[target_idx] = token
-        idx_to_token[original_idx] = original_token
-        swap_idx.append((original_idx, target_idx))
-
-    reserved_tokens = [gluonnlp.vocab.BERTVocab.PADDING_TOKEN, gluonnlp.vocab.BERTVocab.CLS_TOKEN,
-                       gluonnlp.vocab.BERTVocab.SEP_TOKEN, gluonnlp.vocab.BERTVocab.MASK_TOKEN]
-
-    unknown_token = gluonnlp.vocab.BERTVocab.UNKNOWN_TOKEN
-    padding_token = gluonnlp.vocab.BERTVocab.PADDING_TOKEN
-    swap_idx = []
-    assert unknown_token in token_to_idx
-    assert padding_token in token_to_idx
-    swap(unknown_token, 0, token_to_idx, idx_to_token, swap_idx)
-    for i, token in enumerate(reserved_tokens):
-        swap(token, i + 1, token_to_idx, idx_to_token, swap_idx)
-
-    # sanity checks
-    assert len(token_to_idx) == num_tokens
-    assert len(idx_to_token) == num_tokens
-    assert None not in idx_to_token
-    assert len(set(idx_to_token)) == num_tokens
-
-    bert_vocab_dict = {}
-    bert_vocab_dict['idx_to_token'] = idx_to_token
-    bert_vocab_dict['token_to_idx'] = token_to_idx
-    bert_vocab_dict['reserved_tokens'] = reserved_tokens
-    bert_vocab_dict['unknown_token'] = unknown_token
-    bert_vocab_dict['padding_token'] = padding_token
-    bert_vocab_dict['bos_token'] = None
-    bert_vocab_dict['eos_token'] = None
-    bert_vocab_dict['mask_token'] = gluonnlp.vocab.BERTVocab.MASK_TOKEN
-    bert_vocab_dict['sep_token'] = gluonnlp.vocab.BERTVocab.SEP_TOKEN
-    bert_vocab_dict['cls_token'] = gluonnlp.vocab.BERTVocab.CLS_TOKEN
-    json_str = json.dumps(bert_vocab_dict)
-    converted_vocab = gluonnlp.vocab.BERTVocab.from_json(json_str)
-    return converted_vocab, swap_idx
+def tf_vocab_to_gluon_vocab(tf_vocab):
+    special_tokens = ['[UNK]', '[PAD]', '[SEP]', '[MASK]', '[CLS]']
+    assert all(t in tf_vocab for t in special_tokens)
+    counter = nlp.data.count_tokens(tf_vocab.keys())
+    vocab = nlp.vocab.BERTVocab(counter, token_to_idx=tf_vocab)
+    return vocab
 
 
 def get_hash(filename):
@@ -122,7 +76,7 @@ def profile(curr_step, start_step, end_step, profile_name='profile.json',
         if early_exit:
             exit()
 
-def load_vocab(vocab_file):
+def load_text_vocab(vocab_file):
     """Loads a vocabulary file into a dictionary."""
     vocab = collections.OrderedDict()
     index = 0

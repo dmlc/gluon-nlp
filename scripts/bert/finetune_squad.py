@@ -40,19 +40,20 @@ import collections
 import json
 import logging
 import os
+import io
+import copy
 import random
 import time
 import warnings
 
 import numpy as np
 import mxnet as mx
-from mxnet import gluon, nd
 
 import gluonnlp as nlp
 from gluonnlp.data import SQuAD
-from bert_qa_model import BertForQALoss, BertForQA
-from bert_qa_dataset import (SQuADTransform, preprocess_dataset)
-from bert_qa_evaluate import get_F1_EM, predictions
+from model.qa import BertForQALoss, BertForQA
+from data.qa import SQuADTransform, preprocess_dataset
+from bert_qa_evaluate import get_F1_EM, predict, PredResult
 
 np.random.seed(6)
 random.seed(6)
@@ -187,8 +188,18 @@ parser.add_argument('--null_score_diff_threshold',
                     'Typical values are between -1.0 and -5.0. default is 0.0')
 
 parser.add_argument('--gpu',
+                    type=int,
+                    default=None,
+                    help='which gpu to use for finetuning. CPU is used if not set.')
+
+parser.add_argument('--sentencepiece',
+                    type=str,
+                    default=None,
+                    help='Path to the sentencepiece .model file for both tokenization and vocab.')
+
+parser.add_argument('--debug',
                     action='store_true',
-                    help='whether to use gpu for finetuning')
+                    help='Run the example in test mode for sanity checks')
 
 args = parser.parse_args()
 
@@ -213,13 +224,16 @@ dataset_name = args.bert_dataset
 only_predict = args.only_predict
 model_parameters = args.model_parameters
 pretrained_bert_parameters = args.pretrained_bert_parameters
+if pretrained_bert_parameters and model_parameters:
+    raise ValueError('Cannot provide both pre-trained BERT parameters and '
+                     'BertForQA model parameters.')
 lower = args.uncased
 
 epochs = args.epochs
 batch_size = args.batch_size
 test_batch_size = args.test_batch_size
 lr = args.lr
-ctx = mx.cpu() if not args.gpu else mx.gpu()
+ctx = mx.cpu() if args.gpu is None else mx.gpu(args.gpu)
 
 accumulate = args.accumulate
 log_interval = args.log_interval * accumulate if accumulate else args.log_interval
@@ -244,14 +258,32 @@ if max_seq_length <= max_query_length + 3:
     raise ValueError('The max_seq_length (%d) must be greater than max_query_length '
                      '(%d) + 3' % (max_seq_length, max_query_length))
 
+# vocabulary and tokenizer
+if args.sentencepiece:
+    logging.info('loading vocab file from sentence piece model: %s', args.sentencepiece)
+    if dataset_name:
+        warnings.warn('Both --dataset_name and --sentencepiece are provided. '
+                      'The vocabulary will be loaded based on --sentencepiece.')
+    vocab = nlp.vocab.BERTVocab.from_sentencepiece(args.sentencepiece)
+    dataset_name = None
+else:
+    vocab = None
+
+pretrained = not model_parameters and not pretrained_bert_parameters and not args.sentencepiece
 bert, vocab = nlp.model.get_model(
     name=model_name,
     dataset_name=dataset_name,
-    pretrained=not model_parameters and not pretrained_bert_parameters,
+    vocab=vocab,
+    pretrained=pretrained,
     ctx=ctx,
     use_pooler=False,
     use_decoder=False,
     use_classifier=False)
+
+if args.sentencepiece:
+    tokenizer = nlp.data.BERTSPTokenizer(args.sentencepiece, vocab, lower=lower)
+else:
+    tokenizer = nlp.data.BERTTokenizer(vocab=vocab, lower=lower)
 
 batchify_fn = nlp.data.batchify.Tuple(
     nlp.data.batchify.Stack(),
@@ -261,16 +293,22 @@ batchify_fn = nlp.data.batchify.Tuple(
     nlp.data.batchify.Stack('float32'),
     nlp.data.batchify.Stack('float32'))
 
-berttoken = nlp.data.BERTTokenizer(vocab=vocab, lower=lower)
-
 net = BertForQA(bert=bert)
-if pretrained_bert_parameters and not model_parameters:
+if model_parameters:
+    # load complete BertForQA parameters
+    net.load_parameters(model_parameters, ctx=ctx, cast_dtype=True)
+elif pretrained_bert_parameters:
+    # only load BertModel parameters
     bert.load_parameters(pretrained_bert_parameters, ctx=ctx,
-                         ignore_extra=True)
-if not model_parameters:
+                         ignore_extra=True, cast_dtype=True)
+    net.span_classifier.initialize(init=mx.init.Normal(0.02), ctx=ctx)
+elif pretrained:
+    # only load BertModel parameters
     net.span_classifier.initialize(init=mx.init.Normal(0.02), ctx=ctx)
 else:
-    net.load_parameters(model_parameters, ctx=ctx)
+    # no checkpoint is loaded
+    net.initialize(init=mx.init.Normal(0.02), ctx=ctx)
+
 net.hybridize(static_alloc=True)
 
 loss_function = BertForQALoss()
@@ -279,16 +317,20 @@ loss_function.hybridize(static_alloc=True)
 
 def train():
     """Training function."""
-    log.info('Loader Train data...')
+    segment = 'train' if not args.debug else 'dev'
+    log.info('Loading %s data...', segment)
     if version_2:
-        train_data = SQuAD('train', version='2.0')
+        train_data = SQuAD(segment, version='2.0')
     else:
-        train_data = SQuAD('train', version='1.1')
+        train_data = SQuAD(segment, version='1.1')
+    if args.debug:
+        sampled_data = [train_data[i] for i in range(1000)]
+        train_data = mx.gluon.data.SimpleDataset(sampled_data)
     log.info('Number of records in Train data:{}'.format(len(train_data)))
 
     train_data_transform, _ = preprocess_dataset(
         train_data, SQuADTransform(
-            berttoken,
+            copy.copy(tokenizer),
             max_seq_length=max_seq_length,
             doc_stride=doc_stride,
             max_query_length=max_query_length,
@@ -305,14 +347,14 @@ def train():
 
     optimizer_params = {'learning_rate': lr}
     try:
-        trainer = gluon.Trainer(net.collect_params(), optimizer,
-                                optimizer_params, update_on_kvstore=False)
+        trainer = mx.gluon.Trainer(net.collect_params(), optimizer,
+                                   optimizer_params, update_on_kvstore=False)
     except ValueError as e:
         print(e)
         warnings.warn('AdamW optimizer is not found. Please consider upgrading to '
                       'mxnet>=1.5.0. Now the original Adam optimizer is used instead.')
-        trainer = gluon.Trainer(net.collect_params(), 'adam',
-                                optimizer_params, update_on_kvstore=False)
+        trainer = mx.gluon.Trainer(net.collect_params(), 'adam',
+                                   optimizer_params, update_on_kvstore=False)
 
     num_train_examples = len(train_data_transform)
     step_size = batch_size * accumulate if accumulate else batch_size
@@ -406,25 +448,28 @@ def train():
 def evaluate():
     """Evaluate the model on validation dataset.
     """
-    log.info('Loader dev data...')
+    log.info('Loading dev data...')
     if version_2:
         dev_data = SQuAD('dev', version='2.0')
     else:
         dev_data = SQuAD('dev', version='1.1')
-    log.info('Number of records in Train data:{}'.format(len(dev_data)))
+    if args.debug:
+        sampled_data = [dev_data[0], dev_data[1], dev_data[2]]
+        dev_data = mx.gluon.data.SimpleDataset(sampled_data)
+    log.info('Number of records in dev data:{}'.format(len(dev_data)))
 
     dev_dataset = dev_data.transform(
         SQuADTransform(
-            berttoken,
+            copy.copy(tokenizer),
             max_seq_length=max_seq_length,
             doc_stride=doc_stride,
             max_query_length=max_query_length,
             is_pad=False,
-            is_training=False)._transform)
+            is_training=False)._transform, lazy=False)
 
     dev_data_transform, _ = preprocess_dataset(
         dev_data, SQuADTransform(
-            berttoken,
+            copy.copy(tokenizer),
             max_seq_length=max_seq_length,
             doc_stride=doc_stride,
             max_query_length=max_query_length,
@@ -436,13 +481,12 @@ def evaluate():
     dev_dataloader = mx.gluon.data.DataLoader(
         dev_data_transform,
         batchify_fn=batchify_fn,
-        num_workers=4, batch_size=test_batch_size, shuffle=False, last_batch='keep')
+        num_workers=4, batch_size=test_batch_size,
+        shuffle=False, last_batch='keep')
 
-    log.info('Start predict')
+    log.info('start prediction')
 
-    _Result = collections.namedtuple(
-        '_Result', ['example_id', 'start_logits', 'end_logits'])
-    all_results = {}
+    all_results = collections.defaultdict(list)
 
     epoch_tic = time.time()
     total_num = 0
@@ -453,44 +497,47 @@ def evaluate():
                   token_types.astype('float32').as_in_context(ctx),
                   valid_length.astype('float32').as_in_context(ctx))
 
-        output = nd.split(out, axis=2, num_outputs=2)
-        start_logits = output[0].reshape((0, -3)).asnumpy()
-        end_logits = output[1].reshape((0, -3)).asnumpy()
+        output = mx.nd.split(out, axis=2, num_outputs=2)
+        example_ids = example_ids.asnumpy().tolist()
+        pred_start = output[0].reshape((0, -3)).asnumpy()
+        pred_end = output[1].reshape((0, -3)).asnumpy()
 
-        for example_id, start, end in zip(example_ids, start_logits, end_logits):
-            example_id = example_id.asscalar()
-            if example_id not in all_results:
-                all_results[example_id] = []
-            all_results[example_id].append(
-                _Result(example_id, start.tolist(), end.tolist()))
+        for example_id, start, end in zip(example_ids, pred_start, pred_end):
+            all_results[example_id].append(PredResult(start=start, end=end))
+
     epoch_toc = time.time()
     log.info('Time cost={:.2f} s, Thoughput={:.2f} samples/s'.format(
         epoch_toc - epoch_tic, total_num/(epoch_toc - epoch_tic)))
+
     log.info('Get prediction results...')
 
-    all_predictions, all_nbest_json, scores_diff_json = predictions(
-        dev_dataset=dev_dataset,
-        all_results=all_results,
-        tokenizer=nlp.data.BERTBasicTokenizer(lower=lower),
-        max_answer_length=max_answer_length,
-        null_score_diff_threshold=null_score_diff_threshold,
-        n_best_size=n_best_size,
-        version_2=version_2)
+    all_predictions = collections.OrderedDict()
 
-    with open(os.path.join(output_dir, 'predictions.json'),
-              'w', encoding='utf-8') as all_predictions_write:
-        all_predictions_write.write(json.dumps(all_predictions))
+    for features in dev_dataset:
+        results = all_results[features[0].example_id]
+        example_qas_id = features[0].qas_id
 
-    with open(os.path.join(output_dir, 'nbest_predictions.json'),
-              'w', encoding='utf-8') as all_predictions_write:
-        all_predictions_write.write(json.dumps(all_nbest_json))
+        prediction, _ = predict(
+            features=features,
+            results=results,
+            tokenizer=nlp.data.BERTBasicTokenizer(lower=lower),
+            max_answer_length=max_answer_length,
+            null_score_diff_threshold=null_score_diff_threshold,
+            n_best_size=n_best_size,
+            version_2=version_2)
+
+        all_predictions[example_qas_id] = prediction
+
+    with io.open(os.path.join(output_dir, 'predictions.json'),
+                 'w', encoding='utf-8') as fout:
+        data = json.dumps(all_predictions, ensure_ascii=False)
+        fout.write(data)
 
     if version_2:
-        with open(os.path.join(output_dir, 'null_odds.json'),
-                  'w', encoding='utf-8') as all_predictions_write:
-            all_predictions_write.write(json.dumps(scores_diff_json))
+        log.info('Please run evaluate-v2.0.py to get evaluation results for SQuAD 2.0')
     else:
-        log.info(get_F1_EM(dev_data, all_predictions))
+        F1_EM = get_F1_EM(dev_data, all_predictions)
+        log.info(F1_EM)
 
 
 if __name__ == '__main__':

@@ -98,29 +98,80 @@ def test_transformer_models():
 
 @pytest.mark.serial
 @pytest.mark.remote_required
-def test_pretrained_bert_models():
+@pytest.mark.parametrize('disable_missing_parameters', [False, True])
+def test_pretrained_bert_models(disable_missing_parameters):
     models = ['bert_12_768_12', 'bert_24_1024_16']
     pretrained = {
-        'bert_12_768_12':
-        ['book_corpus_wiki_en_cased', 'book_corpus_wiki_en_uncased',
-         'wiki_multilingual_uncased', 'wiki_multilingual_cased', 'wiki_cn_cased'],
-        'bert_24_1024_16': ['book_corpus_wiki_en_uncased', 'book_corpus_wiki_en_cased']}
+        'bert_12_768_12': [
+            'book_corpus_wiki_en_cased', 'book_corpus_wiki_en_uncased', 'wiki_multilingual_uncased',
+            'wiki_multilingual_cased', 'wiki_cn_cased', 'scibert_scivocab_uncased',
+            'scibert_scivocab_cased', 'scibert_basevocab_uncased', 'scibert_basevocab_cased',
+            'biobert_v1.0_pmc_cased', 'biobert_v1.0_pubmed_cased', 'biobert_v1.0_pubmed_pmc_cased',
+            'biobert_v1.1_pubmed_cased', 'clinicalbert_uncased',
+        ],
+        'bert_24_1024_16': ['book_corpus_wiki_en_uncased', 'book_corpus_wiki_en_cased']
+    }
     vocab_size = {'book_corpus_wiki_en_cased': 28996,
                   'book_corpus_wiki_en_uncased': 30522,
                   'wiki_multilingual_cased': 119547,
                   'wiki_cn_cased': 21128,
-                  'wiki_multilingual_uncased': 105879}
+                  'wiki_multilingual_uncased': 105879,
+                  'scibert_scivocab_uncased': 31090,
+                  'scibert_scivocab_cased': 31116,
+                  'scibert_basevocab_uncased': 30522,
+                  'scibert_basevocab_cased': 28996,
+                  'biobert_v1.0_pubmed_cased': 28996,
+                  'biobert_v1.0_pmc_cased': 28996,
+                  'biobert_v1.0_pubmed_pmc_cased': 28996,
+                  'biobert_v1.1_pubmed_cased': 28996,
+                  'clinicalbert_uncased': 30522}
     special_tokens = ['[UNK]', '[PAD]', '[SEP]', '[CLS]', '[MASK]']
     ones = mx.nd.ones((2, 10))
     valid_length = mx.nd.ones((2,))
     positions = mx.nd.zeros((2, 3))
     for model_name in models:
-        eprint('testing forward for %s' % model_name)
         pretrained_datasets = pretrained.get(model_name)
         for dataset in pretrained_datasets:
-            model, vocab = nlp.model.get_model(model_name, dataset_name=dataset,
-                                               pretrained=True,
-                                               root='tests/data/model/')
+            has_missing_params = any(n in dataset for n in ('biobert', 'clinicalbert'))
+            if not has_missing_params and disable_missing_parameters:
+                # No parameters to disable for models pretrained on this dataset
+                continue
+
+            eprint('testing forward for %s on %s' % (model_name, dataset))
+
+            if not has_missing_params:
+                model, vocab = nlp.model.get_model(model_name, dataset_name=dataset,
+                                                   pretrained=True,
+                                                   root='tests/data/model/')
+            else:
+                with pytest.raises(AssertionError):
+                    model, vocab = nlp.model.get_model(model_name, dataset_name=dataset,
+                                                       pretrained=True,
+                                                       root='tests/data/model/')
+
+                if not disable_missing_parameters:
+                    model, vocab = nlp.model.get_model(model_name, dataset_name=dataset,
+                                                       pretrained=True,
+                                                       root='tests/data/model/',
+                                                       pretrained_allow_missing=True)
+                elif 'biobert' in dataset:
+                    # Biobert specific test case
+                    model, vocab = nlp.model.get_model(model_name, dataset_name=dataset,
+                                                       pretrained=True,
+                                                       root='tests/data/model/',
+                                                       pretrained_allow_missing=True,
+                                                       use_decoder=False,
+                                                       use_classifier=False)
+                elif 'clinicalbert' in dataset:
+                    # Clinicalbert specific test case
+                    model, vocab = nlp.model.get_model(model_name, dataset_name=dataset,
+                                                       pretrained=True,
+                                                       root='tests/data/model/',
+                                                       pretrained_allow_missing=True,
+                                                       use_decoder=False)
+                else:
+                    assert False, "Testcase needs to be adapted."
+
             assert len(vocab) == vocab_size[dataset]
             for token in special_tokens:
                 assert token in vocab, "Token %s not found in the vocab" % token
@@ -129,8 +180,14 @@ def test_pretrained_bert_models():
             assert vocab.unknown_token == '[UNK]'
             assert vocab.bos_token is None
             assert vocab.eos_token is None
-            output = model(ones, ones, valid_length, positions)
-            output[0].wait_to_read()
+
+            if has_missing_params and not disable_missing_parameters:
+                with pytest.raises(RuntimeError):
+                    output = model(ones, ones, valid_length, positions)
+                    output[0].wait_to_read()
+            else:
+                output = model(ones, ones, valid_length, positions)
+                output[0].wait_to_read()
             del model
             mx.nd.waitall()
 
@@ -481,3 +538,30 @@ def test_weight_drop():
         y.backward()
         for name, param in shared_net.collect_params().items():
             assert not mx.test_utils.almost_equal(grads[name].asnumpy(), param.grad().asnumpy())
+
+
+def test_gelu():
+    x = mx.random.uniform(shape=(3, 4, 5))
+    net = nlp.model.GELU()
+    y = net(x)
+    assert y.shape == x.shape
+    y.wait_to_read()
+
+def test_transformer_encoder():
+    batch_size = 2
+    seq_length = 5
+    units = 768
+    inputs = mx.random.uniform(shape=(batch_size, seq_length, units))
+    mask = mx.nd.ones([batch_size, seq_length, seq_length])
+    cell = nlp.model.TransformerEncoderCell(units=768, hidden_size=3072,num_heads=12,
+                                            attention_cell='multi_head',dropout=0.0,
+                                            use_residual=True, scaled=True,
+                                            output_attention=False,
+                                            prefix='transformer_cell')
+    cell.collect_params().initialize()
+    cell.hybridize()
+    outputs, attention_weights = cell(inputs, mask)
+    outputs.wait_to_read()
+    mx.nd.waitall()
+    assert outputs.shape == (batch_size, seq_length, units)
+

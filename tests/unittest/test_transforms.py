@@ -16,21 +16,23 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-
 from __future__ import print_function
 
 import os
 import sys
 import warnings
-import numpy as np
-from numpy.testing import assert_allclose
-import pytest
+
 import mxnet as mx
+import numpy as np
+import pytest
+from mxnet.gluon.data import SimpleDataset
 from mxnet.gluon.utils import download
-from gluonnlp.data import transforms as t
+from numpy.testing import assert_allclose
+
 from gluonnlp.data import count_tokens
+from gluonnlp.data import transforms as t
 from gluonnlp.model.utils import _load_vocab
-from gluonnlp.vocab import Vocab, BERTVocab
+from gluonnlp.vocab import BERTVocab, Vocab
 
 
 def test_clip_sequence():
@@ -104,7 +106,7 @@ def test_spacy_tokenizer():
 @pytest.mark.skipif(sys.version_info < (3, 0),
                     reason="requires python3 or higher")
 def test_moses_detokenizer():
-    detokenizer = t.SacreMosesDetokenizer()
+    detokenizer = t.SacreMosesDetokenizer(return_str=False)
     text = ['Introducing', 'Gluon', ':', 'An', 'Easy-to-Use', 'Programming',
             'Interface', 'for', 'Flexible', 'Deep', 'Learning', '.']
     try:
@@ -212,6 +214,8 @@ def test_berttokenizer():
     assert tokenizer(u"unwanted running") == [
         "un", "##want", "##ed", "runn", "##ing"]
     assert tokenizer(u"unwantedX running") == ["[UNK]", "runn", "##ing"]
+    assert tokenizer.is_first_subword('un')
+    assert not tokenizer.is_first_subword('##want')
 
     # test BERTTokenizer
     vocab_tokens = ["[CLS]", "[SEP]", "want", "##want", "##ed", "wa", "un", "runn",
@@ -259,3 +263,67 @@ def test_bert_sentences_transform():
     assert all(token_ids == valid_token_ids)
     assert length == len(vocab_tokens) + 3
     assert all(type_ids == valid_type_ids)
+
+
+@pytest.mark.remote_required
+def test_bert_sentencepiece_sentences_transform():
+    url = 'http://repo.mxnet.io/gluon/dataset/vocab/test-682b5d15.bpe'
+    f = download(url, overwrite=True)
+    bert_vocab = BERTVocab.from_sentencepiece(f)
+    bert_tokenizer = t.BERTSPTokenizer(f, bert_vocab, lower=True)
+    assert bert_tokenizer.is_first_subword(u'▁this')
+    assert not bert_tokenizer.is_first_subword(u'this')
+    max_len = 36
+    data_train_raw = SimpleDataset(
+        [[u'This is a very awesome, life-changing sentence.']])
+    transform = t.BERTSentenceTransform(bert_tokenizer,
+                                        max_len,
+                                        pad=True,
+                                        pair=False)
+    try:
+        data_train = data_train_raw.transform(transform)
+    except ImportError:
+        warnings.warn(
+            "Sentencepiece not installed, skip test_bert_sentencepiece_sentences_transform()."
+        )
+        return
+    processed = list(data_train)[0]
+
+    tokens = [
+        u'▁this', u'▁is', u'▁a', u'▁very', u'▁a', u'w', u'es', u'om', u'e', u'▁', u',',
+        u'▁life', u'▁', u'-', u'▁c', u'hang', u'ing', u'▁sentence', u'▁', u'.'
+    ]
+    token_ids = [bert_vocab[bert_vocab.cls_token]
+                 ] + bert_tokenizer.convert_tokens_to_ids(tokens) + [
+                     bert_vocab[bert_vocab.sep_token]
+                 ]
+    token_ids += [bert_vocab[bert_vocab.padding_token]
+                  ] * (max_len - len(token_ids))
+
+    # token ids
+    assert all(processed[0] == np.array(token_ids, dtype='int32'))
+    # sequence length
+    assert np.asscalar(processed[1]) == len(tokens) + 2
+    # segment id
+    assert all(processed[2] == np.array([0] * max_len, dtype='int32'))
+
+
+@pytest.mark.remote_required
+def test_gpt2_transforms():
+    tokenizer = t.GPT2BPETokenizer()
+    detokenizer = t.GPT2BPEDetokenizer()
+    vocab = _load_vocab('openai_webtext', None, root=os.path.join('tests', 'data', 'models'))
+    s = ' natural language processing tools such as gluonnlp and torchtext'
+    subwords = tokenizer(s)
+    indices = vocab[subwords]
+    gt_gpt2_subword = [u'Ġnatural', u'Ġlanguage', u'Ġprocessing', u'Ġtools',
+                       u'Ġsuch', u'Ġas', u'Ġgl', u'u', u'on',
+                       u'nl', u'p', u'Ġand', u'Ġtorch', u'text']
+    gt_gpt2_idx = [3288, 3303, 7587, 4899, 884, 355, 1278, 84, 261, 21283, 79, 290, 28034, 5239]
+    for lhs, rhs in zip(indices, gt_gpt2_idx):
+        assert lhs == rhs
+    for lhs, rhs in zip(subwords, gt_gpt2_subword):
+        assert lhs == rhs
+
+    recovered_sentence = detokenizer([vocab.idx_to_token[i] for i in indices])
+    assert recovered_sentence == s

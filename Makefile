@@ -53,17 +53,23 @@ docs: compile_notebooks distribute
 		sed -i "s/docs\/model_zoo/scripts/g" $$TARGET_HTML; \
 	done;
 	sed -i.bak 's/33\,150\,243/23\,141\,201/g' docs/_build/html/_static/material-design-lite-1.3.0/material.blue-deep_orange.min.css;
+	sed -i.bak 's/2196f3/178dc9/g' docs/_build/html/_static/sphinx_materialdesign_theme.css;
 
 clean:
 	git clean -ff -d -x --exclude="$(ROOTDIR)/tests/externaldata/*" --exclude="$(ROOTDIR)/tests/data/*" --exclude="$(ROOTDIR)/conda/"
 
 compile_notebooks:
 	for f in $(shell find docs/examples -type f -name '*.md' -print) ; do \
-		DIR=`dirname $$f` ; \
-		BASENAME=`basename $$f` ; \
-		echo $$DIR $$BASENAME ; \
+		DIR=$$(dirname $$f) ; \
+		BASENAME=$$(basename $$f) ; \
+		TARGETNAME=$${BASENAME%.md}.ipynb ; \
+		echo $$DIR $$BASENAME $$TARGETNAME; \
 		cd $$DIR ; \
-		python $(MD2IPYNB) $$BASENAME ; \
+		if [ -f $$TARGETNAME ]; then \
+			echo $$TARGETNAME exists. Skipping compilation of $$BASENAME in Makefile. ; \
+		else \
+			python $(MD2IPYNB) $$BASENAME ; \
+		fi ; \
 		cd - ; \
 	done;
 

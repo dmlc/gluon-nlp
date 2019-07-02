@@ -25,7 +25,6 @@ __all__ = ['HybridBERTModel', 'HybridBERTEncoder',
 
 import os
 import math
-import warnings
 
 import mxnet as mx
 from mxnet.gluon import Block, HybridBlock
@@ -766,9 +765,6 @@ def get_hybrid_bert_model(model_name=None, dataset_name=None, vocab=None,
                                 use_residual=predefined_args['use_residual'],
                                 input_size=input_size,
                                 seq_length=seq_length)
-    if dataset_name in ['wiki_cn', 'wiki_multilingual']:
-        warnings.warn('wiki_cn/wiki_multilingual will be deprecated.'
-                      ' Please use wiki_cn_cased/wiki_multilingual_uncased instead.')
     bert_vocab = _load_vocab(dataset_name, vocab, root, cls=BERTVocab)
     # BERT
     net = HybridBERTModel(encoder, len(bert_vocab),

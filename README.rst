@@ -17,7 +17,7 @@ GluonNLP: Your Choice of Deep Learning for NLP
 
    <a href='http://ci.mxnet.io/job/gluon-nlp/job/master/'><img src='https://img.shields.io/badge/python-2.7%2C%203.6-blue.svg'></a>
    <a href='https://codecov.io/gh/dmlc/gluon-nlp'><img src='https://codecov.io/gh/dmlc/gluon-nlp/branch/master/graph/badge.svg'></a>
-   <a href='http://ci.mxnet.io/job/gluon-nlp/job/master/'><img src='http://ci.mxnet.io/job/gluon-nlp/job/master/badge/icon'></a>
+   <a href='http://ci.mxnet.io/job/gluonnlp-py3-master-gpu-doc/job/master/'><img src='http://ci.mxnet.io/buildStatus/icon?job=gluonnlp-py3-master-gpu-doc%2Fmaster'></a>
    <a href='https://pypi.org/project/gluonnlp/#history'><img src='https://img.shields.io/pypi/v/gluonnlp.svg'></a>
 
 GluonNLP is a toolkit that enables easy text preprocessing, datasets
@@ -30,10 +30,12 @@ Language Processing (NLP) research.
 News
 ====
 
+- GluonNLP will be featured in KDD 2019 Alaska! Check out our tutorial: `From Shallow to Deep Language Representations: Pre-training, Fine-tuning, and Beyond <https://www.kdd.org/kdd2019/hands-on-tutorials>`__.
 - Tutorial proposal for GluonNLP is accepted at `EMNLP 2019 <https://www.emnlp-ijcnlp2019.org>`__, Hong Kong.
 
 - GluonNLP was featured in:
 
+  - **JSALT 2019 in Montreal, 2019-6-14**! Checkout **https://jsalt19.mxnet.io**.
   - **AWS re:invent 2018 in Las Vegas, 2018-11-28**! Checkout `details <https://www.portal.reinvent.awsevents.com/connect/sessionDetail.ww?SESSION_ID=88736>`_.
   - **PyData 2018 NYC, 2018-10-18**! Checkout the `awesome talk <https://pydata.org/nyc2018/schedule/presentation/76/>`__ by Sneha Jha.
   - **KDD 2018 London, 2018-08-21, Apache MXNet Gluon tutorial**! Check out **https://kdd18.mxnet.io**.
@@ -147,7 +149,7 @@ Build vocabulary based on the above dataset, for example:
 
 .. code:: python
 
-    >>> vocab = nlp.Vocab(counter=nlp.data.Counter(train[0]))
+    >>> vocab = nlp.Vocab(counter=nlp.data.Counter(train))
     >>> vocab
     Vocab(size=33280, unk="<unk>", reserved="['<pad>', '<bos>', '<eos>']")
 

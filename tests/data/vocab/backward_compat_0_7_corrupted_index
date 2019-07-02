@@ -1,0 +1,1 @@
+{"eos_token": "<eos>", "unknown_token": "<unk>", "bos_token": "<bos>", "padding_token": "<eos>", "idx_to_token": ["<unk>", "<eos>", "<bos>", "<eos>", "token"], "token_to_idx": {"<unk>": 0, "<bos>": 2, "<eos>": 3, "token": 4}, "reserved_tokens": ["<eos>", "<bos>", "<eos>"]}

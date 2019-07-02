@@ -40,9 +40,7 @@ github_doc_root = 'http://gluon-nlp.mxnet.io/{}/'.format(str(version))
 
 # add markdown parser
 CommonMarkParser.github_doc_root = github_doc_root
-source_parsers = {
-    '.md': CommonMarkParser
-}
+extensions = ['recommonmark']
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom ones
@@ -84,7 +82,7 @@ nbsphinx_prolog = """
 
 .. only:: html
 
-    :download:`[Download] <{{ "../%s.zip"|format(paths[1]) }}>`
+    :download:`Download this tutorial <{{ "../%s.zip"|format(paths[1]) }}>`
 """
 
 # The suffix(es) of source filenames.

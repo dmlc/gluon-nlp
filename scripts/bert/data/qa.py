@@ -21,6 +21,7 @@ from functools import partial
 from mxnet.gluon.data import SimpleDataset
 from gluonnlp.data.utils import whitespace_splitter
 
+__all__ = ['SQuADTransform', 'preprocess_dataset']
 
 class SquadExample(object):
     """A single training/test example for SQuAD question.
@@ -45,7 +46,6 @@ class SquadExample(object):
         self.end_position = end_position
         self.is_impossible = is_impossible
         self.example_id = example_id
-
 
 def _worker_fn(example, transform):
     """Function for processing data in worker process."""
@@ -86,7 +86,7 @@ def preprocess_dataset(dataset, transform, num_workers=8):
     return dataset, dataset_len
 
 
-class SquadFeature(object):
+class SQuADFeature(object):
     """Single feature of a single example transform of the SQuAD question.
 
     """
@@ -138,6 +138,7 @@ class SQuADTransform(object):
     E.g:
 
     Inputs:
+
         question_text: 'When did BBC Japan begin broadcasting?'
         doc_tokens: ['BBC','Japan','was','a','general','entertainment','channel,',
                     'which','operated','between','December','2004','and','April',
@@ -146,14 +147,16 @@ class SQuADTransform(object):
         start_position: 10
         end_position: 11
         orig_answer_text: 'December 2004'
+
     Processed:
+
         tokens: ['[CLS]','when','did','bbc','japan','begin','broadcasting','?',
                 '[SEP]','bbc','japan','was','a','general','entertainment','channel',
                 ',','which','operated','between','december','2004','and','april',
                 '2006','.','it','ceased','operations','after','its','japanese',
                 'distributor','folded','.','[SEP]']
         segment_ids: [0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,
-            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+                      1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
         start_position: 20
         end_position: 21
         valid_length: 36
@@ -193,6 +196,8 @@ class SQuADTransform(object):
         Whether to pad the sentences to maximum length.
     is_training : bool, default True
         Whether to run training.
+    do_lookup : bool, default True
+        Whether to do vocabulary lookup for convert tokens to indices.
     """
 
     def __init__(self,
@@ -201,13 +206,15 @@ class SQuADTransform(object):
                  doc_stride=128,
                  max_query_length=64,
                  is_pad=True,
-                 is_training=True):
+                 is_training=True,
+                 do_lookup=True):
         self.tokenizer = tokenizer
         self.max_seq_length = max_seq_length
         self.max_query_length = max_query_length
         self.doc_stride = doc_stride
         self.is_pad = is_pad
         self.is_training = is_training
+        self.do_lookup = do_lookup
 
     def _is_whitespace(self, c):
         if c == ' ' or c == '\t' or c == '\r' or c == '\n' or ord(
@@ -283,6 +290,9 @@ class SQuADTransform(object):
         if not example:
             return None
 
+        padding = self.tokenizer.vocab.padding_token
+        if self.do_lookup:
+            padding = self.tokenizer.vocab[padding]
         features = []
         query_tokens = self.tokenizer(example.question_text)
 
@@ -339,12 +349,12 @@ class SQuADTransform(object):
             token_to_orig_map = {}
             token_is_max_context = {}
             segment_ids = []
-            tokens.append('[CLS]')
+            tokens.append(self.tokenizer.vocab.cls_token)
             segment_ids.append(0)
             for token in query_tokens:
                 tokens.append(token)
                 segment_ids.append(0)
-            tokens.append('[SEP]')
+            tokens.append(self.tokenizer.vocab.sep_token)
             segment_ids.append(0)
 
             for i in range(doc_span.length):
@@ -357,10 +367,13 @@ class SQuADTransform(object):
                 token_is_max_context[len(tokens)] = is_max_context
                 tokens.append(all_doc_tokens[split_token_index])
                 segment_ids.append(1)
-            tokens.append('[SEP]')
+            tokens.append(self.tokenizer.vocab.sep_token)
             segment_ids.append(1)
 
-            input_ids = self.tokenizer.convert_tokens_to_ids(tokens)
+            if self.do_lookup:
+                input_ids = self.tokenizer.convert_tokens_to_ids(tokens)
+            else:
+                input_ids = tokens
 
             # The mask has 1 for real tokens and 0 for padding tokens. Only real
             # tokens are attended to.
@@ -369,8 +382,9 @@ class SQuADTransform(object):
             # Zero-pad up to the sequence length.
             if self.is_pad:
                 while len(input_ids) < self.max_seq_length:
-                    input_ids.append(self.tokenizer.vocab['<PAD>'])
-                    segment_ids.append(self.tokenizer.vocab['<PAD>'])
+                    input_ids.append(padding)
+                    segment_ids.append(padding)
+
                 assert len(input_ids) == self.max_seq_length
                 assert len(segment_ids) == self.max_seq_length
 
@@ -396,7 +410,8 @@ class SQuADTransform(object):
             if self.is_training and example.is_impossible:
                 start_position = 0
                 end_position = 0
-            features.append(SquadFeature(example_id=example.example_id,
+
+            features.append(SQuADFeature(example_id=example.example_id,
                                          qas_id=example.qas_id,
                                          doc_tokens=example.doc_tokens,
                                          doc_span_index=doc_span_index,
