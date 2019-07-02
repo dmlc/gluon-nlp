@@ -16,7 +16,7 @@ The following pre-trained BERT models are available from the **gluonnlp.model.ge
 +-----------------------------------------+----------------+-----------------+
 | book_corpus_wiki_en_cased               | ✓              | ✓               |
 +-----------------------------------------+----------------+-----------------+
-| openwebtext_book_corpus_wiki_en_uncased | ✓              | ✓               |
+| openwebtext_book_corpus_wiki_en_uncased | ✓              | x               |
 +-----------------------------------------+----------------+-----------------+
 | wiki_multilingual_uncased               | ✓              | x               |
 +-----------------------------------------+----------------+-----------------+
