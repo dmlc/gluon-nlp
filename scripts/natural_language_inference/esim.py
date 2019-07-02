@@ -21,7 +21,7 @@
 Build an Enhancing LSTM model for Natural Language Inference
 """
 
-__all__ = ['ESIM']
+__all__ = ['ESIMModel']
 
 from mxnet.gluon import nn, rnn
 
@@ -50,7 +50,7 @@ class ESIMModel(nn.HybridBlock):
 
     def __init__(self, vocab_size, num_classes, word_embed_size, hidden_size, dense_size,
                  dropout=0., **kwargs):
-        super().__init__(**kwargs)
+        super(ESIMModel, self).__init__(**kwargs)
         with self.name_scope():
             self.word_emb= nn.Embedding(vocab_size, word_embed_size)
             self.embedding_dropout = nn.Dropout(dropout, axes=1)
