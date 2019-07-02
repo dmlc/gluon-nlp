@@ -28,7 +28,7 @@ restruc:
 	python setup.py check --restructuredtext --strict
 
 lint:
-	flake8
+	make lintdir=$(lintdir) flake8
 	make lintdir=$(lintdir) pylint
 	make restruc
 
