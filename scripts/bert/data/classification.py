@@ -21,9 +21,7 @@ __all__ = [
     'CoLATask', 'MNLITask', 'WNLITask', 'SSTTask', 'XNLITask'
 ]
 
-import os
 from mxnet.metric import Accuracy, F1, MCC, PearsonCorrelation, CompositeEvalMetric
-from gluonnlp.base import get_home_dir
 from gluonnlp.data import GlueCoLA, GlueSST2, GlueSTSB, GlueMRPC
 from gluonnlp.data import GlueQQP, GlueRTE, GlueMNLI, GlueQNLI, GlueWNLI
 try:
@@ -56,15 +54,13 @@ class GlueTask(object):
         self.is_pair = is_pair
         self.label_alias = label_alias
 
-    def get_dataset(self, segment='train', root=None):
+    def get_dataset(self, segment='train'):
         """Get the corresponding dataset for the task.
 
         Parameters
         ----------
         segment : str, default 'train'
             Dataset segments.
-        root : str
-            Path to the folder which stores the dataset.
 
         Returns
         -------
@@ -109,18 +105,15 @@ class MRPCTask(GlueTask):
         metric.add(Accuracy())
         super(MRPCTask, self).__init__(class_labels, metric, is_pair)
 
-    def get_dataset(self, segment='train',
-                    root=os.path.join(os.getenv('GLUE_DIR', 'glue_data'), 'MRPC')):
+    def get_dataset(self, segment='train'):
         """Get the corresponding dataset for MRPC.
 
         Parameters
         ----------
         segment : str, default 'train'
             Dataset segments. Options are 'train', 'dev', 'test'.
-        root : str, default $GLUE_DIR/MRPC
-            Path to the folder which stores the dataset.
         """
-        return GlueMRPC(segment=segment, root=root)
+        return GlueMRPC(segment=segment)
 
 class QQPTask(GlueTask):
     """The Quora Question Pairs task on GlueBenchmark."""
@@ -132,18 +125,15 @@ class QQPTask(GlueTask):
         metric.add(Accuracy())
         super(QQPTask, self).__init__(class_labels, metric, is_pair)
 
-    def get_dataset(self, segment='train',
-                    root=os.path.join(os.getenv('GLUE_DIR', 'glue_data'), 'QQP')):
+    def get_dataset(self, segment='train'):
         """Get the corresponding dataset for QQP.
 
         Parameters
         ----------
         segment : str, default 'train'
             Dataset segments. Options are 'train', 'dev', 'test'.
-        root : str, default $GLUE_DIR/QQP
-            Path to the folder which stores the dataset.
         """
-        return GlueQQP(segment=segment, root=root)
+        return GlueQQP(segment=segment)
 
 
 class RTETask(GlueTask):
@@ -154,18 +144,15 @@ class RTETask(GlueTask):
         metric = Accuracy()
         super(RTETask, self).__init__(class_labels, metric, is_pair)
 
-    def get_dataset(self, segment='train',
-                    root=os.path.join(os.getenv('GLUE_DIR', 'glue_data'), 'RTE')):
+    def get_dataset(self, segment='train'):
         """Get the corresponding dataset for RTE.
 
         Parameters
         ----------
         segment : str, default 'train'
             Dataset segments. Options are 'train', 'dev', 'test'.
-        root : str, default $GLUE_DIR/RTE
-            Path to the folder which stores the dataset.
         """
-        return GlueRTE(segment=segment, root=root)
+        return GlueRTE(segment=segment)
 
 class QNLITask(GlueTask):
     """The SQuAD NLI task on GlueBenchmark."""
@@ -175,18 +162,15 @@ class QNLITask(GlueTask):
         metric = Accuracy()
         super(QNLITask, self).__init__(class_labels, metric, is_pair)
 
-    def get_dataset(self, segment='train',
-                    root=os.path.join(os.getenv('GLUE_DIR', 'glue_data'), 'QNLI')):
+    def get_dataset(self, segment='train'):
         """Get the corresponding dataset for QNLI.
 
         Parameters
         ----------
         segment : str, default 'train'
             Dataset segments. Options are 'train', 'dev', 'test'.
-        root : str, default $GLUE_DIR/QNLI
-            Path to the folder which stores the dataset.
         """
-        return GlueQNLI(segment=segment, root=root)
+        return GlueQNLI(segment=segment)
 
 class STSBTask(GlueTask):
     """The Sentence Textual Similarity Benchmark task on GlueBenchmark."""
@@ -196,18 +180,15 @@ class STSBTask(GlueTask):
         metric = PearsonCorrelation()
         super(STSBTask, self).__init__(class_labels, metric, is_pair)
 
-    def get_dataset(self, segment='train',
-                    root=os.path.join(os.getenv('GLUE_DIR', 'glue_data'), 'STS-B')):
+    def get_dataset(self, segment='train'):
         """Get the corresponding dataset for STSB
 
         Parameters
         ----------
         segment : str, default 'train'
             Dataset segments. Options are 'train', 'dev', 'test'.
-        root : str, default $GLUE_DIR/STS-B
-            Path to the folder which stores the dataset.
         """
-        return GlueSTSB(segment=segment, root=root)
+        return GlueSTSB(segment=segment)
 
 class CoLATask(GlueTask):
     """The Warstdadt acceptability task on GlueBenchmark."""
@@ -217,18 +198,15 @@ class CoLATask(GlueTask):
         metric = MCC(average='micro')
         super(CoLATask, self).__init__(class_labels, metric, is_pair)
 
-    def get_dataset(self, segment='train',
-                    root=os.path.join(os.getenv('GLUE_DIR', 'glue_data'), 'CoLA')):
+    def get_dataset(self, segment='train'):
         """Get the corresponding dataset for CoLA
 
         Parameters
         ----------
         segment : str, default 'train'
             Dataset segments. Options are 'train', 'dev', 'test'.
-        root : str, default $GLUE_DIR/CoLA
-            Path to the folder which stores the dataset.
         """
-        return GlueCoLA(segment=segment, root=root)
+        return GlueCoLA(segment=segment)
 
 class SSTTask(GlueTask):
     """The Stanford Sentiment Treebank task on GlueBenchmark."""
@@ -238,18 +216,15 @@ class SSTTask(GlueTask):
         metric = Accuracy()
         super(SSTTask, self).__init__(class_labels, metric, is_pair)
 
-    def get_dataset(self, segment='train',
-                    root=os.path.join(os.getenv('GLUE_DIR', 'glue_data'), 'SST')):
+    def get_dataset(self, segment='train'):
         """Get the corresponding dataset for SST
 
         Parameters
         ----------
         segment : str, default 'train'
             Dataset segments. Options are 'train', 'dev', 'test'.
-        root : str, default $GLUE_DIR/SST
-            Path to the folder which stores the dataset.
         """
-        return GlueSST2(segment=segment, root=root)
+        return GlueSST2(segment=segment)
 
 class WNLITask(GlueTask):
     """The Winograd NLI task on GlueBenchmark."""
@@ -259,18 +234,15 @@ class WNLITask(GlueTask):
         metric = Accuracy()
         super(WNLITask, self).__init__(class_labels, metric, is_pair)
 
-    def get_dataset(self, segment='train',
-                    root=os.path.join(os.getenv('GLUE_DIR', 'glue_data'), 'WNLI')):
+    def get_dataset(self, segment='train'):
         """Get the corresponding dataset for WNLI
 
         Parameters
         ----------
         segment : str, default 'train'
             Dataset segments. Options are 'dev', 'test', 'train'
-        root : str, default $GLUE_DIR/WNLI
-            Path to the folder which stores the dataset.
         """
-        return GlueWNLI(segment=segment, root=root)
+        return GlueWNLI(segment=segment)
 
 class MNLITask(GlueTask):
     """The Multi-Genre Natural Language Inference task on GlueBenchmark."""
@@ -280,8 +252,7 @@ class MNLITask(GlueTask):
         metric = Accuracy()
         super(MNLITask, self).__init__(class_labels, metric, is_pair)
 
-    def get_dataset(self, segment='train',
-                    root=os.path.join(os.getenv('GLUE_DIR', 'glue_data'), 'MNLI')):
+    def get_dataset(self, segment='train'):
         """Get the corresponding dataset for MNLI
 
         Parameters
@@ -289,10 +260,8 @@ class MNLITask(GlueTask):
         segment : str, default 'train'
             Dataset segments. Options are 'dev_matched', 'dev_mismatched', 'test_matched',
             'test_mismatched', 'train'
-        root : str, default $GLUE_DIR/MNLI
-            Path to the folder which stores the dataset.
         """
-        return GlueMNLI(segment=segment, root=root)
+        return GlueMNLI(segment=segment)
 
     def dataset_dev(self):
         """Get the dev segment of the dataset for the task.
@@ -327,18 +296,15 @@ class XNLITask(GlueTask):
         super(XNLITask, self).__init__(class_labels, metric, is_pair,
                                        label_alias={'contradictory':'contradiction'})
 
-    def get_dataset(self, segment='train',
-                    root=os.path.join(get_home_dir(), 'datasets', 'baidu_ernie_data')):
+    def get_dataset(self, segment='train'):
         """Get the corresponding dataset for XNLI.
 
         Parameters
         ----------
         segment : str, default 'train'
             Dataset segments. Options are 'dev', 'test', 'train'
-        root : str, default $BAIDU_ERNIE_DATA_DIR/
-            Path to the folder which stores the dataset.
         """
-        return BaiduErnieXNLI(segment, root=root)
+        return BaiduErnieXNLI(segment)
 
 class LCQMCTask(GlueTask):
     """The LCQMC task using the dataset released from Baidu
@@ -352,18 +318,15 @@ class LCQMCTask(GlueTask):
         metric = Accuracy()
         super(LCQMCTask, self).__init__(class_labels, metric, is_pair)
 
-    def get_dataset(self, segment='train',
-                    root=os.path.join(get_home_dir(), 'datasets', 'baidu_ernie_data')):
+    def get_dataset(self, segment='train'):
         """Get the corresponding dataset for LCQMC.
 
         Parameters
         ----------
         segment : str, default 'train'
             Dataset segments. Options are 'dev', 'test', 'train'
-        root : str, default $BAIDU_ERNIE_DATA_DIR/
-            Path to the folder which stores the dataset.
         """
-        return BaiduErnieLCQMC(segment, root=root)
+        return BaiduErnieLCQMC(segment)
 
 class ChnSentiCorpTask(GlueTask):
     """The ChnSentiCorp task using the dataset released from Baidu
@@ -377,15 +340,12 @@ class ChnSentiCorpTask(GlueTask):
         metric = Accuracy()
         super(ChnSentiCorpTask, self).__init__(class_labels, metric, is_pair)
 
-    def get_dataset(self, segment='train',
-                    root=os.path.join(get_home_dir(), 'datasets', 'baidu_ernie_data')):
+    def get_dataset(self, segment='train'):
         """Get the corresponding dataset for ChnSentiCorp.
 
         Parameters
         ----------
         segment : str, default 'train'
             Dataset segments. Options are 'dev', 'test', 'train'
-        root : str, default $BAIDU_ERNIE_DATA_DIR/
-            Path to the folder which stores the dataset.
         """
-        return BaiduErnieChnSentiCorp(segment, root=root)
+        return BaiduErnieChnSentiCorp(segment)

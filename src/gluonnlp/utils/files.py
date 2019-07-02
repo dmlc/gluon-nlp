@@ -19,13 +19,33 @@
 # pylint:disable=redefined-outer-name,logging-format-interpolation
 """Utility functions for files."""
 
-__all__ = ['mkdir']
+__all__ = ['mkdir', 'glob']
 
 import os
 import warnings
 import logging
 import tempfile
+import glob as _glob
 from .. import _constants as C
+
+def glob(url, separator=','):
+    """Return a list of paths matching a pathname pattern.
+
+    The pattern may contain simple shell-style wildcards.
+    Input may also include multiple patterns, separated by separator.
+
+    Parameters
+    ----------
+    url : str
+        The name of the files
+    separator : str, default is ','
+        The separator in url to allow multiple patterns in the input
+    """
+    patterns = [url] if separator is None else url.split(separator)
+    result = []
+    for pattern in patterns:
+        result.extend(_glob.glob(os.path.expanduser(pattern.strip())))
+    return result
 
 def mkdir(dirname):
     """Create directory.

@@ -1,7 +1,27 @@
+# coding: utf-8
+
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+
 import os
 import subprocess
 import sys
 import time
+import datetime
 
 import pytest
 import mxnet as mx
@@ -327,8 +347,22 @@ def test_pretrain_hvd():
 @pytest.mark.integration
 # MNLI inference (multiple dev sets)
 # STS-B inference (regression task)
-@pytest.mark.parametrize('dataset', ['MNLI', 'STS-B', 'XNLI', 'LCQMC', 'ChnSentiCorp'])
+@pytest.mark.parametrize('dataset', ['MNLI', 'STS-B'])
 def test_finetune_inference(dataset):
+    arguments = ['--log_interval', '100', '--epsilon', '1e-8', '--optimizer',
+                 'adam', '--gpu', '0', '--max_len', '80', '--only_inference']
+    process = subprocess.check_call([sys.executable, './scripts/bert/finetune_classifier.py',
+                                     '--task_name', dataset] + arguments)
+    time.sleep(5)
+
+@pytest.mark.serial
+@pytest.mark.gpu
+@pytest.mark.remote_required
+@pytest.mark.integration
+@pytest.mark.parametrize('dataset', ['XNLI', 'LCQMC', 'ChnSentiCorp'])
+@pytest.mark.skipif(datetime.date.today() < datetime.date(2019, 7, 18),
+                    reason='Disabled for 4 weeks due to DNS error.')
+def test_finetune_chinese_inference(dataset):
     arguments = ['--log_interval', '100', '--epsilon', '1e-8', '--optimizer',
                  'adam', '--gpu', '0', '--max_len', '80', '--only_inference']
     process = subprocess.check_call([sys.executable, './scripts/bert/finetune_classifier.py',
