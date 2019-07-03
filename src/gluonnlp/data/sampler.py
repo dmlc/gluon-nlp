@@ -78,9 +78,9 @@ class BucketScheme(object):
 
         Parameters
         ----------
-        max_lengths : int of list of int
+        max_lengths : int or list of int
             Maximum of lengths of sequences.
-        min_lengths : int of list of int
+        min_lengths : int or list of int
             Minimum of lengths of sequences.
         num_buckets : int
             Number of buckets
@@ -100,9 +100,9 @@ class ConstWidthBucket(BucketScheme):
 
         Parameters
         ----------
-        max_lengths : int of list of int
+        max_lengths : int or list of int
             Maximum of lengths of sequences.
-        min_lengths : int of list of int
+        min_lengths : int or list of int
             Minimum of lengths of sequences.
         num_buckets : int
             Number of buckets
@@ -136,9 +136,9 @@ class LinearWidthBucket(BucketScheme):
 
         Parameters
         ----------
-        max_lengths : int of list of int
+        max_lengths : int or list of int
             Maximum of lengths of sequences.
-        min_lengths : int of list of int
+        min_lengths : int or list of int
             Minimum of lengths of sequences.
         num_buckets : int
             Number of buckets
@@ -186,9 +186,9 @@ class ExpWidthBucket(BucketScheme):
 
         Parameters
         ----------
-        max_lengths : int of list of int
+        max_lengths : int or list of int
             Maximum of lengths of sequences.
-        min_lengths : int of list of int
+        min_lengths : int or list of int
             Minimum of lengths of sequences.
         num_buckets : int
             Number of buckets
