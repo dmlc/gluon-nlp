@@ -30,7 +30,28 @@ restruc:
 lint:
 	make lintdir=$(lintdir) flake8
 	make lintdir=$(lintdir) pylint
+	make lintdir=$(lintdir) ratcheck
 	make restruc
+
+ci/rat/apache-rat.jar:
+	mkdir -p build
+	svn co http://svn.apache.org/repos/asf/creadur/rat/tags/apache-rat-project-0.13/ ci/rat/apache-rat; \
+	cd ci/rat/apache-rat/apache-rat; \
+	mvn -Dmaven.test.skip=true install;
+	cp ci/rat/apache-rat/apache-rat/target/apache-rat-0.13.jar ci/rat/apache-rat.jar
+
+ratcheck: ci/rat/apache-rat.jar
+	exec 5>&1; \
+	RAT_JAR=ci/rat/apache-rat.jar; \
+	OUTPUT=$(java -jar $(RAT_JAR) -E ci/rat/rat-excludes -d $(lintdir) | tee >(cat - >&5)); \
+    ERROR_MESSAGE="Printing headers for text files without a valid license header"; \
+    echo "-------Process The Output-------"; \
+    if [[ $OUTPUT =~ $ERROR_MESSAGE ]]; then \
+        echo "ERROR: RAT Check detected files with unknown licenses. Please fix and run test again!"; \
+        exit 1; \
+    else \
+        echo "SUCCESS: There are no files with an Unknown License."; \
+    fi
 
 docs: compile_notebooks distribute
 	make -C docs html SPHINXOPTS=-W
