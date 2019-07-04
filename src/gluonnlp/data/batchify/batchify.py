@@ -341,27 +341,20 @@ class Tuple(object):
             ret.append(ele_fn([ele[i] for ele in data]))
         return tuple(ret)
 
- class List:
+class List(object):
     """Simply forward the list of input data.
-    
+
     This is particularly useful when the Dataset contains textual data
     and in conjonction with the `Tuple` batchify function.
-    
+
     Examples
     --------
-    >>>a = ([1, 2, 3, 4], "I am using MXNet")
-    >>>b = ([5, 7, 2, 5], "Gluon rocks!")
-    >>>c = ([1, 2, 3, 4], "Batchification!")
-    >>> f1, f2 = gluonnlp.data.batchify.Tuple(gluonnlp.data.batchify.Stack(),
-    ...                                       gluonnlp.data.batchify.List())([a, b, c])
-    >>> f1
-    <BLANKLINE>
-    [[1 2 3 4]
-     [5 7 2 5]
-     [1 2 3 4]]
-    <NDArray 3x4 @cpu_shared(0)>
-    >>> f2
-    <BLANKLINE>
+    >>> a = ([1, 2, 3, 4], "I am using MXNet")
+    >>> b = ([5, 7, 2, 5], "Gluon rocks!")
+    >>> c = ([1, 2, 3, 4], "Batchification!")
+    >>> _, l = gluonnlp.data.batchify.Tuple(gluonnlp.data.batchify.Stack(),
+    ...                                     gluonnlp.data.batchify.List())([a, b, c])
+    >>> print(l)
     ['I am using MXNet', 'Gluon rocks!', 'Batchification!']
     """
     def __call__(self, x):
