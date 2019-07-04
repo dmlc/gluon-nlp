@@ -26,13 +26,15 @@ def sanity_lint(workspace_name, conda_env_name, path) {
   return ['Lint': {
     node {
       ws(workspace_name) {
-        utils.init_git()
-        sh """
-        set -ex
-        source ci/prepare_clean_env.sh ${conda_env_name}
-        make lintdir=${path} lint
-        set +ex
-        """
+        timeout(time: max_time, unit: 'MINUTES') {
+          utils.init_git()
+          sh """
+          set -ex
+          source ci/prepare_clean_env.sh ${conda_env_name}
+          make lintdir=${path} lint
+          set +ex
+          """
+        }
       }
     }
   }]
@@ -47,14 +49,16 @@ def test_unittest(workspace_name, conda_env_name,
   return ["${conda_env_name}: ${test_path} -m '${mark}'": {
     node(node_type) {
       ws(workspace_name) {
-        utils.init_git()
-        sh """
-        set -ex
-        source ci/prepare_clean_env.sh ${conda_env_name}
-        pytest -v ${capture_flag} -n ${threads} -m '${mark}' --durations=30 --cov ${cov_path} --cov-report=term --cov-report xml ${test_path}
-        set +ex
-        """
-        if (!skip_report) utils.publish_test_coverage('GluonNLPCodeCov')
+        timeout(time: max_time, unit: 'MINUTES') {
+          utils.init_git()
+          sh """
+          set -ex
+          source ci/prepare_clean_env.sh ${conda_env_name}
+          pytest -v ${capture_flag} -n ${threads} -m '${mark}' --durations=30 --cov ${cov_path} --cov-report=term --cov-report xml ${test_path}
+          set +ex
+          """
+          if (!skip_report) utils.publish_test_coverage('GluonNLPCodeCov')
+        }
       }
     }
   }]
@@ -66,14 +70,16 @@ def test_doctest(workspace_name, conda_env_name,
   return ["${conda_env_name}: doctest ${test_path}": {
     node(NODE_LINUX_CPU) {
       ws(workspace_name) {
-        utils.init_git()
-        sh """
-        set -ex
-        source ci/prepare_clean_env.sh ${conda_env_name}
-        pytest -v ${capture_flag} -n ${threads} --durations=30 --cov ${cov_path} --cov-report=term --cov-report xml --doctest-modules ${test_path}
-        set +ex
-        """
-        utils.publish_test_coverage('GluonNLPCodeCov')
+        timeout(time: max_time, unit: 'MINUTES') {
+          utils.init_git()
+          sh """
+          set -ex
+          source ci/prepare_clean_env.sh ${conda_env_name}
+          pytest -v ${capture_flag} -n ${threads} --durations=30 --cov ${cov_path} --cov-report=term --cov-report xml --doctest-modules ${test_path}
+          set +ex
+          """
+          utils.publish_test_coverage('GluonNLPCodeCov')
+        }
       }
     }
   }]
@@ -84,19 +90,21 @@ def website_linkcheck(workspace_name, conda_env_name) {
   return ["${conda_env_name}: website link check": {
     node(NODE_LINUX_CPU) {
       ws(workspace_name) {
-        utils.init_git()
-        sh """
-        set -ex
-        source ci/prepare_clean_env.sh ${conda_env_name}
-        make distribute
-        if [[ ${enforce_linkcheck} == true ]]; then
-            make -C docs linkcheck SPHINXOPTS=-W
-        else
-            set +e
-            make -C docs linkcheck
-        fi;
-        set +ex
-        """
+        timeout(time: max_time, unit: 'MINUTES') {
+          utils.init_git()
+          sh """
+          set -ex
+          source ci/prepare_clean_env.sh ${conda_env_name}
+          make distribute
+          if [[ ${enforce_linkcheck} == true ]]; then
+              make -C docs linkcheck SPHINXOPTS=-W
+          else
+              set +e
+              make -C docs linkcheck
+          fi;
+          set +ex
+          """
+        }
       }
     }
   }]
@@ -105,8 +113,10 @@ def website_linkcheck(workspace_name, conda_env_name) {
 def post_website_link() {
   return ["Deploy: ": {
     node {
-      if (env.BRANCH_NAME.startsWith("PR-")) {
-          pullRequest.comment("Job ${env.BRANCH_NAME}/${env.BUILD_NUMBER} is complete. \nDocs are uploaded to http://gluon-nlp-staging.s3-accelerate.dualstack.amazonaws.com/${env.BRANCH_NAME}/${env.BUILD_NUMBER}/index.html")
+      timeout(time: max_time, unit: 'MINUTES') {
+        if (env.BRANCH_NAME.startsWith("PR-")) {
+            pullRequest.comment("Job ${env.BRANCH_NAME}/${env.BUILD_NUMBER} is complete. \nDocs are uploaded to http://gluon-nlp-staging.s3-accelerate.dualstack.amazonaws.com/${env.BRANCH_NAME}/${env.BUILD_NUMBER}/index.html")
+        }
       }
     }
   }]
