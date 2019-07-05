@@ -354,10 +354,10 @@ class List(object):
     >>> c = ([1, 2, 3, 4], "Batchification!")
     >>> _, l = gluonnlp.data.batchify.Tuple(gluonnlp.data.batchify.Stack(),
     ...                                     gluonnlp.data.batchify.List())([a, b, c])
-    >>> print(l)
+    >>> l
     ['I am using MXNet', 'Gluon rocks!', 'Batchification!']
     """
-    def __call__(self, x):
+    def __call__(self, data):
         """
         Parameters
         ----------
@@ -369,4 +369,4 @@ class List(object):
         ret : list
             The input list
         """
-        return x
+        return list(data)
