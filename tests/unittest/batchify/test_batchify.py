@@ -6,6 +6,12 @@ from gluonnlp.data import batchify
 import pytest
 
 
+def test_list():
+    data = [object() for _ in range(5)]
+    passthrough = batchify.List()(data)
+    assert passthrough == data
+
+
 def test_pad():
     padded = batchify.Pad(pad_val=-1)([mx.nd.array([]), mx.nd.arange(1)]).asnumpy().flatten().tolist()
     assert padded == [-1.0, 0.0]
