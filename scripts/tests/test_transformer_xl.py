@@ -26,7 +26,8 @@ import gluonnlp as nlp
 
 from gluonnlp.model.transformer import _position_encoding_init
 
-from ..language_model.transformer import AdaptiveEmbedding
+from ..language_model.transformer import \
+    PositionalEmbeddingMultiHeadAttentionCell, AdaptiveEmbedding
 
 
 @pytest.mark.parametrize('d_head', [5])
@@ -54,3 +55,19 @@ def test_positional_embedding_multihead_attention_cell(d_head, num_heads, base_c
     read_value, att_weights = attention_cell(query_nd, key_nd, value_nd, emb_nd, mask_nd)
 
 
+@pytest.mark.parametrize('embed_size', [64, 32])
+@pytest.mark.parametrize('units', [64, 32])
+@pytest.mark.parametrize('cutoffs', [[10], [10, 30]])
+@pytest.mark.parametrize('div_val', [1, 2, 4])
+@pytest.mark.parametrize('hybridize', [True, False])
+def test_adaptive_embedding(embed_size, units, cutoffs, div_val, hybridize):
+    vocab_size = 100
+    emb = AdaptiveEmbedding(vocab_size=vocab_size, embed_size=embed_size, units=units,
+                            cutoffs=cutoffs, div_val=div_val)
+    emb.initialize()
+    if hybridize:
+        emb.hybridize()
+
+    x = mx.nd.arange(vocab_size)
+    _ = emb(x)
+    mx.nd.waitall()
