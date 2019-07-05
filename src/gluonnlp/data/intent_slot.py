@@ -132,28 +132,18 @@ class ATISDataset(_BaseICSLDataset):
     -etc-
     >>> len(atis)
     4478
-    >>> atis[0]
-    (['i',
-      'want',
-      'to',
-      'fly',
-      'from',
-      'baltimore',
-      'to',
-      'dallas',
-      'round',
-      'trip'],
-     ['O',
-      'O',
-      'O',
-      'O',
-      'O',
-      'B-fromloc.city_name',
-      'O',
-      'B-toloc.city_name',
-      'B-round_trip',
-      'I-round_trip'],
-     array([10], dtype=int32))
+    >>> len(atis[0])
+    3
+    >>> len(atis[0][0])
+    10
+    >>> atis[0][0]
+    ['i', 'want', 'to', 'fly', 'from', 'baltimore', 'to', 'dallas', 'round', 'trip']
+    >>> len(atis[0][1])
+    10
+    >>> atis[0][1][:8]
+    ['O', 'O', 'O', 'O', 'O', 'B-fromloc.city_name', 'O', 'B-toloc.city_name']
+    >>> atis[0][2]
+    array([10], dtype=int32)
     """
     def __init__(self, segment='train',
                  root=os.path.join(get_home_dir(), 'datasets', 'atis')):
@@ -192,32 +182,18 @@ class SNIPSDataset(_BaseICSLDataset):
     -etc-
     >>> len(snips)
     13084
-    >>> snips[0]
-    (['Add',
-      'Don',
-      'and',
-      'Sherri',
-      'to',
-      'my',
-      'Meditate',
-      'to',
-      'Sounds',
-      'of',
-      'Nature',
-      'playlist'],
-     ['O',
-      'B-entity_name',
-      'I-entity_name',
-      'I-entity_name',
-      'O',
-      'B-playlist_owner',
-      'B-playlist',
-      'I-playlist',
-      'I-playlist',
-      'I-playlist',
-      'I-playlist',
-      'O'],
-     array([0], dtype=int32))
+    >>> len(snips[0])
+    3
+    >>> len(snips[1][0])
+    8
+    >>> snips[1][0]
+    ['put', 'United', 'Abominations', 'onto', 'my', 'rare', 'groove', 'playlist']
+    >>> len(snips[1][1])
+    8
+    >>> snips[1][1][:5]
+    ['O', 'B-entity_name', 'I-entity_name', 'O', 'B-playlist_owner']
+    >>> snips[1][2]
+    array([0], dtype=int32)
     """
     def __init__(self, segment='train',
                  root=os.path.join(get_home_dir(), 'datasets', 'snips')):
