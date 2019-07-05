@@ -33,7 +33,6 @@ from .dataset import TSVDataset
 from .registry import register
 from ..base import get_home_dir
 
-_glue_s3_uri = 's3://apache-mxnet/gluon/dataset/Glue/'
 
 class _GlueDataset(TSVDataset):
     def __init__(self, root, data_file, **kwargs):
