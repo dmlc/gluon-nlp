@@ -623,6 +623,7 @@ def test_intent_slot(dataset, segment, expected_samples):
 
     assert len(dataset) == expected_samples
     assert len(dataset[0]) == 3
+    assert all(len(x[0]) == len(x[1]) for x in dataset)
 
 def test_counter():
     x = nlp.data.Counter({'a': 10, 'b': 1, 'c': 1})
