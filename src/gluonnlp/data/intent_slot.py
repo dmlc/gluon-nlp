@@ -16,6 +16,7 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+"""Datasets for intent classification and slot labeling."""
 
 import io
 import os
@@ -225,4 +226,3 @@ class SNIPSDataset(_BaseICSLDataset):
     @property
     def _download_info(self):
         return 'snips-{}.zip', 'f22420cc0f2a26078337dc375606be46a4cc8c51'
-
