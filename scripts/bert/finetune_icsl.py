@@ -26,7 +26,7 @@ joint intent classification and slot labelling, with Gluon NLP Toolkit.
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-# pylint:disable=redefined-outer-name,logging-format-interpolation,arguments-differ,unused-variable,missing-docstring
+# pylint:disable=redefined-outer-name,logging-format-interpolation,arguments-differ,unused-variable,missing-docstring,wrong-import-order
 import os
 import sys
 import time
