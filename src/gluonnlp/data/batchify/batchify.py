@@ -213,19 +213,20 @@ class Pad(object):
       [ 1  2 -1 -1]]]
     <NDArray 2x2x4 @cpu_shared(0)>
     """
-    def __init__(self, axis=0, pad_val=0, ret_length=False, dtype=None):
+    def __init__(self, axis=0, pad_val=None, ret_length=False, dtype=None):
         self._axis = axis
         assert isinstance(axis, int), 'axis must be an integer! ' \
                                       'Received axis=%s, type=%s.' % (str(axis),
                                                                       str(type(axis)))
-        self._pad_val = pad_val
+        self._pad_val = 0 if pad_val is None else pad_val
         self._ret_length = ret_length
         self._dtype = dtype
         self._warned = False
 
-        if pad_val == 0:
+        if pad_val is None:
             warnings.warn(
-                'Padding value 0 is used in data.batchify.Pad(). '
+                'Padding value is not given and will be set automatically to 0 '
+                'in data.batchify.Pad(). '
                 'Please check whether this is intended '
                 '(e.g. value of padding index in the vocabulary).')
 
