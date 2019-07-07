@@ -8,7 +8,7 @@ import mxnet as mx
 import random
 from mxnet import gluon
 import gluonnlp as nlp
-import tqdm
+from tqdm import tqdm
 from gluonnlp.data import BERTTokenizer, ATISDataset, SNIPSDataset
 from seqeval.metrics import f1_score as ner_f1_score
 
