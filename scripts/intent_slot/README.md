@@ -41,6 +41,7 @@ choose to finetune a pretrained BERT model.  We use two datasets [ATIS](https://
 mxnet
 gluonnlp
 seqeval
+tqdm
 ```
 
 You may use pip or other tools to install these packages
@@ -77,3 +78,6 @@ For SNIPS
 | [BLSTM-CRF + ELMo, AAAI 2019](https://arxiv.org/abs/1811.05370) | 99.29 | 93.90 |
 | [Joint BERT, Arxiv 2019](https://arxiv.org/pdf/1902.10909.pdf) | 98.60 | 97.00 |
 | Ours | 98.81±0.13 | 95.94±0.10 |
+
+## Notebook
+To have a hands-on experience about the problem, you may try the notebook in [bert_icsl.ipynb](bert_icsl.ipynb)

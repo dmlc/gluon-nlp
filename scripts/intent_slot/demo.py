@@ -1,4 +1,4 @@
-import os
+import os, sys
 import pandas as pd
 from mxnet.gluon import nn, Block
 import time
@@ -8,6 +8,7 @@ import mxnet as mx
 import random
 from mxnet import gluon
 import gluonnlp as nlp
+import tqdm
 from gluonnlp.data import BERTTokenizer, ATISDataset, SNIPSDataset
 from seqeval.metrics import f1_score as ner_f1_score
 
@@ -327,7 +328,7 @@ def train(args):
         nslot = 0
         ntoken = 0
         train_epoch_start = time.time()
-        for token_ids, mask, selected, slot_ids, intent_label, valid_length in train_loader:
+        for token_ids, mask, selected, slot_ids, intent_label, valid_length in tqdm(train_loader, file=sys.stdout):
             ntoken += valid_length.sum().asscalar()
             token_ids = mx.nd.array(token_ids, ctx=ctx).astype(np.int32)
             mask = mx.nd.array(mask, ctx=ctx).astype(np.float32)
