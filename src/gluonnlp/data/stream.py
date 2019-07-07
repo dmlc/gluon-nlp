@@ -402,6 +402,6 @@ def _sigterm_handler(sig, _):
     """Handler for SIGTERM signal"""
     for process in _managed_processes:
         process.terminate()
-    sys.exit(sig)
+    sys.exit(0)
 
 signal.signal(signal.SIGTERM, _sigterm_handler)
