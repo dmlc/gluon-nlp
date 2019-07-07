@@ -35,10 +35,10 @@ import random
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
-from seqeval.metrics import f1_score as ner_f1_score
 import mxnet as mx
 from mxnet import gluon
 from mxnet.gluon import nn, Block
+from seqeval.metrics import f1_score as ner_f1_score
 import gluonnlp as nlp
 from gluonnlp.data import BERTTokenizer, ATISDataset, SNIPSDataset
 
