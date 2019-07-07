@@ -26,7 +26,7 @@ joint intent classification and slot labelling, with Gluon NLP Toolkit.
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-# pylint:disable=redefined-outer-name,logging-format-interpolation
+# pylint:disable=redefined-outer-name,logging-format-interpolation,arguments-differ,unused-variable,missing-docstring
 import os
 import sys
 import time
@@ -97,7 +97,10 @@ class BERTForICSL(Block):
         return intent_scores, slot_scores
 
 
-class IDSLSubwordTransform(object):
+class IDSLSubwordTransform():
+    """Transform the word_tokens/tags by the subword tokenizer
+
+    """
     def __init__(self, subword_vocab, subword_tokenizer, slot_vocab, cased=False):
         """
 
@@ -108,7 +111,6 @@ class IDSLSubwordTransform(object):
         cased : bool
             Whether to convert all characters to lower
         """
-        super(IDSLSubwordTransform, self).__init__()
         self._subword_vocab = subword_vocab
         self._subword_tokenizer = subword_tokenizer
         self._slot_vocab = slot_vocab
@@ -200,6 +202,16 @@ def parse_args():
 
 
 def print_sample(dataset, sample_id):
+    """ Print sample in the dataset
+
+    Parameters
+    ----------
+    dataset : SimpleDataset
+    sample_id: int
+
+    Returns
+    -------
+    """
     word_tokens, tags, intent_ids = dataset[sample_id]
     print('Sample #ID: {} Intent: {}'.format(sample_id,
                                              [dataset.intent_vocab.idx_to_token[ele]
@@ -211,7 +223,7 @@ def print_sample(dataset, sample_id):
 
 
 def evaluation(ctx, data_loader, net, intent_pred_loss, slot_pred_loss, slot_vocab):
-    """
+    """ Evaluate the trained model
 
     Parameters
     ----------
@@ -372,7 +384,7 @@ def train(args):
         nslot = 0
         ntoken = 0
         train_epoch_start = time.time()
-        for token_ids, mask, selected, slot_ids, intent_label, valid_length\
+        for token_ids, mask, _, slot_ids, intent_label, valid_length\
                 in tqdm(train_loader, file=sys.stdout):
             ntoken += valid_length.sum().asscalar()
             token_ids = mx.nd.array(token_ids, ctx=ctx).astype(np.int32)
@@ -416,18 +428,20 @@ def train(args):
         dev_slot_f1, dev_pred_slots, dev_gt_slots\
             = evaluation(ctx, dev_loader, net, intent_pred_loss, slot_pred_loss, slot_vocab)
         print('[Epoch {}]    dev intent/slot = {:.3f}/{:.3f},'
-              ' slot f1 = {:.2f}, intent acc = {:.2f}'.format(
-            epoch_id, avg_dev_intent_loss, avg_dev_slot_loss,
-            dev_slot_f1 * 100, dev_intent_acc * 100))
+              ' slot f1 = {:.2f}, intent acc = {:.2f}'.format(epoch_id, avg_dev_intent_loss,
+                                                              avg_dev_slot_loss,
+                                                              dev_slot_f1 * 100,
+                                                              dev_intent_acc * 100))
         if dev_slot_f1 > best_dev_sf1:
             best_dev_sf1 = dev_slot_f1
             avg_test_intent_loss, avg_test_slot_loss, test_intent_acc, \
             test_slot_f1, test_pred_slots, test_gt_slots \
                 = evaluation(ctx, test_loader, net, intent_pred_loss, slot_pred_loss, slot_vocab)
             print('[Epoch {}]    test intent/slot = {:.3f}/{:.3f},'
-                  ' slot f1 = {:.2f}, intent acc = {:.2f}'.format(
-                epoch_id, avg_test_intent_loss, avg_test_slot_loss,
-                test_slot_f1 * 100, test_intent_acc * 100))
+                  ' slot f1 = {:.2f}, intent acc = {:.2f}'.format(epoch_id, avg_test_intent_loss,
+                                                                  avg_test_slot_loss,
+                                                                  test_slot_f1 * 100,
+                                                                  test_intent_acc * 100))
             if not os.path.exists(args.save_dir):
                 os.makedirs(args.save_dir)
             net.save_parameters(os.path.join(args.save_dir, 'best_valid.params'))
