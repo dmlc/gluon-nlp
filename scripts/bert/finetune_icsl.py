@@ -1,22 +1,66 @@
-import os, sys
-import pandas as pd
-from mxnet.gluon import nn, Block
+"""
+Intent Classification and Slot Labelling with BERT
+
+=========================================================================================
+
+This example shows how to implement finetune a model with pre-trained BERT parameters for
+joint intent classification and slot labelling, with Gluon NLP Toolkit.
+
+"""
+
+# coding: utf-8
+
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+# pylint:disable=redefined-outer-name,logging-format-interpolation
+import os
+import sys
 import time
 import argparse
-import numpy as np
-import mxnet as mx
 import random
-from mxnet import gluon
-import gluonnlp as nlp
+import numpy as np
+import pandas as pd
 from tqdm import tqdm
+import mxnet as mx
+from mxnet import gluon
+from mxnet.gluon import nn, Block
+import gluonnlp as nlp
 from gluonnlp.data import BERTTokenizer, ATISDataset, SNIPSDataset
 from seqeval.metrics import f1_score as ner_f1_score
 
 
 
 class BERTForICSL(Block):
+    """Model
+
+    """
     def __init__(self, bert, num_intent_classes, num_slot_classes, dropout_prob,
                  prefix=None, params=None):
+        """
+
+        Parameters
+        ----------
+        bert : Block
+        num_intent_classes : int
+        num_slot_classes : int
+        dropout_prob : float
+        prefix : None or str
+        params : None or ParamDict
+        """
         super(BERTForICSL, self).__init__(prefix=prefix, params=params)
         self.bert = bert
         with self.name_scope():
@@ -73,7 +117,7 @@ class IDSLSubwordTransform(object):
 
 
     def __call__(self, word_tokens, tags, intent_ids):
-        """ Transform the
+        """ Transform the word_tokens/tags by the subword tokenizer
 
         Parameters
         ----------
@@ -148,7 +192,8 @@ def parse_args():
                             help='Multiplier for the slot loss.')
     arg_parser.add_argument('--save-dir', type=str, default='saved_model')
     arg_parser.add_argument('--gpu', type=int, default=None,
-                            help='Number (index) of GPU to run on, e.g. 0. If not specified, uses CPU.')
+                            help='Number (index) of GPU to run on, e.g. 0.'
+                                 ' If not specified, uses CPU.')
     args = arg_parser.parse_args()
     return args
 
@@ -316,7 +361,6 @@ def train(args):
                             {'learning_rate': args.learning_rate, 'wd': args.wd},
                             update_on_kvstore=False)
 
-    params = [p for p in net.collect_params().values() if p.grad_req != 'null']
     step_num = 0
     num_train_steps = int(len(train_batch_sampler) * args.epochs)
     num_warmup_steps = int(num_train_steps * args.warmup_ratio)
@@ -328,7 +372,8 @@ def train(args):
         nslot = 0
         ntoken = 0
         train_epoch_start = time.time()
-        for token_ids, mask, selected, slot_ids, intent_label, valid_length in tqdm(train_loader, file=sys.stdout):
+        for token_ids, mask, selected, slot_ids, intent_label, valid_length\
+                in tqdm(train_loader, file=sys.stdout):
             ntoken += valid_length.sum().asscalar()
             token_ids = mx.nd.array(token_ids, ctx=ctx).astype(np.int32)
             mask = mx.nd.array(mask, ctx=ctx).astype(np.float32)
@@ -370,15 +415,19 @@ def train(args):
         avg_dev_intent_loss, avg_dev_slot_loss, dev_intent_acc,\
         dev_slot_f1, dev_pred_slots, dev_gt_slots\
             = evaluation(ctx, dev_loader, net, intent_pred_loss, slot_pred_loss, slot_vocab)
-        print('[Epoch {}]    dev intent/slot = {:.3f}/{:.3f}, slot f1 = {:.2f}, intent acc = {:.2f}'.format(
-            epoch_id, avg_dev_intent_loss, avg_dev_slot_loss, dev_slot_f1 * 100, dev_intent_acc * 100))
+        print('[Epoch {}]    dev intent/slot = {:.3f}/{:.3f},'
+              ' slot f1 = {:.2f}, intent acc = {:.2f}'.format(
+            epoch_id, avg_dev_intent_loss, avg_dev_slot_loss,
+            dev_slot_f1 * 100, dev_intent_acc * 100))
         if dev_slot_f1 > best_dev_sf1:
             best_dev_sf1 = dev_slot_f1
             avg_test_intent_loss, avg_test_slot_loss, test_intent_acc, \
             test_slot_f1, test_pred_slots, test_gt_slots \
                 = evaluation(ctx, test_loader, net, intent_pred_loss, slot_pred_loss, slot_vocab)
-            print('[Epoch {}]    test intent/slot = {:.3f}/{:.3f}, slot f1 = {:.2f}, intent acc = {:.2f}'.format(
-                epoch_id, avg_test_intent_loss, avg_test_slot_loss, test_slot_f1 * 100, test_intent_acc * 100))
+            print('[Epoch {}]    test intent/slot = {:.3f}/{:.3f},'
+                  ' slot f1 = {:.2f}, intent acc = {:.2f}'.format(
+                epoch_id, avg_test_intent_loss, avg_test_slot_loss,
+                test_slot_f1 * 100, test_intent_acc * 100))
             if not os.path.exists(args.save_dir):
                 os.makedirs(args.save_dir)
             net.save_parameters(os.path.join(args.save_dir, 'best_valid.params'))
@@ -387,9 +436,10 @@ def train(args):
     avg_test_intent_loss, avg_test_slot_loss, test_intent_acc, \
     test_slot_f1, test_pred_slots, test_gt_slots \
         = evaluation(ctx, test_loader, net, intent_pred_loss, slot_pred_loss, slot_vocab)
-    print('Best validation model --> Slot F1={:.2f}, Intent acc={:.2f}'.format(test_slot_f1 * 100, test_intent_acc * 100))
+    print('Best validation model --> Slot F1={:.2f}, Intent acc={:.2f}'
+          .format(test_slot_f1 * 100, test_intent_acc * 100))
     with open(os.path.join(args.save_dir, 'test_error.txt'), 'w') as of:
-        of.write('{} {}\n'.format(test_slot_f1, test_intent_acc ))
+        of.write('{} {}\n'.format(test_slot_f1, test_intent_acc))
 
 if __name__ == '__main__':
     args = parse_args()
