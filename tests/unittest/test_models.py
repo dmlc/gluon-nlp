@@ -104,7 +104,7 @@ def test_pretrained_bert_models(disable_missing_parameters):
     pretrained = {
         'bert_12_768_12': [
             'book_corpus_wiki_en_cased', 'book_corpus_wiki_en_uncased', 'wiki_multilingual_uncased',
-            'wiki_multilingual_cased', 'wiki_cn_cased', 'scibert_scivocab_uncased',
+            'openwebtext_book_corpus_wiki_en_uncased', 'wiki_multilingual_cased', 'wiki_cn_cased', 'scibert_scivocab_uncased',
             'scibert_scivocab_cased', 'scibert_basevocab_uncased', 'scibert_basevocab_cased',
             'biobert_v1.0_pmc_cased', 'biobert_v1.0_pubmed_cased', 'biobert_v1.0_pubmed_pmc_cased',
             'biobert_v1.1_pubmed_cased', 'clinicalbert_uncased',
@@ -113,6 +113,7 @@ def test_pretrained_bert_models(disable_missing_parameters):
     }
     vocab_size = {'book_corpus_wiki_en_cased': 28996,
                   'book_corpus_wiki_en_uncased': 30522,
+                  'openwebtext_book_corpus_wiki_en_uncased': 30522,
                   'wiki_multilingual_cased': 119547,
                   'wiki_cn_cased': 21128,
                   'wiki_multilingual_uncased': 105879,

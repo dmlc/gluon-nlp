@@ -27,7 +27,7 @@ from mxnet import gluon
 from mxnet.gluon import nn
 
 
-class NLIModel(gluon.HybridBlock):
+class DecomposableAttentionModel(gluon.HybridBlock):
     """
     A Decomposable Attention Model for Natural Language Inference
     using intra-sentence attention.
@@ -35,7 +35,7 @@ class NLIModel(gluon.HybridBlock):
     """
     def __init__(self, vocab_size, word_embed_size, hidden_size,
                  dropout=0., intra_attention=False, **kwargs):
-        super(NLIModel, self).__init__(**kwargs)
+        super(DecomposableAttentionModel, self).__init__(**kwargs)
         self.word_embed_size = word_embed_size
         self.hidden_size = hidden_size
         self.use_intra_attention = intra_attention

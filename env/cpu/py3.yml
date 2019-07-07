@@ -33,4 +33,3 @@ dependencies:
     - https://github.com/mli/mx-theme/tarball/v0.3.9
     - seaborn
     - jieba
-    - sphinx-autorun
