@@ -336,11 +336,11 @@ For ATIS
 +--------+----------------+-------------+
 | Models | Intent Acc (%) | Slot F1 (%) |
 +========+================+=============+
-|`Intent Gating & self-attention, EMNLP 2018 <https://www.aclweb.org/anthology/D18-1417>`__ | 98.77 | 96.52 |
+| `Intent Gating & self-attention, EMNLP 2018 <https://www.aclweb.org/anthology/D18-1417>`__ | 98.77 | 96.52 |
 +--------+----------------+-------------+
-|`BLSTM-CRF + ELMo, AAAI 2019, <https://arxiv.org/abs/1811.05370>`__ | 97.42 | 95.62 |
+| `BLSTM-CRF + ELMo, AAAI 2019, <https://arxiv.org/abs/1811.05370>`__ | 97.42 | 95.62 |
 +--------+----------------+-------------+
-|`Joint BERT, Arxiv 2019, <https://arxiv.org/pdf/1902.10909.pdf>`__ |  97.5 | 96.1 |
+| `Joint BERT, Arxiv 2019, <https://arxiv.org/pdf/1902.10909.pdf>`__ |  97.5 | 96.1 |
 +--------+----------------+-------------+
 | Ours | 98.66±0.00  | 95.88±0.04 |
 +--------+----------------+-------------+
@@ -350,9 +350,9 @@ For SNIPS
 +--------+----------------+-------------+
 | Models | Intent Acc (%) | Slot F1 (%) |
 +========+================+=============+
-| [BLSTM-CRF + ELMo, AAAI 2019](https://arxiv.org/abs/1811.05370) | 99.29 | 93.90 |
+| `BLSTM-CRF + ELMo, AAAI 2019 <https://arxiv.org/abs/1811.05370>`__ | 99.29 | 93.90 |
 +--------+----------------+-------------+
-| [Joint BERT, Arxiv 2019](https://arxiv.org/pdf/1902.10909.pdf) | 98.60 | 97.00 |
+| `Joint BERT, Arxiv 2019 <https://arxiv.org/pdf/1902.10909.pdf>`__ | 98.60 | 97.00 |
 +--------+----------------+-------------+
 | Ours | 98.81±0.13 | 95.94±0.10 |
 +--------+----------------+-------------+
