@@ -260,8 +260,7 @@ Joint Intent Classification and Slot Labelling
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Intent classification and slot labelling are two essential problems in Natural Language Understanding (NLU).
-In *intent classification*, the agent needs to detect the intention that the speaker's utterance conveys.
- For example, when the speaker says "Book a flight from Long Beach to Seattle", the intention is to book a flight ticket.
+In *intent classification*, the agent needs to detect the intention that the speaker's utterance conveys. For example, when the speaker says "Book a flight from Long Beach to Seattle", the intention is to book a flight ticket.
 In *slot labelling*, the agent needs to extract the semantic entities that are related to the intent. In our previous example,
 "Long Beach" and "Seattle" are two semantic constituents related to the flight, i.e., the origin and the destination.
 
