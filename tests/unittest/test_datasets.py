@@ -294,8 +294,6 @@ def test_simlex999():
 @flaky(max_runs=2, min_passes=1)
 @pytest.mark.serial
 @pytest.mark.remote_required
-@pytest.mark.skipif(datetime.date.today() < datetime.date(2019, 7, 18),
-                    reason='Disabled for 4 weeks due to link move.')
 def test_simverb3500():
     data = nlp.data.SimVerb3500(
         root=os.path.join('tests', 'externaldata', 'simverb3500'))
@@ -603,6 +601,29 @@ def test_load_dev_squad():
     # list of answer texts, list of answer start indices, is_impossible
     for record in val_dataset:
         assert len(record) == 7
+
+###############################################################################
+# Intent Classification and Slot Labeling
+###############################################################################
+@pytest.mark.remote_required
+@pytest.mark.parametrize('dataset,segment,expected_samples', [
+    ('atis', 'train', 4478),
+    ('atis', 'dev', 500),
+    ('atis', 'test', 893),
+    ('snips', 'train', 13084),
+    ('snips', 'dev', 700),
+    ('snips', 'test', 700)])
+def test_intent_slot(dataset, segment, expected_samples):
+    assert dataset in ['atis', 'snips']
+    if dataset == 'atis':
+        data_cls = nlp.data.ATISDataset
+    else:
+        data_cls = nlp.data.SNIPSDataset
+    dataset = data_cls(segment=segment, root='tests/data/'+dataset)
+
+    assert len(dataset) == expected_samples
+    assert len(dataset[0]) == 3
+    assert all(len(x[0]) == len(x[1]) for x in dataset)
 
 def test_counter():
     x = nlp.data.Counter({'a': 10, 'b': 1, 'c': 1})

@@ -296,11 +296,11 @@ batchify_fn = nlp.data.batchify.Tuple(
 net = BertForQA(bert=bert)
 if model_parameters:
     # load complete BertForQA parameters
-    net.load_parameters(model_parameters, ctx=ctx, cast_dtype=True)
+    nlp.utils.load_parameters(net, model_parameters, ctx=ctx, cast_dtype=True)
 elif pretrained_bert_parameters:
     # only load BertModel parameters
-    bert.load_parameters(pretrained_bert_parameters, ctx=ctx,
-                         ignore_extra=True, cast_dtype=True)
+    nlp.utils.load_parameters(bert, pretrained_bert_parameters, ctx=ctx,
+                              ignore_extra=True, cast_dtype=True)
     net.span_classifier.initialize(init=mx.init.Normal(0.02), ctx=ctx)
 elif pretrained:
     # only load BertModel parameters

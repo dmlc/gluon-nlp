@@ -500,6 +500,8 @@ model_store._model_sha1.update(
     {name: checksum for checksum, name in [
         ('5656dac6965b5054147b0375337d5a6a7a2ff832', 'bert_12_768_12_book_corpus_wiki_en_cased'),
         ('75cc780f085e8007b3bf6769c6348bb1ff9a3074', 'bert_12_768_12_book_corpus_wiki_en_uncased'),
+        ('a56e24015a777329c795eed4ed21c698af03c9ff',
+         'bert_12_768_12_openwebtext_book_corpus_wiki_en_uncased'),
         ('237f39851b24f0b56d70aa20efd50095e3926e26', 'bert_12_768_12_wiki_multilingual_uncased'),
         ('b0f57a207f85a7d361bb79de80756a8c9a4276f7', 'bert_12_768_12_wiki_multilingual_cased'),
         ('885ebb9adc249a170c5576e90e88cfd1bbd98da6', 'bert_12_768_12_wiki_cn_cased'),
@@ -591,6 +593,7 @@ def bert_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
         is further used to select the pretrained parameters to load.
         The supported datasets are 'book_corpus_wiki_en_cased',
         'book_corpus_wiki_en_uncased', 'wiki_cn_cased',
+        'openwebtext_book_corpus_wiki_en_uncased',
         'wiki_multilingual_uncased', 'wiki_multilingual_cased',
         'scibert_scivocab_uncased', 'scibert_scivocab_cased',
         'scibert_basevocab_uncased','scibert_basevocab_cased',
