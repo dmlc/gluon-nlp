@@ -17,7 +17,8 @@
 # specific language governing permissions and limitations
 # under the License.
 """Test Transformer-XL."""
-import time
+import functools
+import re
 
 import mxnet as mx
 import pytest
@@ -27,7 +28,7 @@ import gluonnlp as nlp
 from gluonnlp.model.transformer import _position_encoding_init
 
 from ..language_model.transformer import \
-    PositionalEmbeddingMultiHeadAttentionCell, AdaptiveEmbedding
+    PositionalEmbeddingMultiHeadAttentionCell, AdaptiveEmbedding, AdaptiveLogSoftmaxWithLoss
 
 
 @pytest.mark.parametrize('d_head', [5])
@@ -70,4 +71,50 @@ def test_adaptive_embedding(embed_size, units, cutoffs, div_val, hybridize):
 
     x = mx.nd.arange(vocab_size)
     _ = emb(x)
+    mx.nd.waitall()
+
+
+@pytest.mark.parametrize('embed_size', [64, 32])
+@pytest.mark.parametrize('units', [64, 32])
+@pytest.mark.parametrize('cutoffs', [[10], [10, 30]])
+@pytest.mark.parametrize('div_val', [2, 4])
+@pytest.mark.parametrize('tie_with_adaptive_embedding', [False, True])
+@pytest.mark.parametrize('hybridize', [True, False])
+def test_adaptive_softmax(embed_size, units, cutoffs, div_val, tie_with_adaptive_embedding,
+                          hybridize):
+    vocab_size = 100
+
+    Net = functools.partial(AdaptiveLogSoftmaxWithLoss, vocab_size=vocab_size,
+                            embed_size=embed_size, units=units, cutoffs=cutoffs, div_val=div_val)
+
+    if tie_with_adaptive_embedding:
+        # Share all parameters
+        emb = AdaptiveEmbedding(vocab_size=vocab_size, embed_size=embed_size, units=units,
+                                cutoffs=cutoffs, div_val=div_val)
+        emb_params = emb.collect_params()
+        net = Net(tie_embeddings=True, tie_projections=[True] * (len(cutoffs) + 1),
+                  params=emb_params)
+        for param_name, param in net.collect_params().items():
+            if re.search(r'(?:(?:embedding)|(?:projection))\d+_weight', param_name):
+                assert param in emb_params.values()
+            elif re.search(r'(?:(?:embedding)|(?:projection))\d+_bias', param_name):
+                assert param not in emb_params.values()
+
+        # Share only embedding parameters
+        net = Net(tie_embeddings=True, params=emb_params)
+        for param_name, param in net.collect_params().items():
+            if re.search(r'(?:embedding)\d+_weight', param_name):
+                assert param in emb_params.values()
+            elif re.search(r'(?:projection)|(?:bias)', param_name):
+                assert param not in emb_params.values()
+    else:
+        net = Net()
+
+    net.initialize()
+    if hybridize:
+        net.hybridize()
+
+    x = mx.nd.random.normal(shape=(8, 16, units))
+    y = mx.nd.arange(8 * 16).clip(0, vocab_size - 1).reshape((8, 16))
+    _ = net(x, y)
     mx.nd.waitall()
