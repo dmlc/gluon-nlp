@@ -398,7 +398,7 @@ class PrefetchingStream(DataStream):
                                      seed=seed, np_seed=np_seed,
                                      mx_seed=mx_seed)
 
-def _sigterm_handler(sig, _):
+def _sigterm_handler(sig, _): # pylint: disable=unused-argument
     """Handler for SIGTERM signal"""
     for process in _managed_processes:
         process.terminate()
