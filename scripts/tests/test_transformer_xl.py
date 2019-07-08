@@ -24,11 +24,10 @@ import mxnet as mx
 import pytest
 
 import gluonnlp as nlp
-
 from gluonnlp.model.transformer import _position_encoding_init
 
-from ..language_model.transformer import \
-    PositionalEmbeddingMultiHeadAttentionCell, AdaptiveEmbedding, AdaptiveLogSoftmaxWithLoss
+from ..language_model.transformer import (AdaptiveEmbedding, AdaptiveLogSoftmaxWithLoss,
+                                          PositionalEmbeddingMultiHeadAttentionCell, TransformerXL)
 
 
 @pytest.mark.parametrize('d_head', [5])
@@ -117,4 +116,27 @@ def test_adaptive_softmax(embed_size, units, cutoffs, div_val, tie_with_adaptive
     x = mx.nd.random.normal(shape=(8, 16, units))
     y = mx.nd.arange(8 * 16).clip(0, vocab_size - 1).reshape((8, 16))
     _ = net(x, y)
+    mx.nd.waitall()
+
+
+@pytest.mark.parametrize('embed_size', [64, 32])
+@pytest.mark.parametrize('units', [64, 32])
+@pytest.mark.parametrize('cutoffs', [[10], [10, 30]])
+@pytest.mark.parametrize('div_val', [1, 2, 4])
+@pytest.mark.parametrize('mem_len', [8, 16])
+@pytest.mark.parametrize('hybridize', [True, False])
+def test_transformer_xl_model(embed_size, units, cutoffs, div_val, mem_len, hybridize):
+    batch_size = 8
+    vocab_size = 100
+    net = TransformerXL(vocab_size=vocab_size, embed_size=embed_size, units=units,
+                        embed_cutoffs=cutoffs, embed_div_val=div_val)
+    net.initialize()
+    if hybridize:
+        net.hybridize()
+
+    mems = net.begin_mems(batch_size, mem_len, context=mx.cpu())
+    x = mx.nd.arange(batch_size * 16).clip(0, vocab_size - 1).reshape((8, 16))
+    y = x
+    with mx.autograd.record():
+        _ = net(x, y, mems)
     mx.nd.waitall()
