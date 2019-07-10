@@ -425,7 +425,7 @@ class BaseTransformerEncoder(HybridBlock, Seq2SeqEncoder):
         """
         return super(BaseTransformerEncoder, self).__call__(inputs, states, valid_length)
 
-    def forward(self, inputs, states=None, valid_length=None, steps=None): # pylint: disable=arguments-differ
+    def _forward(self, F, inputs, states=None, valid_length=None, steps=None): # pylint: disable=arguments-differ
         """
 
         Parameters
@@ -447,33 +447,36 @@ class BaseTransformerEncoder(HybridBlock, Seq2SeqEncoder):
             (batch_size, num_heads, length, length)
 
         """
-        length = inputs.shape[1]
+        
+        try:
+            from F.contrib import arange_like
+        except ImportError:
+            raise ImportError('Failed to import nd.contrib.arange_like from MXNet. '
+                              'arange_like operator requires mxnet>=1.5.0b20190708. '
+                              'Please upgrade your MXNet version.')
+
         if valid_length is not None:
-            arange = mx.nd.arange(length, ctx=valid_length.context, dtype=valid_length.dtype)
-            mask = mx.nd.broadcast_lesser(
-                arange.reshape((1, -1)),
-                valid_length.reshape((-1, 1)))
-            mask = mx.nd.broadcast_axes(mx.nd.expand_dims(mask, axis=1), axis=1, size=length)
+            arange = F.contrib.arange_like(inputs, axis=1, ctx=valid_length.context, dtype=valid_length.dtype)
+            mask = F.broadcast_lesser(F.reshape(arange, shape=(1, -1)), F.reshape(valid_length, shape=(-1, 1)))
+            mask = F.broadcast_mul(F.expand_dims(mask, axis=1), F.broadcast_mul(ones, mx.symbol.reshape(ones, shape=(-1, 1))))
             if states is None:
                 states = [mask]
             else:
                 states.append(mask)
         if self._scale_embed:
-            inputs = inputs * math.sqrt(inputs.shape[-1])
-        steps = mx.nd.arange(length, ctx=inputs.context)
+            dims = F.slice(F.shape_array(inputs), begin=(-1,), end=(None,))
+            dims = F.cast(a, inputs.dtype)
+            inputs = F.broadcast_mul(inputs, F.sqrt(dims))
+
+        steps = F.contrib.arange_like(inputs, axis=1, ctx=inputs.context)
         if states is None:
             states = [steps]
         else:
             states.append(steps)
-        if valid_length is not None:
-            step_output, additional_outputs =\
-                super(BaseTransformerEncoder, self).forward(inputs, states, valid_length)
-        else:
-            step_output, additional_outputs =\
-                super(BaseTransformerEncoder, self).forward(inputs, states)
-        return step_output, additional_outputs
 
-    def hybrid_forward(self, F, inputs, states=None, valid_length=None, position_weight=None):
+        return inputs, states, valid_length
+
+    def hybrid_forward(self, F, inputs, states=None, valid_length=None, steps=None, position_weight=None):
         # pylint: disable=arguments-differ
         """
 
@@ -496,6 +499,7 @@ class BaseTransformerEncoder(HybridBlock, Seq2SeqEncoder):
             (batch_size, num_heads, length, length)
 
         """
+        inputs, states, valid_length = self._forward(F, inputs, states, valid_length, steps)
         if states is not None:
             steps = states[-1]
             # Positional Encoding
