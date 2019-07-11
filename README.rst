@@ -196,7 +196,7 @@ Citation
 
 If our code helps your research, please cite our paper:
 
-.. code:: python
+.. code::
 
    @article{gluoncvnlp2019,
      title={GluonCV and GluonNLP: Deep Learning in Computer Vision and Natural Language Processing},
