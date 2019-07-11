@@ -189,6 +189,21 @@ English word embeddings:
     <class 'mxnet.ndarray.ndarray.NDArray'>
     >>> glove['baby'].shape
     (50,)
+    
+    
+Citation
+========
+
+If our code helps your research, please cite our paper:
+
+.. code:: python
+
+   @article{gluoncvnlp2019,
+     title={GluonCV and GluonNLP: Deep Learning in Computer Vision and Natural Language Processing},
+     author={Guo, Jian and He, He and He, Tong and Lausen, Leonard and Li, Mu and Lin, Haibin and Shi, Xingjian and Wang, Chenguang and Xie, Junyuan and Zha, Sheng and Zhang, Aston and Zhang, Hang and Zhang, Zhi and Zhang, Zhongyue and Zheng,   Shuai},
+     journal={arXiv preprint arXiv:1907.04433},
+     year={2019}
+}
 
 
 New to Deep Learning or NLP?
