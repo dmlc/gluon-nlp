@@ -203,7 +203,7 @@ If our code helps your research, please cite our paper:
      author={Guo, Jian and He, He and He, Tong and Lausen, Leonard and Li, Mu and Lin, Haibin and Shi, Xingjian and Wang, Chenguang and Xie, Junyuan and Zha, Sheng and Zhang, Aston and Zhang, Hang and Zhang, Zhi and Zhang, Zhongyue and Zheng,   Shuai},
      journal={arXiv preprint arXiv:1907.04433},
      year={2019}
-}
+   }
 
 
 New to Deep Learning or NLP?
