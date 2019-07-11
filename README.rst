@@ -191,10 +191,10 @@ English word embeddings:
     (50,)
     
     
-Citation
-========
+Reference Paper
+===============
 
-If our code helps your research, please cite our paper:
+The bibtex entry for the `reference paper <https://arxiv.org/abs/1907.04433>`__ of GluonNLP is:
 
 .. code::
 
