@@ -612,11 +612,11 @@ class BakerVerb143(WordSimilarityEvaluationDataset):
 
     Examples
     --------
-    >>> bakerverb143 = gluonnlp.data.BakerVerb143(root='./datasets/bakerverb143')
+    >>> bakerverb143 = gluonnlp.data.BakerVerb143(root='./datasets/bakerverb143') #doctest:+SKIP
     -etc-
-    >>> len(bakerverb143)
+    >>> len(bakerverb143) #doctest:+SKIP
     144
-    >>> bakerverb143[0]
+    >>> bakerverb143[0] #doctest:+SKIP
     ['happen', 'say', 0.19]
     """
     _url = 'https://ie.technion.ac.il/~roiri/papers/EMNLP14.zip'
