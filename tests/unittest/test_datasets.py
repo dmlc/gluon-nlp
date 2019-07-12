@@ -620,7 +620,7 @@ def test_intent_slot(dataset, segment, expected_samples):
     else:
         data_cls = nlp.data.SNIPSDataset
 
-    dataset = data_cls(segment=segment, root='tests/data/'+dataset)
+    dataset = data_cls(segment=segment, root='tests/data/{}/{}'.format(dataset, segment))
 
     assert len(dataset) == expected_samples
     assert len(dataset[0]) == 3
