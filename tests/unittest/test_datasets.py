@@ -255,6 +255,8 @@ def test_radinsky_mturk():
 @flaky(max_runs=2, min_passes=1)
 @pytest.mark.serial
 @pytest.mark.remote_required
+@pytest.mark.skipif(datetime.date.today() < datetime.date(2019, 7, 25),
+                    reason="verb143 temporarily unavailable.")
 def test_verb143():
     data = nlp.data.BakerVerb143(
         root=os.path.join('tests', 'externaldata', 'verb143'))
