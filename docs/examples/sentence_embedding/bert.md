@@ -107,10 +107,10 @@ The `BERTClassifier` class uses a BERT base model to encode sentence
 representation, followed by a `nn.Dense` layer for classification.
 
 ```{.python .input}
-model = model.classification.BERTClassifier(bert_base, num_classes=2, dropout=0.1)
+bert_classifier = model.classification.BERTClassifier(bert_base, num_classes=2, dropout=0.1)
 # only need to initialize the classifier layer.
-model.classifier.initialize(init=mx.init.Normal(0.02), ctx=ctx)
-model.hybridize(static_alloc=True)
+bert_classifier.classifier.initialize(init=mx.init.Normal(0.02), ctx=ctx)
+bert_classifier.hybridize(static_alloc=True)
 
 # softmax cross entropy loss for classification
 loss_function = mx.gluon.loss.SoftmaxCELoss()
@@ -242,13 +242,13 @@ train_sampler = nlp.data.FixedBucketSampler(lengths=[int(item[1]) for item in da
                                             shuffle=True)
 bert_dataloader = mx.gluon.data.DataLoader(data_train, batch_sampler=train_sampler)
 
-trainer = mx.gluon.Trainer(model.collect_params(), 'adam',
+trainer = mx.gluon.Trainer(bert_classifier.collect_params(), 'adam',
                            {'learning_rate': lr, 'epsilon': 1e-9})
 
 # Collect all differentiable parameters
 # `grad_req == 'null'` indicates no gradients are calculated (e.g. constant parameters)
 # The gradients for these params are clipped later
-params = [p for p in model.collect_params().values() if p.grad_req != 'null']
+params = [p for p in bert_classifier.collect_params().values() if p.grad_req != 'null']
 grad_clip = 1
 
 # Training the model with only three epochs
@@ -267,7 +267,7 @@ for epoch_id in range(num_epochs):
             label = label.as_in_context(ctx)
 
             # Forward computation
-            out = model(token_ids, segment_ids, valid_length.astype('float32'))
+            out = bert_classifier(token_ids, segment_ids, valid_length.astype('float32'))
             ls = loss_function(out, label).mean()
 
         # And backwards computation
