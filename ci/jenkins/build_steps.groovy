@@ -86,7 +86,6 @@ def test_doctest(workspace_name, conda_env_name,
 }
 
 def website_linkcheck(workspace_name, conda_env_name) {
-  enforce_linkcheck = env.BRANCH_NAME.startsWith('PR-')?'false':'true'
   return ["${conda_env_name}: website link check": {
     node(NODE_LINUX_CPU) {
       ws(workspace_name) {
@@ -96,14 +95,16 @@ def website_linkcheck(workspace_name, conda_env_name) {
           set -ex
           source ci/prepare_clean_env.sh ${conda_env_name}
           make distribute
-          if [[ ${enforce_linkcheck} == true ]]; then
-              make -C docs linkcheck SPHINXOPTS=-W
-          else
-              set +e
-              make -C docs linkcheck
-          fi;
           set +ex
           """
+          linkcheck_errors = sh returnStdout: true, script: """
+          conda activate ./conda/${conda_env_name}
+          make -C docs linkcheck 2>&1 | grep '^(line *[0-9]*) broken'
+          """
+          linkcheck_errors = linkcheck_errors.trim()
+          if (linkcheck_errors && env.BRANCH_NAME.startsWith("PR-")) {
+            pullRequest.comment("Found link check problems in job ${env.BRANCH_NAME}/${env.BUILD_NUMBER}:\n"+linkcheck_errors)
+          }
         }
       }
     }
