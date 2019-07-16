@@ -99,7 +99,7 @@ def website_linkcheck(workspace_name, conda_env_name) {
           """
           linkcheck_errors = sh returnStdout: true, script: """
           conda activate ./conda/${conda_env_name}
-          make -C docs linkcheck 2>&1 | grep '^(line *[0-9]*) broken'
+          make -C docs linkcheck 2>&1 | grep '^(line *[0-9]*) broken || true'
           """
           linkcheck_errors = linkcheck_errors.trim()
           if (linkcheck_errors && env.BRANCH_NAME.startsWith("PR-")) {
