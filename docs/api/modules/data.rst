@@ -140,6 +140,24 @@ Intent Classification and Slot Labeling
     ATISDataset
     SNIPSDataset
 
+GLUE Benchmark
+~~~~~~~~~~~~~~
+
+The `General Language Understanding Evaluation (GLUE) benchmark <https://gluebenchmark.com/>`_ is a collection of resources for training, evaluating, and analyzing natural language understanding systems.
+
+.. autosummary::
+    :nosignatures:
+
+    GlueCoLA
+    GlueSST2
+    GlueSTSB
+    GlueQQP
+    GlueRTE
+    GlueMNLI
+    GlueQNLI
+    GlueWNLI
+    GlueMRPC
+
 
 Datasets
 --------
