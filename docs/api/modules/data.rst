@@ -97,6 +97,7 @@ Analogy-based evaluation datasets include:
     GoogleAnalogyTestSet
     BiggerAnalogyTestSet
 
+
 CoNLL Datasets
 ~~~~~~~~~~~~~~
 The `CoNLL <http://www.conll.org/previous-tasks>`_ datasets are from a series of annual
@@ -129,7 +130,7 @@ Machine Translation Datasets
     WMT2014BPE
     WMT2016
     WMT2016BPE
-    SQuAD
+
 
 Intent Classification and Slot Labeling
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -139,6 +140,18 @@ Intent Classification and Slot Labeling
 
     ATISDataset
     SNIPSDataset
+
+
+Question Answering
+~~~~~~~~~~~~~~~~~~
+
+`Stanford Question Answering Dataset (SQuAD) <https://rajpurkar.github.io/SQuAD-explorer/>`_ is a reading comprehension dataset, consisting of questions posed by crowdworkers on a set of Wikipedia articles, where the answer to every question is a segment of text, or span, from the corresponding reading passage, or the question might be unanswerable.
+
+.. autosummary::
+    :nosignatures:
+
+    SQuAD
+
 
 GLUE Benchmark
 ~~~~~~~~~~~~~~
