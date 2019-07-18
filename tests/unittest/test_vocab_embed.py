@@ -761,7 +761,7 @@ def test_vocab_set_embedding_with_subword_lookup_only_token_embedding(
         allow_extend, unknown_token, vocab_unknown_token, initialize):
     embsize = 5
 
-    class NaiveLookup(object):
+    class NaiveLookup:
         def __contains__(self, token):
             return True
 
@@ -915,7 +915,7 @@ def test_token_embedding_from_S3_fasttext_with_ngrams(load_ngrams):
 def test_token_embedding_unknown_lookup(setinconstructor, lookup,
                                         initializetokenembedding,
                                         unknown_token, allow_extend, tmpdir):
-    class NaiveLookup(object):
+    class NaiveLookup:
         dim = 5  # Must match _mk_my_pretrain_file
 
         def __contains__(self, token):
@@ -927,7 +927,7 @@ def test_token_embedding_unknown_lookup(setinconstructor, lookup,
             else:
                 return nd.ones((len(tokens), self.dim))
 
-    class IncapableLookup(object):
+    class IncapableLookup:
         def __contains__(self, token):
             return False
 
@@ -1090,7 +1090,7 @@ def test_word_embedding_evaluation_registry():
     with pytest.raises(RuntimeError):
 
         @nlp.embedding.evaluation.register
-        class InvalidEvaluationFunction(object):
+        class InvalidEvaluationFunction:
             pass
 
     with pytest.raises(KeyError):

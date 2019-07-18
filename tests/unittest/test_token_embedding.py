@@ -27,7 +27,7 @@ import gluonnlp as nlp
 from gluonnlp.base import _str_types
 
 
-class NaiveUnknownLookup(object):
+class NaiveUnknownLookup:
     def __init__(self, embsize):
         self.embsize = embsize
 

@@ -49,7 +49,7 @@ from .utils import _extract_archive
 from ..base import get_home_dir
 
 
-class ClipSequence(object):
+class ClipSequence:
     """Clip the sequence to have length no more than `length`.
 
     Parameters
@@ -82,7 +82,7 @@ class ClipSequence(object):
         return sample[:min(len(sample), self._length)]
 
 
-class PadSequence(object):
+class PadSequence:
     """Pad the sequence.
 
     Pad the sequence to the given `length` by inserting `pad_val`. If `clip` is set,
@@ -157,7 +157,7 @@ class PadSequence(object):
                     'mxnet.NDArray, received type=%s' % str(type(sample)))
 
 
-class NLTKMosesTokenizer(object):
+class NLTKMosesTokenizer:
     """Apply the Moses Tokenizer implemented in NLTK.
 
     Users of this class are required to install `NLTK <https://www.nltk.org/install.html>`_
@@ -219,7 +219,7 @@ class NLTKMosesTokenizer(object):
         return self._tokenizer.tokenize(sample, return_str=return_str)
 
 
-class SacreMosesTokenizer(object):
+class SacreMosesTokenizer:
     """Apply the Moses Tokenizer implemented in sacremoses.
 
     Users of this class are required to install
@@ -285,7 +285,7 @@ class SacreMosesTokenizer(object):
         return self._tokenizer.tokenize(sample, return_str=return_str)
 
 
-class SpacyTokenizer(object):
+class SpacyTokenizer:
     """Apply the Spacy Tokenizer.
 
     Users of this class are required to install `spaCy <https://spacy.io/usage/>`_
@@ -348,7 +348,7 @@ class SpacyTokenizer(object):
         return [tok.text for tok in self._nlp(sample)]
 
 
-class NLTKMosesDetokenizer(object):
+class NLTKMosesDetokenizer:
     r"""Apply the Moses Detokenizer implemented in NLTK.
 
     Users of this class are required to `install NLTK <https://www.nltk.org/install.html>`_
@@ -410,7 +410,7 @@ class NLTKMosesDetokenizer(object):
         return self._detokenizer.detokenize(sample, return_str=return_str)
 
 
-class SacreMosesDetokenizer(object):
+class SacreMosesDetokenizer:
     r"""Apply the Moses Detokenizer implemented in sacremoses.
 
     Users of this class are required to `install sacremoses
@@ -490,7 +490,7 @@ class SacreMosesDetokenizer(object):
         return self._detokenizer.detokenize(sample, return_str=ret_str)
 
 
-class JiebaTokenizer(object):
+class JiebaTokenizer:
     r"""Apply the jieba Tokenizer.
 
     Users of this class are required to `install jieba <https://github.com/fxsjy/jieba>`_
@@ -541,7 +541,7 @@ class JiebaTokenizer(object):
         ]
 
 
-class NLTKStanfordSegmenter(object):
+class NLTKStanfordSegmenter:
     r"""Apply the Stanford Chinese Word Segmenter implemented in NLTK.
 
     Users of this class are required to install Java, NLTK and download Stanford Word Segmenter
@@ -651,7 +651,7 @@ class NLTKStanfordSegmenter(object):
         return [tok for tok in self._tokenizer.segment(sample).strip().split()]
 
 
-class _SentencepieceProcessor(object):
+class _SentencepieceProcessor:
     def __init__(self, path):
         try:
             import sentencepiece
@@ -774,7 +774,7 @@ class SentencepieceDetokenizer(_SentencepieceProcessor):
         return self._processor.DecodePieces(sample)
 
 
-class BERTBasicTokenizer(object):
+class BERTBasicTokenizer:
     r"""Runs basic tokenization
 
     performs invalid character removal (e.g. control chars) and whitespace.
@@ -963,7 +963,7 @@ class BERTBasicTokenizer(object):
         return tokens
 
 
-class BERTTokenizer(object):
+class BERTTokenizer:
     r"""End-to-end tokenization for BERT models.
 
     Parameters
@@ -1220,7 +1220,7 @@ class BERTSPTokenizer(BERTTokenizer):
         return token.startswith(BERTSPTokenizer._special_prefix)
 
 
-class BERTSentenceTransform(object):
+class BERTSentenceTransform:
     r"""BERT style data transformation.
 
     Parameters
@@ -1366,7 +1366,7 @@ class BERTSentenceTransform(object):
             else:
                 tokens_b.pop()
 
-class _GPT2BPE(object):
+class _GPT2BPE:
     """Base class for GPT-2 BPE tokenizer and detokenizer."""
     def __init__(self):
         codes = list(range(ord(u'!'), ord(u'~') + 1)) +\

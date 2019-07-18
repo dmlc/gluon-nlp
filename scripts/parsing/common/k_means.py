@@ -21,7 +21,7 @@ from collections import Counter
 import numpy as np
 
 
-class KMeans(object):
+class KMeans:
     """
     Cluster sentences by their lengths
 

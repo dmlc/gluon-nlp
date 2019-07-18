@@ -142,7 +142,7 @@ def list_sources(embedding_name=None):
                 for embedding_name, embedding_cls in registry.get_registry(TokenEmbedding).items()}
 
 
-class TokenEmbedding(object):
+class TokenEmbedding:
     """Token embedding base class.
 
     To load token embedding from an externally hosted pre-trained token embedding file, such as

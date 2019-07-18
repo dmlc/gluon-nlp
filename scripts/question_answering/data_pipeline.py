@@ -38,7 +38,7 @@ from gluonnlp import data, Vocab
 from gluonnlp.data import SQuAD
 
 
-class SQuADDataPipeline(object):
+class SQuADDataPipeline:
     """Main data processing pipeline class, which encapsulate all preprocessing logic. The class
     process the data in multiprocessing mode using Pool. It can save/load the result of processing,
     but since it happens in a single thread, it is usually faster to just process data from scratch.
@@ -432,7 +432,7 @@ class SQuADDataPipeline(object):
         return partitioned_data.items()
 
 
-class SQuADDataTokenizer(object):
+class SQuADDataTokenizer:
     """SQuAD data tokenizer, that encapsulate the splitting logic of each entry of SQuAD dataset"""
     spacy_tokenizer = nlp.data.SpacyTokenizer()
 
@@ -574,7 +574,7 @@ class SQuADDataTokenizer(object):
         return spans
 
 
-class SQuADDataFilter(object):
+class SQuADDataFilter:
     """Filter an example based on the specified conditions"""
 
     def __init__(self, para_limit, ques_limit, ans_limit):
@@ -612,7 +612,7 @@ class SQuADDataFilter(object):
                (example['y2s'][0] - example['y1s'][0]) <= self._ans_limit
 
 
-class SQuADAsyncVocabMapper(object):
+class SQuADAsyncVocabMapper:
     """A multiprocessing implementation of a Mapper for tokens counting"""
 
     def __init__(self, iterate_over_example=False):
@@ -663,7 +663,7 @@ class SQuADAsyncVocabMapper(object):
         return list(counter.items())
 
 
-class SQuADAsyncVocabReducer(object):
+class SQuADAsyncVocabReducer:
     """A multiprocessing implementation of a Reducing for tokens counting"""
 
     def run_async(self, items, pool):
@@ -701,7 +701,7 @@ class SQuADAsyncVocabReducer(object):
         return token, sum(counts)
 
 
-class SQuADDataFeaturizer(object):
+class SQuADDataFeaturizer:
     """Class that converts tokenized examples into featurized"""
 
     def __init__(self, word_vocab, char_vocab, para_limit, ques_limit, char_limit,
@@ -892,7 +892,7 @@ class SQuADQADataset(Dataset):
         return self._record_idx_to_record[rec_idx]['rec']
 
 
-class SQuADDataLoaderTransformer(object):
+class SQuADDataLoaderTransformer:
     """Thin wrapper on SQuADQADataset that removed non-numeric values from the record. The output of
     that transformer can be provided to a DataLoader"""
 

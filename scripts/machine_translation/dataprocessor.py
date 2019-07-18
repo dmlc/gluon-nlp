@@ -65,7 +65,7 @@ def _load_cached_dataset(prefix):
         return None
 
 
-class TrainValDataTransform(object):
+class TrainValDataTransform:
     """Transform the machine translation dataset.
 
     Clip source and the target sentences to the maximum length. For the source sentence, append the

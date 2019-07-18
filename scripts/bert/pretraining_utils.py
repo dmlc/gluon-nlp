@@ -258,7 +258,7 @@ class BERTDataLoaderFn(DataLoaderFn):
                                     num_workers=self._num_ctxes)
         return dataloader
 
-class BERTLoaderTransform(object):
+class BERTLoaderTransform:
     """Create dataloader for a BERT dataset. """
 
     def __init__(self, use_avg_len, batch_size, shuffle, num_ctxes, num_buckets):

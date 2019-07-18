@@ -110,7 +110,7 @@ def _tokenize_mteval_13a(segment):
     return norm
 
 
-class UnicodeRegex(object):
+class UnicodeRegex:
     """Ad-hoc hack to recognize all punctuation and symbols.
     """
     def __init__(self):

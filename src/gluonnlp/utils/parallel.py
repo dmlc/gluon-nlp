@@ -25,7 +25,7 @@ except ImportError:
 
 __all__ = ['Parallelizable', 'Parallel']
 
-class Parallelizable(object):
+class Parallelizable:
     """Base class for parallelizable unit of work, which can be invoked by `Parallel`.
     The subclass must implement the `forward_backward` method, and be used
     together with `Parallel`. For example::
@@ -59,7 +59,7 @@ class Parallelizable(object):
         """ Forward and backward computation. """
         raise NotImplementedError()
 
-class Parallel(object):
+class Parallel:
     """Class for parallel processing with `Parallelizable`s. It invokes a
     `Parallelizable` with multiple Python threads. For example::
 
@@ -100,7 +100,7 @@ class Parallel(object):
         multiple threads may cause unexpected behavior.
     """
 
-    class _StopSignal(object):
+    class _StopSignal:
         """Internal class to signal stop. """
         def __init__(self, msg):
             self._msg = msg

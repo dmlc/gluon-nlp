@@ -47,7 +47,7 @@ __all__ = [
     'DataStream', 'SimpleDataStream', 'DatasetStream', 'SimpleDatasetStream',
     'PrefetchingStream']
 
-class DataStream(object):
+class DataStream:
     """Abstract Data Stream Interface.
 
     DataStreams are useful to avoid loading big datasets to memory. A
@@ -232,7 +232,7 @@ class SimpleDatasetStream(DatasetStream):
             yield self._dataset(filename, **self._kwargs)
 
 
-class _Prefetcher(object):
+class _Prefetcher:
     """Internal shared prefetcher logic."""
     _dataq = None  # Data queue transmits prefetched elements
     _controlq = None  # Control queue to instruct thread / process shutdown

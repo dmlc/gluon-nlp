@@ -25,7 +25,7 @@ import numpy as np
 import mxnet as mx
 from gluonnlp.model import BeamSearchScorer, BeamSearchSampler
 
-class BeamSearchTranslator(object):
+class BeamSearchTranslator:
     """Beam Search Translator
 
     Parameters
