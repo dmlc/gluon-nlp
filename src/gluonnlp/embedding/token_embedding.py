@@ -743,10 +743,10 @@ class TokenEmbedding:
         """
         embedding_name = cls.__name__.lower()
         if source not in source_file_hash:
-            raise KeyError('Cannot find pre-trained source {} for token embedding {}. '
-                           'Valid pre-trained file names for embedding {}: {}'.format(
-                               source, embedding_name, embedding_name,
-                               ', '.join(source_file_hash.keys())))
+            raise KeyError('Cannot find pre-trained source {source} for token embedding {name}. '
+                           'Valid pre-trained file names for embedding {name}: {values}'.format(
+                               source=source, name=embedding_name,
+                               values=', '.join(source_file_hash.keys())))
 
     @staticmethod
     def from_file(file_path, elem_delim=' ', encoding=ENCODING, **kwargs):
