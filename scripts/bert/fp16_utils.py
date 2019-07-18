@@ -208,7 +208,6 @@ class StaticLossScaler(LossScaler):
 
     def update_scale(self, overflow):
         """update loss scale"""
-        pass
 
 class DynamicLossScaler(LossScaler):
     """Class that manages dynamic loss scaling.
