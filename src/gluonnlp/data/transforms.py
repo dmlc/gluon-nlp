@@ -537,7 +537,7 @@ class JiebaTokenizer:
         # we use default cutting mode provided by jieba, i.e., accurate mode
         return [
             tok for tok in self._tokenizer.cut(sample)
-            if tok != ' ' and tok != ''
+            if tok not in (' ', '')
         ]
 
 

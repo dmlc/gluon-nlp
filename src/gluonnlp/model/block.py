@@ -39,7 +39,7 @@ class RNNCellLayer(Block):
     def __init__(self, rnn_cell, layout='TNC', **kwargs):
         super(RNNCellLayer, self).__init__(**kwargs)
         self.cell = rnn_cell
-        assert layout == 'TNC' or layout == 'NTC', \
+        assert layout in ('TNC', 'NTC'), \
             'Invalid layout %s; must be one of ["TNC" or "NTC"]'%layout
         self._layout = layout
         self._axis = layout.find('T')
