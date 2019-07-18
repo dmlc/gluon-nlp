@@ -303,8 +303,7 @@ class _Prefetcher:
             self._controlq.put(None)
             if isinstance(next_error[0], StopIteration):
                 raise StopIteration
-            else:
-                return self._reraise(*next_error)
+            return self._reraise(*next_error)
 
     def _reraise(self, e, tb):
         print('Reraising exception from Prefetcher', file=sys.stderr)

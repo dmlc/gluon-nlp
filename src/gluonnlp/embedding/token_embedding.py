@@ -724,10 +724,9 @@ class TokenEmbedding:
                                     ' unknown token, please explicitly include "{}" as the '
                                     '`unknown_token` in `tokens`. This is to avoid unintended '
                                     'updates.').format(token, self.unknown_token))
-                else:
-                    raise KeyError(('Token "{}" is unknown. Updating the embedding vector for an '
-                                    'unknown token is not allowed because `unknown_token` is not '
-                                    'specified.').format(token))
+                raise KeyError(('Token "{}" is unknown. Updating the embedding vector for an '
+                                'unknown token is not allowed because `unknown_token` is not '
+                                'specified.').format(token))
 
         self._idx_to_vec[nd.array(indices)] = new_embedding
 
