@@ -78,7 +78,6 @@ class Tarjan:
             w = stack.pop()
             self._onstack[w] = False
             self._SCCs[-1].add(w)
-        return
 
     # ======================
     @property

@@ -101,7 +101,6 @@ class KMeans:
         # print('%d) Final splits: %s; Final mass: %d' % (i, self._splits, self.get_mass()))
 
         self._reindex()
-        return
 
     def _recenter(self):
         """
