@@ -109,7 +109,7 @@ class GELU(HybridBlock):
         super(GELU, self).__init__(**kwargs)
         self._support_erf = False
         try:
-            self._support_erf = True if ndarray.erf else False
+            self._support_erf = bool(ndarray.erf)
         except AttributeError:
             warnings.warn('`erf` operator support is not found. '
                           'Please consider upgrading to mxnet >= 1.4')
