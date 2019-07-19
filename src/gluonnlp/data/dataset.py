@@ -27,6 +27,7 @@ import os
 import warnings
 import bisect
 import numpy as np
+import json
 
 from mxnet.gluon.data import SimpleDataset, Dataset, ArrayDataset
 
@@ -296,3 +297,29 @@ class NumpyDataset(ArrayDataset):
         """
         idx = self._keys.index(field)
         return self._data[idx]
+
+
+class JsonlDataset(SimpleDataset):
+    def __init__(self, filename, encoding='utf-8'):
+
+        if not isinstance(filename, (tuple, list)):
+            filename = (filename, )
+
+        self._filenames = [os.path.expanduser(f) for f in filename]
+        self._encoding = encoding
+
+        super(JsonlDataset, self).__init__(self._read())
+
+    def _read(self):
+        all_samples = []
+        for filename in self._filenames:
+            samples = []
+            with open(filename, 'r', encoding=self._encoding) as fin:
+                for line in fin.readlines():
+                    samples.append(json.loads(line))
+            samples = self.read_samples(samples)
+            all_samples += samples
+        return all_samples
+
+    def read_samples(self, samples):
+        raise NotImplementedError
