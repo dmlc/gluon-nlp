@@ -21,7 +21,7 @@ __all__ = ['BERTDatasetTransform']
 import numpy as np
 from gluonnlp.data import BERTSentenceTransform
 
-class BERTDatasetTransform(object):
+class BERTDatasetTransform:
     """Dataset transformation for BERT-style sentence classification or regression.
 
     Parameters

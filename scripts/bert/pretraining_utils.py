@@ -24,6 +24,7 @@ import logging
 import argparse
 import random
 import multiprocessing
+import functools
 
 import numpy as np
 
@@ -258,7 +259,7 @@ class BERTDataLoaderFn(DataLoaderFn):
                                     num_workers=self._num_ctxes)
         return dataloader
 
-class BERTLoaderTransform(object):
+class BERTLoaderTransform:
     """Create dataloader for a BERT dataset. """
 
     def __init__(self, use_avg_len, batch_size, shuffle, num_ctxes, num_buckets):
@@ -281,7 +282,8 @@ def get_pretrain_data_npz(data, batch_size, num_ctxes, shuffle, use_avg_len,
         'Number of training files must be greater than the number of partitions. ' \
         'Only found %d files at %s'%(num_files, data)
     split_sampler = nlp.data.SplitSampler(num_files, num_parts=num_parts, part_index=part_idx)
-    stream = nlp.data.SimpleDatasetStream(nlp.data.NumpyDataset, data, split_sampler)
+    NumpyDataset = functools.partial(nlp.data.NumpyDataset, allow_pickle=True)
+    stream = nlp.data.SimpleDatasetStream(NumpyDataset, data, split_sampler)
     stream = nlp.data.PrefetchingStream(stream, worker_type='process')
 
     # create data loader based on the dataset

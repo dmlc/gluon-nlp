@@ -30,7 +30,7 @@ except ImportError:
     from baidu_ernie_data import BaiduErnieXNLI, BaiduErnieLCQMC, BaiduErnieChnSentiCorp
 
 
-class GlueTask(object):
+class GlueTask:
     """Abstract GLUE task class.
 
     Parameters

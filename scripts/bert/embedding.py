@@ -55,7 +55,7 @@ __all__ = ['BertEmbedding']
 logger = logging.getLogger(__name__)
 
 
-class BertEmbedding(object):
+class BertEmbedding:
     """
     Encoding from BERT model.
 

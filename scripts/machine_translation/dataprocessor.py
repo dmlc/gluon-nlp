@@ -65,7 +65,7 @@ def _load_cached_dataset(prefix):
         return None
 
 
-class TrainValDataTransform(object):
+class TrainValDataTransform:
     """Transform the machine translation dataset.
 
     Clip source and the target sentences to the maximum length. For the source sentence, append the
@@ -176,7 +176,7 @@ def load_translation_data(dataset, bleu, args):
         fetch_tgt_sentence = lambda src, tgt: tgt.split()
         val_tgt_sentences = list(data_val.transform(fetch_tgt_sentence))
         test_tgt_sentences = list(data_test.transform(fetch_tgt_sentence))
-    elif bleu == '13a' or bleu == 'intl':
+    elif bleu in ('13a', 'intl'):
         fetch_tgt_sentence = lambda src, tgt: tgt
         if dataset == 'WMT2016BPE':
             val_text = nlp.data.WMT2016('newstest2013', src_lang=src_lang, tgt_lang=tgt_lang)
@@ -185,7 +185,7 @@ def load_translation_data(dataset, bleu, args):
             val_text = nlp.data.WMT2014('newstest2013', src_lang=src_lang, tgt_lang=tgt_lang)
             test_text = nlp.data.WMT2014('newstest2014', src_lang=src_lang, tgt_lang=tgt_lang,
                                          full=args.full)
-        elif dataset == 'IWSLT2015' or dataset == 'TOY':
+        elif dataset in ('IWSLT2015', 'TOY'):
             val_text = data_val
             test_text = data_test
         else:

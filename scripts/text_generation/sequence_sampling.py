@@ -86,7 +86,7 @@ assert 0 < args.print_num <= args.beam_size,\
 
 # Define the decoder function, we use log_softmax to map the output scores to log-likelihoods
 # Also, we transform the layout to NTC
-class LMDecoder(object):
+class LMDecoder:
     def __init__(self, net):
         self.net = net
 

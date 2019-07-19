@@ -71,7 +71,7 @@ def init(textCNN, vocab, model_mode, context):
         textCNN.embedding.weight.set_data(vocab.embedding.idx_to_vec)
     if model_mode == 'multichannel':
         textCNN.embedding_extend.weight.set_data(vocab.embedding.idx_to_vec)
-    if model_mode == 'static' or model_mode == 'multichannel':
+    if model_mode in ('static', 'multichannel'):
         # Parameters of textCNN.embedding are not updated during training.
         textCNN.embedding.collect_params().setattr('grad_req', 'null')
     trainer = gluon.Trainer(textCNN.collect_params(), 'adadelta', {'rho':0.95, 'clip_gradient':3})

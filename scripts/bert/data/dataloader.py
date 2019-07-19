@@ -24,7 +24,7 @@ __all__ = ['DatasetLoader', 'SamplerFn', 'DatasetFn', 'DataLoaderFn']
 import multiprocessing
 from gluonnlp.data.stream import _PathDataset
 
-class DatasetFn(object):
+class DatasetFn:
     """Callable object to generate a gluon.data.Dataset given a url.
 
     Subclasses should override the __call__ method.
@@ -32,7 +32,7 @@ class DatasetFn(object):
     def __call__(self, dataset_url):
         raise NotImplementedError
 
-class SamplerFn(object):
+class SamplerFn:
     """Callable object to generate a gluon.data.sampler.Sampler given a dataset.
 
     Subclasses should override the __call__ method.
@@ -40,7 +40,7 @@ class SamplerFn(object):
     def __call__(self, dataset):
         raise NotImplementedError
 
-class DataLoaderFn(object):
+class DataLoaderFn:
     """Callable object to generate a DataLoader object given a dataset and sampler.
 
     Subclasses should override the __call__ method.
@@ -48,7 +48,7 @@ class DataLoaderFn(object):
     def __call__(self, dataset, sampler):
         raise NotImplementedError
 
-class SimpleDataLoaderFn(object):
+class SimpleDataLoaderFn:
     """A simple callable object that geneartes a data loader by applying
     dataloader_cls(dataset, batch_sampler=sampler, **dataset_params)
     """
@@ -77,7 +77,7 @@ def _worker_fn(url, dataset_fn, sampler_fn):
     sampler = sampler_fn(dataset)
     return (dataset, sampler)
 
-class _MultiWorkerIter(object):
+class _MultiWorkerIter:
     """Internal multi-worker iterator for DataLoader."""
     def __init__(self, worker_pool, worker_fn, dataset, file_sampler,
                  dataset_fn, sampler_fn, dataloader_fn, prefetch):
@@ -165,7 +165,7 @@ class _MultiWorkerIter(object):
         return self
 
 
-class DatasetLoader(object):
+class DatasetLoader:
     """Loads data from a list of datasets and returns mini-batches of data.
 
     One dataset is loaded at a time.

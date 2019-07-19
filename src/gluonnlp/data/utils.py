@@ -406,7 +406,7 @@ def whitespace_splitter(s):
     return s.split()
 
 
-class Splitter(object):
+class Splitter:
     """Split a string based on a separator.
 
     Parameters

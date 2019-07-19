@@ -32,7 +32,7 @@ from mxnet.gluon.data import RandomSampler, SequentialSampler, SimpleDataset
 from ..utils import slice_sequence, _slice_pad_length
 from ..stream import DataStream
 
-class CorpusBatchify(object):
+class CorpusBatchify:
     """Transform the dataset into N independent sequences, where N is the batch size.
 
     Parameters
@@ -70,7 +70,7 @@ class CorpusBatchify(object):
                     self._batch_size, -1).T)
 
 
-class CorpusBPTTBatchify(object):
+class CorpusBPTTBatchify:
     """Transform the dataset into batches of numericalized samples, in the way
     that the recurrent states from last batch connects with the current batch
     for each sample.
@@ -154,7 +154,7 @@ def _split_data_label(x):
     return x[:-1, :], x[1:, :]
 
 
-class StreamBPTTBatchify(object):
+class StreamBPTTBatchify:
     """Transform a Stream of CorpusDataset to BPTT batches.
 
     The corpus is transformed into batches of numericalized samples, in the way that the
