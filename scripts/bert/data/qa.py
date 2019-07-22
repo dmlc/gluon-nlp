@@ -23,7 +23,7 @@ from gluonnlp.data.utils import whitespace_splitter
 
 __all__ = ['SQuADTransform', 'preprocess_dataset']
 
-class SquadExample(object):
+class SquadExample:
     """A single training/test example for SQuAD question.
 
        For examples without an answer, the start and end position are -1.
@@ -86,7 +86,7 @@ def preprocess_dataset(dataset, transform, num_workers=8):
     return dataset, dataset_len
 
 
-class SQuADFeature(object):
+class SQuADFeature:
     """Single feature of a single example transform of the SQuAD question.
 
     """
@@ -120,7 +120,7 @@ class SQuADFeature(object):
         self.is_impossible = is_impossible
 
 
-class SQuADTransform(object):
+class SQuADTransform:
     """Dataset Transformation for BERT-style QA.
 
     The transformation is processed in the following steps:

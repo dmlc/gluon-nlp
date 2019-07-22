@@ -4,7 +4,7 @@ dependencies:
   - python=3.6
   - pip=18.1
   - perl
-  - pylint=1.9.2
+  - pylint=2.3.1
   - flake8
   - sphinx=1.7.7
   - spacy

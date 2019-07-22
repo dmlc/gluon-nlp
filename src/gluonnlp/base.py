@@ -45,9 +45,9 @@ except ImportError:
         # pylint: disable=unused-argument
         return identity
 
-    class NumbaTypes(object):
+    class NumbaTypes:
         """Shim for numba.types"""
-        class NumbaType(object):
+        class NumbaType:
             """Shim for numba.types.type"""
             def __getitem__(self, x):
                 # pylint: disable=unused-argument

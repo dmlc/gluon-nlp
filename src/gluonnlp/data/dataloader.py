@@ -59,7 +59,7 @@ def _thread_worker_fn(samples, batchify_fn, dataset):
         batch = batchify_fn([dataset[i] for i in samples])
     return batch
 
-class _MultiWorkerIter(object):
+class _MultiWorkerIter:
     """Internal multi-worker iterator for DataLoader."""
     def __init__(self, worker_pool, batchify_fn, batch_sampler, pin_memory=False,
                  worker_fn=_worker_fn, prefetch=0, dataset=None):
@@ -112,7 +112,7 @@ class _MultiWorkerIter(object):
         return self
 
 
-class ShardedDataLoader(object):
+class ShardedDataLoader:
     """Loads data from a dataset and returns mini-batches of data.
 
     Parameters

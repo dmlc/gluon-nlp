@@ -39,7 +39,7 @@ from .. import embedding as emb
 UNK_IDX = 0
 
 
-class Vocab(object):
+class Vocab:
     """Indexing and embedding attachment for text tokens.
 
     Parameters

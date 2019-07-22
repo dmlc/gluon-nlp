@@ -93,7 +93,7 @@ def _stack_arrs(arrs, use_shared_mem, dtype):
             return mx.nd.array(out, dtype=dtype)
 
 
-class Stack(object):
+class Stack:
     r"""Stack the input data samples to construct the batch.
 
     The N input samples must have the same shape/length and will be stacked to construct a batch.
@@ -157,7 +157,7 @@ class Stack(object):
         return _stack_arrs(data, True, self._dtype)
 
 
-class Pad(object):
+class Pad:
     """Return a callable that pads and stacks data.
 
     Parameters
@@ -275,7 +275,7 @@ class Pad(object):
             raise NotImplementedError
 
 
-class Tuple(object):
+class Tuple:
     """Wrap multiple batchify functions together. The input functions will be applied
     to the corresponding input fields.
 
@@ -342,7 +342,7 @@ class Tuple(object):
             ret.append(ele_fn([ele[i] for ele in data]))
         return tuple(ret)
 
-class List(object):
+class List:
     """Simply forward the list of input data.
 
     This is particularly useful when the Dataset contains textual data

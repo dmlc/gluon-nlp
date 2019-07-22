@@ -32,12 +32,10 @@ __all__ = [
 
 class _WordEmbeddingEvaluationFunction(HybridBlock):  # pylint: disable=abstract-method
     """Base class for word embedding evaluation functions."""
-    pass
 
 
 class WordEmbeddingSimilarityFunction(_WordEmbeddingEvaluationFunction):  # pylint: disable=abstract-method
     """Base class for word embedding similarity functions."""
-    pass
 
 
 class WordEmbeddingAnalogyFunction(_WordEmbeddingEvaluationFunction):  # pylint: disable=abstract-method
@@ -52,7 +50,6 @@ class WordEmbeddingAnalogyFunction(_WordEmbeddingEvaluationFunction):  # pylint:
     eps : float, optional, default=1e-10
         A small constant for numerical stability.
     """
-    pass
 
 
 ###############################################################################

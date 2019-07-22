@@ -188,7 +188,7 @@ def load_segment(file_path, bert_tokenizer):
     return subword_sentences
 
 
-class BERTTaggingDataset(object):
+class BERTTaggingDataset:
     """
 
     Parameters

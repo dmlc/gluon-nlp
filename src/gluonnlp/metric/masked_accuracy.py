@@ -23,7 +23,7 @@ from mxnet.metric import check_label_shapes
 
 __all__ = ['EvalMetric', 'MaskedAccuracy']
 
-class EvalMetric(object):
+class EvalMetric:
     """Base class for all evaluation metrics.
 
     .. note::

@@ -144,10 +144,9 @@ def load_parameters(model, filename, ctx=None, allow_missing=False,
     if cast_dtype is not None:
         if mx.__version__ < '1.5.0':
             raise NotImplementedError('cast_dtype option requires MXNet 1.5.0')
-        else:
-            _s3_compatible_save_load(False, model.load_parameters, filename, ctx=ctx,
-                                     allow_missing=allow_missing, ignore_extra=ignore_extra,
-                                     cast_dtype=cast_dtype)
+        _s3_compatible_save_load(False, model.load_parameters, filename, ctx=ctx,
+                                 allow_missing=allow_missing, ignore_extra=ignore_extra,
+                                 cast_dtype=cast_dtype)
     else:
         _s3_compatible_save_load(False, model.load_parameters, filename, ctx=ctx,
                                  allow_missing=allow_missing, ignore_extra=ignore_extra)
