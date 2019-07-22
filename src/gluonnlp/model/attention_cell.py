@@ -410,7 +410,7 @@ class DotProductAttentionCell(AttentionCell):
             If the units is None,
                 score = <h_q, h_k>
             Else if the units is not None and luong_style is False:
-                score = <W_q h_q, W_k, h_k>
+                score = <W_q h_q, W_k h_k>
             Else if the units is not None and luong_style is True:
                 score = <W h_q, h_k>
 
