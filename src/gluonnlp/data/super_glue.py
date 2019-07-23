@@ -301,10 +301,9 @@ class SuperGlueReCoRD(_SuperGlueDataset):
         return 'gluon/dataset/SUPERGLUE/ReCoRD'
 
 
-@register(segment=['AX-b'])
 class SuperGlueAX_b(_SuperGlueDataset):
     def __init__(self, root=os.path.join(get_home_dir(), 'datasets', 'superglue_ax_b')):
-        data_file = ('AX-g', '398c5a376eb436f790723cd217ac040334140000',
+        data_file = ('AX-b', '398c5a376eb436f790723cd217ac040334140000',
                      '50fd8ac409897b652daa4b246917097c3c394bc8')
 
         super(SuperGlueAX_b, self).__init__(root, data_file)
@@ -316,7 +315,6 @@ class SuperGlueAX_b(_SuperGlueDataset):
         return 'gluon/dataset/SUPERGLUE/AX-b'
 
 
-@register(segment=['AX-g'])
 class SuperGlueAX_g(_SuperGlueDataset):
     def __init__(self, root=os.path.join(get_home_dir(), 'datasets', 'superglue_ax_g')):
         data_file = ('AX-g', 'd8c92498496854807dfeacd344eddf466d7f468a',
