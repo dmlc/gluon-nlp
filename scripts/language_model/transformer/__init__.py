@@ -22,5 +22,7 @@ from .attention_cell import *
 from .embedding import *
 from .softmax import *
 from .transformer import *
+from .model import *
 
-__all__ = attention_cell.__all__ + embedding.__all__ + softmax.__all__ + transformer.__all__
+__all__ = attention_cell.__all__ + embedding.__all__ + softmax.__all__ + \
+    transformer.__all__ + model.__all__

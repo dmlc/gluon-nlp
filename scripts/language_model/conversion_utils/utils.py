@@ -94,4 +94,5 @@ def to_gluon_kwargs(tf_tensors):
     kwargs['dropout'] = 0
     kwargs['attention_dropout'] = 0
 
+    print(kwargs)
     return kwargs
