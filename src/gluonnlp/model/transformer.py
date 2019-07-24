@@ -410,7 +410,7 @@ class BaseTransformerEncoder(HybridBlock, Seq2SeqEncoder):
                     layer_norm_eps=layer_norm_eps)
 
 
-    def __call__(self, inputs, states, valid_length): #pylint: disable=arguments-differ
+    def __call__(self, inputs, states=None, valid_length=None): #pylint: disable=arguments-differ
         """Encoder the inputs given the states and valid sequence length.
 
         Parameters
@@ -432,54 +432,6 @@ class BaseTransformerEncoder(HybridBlock, Seq2SeqEncoder):
             - additional_outputs of all the transformer encoder
         """
         return super(BaseTransformerEncoder, self).__call__(inputs, states, valid_length)
-
-    def _forward(self, F, inputs, states=None, valid_length=None, steps=None): # pylint: disable=arguments-differ
-        """
-
-        Parameters
-        ----------
-        inputs : NDArray, Shape(batch_size, length, C_in)
-        states : list of NDArray
-        valid_length : NDArray
-        steps : NDArray
-            Stores value [0, 1, ..., length].
-            It is used for lookup in positional encoding matrix
-
-        Returns
-        -------
-        outputs : NDArray
-            The output of the encoder. Shape is (batch_size, length, C_out)
-        additional_outputs : list
-            Either be an empty list or contains the attention weights in this step.
-            The attention weights will have shape (batch_size, length, length) or
-            (batch_size, num_heads, length, length)
-
-        """
- 
-        if self._support_arange_like:
-            if valid_length is not None:
-                arange = F.contrib.arange_like(inputs, axis=1)
-                ones = F.ones_like(arange)
-                mask = F.broadcast_lesser(F.reshape(arange, shape=(1, -1)), F.reshape(valid_length, shape=(-1, 1)))
-                mask = F.broadcast_mul(F.expand_dims(mask, axis=1), F.broadcast_mul(ones, F.reshape(ones, shape=(-1, 1))))
-                if states is None:
-                    states = [mask]
-                else:
-                    states.append(mask)
-            if self._scale_embed:
-                dims = F.slice(F.shape_array(inputs), begin=(-1,), end=(None,))
-                dims = F.cast(a, inputs.dtype)
-                inputs = F.broadcast_mul(inputs, F.sqrt(dims))
-
-            steps = F.contrib.arange_like(inputs, axis=1)
-            if states is None:
-                states = [steps]
-            else:
-                states.append(steps)
-        else:
-            raise NotImplementedError
-
-        return inputs, states
 
     def hybrid_forward(self, F, inputs, states=None, valid_length=None, steps=None, position_weight=None):
         # pylint: disable=arguments-differ
@@ -504,7 +456,29 @@ class BaseTransformerEncoder(HybridBlock, Seq2SeqEncoder):
             (batch_size, num_heads, length, length)
 
         """
-        inputs, states = self._forward(F, inputs, states, valid_length, steps)
+        if self._support_arange_like:
+            if valid_length is not None:
+                arange = F.contrib.arange_like(inputs, axis=1)
+                ones = F.ones_like(arange)
+                mask = F.broadcast_lesser(F.reshape(arange, shape=(1, -1)), F.reshape(valid_length, shape=(-1, 1)))
+                mask = F.broadcast_mul(F.expand_dims(mask, axis=1), F.broadcast_mul(ones, F.reshape(ones, shape=(-1, 1))))
+                if states is None:
+                    states = [mask]
+                else:
+                    states.append(mask)
+            if self._scale_embed:
+                dims = F.slice(F.shape_array(inputs), begin=(-1,), end=(None,))
+                dims = F.cast(a, inputs.dtype)
+                inputs = F.broadcast_mul(inputs, F.sqrt(dims))
+
+            steps = F.contrib.arange_like(inputs, axis=1)
+            if states is None:
+                states = [steps]
+            else:
+                states.append(steps)
+        else:
+            raise NotImplementedError
+
         if states is not None:
             steps = states[-1]
             # Positional Encoding
