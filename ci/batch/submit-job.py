@@ -1,8 +1,9 @@
 import argparse
-from datetime import datetime
 import random
+import re
 import sys
 import time
+from datetime import datetime
 
 import boto3
 from botocore.compat import total_seconds
@@ -91,7 +92,7 @@ def main():
     spin = ['-', '/', '|', '\\', '-', '/', '|', '\\']
     logGroupName = '/aws/batch/job'
 
-    jobName = args.name
+    jobName = re.sub('[^A-Za-z0-9_\-]', '', args.name)[:128]  # Enforce AWS Batch jobName rules
     jobQueue = args.job_queue
     jobDefinition = args.job_definition
     command = args.command.split()
