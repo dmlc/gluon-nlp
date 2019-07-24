@@ -456,28 +456,38 @@ class BaseTransformerEncoder(HybridBlock, Seq2SeqEncoder):
             (batch_size, num_heads, length, length)
 
         """
-        if self._support_arange_like:
-            if valid_length is not None:
-                arange = F.contrib.arange_like(inputs, axis=1)
-                ones = F.ones_like(arange)
-                mask = F.broadcast_lesser(F.reshape(arange, shape=(1, -1)), F.reshape(valid_length, shape=(-1, 1)))
-                mask = F.broadcast_mul(F.expand_dims(mask, axis=1), F.broadcast_mul(ones, F.reshape(ones, shape=(-1, 1))))
-                if states is None:
-                    states = [mask]
-                else:
-                    states.append(mask)
-            if self._scale_embed:
-                dims = F.slice(F.shape_array(inputs), begin=(-1,), end=(None,))
-                dims = F.cast(a, inputs.dtype)
-                inputs = F.broadcast_mul(inputs, F.sqrt(dims))
-
-            steps = F.contrib.arange_like(inputs, axis=1)
-            if states is None:
-                states = [steps]
+        def arange_like(F, inputs, axis):
+            if self._support_arange_like:
+                arange = F.contrib.arange_like(inputs, axis=axis)
             else:
-                states.append(steps)
+                warnings.warn('`arange_like` operator support is not found. '
+                              'In this case, please make sure the input sequence lenght < 512.')
+
+                temp = F.transpose(inputs, axes=(1, 0, 2))
+                arange = F.arange(512)
+                arange = F.slice_like(arange, temp, axes=(0,))
+
+            return arange
+
+        if valid_length is not None:
+            arange = arange_like(F, inputs, axis=1)
+            ones = F.ones_like(arange)
+            mask = F.broadcast_lesser(F.reshape(arange, shape=(1, -1)), F.reshape(valid_length, shape=(-1, 1)))
+            mask = F.broadcast_mul(F.expand_dims(mask, axis=1), F.broadcast_mul(ones, F.reshape(ones, shape=(-1, 1))))
+            if states is None:
+                states = [mask]
+            else:
+                states.append(mask)
+        if self._scale_embed:
+            dims = F.slice(F.shape_array(inputs), begin=(-1,), end=(None,))
+            dims = F.cast(a, inputs.dtype)
+            inputs = F.broadcast_mul(inputs, F.sqrt(dims))
+
+        steps = arange_like(F, inputs, axis=1)
+        if states is None:
+            states = [steps]
         else:
-            raise NotImplementedError
+            states.append(steps)
 
         if states is not None:
             steps = states[-1]
