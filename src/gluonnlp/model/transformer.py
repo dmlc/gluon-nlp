@@ -480,7 +480,7 @@ class BaseTransformerEncoder(HybridBlock, Seq2SeqEncoder):
                 states.append(mask)
         if self._scale_embed:
             dims = F.slice(F.shape_array(inputs), begin=(-1,), end=(None,))
-            dims = F.cast(a, inputs.dtype)
+            dims = F.cast(dims, inputs.dtype)
             inputs = F.broadcast_mul(inputs, F.sqrt(dims))
 
         steps = arange_like(F, inputs, axis=1)
