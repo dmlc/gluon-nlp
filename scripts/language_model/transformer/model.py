@@ -20,12 +20,7 @@
 # pylint: disable=wildcard-import, arguments-differ
 """Module for pre-defined NLP models."""
 
-import os
-
-import mxnet as mx
-
 import gluonnlp as nlp
-from gluonnlp.base import get_home_dir
 
 from .transformer import TransformerXL
 
@@ -45,8 +40,7 @@ def get_model(name, **kwargs):
     return models[name](**kwargs)
 
 
-def transformerxl(dataset_name: str, vocab: nlp.Vocab, ctx: mx.Context = mx.cpu(),
-                  root: str = os.path.join(get_home_dir(), 'models'), **kwargs):
+def transformerxl(dataset_name: str, vocab: nlp.Vocab, **kwargs):
     """Generic pre-trained Transformer-XL model.
 
     The hyperparameters are chosen based on the specified dataset_name from the
@@ -64,11 +58,6 @@ def transformerxl(dataset_name: str, vocab: nlp.Vocab, ctx: mx.Context = mx.cpu(
         Used to load hyperparameters for the dataset.
     vocab
         Vocabulary for the dataset.
-    ctx
-        The context in which to load the pretrained weights.
-    root
-        Location for keeping the model parameters.
-        Defaulting to '~/.mxnet/models'.
 
     Returns
     -------

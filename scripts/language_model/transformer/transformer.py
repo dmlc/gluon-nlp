@@ -22,8 +22,8 @@ __all__ = ['TransformerXLCell', 'TransformerXL']
 
 import typing
 
-import mxnet as mx
 import numpy as np
+import mxnet as mx
 from mxnet.gluon import nn
 
 import gluonnlp as nlp
@@ -49,7 +49,7 @@ class PositionalEmbedding(mx.gluon.HybridBlock):
         with self.name_scope():
             self.inv_freq = self.params.get_constant('inv_freq', inv_freq.reshape((1, -1)))
 
-    def hybrid_forward(self, F, pos_seq, inv_freq):
+    def hybrid_forward(self, F, pos_seq, inv_freq):  # pylint: disable=arguments-differ
         """Compute positional embeddings.
 
         Parameters
@@ -276,7 +276,7 @@ class _BaseTransformerXL(mx.gluon.HybridBlock):
         return softmax_output, hids, core_out
 
 
-class TransformerXL(mx.gluon.HybridBlock):
+class TransformerXL(mx.gluon.Block):
     """Structure of the Transformer-XL.
 
     Dai, Z., Yang, Z., Yang, Y., Cohen, W. W., Carbonell, J., Le, Q. V., &
@@ -340,8 +340,7 @@ class TransformerXL(mx.gluon.HybridBlock):
         ]
         return mems
 
-    def forward(self, step_input, target, mems):
-        #pylint: disable=arguments-differ
+    def forward(self, step_input, target, mems):  # pylint: disable=arguments-differ
         """
 
         Parameters
@@ -382,6 +381,7 @@ class TransformerXL(mx.gluon.HybridBlock):
         # Update memory
         if mems is not None:
             new_mems = [
+                # pylint: disable=invalid-sequence-index
                 mx.nd.concat(mem_i, hid_i, dim=1)[:, -mem_i.shape[1]:].detach()
                 for mem_i, hid_i in zip(mems, hids)
             ]

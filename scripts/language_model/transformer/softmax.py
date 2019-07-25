@@ -165,7 +165,7 @@ class AdaptiveLogSoftmaxWithLoss(mx.gluon.HybridBlock):
         else:
             raise ValueError('Invalid name')
 
-    def hybrid_forward(self, F, hidden, target, **params):
+    def hybrid_forward(self, F, hidden, target, **params):  # pylint: disable=arguments-differ
         """Compute adaptive softmax.
 
         Parameters
@@ -251,7 +251,7 @@ class AdaptiveLogSoftmaxWithLoss(mx.gluon.HybridBlock):
                 target_i = F.where(cond_i, target_flat - l_idx, F.zeros_like(target_flat))
                 target_i = F.stack(range_bs_len, target_i)
 
-                # Write negative log likelihood for targets that fall into the current cluster to out
+                # Copy for targets that fall into the current cluster to out
                 out_i = F.gather_nd(logprob_i, indices=target_i)
                 out = F.where(cond_i, out_i, out)
 

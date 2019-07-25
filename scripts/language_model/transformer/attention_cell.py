@@ -66,7 +66,7 @@ class PositionalEmbeddingMultiHeadAttentionCell(mx.gluon.HybridBlock):
             if dropout:
                 self._dropout_layer = mx.gluon.nn.Dropout(dropout)
 
-    def __call__(self, query, key, value, emb, mask):
+    def hybrid_forward(self, F, query, key, value, emb, mask, query_key_bias, query_emb_bias):  # pylint: disable=arguments-differ
         """Compute the attention.
 
         Parameters
@@ -92,9 +92,6 @@ class PositionalEmbeddingMultiHeadAttentionCell(mx.gluon.HybridBlock):
             Attention weights of multiple heads.
             Shape (batch_size, num_heads, query_length, memory_length)
         """
-        return super().__call__(query, key, value, emb, mask)
-
-    def hybrid_forward(self, F, query, key, value, emb, mask, query_key_bias, query_emb_bias):  # pylint: disable=arguments-differ
         att_weights = self._compute_weight(F, query, key, emb, mask, query_key_bias=query_key_bias,
                                            query_emb_bias=query_emb_bias)
         context_vec = self._read_by_weight(F, att_weights, value)

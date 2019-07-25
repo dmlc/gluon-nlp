@@ -84,7 +84,7 @@ class AdaptiveEmbedding(mx.gluon.HybridBlock):
                         self.params.get(name, shape=(units, embed_size // div_val**i),
                                         init=projection_initializer))
 
-    def hybrid_forward(self, F, inp, **params):
+    def hybrid_forward(self, F, inp, **params):  # pylint: disable=arguments-differ
         if self._div_val == 1:
             emb = F.Embedding(data=inp, weight=params['embedding0_weight'],
                               input_dim=self._vocab_size, output_dim=self._embed_size)
