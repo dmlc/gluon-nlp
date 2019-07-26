@@ -579,7 +579,8 @@ bert_hparams = {
 
 def bert_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
                    root=os.path.join(get_home_dir(), 'models'), use_pooler=True, use_decoder=True,
-                   use_classifier=True, pretrained_allow_missing=False, **kwargs):
+                   use_classifier=True, pretrained_allow_missing=False,
+                   hparam_allow_override=False, **kwargs):
     """Generic BERT BASE model.
 
     The number of layers (L) is 12, number of units (H) is 768, and the
@@ -637,6 +638,9 @@ def bert_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
         If pretrained_allow_missing=True, this will be ignored and the
         parameters will be left uninitialized. Otherwise AssertionError is
         raised.
+    hparam_allow_override : bool, default False
+        If set to True, pre-defined hyper-parameters of the model
+        (e.g. the number of layers, hidden units) can be overriden.
 
     Returns
     -------
@@ -645,13 +649,15 @@ def bert_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
     return get_bert_model(model_name='bert_12_768_12', vocab=vocab, dataset_name=dataset_name,
                           pretrained=pretrained, ctx=ctx, use_pooler=use_pooler,
                           use_decoder=use_decoder, use_classifier=use_classifier, root=root,
-                          pretrained_allow_missing=pretrained_allow_missing, **kwargs)
+                          pretrained_allow_missing=pretrained_allow_missing,
+                          hparam_allow_override=hparam_allow_override, **kwargs)
 
 
 def bert_24_1024_16(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(), use_pooler=True,
                     use_decoder=True, use_classifier=True,
                     root=os.path.join(get_home_dir(), 'models'),
-                    pretrained_allow_missing=False, **kwargs):
+                    pretrained_allow_missing=False,
+                    hparam_allow_override=False, **kwargs):
     """Generic BERT LARGE model.
 
     The number of layers (L) is 24, number of units (H) is 1024, and the
@@ -692,6 +698,9 @@ def bert_24_1024_16(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu()
         If pretrained_allow_missing=True, this will be ignored and the
         parameters will be left uninitialized. Otherwise AssertionError is
         raised.
+    hparam_allow_override : bool, default False
+        If set to True, pre-defined hyper-parameters of the model
+        (e.g. the number of layers, hidden units) can be overriden.
 
     Returns
     -------
@@ -700,12 +709,13 @@ def bert_24_1024_16(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu()
     return get_bert_model(model_name='bert_24_1024_16', vocab=vocab, dataset_name=dataset_name,
                           pretrained=pretrained, ctx=ctx, use_pooler=use_pooler,
                           use_decoder=use_decoder, use_classifier=use_classifier, root=root,
-                          pretrained_allow_missing=pretrained_allow_missing, **kwargs)
+                          pretrained_allow_missing=pretrained_allow_missing,
+                          hparam_allow_override=hparam_allow_override, **kwargs)
 
 
 def ernie_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
                     root=os.path.join(get_home_dir(), 'models'), use_pooler=True, use_decoder=True,
-                    use_classifier=True, **kwargs):
+                    use_classifier=True, hparam_allow_override=False, **kwargs):
     """Baidu ERNIE model.
 
     Reference:
@@ -739,6 +749,9 @@ def ernie_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu()
         Whether to include the decoder for masked language model prediction.
     use_classifier : bool, default True
         Whether to include the classifier for next sentence classification.
+    hparam_allow_override : bool, default False
+        If set to True, pre-defined hyper-parameters of the model
+        (e.g. the number of layers, hidden units) can be overriden.
 
     Returns
     -------
@@ -747,13 +760,14 @@ def ernie_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu()
     return get_bert_model(model_name='ernie_12_768_12', vocab=vocab, dataset_name=dataset_name,
                           pretrained=pretrained, ctx=ctx, use_pooler=use_pooler,
                           use_decoder=use_decoder, use_classifier=use_classifier, root=root,
-                          pretrained_allow_missing=False, **kwargs)
+                          pretrained_allow_missing=False,
+                          hparam_allow_override=hparam_allow_override, **kwargs)
 
 
 def get_bert_model(model_name=None, dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
                    use_pooler=True, use_decoder=True, use_classifier=True, output_attention=False,
                    output_all_encodings=False, root=os.path.join(get_home_dir(), 'models'),
-                   pretrained_allow_missing=False, **kwargs):
+                   pretrained_allow_missing=False, hparam_allow_override=False, **kwargs):
     """Any BERT pretrained model.
 
     Parameters
@@ -816,16 +830,20 @@ def get_bert_model(model_name=None, dataset_name=None, vocab=None, pretrained=Tr
         If pretrained_allow_missing=True, this will be ignored and the
         parameters will be left uninitialized. Otherwise AssertionError is
         raised.
+    hparam_allow_override : bool, default False
+        If set to True, pre-defined hyper-parameters of the model
+        (e.g. the number of layers, hidden units) can be overriden.
 
     Returns
     -------
     BERTModel, gluonnlp.vocab.BERTVocab
     """
     predefined_args = bert_hparams[model_name]
-    mutable_args = ['use_residual', 'dropout', 'embed_dropout', 'word_embed']
-    mutable_args = frozenset(mutable_args)
-    assert all((k not in kwargs or k in mutable_args) for k in predefined_args), \
-        'Cannot override predefined model settings.'
+    if not hparam_allow_override:
+        mutable_args = ['use_residual', 'dropout', 'embed_dropout', 'word_embed']
+        mutable_args = frozenset(mutable_args)
+        assert all((k not in kwargs or k in mutable_args) for k in predefined_args), \
+            'Cannot override predefined model settings.'
     predefined_args.update(kwargs)
     # encoder
     encoder = BERTEncoder(attention_cell=predefined_args['attention_cell'],
