@@ -213,14 +213,14 @@ if args.dtype == 'float16':
         amp.lists.symbol.FP32_FUNCS.append('topk')
         amp.lists.symbol.FP16_FP32_FUNCS.remove('topk')
         amp.init()
+    except ValueError:
+        # topk is already in the FP32_FUNCS list
+        amp.init()
     except ImportError:
         # amp is not available
         logging.info('Mixed precision training with float16 requires MXNet >= '
                      '1.5.0b20190627. Please consider upgrading your MXNet version.')
         exit()
-    except ValueError:
-        # topk is already in the FP32_FUNCS list
-        pass
 
 # model and loss
 only_inference = args.only_inference
