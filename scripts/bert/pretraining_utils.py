@@ -186,7 +186,7 @@ def get_pretrain_data_text(data, batch_size, num_ctxes, shuffle, use_avg_len,
                       'whole_word_mask': whole_word_mask}
     dataset_fn = SimpleDatasetFn(BERTPretrainDataset, dataset_params)
     sampler_fn = BERTSamplerFn(use_avg_len, batch_size, shuffle, num_ctxes, num_buckets)
-    dataloader_fn = BERTDataLoaderFn(use_avg_len, num_ctxes)
+    dataloader_fn = BERTDataLoaderFn(use_avg_len, num_ctxes, vocab)
 
     split_sampler = nlp.data.SplitSampler(num_files, num_parts=num_parts, part_index=part_idx)
     dataloader = DatasetLoader(data, split_sampler, dataset_fn, sampler_fn, dataloader_fn,
@@ -237,34 +237,38 @@ class BERTSamplerFn(SamplerFn):
 
 class BERTDataLoaderFn(DataLoaderFn):
     """Callable object to create the data loader"""
-    def __init__(self, use_avg_len, num_ctxes):
+    def __init__(self, use_avg_len, num_ctxes, vocab):
         self._use_avg_len = use_avg_len
         self._num_ctxes = num_ctxes
+        pad_val = vocab[vocab.padding_token]
+        self._batchify_fn = Tuple(Pad(pad_val=pad_val), # input_id
+                                  Pad(pad_val=pad_val), # masked_id
+                                  Pad(pad_val=0),       # masked_position
+                                  Pad(pad_val=0),       # masked_weight
+                                  Stack(),              # next_sentence_label
+                                  Pad(pad_val=0),       # segment_id
+                                  Stack())              # valid_length
 
     def __call__(self, dataset, sampler):
-        # A batch includes: input_id, masked_id, masked_position, masked_weight,
-        #                   next_sentence_label, segment_id, valid_length
-        batchify_fn = Tuple(Pad(), Pad(), Pad(), Pad(), Stack(), Pad(), Stack())
-
         if self._use_avg_len:
             # sharded data loader
             dataloader = nlp.data.ShardedDataLoader(dataset,
                                                     batch_sampler=sampler,
-                                                    batchify_fn=batchify_fn,
+                                                    batchify_fn=self._batchify_fn,
                                                     num_workers=self._num_ctxes)
         else:
             dataloader = DataLoader(dataset=dataset,
                                     batch_sampler=sampler,
-                                    batchify_fn=batchify_fn,
+                                    batchify_fn=self._batchify_fn,
                                     num_workers=self._num_ctxes)
         return dataloader
 
 class BERTLoaderTransform:
     """Create dataloader for a BERT dataset. """
 
-    def __init__(self, use_avg_len, batch_size, shuffle, num_ctxes, num_buckets):
+    def __init__(self, use_avg_len, batch_size, shuffle, num_ctxes, num_buckets, vocab):
         self._sampler_fn = BERTSamplerFn(use_avg_len, batch_size, shuffle, num_ctxes, num_buckets)
-        self._data_fn = BERTDataLoaderFn(use_avg_len, num_ctxes)
+        self._data_fn = BERTDataLoaderFn(use_avg_len, num_ctxes, vocab)
 
     def __call__(self, dataset):
         """create data loader based on the dataset chunk"""
@@ -273,7 +277,7 @@ class BERTLoaderTransform:
         return dataloader
 
 def get_pretrain_data_npz(data, batch_size, num_ctxes, shuffle, use_avg_len,
-                          num_buckets, num_parts=1, part_idx=0):
+                          num_buckets, vocab, num_parts=1, part_idx=0):
     """create dataset for pretraining based on pre-processed npz files."""
     # handle commas in the provided path
     num_files = len(nlp.utils.glob(data))
@@ -288,7 +292,7 @@ def get_pretrain_data_npz(data, batch_size, num_ctxes, shuffle, use_avg_len,
 
     # create data loader based on the dataset
     dataloader_xform = BERTLoaderTransform(use_avg_len, batch_size,
-                                           shuffle, num_ctxes, num_buckets)
+                                           shuffle, num_ctxes, num_buckets, vocab)
     stream = stream.transform(dataloader_xform)
     return stream
 
