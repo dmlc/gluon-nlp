@@ -134,7 +134,7 @@ parser.add_argument('--save_dir', type=str, default='transformer_out',
 parser.add_argument('--gpus', type=str,
                     help='list of gpus to run, e.g. 0 or 0,2,5. empty means using cpu.'
                          '(using single gpu is suggested)')
-parser.add_argument('--model_parameter', type=str,
+parser.add_argument('--model_parameter', type=str, default=' ',
                     help='provide model parameter for inference.')
 
 args = parser.parse_args()
@@ -157,7 +157,6 @@ data_test = gluon.data.SimpleDataset([(ele[0], ele[1], len(ele[0]), len(ele[1]),
 data_train_lengths, data_val_lengths, data_test_lengths = [dataprocessor.get_data_lengths(x)
                                                            for x in
                                                            [data_train, data_val, data_test]]
-                                                           
 detokenizer = nlp.data.SacreMosesDetokenizer()
 
 # model prepare
@@ -178,7 +177,7 @@ if args.tgt_max_len > 0:
     tgt_max_len = args.tgt_max_len
 else:
     tgt_max_len = max_len[1]
-    
+
 encoder, decoder = get_transformer_encoder_decoder(units=args.num_units,
                                                    hidden_size=args.hidden_size,
                                                    dropout=args.dropout,
@@ -191,7 +190,7 @@ model = NMTModel(src_vocab=src_vocab, tgt_vocab=tgt_vocab, encoder=encoder, deco
                  share_embed=args.dataset != 'TOY', embed_size=args.num_units,
                  tie_weights=args.dataset != 'TOY', embed_initializer=None, prefix='transformer_')
 
-assert args.model_parameter is not '', "INFERENCE BUT DO NOT HAVE PARAMETERS!"
+assert args.model_parameter is not ' ', 'INFERENCE BUT DO NOT HAVE PARAMETERS!'
 model.load_parameters(args.model_parameter, ctx)
 
 static_alloc = True
@@ -216,7 +215,7 @@ def inference():
     _, val_data_loader, _ \
         = dataprocessor.make_dataloader(data_train, data_val, data_test, args,
                                         use_average_length=True, num_shards=len(ctx))
-    
+
     if args.bleu == 'tweaked':
         bpe = bool(args.dataset != 'IWSLT2015' and args.dataset != 'TOY')
         split_compound_word = bpe
@@ -237,7 +236,7 @@ def inference():
 
     for batch_id, (src_seq, tgt_seq, src_valid_length, tgt_valid_length, inst_ids) \
             in enumerate(val_data_loader):
-        
+
         total_wc += src_valid_length.sum().asscalar() + tgt_valid_length.sum().asscalar()
 
         src_seq = src_seq.as_in_context(ctx[0])
@@ -267,7 +266,7 @@ def inference():
         for i in range(max_score_sample.shape[0]):
             translation_out.append(
                 [tgt_vocab.idx_to_token[ele] for ele in 
-                max_score_sample[i][1:(sample_valid_length[i] - 1)]])
+                 max_score_sample[i][1:(sample_valid_length[i] - 1)]])
 
     #avg_loss = avg_loss / avg_loss_denom
     real_translation_out = [None for _ in range(len(all_inst_ids))]
@@ -281,11 +280,13 @@ def inference():
     valid_bleu_score, _, _, _, _ = compute_bleu([val_tgt_sentences], real_translation_out,
                                                 tokenized=tokenized, tokenizer=args.bleu,
                                                 split_compound_word=split_compound_word,
-                                                bpe=bpe)        
-                                                    
+                                                bpe=bpe)
+
     val_ave_loss = avg_loss / avg_loss_denom
-    logging.info('Inference at val dataset. Loss={:.4f}, val ppl={:.4f}, val bleu={:.4f} throughput={:.4f}K wps'
-                .format(val_ave_loss, np.exp(val_ave_loss), valid_bleu_score * 100, total_wc / total_time / 1000))
+    logging.info('Inference at val dataset. Loss={:.4f}, \
+                 val ppl={:.4f}, val bleu={:.4f}, throughput={:.4f}K wps'
+                 .format(val_ave_loss, np.exp(val_ave_loss),
+                         valid_bleu_score * 100, total_wc / total_time / 1000))
 
 
 if __name__ == '__main__':
