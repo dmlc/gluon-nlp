@@ -460,9 +460,11 @@ def get_argparser():
                         help='Model to run pre-training on. '
                              'Options are bert_12_768_12, bert_24_1024_16')
     parser.add_argument('--data', type=str, default=None,
-                        help='Path to training data. Training is skipped if not set.')
+                        help='Path to training data file. File name with wildcard such as *.train is accepted. '
+                             'Training is skipped if not set.')
     parser.add_argument('--data_eval', type=str, required=True,
-                        help='Path to evaluation data. Evaluation is skipped if not set.')
+                        help='Path to evaluation data file. File name with wildcard such as *.dev is accepted. '
+                             'Evaluation data is required.')
     parser.add_argument('--ckpt_dir', type=str, default='./ckpt_dir',
                         help='Path to checkpoint directory')
     parser.add_argument('--start_step', type=int, default=0,
