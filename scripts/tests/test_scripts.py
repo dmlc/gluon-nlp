@@ -355,19 +355,20 @@ def test_finetune_inference(dataset):
                                      '--task_name', dataset] + arguments)
     time.sleep(5)
 
-@pytest.mark.serial
-@pytest.mark.gpu
-@pytest.mark.remote_required
-@pytest.mark.integration
-@pytest.mark.parametrize('dataset', ['XNLI', 'LCQMC', 'ChnSentiCorp'])
-@pytest.mark.skipif(datetime.date.today() < datetime.date(2019, 7, 18),
-                    reason='Disabled for 4 weeks due to DNS error.')
-def test_finetune_chinese_inference(dataset):
-    arguments = ['--log_interval', '100', '--epsilon', '1e-8', '--optimizer',
-                 'adam', '--gpu', '0', '--max_len', '80', '--only_inference']
-    process = subprocess.check_call([sys.executable, './scripts/bert/finetune_classifier.py',
-                                     '--task_name', dataset] + arguments)
-    time.sleep(5)
+# Disable Bert finetune
+# @pytest.mark.serial
+# @pytest.mark.gpu
+# @pytest.mark.remote_required
+# @pytest.mark.integration
+# @pytest.mark.parametrize('dataset', ['XNLI', 'LCQMC', 'ChnSentiCorp'])
+# @pytest.mark.skipif(datetime.date.today() < datetime.date(2019, 7, 18),
+#                     reason='Disabled for 4 weeks due to DNS error.')
+# def test_finetune_chinese_inference(dataset):
+#     arguments = ['--log_interval', '100', '--epsilon', '1e-8', '--optimizer',
+#                  'adam', '--gpu', '0', '--max_len', '80', '--only_inference']
+#     process = subprocess.check_call([sys.executable, './scripts/bert/finetune_classifier.py',
+#                                      '--task_name', dataset] + arguments)
+#     time.sleep(5)
 
 @pytest.mark.serial
 @pytest.mark.gpu
