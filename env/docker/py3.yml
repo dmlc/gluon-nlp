@@ -7,7 +7,7 @@ dependencies:
   - pylint=1.9.2
   - flake8
   - sphinx=1.7.7
-  - spacy
+  - spacy>2
   - nltk
   - pytest=4.5.0
   - flaky=3.5.3
