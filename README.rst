@@ -53,7 +53,7 @@ In particular, if you want to install the most recent ``MXNet`` release:
 
 ::
 
-    pip install --upgrade mxnet>=1.4.1
+    pip install --upgrade mxnet>=1.5.0
 
 Else, if you want to install the most recent ``MXNet`` nightly build:
 
