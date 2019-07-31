@@ -51,7 +51,7 @@ command installs the latest version of MXNet.
 
 .. code-block:: console
 
-   pip install --upgrade mxnet>=1.4.1
+   pip install --upgrade mxnet>=1.5.0
 
 .. note::
 
