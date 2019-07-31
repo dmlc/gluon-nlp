@@ -43,7 +43,8 @@ import mxnet as mx
 from mxnet import gluon, autograd
 import gluonnlp as nlp
 
-from decomposable_attention import NLIModel
+from decomposable_attention import DecomposableAttentionModel
+from esim import ESIMModel
 from dataset import read_dataset, prepare_data_loader, build_vocab
 from utils import logging_config
 
@@ -67,6 +68,8 @@ def parse_args():
                         help='batch size')
     parser.add_argument('--print-interval', type=int, default=20,
                         help='the interval of two print')
+    parser.add_argument('--model', choices=['da', 'esim'], default=None, required=True,
+                        help='which model to use')
     parser.add_argument('--mode', choices=['train', 'test'], default='train',
                         help='train or test')
     parser.add_argument('--lr', type=float, default=0.025,
@@ -75,6 +78,8 @@ def parse_args():
                         help='maximum number of epochs to train')
     parser.add_argument('--embedding', default='glove',
                         help='word embedding type')
+    parser.add_argument('--fix-embedding', action='store_true',
+                        help='whether to fix pretrained word embedding')
     parser.add_argument('--embedding-source', default='glove.840B.300d',
                         help='embedding file source')
     parser.add_argument('--embedding-size', type=int, default=300,
@@ -89,6 +94,8 @@ def parse_args():
                         help='random seed')
     parser.add_argument('--dropout', type=float, default=0.,
                         help='dropout rate')
+    parser.add_argument('--optimizer', choices=['adam', 'adagrad'], default='adagrad',
+                        help='optimization method')
     parser.add_argument('--weight-decay', type=float, default=0.,
                         help='l2 regularization weight')
     parser.add_argument('--intra-attention', action='store_true',
@@ -107,10 +114,11 @@ def train_model(model, train_data_loader, val_data_loader, embedding, ctx, args)
     model.collect_params().initialize(mx.init.Normal(0.01), ctx=ctx)
     model.word_emb.weight.set_data(embedding.idx_to_vec)
     # Fix word embedding
-    model.word_emb.weight.grad_req = 'null'
+    if args.fix_embedding:
+        model.word_emb.weight.grad_req = 'null'
 
     loss_func = gluon.loss.SoftmaxCrossEntropyLoss()
-    trainer = gluon.Trainer(model.collect_params(), 'adagrad',
+    trainer = gluon.Trainer(model.collect_params(), args.optimizer,
                             {'learning_rate': args.lr,
                              'wd': args.weight_decay,
                              'clip_gradient': 5})
@@ -181,6 +189,15 @@ def test_model(model, data_loader, loss_func, ctx):
     loss /= len(data_loader)
     return loss, acc
 
+def build_model(args, vocab):
+    if args.model == 'da':
+        model = DecomposableAttentionModel(len(vocab), args.embedding_size, args.hidden_size,
+                                           args.dropout, args.intra_attention)
+    elif args.model == 'esim':
+        model = ESIMModel(len(vocab), 3, args.embedding_size, args.hidden_size,
+                          args.dropout)
+    return model
+
 def main(args):
     """
     Entry point: train or test.
@@ -211,8 +228,7 @@ def main(args):
         train_data_loader = prepare_data_loader(args, train_dataset, vocab)
         val_data_loader = prepare_data_loader(args, val_dataset, vocab, test=True)
 
-        model = NLIModel(len(vocab), args.embedding_size, args.hidden_size,
-                         args.dropout, args.intra_attention)
+        model = build_model(args, vocab)
         train_model(model, train_data_loader, val_data_loader, vocab.embedding, ctx, args)
     elif args.mode == 'test':
         model_args = argparse.Namespace(**json.load(
@@ -221,8 +237,7 @@ def main(args):
             open(os.path.join(args.model_dir, 'vocab.jsons')).read())
         val_dataset = read_dataset(args, 'test_file')
         val_data_loader = prepare_data_loader(args, val_dataset, vocab, test=True)
-        model = NLIModel(len(vocab), model_args.embedding_size,
-                         model_args.hidden_size, 0., model_args.intra_attention)
+        model = build_model(model_args, vocab)
         model.load_parameters(os.path.join(
             args.model_dir, 'checkpoints', 'valid_best.params'), ctx=ctx)
         loss_func = gluon.loss.SoftmaxCrossEntropyLoss()

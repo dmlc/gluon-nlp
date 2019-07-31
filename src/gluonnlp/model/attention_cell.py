@@ -47,7 +47,17 @@ def _masked_softmax(F, att_score, mask, dtype):
     """
     if mask is not None:
         # Fill in the masked scores with a very small value
-        neg = -1e4 if np.dtype(dtype) == np.float16 else -1e18
+        neg = -1e18
+        if np.dtype(dtype) == np.float16:
+            neg = -1e4
+        else:
+            try:
+                # if AMP (automatic mixed precision) is enabled, -1e18 will cause NaN.
+                from mxnet.contrib import amp
+                if amp.amp._amp_initialized:
+                    neg = -1e4
+            except ImportError:
+                pass
         att_score = F.where(mask, att_score, neg * F.ones_like(att_score))
         att_weights = F.softmax(att_score, axis=-1) * mask
     else:
@@ -400,7 +410,7 @@ class DotProductAttentionCell(AttentionCell):
             If the units is None,
                 score = <h_q, h_k>
             Else if the units is not None and luong_style is False:
-                score = <W_q h_q, W_k, h_k>
+                score = <W_q h_q, W_k h_k>
             Else if the units is not None and luong_style is True:
                 score = <W h_q, h_k>
 

@@ -71,16 +71,16 @@ def _bucket_stats(bucket_sample_ids, seq_lengths):
     return (bucket_average_lengths, bucket_length_stds)
 
 
-class BucketScheme(object):
+class BucketScheme:
     r"""Base class for generating bucket keys."""
     def __call__(self, max_lengths, min_lengths, num_buckets):
         """Generate bucket keys based on the lengths of sequences and number of buckets.
 
         Parameters
         ----------
-        max_lengths : int of list of int
+        max_lengths : int or list of int
             Maximum of lengths of sequences.
-        min_lengths : int of list of int
+        min_lengths : int or list of int
             Minimum of lengths of sequences.
         num_buckets : int
             Number of buckets
@@ -100,9 +100,9 @@ class ConstWidthBucket(BucketScheme):
 
         Parameters
         ----------
-        max_lengths : int of list of int
+        max_lengths : int or list of int
             Maximum of lengths of sequences.
-        min_lengths : int of list of int
+        min_lengths : int or list of int
             Minimum of lengths of sequences.
         num_buckets : int
             Number of buckets
@@ -136,9 +136,9 @@ class LinearWidthBucket(BucketScheme):
 
         Parameters
         ----------
-        max_lengths : int of list of int
+        max_lengths : int or list of int
             Maximum of lengths of sequences.
-        min_lengths : int of list of int
+        min_lengths : int or list of int
             Minimum of lengths of sequences.
         num_buckets : int
             Number of buckets
@@ -186,9 +186,9 @@ class ExpWidthBucket(BucketScheme):
 
         Parameters
         ----------
-        max_lengths : int of list of int
+        max_lengths : int or list of int
             Maximum of lengths of sequences.
-        min_lengths : int of list of int
+        min_lengths : int or list of int
             Minimum of lengths of sequences.
         num_buckets : int
             Number of buckets

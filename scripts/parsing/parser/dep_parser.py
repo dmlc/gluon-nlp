@@ -33,7 +33,7 @@ from scripts.parsing.parser.biaffine_parser import BiaffineParser
 from scripts.parsing.parser.evaluate import evaluate_official_script
 
 
-class DepParser(object):
+class DepParser:
     """User interfaces for biaffine dependency parser.
 
     It wraps a biaffine model inside, provides training, evaluating and parsing.

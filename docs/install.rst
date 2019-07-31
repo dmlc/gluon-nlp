@@ -9,7 +9,7 @@ command installs the latest version of MXNet.
 
 .. code-block:: console
 
-   pip install --upgrade mxnet>=1.4.0
+   pip install --upgrade mxnet>=1.5.0
 
 .. note::
 
@@ -31,8 +31,8 @@ After installing MXNet, you can install the GluonNLP toolkit by
 Install from Master Branch
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-If you are interested in trying out features on master branch that hasn't been released yet, you have
-the option of installing from master branch directly.
+If you are interested in trying out features on master branch that hasn't been released yet,
+you have the option of installing from master branch directly.
 
 
 Install from GitHub

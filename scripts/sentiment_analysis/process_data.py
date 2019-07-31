@@ -61,7 +61,7 @@ def _load_file(data_name):
 
 
 def _clean_str(string, data_name):
-    if data_name == 'SST-1' or data_name == 'SST-2':
+    if data_name in ('SST-1', 'SST-2'):
         string = re.sub(r'[^A-Za-z0-9(),!?\'\`]', ' ', string)
         string = re.sub(r'\s{2,}', ' ', string)
         return string.strip().lower()
@@ -122,7 +122,7 @@ def _preprocess_dataset(dataset, vocab, max_len):
 
 def load_dataset(data_name):
     """Load sentiment dataset."""
-    if data_name == 'MR' or data_name == 'Subj' or data_name == 'CR' or data_name == 'MPQA':
+    if data_name in ('MR', 'Subj', 'CR', 'MPQA'):
         train_dataset, output_size = _load_file(data_name)
         vocab, max_len = _build_vocab(data_name, train_dataset, [], [])
         train_dataset, train_data_lengths = _preprocess_dataset(train_dataset, vocab, max_len)

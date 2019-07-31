@@ -39,7 +39,7 @@ def add_parameters(parser):
     """Add evaluation specific parameters to parser."""
     group = parser.add_argument_group('Evaluation arguments')
 
-    group.add_argument('--eval-batch-size', type=int, default=1024)
+    group.add_argument('--eval-batch-size', type=int, default=512)
 
     # Datasets
     group.add_argument(
@@ -74,7 +74,7 @@ def validate_args(args):
     """Validate provided arguments and act on --help."""
     # Check correctness of similarity dataset names
     for dataset_name in args.similarity_datasets:
-        if dataset_name.lower() not in map(
+        if dataset_name and dataset_name.lower() not in map(
                 str.lower,
                 nlp.data.word_embedding_evaluation.word_similarity_datasets):
             print('{} is not a supported dataset.'.format(dataset_name))
@@ -82,7 +82,7 @@ def validate_args(args):
 
     # Check correctness of analogy dataset names
     for dataset_name in args.analogy_datasets:
-        if dataset_name.lower() not in map(
+        if dataset_name and dataset_name.lower() not in map(
                 str.lower,
                 nlp.data.word_embedding_evaluation.word_analogy_datasets):
             print('{} is not a supported dataset.'.format(dataset_name))
@@ -97,6 +97,8 @@ def iterate_similarity_datasets(args):
 
     """
     for dataset_name in args.similarity_datasets:
+        if not dataset_name:
+            continue
         parameters = nlp.data.list_datasets(dataset_name)
         for key_values in itertools.product(*parameters.values()):
             kwargs = dict(zip(parameters.keys(), key_values))
@@ -111,6 +113,8 @@ def iterate_analogy_datasets(args):
 
     """
     for dataset_name in args.analogy_datasets:
+        if not dataset_name:
+            continue
         parameters = nlp.data.list_datasets(dataset_name)
         for key_values in itertools.product(*parameters.values()):
             kwargs = dict(zip(parameters.keys(), key_values))

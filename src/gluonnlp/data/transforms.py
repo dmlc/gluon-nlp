@@ -30,21 +30,26 @@ __all__ = [
     'SpacyTokenizer', 'SacreMosesDetokenizer', 'NLTKMosesDetokenizer',
     'JiebaTokenizer', 'NLTKStanfordSegmenter', 'SentencepieceTokenizer',
     'SentencepieceDetokenizer', 'BERTBasicTokenizer', 'BERTTokenizer',
-    'BERTSentenceTransform', 'BERTSPTokenizer'
+    'BERTSentenceTransform', 'BERTSPTokenizer',
+    'GPT2BPETokenizer', 'GPT2BPEDetokenizer'
 ]
 
+import errno
+import io
 import os
-import warnings
+import time
 import unicodedata
+import warnings
+import zipfile
 
 import numpy as np
 import mxnet as mx
-from mxnet.gluon.utils import download, check_sha1
+from mxnet.gluon.utils import _get_repo_url, check_sha1, download
 from .utils import _extract_archive
 from ..base import get_home_dir
 
 
-class ClipSequence(object):
+class ClipSequence:
     """Clip the sequence to have length no more than `length`.
 
     Parameters
@@ -77,7 +82,7 @@ class ClipSequence(object):
         return sample[:min(len(sample), self._length)]
 
 
-class PadSequence(object):
+class PadSequence:
     """Pad the sequence.
 
     Pad the sequence to the given `length` by inserting `pad_val`. If `clip` is set,
@@ -152,7 +157,7 @@ class PadSequence(object):
                     'mxnet.NDArray, received type=%s' % str(type(sample)))
 
 
-class NLTKMosesTokenizer(object):
+class NLTKMosesTokenizer:
     """Apply the Moses Tokenizer implemented in NLTK.
 
     Users of this class are required to install `NLTK <https://www.nltk.org/install.html>`_
@@ -214,7 +219,7 @@ class NLTKMosesTokenizer(object):
         return self._tokenizer.tokenize(sample, return_str=return_str)
 
 
-class SacreMosesTokenizer(object):
+class SacreMosesTokenizer:
     """Apply the Moses Tokenizer implemented in sacremoses.
 
     Users of this class are required to install
@@ -280,7 +285,7 @@ class SacreMosesTokenizer(object):
         return self._tokenizer.tokenize(sample, return_str=return_str)
 
 
-class SpacyTokenizer(object):
+class SpacyTokenizer:
     """Apply the Spacy Tokenizer.
 
     Users of this class are required to install `spaCy <https://spacy.io/usage/>`_
@@ -343,7 +348,7 @@ class SpacyTokenizer(object):
         return [tok.text for tok in self._nlp(sample)]
 
 
-class NLTKMosesDetokenizer(object):
+class NLTKMosesDetokenizer:
     r"""Apply the Moses Detokenizer implemented in NLTK.
 
     Users of this class are required to `install NLTK <https://www.nltk.org/install.html>`_
@@ -405,7 +410,7 @@ class NLTKMosesDetokenizer(object):
         return self._detokenizer.detokenize(sample, return_str=return_str)
 
 
-class SacreMosesDetokenizer(object):
+class SacreMosesDetokenizer:
     r"""Apply the Moses Detokenizer implemented in sacremoses.
 
     Users of this class are required to `install sacremoses
@@ -414,6 +419,12 @@ class SacreMosesDetokenizer(object):
 
     .. note::
         sacremoses carries an LGPL 2.1+ license.
+
+    Parameters
+    ----------
+    return_str: bool, default False
+        True: return a single string
+        False: return a list of words
 
     Examples
     --------
@@ -426,7 +437,8 @@ class SacreMosesDetokenizer(object):
     'Das Gluon NLP-Toolkit stellt eine Reihe von Textverarbeitungstools zur Verfügung.'
     """
 
-    def __init__(self):
+    def __init__(self, return_str=True):
+        self._return_str = return_str
         try:
             from sacremoses import MosesDetokenizer
             self._detokenizer = MosesDetokenizer()
@@ -457,26 +469,28 @@ class SacreMosesDetokenizer(object):
                     'installation guide in https://www.nltk.org/install.html .'
                 )
 
-    def __call__(self, sample, return_str=False):
+    def __call__(self, sample, return_str=None):
         """
 
         Parameters
         ----------
         sample: list(str)
             The sentence to detokenize
-        return_str: bool, default False
+        return_str: bool or None, default False
             True: return a single string
             False: return a list of words
+            None: use constructor setting
 
         Returns
         -------
         ret : list of strs or str
             List of words or detokenized text
         """
-        return self._detokenizer.detokenize(sample, return_str=return_str)
+        ret_str = self._return_str if return_str is None else return_str
+        return self._detokenizer.detokenize(sample, return_str=ret_str)
 
 
-class JiebaTokenizer(object):
+class JiebaTokenizer:
     r"""Apply the jieba Tokenizer.
 
     Users of this class are required to `install jieba <https://github.com/fxsjy/jieba>`_
@@ -523,11 +537,11 @@ class JiebaTokenizer(object):
         # we use default cutting mode provided by jieba, i.e., accurate mode
         return [
             tok for tok in self._tokenizer.cut(sample)
-            if tok != ' ' and tok != ''
+            if tok not in (' ', '')
         ]
 
 
-class NLTKStanfordSegmenter(object):
+class NLTKStanfordSegmenter:
     r"""Apply the Stanford Chinese Word Segmenter implemented in NLTK.
 
     Users of this class are required to install Java, NLTK and download Stanford Word Segmenter
@@ -637,7 +651,7 @@ class NLTKStanfordSegmenter(object):
         return [tok for tok in self._tokenizer.segment(sample).strip().split()]
 
 
-class _SentencepieceProcessor(object):
+class _SentencepieceProcessor:
     def __init__(self, path):
         try:
             import sentencepiece
@@ -760,7 +774,7 @@ class SentencepieceDetokenizer(_SentencepieceProcessor):
         return self._processor.DecodePieces(sample)
 
 
-class BERTBasicTokenizer(object):
+class BERTBasicTokenizer:
     r"""Runs basic tokenization
 
     performs invalid character removal (e.g. control chars) and whitespace.
@@ -871,13 +885,10 @@ class BERTBasicTokenizer(object):
         # as is Japanese Hiragana and Katakana. Those alphabets are used to write
         # space-separated words, so they are not treated specially and handled
         # like the all of the other languages.
-        if ((cp >= 0x4E00 and cp <= 0x9FFF) or (cp >= 0x3400 and cp <= 0x4DBF)
-                or (cp >= 0x20000 and cp <= 0x2A6DF)
-                or (cp >= 0x2A700 and cp <= 0x2B73F)
-                or (cp >= 0x2B740 and cp <= 0x2B81F)
-                or (cp >= 0x2B820 and cp <= 0x2CEAF)
-                or (cp >= 0xF900 and cp <= 0xFAFF)
-                or (cp >= 0x2F800 and cp <= 0x2FA1F)):
+        if ((0x4E00 <= cp <= 0x9FFF) or (0x3400 <= cp <= 0x4DBF) or (0x20000 <= cp <= 0x2A6DF)
+                or (0x2A700 <= cp <= 0x2B73F) or (0x2B740 <= cp <= 0x2B81F)
+                or (0x2B820 <= cp <= 0x2CEAF) or (0xF900 <= cp <= 0xFAFF)
+                or (0x2F800 <= cp <= 0x2FA1F)):
             return True
 
         return False
@@ -920,10 +931,10 @@ class BERTBasicTokenizer(object):
         # Characters such as "^", "$", and "`" are not in the Unicode
         # Punctuation class but we treat them as punctuation anyways, for
         # consistency.
-        group0 = cp >= 33 and cp <= 47
-        group1 = cp >= 58 and cp <= 64
-        group2 = cp >= 91 and cp <= 96
-        group3 = cp >= 123 and cp <= 126
+        group0 = 33 <= cp <= 47
+        group1 = 58 <= cp <= 64
+        group2 = 91 <= cp <= 96
+        group3 = 123 <= cp <= 126
         if (group0 or group1 or group2 or group3):
             return True
         cat = unicodedata.category(char)
@@ -949,7 +960,7 @@ class BERTBasicTokenizer(object):
         return tokens
 
 
-class BERTTokenizer(object):
+class BERTTokenizer:
     r"""End-to-end tokenization for BERT models.
 
     Parameters
@@ -973,6 +984,8 @@ class BERTTokenizer(object):
     ['gl', '##uo', '##nn', '##lp', ':', '使', 'nl', '##p', '变', '得', '简', '单', '。']
 
     """
+
+    _special_prefix = u'##'
 
     def __init__(self, vocab, lower=True, max_input_chars_per_word=200):
         self.vocab = vocab
@@ -1013,12 +1026,14 @@ class BERTTokenizer(object):
           input = "unaffable"
           output = ["un", "##aff", "##able"]
 
-        Args:
-          text: A single token or whitespace separated tokens. This should have
-            already been passed through `BERTBasicTokenizer.
+        Parameters
+        ----------
+        text : A single token or whitespace separated tokens. This should have
+               already been passed through `BERTBasicTokenizer.
 
-        Returns:
-          A list of wordpiece tokens.
+        Returns
+        -------
+        ret : A list of wordpiece tokens.
         """
 
         output_tokens = []
@@ -1036,7 +1051,7 @@ class BERTTokenizer(object):
                 while start < end:
                     substr = ''.join(chars[start:end])
                     if start > 0:
-                        substr = '##' + substr
+                        substr = self._special_prefix + substr
                     if substr in self.vocab:
                         cur_substr = substr
                         break
@@ -1056,10 +1071,45 @@ class BERTTokenizer(object):
         """Converts a sequence of tokens into ids using the vocab."""
         return self.vocab.to_indices(tokens)
 
+    @staticmethod
+    def is_first_subword(token):
+        """Check if a token is the beginning of subwords.
+
+        Parameters
+        ----------
+        token : str
+            The input token.
+
+        Returns
+        -------
+        ret : True if the token is the beginning of a serious of wordpieces.
+
+        Examples
+        --------
+        >>> _, vocab = gluonnlp.model.bert_12_768_12(dataset_name='wiki_multilingual_uncased',
+        ...                                          pretrained=False, root='./bert_tokenizer')
+        -etc-
+        >>> tokenizer = gluonnlp.data.BERTTokenizer(vocab=vocab)
+        >>> tokenizer('gluonnlp: 使NLP变得简单。')
+        ['gl', '##uo', '##nn', '##lp', ':', '使', 'nl', '##p', '变', '得', '简', '单', '。']
+        >>> tokenizer.is_first_subword('gl')
+        True
+        >>> tokenizer.is_first_subword('##uo')
+        False
+        """
+        return not token.startswith(BERTTokenizer._special_prefix)
+
 
 class BERTSPTokenizer(BERTTokenizer):
     r"""End-to-end SentencePiece tokenization for BERT models.
-    It works best with BERTSentenceTransform()
+
+    It works best with BERTSentenceTransform().
+
+    .. note::
+
+        BERTSPTokenizer depends on the sentencepiece library. For multi-processing
+        with BERTSPTokenizer, making an extra copy of the BERTSPTokenizer instance
+        is recommended before using it.
 
     Parameters
     ----------
@@ -1093,6 +1143,8 @@ class BERTSPTokenizer(BERTTokenizer):
     >>> sp_tokenizer(sentence)
     ['▁better', '▁is', '▁to', '▁b', 'ow', '▁than', '▁brea', 'k', '▁', '.']
     """
+
+    _special_prefix = u'▁'
 
     def __init__(self,
                  path,
@@ -1134,8 +1186,38 @@ class BERTSPTokenizer(BERTTokenizer):
         output_tokens = self.sentencepiece(text)
         return output_tokens
 
+    @staticmethod
+    def is_first_subword(token):
+        """Check if a string token is a subword following a previous subword,
+        instead of the beginning of a word.
 
-class BERTSentenceTransform(object):
+        Parameters
+        ----------
+        token : str
+            The input token.
+
+        Returns
+        -------
+        ret : True if the token is the beginning of a series of subwords,
+
+        Examples
+        --------
+        >>> url = 'http://repo.mxnet.io/gluon/dataset/vocab/test-682b5d15.bpe'
+        >>> f = gluon.utils.download(url, overwrite=True)
+        -etc-
+        >>> bert_vocab = gluonnlp.vocab.BERTVocab.from_sentencepiece(f)
+        >>> sp_tokenizer = BERTSPTokenizer(f, bert_vocab, lower=True)
+        >>> sp_tokenizer('Better is to bow than break.')
+        ['▁better', '▁is', '▁to', '▁b', 'ow', '▁than', '▁brea', 'k', '▁', '.']
+        >>> sp_tokenizer.is_first_subword('▁better')
+        True
+        >>> sp_tokenizer.is_first_subword('ow')
+        False
+        """
+        return token.startswith(BERTSPTokenizer._special_prefix)
+
+
+class BERTSentenceTransform:
     r"""BERT style data transformation.
 
     Parameters
@@ -1280,3 +1362,181 @@ class BERTSentenceTransform(object):
                 tokens_a.pop()
             else:
                 tokens_b.pop()
+
+class _GPT2BPE:
+    """Base class for GPT-2 BPE tokenizer and detokenizer."""
+    def __init__(self):
+        codes = list(range(ord(u'!'), ord(u'~') + 1)) +\
+                list(range(ord(u'¡'), ord(u'¬') + 1)) +\
+                list(range(ord(u'®'), ord(u'ÿ') + 1))
+        chr_fn = chr
+        try:
+            chr_fn(256)
+        except ValueError:
+            chr_fn = unichr # noqa: F821
+        byte_encoder = {code: chr_fn(code) for code in codes}
+        shift = 0
+        for code in range(2 ** 8):
+            if code not in byte_encoder:
+                byte_encoder[code] = chr_fn(2 ** 8 + shift)
+                shift += 1
+        self._byte_encoder = byte_encoder
+
+
+class GPT2BPETokenizer(_GPT2BPE):
+    """BPE tokenizer used in OpenAI GPT-2 model.
+
+    Parameters
+    ----------
+    root : str, default '$MXNET_HOME/models'
+        Location for keeping the BPE rank file.
+        MXNET_HOME defaults to '~/.mxnet'.
+    """
+    bpe_ranks_file_hash = ('openai_webtext_bpe_ranks-396d4d8e.json',
+                           '396d4d8ec90cb02f4d56e049e0e4add868bcd943')
+    bpe_ranks_archive_hash = ('openai_webtext_bpe_ranks-396d4d8e.zip',
+                              '1a770728fd102bc9dc332f322e6bfb294767a685')
+    def __init__(self, root=os.path.join(get_home_dir(), 'models')):
+        try:
+            import regex as re
+        except ImportError:
+            raise ImportError(
+                'GPT2BPETokenizer requires regex. '
+                'To install regex, use pip install -U regex')
+        super(GPT2BPETokenizer, self).__init__()
+        root = os.path.expanduser(root)
+        file_name, sha1_hash = self.bpe_ranks_file_hash
+        file_path = os.path.join(root, file_name)
+        if not os.path.exists(file_path) or not check_sha1(file_path, sha1_hash):
+            if os.path.exists(file_path):
+                print('Detected mismatch in the content of BPE rank file. Downloading again.')
+            else:
+                print('BPE rank file is not found. Downloading.')
+            if not os.path.exists(root):
+                try:
+                    os.makedirs(root)
+                except OSError as e:
+                    if e.errno == errno.EEXIST and os.path.isdir(root):
+                        pass
+                    else:
+                        raise e
+
+            prefix = str(time.time())
+            zip_file_path = os.path.join(root, prefix + file_name)
+            repo_url = _get_repo_url()
+            if repo_url[-1] != '/':
+                repo_url = repo_url + '/'
+            archive_name, archive_hash = self.bpe_ranks_archive_hash
+            _url_format = '{repo_url}gluon/dataset/vocab/{file_name}'
+            download(_url_format.format(repo_url=repo_url, file_name=archive_name),
+                     path=zip_file_path,
+                     sha1_hash=archive_hash,
+                     overwrite=True)
+            with zipfile.ZipFile(zip_file_path) as zf:
+                if not os.path.exists(file_path):
+                    zf.extractall(root)
+            try:
+                os.remove(zip_file_path)
+            except OSError as e:
+                # file has already been removed.
+                if e.errno == 2:
+                    pass
+                else:
+                    raise e
+
+            if not check_sha1(file_path, sha1_hash):
+                raise ValueError('Downloaded file has different hash. Please try again.')
+        self._read_bpe_ranks(file_path)
+        self._cache = {}
+        self._token_pattern = re.compile(
+            r'\'s|\'t|\'re|\'ve|\'m|\'ll|\'d| ?\p{L}+'
+            r'| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+')
+
+    def _read_bpe_ranks(self, file_path):
+        with io.open(file_path, 'r', encoding='utf-8') as f:
+            bpe_data = f.read()
+            self._bpe_ranks = {
+                tuple(merge_str.split()): i for i, merge_str
+                in enumerate(bpe_data.split('\n')[1:-1])}
+
+    def get_bpe_subword(self, token):
+        """ Encode the word token into BPE subwords
+
+        Parameters
+        ----------
+        token : str
+
+        Returns
+        -------
+        chars : list(str)
+        """
+        if token in self._cache:
+            return self._cache[token]
+        chars = list(token)
+        while len(chars) > 0:
+            min_pair, min_rank = None, float('inf')
+            # Find the pair with the minimum rank
+            for i in range(1, len(chars)):
+                pair = (chars[i - 1], chars[i])
+                rank = self._bpe_ranks.get(pair, float('inf'))
+                if rank < min_rank:
+                    min_rank = rank
+                    min_pair = pair
+            if min_pair is None or min_pair not in self._bpe_ranks:
+                break
+            # Merge the pair
+            last, tail = chars[0], 1
+            for index in range(1, len(chars)):
+                if (last, chars[index]) == min_pair:
+                    chars[tail - 1] = last + chars[index]
+                    last = last + chars[index]
+                else:
+                    chars[tail - 1] = last
+                    tail += 1
+                    last = chars[index]
+            chars[tail - 1] = last
+            chars = chars[:tail]
+        self._cache[token] = chars
+        return chars
+
+    def __call__(self, sample):
+        """
+
+        Parameters
+        ----------
+        sample : str
+
+        Returns
+        -------
+        ret : list(str)
+        """
+        import regex as re
+        ret = []
+        for word_token in re.findall(self._token_pattern, sample):
+            word_token = bytearray(word_token.encode('utf-8'))
+            word_token = ''.join(self._byte_encoder[code] for code in word_token)
+            ret.extend(self.get_bpe_subword(word_token))
+        return ret
+
+
+class GPT2BPEDetokenizer(_GPT2BPE):
+    """BPE detokenizer used in OpenAI GPT-2 model."""
+    def __init__(self):
+        super(GPT2BPEDetokenizer, self).__init__()
+        self._byte_decoder = {v: k for k, v in self._byte_encoder.items()}
+
+    def __call__(self, sample):
+        """
+
+        Parameters
+        ----------
+        sample : list(str)
+
+        Returns
+        -------
+        ret : str
+        """
+        text = ''.join(sample)
+        ret = bytearray(
+            [self._byte_decoder[byte] for byte in text]).decode('utf-8', errors='replace')
+        return ret

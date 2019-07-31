@@ -18,17 +18,20 @@
 # under the License.
 
 """Utilities for pre-training."""
-import glob
 import time
 import os
-import functools
 import logging
 import argparse
+import random
 import multiprocessing
+import functools
+
+import numpy as np
 
 import mxnet as mx
 from mxnet.gluon.data import DataLoader
 from create_pretraining_data import create_training_instances
+from data.dataloader import DatasetLoader, SamplerFn, DataLoaderFn, SimpleDatasetFn
 
 import gluonnlp as nlp
 from gluonnlp.data.batchify import Tuple, Stack, Pad
@@ -36,7 +39,7 @@ from gluonnlp.metric import MaskedAccuracy
 
 __all__ = ['get_model_loss', 'get_pretrain_data_npz', 'get_dummy_dataloader',
            'save_parameters', 'save_states', 'evaluate', 'forward', 'split_and_load',
-           'get_argparser', 'get_pretrain_data_text']
+           'get_argparser', 'get_pretrain_data_text', 'generate_dev_set']
 
 def get_model_loss(ctx, model, pretrained, dataset_name, vocab, dtype,
                    ckpt_dir=None, start_step=None):
@@ -115,6 +118,8 @@ class BERTPretrainDataset(mx.gluon.data.ArrayDataset):
         The probability of replacing texts with masks/random words/original words.
     max_predictions_per_seq : int
         The hard limit of the number of predictions for masked words
+    whole_word_mask : bool
+        Whether to use whole word masking.
     vocab : BERTVocab
         The BERTVocab
     num_workers : int
@@ -123,21 +128,22 @@ class BERTPretrainDataset(mx.gluon.data.ArrayDataset):
         The worker process pool. Must be provided if num_workers > 1.
     """
     def __init__(self, filename, tokenizer, max_seq_length, short_seq_prob,
-                 masked_lm_prob, max_predictions_per_seq, vocab, num_workers=1, worker_pool=None):
+                 masked_lm_prob, max_predictions_per_seq, whole_word_mask,
+                 vocab, num_workers=1, worker_pool=None):
         logging.debug('start to load file %s ...', filename)
         dupe_factor = 1
         instances = create_training_instances(([filename], tokenizer, max_seq_length,
                                                short_seq_prob, masked_lm_prob,
-                                               max_predictions_per_seq, vocab,
+                                               max_predictions_per_seq,
+                                               whole_word_mask, vocab,
                                                dupe_factor, num_workers,
                                                worker_pool, None))
         super(BERTPretrainDataset, self).__init__(*instances)
 
 def get_pretrain_data_text(data, batch_size, num_ctxes, shuffle, use_avg_len,
                            num_buckets, vocab, tokenizer, max_seq_length, short_seq_prob,
-                           masked_lm_prob, max_predictions_per_seq,
-                           num_parts=1, part_idx=0,
-                           prefetch=True, num_workers=1):
+                           masked_lm_prob, max_predictions_per_seq, whole_word_mask,
+                           num_parts=1, part_idx=0, num_workers=1):
     """Get data iterators from raw text documents.
 
     Parameters
@@ -159,42 +165,39 @@ def get_pretrain_data_text(data, batch_size, num_ctxes, shuffle, use_avg_len,
         The probability of replacing texts with masks/random words/original words.
     max_predictions_per_seq : int
         The hard limit of the number of predictions for masked words
+    whole_word_mask : bool
+        Whether to use whole word masking.
     num_parts : int
         The number of partitions for the dataset.
     part_idx : int
         The index of the partition to read.
-    prefetch : bool
-        If set to True, a separate thread helps prefetching the next mini-batch of data.
     num_workers : int
         The number of worker processes for dataset contruction.
     """
     # handle commas in the provided path
-    num_files = sum([len(glob.glob(os.path.expanduser(d.strip()))) for d in data.split(',')])
+    num_files = len(nlp.utils.glob(data))
     logging.info('%d files found.', num_files)
     assert num_files >= num_parts, \
         'Number of training files must be greater than the number of partitions. ' \
         'Only found %d files at %s'%(num_files, data)
-    worker_pool = multiprocessing.Pool(num_workers)
-    dataset_cls = functools.partial(BERTPretrainDataset, tokenizer=tokenizer,
-                                    max_seq_length=max_seq_length,
-                                    short_seq_prob=short_seq_prob,
-                                    masked_lm_prob=masked_lm_prob,
-                                    max_predictions_per_seq=max_predictions_per_seq,
-                                    vocab=vocab, num_workers=num_workers, worker_pool=worker_pool)
+    dataset_params = {'tokenizer': tokenizer, 'max_seq_length': max_seq_length,
+                      'short_seq_prob': short_seq_prob, 'masked_lm_prob': masked_lm_prob,
+                      'max_predictions_per_seq': max_predictions_per_seq, 'vocab':vocab,
+                      'whole_word_mask': whole_word_mask}
+    dataset_fn = SimpleDatasetFn(BERTPretrainDataset, dataset_params)
+    sampler_fn = BERTSamplerFn(use_avg_len, batch_size, shuffle, num_ctxes, num_buckets)
+    dataloader_fn = BERTDataLoaderFn(use_avg_len, num_ctxes)
 
     split_sampler = nlp.data.SplitSampler(num_files, num_parts=num_parts, part_index=part_idx)
-    stream = nlp.data.SimpleDatasetStream(dataset_cls, data, split_sampler)
-    if prefetch:
-        stream = nlp.data.PrefetchingStream(stream)
-    # create data loader based on the dataset
-    dataloader_xform = BERTLoaderTransform(use_avg_len, batch_size,
-                                           shuffle, num_ctxes, num_buckets)
-    stream = stream.transform(dataloader_xform)
-    return stream
+    dataloader = DatasetLoader(data, split_sampler, dataset_fn, sampler_fn, dataloader_fn,
+                               num_dataset_workers=num_workers)
 
-class BERTLoaderTransform(object):
-    """Create dataloader for a BERT dataset. """
+    return dataloader
 
+
+
+class BERTSamplerFn(SamplerFn):
+    """Callable object to create the sampler"""
     def __init__(self, use_avg_len, batch_size, shuffle, num_ctxes, num_buckets):
         self._use_avg_len = use_avg_len
         self._batch_size = batch_size
@@ -203,7 +206,7 @@ class BERTLoaderTransform(object):
         self._num_buckets = num_buckets
 
     def __call__(self, dataset):
-        """create data loader based on the dataset chunk"""
+        """Create data sampler based on the dataset"""
         if isinstance(dataset, nlp.data.NumpyDataset):
             lengths = dataset.get_field('valid_lengths')
         elif isinstance(dataset, BERTPretrainDataset):
@@ -214,9 +217,6 @@ class BERTLoaderTransform(object):
         else:
             raise ValueError('unexpected dataset type: %s'%str(dataset))
 
-        # A batch includes: input_id, masked_id, masked_position, masked_weight,
-        #                   next_sentence_label, segment_id, valid_length
-        batchify_fn = Tuple(Pad(), Pad(), Pad(), Pad(), Stack(), Pad(), Stack())
         if self._use_avg_len:
             # sharded data loader
             sampler = nlp.data.FixedBucketSampler(lengths=lengths,
@@ -226,36 +226,65 @@ class BERTLoaderTransform(object):
                                                   shuffle=self._shuffle,
                                                   use_average_length=True,
                                                   num_shards=self._num_ctxes)
-            dataloader = nlp.data.ShardedDataLoader(dataset,
-                                                    batch_sampler=sampler,
-                                                    batchify_fn=batchify_fn,
-                                                    num_workers=self._num_ctxes)
         else:
             sampler = nlp.data.FixedBucketSampler(lengths,
                                                   batch_size=self._batch_size * self._num_ctxes,
                                                   num_buckets=self._num_buckets,
                                                   ratio=0,
                                                   shuffle=self._shuffle)
+        logging.debug('Sampler created for a new dataset:\n%s', sampler.stats())
+        return sampler
+
+class BERTDataLoaderFn(DataLoaderFn):
+    """Callable object to create the data loader"""
+    def __init__(self, use_avg_len, num_ctxes):
+        self._use_avg_len = use_avg_len
+        self._num_ctxes = num_ctxes
+
+    def __call__(self, dataset, sampler):
+        # A batch includes: input_id, masked_id, masked_position, masked_weight,
+        #                   next_sentence_label, segment_id, valid_length
+        batchify_fn = Tuple(Pad(), Pad(), Pad(), Pad(), Stack(), Pad(), Stack())
+
+        if self._use_avg_len:
+            # sharded data loader
+            dataloader = nlp.data.ShardedDataLoader(dataset,
+                                                    batch_sampler=sampler,
+                                                    batchify_fn=batchify_fn,
+                                                    num_workers=self._num_ctxes)
+        else:
             dataloader = DataLoader(dataset=dataset,
                                     batch_sampler=sampler,
                                     batchify_fn=batchify_fn,
-                                    num_workers=1)
-        logging.debug('Sampler created for a new dataset:\n%s', sampler.stats())
+                                    num_workers=self._num_ctxes)
+        return dataloader
+
+class BERTLoaderTransform:
+    """Create dataloader for a BERT dataset. """
+
+    def __init__(self, use_avg_len, batch_size, shuffle, num_ctxes, num_buckets):
+        self._sampler_fn = BERTSamplerFn(use_avg_len, batch_size, shuffle, num_ctxes, num_buckets)
+        self._data_fn = BERTDataLoaderFn(use_avg_len, num_ctxes)
+
+    def __call__(self, dataset):
+        """create data loader based on the dataset chunk"""
+        sampler = self._sampler_fn(dataset)
+        dataloader = self._data_fn(dataset, sampler)
         return dataloader
 
 def get_pretrain_data_npz(data, batch_size, num_ctxes, shuffle, use_avg_len,
-                          num_buckets, num_parts=1, part_idx=0, prefetch=True):
+                          num_buckets, num_parts=1, part_idx=0):
     """create dataset for pretraining based on pre-processed npz files."""
     # handle commas in the provided path
-    num_files = sum([len(glob.glob(os.path.expanduser(d.strip()))) for d in data.split(',')])
+    num_files = len(nlp.utils.glob(data))
     logging.info('%d files found.', num_files)
     assert num_files >= num_parts, \
         'Number of training files must be greater than the number of partitions. ' \
         'Only found %d files at %s'%(num_files, data)
     split_sampler = nlp.data.SplitSampler(num_files, num_parts=num_parts, part_index=part_idx)
-    stream = nlp.data.SimpleDatasetStream(nlp.data.NumpyDataset, data, split_sampler)
-    if prefetch:
-        stream = nlp.data.PrefetchingStream(stream)
+    NumpyDataset = functools.partial(nlp.data.NumpyDataset, allow_pickle=True)
+    stream = nlp.data.SimpleDatasetStream(NumpyDataset, data, split_sampler)
+    stream = nlp.data.PrefetchingStream(stream, worker_type='process')
 
     # create data loader based on the dataset
     dataloader_xform = BERTLoaderTransform(use_avg_len, batch_size,
@@ -305,7 +334,8 @@ def log(begin_time, running_num_tks, running_mlm_loss, running_nsp_loss, step_nu
     running_nsp_loss = running_nsp_loss / log_interval
     lr = trainer.learning_rate if trainer else 0
     # pylint: disable=line-too-long
-    logging.info('[step {}]\tmlm_loss={:.5f}\tmlm_acc={:.5f}\tnsp_loss={:.5f}\tnsp_acc={:.3f}\tthroughput={:.1f}K tks/s\tlr={:.7f} time={:.2f}, latency={:.1f} ms/batch'
+
+    logging.info('[step {}]\tmlm_loss={:7.5f}\tmlm_acc={:4.2f}\tnsp_loss={:5.2f}\tnsp_acc={:5.2f}\tthroughput={:.1f}K tks/s\tlr={:.7f} time={:.2f}, latency={:.1f} ms/batch'
                  .format(step_num, running_mlm_loss.asscalar(), mlm_metric.get()[1] * 100, running_nsp_loss.asscalar(),
                          nsp_metric.get()[1] * 100, throughput.asscalar(), lr, duration, duration*1000/log_interval))
     # pylint: enable=line-too-long
@@ -406,9 +436,9 @@ def get_argparser():
     """Argument parser"""
     parser = argparse.ArgumentParser(description='BERT pretraining example.')
     parser.add_argument('--num_steps', type=int, default=20, help='Number of optimization steps')
-    parser.add_argument('--num_buckets', type=int, default=1,
+    parser.add_argument('--num_buckets', type=int, default=10,
                         help='Number of buckets for variable length sequence sampling')
-    parser.add_argument('--dtype', type=str, default='float32', help='data dtype')
+    parser.add_argument('--dtype', type=str, default='float16', help='data dtype')
     parser.add_argument('--batch_size', type=int, default=8, help='Batch size per GPU.')
     parser.add_argument('--accumulate', type=int, default=1,
                         help='Number of batches for gradient accumulation. '
@@ -430,23 +460,44 @@ def get_argparser():
                         help='Model to run pre-training on. '
                              'Options are bert_12_768_12, bert_24_1024_16')
     parser.add_argument('--data', type=str, default=None,
-                        help='Path to training data. Training is skipped if not set.')
-    parser.add_argument('--data_eval', type=str, default=None,
-                        help='Path to evaluation data. Evaluation is skipped if not set.')
-    parser.add_argument('--ckpt_dir', type=str, required=True,
+                        help='Path to training data file. File name with wildcard such as '
+                             '*.train is accepted. Training is skipped if not set.')
+    parser.add_argument('--data_eval', type=str, required=True,
+                        help='Path to evaluation data file. File name with wildcard such as '
+                             '*.dev is accepted. Evaluation data is required.')
+    parser.add_argument('--ckpt_dir', type=str, default='./ckpt_dir',
                         help='Path to checkpoint directory')
     parser.add_argument('--start_step', type=int, default=0,
                         help='Start optimization step from the checkpoint.')
     parser.add_argument('--lr', type=float, default=1e-4, help='Learning rate')
-    parser.add_argument('--warmup_ratio', type=float, default=0.1,
+    parser.add_argument('--warmup_ratio', type=float, default=0.01,
                         help='ratio of warmup steps used in NOAM\'s stepsize schedule')
-    parser.add_argument('--log_interval', type=int, default=10, help='Report interval')
-    parser.add_argument('--ckpt_interval', type=int, default=250000, help='Checkpoint interval')
+    parser.add_argument('--log_interval', type=int, default=250, help='Report interval')
+    parser.add_argument('--ckpt_interval', type=int, default=25000, help='Checkpoint interval')
     parser.add_argument('--dummy_data_len', type=int, default=None,
                         help='If provided, a data batch of target sequence length is '
                              'used. For benchmarking purpuse only.')
-    parser.add_argument('--seed', type=int, default=0, help='Random seed')
     parser.add_argument('--verbose', action='store_true', help='verbose logging')
     parser.add_argument('--profile', type=str, default=None,
                         help='output profiling result to the target file')
     return parser
+
+def generate_dev_set(tokenizer, vocab, cache_file, args):
+    """Generate validation set."""
+    # set random seed to generate dev data deterministically
+    np.random.seed(0)
+    random.seed(0)
+    mx.random.seed(0)
+    worker_pool = multiprocessing.Pool()
+    eval_files = nlp.utils.glob(args.data_eval)
+    num_files = len(eval_files)
+    assert num_files > 0, 'Number of eval files must be greater than 0.' \
+                          'Only found %d files at %s'%(num_files, args.data_eval)
+    logging.info('Generating validation set from %d files on rank 0.', len(eval_files))
+    create_training_instances((eval_files, tokenizer, args.max_seq_length,
+                               args.short_seq_prob, args.masked_lm_prob,
+                               args.max_predictions_per_seq,
+                               args.whole_word_mask, vocab,
+                               1, args.num_data_workers,
+                               worker_pool, cache_file))
+    logging.info('Done generating validation set on rank 0.')

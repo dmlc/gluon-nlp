@@ -19,26 +19,44 @@
 # pylint:disable=redefined-outer-name,logging-format-interpolation
 """ Script for converting TF Model to Gluon. """
 
-import os
-import logging
 import argparse
+import json
+import logging
+import os
+import sys
+
 import mxnet as mx
+import gluonnlp as nlp
 from gluonnlp.model import BERTEncoder, BERTModel
 from gluonnlp.model.bert import bert_hparams
-from utils import convert_vocab, get_hash, read_tf_checkpoint
 
-parser = argparse.ArgumentParser(description='Conversion script for Tensorflow BERT model')
-parser.add_argument('--model', type=str, default='bert_12_768_12',
-                    help='BERT model name. options are bert_12_768_12 and bert_24_1024_16.'
-                         'Default is bert_12_768_12')
-parser.add_argument('--tf_checkpoint_dir', type=str,
-                    default=os.path.join('~', 'cased_L-12_H-768_A-12/'),
-                    help='Path to Tensorflow checkpoint folder. '
-                         'Default is /home/ubuntu/cased_L-12_H-768_A-12/')
-parser.add_argument('--out_dir', type=str,
+sys.path.insert(0, os.path.abspath(os.path.join(__file__, os.pardir, os.pardir)))
+
+from utils import (get_hash, load_text_vocab, read_tf_checkpoint,
+                   tf_vocab_to_gluon_vocab)
+
+
+parser = argparse.ArgumentParser(
+    description='Conversion script for Tensorflow BERT model',
+    formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+parser.add_argument('--model',
+                    type=str,
+                    default='bert_12_768_12',
+                    choices=['bert_12_768_12', 'bert_24_1024_16'],
+                    help='BERT model name')
+parser.add_argument('--tf_checkpoint_dir',
+                    type=str,
+                    help='Path to Tensorflow checkpoint folder.')
+parser.add_argument('--tf_model_prefix', type=str,
+                    default='bert_model.ckpt',
+                    help='name of bert checkpoint file.')
+parser.add_argument('--tf_config_name', type=str,
+                    default='bert_config.json',
+                    help='Name of Bert config file')
+parser.add_argument('--out_dir',
+                    type=str,
                     default=os.path.join('~', 'output'),
-                    help='Path to output folder. The folder must exist. '
-                         'Default is /home/ubuntu/output/')
+                    help='Path to output folder. The folder must exist.')
 parser.add_argument('--debug', action='store_true', help='debugging mode')
 args = parser.parse_args()
 logging.getLogger().setLevel(logging.DEBUG if args.debug else logging.INFO)
@@ -46,24 +64,35 @@ logging.info(args)
 
 # convert vocabulary
 vocab_path = os.path.join(args.tf_checkpoint_dir, 'vocab.txt')
-vocab, reserved_token_idx_map = convert_vocab(vocab_path)
+vocab = tf_vocab_to_gluon_vocab(load_text_vocab(vocab_path))
 
 # vocab serialization
-tmp_file_path = os.path.expanduser(os.path.join(args.out_dir, 'tmp'))
+out_dir = os.path.expanduser(args.out_dir)
+nlp.utils.mkdir(out_dir)
+tmp_file_path = os.path.join(out_dir, 'tmp')
 with open(tmp_file_path, 'w') as f:
     f.write(vocab.to_json())
 hash_full, hash_short = get_hash(tmp_file_path)
-gluon_vocab_path = os.path.expanduser(os.path.join(args.out_dir, hash_short + '.vocab'))
+gluon_vocab_path = os.path.join(out_dir, hash_short + '.vocab')
 with open(gluon_vocab_path, 'w') as f:
     f.write(vocab.to_json())
     logging.info('vocab file saved to %s. hash = %s', gluon_vocab_path, hash_full)
 
 # load tf model
 tf_checkpoint_file = os.path.expanduser(
-    os.path.join(args.tf_checkpoint_dir, 'bert_model.ckpt'))
+    os.path.join(args.tf_checkpoint_dir, args.tf_model_prefix))
 logging.info('loading Tensorflow checkpoint %s ...', tf_checkpoint_file)
 tf_tensors = read_tf_checkpoint(tf_checkpoint_file)
 tf_names = sorted(tf_tensors.keys())
+
+tf_names = filter(lambda name: not name.endswith('adam_m'), tf_names)
+tf_names = filter(lambda name: not name.endswith('adam_v'), tf_names)
+tf_names = filter(lambda name: name != 'global_step', tf_names)
+tf_names = list(tf_names)
+if len(tf_tensors) != len(tf_names):
+    logging.info('Tensorflow model was saved with Optimizer parameters. '
+                 'Ignoring them.')
+
 for name in tf_names:
     logging.debug('%s: %s', name, tf_tensors[name].shape)
 
@@ -110,22 +139,28 @@ for source_name in tf_names:
         logging.info('warning: %s has symmetric shape %s', target_name, target.shape)
     logging.debug('%s: %s', target_name, target.shape)
 
-# post processings for parameters:
-# - handle tied decoder weight
-# - update word embedding for reserved tokens
-mx_tensors['decoder.3.weight'] = mx_tensors['word_embed.0.weight']
-embedding = mx_tensors['word_embed.0.weight']
-for source_idx, dst_idx in reserved_token_idx_map:
-    source = embedding[source_idx].copy()
-    dst = embedding[dst_idx].copy()
-    embedding[source_idx][:] = dst
-    embedding[dst_idx][:] = source
-logging.info('total number of tf parameters = %d', len(tf_tensors))
-logging.info('total number of mx parameters = %d (including decoder param for weight tying)',
-             len(mx_tensors))
-
-# XXX assume no changes in BERT configs
+# BERT config
+tf_config_names_to_gluon_config_names = {
+    'attention_probs_dropout_prob': 'embed_dropout',
+    'hidden_act': None,
+    'hidden_dropout_prob': 'dropout',
+    'hidden_size': 'units',
+    'initializer_range': None,
+    'intermediate_size': 'hidden_size',
+    'max_position_embeddings': 'max_length',
+    'num_attention_heads': 'num_heads',
+    'num_hidden_layers': 'num_layers',
+    'type_vocab_size': 'token_type_vocab_size',
+    'vocab_size': None
+}
 predefined_args = bert_hparams[args.model]
+with open(os.path.join(args.tf_checkpoint_dir, args.tf_config_name), 'r') as f:
+    tf_config = json.load(f)
+    assert len(tf_config) == len(tf_config_names_to_gluon_config_names)
+    for tf_name, gluon_name in tf_config_names_to_gluon_config_names.items():
+        if tf_name is None or gluon_name is None:
+            continue
+        assert tf_config[tf_name] == predefined_args[gluon_name]
 
 # BERT encoder
 encoder = BERTEncoder(attention_cell=predefined_args['attention_cell'],
@@ -138,6 +173,26 @@ encoder = BERTEncoder(attention_cell=predefined_args['attention_cell'],
                       dropout=predefined_args['dropout'],
                       use_residual=predefined_args['use_residual'])
 
+# Infer enabled BERTModel components
+use_pooler = any('pooler' in n for n in mx_tensors)
+use_decoder = any('decoder.0' in n for n in mx_tensors)
+use_classifier = any('classifier.weight' in n for n in mx_tensors)
+
+logging.info('Inferred that the tensorflow model provides the following parameters:')
+logging.info('- use_pooler = {}'.format(use_pooler))
+logging.info('- use_decoder = {}'.format(use_decoder))
+logging.info('- use_classifier = {}'.format(use_classifier))
+
+# post processings for parameters:
+# - handle tied decoder weight
+logging.info('total number of tf parameters = %d', len(tf_names))
+if use_decoder:
+    mx_tensors['decoder.3.weight'] = mx_tensors['word_embed.0.weight']
+    logging.info('total number of mx parameters = %d'
+                 '(including decoder param for weight tying)', len(mx_tensors))
+else:
+    logging.info('total number of mx parameters = %d', len(mx_tensors))
+
 # BERT model
 bert = BERTModel(encoder, len(vocab),
                  token_type_vocab_size=predefined_args['token_type_vocab_size'],
@@ -145,14 +200,19 @@ bert = BERTModel(encoder, len(vocab),
                  embed_size=predefined_args['embed_size'],
                  embed_dropout=predefined_args['embed_dropout'],
                  word_embed=predefined_args['word_embed'],
-                 use_pooler=True, use_decoder=True,
-                 use_classifier=True)
+                 use_pooler=use_pooler, use_decoder=use_decoder,
+                 use_classifier=use_classifier)
 
 bert.initialize(init=mx.init.Normal(0.02))
 
 ones = mx.nd.ones((2, 8))
 out = bert(ones, ones, mx.nd.array([5, 6]), mx.nd.array([[1], [2]]))
 params = bert._collect_params_with_prefix()
+if len(params) != len(mx_tensors):
+    raise RuntimeError('The Gluon BERTModel comprises {} parameter arrays, '
+                       'but {} have been extracted from the tf model. '
+                       'Most likely the BERTModel hyperparameters do not match '
+                       'the hyperparameters of the tf model.'.format(len(params), len(mx_tensors)))
 
 # set parameter data
 loaded_params = {}
@@ -178,7 +238,7 @@ for name in mx_tensors:
 # param serialization
 bert.save_parameters(tmp_file_path)
 hash_full, hash_short = get_hash(tmp_file_path)
-gluon_param_path = os.path.expanduser(os.path.join(args.out_dir, hash_short + '.params'))
+gluon_param_path = os.path.join(out_dir, hash_short + '.params')
 logging.info('param saved to %s. hash = %s', gluon_param_path, hash_full)
 bert.save_parameters(gluon_param_path)
 mx.nd.waitall()

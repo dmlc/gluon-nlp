@@ -107,7 +107,7 @@ def grad_global_norm(parameters, max_norm):
     return total_norm, chosen_scale, is_finite
 
 
-class FP16Trainer(object):
+class FP16Trainer:
     """ Trainer for mixed precision training.
 
     Parameters
@@ -182,7 +182,7 @@ class FP16Trainer(object):
         # update scale based on overflow information
         self._scaler.update_scale(overflow)
 
-class LossScaler(object):
+class LossScaler:
     """Abstract loss scaler"""
     def has_overflow(self, params):
         """ detect inf and nan """
@@ -208,7 +208,6 @@ class StaticLossScaler(LossScaler):
 
     def update_scale(self, overflow):
         """update loss scale"""
-        pass
 
 class DynamicLossScaler(LossScaler):
     """Class that manages dynamic loss scaling.

@@ -39,7 +39,7 @@ except ImportError:
         return func
 
 
-class EmbeddingCenterContextBatchify(object):
+class EmbeddingCenterContextBatchify:
     """Helper to create batches of center and contexts words.
 
     Batches are created lazily on a optionally shuffled version of the Dataset.

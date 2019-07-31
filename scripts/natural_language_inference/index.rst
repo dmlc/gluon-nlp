@@ -1,7 +1,7 @@
 Natural Language Inference
 --------------------------
 
-:download:`[Download] </model_zoo/natural_language_inference.zip>`
+:download:`Download scripts </model_zoo/natural_language_inference.zip>`
 
 Replication of the model described in `A Decomposable Attention Model for Natural Language Inference <https://arxiv.org/abs/1606.01933>`_.
 
@@ -23,13 +23,13 @@ Train the model without intra-sentence attention:
 
 .. code-block:: console
 
-	$ python3 main.py --train-file data/snli_1.0/train.txt --test-file data/snli_1.0/dev.txt --output-dir output/snli-basic --batch-size 32 --print-interval 5000 --lr 0.025 --epochs 300 --gpu-id 0 --dropout 0.2 --weight-decay 1e-5
+	$ python3 main.py --train-file data/snli_1.0/train.txt --test-file data/snli_1.0/dev.txt --output-dir output/snli-basic --batch-size 32 --print-interval 5000 --lr 0.025 --epochs 300 --gpu-id 0 --dropout 0.2 --weight-decay 1e-5 --fix-embedding
 
 Test:
 
 .. code-block:: console
 
-	$ python3 main.py --test-file data/snli_1.0/test.txt --model-dir output/snli-basic --gpu-id 0 --mode test --output-dir output/snli-basic/test
+	$ python3 main.py --test-file data/snli_1.0/test.txt --model-dir output/snli-basic --gpu-id 0 --mode test --output-dir output/snli-basic/test 
 
 We achieve 85.0% accuracy on the SNLI test set, comparable to 86.3% reported in the
 original paper. `[Training log] <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/natural_language_inference/decomposable_attention_snli.log>`__
@@ -38,7 +38,7 @@ Train the model with intra-sentence attention:
 
 .. code-block:: console
 
-	$ python3 main.py --train-file data/snli_1.0/train.txt --test-file data/snli_1.0/dev.txt --output-dir output/snli-intra --batch-size 32 --print-interval 5000 --lr 0.025 --epochs 300 --gpu-id 0 --dropout 0.2 --weight-decay 1e-5 --intra-attention
+	$ python3 main.py --train-file data/snli_1.0/train.txt --test-file data/snli_1.0/dev.txt --output-dir output/snli-intra --batch-size 32 --print-interval 5000 --lr 0.025 --epochs 300 --gpu-id 0 --dropout 0.2 --weight-decay 1e-5 --intra-attention --fix-embedding   
 
 Test:
 

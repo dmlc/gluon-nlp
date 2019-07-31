@@ -20,7 +20,7 @@
 # pylint: disable=line-too-long
 """Baidu ernie data, contains XNLI."""
 
-__all__ = ['BaiduErnieXNLI']
+__all__ = ['BaiduErnieXNLI', 'BaiduErnieLCQMC', 'BaiduErnieChnSentiCorp']
 
 import os
 import sys
@@ -52,8 +52,17 @@ class _BaiduErnieDataset(TSVDataset):
 
 @register(segment=['train', 'dev', 'test'])
 class BaiduErnieXNLI(_BaiduErnieDataset):
-    """ The XNLI dataset released from Baidu
+    """ The XNLI dataset redistributed by Baidu
     <https://github.com/PaddlePaddle/LARK/tree/develop/ERNIE>.
+
+    Original from:
+    Conneau, Alexis, et al. "Xnli: Evaluating cross-lingual sentence representations."
+        arXiv preprint arXiv:1809.05053 (2018).
+        https://github.com/facebookresearch/XNLI
+
+    Licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.
+        License details: https://creativecommons.org/licenses/by-nc/4.0/
+
     Parameters
     ----------
     segment : {'train', 'dev', 'test'}, default 'train'
@@ -97,3 +106,110 @@ class BaiduErnieXNLI(_BaiduErnieDataset):
         super(BaiduErnieXNLI, self).__init__(root, 'xnli', segment,
                                              num_discard_samples=num_discard_samples,
                                              field_indices=field_indices)
+
+@register(segment=['train', 'dev', 'test'])
+class BaiduErnieLCQMC(_BaiduErnieDataset):
+    """ The LCQMC dataset redistributed by Baidu
+    <https://github.com/PaddlePaddle/LARK/tree/develop/ERNIE>.
+
+    Original from:
+    Xin Liu, Qingcai Chen, Chong Deng, Huajun Zeng, Jing Chen, Dongfang Li, Buzhou Tang,
+        LCQMC: A Large-scale Chinese Question Matching Corpus,COLING2018.
+    Licensed under a Creative Commons Attribution 4.0 International License. License details:
+        http://creativecommons.org/licenses/by/4.0/
+
+    Parameters
+    ----------
+    segment : {'train', 'dev', 'test'}, default 'train'
+        Dataset segment.
+    root : str, default '$MXNET_HOME/datasets/baidu_ernie_task_data'
+        Path to temp folder for storing data.
+        MXNET_HOME defaults to '~/.mxnet'.
+    return_all_fields : bool, default False
+        Return all fields available in the dataset.
+
+    Examples
+    --------
+    >>> lcqmc_dev = BaiduErnieLCQMC('dev', root='./datasets/baidu_ernie_task_data/')
+    -etc-
+    >>> len(lcqmc_dev)
+    8802
+    >>> len(lcqmc_dev[0])
+    3
+    >>> lcqmc_dev[0]
+    ['开初婚未育证明怎么弄？', '初婚未育情况证明怎么开？', '1']
+    >>> lcqmc_test = BaiduErnieLCQMC('test', root='./datasets/baidu_ernie_task_data/')
+    -etc-
+    >>> len(lcqmc_test)
+    12500
+    >>> len(lcqmc_test[0])
+    2
+    >>> lcqmc_test[0]
+    ['谁有狂三这张高清的', '这张高清图，谁有']
+    """
+    def __init__(self, segment='train',
+                 root=os.path.join(get_home_dir(), 'datasets', 'baidu_ernie_data'),
+                 return_all_fields=False):
+        A_IDX, B_IDX, LABEL_IDX = 0, 1, 2
+        if segment in ['train', 'dev']:
+            field_indices = [A_IDX, B_IDX, LABEL_IDX] if not return_all_fields else None
+            num_discard_samples = 1
+        elif segment == 'test':
+            field_indices = [A_IDX, B_IDX] if not return_all_fields else None
+            num_discard_samples = 1
+
+        super(BaiduErnieLCQMC, self).__init__(root, 'lcqmc', segment,
+                                              num_discard_samples=num_discard_samples,
+                                              field_indices=field_indices)
+
+
+@register(segment=['train', 'dev', 'test'])
+class BaiduErnieChnSentiCorp(_BaiduErnieDataset):
+    """ The ChnSentiCorp dataset redistributed by Baidu
+    <https://github.com/PaddlePaddle/LARK/tree/develop/ERNIE>.
+
+    Original from Tan Songbo (Chinese Academy of Sciences, tansongbo@software.ict.ac.cn).
+
+    Parameters
+    ----------
+    segment : {'train', 'dev', 'test'}, default 'train'
+        Dataset segment.
+    root : str, default '$MXNET_HOME/datasets/baidu_ernie_task_data'
+        Path to temp folder for storing data.
+        MXNET_HOME defaults to '~/.mxnet'.
+    return_all_fields : bool, default False
+        Return all fields available in the dataset.
+
+    Examples
+    --------
+    >>> chnsenticorp_dev = BaiduErnieChnSentiCorp('dev', root='./datasets/baidu_ernie_task_data/')
+    -etc-
+    >>> len(chnsenticorp_dev)
+    1200
+    >>> len(chnsenticorp_dev[0])
+    2
+    >>> chnsenticorp_dev[2]
+    ['商品的不足暂时还没发现，京东的订单处理速度实在.......周二就打包完成，周五才发货...', '0']
+    >>> chnsenticorp_test = BaiduErnieChnSentiCorp('test', root='./datasets/baidu_ernie_task_data/')
+    -etc-
+    >>> len(chnsenticorp_test)
+    1200
+    >>> len(chnsenticorp_test[0])
+    1
+    >>> chnsenticorp_test[0]
+    ['这个宾馆比较陈旧了，特价的房间也很一般。总体来说一般']
+    """
+    def __init__(self, segment='train',
+                 root=os.path.join(get_home_dir(), 'datasets', 'baidu_ernie_data'),
+                 return_all_fields=False):
+        LABEL_IDX, A_IDX = 0, 1
+        if segment in ['train', 'dev']:
+            field_indices = [A_IDX, LABEL_IDX] if not return_all_fields else None
+            num_discard_samples = 1
+        elif segment == 'test':
+            field_indices = [A_IDX] if not return_all_fields else None
+            num_discard_samples = 1
+
+        super(BaiduErnieChnSentiCorp, self).__init__(root, 'chnsenticorp', segment,
+                                                     num_discard_samples=num_discard_samples,
+                                                     field_indices=field_indices)

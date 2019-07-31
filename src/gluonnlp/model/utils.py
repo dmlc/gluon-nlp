@@ -56,26 +56,26 @@ def apply_weight_drop(block, local_param_regex, rate, axes=(),
     >>> gluonnlp.model.apply_weight_drop(net, r'.*h2h_weight', 0.5)
     >>> net.collect_params()
     lstm0_ (
-      Parameter lstm0_l0_i2h_weight (shape=(40, 0), dtype=<class 'numpy.float32'>)
-      WeightDropParameter lstm0_l0_h2h_weight (shape=(40, 10), dtype=<class 'numpy.float32'>, \
+      Parameter lstm0_l0_i2h_weight (shape=(40, 0), dtype=float32)
+      WeightDropParameter lstm0_l0_h2h_weight (shape=(40, 10), dtype=float32, \
 rate=0.5, mode=training)
-      Parameter lstm0_l0_i2h_bias (shape=(40,), dtype=<class 'numpy.float32'>)
-      Parameter lstm0_l0_h2h_bias (shape=(40,), dtype=<class 'numpy.float32'>)
-      Parameter lstm0_r0_i2h_weight (shape=(40, 0), dtype=<class 'numpy.float32'>)
-      WeightDropParameter lstm0_r0_h2h_weight (shape=(40, 10), dtype=<class 'numpy.float32'>, \
+      Parameter lstm0_l0_i2h_bias (shape=(40,), dtype=float32)
+      Parameter lstm0_l0_h2h_bias (shape=(40,), dtype=float32)
+      Parameter lstm0_r0_i2h_weight (shape=(40, 0), dtype=float32)
+      WeightDropParameter lstm0_r0_h2h_weight (shape=(40, 10), dtype=float32, \
 rate=0.5, mode=training)
-      Parameter lstm0_r0_i2h_bias (shape=(40,), dtype=<class 'numpy.float32'>)
-      Parameter lstm0_r0_h2h_bias (shape=(40,), dtype=<class 'numpy.float32'>)
-      Parameter lstm0_l1_i2h_weight (shape=(40, 20), dtype=<class 'numpy.float32'>)
-      WeightDropParameter lstm0_l1_h2h_weight (shape=(40, 10), dtype=<class 'numpy.float32'>, \
+      Parameter lstm0_r0_i2h_bias (shape=(40,), dtype=float32)
+      Parameter lstm0_r0_h2h_bias (shape=(40,), dtype=float32)
+      Parameter lstm0_l1_i2h_weight (shape=(40, 20), dtype=float32)
+      WeightDropParameter lstm0_l1_h2h_weight (shape=(40, 10), dtype=float32, \
 rate=0.5, mode=training)
-      Parameter lstm0_l1_i2h_bias (shape=(40,), dtype=<class 'numpy.float32'>)
-      Parameter lstm0_l1_h2h_bias (shape=(40,), dtype=<class 'numpy.float32'>)
-      Parameter lstm0_r1_i2h_weight (shape=(40, 20), dtype=<class 'numpy.float32'>)
-      WeightDropParameter lstm0_r1_h2h_weight (shape=(40, 10), dtype=<class 'numpy.float32'>, \
+      Parameter lstm0_l1_i2h_bias (shape=(40,), dtype=float32)
+      Parameter lstm0_l1_h2h_bias (shape=(40,), dtype=float32)
+      Parameter lstm0_r1_i2h_weight (shape=(40, 20), dtype=float32)
+      WeightDropParameter lstm0_r1_h2h_weight (shape=(40, 10), dtype=float32, \
 rate=0.5, mode=training)
-      Parameter lstm0_r1_i2h_bias (shape=(40,), dtype=<class 'numpy.float32'>)
-      Parameter lstm0_r1_h2h_bias (shape=(40,), dtype=<class 'numpy.float32'>)
+      Parameter lstm0_r1_i2h_bias (shape=(40,), dtype=float32)
+      Parameter lstm0_r1_h2h_bias (shape=(40,), dtype=float32)
     )
     >>> ones = mx.nd.ones((3, 4, 5))
     >>> net.initialize()
@@ -274,7 +274,8 @@ def _load_vocab(dataset_name, vocab, root, cls=None):
     return vocab
 
 
-def _load_pretrained_params(net, model_name, dataset_name, root, ctx, ignore_extra=False):
+def _load_pretrained_params(net, model_name, dataset_name, root, ctx, ignore_extra=False,
+                            allow_missing=False):
     path = '_'.join([model_name, dataset_name])
     model_file = model_store.get_model_file(path, root=root)
-    net.load_parameters(model_file, ctx=ctx, ignore_extra=ignore_extra)
+    net.load_parameters(model_file, ctx=ctx, ignore_extra=ignore_extra, allow_missing=allow_missing)

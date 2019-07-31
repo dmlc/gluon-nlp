@@ -25,7 +25,7 @@ import os
 __all__ = ['_str_types', 'numba_njit', 'numba_prange', 'numba_jitclass', 'numba_types',
            'get_home_dir']
 
-try:
+try:  # Python 2 compat
     _str_types = (str, unicode)
 except NameError:  # Python 3
     _str_types = (str, )
@@ -45,9 +45,9 @@ except ImportError:
         # pylint: disable=unused-argument
         return identity
 
-    class NumbaTypes(object):
+    class NumbaTypes:
         """Shim for numba.types"""
-        class NumbaType(object):
+        class NumbaType:
             """Shim for numba.types.type"""
             def __getitem__(self, x):
                 # pylint: disable=unused-argument

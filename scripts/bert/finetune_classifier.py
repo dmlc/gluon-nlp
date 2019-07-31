@@ -46,12 +46,13 @@ import numpy as np
 import mxnet as mx
 from mxnet import gluon
 import gluonnlp as nlp
-from gluonnlp.model import get_bert_model
+from gluonnlp.model import get_model
 from gluonnlp.data import BERTTokenizer
 
 from model.classification import BERTClassifier, BERTRegression
 from data.classification import MRPCTask, QQPTask, RTETask, STSBTask, SSTTask
 from data.classification import QNLITask, CoLATask, MNLITask, WNLITask, XNLITask
+from data.classification import LCQMCTask, ChnSentiCorpTask
 from data.transform import BERTDatasetTransform
 
 tasks = {
@@ -64,60 +65,63 @@ tasks = {
     'MNLI': MNLITask(),
     'WNLI': WNLITask(),
     'SST': SSTTask(),
-    'XNLI': XNLITask()
+    'XNLI': XNLITask(),
+    'LCQMC': LCQMCTask(),
+    'ChnSentiCorp': ChnSentiCorpTask()
 }
 
 parser = argparse.ArgumentParser(
-    description='BERT fine-tune examples for GLUE tasks.')
+    description='BERT fine-tune examples for classification/regression tasks.',
+    formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument(
-    '--epochs', type=int, default=3, help='number of epochs, default is 3')
+    '--epochs', type=int, default=3, help='number of epochs.')
 parser.add_argument(
     '--batch_size',
     type=int,
     default=32,
-    help='Batch size. Number of examples per gpu in a minibatch, default is 32')
+    help='Batch size. Number of examples per gpu in a minibatch.')
 parser.add_argument(
     '--dev_batch_size',
     type=int,
     default=8,
-    help='Batch size for dev set and test set, default is 8')
+    help='Batch size for dev set and test set')
 parser.add_argument(
     '--optimizer',
     type=str,
     default='bertadam',
-    help='Optimization algorithm, default is bertadam')
+    help='Optimization algorithm')
 parser.add_argument(
     '--lr',
     type=float,
     default=5e-5,
-    help='Initial learning rate, default is 5e-5')
+    help='Initial learning rate')
 parser.add_argument(
     '--epsilon',
     type=float,
-    default=1e-06,
-    help='Small value to avoid division by 0, default is 1e-06'
+    default=1e-6,
+    help='Small value to avoid division by 0'
 )
 parser.add_argument(
     '--warmup_ratio',
     type=float,
     default=0.1,
-    help='ratio of warmup steps used in NOAM\'s stepsize schedule, default is 0.1')
+    help='ratio of warmup steps used in NOAM\'s stepsize schedule')
 parser.add_argument(
     '--log_interval',
     type=int,
     default=10,
-    help='report interval, default is 10')
+    help='report interval')
 parser.add_argument(
     '--max_len',
     type=int,
     default=128,
-    help='Maximum length of the sentence pairs, default is 128')
+    help='Maximum length of the sentence pairs')
 parser.add_argument(
     '--pad',
     action='store_true',
     help='Whether to pad to maximum length when preparing data batches. Default is False.')
 parser.add_argument(
-    '--seed', type=int, default=2, help='Random seed, default is 2')
+    '--seed', type=int, default=2, help='Random seed')
 parser.add_argument(
     '--accumulate',
     type=int,
@@ -125,7 +129,7 @@ parser.add_argument(
     help='The number of batches for gradients accumulation to simulate large batch size. '
          'Default is None')
 parser.add_argument(
-    '--gpu', type=int, default=None, help='Which gpu for finetuning. By default cpu is used.')
+    '--gpu', type=int, default=None, help='Which gpu for finetuning.')
 parser.add_argument(
     '--task_name',
     type=str,
@@ -151,28 +155,33 @@ parser.add_argument(
     '--pretrained_bert_parameters',
     type=str,
     default=None,
-    help='Pre-trained bert model parameter file. default is None')
+    help='Pre-trained bert model parameter file.')
 parser.add_argument(
     '--model_parameters',
     type=str,
     default=None,
     help='A parameter file for the model that is loaded into the model'
     ' before training/inference. It is different from the parameter'
-    ' file written after the model is trained. default is None')
+    ' file written after the model is trained.')
 parser.add_argument(
     '--output_dir',
     type=str,
     default='./output_dir',
-    help='The output directory where the model params will be written.'
-    ' default is ./output_dir')
+    help='The output directory where the model params will be written.')
 parser.add_argument(
     '--only_inference',
     action='store_true',
     help='If set, we skip training and only perform inference on dev and test data.')
+parser.add_argument(
+    '--dtype',
+    type=str,
+    default='float32',
+    choices=['float32', 'float16'],
+    help='The data type for training.')
 
 args = parser.parse_args()
 
-logging.getLogger().setLevel(logging.DEBUG)
+logging.getLogger().setLevel(logging.INFO)
 logging.captureWarnings(True)
 logging.info(args)
 
@@ -196,6 +205,17 @@ ctx = mx.cpu() if args.gpu is None else mx.gpu(args.gpu)
 
 task = tasks[task_name]
 
+# data type with mixed precision training
+if args.dtype == 'float16':
+    try:
+        from mxnet.contrib import amp # pylint: disable=ungrouped-imports
+        amp.init()
+    except ImportError:
+        # amp is not available
+        logging.info('Mixed precision training with float16 requires MXNet >= '
+                     '1.5.0b20190627. Please consider upgrading your MXNet version.')
+        exit()
+
 # model and loss
 only_inference = args.only_inference
 model_name = args.bert_model
@@ -208,8 +228,8 @@ if only_inference and not model_parameters:
 
 get_pretrained = not (pretrained_bert_parameters is not None
                       or model_parameters is not None)
-bert, vocabulary = get_bert_model(
-    model_name=model_name,
+bert, vocabulary = get_model(
+    name=model_name,
     dataset_name=dataset,
     pretrained=get_pretrained,
     ctx=ctx,
@@ -235,14 +255,14 @@ else:
 output_dir = args.output_dir
 if pretrained_bert_parameters:
     logging.info('loading bert params from %s', pretrained_bert_parameters)
-    model.bert.load_parameters(pretrained_bert_parameters, ctx=ctx,
-                               ignore_extra=True)
+    nlp.utils.load_parameters(model.bert, pretrained_bert_parameters, ctx=ctx,
+                              ignore_extra=True, cast_dtype=True)
 if model_parameters:
     logging.info('loading model params from %s', model_parameters)
-    model.load_parameters(model_parameters, ctx=ctx)
+    nlp.utils.load_parameters(model, model_parameters, ctx=ctx, cast_dtype=True)
 nlp.utils.mkdir(output_dir)
 
-logging.info(model)
+logging.debug(model)
 model.hybridize(static_alloc=True)
 loss_function.hybridize(static_alloc=True)
 
@@ -281,7 +301,7 @@ def preprocess_data(tokenizer, task, batch_size, dev_batch_size, max_len, pad=Fa
     # data loader for training
     loader_train = gluon.data.DataLoader(
         dataset=data_train,
-        num_workers=1,
+        num_workers=4,
         batch_sampler=batch_sampler,
         batchify_fn=batchify_fn)
 
@@ -294,7 +314,7 @@ def preprocess_data(tokenizer, task, batch_size, dev_batch_size, max_len, pad=Fa
         loader_dev = mx.gluon.data.DataLoader(
             data_dev,
             batch_size=dev_batch_size,
-            num_workers=1,
+            num_workers=4,
             shuffle=False,
             batchify_fn=batchify_fn)
         loader_dev_list.append((segment, loader_dev))
@@ -318,7 +338,7 @@ def preprocess_data(tokenizer, task, batch_size, dev_batch_size, max_len, pad=Fa
         loader_test = mx.gluon.data.DataLoader(
             data_test,
             batch_size=dev_batch_size,
-            num_workers=1,
+            num_workers=4,
             shuffle=False,
             batchify_fn=test_batchify_fn)
         loader_test_list.append((segment, loader_test))
@@ -336,26 +356,36 @@ def test(loader_test, segment):
     logging.info('Now we are doing testing on %s with %s.', segment, ctx)
 
     tic = time.time()
-    value_list = []
-    index_list = []
+    results = []
     for _, seqs in enumerate(loader_test):
         input_ids, valid_length, type_ids = seqs
         out = model(input_ids.as_in_context(ctx),
                     type_ids.as_in_context(ctx),
                     valid_length.astype('float32').as_in_context(ctx))
-        values, indices = mx.nd.topk(out, k=1, ret_typ='both')
-        value_list.extend(values.asnumpy().reshape(-1).tolist())
-        index_list.extend(indices.asnumpy().reshape(-1).tolist())
+        if not task.class_labels:
+            # regression task
+            for result in out.asnumpy().reshape(-1).tolist():
+                results.append('{:.3f}'.format(result))
+        else:
+            # classification task
+            indices = mx.nd.topk(out, k=1, ret_typ='indices', dtype='int32').asnumpy()
+            for index in indices:
+                results.append(task.class_labels[int(index)])
 
     mx.nd.waitall()
     toc = time.time()
     logging.info('Time cost=%.2fs, throughput=%.2f samples/s', toc - tic,
                  dev_batch_size * len(loader_test) / (toc - tic))
     # write result to a file.
-    test_path = os.path.join(args.output_dir, 'result.csv')
+    segment = segment.replace('_mismatched', '-mm')
+    segment = segment.replace('_matched', '-m')
+    segment = segment.replace('SST', 'SST-2')
+    filename = args.task_name + segment.replace('test', '') + '.tsv'
+    test_path = os.path.join(args.output_dir, filename)
     with io.open(test_path, 'w', encoding='utf-8') as f:
-        for v, i in zip(value_list, index_list):
-            f.write(u'%.5f\t%d\n'%(v, i))
+        f.write(u'index\tprediction\n')
+        for i, pred in enumerate(results):
+            f.write(u'%d\t%s\n'%(i, str(pred)))
 
 
 def log_train(batch_id, batch_num, metric, step_loss, log_interval, epoch_id, learning_rate):
@@ -399,6 +429,8 @@ def train(metric):
             'mxnet>=1.5.0. Now the original Adam optimizer is used instead.')
         trainer = gluon.Trainer(all_model_params, 'adam',
                                 optimizer_params, update_on_kvstore=False)
+    if args.dtype == 'float16':
+        amp.init_trainer(trainer)
 
     step_size = batch_size * accumulate if accumulate else batch_size
     num_train_steps = int(num_train_examples / step_size * args.epochs)
@@ -413,7 +445,7 @@ def train(metric):
     params = [p for p in all_model_params.values() if p.grad_req != 'null']
 
     # Set grad_req if gradient accumulation is required
-    if accumulate:
+    if accumulate and accumulate > 1:
         for p in params:
             p.grad_req = 'add'
     # track best eval score
@@ -444,16 +476,21 @@ def train(metric):
                         input_ids.as_in_context(ctx), type_ids.as_in_context(ctx),
                         valid_length.astype('float32').as_in_context(ctx))
                     ls = loss_function(out, label.as_in_context(ctx)).mean()
-                ls.backward()
+                    if args.dtype == 'float16':
+                        with amp.scale_loss(ls, trainer) as scaled_loss:
+                            mx.autograd.backward(scaled_loss)
+                    else:
+                        ls.backward()
 
                 # update
                 if not accumulate or (batch_id + 1) % accumulate == 0:
                     trainer.allreduce_grads()
                     nlp.utils.clip_grad_global_norm(params, 1)
                     trainer.update(accumulate if accumulate else 1)
-                    # set grad to zero for gradient accumulation
-                    all_model_params.zero_grad()
                     step_num += 1
+                    if accumulate and accumulate > 1:
+                        # set grad to zero for gradient accumulation
+                        all_model_params.zero_grad()
 
                 step_loss += ls.asscalar()
                 metric.update([label], [out])

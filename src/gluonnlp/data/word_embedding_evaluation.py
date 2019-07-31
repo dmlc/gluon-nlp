@@ -456,11 +456,11 @@ class SimVerb3500(WordSimilarityEvaluationDataset):
 
     Examples
     --------
-    >>> simverb3500 = gluonnlp.data.SimVerb3500(root='./datasets/simverb3500')
+    >>> simverb3500 = gluonnlp.data.SimVerb3500(root='./datasets/simverb3500') #doctest:+SKIP
     -etc-
-    >>> len(simverb3500)
+    >>> len(simverb3500) #doctest:+SKIP
     3500
-    >>> simverb3500[0]
+    >>> simverb3500[0] #doctest:+SKIP
     ['take', 'remove', 6.81]
     """
     _url = 'http://people.ds.cam.ac.uk/dsg40/paper/simverb/simverb-3500-data.zip'
@@ -612,11 +612,11 @@ class BakerVerb143(WordSimilarityEvaluationDataset):
 
     Examples
     --------
-    >>> bakerverb143 = gluonnlp.data.BakerVerb143(root='./datasets/bakerverb143')
+    >>> bakerverb143 = gluonnlp.data.BakerVerb143(root='./datasets/bakerverb143') #doctest:+SKIP
     -etc-
-    >>> len(bakerverb143)
+    >>> len(bakerverb143) #doctest:+SKIP
     144
-    >>> bakerverb143[0]
+    >>> bakerverb143[0] #doctest:+SKIP
     ['happen', 'say', 0.19]
     """
     _url = 'https://ie.technion.ac.il/~roiri/papers/EMNLP14.zip'

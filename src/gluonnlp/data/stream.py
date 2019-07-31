@@ -47,7 +47,7 @@ __all__ = [
     'DataStream', 'SimpleDataStream', 'DatasetStream', 'SimpleDatasetStream',
     'PrefetchingStream']
 
-class DataStream(object):
+class DataStream:
     """Abstract Data Stream Interface.
 
     DataStreams are useful to avoid loading big datasets to memory. A
@@ -155,6 +155,26 @@ class DatasetStream(DataStream):
         raise NotImplementedError
 
 
+class _PathDataset(mx.gluon.data.SimpleDataset):
+    """A simple Datasets containing a list of paths given the file_pattern.
+
+    Parameters
+    ----------
+    file_pattern: str
+        Path to the input text files.
+    """
+    def __init__(self, file_pattern):
+        if not isinstance(file_pattern, str):
+            raise TypeError('file_pattern must be str, but got %s'%type(file_pattern))
+        files = []
+        for pattern in file_pattern.split(','):
+            files.extend(glob.glob(os.path.expanduser(pattern.strip())))
+        files = sorted(files)
+        if len(files) == 0:
+            raise ValueError('Cannot find any file with path "%s"'%file_pattern)
+        super(_PathDataset, self).__init__(files)
+
+
 class SimpleDatasetStream(DatasetStream):
     """A simple stream of Datasets.
 
@@ -179,6 +199,7 @@ class SimpleDatasetStream(DatasetStream):
         All other keyword arguments are passed to the dataset constructor.
     """
     def __init__(self, dataset, file_pattern, file_sampler='random', **kwargs):
+        # TODO(haibin) reuse _SimpleDatasetPathStream here
         if not isinstance(file_pattern, str):
             raise TypeError('file_pattern must be str, but got %s'%type(file_pattern))
         self._dataset = dataset
@@ -211,7 +232,7 @@ class SimpleDatasetStream(DatasetStream):
             yield self._dataset(filename, **self._kwargs)
 
 
-class _Prefetcher(object):
+class _Prefetcher:
     """Internal shared prefetcher logic."""
     _dataq = None  # Data queue transmits prefetched elements
     _controlq = None  # Control queue to instruct thread / process shutdown
@@ -282,8 +303,7 @@ class _Prefetcher(object):
             self._controlq.put(None)
             if isinstance(next_error[0], StopIteration):
                 raise StopIteration
-            else:
-                return self._reraise(*next_error)
+            return self._reraise(*next_error)
 
     def _reraise(self, e, tb):
         print('Reraising exception from Prefetcher', file=sys.stderr)

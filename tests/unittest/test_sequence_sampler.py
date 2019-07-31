@@ -29,21 +29,29 @@ def test_beam_search_score(length, alpha, K):
 
 @pytest.mark.skip_master
 @pytest.mark.serial
-def test_sequence_sampler():
+@pytest.mark.parametrize('top_k', [None, 5])
+def test_sequence_sampler(top_k):
     vocab_size = np.random.randint(5, 20)
     batch_size = 1000
     dist = mx.random.uniform(shape=(vocab_size,))
     def context_free_distribution(step_input, states):
         batch_size = step_input.shape[0]
         return dist.expand_dims(0).broadcast_to(shape=(batch_size, vocab_size)), states
-    sampler = model.SequenceSampler(2, context_free_distribution, vocab_size+1, max_length=500)
+    sampler = model.SequenceSampler(2, context_free_distribution, vocab_size+1, max_length=500,
+                                    top_k=top_k)
     samples, _, _ = sampler(mx.nd.ones((batch_size,)), mx.nd.ones((batch_size,)))
     freq = collections.Counter(samples.asnumpy().flatten().tolist())
     emp_dist = [0] * vocab_size
     N = float(len(list(freq.elements())))
     for i in range(vocab_size):
         emp_dist[i] = freq[i] / N
-    assert_allclose(dist.softmax().asnumpy(), np.array(emp_dist), atol=0.01, rtol=0.1)
+    if top_k is None:
+        true_dist = dist.softmax().asnumpy()
+    else:
+        ranks = dist.argsort(is_ascend=False, dtype='int32')
+        dist = mx.nd.where(ranks < top_k, dist, mx.nd.ones_like(dist)*-99999)
+        true_dist = dist.softmax().asnumpy()
+    assert_allclose(true_dist, np.array(emp_dist), atol=0.01, rtol=0.1)
 
 # temporarily disabled model.HybridBeamSearchSampler test
 # due to https://github.com/dmlc/gluon-nlp/issues/706

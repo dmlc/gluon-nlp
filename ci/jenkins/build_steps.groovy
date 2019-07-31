@@ -26,13 +26,15 @@ def sanity_lint(workspace_name, conda_env_name, path) {
   return ['Lint': {
     node {
       ws(workspace_name) {
-        utils.init_git()
-        sh """
-        set -ex
-        source ci/prepare_clean_env.sh ${conda_env_name}
-        make lintdir=${path} lint
-        set +ex
-        """
+        timeout(time: max_time, unit: 'MINUTES') {
+          utils.init_git()
+          sh """
+          set -ex
+          source ci/prepare_clean_env.sh ${conda_env_name}
+          make lintdir=${path} lint
+          set +ex
+          """
+        }
       }
     }
   }]
@@ -47,14 +49,16 @@ def test_unittest(workspace_name, conda_env_name,
   return ["${conda_env_name}: ${test_path} -m '${mark}'": {
     node(node_type) {
       ws(workspace_name) {
-        utils.init_git()
-        sh """
-        set -ex
-        source ci/prepare_clean_env.sh ${conda_env_name}
-        pytest -v ${capture_flag} -n ${threads} -m '${mark}' --durations=30 --cov ${cov_path} --cov-report=term --cov-report xml ${test_path}
-        set +ex
-        """
-        if (!skip_report) utils.publish_test_coverage('GluonNLPCodeCov')
+        timeout(time: max_time, unit: 'MINUTES') {
+          utils.init_git()
+          sh """
+          set -ex
+          source ci/prepare_clean_env.sh ${conda_env_name}
+          pytest -v ${capture_flag} -n ${threads} -m '${mark}' --durations=30 --cov ${cov_path} --cov-report=term --cov-report xml ${test_path}
+          set +ex
+          """
+          if (!skip_report) utils.publish_test_coverage('GluonNLPCodeCov')
+        }
       }
     }
   }]
@@ -63,65 +67,45 @@ def test_unittest(workspace_name, conda_env_name,
 def test_doctest(workspace_name, conda_env_name,
                  test_path, cov_path, threads) {
   capture_flag = env.BRANCH_NAME.startsWith('PR-')?'':'--capture=no'
-  return ["${conda_env_name}: doctest ${test_path}'": {
+  return ["${conda_env_name}: doctest ${test_path}": {
     node(NODE_LINUX_CPU) {
       ws(workspace_name) {
-        utils.init_git()
-        sh """
-        set -ex
-        source ci/prepare_clean_env.sh ${conda_env_name}
-        pytest -v ${capture_flag} -n ${threads} --durations=30 --cov ${cov_path} --cov-report=term --cov-report xml --doctest-modules ${test_path}
-        set +ex
-        """
-        utils.publish_test_coverage('GluonNLPCodeCov')
-      }
-    }
-  }]
-}
-
-def create_website(workspace_name, conda_env_name) {
-  if (env.BRANCH_NAME.startsWith('PR-')){
-    bucket = 'gluon-nlp-staging'
-    path = env.BRANCH_NAME+'/'+env.BUILD_NUMBER
-  } else {
-    bucket = 'gluon-nlp'
-    path = env.BRANCH_NAME
-  }
-  return ["${conda_env_name}: website'": {
-    node(NODE_LINUX_GPU) {
-      ws(workspace_name) {
-        utils.init_git()
-        sh """
-        set -ex
-        source ci/prepare_clean_env.sh ${conda_env_name}
-        make docs
-
-        ci/upload_doc.sh ${bucket} ${path}
-        set +ex
-        """
+        timeout(time: max_time, unit: 'MINUTES') {
+          utils.init_git()
+          sh """
+          set -ex
+          source ci/prepare_clean_env.sh ${conda_env_name}
+          pytest -v ${capture_flag} -n ${threads} --durations=30 --cov ${cov_path} --cov-report=term --cov-report xml --doctest-modules ${test_path}
+          set +ex
+          """
+          utils.publish_test_coverage('GluonNLPCodeCov')
+        }
       }
     }
   }]
 }
 
 def website_linkcheck(workspace_name, conda_env_name) {
-  enforce_linkcheck = env.BRANCH_NAME.startsWith('PR-')?'false':'true'
-  return ["${conda_env_name}: website link check'": {
+  return ["${conda_env_name}: website link check": {
     node(NODE_LINUX_CPU) {
       ws(workspace_name) {
-        utils.init_git()
-        sh """
-        set -ex
-        source ci/prepare_clean_env.sh ${conda_env_name}
-        make distribute
-        if [[ ${enforce_linkcheck} == true ]]; then
-            make -C docs linkcheck SPHINXOPTS=-W
-        else
-            set +e
-            make -C docs linkcheck
-        fi;
-        set +ex
-        """
+        timeout(time: max_time, unit: 'MINUTES') {
+          utils.init_git()
+          sh """
+          set -ex
+          source ci/prepare_clean_env.sh ${conda_env_name}
+          make distribute
+          set +ex
+          """
+          linkcheck_errors = sh returnStdout: true, script: """
+          conda activate ./conda/${conda_env_name}
+          make -C docs linkcheck 2>&1 | grep '^(line *[0-9]*) broken'
+          """
+          linkcheck_errors = linkcheck_errors.trim()
+          if (linkcheck_errors && env.BRANCH_NAME.startsWith("PR-")) {
+            pullRequest.comment("Found link check problems in job ${env.BRANCH_NAME}/${env.BUILD_NUMBER}:\n"+linkcheck_errors)
+          }
+        }
       }
     }
   }]
@@ -130,8 +114,10 @@ def website_linkcheck(workspace_name, conda_env_name) {
 def post_website_link() {
   return ["Deploy: ": {
     node {
-      if (env.BRANCH_NAME.startsWith("PR-")) {
-          pullRequest.comment("Job ${env.BRANCH_NAME}/${env.BUILD_NUMBER} is complete. \nDocs are uploaded to http://gluon-nlp-staging.s3-accelerate.dualstack.amazonaws.com/${env.BRANCH_NAME}/${env.BUILD_NUMBER}/index.html")
+      timeout(time: max_time, unit: 'MINUTES') {
+        if (env.BRANCH_NAME.startsWith("PR-")) {
+            pullRequest.comment("Job ${env.BRANCH_NAME}/${env.BUILD_NUMBER} is complete. \nDocs are uploaded to http://gluon-nlp-staging.s3-accelerate.dualstack.amazonaws.com/${env.BRANCH_NAME}/${env.BUILD_NUMBER}/index.html")
+        }
       }
     }
   }]
