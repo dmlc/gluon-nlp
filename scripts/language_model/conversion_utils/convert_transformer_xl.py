@@ -52,16 +52,18 @@ def to_gluon_vocab(corpus):
     elif '<S>' in sym2idx:
         # Special case for model trained on Google 1 Billion Word LM dataset
         special_tokens['eos_token'] = '<S>'
-    elif len(corpus.vocab.special):
+    elif corpus.vocab.special:
         raise NotImplementedError('Provided TransformerXL cache.pkl uses an unknown special token. '
                                   'You must extend the `to_gluon_vocab` method to support it.')
+    else:
+        special_tokens['eos_token'] = None
 
     counter = nlp.data.count_tokens(sym2idx.keys())
     vocab = nlp.vocab.Vocab(counter, token_to_idx=sym2idx, **special_tokens)
     return vocab
 
 
-def set_params(model, tf_tensors, kwargs):
+def set_params(model, tf_tensors, kwargs, tie_r):
     # Drop optimizer params
     _, tf_tensors = _split_dict(lambda k, v: k.endswith('Adam'), tf_tensors)
     _, tf_tensors = _split_dict(lambda k, v: k.endswith('Adam_1'), tf_tensors)
@@ -71,58 +73,100 @@ def set_params(model, tf_tensors, kwargs):
 
     loaded = set()  # Cache of processed parameters
 
-    # Adaptive Embedding
-    for name, param in model._net.embedding._collect_params_with_prefix().items():
-        purpose, i, postfix = re.match(r'([a-zA-Z]*)(\d*)(.*)', name).groups()
-        if purpose == 'embedding':
-            assert postfix == '_weight'
-            tf_param = tf_tensors.pop('transformer/adaptive_embed/cutoff_{}/lookup_table'.format(i))
-        elif purpose == 'projection':
-            assert postfix == '_weight'
-            tf_param = tf_tensors.pop('transformer/adaptive_embed/cutoff_{}/proj_W'.format(i)).T
-        else:
-            raise RuntimeError('Embedding had unexpected parameter: {}'.format(name))
-
-        param.set_data(mx.nd.array(tf_param))
-        loaded.add(param)
-
-    # Adaptive Softmax
-    for name, param in model._net.crit._collect_params_with_prefix().items():
-        if param in loaded:
-            continue  # Some parameters are shared between Embedding and Softmax
-
-        purpose, i, postfix = re.match(r'([a-zA-Z]*)(\d*)(.*)', name).groups()
-        if purpose == 'outembedding':
-            if postfix == '_weight':
+    if 'embed_cutoffs' in kwargs:  # Adaptive Embedding and Softmax
+        # Embedding
+        for name, param in model._net.embedding._collect_params_with_prefix().items():
+            purpose, i, postfix = re.match(r'([a-zA-Z]*)(\d*)(.*)', name).groups()
+            if purpose == 'embedding':
+                assert postfix == '_weight'
                 tf_param = tf_tensors.pop(
-                    'transformer/adaptive_softmax/cutoff_{}/lookup_table'.format(i))
-            elif postfix == '_bias':
-                tf_param = tf_tensors.pop('transformer/adaptive_softmax/cutoff_{}/b'.format(i))
+                    'transformer/adaptive_embed/cutoff_{}/lookup_table'.format(i))
+            elif purpose == 'projection':
+                assert postfix == '_weight'
+                tf_param = tf_tensors.pop('transformer/adaptive_embed/cutoff_{}/proj_W'.format(i)).T
             else:
-                raise RuntimeError('Softmax had unexpected parameter: {}'.format(name))
-        elif purpose == 'outprojection':
-            assert postfix == '_weight'
-            tf_param = tf_tensors.pop('transformer/adaptive_softmax/cutoff_{}/proj'.format(i)).T
-        elif purpose == 'cluster':
-            if postfix == '.weight':
-                tf_param = tf_tensors.pop('transformer/adaptive_softmax/cutoff_0/cluster_W')
-            elif postfix == '.bias':
-                tf_param = tf_tensors.pop('transformer/adaptive_softmax/cutoff_0/cluster_b')
-            else:
-                raise RuntimeError('Softmax had unexpected parameter: {}'.format(name))
-        else:
-            raise RuntimeError('Softmax had unexpected parameter: {}'.format(name))
+                raise RuntimeError('Embedding had unexpected parameter: {}'.format(name))
 
-        param.set_data(mx.nd.array(tf_param))
-        loaded.add(param)
+            param.set_data(mx.nd.array(tf_param))
+            loaded.add(param)
+
+        # Softmax
+        for name, param in model._net.crit._collect_params_with_prefix().items():
+            if param in loaded:
+                continue  # Some parameters are shared between Embedding and Softmax
+
+            purpose, i, postfix = re.match(r'([a-zA-Z]*)(\d*)(.*)', name).groups()
+            if purpose == 'outembedding':
+                if postfix == '_weight':
+                    tf_param = tf_tensors.pop(
+                        'transformer/adaptive_softmax/cutoff_{}/lookup_table'.format(i))
+                elif postfix == '_bias':
+                    tf_param = tf_tensors.pop('transformer/adaptive_softmax/cutoff_{}/b'.format(i))
+                else:
+                    raise RuntimeError('Softmax had unexpected parameter: {}'.format(name))
+            elif purpose == 'outprojection':
+                assert postfix == '_weight'
+                tf_param = tf_tensors.pop('transformer/adaptive_softmax/cutoff_{}/proj'.format(i)).T
+            elif purpose == 'cluster':
+                if postfix == '.weight':
+                    tf_param = tf_tensors.pop('transformer/adaptive_softmax/cutoff_0/cluster_W')
+                elif postfix == '.bias':
+                    tf_param = tf_tensors.pop('transformer/adaptive_softmax/cutoff_0/cluster_b')
+                else:
+                    raise RuntimeError('Softmax had unexpected parameter: {}'.format(name))
+            else:
+                raise RuntimeError('Softmax had unexpected parameter: {}'.format(name))
+
+            param.set_data(mx.nd.array(tf_param))
+            loaded.add(param)
+    else:  # Non-adaptive, (possibly) projected embedding and softmax
+        # Embedding
+        tf_param = tf_tensors.pop('transformer/adaptive_embed/lookup_table')
+        model._net.embedding.embedding_weight.set_data(mx.nd.array(tf_param))
+        loaded.add(model._net.embedding.embedding_weight)
+        if kwargs['embed_size'] != kwargs['units']:
+            tf_param = tf_tensors.pop('transformer/adaptive_embed/proj_W')
+            model._net.embedding.projection_weight.set_data(mx.nd.array(tf_param))
+            loaded.add(model._net.embedding.projection_weight)
+            assert len(model._net.embedding.collect_params().keys()) == 2
+        else:
+            assert len(model._net.embedding.collect_params().keys()) == 1
+
+        # Softmax
+        for name, param in model._net.crit._collect_params_with_prefix().items():
+            if param in loaded:
+                continue  # Some parameters are shared between Embedding and Softmax
+
+            purpose, i, postfix = re.match(r'([a-zA-Z]*)(\d*)(.*)', name).groups()
+            if purpose == 'outembedding':
+                if postfix == '_weight':
+                    tf_param = tf_tensors.pop('transformer/adaptive_softmax/lookup_table')
+                elif postfix == '_bias':
+                    tf_param = tf_tensors.pop('transformer/adaptive_softmax/bias')
+                else:
+                    raise RuntimeError('Softmax had unexpected parameter: {}'.format(name))
+            elif purpose == 'outprojection':
+                assert postfix == '_weight'
+                tf_param = tf_tensors.pop('transformer/adaptive_softmax/proj').T
+            else:
+                raise RuntimeError('Softmax had unexpected parameter: {}'.format(name))
+
+            param.set_data(mx.nd.array(tf_param))
+            loaded.add(param)
 
     tf_r_r_bias = tf_tensors.pop('transformer/r_r_bias')
     tf_r_w_bias = tf_tensors.pop('transformer/r_w_bias')
     for layer_i in range(kwargs['num_layers']):
         # Attention Cell
         attention_cell = model._net.transformer_cells[layer_i].attention_cell
-        attention_cell.query_key_bias.set_data(mx.nd.array(tf_r_w_bias[layer_i]))
-        attention_cell.query_emb_bias.set_data(mx.nd.array(tf_r_r_bias[layer_i]))
+        # TODO(leezu): Duplicate tied parameters until parameter sharing
+        # support is improved in Gluon 2. (It is currently impossible to share
+        # only subsets of parameters between Blocks due to name clashes between
+        # the non-shared parameters (due to same prefix))
+        attention_cell.query_key_bias.set_data(
+            mx.nd.array(tf_r_w_bias if tie_r else tf_r_w_bias[layer_i]))
+        attention_cell.query_emb_bias.set_data(
+            mx.nd.array(tf_r_r_bias if tie_r else tf_r_r_bias[layer_i]))
         tf_param = np.split(
             tf_tensors.pop('transformer/layer_{}/rel_attn/qkv/kernel'.format(layer_i)).T, 3, axis=0)
         attention_cell.proj_query.weight.set_data(mx.nd.array(tf_param[0]))
@@ -167,7 +211,7 @@ def convert_transformerxl(args):
     tf_tensors = read_tf_checkpoint(tf_checkpoint_file)
 
     # Initialize Gluon model
-    kwargs = to_gluon_kwargs(tf_tensors)
+    kwargs, tie_r = to_gluon_kwargs(tf_tensors)
     model = TransformerXL(vocab_size=len(vocab), **kwargs)
     model.initialize(init=mx.init.Normal(0.02))
 
@@ -179,7 +223,7 @@ def convert_transformerxl(args):
     model(x, x, mems)
 
     # Convert parameters
-    set_params(model, tf_tensors, kwargs)
+    set_params(model, tf_tensors, kwargs, tie_r)
 
     # Serialization
     tmp_file_path = os.path.expanduser(os.path.join(args.out_dir, 'tmp'))

@@ -58,35 +58,42 @@ def read_tf_checkpoint(path):
 def to_gluon_kwargs(tf_tensors):
     kwargs = dict()
 
-    lookup_table_selector = 'transformer/adaptive_embed/cutoff_{i}/lookup_table'
-    kwargs['embed_cutoffs'] = list(
-        itertools.accumulate([
-            tf_tensors[lookup_table_selector.format(i=i)].shape[0]
-            for i in range(len(_filter_dict(lambda k, v: k.endswith('lookup_table'), tf_tensors)))
-        ][:-1]))
-    kwargs['embed_size'] = tf_tensors[lookup_table_selector.format(i=0)].shape[1]
-    if kwargs['embed_cutoffs']:
+    if 'transformer/adaptive_embed/lookup_table' in tf_tensors:
+        # Adaptive embedding is not used
+        kwargs['embed_size'] = tf_tensors['transformer/adaptive_embed/lookup_table'].shape[1]
+        kwargs['tie_input_output_embeddings'] = \
+            'transformer/adaptive_softmax/lookup_table' not in tf_tensors
+        kwargs['tie_input_output_projections'] = \
+            ['transformer/adaptive_softmax/proj' not in tf_tensors]
+    else:
+        # Adaptive embedding is used
+        lookup_table_selector = 'transformer/adaptive_embed/cutoff_{i}/lookup_table'
+        kwargs['embed_cutoffs'] = list(
+            itertools.accumulate([
+                tf_tensors[lookup_table_selector.format(i=i)].shape[0] for i in range(
+                    len(_filter_dict(lambda k, v: k.endswith('lookup_table'), tf_tensors)))
+            ][:-1]))
+        kwargs['embed_size'] = tf_tensors[lookup_table_selector.format(i=0)].shape[1]
         size_of_second = tf_tensors[lookup_table_selector.format(i=1)].shape[1]
         kwargs['embed_div_val'] = kwargs['embed_size'] // size_of_second
         assert kwargs['embed_size'] % size_of_second == 0
-    kwargs['tie_input_output_embeddings'] = not bool(
-        _filter_dict(
-            lambda k, v: k.startswith('transformer/adaptive_softmax/cutoff_') and k.endswith(
-                'lookup_table'), tf_tensors))
-    proj_selector = 'transformer/adaptive_softmax/cutoff_{i}/proj'
-    kwargs['tie_input_output_projections'] = [
-        proj_selector.format(i=i) not in tf_tensors
-        for i in range(len(kwargs['embed_cutoffs']) + 1)
-    ]
+        kwargs['tie_input_output_embeddings'] = not bool(
+            _filter_dict(
+                lambda k, v: k.startswith('transformer/adaptive_softmax/cutoff_') and k.endswith(
+                    'lookup_table'), tf_tensors))
+        proj_selector = 'transformer/adaptive_softmax/cutoff_{i}/proj'
+        kwargs['tie_input_output_projections'] = [
+            proj_selector.format(i=i) not in tf_tensors
+            for i in range(len(kwargs['embed_cutoffs']) + 1)
+        ]
 
     # Main model
     kwargs['num_layers'] = len(
         set(itertools.chain.from_iterable(re.findall(r'layer_\d*', k) for k in tf_tensors)))
     kwargs['hidden_size'] = tf_tensors['transformer/layer_0/ff/layer_2/kernel'].shape[0]
     kwargs['units'] = tf_tensors['transformer/layer_0/ff/layer_2/kernel'].shape[1]
-    untie_r = len(tf_tensors['transformer/r_w_bias'].shape) == 3
-    assert untie_r, 'untie_r not yet implemented'  # untie_r seems unused in the tf version
-    kwargs['num_heads'] = tf_tensors['transformer/r_w_bias'].shape[1]
+    tie_r = len(tf_tensors['transformer/r_w_bias'].shape) != 3
+    kwargs['num_heads'] = tf_tensors['transformer/r_w_bias'].shape[0 if tie_r else 1]
 
     # Dropout
     # All pre-trained TransformerXL models from
@@ -95,4 +102,4 @@ def to_gluon_kwargs(tf_tensors):
     kwargs['attention_dropout'] = 0
 
     print(kwargs)
-    return kwargs
+    return kwargs, tie_r

@@ -18,9 +18,38 @@
 # under the License.
 """Attention cells."""
 
-__all__ = ['AdaptiveEmbedding']
+__all__ = ['AdaptiveEmbedding', 'ProjectedEmbedding']
 
 import mxnet as mx
+
+
+class ProjectedEmbedding(mx.gluon.HybridBlock):
+    """Projected Embedding"""
+
+    def __init__(self, vocab_size, embed_size, units, embedding_initializer=None,
+                 projection_initializer=None, prefix=None, params=None):
+        super().__init__(prefix=prefix, params=params)
+        self._vocab_size = vocab_size
+        self._embed_size = embed_size
+        self._units = units
+        self._emb_scale = units**0.5
+
+        with self.name_scope():
+            self.embedding_weight = self.params.get('embedding_weight',
+                                                    shape=(vocab_size, embed_size),
+                                                    init=embedding_initializer)
+            if units != embed_size:
+                self.projection_weight = self.params.get('projection_weight',
+                                                         shape=(units, embed_size),
+                                                         init=projection_initializer)
+
+    def hybrid_forward(self, F, inp, **params):  # pylint: disable=arguments-differ
+        emb = F.Embedding(data=inp, weight=params['embedding_weight'], input_dim=self._vocab_size,
+                          output_dim=self._embed_size)
+        if self._units != self._embed_size:
+            emb = F.FullyConnected(data=emb, weight=params['projection_weight'], no_bias=True,
+                                   flatten=False, num_hidden=self._units)
+        return emb * self._emb_scale
 
 
 class AdaptiveEmbedding(mx.gluon.HybridBlock):

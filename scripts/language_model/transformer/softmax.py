@@ -18,11 +18,107 @@
 # under the License.
 """Attention cells."""
 
-__all__ = ['AdaptiveLogSoftmaxWithLoss']
+__all__ = ['AdaptiveLogSoftmaxWithLoss', 'ProjectedLogSoftmaxWithLoss']
 
-import typing
+from typing import List, Optional
 
 import mxnet as mx
+
+
+class ProjectedLogSoftmaxWithLoss(mx.gluon.HybridBlock):
+    """ProjectedLogSoftmaxWithLoss"""
+
+    def __init__(self, vocab_size: int, embed_size: int, units: int, use_bias: bool = True,
+                 projection_initializer=None, embedding_initializer=None,
+                 tie_embeddings: bool = False, tie_projections: bool = False,
+                 prefix: Optional[str] = None, params: Optional[mx.gluon.ParameterDict] = None):
+        super().__init__(prefix=prefix, params=params)
+        self._vocab_size = vocab_size
+        self._embed_size = embed_size
+        self._use_bias = use_bias
+        self._units = units
+        self._embedding_initializer = embedding_initializer
+        self._projection_initializer = projection_initializer
+        self._tie_embeddings = tie_embeddings
+        self._tie_projections = tie_projections
+
+        self._projections_name = '{}projection_weight'
+        self._embeddings_name = '{}embedding_weight'
+        with self.name_scope():
+            if units != embed_size:
+                name = self._get_param_name('projection')
+                param = self.params.get(name, shape=(units, embed_size),
+                                        init=self._projection_initializer)
+                setattr(self, name, param)
+
+            name = self._get_param_name('embedding')
+            param = self.params.get(name, shape=(vocab_size, embed_size),
+                                    init=self._embedding_initializer)
+            setattr(self, name, param)
+            if use_bias:
+                name = 'outembedding_bias'
+                param = self.params.get(name, shape=(self._vocab_size, ))
+                setattr(self, name, param)
+
+    def _get_param_name(self, name):
+        if name == 'projection':
+            return self._projections_name.format('' if self._tie_projections else 'out')
+        elif name == 'embedding':
+            return self._embeddings_name.format('' if self._tie_embeddings else 'out')
+        else:
+            raise ValueError('Invalid name')
+
+    def hybrid_forward(self, F, hidden, target, **params):  # pylint: disable=arguments-differ
+        """Compute adaptive softmax.
+
+        Parameters
+        ----------
+        hidden : Symbol or NDArray
+            Inputs of shape [batch_size, sequence_length, units]
+        target : Symbol or NDArray
+            Targets of shape [batch_size, sequence_length]
+
+        Returns
+        -------
+        out : Symbol or NDArray
+            Negative log likelihood of targets with shape [batch_size,
+            sequence_length]
+        """
+        if target is None:  # TODO support None or add separate log_prob method
+            raise NotImplementedError()
+
+        # Work with flat data for simplicity
+        target_flat = target.reshape((-1, ))
+        hidden = F.reshape(hidden, shape=(-1, 0), reverse=True)
+
+        # Helper arrays
+        if F is mx.nd:
+            range_bs_len = mx.nd.arange(target_flat.shape[0], dtype=target_flat.dtype,
+                                        ctx=target_flat.context)
+        else:
+            # Shape inference fails when relying on F.stack(range_bs_len, ...)
+            # below. Thus add zeros of intended shape here to simplify the
+            # shape inference problem.
+            range_bs_len = F.zeros_like(target_flat) + F.arange(start=0, stop=None,
+                                                                infer_range=True)
+
+        if self._units != self._embed_size:
+            name = self._get_param_name('projection')
+            hidden = F.FullyConnected(data=hidden, weight=F.transpose(params[name]), no_bias=True,
+                                      flatten=False, num_hidden=self._embed_size)
+
+        name = self._get_param_name('embedding')
+        logits = F.FullyConnected(data=hidden, weight=params[name],
+                                  bias=params['outembedding_bias'] if self._use_bias else None,
+                                  no_bias=not self._use_bias, flatten=False,
+                                  num_hidden=self._vocab_size)
+        logprob = F.log_softmax(logits)
+        target_ = F.stack(range_bs_len, target_flat)
+        out = F.gather_nd(logprob, indices=target_)
+
+        out = F.reshape_like(out, target)
+
+        return -out
 
 
 class AdaptiveLogSoftmaxWithLoss(mx.gluon.HybridBlock):
@@ -66,12 +162,11 @@ class AdaptiveLogSoftmaxWithLoss(mx.gluon.HybridBlock):
 
     """
 
-    def __init__(self, vocab_size: int, embed_size: int, units: int, cutoffs: typing.List[int],
+    def __init__(self, vocab_size: int, embed_size: int, units: int, cutoffs: List[int],
                  div_val: int = 1, use_bias: bool = True, projection_initializer=None,
                  embedding_initializer=None, tie_embeddings: bool = False,
-                 tie_projections: typing.Optional[typing.List[bool]] = None,
-                 prefix: typing.Optional[str] = None,
-                 params: typing.Optional[mx.gluon.ParameterDict] = None):
+                 tie_projections: Optional[List[bool]] = None, prefix: Optional[str] = None,
+                 params: Optional[mx.gluon.ParameterDict] = None):
         super().__init__(prefix=prefix, params=params)
         self._vocab_size = vocab_size
         self._embed_size = embed_size

@@ -32,19 +32,22 @@ class PositionalEmbeddingMultiHeadAttentionCell(mx.gluon.HybridBlock):
 
     Parameters
     ----------
-    d_head : int
+    d_head
         Number of projected units for respectively query, key, value and
         positional embeddings per attention head.
-    num_heads : int
+    num_heads
         Number of parallel attention heads
+    dropout
+    scaled
     weight_initializer : str or `Initializer` or None, default None
         Initializer of the weights.
     bias_initializer : str or `Initializer`, default 'zeros'
         Initializer of the bias.
     """
 
-    def __init__(self, d_head, num_heads, dropout, scaled, weight_initializer=None,
-                 bias_initializer='zeros', dtype='float32', prefix=None, params=None):
+    def __init__(self, d_head: int, num_heads: int, dropout: float, scaled: bool,
+                 weight_initializer=None, bias_initializer='zeros', dtype='float32', prefix=None,
+                 params=None):
         super().__init__(prefix=prefix, params=params)
         self._d_head = d_head
         self._num_heads = num_heads
