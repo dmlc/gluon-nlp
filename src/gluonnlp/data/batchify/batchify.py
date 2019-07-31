@@ -26,7 +26,7 @@ import numpy as np
 import mxnet as mx
 
 
-def _pad_arrs_to_max_length(arrs, pad_axis, pad_val, use_shared_mem, dtype):
+def _pad_arrs_to_max_length(arrs, pad_axis, pad_val, use_shared_mem, dtype, round_len):
     """Inner Implementation of the Pad batchify
 
     Parameters
@@ -35,6 +35,7 @@ def _pad_arrs_to_max_length(arrs, pad_axis, pad_val, use_shared_mem, dtype):
     pad_axis : int
     pad_val : number
     use_shared_mem : bool, default False
+    round_len : pad to the factor of round_len, e.g., if round_len == 8, we will only pad to 8, 16, 24, 32,...
 
     Returns
     -------
@@ -50,7 +51,10 @@ def _pad_arrs_to_max_length(arrs, pad_axis, pad_val, use_shared_mem, dtype):
         dtype = arrs[0].dtype if dtype is None else dtype
 
     original_length = [ele.shape[pad_axis] for ele in arrs]
-    max_size = max(original_length)
+    if round_len is None:
+        max_size = max(original_length)
+    else:
+        max_size = int(math.ceil(max(original_length) * 1.0 / round_len) * round_len)
 
     ret_shape = list(arrs[0].shape)
     ret_shape[pad_axis] = max_size
@@ -157,7 +161,7 @@ class Stack:
         return _stack_arrs(data, True, self._dtype)
 
 
-class Pad:
+class Pad(object):
     """Return a callable that pads and stacks data.
 
     Parameters
@@ -213,22 +217,23 @@ class Pad:
       [ 1  2 -1 -1]]]
     <NDArray 2x2x4 @cpu_shared(0)>
     """
-    def __init__(self, axis=0, pad_val=None, ret_length=False, dtype=None):
+    def __init__(self, axis=0, pad_val=0, ret_length=False, dtype=None, round_len=None):
         self._axis = axis
         assert isinstance(axis, int), 'axis must be an integer! ' \
                                       'Received axis=%s, type=%s.' % (str(axis),
                                                                       str(type(axis)))
-        self._pad_val = 0 if pad_val is None else pad_val
+        self._pad_val = pad_val
         self._ret_length = ret_length
         self._dtype = dtype
         self._warned = False
 
-        if pad_val is None:
+        if pad_val == 0:
             warnings.warn(
-                'Padding value is not given and will be set automatically to 0 '
-                'in data.batchify.Pad(). '
+                'Padding value 0 is used in data.batchify.Pad(). '
                 'Please check whether this is intended '
                 '(e.g. value of padding index in the vocabulary).')
+        
+        self._round_len = round_len
 
     def __call__(self, data):
         """Batchify the input data.
@@ -266,7 +271,7 @@ class Pad:
         if isinstance(data[0], (mx.nd.NDArray, np.ndarray, list)):
             padded_arr, original_length = _pad_arrs_to_max_length(data, self._axis,
                                                                   self._pad_val, True,
-                                                                  self._dtype)
+                                                                  self._dtype, self._round_len)
             if self._ret_length:
                 return padded_arr, original_length
             else:
