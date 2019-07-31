@@ -19,7 +19,7 @@
 """BERT models."""
 
 __all__ = ['BERTModel', 'BERTEncoder', 'BERTEncoderCell', 'BERTPositionwiseFFN',
-           'BERTLayerNorm', 'bert_12_768_12', 'bert_24_1024_16',
+           'BERTLayerNorm', 'bert_6_768_3', 'bert_6_768_12', 'bert_12_768_12', 'bert_24_1024_16',
            'ernie_12_768_12']
 
 import os
@@ -520,6 +520,38 @@ model_store._model_sha1.update(
         ('f869f3f89e4237a769f1b7edcbdfe8298b480052', 'ernie_12_768_12_baidu_ernie_uncased'),
     ]})
 
+bert_6_768_3_hparams = {
+    'attention_cell': 'multi_head',
+    'num_layers': 6,
+    'units': 768,
+    'hidden_size': 3072,
+    'max_length': 512,
+    'num_heads': 3,
+    'scaled': True,
+    'dropout': 0.1,
+    'use_residual': True,
+    'embed_size': 768,
+    'embed_dropout': 0.1,
+    'token_type_vocab_size': 2,
+    'word_embed': None,
+}
+
+bert_6_768_12_hparams = {
+    'attention_cell': 'multi_head',
+    'num_layers': 6,
+    'units': 768,
+    'hidden_size': 3072,
+    'max_length': 512,
+    'num_heads': 12,
+    'scaled': True,
+    'dropout': 0.1,
+    'use_residual': True,
+    'embed_size': 768,
+    'embed_dropout': 0.1,
+    'token_type_vocab_size': 2,
+    'word_embed': None,
+}
+
 bert_12_768_12_hparams = {
     'attention_cell': 'multi_head',
     'num_layers': 12,
@@ -571,13 +603,14 @@ ernie_12_768_12_hparams = {
 }
 
 bert_hparams = {
+    'bert_6_768_3': bert_12_768_12_hparams,
+    'bert_6_768_12': bert_12_768_12_hparams,
     'bert_12_768_12': bert_12_768_12_hparams,
     'bert_24_1024_16': bert_24_1024_16_hparams,
     'ernie_12_768_12': ernie_12_768_12_hparams
 }
 
-
-def bert_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
+def bert_6_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
                    root=os.path.join(get_home_dir(), 'models'), use_pooler=True, use_decoder=True,
                    use_classifier=True, pretrained_allow_missing=False, **kwargs):
     """Generic BERT BASE model.
@@ -642,7 +675,77 @@ def bert_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
     -------
     BERTModel, gluonnlp.vocab.BERTVocab
     """
-    return get_bert_model(model_name='bert_12_768_12', vocab=vocab, dataset_name=dataset_name,
+    return get_bert_model(model_name='bert_6_768_12', vocab=vocab, dataset_name=dataset_name,
+                          pretrained=pretrained, ctx=ctx, use_pooler=use_pooler,
+                          use_decoder=use_decoder, use_classifier=use_classifier, root=root,
+                          pretrained_allow_missing=pretrained_allow_missing, **kwargs)
+
+def bert_6_768_3(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
+                   root=os.path.join(get_home_dir(), 'models'), use_pooler=True, use_decoder=True,
+                   use_classifier=True, pretrained_allow_missing=False, **kwargs):
+    """Generic BERT BASE model.
+
+    The number of layers (L) is 12, number of units (H) is 768, and the
+    number of self-attention heads (A) is 12.
+
+    Parameters
+    ----------
+    dataset_name : str or None, default None
+        If not None, the dataset name is used to load a vocabulary for the
+        dataset. If the `pretrained` argument is set to True, the dataset name
+        is further used to select the pretrained parameters to load.
+        The supported datasets are 'book_corpus_wiki_en_cased',
+        'book_corpus_wiki_en_uncased', 'wiki_cn_cased',
+        'openwebtext_book_corpus_wiki_en_uncased',
+        'wiki_multilingual_uncased', 'wiki_multilingual_cased',
+        'scibert_scivocab_uncased', 'scibert_scivocab_cased',
+        'scibert_basevocab_uncased','scibert_basevocab_cased',
+        'biobert_v1.0_pmc', 'biobert_v1.0_pubmed', 'biobert_v1.0_pubmed_pmc',
+        'biobert_v1.1_pubmed',
+        'clinicalbert'
+    vocab : gluonnlp.vocab.BERTVocab or None, default None
+        Vocabulary for the dataset. Must be provided if dataset_name is not
+        specified. Ignored if dataset_name is specified.
+    pretrained : bool, default True
+        Whether to load the pretrained weights for model.
+    ctx : Context, default CPU
+        The context in which to load the pretrained weights.
+    root : str, default '$MXNET_HOME/models'
+        Location for keeping the model parameters.
+        MXNET_HOME defaults to '~/.mxnet'.
+    use_pooler : bool, default True
+        Whether to include the pooler which converts the encoded sequence tensor of shape
+        (batch_size, seq_length, units) to a tensor of shape (batch_size, units)
+        for for segment level classification task.
+    use_decoder : bool, default True
+        Whether to include the decoder for masked language model prediction.
+        Note that
+        'biobert_v1.0_pmc', 'biobert_v1.0_pubmed', 'biobert_v1.0_pubmed_pmc',
+        'biobert_v1.1_pubmed',
+        'clinicalbert'
+        do not include these parameters.
+    use_classifier : bool, default True
+        Whether to include the classifier for next sentence classification.
+        Note that
+        'biobert_v1.0_pmc', 'biobert_v1.0_pubmed', 'biobert_v1.0_pubmed_pmc',
+        'biobert_v1.1_pubmed'
+        do not include these parameters.
+    pretrained_allow_missing : bool, default False
+        Whether to ignore if any parameters for the BERTModel are missing in
+        the pretrained weights for model.
+        Some BERTModels for example do not provide decoder or classifier
+        weights. In that case it is still possible to construct a BERTModel
+        with use_decoder=True and/or use_classifier=True, but the respective
+        parameters will be missing from the pretrained file.
+        If pretrained_allow_missing=True, this will be ignored and the
+        parameters will be left uninitialized. Otherwise AssertionError is
+        raised.
+
+    Returns
+    -------
+    BERTModel, gluonnlp.vocab.BERTVocab
+    """
+    return get_bert_model(model_name='bert_6_768_3', vocab=vocab, dataset_name=dataset_name,
                           pretrained=pretrained, ctx=ctx, use_pooler=use_pooler,
                           use_decoder=use_decoder, use_classifier=use_classifier, root=root,
                           pretrained_allow_missing=pretrained_allow_missing, **kwargs)

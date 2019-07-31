@@ -140,6 +140,8 @@ def get_model(name, **kwargs):
               'elmo_2x2048_256_2048cnn_1xhighway': elmo_2x2048_256_2048cnn_1xhighway,
               'elmo_2x4096_512_2048cnn_2xhighway': elmo_2x4096_512_2048cnn_2xhighway,
               'transformer_en_de_512': transformer_en_de_512,
+              'bert_6_768_3'       : bert_6_768_3,
+              'bert_6_768_12'       : bert_6_768_12,
               'bert_12_768_12'       : bert_12_768_12,
               'bert_24_1024_16'      : bert_24_1024_16,
               'ernie_12_768_12'      : ernie_12_768_12}
