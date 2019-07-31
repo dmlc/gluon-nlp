@@ -56,15 +56,6 @@ class SuperGlueRTE(_SuperGlueDataset):
         super(SuperGlueRTE, self).__init__(root, data_file)
 
     def read_samples(self, samples):
-        for i, sample in enumerate(samples):
-            premise = sample['premise']
-            hypothesis = sample['hypothesis']
-            if self._segment == 'test':
-                samples[i] = [premise, hypothesis]
-            else:
-                label = sample['label']
-                samples[i] = [premise, hypothesis, label]
-
         return samples
 
     def _repo_dir(self):
@@ -87,15 +78,6 @@ class SuperGlueCB(_SuperGlueDataset):
         super(SuperGlueCB, self).__init__(root, data_file)
 
     def read_samples(self, samples):
-        for i, sample in enumerate(samples):
-            premise = sample['premise']
-            hypothesis = sample['hypothesis']
-            if self._segment == 'test':
-                samples[i] = [premise, hypothesis]
-            else:
-                label = sample['label']
-                samples[i] = [premise, hypothesis, label]
-
         return samples
 
     def _repo_dir(self):
@@ -118,19 +100,6 @@ class SuperGlueWSC(_SuperGlueDataset):
         super(SuperGlueWSC, self).__init__(root, data_file)
 
     def read_samples(self, samples):
-        for i, sample in enumerate(samples):
-            text = sample['text']
-            span1_index = sample['target']['span1_index']
-            span2_index = sample['target']['span2_index']
-            span1_text = sample['target']['span1_text']
-            span2_text = sample['target']['span2_text']
-
-            if self._segment == 'test':
-                samples[i] = [text, span1_index, span2_index, span1_text, span2_text]
-            else:
-                label = int(sample['label'])
-                samples[i] = [text, span1_index, span2_index, span1_text, span2_text, label]
-
         return samples
 
     def _repo_dir(self):
@@ -142,31 +111,17 @@ class SuperGlueWiC(_SuperGlueDataset):
     def __init__(self, segment='train',
                  root=os.path.join(get_home_dir(), 'datasets', 'superglue_wic')):
         self._segment = segment
-        self._data_file = {'train': ('train', '476d8739e75c04ecbceec890b35701be806d98dd',
-                                     '4023b02eca013767f249658ba6210226e98b366f'),
-                           'val': ('val', '9dd7c496ab5475c518d88e8eab134e9b94a59b48',
-                                   'fc472ff8cea263ba0b75259cf1bff61262afccca'),
-                           'test': ('test', 'e4fac56a0281a6f102e22b0d6cb72e52a9e3cb86',
-                                    '6bc0201849e814fae34f5ba665e3ae3d110f6797')}
+        self._data_file = {'train': ('train', 'ec1e265bbdcde1d8da0b56948ed30d86874b1f12',
+                                     '831a58c553def448e1b1d0a8a36e2b987c81bc9c'),
+                           'val': ('val', '2046c43e614d98d538a03924335daae7881f77cf',
+                                   '73b71136a2dc2eeb3be7ab455a08f20b8dbe7526'),
+                           'test': ('test', '77af78a49aac602b7bbf080a03b644167b781ba9',
+                                    '1be93932d46c8f8dc665eb7af6703c56ca1b1e08')}
         data_file = self._data_file[segment]
 
         super(SuperGlueWiC, self).__init__(root, data_file)
 
     def read_samples(self, samples):
-        for i, sample in enumerate(samples):
-            word = sample['word']
-            pos = sample['pos']
-            sentence1 = sample['sentence1']
-            sentence2 = sample['sentence2']
-            sentence1_idx = int(sample['sentence1_idx'])
-            sentence2_idx = int(sample['sentence2_idx'])
-
-            if self._segment == 'test':
-                samples[i] = [word, pos, sentence1, sentence2, sentence1_idx, sentence2_idx]
-            else:
-                label = int(sample['label'])
-                samples[i] = [word, pos, sentence1, sentence2, sentence1_idx, sentence2_idx, label]
-
         return samples
 
     def _repo_dir(self):
@@ -189,18 +144,6 @@ class SuperGlueCOPA(_SuperGlueDataset):
         super(SuperGlueCOPA, self).__init__(root, data_file)
 
     def read_samples(self, samples):
-        for i, sample in enumerate(samples):
-            premise = sample['premise']
-            question = sample['question']
-            choice1 = sample['choice1']
-            choice2 = sample['choice2']
-
-            if self._segment == 'test':
-                samples[i] = [premise, question, choice1, choice2]
-            else:
-                label = int(sample['label'])
-                samples[i] = [premise, question, choice1, choice2, label]
-
         return samples
 
     def _repo_dir(self):
@@ -258,15 +201,6 @@ class SuperGlueBoolQ(_SuperGlueDataset):
         super(SuperGlueBoolQ, self).__init__(root, data_file)
 
     def read_samples(self, samples):
-        for i, sample in enumerate(samples):
-            passage = sample['passage']
-            question = sample['question']
-            if self._segment == 'test':
-                samples[i] = [passage, question]
-            else:
-                label = int(sample['label'])
-                samples[i] = [passage, question, label]
-
         return samples
 
     def _repo_dir(self):
@@ -289,12 +223,6 @@ class SuperGlueReCoRD(_SuperGlueDataset):
         super(SuperGlueReCoRD, self).__init__(root, data_file)
 
     def read_samples(self, samples):
-        for i, sample in enumerate(samples):
-            text = sample['passage']['text']
-            entities = sample['passage']['entities']
-            qas = sample['qas']
-            samples[i] = {'text': text, 'entities': entities, 'qas': qas}
-
         return samples
 
     def _repo_dir(self):
