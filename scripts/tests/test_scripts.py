@@ -375,7 +375,7 @@ def test_finetune_inference(dataset):
 @pytest.mark.remote_required
 @pytest.mark.integration
 @pytest.mark.parametrize('dataset', ['WNLI'])
-@pytest.mark.parametrize('dtype', ['float32'])  # TODO fix 'float16'
+@pytest.mark.parametrize('dtype', ['float32', 'float16'])
 def test_finetune_train(dataset, dtype):
     arguments = ['--log_interval', '100', '--epsilon', '1e-8', '--optimizer',
                  'adam', '--gpu', '0', '--epochs', '2', '--dtype', dtype]
