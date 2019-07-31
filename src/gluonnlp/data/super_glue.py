@@ -1,3 +1,24 @@
+# coding: utf-8
+
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+
+# pylint: disable=line-too-long
+"""SuperGLUEBenchmark corpora."""
 
 import zipfile
 import os
@@ -42,6 +63,20 @@ class _SuperGlueDataset(JsonlDataset):
 
 @register(segment=['train', 'val', 'test'])
 class SuperGlueRTE(_SuperGlueDataset):
+    """The Recognizing Textual Entailment (RTE) datasets come from a series of annual textual
+    entailment challenges (RTE1, RTE2, RTE3 and RTE5).
+    
+    From
+    https://super.gluebenchmark.com/tasks
+
+    Parameters
+    ----------
+    segment : {'train', 'dev', 'test'}, default 'train'
+        Dataset segment.
+    root : str, default "$MXNET_HOME/datasets/superglue_rte"
+        Path to temp folder for storing data.
+        MXNET_HOME defaults to '~/.mxnet'.
+    """
     def __init__(self, segment='train',
                  root=os.path.join(get_home_dir(), 'datasets', 'superglue_rte')):
         self._segment = segment
@@ -73,6 +108,20 @@ class SuperGlueRTE(_SuperGlueDataset):
 
 @register(segment=['train', 'val', 'test'])
 class SuperGlueCB(_SuperGlueDataset):
+    """The CommitmentBank (CB) is a corpus of short texts in which at least one sentence
+    contains an embedded clause.
+
+    From
+    https://super.gluebenchmark.com/tasks
+
+    Parameters
+    ----------
+    segment : {'train', 'dev', 'test'}, default 'train'
+        Dataset segment.
+    root : str, default "$MXNET_HOME/datasets/superglue_cb"
+        Path to temp folder from storing data.
+        MXNET_HOME defaults to '~/.mxnet'
+    """
     def __init__(self, segment='train',
                  root=os.path.join(get_home_dir(), 'datasets', 'superglue_cb')):
         self._segment = segment
@@ -104,6 +153,21 @@ class SuperGlueCB(_SuperGlueDataset):
 
 @register(segment=['train', 'val', 'test'])
 class SuperGlueWSC(_SuperGlueDataset):
+    """
+    The Winograd Schema Challenge (WSC) is a co-reference resolution dataset.
+    (Levesque et al., 2012)
+
+    From
+    https://super.gluebenchmark.com/tasks
+
+    Parameters
+    ----------
+    segment : {'train', 'dev', 'test'}, default 'train'
+        Dataset segment.
+    root : str, default "$MXNET_HOME/datasets/superglue_cb"
+        Path to temp folder from storing data.
+        MXNET_HOME defaults to '~/.mxnet'
+    """
     def __init__(self, segment='train',
                  root=os.path.join(get_home_dir(), 'datasets', 'superglue_wsc')):
         self._segment = segment
@@ -139,6 +203,21 @@ class SuperGlueWSC(_SuperGlueDataset):
 
 @register(segment=['train', 'val', 'test'])
 class SuperGlueWiC(_SuperGlueDataset):
+    """
+    The Word-in-Context (WiC) is a word sense disambiguation dataset cast as binary classification
+    of sentence pairs. (Pilehvar and Camacho-Collados, 2019)
+
+    From
+    https://super.gluebenchmark.com/tasks
+
+    Parameters
+    ----------
+    segment : {'train', 'dev', 'test'}, default 'train'
+        Dataset segment.
+    root : str, default "$MXNET_HOME/datasets/superglue_cb"
+        Path to temp folder from storing data.
+        MXNET_HOME defaults to '~/.mxnet'
+    """
     def __init__(self, segment='train',
                  root=os.path.join(get_home_dir(), 'datasets', 'superglue_wic')):
         self._segment = segment
@@ -175,6 +254,21 @@ class SuperGlueWiC(_SuperGlueDataset):
 
 @register(segment=['train', 'val', 'test'])
 class SuperGlueCOPA(_SuperGlueDataset):
+    """
+    The Choice of Plausible Alternatives (COPA) is a causal reasoning dataset.
+    (Roemmele et al., 2011)
+
+    From
+    https://super.gluebenchmark.com/tasks
+
+    Parameters
+    ----------
+    segment : {'train', 'dev', 'test'}, default 'train'
+        Dataset segment.
+    root : str, default "$MXNET_HOME/datasets/superglue_cb"
+        Path to temp folder from storing data.
+        MXNET_HOME defaults to '~/.mxnet'
+    """
     def __init__(self, segment='train',
                  root=os.path.join(get_home_dir(), 'datasets', 'superglue_copa')):
         self._segment = segment
@@ -209,6 +303,21 @@ class SuperGlueCOPA(_SuperGlueDataset):
 
 @register(segment=['train', 'val', 'test'])
 class SuperGlueMultiRC(_SuperGlueDataset):
+    """
+    Multi-Sentence Reading Comprehension (MultiRC) is a QA dataset.
+    (Khashabi et al., 2018)
+
+    From
+    https://super.gluebenchmark.com/tasks
+
+    Parameters
+    ----------
+    segment : {'train', 'dev', 'test'}, default 'train'
+        Dataset segment.
+    root : str, default "$MXNET_HOME/datasets/superglue_cb"
+        Path to temp folder from storing data.
+        MXNET_HOME defaults to '~/.mxnet'
+    """
     def __init__(self, segment='train',
                  root=os.path.join(get_home_dir(), 'datasets', 'superglue_multirc')):
         self._segment = segment
@@ -244,6 +353,21 @@ class SuperGlueMultiRC(_SuperGlueDataset):
 
 @register(segment=['train', 'val', 'test'])
 class SuperGlueBoolQ(_SuperGlueDataset):
+    """
+    Boolean Questions (BoolQ) is a QA dataset where each example consists of a short
+    passage and a yes/no question about it.
+
+    From
+    https://super.gluebenchmark.com/tasks
+
+    Parameters
+    ----------
+    segment : {'train', 'dev', 'test'}, default 'train'
+        Dataset segment.
+    root : str, default "$MXNET_HOME/datasets/superglue_cb"
+        Path to temp folder from storing data.
+        MXNET_HOME defaults to '~/.mxnet'
+    """
     def __init__(self, segment='train',
                  root=os.path.join(get_home_dir(), 'datasets', 'superglue_boolq')):
         self._segment = segment
@@ -275,6 +399,21 @@ class SuperGlueBoolQ(_SuperGlueDataset):
 
 @register(segment=['train', 'val', 'test'])
 class SuperGlueReCoRD(_SuperGlueDataset):
+    """
+    Reading Comprehension with Commonsense Reasoning Dataset (ReCoRD) is a multiple-choice
+    QA dataset.
+
+    From
+    https://super.gluebenchmark.com/tasks
+
+    Parameters
+    ----------
+    segment : {'train', 'dev', 'test'}, default 'train'
+        Dataset segment.
+    root : str, default "$MXNET_HOME/datasets/superglue_cb"
+        Path to temp folder from storing data.
+        MXNET_HOME defaults to '~/.mxnet'
+    """
     def __init__(self, segment='train',
                  root=os.path.join(get_home_dir(), 'datasets', 'superglue_record')):
         self._segment = segment
@@ -303,6 +442,19 @@ class SuperGlueReCoRD(_SuperGlueDataset):
 
 @register(segment=['AX-b'])
 class SuperGlueAX_b(_SuperGlueDataset):
+    """
+    The Broadcoverage Diagnostics (AX-b) is a diagnostics dataset labeled closely to
+    the schema of MultiNLI.
+
+    From
+    https://super.gluebenchmark.com/tasks
+
+    Parameters
+    ----------
+    root : str, default "$MXNET_HOME/datasets/superglue_cb"
+        Path to temp folder from storing data.
+        MXNET_HOME defaults to '~/.mxnet'
+    """
     def __init__(self, root=os.path.join(get_home_dir(), 'datasets', 'superglue_ax_b')):
         data_file = ('AX-g', '398c5a376eb436f790723cd217ac040334140000',
                      '50fd8ac409897b652daa4b246917097c3c394bc8')
@@ -318,6 +470,19 @@ class SuperGlueAX_b(_SuperGlueDataset):
 
 @register(segment=['AX-g'])
 class SuperGlueAX_g(_SuperGlueDataset):
+    """
+    The Winogender Schema Diagnostics (AX-g) is a diagnostics dataset labeled closely to
+    the schema of MultiNLI.
+
+    From
+    https://super.gluebenchmark.com/tasks
+
+    Parameters
+    ----------
+    root : str, default "$MXNET_HOME/datasets/superglue_cb"
+        Path to temp folder from storing data.
+        MXNET_HOME defaults to '~/.mxnet'
+    """
     def __init__(self, root=os.path.join(get_home_dir(), 'datasets', 'superglue_ax_g')):
         data_file = ('AX-g', 'd8c92498496854807dfeacd344eddf466d7f468a',
                      '8a8cbfe00fd88776a2a2f20b477e5b0c6cc8ebae')
