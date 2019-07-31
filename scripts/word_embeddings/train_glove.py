@@ -224,13 +224,13 @@ class GloVe(nlp.model.train.EmbeddingModel, mx.gluon.HybridBlock):
             emb_in = F.Dropout(emb_in, p=self._dropout)
             emb_out = F.Dropout(emb_out, p=self._dropout)
 
-        bias_in = self.source_bias(row).squeeze()
-        bias_out = self.context_bias(col).squeeze()
+        bias_in = self.source_bias(row).squeeze(axis=None)
+        bias_out = self.context_bias(col).squeeze(axis=None)
         dot = F.batch_dot(emb_in.expand_dims(1),
-                          emb_out.expand_dims(2)).squeeze()
-        tmp = dot + bias_in + bias_out - F.log(counts).squeeze()
+                          emb_out.expand_dims(2)).squeeze(axis=None)
+        tmp = dot + bias_in + bias_out - F.log(counts).squeeze(axis=None)
         weight = F.clip(((counts / self._x_max)**self._alpha), a_min=0,
-                        a_max=1).squeeze()
+                        a_max=1).squeeze(axis=None)
         loss = weight * F.square(tmp)
         return loss
 
@@ -264,7 +264,7 @@ class GloVe(nlp.model.train.EmbeddingModel, mx.gluon.HybridBlock):
 
         if squeeze:
             assert len(vecs) == 1
-            return vecs[0].squeeze()
+            return vecs[0].squeeze(axis=None)
         else:
             return vecs
 
