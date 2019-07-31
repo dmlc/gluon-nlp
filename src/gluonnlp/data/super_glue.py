@@ -20,6 +20,10 @@
 # pylint: disable=line-too-long
 """SuperGLUEBenchmark corpora."""
 
+__all__ = ['SuperGlueRTE', 'SuperGlueCB', 'SuperGlueWSC', 'SuperGlueWiC',
+           'SuperGlueCOPA', 'SuperGlueMultiRC', 'SuperGlueBoolQ',
+           'SuperGlueReCoRD', 'SuperGlueAX_b', 'SuperGlueAX_g']
+
 import zipfile
 import os
 import re
