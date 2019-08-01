@@ -36,6 +36,8 @@ sentence pair classification, with Gluon NLP Toolkit.
 
 import io
 import os
+os.environ['MXNET_GPU_MEM_POOL_TYPE'] = 'Round'
+
 import sys
 import time
 import argparse
@@ -186,8 +188,6 @@ logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 # logging.getLogger().setLevel(logging.INFO)
 logging.captureWarnings(True)
 logging.info(args)
-
-os.environ['MXNET_GPU_MEM_POOL_TYPE'] = 'Round'
 
 batch_size = args.batch_size
 dev_batch_size = args.dev_batch_size
