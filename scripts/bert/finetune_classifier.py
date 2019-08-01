@@ -56,6 +56,8 @@ from data.classification import QNLITask, CoLATask, MNLITask, WNLITask, XNLITask
 from data.classification import LCQMCTask, ChnSentiCorpTask
 from data.transform import BERTDatasetTransform
 
+os.environ['MXNET_GPU_MEM_POOL_TYPE'] = 'Round'
+
 tasks = {
     'MRPC': MRPCTask(),
     'QQP': QQPTask(),
