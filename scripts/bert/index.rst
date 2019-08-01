@@ -3,9 +3,13 @@ Bidirectional Encoder Representations from Transformers
 
 :download:`Download scripts </model_zoo/bert.zip>`
 
+
 Reference: Devlin, Jacob, et al. "`Bert: Pre-training of deep bidirectional transformers for language understanding. <https://arxiv.org/abs/1810.04805>`_" arXiv preprint arXiv:1810.04805 (2018).
 
 Note: BERT model requires `nightly version of MXNet <https://mxnet.incubator.apache.org/versions/master/install/index.html?version=master&platform=Linux&language=Python&processor=CPU>`__. 
+
+BERT Model Zoo
+~~~~~~~~~~~~~~
 
 The following pre-trained BERT models are available from the **gluonnlp.model.get_model** API:
 
@@ -44,6 +48,12 @@ The following pre-trained BERT models are available from the **gluonnlp.model.ge
 +-----------------------------------------+----------------+-----------------+
 
 where **bert_12_768_12** refers to the BERT BASE model, and **bert_24_1024_16** refers to the BERT LARGE model.
+
+
+.. hint::
+
+   The pre-training, fine-tunining and export scripts are available `here. </model_zoo/bert.zip>`__
+
 
 BERT for Sentence Classification
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -111,6 +121,12 @@ BERT Pre-training
 We also provide scripts for pre-training BERT with masked language modeling and and next sentence prediction.
 
 The pre-training data format expects: (1) One sentence per line. These should ideally be actual sentences, not entire paragraphs or arbitrary spans of text for the "next sentence prediction" task. (2) Blank lines between documents. You can find a sample pre-training text with 3 documents `here <https://github.com/dmlc/gluon-nlp/blob/master/scripts/bert/sample_text.txt>`__. You can perform sentence segmentation with an off-the-shelf NLP toolkit such as NLTK.
+
+
+.. hint::
+
+   You can download pre-processed English wikipedia dataset `here. <https://apache-mxnet.s3-accelerate.dualstack.amazonaws.com/gluon/dataset/enwiki-197b5d8d.zip>`__
+
 
 Pre-requisite
 +++++++++++++
