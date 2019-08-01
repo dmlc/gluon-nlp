@@ -56,8 +56,6 @@ from data.classification import QNLITask, CoLATask, MNLITask, WNLITask, XNLITask
 from data.classification import LCQMCTask, ChnSentiCorpTask
 from data.transform import BERTDatasetTransform
 
-os.environ['MXNET_GPU_MEM_POOL_TYPE'] = 'Round'
-
 tasks = {
     'MRPC': MRPCTask(),
     'QQP': QQPTask(),
@@ -188,6 +186,8 @@ logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 # logging.getLogger().setLevel(logging.INFO)
 logging.captureWarnings(True)
 logging.info(args)
+
+os.environ['MXNET_GPU_MEM_POOL_TYPE'] = 'Round'
 
 batch_size = args.batch_size
 dev_batch_size = args.dev_batch_size
