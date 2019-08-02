@@ -34,6 +34,7 @@ Toolkit.
 # under the License.
 
 import argparse
+import itertools
 import math
 import sys
 import time
@@ -69,8 +70,8 @@ def evaluate(data_iter):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Transformer-XL Language Modeling.',
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    # TODO add 'enwiki8', 'lm1b', 'text8',
-    parser.add_argument('--dataset', type=str, required=True, choices=['wt103'],
+    # TODO add 'enwiki8', 'lm1b'
+    parser.add_argument('--dataset', type=str, required=True, choices=['wt103', 'text8'],
                         help='Dataset name.')
     parser.add_argument('--split', type=str, default='test', choices=['valid', 'test'],
                         help='Which split to evaluate')
@@ -105,7 +106,7 @@ if __name__ == '__main__':
         vocab = nlp.Vocab.from_json(f.read())
 
     ctx = mx.gpu(args.gpu) if args.gpu is not None else mx.cpu()
-    model, vocab = get_model('transformerxl', vocab=vocab, dataset_name=args.dataset, ctx=ctx,
+    model, vocab = get_model('transformerxl', vocab=vocab, dataset_name=args.dataset,
                              clamp_len=args.clamp_len)
     model.initialize(ctx=ctx)
     model.load_parameters(args.parameter_file, ignore_extra=False)
@@ -118,6 +119,12 @@ if __name__ == '__main__':
             nlp.data.WikiText103(segment=segment, skip_empty=False, bos=None, eos='<eos>')
             for segment in ['val', 'test']
         ]
+    elif args.dataset == 'text8':
+        dataset = nlp.data.Text8(max_sentence_length=None)
+        chars = list(itertools.chain.from_iterable(list(w) + ['_'] for w in dataset[0]))
+        num_test_chars = 5000000
+        val_dataset = mx.gluon.data.SimpleDataset(chars[-2 * num_test_chars:-num_test_chars])
+        test_dataset = mx.gluon.data.SimpleDataset(chars[-num_test_chars:])
     else:
         print('Dataset unsupported by this script.')
         sys.exit(1)
@@ -139,8 +146,10 @@ if __name__ == '__main__':
         valid_loss = None
 
     if test_loss is not None:
-        print('Best test loss %.2f, test ppl %.2f' % (test_loss, math.exp(test_loss)))
+        print('Best test loss {:.2f}, test ppl {:.2f}, test bpc {:.2f}'.format(
+            test_loss, math.exp(test_loss), test_loss / math.log(2)))
     if valid_loss is not None:
-        print('Best validation loss %.2f, val ppl %.2f' % (valid_loss, math.exp(valid_loss)))
+        print('Best validation loss {:.2f}, val ppl {:.2f}, val bpc {:.2f}'.format(
+            valid_loss, math.exp(valid_loss), valid_loss / math.log(2)))
 
-    print('Total time cost %.2fs' % (time.time() - start_time))
+    print('Total time cost {:.2f}s'.format(time.time() - start_time))

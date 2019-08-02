@@ -81,8 +81,16 @@ def transformerxl(dataset_name: str, vocab: nlp.Vocab, **kwargs):
         },
         # enwiki8=None,  # TODO
         # lm1b=None,
-        # text8=None,
-    )
+        text8={
+            'embed_size': 1024,
+            'tie_input_output_embeddings': True,
+            'num_layers': 24,
+            'hidden_size': 3072,
+            'units': 1024,
+            'num_heads': 8,
+            'dropout': 0,
+            'attention_dropout': 0
+        })
 
     options = dataset_name_to_kwargs[dataset_name]
     options.update(**kwargs)
