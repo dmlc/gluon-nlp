@@ -317,9 +317,9 @@ class JsonlDataset(SimpleDataset):
             with open(filename, 'r', encoding=self._encoding) as fin:
                 for line in fin.readlines():
                     samples.append(json.loads(line))
-            samples = self.read_samples(samples)
+            samples = self._read_samples(samples)
             all_samples += samples
         return all_samples
 
-    def read_samples(self, samples):
+    def _read_samples(self, samples):
         raise NotImplementedError
