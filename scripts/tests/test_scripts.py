@@ -360,7 +360,7 @@ def test_finetune_inference(dataset):
 @pytest.mark.gpu
 @pytest.mark.remote_required
 @pytest.mark.integration
-@pytest.mark.parametrize('dataset', ['XNLI', 'LCQMC'])
+@pytest.mark.parametrize('dataset', ['XNLI'])
 @pytest.mark.skipif(datetime.date.today() < datetime.date(2019, 7, 18),
                     reason='Disabled for 4 weeks due to DNS error.')
 def test_finetune_chinese_inference(dataset):
