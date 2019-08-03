@@ -176,7 +176,7 @@ def test_pretrained_bert_models(disable_missing_parameters):
             assert len(vocab) == vocab_size[dataset]
             for token in special_tokens:
                 assert token in vocab, "Token %s not found in the vocab" % token
-            assert vocab['RandomWordByHaibin'] == 0
+            assert vocab['RandomWordByHaibin'] == vocab[vocab.unknown_token]
             assert vocab.padding_token == '[PAD]'
             assert vocab.unknown_token == '[UNK]'
             assert vocab.bos_token is None
