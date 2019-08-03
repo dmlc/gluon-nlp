@@ -70,9 +70,8 @@ def evaluate(data_iter):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Transformer-XL Language Modeling.',
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    # TODO add 'lm1b'
-    parser.add_argument('--dataset', type=str, required=True, choices=['wt103', 'text8', 'enwik8'],
-                        help='Dataset name.')
+    parser.add_argument('--dataset', type=str, required=True,
+                        choices=['wt103', 'text8', 'enwik8', 'lm1b'], help='Dataset name.')
     parser.add_argument('--split', type=str, default='test', choices=['valid', 'test'],
                         help='Which split to evaluate')
     parser.add_argument('--parameter-file', type=str, default=None, required=True,
@@ -116,9 +115,18 @@ if __name__ == '__main__':
     # Data
     if args.dataset == 'wt103':
         val_dataset, test_dataset = [
-            nlp.data.WikiText103(segment=segment, skip_empty=False, bos=None, eos='<eos>')
-            for segment in ['val', 'test']
+            nlp.data.WikiText103(segment=segment, skip_empty=False, bos=vocab.bos_token,
+                                 eos=vocab.eos_token) for segment in ['val', 'test']
         ]
+    elif args.dataset == 'lm1b':
+        # bos=vocab.eos_token is not a typo: tf uses ['<S>'] + symbols + ['<S>']
+        test_datasets = list(
+            nlp.data.GBWStream(segment='test', skip_empty=True, bos=vocab.eos_token,
+                               eos=vocab.eos_token))
+        assert len(test_datasets) == 1
+        test_dataset = mx.gluon.data.SimpleDataset(
+            list(itertools.chain.from_iterable(test_datasets[0])))
+        val_dataset = None
     elif args.dataset == 'text8':
         dataset = nlp.data.Text8(max_sentence_length=None)
         chars = list(itertools.chain.from_iterable(list(w) + ['_'] for w in dataset[0]))
@@ -137,19 +145,16 @@ if __name__ == '__main__':
 
     eval_batchify = nlp.data.batchify.CorpusBPTTBatchify(vocab, args.bptt, args.eval_batch_size,
                                                          last_batch='discard')
-    val_data = eval_batchify(val_dataset)
-    test_data = eval_batchify(test_dataset)
 
     # Evaluate
-    if args.split == 'all':
-        test_loss = evaluate(test_data)
+    test_loss = None
+    valid_loss = None
+    if args.split in ('valid', 'all') and val_dataset is not None:
+        val_data = eval_batchify(val_dataset)
         valid_loss = evaluate(val_data)
-    elif args.split == 'valid':
-        valid_loss = evaluate(val_data)
-        test_loss = None
-    elif args.split == 'test':
+    if args.split in ('test', 'all') and test_dataset is not None:
+        test_data = eval_batchify(test_dataset)
         test_loss = evaluate(test_data)
-        valid_loss = None
 
     if test_loss is not None:
         print('Best test loss {:.2f}, test ppl {:.2f}, test bpc {:.2f}'.format(

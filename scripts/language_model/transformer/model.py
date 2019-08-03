@@ -78,8 +78,19 @@ def transformerxl(dataset_name: str, vocab: nlp.Vocab, **kwargs):
             'num_heads': 16,
             'dropout': 0,
             'attention_dropout': 0
-        },
-        enwik8={
+        }, lm1b={
+            'embed_cutoffs': [60000, 100000, 640000],
+            'embed_size': 1280,
+            'embed_div_val': 4,
+            'project_same_dim': False,
+            'tie_input_output_embeddings': True,
+            'num_layers': 24,
+            'hidden_size': 8192,
+            'units': 1280,
+            'num_heads': 16,
+            'dropout': 0,
+            'attention_dropout': 0
+        }, enwik8={
             'embed_size': 1024,
             'tie_input_output_embeddings': True,
             'num_layers': 24,
@@ -88,9 +99,7 @@ def transformerxl(dataset_name: str, vocab: nlp.Vocab, **kwargs):
             'num_heads': 8,
             'dropout': 0,
             'attention_dropout': 0
-        },
-        # lm1b=None,
-        text8={
+        }, text8={
             'embed_size': 1024,
             'tie_input_output_embeddings': True,
             'num_layers': 24,
