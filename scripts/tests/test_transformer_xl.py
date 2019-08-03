@@ -32,15 +32,14 @@ from ..language_model.transformer import (AdaptiveEmbedding, AdaptiveLogSoftmaxW
 
 @pytest.mark.parametrize('d_head', [5])
 @pytest.mark.parametrize('num_heads', [1, 3])
-@pytest.mark.parametrize('base_cell', [nlp.model.DotProductAttentionCell(scaled=False, dropout=0)])
 @pytest.mark.parametrize('query_length', [10, 5, 1])
 @pytest.mark.parametrize('memory_length', [5, 1])
 @pytest.mark.parametrize('batch_size', [3, 1])
 @pytest.mark.parametrize('use_mask', [True, False])
-def test_positional_embedding_multihead_attention_cell(d_head, num_heads, base_cell, query_length,
+def test_positional_embedding_multihead_attention_cell(d_head, num_heads, query_length,
                                                        memory_length, batch_size, use_mask):
-    attention_cell = PositionalEmbeddingMultiHeadAttentionCell(base_cell=base_cell, d_head=d_head,
-                                                               num_heads=num_heads)
+    attention_cell = PositionalEmbeddingMultiHeadAttentionCell(d_head=d_head, num_heads=num_heads,
+                                                               scaled=False, dropout=0)
     attention_cell.initialize()
 
     if use_mask:

@@ -195,7 +195,7 @@ class AdaptiveLogSoftmaxWithLoss(mx.gluon.HybridBlock):
                 'The last cutoff value ({}) must be smaller than vocab_size ({}).'.format(
                     cutoffs[-1], vocab_size))
 
-        if tie_embeddings is not None:
+        if tie_embeddings:
             assert params is not None
         if tie_projections is not None:
             assert params is not None
