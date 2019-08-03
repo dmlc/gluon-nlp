@@ -58,6 +58,15 @@ def read_tf_checkpoint(path):
 def to_gluon_kwargs(tf_tensors):
     kwargs = dict()
 
+    # Main model
+    kwargs['num_layers'] = len(
+        set(itertools.chain.from_iterable(re.findall(r'layer_\d*', k) for k in tf_tensors)))
+    kwargs['hidden_size'] = tf_tensors['transformer/layer_0/ff/layer_2/kernel'].shape[0]
+    kwargs['units'] = tf_tensors['transformer/layer_0/ff/layer_2/kernel'].shape[1]
+    tie_r = len(tf_tensors['transformer/r_w_bias'].shape) != 3
+    kwargs['num_heads'] = tf_tensors['transformer/r_w_bias'].shape[0 if tie_r else 1]
+
+    # Embedding and softmax
     if 'transformer/adaptive_embed/lookup_table' in tf_tensors:
         # Adaptive embedding is not used
         kwargs['embed_size'] = tf_tensors['transformer/adaptive_embed/lookup_table'].shape[1]
@@ -86,14 +95,9 @@ def to_gluon_kwargs(tf_tensors):
             proj_selector.format(i=i) not in tf_tensors
             for i in range(len(kwargs['embed_cutoffs']) + 1)
         ]
-
-    # Main model
-    kwargs['num_layers'] = len(
-        set(itertools.chain.from_iterable(re.findall(r'layer_\d*', k) for k in tf_tensors)))
-    kwargs['hidden_size'] = tf_tensors['transformer/layer_0/ff/layer_2/kernel'].shape[0]
-    kwargs['units'] = tf_tensors['transformer/layer_0/ff/layer_2/kernel'].shape[1]
-    tie_r = len(tf_tensors['transformer/r_w_bias'].shape) != 3
-    kwargs['num_heads'] = tf_tensors['transformer/r_w_bias'].shape[0 if tie_r else 1]
+        if kwargs['embed_size'] == kwargs['embed_size'] and \
+           'transformer/adaptive_embed/cutoff_0/proj_W' not in tf_tensors:
+            kwargs['project_same_dim'] = False
 
     # Dropout
     # All pre-trained TransformerXL models from

@@ -172,7 +172,7 @@ class _BaseTransformerXL(mx.gluon.HybridBlock):
     def __init__(self, vocab_size, embed_size, embed_cutoffs=None, embed_div_val=None, num_layers=2,
                  units=128, hidden_size=2048, num_heads=4, scaled=True, dropout=0.0,
                  attention_dropout=0.0, use_residual=True, clamp_len: typing.Optional[int] = None,
-                 tie_input_output_embeddings: bool = False,
+                 project_same_dim: bool = True, tie_input_output_embeddings: bool = False,
                  tie_input_output_projections: typing.Optional[typing.List[bool]] = None,
                  output_attention=False, weight_initializer=None, bias_initializer='zeros',
                  scale_embed=True, prefix=None, params=None):
@@ -189,6 +189,7 @@ class _BaseTransformerXL(mx.gluon.HybridBlock):
         self._dropout = dropout
         self._use_residual = use_residual
         self._clamp_len = clamp_len
+        self._project_same_dim = project_same_dim
         self._tie_input_output_embeddings = tie_input_output_embeddings
         self._tie_input_output_projections = tie_input_output_projections
         if output_attention:
@@ -202,19 +203,21 @@ class _BaseTransformerXL(mx.gluon.HybridBlock):
             if embed_cutoffs is not None and embed_div_val != 1:
                 self.embedding = AdaptiveEmbedding(vocab_size=vocab_size, embed_size=embed_size,
                                                    units=units, cutoffs=embed_cutoffs,
-                                                   div_val=embed_div_val)
+                                                   div_val=embed_div_val,
+                                                   project_same_dim=project_same_dim)
                 self.crit = AdaptiveLogSoftmaxWithLoss(vocab_size=vocab_size, embed_size=embed_size,
                                                        units=units, cutoffs=embed_cutoffs,
                                                        div_val=embed_div_val,
+                                                       project_same_dim=project_same_dim,
                                                        tie_embeddings=tie_input_output_embeddings,
                                                        tie_projections=tie_input_output_projections,
                                                        params=self.embedding.collect_params())
             else:
                 self.embedding = ProjectedEmbedding(vocab_size=vocab_size, embed_size=embed_size,
-                                                    units=units)
+                                                    units=units, project_same_dim=project_same_dim)
                 self.crit = ProjectedLogSoftmaxWithLoss(
                     vocab_size=vocab_size, embed_size=embed_size, units=units,
-                    tie_embeddings=tie_input_output_embeddings,
+                    project_same_dim=project_same_dim, tie_embeddings=tie_input_output_embeddings,
                     tie_projections=tie_input_output_projections[0]
                     if tie_input_output_projections is not None else None,
                     params=self.embedding.collect_params())

@@ -20,25 +20,28 @@
 
 __all__ = ['AdaptiveEmbedding', 'ProjectedEmbedding']
 
+from typing import List
+
 import mxnet as mx
 
 
 class ProjectedEmbedding(mx.gluon.HybridBlock):
     """Projected Embedding"""
 
-    def __init__(self, vocab_size, embed_size, units, embedding_initializer=None,
-                 projection_initializer=None, prefix=None, params=None):
+    def __init__(self, vocab_size: int, embed_size: int, units: int, project_same_dim: bool = True,
+                 embedding_initializer=None, projection_initializer=None, prefix=None, params=None):
         super().__init__(prefix=prefix, params=params)
         self._vocab_size = vocab_size
         self._embed_size = embed_size
         self._units = units
+        self._project_same_dim = project_same_dim
         self._emb_scale = units**0.5
 
         with self.name_scope():
             self.embedding_weight = self.params.get('embedding_weight',
                                                     shape=(vocab_size, embed_size),
                                                     init=embedding_initializer)
-            if units != embed_size:
+            if units != embed_size or project_same_dim:
                 self.projection_weight = self.params.get('projection_weight',
                                                          shape=(units, embed_size),
                                                          init=projection_initializer)
@@ -46,7 +49,7 @@ class ProjectedEmbedding(mx.gluon.HybridBlock):
     def hybrid_forward(self, F, inp, **params):  # pylint: disable=arguments-differ
         emb = F.Embedding(data=inp, weight=params['embedding_weight'], input_dim=self._vocab_size,
                           output_dim=self._embed_size)
-        if self._units != self._embed_size:
+        if self._units != self._embed_size or self._project_same_dim:
             emb = F.FullyConnected(data=emb, weight=params['projection_weight'], no_bias=True,
                                    flatten=False, num_hidden=self._units)
         return emb * self._emb_scale
@@ -62,8 +65,9 @@ class AdaptiveEmbedding(mx.gluon.HybridBlock):
 
     # TODO: Transformer-XL has a sample_softmax argument here
 
-    def __init__(self, vocab_size, embed_size, units, cutoffs, div_val=1,
-                 embedding_initializer=None, projection_initializer=None, prefix=None, params=None):
+    def __init__(self, vocab_size: int, embed_size: int, units: int, cutoffs: List[int],
+                 div_val: int = 1, project_same_dim: bool = True, embedding_initializer=None,
+                 projection_initializer=None, prefix=None, params=None):
         super().__init__(prefix=prefix, params=params)
         # Sanity checks
         if cutoffs != sorted(cutoffs):
@@ -83,6 +87,7 @@ class AdaptiveEmbedding(mx.gluon.HybridBlock):
         self._cutoffs = [0] + cutoffs + [vocab_size]
         self._div_val = div_val
         self._units = units
+        self._project_same_dim = project_same_dim
         self._emb_scale = units**0.5
 
         with self.name_scope():
@@ -93,7 +98,7 @@ class AdaptiveEmbedding(mx.gluon.HybridBlock):
                     self.params.get(name, shape=(vocab_size, embed_size),
                                     init=embedding_initializer))
 
-                if units != embed_size:
+                if units != embed_size or project_same_dim:
                     name = 'projection0_weight'
                     setattr(
                         self, name,
@@ -107,17 +112,18 @@ class AdaptiveEmbedding(mx.gluon.HybridBlock):
                         self.params.get(name, shape=(r_idx - l_idx, embed_size // div_val**i),
                                         init=embedding_initializer))
 
-                    name = 'projection{}_weight'.format(i)
-                    setattr(
-                        self, name,
-                        self.params.get(name, shape=(units, embed_size // div_val**i),
-                                        init=projection_initializer))
+                    if units != embed_size // div_val**i or project_same_dim:
+                        name = 'projection{}_weight'.format(i)
+                        setattr(
+                            self, name,
+                            self.params.get(name, shape=(units, embed_size // div_val**i),
+                                            init=projection_initializer))
 
     def hybrid_forward(self, F, inp, **params):  # pylint: disable=arguments-differ
         if self._div_val == 1:
             emb = F.Embedding(data=inp, weight=params['embedding0_weight'],
                               input_dim=self._vocab_size, output_dim=self._embed_size)
-            if self._units != self._embed_size:
+            if self._units != self._embed_size or self._project_same_dim:
                 emb = F.FullyConnected(data=emb, weight=params['projection0_weight'], no_bias=True,
                                        flatten=False, num_hidden=self._units)
         else:
@@ -135,14 +141,15 @@ class AdaptiveEmbedding(mx.gluon.HybridBlock):
                                     input_dim=r_idx - l_idx,
                                     output_dim=self._embed_size // self._div_val**i)
                 emb_i = F.broadcast_mul(emb_i, mask_i)
-                proj_i = F.FullyConnected(data=emb_i,
-                                          weight=params['projection{}_weight'.format(i)],
-                                          no_bias=True, flatten=False, num_hidden=self._units)
+                if self._units != self._embed_size // self._div_val**i or self._project_same_dim:
+                    emb_i = F.FullyConnected(data=emb_i,
+                                             weight=params['projection{}_weight'.format(i)],
+                                             no_bias=True, flatten=False, num_hidden=self._units)
 
                 if emb_flat is None:  # i == 0
-                    emb_flat = proj_i
+                    emb_flat = emb_i
                 else:
-                    emb_flat = emb_flat + proj_i
+                    emb_flat = emb_flat + emb_i
 
             emb = F.reshape_like(emb_flat, inp, lhs_begin=0, lhs_end=1)
 

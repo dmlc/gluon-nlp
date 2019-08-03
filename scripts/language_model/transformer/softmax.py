@@ -29,14 +29,16 @@ class ProjectedLogSoftmaxWithLoss(mx.gluon.HybridBlock):
     """ProjectedLogSoftmaxWithLoss"""
 
     def __init__(self, vocab_size: int, embed_size: int, units: int, use_bias: bool = True,
-                 projection_initializer=None, embedding_initializer=None,
-                 tie_embeddings: bool = False, tie_projections: bool = False,
-                 prefix: Optional[str] = None, params: Optional[mx.gluon.ParameterDict] = None):
+                 project_same_dim: bool = True, projection_initializer=None,
+                 embedding_initializer=None, tie_embeddings: bool = False,
+                 tie_projections: bool = False, prefix: Optional[str] = None,
+                 params: Optional[mx.gluon.ParameterDict] = None):
         super().__init__(prefix=prefix, params=params)
         self._vocab_size = vocab_size
         self._embed_size = embed_size
         self._use_bias = use_bias
         self._units = units
+        self._project_same_dim = project_same_dim
         self._embedding_initializer = embedding_initializer
         self._projection_initializer = projection_initializer
         self._tie_embeddings = tie_embeddings
@@ -45,7 +47,7 @@ class ProjectedLogSoftmaxWithLoss(mx.gluon.HybridBlock):
         self._projections_name = '{}projection_weight'
         self._embeddings_name = '{}embedding_weight'
         with self.name_scope():
-            if units != embed_size:
+            if units != embed_size or project_same_dim:
                 name = self._get_param_name('projection')
                 param = self.params.get(name, shape=(units, embed_size),
                                         init=self._projection_initializer)
@@ -102,7 +104,7 @@ class ProjectedLogSoftmaxWithLoss(mx.gluon.HybridBlock):
             range_bs_len = F.zeros_like(target_flat) + F.arange(start=0, stop=None,
                                                                 infer_range=True)
 
-        if self._units != self._embed_size:
+        if self._units != self._embed_size or self._project_same_dim:
             name = self._get_param_name('projection')
             hidden = F.FullyConnected(data=hidden, weight=F.transpose(params[name]), no_bias=True,
                                       flatten=False, num_hidden=self._embed_size)
@@ -163,10 +165,10 @@ class AdaptiveLogSoftmaxWithLoss(mx.gluon.HybridBlock):
     """
 
     def __init__(self, vocab_size: int, embed_size: int, units: int, cutoffs: List[int],
-                 div_val: int = 1, use_bias: bool = True, projection_initializer=None,
-                 embedding_initializer=None, tie_embeddings: bool = False,
-                 tie_projections: Optional[List[bool]] = None, prefix: Optional[str] = None,
-                 params: Optional[mx.gluon.ParameterDict] = None):
+                 div_val: int = 1, use_bias: bool = True, project_same_dim: bool = True,
+                 projection_initializer=None, embedding_initializer=None,
+                 tie_embeddings: bool = False, tie_projections: Optional[List[bool]] = None,
+                 prefix: Optional[str] = None, params: Optional[mx.gluon.ParameterDict] = None):
         super().__init__(prefix=prefix, params=params)
         self._vocab_size = vocab_size
         self._embed_size = embed_size
@@ -174,6 +176,7 @@ class AdaptiveLogSoftmaxWithLoss(mx.gluon.HybridBlock):
         self._div_val = div_val
         self._use_bias = use_bias
         self._units = units
+        self._project_same_dim = project_same_dim
         self._embedding_initializer = embedding_initializer
         self._projection_initializer = projection_initializer
         self._tie_embeddings = tie_embeddings
@@ -214,7 +217,7 @@ class AdaptiveLogSoftmaxWithLoss(mx.gluon.HybridBlock):
         self._embeddings_name = '{}embedding{}_weight'
         with self.name_scope():
             if self._div_val == 1:
-                if self._units != self._embed_size:
+                if self._units != self._embed_size or project_same_dim:
                     name = self._get_param_name('projection', 0)
                     param = self.params.get(name, shape=(self._units, self._embed_size),
                                             init=self._projection_initializer)
@@ -230,11 +233,12 @@ class AdaptiveLogSoftmaxWithLoss(mx.gluon.HybridBlock):
                     setattr(self, name, param)
             else:
                 for i, (l_idx, r_idx) in enumerate(zip(self._cutoffs, self._cutoffs[1:])):
-                    name = self._get_param_name('projection', i)
-                    param = self.params.get(
-                        name, shape=(self._units, self._embed_size // self._div_val**i),
-                        init=self._projection_initializer)
-                    setattr(self, name, param)
+                    if self._units != self._embed_size // self._div_val**i or project_same_dim:
+                        name = self._get_param_name('projection', i)
+                        param = self.params.get(
+                            name, shape=(self._units, self._embed_size // self._div_val**i),
+                            init=self._projection_initializer)
+                        setattr(self, name, param)
 
                     name = self._get_param_name('embedding', i)
                     param = self.params.get(
@@ -295,7 +299,7 @@ class AdaptiveLogSoftmaxWithLoss(mx.gluon.HybridBlock):
                                                                 infer_range=True)
 
         if self._div_val == 1:
-            if self._units != self._embed_size:
+            if self._units != self._embed_size or self._project_same_dim:
                 name = self._get_param_name('projection', 0)
                 hidden = F.FullyConnected(data=hidden, weight=F.transpose(params[name]),
                                           no_bias=True, flatten=False, num_hidden=self._embed_size)
@@ -315,10 +319,13 @@ class AdaptiveLogSoftmaxWithLoss(mx.gluon.HybridBlock):
             out = F.zeros_like(target_flat)
 
             for i, (l_idx, r_idx) in enumerate(zip(self._cutoffs, self._cutoffs[1:])):
-                name = self._get_param_name('projection', i)
-                proj_i = F.FullyConnected(data=hidden, weight=F.transpose(params[name]),
-                                          no_bias=True, flatten=False,
-                                          num_hidden=self._embed_size // self._div_val**i)
+                if self._units != self._embed_size // self._div_val**i or self._project_same_dim:
+                    name = self._get_param_name('projection', i)
+                    proj_i = F.FullyConnected(data=hidden, weight=F.transpose(params[name]),
+                                              no_bias=True, flatten=False,
+                                              num_hidden=self._embed_size // self._div_val**i)
+                else:
+                    proj_i = hidden
                 # Shape [batch_size * sequence_length, r_idx - l_idx]
                 name = self._get_param_name('embedding', i)
                 logits_i = F.FullyConnected(
