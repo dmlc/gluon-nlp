@@ -355,13 +355,13 @@ def test_finetune_inference(dataset):
                                      '--task_name', dataset] + arguments)
     time.sleep(5)
 
-# TODO(haibin): ChnSentiCorp temp unavailable
+# TODO(haibin): ChnSentiCorp, XNLI, ChnSentiCorp temporarily unavailable
 @pytest.mark.serial
 @pytest.mark.gpu
 @pytest.mark.remote_required
 @pytest.mark.integration
-@pytest.mark.parametrize('dataset', ['XNLI'])
-@pytest.mark.skipif(datetime.date.today() < datetime.date(2019, 7, 18),
+@pytest.mark.parametrize('dataset', ['XNLI', 'LCQMC', 'ChnSentiCorp'])
+@pytest.mark.skipif(datetime.date.today() < datetime.date(2019, 9, 18),
                     reason='Disabled for 4 weeks due to DNS error.')
 def test_finetune_chinese_inference(dataset):
     arguments = ['--log_interval', '100', '--epsilon', '1e-8', '--optimizer',
