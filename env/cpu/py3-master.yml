@@ -20,4 +20,4 @@ dependencies:
     - mxnet-mkl>=1.6.0b20190729
     - sacremoses
     - sentencepiece<0.2
-    - sphinx-autodoc-typehints==1.6.0
+    - sphinx-autodoc-typehints==1.7.0
