@@ -61,8 +61,8 @@ def evaluate(data_iter):
 
         if i % args.log_every == 0:
             current_loss = total_L.asscalar() / ntotal
-            print('Iter {} evaluation loss {:.2f}, ppl {:.2f}'.format(i, current_loss,
-                                                                      math.exp(current_loss)))
+            print('Iter {} evaluation loss {:.2f}, ppl {:.2f}, bpc {:.2f}'.format(
+                i, current_loss, math.exp(current_loss), current_loss / math.log(2)))
 
     return total_L.asscalar() / ntotal
 
@@ -70,8 +70,8 @@ def evaluate(data_iter):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Transformer-XL Language Modeling.',
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    # TODO add 'enwiki8', 'lm1b'
-    parser.add_argument('--dataset', type=str, required=True, choices=['wt103', 'text8'],
+    # TODO add 'lm1b'
+    parser.add_argument('--dataset', type=str, required=True, choices=['wt103', 'text8', 'enwik8'],
                         help='Dataset name.')
     parser.add_argument('--split', type=str, default='test', choices=['valid', 'test'],
                         help='Which split to evaluate')
@@ -125,6 +125,12 @@ if __name__ == '__main__':
         num_test_chars = 5000000
         val_dataset = mx.gluon.data.SimpleDataset(chars[-2 * num_test_chars:-num_test_chars])
         test_dataset = mx.gluon.data.SimpleDataset(chars[-num_test_chars:])
+    elif args.dataset == 'enwik8':
+        val_dataset, test_dataset = [
+            mx.gluon.data.SimpleDataset(
+                list(itertools.chain.from_iterable(nlp.data.Enwik8(segment=segment))))
+            for segment in ['val', 'test']
+        ]
     else:
         print('Dataset unsupported by this script.')
         sys.exit(1)

@@ -41,3 +41,9 @@ def test_fil9():
     assert len(freq) == 833184
     assert sum(c for c in freq.values()) == 124301826
     assert freq['english'] == 56767
+
+
+@pytest.mark.remote_required
+@pytest.mark.parametrize('segment', ['test', 'train', 'val', 'testraw', 'trainraw', 'valraw'])
+def test_enwik8(segment):
+    _ = nlp.data.Enwik8(segment=segment)

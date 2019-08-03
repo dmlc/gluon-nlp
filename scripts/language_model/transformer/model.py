@@ -79,7 +79,16 @@ def transformerxl(dataset_name: str, vocab: nlp.Vocab, **kwargs):
             'dropout': 0,
             'attention_dropout': 0
         },
-        # enwiki8=None,  # TODO
+        enwik8={
+            'embed_size': 1024,
+            'tie_input_output_embeddings': True,
+            'num_layers': 24,
+            'hidden_size': 3072,
+            'units': 1024,
+            'num_heads': 8,
+            'dropout': 0,
+            'attention_dropout': 0
+        },
         # lm1b=None,
         text8={
             'embed_size': 1024,
