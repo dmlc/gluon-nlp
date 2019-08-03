@@ -24,15 +24,15 @@ __all__ = ['Vocab']
 
 import collections
 import json
-import typing
 import uuid
 import warnings
+from typing import Dict, Hashable, List, Optional
 
 from mxnet import nd
 
 from .. import _constants as C
 from .. import embedding as emb
-from ..data.utils import DefaultLookupDict, Counter, count_tokens
+from ..data.utils import Counter, DefaultLookupDict, count_tokens
 
 UNK_IDX = 0
 
@@ -173,14 +173,13 @@ class Vocab:
 
     """
 
-    def __init__(self, counter: typing.Optional[Counter] = None,
-                 max_size: typing.Optional[int] = None, min_freq: int = 1,
-                 unknown_token: typing.Optional[typing.Hashable] = C.UNK_TOKEN,
-                 padding_token: typing.Optional[typing.Hashable] = C.PAD_TOKEN,
-                 bos_token: typing.Optional[typing.Hashable] = C.BOS_TOKEN,
-                 eos_token: typing.Optional[typing.Hashable] = C.EOS_TOKEN,
-                 reserved_tokens: typing.Optional[typing.List[typing.Hashable]] = None,
-                 token_to_idx: typing.Optional[typing.Dict[typing.Hashable, int]] = None, **kwargs):
+    def __init__(self, counter: Optional[Counter] = None, max_size: Optional[int] = None,
+                 min_freq: int = 1, unknown_token: Optional[Hashable] = C.UNK_TOKEN,
+                 padding_token: Optional[Hashable] = C.PAD_TOKEN,
+                 bos_token: Optional[Hashable] = C.BOS_TOKEN,
+                 eos_token: Optional[Hashable] = C.EOS_TOKEN,
+                 reserved_tokens: Optional[List[Hashable]] = None,
+                 token_to_idx: Optional[Dict[Hashable, int]] = None, **kwargs):
 
         # Sanity checks.
         assert min_freq > 0, '`min_freq` must be set to a positive value.'
