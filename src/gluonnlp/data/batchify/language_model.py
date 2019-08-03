@@ -105,7 +105,6 @@ class CorpusBPTTBatchify:
         self._seq_len = seq_len
         self._batch_size = batch_size
         self._last_batch = last_batch
-        self._padding_idx = vocab[vocab.padding_token]
 
         if last_batch not in ['keep', 'discard']:
             raise ValueError(
@@ -224,8 +223,7 @@ class StreamBPTTBatchify:
         self._sampler = sampler
         self._last_batch = last_batch
         if not self._vocab.padding_token:
-            raise ValueError('Padding token must be specified in vocab for BPTT.')
-        self._padding_idx = vocab[vocab.padding_token]
+            raise ValueError('Padding token must be specified in vocab for StreamBPTTBatchify.')
 
         if last_batch not in ['keep', 'discard']:
             raise ValueError(
