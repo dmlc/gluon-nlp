@@ -42,7 +42,6 @@ __all__ = ['Text8', 'Fil9', 'Enwik8']
 import os
 import zipfile
 
-from mxnet.gluon.data import SimpleDataset
 from mxnet.gluon.utils import _get_repo_file_url, check_sha1, download
 
 from ...base import get_home_dir
