@@ -1442,3 +1442,20 @@ def test_vocab_backwards_compatibility_prior_v0_7_corrupted_index_bug():
     assert v.idx_to_token[2] == '<bos>'
     assert v.idx_to_token[3] == '<eos>'
     assert v.idx_to_token[4] == 'token'
+
+
+@pytest.mark.parametrize('unknown_token', ['<unk>', '<UNK>'])
+@pytest.mark.parametrize('padding_token', ['<pad>', '<eos>', None])
+@pytest.mark.parametrize('eos_token', ['<eos>', None])
+@pytest.mark.parametrize('reserved_tokens', [['<tok>'], []])
+def test_vocab_remapped_unknown_token_idx(unknown_token, padding_token, eos_token, reserved_tokens,
+                                          counter):
+    Vocab = functools.partial(nlp.Vocab, counter, max_size=None, min_freq=1,
+                              unknown_token=unknown_token, padding_token=padding_token,
+                              bos_token=None, eos_token=eos_token)
+
+    v = Vocab()
+    assert v['UNKNOWNWORD'] == 0
+
+    v = Vocab(token_to_idx={unknown_token: 1})
+    assert v['UNKNOWNWORD'] == 1
