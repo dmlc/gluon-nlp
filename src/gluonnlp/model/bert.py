@@ -449,7 +449,7 @@ class BERTModel(Block):
         type_embedding = self.token_type_embed(token_types)
         embedding = word_embedding + type_embedding
         # encoding
-        outputs, additional_outputs = self.encoder(embedding, None, valid_length)
+        outputs, additional_outputs = self.encoder(embedding, valid_length=valid_length)
         return outputs, additional_outputs
 
     def _apply_pooling(self, sequence):

@@ -273,6 +273,7 @@ def test_bert_models():
                                            pretrained=False, root='tests/data/model/',
                                            **kwarg)
             model.initialize()
+            model.hybridize()
             if kwarg['use_decoder']:
                 # position tensor is required for decoding
                 output = model(ones, ones, valid_length, positions)

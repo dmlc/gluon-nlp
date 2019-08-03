@@ -365,8 +365,9 @@ class BaseTransformerEncoder(HybridBlock, Seq2SeqEncoder):
         try:
             self._support_arange_like = bool(ndarray.contrib.arange_like)
         except AttributeError:
-            warnings.warn('`arange_like` operator support is not found. '
-                          'Please consider upgrading to mxnet >= 1.5.0')
+            warnings.warn('"arange_like" operator support is not found. '
+                          'Please consider upgrading to mxnet >= 1.6.0, '
+                          'which leads to higher training throughput. ')
 
         with self.name_scope():
             if dropout:
@@ -409,17 +410,16 @@ class BaseTransformerEncoder(HybridBlock, Seq2SeqEncoder):
                     activation=activation,
                     layer_norm_eps=layer_norm_eps)
 
-
-    def __call__(self, inputs, states=None, valid_length=None): #pylint: disable=arguments-differ
-        """Encoder the inputs given the states and valid sequence length.
+    def __call__(self, inputs, states=[], valid_length=[]): #pylint: disable=arguments-differ
+        """Encode the inputs given the states and valid sequence length.
 
         Parameters
         ----------
-        inputs : NDArray
+        inputs : NDArray or Symbol
             Input sequence. Shape (batch_size, length, C_in)
-        states : list of NDArrays or None
+        states : list of NDArrays or Symbols
             Initial states. The list of initial states and masks
-        valid_length : NDArray or None
+        valid_length : NDArray or Symbol
             Valid lengths of each sequence. This is usually used when part of sequence has
             been padded. Shape (batch_size,)
 
@@ -433,16 +433,29 @@ class BaseTransformerEncoder(HybridBlock, Seq2SeqEncoder):
         """
         return super(BaseTransformerEncoder, self).__call__(inputs, states, valid_length)
 
-    def hybrid_forward(self, F, inputs, states=None, valid_length=None, steps=None, position_weight=None):
+    def hybrid_forward(self, F, inputs, states=None, valid_length=None, position_weight=None):
         # pylint: disable=arguments-differ
-        """
+        """Encode the inputs given the states and valid sequence length.
 
         Parameters
         ----------
-        inputs : NDArray or Symbol, Shape(batch_size, length, C_in)
-        states : list of NDArray or Symbol
+        inputs : NDArray or Symbol
+            Input sequence. Shape (batch_size, length, C_in)
+        states : list of NDArrays or Symbols
+            Initial states. The list of initial states and masks
         valid_length : NDArray or Symbol
+            Valid lengths of each sequence. This is usually used when part of sequence has
+            been padded. Shape (batch_size,)
         position_weight : NDArray or Symbol
+            The weight of positional encoding. Shape (max_len, C_in).
+
+        Returns
+        -------
+        encoder_outputs: list
+            Outputs of the encoder. Contains:
+
+            - outputs of the transformer encoder. Shape (batch_size, length, C_out)
+            - additional_outputs of all the transformer encoder
 
         Returns
         -------
@@ -456,34 +469,31 @@ class BaseTransformerEncoder(HybridBlock, Seq2SeqEncoder):
             (batch_size, num_heads, length, length)
 
         """
-        def arange_like(F, inputs, axis):
+        def _arange_like(F, inputs, axis):
             if self._support_arange_like:
                 arange = F.contrib.arange_like(inputs, axis=axis)
             else:
-                warnings.warn('`arange_like` operator support is not found. '
-                              'In this case, please make sure the input sequence lenght < 512.')
-
-                temp = F.transpose(inputs, axes=(1, 0, 2))
-                arange = F.arange(512)
-                arange = F.slice_like(arange, temp, axes=(0,))
-
+                arange = F.arange(self._max_length)
+                arange = F.slice_like(arange, inputs, axes=(1,))
             return arange
 
         if valid_length is not None:
-            arange = arange_like(F, inputs, axis=1)
+            arange = _arange_like(F, inputs, axis=1)
             ones = F.ones_like(arange)
-            mask = F.broadcast_lesser(F.reshape(arange, shape=(1, -1)), F.reshape(valid_length, shape=(-1, 1)))
-            mask = F.broadcast_mul(F.expand_dims(mask, axis=1), F.broadcast_mul(ones, F.reshape(ones, shape=(-1, 1))))
+            mask = F.broadcast_lesser(F.reshape(arange, shape=(1, -1)),
+                                      F.reshape(valid_length, shape=(-1, 1)))
+            mask = F.broadcast_mul(F.expand_dims(mask, axis=1),
+                                   F.broadcast_mul(ones, F.reshape(ones, shape=(-1, 1))))
             if states is None:
                 states = [mask]
             else:
                 states.append(mask)
-        if self._scale_embed:
-            dims = F.slice(F.shape_array(inputs), begin=(-1,), end=(None,))
-            dims = F.cast(dims, inputs.dtype)
-            inputs = F.broadcast_mul(inputs, F.sqrt(dims))
 
-        steps = arange_like(F, inputs, axis=1)
+        if self._scale_embed:
+            # XXX: input.shape[-1] and self._units are expected to be the same
+            inputs = F.broadcast_mul(inputs, math.sqrt(self._units))
+
+        steps = _arange_like(F, inputs, axis=1)
         if states is None:
             states = [steps]
         else:
@@ -491,7 +501,7 @@ class BaseTransformerEncoder(HybridBlock, Seq2SeqEncoder):
 
         if states is not None:
             steps = states[-1]
-            # Positional Encoding
+            # positional encoding
             positional_embed = F.Embedding(steps, position_weight, self._max_length, self._units)
             inputs = F.broadcast_add(inputs, F.expand_dims(positional_embed, axis=0))
         if self._dropout:
