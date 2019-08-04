@@ -783,8 +783,8 @@ def test_glue_data(cls, name, segment, length, fields):
     (nlp.data.SuperGlueReCoRD, 'record', 'val', 7481, 4),
     (nlp.data.SuperGlueReCoRD, 'record', 'test', 7484, 4),
     # in AX-b dataset, number of fields may differ
-    (nlp.data.SuperGlueAX_b, 'ax_b', None, 1104, None),
-    (nlp.data.SuperGlueAX_g, 'ax_g', None, 356, 5),
+    (nlp.data.SuperGlueAXb, 'ax_b', None, 1104, None),
+    (nlp.data.SuperGlueAXg, 'ax_g', None, 356, 5),
 ])
 @pytest.mark.serial
 @pytest.mark.remote_required
