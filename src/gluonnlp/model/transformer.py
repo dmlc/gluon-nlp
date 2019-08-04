@@ -410,7 +410,8 @@ class BaseTransformerEncoder(HybridBlock, Seq2SeqEncoder):
                     activation=activation,
                     layer_norm_eps=layer_norm_eps)
 
-    def __call__(self, inputs, states=[], valid_length=[]): #pylint: disable=arguments-differ
+    def __call__(self, inputs, states=[], valid_length=[]):
+        #pylint: disable=arguments-differ, dangerous-default-value
         """Encode the inputs given the states and valid sequence length.
 
         Parameters
