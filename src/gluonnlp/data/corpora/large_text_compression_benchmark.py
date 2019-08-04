@@ -177,7 +177,7 @@ class Enwik8(_LargeTextCompressionBenchmark):
 
     """
 
-    archive_file = ('enwik8-d25f6043.zip', 'd25f60433af3c02ec6d2dec2435e1732f42a1a68cp')
+    archive_file = ('enwik8-d25f6043.zip', 'd25f60433af3c02ec6d2dec2435e1732f42a1a68')
     data_file = {
         'test': ('test.txt', '1389fdf312b253350a959d4fd63e5e9ae7fe74d4'),
         'train': ('train.txt', 'eff044567358678cd81b9eda516cb146fdba7360'),
