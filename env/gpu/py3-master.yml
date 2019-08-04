@@ -27,7 +27,7 @@ dependencies:
   - regex
   - pip:
     - pylint-quotes<0.2
-    - mxnet-cu101mkl>=1.6.0b20190730
+    - mxnet-cu101mkl==1.4.1
     - sacremoses
     - sentencepiece<0.2
     - https://github.com/mli/mx-theme/tarball/v0.3.9
