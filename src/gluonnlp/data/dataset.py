@@ -300,7 +300,16 @@ class NumpyDataset(ArrayDataset):
 
 
 class JsonlDataset(SimpleDataset):
-    def __init__(self, filename, encoding='utf-8'):
+    """A dataset wrapping over a jsonlines (.jsonl) file, each line is a json object.
+    
+    Parameters
+    ----------
+    filename : str
+        Path to the .jsonl file.
+    encoding : str, default 'utf8'
+        File encoding format.
+    """
+    def __init__(self, filename, encoding='utf8'):
 
         if not isinstance(filename, (tuple, list)):
             filename = (filename, )

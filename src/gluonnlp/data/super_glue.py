@@ -372,7 +372,7 @@ class SuperGlueReCoRD(_SuperGlueDataset):
         return 'gluon/dataset/SUPERGLUE/ReCoRD'
 
 
-class SuperGlueAX_b(_SuperGlueDataset):
+class SuperGlueAXb(_SuperGlueDataset):
     """
     The Broadcoverage Diagnostics (AX-b) is a diagnostics dataset labeled closely to
     the schema of MultiNLI.
@@ -399,7 +399,7 @@ class SuperGlueAX_b(_SuperGlueDataset):
         return 'gluon/dataset/SUPERGLUE/AX-b'
 
 
-class SuperGlueAX_g(_SuperGlueDataset):
+class SuperGlueAXg(_SuperGlueDataset):
     """
     The Winogender Schema Diagnostics (AX-g) is a diagnostics dataset labeled closely to
     the schema of MultiNLI.
