@@ -69,7 +69,7 @@ def evaluate_official_script(parser, vocab, num_buckets_test, test_batch_size,
             gold_arc = gold_arc[1:length + 1]
             gold_rel = gold_rel[1:length + 1]
 
-            arc_mask = np.equal(pred_arc, gold_arc)
+            arc_mask = np.equal(pred_arc, gold_arc)  # pylint: disable=assignment-from-no-return
             uc += np.sum(arc_mask)
             total += length
 

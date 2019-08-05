@@ -253,7 +253,7 @@ class BiaffineParser(nn.Block):
         # seq_len x batch_size
 
         if is_train or arc_targets is not None:
-            correct = np.equal(arc_preds.asnumpy(), arc_targets)
+            correct = np.equal(arc_preds.asnumpy(), arc_targets)  # pylint: disable=assignment-from-no-return
             arc_correct = correct.astype(np.float32) * mask
             arc_accuracy = np.sum(arc_correct) / num_tokens
             targets_1D = flatten_numpy(arc_targets)

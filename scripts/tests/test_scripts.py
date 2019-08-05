@@ -360,7 +360,7 @@ def test_finetune_inference(dataset):
 @pytest.mark.remote_required
 @pytest.mark.integration
 @pytest.mark.parametrize('dataset', ['XNLI', 'LCQMC', 'ChnSentiCorp'])
-@pytest.mark.skipif(datetime.date.today() < datetime.date(2019, 7, 18),
+@pytest.mark.skipif(datetime.date.today() < datetime.date(2019, 8, 18),
                     reason='Disabled for 4 weeks due to DNS error.')
 def test_finetune_chinese_inference(dataset):
     arguments = ['--log_interval', '100', '--epsilon', '1e-8', '--optimizer',
