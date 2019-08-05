@@ -492,7 +492,7 @@ class BaseTransformerEncoder(HybridBlock, Seq2SeqEncoder):
 
         if self._scale_embed:
             # XXX: input.shape[-1] and self._units are expected to be the same
-            inputs = F.broadcast_mul(inputs, math.sqrt(self._units))
+            inputs = inputs / math.sqrt(self._units)
 
         steps = _arange_like(F, inputs, axis=1)
         if states is None:
