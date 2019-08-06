@@ -224,7 +224,7 @@ import utils
 
 print('Translate the following English sentence into German:')
 
-sample_src_seq = 'We love language.'
+sample_src_seq = 'We love language .'
 
 print('[\'' + sample_src_seq + '\']')
 
