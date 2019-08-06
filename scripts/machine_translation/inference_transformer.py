@@ -195,7 +195,7 @@ model.load_parameters(args.model_parameter, ctx)
 
 static_alloc = True
 model.hybridize(static_alloc=static_alloc)
-logging.info(model)
+#logging.info(model)
 
 # translator prepare
 translator = BeamSearchTranslator(model=model, beam_size=args.beam_size,
@@ -212,7 +212,7 @@ def inference():
     logging.info('Inference on dev_dataset!')
 
     # data and model prepare
-    _, val_data_loader, _ \
+    _, _, test_data_loader \
         = dataprocessor.make_dataloader(data_train, data_val, data_test, args,
                                         use_average_length=True, num_shards=len(ctx))
 
@@ -233,60 +233,93 @@ def inference():
     avg_loss = 0.0
     total_wc = 0
     total_time = 0
+    
+    batch_total_blue = 0
 
-    for batch_id, (src_seq, tgt_seq, src_valid_length, tgt_valid_length, inst_ids) \
-            in enumerate(val_data_loader):
+    # add profiler on-off
+    is_profiler_on = os.getenv('GLUONNLP_TRANSFORMER_PROFILING', False)
+    is_mkldnn_verbose_on = os.getenv('MKLDNN_VERBOSE', 0)
+    if is_profiler_on:
+        mx.profiler.set_config(profile_symbolic=True, profile_imperative=True, profile_memory=False,
+                               profile_api=False, filename='profile.json', aggregate_stats=True)
+        mx.profiler.set_state('run')
 
-        total_wc += src_valid_length.sum().asscalar() + tgt_valid_length.sum().asscalar()
+    for batch_id, (src_seq, tgt_seq, src_test_length, tgt_test_length, inst_ids) \
+            in enumerate(test_data_loader):
+
+        total_wc += src_test_length.sum().asscalar() + tgt_test_length.sum().asscalar()
 
         src_seq = src_seq.as_in_context(ctx[0])
         tgt_seq = tgt_seq.as_in_context(ctx[0])
-        src_valid_length = src_valid_length.as_in_context(ctx[0])
-        tgt_valid_length = tgt_valid_length.as_in_context(ctx[0])
-
-        start = time.time()
+        src_test_length = src_test_length.as_in_context(ctx[0])
+        tgt_test_length = tgt_test_length.as_in_context(ctx[0])
+       
         # Calculating Loss
-        out, _ = model(src_seq, tgt_seq[:, :-1], src_valid_length, tgt_valid_length - 1)
-        loss = test_loss_function(out, tgt_seq[:, 1:], tgt_valid_length - 1).mean().asscalar()
+        out, _ = model(src_seq, tgt_seq[:, :-1], tgt_test_length, tgt_test_length - 1)
+        loss = test_loss_function(out, tgt_seq[:, 1:], tgt_test_length - 1).mean().asscalar()
         all_inst_ids.extend(inst_ids.asnumpy().astype(np.int32).tolist())
         avg_loss += loss * (tgt_seq.shape[1] - 1)
         avg_loss_denom += (tgt_seq.shape[1] - 1)
 
-        end = time.time()
-        total_time += (end - start)
-
-        if batch_id % 10 == 0:
-            logging.info('batch id={:d}, loss={:.4f}'.format(batch_id, avg_loss / avg_loss_denom))
-
+        start = time.time()
         # Translate to get a bleu score
-        samples, _, sample_valid_length = \
-            translator.translate(src_seq=src_seq, src_valid_length=src_valid_length)
-        max_score_sample = samples[:, 0, :].asnumpy()
-        sample_valid_length = sample_valid_length[:, 0].asnumpy()
-        for i in range(max_score_sample.shape[0]):
-            translation_out.append(
-                [tgt_vocab.idx_to_token[ele] for ele in 
-                 max_score_sample[i][1:(sample_valid_length[i] - 1)]])
+        samples, _, sample_test_length = \
+            translator.translate(src_seq=src_seq, src_valid_length=src_test_length)
+        total_time += (time.time() - start)
 
-    #avg_loss = avg_loss / avg_loss_denom
-    real_translation_out = [None for _ in range(len(all_inst_ids))]
-    for ind, sentence in zip(all_inst_ids, translation_out):
-        if args.bleu == 'tweaked':
-            real_translation_out[ind] = sentence
-        elif args.bleu == '13a' or args.bleu == 'intl':
-            real_translation_out[ind] = detokenizer(_bpe_to_words(sentence))
-        else:
-            raise NotImplementedError
-    valid_bleu_score, _, _, _, _ = compute_bleu([val_tgt_sentences], real_translation_out,
+        # generator the translator result for each batch
+        max_score_sample = samples[:, 0, :].asnumpy()
+        sample_test_length = sample_test_length[:, 0].asnumpy()
+        translation_tmp = []
+        translation_tmp_sentences = []
+        for i in range(max_score_sample.shape[0]):
+            translation_tmp.append([tgt_vocab.idx_to_token[ele] for ele in 
+                max_score_sample[i][1:(sample_test_length[i] - 1)]])
+        # translation_out.extend(translation_tmp)
+        
+        # detokenizer each translator result
+        for _, sentence in enumerate(translation_tmp):
+            if args.bleu == 'tweaked':
+                translation_tmp_sentences.append(sentence)
+                translation_out.append(sentence)
+            elif args.bleu == '13a' or args.bleu == 'intl':
+                translation_tmp_sentences.append(detokenizer(_bpe_to_words(sentence)))
+                translation_out.append(detokenizer(_bpe_to_words(sentence)))
+            else:
+                raise NotImplementedError
+
+        # generate tgt_sentence for bleu calculation of each batch
+        tgt_sen_tmp = [test_tgt_sentences[index] for 
+                                _, index in enumerate(inst_ids.asnumpy().astype(np.int32).tolist())]
+        batch_test_bleu_score, _, _, _, _ = compute_bleu([tgt_sen_tmp], translation_tmp_sentences,
                                                 tokenized=tokenized, tokenizer=args.bleu,
                                                 split_compound_word=split_compound_word,
                                                 bpe=bpe)
+        batch_total_blue += batch_test_bleu_score
 
-    val_ave_loss = avg_loss / avg_loss_denom
+        # log for every ten batchs
+        if batch_id % 10 == 0 and batch_id != 0:
+            batch_ave_bleu = batch_total_blue / 10
+            batch_total_blue = 0
+            logging.info('batch id={:d}, loss={:.4f}, batch_bleu={:.4f}'
+                        .format(batch_id, loss, batch_ave_bleu * 100))
+
+    # reorg translation sentences by inst_ids
+    real_translation_out = [None for _ in range(len(all_inst_ids))]
+    for ind, sentence in zip(all_inst_ids, translation_out):
+        real_translation_out[ind] = sentence
+
+    # get bleu score, n-gram precisions, brevity penalty,  reference length, and translation length
+    test_bleu_score, _, _, _, _ = compute_bleu([test_tgt_sentences], real_translation_out,
+                                                tokenized=tokenized, tokenizer=args.bleu,
+                                                split_compound_word=split_compound_word,
+                                                bpe=bpe)
+    # total batch logging
+    test_ave_loss = avg_loss / avg_loss_denom
     logging.info('Inference at val dataset. Loss={:.4f}, \
                  val ppl={:.4f}, val bleu={:.4f}, throughput={:.4f}K wps'
-                 .format(val_ave_loss, np.exp(val_ave_loss),
-                         valid_bleu_score * 100, total_wc / total_time / 1000))
+                 .format(test_ave_loss, np.exp(val_ave_loss), 
+                        test_bleu_score * 100, total_wc / total_time / 1000))
 
 
 if __name__ == '__main__':
