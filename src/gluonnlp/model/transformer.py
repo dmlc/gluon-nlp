@@ -474,8 +474,14 @@ class BaseTransformerEncoder(HybridBlock, Seq2SeqEncoder):
             if self._support_arange_like:
                 arange = F.contrib.arange_like(inputs, axis=axis)
             else:
-                arange = F.arange(self._max_length)
-                arange = F.slice_like(arange, inputs, axes=(1,))
+                if F == mx.ndarray:
+                    seq_len = inputs.shape[1]
+                    arange = F.arange(seq_len, dtype=inputs.dtype, ctx=inputs.context)
+                else:
+                    inputs = inputs.slice(begin=(0, 0, 0), end=(1, None, 1)).reshape((-1))
+                    zeros = F.zeros_like(inputs)
+                    arange = F.arange(start=0, repeat=1, step=1, infer_range=True)
+                    arange = F.elemwise_add(arange, zeros)
             return arange
 
         if valid_length is not None:
