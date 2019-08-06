@@ -440,7 +440,7 @@ trainer = gluon.Trainer(model.collect_params(), 'adam', {'learning_rate': lr})
 ```
 
 We can then write the training loop. During the training, we evaluate on the validation and testing datasets every epoch, and record the
-parameters that give the highest [Bilingual Evaluation Understudy Score (BLEU)](https://www.aclweb.org/anthology/P02-1040.pdf)[1] score on the validation dataset. Before
+parameters that give the highest [Bilingual Evaluation Understudy Score (BLEU)](https://www.aclweb.org/anthology/P02-1040.pdf) score on the validation dataset. Before
 performing forward and backward computation, we first use the `as_in_context` function to copy
 the mini-batch to the GPU. The statement `with mx.autograd.record()` tells Gluon's
 backend to compute the gradients for the part inside the block.
@@ -528,6 +528,3 @@ for epoch_id in range(epochs):
 In this notebook, we have shown how to train a GNMT model on the IWSLT 2015 English-Vietnamese dataset using the Gluon NLP toolkit.
 The complete training script can be found [here](https://github.com/dmlc/gluon-nlp/blob/master/scripts/machine_translation/train_gnmt.py).
 The code sequence to reproduce the results can be seen on the [machine translation page](http://gluon-nlp.mxnet.io/model_zoo/machine_translation/index.html).
-
-## References
-[1] Papineni, Kishore, et al. "BLEU: a method for automatic evaluation of machine translation." Proceedings of the 40th annual meeting on association for computational linguistics. Association for Computational Linguistics, 2002.
