@@ -45,7 +45,10 @@ import mxnet as mx
 from mxnet import gluon
 import gluonnlp as nlp
 
+from gluonnlp.loss import MaskedSoftmaxCELoss, LabelSmoothing
 from gluonnlp.model.translation import NMTModel
+from gluonnlp.model.transformer import get_transformer_encoder_decoder, ParallelTransformer	
+from gluonnlp.utils.parallel import Parallel
 from translation import BeamSearchTranslator
 #from loss import SoftmaxCEMaskedLoss, LabelSmoothing
 from utils import logging_config
