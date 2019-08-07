@@ -6,6 +6,7 @@ In this notebook, we will show how to use Transformer introduced in [1] and eval
 
 We start with some usual preparation such as importing libraries and setting the environment.
 
+
 ### Load MXNet and GluonNLP
 
 ```{.python .input}
