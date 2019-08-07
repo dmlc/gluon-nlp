@@ -408,7 +408,7 @@ def train():
                 log_avg_loss = 0
                 log_wc = 0
         if local_sgd > 1 and not is_sync:
-            # synchronous model parameters for local sgd
+            # synchronize model parameters before evaluation
             trainer.allreduce_params()
             trainer.allreduce_states()
         mx.nd.waitall()
