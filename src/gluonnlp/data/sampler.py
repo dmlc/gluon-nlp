@@ -257,6 +257,7 @@ class FixedBucketSampler(Sampler):
     batch_size : int
         The batch size of the sampler
         If batch_size is a list, then use it as pre-defined _bucket_batch_sizes
+        Default: [81,41,26,18,15,11,9,8], [142,80,56,41,32,26,22,19,16,15,13,12,11,9,8,8]
     num_buckets : int or None, default 10
         The number of buckets. This will not be used if bucket_keys is set.
     bucket_keys : None or list of int or list of tuple, default None
