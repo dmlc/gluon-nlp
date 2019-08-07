@@ -295,6 +295,8 @@ class FixedBucketSampler(Sampler):
         LinearWidthBucket: the width of ith  bucket follows :math:`w_i = \alpha * i + 1`
         ExpWidthBucket: the width of ith bucket follows
         :math:`w_i` = bucket_len_step :math:`* w_{i-1}`
+    min_length : int, default None
+        If None, then search the minimum in lengths, otherwise use min_length
     Examples
     --------
     >>> lengths = [np.random.randint(1, 100) for _ in range(1000)]
