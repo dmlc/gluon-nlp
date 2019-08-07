@@ -36,7 +36,6 @@ sentence pair classification, with Gluon NLP Toolkit.
 
 import io
 import os
-import sys
 import time
 import argparse
 import random
@@ -182,8 +181,7 @@ parser.add_argument(
 
 args = parser.parse_args()
 
-logging.basicConfig(stream=sys.stdout, level=logging.INFO)
-# logging.getLogger().setLevel(logging.INFO)
+logging.getLogger().setLevel(logging.INFO)
 logging.captureWarnings(True)
 logging.info(args)
 
