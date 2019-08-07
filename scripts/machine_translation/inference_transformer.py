@@ -47,7 +47,7 @@ import gluonnlp as nlp
 
 from gluonnlp.loss import MaskedSoftmaxCELoss, LabelSmoothing
 from gluonnlp.model.translation import NMTModel
-from gluonnlp.model.transformer import get_transformer_encoder_decoder, ParallelTransformer	
+from gluonnlp.model.transformer import get_transformer_encoder_decoder, ParallelTransformer
 from gluonnlp.utils.parallel import Parallel
 from translation import BeamSearchTranslator
 from utils import logging_config
@@ -303,8 +303,8 @@ def inference():
                                                bpe=bpe)
     # total batch logging
     test_ave_loss = avg_loss / avg_loss_denom
-    logging.info('Inference at val dataset. Loss={:.4f}, \
-                 val ppl={:.4f}, val bleu={:.4f}, throughput={:.4f}K wps'
+    logging.info('Inference at test dataset. Loss={:.4f}, \
+                 inference ppl={:.4f}, inference bleu={:.4f}, throughput={:.4f}K wps'
                  .format(test_ave_loss, np.exp(test_ave_loss),
                          test_bleu_score * 100, total_wc / total_time / 1000))
 
