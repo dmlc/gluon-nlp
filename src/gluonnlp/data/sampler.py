@@ -255,7 +255,9 @@ class FixedBucketSampler(Sampler):
     lengths : list of int or list of tuple/list of int
         The length of the sequences in the input data sample.
     batch_size : int
-        The batch size of the sampler.
+        The batch size of the sampler
+        If batch_size is a list, then use it as pre-defined _bucket_batch_sizes
+        Default: [81,41,26,18,15,11,9,8], [142,80,56,41,32,26,22,19,16,15,13,12,11,9,8,8]
     num_buckets : int or None, default 10
         The number of buckets. This will not be used if bucket_keys is set.
     bucket_keys : None or list of int or list of tuple, default None
@@ -293,6 +295,8 @@ class FixedBucketSampler(Sampler):
         LinearWidthBucket: the width of ith  bucket follows :math:`w_i = \alpha * i + 1`
         ExpWidthBucket: the width of ith bucket follows
         :math:`w_i` = bucket_len_step :math:`* w_{i-1}`
+    min_length : int, default None
+        If None, then search the minimum in lengths, otherwise use min_length
     Examples
     --------
     >>> lengths = [np.random.randint(1, 100) for _ in range(1000)]
@@ -303,9 +307,9 @@ class FixedBucketSampler(Sampler):
     """
     def __init__(self, lengths, batch_size, num_buckets=10, bucket_keys=None,
                  ratio=0, shuffle=False, use_average_length=False, num_shards=0,
-                 bucket_scheme=ConstWidthBucket()):
+                 bucket_scheme=ConstWidthBucket(), min_length=None):
         assert len(lengths) > 0, 'FixedBucketSampler does not support empty lengths.'
-        assert batch_size > 0, 'Batch size must be larger than 0.'
+        assert isinstance(batch_size, list) or batch_size > 0, 'Batch size must be larger than 0.'
         assert ratio >= 0, 'batch size scaling ratio cannot be negative.'
         self._batch_size = batch_size
         self._ratio = ratio
@@ -323,17 +327,21 @@ class FixedBucketSampler(Sampler):
         self._num_shards = num_shards
         self._bucket_scheme = bucket_scheme
         max_lengths = self._lengths.max(axis=0)
-        min_lengths = self._lengths.min(axis=0)
-        if self._single_element:
-            assert min_lengths > 0, 'Sequence lengths must all be larger than 0.'
+        if min_length is not None:
+            min_lengths = min_length
         else:
-            for _, ele in enumerate(min_lengths):
-                assert ele > 0, 'Sequence lengths must all be larger than 0.'
+            min_lengths = self._lengths.min(axis=0)
+            if self._single_element:
+                assert min_lengths > 0, 'Sequence lengths must all be larger than 0.'
+            else:
+                for _, ele in enumerate(min_lengths):
+                    assert ele > 0, 'Sequence lengths must all be larger than 0.'
         # Generate the buckets
         if bucket_keys is None:
             assert num_buckets > 0, 'num_buckets must be set when bucket_keys is None. Received ' \
                                     'num_buckets=%d' % num_buckets
-            bucket_keys = bucket_scheme(max_lengths, min_lengths, num_buckets)
+            # bucket_keys = bucket_scheme(max_lengths, min_lengths, num_buckets)
+            bucket_keys = bucket_scheme(int(math.ceil(max_lengths / 32.0)*32), min_lengths, num_buckets)
         else:
             if num_buckets is not None:
                 warnings.warn('num_buckets will not be used if bucket_keys is not None. '
@@ -358,21 +366,27 @@ class FixedBucketSampler(Sampler):
 
         self._bucket_sample_ids = [sample_ids for sample_ids in bucket_sample_ids
                                    if len(sample_ids) > 0]
-        if not use_average_length:
-            scale_up_keys = [key if self._single_element else sum(key) for key
-                             in self._bucket_keys]
-            max_scale_up_key = max(scale_up_keys)
-            self._bucket_batch_sizes = [max(int(max_scale_up_key / float(scale_up_key)
-                                                * self._ratio * batch_size), batch_size)
-                                        for scale_up_key in scale_up_keys]
+        # if batch_size is a list, then use it as pre-defined _bucket_batch_sizes
+        if isinstance(batch_size, list):
+            self._bucket_batch_sizes = batch_size
+            assert len(batch_size) == len(self._bucket_keys)
         else:
-            if ratio > 0.:
-                warnings.warn('ratio=%f is ignored when use_average_length is True' % self._ratio)
-            bucket_average_lengths, bucket_length_stds = _bucket_stats(self._bucket_sample_ids,
-                                                                       self._lengths)
-            self._bucket_batch_sizes = [max(int(batch_size / (average_length + length_std)), 1)
-                                        for average_length, length_std
-                                        in zip(bucket_average_lengths, bucket_length_stds)]
+            if not use_average_length:
+                scale_up_keys = [key if self._single_element else sum(key) for key
+                                in self._bucket_keys]
+                max_scale_up_key = max(scale_up_keys)
+                self._bucket_batch_sizes = [max(int(max_scale_up_key / float(scale_up_key)
+                                                    * self._ratio * batch_size), batch_size)
+                                            for scale_up_key in scale_up_keys]
+            else:
+                if ratio > 0.:
+                    warnings.warn('ratio=%f is ignored when use_average_length is True' % self._ratio)
+                bucket_average_lengths, bucket_length_stds = _bucket_stats(self._bucket_sample_ids,
+                                                                        self._lengths)
+                # fix integer division
+                self._bucket_batch_sizes = [max(int(1.0 * batch_size / min((average_length + length_std), max_length)), 1)
+                                            for average_length, length_std, max_length
+                                            in zip(bucket_average_lengths, bucket_length_stds, self._bucket_keys)]
         self._batch_infos = []
         for bucket_id, sample_ids, bucket_batch_size in\
                 zip(range(len(self._bucket_keys) - 1, -1, -1),
