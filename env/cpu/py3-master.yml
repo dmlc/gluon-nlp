@@ -6,7 +6,7 @@ dependencies:
   - perl
   - pylint=2.3.1
   - flake8
-  - sphinx=1.7.7
+  - sphinx=2.1.2
   - spacy>2
   - nltk
   - pytest=4.5.0
@@ -20,3 +20,4 @@ dependencies:
     - mxnet-mkl>=1.6.0b20190729
     - sacremoses
     - sentencepiece<0.2
+    - sphinx-autodoc-typehints==1.7.0

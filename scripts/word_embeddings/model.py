@@ -132,7 +132,7 @@ class SG(Net):
         # center - context pairs
         emb_center = self.embedding(center).expand_dims(1)
         emb_context = self.embedding_out(context).expand_dims(2)
-        pred_pos = F.batch_dot(emb_center, emb_context).squeeze(axis=None)
+        pred_pos = F.batch_dot(emb_center, emb_context).squeeze()
         loss_pos = (F.relu(pred_pos) - pred_pos + F.Activation(
             -F.abs(pred_pos), act_type='softrelu')) / (mask.sum(axis=1) + 1)
 
@@ -140,7 +140,7 @@ class SG(Net):
         emb_negatives = self.embedding_out(negatives).reshape(
             (-1, self._kwargs['num_negatives'],
              self._kwargs['output_dim'])).swapaxes(1, 2)
-        pred_neg = F.batch_dot(emb_center, emb_negatives).squeeze(axis=None)
+        pred_neg = F.batch_dot(emb_center, emb_negatives).squeeze()
         mask = mask.reshape((-1, self._kwargs['num_negatives']))
         loss_neg = (F.relu(pred_neg) + F.Activation(
             -F.abs(pred_neg), act_type='softrelu')) * mask
@@ -180,7 +180,7 @@ class CBOW(Net):
         # context - center samples
         emb_context = self.embedding(context).expand_dims(1)
         emb_center = self.embedding_out(center).expand_dims(2)
-        pred_pos = F.batch_dot(emb_context, emb_center).squeeze(axis=None)
+        pred_pos = F.batch_dot(emb_context, emb_center).squeeze()
         loss_pos = (F.relu(pred_pos) - pred_pos + F.Activation(
             -F.abs(pred_pos), act_type='softrelu')) / (mask.sum(axis=1) + 1)
 
@@ -188,7 +188,7 @@ class CBOW(Net):
         emb_negatives = self.embedding_out(negatives).reshape(
             (-1, self._kwargs['num_negatives'],
              self._kwargs['output_dim'])).swapaxes(1, 2)
-        pred_neg = F.batch_dot(emb_context, emb_negatives).squeeze(axis=None)
+        pred_neg = F.batch_dot(emb_context, emb_negatives).squeeze()
         mask = mask.reshape((-1, self._kwargs['num_negatives']))
         loss_neg = (F.relu(pred_neg) + F.Activation(
             -F.abs(pred_neg), act_type='softrelu')) * mask
