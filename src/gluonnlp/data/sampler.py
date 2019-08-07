@@ -255,7 +255,8 @@ class FixedBucketSampler(Sampler):
     lengths : list of int or list of tuple/list of int
         The length of the sequences in the input data sample.
     batch_size : int
-        The batch size of the sampler.
+        The batch size of the sampler
+        If batch_size is a list, then use it as pre-defined _bucket_batch_sizes
     num_buckets : int or None, default 10
         The number of buckets. This will not be used if bucket_keys is set.
     bucket_keys : None or list of int or list of tuple, default None

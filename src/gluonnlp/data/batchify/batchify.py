@@ -177,6 +177,8 @@ class Pad(object):
         Whether to return the valid length in the output.
     dtype : str or numpy.dtype, default None
         The value type of the output. If it is set to None, the input data type is used.
+    round_len : int, default None
+        The integer, which is the factor that the sequences are padded to, usually 8 or 16
 
     Examples
     --------
