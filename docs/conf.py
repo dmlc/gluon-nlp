@@ -51,6 +51,7 @@ extensions = [
     'sphinx.ext.viewcode',
     'sphinx.ext.intersphinx',
     'sphinx.ext.napoleon',
+    'sphinx_autodoc_typehints',
     'sphinx.ext.mathjax',
     'sphinx_gallery.gen_gallery',
     'nbsphinx',
@@ -253,6 +254,7 @@ sphinx_gallery_conf = {
 
 # Napoleon settings
 napoleon_use_ivar = True
+napoleon_use_param = True  # Required for compatibility with sphinx-autodoc-typehints
 
 # linkcheck settings
 import multiprocessing
