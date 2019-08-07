@@ -35,7 +35,7 @@ class LocalSGDTrainer(mx.gluon.Trainer):
     ----------
     local_sgd_interval : int, default 1
         If local_sgd_interval<=1, run fully synchronous SGD,
-        otherwise, sync params and states for every local_sgd steps.
+        otherwise, sync params and states for every local_sgd_interval steps.
     local_sgd_regularization : float, default 0
         The weight of local regularization, within the range [0, 1)
     local_sgd_regularization_interval : int, default 0

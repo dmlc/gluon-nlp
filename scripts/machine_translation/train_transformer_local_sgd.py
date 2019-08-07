@@ -407,7 +407,7 @@ def train():
                 log_start_time = time.time()
                 log_avg_loss = 0
                 log_wc = 0
-        if local_sgd > 1 and not is_sync:
+        if local_sgd_interval > 1 and not is_sync:
             # synchronize model parameters before evaluation
             trainer.allreduce_params()
             trainer.allreduce_states()
