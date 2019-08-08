@@ -17,6 +17,7 @@
 # specific language governing permissions and limitations
 # under the License.
 """BERT models."""
+# pylint: disable=too-many-lines
 
 __all__ = ['BERTModel', 'BERTEncoder', 'BERTEncoderCell', 'BERTPositionwiseFFN',
            'BERTLayerNorm', 'bert_12_768_12', 'bert_24_1024_16',
@@ -278,7 +279,7 @@ class BERTModel(Block):
     vocab_size : int or None, default None
         The size of the vocabulary.
     token_type_vocab_size : int or None, default None
-        The vocabulary size of token types.
+        The vocabulary size of token types (number of segments).
     units : int or None, default None
         Number of units for the final pooler layer.
     embed_size : int or None, default None
@@ -294,8 +295,8 @@ class BERTModel(Block):
         The word embedding. If set to None, word_embed will be constructed using embed_size and
         embed_dropout.
     token_type_embed : Block or None, default None
-        The token type embedding. If set to None and the token_type_embed will be constructed using
-        embed_size and embed_dropout.
+        The token type embedding (segment embedding). If set to None and the token_type_embed will
+        be constructed using embed_size and embed_dropout.
     use_pooler : bool, default True
         Whether to include the pooler which converts the encoded sequence tensor of shape
         (batch_size, seq_length, units) to a tensor of shape (batch_size, units)
@@ -305,7 +306,7 @@ class BERTModel(Block):
     use_classifier : bool, default True
         Whether to include the classifier for next sentence classification.
     use_token_type_embed : bool, default True
-        Whether to include token type embedding. TODO: explain more.
+        Whether to include token type embedding (segment embedding).
     prefix : str or None
         See document of `mx.gluon.Block`.
     params : ParameterDict or None
@@ -313,7 +314,7 @@ class BERTModel(Block):
 
     Inputs:
         - **inputs**: input sequence tensor, shape (batch_size, seq_length)
-        - **token_types**: optinal input token type tensor, shape (batch_size, seq_length).
+        - **token_types**: optional input token type tensor, shape (batch_size, seq_length).
             If the inputs contain two sequences, then the token type of the first
             sequence differs from that of the second one.
         - **valid_length**: optional tensor of input sequence valid lengths, shape (batch_size,)
@@ -438,8 +439,6 @@ class BERTModel(Block):
                 next_sentence_classifier_out = self.classifier(pooled_out)
                 outputs.append(next_sentence_classifier_out)
         if self._use_decoder and masked_positions is not None:
-            assert masked_positions is not None, \
-                'masked_positions tensor is required for decoding masked language model'
             decoder_out = self._decode(output, masked_positions)
             outputs.append(decoder_out)
         return tuple(outputs) if len(outputs) > 1 else outputs[0]
