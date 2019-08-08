@@ -527,7 +527,7 @@ model_store._model_sha1.update(
     ]})
 
 roberta_12_768_12_hparams = {
-    'attention_cell': 'multi_head_self',
+    'attention_cell': 'multi_head',
     'num_layers': 12,
     'units': 768,
     'hidden_size': 3072,
@@ -544,7 +544,7 @@ roberta_12_768_12_hparams = {
 }
 
 roberta_24_1024_16_hparams = {
-    'attention_cell': 'multi_head_self',
+    'attention_cell': 'multi_head',
     'num_layers': 24,
     'units': 1024,
     'hidden_size': 4096,

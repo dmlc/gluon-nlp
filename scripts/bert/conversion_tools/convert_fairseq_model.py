@@ -145,7 +145,9 @@ mapping = {
     'encoder.layer_norm' : 'decoder.sentence_encoder.emb_layer_norm',
     'encoder.position_weight' : 'decoder.sentence_encoder.embed_positions.weight',
     'encoder.transformer_cells': 'decoder.sentence_encoder.layers',
-    'attention_cell.proj.' : 'self_attn.in_proj_',
+    'attention_cell.proj_key.' : 'self_attn.in_proj_',
+    'attention_cell.proj_value.' : 'self_attn.in_proj_',
+    'attention_cell.proj_query.' : 'self_attn.in_proj_',
     'ffn.ffn_1' : 'fc1',
     'ffn.ffn_2' : 'fc2',
     'layer_norm.gamma' : 'layer_norm.weight',
@@ -160,6 +162,7 @@ for i in range(24):
 
 # set parameter data
 loaded_params = {}
+visited_pytorch_params = {}
 for name in params:
     pytorch_name = name
     for source, dest in mapping.items():
@@ -170,14 +173,23 @@ for name in params:
     # fairseq positional embedding starts with index 2
     if pytorch_name == 'decoder.sentence_encoder.embed_positions.weight':
        torch_arr = torch_arr[2:]
+
     arr = mx.nd.array(torch_arr)
-    assert arr.shape == params[name].shape, (arr.shape, params[name].shape, name, pytorch_name)
+    if 'attention_cell.proj' in name:
+        unfused = ['query', 'key', 'value']
+        arrs = arr.split(num_outputs=3, axis=0)
+        for i, p in enumerate(unfused):
+            if p in name:
+                arr = arrs[i]
+    else:
+        assert arr.shape == params[name].shape, (arr.shape, params[name].shape, name, pytorch_name)
     params[name].set_data(arr)
     loaded_params[name] = True
+    visited_pytorch_params[pytorch_name] = True
 
 assert len(params) == len(loaded_params)
-assert len(params) == len(pytorch_params), "Gluon model does not match PyTorch model. " \
-    "Please fix the BERTModel hyperparameters\n" + str(len(params)) + ' v.s. ' + str(len(pytorch_params))
+assert len(visited_pytorch_params) == len(pytorch_params), "Gluon model does not match PyTorch model. " \
+    "Please fix the BERTModel hyperparameters\n" + str(len(visited_pytorch_params)) + ' v.s. ' + str(len(pytorch_params))
 
 
 texts = 'Hello world. abc, def and 中文!'
