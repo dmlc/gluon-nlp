@@ -22,20 +22,20 @@
 
 __all__ = ['SuperGlueRTE', 'SuperGlueCB', 'SuperGlueWSC', 'SuperGlueWiC',
            'SuperGlueCOPA', 'SuperGlueMultiRC', 'SuperGlueBoolQ',
-           'SuperGlueReCoRD', 'SuperGlueAX_b', 'SuperGlueAX_g']
+           'SuperGlueReCoRD', 'SuperGlueAXb', 'SuperGlueAXg']
 
 import zipfile
 import os
 import re
 
-from .dataset import JsonlDataset
+from .dataset import _JsonlDataset
 from .registry import register
 from ..base import get_home_dir
 
 from mxnet.gluon.utils import download, check_sha1, _get_repo_file_url
 
 
-class _SuperGlueDataset(JsonlDataset):
+class _SuperGlueDataset(_JsonlDataset):
     def __init__(self, root, data_file):
         root = os.path.expanduser(root)
         if not os.path.isdir(root):
@@ -75,7 +75,7 @@ class SuperGlueRTE(_SuperGlueDataset):
 
     Parameters
     ----------
-    segment : {'train', 'dev', 'test'}, default 'train'
+    segment : {'train', 'val', 'test'}, default 'train'
         Dataset segment.
     root : str, default "$MXNET_HOME/datasets/superglue_rte"
         Path to temp folder for storing data.
@@ -130,7 +130,7 @@ class SuperGlueCB(_SuperGlueDataset):
 
     Parameters
     ----------
-    segment : {'train', 'dev', 'test'}, default 'train'
+    segment : {'train', 'val', 'test'}, default 'train'
         Dataset segment.
     root : str, default "$MXNET_HOME/datasets/superglue_cb"
         Path to temp folder from storing data.
@@ -188,9 +188,9 @@ class SuperGlueWSC(_SuperGlueDataset):
 
     Parameters
     ----------
-    segment : {'train', 'dev', 'test'}, default 'train'
+    segment : {'train', 'val', 'test'}, default 'train'
         Dataset segment.
-    root : str, default "$MXNET_HOME/datasets/superglue_cb"
+    root : str, default "$MXNET_HOME/datasets/superglue_wsc"
         Path to temp folder from storing data.
         MXNET_HOME defaults to '~/.mxnet'
 
@@ -244,9 +244,9 @@ class SuperGlueWiC(_SuperGlueDataset):
 
     Parameters
     ----------
-    segment : {'train', 'dev', 'test'}, default 'train'
+    segment : {'train', 'val', 'test'}, default 'train'
         Dataset segment.
-    root : str, default "$MXNET_HOME/datasets/superglue_cb"
+    root : str, default "$MXNET_HOME/datasets/superglue_wic"
         Path to temp folder from storing data.
         MXNET_HOME defaults to '~/.mxnet'
 
@@ -300,9 +300,9 @@ class SuperGlueCOPA(_SuperGlueDataset):
 
     Parameters
     ----------
-    segment : {'train', 'dev', 'test'}, default 'train'
+    segment : {'train', 'val', 'test'}, default 'train'
         Dataset segment.
-    root : str, default "$MXNET_HOME/datasets/superglue_cb"
+    root : str, default "$MXNET_HOME/datasets/superglue_copa"
         Path to temp folder from storing data.
         MXNET_HOME defaults to '~/.mxnet'
 
@@ -356,9 +356,9 @@ class SuperGlueMultiRC(_SuperGlueDataset):
 
     Parameters
     ----------
-    segment : {'train', 'dev', 'test'}, default 'train'
+    segment : {'train', 'val', 'test'}, default 'train'
         Dataset segment.
-    root : str, default "$MXNET_HOME/datasets/superglue_cb"
+    root : str, default "$MXNET_HOME/datasets/superglue_multirc"
         Path to temp folder from storing data.
         MXNET_HOME defaults to '~/.mxnet'
 
@@ -433,9 +433,9 @@ class SuperGlueBoolQ(_SuperGlueDataset):
 
     Parameters
     ----------
-    segment : {'train', 'dev', 'test'}, default 'train'
+    segment : {'train', 'val', 'test'}, default 'train'
         Dataset segment.
-    root : str, default "$MXNET_HOME/datasets/superglue_cb"
+    root : str, default "$MXNET_HOME/datasets/superglue_boolq"
         Path to temp folder from storing data.
         MXNET_HOME defaults to '~/.mxnet'
 
@@ -485,9 +485,9 @@ class SuperGlueReCoRD(_SuperGlueDataset):
 
     Parameters
     ----------
-    segment : {'train', 'dev', 'test'}, default 'train'
+    segment : {'train', 'val', 'test'}, default 'train'
         Dataset segment.
-    root : str, default "$MXNET_HOME/datasets/superglue_cb"
+    root : str, default "$MXNET_HOME/datasets/superglue_record"
         Path to temp folder from storing data.
         MXNET_HOME defaults to '~/.mxnet'
 
@@ -536,13 +536,13 @@ class SuperGlueAXb(_SuperGlueDataset):
 
     Parameters
     ----------
-    root : str, default "$MXNET_HOME/datasets/superglue_cb"
+    root : str, default "$MXNET_HOME/datasets/superglue_ax_b"
         Path to temp folder from storing data.
         MXNET_HOME defaults to '~/.mxnet'
 
     Examples
     --------
-    >>> ax_b = gluonnlp.data.SuperGlueAX_b(root='./datasets/ax_b')
+    >>> ax_b = gluonnlp.data.SuperGlueAXb(root='./datasets/ax_b')
     -etc-
     >>> len(ax_b)
     1104
@@ -555,7 +555,7 @@ class SuperGlueAXb(_SuperGlueDataset):
         data_file = ('AX-b', '398c5a376eb436f790723cd217ac040334140000',
                      '50fd8ac409897b652daa4b246917097c3c394bc8')
 
-        super(SuperGlueAX_b, self).__init__(root, data_file)
+        super(SuperGlueAXb, self).__init__(root, data_file)
 
     def _read_samples(self, samples):
         return samples
@@ -574,13 +574,13 @@ class SuperGlueAXg(_SuperGlueDataset):
 
     Parameters
     ----------
-    root : str, default "$MXNET_HOME/datasets/superglue_cb"
+    root : str, default "$MXNET_HOME/datasets/superglue_ax_g"
         Path to temp folder from storing data.
         MXNET_HOME defaults to '~/.mxnet'
 
     Examples
     --------
-    >>> ax_g = gluonnlp.data.SuperGlueAX_g(root='./datasets/ax_g')
+    >>> ax_g = gluonnlp.data.SuperGlueAXg(root='./datasets/ax_g')
     -etc-
     >>> len(ax_g)
     356
@@ -593,7 +593,7 @@ class SuperGlueAXg(_SuperGlueDataset):
         data_file = ('AX-g', 'd8c92498496854807dfeacd344eddf466d7f468a',
                      '8a8cbfe00fd88776a2a2f20b477e5b0c6cc8ebae')
 
-        super(SuperGlueAX_g, self).__init__(root, data_file)
+        super(SuperGlueAXg, self).__init__(root, data_file)
 
     def _read_samples(self, samples):
         return samples

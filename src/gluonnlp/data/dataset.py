@@ -299,7 +299,7 @@ class NumpyDataset(ArrayDataset):
         return self._data[idx]
 
 
-class JsonlDataset(SimpleDataset):
+class _JsonlDataset(SimpleDataset):
     """A dataset wrapping over a jsonlines (.jsonl) file, each line is a json object.
     
     Parameters
@@ -317,7 +317,7 @@ class JsonlDataset(SimpleDataset):
         self._filenames = [os.path.expanduser(f) for f in filename]
         self._encoding = encoding
 
-        super(JsonlDataset, self).__init__(self._read())
+        super(_JsonlDataset, self).__init__(self._read())
 
     def _read(self):
         all_samples = []
