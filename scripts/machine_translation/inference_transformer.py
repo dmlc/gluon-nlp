@@ -39,16 +39,14 @@ import time
 import random
 import os
 import logging
-import math
 import numpy as np
 import mxnet as mx
 from mxnet import gluon
 import gluonnlp as nlp
 
-from gluonnlp.loss import MaskedSoftmaxCELoss, LabelSmoothing
+from gluonnlp.loss import MaskedSoftmaxCELoss
 from gluonnlp.model.translation import NMTModel
-from gluonnlp.model.transformer import get_transformer_encoder_decoder, ParallelTransformer
-from gluonnlp.utils.parallel import Parallel
+from gluonnlp.model.transformer import get_transformer_encoder_decoder
 from translation import BeamSearchTranslator
 from utils import logging_config
 from bleu import _bpe_to_words, compute_bleu
