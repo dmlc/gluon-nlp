@@ -24,7 +24,7 @@ import mxnet as mx
 from mxnet.gluon import rnn
 from mxnet.gluon.block import Block
 from gluonnlp.model import AttentionCell, MLPAttentionCell, DotProductAttentionCell, \
-    MultiHeadAttentionCell
+    MultiHeadAttentionCell, MultiHeadSelfAttentionCell
 
 
 def _get_cell_type(cell_type):
@@ -89,6 +89,10 @@ def _get_attention_cell(attention_cell, units=None,
             base_cell = DotProductAttentionCell(scaled=scaled, dropout=dropout)
             return MultiHeadAttentionCell(base_cell=base_cell, query_units=units, use_bias=use_bias,
                                           key_units=units, value_units=units, num_heads=num_heads)
+        elif attention_cell == 'multi_head_self':
+            base_cell = DotProductAttentionCell(scaled=scaled, dropout=dropout)
+            return MultiHeadSelfAttentionCell(base_cell=base_cell, query_units=units, use_bias=use_bias,
+                                              key_units=units, value_units=units, num_heads=num_heads)
         else:
             raise NotImplementedError
     else:

@@ -51,6 +51,7 @@ class BERTLayerNorm(nn.LayerNorm):
     def __init__(self, epsilon=1e-12, in_channels=0, prefix=None, params=None):
         super(BERTLayerNorm, self).__init__(epsilon=epsilon, in_channels=in_channels,
                                             prefix=prefix, params=params)
+
     def hybrid_forward(self, F, data, gamma, beta):
         """forward computation."""
         return F.LayerNorm(data, gamma=gamma, beta=beta, axis=self._axis, eps=self._epsilon)
@@ -304,6 +305,8 @@ class BERTModel(Block):
         Whether to include the decoder for masked language model prediction.
     use_classifier : bool, default True
         Whether to include the classifier for next sentence classification.
+    use_token_type_embed : bool, default True
+        Whether to include token type embedding. TODO: explain more.
     prefix : str or None
         See document of `mx.gluon.Block`.
     params : ParameterDict or None
@@ -311,7 +314,7 @@ class BERTModel(Block):
 
     Inputs:
         - **inputs**: input sequence tensor, shape (batch_size, seq_length)
-        - **token_types**: input token type tensor, shape (batch_size, seq_length).
+        - **token_types**: optinal input token type tensor, shape (batch_size, seq_length).
             If the inputs contain two sequences, then the token type of the first
             sequence differs from that of the second one.
         - **valid_length**: optional tensor of input sequence valid lengths, shape (batch_size,)
@@ -338,20 +341,22 @@ class BERTModel(Block):
     def __init__(self, encoder, vocab_size=None, token_type_vocab_size=None, units=None,
                  embed_size=None, embed_dropout=0.0, embed_initializer=None,
                  word_embed=None, token_type_embed=None, use_pooler=True, use_decoder=True,
-                 use_classifier=True, prefix=None, params=None):
+                 use_classifier=True, use_token_type_embed=True, prefix=None, params=None):
         super(BERTModel, self).__init__(prefix=prefix, params=params)
         self._use_decoder = use_decoder
         self._use_classifier = use_classifier
         self._use_pooler = use_pooler
+        self._use_token_type_embed = use_token_type_embed
         self._vocab_size = vocab_size
         self.encoder = encoder
         # Construct word embedding
         self.word_embed = self._get_embed(word_embed, vocab_size, embed_size,
                                           embed_initializer, embed_dropout, 'word_embed_')
         # Construct token type embedding
-        self.token_type_embed = self._get_embed(token_type_embed, token_type_vocab_size,
-                                                embed_size, embed_initializer, embed_dropout,
-                                                'token_type_embed_')
+        if use_token_type_embed:
+            self.token_type_embed = self._get_embed(token_type_embed, token_type_vocab_size,
+                                                    embed_size, embed_initializer, embed_dropout,
+                                                    'token_type_embed_')
         if self._use_pooler:
             # Construct pooler
             self.pooler = self._get_pooler(units, 'pooler_')
@@ -409,7 +414,7 @@ class BERTModel(Block):
                               prefix=prefix)
         return pooler
 
-    def forward(self, inputs, token_types, valid_length=None, masked_positions=None):  # pylint: disable=arguments-differ
+    def forward(self, inputs, token_types=None, valid_length=None, masked_positions=None):  # pylint: disable=arguments-differ
         """Generate the representation given the inputs.
 
         This is used in training or fine-tuning a BERT model.
@@ -433,7 +438,7 @@ class BERTModel(Block):
             if self._use_classifier:
                 next_sentence_classifier_out = self.classifier(pooled_out)
                 outputs.append(next_sentence_classifier_out)
-        if self._use_decoder:
+        if self._use_decoder and masked_positions is not None:
             assert masked_positions is not None, \
                 'masked_positions tensor is required for decoding masked language model'
             decoder_out = self._decode(output, masked_positions)
@@ -446,9 +451,10 @@ class BERTModel(Block):
         This is used for pre-training or fine-tuning a BERT model.
         """
         # embedding
-        word_embedding = self.word_embed(inputs)
-        type_embedding = self.token_type_embed(token_types)
-        embedding = word_embedding + type_embedding
+        embedding = self.word_embed(inputs)
+        if self._use_token_type_embed:
+            type_embedding = self.token_type_embed(token_types)
+            embedding = embedding + type_embedding
         # encoding
         outputs, additional_outputs = self.encoder(embedding, None, valid_length)
         return outputs, additional_outputs
@@ -521,6 +527,40 @@ model_store._model_sha1.update(
         ('f869f3f89e4237a769f1b7edcbdfe8298b480052', 'ernie_12_768_12_baidu_ernie_uncased'),
     ]})
 
+roberta_12_768_12_hparams = {
+    'attention_cell': 'multi_head_self',
+    'num_layers': 12,
+    'units': 768,
+    'hidden_size': 3072,
+    'max_length': 512,
+    'num_heads': 12,
+    'scaled': True,
+    'dropout': 0.1,
+    'use_residual': True,
+    'embed_size': 768,
+    'embed_dropout': 0.1,
+    'token_type_vocab_size': None,
+    'word_embed': None,
+    'layer_norm_eps': 1e-5
+}
+
+roberta_24_1024_16_hparams = {
+    'attention_cell': 'multi_head_self',
+    'num_layers': 24,
+    'units': 1024,
+    'hidden_size': 4096,
+    'max_length': 512,
+    'num_heads': 16,
+    'scaled': True,
+    'dropout': 0.1,
+    'use_residual': True,
+    'embed_size': 1024,
+    'embed_dropout': 0.1,
+    'token_type_vocab_size': None,
+    'word_embed': None,
+    'layer_norm_eps': 1e-5
+}
+
 bert_12_768_12_hparams = {
     'attention_cell': 'multi_head',
     'num_layers': 12,
@@ -574,6 +614,8 @@ ernie_12_768_12_hparams = {
 bert_hparams = {
     'bert_12_768_12': bert_12_768_12_hparams,
     'bert_24_1024_16': bert_24_1024_16_hparams,
+    'roberta_12_768_12': roberta_12_768_12_hparams,
+    'roberta_24_1024_16': roberta_24_1024_16_hparams,
     'ernie_12_768_12': ernie_12_768_12_hparams
 }
 

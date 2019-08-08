@@ -20,7 +20,7 @@
 from __future__ import absolute_import
 from __future__ import print_function
 
-__all__ = ['AttentionCell', 'MultiHeadAttentionCell', 'MLPAttentionCell', 'DotProductAttentionCell']
+__all__ = ['AttentionCell', 'MultiHeadAttentionCell', 'MLPAttentionCell', 'DotProductAttentionCell', 'MultiHeadSelfAttentionCell']
 
 import math
 import numpy as np
@@ -168,6 +168,149 @@ class AttentionCell(HybridBlock):
         context_vec = self._read_by_weight(F, att_weights, value)
         return context_vec, att_weights
 
+
+class MultiHeadSelfAttentionCell(AttentionCell):
+    r"""Multi-head Self Attention Cell.
+
+    In the MultiHeadSelfAttentionCell, the input query/key/value will be linearly projected
+    for `num_heads` times with different projection matrices. Each projected key, value, query
+    will be used to calculate the attention weights and values. The output of each head will be
+    concatenated to form the final output.
+
+    The idea is first proposed in "[Arxiv2014] Neural Turing Machines" and
+    is later adopted in "[NIPS2017] Attention is All You Need" to solve the
+    Neural Machine Translation problem.
+
+    Parameters
+    ----------
+    base_cell : AttentionCell
+    query_units : int
+        Total number of projected units for query. Must be divided exactly by num_heads.
+    key_units : int
+        Total number of projected units for key. Must be divided exactly by num_heads.
+    value_units : int
+        Total number of projected units for value. Must be divided exactly by num_heads.
+    num_heads : int
+        Number of parallel attention heads
+    use_bias : bool, default True
+        Whether to use bias when projecting the query/key/values
+    weight_initializer : str or `Initializer` or None, default None
+        Initializer of the weights.
+    bias_initializer : str or `Initializer`, default 'zeros'
+        Initializer of the bias.
+    prefix : str or None, default None
+        See document of `Block`.
+    params : str or None, default None
+        See document of `Block`.
+    """
+    def __init__(self, base_cell, query_units, key_units, value_units, num_heads, use_bias=True,
+                 weight_initializer=None, bias_initializer='zeros', prefix=None, params=None):
+        super(MultiHeadSelfAttentionCell, self).__init__(prefix=prefix, params=params)
+        self._base_cell = base_cell
+        self._num_heads = num_heads
+        self._use_bias = use_bias
+        self.proj = nn.Dense(units=query_units + key_units + value_units, use_bias=self._use_bias,
+                             flatten=False, weight_initializer=weight_initializer,
+                             bias_initializer=bias_initializer)
+
+        #units = {'query': query_units, 'key': key_units, 'value': value_units}
+        #for name, unit in units.items():
+        #    if unit % self._num_heads != 0:
+        #        raise ValueError(
+        #            'In MultiHeadAttetion, the {name}_units should be divided exactly'
+        #            ' by the number of heads. Received {name}_units={unit}, num_heads={n}'.format(
+        #                name=name, unit=unit, n=num_heads))
+        #    setattr(self, '_{}_units'.format(name), unit)
+        #    with self.name_scope():
+        #        setattr(
+        #            self, 'proj_{}'.format(name),
+        #            nn.Dense(units=self._query_units, use_bias=self._use_bias, flatten=False,
+        #                     weight_initializer=weight_initializer,
+        #                     bias_initializer=bias_initializer, prefix='{}_'.format(name)))
+
+    def __call__(self, query, key, value=None, mask=None):
+        """Compute the attention.
+
+        Parameters
+        ----------
+        query : Symbol or NDArray
+            Query vector. Shape (batch_size, query_length, query_dim)
+        key : Symbol or NDArray
+            Key of the memory. Shape (batch_size, memory_length, key_dim)
+        value : Symbol or NDArray or None, default None
+            Value of the memory. If set to None, the value will be set as the key.
+            Shape (batch_size, memory_length, value_dim)
+        mask : Symbol or NDArray or None, default None
+            Mask of the memory slots. Shape (batch_size, query_length, memory_length)
+            Only contains 0 or 1 where 0 means that the memory slot will not be used.
+            If set to None. No mask will be used.
+
+        Returns
+        -------
+        context_vec : Symbol or NDArray
+            Shape (batch_size, query_length, context_vec_dim)
+        att_weights : Symbol or NDArray
+            Attention weights of multiple heads.
+            Shape (batch_size, num_heads, query_length, memory_length)
+        """
+        return super(MultiHeadSelfAttentionCell, self).__call__(query, key, value, mask)
+
+    #def _project(self, F, name, x):
+    #    # Shape (batch_size, query_length, query_units)
+    #    x = getattr(self, 'proj_{}'.format(name))(x)
+    #    # Shape (batch_size * num_heads, query_length, ele_units)
+    #    x = F.transpose(x.reshape(shape=(0, 0, self._num_heads, -1)),
+    #                    axes=(0, 2, 1, 3))\
+    #         .reshape(shape=(-1, 0, 0), reverse=True)
+    #    return x
+
+    #def _compute_weight(self, F, query, key, mask=None):
+    #    query = self._project(F, 'query', query)
+    #    key = self._project(F, 'key', key)
+    #    if mask is not None:
+    #        mask = F.broadcast_axis(F.expand_dims(mask, axis=1),
+    #                                axis=1, size=self._num_heads)\
+    #                .reshape(shape=(-1, 0, 0), reverse=True)
+    #    att_weights = self._base_cell._compute_weight(F, query, key, mask)
+    #    return att_weights.reshape(shape=(-1, self._num_heads, 0, 0), reverse=True)
+
+    #def _read_by_weight(self, F, att_weights, value):
+    #    att_weights = att_weights.reshape(shape=(-1, 0, 0), reverse=True)
+    #    value = self._project(F, 'value', value)
+    #    context_vec = self._base_cell._read_by_weight(F, att_weights, value)
+    #    context_vec = F.transpose(context_vec.reshape(shape=(-1, self._num_heads, 0, 0),
+    #                                                  reverse=True),
+    #                              axes=(0, 2, 1, 3)).reshape(shape=(0, 0, -1))
+    #    return context_vec
+
+    def hybrid_forward(self, F, query, key, value, mask=None):  # pylint: disable=arguments-differ
+        # XXX: assume query == key == value
+        x = query
+        x_proj = self.proj(x)
+        query, key, value = x_proj.split(num_outputs=3, axis=-1)
+
+        query = F.transpose(query.reshape(shape=(0, 0, self._num_heads, -1)),
+                                          axes=(0, 2, 1, 3))\
+                            .reshape(shape=(-1, 0, 0), reverse=True)
+        key = F.transpose(key.reshape(shape=(0, 0, self._num_heads, -1)),
+                                          axes=(0, 2, 1, 3))\
+                            .reshape(shape=(-1, 0, 0), reverse=True)
+        value = F.transpose(value.reshape(shape=(0, 0, self._num_heads, -1)),
+                                          axes=(0, 2, 1, 3))\
+                            .reshape(shape=(-1, 0, 0), reverse=True)
+        if mask is not None:
+            mask = F.broadcast_axis(F.expand_dims(mask, axis=1),
+                                    axis=1, size=self._num_heads)\
+                    .reshape(shape=(-1, 0, 0), reverse=True)
+        att_weights = self._base_cell._compute_weight(F, query, key, mask)
+        att_weights = att_weights.reshape(shape=(-1, self._num_heads, 0, 0), reverse=True)
+        att_weights = att_weights.reshape(shape=(-1, 0, 0), reverse=True)
+
+        context_vec = self._base_cell._read_by_weight(F, att_weights, value)
+        context_vec = F.transpose(context_vec.reshape(shape=(-1, self._num_heads, 0, 0),
+                                                      reverse=True),
+                                  axes=(0, 2, 1, 3)).reshape(shape=(0, 0, -1))
+        return context_vec, att_weights
 
 class MultiHeadAttentionCell(AttentionCell):
     r"""Multi-head Attention Cell.
