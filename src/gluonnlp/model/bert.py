@@ -419,7 +419,7 @@ class BERTModel(Block):
     def forward(self, inputs, token_types=None, valid_length=None, masked_positions=None):  # pylint: disable=arguments-differ
         """Generate the representation given the inputs.
 
-        This is used in training or fine-tuning a RoBERTa model.
+        This is used in training or fine-tuning a BERT model.
         """
         outputs = []
         seq_out, attention_out = self._encode_sequence(inputs, token_types, valid_length)
@@ -1041,7 +1041,7 @@ def get_bert_model(model_name=None, dataset_name=None, vocab=None, pretrained=Tr
         'biobert_v1.1_pubmed',
         'clinicalbert'
         are additionally supported.
-    vocab : gluonnlp.vocab.BERTVocab, gluonnlp.vocab.Vocab or None, default None
+    vocab : gluonnlp.vocab.BERTVocab or None, default None
         Vocabulary for the dataset. Must be provided if dataset_name is not
         specified. Ignored if dataset_name is specified.
     pretrained : bool, default True

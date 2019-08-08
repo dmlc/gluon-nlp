@@ -598,5 +598,3 @@ def test_transformer_encoder():
     outputs.wait_to_read()
     mx.nd.waitall()
     assert outputs.shape == (batch_size, seq_length, units)
-
-test_pretrained_roberta_models()
