@@ -414,6 +414,11 @@ class BERTModel(Block):
                               prefix=prefix)
         return pooler
 
+    def __call__(self, inputs, token_types=None, valid_length=None, masked_positions=None):
+        """Generate the representation given the inputs."""
+        return self.forward(inputs, token_types=token_types, valid_length=valid_length,
+                            masked_positions=masked_positions)
+
     def forward(self, inputs, token_types=None, valid_length=None, masked_positions=None):  # pylint: disable=arguments-differ
         """Generate the representation given the inputs.
 
