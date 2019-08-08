@@ -18,36 +18,103 @@
 # under the License.
 # pylint:disable=redefined-outer-name,logging-format-interpolation
 """ Script for converting Fairseq Roberta Model to Gluon. """
+import argparse
+import logging
+import os
+import sys
+import io
+import numpy as np
 
 import torch
 from fairseq.models.roberta import RobertaModel
-
-ckpt = torch.load('/home/ubuntu/roberta/roberta.base/model.pt')
-print(ckpt['args'])
-pytorch_params = ckpt['model']
-
-
-# Load the model in fairseq
-roberta = RobertaModel.from_pretrained('/home/ubuntu/roberta/roberta.base')
-roberta.eval()
-print(roberta)
-#exit()
-
-#for k, v in pytorch_params.items():
-#    print(k, v.shape)
 
 import mxnet as mx
 import gluonnlp as nlp
 from gluonnlp.model import BERTEncoder, BERTModel
 from gluonnlp.model.bert import bert_hparams
+from gluonnlp.data.utils import _load_pretrained_vocab
 
-#mx_model = mx.nd.load('/home/ubuntu/.mxnet/models/bert_12_768_12_book_corpus_wiki_en_uncased-75cc780f.params')
+from utils import get_hash, load_text_vocab, tf_vocab_to_gluon_vocab
 
+parser = argparse.ArgumentParser(description='Conversion script for Fairseq RoBERTa model',
+                                 formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+parser.add_argument('--ckpt_dir', type=str, help='Full path to the roberta folder',
+                    default='/home/ubuntu/roberta/roberta.base')
+parser.add_argument('--model', type=str, help='Model type. ',
+                    choices=['roberta_12_768_12', 'roberta_24_1024_16'],
+                    default='roberta_12_768_12')
+parser.add_argument('--verbose', action='store_true', help='Verbose logging')
 
-predefined_args = bert_hparams['roberta_12_768_12']#args.model]
+args = parser.parse_args()
+
+ckpt_dir = os.path.expanduser(args.ckpt_dir)
+
+ckpt = torch.load(os.path.join(ckpt_dir, 'model.pt'))
+pytorch_params = ckpt['model']
+
+if args.verbose:
+    print(ckpt['args'])
+    for k, v in pytorch_params.items():
+        print(k, v.shape)
+
+# Load the model in fairseq
+roberta = RobertaModel.from_pretrained(ckpt_dir)
+roberta.eval()
+
+def fairseq_vocab_to_gluon_vocab(torch_vocab):
+    index_to_words = [None] * len(torch_vocab)
+
+    bos_idx = torch_vocab.bos()
+    pad_idx = torch_vocab.pad()
+    eos_idx = torch_vocab.eos()
+    unk_idx = torch_vocab.unk()
+
+    index_to_words[bos_idx] = torch_vocab.symbols[bos_idx]
+    index_to_words[pad_idx] = torch_vocab.symbols[pad_idx]
+    index_to_words[eos_idx] = torch_vocab.symbols[eos_idx]
+    index_to_words[unk_idx] = torch_vocab.symbols[unk_idx]
+
+    specials = [bos_idx, pad_idx, eos_idx, unk_idx]
+
+    openai_to_roberta = {}
+    openai_vocab = _load_pretrained_vocab('openai_webtext', '.')
+
+    with io.open(os.path.join(ckpt_dir, 'dict.txt'), encoding='utf-8') as f:
+        for i, line in enumerate(f):
+            token, count = line.split(' ')
+            try:
+                fake_token = int(token)
+                openai_to_roberta[token] = i + len(specials)
+            except ValueError:
+                index_to_words[i + len(specials)] = token
+
+    for idx, token in enumerate(openai_vocab.idx_to_token):
+        if str(idx) in openai_to_roberta:
+            index_to_words[openai_to_roberta[str(idx)]] = token
+        else:
+            assert token == u'<mask>', token
+
+    mask_idx = torch_vocab.index(u'<mask>')
+    index_to_words[mask_idx] = torch_vocab.string([mask_idx])
+    assert None not in index_to_words
+    word2idx = {}
+    for idx, token in enumerate(index_to_words):
+        word2idx[token] = idx
+
+    vocab = nlp.vocab.Vocab(word2idx, token_to_idx=word2idx,
+                            unknown_token=index_to_words[unk_idx],
+                            padding_token=index_to_words[pad_idx],
+                            bos_token=index_to_words[bos_idx],
+                            eos_token=index_to_words[eos_idx],
+                            mask_token=u'<mask>')
+    return vocab
+
+vocab = fairseq_vocab_to_gluon_vocab(roberta.task.dictionary)
+
+predefined_args = bert_hparams[args.model]
 
 # BERT encoder
-encoder = BERTEncoder(attention_cell='multi_head_self', #predefined_args['attention_cell'],
+encoder = BERTEncoder(attention_cell=predefined_args['attention_cell'],
                       num_layers=predefined_args['num_layers'], units=predefined_args['units'],
                       hidden_size=predefined_args['hidden_size'],
                       max_length=predefined_args['max_length'],
@@ -57,8 +124,7 @@ encoder = BERTEncoder(attention_cell='multi_head_self', #predefined_args['attent
                       layer_norm_eps=predefined_args['layer_norm_eps'])
 
 # BERT model
-bert = BERTModel(encoder, 50265, #len(vocab),
-                 #token_type_vocab_size=predefined_args['token_type_vocab_size'],
+bert = BERTModel(encoder, len(vocab),
                  units=predefined_args['units'], embed_size=predefined_args['embed_size'],
                  embed_dropout=predefined_args['embed_dropout'],
                  word_embed=predefined_args['word_embed'], use_pooler=False,
@@ -70,10 +136,7 @@ ones = mx.nd.ones((2, 8))
 out = bert(ones, None, mx.nd.array([5, 6]), mx.nd.array([[1], [2]]))
 params = bert._collect_params_with_prefix()
  
-bert.save_parameters('test.params')
-mx_model = mx.nd.load('test.params')
-#for k, v in mx_model.items():
-#    print(k, v.shape)
+
 
 mapping = {
     'decoder.2' : 'decoder.lm_head.layer_norm',
@@ -113,20 +176,29 @@ for name in params:
     loaded_params[name] = True
 
 assert len(params) == len(loaded_params)
-#print(sorted(list(mx_model.keys())))
-
 assert len(params) == len(pytorch_params), "Gluon model does not match PyTorch model. " \
     "Please fix the BERTModel hyperparameters\n" + str(len(params)) + ' v.s. ' + str(len(pytorch_params))
 
 
-tokens = roberta.encode('Hello world abc 中文!')
-last_layer_features = roberta.extract_features(tokens)
-pytorch_out = last_layer_features.detach().numpy()
+texts = 'Hello world. abc, def and 中文!'
+torch_tokens = roberta.encode(texts)
 
-mx_out = bert(mx.nd.array([tokens.tolist()]))
-import numpy as np
+torch_features = roberta.extract_features(torch_tokens)
+pytorch_out = torch_features.detach().numpy()
 
-print('stdev = ', mx_out.asnumpy().mean(), pytorch_out.mean())
+mx_tokenizer = nlp.data.GPT2BPETokenizer()
+mx_tokens = [vocab.bos_token] + mx_tokenizer(texts) + [vocab.eos_token]
+mx_data = vocab[mx_tokens]
+print(mx_tokens)
+print(vocab[mx_tokens])
+print(torch_tokens)
+assert mx_data == torch_tokens.tolist()
+
+mx_out = bert(mx.nd.array([mx_data]))
 print('stdev = ', np.std(mx_out.asnumpy() - pytorch_out))
 mx.test_utils.assert_almost_equal(mx_out.asnumpy(), pytorch_out, atol=1e-3, rtol=1e-3)
 mx.test_utils.assert_almost_equal(mx_out.asnumpy(), pytorch_out, atol=5e-6, rtol=5e-6)
+
+bert.save_parameters(os.path.join(ckpt_dir, args.model + '.params'))
+with io.open(os.path.join(ckpt_dir, args.model + '.vocab'), 'w', encoding='utf-8') as f:
+    f.write(vocab.to_json())

@@ -40,11 +40,10 @@ import time
 import mxnet as mx
 import gluonnlp as nlp
 
-from utils import profile
 from fp16_utils import FP16Trainer
 from pretraining_utils import get_model_loss, get_pretrain_data_npz, get_dummy_dataloader
 from pretraining_utils import split_and_load, log, evaluate, forward, get_argparser
-from pretraining_utils import save_parameters, save_states
+from pretraining_utils import save_parameters, save_states, profile
 from pretraining_utils import get_pretrain_data_text, generate_dev_set
 
 # parser

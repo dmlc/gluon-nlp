@@ -39,7 +39,7 @@ from gluonnlp.metric import MaskedAccuracy
 
 __all__ = ['get_model_loss', 'get_pretrain_data_npz', 'get_dummy_dataloader',
            'save_parameters', 'save_states', 'evaluate', 'forward', 'split_and_load',
-           'get_argparser', 'get_pretrain_data_text', 'generate_dev_set']
+           'get_argparser', 'get_pretrain_data_text', 'generate_dev_set', 'profile']
 
 def get_model_loss(ctx, model, pretrained, dataset_name, vocab, dtype,
                    ckpt_dir=None, start_step=None):
@@ -505,3 +505,20 @@ def generate_dev_set(tokenizer, vocab, cache_file, args):
                                1, args.num_data_workers,
                                worker_pool, cache_file))
     logging.info('Done generating validation set on rank 0.')
+
+def profile(curr_step, start_step, end_step, profile_name='profile.json',
+            early_exit=True):
+    """profile the program between [start_step, end_step)."""
+    if curr_step == start_step:
+        mx.nd.waitall()
+        mx.profiler.set_config(profile_memory=False, profile_symbolic=True,
+                               profile_imperative=True, filename=profile_name,
+                               aggregate_stats=True)
+        mx.profiler.set_state('run')
+    elif curr_step == end_step:
+        mx.nd.waitall()
+        mx.profiler.set_state('stop')
+        logging.info(mx.profiler.dumps())
+        mx.profiler.dump()
+        if early_exit:
+            exit()

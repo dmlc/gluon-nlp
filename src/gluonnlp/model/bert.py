@@ -39,9 +39,8 @@ from ..base import get_home_dir
 
 
 class BERTLayerNorm(nn.LayerNorm):
-    """BERT style Layer Normalization.
-
-    Epsilon is added inside the square root and set to 1e-12 by default.
+    """BERT style Layer Normalization, where epsilon is added inside the square
+    root and set to 1e-12 by default.
 
     Inputs:
         - **data**: input tensor with arbitrary shape.
