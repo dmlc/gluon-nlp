@@ -47,6 +47,31 @@ The following pre-trained BERT models are available from the **gluonnlp.model.ge
 
 where **bert_12_768_12** refers to the BERT BASE model, and **bert_24_1024_16** refers to the BERT LARGE model.
 
+.. code-block:: python
+
+    import gluonnlp as nlp; import mxnet as mx;
+    model, vocab = nlp.model.get_model('bert_12_768_12', dataset_name='book_corpus_wiki_en_uncased', use_classifier=False);
+    tokenizer = nlp.data.BERTTokenizer(vocab, lower=True);
+    transform = nlp.data.BERTSentenceTransform(tokenizer, max_seq_length=512, pair=False, pad=False);
+    sample = transform(['Hello world!']);
+    words, valid_len, segments = mx.nd.array([sample[0]]), mx.nd.array([sample[1]]), mx.nd.array([sample[2]]);
+    seq_encoding, cls_encoding = model(words, segments, valid_len);
+
+Additionally, GluonNLP supports the "`RoBERTa <https://arxiv.org/abs/1907.11692>`_" model:
+
++-----------------------------------------+-------------------+--------------------+
+|                                         | roberta_12_768_12 | roberta_24_1024_16 |
++=========================================+===================+====================+
+| openwebtext_ccnews_stories_books_cased  | ✓                 | ✓                  |
++-----------------------------------------+-------------------+--------------------+
+
+.. code-block:: python
+
+    import gluonnlp as nlp; import mxnet as mx;
+    model, vocab = nlp.model.get_model('roberta_12_768_12', dataset_name='openwebtext_ccnews_stories_books_cased');
+    tokenizer = nlp.data.GPT2BPETokenizer();
+    text = [vocab.bos] + tokenizer('Hello world!') + [vocab.eos];
+    seq_encoding = model(mx.nd.array([vocab[text]]))
 
 .. hint::
 
