@@ -20,7 +20,7 @@
 
 __all__ = ['BERTModel', 'BERTEncoder', 'BERTEncoderCell', 'BERTPositionwiseFFN',
            'BERTLayerNorm', 'bert_12_768_12', 'bert_24_1024_16',
-           'ernie_12_768_12']
+           'ernie_12_768_12', 'roberta_12_768_12', 'roberta_24_1024_16']
 
 import os
 from mxnet.gluon import Block
@@ -508,6 +508,10 @@ model_store._model_sha1.update(
         ('75cc780f085e8007b3bf6769c6348bb1ff9a3074', 'bert_12_768_12_book_corpus_wiki_en_uncased'),
         ('a56e24015a777329c795eed4ed21c698af03c9ff',
          'bert_12_768_12_openwebtext_book_corpus_wiki_en_uncased'),
+        ('5cf21fcddb5ae1a4c21c61201643460c9d65d3b0',
+         'roberta_12_768_12_openwebtext_ccnews_stories_books_cased'),
+        ('d1b7163e9628e2fd51c9a9f3a0dc519d4fc24add',
+         'roberta_24_1024_16_openwebtext_ccnews_stories_books_cased'),
         ('237f39851b24f0b56d70aa20efd50095e3926e26', 'bert_12_768_12_wiki_multilingual_uncased'),
         ('b0f57a207f85a7d361bb79de80756a8c9a4276f7', 'bert_12_768_12_wiki_multilingual_cased'),
         ('885ebb9adc249a170c5576e90e88cfd1bbd98da6', 'bert_12_768_12_wiki_cn_cased'),
@@ -744,6 +748,105 @@ def bert_24_1024_16(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu()
                           use_decoder=use_decoder, use_classifier=use_classifier, root=root,
                           pretrained_allow_missing=pretrained_allow_missing, **kwargs)
 
+
+def roberta_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
+                      use_decoder=True,
+                      root=os.path.join(get_home_dir(), 'models'),
+                      pretrained_allow_missing=False, **kwargs):
+    """Generic RoBERTa BASE model.
+
+    The number of layers (L) is 12, number of units (H) is 768, and the
+    number of self-attention heads (A) is 12.
+
+    Parameters
+    ----------
+    dataset_name : str or None, default None
+        If not None, the dataset name is used to load a vocabulary for the
+        dataset. If the `pretrained` argument is set to True, the dataset name
+        is further used to select the pretrained parameters to load.
+        Options include 'book_corpus_wiki_en_uncased' and 'book_corpus_wiki_en_cased'.
+    vocab : gluonnlp.vocab.BERTVocab or None, default None
+        Vocabulary for the dataset. Must be provided if dataset_name is not
+        specified. Ignored if dataset_name is specified.
+    pretrained : bool, default True
+        Whether to load the pretrained weights for model.
+    ctx : Context, default CPU
+        The context in which to load the pretrained weights.
+    root : str, default '$MXNET_HOME/models'
+        Location for keeping the model parameters.
+        MXNET_HOME defaults to '~/.mxnet'.
+    use_decoder : bool, default True
+        Whether to include the decoder for masked language model prediction.
+    pretrained_allow_missing : bool, default False
+        Whether to ignore if any parameters for the BERTModel are missing in
+        the pretrained weights for model.
+        Some BERTModels for example do not provide decoder or classifier
+        weights. In that case it is still possible to construct a BERTModel
+        with use_decoder=True, but the respective
+        parameters will be missing from the pretrained file.
+        If pretrained_allow_missing=True, this will be ignored and the
+        parameters will be left uninitialized. Otherwise AssertionError is
+        raised.
+
+    Returns
+    -------
+    BERTModel, gluonnlp.vocab.Vocab
+    """
+    return get_bert_model(model_name='roberta_12_768_12', vocab=vocab, dataset_name=dataset_name,
+                          pretrained=pretrained, ctx=ctx, use_pooler=False,
+                          use_decoder=use_decoder, use_classifier=False,
+                          use_token_type_embed=False, root=root,
+                          pretrained_allow_missing=pretrained_allow_missing, **kwargs)
+
+
+def roberta_24_1024_16(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
+                       use_decoder=True,
+                       root=os.path.join(get_home_dir(), 'models'),
+                       pretrained_allow_missing=False, **kwargs):
+    """Generic RoBERTa LARGE model.
+
+    The number of layers (L) is 24, number of units (H) is 1024, and the
+    number of self-attention heads (A) is 16.
+
+    Parameters
+    ----------
+    dataset_name : str or None, default None
+        If not None, the dataset name is used to load a vocabulary for the
+        dataset. If the `pretrained` argument is set to True, the dataset name
+        is further used to select the pretrained parameters to load.
+        Options include 'book_corpus_wiki_en_uncased' and 'book_corpus_wiki_en_cased'.
+    vocab : gluonnlp.vocab.BERTVocab or None, default None
+        Vocabulary for the dataset. Must be provided if dataset_name is not
+        specified. Ignored if dataset_name is specified.
+    pretrained : bool, default True
+        Whether to load the pretrained weights for model.
+    ctx : Context, default CPU
+        The context in which to load the pretrained weights.
+    root : str, default '$MXNET_HOME/models'
+        Location for keeping the model parameters.
+        MXNET_HOME defaults to '~/.mxnet'.
+    use_decoder : bool, default True
+        Whether to include the decoder for masked language model prediction.
+    pretrained_allow_missing : bool, default False
+        Whether to ignore if any parameters for the BERTModel are missing in
+        the pretrained weights for model.
+        Some BERTModels for example do not provide decoder or classifier
+        weights. In that case it is still possible to construct a BERTModel
+        with use_decoder=True, but the respective
+        parameters will be missing from the pretrained file.
+        If pretrained_allow_missing=True, this will be ignored and the
+        parameters will be left uninitialized. Otherwise AssertionError is
+        raised.
+
+    Returns
+    -------
+    BERTModel, gluonnlp.vocab.Vocab
+    """
+    return get_bert_model(model_name='roberta_24_1024_16', vocab=vocab, dataset_name=dataset_name,
+                          pretrained=pretrained, ctx=ctx, use_pooler=False,
+                          use_decoder=use_decoder, use_classifier=False,
+                          use_token_type_embed=False, root=root,
+                          pretrained_allow_missing=pretrained_allow_missing, **kwargs)
 
 def ernie_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
                     root=os.path.join(get_home_dir(), 'models'), use_pooler=True, use_decoder=True,
