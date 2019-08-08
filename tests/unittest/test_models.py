@@ -124,7 +124,7 @@ def test_pretrained_roberta_models():
             assert vocab.bos_token == '<s>'
             assert vocab.eos_token == '</s>'
 
-            output = model(ones, valid_length=valid_length, masked_positions=positions)
+            output = model(ones, valid_length, positions)
             output[0].wait_to_read()
             del model
             mx.nd.waitall()
@@ -599,3 +599,4 @@ def test_transformer_encoder():
     mx.nd.waitall()
     assert outputs.shape == (batch_size, seq_length, units)
 
+test_pretrained_roberta_models()
