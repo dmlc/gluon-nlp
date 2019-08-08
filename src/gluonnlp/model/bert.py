@@ -764,7 +764,7 @@ def roberta_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu
         dataset. If the `pretrained` argument is set to True, the dataset name
         is further used to select the pretrained parameters to load.
         Options include 'book_corpus_wiki_en_uncased' and 'book_corpus_wiki_en_cased'.
-    vocab : gluonnlp.vocab.BERTVocab or None, default None
+    vocab : gluonnlp.vocab.Vocab or None, default None
         Vocabulary for the dataset. Must be provided if dataset_name is not
         specified. Ignored if dataset_name is specified.
     pretrained : bool, default True
@@ -791,11 +791,13 @@ def roberta_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu
     -------
     BERTModel, gluonnlp.vocab.Vocab
     """
+    from ..vocab import Vocab
     return get_bert_model(model_name='roberta_12_768_12', vocab=vocab, dataset_name=dataset_name,
                           pretrained=pretrained, ctx=ctx, use_pooler=False,
                           use_decoder=use_decoder, use_classifier=False,
                           use_token_type_embed=False, root=root,
-                          pretrained_allow_missing=pretrained_allow_missing, **kwargs)
+                          pretrained_allow_missing=pretrained_allow_missing,
+                          vocab_cls=Vocab, **kwargs)
 
 
 def roberta_24_1024_16(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
@@ -814,7 +816,7 @@ def roberta_24_1024_16(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cp
         dataset. If the `pretrained` argument is set to True, the dataset name
         is further used to select the pretrained parameters to load.
         Options include 'book_corpus_wiki_en_uncased' and 'book_corpus_wiki_en_cased'.
-    vocab : gluonnlp.vocab.BERTVocab or None, default None
+    vocab : gluonnlp.vocab.Vocab or None, default None
         Vocabulary for the dataset. Must be provided if dataset_name is not
         specified. Ignored if dataset_name is specified.
     pretrained : bool, default True
@@ -841,11 +843,13 @@ def roberta_24_1024_16(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cp
     -------
     BERTModel, gluonnlp.vocab.Vocab
     """
+    from ..vocab import Vocab
     return get_bert_model(model_name='roberta_24_1024_16', vocab=vocab, dataset_name=dataset_name,
                           pretrained=pretrained, ctx=ctx, use_pooler=False,
                           use_decoder=use_decoder, use_classifier=False,
                           use_token_type_embed=False, root=root,
-                          pretrained_allow_missing=pretrained_allow_missing, **kwargs)
+                          pretrained_allow_missing=pretrained_allow_missing,
+                          vocab_cls=Vocab, **kwargs)
 
 def ernie_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
                     root=os.path.join(get_home_dir(), 'models'), use_pooler=True, use_decoder=True,
@@ -896,8 +900,9 @@ def ernie_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu()
 
 def get_bert_model(model_name=None, dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
                    use_pooler=True, use_decoder=True, use_classifier=True, output_attention=False,
-                   output_all_encodings=False, root=os.path.join(get_home_dir(), 'models'),
-                   pretrained_allow_missing=False, **kwargs):
+                   output_all_encodings=False, use_token_type_embed=True,
+                   root=os.path.join(get_home_dir(), 'models'),
+                   pretrained_allow_missing=False, vocab_cls=None, **kwargs):
     """Any BERT pretrained model.
 
     Parameters
@@ -919,7 +924,7 @@ def get_bert_model(model_name=None, dataset_name=None, vocab=None, pretrained=Tr
         'biobert_v1.1_pubmed',
         'clinicalbert'
         are additionally supported.
-    vocab : gluonnlp.vocab.BERTVocab or None, default None
+    vocab : gluonnlp.vocab.BERTVocab, gluonnlp.vocab.Vocab or None, default None
         Vocabulary for the dataset. Must be provided if dataset_name is not
         specified. Ignored if dataset_name is specified.
     pretrained : bool, default True
@@ -985,9 +990,12 @@ def get_bert_model(model_name=None, dataset_name=None, vocab=None, pretrained=Tr
                           use_residual=predefined_args['use_residual'],
                           activation=predefined_args.get('activation', 'gelu'),
                           layer_norm_eps=predefined_args.get('layer_norm_eps', None))
+
+    if vocab_cls is None:
+        from ..vocab import BERTVocab
+        vocab_cls = BERTVocab
     # bert_vocab
-    from ..vocab import BERTVocab
-    bert_vocab = _load_vocab(dataset_name, vocab, root, cls=BERTVocab)
+    bert_vocab = _load_vocab(dataset_name, vocab, root, cls=vocab_cls)
     # BERT
     net = BERTModel(encoder, len(bert_vocab),
                     token_type_vocab_size=predefined_args['token_type_vocab_size'],
@@ -996,7 +1004,8 @@ def get_bert_model(model_name=None, dataset_name=None, vocab=None, pretrained=Tr
                     embed_dropout=predefined_args['embed_dropout'],
                     word_embed=predefined_args['word_embed'],
                     use_pooler=use_pooler, use_decoder=use_decoder,
-                    use_classifier=use_classifier)
+                    use_classifier=use_classifier,
+                    use_token_type_embed=use_token_type_embed)
     if pretrained:
         ignore_extra = not (use_pooler and use_decoder and use_classifier)
         _load_pretrained_params(net, model_name, dataset_name, root, ctx, ignore_extra=ignore_extra,
