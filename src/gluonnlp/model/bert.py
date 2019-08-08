@@ -820,8 +820,7 @@ def bert_24_1024_16(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu()
 
 def roberta_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
                       use_decoder=True,
-                      root=os.path.join(get_home_dir(), 'models'),
-                      pretrained_allow_missing=False, **kwargs):
+                      root=os.path.join(get_home_dir(), 'models'), **kwargs):
     """Generic RoBERTa BASE model.
 
     The number of layers (L) is 12, number of units (H) is 768, and the
@@ -888,8 +887,8 @@ def roberta_24_1024_16(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cp
     -------
     RoBERTaModel, gluonnlp.vocab.Vocab
     """
-    return get_roberta_model(model_name='roberta_24_1024_16', vocab=vocab, dataset_name=dataset_name,
-                             pretrained=pretrained, ctx=ctx,
+    return get_roberta_model(model_name='roberta_24_1024_16', vocab=vocab,
+                             dataset_name=dataset_name, pretrained=pretrained, ctx=ctx,
                              use_decoder=use_decoder, root=root, **kwargs)
 
 def ernie_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
@@ -940,8 +939,7 @@ def ernie_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu()
 
 
 def get_roberta_model(model_name=None, dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
-                      use_pooler=True, use_decoder=True, output_attention=False,
-                      output_all_encodings=False,
+                      use_decoder=True, output_attention=False, output_all_encodings=False,
                       root=os.path.join(get_home_dir(), 'models'), **kwargs):
     """Any RoBERTa pretrained model.
 
