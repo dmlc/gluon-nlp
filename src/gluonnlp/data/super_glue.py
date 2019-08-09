@@ -375,7 +375,7 @@ class SuperGlueMultiRC(_SuperGlueDataset):
     >>> multirc_val[0]['questions'][0].keys()
     dict_keys(['question', 'sentences_used', 'answers', 'idx', 'multisent'])
     >>> multirc_test = gluonnlp.data.SuperGlueMultiRC('test', root='./datasets/multirc')
-    -etc
+    -etc-
     >>> len(multirc_test)
     166
     >>> multirc_test[0].keys()
