@@ -411,7 +411,7 @@ class SuperGlueMultiRC(_SuperGlueDataset):
         return samples
 
     def _split_text(self, text):
-        text = re.sub("<b>Sent .{1,2}: </b>", "", text)
+        text = re.sub(r'<b>Sent .{1,2}: </b>', '', text)
         text = text.split('<br>')
         sents = [s for s in text if len(s) > 0]
         return sents
@@ -440,7 +440,7 @@ class SuperGlueBoolQ(_SuperGlueDataset):
     Examples
     --------
     >>> boolq_val = gluonnlp.data.SuperGlueBoolQ('val', root='./datasets/boolq')
-    -etc
+    -etc-
     >>> len(boolq_val)
     3270
     >>> boolq_val[0].keys()
