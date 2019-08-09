@@ -26,8 +26,8 @@ import io
 import os
 import warnings
 import bisect
-import numpy as np
 import json
+import numpy as np
 
 from mxnet.gluon.data import SimpleDataset, Dataset, ArrayDataset
 
@@ -301,7 +301,7 @@ class NumpyDataset(ArrayDataset):
 
 class _JsonlDataset(SimpleDataset):
     """A dataset wrapping over a jsonlines (.jsonl) file, each line is a json object.
-    
+
     Parameters
     ----------
     filename : str

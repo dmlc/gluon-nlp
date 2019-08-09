@@ -28,11 +28,11 @@ import zipfile
 import os
 import re
 
+from mxnet.gluon.utils import download, check_sha1, _get_repo_file_url
+
 from .dataset import _JsonlDataset
 from .registry import register
 from ..base import get_home_dir
-
-from mxnet.gluon.utils import download, check_sha1, _get_repo_file_url
 
 
 class _SuperGlueDataset(_JsonlDataset):
@@ -69,7 +69,7 @@ class _SuperGlueDataset(_JsonlDataset):
 class SuperGlueRTE(_SuperGlueDataset):
     """The Recognizing Textual Entailment (RTE) datasets come from a series of annual textual
     entailment challenges (RTE1, RTE2, RTE3 and RTE5).
-    
+
     From
     https://super.gluebenchmark.com/tasks
 
@@ -138,8 +138,6 @@ class SuperGlueCB(_SuperGlueDataset):
 
     Examples
     --------
-    >>> cb_val = gluonnlp.data.SuperGlueC
-    gluonnlp.data.SuperGlueCB(    gluonnlp.data.SuperGlueCOPA(  
     >>> cb_val = gluonnlp.data.SuperGlueCB('val', root='./datasets/cb')
     -etc-
     >>> len(cb_val)
