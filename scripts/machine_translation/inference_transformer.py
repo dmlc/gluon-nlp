@@ -58,25 +58,22 @@ mx.random.seed(10000)
 
 parser = argparse.ArgumentParser(description='Neural Machine Translation Example.'
                                              'We use this script only for transformer inference.')
-parser.add_argument('--dataset', type=str, default='WMT2016BPE', help='Dataset to use.')
+parser.add_argument('--dataset', type=str, default='WMT2014BPE', help='Dataset to use.')
 parser.add_argument('--src_lang', type=str, default='en', help='Source language')
 parser.add_argument('--tgt_lang', type=str, default='de', help='Target language')
-parser.add_argument('--epochs', type=int, default=10, help='upper epoch limit')
 parser.add_argument('--num_units', type=int, default=512, help='Dimension of the embedding '
                                                                'vectors and states.')
 parser.add_argument('--hidden_size', type=int, default=2048,
                     help='Dimension of the hidden state in position-wise feed-forward networks.')
 parser.add_argument('--dropout', type=float, default=0.1,
                     help='dropout applied to layers (0 = no dropout)')
-parser.add_argument('--epsilon', type=float, default=0.1,
-                    help='epsilon parameter for label smoothing')
 parser.add_argument('--num_layers', type=int, default=6,
                     help='number of layers in the encoder and decoder')
 parser.add_argument('--num_heads', type=int, default=8,
                     help='number of heads in multi-head attention')
 parser.add_argument('--scaled', action='store_true', help='Turn on to use scale in attention')
 parser.add_argument('--batch_size', type=int, default=1024,
-                    help='Batch size. Number of tokens per gpu in a minibatch')
+                    help='Batch size. Number of tokens in a minibatch')
 parser.add_argument('--beam_size', type=int, default=4, help='Beam size')
 parser.add_argument('--lp_alpha', type=float, default=0.6,
                     help='Alpha used in calculating the length penalty')
@@ -94,24 +91,6 @@ parser.add_argument('--src_max_len', type=int, default=-1, help='Maximum length 
                                                                 'sentence, -1 means no clipping')
 parser.add_argument('--tgt_max_len', type=int, default=-1, help='Maximum length of the target '
                                                                 'sentence, -1 means no clipping')
-parser.add_argument('--optimizer', type=str, default='adam', help='optimization algorithm')
-parser.add_argument('--lr', type=float, default=1.0, help='Initial learning rate')
-parser.add_argument('--warmup_steps', type=float, default=4000,
-                    help='number of warmup steps used in NOAM\'s stepsize schedule')
-parser.add_argument('--num_accumulated', type=int, default=1,
-                    help='Number of steps to accumulate the gradients. '
-                         'This is useful to mimic large batch training with limited gpu memory')
-parser.add_argument('--magnitude', type=float, default=3.0,
-                    help='Magnitude of Xavier initialization')
-parser.add_argument('--average_checkpoint', action='store_true',
-                    help='Turn on to perform final testing based on '
-                         'the average of last few checkpoints')
-parser.add_argument('--num_averages', type=int, default=5,
-                    help='Perform final testing based on the '
-                         'average of last num_averages checkpoints. '
-                         'This is only used if average_checkpoint is True')
-parser.add_argument('--average_start', type=int, default=5,
-                    help='Perform average SGD on last average_start epochs')
 parser.add_argument('--full', action='store_true',
                     help='In default, we use the test dataset in'
                          ' http://statmt.org/wmt14/test-filtered.tgz.'
@@ -142,7 +121,6 @@ logging.info(args)
 data_train, data_val, data_test, val_tgt_sentences, test_tgt_sentences, src_vocab, tgt_vocab \
     = dataprocessor.load_translation_data(dataset=args.dataset, bleu=args.bleu, args=args)
 
-dataprocessor.write_sentences(val_tgt_sentences, os.path.join(args.save_dir, 'val_gt.txt'))
 dataprocessor.write_sentences(test_tgt_sentences, os.path.join(args.save_dir, 'test_gt.txt'))
 
 data_train = data_train.transform(lambda src, tgt: (src, tgt, len(src), len(tgt)), lazy=False)
@@ -154,6 +132,7 @@ data_test = gluon.data.SimpleDataset([(ele[0], ele[1], len(ele[0]), len(ele[1]),
 data_train_lengths, data_val_lengths, data_test_lengths = [dataprocessor.get_data_lengths(x)
                                                            for x in
                                                            [data_train, data_val, data_test]]
+
 detokenizer = nlp.data.SacreMosesDetokenizer()
 
 # model prepare
@@ -191,7 +170,7 @@ model.load_parameters(args.model_parameter, ctx)
 
 static_alloc = True
 model.hybridize(static_alloc=static_alloc)
-#logging.info(model)
+logging.info(model)
 
 # translator prepare
 translator = BeamSearchTranslator(model=model, beam_size=args.beam_size,
@@ -211,7 +190,6 @@ def inference():
     _, _, test_data_loader \
         = dataprocessor.make_dataloader(data_train, data_val, data_test, args,
                                         use_average_length=True, num_shards=len(ctx))
-
     if args.bleu == 'tweaked':
         bpe = bool(args.dataset != 'IWSLT2015' and args.dataset != 'TOY')
         split_compound_word = bpe
@@ -225,8 +203,6 @@ def inference():
 
     translation_out = []
     all_inst_ids = []
-    avg_loss_denom = 0
-    avg_loss = 0.0
     total_wc = 0
     total_time = 0
     batch_total_blue = 0
@@ -240,12 +216,7 @@ def inference():
         tgt_seq = tgt_seq.as_in_context(ctx[0])
         src_test_length = src_test_length.as_in_context(ctx[0])
         tgt_test_length = tgt_test_length.as_in_context(ctx[0])
-        # Calculating Loss
-        out, _ = model(src_seq, tgt_seq[:, :-1], tgt_test_length, tgt_test_length - 1)
-        loss = test_loss_function(out, tgt_seq[:, 1:], tgt_test_length - 1).mean().asscalar()
         all_inst_ids.extend(inst_ids.asnumpy().astype(np.int32).tolist())
-        avg_loss += loss * (tgt_seq.shape[1] - 1)
-        avg_loss_denom += (tgt_seq.shape[1] - 1)
 
         start = time.time()
         # Translate to get a bleu score
@@ -286,8 +257,8 @@ def inference():
         if batch_id % 10 == 0 and batch_id != 0:
             batch_ave_bleu = batch_total_blue / 10
             batch_total_blue = 0
-            logging.info('batch id={:d}, loss={:.4f}, batch_bleu={:.4f}'
-                         .format(batch_id, loss, batch_ave_bleu * 100))
+            logging.info('batch id={:d}, batch_bleu={:.4f}'
+                         .format(batch_id, batch_ave_bleu * 100))
 
     # reorg translation sentences by inst_ids
     real_translation_out = [None for _ in range(len(all_inst_ids))]
@@ -299,12 +270,10 @@ def inference():
                                                tokenized=tokenized, tokenizer=args.bleu,
                                                split_compound_word=split_compound_word,
                                                bpe=bpe)
-    # total batch logging
-    test_ave_loss = avg_loss / avg_loss_denom
-    logging.info('Inference at test dataset. Loss={:.4f}, \
-                 inference ppl={:.4f}, inference bleu={:.4f}, throughput={:.4f}K wps'
-                 .format(test_ave_loss, np.exp(test_ave_loss),
-                         test_bleu_score * 100, total_wc / total_time / 1000))
+
+    logging.info('Inference at test dataset. \
+                 inference bleu={:.4f}, throughput={:.4f}K wps'
+                 .format(test_bleu_score * 100, total_wc / total_time / 1000))
 
 
 if __name__ == '__main__':
