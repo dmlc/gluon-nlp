@@ -34,7 +34,7 @@ import gluonnlp as nlp
 from gluonnlp.data import BERTTokenizer, JiebaTokenizer
 
 
-class TrainingInstance(object):
+class TrainingInstance:
     """A single training instance (sentence pair)."""
 
     def __init__(self, tokens, segment_ids, masked_lm_positions,

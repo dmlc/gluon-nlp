@@ -68,7 +68,7 @@ def mkdir(dirname):
             if e.errno != 17:
                 raise e
 
-class _TempFilePath(object):
+class _TempFilePath:
     """A TempFilePath that provides a path to a temporarily file, and automatically
     cleans up the temp file at exit.
     """

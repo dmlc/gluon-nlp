@@ -761,7 +761,7 @@ def test_vocab_set_embedding_with_subword_lookup_only_token_embedding(
         allow_extend, unknown_token, vocab_unknown_token, initialize):
     embsize = 5
 
-    class NaiveLookup(object):
+    class NaiveLookup:
         def __contains__(self, token):
             return True
 
@@ -915,7 +915,7 @@ def test_token_embedding_from_S3_fasttext_with_ngrams(load_ngrams):
 def test_token_embedding_unknown_lookup(setinconstructor, lookup,
                                         initializetokenembedding,
                                         unknown_token, allow_extend, tmpdir):
-    class NaiveLookup(object):
+    class NaiveLookup:
         dim = 5  # Must match _mk_my_pretrain_file
 
         def __contains__(self, token):
@@ -927,7 +927,7 @@ def test_token_embedding_unknown_lookup(setinconstructor, lookup,
             else:
                 return nd.ones((len(tokens), self.dim))
 
-    class IncapableLookup(object):
+    class IncapableLookup:
         def __contains__(self, token):
             return False
 
@@ -1090,7 +1090,7 @@ def test_word_embedding_evaluation_registry():
     with pytest.raises(RuntimeError):
 
         @nlp.embedding.evaluation.register
-        class InvalidEvaluationFunction(object):
+        class InvalidEvaluationFunction:
             pass
 
     with pytest.raises(KeyError):
@@ -1442,3 +1442,20 @@ def test_vocab_backwards_compatibility_prior_v0_7_corrupted_index_bug():
     assert v.idx_to_token[2] == '<bos>'
     assert v.idx_to_token[3] == '<eos>'
     assert v.idx_to_token[4] == 'token'
+
+
+@pytest.mark.parametrize('unknown_token', ['<unk>', '<UNK>'])
+@pytest.mark.parametrize('padding_token', ['<pad>', '<eos>', None])
+@pytest.mark.parametrize('eos_token', ['<eos>', None])
+@pytest.mark.parametrize('reserved_tokens', [['<tok>'], []])
+def test_vocab_remapped_unknown_token_idx(unknown_token, padding_token, eos_token, reserved_tokens,
+                                          counter):
+    Vocab = functools.partial(nlp.Vocab, counter, max_size=None, min_freq=1,
+                              unknown_token=unknown_token, padding_token=padding_token,
+                              bos_token=None, eos_token=eos_token)
+
+    v = Vocab()
+    assert v['UNKNOWNWORD'] == 0
+
+    v = Vocab(token_to_idx={unknown_token: 1})
+    assert v['UNKNOWNWORD'] == 1

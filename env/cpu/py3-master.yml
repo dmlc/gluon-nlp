@@ -4,10 +4,10 @@ dependencies:
   - python=3.6
   - pip=18.1
   - perl
-  - pylint=1.9.2
+  - pylint=2.3.1
   - flake8
-  - sphinx=1.7.7
-  - spacy
+  - sphinx=2.1.2
+  - spacy>2
   - nltk
   - pytest=4.5.0
   - flaky=3.5.3
@@ -16,7 +16,8 @@ dependencies:
   - pytest-xdist<2
   - regex
   - pip:
-    - pylint-quotes<0.2
-    - mxnet-mkl>=1.5.0b20190407
+    - pylint-quotes==0.2.1
+    - mxnet-mkl>=1.6.0b20190729
     - sacremoses
     - sentencepiece<0.2
+    - sphinx-autodoc-typehints==1.7.0

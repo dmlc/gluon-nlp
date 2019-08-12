@@ -40,11 +40,10 @@ import time
 import mxnet as mx
 import gluonnlp as nlp
 
-from utils import profile
 from fp16_utils import FP16Trainer
 from pretraining_utils import get_model_loss, get_pretrain_data_npz, get_dummy_dataloader
 from pretraining_utils import split_and_load, log, evaluate, forward, get_argparser
-from pretraining_utils import save_parameters, save_states
+from pretraining_utils import save_parameters, save_states, profile
 from pretraining_utils import get_pretrain_data_text, generate_dev_set
 
 # parser
@@ -242,7 +241,7 @@ def train(data_train, data_eval, model, nsp_loss, mlm_loss, vocab_size, ctx):
                 if data_eval:
                     # eval data is always based on a fixed npz file.
                     dataset_eval = get_pretrain_data_npz(data_eval, args.batch_size_eval, 1,
-                                                         False, False, 1)
+                                                         False, False, 1, vocab)
                     evaluate(dataset_eval, model, nsp_loss, mlm_loss, len(vocab), [ctx],
                              args.log_interval, args.dtype)
 
@@ -307,7 +306,7 @@ if __name__ == '__main__':
                                                max_predictions_per_seq=args.max_predictions_per_seq,
                                                whole_word_mask=args.whole_word_mask,
                                                cn_whole_word_mask=args.cn_whole_word_mask,
-                                               vocab=vocab, tokenizer=tokenizer,
+                                               tokenizer=tokenizer,
                                                num_workers=args.num_data_workers)
         else:
             get_dataset_fn = get_pretrain_data_npz
@@ -316,11 +315,11 @@ if __name__ == '__main__':
         part_idx = 0 if args.dummy_data_len else rank
         data_train = get_dataset_fn(args.data, args.batch_size, 1, True,
                                     args.use_avg_len, args.num_buckets,
-                                    num_parts=num_parts, part_idx=part_idx)
+                                    vocab, num_parts=num_parts, part_idx=part_idx)
         train(data_train, data_eval, model, nsp_loss, mlm_loss, len(vocab), ctx)
     if data_eval:
         # eval data is always based on a fixed npz file.
         dataset_eval = get_pretrain_data_npz(data_eval, args.batch_size_eval, 1,
-                                             False, False, 1)
+                                             False, False, 1, vocab)
         evaluate(dataset_eval, model, nsp_loss, mlm_loss, len(vocab), [ctx],
                  args.log_interval, args.dtype)

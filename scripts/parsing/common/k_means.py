@@ -21,7 +21,7 @@ from collections import Counter
 import numpy as np
 
 
-class KMeans(object):
+class KMeans:
     """
     Cluster sentences by their lengths
 
@@ -101,7 +101,6 @@ class KMeans(object):
         # print('%d) Final splits: %s; Final mass: %d' % (i, self._splits, self.get_mass()))
 
         self._reindex()
-        return
 
     def _recenter(self):
         """

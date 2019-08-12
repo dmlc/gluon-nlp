@@ -20,36 +20,34 @@
 # pylint: disable=consider-iterating-dictionary
 
 """Vocabulary."""
-from __future__ import absolute_import
-from __future__ import print_function
-
 __all__ = ['Vocab']
 
 import collections
 import json
 import uuid
 import warnings
+from typing import Dict, Hashable, List, Optional
 
 from mxnet import nd
 
-from ..data.utils import DefaultLookupDict, count_tokens
 from .. import _constants as C
 from .. import embedding as emb
+from ..data.utils import Counter, DefaultLookupDict, count_tokens
 
 UNK_IDX = 0
 
 
-class Vocab(object):
+class Vocab:
     """Indexing and embedding attachment for text tokens.
 
     Parameters
     ----------
-    counter : Counter or None, default None
+    counter
         Counts text token frequencies in the text data. Its keys will be indexed according to
         frequency thresholds such as `max_size` and `min_freq`. Keys of `counter`,
         `unknown_token`, and values of `reserved_tokens` must be of the same hashable type.
         Examples: str, int, and tuple.
-    max_size : None or int, default None
+    max_size
         The maximum possible number of the most frequent tokens in the keys of `counter` that can be
         indexed. Note that this argument does not count any token from `reserved_tokens`. Suppose
         that there are different keys of `counter` whose frequency are the same, if indexing all of
@@ -57,25 +55,25 @@ class Vocab(object):
         their __cmp__() order until the frequency threshold is met. If this argument is None or
         larger than its largest possible value restricted by `counter` and `reserved_tokens`, this
         argument has no effect.
-    min_freq : int, default 1
+    min_freq
         The minimum frequency required for a token in the keys of `counter` to be indexed.
-    unknown_token : hashable object or None, default '<unk>'
+    unknown_token
         The representation for any unknown token. If `unknown_token` is not
         `None`, looking up any token that is not part of the vocabulary and
         thus considered unknown will return the index of `unknown_token`. If
         None, looking up an unknown token will result in `KeyError`.
-    padding_token : hashable object or None, default '<pad>'
+    padding_token
         The representation for the special token of padding token.
-    bos_token : hashable object or None, default '<bos>'
+    bos_token
         The representation for the special token of beginning-of-sequence token.
-    eos_token : hashable object or None, default '<eos>'
+    eos_token
         The representation for the special token of end-of-sequence token.
-    reserved_tokens : list of hashable objects or None, default None
+    reserved_tokens
         A list specifying additional tokens to be added to the vocabulary.
         `reserved_tokens` must not contain the value of `unknown_token` or
         duplicate tokens. It must neither contain special tokens specified via
         keyword arguments.
-    token_to_idx : dict mapping tokens (hashable objects) to int or None, default None
+    token_to_idx
         If not `None`, specifies the indices of tokens to be used by the
         vocabulary. Each token in `token_to_index` must be part of the Vocab
         and each index can only be associated with a single token.
@@ -175,9 +173,13 @@ class Vocab(object):
 
     """
 
-    def __init__(self, counter=None, max_size=None, min_freq=1, unknown_token=C.UNK_TOKEN,
-                 padding_token=C.PAD_TOKEN, bos_token=C.BOS_TOKEN, eos_token=C.EOS_TOKEN,
-                 reserved_tokens=None, token_to_idx=None, **kwargs):
+    def __init__(self, counter: Optional[Counter] = None, max_size: Optional[int] = None,
+                 min_freq: int = 1, unknown_token: Optional[Hashable] = C.UNK_TOKEN,
+                 padding_token: Optional[Hashable] = C.PAD_TOKEN,
+                 bos_token: Optional[Hashable] = C.BOS_TOKEN,
+                 eos_token: Optional[Hashable] = C.EOS_TOKEN,
+                 reserved_tokens: Optional[List[Hashable]] = None,
+                 token_to_idx: Optional[Dict[Hashable, int]] = None, **kwargs):
 
         # Sanity checks.
         assert min_freq > 0, '`min_freq` must be set to a positive value.'
@@ -234,6 +236,8 @@ class Vocab(object):
 
         if token_to_idx:
             self._sort_index_according_to_user_specification(token_to_idx)
+            if unknown_token:
+                self._token_to_idx._default = self._token_to_idx[unknown_token]
 
 
     def _index_counter_keys(self, counter, unknown_token, special_tokens, max_size,

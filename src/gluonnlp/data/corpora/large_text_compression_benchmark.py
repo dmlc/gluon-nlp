@@ -37,15 +37,15 @@ http://mattmahoney.net/dc/textdata.html for more information.
 
 """
 
-__all__ = ['Text8', 'Fil9']
+__all__ = ['Text8', 'Fil9', 'Enwik8']
 
 import os
 import zipfile
 
 from mxnet.gluon.utils import _get_repo_file_url, check_sha1, download
 
-from ..dataset import CorpusDataset
 from ...base import get_home_dir
+from ..dataset import CorpusDataset
 
 
 class _LargeTextCompressionBenchmark(CorpusDataset):
@@ -56,19 +56,18 @@ class _LargeTextCompressionBenchmark(CorpusDataset):
         self._root = root
         self._segment = segment
         self._namespace = 'gluon/dataset/large_text_compression_benchmark'
-        super(_LargeTextCompressionBenchmark, self).__init__(
-            self._get_data(), **kwargs)
+        super().__init__(
+            self._get_data(self.archive_file, self.data_file, segment, root, self._namespace),
+            **kwargs)
 
-    def _get_data(self):
-        archive_file_name, archive_hash = self.archive_file
-        data_file_name, data_hash = self.data_file[self._segment]
-        root = self._root
+    @staticmethod
+    def _get_data(archive_file, data_file, segment, root, namespace):
+        archive_file_name, archive_hash = archive_file
+        data_file_name, data_hash = data_file[segment]
         path = os.path.join(root, data_file_name)
         if not os.path.exists(path) or not check_sha1(path, data_hash):
-            downloaded_file_path = download(
-                _get_repo_file_url(self._namespace, archive_file_name),
-                path=root,
-                sha1_hash=archive_hash)
+            downloaded_file_path = download(_get_repo_file_url(namespace, archive_file_name),
+                                            path=root, sha1_hash=archive_hash)
 
             with zipfile.ZipFile(downloaded_file_path, 'r') as zf:
                 zf.extractall(root)
@@ -81,8 +80,8 @@ class Text8(_LargeTextCompressionBenchmark):
     http://mattmahoney.net/dc/textdata.html
 
     Part of the test data for the Large Text Compression Benchmark
-    http://mattmahoney.net/dc/text.html. The first 10**8 bytes of the English
-    Wikipedia dump on Mar. 3, 2006.
+    http://mattmahoney.net/dc/text.html. The first 10**8 bytes of the cleaned
+    English Wikipedia dump on Mar. 3, 2006.
 
     License: https://en.wikipedia.org/wiki/Wikipedia:Copyrights
 
@@ -103,11 +102,8 @@ class Text8(_LargeTextCompressionBenchmark):
                  root=os.path.join(get_home_dir(), 'datasets', 'text8'),
                  segment='train',
                  max_sentence_length=10000):
-        root = os.path.expanduser(root)
-        if not os.path.isdir(root):
-            os.makedirs(root)
         self._max_sentence_length = max_sentence_length
-        super(Text8, self).__init__(root=root, segment=segment)
+        super().__init__(root=root, segment=segment)
 
         # pylint: disable=access-member-before-definition
         if max_sentence_length:
@@ -145,11 +141,8 @@ class Fil9(_LargeTextCompressionBenchmark):
                  root=os.path.join(get_home_dir(), 'datasets', 'fil9'),
                  segment='train',
                  max_sentence_length=None):
-        root = os.path.expanduser(root)
-        if not os.path.isdir(root):
-            os.makedirs(root)
         self._max_sentence_length = max_sentence_length
-        super(Fil9, self).__init__(root=root, segment=segment)
+        super().__init__(root=root, segment=segment)
 
         # pylint: disable=access-member-before-definition
         if max_sentence_length is not None:
@@ -158,3 +151,42 @@ class Fil9(_LargeTextCompressionBenchmark):
                 for i in range(0, len(sentence), max_sentence_length):
                     data.append(sentence[i:i + max_sentence_length])
             self._data = data
+
+
+class Enwik8(_LargeTextCompressionBenchmark):
+    """Enwik8 corpus
+
+    http://mattmahoney.net/dc/textdata.html
+
+    Part of the test data for the Large Text Compression Benchmark
+    http://mattmahoney.net/dc/text.html. The first 10**8 bytes of the English
+    Wikipedia dump on Mar. 3, 2006.
+
+    License: https://en.wikipedia.org/wiki/Wikipedia:Copyrights
+
+    Parameters
+    ----------
+    root : str, default '$MXNET_HOME/datasets/text8'
+        Path to temp folder for storing data.
+        MXNET_HOME defaults to '~/.mxnet'.
+    segment
+        train, test, valid, trainraw, testraw and validraw segments
+        preprocessed with
+        https://github.com/salesforce/awd-lstm-lm/blob/master/data/enwik8/prep_enwik8.py
+        are provided.
+
+    """
+
+    archive_file = ('enwik8-d25f6043.zip', 'd25f60433af3c02ec6d2dec2435e1732f42a1a68')
+    data_file = {
+        'test': ('test.txt', '1389fdf312b253350a959d4fd63e5e9ae7fe74d4'),
+        'train': ('train.txt', 'eff044567358678cd81b9eda516cb146fdba7360'),
+        'val': ('valid.txt', '2076ad59caee0099b6c68e66f92d7ef7d0975113'),
+        'testraw': ('test.txt.raw', 'c30edaac372090c10a562b8777a6703fa3dd9f7e'),
+        'trainraw': ('train.txt.raw', 'd8a8d0ca2a95f20c9d243cb60a579a59d12b0f48'),
+        'valraw': ('valid.txt.raw', '2e6218a15c1d5c3c2d23f8092bf07bc24da0d922')
+    }
+
+    def __init__(self, root=os.path.join(get_home_dir(), 'datasets', 'enwik8'),
+                 segment: str = 'train'):
+        super().__init__(root=root, segment=segment)

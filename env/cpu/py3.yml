@@ -4,10 +4,10 @@ dependencies:
   - python=3.6
   - pip=18.1
   - perl
-  - pylint=1.9.2
+  - pylint=2.3.1
   - flake8
-  - sphinx=1.7.7
-  - spacy
+  - sphinx=2.1.2
+  - spacy>2
   - nltk
   - pytest=4.5.0
   - flaky=3.5.3
@@ -26,10 +26,11 @@ dependencies:
   - ipykernel
   - regex
   - pip:
-    - pylint-quotes<0.2
-    - mxnet-mkl>=1.4.1
+    - pylint-quotes==0.2.1
+    - mxnet-mkl>=1.5.0
     - sacremoses
     - sentencepiece<0.2
-    - https://github.com/mli/mx-theme/tarball/v0.3.9
+    - https://github.com/szha/mx-theme/tarball/master
     - seaborn
     - jieba
+    - sphinx-autodoc-typehints==1.7.0

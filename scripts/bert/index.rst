@@ -3,9 +3,11 @@ Bidirectional Encoder Representations from Transformers
 
 :download:`Download scripts </model_zoo/bert.zip>`
 
+
 Reference: Devlin, Jacob, et al. "`Bert: Pre-training of deep bidirectional transformers for language understanding. <https://arxiv.org/abs/1810.04805>`_" arXiv preprint arXiv:1810.04805 (2018).
 
-Note: BERT model requires `nightly version of MXNet <https://mxnet.incubator.apache.org/versions/master/install/index.html?version=master&platform=Linux&language=Python&processor=CPU>`__. 
+BERT Model Zoo
+~~~~~~~~~~~~~~
 
 The following pre-trained BERT models are available from the **gluonnlp.model.get_model** API:
 
@@ -44,6 +46,37 @@ The following pre-trained BERT models are available from the **gluonnlp.model.ge
 +-----------------------------------------+----------------+-----------------+
 
 where **bert_12_768_12** refers to the BERT BASE model, and **bert_24_1024_16** refers to the BERT LARGE model.
+
+.. code-block:: python
+
+    import gluonnlp as nlp; import mxnet as mx;
+    model, vocab = nlp.model.get_model('bert_12_768_12', dataset_name='book_corpus_wiki_en_uncased', use_classifier=False);
+    tokenizer = nlp.data.BERTTokenizer(vocab, lower=True);
+    transform = nlp.data.BERTSentenceTransform(tokenizer, max_seq_length=512, pair=False, pad=False);
+    sample = transform(['Hello world!']);
+    words, valid_len, segments = mx.nd.array([sample[0]]), mx.nd.array([sample[1]]), mx.nd.array([sample[2]]);
+    seq_encoding, cls_encoding = model(words, segments, valid_len);
+
+Additionally, GluonNLP supports the "`RoBERTa <https://arxiv.org/abs/1907.11692>`_" model:
+
++-----------------------------------------+-------------------+--------------------+
+|                                         | roberta_12_768_12 | roberta_24_1024_16 |
++=========================================+===================+====================+
+| openwebtext_ccnews_stories_books_cased  | ✓                 | ✓                  |
++-----------------------------------------+-------------------+--------------------+
+
+.. code-block:: python
+
+    import gluonnlp as nlp; import mxnet as mx;
+    model, vocab = nlp.model.get_model('roberta_12_768_12', dataset_name='openwebtext_ccnews_stories_books_cased');
+    tokenizer = nlp.data.GPT2BPETokenizer();
+    text = [vocab.bos_token] + tokenizer('Hello world!') + [vocab.eos_token];
+    seq_encoding = model(mx.nd.array([vocab[text]]))
+
+.. hint::
+
+   The pre-training, fine-tunining and export scripts are available `here. </model_zoo/bert.zip>`__
+
 
 BERT for Sentence Classification
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -112,6 +145,12 @@ We also provide scripts for pre-training BERT with masked language modeling and 
 
 The pre-training data format expects: (1) One sentence per line. These should ideally be actual sentences, not entire paragraphs or arbitrary spans of text for the "next sentence prediction" task. (2) Blank lines between documents. You can find a sample pre-training text with 3 documents `here <https://github.com/dmlc/gluon-nlp/blob/master/scripts/bert/sample_text.txt>`__. You can perform sentence segmentation with an off-the-shelf NLP toolkit such as NLTK.
 
+
+.. hint::
+
+   You can download pre-processed English wikipedia dataset `here. <https://apache-mxnet.s3-accelerate.dualstack.amazonaws.com/gluon/dataset/enwiki-197b5d8d.zip>`__
+
+
 Pre-requisite
 +++++++++++++
 
@@ -162,7 +201,7 @@ You can `train <//github.com/google/sentencepiece/tree/v0.1.82/python#model-trai
 .. code-block:: python
 
     import sentencepiece as spm
-    spm.SentencePieceTrainer.Train('--input=a.txt,b.txt --unk_id=0 --pad_id=1 --model_prefix=my_vocab --vocab_size=30000 --model_type BPE')
+    spm.SentencePieceTrainer.Train('--input=a.txt,b.txt --unk_id=0 --pad_id=3 --model_prefix=my_vocab --vocab_size=30000 --model_type=BPE')
 
 To use sentencepiece vocab for pre-training, please set --sentencepiece=my_vocab.model when using run_pretraining_hvd.py.
 

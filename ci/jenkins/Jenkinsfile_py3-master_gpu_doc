@@ -63,38 +63,74 @@ core_logic: {
               // The converted notebooks and the conversion logs are
               // saved to S3 and retrieved on the CI server once the jobs
               // finished.
-              sh """
-              set +e
-              conda activate ./conda/cpu/py3
 
-              python3 ci/batch/submit-job.py --region us-east-1 --wait \
-                --timeout 1800 --saved-output ./docs/examples --conda-env docker/py3 \
-                --name GluonNLP-${env.BRANCH_NAME}-${env.BUILD_NUMBER} \
-                --save-path batch/${env.BRANCH_NAME}/${env.BUILD_NUMBER}/docs/examples \
-                --work-dir . --source-ref refs/pull/${env.CHANGE_ID}/head \
-                --command \"python3 docs/md2ipynb.py ${md_file} > ${stdout_file} 2> ${stderr_file} \"
-              BATCH_EXIT_CODE=\$?
+              if (env.BRANCH_NAME.startsWith('PR-')){
+                sh """
+                set +e
+                conda activate ./conda/cpu/py3
 
-              aws s3api wait object-exists --bucket gluon-nlp-staging \
-                --key batch/${env.BRANCH_NAME}/${env.BUILD_NUMBER}/${stderr_file}
-              aws s3 cp s3://gluon-nlp-staging/batch/${env.BRANCH_NAME}/${env.BUILD_NUMBER}/${stderr_file} ${stderr_file}
-              cat ${stderr_file}
+                python3 ci/batch/submit-job.py --region us-east-1 --wait \
+                  --timeout 1800 --saved-output ./docs/examples --conda-env docker/py3 \
+                  --name GluonNLP-${env.BRANCH_NAME}-${env.BUILD_NUMBER} \
+                  --save-path batch/${env.BRANCH_NAME}/${env.BUILD_NUMBER}/docs/examples \
+                  --work-dir . --source-ref refs/pull/${env.CHANGE_ID}/head \
+                  --command \"python3 docs/md2ipynb.py ${md_file} > ${stdout_file} 2> ${stderr_file} \"
+                BATCH_EXIT_CODE=\$?
 
-              aws s3api wait object-exists --bucket gluon-nlp-staging \
-                --key batch/${env.BRANCH_NAME}/${env.BUILD_NUMBER}/${stdout_file}
-              aws s3 cp s3://gluon-nlp-staging/batch/${env.BRANCH_NAME}/${env.BUILD_NUMBER}/${stdout_file} ${stdout_file}
-              cat ${stdout_file}
-
-              if [ \$BATCH_EXIT_CODE -ne 0 ]; then
-                echo AWS Batch Task Failed
-              else
                 aws s3api wait object-exists --bucket gluon-nlp-staging \
-                  --key batch/${env.BRANCH_NAME}/${env.BUILD_NUMBER}/${ipynb_file}
-                aws s3 cp s3://gluon-nlp-staging/batch/${env.BRANCH_NAME}/${env.BUILD_NUMBER}/${ipynb_file} ${ipynb_file}
-              fi
+                  --key batch/${env.BRANCH_NAME}/${env.BUILD_NUMBER}/${stderr_file}
+                aws s3 cp s3://gluon-nlp-staging/batch/${env.BRANCH_NAME}/${env.BUILD_NUMBER}/${stderr_file} ${stderr_file}
+                cat ${stderr_file}
 
-              exit \$BATCH_EXIT_CODE
-              """
+                aws s3api wait object-exists --bucket gluon-nlp-staging \
+                  --key batch/${env.BRANCH_NAME}/${env.BUILD_NUMBER}/${stdout_file}
+                aws s3 cp s3://gluon-nlp-staging/batch/${env.BRANCH_NAME}/${env.BUILD_NUMBER}/${stdout_file} ${stdout_file}
+                cat ${stdout_file}
+
+                if [ \$BATCH_EXIT_CODE -ne 0 ]; then
+                  echo AWS Batch Task Failed
+                else
+                  aws s3api wait object-exists --bucket gluon-nlp-staging \
+                    --key batch/${env.BRANCH_NAME}/${env.BUILD_NUMBER}/${ipynb_file}
+                  aws s3 cp s3://gluon-nlp-staging/batch/${env.BRANCH_NAME}/${env.BUILD_NUMBER}/${ipynb_file} ${ipynb_file}
+                fi
+
+                exit \$BATCH_EXIT_CODE
+                """
+              } else {
+                sh """
+                set +e
+                conda activate ./conda/cpu/py3
+
+                python3 ci/batch/submit-job.py --region us-east-1 --wait \
+                  --timeout 1800 --saved-output ./docs/examples --conda-env docker/py3 \
+                  --name GluonNLP-${env.BRANCH_NAME}-${env.BUILD_NUMBER} \
+                  --save-path batch/${env.BRANCH_NAME}/${env.BUILD_NUMBER}/docs/examples \
+                  --work-dir . --source-ref ${env.BRANCH_NAME} \
+                  --command \"python3 docs/md2ipynb.py ${md_file} > ${stdout_file} 2> ${stderr_file} \"
+                BATCH_EXIT_CODE=\$?
+
+                aws s3api wait object-exists --bucket gluon-nlp-staging \
+                  --key batch/${env.BRANCH_NAME}/${env.BUILD_NUMBER}/${stderr_file}
+                aws s3 cp s3://gluon-nlp-staging/batch/${env.BRANCH_NAME}/${env.BUILD_NUMBER}/${stderr_file} ${stderr_file}
+                cat ${stderr_file}
+
+                aws s3api wait object-exists --bucket gluon-nlp-staging \
+                  --key batch/${env.BRANCH_NAME}/${env.BUILD_NUMBER}/${stdout_file}
+                aws s3 cp s3://gluon-nlp-staging/batch/${env.BRANCH_NAME}/${env.BUILD_NUMBER}/${stdout_file} ${stdout_file}
+                cat ${stdout_file}
+
+                if [ \$BATCH_EXIT_CODE -ne 0 ]; then
+                  echo AWS Batch Task Failed
+                else
+                  aws s3api wait object-exists --bucket gluon-nlp-staging \
+                    --key batch/${env.BRANCH_NAME}/${env.BUILD_NUMBER}/${ipynb_file}
+                  aws s3 cp s3://gluon-nlp-staging/batch/${env.BRANCH_NAME}/${env.BUILD_NUMBER}/${ipynb_file} ${ipynb_file}
+                fi
+
+                exit \$BATCH_EXIT_CODE
+                """
+              }
             }
           }
         }

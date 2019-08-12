@@ -21,7 +21,7 @@
 import pickle
 
 
-class Savable(object):
+class Savable:
     """
     A super class for save/load operations.
     """

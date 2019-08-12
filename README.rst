@@ -15,7 +15,7 @@ GluonNLP: Your Choice of Deep Learning for NLP
 
 .. raw:: html
 
-   <a href='http://ci.mxnet.io/job/gluon-nlp/job/master/'><img src='https://img.shields.io/badge/python-2.7%2C%203.6-blue.svg'></a>
+   <a href='http://ci.mxnet.io/job/gluon-nlp/job/master/'><img src='https://img.shields.io/badge/python-3.6%2C3.7-blue.svg'></a>
    <a href='https://codecov.io/gh/dmlc/gluon-nlp'><img src='https://codecov.io/gh/dmlc/gluon-nlp/branch/master/graph/badge.svg'></a>
    <a href='http://ci.mxnet.io/job/gluonnlp-py3-master-gpu-doc/job/master/'><img src='http://ci.mxnet.io/buildStatus/icon?job=gluonnlp-py3-master-gpu-doc%2Fmaster'></a>
    <a href='https://pypi.org/project/gluonnlp/#history'><img src='https://img.shields.io/pypi/v/gluonnlp.svg'></a>
@@ -43,7 +43,9 @@ News
 Installation
 ============
 
-Make sure you have Python 2.7 or Python 3.6 and recent version of MXNet.
+Make sure you have Python 3.6 or newer and a recent version of MXNet (our CI
+server runs the testsuite with Python 3.6).
+
 You can install ``MXNet`` and ``GluonNLP`` using pip.
 
 ``GluonNLP`` is based on the most recent version of ``MXNet``.
@@ -53,7 +55,7 @@ In particular, if you want to install the most recent ``MXNet`` release:
 
 ::
 
-    pip install --upgrade mxnet>=1.4.0
+    pip install --upgrade mxnet>=1.5.0
 
 Else, if you want to install the most recent ``MXNet`` nightly build:
 
@@ -189,6 +191,21 @@ English word embeddings:
     <class 'mxnet.ndarray.ndarray.NDArray'>
     >>> glove['baby'].shape
     (50,)
+    
+    
+Reference Paper
+===============
+
+The bibtex entry for the `reference paper <https://arxiv.org/abs/1907.04433>`__ of GluonNLP is:
+
+.. code::
+
+   @article{gluoncvnlp2019,
+     title={GluonCV and GluonNLP: Deep Learning in Computer Vision and Natural Language Processing},
+     author={Guo, Jian and He, He and He, Tong and Lausen, Leonard and Li, Mu and Lin, Haibin and Shi, Xingjian and Wang, Chenguang and Xie, Junyuan and Zha, Sheng and Zhang, Aston and Zhang, Hang and Zhang, Zhi and Zhang, Zhongyue and Zheng, Shuai},
+     journal={arXiv preprint arXiv:1907.04433},
+     year={2019}
+   }
 
 
 New to Deep Learning or NLP?

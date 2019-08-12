@@ -207,36 +207,22 @@ class MultiHeadAttentionCell(AttentionCell):
                  weight_initializer=None, bias_initializer='zeros', prefix=None, params=None):
         super(MultiHeadAttentionCell, self).__init__(prefix=prefix, params=params)
         self._base_cell = base_cell
-        self._query_units = query_units
-        self._key_units = key_units
-        self._value_units = value_units
         self._num_heads = num_heads
         self._use_bias = use_bias
-        if self._query_units % self._num_heads != 0:
-            raise ValueError('In MultiHeadAttetion, the query_units should be divided exactly'
-                             ' by the number of heads. Received query_units={}, num_heads={}'
-                             .format(key_units, num_heads))
-
-        if self._key_units % self._num_heads != 0:
-            raise ValueError('In MultiHeadAttetion, the key_units should be divided exactly'
-                             ' by the number of heads. Received key_units={}, num_heads={}'
-                             .format(key_units, num_heads))
-
-        if self._value_units % self._num_heads != 0:
-            raise ValueError('In MultiHeadAttetion, the value_units should be divided exactly'
-                             ' by the number of heads. Received value_units={}, num_heads={}'
-                             .format(value_units, num_heads))
-
-        with self.name_scope():
-            self.proj_query = nn.Dense(units=self._query_units, use_bias=self._use_bias,
-                                       flatten=False, weight_initializer=weight_initializer,
-                                       bias_initializer=bias_initializer, prefix='query_')
-            self.proj_key = nn.Dense(units=self._key_units, use_bias=self._use_bias,
-                                     flatten=False, weight_initializer=weight_initializer,
-                                     bias_initializer=bias_initializer, prefix='key_')
-            self.proj_value = nn.Dense(units=self._value_units, use_bias=self._use_bias,
-                                       flatten=False, weight_initializer=weight_initializer,
-                                       bias_initializer=bias_initializer, prefix='value_')
+        units = {'query': query_units, 'key': key_units, 'value': value_units}
+        for name, unit in units.items():
+            if unit % self._num_heads != 0:
+                raise ValueError(
+                    'In MultiHeadAttetion, the {name}_units should be divided exactly'
+                    ' by the number of heads. Received {name}_units={unit}, num_heads={n}'.format(
+                        name=name, unit=unit, n=num_heads))
+            setattr(self, '_{}_units'.format(name), unit)
+            with self.name_scope():
+                setattr(
+                    self, 'proj_{}'.format(name),
+                    nn.Dense(units=self._query_units, use_bias=self._use_bias, flatten=False,
+                             weight_initializer=weight_initializer,
+                             bias_initializer=bias_initializer, prefix='{}_'.format(name)))
 
     def __call__(self, query, key, value=None, mask=None):
         """Compute the attention.
@@ -265,15 +251,18 @@ class MultiHeadAttentionCell(AttentionCell):
         """
         return super(MultiHeadAttentionCell, self).__call__(query, key, value, mask)
 
-    def _compute_weight(self, F, query, key, mask=None):
-        query = self.proj_query(query)  # Shape (batch_size, query_length, query_units)
+    def _project(self, F, name, x):
+        # Shape (batch_size, query_length, query_units)
+        x = getattr(self, 'proj_{}'.format(name))(x)
         # Shape (batch_size * num_heads, query_length, ele_units)
-        query = F.transpose(query.reshape(shape=(0, 0, self._num_heads, -1)),
-                            axes=(0, 2, 1, 3))\
-                 .reshape(shape=(-1, 0, 0), reverse=True)
-        key = self.proj_key(key)
-        key = F.transpose(key.reshape(shape=(0, 0, self._num_heads, -1)),
-                          axes=(0, 2, 1, 3)).reshape(shape=(-1, 0, 0), reverse=True)
+        x = F.transpose(x.reshape(shape=(0, 0, self._num_heads, -1)),
+                        axes=(0, 2, 1, 3))\
+             .reshape(shape=(-1, 0, 0), reverse=True)
+        return x
+
+    def _compute_weight(self, F, query, key, mask=None):
+        query = self._project(F, 'query', query)
+        key = self._project(F, 'key', key)
         if mask is not None:
             mask = F.broadcast_axis(F.expand_dims(mask, axis=1),
                                     axis=1, size=self._num_heads)\
@@ -283,9 +272,7 @@ class MultiHeadAttentionCell(AttentionCell):
 
     def _read_by_weight(self, F, att_weights, value):
         att_weights = att_weights.reshape(shape=(-1, 0, 0), reverse=True)
-        value = self.proj_value(value)
-        value = F.transpose(value.reshape(shape=(0, 0, self._num_heads, -1)),
-                            axes=(0, 2, 1, 3)).reshape(shape=(-1, 0, 0), reverse=True)
+        value = self._project(F, 'value', value)
         context_vec = self._base_cell._read_by_weight(F, att_weights, value)
         context_vec = F.transpose(context_vec.reshape(shape=(-1, self._num_heads, 0, 0),
                                                       reverse=True),
@@ -410,7 +397,7 @@ class DotProductAttentionCell(AttentionCell):
             If the units is None,
                 score = <h_q, h_k>
             Else if the units is not None and luong_style is False:
-                score = <W_q h_q, W_k, h_k>
+                score = <W_q h_q, W_k h_k>
             Else if the units is not None and luong_style is True:
                 score = <W h_q, h_k>
 

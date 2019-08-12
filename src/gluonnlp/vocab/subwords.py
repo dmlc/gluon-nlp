@@ -53,7 +53,7 @@ def list_subword_functions():
     return list(reg.keys())
 
 
-class SubwordFunction(object):
+class SubwordFunction:
     """A SubwordFunction maps words to lists of subword indices.
 
     This class is abstract and to be subclassed. Use

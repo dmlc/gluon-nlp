@@ -33,7 +33,7 @@ from .data import ParserVocabulary
 from .tarjan import Tarjan
 
 
-class Progbar(object):
+class Progbar:
     """Progbar class copied from keras (https://github.com/fchollet/keras/)
 
     Displays a progress bar.

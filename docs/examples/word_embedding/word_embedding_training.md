@@ -1,8 +1,3 @@
-## Before You Start
-
-Before we begin, please click the download link above to download the necessary
-python files for completing this tutorial.
-
 # Word Embeddings Training and Evaluation
 
 ```{.python .input}

@@ -24,6 +24,7 @@ import logging
 import argparse
 import random
 import multiprocessing
+import functools
 
 import numpy as np
 
@@ -38,7 +39,7 @@ from gluonnlp.metric import MaskedAccuracy
 
 __all__ = ['get_model_loss', 'get_pretrain_data_npz', 'get_dummy_dataloader',
            'save_parameters', 'save_states', 'evaluate', 'forward', 'split_and_load',
-           'get_argparser', 'get_pretrain_data_text', 'generate_dev_set']
+           'get_argparser', 'get_pretrain_data_text', 'generate_dev_set', 'profile']
 
 def get_model_loss(ctx, model, pretrained, dataset_name, vocab, dtype,
                    ckpt_dir=None, start_step=None):
@@ -185,7 +186,7 @@ def get_pretrain_data_text(data, batch_size, num_ctxes, shuffle, use_avg_len,
                       'whole_word_mask': whole_word_mask}
     dataset_fn = SimpleDatasetFn(BERTPretrainDataset, dataset_params)
     sampler_fn = BERTSamplerFn(use_avg_len, batch_size, shuffle, num_ctxes, num_buckets)
-    dataloader_fn = BERTDataLoaderFn(use_avg_len, num_ctxes)
+    dataloader_fn = BERTDataLoaderFn(use_avg_len, num_ctxes, vocab)
 
     split_sampler = nlp.data.SplitSampler(num_files, num_parts=num_parts, part_index=part_idx)
     dataloader = DatasetLoader(data, split_sampler, dataset_fn, sampler_fn, dataloader_fn,
@@ -236,34 +237,38 @@ class BERTSamplerFn(SamplerFn):
 
 class BERTDataLoaderFn(DataLoaderFn):
     """Callable object to create the data loader"""
-    def __init__(self, use_avg_len, num_ctxes):
+    def __init__(self, use_avg_len, num_ctxes, vocab):
         self._use_avg_len = use_avg_len
         self._num_ctxes = num_ctxes
+        pad_val = vocab[vocab.padding_token]
+        self._batchify_fn = Tuple(Pad(pad_val=pad_val), # input_id
+                                  Pad(pad_val=pad_val), # masked_id
+                                  Pad(pad_val=0),       # masked_position
+                                  Pad(pad_val=0),       # masked_weight
+                                  Stack(),              # next_sentence_label
+                                  Pad(pad_val=0),       # segment_id
+                                  Stack())              # valid_length
 
     def __call__(self, dataset, sampler):
-        # A batch includes: input_id, masked_id, masked_position, masked_weight,
-        #                   next_sentence_label, segment_id, valid_length
-        batchify_fn = Tuple(Pad(), Pad(), Pad(), Pad(), Stack(), Pad(), Stack())
-
         if self._use_avg_len:
             # sharded data loader
             dataloader = nlp.data.ShardedDataLoader(dataset,
                                                     batch_sampler=sampler,
-                                                    batchify_fn=batchify_fn,
+                                                    batchify_fn=self._batchify_fn,
                                                     num_workers=self._num_ctxes)
         else:
             dataloader = DataLoader(dataset=dataset,
                                     batch_sampler=sampler,
-                                    batchify_fn=batchify_fn,
+                                    batchify_fn=self._batchify_fn,
                                     num_workers=self._num_ctxes)
         return dataloader
 
-class BERTLoaderTransform(object):
+class BERTLoaderTransform:
     """Create dataloader for a BERT dataset. """
 
-    def __init__(self, use_avg_len, batch_size, shuffle, num_ctxes, num_buckets):
+    def __init__(self, use_avg_len, batch_size, shuffle, num_ctxes, num_buckets, vocab):
         self._sampler_fn = BERTSamplerFn(use_avg_len, batch_size, shuffle, num_ctxes, num_buckets)
-        self._data_fn = BERTDataLoaderFn(use_avg_len, num_ctxes)
+        self._data_fn = BERTDataLoaderFn(use_avg_len, num_ctxes, vocab)
 
     def __call__(self, dataset):
         """create data loader based on the dataset chunk"""
@@ -272,7 +277,7 @@ class BERTLoaderTransform(object):
         return dataloader
 
 def get_pretrain_data_npz(data, batch_size, num_ctxes, shuffle, use_avg_len,
-                          num_buckets, num_parts=1, part_idx=0):
+                          num_buckets, vocab, num_parts=1, part_idx=0):
     """create dataset for pretraining based on pre-processed npz files."""
     # handle commas in the provided path
     num_files = len(nlp.utils.glob(data))
@@ -281,12 +286,13 @@ def get_pretrain_data_npz(data, batch_size, num_ctxes, shuffle, use_avg_len,
         'Number of training files must be greater than the number of partitions. ' \
         'Only found %d files at %s'%(num_files, data)
     split_sampler = nlp.data.SplitSampler(num_files, num_parts=num_parts, part_index=part_idx)
-    stream = nlp.data.SimpleDatasetStream(nlp.data.NumpyDataset, data, split_sampler)
+    NumpyDataset = functools.partial(nlp.data.NumpyDataset, allow_pickle=True)
+    stream = nlp.data.SimpleDatasetStream(NumpyDataset, data, split_sampler)
     stream = nlp.data.PrefetchingStream(stream, worker_type='process')
 
     # create data loader based on the dataset
     dataloader_xform = BERTLoaderTransform(use_avg_len, batch_size,
-                                           shuffle, num_ctxes, num_buckets)
+                                           shuffle, num_ctxes, num_buckets, vocab)
     stream = stream.transform(dataloader_xform)
     return stream
 
@@ -458,9 +464,11 @@ def get_argparser():
                         help='Model to run pre-training on. '
                              'Options are bert_12_768_12, bert_24_1024_16')
     parser.add_argument('--data', type=str, default=None,
-                        help='Path to training data. Training is skipped if not set.')
+                        help='Path to training data file. File name with wildcard such as '
+                             '*.train is accepted. Training is skipped if not set.')
     parser.add_argument('--data_eval', type=str, required=True,
-                        help='Path to evaluation data. Evaluation is skipped if not set.')
+                        help='Path to evaluation data file. File name with wildcard such as '
+                             '*.dev is accepted. Evaluation data is required.')
     parser.add_argument('--ckpt_dir', type=str, default='./ckpt_dir',
                         help='Path to checkpoint directory')
     parser.add_argument('--start_step', type=int, default=0,
@@ -497,3 +505,20 @@ def generate_dev_set(tokenizer, vocab, cache_file, args):
                                1, args.num_data_workers,
                                worker_pool, cache_file))
     logging.info('Done generating validation set on rank 0.')
+
+def profile(curr_step, start_step, end_step, profile_name='profile.json',
+            early_exit=True):
+    """profile the program between [start_step, end_step)."""
+    if curr_step == start_step:
+        mx.nd.waitall()
+        mx.profiler.set_config(profile_memory=False, profile_symbolic=True,
+                               profile_imperative=True, filename=profile_name,
+                               aggregate_stats=True)
+        mx.profiler.set_state('run')
+    elif curr_step == end_step:
+        mx.nd.waitall()
+        mx.profiler.set_state('stop')
+        logging.info(mx.profiler.dumps())
+        mx.profiler.dump()
+        if early_exit:
+            exit()
