@@ -29,7 +29,6 @@ from mxnet.gluon.block import HybridBlock
 from mxnet.gluon import nn
 from .block import L2Normalization
 
-# TODO(sxjscience) Add mask flag to softmax operator. Think about how to accelerate the kernel
 def _masked_softmax(F, att_score, mask, dtype):
     """Ignore the masked elements when calculating the softmax
 
@@ -39,27 +38,14 @@ def _masked_softmax(F, att_score, mask, dtype):
     att_score : Symborl or NDArray
         Shape (batch_size, query_length, memory_length)
     mask : Symbol or NDArray or None
-        Shape (batch_size, query_length, memory_length)
+        Shape (batch_size, query_length)
     Returns
     -------
     att_weights : Symborl or NDArray
         Shape (batch_size, query_length, memory_length)
     """
     if mask is not None:
-        # Fill in the masked scores with a very small value
-        neg = -1e18
-        if np.dtype(dtype) == np.float16:
-            neg = -1e4
-        else:
-            try:
-                # if AMP (automatic mixed precision) is enabled, -1e18 will cause NaN.
-                from mxnet.contrib import amp
-                if amp.amp._amp_initialized:
-                    neg = -1e4
-            except ImportError:
-                pass
-        att_score = F.where(mask, att_score, neg * F.ones_like(att_score))
-        att_weights = F.softmax(att_score, axis=-1) * mask
+        att_weights = F.softmax(att_score, length=mask, use_length=True, axis=-1)
     else:
         att_weights = F.softmax(att_score, axis=-1)
     return att_weights
@@ -94,8 +80,8 @@ class AttentionCell(HybridBlock):
         key : Symbol or NDArray
             Key of the memory. Shape (batch_size, memory_length, key_dim)
         mask : Symbol or NDArray or None
-            Mask the memory slots. Shape (batch_size, query_length, memory_length)
-            Only contains 0 or 1 where 0 means that the memory slot will not be used.
+            Mask the memory slots. Shape (batch_size, query_length)
+            Contains length of the valid portion of the input.
             If set to None. No mask will be used.
 
         Returns
@@ -142,8 +128,8 @@ class AttentionCell(HybridBlock):
             Value of the memory. If set to None, the value will be set as the key.
             Shape (batch_size, memory_length, value_dim)
         mask : Symbol or NDArray or None, default None
-            Mask of the memory slots. Shape (batch_size, query_length, memory_length)
-            Only contains 0 or 1 where 0 means that the memory slot will not be used.
+            Mask of the memory slots. Shape (batch_size, query_length)
+            Contains length of the valid portion of the input.
             If set to None. No mask will be used.
 
         Returns
@@ -237,8 +223,8 @@ class MultiHeadAttentionCell(AttentionCell):
             Value of the memory. If set to None, the value will be set as the key.
             Shape (batch_size, memory_length, value_dim)
         mask : Symbol or NDArray or None, default None
-            Mask of the memory slots. Shape (batch_size, query_length, memory_length)
-            Only contains 0 or 1 where 0 means that the memory slot will not be used.
+            Mask of the memory slots. Shape (batch_size, query_length)
+            Contains length of the valid portion of the input.
             If set to None. No mask will be used.
 
         Returns
@@ -266,7 +252,7 @@ class MultiHeadAttentionCell(AttentionCell):
         if mask is not None:
             mask = F.broadcast_axis(F.expand_dims(mask, axis=1),
                                     axis=1, size=self._num_heads)\
-                    .reshape(shape=(-1, 0, 0), reverse=True)
+                    .reshape(shape=(-1, 0), reverse=True)
         att_weights = self._base_cell._compute_weight(F, query, key, mask)
         return att_weights.reshape(shape=(-1, self._num_heads, 0, 0), reverse=True)
 
