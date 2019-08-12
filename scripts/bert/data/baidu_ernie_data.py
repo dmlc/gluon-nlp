@@ -33,7 +33,7 @@ if sys.version_info[0] >= 3:
 else:
     from urllib import urlretrieve
 
-_baidu_ernie_data_url = 'https://ernie.bj.bcebos.com/task_data.tgz'
+_baidu_ernie_data_url = 'https://ernie.bj.bcebos.com/task_data_zh.tgz'
 
 class _BaiduErnieDataset(TSVDataset):
     def __init__(self, root, dataset_name, segment, **kwargs):
