@@ -301,6 +301,7 @@ def test_bert_models():
         ]
 
         for kwarg, expected_shape in zip(kwargs, expected_shapes):
+            eprint('testing forward for %s' % str(kwarg))
             expected_shape = infer_shape(expected_shape, unit)
             model, _ = nlp.model.get_model(model_name, dataset_name=dataset,
                                            pretrained=False, root='tests/data/model/',
