@@ -767,7 +767,8 @@ def ernie_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu()
 def get_bert_model(model_name=None, dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
                    use_pooler=True, use_decoder=True, use_classifier=True, output_attention=False,
                    output_all_encodings=False, root=os.path.join(get_home_dir(), 'models'),
-                   pretrained_allow_missing=False, hparam_allow_override=False, **kwargs):
+                   pretrained_allow_missing=False, ignore_extra=False,
+                   hparam_allow_override=False, **kwargs):
     """Any BERT pretrained model.
 
     Parameters
@@ -830,6 +831,9 @@ def get_bert_model(model_name=None, dataset_name=None, vocab=None, pretrained=Tr
         If pretrained_allow_missing=True, this will be ignored and the
         parameters will be left uninitialized. Otherwise AssertionError is
         raised.
+    ignore_extra : bool, default False
+        Whether to silently ignore parameters from the file that are not
+        present in this Block.
     hparam_allow_override : bool, default False
         If set to True, pre-defined hyper-parameters of the model
         (e.g. the number of layers, hidden units) can be overriden.
@@ -872,7 +876,7 @@ def get_bert_model(model_name=None, dataset_name=None, vocab=None, pretrained=Tr
                     use_pooler=use_pooler, use_decoder=use_decoder,
                     use_classifier=use_classifier)
     if pretrained:
-        ignore_extra = not (use_pooler and use_decoder and use_classifier)
+        ignore_extra = ignore_extra or not (use_pooler and use_decoder and use_classifier)
         _load_pretrained_params(net, model_name, dataset_name, root, ctx, ignore_extra=ignore_extra,
                                 allow_missing=pretrained_allow_missing)
     return net, bert_vocab
