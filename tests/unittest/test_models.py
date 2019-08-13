@@ -229,10 +229,13 @@ def test_pretrained_bert_models(disable_missing_parameters):
 @pytest.mark.remote_required
 @pytest.mark.parametrize('hparam_allow_override', [False, True])
 def test_pretrained_bert_models_override(hparam_allow_override):
-    models = ['bert_12_768_12', 'bert_24_1024_16']
+    models = ['bert_12_768_12', 'bert_24_1024_16',
+              'roberta_12_768_12', 'roberta_24_1024_16']
     pretrained = {
         'bert_12_768_12':  ['book_corpus_wiki_en_uncased', 'book_corpus_wiki_en_cased'],
-        'bert_24_1024_16': ['book_corpus_wiki_en_uncased', 'book_corpus_wiki_en_cased']
+        'bert_24_1024_16': ['book_corpus_wiki_en_uncased', 'book_corpus_wiki_en_cased'],
+        'roberta_12_768_12':  ['openwebtext_ccnews_stories_books_cased'],
+        'roberta_24_1024_16': ['openwebtext_ccnews_stories_books_cased']
     }
     ones = mx.nd.ones((2, 10))
     valid_length = mx.nd.ones((2,))
@@ -256,7 +259,10 @@ def test_pretrained_bert_models_override(hparam_allow_override):
                                                        root='tests/data/model/',
                                                        num_layers=6)
                 continue
-            output = model(ones, ones, valid_length, positions)
+            if 'roberta' in model_name:
+                output = model(ones, valid_length, positions)
+            else:
+                output = model(ones, ones, valid_length, positions)
             output[0].wait_to_read()
             del model
             mx.nd.waitall()

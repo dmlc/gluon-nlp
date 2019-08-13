@@ -830,7 +830,8 @@ def bert_24_1024_16(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu()
 
 def roberta_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
                       use_decoder=True,
-                      root=os.path.join(get_home_dir(), 'models'), **kwargs):
+                      root=os.path.join(get_home_dir(), 'models'),
+                      hparam_allow_override=False, **kwargs):
     """Generic RoBERTa BASE model.
 
     The number of layers (L) is 12, number of units (H) is 768, and the
@@ -855,6 +856,9 @@ def roberta_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu
         MXNET_HOME defaults to '~/.mxnet'.
     use_decoder : bool, default True
         Whether to include the decoder for masked language model prediction.
+    hparam_allow_override : bool, default False
+        If set to True, pre-defined hyper-parameters of the model
+        (e.g. the number of layers, hidden units) can be overriden.
 
     Returns
     -------
@@ -862,12 +866,14 @@ def roberta_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu
     """
     return get_roberta_model(model_name='roberta_12_768_12', vocab=vocab, dataset_name=dataset_name,
                              pretrained=pretrained, ctx=ctx,
-                             use_decoder=use_decoder, root=root, **kwargs)
+                             use_decoder=use_decoder, root=root,
+                             hparam_allow_override=hparam_allow_override, **kwargs)
 
 
 def roberta_24_1024_16(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
                        use_decoder=True,
-                       root=os.path.join(get_home_dir(), 'models'), **kwargs):
+                       root=os.path.join(get_home_dir(), 'models'),
+                       hparam_allow_override=False, **kwargs):
     """Generic RoBERTa LARGE model.
 
     The number of layers (L) is 24, number of units (H) is 1024, and the
@@ -892,6 +898,9 @@ def roberta_24_1024_16(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cp
         MXNET_HOME defaults to '~/.mxnet'.
     use_decoder : bool, default True
         Whether to include the decoder for masked language model prediction.
+    hparam_allow_override : bool, default False
+        If set to True, pre-defined hyper-parameters of the model
+        (e.g. the number of layers, hidden units) can be overriden.
 
     Returns
     -------
@@ -899,7 +908,8 @@ def roberta_24_1024_16(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cp
     """
     return get_roberta_model(model_name='roberta_24_1024_16', vocab=vocab,
                              dataset_name=dataset_name, pretrained=pretrained, ctx=ctx,
-                             use_decoder=use_decoder, root=root, **kwargs)
+                             use_decoder=use_decoder, root=root,
+                             hparam_allow_override=hparam_allow_override, **kwargs)
 
 def ernie_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
                     root=os.path.join(get_home_dir(), 'models'), use_pooler=True, use_decoder=True,
@@ -954,7 +964,8 @@ def ernie_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu()
 
 def get_roberta_model(model_name=None, dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
                       use_decoder=True, output_attention=False, output_all_encodings=False,
-                      root=os.path.join(get_home_dir(), 'models'), **kwargs):
+                      root=os.path.join(get_home_dir(), 'models'), ignore_extra=False,
+                      hparam_allow_override=False, **kwargs):
     """Any RoBERTa pretrained model.
 
     Parameters
@@ -988,17 +999,25 @@ def get_roberta_model(model_name=None, dataset_name=None, vocab=None, pretrained
         Whether to include attention weights of each encoding cell to the output.
     output_all_encodings : bool, default False
         Whether to output encodings of all encoder cells.
+    ignore_extra : bool, default False
+        Whether to silently ignore parameters from the file that are not
+        present in this Block.
+    hparam_allow_override : bool, default False
+        If set to True, pre-defined hyper-parameters of the model
+        (e.g. the number of layers, hidden units) can be overriden.
 
     Returns
     -------
     RoBERTaModel, gluonnlp.vocab.Vocab
     """
     predefined_args = bert_hparams[model_name]
-    mutable_args = ['use_residual', 'dropout', 'embed_dropout', 'word_embed']
-    mutable_args = frozenset(mutable_args)
-    assert all((k not in kwargs or k in mutable_args) for k in predefined_args), \
-        'Cannot override predefined model settings.'
+    if not hparam_allow_override:
+        mutable_args = ['use_residual', 'dropout', 'embed_dropout', 'word_embed']
+        mutable_args = frozenset(mutable_args)
+        assert all((k not in kwargs or k in mutable_args) for k in predefined_args), \
+            'Cannot override predefined model settings.'
     predefined_args.update(kwargs)
+
     # encoder
     encoder = BERTEncoder(attention_cell=predefined_args['attention_cell'],
                           num_layers=predefined_args['num_layers'],
@@ -1024,7 +1043,7 @@ def get_roberta_model(model_name=None, dataset_name=None, vocab=None, pretrained
                        word_embed=predefined_args['word_embed'],
                        use_decoder=use_decoder)
     if pretrained:
-        ignore_extra = not use_decoder
+        ignore_extra = ignore_extra or not use_decoder
         _load_pretrained_params(net, model_name, dataset_name, root, ctx, ignore_extra=ignore_extra,
                                 allow_missing=False)
     return net, bert_vocab
