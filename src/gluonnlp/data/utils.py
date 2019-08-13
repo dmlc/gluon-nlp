@@ -225,6 +225,8 @@ _vocab_sha1 = {'wikitext-2': 'be36dc5238c2e7d69720881647ab72eb506d0131',
                'book_corpus_wiki_en_uncased': 'a66073971aa0b1a262453fe51342e57166a8abcf',
                'openwebtext_book_corpus_wiki_en_uncased':
                'a66073971aa0b1a262453fe51342e57166a8abcf',
+               'openwebtext_ccnews_stories_books_cased':
+               '2b804f8f90f9f93c07994b703ce508725061cf43',
                'wiki_multilingual_cased': '0247cb442074237c38c62021f36b7a4dbd2e55f7',
                'wiki_cn_cased': 'ddebd8f3867bca5a61023f73326fb125cf12b4f5',
                'wiki_multilingual_uncased': '2b2514cc539047b9179e9d98a4e68c36db05c97a',
