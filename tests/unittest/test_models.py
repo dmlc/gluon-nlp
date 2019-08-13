@@ -98,36 +98,33 @@ def test_transformer_models():
 
 @pytest.mark.serial
 @pytest.mark.remote_required
-@pytest.mark.parametrize('hparam_allow_override', [False, True])
-def test_pretrained_bert_models_override(hparam_allow_override):
-    models = ['bert_12_768_12', 'bert_24_1024_16']
-    pretrained = {
-        'bert_12_768_12':  ['book_corpus_wiki_en_uncased', 'book_corpus_wiki_en_cased'],
-        'bert_24_1024_16': ['book_corpus_wiki_en_uncased', 'book_corpus_wiki_en_cased']
-    }
+def test_pretrained_roberta_models():
+    models = ['roberta_12_768_12', 'roberta_24_1024_16']
+    pretrained_datasets = ['openwebtext_ccnews_stories_books_cased']
+
+    vocab_size = {'openwebtext_ccnews_stories_books_cased': 50265}
+    special_tokens = ['<unk>', '<pad>', '<s>', '</s>', '<mask>']
     ones = mx.nd.ones((2, 10))
     valid_length = mx.nd.ones((2,))
     positions = mx.nd.zeros((2, 3))
     for model_name in models:
-        pretrained_datasets = pretrained.get(model_name)
         for dataset in pretrained_datasets:
             eprint('testing forward for %s on %s' % (model_name, dataset))
 
-            if hparam_allow_override:
-                model, vocab = nlp.model.get_model(model_name, dataset_name=dataset,
-                                                   pretrained=True,
-                                                   root='tests/data/model/',
-                                                   hparam_allow_override=hparam_allow_override,
-                                                   ignore_extra=True,
-                                                   num_layers=6)
-            else:
-                with pytest.raises(AssertionError):
-                    model, vocab = nlp.model.get_model(model_name, dataset_name=dataset,
-                                                       pretrained=True,
-                                                       root='tests/data/model/',
-                                                       num_layers=6)
-                continue
-            output = model(ones, ones, valid_length, positions)
+            model, vocab = nlp.model.get_model(model_name, dataset_name=dataset,
+                                               pretrained=True,
+                                               root='tests/data/model/')
+
+            assert len(vocab) == vocab_size[dataset]
+            for token in special_tokens:
+                assert token in vocab, "Token %s not found in the vocab" % token
+            assert vocab['RandomWordByHaibin'] == vocab[vocab.unknown_token]
+            assert vocab.padding_token == '<pad>'
+            assert vocab.unknown_token == '<unk>'
+            assert vocab.bos_token == '<s>'
+            assert vocab.eos_token == '</s>'
+
+            output = model(ones, valid_length, positions)
             output[0].wait_to_read()
             del model
             mx.nd.waitall()
@@ -212,7 +209,7 @@ def test_pretrained_bert_models(disable_missing_parameters):
             assert len(vocab) == vocab_size[dataset]
             for token in special_tokens:
                 assert token in vocab, "Token %s not found in the vocab" % token
-            assert vocab['RandomWordByHaibin'] == 0
+            assert vocab['RandomWordByHaibin'] == vocab[vocab.unknown_token]
             assert vocab.padding_token == '[PAD]'
             assert vocab.unknown_token == '[UNK]'
             assert vocab.bos_token is None
@@ -228,6 +225,41 @@ def test_pretrained_bert_models(disable_missing_parameters):
             del model
             mx.nd.waitall()
 
+@pytest.mark.serial
+@pytest.mark.remote_required
+@pytest.mark.parametrize('hparam_allow_override', [False, True])
+def test_pretrained_bert_models_override(hparam_allow_override):
+    models = ['bert_12_768_12', 'bert_24_1024_16']
+    pretrained = {
+        'bert_12_768_12':  ['book_corpus_wiki_en_uncased', 'book_corpus_wiki_en_cased'],
+        'bert_24_1024_16': ['book_corpus_wiki_en_uncased', 'book_corpus_wiki_en_cased']
+    }
+    ones = mx.nd.ones((2, 10))
+    valid_length = mx.nd.ones((2,))
+    positions = mx.nd.zeros((2, 3))
+    for model_name in models:
+        pretrained_datasets = pretrained.get(model_name)
+        for dataset in pretrained_datasets:
+            eprint('testing forward for %s on %s' % (model_name, dataset))
+
+            if hparam_allow_override:
+                model, vocab = nlp.model.get_model(model_name, dataset_name=dataset,
+                                                   pretrained=True,
+                                                   root='tests/data/model/',
+                                                   hparam_allow_override=hparam_allow_override,
+                                                   ignore_extra=True,
+                                                   num_layers=6)
+            else:
+                with pytest.raises(AssertionError):
+                    model, vocab = nlp.model.get_model(model_name, dataset_name=dataset,
+                                                       pretrained=True,
+                                                       root='tests/data/model/',
+                                                       num_layers=6)
+                continue
+            output = model(ones, ones, valid_length, positions)
+            output[0].wait_to_read()
+            del model
+            mx.nd.waitall()
 
 @pytest.mark.serial
 @pytest.mark.remote_required
@@ -601,4 +633,3 @@ def test_transformer_encoder():
     outputs.wait_to_read()
     mx.nd.waitall()
     assert outputs.shape == (batch_size, seq_length, units)
-
