@@ -335,9 +335,9 @@ def test_bert_models():
              (batch_size, -1),
              (batch_size, 2),
              (batch_size, num_masks, vocab_size)],
-            [(batch_size, seq_len, -1)] + [(num_masks, head, seq_len, seq_len)] * layer,
-            [(batch_size, seq_len, -1)] * layer + [(num_masks, head, seq_len, seq_len)] * layer,
-            [(batch_size, seq_len, -1)] * layer + [(num_masks, head, seq_len, seq_len)] * layer +
+            [(batch_size, seq_len, -1)] + [(batch_size, head, seq_len, seq_len)] * layer,
+            [(batch_size, seq_len, -1)] * layer + [(batch_size, head, seq_len, seq_len)] * layer,
+            [(batch_size, seq_len, -1)] * layer + [(batch_size, head, seq_len, seq_len)] * layer +
             [(batch_size, -1)] + [(batch_size, 2)] + [(batch_size, num_masks, vocab_size)],
         ]
 
