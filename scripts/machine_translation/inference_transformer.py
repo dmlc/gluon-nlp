@@ -145,6 +145,7 @@ if args.src_max_len <= 0 or args.tgt_max_len <= 0:
         [np.max(data_train_lengths, axis=0), np.max(data_val_lengths, axis=0),
          np.max(data_test_lengths, axis=0)],
         axis=0)
+
 if args.src_max_len > 0:
     src_max_len = args.src_max_len
 else:
@@ -184,12 +185,14 @@ test_loss_function.hybridize(static_alloc=static_alloc)
 
 def inference():
     """inference function."""
-    logging.info('Inference on dev_dataset!')
+    logging.info('Inference on test_dataset!')
 
-    # data and model prepare
-    _, _, test_data_loader \
-        = dataprocessor.make_dataloader(data_train, data_val, data_test, args,
-                                        use_average_length=True, num_shards=len(ctx))
+    # data prepare
+    test_data_loader = dataprocessor.get_dataloader(data_test, args,
+                                                    dataset_type='test',
+                                                    use_average_length=True,
+                                                    num_shards=len(ctx))
+
     if args.bleu == 'tweaked':
         bpe = bool(args.dataset != 'IWSLT2015' and args.dataset != 'TOY')
         split_compound_word = bpe
