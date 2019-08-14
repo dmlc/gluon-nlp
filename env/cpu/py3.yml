@@ -25,6 +25,7 @@ dependencies:
   - ipython
   - ipykernel
   - regex
+  - boto3=1.9.207
   - pip:
     - pylint-quotes==0.2.1
     - mxnet-mkl>=1.5.0
