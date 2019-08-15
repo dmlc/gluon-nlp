@@ -82,6 +82,10 @@ class BasePositionwiseFFN(HybridBlock):
     use_bert_layer_norm : bool, default False.
         Whether to use the BERT-stype layer norm implemented in Tensorflow, where
         epsilon is added inside the square root. Set to True for pre-trained BERT model.
+    ffn1_dropout : bool, default False
+        If True, apply dropout both after the first and second Positionwise
+        Feed-Forward Neural Network layers. If False, only apply dropout after
+        the second.
     prefix : str, default None
         Prefix for name of `Block`s
         (and name of weight if params is `None`).
@@ -97,14 +101,17 @@ class BasePositionwiseFFN(HybridBlock):
     Outputs:
         - **outputs** : output encoding of shape (batch_size, length, C_out).
     """
+
     def __init__(self, units=512, hidden_size=2048, dropout=0.0, use_residual=True,
                  weight_initializer=None, bias_initializer='zeros', activation='relu',
-                 use_bert_layer_norm=False, prefix=None, params=None, layer_norm_eps=None):
+                 use_bert_layer_norm=False, ffn1_dropout=False, prefix=None, params=None,
+                 layer_norm_eps=None):
         super(BasePositionwiseFFN, self).__init__(prefix=prefix, params=params)
         self._hidden_size = hidden_size
         self._units = units
         self._use_residual = use_residual
         self._dropout = dropout
+        self._ffn1_dropout = ffn1_dropout
         with self.name_scope():
             self.ffn_1 = nn.Dense(units=hidden_size, flatten=False,
                                   weight_initializer=weight_initializer,
@@ -147,6 +154,8 @@ class BasePositionwiseFFN(HybridBlock):
         outputs = self.ffn_1(inputs)
         if self.activation:
             outputs = self.activation(outputs)
+        if self._dropout and self._ffn1_dropout:
+            outputs = self.dropout_layer(outputs)
         outputs = self.ffn_2(outputs)
         if self._dropout:
             outputs = self.dropout_layer(outputs)
@@ -474,8 +483,14 @@ class BaseTransformerEncoder(HybridBlock, Seq2SeqEncoder):
             if self._support_arange_like:
                 arange = F.contrib.arange_like(inputs, axis=axis)
             else:
-                arange = F.arange(self._max_length)
-                arange = F.slice_like(arange, inputs, axes=(1,))
+                if F == mx.ndarray:
+                    seq_len = inputs.shape[1]
+                    arange = F.arange(seq_len, dtype=inputs.dtype, ctx=inputs.context)
+                else:
+                    inputs = inputs.slice(begin=(0, 0, 0), end=(1, None, 1)).reshape((-1))
+                    zeros = F.zeros_like(inputs)
+                    arange = F.arange(start=0, repeat=1, step=1, infer_range=True)
+                    arange = F.elemwise_add(arange, zeros)
             return arange
 
         if valid_length is not None:
@@ -563,6 +578,10 @@ class PositionwiseFFN(BasePositionwiseFFN):
         Dropout probability for the output
     use_residual : bool
         Add residual connection between the input and the output
+    ffn1_dropout : bool, default False
+        If True, apply dropout both after the first and second Positionwise
+        Feed-Forward Neural Network layers. If False, only apply dropout after
+        the second.
     weight_initializer : str or Initializer
         Initializer for the input weights matrix, used for the linear
         transformation of the inputs.
@@ -583,17 +602,25 @@ class PositionwiseFFN(BasePositionwiseFFN):
     Outputs:
         - **outputs** : output encoding of shape (batch_size, length, C_out).
     """
+
     def __init__(self, units=512, hidden_size=2048, dropout=0.0, use_residual=True,
-                 weight_initializer=None, bias_initializer='zeros',
-                 prefix=None, params=None, activation='relu', layer_norm_eps=None):
-        super(PositionwiseFFN, self).__init__(units=units, hidden_size=hidden_size,
-                                              dropout=dropout, use_residual=use_residual,
-                                              weight_initializer=weight_initializer,
-                                              bias_initializer=bias_initializer,
-                                              prefix=prefix, params=params,
-                                              # extra configurations for transformer
-                                              activation=activation, use_bert_layer_norm=False,
-                                              layer_norm_eps=layer_norm_eps)
+                 ffn1_dropout=False, weight_initializer=None, bias_initializer='zeros', prefix=None,
+                 params=None, activation='relu', layer_norm_eps=None):
+        super(PositionwiseFFN, self).__init__(
+            units=units,
+            hidden_size=hidden_size,
+            dropout=dropout,
+            use_residual=use_residual,
+            weight_initializer=weight_initializer,
+            bias_initializer=bias_initializer,
+            prefix=prefix,
+            params=params,
+            # extra configurations for transformer
+            activation=activation,
+            use_bert_layer_norm=False,
+            layer_norm_eps=layer_norm_eps,
+            ffn1_dropout=ffn1_dropout)
+
 
 class TransformerEncoderCell(BaseTransformerEncoderCell):
     """Structure of the Transformer Encoder Cell.
@@ -760,7 +787,7 @@ class TransformerDecoderCell(HybridBlock):
         transformation of the inputs.
     bias_initializer : str or Initializer
         Initializer for the bias vector.
-    prefix : str, default 'rnn_'
+    prefix : str, default None
         Prefix for name of `Block`s
         (and name of weight if params is `None`).
     params : Parameter or None

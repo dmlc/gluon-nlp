@@ -40,34 +40,38 @@ def test_corpus_batchify(batch_size, wikitext2_test_and_counter):
 
 @pytest.mark.parametrize('batch_size', [7, 80])
 @pytest.mark.parametrize('seq_len', [7, 35])
+@pytest.mark.parametrize('pad_token', ['<pad>', None])
 @pytest.mark.serial
 @pytest.mark.remote_required
-def test_corpus_bptt_batchify(batch_size, seq_len, wikitext2_test_and_counter):
+def test_corpus_bptt_batchify(batch_size, seq_len, wikitext2_test_and_counter, pad_token):
     data, counter = wikitext2_test_and_counter
-    vocab = nlp.Vocab(counter)
+    vocab = nlp.Vocab(counter, unknown_token=None, bos_token=None, eos_token=None,
+                      padding_token=pad_token)
 
     # unsupported last_batch
     with pytest.raises(ValueError):
-        bptt_keep = nlp.data.batchify.CorpusBPTTBatchify(
-            vocab, seq_len, batch_size, last_batch='unsupported')
+        bptt_keep = nlp.data.batchify.CorpusBPTTBatchify(vocab, seq_len, batch_size,
+                                                         last_batch='unsupported')
 
     # last_batch='keep'
-    bptt_keep = nlp.data.batchify.CorpusBPTTBatchify(
-        vocab, seq_len, batch_size, last_batch='keep')
-    X, Y = zip(*(bptt_keep(data)))
-    X, Y = mx.nd.concat(*X, dim=0), mx.nd.concat(*Y, dim=0)
-    coded = mx.nd.concat(
-        X, Y[-1].expand_dims(0), dim=0).T.reshape(-1).asnumpy().tolist()
-    assert vocab[list(data)] == coded[:len(data)]
-    assert all(pad == vocab[vocab.padding_token] for pad in coded[len(data):])
+    if pad_token is not None:
+        bptt_keep = nlp.data.batchify.CorpusBPTTBatchify(vocab, seq_len, batch_size,
+                                                         last_batch='keep')
+        X, Y = zip(*(bptt_keep(data)))
+        X, Y = mx.nd.concat(*X, dim=0), mx.nd.concat(*Y, dim=0)
+        coded = mx.nd.concat(X, Y[-1].expand_dims(0), dim=0).T.reshape(-1).asnumpy().tolist()
+        assert vocab[list(data)] == coded[:len(data)]
+        assert all(pad == vocab[vocab.padding_token] for pad in coded[len(data):])
+    else:
+        with pytest.raises(ValueError):
+            nlp.data.batchify.CorpusBPTTBatchify(vocab, seq_len, batch_size, last_batch='keep')
 
     # last_batch='discard'
-    bptt_discard = nlp.data.batchify.CorpusBPTTBatchify(
-        vocab, seq_len, batch_size, last_batch='discard')
+    bptt_discard = nlp.data.batchify.CorpusBPTTBatchify(vocab, seq_len, batch_size,
+                                                        last_batch='discard')
     X, Y = zip(*(bptt_discard(data)))
     X, Y = mx.nd.concat(*X, dim=0), mx.nd.concat(*Y, dim=0)
-    coded = mx.nd.concat(
-        X, Y[-1].expand_dims(0), dim=0).T.reshape(-1).asnumpy().tolist()
+    coded = mx.nd.concat(X, Y[-1].expand_dims(0), dim=0).T.reshape(-1).asnumpy().tolist()
     assert len(data) - len(coded) < batch_size * seq_len
 
 

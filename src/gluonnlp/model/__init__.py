@@ -142,6 +142,8 @@ def get_model(name, **kwargs):
               'transformer_en_de_512': transformer_en_de_512,
               'bert_12_768_12'       : bert_12_768_12,
               'bert_24_1024_16'      : bert_24_1024_16,
+              'roberta_12_768_12'    : roberta_12_768_12,
+              'roberta_24_1024_16'   : roberta_24_1024_16,
               'ernie_12_768_12'      : ernie_12_768_12}
     name = name.lower()
     if name not in models:
