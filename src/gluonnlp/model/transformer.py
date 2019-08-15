@@ -504,7 +504,8 @@ class BaseTransformerEncoder(HybridBlock, Seq2SeqEncoder):
                 else:
                     inputs = inputs.slice(begin=(0, 0, 0), end=(1, None, 1)).reshape((-1))
                     zeros = F.zeros_like(inputs)
-                    arange = F.arange(start=0, repeat=1, step=1, infer_range=True, dtype=self._dtype)
+                    arange = F.arange(start=0, repeat=1, step=1,
+                                      infer_range=True, dtype=self._dtype)
                     arange = F.elemwise_add(arange, zeros)
             return arange
 
