@@ -305,7 +305,8 @@ class _LegacyRoBERTaModel(_LegacyBERTModel):
                  word_embed=None, use_decoder=True, prefix=None, params=None):
         super(_LegacyRoBERTaModel, self).__init__(encoder, vocab_size=vocab_size,
                                                   token_type_vocab_size=None, units=units,
-                                                  embed_size=embed_size, embed_dropout=embed_dropout,
+                                                  embed_size=embed_size,
+                                                  embed_dropout=embed_dropout,
                                                   embed_initializer=embed_initializer,
                                                   word_embed=word_embed, token_type_embed=None,
                                                   use_pooler=False, use_decoder=use_decoder,
