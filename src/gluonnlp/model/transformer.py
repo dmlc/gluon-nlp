@@ -419,7 +419,7 @@ class BaseTransformerEncoder(HybridBlock, Seq2SeqEncoder):
                     activation=activation,
                     layer_norm_eps=layer_norm_eps)
 
-    def __call__(self, inputs, states=[], valid_length=[]):
+    def __call__(self, inputs, states=None, valid_length=None):
         #pylint: disable=arguments-differ, dangerous-default-value
         """Encode the inputs given the states and valid sequence length.
 
@@ -441,6 +441,9 @@ class BaseTransformerEncoder(HybridBlock, Seq2SeqEncoder):
             - outputs of the transformer encoder. Shape (batch_size, length, C_out)
             - additional_outputs of all the transformer encoder
         """
+        # XXX Temporary hack for hybridization as hybridblock does not support None inputs
+        valid_length = [] if valid_length is None else valid_length
+        states = [] if states is None else states
         return super(BaseTransformerEncoder, self).__call__(inputs, states, valid_length)
 
     def hybrid_forward(self, F, inputs, states=None, valid_length=None, position_weight=None):

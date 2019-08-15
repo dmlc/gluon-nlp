@@ -140,6 +140,8 @@ class NMTModel(Block):
         outputs : list
             Outputs of the encoder.
         """
+        states = [] if states is None else states
+        valid_length = [] if valid_length is None else valid_length
         return self.encoder(self.src_embed(inputs), states, valid_length)
 
     def decode_seq(self, inputs, states, valid_length=None):

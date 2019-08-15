@@ -416,12 +416,15 @@ class _BERTModel(HybridBlock):
                               prefix=prefix)
         return pooler
 
-    def __call__(self, inputs, token_types, valid_length=[], masked_positions=[]):
+    def __call__(self, inputs, token_types, valid_length=None, masked_positions=None):
         # pylint: disable=dangerous-default-value, arguments-differ
         """Generate the representation given the inputs.
 
         This is used in training or fine-tuning a BERT model.
         """
+        # XXX Temporary hack for hybridization as hybridblock does not support None inputs
+        valid_length = [] if valid_length is None else valid_length
+        masked_positions = [] if masked_positions is None else masked_positions
         return super(_BERTModel, self).__call__(inputs, token_types,
                                                 valid_length, masked_positions)
 
@@ -576,12 +579,15 @@ class _RoBERTaModel(_BERTModel):
                                            use_classifier=False, use_token_type_embed=False,
                                            prefix=prefix, params=params)
 
-    def __call__(self, inputs, valid_length=[], masked_positions=[]):
+    def __call__(self, inputs, valid_length=None, masked_positions=None):
         # pylint: disable=dangerous-default-value
         """Generate the representation given the inputs.
 
         This is used in training or fine-tuning a BERT model.
         """
+        # XXX Temporary hack for hybridization as hybridblock does not support None inputs
+        valid_length = [] if valid_length is None else valid_length
+        masked_positions = [] if masked_positions is None else masked_positions
         return super(_RoBERTaModel, self).__call__(inputs, [], valid_length=valid_length,
                                                    masked_positions=masked_positions)
 
