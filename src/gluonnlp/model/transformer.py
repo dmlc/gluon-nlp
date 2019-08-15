@@ -496,7 +496,7 @@ class BaseTransformerEncoder(HybridBlock, Seq2SeqEncoder):
 
         def _arange_like(F, inputs, axis):
             if self._support_arange_like:
-                arange = F.contrib.arange_like(inputs, axis=axis)
+                arange = F.contrib.arange_like(inputs, axis=axis).astype(self._dtype)
             else:
                 if F == mx.ndarray:
                     seq_len = inputs.shape[1]
