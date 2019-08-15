@@ -479,6 +479,12 @@ class BaseTransformerEncoder(HybridBlock, Seq2SeqEncoder):
             (batch_size, num_heads, length, length)
 
         """
+        # XXX Temporary hack for hybridization as hybridblock does not support None inputs
+        if isinstance(valid_length, list) and len(valid_length) == 0:
+            valid_length = None
+        if isinstance(states, list) and len(states) == 0:
+            states = None
+
         def _arange_like(F, inputs, axis):
             if self._support_arange_like:
                 arange = F.contrib.arange_like(inputs, axis=axis)

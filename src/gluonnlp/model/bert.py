@@ -271,7 +271,7 @@ class BERTEncoderCell(BaseTransformerEncoderCell):
 #                                FULL MODEL                                   #
 ###############################################################################
 
-class BERTModel(HybridBlock):
+class _BERTModel(HybridBlock):
     """Generic Model for BERT (Bidirectional Encoder Representations from Transformers).
 
     Parameters
@@ -344,7 +344,7 @@ class BERTModel(HybridBlock):
                  embed_size=None, embed_dropout=0.0, embed_initializer=None,
                  word_embed=None, token_type_embed=None, use_pooler=True, use_decoder=True,
                  use_classifier=True, use_token_type_embed=True, prefix=None, params=None):
-        super(BERTModel, self).__init__(prefix=prefix, params=params)
+        super(_BERTModel, self).__init__(prefix=prefix, params=params)
         self._use_decoder = use_decoder
         self._use_classifier = use_classifier
         self._use_pooler = use_pooler
@@ -417,12 +417,24 @@ class BERTModel(HybridBlock):
                               prefix=prefix)
         return pooler
 
+    def __call__(self, inputs, token_types, valid_length=[], masked_positions=[]):
+        """Generate the representation given the inputs.
+
+        This is used in training or fine-tuning a BERT model.
+        """
+        return super(_BERTModel, self).__call__(inputs, token_types,
+                                                valid_length, masked_positions)
+
     def hybrid_forward(self, F, inputs, token_types, valid_length=None, masked_positions=None):
         # pylint: disable=arguments-differ
         """Generate the representation given the inputs.
 
         This is used in training or fine-tuning a BERT model.
         """
+        # XXX Temporary hack for hybridization as hybridblock does not support None
+        if isinstance(masked_positions, list) and len(masked_positions) == 0:
+            masked_positions = None
+
         outputs = []
         seq_out, attention_out = self._encode_sequence(inputs, token_types, valid_length)
         outputs.append(seq_out)
@@ -503,7 +515,7 @@ class BERTModel(HybridBlock):
         decoded = self.decoder(encoded)
         return decoded
 
-class RoBERTaModel(BERTModel):
+class _RoBERTaModel(_BERTModel):
     """Generic Model for BERT (Bidirectional Encoder Representations from Transformers).
 
     Parameters
@@ -564,14 +576,27 @@ class RoBERTaModel(BERTModel):
                                            use_classifier=False, use_token_type_embed=False,
                                            prefix=prefix, params=params)
 
-    def forward(self, inputs, valid_length=None, masked_positions=None):  # pylint: disable=arguments-differ
+    def __call__(self, inputs, valid_length=[], masked_positions=[]):
         """Generate the representation given the inputs.
 
         This is used in training or fine-tuning a BERT model.
         """
-        return super(RoBERTaModel, self).forward(inputs, token_types=None,
-                                                 valid_length=valid_length,
-                                                 masked_positions=masked_positions)
+        return super(_RoBERTaModel, self).__call__(inputs, [], valid_length=valid_length,
+                                                   masked_positions=masked_positions)
+
+
+###############################################################################
+#                             BACKWARD COMPATIBILITY                          #
+###############################################################################
+
+try:
+    support_arange = mx.nd.contrib.arange_like
+    BERTModel = _BERTModel
+    RoBERTaModel = _RoBERTaModel
+except AttributeError:
+    from .legacy import _LegacyBERTModel, _LegacyRoBERTaModel
+    BERTModel = _LegacyBERTModel
+    RoBERTaModel = _LegacyRoBERTaModel
 
 ###############################################################################
 #                               GET MODEL                                     #
