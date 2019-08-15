@@ -359,7 +359,7 @@ def test_finetune_inference(dataset):
 @pytest.mark.gpu
 @pytest.mark.remote_required
 @pytest.mark.integration
-@pytest.mark.parametrize('dataset', ['XNLI', 'LCQMC', 'ChnSentiCorp'])
+@pytest.mark.parametrize('dataset', ['XNLI', 'ChnSentiCorp'])
 def test_finetune_chinese_inference(dataset):
     arguments = ['--log_interval', '100', '--epsilon', '1e-8', '--optimizer',
                  'adam', '--gpu', '0', '--max_len', '80', '--only_inference']
