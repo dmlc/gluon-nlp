@@ -42,7 +42,6 @@ from ..base import get_home_dir
 class BERTLayerNorm(nn.LayerNorm):
     """BERT style Layer Normalization.
 
-
     Epsilon is added inside the square root and set to 1e-12 by default.
 
     Inputs:
@@ -418,6 +417,7 @@ class _BERTModel(HybridBlock):
         return pooler
 
     def __call__(self, inputs, token_types, valid_length=[], masked_positions=[]):
+        # pylint: disable=dangerous-default-value, arguments-differ
         """Generate the representation given the inputs.
 
         This is used in training or fine-tuning a BERT model.
@@ -577,6 +577,7 @@ class _RoBERTaModel(_BERTModel):
                                            prefix=prefix, params=params)
 
     def __call__(self, inputs, valid_length=[], masked_positions=[]):
+        # pylint: disable=dangerous-default-value
         """Generate the representation given the inputs.
 
         This is used in training or fine-tuning a BERT model.

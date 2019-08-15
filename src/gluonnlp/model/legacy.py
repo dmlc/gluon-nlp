@@ -20,15 +20,10 @@
 
 __all__ = []
 
-import os
 from mxnet.gluon import Block
 from mxnet.gluon import nn
-from mxnet.gluon.model_zoo import model_store
 import mxnet as mx
-from .transformer import BasePositionwiseFFN, BaseTransformerEncoderCell, BaseTransformerEncoder
 from .block import GELU
-from .utils import _load_vocab, _load_pretrained_params
-from ..base import get_home_dir
 
 class _LegacyBERTModel(Block):
     """Generic Model for BERT (Bidirectional Encoder Representations from Transformers).
@@ -172,6 +167,7 @@ class _LegacyBERTModel(Block):
         return pooler
 
     def __call__(self, inputs, token_types, valid_length=[], masked_positions=[]):
+        # pylint: disable=dangerous-default-value, arguments-differ
         """Generate the representation given the inputs.
 
         This is used in training or fine-tuning a BERT model.
@@ -308,15 +304,16 @@ class _LegacyRoBERTaModel(_LegacyBERTModel):
                  embed_size=None, embed_dropout=0.0, embed_initializer=None,
                  word_embed=None, use_decoder=True, prefix=None, params=None):
         super(_LegacyRoBERTaModel, self).__init__(encoder, vocab_size=vocab_size,
-                                           token_type_vocab_size=None, units=units,
-                                           embed_size=embed_size, embed_dropout=embed_dropout,
-                                           embed_initializer=embed_initializer,
-                                           word_embed=word_embed, token_type_embed=None,
-                                           use_pooler=False, use_decoder=use_decoder,
-                                           use_classifier=False, use_token_type_embed=False,
-                                           prefix=prefix, params=params)
+                                                  token_type_vocab_size=None, units=units,
+                                                  embed_size=embed_size, embed_dropout=embed_dropout,
+                                                  embed_initializer=embed_initializer,
+                                                  word_embed=word_embed, token_type_embed=None,
+                                                  use_pooler=False, use_decoder=use_decoder,
+                                                  use_classifier=False, use_token_type_embed=False,
+                                                  prefix=prefix, params=params)
 
     def __call__(self, inputs, valid_length=[], masked_positions=[]):
+        # pylint: disable=dangerous-default-value
         """Generate the representation given the inputs.
 
         This is used in training or fine-tuning a BERT model.
