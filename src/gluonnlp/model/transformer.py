@@ -371,6 +371,7 @@ class BaseTransformerEncoder(HybridBlock, Seq2SeqEncoder):
         self._use_layer_norm_before_dropout = use_layer_norm_before_dropout
         self._scale_embed = scale_embed
         self._support_arange_like = False
+        self._dtype = 'float32'
         try:
             self._support_arange_like = bool(ndarray.contrib.arange_like)
         except AttributeError:
@@ -418,6 +419,11 @@ class BaseTransformerEncoder(HybridBlock, Seq2SeqEncoder):
                     prefix='transformer%d_'%i,
                     activation=activation,
                     layer_norm_eps=layer_norm_eps)
+
+    def cast(self, dtype):
+        """Cast the data type of the parameters"""
+        self._dtype = dtype
+        super(BaseTransformerEncoder, self).cast(dtype)
 
     def __call__(self, inputs, states=None, valid_length=None):
         #pylint: disable=arguments-differ, dangerous-default-value
@@ -498,7 +504,7 @@ class BaseTransformerEncoder(HybridBlock, Seq2SeqEncoder):
                 else:
                     inputs = inputs.slice(begin=(0, 0, 0), end=(1, None, 1)).reshape((-1))
                     zeros = F.zeros_like(inputs)
-                    arange = F.arange(start=0, repeat=1, step=1, infer_range=True)
+                    arange = F.arange(start=0, repeat=1, step=1, infer_range=True, dtype=self._dtype)
                     arange = F.elemwise_add(arange, zeros)
             return arange
 
