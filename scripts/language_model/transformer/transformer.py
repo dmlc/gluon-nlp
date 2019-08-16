@@ -105,8 +105,8 @@ class TransformerXLCell(mx.gluon.HybridBlock):
 
     def __init__(self, attention_cell: PositionalEmbeddingMultiHeadAttentionCell, units=128,
                  hidden_size=512, num_heads=4, activation='relu', scaled=True, dropout=0.0,
-                 attention_dropout=0.0, use_residual=True, output_attention=False,
-                 weight_initializer=None, bias_initializer='zeros', prefix=None, params=None):
+                 use_residual=True, output_attention=False, weight_initializer=None,
+                 bias_initializer='zeros', prefix=None, params=None):
         super().__init__(prefix=prefix, params=params)
         self._units = units
         self._num_heads = num_heads
@@ -239,8 +239,8 @@ class _BaseTransformerXL(mx.gluon.HybridBlock):
                                       hidden_size=hidden_size, num_heads=num_heads,
                                       weight_initializer=weight_initializer,
                                       bias_initializer=bias_initializer, dropout=dropout,
-                                      attention_dropout=attention_dropout, scaled=scaled,
-                                      use_residual=use_residual, output_attention=output_attention,
+                                      scaled=scaled, use_residual=use_residual,
+                                      output_attention=output_attention,
                                       prefix='transformer%d_' % i))
 
     def hybrid_forward(self, F, step_input, target, mask, pos_seq, mems):  #pylint: disable=arguments-differ
@@ -523,8 +523,7 @@ class _BaseXLNet(mx.gluon.HybridBlock):
                     XLNetCell(attention_cell=attention_cell, units=units, hidden_size=hidden_size,
                               num_heads=num_heads, activation=activation,
                               weight_initializer=weight_initializer,
-                              bias_initializer=bias_initializer, dropout=dropout,
-                              attention_dropout=attention_dropout, scaled=scaled,
+                              bias_initializer=bias_initializer, dropout=dropout, scaled=scaled,
                               use_residual=use_residual, prefix='transformer%d_' % i))
 
     def hybrid_forward(self, F, step_input, segments, mask, pos_seq, mems):  #pylint: disable=arguments-differ
@@ -614,7 +613,7 @@ class XLNet(TransformerXL):
     def __init__(self, *args, **kwargs):
         prefix = kwargs.pop('prefix', None)
         params = kwargs.pop('params', None)
-        super(TransformerXL, self).__init__(prefix=prefix, params=params)
+        super().__init__(prefix=prefix, params=params)
 
         with self.name_scope():
             self._net = _BaseXLNet(*args, **kwargs)

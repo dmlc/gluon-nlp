@@ -241,8 +241,9 @@ class RelativeSegmentEmbeddingPositionalEmbeddingMultiHeadAttentionCell(mx.gluon
             if dropout:
                 self._dropout_layer = mx.gluon.nn.Dropout(dropout)
 
+    # pylint: disable=arguments-differ
     def hybrid_forward(self, F, query, key, value, emb, mask, segments, query_key_bias,
-                       query_emb_bias, seg_emb, query_seg_bias):  # pylint: disable=arguments-differ
+                       query_emb_bias, seg_emb, query_seg_bias):
         """Compute the attention.
 
         Parameters
