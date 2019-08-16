@@ -216,33 +216,30 @@ def get_dataloader(data_set, args, dataset_type,
     else:
         raise NotImplementedError
 
+    data_lengths = get_data_lengths(data_set)
+
     if dataset_type == 'train':
-        data_lengths = get_data_lengths(data_set)
         train_batchify_fn = btf.Tuple(btf.Pad(), btf.Pad(),
                                       btf.Stack(dtype='float32'), btf.Stack(dtype='float32'))
 
-        batch_sampler = nlp.data.FixedBucketSampler(lengths=data_lengths,
-                                                    batch_size=args.batch_size,
-                                                    num_buckets=args.num_buckets,
-                                                    ratio=args.bucket_ratio,
-                                                    shuffle=True,
-                                                    use_average_length=use_average_length,
-                                                    num_shards=num_shards,
-                                                    bucket_scheme=bucket_scheme)
     else:
-        data_lengths = get_data_lengths(data_set)
-        target_lengths = list(map(lambda x: x[-1], data_lengths))
+        data_lengths = list(map(lambda x: x[-1], data_lengths))
         test_batchify_fn = btf.Tuple(btf.Pad(), btf.Pad(),
                                      btf.Stack(dtype='float32'), btf.Stack(dtype='float32'),
                                      btf.Stack())
 
-        batch_sampler = nlp.data.FixedBucketSampler(lengths=target_lengths,
-                                                    batch_size=args.test_batch_size,
-                                                    num_buckets=args.num_buckets,
-                                                    ratio=args.bucket_ratio,
-                                                    shuffle=False,
-                                                    use_average_length=use_average_length,
-                                                    bucket_scheme=bucket_scheme)
+    batch_sampler = nlp.data.FixedBucketSampler(lengths=data_lengths,
+                                                batch_size=(args.batch_size \
+                                                            if dataset_type == 'train' \
+                                                            else args.test_batch_size),
+                                                num_buckets=args.num_buckets,
+                                                ratio=args.bucket_ratio,
+                                                shuffle=(dataset_type == 'train'),
+                                                use_average_length=use_average_length,
+                                                num_shards=(num_shards \
+                                                            if dataset_type == 'train' \
+                                                            else 0),
+                                                bucket_scheme=bucket_scheme)
 
     if dataset_type == 'train':
         logging.info('Train Batch Sampler:\n%s', batch_sampler.stats())
@@ -273,12 +270,10 @@ def make_dataloader(data_train, data_val, data_test, args,
 
     val_data_loader = get_dataloader(data_val, args, dataset_type='val',
                                      use_average_length=use_average_length,
-                                     num_shards=num_shards,
                                      num_workers=num_workers)
 
     test_data_loader = get_dataloader(data_test, args, dataset_type='test',
                                       use_average_length=use_average_length,
-                                      num_shards=num_shards,
                                       num_workers=num_workers)
 
     return train_data_loader, val_data_loader, test_data_loader
