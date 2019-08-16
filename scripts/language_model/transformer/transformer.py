@@ -395,7 +395,7 @@ class TransformerXL(mx.gluon.Block):
         mask_nd = (mx.nd.from_numpy(mask, zero_copy=True) == 0).as_in_context(
             step_input.context).expand_dims(0).broadcast_axes(axis=0, size=batch_size)
 
-        pos_seq = mx.nd.arange(start=klen - 1, stop=-1, step=-1, ctx=step_input.context)
+        pos_seq = mx.nd.arange(start=klen, stop=-qlen, step=-1, ctx=step_input.context)
 
         softmax_output, hids, last_hidden = self._net(step_input, target, mask_nd, pos_seq, mems)
 

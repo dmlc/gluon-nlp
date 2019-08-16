@@ -30,6 +30,30 @@ import mxnet as mx
 from gluonnlp.model.attention_cell import _masked_softmax
 
 
+def _rel_shift(F, x):
+    """Perform relative shift operation following Dai et al. (2019) Appendix B.
+
+    Unlike Dai et al.'s implementation, the relative shift is performed on the
+    last two dimensions of the ndarray x. Further, we follow Yang et al. (2019)
+    in not performing zero-padding but expecting the input array to be one
+    element longer along the to be shifted dimension. For example, for
+    TransformerXL, the pos_seq should be `arange(start=klen, stop=-qlen,
+    step=-1)` instead of `arange(start=klen - 1, stop=-qlen, step=-1)`.
+
+    Assumes len(x.shape) == 3 (could be generalized once F.swapaxes supports
+    negative indices)
+
+    """
+    x_ = x
+    # Reshape to x.shape[:-2] + [x.shape[-1] + 1, x.shape[-2]]
+    x_ = F.reshape_like(x_, F.swapaxes(x_, 1, 2))
+    # Remove padded elements
+    x_ = F.slice_axis(x_, axis=-2, begin=1, end=None)
+    # Reshape back to original shape
+    x = F.reshape_like(x_, F.swapaxes(x_, 1, 2))
+    return x
+
+
 class PositionalEmbeddingMultiHeadAttentionCell(mx.gluon.HybridBlock):
     """Multi-head Attention Cell with positional embeddings.
 
@@ -84,7 +108,7 @@ class PositionalEmbeddingMultiHeadAttentionCell(mx.gluon.HybridBlock):
         value : Symbol or NDArray
             Value of the memory. Shape (batch_size, memory_length, value_dim)
         emb : Symbol or NDArray
-            Positional embeddings. Shape (memory_length, value_dim)
+            Positional embeddings. Shape (memory_length + 1, value_dim)
         mask : Symbol or NDArray
             Mask of the memory slots. Shape (batch_size, query_length, memory_length)
             Only contains 0 or 1 where 0 means that the memory slot will not be used.
@@ -112,28 +136,6 @@ class PositionalEmbeddingMultiHeadAttentionCell(mx.gluon.HybridBlock):
              .reshape(shape=(-1, 0, 0), reverse=True)
         return x
 
-    @staticmethod
-    def _rel_shift(F, x):
-        """Perform relative shift operation following Dai et al. (2019) Appendix B
-
-        Unlike Dai et al.'s PyTorch implementation, the relative shift is
-        performed on the last two dimensions of the ndarray x.
-
-        Requires len(x.shape) == 3 due to F.swapaxes not supporting negative
-        indices
-
-        """
-        # Zero pad along last axis
-        zero_pad = F.zeros_like(F.slice_axis(x, axis=-1, begin=0, end=1))
-        x_padded = F.concat(zero_pad, x, dim=-1)
-        # Reshape to x.shape[:-2] + [x.shape[-1] + 1, x.shape[-2]]
-        x_padded = F.reshape_like(x_padded, F.swapaxes(x_padded, 1, 2))
-        # Remove padded elements
-        x_padded = F.slice_axis(x_padded, axis=-2, begin=1, end=None)
-        # Reshape back to original shape
-        x = F.reshape_like(x_padded, x)
-        return x
-
     def _compute_weight(self, F, query, key, emb, mask, query_key_bias, query_emb_bias):
         # Project query, key and emb
         proj_query = self.proj_query(query).reshape(shape=(0, 0, self._num_heads, -1))
@@ -152,7 +154,8 @@ class PositionalEmbeddingMultiHeadAttentionCell(mx.gluon.HybridBlock):
         proj_emb = F.transpose(proj_emb, axes=(1, 0, 2))
 
         # Broadcast emb along batch axis
-        proj_emb = F.broadcast_like(F.expand_dims(proj_emb, axis=0), proj_key)
+        proj_emb = F.broadcast_like(F.expand_dims(proj_emb, axis=0), proj_key, lhs_axes=(0, ),
+                                    rhs_axes=(0, ))
 
         # Merge batch and num_heads axes
         query_with_key_bias = query_with_key_bias.reshape(shape=(-1, 0, 0), reverse=True)
@@ -171,7 +174,9 @@ class PositionalEmbeddingMultiHeadAttentionCell(mx.gluon.HybridBlock):
         att_score_BD = F.batch_dot(query_with_emb_bias, proj_emb, transpose_b=True)
 
         # Relative shift
-        shifted_att_score_BD = self._rel_shift(F, att_score_BD)
+        shifted_att_score_BD = _rel_shift(F, att_score_BD)
+        shifted_att_score_BD = F.slice_like(shifted_att_score_BD, shape_like=att_score_AC,
+                                            axes=(2, ))
 
         att_score = att_score_AC + shifted_att_score_BD
         if self._scaled:
@@ -255,7 +260,8 @@ class RelativeSegmentEmbeddingPositionalEmbeddingMultiHeadAttentionCell(mx.gluon
         value : Symbol or NDArray
             Value of the memory. Shape (batch_size, memory_length, value_dim)
         emb : Symbol or NDArray
-            Positional embeddings. Shape (memory_length, value_dim)
+            Positional embeddings. Shape (memory_length + 1, value_dim) or
+            (memory_length + query_length + 1, value_dim)
         mask : Symbol or NDArray
             Mask of the memory slots. Shape (batch_size, query_length, memory_length)
             Only contains 0 or 1 where 0 means that the memory slot will not be used.
@@ -286,26 +292,6 @@ class RelativeSegmentEmbeddingPositionalEmbeddingMultiHeadAttentionCell(mx.gluon
         x = F.transpose(x.reshape(shape=(0, 0, self._num_heads, -1)),
                         axes=(0, 2, 1, 3))\
              .reshape(shape=(-1, 0, 0), reverse=True)
-        return x
-
-    @staticmethod
-    def _rel_shift(F, x):
-        """Perform relative shift operation following Yang et al. (2019)
-
-        Unlike Yang et al.'s implementation, the relative shift is performed on
-        the last two dimensions of the ndarray x.
-
-        Requires len(x.shape) == 3 due to F.swapaxes not supporting negative
-        indices
-
-        """
-        x_ = x
-        # Reshape to x.shape[:-2] + [x.shape[-1] + 1, x.shape[-2]]
-        x_ = F.reshape_like(x_, F.swapaxes(x_, 1, 2))
-        # Remove padded elements
-        x_ = F.slice_axis(x_, axis=-2, begin=1, end=None)
-        # Reshape back to original shape
-        x = F.reshape_like(x_, F.swapaxes(x_, 1, 2))
         return x
 
     def _compute_weight(self, F, query, key, emb, segments, seg_emb, mask, query_key_bias,
@@ -384,7 +370,7 @@ class RelativeSegmentEmbeddingPositionalEmbeddingMultiHeadAttentionCell(mx.gluon
         # shape (batch_size * num_heads, query_length, memory_length)
 
         # Relative shift
-        shifted_att_score_BD = self._rel_shift(F, att_score_BD)
+        shifted_att_score_BD = _rel_shift(F, att_score_BD)
         shifted_att_score_BD = F.slice_like(shifted_att_score_BD, shape_like=att_score_AC,
                                             axes=(2, ))
 
