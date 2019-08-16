@@ -42,7 +42,8 @@ def get_kwargs_and_corpus(args):
     tf_checkpoint_file = os.path.expanduser(
         os.path.join(args.tf_checkpoint_dir, args.tf_model_prefix))
     tf_tensors = read_tf_checkpoint(tf_checkpoint_file)
-    return to_gluon_kwargs(tf_tensors), corpus
+    kwargs, _ = to_gluon_kwargs(tf_tensors)
+    return kwargs, corpus
 
 
 def get_data(args):
