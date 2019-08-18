@@ -25,10 +25,9 @@ __all__ = ['TransformerEncoder', 'PositionwiseFFN', 'TransformerEncoderCell',
 import os
 
 import math
-import warnings
 import numpy as np
 import mxnet as mx
-from mxnet import cpu, gluon, ndarray
+from mxnet import cpu, gluon
 from mxnet.gluon import nn
 from mxnet.gluon.block import HybridBlock
 from mxnet.gluon.model_zoo import model_store
