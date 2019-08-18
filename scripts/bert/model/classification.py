@@ -20,10 +20,10 @@
 
 __all__ = ['BERTClassifier', 'BERTRegression']
 
-from mxnet.gluon import Block
+from mxnet.gluon import HybridBlock
 from mxnet.gluon import nn
 
-class BERTRegression(Block):
+class BERTRegression(HybridBlock):
     """Model for sentence (pair) regression task with BERT.
 
     The model feeds token ids and token type ids into BERT to get the
@@ -51,7 +51,8 @@ class BERTRegression(Block):
                 self.regression.add(nn.Dropout(rate=dropout))
             self.regression.add(nn.Dense(1))
 
-    def forward(self, inputs, token_types, valid_length=None):  # pylint: disable=arguments-differ
+    def hybrid_forward(self, F, inputs, token_types, valid_length=None):
+        # pylint: disable=arguments-differ
         """Generate the unnormalized score for the given the input sequences.
 
         Parameters
@@ -73,7 +74,7 @@ class BERTRegression(Block):
         return self.regression(pooler_out)
 
 
-class BERTClassifier(Block):
+class BERTClassifier(HybridBlock):
     """Model for sentence (pair) classification task with BERT.
 
     The model feeds token ids and token type ids into BERT to get the
@@ -108,7 +109,8 @@ class BERTClassifier(Block):
                 self.classifier.add(nn.Dropout(rate=dropout))
             self.classifier.add(nn.Dense(units=num_classes))
 
-    def forward(self, inputs, token_types, valid_length=None):  # pylint: disable=arguments-differ
+    def hybrid_forward(self, F, inputs, token_types, valid_length=None):
+        # pylint: disable=arguments-differ
         """Generate the unnormalized score for the given the input sequences.
 
         Parameters

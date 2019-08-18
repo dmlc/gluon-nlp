@@ -262,14 +262,14 @@ This achieves Test F1 from `91.5` to `92.2` (`log <https://github.com/dmlc/web-d
 Export BERT for Deployment
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Current export/export.py support exporting BERT models. Supported values for --task argument include classification, regression and question_answering.
+Current export.py support exporting BERT models. Supported values for --task argument include classification, regression and question answering.
 
 .. code-block:: console
 
-    $ python export/export.py --task classification --model_parameters /path/to/saved/ckpt.params --output_dir /path/to/output/dir/ --seq_length 128
+    $ python export.py --task classification --model_parameters /path/to/saved/ckpt.params --output_dir /path/to/output/dir/ --seq_length 128
 
 This will export the BERT model for classification to a symbol.json file, saved to the directory specified by --output_dir.
-The --model_parameters argument is optional. If not set, the .params file saved in the output directory will be randomly intialized parameters.
+The --model_parameters argument is optional. If not set, the .params file saved in the output directory will be randomly initialized parameters.
 
 BERT for Sentence or Tokens Embedding
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

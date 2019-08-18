@@ -370,14 +370,7 @@ class BaseTransformerEncoder(HybridBlock, Seq2SeqEncoder):
         self._scaled = scaled
         self._use_layer_norm_before_dropout = use_layer_norm_before_dropout
         self._scale_embed = scale_embed
-        self._support_arange_like = False
         self._dtype = 'float32'
-        try:
-            self._support_arange_like = bool(ndarray.contrib.arange_like)
-        except AttributeError:
-            warnings.warn('"arange_like" operator support is not found. '
-                          'Please consider upgrading to mxnet >= 1.6.0, '
-                          'which leads to higher training throughput. ')
 
         with self.name_scope():
             if dropout:
@@ -454,18 +447,15 @@ class BaseTransformerEncoder(HybridBlock, Seq2SeqEncoder):
 
     def _arange_like(self, F, inputs, axis):
         """Helper function to generate indices of a range"""
-        if self._support_arange_like:
-            arange = F.contrib.arange_like(inputs, axis=axis).astype(self._dtype)
+        if F == mx.ndarray:
+            seq_len = inputs.shape[axis]
+            arange = F.arange(seq_len, dtype=inputs.dtype, ctx=inputs.context)
         else:
-            if F == mx.ndarray:
-                seq_len = inputs.shape[axis]
-                arange = F.arange(seq_len, dtype=inputs.dtype, ctx=inputs.context)
-            else:
-                input_axis = inputs.slice(begin=(0, 0, 0), end=(1, None, 1)).reshape((-1))
-                zeros = F.zeros_like(input_axis)
-                arange = F.arange(start=0, repeat=1, step=1,
-                                  infer_range=True, dtype=self._dtype)
-                arange = F.elemwise_add(arange, zeros)
+            input_axis = inputs.slice(begin=(0, 0, 0), end=(1, None, 1)).reshape((-1))
+            zeros = F.zeros_like(input_axis)
+            arange = F.arange(start=0, repeat=1, step=1,
+                              infer_range=True, dtype=self._dtype)
+            arange = F.elemwise_add(arange, zeros)
         return arange
 
 
