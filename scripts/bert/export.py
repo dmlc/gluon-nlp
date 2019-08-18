@@ -155,7 +155,7 @@ elif args.task == 'question_answering':
         use_decoder=False,
         use_classifier=False,
         seq_length=args.seq_length)
-    net = BERTForQA(bert)
+    net = BertForQA(bert)
 else:
     raise ValueError('unknown task: %s'%args.task)
 
