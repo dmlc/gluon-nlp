@@ -270,7 +270,7 @@ class BERTEncoderCell(BaseTransformerEncoderCell):
 #                                FULL MODEL                                   #
 ###############################################################################
 
-class _BERTModel(HybridBlock):
+class BERTModel(HybridBlock):
     """Generic Model for BERT (Bidirectional Encoder Representations from Transformers).
 
     Parameters
@@ -343,7 +343,7 @@ class _BERTModel(HybridBlock):
                  embed_size=None, embed_dropout=0.0, embed_initializer=None,
                  word_embed=None, token_type_embed=None, use_pooler=True, use_decoder=True,
                  use_classifier=True, use_token_type_embed=True, prefix=None, params=None):
-        super(_BERTModel, self).__init__(prefix=prefix, params=params)
+        super(BERTModel, self).__init__(prefix=prefix, params=params)
         self._use_decoder = use_decoder
         self._use_classifier = use_classifier
         self._use_pooler = use_pooler
@@ -425,8 +425,8 @@ class _BERTModel(HybridBlock):
         # XXX Temporary hack for hybridization as hybridblock does not support None inputs
         valid_length = [] if valid_length is None else valid_length
         masked_positions = [] if masked_positions is None else masked_positions
-        return super(_BERTModel, self).__call__(inputs, token_types,
-                                                valid_length, masked_positions)
+        return super(BERTModel, self).__call__(inputs, token_types,
+                                               valid_length, masked_positions)
 
     def hybrid_forward(self, F, inputs, token_types, valid_length=None, masked_positions=None):
         # pylint: disable=arguments-differ
@@ -487,6 +487,18 @@ class _BERTModel(HybridBlock):
         outputs = outputs.reshape(shape=(-1, self._units))
         return self.pooler(outputs)
 
+    def _arange_like(self, F, inputs):
+        """Helper function to generate int32 indices of a range"""
+        inputs = inputs.reshape(-1)
+        if F == mx.ndarray:
+            seq_len = inputs.shape[0]
+            arange = F.arange(seq_len, dtype=inputs.dtype, ctx=inputs.context)
+        else:
+            zeros = F.zeros_like(inputs)
+            arange = F.arange(start=0, repeat=1, step=1, infer_range=True, dtype='int32')
+            arange = F.elemwise_add(arange, zeros)
+        return arange
+
     def _decode(self, F, sequence, masked_positions):
         """Generate unnormalized prediction for the masked language model task.
 
@@ -506,7 +518,7 @@ class _BERTModel(HybridBlock):
         masked_positions = masked_positions.astype('int32')
         mask_shape = masked_positions.shape_array()
         num_masked_positions = mask_shape.slice(begin=(1,), end=(2,)).astype('int32')
-        idx_arange = F.contrib.arange_like(masked_positions, dtype='int32')
+        idx_arange = self._arange_like(F, masked_positions)
         batch_idx = F.broadcast_div(idx_arange, num_masked_positions)
         # batch_idx_1d =        [0,0,0,1,1,1,2,2,2...]
         # masked_positions_1d = [1,2,4,0,3,4,2,3,5...]
@@ -518,7 +530,7 @@ class _BERTModel(HybridBlock):
         decoded = self.decoder(encoded)
         return decoded
 
-class _RoBERTaModel(_BERTModel):
+class RoBERTaModel(BERTModel):
     """Generic Model for BERT (Bidirectional Encoder Representations from Transformers).
 
     Parameters
@@ -588,22 +600,9 @@ class _RoBERTaModel(_BERTModel):
         # XXX Temporary hack for hybridization as hybridblock does not support None inputs
         valid_length = [] if valid_length is None else valid_length
         masked_positions = [] if masked_positions is None else masked_positions
-        return super(_RoBERTaModel, self).__call__(inputs, [], valid_length=valid_length,
-                                                   masked_positions=masked_positions)
+        return super(RoBERTaModel, self).__call__(inputs, [], valid_length=valid_length,
+                                                  masked_positions=masked_positions)
 
-
-###############################################################################
-#                             BACKWARD COMPATIBILITY                          #
-###############################################################################
-
-try:
-    support_arange = mx.nd.contrib.arange_like
-    BERTModel = _BERTModel
-    RoBERTaModel = _RoBERTaModel
-except AttributeError:
-    from .legacy import _LegacyBERTModel, _LegacyRoBERTaModel
-    BERTModel = _LegacyBERTModel
-    RoBERTaModel = _LegacyRoBERTaModel
 
 ###############################################################################
 #                               GET MODEL                                     #
