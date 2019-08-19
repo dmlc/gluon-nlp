@@ -190,8 +190,7 @@ def inference():
     # data prepare
     test_data_loader = dataprocessor.get_dataloader(data_test, args,
                                                     dataset_type='test',
-                                                    use_average_length=True,
-                                                    num_shards=len(ctx))
+                                                    use_average_length=True)
 
     if args.bleu == 'tweaked':
         bpe = bool(args.dataset != 'IWSLT2015' and args.dataset != 'TOY')

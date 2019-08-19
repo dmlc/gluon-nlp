@@ -236,9 +236,7 @@ def get_dataloader(data_set, args, dataset_type,
                                                 ratio=args.bucket_ratio,
                                                 shuffle=(dataset_type == 'train'),
                                                 use_average_length=use_average_length,
-                                                num_shards=(num_shards \
-                                                            if dataset_type == 'train' \
-                                                            else 0),
+                                                num_shards=num_shards,
                                                 bucket_scheme=bucket_scheme)
 
     if dataset_type == 'train':
