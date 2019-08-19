@@ -39,7 +39,7 @@ def add_parameters(parser):
     """Add evaluation specific parameters to parser."""
     group = parser.add_argument_group('Evaluation arguments')
 
-    group.add_argument('--eval-batch-size', type=int, default=1024)
+    group.add_argument('--eval-batch-size', type=int, default=512)
 
     # Datasets
     group.add_argument(

@@ -16,7 +16,7 @@ reside in ~/.mxnet/datasets/.
 Language modeling
 ~~~~~~~~~~~~~~~~~
 
-`WikiText <https://www.salesforce.com/products/einstein/ai-research/the-wikitext-dependency-language-modeling-dataset/>`_
+`WikiText <https://blog.einstein.ai/the-wikitext-long-term-dependency-language-modeling-dataset/>`_
 is a popular language modeling dataset from Salesforce.
 It is a collection of over 100 million tokens extracted from the set of verified Good and Featured articles on Wikipedia.
 The dataset is available under the Creative Commons Attribution-ShareAlike License.
