@@ -20,11 +20,11 @@
 
 __all__ = ['BertForQA', 'BertForQALoss']
 
-from mxnet.gluon import Block, loss, nn
+from mxnet.gluon import HybridBlock, loss, nn
 from mxnet.gluon.loss import Loss
 
 
-class BertForQA(Block):
+class BertForQA(HybridBlock):
     """Model for SQuAD task with BERT.
 
     The model feeds token ids and token type ids into BERT to get the
@@ -46,7 +46,15 @@ class BertForQA(Block):
         with self.name_scope():
             self.span_classifier = nn.Dense(units=2, flatten=False)
 
-    def forward(self, inputs, token_types, valid_length=None):  # pylint: disable=arguments-differ
+    def __call__(self, inputs, token_types, valid_length=None):
+        #pylint: disable=arguments-differ, dangerous-default-value
+        """Generate the unnormalized score for the given the input sequences."""
+        # XXX Temporary hack for hybridization as hybridblock does not support None inputs
+        valid_length = [] if valid_length is None else valid_length
+        return super(BertForQA, self).__call__(inputs, token_types, valid_length)
+
+    def hybrid_forward(self, F, inputs, token_types, valid_length=None):
+        # pylint: disable=arguments-differ
         """Generate the unnormalized score for the given the input sequences.
 
         Parameters
@@ -64,6 +72,9 @@ class BertForQA(Block):
         outputs : NDArray
             Shape (batch_size, seq_length, 2)
         """
+        # XXX Temporary hack for hybridization as hybridblock does not support None inputs
+        if isinstance(valid_length, list) and len(valid_length) == 0:
+            valid_length = None
         bert_output = self.bert(inputs, token_types, valid_length)
         output = self.span_classifier(bert_output)
         return output
