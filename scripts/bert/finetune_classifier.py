@@ -209,6 +209,12 @@ task = tasks[task_name]
 if args.dtype == 'float16':
     try:
         from mxnet.contrib import amp # pylint: disable=ungrouped-imports
+        # monkey patch amp list since topk does not support fp16
+        amp.lists.symbol.FP32_FUNCS.append('topk')
+        amp.lists.symbol.FP16_FP32_FUNCS.remove('topk')
+        amp.init()
+    except ValueError:
+        # topk is already in the FP32_FUNCS list
         amp.init()
     except ImportError:
         # amp is not available

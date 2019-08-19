@@ -89,7 +89,7 @@ len(train_dataset), len(valid_dataset)
 
 ### Preliminary processing of the data
 
-The purpose of the following code is to process the raw data so that the pre-processed data can be used for model training and prediction. We will use the `SpacyTokenizer` to split the document into tokens, `ClipSequence` to crop the comments to the specified length, and then build a vocabulary based on the word frequency of the training data. Next, we attach the [Glove](https://nlp.stanford.edu/pubs/glove.pdf)[2] pre-trained word vector to the vocabulary and convert each token into the corresponding word index in the vocabulary.
+The purpose of the following code is to process the raw data so that the pre-processed data can be used for model training and prediction. We will use the `SpacyTokenizer` to split the document into tokens, `ClipSequence` to crop the comments to the specified length, and then build a vocabulary based on the word frequency of the training data. Next, we attach the [Glove](https://nlp.stanford.edu/pubs/glove.pdf) [2] pre-trained word vector to the vocabulary and convert each token into the corresponding word index in the vocabulary.
 Finally, we get the standardized training data set and verification data set. Here we also define a few helper functions for later. We take advantage of the `mp.Pool()` function to spread the pre-processing over multiple cores or machines.
 
 
@@ -206,7 +206,7 @@ train_dataloader, valid_dataloader = get_dataloader()
 In the original paper, the representation of the sentence is broken into the following steps:
 
 Firstly, the sentence is disassembled into a list corresponding to the word.
-Then the words are unrolled in order, and the word vector of each word is calculated as the input of each step of the [bidirectional LSTM neural network layer](https://www.bioinf.jku.at/publications/older/2604.pdf)[3].
+Then the words are unrolled in order, and the word vector of each word is calculated as the input of each step of the [bidirectional LSTM neural network layer](https://www.bioinf.jku.at/publications/older/2604.pdf) [3].
 Taking the output of each step of the bidirectional LSTM network layer, a matrix H is obtained. Suppose the hidden_dim of the bidirectional LSTM is `U`, the word length of the sentence is `N`, then the dimension of the last H is `N x 2U`.  For example, the sentence "This movie is amazing!" would be represented as:
 ![](Bi-LSTM-Rep.png)
 

@@ -18,7 +18,7 @@ The Adam optimizer with weight decay regularization for BERT.
 LAMB Optimizer
 --------------------------
 
-Implementation of the LAMB optimizer from the paper `Reducing BERT Pre-Training Time from 3 Days to 76 Minutes. <https://www.salesforce.com/products/einstein/ai-research/the-wikitext-dependency-language-modeling-dataset/>`_ 
+Implementation of the LAMB optimizer from the paper `Reducing BERT Pre-Training Time from 3 Days to 76 Minutes. <https://arxiv.org/abs/1904.00962>`_ 
 
 In paper, the empirical results demonstrate the superior performance of LAMB for BERT and ResNet-50 training.
 By increasing the batch size to the memory limit of a TPUv3 pod, BERT training time can be reduced from 3 days to 76 minutes.
