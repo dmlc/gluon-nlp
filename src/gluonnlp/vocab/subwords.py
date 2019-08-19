@@ -73,7 +73,7 @@ class SubwordFunction:
         """Return the number of subwords modeled."""
         raise NotImplementedError
 
-    def indices_to_subwords(self, indices):
+    def indices_to_subwords(self, subwordindices):
         """Return list of subwords associated with subword indices.
 
         This may raise RuntimeError if the subword function is not invertible.
@@ -135,10 +135,8 @@ class ByteSubwords(SubwordFunction):
     def __repr__(self):
         return 'ByteSubwords(encoding={})'.format(self.encoding)
 
-    def indices_to_subwords(self, indices):
+    def indices_to_subwords(self, subwordindices):
         """Return list of subwords associated with subword indices.
-
-        This may raise RuntimeError if the subword function is not invertible.
 
         Parameters
         ----------
@@ -150,7 +148,7 @@ class ByteSubwords(SubwordFunction):
         Iterable of str.
 
         """
-        return indices
+        return subwordindices
 
     def subwords_to_indices(self, subwords):
         """Return list of subwordindices associated with subwords.
@@ -280,10 +278,8 @@ class NGramHashes(SubwordFunction):
     def __repr__(self):
         return ('NGramHashes(num_subwords={}, ngrams={})'.format(self.num_subwords, self.ngrams))
 
-    def indices_to_subwords(self, indices):
-        """Return list of subwords associated with subword indices.
-
-        This may raise RuntimeError if the subword function is not invertible.
+    def indices_to_subwords(self, subwordindices):
+        """This raises RuntimeError because the subword function is not invertible.
 
         Parameters
         ----------

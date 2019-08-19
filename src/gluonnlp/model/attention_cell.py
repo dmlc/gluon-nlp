@@ -220,7 +220,7 @@ class MultiHeadAttentionCell(AttentionCell):
             with self.name_scope():
                 setattr(
                     self, 'proj_{}'.format(name),
-                    nn.Dense(units=self._query_units, use_bias=self._use_bias, flatten=False,
+                    nn.Dense(units=unit, use_bias=self._use_bias, flatten=False,
                              weight_initializer=weight_initializer,
                              bias_initializer=bias_initializer, prefix='{}_'.format(name)))
 

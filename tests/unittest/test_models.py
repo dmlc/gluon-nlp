@@ -98,7 +98,8 @@ def test_transformer_models():
 
 @pytest.mark.serial
 @pytest.mark.remote_required
-def test_pretrained_roberta_models():
+@pytest.mark.parametrize('wo_valid_len', [False, True])
+def test_pretrained_roberta_models(wo_valid_len):
     models = ['roberta_12_768_12', 'roberta_24_1024_16']
     pretrained_datasets = ['openwebtext_ccnews_stories_books_cased']
 
@@ -114,7 +115,6 @@ def test_pretrained_roberta_models():
             model, vocab = nlp.model.get_model(model_name, dataset_name=dataset,
                                                pretrained=True,
                                                root='tests/data/model/')
-
             assert len(vocab) == vocab_size[dataset]
             for token in special_tokens:
                 assert token in vocab, "Token %s not found in the vocab" % token
@@ -124,7 +124,11 @@ def test_pretrained_roberta_models():
             assert vocab.bos_token == '<s>'
             assert vocab.eos_token == '</s>'
 
-            output = model(ones, valid_length, positions)
+            model.hybridize()
+            if wo_valid_len:
+                output = model(ones, masked_positions=positions)
+            else:
+                output = model(ones, valid_length, positions)
             output[0].wait_to_read()
             del model
             mx.nd.waitall()
@@ -228,7 +232,8 @@ def test_pretrained_bert_models(disable_missing_parameters):
 
 @pytest.mark.serial
 @pytest.mark.remote_required
-def test_bert_models():
+@pytest.mark.parametrize('wo_valid_len', [False, True])
+def test_bert_models(wo_valid_len):
     models = ['bert_12_768_12', 'bert_24_1024_16']
     layers = [12, 24]
     attention_heads = [12, 16]
@@ -294,23 +299,33 @@ def test_bert_models():
              (batch_size, -1),
              (batch_size, 2),
              (batch_size, num_masks, vocab_size)],
-            [(batch_size, seq_len, -1)] + [(num_masks, head, seq_len, seq_len)] * layer,
-            [(batch_size, seq_len, -1)] * layer + [(num_masks, head, seq_len, seq_len)] * layer,
-            [(batch_size, seq_len, -1)] * layer + [(num_masks, head, seq_len, seq_len)] * layer +
+            [(batch_size, seq_len, -1)] + [(batch_size, head, seq_len, seq_len)] * layer,
+            [(batch_size, seq_len, -1)] * layer + [(batch_size, head, seq_len, seq_len)] * layer,
+            [(batch_size, seq_len, -1)] * layer + [(batch_size, head, seq_len, seq_len)] * layer +
             [(batch_size, -1)] + [(batch_size, 2)] + [(batch_size, num_masks, vocab_size)],
         ]
 
         for kwarg, expected_shape in zip(kwargs, expected_shapes):
+            eprint('testing forward for %s' % str(kwarg))
             expected_shape = infer_shape(expected_shape, unit)
             model, _ = nlp.model.get_model(model_name, dataset_name=dataset,
                                            pretrained=False, root='tests/data/model/',
                                            **kwarg)
             model.initialize()
+            model.hybridize()
+
             if kwarg['use_decoder']:
                 # position tensor is required for decoding
-                output = model(ones, ones, valid_length, positions)
+                if wo_valid_len:
+                    output = model(ones, ones, masked_positions=positions)
+                else:
+                    output = model(ones, ones, valid_length, positions)
             else:
-                output = model(ones, ones, valid_length)
+                if wo_valid_len:
+                    output = model(ones, ones)
+                else:
+                    output = model(ones, ones, valid_length)
+
             out_shapes = get_shapes(output)
             assert out_shapes == expected_shape, (out_shapes, expected_shape)
             sync_instance = output[0] if not isinstance(output[0], list) else output[0][0]

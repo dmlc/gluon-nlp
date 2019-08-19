@@ -33,7 +33,7 @@ if sys.version_info[0] >= 3:
 else:
     from urllib import urlretrieve
 
-_baidu_ernie_data_url = 'https://ernie.bj.bcebos.com/task_data.tgz'
+_baidu_ernie_data_url = 'https://ernie.bj.bcebos.com/task_data_zh.tgz'
 
 class _BaiduErnieDataset(TSVDataset):
     def __init__(self, root, dataset_name, segment, **kwargs):
@@ -109,14 +109,13 @@ class BaiduErnieXNLI(_BaiduErnieDataset):
 
 @register(segment=['train', 'dev', 'test'])
 class BaiduErnieLCQMC(_BaiduErnieDataset):
-    """ The LCQMC dataset redistributed by Baidu
-    <https://github.com/PaddlePaddle/LARK/tree/develop/ERNIE>.
-
-    Original from:
+    """ The LCQMC dataset original from:
     Xin Liu, Qingcai Chen, Chong Deng, Huajun Zeng, Jing Chen, Dongfang Li, Buzhou Tang,
         LCQMC: A Large-scale Chinese Question Matching Corpus,COLING2018.
-    Licensed under a Creative Commons Attribution 4.0 International License. License details:
-        http://creativecommons.org/licenses/by/4.0/
+    No license granted. You can request a private license via
+    http://icrc.hitsz.edu.cn/LCQMC_Application_Form.pdf
+    The code fits the dataset format which was redistributed by Baidu in ERNIE repo.
+    (Baidu does not hold this version any more.)
 
     Parameters
     ----------
