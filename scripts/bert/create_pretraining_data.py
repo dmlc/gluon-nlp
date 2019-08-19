@@ -479,8 +479,8 @@ def create_masked_lm_predictions(tokens, masked_lm_prob, max_predictions_per_seq
         # Note that Whole Word Masking does *not* change the training code
         # at all -- we still predict each subword independently, softmaxed
         # over the entire vocabulary.
-        if whole_word_mask and (len(cand_indexes) >= 1 and \
-           not tokenizer.is_first_subword(token) or \
+        if (whole_word_mask and (len(cand_indexes) >= 1 and \
+           not tokenizer.is_first_subword(token)) or \
            (cn_whole_word_mask and cn_token_bio[i] == 'I')):
             cand_indexes[-1].append(i)
         else:
