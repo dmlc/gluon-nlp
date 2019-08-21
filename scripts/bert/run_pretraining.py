@@ -133,6 +133,7 @@ class ParallelBERT(nlp.utils.Parallelizable):
                masked_weight, ls1, ls2, valid_length
 
 def init_comm(backend):
+    """Init communication backend"""
     # backend specific implementation
     if backend == 'horovod':
         try:
@@ -154,7 +155,6 @@ def init_comm(backend):
         rank = store.rank
         local_rank = 0
         is_master_node = rank == local_rank
-        # XXX try all gpus
         ctxs = os.environ.get('NVIDIA_VISIBLE_DEVICES', '0')
         ctxs = [mx.gpu(int(ctx)) for ctx in ctxs.split(',')]
     return store, num_workers, rank, local_rank, is_master_node, ctxs
@@ -162,7 +162,7 @@ def init_comm(backend):
 backend = args.backend
 store, num_workers, rank, local_rank, is_master_node, ctxs = init_comm(backend)
 
-def train(data_train, data_eval, model, vocab_size):
+def train(data_train, data_eval, model):
     """Training function."""
     # backend specific implementation
     if backend == 'horovod':
@@ -189,7 +189,8 @@ def train(data_train, data_eval, model, vocab_size):
     if backend == 'horovod':
         trainer = hvd.DistributedTrainer(model.collect_params(), 'bertadam', optim_params)
     else:
-        trainer = mx.gluon.Trainer(model.collect_params(), 'bertadam', optim_params, update_on_kvstore=False)
+        trainer = mx.gluon.Trainer(model.collect_params(), 'bertadam', optim_params,
+                                   update_on_kvstore=False)
     fp16_trainer = FP16Trainer(trainer, dynamic_loss_scale=dynamic_loss_scale,
                                loss_scaler_params=loss_scale_param)
 
@@ -255,10 +256,6 @@ def train(data_train, data_eval, model, vocab_size):
                              for context, shard in zip(ctxs, data_batch)]
             else:
                 data_list = list(split_and_load(data_batch, ctxs))
-
-            # data =
-            # input_id, masked_id, masked_position, masked_weight
-            # next_sentence_label, segment_id, valid_length
 
             ns_label_list, ns_pred_list = [], []
             mask_label_list, mask_pred_list, mask_weight_list = [], [], []
@@ -375,7 +372,7 @@ if __name__ == '__main__':
         data_train = get_dataset_fn(args.data, args.batch_size, 1, True,
                                     args.use_avg_len, args.num_buckets,
                                     vocab, num_parts=num_parts, part_idx=part_idx)
-        train(data_train, data_eval, model, len(vocab))
+        train(data_train, data_eval, model)
     if data_eval:
         # eval data is always based on a fixed npz file.
         dataset_eval = get_pretrain_data_npz(data_eval, args.batch_size_eval, 1,

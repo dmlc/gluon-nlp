@@ -350,7 +350,7 @@ def split_and_load(arrs, ctx):
     loaded_arrs = [mx.gluon.utils.split_and_load(arr, ctx, even_split=False) for arr in arrs]
     return zip(*loaded_arrs)
 
-class BERTForPretrain(mx.gluon.HybridBlock):
+class BERTForPretrain(mx.gluon.Block):
     """Model for pre-training MLM and NSP with BERT.
 
     Parameters
@@ -415,15 +415,15 @@ def evaluate(data_eval, model, ctx, log_interval, dtype):
                 valid_length = valid_length.astype(dtype, copy=False)
                 out = model(input_id, masked_id, masked_position, masked_weight, \
                             next_sentence_label, segment_id, valid_length)
-                (classified, decoded, ls1, ls2) = out
+                classified, decoded, ls1, ls2 = out
                 masked_id = masked_id.reshape(-1)
-                valid_length = valid_length.astype('float32', copy=False)
                 ns_label_list.append(next_sentence_label)
                 ns_pred_list.append(classified)
                 mask_label_list.append(masked_id)
                 mask_pred_list.append(decoded)
                 mask_weight_list.append(masked_weight)
 
+                valid_length = valid_length.astype('float32', copy=False)
                 running_mlm_loss += ls1.as_in_context(mx.cpu())
                 running_nsp_loss += ls2.as_in_context(mx.cpu())
                 running_num_tks += valid_length.sum().as_in_context(mx.cpu())
