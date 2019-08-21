@@ -46,7 +46,7 @@ except ImportError:
 
 from fp16_utils import FP16Trainer
 from pretraining_utils import get_model_loss, get_pretrain_data_npz, get_dummy_dataloader
-from pretraining_utils import split_and_load, log, evaluate, forward, get_argparser
+from pretraining_utils import split_and_load, log, evaluate, get_argparser
 from pretraining_utils import save_parameters, save_states, profile
 from pretraining_utils import get_pretrain_data_text, generate_dev_set
 
@@ -105,27 +105,31 @@ class ParallelBERT(nlp.utils.Parallelizable):
     model : Block
         The BERT model.
     """
-    def __init__(self, model, mlm_loss, nsp_loss, vocab_size, rescale_factor, trainer=None):
+    def __init__(self, model, rescale_factor, trainer=None):
         self._model = model
-        self._mlm_loss = mlm_loss
-        self._nsp_loss = nsp_loss
-        self._vocab_size = vocab_size
         self._rescale_factor = rescale_factor
         self._trainer = trainer
 
     def forward_backward(self, x):
         """forward backward implementation"""
+        (input_id, masked_id, masked_position, masked_weight, \
+         next_sentence_label, segment_id, valid_length) = x
+
+        valid_length = valid_length.astype(args.dtype, copy=False)
         with mx.autograd.record():
-            (ls, next_sentence_label, classified, masked_id, decoded, \
-             masked_weight, ls1, ls2, valid_length) = forward(x, self._model, self._mlm_loss,
-                                                              self._nsp_loss, self._vocab_size,
-                                                              args.dtype)
+            out = self._model(input_id, masked_id, masked_position, masked_weight,
+                              next_sentence_label, segment_id, valid_length)
+            classified, decoded, ls1, ls2 = out
+            ls = ls1 + ls2
             ls = ls / self._rescale_factor
         if args.dtype == 'float16':
             self._trainer.backward(ls)
         else:
             ls.backward()
-        return ls, next_sentence_label, classified, masked_id, decoded, \
+
+        masked_id = masked_id.reshape(-1)
+        valid_length = valid_length.astype('float32', copy=False)
+        return next_sentence_label, classified, masked_id, decoded, \
                masked_weight, ls1, ls2, valid_length
 
 def init_comm(backend):
@@ -158,7 +162,7 @@ def init_comm(backend):
 backend = args.backend
 store, num_workers, rank, local_rank, is_master_node, ctxs = init_comm(backend)
 
-def train(data_train, data_eval, model, nsp_loss, mlm_loss, vocab_size):
+def train(data_train, data_eval, model, vocab_size):
     """Training function."""
     # backend specific implementation
     if backend == 'horovod':
@@ -222,8 +226,7 @@ def train(data_train, data_eval, model, nsp_loss, mlm_loss, vocab_size):
         target_shape = (args.batch_size, args.dummy_data_len)
         data_train = get_dummy_dataloader(data_train, target_shape)
 
-    parallel_model = ParallelBERT(model, mlm_loss, nsp_loss, vocab_size,
-                                  num_workers * accumulate, trainer=fp16_trainer)
+    parallel_model = ParallelBERT(model, num_workers * accumulate, trainer=fp16_trainer)
     num_ctxes = len(ctxs)
     parallel = nlp.utils.Parallel(num_ctxes if num_ctxes > 1 else 0, parallel_model)
 
@@ -264,7 +267,7 @@ def train(data_train, data_eval, model, nsp_loss, mlm_loss, vocab_size):
                 for data in data_list:
                     parallel.put(data)
                 for _ in range(len(ctxs)):
-                    (_, next_sentence_label, classified, masked_id,
+                    (next_sentence_label, classified, masked_id,
                      decoded, masked_weight, ls1, ls2, valid_length) = parallel.get()
                     ns_label_list.append(next_sentence_label)
                     ns_pred_list.append(classified)
@@ -301,8 +304,7 @@ def train(data_train, data_eval, model, nsp_loss, mlm_loss, vocab_size):
                     # eval data is always based on a fixed npz file.
                     dataset_eval = get_pretrain_data_npz(data_eval, args.batch_size_eval, 1,
                                                          False, False, 1, vocab)
-                    evaluate(dataset_eval, model, nsp_loss, mlm_loss, len(vocab), ctxs,
-                             args.log_interval, args.dtype)
+                    evaluate(dataset_eval, model, ctxs, args.log_interval, args.dtype)
 
             batch_num += 1
 
@@ -327,10 +329,10 @@ if __name__ == '__main__':
             dataset_name = None
         vocab = nlp.vocab.BERTVocab.from_sentencepiece(args.sentencepiece)
 
-    model, nsp_loss, mlm_loss, vocab = get_model_loss(ctxs, args.model, args.pretrained,
-                                                      dataset_name, vocab, args.dtype,
-                                                      ckpt_dir=args.ckpt_dir,
-                                                      start_step=args.start_step)
+    model, vocab = get_model_loss(ctxs, args.model, args.pretrained,
+                                  dataset_name, vocab, args.dtype,
+                                  ckpt_dir=args.ckpt_dir,
+                                  start_step=args.start_step)
     logging.debug('Model created')
     data_eval = args.data_eval
 
@@ -373,10 +375,10 @@ if __name__ == '__main__':
         data_train = get_dataset_fn(args.data, args.batch_size, 1, True,
                                     args.use_avg_len, args.num_buckets,
                                     vocab, num_parts=num_parts, part_idx=part_idx)
-        train(data_train, data_eval, model, nsp_loss, mlm_loss, len(vocab))
+        train(data_train, data_eval, model, len(vocab))
     if data_eval:
         # eval data is always based on a fixed npz file.
         dataset_eval = get_pretrain_data_npz(data_eval, args.batch_size_eval, 1,
                                              False, False, 1, vocab)
-        evaluate(dataset_eval, model, nsp_loss, mlm_loss, len(vocab), ctxs,
+        evaluate(dataset_eval, model, len(vocab), ctxs,
                  args.log_interval, args.dtype)

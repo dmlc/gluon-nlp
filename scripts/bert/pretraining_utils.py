@@ -70,9 +70,7 @@ def get_model_loss(ctx, model, pretrained, dataset_name, vocab, dtype,
 
     Returns
     -------
-    BERTModel : the model for pre-training.
-    Loss : the next sentence prediction loss.
-    Loss : the masked langauge model loss.
+    BERTForPretrain : the model for pre-training.
     BERTVocab : the vocabulary.
     """
     # model
@@ -96,7 +94,8 @@ def get_model_loss(ctx, model, pretrained, dataset_name, vocab, dtype,
     nsp_loss.hybridize(static_alloc=True)
     mlm_loss.hybridize(static_alloc=True)
 
-    return model, nsp_loss, mlm_loss, vocabulary
+    model = BERTForPretrain(model, nsp_loss, mlm_loss, len(vocabulary))
+    return model, vocabulary
 
 class BERTPretrainDataset(mx.gluon.data.ArrayDataset):
     """Dataset for BERT pre-training.
@@ -351,33 +350,49 @@ def split_and_load(arrs, ctx):
     loaded_arrs = [mx.gluon.utils.split_and_load(arr, ctx, even_split=False) for arr in arrs]
     return zip(*loaded_arrs)
 
+class BERTForPretrain(mx.gluon.HybridBlock):
+    """Model for pre-training MLM and NSP with BERT.
 
-def forward(data, model, mlm_loss, nsp_loss, vocab_size, dtype):
-    """forward computation for evaluation"""
-    (input_id, masked_id, masked_position, masked_weight, \
-     next_sentence_label, segment_id, valid_length) = data
-    num_masks = masked_weight.sum() + 1e-8
-    valid_length = valid_length.reshape(-1)
-    masked_id = masked_id.reshape(-1)
-    valid_length_typed = valid_length.astype(dtype, copy=False)
-    _, _, classified, decoded = model(input_id, segment_id, valid_length_typed,
-                                      masked_position)
-    decoded = decoded.reshape((-1, vocab_size))
-    ls1 = mlm_loss(decoded.astype('float32', copy=False),
-                   masked_id, masked_weight.reshape((-1, 1)))
-    ls2 = nsp_loss(classified.astype('float32', copy=False), next_sentence_label)
-    ls1 = ls1.sum() / num_masks
-    ls2 = ls2.mean()
-    ls = ls1 + ls2
-    return ls, next_sentence_label, classified, masked_id, decoded, \
-           masked_weight, ls1, ls2, valid_length.astype('float32', copy=False)
+    Parameters
+    ----------
+    bert: BERTModel
+        Bidirectional encoder with transformer.
+    mlm_loss : Loss or None
+    nsp_loss : Loss or None
+    vocab_size : int
+    prefix : str or None
+        See document of `mx.gluon.Block`.
+    params : ParameterDict or None
+        See document of `mx.gluon.Block`.
+    """
 
+    def __init__(self, bert, mlm_loss, nsp_loss, vocab_size, prefix=None, params=None):
+        super(BERTForPretrain, self).__init__(prefix=prefix, params=params)
+        self.bert = bert
+        self.mlm_loss = mlm_loss
+        self.nsp_loss = nsp_loss
+        self._vocab_size = vocab_size
 
-def evaluate(data_eval, model, nsp_loss, mlm_loss, vocab_size, ctx, log_interval, dtype):
+    def forward(self, input_id, masked_id, masked_position, masked_weight,
+                next_sentence_label=None, segment_id=None, valid_length=None):
+        # pylint: disable=arguments-differ
+        """Predict with BERT for MLM and NSP. """
+        num_masks = masked_weight.sum() + 1e-8
+        valid_length = valid_length.reshape(-1)
+        masked_id = masked_id.reshape(-1)
+        _, _, classified, decoded = self.bert(input_id, segment_id, valid_length, masked_position)
+        decoded = decoded.reshape((-1, self._vocab_size))
+        ls1 = self.mlm_loss(decoded.astype('float32', copy=False),
+                            masked_id, masked_weight.reshape((-1, 1)))
+        ls2 = self.nsp_loss(classified.astype('float32', copy=False), next_sentence_label)
+        ls1 = ls1.sum() / num_masks
+        ls2 = ls2.mean()
+        return classified, decoded, ls1, ls2
+
+def evaluate(data_eval, model, ctx, log_interval, dtype):
     """Evaluation function."""
     logging.info('Running evaluation ... ')
-    mlm_metric = MaskedAccuracy()
-    nsp_metric = MaskedAccuracy()
+    mlm_metric, nsp_metric = MaskedAccuracy(), MaskedAccuracy()
     mlm_metric.reset()
     nsp_metric.reset()
 
@@ -392,14 +407,17 @@ def evaluate(data_eval, model, nsp_loss, mlm_loss, vocab_size, ctx, log_interval
             step_num += 1
 
             data_list = split_and_load(data_batch, ctx)
-            loss_list = []
             ns_label_list, ns_pred_list = [], []
             mask_label_list, mask_pred_list, mask_weight_list = [], [], []
             for data in data_list:
-                out = forward(data, model, mlm_loss, nsp_loss, vocab_size, dtype)
-                (ls, next_sentence_label, classified, masked_id,
-                 decoded, masked_weight, ls1, ls2, valid_length) = out
-                loss_list.append(ls)
+                (input_id, masked_id, masked_position, masked_weight, \
+                 next_sentence_label, segment_id, valid_length) = data
+                valid_length = valid_length.astype(dtype, copy=False)
+                out = model(input_id, masked_id, masked_position, masked_weight, \
+                            next_sentence_label, segment_id, valid_length)
+                (classified, decoded, ls1, ls2) = out
+                masked_id = masked_id.reshape(-1)
+                valid_length = valid_length.astype('float32', copy=False)
                 ns_label_list.append(next_sentence_label)
                 ns_pred_list.append(classified)
                 mask_label_list.append(masked_id)
