@@ -39,6 +39,10 @@ import time
 
 import mxnet as mx
 import gluonnlp as nlp
+try:
+    import horovod.mxnet as hvd
+except ImportError:
+    pass
 
 from fp16_utils import FP16Trainer
 from pretraining_utils import get_model_loss, get_pretrain_data_npz, get_dummy_dataloader
@@ -81,6 +85,9 @@ parser.add_argument('--num_data_workers', type=int, default=8,
                          'Effective only if --raw is set.')
 parser.add_argument('--eval_use_npz', action='store_true',
                     help='Set to True if --data_eval provides npz files instead of raw text files')
+parser.add_argument('--backend', type=str, default='device',
+                    choices=['horovod', 'dist_sync_device', 'device'],
+                    help='Communication backend.')
 
 args = parser.parse_args()
 
@@ -90,27 +97,72 @@ logging.getLogger().setLevel(level)
 logging.info(args)
 os.environ['MXNET_GPU_MEM_POOL_TYPE'] = 'Round'
 
-try:
-    import horovod.mxnet as hvd
-except ImportError:
-    logging.info('horovod must be installed.')
-    exit()
-hvd.init()
-store = None
-num_workers = hvd.size()
-rank = hvd.rank()
-local_rank = hvd.local_rank()
-is_master_node = rank == local_rank
-if not args.use_avg_len and hvd.size() > 1:
-    logging.info('Specifying --use-avg-len and setting --batch_size with the '
-                 'target number of tokens would help improve training throughput.')
-logging.info('Using effective batch size = batch_size * accumulate * np = %d',
-             args.batch_size * args.accumulate * num_workers)
+class ParallelBERT(nlp.utils.Parallelizable):
+    """Data parallel BERT model.
 
+    Parameters
+    ----------
+    model : Block
+        The BERT model.
+    """
+    def __init__(self, model, mlm_loss, nsp_loss, vocab_size, rescale_factor, trainer=None):
+        self._model = model
+        self._mlm_loss = mlm_loss
+        self._nsp_loss = nsp_loss
+        self._vocab_size = vocab_size
+        self._rescale_factor = rescale_factor
+        self._trainer = trainer
 
-def train(data_train, data_eval, model, nsp_loss, mlm_loss, vocab_size, ctx):
+    def forward_backward(self, x):
+        """forward backward implementation"""
+        with mx.autograd.record():
+            (ls, next_sentence_label, classified, masked_id, decoded, \
+             masked_weight, ls1, ls2, valid_length) = forward(x, self._model, self._mlm_loss,
+                                                              self._nsp_loss, self._vocab_size,
+                                                              args.dtype)
+            ls = ls / self._rescale_factor
+        if args.dtype == 'float16':
+            self._trainer.backward(ls)
+        else:
+            ls.backward()
+        return ls, next_sentence_label, classified, masked_id, decoded, \
+               masked_weight, ls1, ls2, valid_length
+
+def init_comm(backend):
+    # backend specific implementation
+    if backend == 'horovod':
+        try:
+            import horovod.mxnet as hvd
+        except ImportError:
+            logging.info('horovod must be installed.')
+            exit()
+        hvd.init()
+        store = None
+        num_workers = hvd.size()
+        rank = hvd.rank()
+        local_rank = hvd.local_rank()
+        is_master_node = rank == local_rank
+        ctxs = [mx.gpu(local_rank)]
+    else:
+        # kvstore
+        store = mx.kv.create(backend)
+        num_workers = store.num_workers
+        rank = store.rank
+        local_rank = 0
+        is_master_node = rank == local_rank
+        # XXX try all gpus
+        ctxs = os.environ.get('NVIDIA_VISIBLE_DEVICES', '0')
+        ctxs = [mx.gpu(int(ctx)) for ctx in ctxs.split(',')]
+    return store, num_workers, rank, local_rank, is_master_node, ctxs
+
+backend = args.backend
+store, num_workers, rank, local_rank, is_master_node, ctxs = init_comm(backend)
+
+def train(data_train, data_eval, model, nsp_loss, mlm_loss, vocab_size):
     """Training function."""
-    hvd.broadcast_parameters(model.collect_params(), root_rank=0)
+    # backend specific implementation
+    if backend == 'horovod':
+        hvd.broadcast_parameters(model.collect_params(), root_rank=0)
 
     mlm_metric = nlp.metric.MaskedAccuracy()
     nsp_metric = nlp.metric.MaskedAccuracy()
@@ -128,7 +180,12 @@ def train(data_train, data_eval, model, nsp_loss, mlm_loss, vocab_size, ctx):
         loss_scale_param = {'scale_window': 2000 / num_workers}
     else:
         loss_scale_param = None
-    trainer = hvd.DistributedTrainer(model.collect_params(), 'bertadam', optim_params)
+
+    # backend specific implementation
+    if backend == 'horovod':
+        trainer = hvd.DistributedTrainer(model.collect_params(), 'bertadam', optim_params)
+    else:
+        trainer = mx.gluon.Trainer(model.collect_params(), 'bertadam', optim_params, update_on_kvstore=False)
     fp16_trainer = FP16Trainer(trainer, dynamic_loss_scale=dynamic_loss_scale,
                                loss_scaler_params=loss_scale_param)
 
@@ -165,6 +222,11 @@ def train(data_train, data_eval, model, nsp_loss, mlm_loss, vocab_size, ctx):
         target_shape = (args.batch_size, args.dummy_data_len)
         data_train = get_dummy_dataloader(data_train, target_shape)
 
+    parallel_model = ParallelBERT(model, mlm_loss, nsp_loss, vocab_size,
+                                  num_workers * accumulate, trainer=fp16_trainer)
+    num_ctxes = len(ctxs)
+    parallel = nlp.utils.Parallel(num_ctxes if num_ctxes > 1 else 0, parallel_model)
+
     while step_num < num_train_steps:
         for _, data_batch in enumerate(data_train):
             if step_num >= num_train_steps:
@@ -187,37 +249,37 @@ def train(data_train, data_eval, model, nsp_loss, mlm_loss, vocab_size, ctx):
             # load data
             if args.use_avg_len:
                 data_list = [[seq.as_in_context(context) for seq in shard]
-                             for context, shard in zip([ctx], data_batch)]
+                             for context, shard in zip(ctxs, data_batch)]
             else:
-                data_list = list(split_and_load(data_batch, [ctx]))
-            data = data_list[0]
+                data_list = list(split_and_load(data_batch, ctxs))
 
-            # forward
+            # data =
+            # input_id, masked_id, masked_position, masked_weight
+            # next_sentence_label, segment_id, valid_length
+
+            ns_label_list, ns_pred_list = [], []
+            mask_label_list, mask_pred_list, mask_weight_list = [], [], []
+
             with mx.autograd.record():
-                (ls, ns_label, classified, masked_id, decoded, \
-                 masked_weight, ls1, ls2, valid_len) = forward(data, model, mlm_loss,
-                                                               nsp_loss, vocab_size, args.dtype)
-                ls = ls / accumulate
-                # backward
-                if args.dtype == 'float16':
-                    fp16_trainer.backward(ls)
-                else:
-                    ls.backward()
-
-            running_mlm_loss += ls1.as_in_context(mx.cpu())
-            running_nsp_loss += ls2.as_in_context(mx.cpu())
-            running_num_tks += valid_len.sum().as_in_context(mx.cpu())
+                for data in data_list:
+                    parallel.put(data)
+                for _ in range(len(ctxs)):
+                    (_, next_sentence_label, classified, masked_id,
+                     decoded, masked_weight, ls1, ls2, valid_length) = parallel.get()
+                    ns_label_list.append(next_sentence_label)
+                    ns_pred_list.append(classified)
+                    mask_label_list.append(masked_id)
+                    mask_pred_list.append(decoded)
+                    mask_weight_list.append(masked_weight)
+                    running_mlm_loss += ls1.as_in_context(mx.cpu()) / len(ctxs)
+                    running_nsp_loss += ls2.as_in_context(mx.cpu()) / len(ctxs)
+                    running_num_tks += valid_length.sum().as_in_context(mx.cpu())
 
             # update
             if (batch_num + 1) % accumulate == 0:
-                # step() performs 3 things:
-                # 1. allreduce gradients from all workers
-                # 2. checking the global_norm of gradients and clip them if necessary
-                # 3. averaging the gradients and apply updates
-                fp16_trainer.step(1, max_norm=1*num_workers)
-
-            nsp_metric.update([ns_label], [classified])
-            mlm_metric.update([masked_id], [decoded], [masked_weight])
+                fp16_trainer.step(1, max_norm=1)
+            nsp_metric.update(ns_label_list, ns_pred_list)
+            mlm_metric.update(mask_label_list, mask_pred_list, mask_weight_list)
 
             # logging
             if (step_num + 1) % (args.log_interval) == 0 and (batch_num + 1) % accumulate == 0:
@@ -239,7 +301,7 @@ def train(data_train, data_eval, model, nsp_loss, mlm_loss, vocab_size, ctx):
                     # eval data is always based on a fixed npz file.
                     dataset_eval = get_pretrain_data_npz(data_eval, args.batch_size_eval, 1,
                                                          False, False, 1, vocab)
-                    evaluate(dataset_eval, model, nsp_loss, mlm_loss, len(vocab), [ctx],
+                    evaluate(dataset_eval, model, nsp_loss, mlm_loss, len(vocab), ctxs,
                              args.log_interval, args.dtype)
 
             batch_num += 1
@@ -255,7 +317,6 @@ def train(data_train, data_eval, model, nsp_loss, mlm_loss, vocab_size, ctx):
 if __name__ == '__main__':
     random_seed = random.randint(0, 1000)
     nlp.utils.mkdir(args.ckpt_dir)
-    ctx = mx.gpu(local_rank)
 
     dataset_name, vocab = args.dataset_name, None
     if args.sentencepiece:
@@ -266,7 +327,7 @@ if __name__ == '__main__':
             dataset_name = None
         vocab = nlp.vocab.BERTVocab.from_sentencepiece(args.sentencepiece)
 
-    model, nsp_loss, mlm_loss, vocab = get_model_loss([ctx], args.model, args.pretrained,
+    model, nsp_loss, mlm_loss, vocab = get_model_loss(ctxs, args.model, args.pretrained,
                                                       dataset_name, vocab, args.dtype,
                                                       ckpt_dir=args.ckpt_dir,
                                                       start_step=args.start_step)
@@ -312,10 +373,10 @@ if __name__ == '__main__':
         data_train = get_dataset_fn(args.data, args.batch_size, 1, True,
                                     args.use_avg_len, args.num_buckets,
                                     vocab, num_parts=num_parts, part_idx=part_idx)
-        train(data_train, data_eval, model, nsp_loss, mlm_loss, len(vocab), ctx)
+        train(data_train, data_eval, model, nsp_loss, mlm_loss, len(vocab))
     if data_eval:
         # eval data is always based on a fixed npz file.
         dataset_eval = get_pretrain_data_npz(data_eval, args.batch_size_eval, 1,
                                              False, False, 1, vocab)
-        evaluate(dataset_eval, model, nsp_loss, mlm_loss, len(vocab), [ctx],
+        evaluate(dataset_eval, model, nsp_loss, mlm_loss, len(vocab), ctxs,
                  args.log_interval, args.dtype)
