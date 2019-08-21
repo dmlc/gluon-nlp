@@ -245,7 +245,7 @@ def test_pretrain():
         # TODO(haibin) update test once MXNet 1.5 is released.
         from mxnet.ndarray.contrib import adamw_update
         arguments = ['--log_interval', '2', '--data_eval', './test/bert/data/*.npz',
-                     '--batch_size_eval', '8', '--ckpt_dir', './test/bert/ckpt', '--gpus', '0',
+                     '--batch_size_eval', '8', '--ckpt_dir', './test/bert/ckpt',
                      '--num_steps', '20', '--num_buckets', '1']
         # test training
         process = subprocess.check_call([sys.executable, './scripts/bert/run_pretraining.py',
