@@ -38,7 +38,7 @@ from gluonnlp.data.batchify import Tuple, Stack, Pad
 from gluonnlp.metric import MaskedAccuracy
 
 __all__ = ['get_model_loss', 'get_pretrain_data_npz', 'get_dummy_dataloader',
-           'save_parameters', 'save_states', 'evaluate', 'forward', 'split_and_load',
+           'save_parameters', 'save_states', 'evaluate', 'split_and_load',
            'get_argparser', 'get_pretrain_data_text', 'generate_dev_set', 'profile']
 
 def get_model_loss(ctx, model, pretrained, dataset_name, vocab, dtype,

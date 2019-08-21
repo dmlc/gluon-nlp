@@ -380,5 +380,4 @@ if __name__ == '__main__':
         # eval data is always based on a fixed npz file.
         dataset_eval = get_pretrain_data_npz(data_eval, args.batch_size_eval, 1,
                                              False, False, 1, vocab)
-        evaluate(dataset_eval, model, len(vocab), ctxs,
-                 args.log_interval, args.dtype)
+        evaluate(dataset_eval, model, ctxs, args.log_interval, args.dtype)
