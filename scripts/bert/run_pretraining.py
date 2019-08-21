@@ -97,7 +97,7 @@ logging.getLogger().setLevel(level)
 logging.info(args)
 os.environ['MXNET_GPU_MEM_POOL_TYPE'] = 'Round'
 
-class ParallelBERT(nlp.utils.Parallelizable):
+class DataParallelBERT(nlp.utils.Parallelizable):
     """Data parallel BERT model.
 
     Parameters
@@ -105,9 +105,8 @@ class ParallelBERT(nlp.utils.Parallelizable):
     model : Block
         The BERT model.
     """
-    def __init__(self, model, rescale_factor, trainer=None):
+    def __init__(self, model, trainer):
         self._model = model
-        self._rescale_factor = rescale_factor
         self._trainer = trainer
 
     def forward_backward(self, x):
@@ -121,7 +120,7 @@ class ParallelBERT(nlp.utils.Parallelizable):
                               next_sentence_label, segment_id, valid_length)
             classified, decoded, ls1, ls2 = out
             ls = ls1 + ls2
-            ls = ls / self._rescale_factor
+            ls = ls / args.accumulate
         if args.dtype == 'float16':
             self._trainer.backward(ls)
         else:
@@ -227,7 +226,7 @@ def train(data_train, data_eval, model):
         target_shape = (args.batch_size, args.dummy_data_len)
         data_train = get_dummy_dataloader(data_train, target_shape)
 
-    parallel_model = ParallelBERT(model, num_workers * accumulate, trainer=fp16_trainer)
+    parallel_model = DataParallelBERT(model, trainer=fp16_trainer)
     num_ctxes = len(ctxs)
     parallel = nlp.utils.Parallel(num_ctxes if num_ctxes > 1 else 0, parallel_model)
 
@@ -277,7 +276,7 @@ def train(data_train, data_eval, model):
 
             # update
             if (batch_num + 1) % accumulate == 0:
-                fp16_trainer.step(1, max_norm=1)
+                fp16_trainer.step(1, max_norm=1.0 * num_workers)
             nsp_metric.update(ns_label_list, ns_pred_list)
             mlm_metric.update(mask_label_list, mask_pred_list, mask_weight_list)
 
