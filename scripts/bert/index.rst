@@ -75,7 +75,7 @@ Additionally, GluonNLP supports the "`RoBERTa <https://arxiv.org/abs/1907.11692>
 
 .. hint::
 
-   The pre-training, fine-tunining and export scripts are available `here. </model_zoo/bert.zip>`__
+   The pre-training, fine-tunining and export scripts are available `here. </_downloads/bert.zip>`__
 
 
 Sentence Classification
