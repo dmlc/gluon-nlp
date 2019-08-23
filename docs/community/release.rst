@@ -8,6 +8,7 @@ Below is the checklist for releasing a new minor version of GluonNLP:
 - Bump the version in release branch to $major.$minor.$patch
 - Draft the release note, highlight important talks/models/features, as well as breaking change
 - Publish the release on Github, creating a tag $major.$minor.$patch
-- Refresh website
+- Check the content at http://gluon-nlp.mxnet.io/$major.$minor.x/index.html
+- Upload and refresh the default version website
 - Prepare pip package
 - Make annoucement (Twitter, etc)
