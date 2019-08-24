@@ -18,30 +18,8 @@
 # under the License.
 
 # pylint: disable=wildcard-import
-"""NLP toolkit."""
+"""NLP LR scheduler."""
 
-from . import loss
-from . import data
-from . import embedding
-from . import model
-from . import metric
-from . import utils
-from . import vocab
-from . import optimizer
-from . import initializer
-from .vocab import Vocab
-from . import lr_scheduler
+from .reduce_lr_on_plateau import *
 
-__version__ = '0.8.0.dev'
-
-__all__ = ['data',
-           'model',
-           'embedding',
-           'Vocab',
-           'vocab',
-           'loss',
-           'initializer',
-           'optimizer',
-           'utils',
-           'metric',
-           'lr_scheduler']
+__all__ = reduce_lr_on_plateau.__all__
