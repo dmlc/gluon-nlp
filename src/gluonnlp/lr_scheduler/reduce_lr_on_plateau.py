@@ -78,15 +78,15 @@ class ReduceLROnPlateau:
     Examples
     --------
 
-    >>> model = nn.Dense(100)
+    >>> model = gluon.nn.Dense(10)
     >>> model.initialize()
-    >>> trainer = mxnet.gluon.Trainer(model.collect_params(), 'SGD')
+    >>> trainer = gluon.Trainer(model.collect_params(), 'SGD')
     >>> scheduler = ReduceLROnPlateau(trainer, 'min')
-    >>> for epoch in range(10):
-    >>>     train(...)
-    >>>     val_loss = validate(...)
+    >>> for epoch in range(10): # doctest: +SKIP
+    >>>     train(...) # doctest: +SKIP
+    >>>     val_loss = validate(...) # doctest: +SKIP
     >>>     # Note that step should be called after validate()
-    >>>     scheduler.step(val_loss)
+    >>>     scheduler.step(val_loss) # doctest: +SKIP
     """
 
     def __init__(self,
@@ -137,7 +137,7 @@ class ReduceLROnPlateau:
         self.num_bad_epochs = 0
 
     def step(self, metric, epoch=None):
-        r"""Functions to be executed after model evaluation
+        r"""Function to be executed after model evaluation
 
         Parameters
         ----------
