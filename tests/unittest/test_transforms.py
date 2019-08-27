@@ -32,6 +32,11 @@ from gluonnlp.model.utils import _load_vocab
 from gluonnlp.vocab import BERTVocab, Vocab
 
 
+@pytest.fixture(params=[True, False])
+def optimize(request):
+    return request.param
+
+
 def test_clip_sequence():
     for length in [10, 200]:
         clip_seq = t.ClipSequence(length=length)
@@ -186,7 +191,7 @@ def test_bertbasictokenizer():
         "HeLLo", "!", "how", "Are", "yoU", "?"]
 
 
-def test_berttokenizer():
+def test_berttokenizer(optimize):
 
     # test WordpieceTokenizer
     vocab_tokens = ["want", "##want", "##ed", "wa", "un", "runn", "##ing"]
@@ -194,7 +199,7 @@ def test_berttokenizer():
         count_tokens(vocab_tokens),
         reserved_tokens=["[CLS]", "[SEP]"],
         unknown_token="[UNK]", padding_token=None, bos_token=None, eos_token=None)
-    tokenizer = t.BERTTokenizer(vocab=vocab)
+    tokenizer = t.BERTTokenizer(vocab=vocab, optimize=optimize)
 
     assert tokenizer(u"unwanted running") == [
         "un", "##want", "##ed", "runn", "##ing"]
@@ -210,18 +215,18 @@ def test_berttokenizer():
         count_tokens(vocab_tokens),
         reserved_tokens=["[CLS]", "[SEP]"],
         unknown_token="[UNK]", padding_token=None, bos_token=None, eos_token=None)
-    tokenizer = t.BERTTokenizer(vocab=vocab)
+    tokenizer = t.BERTTokenizer(vocab=vocab, optimize=optimize)
     tokens = tokenizer(u"UNwant\u00E9d,running")
     assert tokens == ["un", "##want", "##ed", ",", "runn", "##ing"]
 
 
-def test_bert_sentences_transform():
+def test_bert_sentences_transform(optimize):
     text_a = u'is this jacksonville ?'
     text_b = u'no it is not'
     vocab_tokens = ['is', 'this', 'jack', '##son', '##ville', '?', 'no', 'it', 'is', 'not']
 
     bert_vocab = BERTVocab(count_tokens(vocab_tokens))
-    tokenizer = t.BERTTokenizer(vocab=bert_vocab)
+    tokenizer = t.BERTTokenizer(vocab=bert_vocab, optimize=optimize)
 
     # test BERTSentenceTransform
     bert_st = t.BERTSentenceTransform(tokenizer, 15, pad=True, pair=True)

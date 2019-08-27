@@ -5,6 +5,7 @@ import re
 import shutil
 import sys
 from setuptools import setup, find_packages
+from Cython.Build import cythonize
 
 
 def read(*names, **kwargs):
@@ -82,4 +83,5 @@ setup(
             'flaky',
         ],
     },
+    ext_modules=cythonize("src/gluonnlp/data/*.pyx")
 )

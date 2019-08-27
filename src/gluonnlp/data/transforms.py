@@ -30,6 +30,7 @@ __all__ = [
 ]
 
 import errno
+import functools
 import io
 import os
 import time
@@ -38,11 +39,13 @@ import zipfile
 from typing import List, Optional
 
 import mxnet as mx
-from mxnet.gluon.utils import _get_repo_url, check_sha1, download
 import numpy as np
+from mxnet.gluon.utils import _get_repo_url, check_sha1, download
 
+from .._constants import DEFAULT_CACHE_SIZE
 from ..base import get_home_dir
 from .utils import _extract_archive
+from .wordpiece import tokenize
 
 
 class ClipSequence:
@@ -810,10 +813,11 @@ class BERTTokenizer:
 
     _special_prefix = '##'
 
-    def __init__(self, vocab, lower=True, max_input_chars_per_word=200):
+    def __init__(self, vocab, lower=True, max_input_chars_per_word=200, optimize=False):
         self.vocab = vocab
         self.max_input_chars_per_word = max_input_chars_per_word
         self.basic_tokenizer = BERTBasicTokenizer(lower=lower)
+        self.optimize = optimize
 
     def __call__(self, sample):
         """
@@ -839,6 +843,10 @@ class BERTTokenizer:
 
         return split_tokens
 
+    @functools.lru_cache(maxsize=DEFAULT_CACHE_SIZE)
+    def _word_to_wordpiece_optimized(self, text):
+        return tokenize(text, self.vocab, self.vocab.unknown_token, self.max_input_chars_per_word)
+
     def _tokenize_wordpiece(self, text):
         """Tokenizes a piece of text into its word pieces.
 
@@ -859,8 +867,16 @@ class BERTTokenizer:
         ret : A list of wordpiece tokens.
         """
 
+        # case where text is a single token
+        whitespace_tokenized_tokens = self.basic_tokenizer._whitespace_tokenize(text)
+        if self.optimize and len(whitespace_tokenized_tokens) == 1:
+            return self._word_to_wordpiece_optimized(whitespace_tokenized_tokens[0])
+
         output_tokens = []
-        for token in self.basic_tokenizer._whitespace_tokenize(text):
+        for token in whitespace_tokenized_tokens:
+            if self.optimize:
+                output_tokens.extend(self._word_to_wordpiece_optimized(token))
+                continue
             chars = list(token)
             if len(chars) > self.max_input_chars_per_word:
                 output_tokens.append(self.vocab.unknown_token)
