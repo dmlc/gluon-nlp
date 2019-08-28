@@ -43,8 +43,9 @@ import time
 
 import mxnet as mx
 import gluonnlp as nlp
-from hybrid_bert import get_hybrid_model
-from hybrid_bert import HybridBERTClassifier, HybridBERTRegression, HybridBERTForQA
+from gluonnlp.model import get_model
+from model.classification import BERTClassifier, BERTRegression
+from model.qa import BertForQA
 
 parser = argparse.ArgumentParser(description='Export hybrid BERT base model.')
 
@@ -126,7 +127,7 @@ log.info(args)
 seq_length = args.seq_length
 
 if args.task == 'classification':
-    bert, _ = get_hybrid_model(
+    bert, _ = get_model(
         name=args.model_name,
         dataset_name=args.dataset_name,
         pretrained=False,
@@ -134,9 +135,9 @@ if args.task == 'classification':
         use_decoder=False,
         use_classifier=False,
         seq_length=args.seq_length)
-    net = HybridBERTClassifier(bert, num_classes=2, dropout=args.dropout)
+    net = BERTClassifier(bert, num_classes=2, dropout=args.dropout)
 elif args.task == 'regression':
-    bert, _ = get_hybrid_model(
+    bert, _ = get_model(
         name=args.model_name,
         dataset_name=args.dataset_name,
         pretrained=False,
@@ -144,9 +145,9 @@ elif args.task == 'regression':
         use_decoder=False,
         use_classifier=False,
         seq_length=args.seq_length)
-    net = HybridBERTRegression(bert, dropout=args.dropout)
+    net = BERTRegression(bert, dropout=args.dropout)
 elif args.task == 'question_answering':
-    bert, _ = get_hybrid_model(
+    bert, _ = get_model(
         name=args.model_name,
         dataset_name=args.dataset_name,
         pretrained=False,
@@ -154,7 +155,7 @@ elif args.task == 'question_answering':
         use_decoder=False,
         use_classifier=False,
         seq_length=args.seq_length)
-    net = HybridBERTForQA(bert)
+    net = BertForQA(bert)
 else:
     raise ValueError('unknown task: %s'%args.task)
 
@@ -163,7 +164,7 @@ if args.model_parameters:
 else:
     net.initialize()
     warnings.warn('--model_parameters is not provided. The parameter checkpoint (.params) '
-                  'file will be created based on default parameter intialization.')
+                  'file will be created based on default parameter initialization.')
 
 net.hybridize(static_alloc=True, static_shape=True)
 
