@@ -69,7 +69,8 @@ def test_glove():
 @pytest.mark.gpu
 @pytest.mark.integration
 @pytest.mark.parametrize('fasttextloadngrams', [True, False])
-def test_embedding_evaluate_pretrained(fasttextloadngrams):
+@pytest.mark.parametrize('maxvocabsize', [None, 50000])
+def test_embedding_evaluate_pretrained(fasttextloadngrams, maxvocabsize):
     cmd = [
         sys.executable, './scripts/word_embeddings/evaluate_pretrained.py',
         '--embedding-name', 'fasttext', '--embedding-source', 'wiki.simple',
@@ -79,6 +80,8 @@ def test_embedding_evaluate_pretrained(fasttextloadngrams):
     cmd += ['--analogy-datasets', 'GoogleAnalogyTestSet']
     if fasttextloadngrams:
         cmd.append('--fasttext-load-ngrams')
+    if maxvocabsize:
+        cmd += ['--analogy-max-vocab-size', str(maxvocabsize)]
 
     subprocess.check_call(cmd)
     time.sleep(5)

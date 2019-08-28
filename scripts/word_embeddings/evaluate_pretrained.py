@@ -180,12 +180,11 @@ def enforce_max_size(token_embedding, size):
     if size and len(token_embedding.idx_to_token) > size:
         assert size > 0
         size = size + 1 if token_embedding.unknown_token is not None else size
-        token_embedding._idx_to_token = token_embedding._idx_to_token[:size]
-        token_embedding._idx_to_vec = token_embedding._idx_to_vec[:size]
-        token_embedding._token_to_idx = {
-            token: idx
-            for idx, token in enumerate(token_embedding._idx_to_token)
-        }
+        token_embedding = nlp.embedding.TokenEmbedding(
+            unknown_token=token_embedding.unknown_token,
+            idx_to_token=token_embedding._idx_to_token[:size],
+            idx_to_vec=token_embedding._idx_to_vec[:size])
+    return token_embedding
 
 
 if __name__ == '__main__':
@@ -205,13 +204,16 @@ if __name__ == '__main__':
         token_embedding_ = load_embedding_from_path(args_)
         name = ''
 
-    enforce_max_size(token_embedding_, args_.analogy_max_vocab_size)
+    token_embedding_ = enforce_max_size(
+        token_embedding_, args_.analogy_max_vocab_size)
     known_tokens = set(token_embedding_.idx_to_token)
 
     if args_.similarity_datasets:
         with utils.print_time('find relevant tokens for similarity'):
             tokens = evaluation.get_similarity_task_tokens(args_)
-        vocab = nlp.Vocab(nlp.data.count_tokens(tokens))
+        vocab = nlp.Vocab(nlp.data.count_tokens(tokens),
+                          unknown_token=token_embedding_.unknown_token,
+                          padding_token=None, bos_token=None, eos_token=None)
         with utils.print_time('set {} embeddings'.format(len(tokens))):
             vocab.set_embedding(token_embedding_)
         evaluation.evaluate_similarity(
@@ -225,7 +227,9 @@ if __name__ == '__main__':
                 tokens.update(token_embedding_.idx_to_token[1:])
             else:
                 tokens.update(token_embedding_.idx_to_token)
-        vocab = nlp.Vocab(nlp.data.count_tokens(tokens))
+        vocab = nlp.Vocab(nlp.data.count_tokens(tokens),
+                          unknown_token=token_embedding_.unknown_token,
+                          padding_token=None, bos_token=None, eos_token=None)
         with utils.print_time('set {} embeddings'.format(len(tokens))):
             vocab.set_embedding(token_embedding_)
         evaluation.evaluate_analogy(
