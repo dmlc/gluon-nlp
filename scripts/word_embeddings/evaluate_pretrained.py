@@ -183,7 +183,8 @@ def enforce_max_size(token_embedding, size):
         token_embedding = nlp.embedding.TokenEmbedding(
             unknown_token=token_embedding.unknown_token,
             idx_to_token=token_embedding._idx_to_token[:size],
-            idx_to_vec=token_embedding._idx_to_vec[:size])
+            idx_to_vec=token_embedding._idx_to_vec[:size],
+            unknown_lookup=token_embedding.unknown_lookup)
     return token_embedding
 
 
@@ -206,6 +207,8 @@ if __name__ == '__main__':
 
     token_embedding_ = enforce_max_size(
         token_embedding_, args_.analogy_max_vocab_size)
+    if args_.fasttext_load_ngrams:
+        assert token_embedding_.unknown_lookup is not None
     known_tokens = set(token_embedding_.idx_to_token)
 
     if args_.similarity_datasets:
