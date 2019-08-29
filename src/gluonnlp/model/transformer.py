@@ -989,10 +989,7 @@ class TransformerDecoder(HybridBlock, Seq2SeqDecoder):
         """
         mem_value = encoder_outputs
         decoder_states = [mem_value]
-        mem_length = mem_value.shape[1]
         if encoder_valid_length is not None:
-            dtype = encoder_valid_length.dtype
-            ctx = encoder_valid_length.context
             mem_masks = mx.nd.cast(encoder_valid_length, dtype='int32')
             decoder_states.append(mem_masks)
         self._encoder_valid_length = encoder_valid_length

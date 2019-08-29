@@ -29,7 +29,7 @@ from mxnet.gluon.block import HybridBlock
 from mxnet.gluon import nn
 from .block import L2Normalization
 
-def _masked_softmax(F, att_score, mask, dtype):
+def _masked_softmax(F, att_score, mask):
     """Ignore the masked elements when calculating the softmax
 
     Parameters
@@ -62,12 +62,7 @@ class AttentionCell(HybridBlock):
 
     """
     def __init__(self, prefix=None, params=None):
-        self._dtype = np.float32
         super(AttentionCell, self).__init__(prefix=prefix, params=params)
-
-    def cast(self, dtype):
-        self._dtype = dtype
-        super(AttentionCell, self).cast(dtype)
 
     def _compute_weight(self, F, query, key, mask=None):
         """Compute attention weights based on the query and the keys
@@ -356,7 +351,7 @@ class MLPAttentionCell(AttentionCell):
                                    F.expand_dims(mapped_key, axis=1))
         mid_feat = self._act(mid_feat)
         att_score = self._attention_score(mid_feat).reshape(shape=(0, 0, 0))
-        att_weights = self._dropout_layer(_masked_softmax(F, att_score, mask, self._dtype))
+        att_weights = self._dropout_layer(_masked_softmax(F, att_score, mask))
         return att_weights
 
 
@@ -463,5 +458,5 @@ class DotProductAttentionCell(AttentionCell):
 
         att_score = F.batch_dot(query, key, transpose_b=True)
 
-        att_weights = self._dropout_layer(_masked_softmax(F, att_score, mask, self._dtype))
+        att_weights = self._dropout_layer(_masked_softmax(F, att_score, mask))
         return att_weights
