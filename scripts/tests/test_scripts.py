@@ -101,11 +101,11 @@ def test_embedding_evaluate_from_path(evaluateanalogies, maxvocabsize):
         sys.executable, './scripts/word_embeddings/evaluate_pretrained.py',
         '--embedding-path', path, '--gpu', '0']
     if evaluateanalogies:
-        cmd += ['--similarity-datasets=']
+        cmd += ['--similarity-datasets']
         cmd += ['--analogy-datasets', 'GoogleAnalogyTestSet']
     else:
         cmd += ['--similarity-datasets', 'WordSim353']
-        cmd += ['--analogy-datasets=']
+        cmd += ['--analogy-datasets']
     if maxvocabsize is not None:
         cmd += ['--analogy-max-vocab-size', str(maxvocabsize)]
     subprocess.check_call(cmd)
