@@ -176,6 +176,8 @@ class Pad:
         Whether to return the valid length in the output.
     dtype : str or numpy.dtype, default None
         The value type of the output. If it is set to None, the input data type is used.
+    round_to : int, default None
+        If specified, the padded dimension will be rounded to be multiple of this argument.
 
     Examples
     --------
