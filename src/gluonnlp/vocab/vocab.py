@@ -400,6 +400,8 @@ class Vocab:
             'unknown_token set.'
 
         new_vec_len = sum(embs.idx_to_vec.shape[1] for embs in embeddings)
+        # TODO(leezu): Remove once np shape is used by default
+        assert len(self), "Empty vocab not yet supported"
         new_idx_to_vec = nd.zeros(shape=(len(self), new_vec_len))
 
         col_start = 0
