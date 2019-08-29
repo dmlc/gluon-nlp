@@ -17,11 +17,10 @@
 # under the License.
 
 """RAdam optimizer"""
-
+import math
 from mxnet.optimizer import Optimizer, register
 from mxnet.ndarray import zeros, NDArray
 from mxnet.ndarray import square, power, sqrt, maximum, minimum, clip
-import math
 
 __all__ = ['RAdam']
 
@@ -70,19 +69,18 @@ class RAdam(Optimizer):
         mean, var = state
         mean[:] = self.beta1 * mean + (1. - self.beta1) * grad
         var[:] = self.beta2 * var + (1. - self.beta2) * square(grad)
-        
         mean_hat = mean / (1. - power(self.beta1, t))
-        
         buffered = self.buffer[int(t % 10)]
+
         if t == buffered[0]:
             N_sma, step_size = buffered[1], buffered[2]
         else:
             buffered[0] = t
             beta2_t = power(self.beta2, t)
-            N_sma_max = 2 / (1 -self. beta2) - 1
+            N_sma_max = 2 / (1 - self. beta2) - 1
             N_sma = N_sma_max - 2 * t * beta2_t / (1 - beta2_t)
             buffered[1] = N_sma
-            # more conservative since it's an approximated value            
+            # more conservative since it's an approximated value      
             if N_sma >= 5:
                 step_size = lr * math.sqrt((1 - beta2_t) * (N_sma - 4) / (N_sma_max - 4) * (N_sma - 2) / N_sma * N_sma_max / (N_sma_max - 2)) / (1 - self.beta1 ** t)
             else:
@@ -91,15 +89,11 @@ class RAdam(Optimizer):
         
         if wd != 0:
             weight[:] -= lr * wd * weight[:]
-        
+
         # update weight
         # more conservative since it's an approximated value
         if N_sma >= 5:
-            denom = sqrt(var) + self.epsilon
-            tmp = step_size * mean_hat / denom      
+            denom = sqrt(var) + self.epsilon   
             weight[:] -= step_size * mean_hat / denom
-
         else:
-
-            tmp = step_size * mean_hat
             weight[:] -= step_size * mean_hat
