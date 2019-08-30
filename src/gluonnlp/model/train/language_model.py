@@ -20,12 +20,12 @@
 __all__ = ['AWDRNN', 'StandardRNN', 'BigRNN']
 
 from mxnet import init, nd, autograd
-from mxnet.gluon import nn, Block, contrib, rnn
+from mxnet.gluon import nn, Block, contrib, rnn, sym
 
 from ..utils import _get_rnn_layer, apply_weight_drop
 from ..sampled_block import ISDense, SparseISDense
 
-class AWDRNN(Block):
+class AWDRNN(HybridBlock):
     """AWD language model by salesforce.
 
     Reference: https://github.com/salesforce/awd-lstm-lm
@@ -116,12 +116,13 @@ class AWDRNN(Block):
     def state_info(self, *args, **kwargs):
         return [c.state_info(*args, **kwargs) for c in self.encoder]
 
-    def forward(self, inputs, begin_state=None): # pylint: disable=arguments-differ
-        """Implement the forward computation that the awd language model and cache model use.
+    def __call__(self, inputs, begin_state=None):
+        #pylint: disable=arguments-differ, dangerous-default-value
+        """Encode the inputs given the states and valid sequence length.
 
         Parameters
         -----------
-        inputs : NDArray
+        inputs : NDArray or Symbol
             input tensor with shape `(sequence_length, batch_size)`
             when `layout` is "TNC".
         begin_state : list
@@ -144,9 +145,48 @@ class AWDRNN(Block):
             to num_layers. The shape of every encoder's dropped output
             `(sequence_length, batch_size, num_hidden)`
         """
+        # XXX Temporary hack for hybridization as hybridblock does not support None inputs
+        begin_state = [] if begin_state is None else begin_state
+        return super(AWDRNN, self).__call__(inputs, begin_state)
+
+    def hybrid_forward(self, F, inputs, begin_state=None): # pylint: disable=arguments-differ
+        """Implement the forward computation that the awd language model and cache model use.
+
+        Parameters
+        -----------
+        inputs : NDArray or Symbol
+            input tensor with shape `(sequence_length, batch_size)`
+            when `layout` is "TNC".
+        begin_state : list
+            initial recurrent state tensor with length equals to num_layers.
+            the initial state with shape `(1, batch_size, num_hidden)`
+
+        Returns
+        --------
+        out: NDArray or Symbol
+            output tensor with shape `(sequence_length, batch_size, input_size)`
+            when `layout` is "TNC".
+        out_states: list
+            output recurrent state tensor with length equals to num_layers.
+            the state with shape `(1, batch_size, num_hidden)`
+        encoded_raw: list
+            The list of outputs of the model's encoder with length equals to num_layers.
+            the shape of every encoder's output `(sequence_length, batch_size, num_hidden)`
+        encoded_dropped: list
+            The list of outputs with dropout of the model's encoder with length equals
+            to num_layers. The shape of every encoder's dropped output
+            `(sequence_length, batch_size, num_hidden)`
+        """
+        # XXX Temporary hack for hybridization as hybridblock does not support None inputs
+        if isinstance(begin_state, list) and len(begin_state) == 0:
+            begin_state = None
+
         encoded = self.embedding(inputs)
         if not begin_state:
-            begin_state = self.begin_state(batch_size=inputs.shape[1])
+            if F == nd:
+                begin_state = self.begin_state(batch_size=inputs.shape[1])
+            else:
+                begin_state = self.begin_state(batch_size=0, func=mx.sym.zeros)
         out_states = []
         encoded_raw = []
         encoded_dropped = []
@@ -155,10 +195,10 @@ class AWDRNN(Block):
             encoded_raw.append(encoded)
             out_states.append(state)
             if self._drop_h and i != len(self.encoder) - 1:
-                encoded = nd.Dropout(encoded, p=self._drop_h, axes=(0,))
+                encoded = F.Dropout(encoded, p=self._drop_h, axes=(0,))
                 encoded_dropped.append(encoded)
         if self._dropout:
-            encoded = nd.Dropout(encoded, p=self._dropout, axes=(0,))
+            encoded = F.Dropout(encoded, p=self._dropout, axes=(0,))
         encoded_dropped.append(encoded)
         with autograd.predict_mode():
             out = self.decoder(encoded)
