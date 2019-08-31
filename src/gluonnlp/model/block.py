@@ -20,8 +20,6 @@
 """Building blocks and utility for models."""
 __all__ = ['RNNCellLayer', 'L2Normalization', 'GELU']
 
-import math
-import warnings
 from mxnet import ndarray
 from mxnet.gluon import Block, HybridBlock, nn
 
