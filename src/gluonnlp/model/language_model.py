@@ -102,7 +102,7 @@ class AWDRNN(train.AWDRNN):
             if F == nd:
                 begin_state = self.begin_state(batch_size=inputs.shape[1])
             else:
-                begin_state = self.begin_state(batch_size=0, func=mx.sym.zeros)
+                begin_state = self.begin_state(batch_size=0, func=sym.zeros)
         out_states = []
         for i, (e, s) in enumerate(zip(self.encoder, begin_state)):
             encoded, state = e(encoded, s)
