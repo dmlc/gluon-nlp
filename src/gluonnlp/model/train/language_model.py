@@ -20,7 +20,7 @@
 __all__ = ['AWDRNN', 'StandardRNN', 'BigRNN']
 
 from mxnet import init, nd, autograd
-from mxnet.gluon import nn, Block, contrib, rnn, sym
+from mxnet.gluon import nn, Block, HybridBlock, contrib, rnn, sym
 
 from ..utils import _get_rnn_layer, apply_weight_drop
 from ..sampled_block import ISDense, SparseISDense
@@ -186,7 +186,7 @@ class AWDRNN(HybridBlock):
             if F == nd:
                 begin_state = self.begin_state(batch_size=inputs.shape[1])
             else:
-                begin_state = self.begin_state(batch_size=0, func=mx.sym.zeros)
+                begin_state = self.begin_state(batch_size=0, func=sym.zeros)
         out_states = []
         encoded_raw = []
         encoded_dropped = []
