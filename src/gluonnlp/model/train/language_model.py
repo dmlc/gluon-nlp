@@ -20,7 +20,8 @@
 __all__ = ['AWDRNN', 'StandardRNN', 'BigRNN']
 
 from mxnet import init, nd, autograd
-from mxnet.gluon import nn, Block, HybridBlock, contrib, rnn, sym
+from mxnet.gluon import nn, Block, HybridBlock, contrib, rnn
+from mxnet import sym
 
 from ..utils import _get_rnn_layer, apply_weight_drop
 from ..sampled_block import ISDense, SparseISDense
