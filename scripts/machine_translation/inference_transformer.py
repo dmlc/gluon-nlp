@@ -110,8 +110,8 @@ parser.add_argument('--save_dir', type=str, default='transformer_out',
 parser.add_argument('--gpus', type=str,
                     help='list of gpus to run, e.g. 0 or 0,2,5. empty means using cpu.'
                          '(using single gpu is suggested)')
-parser.add_argument('--model_parameter', type=str, default=' ',
-                    help='provide model parameter for inference.')
+parser.add_argument('--model_parameter', type=str, default=' ', required=True,
+                    help='model parameter for inference, must be provided.')
 
 args = parser.parse_args()
 logging_config(args.save_dir)
@@ -279,7 +279,5 @@ def inference():
 
 
 if __name__ == '__main__':
-    if args.model_parameter:
-        inference()
-    else:
-        logging.error('Do inference but model parameter not provide!')
+    inference()
+    

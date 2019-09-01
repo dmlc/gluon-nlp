@@ -57,7 +57,6 @@ Use the following commands to inference the Transformer model on the WMT14 test 
                             --src_lang en \
                             --tgt_lang de \
                             --batch_size 2700 \
-                            --num_accumulated 16 \
                             --scaled --average_start 5 \
                             --num_buckets 20 \
                             --bucket_scheme exp \
