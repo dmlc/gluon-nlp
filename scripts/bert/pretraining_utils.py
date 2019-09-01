@@ -277,7 +277,7 @@ class BERTLoaderTransform:
 
 def get_pretrain_data_npz(data, batch_size, num_ctxes, shuffle, use_avg_len,
                           num_buckets, vocab, num_parts=1, part_idx=0):
-    """create dataset for pretraining based on pre-processed npz files."""
+    """Create dataset for pretraining based on pre-processed npz files."""
     # handle commas in the provided path
     num_files = len(nlp.utils.glob(data))
     logging.info('%d files found.', num_files)
@@ -337,7 +337,6 @@ def log(begin_time, running_num_tks, running_mlm_loss, running_nsp_loss, step_nu
     running_nsp_loss = running_nsp_loss / log_interval
     lr = trainer.learning_rate if trainer else 0
     # pylint: disable=line-too-long
-
     logging.info('[step {}]\tmlm_loss={:7.5f}\tmlm_acc={:4.2f}\tnsp_loss={:5.2f}\tnsp_acc={:5.2f}\tthroughput={:.1f}K tks/s\tlr={:.7f} time={:.2f}, latency={:.1f} ms/batch'
                  .format(step_num, running_mlm_loss.asscalar(), mlm_metric.get()[1] * 100, running_nsp_loss.asscalar(),
                          nsp_metric.get()[1] * 100, throughput.asscalar(), lr, duration, duration*1000/log_interval))

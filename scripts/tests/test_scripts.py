@@ -210,7 +210,7 @@ def test_bert_embedding(use_pretrained):
 @pytest.mark.gpu
 @pytest.mark.remote_required
 @pytest.mark.integration
-def test_pretrain_create():
+def test_bert_pretrain_create():
     # test data creation
     process = subprocess.check_call([sys.executable, './scripts/bert/create_pretraining_data.py',
                                      '--input_file', './scripts/bert/sample_text.txt',
@@ -229,7 +229,7 @@ def test_pretrain_create():
 @pytest.mark.gpu
 @pytest.mark.remote_required
 @pytest.mark.integration
-def test_pretrain():
+def test_bert_pretrain():
     # test data creation
     process = subprocess.check_call([sys.executable, './scripts/bert/create_pretraining_data.py',
                                      '--input_file', './scripts/bert/sample_text.txt',
@@ -241,44 +241,38 @@ def test_pretrain():
                                      '--masked_lm_prob', '0.15',
                                      '--short_seq_prob', '0.1',
                                      '--verbose'])
-    try:
-        # TODO(haibin) update test once MXNet 1.5 is released.
-        from mxnet.ndarray.contrib import adamw_update
-        arguments = ['--log_interval', '2', '--data_eval', './test/bert/data/*.npz',
-                     '--batch_size_eval', '8', '--ckpt_dir', './test/bert/ckpt',
-                     '--num_steps', '20', '--num_buckets', '1']
-        # test training
-        process = subprocess.check_call([sys.executable, './scripts/bert/run_pretraining.py',
-                                         '--dtype', 'float32',
-                                         '--data', './test/bert/data/*.npz',
-                                         '--batch_size', '32',
-                                         '--lr', '2e-5',
-                                         '--warmup_ratio', '0.5',
-                                         '--pretrained'] + arguments)
-        # test evaluation
-        process = subprocess.check_call([sys.executable, './scripts/bert/run_pretraining.py',
-                                         '--dtype', 'float32',
-                                         '--pretrained'] + arguments)
+    arguments = ['--log_interval', '2', '--data_eval', './test/bert/data/*.npz',
+                 '--batch_size_eval', '8', '--ckpt_dir', './test/bert/ckpt',
+                 '--num_steps', '20', '--num_buckets', '1']
+    # test training
+    process = subprocess.check_call([sys.executable, './scripts/bert/run_pretraining.py',
+                                     '--dtype', 'float32',
+                                     '--data', './test/bert/data/*.npz',
+                                     '--batch_size', '32',
+                                     '--lr', '2e-5',
+                                     '--warmup_ratio', '0.5',
+                                     '--pretrained'] + arguments)
+    # test evaluation
+    process = subprocess.check_call([sys.executable, './scripts/bert/run_pretraining.py',
+                                     '--dtype', 'float32',
+                                     '--pretrained'] + arguments)
 
-        # test mixed precision training and use-avg-len
-        from mxnet.ndarray.contrib import mp_adamw_update
-        process = subprocess.check_call([sys.executable, './scripts/bert/run_pretraining.py',
-                                         '--data', './test/bert/data/*.npz',
-                                         '--batch_size', '4096',
-                                         '--use_avg_len',
-                                         '--lr', '2e-5',
-                                         '--warmup_ratio', '0.5',
-                                         '--pretrained'] + arguments)
-        time.sleep(5)
-    except ImportError:
-        print("The test expects master branch of MXNet. Skipped now.")
-
+    # test mixed precision training and use-avg-len
+    from mxnet.ndarray.contrib import mp_adamw_update
+    process = subprocess.check_call([sys.executable, './scripts/bert/run_pretraining.py',
+                                     '--data', './test/bert/data/*.npz',
+                                     '--batch_size', '4096',
+                                     '--use_avg_len',
+                                     '--lr', '2e-5',
+                                     '--warmup_ratio', '0.5',
+                                     '--pretrained'] + arguments)
+    time.sleep(5)
 
 @pytest.mark.serial
 @pytest.mark.gpu
 @pytest.mark.remote_required
 @pytest.mark.integration
-def test_pretrain_hvd():
+def test_bert_pretrain_hvd():
     # test data creation
     process = subprocess.check_call([sys.executable, './scripts/bert/create_pretraining_data.py',
                                      '--input_file', './scripts/bert/sample_text.txt',
@@ -291,14 +285,13 @@ def test_pretrain_hvd():
                                      '--short_seq_prob', '0.1',
                                      '--verbose'])
     try:
-        # TODO(haibin) update test once MXNet 1.5 is released.
-        from mxnet.ndarray.contrib import adamw_update
+        # Test only if horovod is present
         import horovod.mxnet as hvd
         arguments = ['--log_interval', '2',
                      '--batch_size_eval', '8', '--ckpt_dir', './test/bert/ckpt',
-                     '--num_steps', '20', '--num_buckets', '1']
+                     '--num_steps', '20', '--num_buckets', '1', '--backend', 'horovod']
         # test training
-        process = subprocess.check_call([sys.executable, './scripts/bert/run_pretraining_hvd.py',
+        process = subprocess.check_call([sys.executable, './scripts/bert/run_pretraining.py',
                                          '--dtype', 'float32',
                                          '--data', './test/bert/data/*.npz',
                                          '--data_eval', './test/bert/data/*.npz',
@@ -307,7 +300,7 @@ def test_pretrain_hvd():
                                          '--warmup_ratio', '0.5',
                                          '--pretrained'] + arguments)
         # test training with raw data
-        process = subprocess.check_call([sys.executable, './scripts/bert/run_pretraining_hvd.py',
+        process = subprocess.check_call([sys.executable, './scripts/bert/run_pretraining.py',
                                          '--dtype', 'float32',
                                          '--raw',
                                          '--max_seq_length', '128',
@@ -322,14 +315,14 @@ def test_pretrain_hvd():
                                          '--pretrained'] + arguments)
 
         # test evaluation
-        process = subprocess.check_call([sys.executable, './scripts/bert/run_pretraining_hvd.py',
+        process = subprocess.check_call([sys.executable, './scripts/bert/run_pretraining.py',
                                          '--dtype', 'float32',
                                          '--data_eval', './test/bert/data/*.npz',
                                          '--eval_use_npz', '--pretrained'] + arguments)
 
         # test mixed precision training and use-avg-len
         from mxnet.ndarray.contrib import mp_adamw_update
-        process = subprocess.check_call([sys.executable, './scripts/bert/run_pretraining_hvd.py',
+        process = subprocess.check_call([sys.executable, './scripts/bert/run_pretraining.py',
                                          '--data', './test/bert/data/*.npz',
                                          '--data_eval', './test/bert/data/*.npz',
                                          '--batch_size', '4096',
