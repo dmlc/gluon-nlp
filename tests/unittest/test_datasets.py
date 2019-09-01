@@ -344,6 +344,8 @@ def test_bigger_analogy():
 @flaky(max_runs=2, min_passes=1)
 @pytest.mark.serial
 @pytest.mark.remote_required
+@pytest.mark.skipif(datetime.date.today() < datetime.date(2019, 10, 25),
+                    reason="conll2000 temporarily unavailable.")
 def test_conll2000():
     train = nlp.data.CoNLL2000(segment='train', root=os.path.join(
         'tests', 'externaldata', 'conll2000'))
@@ -366,6 +368,8 @@ def test_conll2000():
 @flaky(max_runs=2, min_passes=1)
 @pytest.mark.serial
 @pytest.mark.remote_required
+@pytest.mark.skipif(datetime.date.today() < datetime.date(2019, 10, 25),
+                    reason="conll temporarily unavailable.")
 def test_conll2001():
     for part in range(1, 4):
         train = nlp.data.CoNLL2001(part, segment='train', root=os.path.join(
@@ -394,6 +398,8 @@ def test_conll2001():
 ])
 @pytest.mark.serial
 @pytest.mark.remote_required
+@pytest.mark.skipif(datetime.date.today() < datetime.date(2019, 10, 25),
+                    reason="conll temporarily unavailable.")
 def test_conll2002_ned(segment, length):
     dataset = nlp.data.CoNLL2002('ned', segment=segment, root=os.path.join(
         'tests', 'externaldata', 'conll2002'))
@@ -412,6 +418,8 @@ def test_conll2002_ned(segment, length):
 ])
 @pytest.mark.serial
 @pytest.mark.remote_required
+@pytest.mark.skipif(datetime.date.today() < datetime.date(2019, 10, 25),
+                    reason="conll temporarily unavailable.")
 def test_conll2002_esp(segment, length):
     dataset = nlp.data.CoNLL2002('esp', segment=segment, root=os.path.join(
         'tests', 'externaldata', 'conll2002'))
