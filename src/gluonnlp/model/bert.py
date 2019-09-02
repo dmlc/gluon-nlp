@@ -747,7 +747,7 @@ def bert_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
         'openwebtext_book_corpus_wiki_en_uncased',
         'wiki_multilingual_uncased', 'wiki_multilingual_cased',
         'scibert_scivocab_uncased', 'scibert_scivocab_cased',
-        'scibert_basevocab_uncased','scibert_basevocab_cased',
+        'scibert_basevocab_uncased', 'scibert_basevocab_cased',
         'biobert_v1.0_pmc', 'biobert_v1.0_pubmed', 'biobert_v1.0_pubmed_pmc',
         'biobert_v1.1_pubmed',
         'clinicalbert'
@@ -788,6 +788,30 @@ def bert_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
         If pretrained_allow_missing=True, this will be ignored and the
         parameters will be left uninitialized. Otherwise AssertionError is
         raised.
+
+    The pretrained parameters for dataset_name
+    'openwebtext_book_corpus_wiki_en_uncased' were obtained by running the
+    GluonNLP BERT pre-training script on OpenWebText.
+
+    The pretrained parameters for dataset_name 'scibert_scivocab_uncased',
+    'scibert_scivocab_cased', 'scibert_basevocab_uncased',
+    'scibert_basevocab_cased' were obtained by converting the parameters
+    published by "Beltagy, I., Cohan, A., & Lo, K. (2019). Scibert: Pretrained
+    contextualized embeddings for scientific text. arXiv preprint
+    arXiv:1903.10676."
+
+    The pretrained parameters for dataset_name 'biobert_v1.0_pmc',
+    'biobert_v1.0_pubmed', 'biobert_v1.0_pubmed_pmc', 'biobert_v1.1_pubmed'
+    were obtained by converting the parameters published by "Lee, J., Yoon, W.,
+    Kim, S., Kim, D., Kim, S., So, C. H., & Kang, J. (2019). Biobert:
+    pre-trained biomedical language representation model for biomedical text
+    mining. arXiv preprint arXiv:1901.08746."
+
+    The pretrained parameters for dataset_name 'clinicalbert' were obtained by
+    converting the parameters published by "Huang, K., Altosaar, J., &
+    Ranganath, R. (2019). ClinicalBERT: Modeling Clinical Notes and Predicting
+    Hospital Readmission. arXiv preprint arXiv:1904.05342."
+
 
     Returns
     -------
