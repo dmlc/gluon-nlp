@@ -20,11 +20,27 @@
 # pylint: disable=wildcard-import, arguments-differ
 """Module for pre-defined NLP models."""
 
-import gluonnlp as nlp
+import os
+from typing import Dict, Hashable, List, Optional
 
-from .transformer import TransformerXL
+import mxnet as mx
+from mxnet.gluon.model_zoo import model_store
+
+import gluonnlp as nlp
+from gluonnlp.base import get_home_dir
+from gluonnlp.model.utils import _load_pretrained_params, _load_vocab
+
+from .transformer import TransformerXL, XLNet
 
 __all__ = ['get_model']
+
+model_store._model_sha1.update({
+    name: checksum
+    for checksum, name in [
+        ('72a88675d6197ef619c86f0813534cbb35aa5552', 'xlnet_cased_l12_h768_a12_126gb'),
+        ('c86eb2e94b8bc50de3a26bcf53e1d4f66c557b2c', 'xlnet_cased_l24_h1024_a16_126gb'),
+    ]
+})
 
 
 def get_model(name, **kwargs):
@@ -32,6 +48,8 @@ def get_model(name, **kwargs):
     models = {
         # TODO better naming scheme when moving this to main API?
         'transformerxl': transformerxl,
+        'xlnet_cased_l12_h768_a12': xlnet_cased_l12_h768_a12,
+        'xlnet_cased_l24_h1024_a16': xlnet_cased_l24_h1024_a16
     }
     name = name.lower()
     if name not in models:
@@ -114,3 +132,103 @@ def transformerxl(dataset_name: str, vocab: nlp.Vocab, **kwargs):
     options.update(**kwargs)
     model = TransformerXL(vocab_size=len(vocab), **options)
     return model, vocab
+
+
+def xlnet_cased_l12_h768_a12(dataset_name: Optional[str] = None, vocab: Optional[nlp.Vocab] = None,
+                             pretrained: bool = True, ctx: mx.Context = mx.cpu(),
+                             root=os.path.join(get_home_dir(), 'models'), **kwargs):
+    """XLNet model.
+
+    References:
+    Yang, Z., Dai, Z., Yang, Y., Carbonell, J., Salakhutdinov, R., & Le, Q. V.
+    (2019). XLNet: Generalized Autoregressive Pretraining for Language
+    Understanding. arXiv preprint arXiv:1906.08237.
+
+
+    Parameters
+    ----------
+    dataset_name : str or None, default None
+        If not None, the dataset name is used to load a vocabulary for the
+        dataset. If the `pretrained` argument is set to True, the dataset name
+        is further used to select the pretrained parameters to load.
+        Options include 'books_enwiki_giga5_clueweb2012b_commoncrawl'.
+    vocab : gluonnlp.vocab.Vocab or None, default None
+        Vocabulary for the dataset. Must be provided if dataset_name is not
+        specified. Ignored if dataset_name is specified.
+    pretrained : bool, default True
+        Whether to load the pretrained weights for model.
+    ctx : Context, default CPU
+        The context in which to load the pretrained weights.
+    root : str, default '$MXNET_HOME/models'
+        Location for keeping the model parameters.
+        MXNET_HOME defaults to '~/.mxnet'.
+
+    Returns
+    -------
+    XLNet, gluonnlp.Vocab
+    """
+
+    kwargs = {
+        'hidden_size': 3072,
+        'units': 768,
+        'activation': 'gelu',
+        'num_heads': 12,
+        'num_layers': 12,
+    }
+    if vocab is None:
+        vocab = _load_vocab('xlnet_' + dataset_name, vocab, root)
+    net = XLNet(vocab_size=len(vocab), **kwargs)
+    if pretrained:
+        _load_pretrained_params(net=net, model_name='xlnet_cased_l12_h768_a12',
+                                dataset_name=dataset_name, root=root, ctx=ctx)
+    return net, vocab
+
+
+def xlnet_cased_l24_h1024_a16(dataset_name: Optional[str] = None, vocab: Optional[nlp.Vocab] = None,
+                              pretrained: bool = True, ctx: mx.Context = mx.cpu(),
+                              root=os.path.join(get_home_dir(), 'models'), **kwargs):
+    """XLNet model.
+
+    References:
+    Yang, Z., Dai, Z., Yang, Y., Carbonell, J., Salakhutdinov, R., & Le, Q. V.
+    (2019). XLNet: Generalized Autoregressive Pretraining for Language
+    Understanding. arXiv preprint arXiv:1906.08237.
+
+
+    Parameters
+    ----------
+    dataset_name : str or None, default None
+        If not None, the dataset name is used to load a vocabulary for the
+        dataset. If the `pretrained` argument is set to True, the dataset name
+        is further used to select the pretrained parameters to load.
+        Options include 'books_enwiki_giga5_clueweb2012b_commoncrawl'.
+    vocab : gluonnlp.vocab.Vocab or None, default None
+        Vocabulary for the dataset. Must be provided if dataset_name is not
+        specified. Ignored if dataset_name is specified.
+    pretrained : bool, default True
+        Whether to load the pretrained weights for model.
+    ctx : Context, default CPU
+        The context in which to load the pretrained weights.
+    root : str, default '$MXNET_HOME/models'
+        Location for keeping the model parameters.
+        MXNET_HOME defaults to '~/.mxnet'.
+
+    Returns
+    -------
+    XLNet, gluonnlp.Vocab
+
+    """
+    kwargs.update(**{
+        'hidden_size': 4096,
+        'units': 1024,
+        'activation': 'gelu',
+        'num_heads': 16,
+        'num_layers': 24,
+    })
+    if vocab is None:
+        vocab = _load_vocab('xlnet_' + dataset_name, vocab, root)
+    net = XLNet(vocab_size=len(vocab), **kwargs)
+    if pretrained:
+        _load_pretrained_params(net=net, model_name='xlnet_cased_l24_h1024_a16',
+                                dataset_name=dataset_name, root=root, ctx=ctx)
+    return net, vocab
