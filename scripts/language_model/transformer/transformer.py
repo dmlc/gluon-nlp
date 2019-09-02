@@ -554,7 +554,7 @@ class _BaseXLNet(mx.gluon.HybridBlock):
         return mems
 
 
-class XLNet(TransformerXL):
+class XLNet((mx.gluon.Block)):
     """XLNet
 
     Yang, Z., Dai, Z., Yang, Y., Carbonell, J., Salakhutdinov, R., & Le, Q. V.
@@ -615,6 +615,13 @@ class XLNet(TransformerXL):
 
         with self.name_scope():
             self._net = _BaseXLNet(*args, **kwargs)
+
+    def begin_mems(self, batch_size, mem_len, context):
+        mems = [
+            mx.nd.zeros((batch_size, mem_len, self._net._units), ctx=context)
+            for _ in range(len(self._net.transformer_cells))
+        ]
+        return mems
 
     def forward(self, step_input, segments, mems, mask=None):  # pylint: disable=arguments-differ
         """
