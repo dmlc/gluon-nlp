@@ -306,8 +306,6 @@ def predict(features,
             prediction = ''
         else:
             prediction = best_non_null_entry.text
-
-    prediction = nbest_json[0][0]
     return prediction, nbest_json
 
 
