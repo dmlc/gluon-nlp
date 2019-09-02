@@ -241,13 +241,13 @@ class BERTDataLoaderFn(DataLoaderFn):
         self._use_avg_len = use_avg_len
         self._num_ctxes = num_ctxes
         pad_val = vocab[vocab.padding_token]
-        self._batchify_fn = Tuple(Pad(pad_val=pad_val), # input_id
-                                  Pad(pad_val=pad_val), # masked_id
-                                  Pad(pad_val=0),       # masked_position
-                                  Pad(pad_val=0),       # masked_weight
-                                  Stack(),              # next_sentence_label
-                                  Pad(pad_val=0),       # segment_id
-                                  Stack())              # valid_length
+        self._batchify_fn = Tuple(Pad(pad_val=pad_val, round_to=8), # input_id
+                                  Pad(pad_val=pad_val),             # masked_id
+                                  Pad(pad_val=0),                   # masked_position
+                                  Pad(pad_val=0),                   # masked_weight
+                                  Stack(),                          # next_sentence_label
+                                  Pad(pad_val=0, round_to=8),       # segment_id
+                                  Stack())                          # valid_length
 
     def __call__(self, dataset, sampler):
         if self._use_avg_len:
