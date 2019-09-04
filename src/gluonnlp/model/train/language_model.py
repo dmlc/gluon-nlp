@@ -92,7 +92,7 @@ class AWDRNN(HybridBlock):
         return embedding
 
     def _get_encoder(self):
-        encoder = nn.Sequential()
+        encoder = nn.HybridSequential()
         with encoder.name_scope():
             for l in range(self._num_layers):
                 encoder.add(_get_rnn_layer(self._mode, 1, self._embed_size if l == 0 else
@@ -206,7 +206,7 @@ class AWDRNN(HybridBlock):
         return out, out_states, encoded_raw, encoded_dropped
 
 
-class StandardRNN(Block):
+class StandardRNN(HybridBlock):
     """Standard RNN language model.
 
     Parameters
@@ -276,13 +276,13 @@ class StandardRNN(Block):
     def state_info(self, *args, **kwargs):
         return self.encoder.state_info(*args, **kwargs)
 
-    def forward(self, inputs, begin_state=None): # pylint: disable=arguments-differ
+    def __call__(self, inputs, begin_state=None): # pylint: disable=arguments-differ
         """Defines the forward computation. Arguments can be either
         :py:class:`NDArray` or :py:class:`Symbol`.
 
         Parameters
         -----------
-        inputs : NDArray
+        inputs : NDArray or Symbol
             input tensor with shape `(sequence_length, batch_size)`
             when `layout` is "TNC".
         begin_state : list
@@ -291,7 +291,7 @@ class StandardRNN(Block):
 
         Returns
         --------
-        out: NDArray
+        out: NDArray or Symbol
             output tensor with shape `(sequence_length, batch_size, input_size)`
             when `layout` is "TNC".
         out_states: list
@@ -304,15 +304,57 @@ class StandardRNN(Block):
             The list of last output with dropout of the model's encoder.
             the shape of last encoder's dropped output `(sequence_length, batch_size, num_hidden)`
         """
+        print('called train.__call__')
+        # XXX Temporary hack for hybridization as hybridblock does not support None inputs
+        begin_state = [] if begin_state is None else begin_state
+        return super(StandardRNN, self).__call__(inputs, begin_state)
+
+    def hybrid_forward(self, F, inputs, begin_state=None): # pylint: disable=arguments-differ
+        """Defines the forward computation. Arguments can be either
+        :py:class:`NDArray` or :py:class:`Symbol`.
+
+        Parameters
+        -----------
+        inputs : NDArray or Symbol
+            input tensor with shape `(sequence_length, batch_size)`
+            when `layout` is "TNC".
+        begin_state : list
+            initial recurrent state tensor with length equals to num_layers-1.
+            the initial state with shape `(num_layers, batch_size, num_hidden)`
+
+        Returns
+        --------
+        out: NDArray or Symbol
+            output tensor with shape `(sequence_length, batch_size, input_size)`
+            when `layout` is "TNC".
+        out_states: list
+            output recurrent state tensor with length equals to num_layers-1.
+            the state with shape `(num_layers, batch_size, num_hidden)`
+        encoded_raw: list
+            The list of last output of the model's encoder.
+            the shape of last encoder's output `(sequence_length, batch_size, num_hidden)`
+        encoded_dropped: list
+            The list of last output with dropout of the model's encoder.
+            the shape of last encoder's dropped output `(sequence_length, batch_size, num_hidden)`
+        """
+        print('called train.hybrid_forward')
+        # XXX Temporary hack for hybridization as hybridblock does not support None inputs
+        if isinstance(begin_state, list) and len(begin_state) == 0:
+            begin_state = None
+
         encoded = self.embedding(inputs)
         if not begin_state:
-            begin_state = self.begin_state(batch_size=inputs.shape[1])
+            if F == nd:
+                begin_state = self.begin_state(batch_size=inputs.shape[1])
+            else:
+                begin_state = self.begin_state(batch_size=0, func=sym.zeros)
+
         encoded_raw = []
         encoded_dropped = []
         encoded, state = self.encoder(encoded, begin_state)
         encoded_raw.append(encoded)
         if self._dropout:
-            encoded = nd.Dropout(encoded, p=self._dropout, axes=(0,))
+            encoded = F.Dropout(encoded, p=self._dropout, axes=(0,))
         out = self.decoder(encoded)
         return out, state, encoded_raw, encoded_dropped
 
