@@ -42,6 +42,7 @@ import logging
 import numpy as np
 import mxnet as mx
 from mxnet import gluon
+from mxnet.test_utils import download
 import gluonnlp as nlp
 
 from gluonnlp.loss import MaskedSoftmaxCELoss
@@ -167,7 +168,10 @@ model = NMTModel(src_vocab=src_vocab, tgt_vocab=tgt_vocab, encoder=encoder, deco
                  share_embed=args.dataset != 'TOY', embed_size=args.num_units,
                  tie_weights=args.dataset != 'TOY', embed_initializer=None, prefix='transformer_')
 
-model.load_parameters(args.model_parameter, ctx)
+param_name = args.model_parameter
+if (not os.path.exists(param_name)):
+  download("https://drive.google.com/open?id=1588i6OoaL8qC0K8gI3p2iFOYY5AEuRIN", fname=param_name)
+model.load_parameters(param_name, ctx)
 
 static_alloc = True
 model.hybridize(static_alloc=static_alloc)
@@ -280,4 +284,3 @@ def inference():
 
 if __name__ == '__main__':
     inference()
-    
