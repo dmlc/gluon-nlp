@@ -145,7 +145,7 @@ class StandardRNN(train.StandardRNN):
         super(StandardRNN, self).__init__(mode, vocab_size, embed_size, hidden_size,
                                           num_layers, dropout, tie_weights, **kwargs)
 
-    def forward(self, inputs, begin_state=None): # pylint: disable=arguments-differ
+    def hybrid_forward(self, F, inputs, begin_state=None): # pylint: disable=arguments-differ
         """Defines the forward computation. Arguments can be either
         :py:class:`NDArray` or :py:class:`Symbol`.
 
@@ -167,9 +167,16 @@ class StandardRNN(train.StandardRNN):
             output recurrent state tensor with length equals to num_layers-1.
             the state with shape `(num_layers, batch_size, num_hidden)`
         """
+        # XXX Temporary hack for hybridization as hybridblock does not support None inputs
+        if isinstance(begin_state, list) and len(begin_state) == 0:
+            begin_state = None
+
         encoded = self.embedding(inputs)
-        if begin_state is None:
-            begin_state = self.begin_state(batch_size=inputs.shape[1])
+        if not begin_state:
+            if F == nd:
+                begin_state = self.begin_state(batch_size=inputs.shape[1])
+            else:
+                begin_state = self.begin_state(batch_size=0, func=sym.zeros)
         encoded, state = self.encoder(encoded, begin_state)
         if self._dropout:
             encoded = nd.Dropout(encoded, p=self._dropout, axes=(0,))
