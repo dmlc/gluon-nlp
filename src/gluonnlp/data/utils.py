@@ -277,7 +277,10 @@ def train_valid_split(dataset, valid_ratio=0.05):
 
 def short_hash(name):
     if name not in _vocab_sha1:
-        raise ValueError('Vocabulary for {name} is not available.'.format(name=name))
+        vocabs = list(_vocab_sha1.keys())
+        raise ValueError('Vocabulary for {name} is not available. '
+                         'Hosted vocabularies include: {vocabs}'.format(name=name,
+                                                                        vocabs=vocabs))
     return _vocab_sha1[name][:8]
 
 

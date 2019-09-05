@@ -15,6 +15,8 @@ def test_list():
 def test_pad():
     padded = batchify.Pad(pad_val=-1)([mx.nd.array([]), mx.nd.arange(1)]).asnumpy().flatten().tolist()
     assert padded == [-1.0, 0.0]
+    padded = batchify.Pad(pad_val=-1, round_to=2)([mx.nd.array([]), mx.nd.arange(1)]).asnumpy().flatten().tolist()
+    assert padded == [-1.0, -1.0, 0.0, -1.0]
 
 
 @pytest.mark.parametrize('odtype', [np.uint8, np.int32, np.int64,
