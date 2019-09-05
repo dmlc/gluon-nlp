@@ -22,5 +22,7 @@ import sys
 
 if not (sys.version_info[0] >= 3 and sys.version_info[1] >= 6):
     PY3STATEMENT = 'GluonNLP project proudly dropped support of Python2.' \
-                   'The minimal Python requirement is Python 3.6'
+                   'The minimal Python requirement is Python 3.6' \
+                   'The last version that supports Python2 is v0.7.1 ' \
+                   '(pip install gluonnlp==0.7.1).'
     raise Exception(PY3STATEMENT)
