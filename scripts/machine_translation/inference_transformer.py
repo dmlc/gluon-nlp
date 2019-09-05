@@ -170,7 +170,10 @@ model = NMTModel(src_vocab=src_vocab, tgt_vocab=tgt_vocab, encoder=encoder, deco
 
 param_name = args.model_parameter
 if (not os.path.exists(param_name)):
-  download("https://drive.google.com/open?id=1588i6OoaL8qC0K8gI3p2iFOYY5AEuRIN", fname=param_name)
+    param_url = 'https://drive.google.com/open?id=1588i6OoaL8qC0K8gI3p2iFOYY5AEuRIN'
+    logging.warning('The provided param file {} does not exist, start to download it from {}...'
+                    .format(param_name, param_url))
+    download(url=param_url, fname=param_name)
 model.load_parameters(param_name, ctx)
 
 static_alloc = True
