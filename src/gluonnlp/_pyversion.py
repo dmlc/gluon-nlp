@@ -16,31 +16,12 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+"""Python version check"""
 
-# pylint: disable=wildcard-import
-"""NLP toolkit."""
+import sys
 
-from . import _pyversion
-from . import loss
-from . import data
-from . import embedding
-from . import model
-from . import metric
-from . import utils
-from . import vocab
-from . import optimizer
-from . import initializer
-from .vocab import Vocab
-
-__version__ = '0.8.0.dev'
-
-__all__ = ['data',
-           'model',
-           'embedding',
-           'Vocab',
-           'vocab',
-           'loss',
-           'initializer',
-           'optimizer',
-           'utils',
-           'metric']
+if not (sys.version_info[0] >= 3 and sys.version_info[1] >= 5):
+    PY3STATEMENT = """GluonNLP project proudly dropped support of Python2.
+    The minimal Python requirement is Python 3.5
+    """
+    raise Exception(PY3STATEMENT)
