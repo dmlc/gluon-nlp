@@ -260,9 +260,10 @@ def train(data_train, data_eval, model):
             mask_label_list, mask_pred_list, mask_weight_list = [], [], []
 
             with mx.autograd.record():
-                for data in data_list:
-                    parallel.put(data)
-                for _ in range(len(ctxs)):
+                num_data = len(data_list)
+                for i in range(num_data):
+                    parallel.put(data_list[i])
+                for _ in range(num_data):
                     (next_sentence_label, classified, masked_id,
                      decoded, masked_weight, ls1, ls2, valid_length) = parallel.get()
                     ns_label_list.append(next_sentence_label)
