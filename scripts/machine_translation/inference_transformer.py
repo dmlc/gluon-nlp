@@ -38,11 +38,12 @@ import argparse
 import time
 import random
 import os
+import zipfile
 import logging
 import numpy as np
 import mxnet as mx
 from mxnet import gluon
-from mxnet.test_utils import download
+from mxnet.gluon.utils import download, check_sha1
 import gluonnlp as nlp
 
 from gluonnlp.loss import MaskedSoftmaxCELoss
@@ -170,10 +171,26 @@ model = NMTModel(src_vocab=src_vocab, tgt_vocab=tgt_vocab, encoder=encoder, deco
 
 param_name = args.model_parameter
 if (not os.path.exists(param_name)):
-    param_url = 'https://drive.google.com/open?id=1588i6OoaL8qC0K8gI3p2iFOYY5AEuRIN'
+    archive_param_url = 'http://apache-mxnet.s3-accelerate.dualstack.amazonaws.com/gluon/models/{}'
+    archive_file_hash = ('transformer_en_de_512_WMT2014-97ffd554a.zip',
+                         'c182aae397ead66cc91f1bf241ce07a91884c869')
+    param_file_hash = ('transformer_en_de_512_WMT2014-97ffd554a.params',
+                       '97ffd554aac1f4ba2c5a99483543f47440bd9738')
+    archive_file, archive_hash = archive_file_hash
+    param_file, param_hash = param_file_hash
     logging.warning('The provided param file {} does not exist, start to download it from {}...'
-                    .format(param_name, param_url))
-    download(url=param_url, fname=param_name)
+                    .format(param_name, archive_param_url.format(archive_file)))
+
+    root_dir = os.path.dirname(__file__)
+    archive_file_path = '{}/{}'.format(root_dir, archive_file)
+    param_name = '{}/{}'.format(root_dir, param_file)
+    if (not os.path.exists(param_name) or not check_sha1(param_name, param_hash)):
+        download(archive_param_url.format(archive_file),
+                 path=archive_file_path,
+                 sha1_hash=archive_hash)
+        with zipfile.ZipFile(archive_file_path) as zf:
+            zf.extractall(root_dir)
+
 model.load_parameters(param_name, ctx)
 
 static_alloc = True
