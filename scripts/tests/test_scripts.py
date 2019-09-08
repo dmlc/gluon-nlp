@@ -183,6 +183,19 @@ def test_transformer(bleu):
             '--num_heads', '4', '--test_batch_size', '32']
     process = subprocess.check_call([sys.executable, './scripts/machine_translation/train_transformer.py']
                                     +args)
+
+    process = subprocess.check_call([sys.executable, './scripts/machine_translation/inference_transformer.py',
+                                     '--dataset', 'WMT2014BPE', 
+                                     '--src_lang', 'en',
+                                     '--tgt_lang', 'de', 
+                                     '--scaled', 
+                                     '--num_buckets', '20', 
+                                     '--bucket_scheme', 'exp',
+                                     '--bleu', '13a', 
+                                     '--log_interval', '10', 
+                                     '--model_parameter', './scripts/machine_translation/transformer_en_de_u512/valid_best.params', 
+                                     '--gpus', '0'
+                                     ])
     time.sleep(5)
 
 
