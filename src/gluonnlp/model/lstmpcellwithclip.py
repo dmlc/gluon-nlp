@@ -33,14 +33,14 @@ class LSTMPCellWithClip(LSTMPCell):
         f_t = sigmoid(W_{if} x_t + b_{if} + W_{rf} r_{(t-1)} + b_{rf}) \\
         g_t = \tanh(W_{ig} x_t + b_{ig} + W_{rc} r_{(t-1)} + b_{rg}) \\
         o_t = sigmoid(W_{io} x_t + b_{io} + W_{ro} r_{(t-1)} + b_{ro}) \\
-        c_t = c_clip(f_t * c_{(t-1)} + i_t * g_t) \\
+        c_t = c_{clip}(f_t * c_{(t-1)} + i_t * g_t) \\
         h_t = o_t * \tanh(c_t) \\
-        r_t = p_clip(W_{hr} h_t)
+        r_t = p_{clip}(W_{hr} h_t)
         \end{array}
 
-    where :math:`c_clip` is the cell clip applied on the next cell;
+    where :math:`c_{clip}` is the cell clip applied on the next cell;
     :math:`r_t` is the projected recurrent activation at time `t`,
-    :math:`p_clip` means apply projection clip on he projected output.
+    :math:`p_{clip}` means apply projection clip on he projected output.
     math:`h_t` is the hidden state at time `t`, :math:`c_t` is the
     cell state at time `t`, :math:`x_t` is the input at time `t`, and :math:`i_t`,
     :math:`f_t`, :math:`g_t`, :math:`o_t` are the input, forget, cell, and
