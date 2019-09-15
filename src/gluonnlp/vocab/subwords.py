@@ -17,8 +17,6 @@
 
 # pylint: disable=consider-iterating-dictionary
 """Subword functions."""
-import sys
-
 import numpy as np
 from mxnet import registry
 
