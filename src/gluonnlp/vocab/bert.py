@@ -22,7 +22,7 @@ import json
 import os
 
 from ..data.transforms import SentencepieceTokenizer
-from ..data.utils import _convert_to_unicode, count_tokens
+from ..data.utils import count_tokens
 from .vocab import Vocab
 
 __all__ = ['BERTVocab']
@@ -223,18 +223,14 @@ class BERTVocab(Vocab):
         processor = sp._processor
 
         # we manually construct token_to_idx, idx_to_token and relevant fields for a BERT vocab.
-        token_to_idx = {
-            _convert_to_unicode(t): i
-            for i, t in enumerate(sp.tokens)
-        }
+        token_to_idx = {t: i for i, t in enumerate(sp.tokens)}
 
         def _check_consistency(processor, token_id, provided_token):
             """Check if provided_token is consistent with the special token inferred
             from the loaded sentencepiece vocab."""
-            provided_token = _convert_to_unicode(provided_token) if provided_token else None
             if token_id >= 0:
                 # sentencepiece contains this special token.
-                token = _convert_to_unicode(processor.IdToPiece(token_id))
+                token = processor.IdToPiece(token_id)
                 if provided_token:
                     assert provided_token == token
                 provided_token = token
