@@ -118,13 +118,7 @@ class ByteSubwords(SubwordFunction):
         self.encoding = encoding
 
     def __call__(self, words):
-        if sys.version_info[0] == 3:
-            return [list(word.encode(self.encoding)) for word in words]
-        else:
-            return [
-                list((ord(c) for c in word.encode(self.encoding)))
-                for word in words
-            ]
+        return [list(word.encode(self.encoding)) for word in words]
 
     def __len__(self):
         return 256
