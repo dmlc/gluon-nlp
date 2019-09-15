@@ -74,18 +74,12 @@ parser.add_argument('--whole_word_mask', action='store_true',
 parser.add_argument('--sentencepiece', default=None, type=str,
                     help='Path to the sentencepiece .model file for both tokenization and vocab. '
                          'Effective only if --raw is set.')
-parser.add_argument('--sp_nbest', type=int, default=0,
-                    help='Number of best candidates for sampling subwords with sentencepiece. '
-                         'Effective only if --raw is set.')
-parser.add_argument('--sp_alpha', type=float, default=1.0,
-                    help='Inverse temperature for probability rescaling for sentencepiece '
-                         'sampling. Effective only if --raw is set.')
 parser.add_argument('--num_data_workers', type=int, default=8,
                     help='Number of workers to pre-process data. '
                          'Effective only if --raw is set.')
 parser.add_argument('--eval_use_npz', action='store_true',
                     help='Set to True if --data_eval provides npz files instead of raw text files')
-parser.add_argument('--backend', type=str, default='device',
+parser.add_argument('--comm_backend', type=str, default='device',
                     choices=['horovod', 'dist_sync_device', 'device'],
                     help='Communication backend.')
 
@@ -158,7 +152,7 @@ def init_comm(backend):
         ctxs = [mx.gpu(int(ctx)) for ctx in ctxs.split(',')]
     return store, num_workers, rank, local_rank, is_master_node, ctxs
 
-backend = args.backend
+backend = args.comm_backend
 store, num_workers, rank, local_rank, is_master_node, ctxs = init_comm(backend)
 
 def train(data_train, data_eval, model):
@@ -250,11 +244,7 @@ def train(data_train, data_eval, model):
                     profile(step_num, 10, 14, profile_name=args.profile + str(rank))
 
             # load data
-            if args.use_avg_len:
-                data_list = [[seq.as_in_context(context) for seq in shard]
-                             for context, shard in zip(ctxs, data_batch)]
-            else:
-                data_list = list(split_and_load(data_batch, ctxs))
+            data_list = list(split_and_load(data_batch, ctxs))
 
             ns_label_list, ns_pred_list = [], []
             mask_label_list, mask_pred_list, mask_weight_list = [], [], []
@@ -299,8 +289,8 @@ def train(data_train, data_eval, model):
                         save_parameters(step_num, model, args.ckpt_dir)
                 if data_eval:
                     # eval data is always based on a fixed npz file.
-                    dataset_eval = get_pretrain_data_npz(data_eval, args.batch_size_eval, 1,
-                                                         False, False, 1, vocab)
+                    dataset_eval = get_pretrain_data_npz(data_eval, args.batch_size_eval,
+                                                         1, False, 1, vocab)
                     evaluate(dataset_eval, model, ctxs, args.log_interval, args.dtype)
 
             batch_num += 1
@@ -336,8 +326,7 @@ if __name__ == '__main__':
     if args.raw:
         if args.sentencepiece:
             tokenizer = nlp.data.BERTSPTokenizer(args.sentencepiece, vocab,
-                                                 num_best=args.sp_nbest,
-                                                 alpha=args.sp_alpha, lower=not args.cased)
+                                                 lower=not args.cased)
         else:
             tokenizer = nlp.data.BERTTokenizer(vocab=vocab, lower=not args.cased)
 
@@ -370,11 +359,11 @@ if __name__ == '__main__':
         num_parts = 1 if args.dummy_data_len else num_workers
         part_idx = 0 if args.dummy_data_len else rank
         data_train = get_dataset_fn(args.data, args.batch_size, 1, True,
-                                    args.use_avg_len, args.num_buckets,
+                                    args.num_buckets,
                                     vocab, num_parts=num_parts, part_idx=part_idx)
         train(data_train, data_eval, model)
     if data_eval:
         # eval data is always based on a fixed npz file.
         dataset_eval = get_pretrain_data_npz(data_eval, args.batch_size_eval, 1,
-                                             False, False, 1, vocab)
+                                             False, 1, vocab)
         evaluate(dataset_eval, model, ctxs, args.log_interval, args.dtype)

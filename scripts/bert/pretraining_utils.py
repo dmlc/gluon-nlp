@@ -86,13 +86,13 @@ def get_model_loss(ctx, model, pretrained, dataset_name, vocab, dtype,
         nlp.utils.load_parameters(model, param_path, ctx=ctx)
         logging.info('Loading step %d checkpoints from %s.', start_step, param_path)
 
-    model.hybridize(static_alloc=True)
+    model.hybridize(static_alloc=True, static_shape=True)
 
     # losses
     nsp_loss = mx.gluon.loss.SoftmaxCELoss()
     mlm_loss = mx.gluon.loss.SoftmaxCELoss()
-    nsp_loss.hybridize(static_alloc=True)
-    mlm_loss.hybridize(static_alloc=True)
+    nsp_loss.hybridize(static_alloc=True, static_shape=True)
+    mlm_loss.hybridize(static_alloc=True, static_shape=True)
 
     model = BERTForPretrain(model, nsp_loss, mlm_loss, len(vocabulary))
     return model, vocabulary
@@ -139,7 +139,7 @@ class BERTPretrainDataset(mx.gluon.data.ArrayDataset):
                                                worker_pool, None))
         super(BERTPretrainDataset, self).__init__(*instances)
 
-def get_pretrain_data_text(data, batch_size, num_ctxes, shuffle, use_avg_len,
+def get_pretrain_data_text(data, batch_size, num_ctxes, shuffle,
                            num_buckets, vocab, tokenizer, max_seq_length, short_seq_prob,
                            masked_lm_prob, max_predictions_per_seq, whole_word_mask,
                            num_parts=1, part_idx=0, num_workers=1):
@@ -148,8 +148,7 @@ def get_pretrain_data_text(data, batch_size, num_ctxes, shuffle, use_avg_len,
     Parameters
     ----------
     batch_size : int
-        The batch size. If use_avg_len is set to True, batch_size is roughly the number of
-        (non-padded) tokens in a batch.
+        The batch size.
     num_buckets : int
         The number of buckets for the FixedBucketSampler for training.
     vocab : BERTVocab
@@ -184,8 +183,8 @@ def get_pretrain_data_text(data, batch_size, num_ctxes, shuffle, use_avg_len,
                       'max_predictions_per_seq': max_predictions_per_seq, 'vocab':vocab,
                       'whole_word_mask': whole_word_mask}
     dataset_fn = SimpleDatasetFn(BERTPretrainDataset, dataset_params)
-    sampler_fn = BERTSamplerFn(use_avg_len, batch_size, shuffle, num_ctxes, num_buckets)
-    dataloader_fn = BERTDataLoaderFn(use_avg_len, num_ctxes, vocab)
+    sampler_fn = BERTSamplerFn(batch_size, shuffle, num_ctxes, num_buckets)
+    dataloader_fn = BERTDataLoaderFn(num_ctxes, vocab)
 
     split_sampler = nlp.data.SplitSampler(num_files, num_parts=num_parts, part_index=part_idx)
     dataloader = DatasetLoader(data, split_sampler, dataset_fn, sampler_fn, dataloader_fn,
@@ -197,8 +196,7 @@ def get_pretrain_data_text(data, batch_size, num_ctxes, shuffle, use_avg_len,
 
 class BERTSamplerFn(SamplerFn):
     """Callable object to create the sampler"""
-    def __init__(self, use_avg_len, batch_size, shuffle, num_ctxes, num_buckets):
-        self._use_avg_len = use_avg_len
+    def __init__(self, batch_size, shuffle, num_ctxes, num_buckets):
         self._batch_size = batch_size
         self._shuffle = shuffle
         self._num_ctxes = num_ctxes
@@ -216,28 +214,17 @@ class BERTSamplerFn(SamplerFn):
         else:
             raise ValueError('unexpected dataset type: %s'%str(dataset))
 
-        if self._use_avg_len:
-            # sharded data loader
-            sampler = nlp.data.FixedBucketSampler(lengths=lengths,
-                                                  # batch_size per shard
-                                                  batch_size=self._batch_size,
-                                                  num_buckets=self._num_buckets,
-                                                  shuffle=self._shuffle,
-                                                  use_average_length=True,
-                                                  num_shards=self._num_ctxes)
-        else:
-            sampler = nlp.data.FixedBucketSampler(lengths,
-                                                  batch_size=self._batch_size * self._num_ctxes,
-                                                  num_buckets=self._num_buckets,
-                                                  ratio=0,
-                                                  shuffle=self._shuffle)
+        sampler = nlp.data.FixedBucketSampler(lengths,
+                                              batch_size=self._batch_size * self._num_ctxes,
+                                              num_buckets=self._num_buckets,
+                                              ratio=0,
+                                              shuffle=self._shuffle)
         logging.debug('Sampler created for a new dataset:\n%s', sampler.stats())
         return sampler
 
 class BERTDataLoaderFn(DataLoaderFn):
     """Callable object to create the data loader"""
-    def __init__(self, use_avg_len, num_ctxes, vocab):
-        self._use_avg_len = use_avg_len
+    def __init__(self, num_ctxes, vocab):
         self._num_ctxes = num_ctxes
         pad_val = vocab[vocab.padding_token]
         self._batchify_fn = Tuple(Pad(pad_val=pad_val), # input_id
@@ -249,25 +236,18 @@ class BERTDataLoaderFn(DataLoaderFn):
                                   Stack())              # valid_length
 
     def __call__(self, dataset, sampler):
-        if self._use_avg_len:
-            # sharded data loader
-            dataloader = nlp.data.ShardedDataLoader(dataset,
-                                                    batch_sampler=sampler,
-                                                    batchify_fn=self._batchify_fn,
-                                                    num_workers=self._num_ctxes)
-        else:
-            dataloader = DataLoader(dataset=dataset,
-                                    batch_sampler=sampler,
-                                    batchify_fn=self._batchify_fn,
-                                    num_workers=self._num_ctxes)
+        dataloader = DataLoader(dataset=dataset,
+                                batch_sampler=sampler,
+                                batchify_fn=self._batchify_fn,
+                                num_workers=self._num_ctxes)
         return dataloader
 
 class BERTLoaderTransform:
     """Create dataloader for a BERT dataset. """
 
-    def __init__(self, use_avg_len, batch_size, shuffle, num_ctxes, num_buckets, vocab):
-        self._sampler_fn = BERTSamplerFn(use_avg_len, batch_size, shuffle, num_ctxes, num_buckets)
-        self._data_fn = BERTDataLoaderFn(use_avg_len, num_ctxes, vocab)
+    def __init__(self, batch_size, shuffle, num_ctxes, num_buckets, vocab):
+        self._sampler_fn = BERTSamplerFn(batch_size, shuffle, num_ctxes, num_buckets)
+        self._data_fn = BERTDataLoaderFn(num_ctxes, vocab)
 
     def __call__(self, dataset):
         """create data loader based on the dataset chunk"""
@@ -275,7 +255,7 @@ class BERTLoaderTransform:
         dataloader = self._data_fn(dataset, sampler)
         return dataloader
 
-def get_pretrain_data_npz(data, batch_size, num_ctxes, shuffle, use_avg_len,
+def get_pretrain_data_npz(data, batch_size, num_ctxes, shuffle,
                           num_buckets, vocab, num_parts=1, part_idx=0):
     """Create dataset for pretraining based on pre-processed npz files."""
     # handle commas in the provided path
@@ -290,7 +270,7 @@ def get_pretrain_data_npz(data, batch_size, num_ctxes, shuffle, use_avg_len,
     stream = nlp.data.PrefetchingStream(stream, worker_type='process')
 
     # create data loader based on the dataset
-    dataloader_xform = BERTLoaderTransform(use_avg_len, batch_size,
+    dataloader_xform = BERTLoaderTransform(batch_size,
                                            shuffle, num_ctxes, num_buckets, vocab)
     stream = stream.transform(dataloader_xform)
     return stream
@@ -457,16 +437,13 @@ def get_argparser():
     """Argument parser"""
     parser = argparse.ArgumentParser(description='BERT pretraining example.')
     parser.add_argument('--num_steps', type=int, default=20, help='Number of optimization steps')
-    parser.add_argument('--num_buckets', type=int, default=10,
+    parser.add_argument('--num_buckets', type=int, default=1,
                         help='Number of buckets for variable length sequence sampling')
     parser.add_argument('--dtype', type=str, default='float16', help='data dtype')
     parser.add_argument('--batch_size', type=int, default=8, help='Batch size per GPU.')
     parser.add_argument('--accumulate', type=int, default=1,
                         help='Number of batches for gradient accumulation. '
                              'The effective batch size = batch_size * accumulate.')
-    parser.add_argument('--use_avg_len', action='store_true',
-                        help='Use average length information for the bucket sampler. '
-                             'The batch size is approximately the number of tokens in the batch')
     parser.add_argument('--batch_size_eval', type=int, default=8,
                         help='Batch size per GPU for evaluation.')
     parser.add_argument('--dataset_name', type=str, default='book_corpus_wiki_en_uncased',
