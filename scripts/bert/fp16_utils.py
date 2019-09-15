@@ -166,7 +166,7 @@ class FP16Trainer:
                 self.fp32_trainer.update(step_size)
                 overflow = is_finite.asscalar() < 1
             else:
-                overflow = not np.isfinite(norm.asscalar())
+                overflow = is_finite.asscalar() < 1
                 if not overflow:
                     self.fp32_trainer.update(step_size)
         else:
