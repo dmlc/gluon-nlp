@@ -13,7 +13,6 @@
 # limitations under the License.
 """BERT dataset transform."""
 
-from __future__ import absolute_import
 
 __all__ = ['BERTDatasetTransform']
 

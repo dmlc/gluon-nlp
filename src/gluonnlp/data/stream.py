@@ -20,7 +20,6 @@
 corpora and dataset files. Files can be streamed into formats that are
 ready for training and evaluation."""
 
-from __future__ import print_function
 
 import glob
 import multiprocessing

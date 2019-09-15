@@ -16,8 +16,6 @@
 # under the License.
 
 """Utility classes and functions. They help organize and keep statistics of datasets."""
-from __future__ import absolute_import, print_function
-
 import collections
 import errno
 import os

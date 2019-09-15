@@ -18,8 +18,6 @@
 # pylint: disable=consider-iterating-dictionary, too-many-lines
 
 """Text token embedding."""
-from __future__ import absolute_import
-from __future__ import print_function
 
 __all__ = [
     'register', 'create', 'list_sources', 'TokenEmbedding', 'GloVe',

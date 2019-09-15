@@ -13,7 +13,6 @@
 # limitations under the License.
 """BERT classification/regression datasets."""
 
-from __future__ import absolute_import
 
 __all__ = [
     'MRPCTask', 'QQPTask', 'QNLITask', 'RTETask', 'STSBTask',

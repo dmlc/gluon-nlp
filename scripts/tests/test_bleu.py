@@ -16,7 +16,6 @@
 # under the License.
 
 """Test BLEU."""
-from __future__ import print_function
 
 import string
 import os

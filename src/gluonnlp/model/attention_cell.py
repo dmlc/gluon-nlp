@@ -15,8 +15,6 @@
 # specific language governing permissions and limitations
 # under the License.
 """Attention cells."""
-from __future__ import absolute_import
-from __future__ import print_function
 
 __all__ = ['AttentionCell', 'MultiHeadAttentionCell', 'MLPAttentionCell', 'DotProductAttentionCell']
 

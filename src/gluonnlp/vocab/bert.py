@@ -18,8 +18,6 @@
 # pylint: disable=consider-iterating-dictionary
 
 """Vocabulary class used in the BERT."""
-from __future__ import absolute_import, print_function
-
 import json
 import os
 

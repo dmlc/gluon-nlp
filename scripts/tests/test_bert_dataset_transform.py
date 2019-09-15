@@ -16,7 +16,6 @@
 # under the License.
 
 """Test BERTDatasetTransform."""
-from __future__ import print_function
 
 import numpy as np
 from gluonnlp.vocab import BERTVocab
