@@ -806,7 +806,7 @@ class BERTBasicTokenizer:
 
         Parameters
         ----------
-        sample:  str (unicode for Python 2)
+        sample:  str
             The string to tokenize. Must be unicode.
 
         Returns
@@ -997,8 +997,8 @@ class BERTTokenizer:
 
         Parameters
         ----------
-        sample: str (unicode for Python 2)
-            The string to tokenize. Must be unicode.
+        sample: str
+            The string to tokenize.
 
         Returns
         -------

@@ -49,7 +49,6 @@ import numpy as np
 
 import evaluation
 import gluonnlp as nlp
-from gluonnlp.base import _str_types
 from utils import get_context, print_time
 
 os.environ['MXNET_GPU_MEM_POOL_TYPE'] = 'Round'
@@ -254,7 +253,7 @@ class GloVe(nlp.model.train.EmbeddingModel, mx.gluon.HybridBlock):
             (matrix) of shape=(len(tokens), vec_len).
         """
         squeeze = False
-        if isinstance(tokens, _str_types):
+        if isinstance(tokens, str):
             tokens = [tokens]
             squeeze = True
 

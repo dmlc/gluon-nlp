@@ -24,7 +24,6 @@ import mxnet as mx
 import pytest
 
 import gluonnlp as nlp
-from gluonnlp.base import _str_types
 
 
 class NaiveUnknownLookup:
@@ -35,7 +34,7 @@ class NaiveUnknownLookup:
         return True
 
     def __getitem__(self, tokens):
-        if isinstance(tokens, _str_types):
+        if isinstance(tokens, str):
             return mx.nd.ones(self.embsize)
         else:
             return mx.nd.ones((len(tokens), self.embsize))

@@ -31,7 +31,6 @@ from mxnet import ndarray as nd
 from mxnet.test_utils import *
 
 import gluonnlp as nlp
-from gluonnlp.base import _str_types
 
 
 @pytest.fixture
@@ -766,7 +765,7 @@ def test_vocab_set_embedding_with_subword_lookup_only_token_embedding(
             return True
 
         def __getitem__(self, tokens):
-            if isinstance(tokens, _str_types):
+            if isinstance(tokens, str):
                 return nd.ones(embsize)
             else:
                 return nd.ones((len(tokens), embsize))
@@ -922,7 +921,7 @@ def test_token_embedding_unknown_lookup(setinconstructor, lookup,
             return True
 
         def __getitem__(self, tokens):
-            if isinstance(tokens, _str_types):
+            if isinstance(tokens, str):
                 return nd.ones(self.dim)
             else:
                 return nd.ones((len(tokens), self.dim))

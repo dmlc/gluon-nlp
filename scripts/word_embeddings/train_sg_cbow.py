@@ -196,19 +196,12 @@ def train(args):
         else:
             raise e
 
-    try:
-        if args.no_prefetch_batch:
-            data = data.transform(batchify_fn)
-        else:
-            from executors import LazyThreadPoolExecutor
-            num_cpu = len(os.sched_getaffinity(0))
-            ex = LazyThreadPoolExecutor(num_cpu)
-    except (ImportError, SyntaxError, AttributeError):
-        # Py2 - no async prefetching is supported
-        logging.warning(
-            'Asynchronous batch prefetching is not supported on Python 2. '
-            'Consider upgrading to Python 3 for improved performance.')
+    if args.no_prefetch_batch:
         data = data.transform(batchify_fn)
+    else:
+        from executors import LazyThreadPoolExecutor
+        num_cpu = len(os.sched_getaffinity(0))
+        ex = LazyThreadPoolExecutor(num_cpu)
 
     num_update = 0
     prefetched_iters = []
