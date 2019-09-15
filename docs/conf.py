@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 # documentation build configuration file, created by
 # sphinx-quickstart on Thu Jul 23 19:40:08 2015.
 #

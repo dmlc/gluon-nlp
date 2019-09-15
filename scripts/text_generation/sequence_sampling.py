@@ -6,8 +6,6 @@ This example shows how to load a pre-trained language model on wikitext-2 in Glu
 zoo, and use sequence sampler and beam search sampler on the language model to generate sentences.
 """
 
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
