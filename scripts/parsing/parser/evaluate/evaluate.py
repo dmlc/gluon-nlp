@@ -21,6 +21,7 @@
 import time
 from functools import reduce
 import numpy as np
+import gluonnlp as nlp
 
 from scripts.parsing.common.data import DataLoader
 
