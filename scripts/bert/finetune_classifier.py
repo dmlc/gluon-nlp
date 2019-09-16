@@ -172,6 +172,10 @@ parser.add_argument(
     default='float32',
     choices=['float32', 'float16'],
     help='The data type for training.')
+parser.add_argument(
+    '--early_stop',
+    action='store_true',
+    help='Whether to perform early stopping based on the metric on dev set')
 
 args = parser.parse_args()
 
@@ -457,7 +461,10 @@ def train(metric):
     metric_history = []
 
     tic = time.time()
+    should_stop = False
     for epoch_id in range(args.epochs):
+        if should_stop:
+            break
         if not only_inference:
             metric.reset()
             step_loss = 0
@@ -512,6 +519,9 @@ def train(metric):
         # inference on dev data
         for segment, dev_data in dev_data_list:
             metric_nm, metric_val = evaluate(dev_data, metric, segment)
+            if metric_val < metric_history[-1][-1] and args.early_stop:
+                should_stop = True
+                logging.info('Early stop at epoch %d'%epoch_id)
             metric_history.append((epoch_id, metric_nm, metric_val))
 
         if not only_inference:
