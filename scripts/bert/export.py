@@ -47,8 +47,6 @@ from gluonnlp.model import get_model
 from model.classification import BERTClassifier, BERTRegression
 from model.qa import BertForQA
 
-nlp.utils.check_version('0.8.1')
-
 parser = argparse.ArgumentParser(description='Export hybrid BERT base model.')
 
 parser.add_argument('--model_parameters',
