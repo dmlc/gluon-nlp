@@ -52,6 +52,8 @@ import gluonnlp as nlp
 from gluonnlp.base import _str_types
 from utils import get_context, print_time
 
+nlp.utils.check_version('0.7.0')
+
 os.environ['MXNET_GPU_MEM_POOL_TYPE'] = 'Round'
 
 
