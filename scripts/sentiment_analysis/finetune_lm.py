@@ -40,6 +40,8 @@ from mxnet.gluon.data import DataLoader
 
 import gluonnlp as nlp
 
+nlp.utils.check_version('0.7.0')
+
 np.random.seed(100)
 random.seed(100)
 mx.random.seed(10000)
