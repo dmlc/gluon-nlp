@@ -1237,6 +1237,14 @@ class BERTSentenceTransform:
         self._max_seq_length = max_seq_length
         self._pad = pad
         self._pair = pair
+        from ..vocab import BERTVocab
+        if isinstance(tokenizer.vocab, BERTVocab):
+            self._cls_token = tokenizer.vocab.cls_token
+            self._sep_token = tokenizer.vocab.sep_token
+        else:
+            # RoBERTa does not register CLS token and SEP token
+            self._cls_token = tokenizer.vocab.bos_token
+            self._sep_token = tokenizer.vocab.eos_token
 
     def __call__(self, line):
         """Perform transformation for sequence pairs or single sequences.
@@ -1323,14 +1331,14 @@ class BERTSentenceTransform:
         # the entire model is fine-tuned.
         vocab = self._tokenizer.vocab
         tokens = []
-        tokens.append(vocab.cls_token)
+        tokens.append(self._cls_token)
         tokens.extend(tokens_a)
-        tokens.append(vocab.sep_token)
+        tokens.append(self._sep_token)
         segment_ids = [0] * len(tokens)
 
         if tokens_b:
             tokens.extend(tokens_b)
-            tokens.append(vocab.sep_token)
+            tokens.append(self._sep_token)
             segment_ids.extend([1] * (len(tokens) - len(segment_ids)))
 
         input_ids = self._tokenizer.convert_tokens_to_ids(tokens)

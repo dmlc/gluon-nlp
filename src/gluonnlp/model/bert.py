@@ -553,6 +553,10 @@ class RoBERTaModel(BERTModel):
     word_embed : Block or None, default None
         The word embedding. If set to None, word_embed will be constructed using embed_size and
         embed_dropout.
+    use_pooler : bool, default False
+        Whether to include the pooler which converts the encoded sequence tensor of shape
+        (batch_size, seq_length, units) to a tensor of shape (batch_size, units)
+        for for segment level classification task.
     use_decoder : bool, default True
         Whether to include the decoder for masked language model prediction.
     prefix : str or None
@@ -574,6 +578,8 @@ class RoBERTaModel(BERTModel):
             Returned only if BERTEncoder.output_attention is True.
             List of num_layers length of tensors of shape
             (num_masks, num_attention_heads, seq_length, seq_length)
+        - **pooled_output**: output tensor of pooled representation of the first tokens.
+            Returned only if use_pooler is True. Shape (batch_size, units)
         - **masked_lm_outputs**: output tensor of sequence decoding for masked language model
             prediction. Returned only if use_decoder True.
             Shape (batch_size, num_masked_positions, vocab_size)
@@ -581,13 +587,14 @@ class RoBERTaModel(BERTModel):
 
     def __init__(self, encoder, vocab_size=None, units=None,
                  embed_size=None, embed_dropout=0.0, embed_initializer=None,
-                 word_embed=None, use_decoder=True, prefix=None, params=None):
+                 word_embed=None, use_pooler=False, use_decoder=True,
+                 prefix=None, params=None):
         super(RoBERTaModel, self).__init__(encoder, vocab_size=vocab_size,
                                            token_type_vocab_size=None, units=units,
                                            embed_size=embed_size, embed_dropout=embed_dropout,
                                            embed_initializer=embed_initializer,
                                            word_embed=word_embed, token_type_embed=None,
-                                           use_pooler=False, use_decoder=use_decoder,
+                                           use_pooler=use_pooler, use_decoder=use_decoder,
                                            use_classifier=False, use_token_type_embed=False,
                                            prefix=prefix, params=params)
 
@@ -879,7 +886,7 @@ def bert_24_1024_16(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu()
 
 
 def roberta_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
-                      use_decoder=True,
+                      use_pooler=False, use_decoder=True,
                       root=os.path.join(get_home_dir(), 'models'), **kwargs):
     """Generic RoBERTa BASE model.
 
@@ -903,6 +910,10 @@ def roberta_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu
     root : str, default '$MXNET_HOME/models'
         Location for keeping the model parameters.
         MXNET_HOME defaults to '~/.mxnet'.
+    use_pooler : bool, default False
+        Whether to include the pooler which converts the encoded sequence tensor of shape
+        (batch_size, seq_length, units) to a tensor of shape (batch_size, units)
+        for for segment level classification task.
     use_decoder : bool, default True
         Whether to include the decoder for masked language model prediction.
 
@@ -911,12 +922,12 @@ def roberta_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu
     RoBERTaModel, gluonnlp.vocab.Vocab
     """
     return get_roberta_model(model_name='roberta_12_768_12', vocab=vocab, dataset_name=dataset_name,
-                             pretrained=pretrained, ctx=ctx,
+                             pretrained=pretrained, ctx=ctx, use_pooler=use_pooler,
                              use_decoder=use_decoder, root=root, **kwargs)
 
 
 def roberta_24_1024_16(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
-                       use_decoder=True,
+                       use_pooler=False, use_decoder=True,
                        root=os.path.join(get_home_dir(), 'models'), **kwargs):
     """Generic RoBERTa LARGE model.
 
@@ -940,6 +951,10 @@ def roberta_24_1024_16(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cp
     root : str, default '$MXNET_HOME/models'
         Location for keeping the model parameters.
         MXNET_HOME defaults to '~/.mxnet'.
+    use_pooler : bool, default False
+        Whether to include the pooler which converts the encoded sequence tensor of shape
+        (batch_size, seq_length, units) to a tensor of shape (batch_size, units)
+        for for segment level classification task.
     use_decoder : bool, default True
         Whether to include the decoder for masked language model prediction.
 
@@ -949,7 +964,8 @@ def roberta_24_1024_16(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cp
     """
     return get_roberta_model(model_name='roberta_24_1024_16', vocab=vocab,
                              dataset_name=dataset_name, pretrained=pretrained, ctx=ctx,
-                             use_decoder=use_decoder, root=root, **kwargs)
+                             use_pooler=use_pooler, use_decoder=use_decoder,
+                             root=root, **kwargs)
 
 def ernie_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
                     root=os.path.join(get_home_dir(), 'models'), use_pooler=True, use_decoder=True,
@@ -999,7 +1015,7 @@ def ernie_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu()
 
 
 def get_roberta_model(model_name=None, dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
-                      use_decoder=True, output_attention=False, output_all_encodings=False,
+                      use_pooler=False, use_decoder=True, output_attention=False, output_all_encodings=False,
                       root=os.path.join(get_home_dir(), 'models'), **kwargs):
     """Any RoBERTa pretrained model.
 
@@ -1023,6 +1039,10 @@ def get_roberta_model(model_name=None, dataset_name=None, vocab=None, pretrained
     root : str, default '$MXNET_HOME/models'
         Location for keeping the model parameters.
         MXNET_HOME defaults to '~/.mxnet'.
+    use_pooler : bool, default False
+        Whether to include the pooler which converts the encoded sequence tensor of shape
+        (batch_size, seq_length, units) to a tensor of shape (batch_size, units)
+        for for segment level classification task.
     use_decoder : bool, default True
         Whether to include the decoder for masked language model prediction.
         Note that
@@ -1068,11 +1088,12 @@ def get_roberta_model(model_name=None, dataset_name=None, vocab=None, pretrained
                        embed_size=predefined_args['embed_size'],
                        embed_dropout=predefined_args['embed_dropout'],
                        word_embed=predefined_args['word_embed'],
+                       use_pooler=use_pooler,
                        use_decoder=use_decoder)
     if pretrained:
         ignore_extra = not use_decoder
         _load_pretrained_params(net, model_name, dataset_name, root, ctx, ignore_extra=ignore_extra,
-                                allow_missing=False)
+                                allow_missing=use_pooler)
     return net, bert_vocab
 
 def get_bert_model(model_name=None, dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),

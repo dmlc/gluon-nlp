@@ -46,7 +46,6 @@ import numpy as np
 import mxnet as mx
 from mxnet import gluon
 import gluonnlp as nlp
-from gluonnlp.model import get_model
 from gluonnlp.data import BERTTokenizer
 
 from model.classification import BERTClassifier, BERTRegression
@@ -87,11 +86,6 @@ parser.add_argument(
     type=int,
     default=8,
     help='Batch size for dev set and test set')
-parser.add_argument(
-    '--optimizer',
-    type=str,
-    default='bertadam',
-    help='Optimization algorithm')
 parser.add_argument(
     '--lr',
     type=float,
@@ -142,17 +136,17 @@ parser.add_argument(
     '--bert_model',
     type=str,
     default='bert_12_768_12',
-    help='The name of pre-trained BERT model to fine-tune'
-    '(bert_24_1024_16 and bert_12_768_12).')
+    choices=['bert_12_768_12', 'bert_24_1024_16', 'roberta_12_768_12', 'roberta_24_1024_16'],
+    help='The name of pre-trained BERT model to fine-tune')
 parser.add_argument(
     '--bert_dataset',
     type=str,
     default='book_corpus_wiki_en_uncased',
-    help='The dataset BERT pre-trained with.'
-    'Options include \'book_corpus_wiki_en_cased\', \'book_corpus_wiki_en_uncased\''
-    'for both bert_24_1024_16 and bert_12_768_12.'
-    '\'wiki_cn_cased\', \'wiki_multilingual_uncased\' and \'wiki_multilingual_cased\''
-    'for bert_12_768_12 only.')
+    choices=['book_corpus_wiki_en_uncased', 'book_corpus_wiki_en_cased',
+             'openwebtext_book_corpus_wiki_en_uncased','wiki_multilingual_uncased',
+             'wiki_multilingual_cased','wiki_cn_cased',
+             'openwebtext_ccnews_stories_books_cased'],
+    help='The dataset BERT pre-trained with.')
 parser.add_argument(
     '--pretrained_bert_parameters',
     type=str,
@@ -195,8 +189,8 @@ epsilon = args.epsilon
 accumulate = args.accumulate
 log_interval = args.log_interval * accumulate if accumulate else args.log_interval
 if accumulate:
-    logging.info('Using gradient accumulation. Effective batch size = %d',
-                 accumulate * batch_size)
+    logging.info('Using gradient accumulation. Effective batch size = ' \
+                 'batch_size * accumulate = %d', accumulate * batch_size)
 
 # random seed
 np.random.seed(args.seed)
@@ -236,7 +230,7 @@ if only_inference and not model_parameters:
 
 get_pretrained = not (pretrained_bert_parameters is not None
                       or model_parameters is not None)
-bert, vocabulary = get_model(
+bert, vocabulary = nlp.model.get_model(
     name=model_name,
     dataset_name=dataset,
     pretrained=get_pretrained,
@@ -245,18 +239,25 @@ bert, vocabulary = get_model(
     use_decoder=False,
     use_classifier=False)
 
+# initialize the rest of the parameters
+initializer = mx.init.Normal(0.02)
+use_roberta = 'roberta' in model_name
+if use_roberta:
+    # RoBERTa pre-trained model does not have pooler weights
+    bert.pooler.initialize(initializer, ctx=ctx)
 if not task.class_labels:
     # STS-B is a regression task.
     # STSBTask().class_labels returns None
     model = BERTRegression(bert, dropout=0.1)
     if not model_parameters:
-        model.regression.initialize(init=mx.init.Normal(0.02), ctx=ctx)
+        model.regression.initialize(init=initializer, ctx=ctx)
     loss_function = gluon.loss.L2Loss()
 else:
+    # classification task
     model = BERTClassifier(
         bert, dropout=0.1, num_classes=len(task.class_labels))
     if not model_parameters:
-        model.classifier.initialize(init=mx.init.Normal(0.02), ctx=ctx)
+        model.classifier.initialize(init=initializer, ctx=ctx)
     loss_function = gluon.loss.SoftmaxCELoss()
 
 # load checkpointing
@@ -369,10 +370,13 @@ def test(loader_test, segment):
     tic = time.time()
     results = []
     for _, seqs in enumerate(loader_test):
-        input_ids, valid_length, type_ids = seqs
-        out = model(input_ids.as_in_context(ctx),
-                    type_ids.as_in_context(ctx),
-                    valid_length.astype('float32').as_in_context(ctx))
+        input_ids, valid_length, segment_ids = seqs
+        input_ids = input_ids.as_in_context(ctx)
+        valid_length = valid_length.as_in_context(ctx).astype('float32')
+        if use_roberta:
+            out = model(input_ids, valid_length)
+        else:
+            out = model(input_ids, segment_ids.as_in_context(ctx), valid_length)
         if not task.class_labels:
             # regression task
             for result in out.asnumpy().reshape(-1).tolist():
@@ -430,16 +434,8 @@ def train(metric):
 
     all_model_params = model.collect_params()
     optimizer_params = {'learning_rate': lr, 'epsilon': epsilon, 'wd': 0.01}
-    try:
-        trainer = gluon.Trainer(all_model_params, args.optimizer,
-                                optimizer_params, update_on_kvstore=False)
-    except ValueError as e:
-        print(e)
-        warnings.warn(
-            'AdamW optimizer is not found. Please consider upgrading to '
-            'mxnet>=1.5.0. Now the original Adam optimizer is used instead.')
-        trainer = gluon.Trainer(all_model_params, 'adam',
-                                optimizer_params, update_on_kvstore=False)
+    trainer = gluon.Trainer(all_model_params, 'bertadam',
+                            optimizer_params, update_on_kvstore=False)
     if args.dtype == 'float16':
         amp.init_trainer(trainer)
 
@@ -482,11 +478,15 @@ def train(metric):
 
                 # forward and backward
                 with mx.autograd.record():
-                    input_ids, valid_length, type_ids, label = seqs
-                    out = model(
-                        input_ids.as_in_context(ctx), type_ids.as_in_context(ctx),
-                        valid_length.astype('float32').as_in_context(ctx))
-                    ls = loss_function(out, label.as_in_context(ctx)).mean()
+                    input_ids, valid_length, segment_ids, label = seqs
+                    input_ids = input_ids.as_in_context(ctx)
+                    valid_length = valid_length.as_in_context(ctx).astype('float32')
+                    label = label.as_in_context(ctx)
+                    if use_roberta:
+                        out = model(input_ids, valid_length)
+                    else:
+                        out = model(input_ids, segment_ids.as_in_context(ctx), valid_length)
+                    ls = loss_function(out, label).mean()
                     if args.dtype == 'float16':
                         with amp.scale_loss(ls, trainer) as scaled_loss:
                             mx.autograd.backward(scaled_loss)
@@ -550,11 +550,15 @@ def evaluate(loader_dev, metric, segment):
     step_loss = 0
     tic = time.time()
     for batch_id, seqs in enumerate(loader_dev):
-        input_ids, valid_len, type_ids, label = seqs
-        out = model(
-            input_ids.as_in_context(ctx), type_ids.as_in_context(ctx),
-            valid_len.astype('float32').as_in_context(ctx))
-        ls = loss_function(out, label.as_in_context(ctx)).mean()
+        input_ids, valid_length, segment_ids, label = seqs
+        input_ids = input_ids.as_in_context(ctx)
+        valid_length = valid_length.as_in_context(ctx).astype('float32')
+        label = label.as_in_context(ctx)
+        if use_roberta:
+            out = model(input_ids, valid_length)
+        else:
+            out = model(input_ids, segment_ids.as_in_context(ctx), valid_length)
+        ls = loss_function(out, label).mean()
 
         step_loss += ls.asscalar()
         metric.update([label], [out])
