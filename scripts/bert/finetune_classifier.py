@@ -519,7 +519,7 @@ def train(metric):
         # inference on dev data
         for segment, dev_data in dev_data_list:
             metric_nm, metric_val = evaluate(dev_data, metric, segment)
-            if metric_val < metric_history[-1][-1] and args.early_stop:
+            if len(metric_history) and metric_val < metric_history[-1][-1] and args.early_stop:
                 should_stop = True
                 logging.info('Early stop at epoch %d'%epoch_id)
             metric_history.append((epoch_id, metric_nm, metric_val))
