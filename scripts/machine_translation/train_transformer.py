@@ -59,6 +59,8 @@ np.random.seed(100)
 random.seed(100)
 mx.random.seed(10000)
 
+nlp.utils.check_version('0.7.0')
+
 parser = argparse.ArgumentParser(description='Neural Machine Translation Example.'
                                              'We train the Transformer Model')
 parser.add_argument('--dataset', type=str, default='WMT2016BPE', help='Dataset to use.')
