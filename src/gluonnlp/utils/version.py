@@ -22,7 +22,7 @@ __all__ = ['check_version']
 def check_version(min_version, warning_only=False):
     """Check the version of gluonnlp satisfies the provided minimum version.
     An exception is thrown if the check does not pass.
-    
+
     Parameters
     ----------
     min_version : str
