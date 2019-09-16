@@ -33,6 +33,7 @@ import gluonnlp as nlp
 
 import model # local 'model' module with the addition of GPT-2
 
+nlp.utils.check_version('0.7.1')
 
 parser = argparse.ArgumentParser(description='Generate sentences by beam search. '
                                              'We load a LSTM model that is pre-trained on '
