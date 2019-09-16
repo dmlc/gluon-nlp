@@ -1015,8 +1015,9 @@ def ernie_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu()
 
 
 def get_roberta_model(model_name=None, dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
-                      use_pooler=False, use_decoder=True, output_attention=False, output_all_encodings=False,
-                      root=os.path.join(get_home_dir(), 'models'), **kwargs):
+                      use_pooler=False, use_decoder=True, output_attention=False,
+                      output_all_encodings=False, root=os.path.join(get_home_dir(), 'models'),
+                      **kwargs):
     """Any RoBERTa pretrained model.
 
     Parameters
