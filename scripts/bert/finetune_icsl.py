@@ -42,7 +42,7 @@ from seqeval.metrics import f1_score as ner_f1_score
 import gluonnlp as nlp
 from gluonnlp.data import BERTTokenizer, ATISDataset, SNIPSDataset
 
-
+nlp.utils.check_version('0.7.0')
 
 class BERTForICSL(Block):
     """Model
