@@ -121,7 +121,7 @@ class LAMB(Optimizer):
             var_hat[:] = sqrt(var_hat)
             mean_hat /= var_hat
             mean_hat += wd * weight
-            g[:] = mean_hat
+            g = mean_hat
 
         r2 = g.norm()
 
