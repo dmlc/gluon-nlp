@@ -20,11 +20,11 @@
 
 import time
 from functools import reduce
-
 import numpy as np
 
 from scripts.parsing.common.data import DataLoader
 
+nlp.utils.check_version('0.7.0')
 
 def evaluate_official_script(parser, vocab, num_buckets_test, test_batch_size,
                              test_file, output_file, debug=False):
