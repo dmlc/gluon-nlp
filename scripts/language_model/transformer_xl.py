@@ -42,7 +42,7 @@ import time
 import mxnet as mx
 import gluonnlp as nlp
 
-nlp.utils.check_version('0.7.0')
+nlp.utils.check_version('0.8.0')
 
 def evaluate(data_iter):
     """Evaluate the model on the dataset."""
