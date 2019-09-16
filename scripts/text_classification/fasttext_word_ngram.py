@@ -42,6 +42,7 @@ import mxnet.gluon as gluon
 
 import gluonnlp
 
+nlp.utils.check_version('0.7.1')
 
 class MeanPoolingLayer(gluon.HybridBlock):
     """A block for mean pooling of encoder features"""
