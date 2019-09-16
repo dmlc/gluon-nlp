@@ -1,5 +1,3 @@
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -22,13 +20,7 @@
 
 import os
 
-__all__ = ['_str_types', 'numba_njit', 'numba_prange', 'numba_jitclass', 'numba_types',
-           'get_home_dir']
-
-try:  # Python 2 compat
-    _str_types = (str, unicode)
-except NameError:  # Python 3
-    _str_types = (str, )
+__all__ = ['numba_njit', 'numba_prange', 'numba_jitclass', 'numba_types', 'get_home_dir']
 
 try:
     from numba import njit, prange, jitclass, types

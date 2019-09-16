@@ -1,5 +1,3 @@
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -21,9 +19,6 @@
 """Transformer API. It provides tools for common transformation on samples in text dataset, such as
 clipping, padding, and tokenization."""
 
-from __future__ import absolute_import
-from __future__ import print_function
-from __future__ import division
 
 __all__ = [
     'ClipSequence', 'PadSequence', 'SacreMosesTokenizer', 'NLTKMosesTokenizer',
@@ -806,7 +801,7 @@ class BERTBasicTokenizer:
 
         Parameters
         ----------
-        sample:  str (unicode for Python 2)
+        sample:  str
             The string to tokenize. Must be unicode.
 
         Returns
@@ -997,8 +992,8 @@ class BERTTokenizer:
 
         Parameters
         ----------
-        sample: str (unicode for Python 2)
-            The string to tokenize. Must be unicode.
+        sample: str
+            The string to tokenize.
 
         Returns
         -------

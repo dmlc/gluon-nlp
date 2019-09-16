@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-#  coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -19,7 +17,6 @@
 # under the License.
 """Provides command-line interace for training BERT-based named entity recognition model."""
 
-# coding: utf-8
 import argparse
 import logging
 import random

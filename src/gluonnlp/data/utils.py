@@ -1,5 +1,3 @@
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -18,12 +16,9 @@
 # under the License.
 
 """Utility classes and functions. They help organize and keep statistics of datasets."""
-from __future__ import absolute_import, print_function
-
 import collections
 import errno
 import os
-import sys
 import tarfile
 import zipfile
 import time
@@ -38,6 +33,7 @@ __all__ = [
     'Counter', 'count_tokens', 'concat_sequence', 'slice_sequence', 'train_valid_split',
     'line_splitter', 'whitespace_splitter', 'Splitter'
 ]
+
 
 class Counter(collections.Counter):  # pylint: disable=abstract-method
     """Counter class for keeping token frequencies."""
@@ -437,35 +433,3 @@ class Splitter:
             List of strings. Obtained by calling s.split(separator).
         """
         return s.split(self._separator)
-
-
-def _convert_to_unicode(text):
-    """Converts `text` to Unicode.
-
-    Parameters
-    ----------
-    text : str or bytes
-        text to be converted to unicode
-
-    Returns
-    -------
-    str
-        unicode string
-    """
-    py_version = sys.version_info[0]
-    if py_version == 3:
-        if isinstance(text, str):
-            return text
-        elif isinstance(text, bytes):
-            return text.decode('utf-8', 'ignore')
-        else:
-            raise ValueError('Unsupported string type: %s' % (type(text)))
-    elif py_version == 2:
-        if isinstance(text, str):
-            return text.decode('utf-8', 'ignore')
-        elif isinstance(text, unicode):  # noqa: F821
-            return text
-        else:
-            raise ValueError('Unsupported string type: %s' % (type(text)))
-    else:
-        raise ValueError('Not running on Python2 or Python 3?')

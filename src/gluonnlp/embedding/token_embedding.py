@@ -1,5 +1,3 @@
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -20,8 +18,6 @@
 # pylint: disable=consider-iterating-dictionary, too-many-lines
 
 """Text token embedding."""
-from __future__ import absolute_import
-from __future__ import print_function
 
 __all__ = [
     'register', 'create', 'list_sources', 'TokenEmbedding', 'GloVe',

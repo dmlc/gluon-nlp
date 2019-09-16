@@ -1,5 +1,3 @@
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -17,13 +15,10 @@
 # specific language governing permissions and limitations
 # under the License.
 
-from __future__ import absolute_import, print_function
-
 import functools
 import os
 import random
 import re
-import sys
 
 import numpy as np
 import pytest
@@ -31,7 +26,6 @@ from mxnet import ndarray as nd
 from mxnet.test_utils import *
 
 import gluonnlp as nlp
-from gluonnlp.base import _str_types
 
 
 @pytest.fixture
@@ -766,7 +760,7 @@ def test_vocab_set_embedding_with_subword_lookup_only_token_embedding(
             return True
 
         def __getitem__(self, tokens):
-            if isinstance(tokens, _str_types):
+            if isinstance(tokens, str):
                 return nd.ones(embsize)
             else:
                 return nd.ones((len(tokens), embsize))
@@ -922,7 +916,7 @@ def test_token_embedding_unknown_lookup(setinconstructor, lookup,
             return True
 
         def __getitem__(self, tokens):
-            if isinstance(tokens, _str_types):
+            if isinstance(tokens, str):
                 return nd.ones(self.dim)
             else:
                 return nd.ones((len(tokens), self.dim))

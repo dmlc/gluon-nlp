@@ -1,22 +1,3 @@
-"""
-SQuAD with Bidirectional Encoder Representations from Transformers
-
-=========================================================================================
-
-This example shows how to implement finetune a model with pre-trained BERT parameters for
-SQuAD, with Gluon NLP Toolkit.
-
-@article{devlin2018bert,
-  title={BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding},
-  author={Devlin, Jacob and Chang, Ming- \
-      Wei and Lee, Kenton and Toutanova, Kristina},
-  journal={arXiv preprint arXiv:1810.04805},
-  year={2018}
-}
-"""
-
-# coding=utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -34,6 +15,21 @@ SQuAD, with Gluon NLP Toolkit.
 # specific language governing permissions and limitations
 # under the License.
 # pylint:disable=redefined-outer-name,logging-format-interpolation
+"""
+SQuAD with Bidirectional Encoder Representations from Transformers
+==================================================================
+
+This example shows how to implement finetune a model with pre-trained BERT parameters for
+SQuAD, with Gluon NLP Toolkit.
+
+@article{devlin2018bert,
+  title={BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding},
+  author={Devlin, Jacob and Chang, Ming- \
+      Wei and Lee, Kenton and Toutanova, Kristina},
+  journal={arXiv preprint arXiv:1810.04805},
+  year={2018}
+}
+"""
 
 import argparse
 import collections

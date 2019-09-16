@@ -1,4 +1,3 @@
-# coding=utf-8
 # Copyright 2018 The Google AI Language Team Authors and DMLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,7 +13,6 @@
 # limitations under the License.
 """BERT classification/regression datasets."""
 
-from __future__ import absolute_import
 
 __all__ = [
     'MRPCTask', 'QQPTask', 'QNLITask', 'RTETask', 'STSBTask',
