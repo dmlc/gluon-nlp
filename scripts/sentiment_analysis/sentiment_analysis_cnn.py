@@ -35,11 +35,11 @@ import numpy as np
 import mxnet as mx
 from mxnet import nd, gluon, autograd
 from mxnet.gluon.data import DataLoader
-
+import gluonnlp
 import process_data
 import text_cnn
 
-nlp.utils.check_version('0.7.0')
+gluonnlp.utils.check_version('0.7.0')
 
 np.random.seed(3435)
 random.seed(3435)
