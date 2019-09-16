@@ -47,6 +47,7 @@ from utils import get_context, print_time
 from model import SG, CBOW
 from data import transform_data_word2vec, transform_data_fasttext, preprocess_dataset, wiki
 
+nlp.utils.check_version('0.7.0')
 
 def parse_args():
     """Parse command line arguments."""
