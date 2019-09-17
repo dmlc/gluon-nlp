@@ -33,6 +33,7 @@ from model.ner import BERTTagger, attach_prediction
 # seqeval is a dependency that is specific to named entity recognition.
 import seqeval.metrics
 
+nlp.utils.check_version('0.7.0')
 
 def parse_args():
     """Parse command line arguments."""

@@ -34,6 +34,7 @@ import evaluation
 import gluonnlp as nlp
 import utils
 
+nlp.utils.check_version('0.7.0')
 
 def get_args():
     """Construct the argument parser."""

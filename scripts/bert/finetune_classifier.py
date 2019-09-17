@@ -53,6 +53,8 @@ from data.classification import QNLITask, CoLATask, MNLITask, WNLITask, XNLITask
 from data.classification import LCQMCTask, ChnSentiCorpTask
 from data.transform import BERTDatasetTransform
 
+nlp.utils.check_version('0.8.1', warning_only=True)
+
 tasks = {
     'MRPC': MRPCTask(),
     'QQP': QQPTask(),

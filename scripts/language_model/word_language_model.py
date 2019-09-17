@@ -44,6 +44,7 @@ import gluonnlp as nlp
 curr_path = os.path.dirname(os.path.abspath(os.path.expanduser(__file__)))
 sys.path.append(os.path.join(curr_path, '..', '..'))
 
+nlp.utils.check_version('0.7.0')
 
 parser = argparse.ArgumentParser(description=
                                  'MXNet Autograd RNN/LSTM Language Model on Wikitext-2.')

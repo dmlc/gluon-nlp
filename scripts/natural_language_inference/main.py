@@ -48,6 +48,7 @@ from utils import logging_config
 
 logger = logging.getLogger('nli')
 
+nlp.utils.check_version('0.7.0')
 
 def parse_args():
     """
