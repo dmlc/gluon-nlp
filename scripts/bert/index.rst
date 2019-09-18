@@ -68,7 +68,7 @@ Additionally, GluonNLP supports the "`RoBERTa <https://arxiv.org/abs/1907.11692>
 .. code-block:: python
 
     import gluonnlp as nlp; import mxnet as mx;
-    model, vocab = nlp.model.get_model('roberta_12_768_12', dataset_name='openwebtext_ccnews_stories_books_cased');
+    model, vocab = nlp.model.get_model('roberta_12_768_12', dataset_name='openwebtext_ccnews_stories_books_cased', use_decoder=False);
     tokenizer = nlp.data.GPT2BPETokenizer();
     text = [vocab.bos_token] + tokenizer('Hello world!') + [vocab.eos_token];
     seq_encoding = model(mx.nd.array([vocab[text]]))
