@@ -472,7 +472,7 @@ def train(metric):
 
     tic = time.time()
     for epoch_id in range(args.epochs):
-        if patience == 0:
+        if args.early_stop and patience == 0:
             logging.info('Early stopping at epoch %d', epoch_id)
             break
         if not only_inference:
@@ -533,7 +533,8 @@ def train(metric):
                 best_metric = metric_val
                 patience = args.early_stop
             else:
-                patience -= 1
+                if args.early_stop is not None:
+                    patience -= 1
             metric_history.append((epoch_id, metric_nm, metric_val))
 
         if not only_inference:
