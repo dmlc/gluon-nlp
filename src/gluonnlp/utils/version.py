@@ -14,32 +14,29 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+"""Utility functions for version checking."""
+import warnings
 
-"""Various utility methods for Question Answering"""
-import math
+__all__ = ['check_version']
 
-
-def warm_up_lr(base_lr, iteration, lr_warmup_steps):
-    """Returns learning rate based on current iteration.
-
-    This function is used to implement learning rate warm up technique.
-
-    math::
-
-      lr = min(base_lr, base_lr * (log(iteration) /  log(lr_warmup_steps)))
+def check_version(min_version, warning_only=False):
+    """Check the version of gluonnlp satisfies the provided minimum version.
+    An exception is thrown if the check does not pass.
 
     Parameters
     ----------
-    base_lr : float
-        Initial learning rage
-    iteration : int
-        Current iteration number
-    lr_warmup_steps : int
-        Learning rate warm up steps
-
-    Returns
-    -------
-    learning_rate : float
-        Learning rate
+    min_version : str
+        Minimum version
+    warning_only : bool
+        Printing a warning instead of throwing an exception.
     """
-    return min(base_lr, base_lr * (math.log(iteration) / math.log(lr_warmup_steps)))
+    from .. import __version__
+    from packaging.version import parse
+    bad_version = parse(__version__) < parse(min_version)
+    if bad_version:
+        msg = 'Installed GluonNLP version (%s) does not satisfy the ' \
+              'minimum required version (%s)'%(__version__, min_version)
+        if warning_only:
+            warnings.warn(msg)
+        else:
+            raise AssertionError(msg)

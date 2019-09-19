@@ -1,5 +1,3 @@
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -36,6 +34,7 @@ import evaluation
 import gluonnlp as nlp
 import utils
 
+nlp.utils.check_version('0.7.0')
 
 def get_args():
     """Construct the argument parser."""

@@ -6,8 +6,6 @@ This example shows how to load a language model pre-trained on wikitext-2 in Glu
 zoo, and reuse the language model encoder for sentiment analysis on IMDB movie reviews dataset.
 """
 
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -39,6 +37,8 @@ from mxnet.gluon import HybridBlock
 from mxnet.gluon.data import DataLoader
 
 import gluonnlp as nlp
+
+nlp.utils.check_version('0.7.0')
 
 np.random.seed(100)
 random.seed(100)

@@ -1,5 +1,3 @@
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -17,7 +15,6 @@
 # specific language governing permissions and limitations
 # under the License.
 
-from __future__ import print_function
 
 import datetime
 import os
@@ -30,7 +27,6 @@ import numpy as np
 import pytest
 
 import gluonnlp as nlp
-from gluonnlp.base import _str_types
 from mxnet.gluon.data import SimpleDataset
 
 ###############################################################################
@@ -92,15 +88,15 @@ def test_imdb():
     assert len(unsup) == 50000, len(unsup)
 
     for i, (data, score) in enumerate(train):
-        assert isinstance(data, _str_types)
+        assert isinstance(data, str)
         assert score <= 4 or score >= 7
 
     for i, (data, score) in enumerate(test):
-        assert isinstance(data, _str_types)
+        assert isinstance(data, str)
         assert score <= 4 or score >= 7
 
     for i, (data, score) in enumerate(unsup):
-        assert isinstance(data, _str_types)
+        assert isinstance(data, str)
         assert score == 0
 
 @pytest.mark.serial
@@ -110,7 +106,7 @@ def test_mr():
         root=os.path.join('tests', 'data', 'mr'))
     assert len(all) == 10662, len(all)
     for i, (data, label) in enumerate(all):
-        assert isinstance(data, _str_types)
+        assert isinstance(data, str)
         assert label <= 1
 
 @pytest.mark.serial
@@ -126,13 +122,13 @@ def test_sst_1():
     assert len(test) == 2210, len(test)
     assert len(dev) == 1101, len(dev)
     for i, (data, label) in enumerate(train):
-        assert isinstance(data, _str_types)
+        assert isinstance(data, str)
         assert label <= 4
     for i, (data, label) in enumerate(test):
-        assert isinstance(data, _str_types)
+        assert isinstance(data, str)
         assert label <= 4
     for i, (data, label) in enumerate(dev):
-        assert isinstance(data, _str_types)
+        assert isinstance(data, str)
         assert label <= 4
 
 @pytest.mark.serial
@@ -148,13 +144,13 @@ def test_sst_2():
     assert len(test) == 1821, len(test)
     assert len(dev) == 872, len(dev)
     for i, (data, label) in enumerate(train):
-        assert isinstance(data, _str_types)
+        assert isinstance(data, str)
         assert label <= 1
     for i, (data, label) in enumerate(test):
-        assert isinstance(data, _str_types)
+        assert isinstance(data, str)
         assert label <= 1
     for i, (data, label) in enumerate(dev):
-        assert isinstance(data, _str_types)
+        assert isinstance(data, str)
         assert label <= 1
 
 @pytest.mark.serial
@@ -164,7 +160,7 @@ def test_subj():
         root=os.path.join('tests', 'data', 'mr'))
     assert len(all) == 10000, len(all)
     for i, (data, label) in enumerate(all):
-        assert isinstance(data, _str_types)
+        assert isinstance(data, str)
         assert label <= 1
 
 @pytest.mark.serial
@@ -177,10 +173,10 @@ def test_trec():
     assert len(train) == 5452, len(train)
     assert len(test) == 500, len(test)
     for i, (data, label) in enumerate(train):
-        assert isinstance(data, _str_types)
+        assert isinstance(data, str)
         assert label <= 5
     for i, (data, label) in enumerate(test):
-        assert isinstance(data, _str_types)
+        assert isinstance(data, str)
         assert label <= 5
 
 @pytest.mark.serial
@@ -190,7 +186,7 @@ def test_cr():
         root=os.path.join('tests', 'data', 'cr'))
     assert len(all) == 3775, len(all)
     for i, (data, label) in enumerate(all):
-        assert isinstance(data, _str_types)
+        assert isinstance(data, str)
         assert label <= 1
 
 @pytest.mark.serial
@@ -200,7 +196,7 @@ def test_mpqa():
         root=os.path.join('tests', 'data', 'mpqa'))
     assert len(all) == 10606, len(all)
     for i, (data, label) in enumerate(all):
-        assert isinstance(data, _str_types)
+        assert isinstance(data, str)
         assert label <= 1
 
 ###############################################################################
@@ -208,8 +204,8 @@ def test_mpqa():
 ###############################################################################
 def _assert_similarity_dataset(data):
     # Check datatypes
-    assert isinstance(data[0][0], _str_types)
-    assert isinstance(data[0][1], _str_types)
+    assert isinstance(data[0][0], str)
+    assert isinstance(data[0][1], str)
     assert np.isfinite(data[0][2])
 
     # Check score magnitude
@@ -353,14 +349,14 @@ def test_conll2000():
     assert len(test) == 2012, len(test)
 
     for i, (data, pos, chk) in enumerate(train):
-        assert all(isinstance(d, _str_types) for d in data), data
-        assert all(isinstance(p, _str_types) for p in pos), pos
-        assert all(isinstance(c, _str_types) for c in chk), chk
+        assert all(isinstance(d, str) for d in data), data
+        assert all(isinstance(p, str) for p in pos), pos
+        assert all(isinstance(c, str) for c in chk), chk
 
     for i, (data, pos, chk) in enumerate(test):
-        assert all(isinstance(d, _str_types) for d in data), data
-        assert all(isinstance(p, _str_types) for p in pos), pos
-        assert all(isinstance(c, _str_types) for c in chk), chk
+        assert all(isinstance(d, str) for d in data), data
+        assert all(isinstance(p, str) for p in pos), pos
+        assert all(isinstance(c, str) for c in chk), chk
 
 
 @flaky(max_runs=2, min_passes=1)
@@ -380,10 +376,10 @@ def test_conll2001():
 
         for dataset in [train, testa, testb]:
             for i, (data, pos, chk, clause) in enumerate(dataset):
-                assert all(isinstance(d, _str_types) for d in data), data
-                assert all(isinstance(p, _str_types) for p in pos), pos
-                assert all(isinstance(c, _str_types) for c in chk), chk
-                assert all(isinstance(i, _str_types) for i in clause), clause
+                assert all(isinstance(d, str) for d in data), data
+                assert all(isinstance(p, str) for p in pos), pos
+                assert all(isinstance(c, str) for c in chk), chk
+                assert all(isinstance(i, str) for i in clause), clause
 
 
 @flaky(max_runs=2, min_passes=1)
@@ -399,9 +395,9 @@ def test_conll2002_ned(segment, length):
         'tests', 'externaldata', 'conll2002'))
     assert len(dataset) == length, len(dataset)
     for i, (data, pos, ner) in enumerate(dataset):
-        assert all(isinstance(d, _str_types) for d in data), data
-        assert all(isinstance(p, _str_types) for p in pos), pos
-        assert all(isinstance(n, _str_types) for n in ner), ner
+        assert all(isinstance(d, str) for d in data), data
+        assert all(isinstance(p, str) for p in pos), pos
+        assert all(isinstance(n, str) for n in ner), ner
 
 
 @flaky(max_runs=2, min_passes=1)
@@ -417,8 +413,8 @@ def test_conll2002_esp(segment, length):
         'tests', 'externaldata', 'conll2002'))
     assert len(dataset) == length, len(dataset)
     for i, (data, ner) in enumerate(dataset):
-        assert all(isinstance(d, _str_types) for d in data), data
-        assert all(isinstance(n, _str_types) for n in ner), ner
+        assert all(isinstance(d, str) for d in data), data
+        assert all(isinstance(n, str) for n in ner), ner
 
 
 @flaky(max_runs=2, min_passes=1)
@@ -436,7 +432,7 @@ def test_conll2004(segment, length):
 
     for i, x in enumerate(dataset):
         assert len(x) >= 6, x
-        assert all(isinstance(d, _str_types) for f in x for d in f), x
+        assert all(isinstance(d, str) for f in x for d in f), x
         assert max(len(f) for f in x) == min(len(f) for f in x), x
 
 
@@ -457,7 +453,7 @@ def test_ud21():
         print('processing {}: {}'.format(lang, segment))
         for i, x in enumerate(dataset):
             assert len(x) >= 9, x
-            assert all(isinstance(d, _str_types) for f in x for d in f), x
+            assert all(isinstance(d, str) for f in x for d in f), x
             assert max(len(f) for f in x) == min(len(f) for f in x)
 
 

@@ -42,9 +42,6 @@ def test_sharded_data_loader():
 
 @pytest.mark.remote_required
 def test_sharded_data_loader_record_file():
-    if not hasattr(mx.recordio.MXRecordIO, '_check_pid'):
-        # skip if mxnet<=1.4.0 detected, some hotfix is not included so recordfile will break
-        return
     # test record file
     url_format = 'https://apache-mxnet.s3-accelerate.amazonaws.com/gluon/dataset/pikachu/{}'
     filename = 'val.rec'

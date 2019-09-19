@@ -14,8 +14,6 @@ sentence pair classification, with Gluon NLP Toolkit.
 }
 """
 
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -53,6 +51,8 @@ from data.classification import MRPCTask, QQPTask, RTETask, STSBTask, SSTTask
 from data.classification import QNLITask, CoLATask, MNLITask, WNLITask, XNLITask
 from data.classification import LCQMCTask, ChnSentiCorpTask
 from data.transform import BERTDatasetTransform
+
+nlp.utils.check_version('0.8.1', warning_only=True)
 
 tasks = {
     'MRPC': MRPCTask(),

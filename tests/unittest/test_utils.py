@@ -128,3 +128,12 @@ def test_glob():
     assert len(files) == 3
     files_fake = nlp.utils.glob('fake_glob')
     assert len(files_fake) == 0
+
+def test_version():
+    future_version = '10.11.12'
+    past_version = '0.1.2'
+    with pytest.raises(AssertionError):
+        nlp.utils.check_version(future_version, warning_only=False)
+    nlp.utils.check_version(future_version, warning_only=True)
+    nlp.utils.check_version(past_version, warning_only=False)
+    nlp.utils.check_version(past_version, warning_only=True)
