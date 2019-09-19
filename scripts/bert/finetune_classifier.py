@@ -47,8 +47,8 @@ import mxnet as mx
 from mxnet import gluon
 import gluonnlp as nlp
 from gluonnlp.data import BERTTokenizer
+from gluonnlp.model import BERTClassifier, RoBERTaClassifier
 
-from model.classification import BERTClassifier, BERTRegression
 from data.classification import MRPCTask, QQPTask, RTETask, STSBTask, SSTTask
 from data.classification import QNLITask, CoLATask, MNLITask, WNLITask, XNLITask
 from data.classification import LCQMCTask, ChnSentiCorpTask
@@ -232,35 +232,41 @@ if only_inference and not model_parameters:
 
 get_pretrained = not (pretrained_bert_parameters is not None
                       or model_parameters is not None)
-bert, vocabulary = nlp.model.get_model(
-    name=model_name,
-    dataset_name=dataset,
-    pretrained=get_pretrained,
-    ctx=ctx,
-    use_pooler=True,
-    use_decoder=False,
-    use_classifier=False)
+
+use_roberta = 'roberta' in model_name
+get_model_params = {
+    'name' : model_name,
+    'dataset_name' : dataset,
+    'pretrained' : get_pretrained,
+    'ctx' : ctx,
+    'use_decoder' : False,
+    'use_classifier' : False,
+}
+# RoBERTa does not contain parameters for sentence pair classification
+if not use_roberta:
+    get_model_params['use_pooler'] = True
+
+bert, vocabulary = nlp.model.get_model(**get_model_params)
 
 # initialize the rest of the parameters
 initializer = mx.init.Normal(0.02)
-use_roberta = 'roberta' in model_name
-if use_roberta:
-    # RoBERTa pre-trained model does not have pooler weights
-    bert.pooler.initialize(initializer, ctx=ctx)
-if not task.class_labels:
-    # STS-B is a regression task.
-    # STSBTask().class_labels returns None
-    model = BERTRegression(bert, dropout=0.1)
-    if not model_parameters:
-        model.regression.initialize(init=initializer, ctx=ctx)
+# STS-B is a regression task.
+# STSBTask().class_labels returns None
+do_regression = not task.class_labels
+if do_regression:
+    num_classes = 1
     loss_function = gluon.loss.L2Loss()
 else:
-    # classification task
-    model = BERTClassifier(
-        bert, dropout=0.1, num_classes=len(task.class_labels))
-    if not model_parameters:
-        model.classifier.initialize(init=initializer, ctx=ctx)
+    num_classes = len(task.class_labels)
     loss_function = gluon.loss.SoftmaxCELoss()
+# reuse the BERTClassifier class with num_classes=1 for regression
+if use_roberta:
+    model = RoBERTaClassifier(bert, dropout=0.0, num_classes=num_classes)
+else:
+    model = BERTClassifier(bert, dropout=0.1, num_classes=num_classes)
+# initialize classifier
+if not model_parameters:
+    model.classifier.initialize(init=initializer, ctx=ctx)
 
 # load checkpointing
 output_dir = args.output_dir
