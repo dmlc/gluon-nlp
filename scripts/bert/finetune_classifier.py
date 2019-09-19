@@ -527,7 +527,7 @@ def train(metric):
             metric_nm, metric_val = evaluate(dev_data, metric, segment)
             if len(metric_history) and metric_val < metric_history[-1][-1] and args.early_stop:
                 should_stop = True
-                logging.info('Early stopping at epoch %d'%epoch_id)
+                logging.info('Early stopping at epoch %d', epoch_id)
             metric_history.append((epoch_id, metric_nm, metric_val))
 
         if not only_inference:
