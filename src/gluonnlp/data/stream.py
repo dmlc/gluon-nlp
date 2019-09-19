@@ -377,8 +377,8 @@ class PrefetchingStream(DataStream):
 
     def __iter__(self):
         seed = random.getrandbits(32)
-        np_seed = np.random.randint(0, 2**32)
-        mx_seed = int(mx.nd.random.uniform(0, 2**32).asscalar())
+        np_seed = np.random.randint(0, np.iinfo(np.int_).max)
+        mx_seed = int(mx.nd.random.uniform(0, np.iinfo(np.int_).max).asscalar())
         if self._multiprocessing:
             return _ProcessPrefetcher(self._stream, self._num_prefetch,
                                       seed=seed, np_seed=np_seed,
