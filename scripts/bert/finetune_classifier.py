@@ -141,8 +141,8 @@ parser.add_argument(
     type=str,
     default='book_corpus_wiki_en_uncased',
     choices=['book_corpus_wiki_en_uncased', 'book_corpus_wiki_en_cased',
-             'openwebtext_book_corpus_wiki_en_uncased','wiki_multilingual_uncased',
-             'wiki_multilingual_cased','wiki_cn_cased',
+             'openwebtext_book_corpus_wiki_en_uncased', 'wiki_multilingual_uncased',
+             'wiki_multilingual_cased', 'wiki_cn_cased',
              'openwebtext_ccnews_stories_books_cased'],
     help='The dataset BERT pre-trained with.')
 parser.add_argument(
