@@ -351,6 +351,7 @@ def preprocess_data(tokenizer, task, batch_size, dev_batch_size, max_len, vocab,
         nlp.data.batchify.Pad(axis=0, pad_val=0))
     # transform for data test
     test_trans = BERTDatasetTransform(tokenizer, max_len,
+                                      vocab=vocab,
                                       class_labels=None,
                                       pad=pad, pair=task.is_pair,
                                       has_label=False)
