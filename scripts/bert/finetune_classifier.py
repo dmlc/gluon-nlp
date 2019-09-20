@@ -292,13 +292,14 @@ if use_roberta:
 else:
     bert_tokenizer = BERTTokenizer(vocabulary, lower=do_lower_case)
 
-def preprocess_data(tokenizer, task, batch_size, dev_batch_size, max_len, pad=False):
+def preprocess_data(tokenizer, task, batch_size, dev_batch_size, max_len, vocab, pad=False):
     """Train/eval Data preparation function."""
     pool = multiprocessing.Pool()
 
     # transformation for data train and dev
     label_dtype = 'float32' if not task.class_labels else 'int32'
     trans = BERTDatasetTransform(tokenizer, max_len,
+                                 vocab=vocab,
                                  class_labels=task.class_labels,
                                  label_alias=task.label_alias,
                                  pad=pad, pair=task.is_pair,
@@ -373,7 +374,7 @@ def preprocess_data(tokenizer, task, batch_size, dev_batch_size, max_len, pad=Fa
 # Get the loader.
 logging.info('processing dataset...')
 train_data, dev_data_list, test_data_list, num_train_examples = preprocess_data(
-    bert_tokenizer, task, batch_size, dev_batch_size, args.max_len, args.pad)
+    bert_tokenizer, task, batch_size, dev_batch_size, args.max_len, vocabulary, args.pad)
 
 
 def test(loader_test, segment):

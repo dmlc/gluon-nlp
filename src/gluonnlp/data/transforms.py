@@ -1221,25 +1221,29 @@ class BERTSentenceTransform:
         Tokenizer for the sentences.
     max_seq_length : int.
         Maximum sequence length of the sentences.
+    vocab : Vocab or BERTVocab
+        The vocabulary.
     pad : bool, default True
         Whether to pad the sentences to maximum length.
     pair : bool, default True
         Whether to transform sentences or sentence pairs.
     """
 
-    def __init__(self, tokenizer, max_seq_length, pad=True, pair=True):
+    def __init__(self, tokenizer, max_seq_length, vocab=None, pad=True, pair=True):
         self._tokenizer = tokenizer
         self._max_seq_length = max_seq_length
         self._pad = pad
         self._pair = pair
+        self._vocab = self._tokenizer.vocab if vocab is None else vocab
         from ..vocab import BERTVocab
-        if isinstance(tokenizer.vocab, BERTVocab):
-            self._cls_token = tokenizer.vocab.cls_token
-            self._sep_token = tokenizer.vocab.sep_token
+        if isinstance(self._vocab, BERTVocab):
+            self._cls_token = self._vocab.cls_token
+            self._sep_token = self._vocab.sep_token
         else:
             # RoBERTa does not register CLS token and SEP token
-            self._cls_token = tokenizer.vocab.bos_token
-            self._sep_token = tokenizer.vocab.eos_token
+            self._cls_token = self._vocab.bos_token
+            self._sep_token = self._vocab.eos_token
+        self._padding_token = self._vocab.padding_token
 
     def __call__(self, line):
         """Perform transformation for sequence pairs or single sequences.
@@ -1324,7 +1328,6 @@ class BERTSentenceTransform:
         # For classification tasks, the first vector (corresponding to [CLS]) is
         # used as as the "sentence vector". Note that this only makes sense because
         # the entire model is fine-tuned.
-        vocab = self._tokenizer.vocab
         tokens = []
         tokens.append(self._cls_token)
         tokens.extend(tokens_a)
@@ -1336,7 +1339,7 @@ class BERTSentenceTransform:
             tokens.append(self._sep_token)
             segment_ids.extend([1] * (len(tokens) - len(segment_ids)))
 
-        input_ids = self._tokenizer.convert_tokens_to_ids(tokens)
+        input_ids = self._vocab[tokens]
 
         # The valid length of sentences. Only real  tokens are attended to.
         valid_length = len(input_ids)
@@ -1345,7 +1348,7 @@ class BERTSentenceTransform:
             # Zero-pad up to the sequence length.
             padding_length = self._max_seq_length - valid_length
             # use padding tokens for the rest
-            input_ids.extend([vocab[vocab.padding_token]] * padding_length)
+            input_ids.extend([self._vocab[self._padding_token]] * padding_length)
             segment_ids.extend([0] * padding_length)
 
         return np.array(input_ids, dtype='int32'), np.array(valid_length, dtype='int32'),\
