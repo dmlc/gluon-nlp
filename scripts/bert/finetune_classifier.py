@@ -287,7 +287,10 @@ loss_function.hybridize(static_alloc=True)
 
 # data processing
 do_lower_case = 'uncased' in dataset
-bert_tokenizer = BERTTokenizer(vocabulary, lower=do_lower_case)
+if use_roberta:
+    bert_tokenizer = nlp.data.GPT2BPETokenizer()
+else:
+    bert_tokenizer = BERTTokenizer(vocabulary, lower=do_lower_case)
 
 def preprocess_data(tokenizer, task, batch_size, dev_batch_size, max_len, pad=False):
     """Train/eval Data preparation function."""
