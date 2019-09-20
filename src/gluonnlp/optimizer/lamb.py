@@ -127,9 +127,9 @@ class LAMB(Optimizer):
 
         # calculate lamb_trust_ratio
         ratio = r1 / r2
-        # becomes NaN if ratio == NaN or 0
-        nan_or_zero = ratio / ratio
-        r = where(nan_or_zero, ones_like(ratio), ratio)
+        # becomes NaN if ratio == NaN or 0, otherwise 1
+        nan_or_one = ratio / ratio
+        r = where(nan_or_one, ones_like(ratio), ratio)
         lr *= r
 
         # update weight
