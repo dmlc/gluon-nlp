@@ -1,5 +1,3 @@
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -16,22 +14,17 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-
-# pylint: disable=line-too-long
 """Baidu ernie data, contains XNLI."""
 
 __all__ = ['BaiduErnieXNLI', 'BaiduErnieLCQMC', 'BaiduErnieChnSentiCorp']
 
 import os
-import sys
 import tarfile
+from urllib.request import urlretrieve
+
+from gluonnlp.base import get_home_dir
 from gluonnlp.data.dataset import TSVDataset
 from gluonnlp.data.registry import register
-from gluonnlp.base import get_home_dir
-if sys.version_info[0] >= 3:
-    from urllib.request import urlretrieve
-else:
-    from urllib import urlretrieve
 
 _baidu_ernie_data_url = 'https://ernie.bj.bcebos.com/task_data_zh.tgz'
 

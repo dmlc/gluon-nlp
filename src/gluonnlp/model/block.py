@@ -1,5 +1,3 @@
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -21,7 +19,6 @@
 __all__ = ['RNNCellLayer', 'L2Normalization', 'GELU']
 
 import math
-import warnings
 from mxnet import ndarray
 from mxnet.gluon import Block, HybridBlock
 
@@ -107,12 +104,10 @@ class GELU(HybridBlock):
     """
     def __init__(self, **kwargs):
         super(GELU, self).__init__(**kwargs)
-        self._support_erf = False
-        try:
-            self._support_erf = bool(ndarray.erf)
-        except AttributeError:
-            warnings.warn('`erf` operator support is not found. '
-                          'Please consider upgrading to mxnet >= 1.4')
+        # Always True as GluonNLP requires sufficiently recent MXNet. Not
+        # deleting, as gpt script relies on overwriting this internal variable
+        self._support_erf = bool(ndarray.erf)
+
 
     def hybrid_forward(self, F, x): # pylint: disable=arguments-differ
         if self._support_erf:

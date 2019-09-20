@@ -1,5 +1,3 @@
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -25,7 +23,6 @@ import random
 
 import numpy as np
 
-from ...base import _str_types
 from ..stream import DataStream
 
 try:
@@ -135,7 +132,7 @@ class _EmbeddingCenterContextBatchify(DataStream):
                 'with numba, but numba is not installed. '
                 'Consider "pip install numba" for significant speed-ups.')
 
-        if isinstance(self._sentences[0][0], _str_types):
+        if isinstance(self._sentences[0][0], str):
             sentences = [np.asarray(s, dtype='O') for s in self._sentences]
         else:
             sentences = [np.asarray(s) for s in self._sentences]

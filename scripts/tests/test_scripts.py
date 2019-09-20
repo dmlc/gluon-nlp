@@ -1,5 +1,3 @@
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -69,7 +67,8 @@ def test_glove():
 @pytest.mark.gpu
 @pytest.mark.integration
 @pytest.mark.parametrize('fasttextloadngrams', [True, False])
-def test_embedding_evaluate_pretrained(fasttextloadngrams):
+@pytest.mark.parametrize('maxvocabsize', [None, 50000])
+def test_embedding_evaluate_pretrained(fasttextloadngrams, maxvocabsize):
     cmd = [
         sys.executable, './scripts/word_embeddings/evaluate_pretrained.py',
         '--embedding-name', 'fasttext', '--embedding-source', 'wiki.simple',
@@ -79,6 +78,8 @@ def test_embedding_evaluate_pretrained(fasttextloadngrams):
     cmd += ['--analogy-datasets', 'GoogleAnalogyTestSet']
     if fasttextloadngrams:
         cmd.append('--fasttext-load-ngrams')
+    if maxvocabsize:
+        cmd += ['--analogy-max-vocab-size', str(maxvocabsize)]
 
     subprocess.check_call(cmd)
     time.sleep(5)
@@ -98,11 +99,11 @@ def test_embedding_evaluate_from_path(evaluateanalogies, maxvocabsize):
         sys.executable, './scripts/word_embeddings/evaluate_pretrained.py',
         '--embedding-path', path, '--gpu', '0']
     if evaluateanalogies:
-        cmd += ['--similarity-datasets=']
+        cmd += ['--similarity-datasets']
         cmd += ['--analogy-datasets', 'GoogleAnalogyTestSet']
     else:
         cmd += ['--similarity-datasets', 'WordSim353']
-        cmd += ['--analogy-datasets=']
+        cmd += ['--analogy-datasets']
     if maxvocabsize is not None:
         cmd += ['--analogy-max-vocab-size', str(maxvocabsize)]
     subprocess.check_call(cmd)
@@ -183,6 +184,19 @@ def test_transformer(bleu):
             '--num_heads', '4', '--test_batch_size', '32']
     process = subprocess.check_call([sys.executable, './scripts/machine_translation/train_transformer.py']
                                     +args)
+
+    process = subprocess.check_call([sys.executable, './scripts/machine_translation/inference_transformer.py',
+                                     '--dataset', 'WMT2014BPE', 
+                                     '--src_lang', 'en',
+                                     '--tgt_lang', 'de', 
+                                     '--scaled', 
+                                     '--num_buckets', '20', 
+                                     '--bucket_scheme', 'exp',
+                                     '--bleu', '13a', 
+                                     '--log_interval', '10', 
+                                     '--model_parameter', './scripts/machine_translation/transformer_en_de_u512/valid_best.params', 
+                                     '--gpus', '0'
+                                     ])
     time.sleep(5)
 
 

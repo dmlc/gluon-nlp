@@ -1,5 +1,3 @@
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -47,6 +45,7 @@ from utils import get_context, print_time
 from model import SG, CBOW
 from data import transform_data_word2vec, transform_data_fasttext, preprocess_dataset, wiki
 
+nlp.utils.check_version('0.7.0')
 
 def parse_args():
     """Parse command line arguments."""
@@ -184,31 +183,15 @@ def train(args):
         embedding.hybridize(static_alloc=True, static_shape=True)
 
     optimizer_kwargs = dict(learning_rate=args.lr)
-    try:
-        trainer = mx.gluon.Trainer(embedding.collect_params(), args.optimizer,
-                                   optimizer_kwargs)
-    except ValueError as e:
-        if args.optimizer == 'groupadagrad':
-            logging.warning('MXNet <= v1.3 does not contain '
-                            'GroupAdaGrad support. Falling back to AdaGrad')
-            trainer = mx.gluon.Trainer(embedding.collect_params(), 'adagrad',
-                                       optimizer_kwargs)
-        else:
-            raise e
+    trainer = mx.gluon.Trainer(embedding.collect_params(), args.optimizer,
+                               optimizer_kwargs)
 
-    try:
-        if args.no_prefetch_batch:
-            data = data.transform(batchify_fn)
-        else:
-            from executors import LazyThreadPoolExecutor
-            num_cpu = len(os.sched_getaffinity(0))
-            ex = LazyThreadPoolExecutor(num_cpu)
-    except (ImportError, SyntaxError, AttributeError):
-        # Py2 - no async prefetching is supported
-        logging.warning(
-            'Asynchronous batch prefetching is not supported on Python 2. '
-            'Consider upgrading to Python 3 for improved performance.')
+    if args.no_prefetch_batch:
         data = data.transform(batchify_fn)
+    else:
+        from executors import LazyThreadPoolExecutor
+        num_cpu = len(os.sched_getaffinity(0))
+        ex = LazyThreadPoolExecutor(num_cpu)
 
     num_update = 0
     prefetched_iters = []

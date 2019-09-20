@@ -42,6 +42,8 @@ import numpy as np
 import mxnet as mx
 import gluonnlp as nlp
 from bert import data, model
+
+nlp.utils.check_version('0.8.1')
 ```
 
 ### Setting up the environment
