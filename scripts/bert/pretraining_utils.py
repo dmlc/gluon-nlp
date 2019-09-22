@@ -389,9 +389,6 @@ def evaluate(data_eval, model, ctx, log_interval, dtype):
                          total_nsp_loss.asscalar(), nsp_metric.get_global()[1] * 100))
     logging.info('Eval cost={:.1f}s'.format(eval_end_time - eval_begin_time))
 
-def get_argparser():
-    """Argument parser"""
-    return parser
 
 def generate_dev_set(tokenizer, vocab, cache_file, args):
     """Generate validation set."""

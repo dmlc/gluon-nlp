@@ -247,7 +247,7 @@ def test_bert_pretrain(backend):
 
     arguments = ['--log_interval', '2',
                  '--lr', '2e-5', '--warmup_ratio', '0.5',
-                 '--batch_size', '32', '--batch_size_eval', '8',
+                 '--total_batch_size', '32', '--total_batch_size_eval', '8',
                  '--ckpt_dir', './test/bert/ckpt',
                  '--num_steps', '20', '--num_buckets', '1',
                  '--pretrained',

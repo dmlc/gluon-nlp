@@ -71,10 +71,12 @@ parser.add_argument('--dataset_name', type=str, default='book_corpus_wiki_en_unc
 parser.add_argument('--data', type=str, default=None,
                     help='Path to training data file. File name with wildcard such as '
                          'dir/*.train is accepted.')
-parser.add_argument('--batch_size', type=int, default=8, help='Batch size per GPU.')
+parser.add_argument('--total_batch_size', type=int, default=256,
+                    help='Global effective batch size. '
+                         'total_batch_size = batch_size_per_worker * num_worker * accumulate.')
 parser.add_argument('--accumulate', type=int, default=1,
                     help='Number of batches for gradient accumulation. '
-                         'The effective batch size = batch_size * accumulate.')
+                         'total_batch_size = batch_size_per_worker * num_worker * accumulate.')
 parser.add_argument('--num_steps', type=int, default=20, help='Number of optimization steps')
 parser.add_argument('--start_step', type=int, default=0,
                     help='Start optimization step from the checkpoint.')
@@ -84,8 +86,9 @@ parser.add_argument('--warmup_ratio', type=float, default=0.01,
 parser.add_argument('--dtype', type=str, default='float16', help='data dtype')
 # validation
 parser.add_argument('--eval_interval', type=int, default=50000, help='Evaluation interval')
-parser.add_argument('--batch_size_eval', type=int, default=8,
-                    help='Batch size per GPU for evaluation.')
+parser.add_argument('--total_batch_size_eval', type=int, default=256,
+                    help='Global batch size for evaluation. total_batch_size_eval = '
+                         'batch_size_eval_per_worker * num_worker * accumulate.')
 parser.add_argument('--data_eval', type=str, required=True,
                     help='Path to evaluation data file. File name with wildcard such as '
                          'dir/*.dev is accepted.')
@@ -201,6 +204,12 @@ def init_comm(backend):
 
 backend = args.comm_backend
 store, num_workers, rank, local_rank, is_master_node, ctxs = init_comm(backend)
+assert args.total_batch_size % (args.accumulate * num_workers) == 0
+assert args.total_batch_size_eval % (args.accumulate * num_workers) == 0
+batch_size = int(args.total_batch_size / num_workers / args.accumulate)
+batch_size_eval = int(args.total_batch_size_eval / num_workers / args.accumulate)
+assert batch_size > 0
+assert batch_size_eval > 0
 
 def train(data_train, data_eval, model):
     """Training function."""
@@ -264,7 +273,7 @@ def train(data_train, data_eval, model):
 
     # create dummy data loader if needed
     if args.dummy_data_len:
-        target_shape = (args.batch_size, args.dummy_data_len)
+        target_shape = (batch_size, args.dummy_data_len)
         data_train = get_dummy_dataloader(data_train, target_shape)
 
     parallel_model = DataParallelBERT(model, trainer=fp16_trainer)
@@ -336,7 +345,7 @@ def train(data_train, data_eval, model):
                         save_parameters(step_num, model.bert, args.ckpt_dir)
                 if (step_num + 1) % args.eval_interval == 0 and data_eval:
                     # eval data is always based on a fixed npz file.
-                    dataset_eval = get_pretrain_data_npz(data_eval, args.batch_size_eval,
+                    dataset_eval = get_pretrain_data_npz(data_eval, batch_size_eval,
                                                          1, False, 1, vocab)
                     evaluate(dataset_eval, model, ctxs, args.log_interval, args.dtype)
 
@@ -404,13 +413,15 @@ if __name__ == '__main__':
 
         num_parts = 1 if args.dummy_data_len else num_workers
         part_idx = 0 if args.dummy_data_len else rank
-        data_train = get_dataset_fn(args.data, args.batch_size, 1, True,
-                                    args.num_buckets, vocab,
+        shuffle = True
+        data_train = get_dataset_fn(args.data, batch_size,
+                                    len(ctxs), shuffle, args.num_buckets, vocab,
                                     num_parts=num_parts, part_idx=part_idx,
                                     num_workers=args.num_data_workers)
         train(data_train, data_eval, model)
     if data_eval:
         # eval data is always based on a fixed npz file.
-        dataset_eval = get_pretrain_data_npz(data_eval, args.batch_size_eval, 1,
-                                             False, 1, vocab)
+        shuffle = False
+        dataset_eval = get_pretrain_data_npz(data_eval, batch_size_eval,
+                                             len(ctxs), shuffle, 1, vocab)
         evaluate(dataset_eval, model, ctxs, args.log_interval, args.dtype)

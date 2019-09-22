@@ -203,11 +203,20 @@ You can use the following command to run pre-training with 2 hosts, 8 GPUs each:
              --mca plm_rsh_agent 'ssh -q -o StrictHostKeyChecking=no' \
              -x NCCL_MIN_NRINGS=8 -x NCCL_DEBUG=INFO -x HOROVOD_HIERARCHICAL_ALLREDUCE=1 \
              -x MXNET_SAFE_ACCUMULATION=1 --tag-output \
-             python run_pretraining_hvd.py --data='folder1/*.txt,folder2/*.txt,' \
+             python run_pretraining.py --data='folder1/*.txt,folder2/*.txt,' \
              --data_eval='dev_folder/*.txt,' --num_steps 1000000 \
-             --lr 1e-4 --batch_size 4096 --accumulate 4 --use_avg_len --raw
+             --lr 1e-4 --total_batch_size 256 --accumulate 1 --use_avg_len --raw --comm_backend horovod
 
-Note that the batch_size argument sets the per-GPU batch size. When multiple hosts are present, please make sure you can ssh to these nodes without password.
+If you see out-of-memory error, try increasing --accumulate for gradient accumulation.
+When multiple hosts are present, please make sure you can ssh to these nodes without password.
+
+Alternatively, if horovod is not available, you could run pre-training with the MXNet native parameter server by setting ??
+
+.. code-block:: console
+
+    $ MXNET_SAFE_ACCUMULATION=1 python run_pretraining.py --data '/path/to/generated/train/*.npz' --data_eval '/path/to/generated/dev/*.npz' ...
+
+ by setting --comm_backend device or --comm_backend dist_device
 
 Custom Vocabulary
 +++++++++++++++++
@@ -240,18 +249,12 @@ The `create_pretraining_data.py` file generates pre-training data from raw text 
 
 Optionally, if you are using a custom sentencepiece vocab to generate pre-training data, please set --sentencepiece=my_vocab.model.
 
-To use the generated npz files for pre-training, remove the **--raw** argument, and update the argument for **--data** and **--data_eval** with the paths to the npz files when using run_pretraining_hvd.py.
-
-Run without Horovod
-+++++++++++++++++++
-
-Alternatively, if horovod is not available, you could run pre-training with the MXNet native parameter server. As of now, the training script only supports pre-generated data.
+To use the generated npz files for pre-training, remove the **--raw** argument, and update the argument for **--data** and **--data_eval** with the paths to the npz files when using run_pretraining.py:
 
 .. code-block:: console
 
-    $ MXNET_SAFE_ACCUMULATION=1 python run_pretraining.py --gpus 0,1,2,3,4,5,6,7 --batch_size 4096 --accumulate 4 --lr 1e-4 \
-                                                          --data '/path/to/generated/train/*.npz' --num_steps 1000000 --use_avg_len \
-                                                          --log_interval=250 --data_eval '/path/to/generated/dev/*.npz'
+    $ MXNET_SAFE_ACCUMULATION=1 python run_pretraining.py --data '/path/to/generated/train/*.npz' --data_eval '/path/to/generated/dev/*.npz' ...
+
 
 The BERT base model produced by gluonnlp pre-training script (`log <https://raw.githubusercontent.com/dmlc/web-data/master/gluonnlp/logs/bert/bert_base_pretrain.log>`__) achieves 83.6% on MNLI-mm, 93% on SST-2, 87.99% on MRPC and 80.99/88.60 on SQuAD 1.1 validation set on the books corpus and English wikipedia dataset.
 
