@@ -100,7 +100,7 @@ parser.add_argument('--dummy_data_len', type=int, default=None,
                          'used. For benchmarking purpuse only.')
 parser.add_argument('--verbose', action='store_true', help='verbose logging')
 parser.add_argument('--profile', type=str, default=None,
-                        help='output profiling result to the target file')
+                    help='output profiling result to the provided file path')
 # data pre-processing
 parser.add_argument('--num_buckets', type=int, default=1,
                     help='Number of buckets for variable length sequence sampling')
