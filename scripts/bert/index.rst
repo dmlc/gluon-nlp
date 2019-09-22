@@ -50,7 +50,7 @@ where **bert_12_768_12** refers to the BERT BASE model, and **bert_24_1024_16** 
 .. code-block:: python
 
     import gluonnlp as nlp; import mxnet as mx;
-    model, vocab = nlp.model.get_model('bert_12_768_12', dataset_name='book_corpus_wiki_en_uncased', use_classifier=False);
+    model, vocab = nlp.model.get_model('bert_12_768_12', dataset_name='book_corpus_wiki_en_uncased', use_classifier=False, use_decoder=False);
     tokenizer = nlp.data.BERTTokenizer(vocab, lower=True);
     transform = nlp.data.BERTSentenceTransform(tokenizer, max_seq_length=512, pair=False, pad=False);
     sample = transform(['Hello world!']);
