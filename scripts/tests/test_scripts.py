@@ -210,26 +210,8 @@ def test_bert_embedding(use_pretrained):
 @pytest.mark.gpu
 @pytest.mark.remote_required
 @pytest.mark.integration
-def test_bert_pretrain_create():
-    # test data creation
-    process = subprocess.check_call([sys.executable, './scripts/bert/create_pretraining_data.py',
-                                     '--input_file', './scripts/bert/sample_text.txt',
-                                     '--output_dir', 'test/bert/data',
-                                     '--dataset_name', 'book_corpus_wiki_en_uncased',
-                                     '--max_seq_length', '128',
-                                     '--max_predictions_per_seq', '20',
-                                     '--dupe_factor', '5',
-                                     '--whole_word_mask',
-                                     '--masked_lm_prob', '0.15',
-                                     '--short_seq_prob', '0.1',
-                                     '--verbose'])
-    time.sleep(3)
-
-@pytest.mark.serial
-@pytest.mark.gpu
-@pytest.mark.remote_required
-@pytest.mark.integration
-def test_bert_pretrain():
+@pytest.mark.parametrize('backend', ['horovod', 'device'])
+def test_bert_pretrain(backend):
     # test data creation
     process = subprocess.check_call([sys.executable, './scripts/bert/create_pretraining_data.py',
                                      '--input_file', './scripts/bert/sample_text.txt',
@@ -239,100 +221,39 @@ def test_bert_pretrain():
                                      '--max_predictions_per_seq', '20',
                                      '--dupe_factor', '5',
                                      '--masked_lm_prob', '0.15',
-                                     '--short_seq_prob', '0.1',
+                                     '--short_seq_prob', '0',
                                      '--verbose'])
-    arguments = ['--log_interval', '2', '--data_eval', './test/bert/data/*.npz',
-                 '--batch_size_eval', '8', '--ckpt_dir', './test/bert/ckpt',
-                 '--num_steps', '20', '--num_buckets', '1']
-    # test training
-    process = subprocess.check_call([sys.executable, './scripts/bert/run_pretraining.py',
-                                     '--dtype', 'float32',
-                                     '--data', './test/bert/data/*.npz',
-                                     '--batch_size', '32',
-                                     '--lr', '2e-5',
-                                     '--warmup_ratio', '0.5',
-                                     '--pretrained'] + arguments)
-    # test evaluation
-    process = subprocess.check_call([sys.executable, './scripts/bert/run_pretraining.py',
-                                     '--dtype', 'float32',
-                                     '--pretrained'] + arguments)
+    if backend == 'horovod':
+        try:
+            # Test only if horovod is present
+            import horovod.mxnet as hvd
+        except ImportError:
+            print("The test expects master branch of MXNet and Horovod. Skipped now.")
+            return
 
-    # test mixed precision training and use-avg-len
-    from mxnet.ndarray.contrib import mp_adamw_update
+    arguments = ['--log_interval', '2',
+                 '--lr', '2e-5', '--warmup_ratio', '0.5',
+                 '--batch_size', '32', '--batch_size_eval', '8',
+                 '--ckpt_dir', './test/bert/ckpt',
+                 '--num_steps', '20', '--num_buckets', '1',
+                 '--pretrained',
+                 '--comm_backend', 'horovod']
+    # test training with npz data, float32
     process = subprocess.check_call([sys.executable, './scripts/bert/run_pretraining.py',
+                                     '--dtype', 'float32',
                                      '--data', './test/bert/data/*.npz',
-                                     '--batch_size', '4096',
-                                     '--use_avg_len',
-                                     '--lr', '2e-5',
-                                     '--warmup_ratio', '0.5',
-                                     '--pretrained'] + arguments)
+                                     '--data_eval', './test/bert/data/*.npz',
+                                     '--eval_use_npz'] + arguments)
+
+    raw_txt_arguments = ['--raw', '--max_seq_length', '128',
+                         '--max_predictions_per_seq', '20', '--masked_lm_prob', '0.15']
+
+    # test training with raw data
+    process = subprocess.check_call([sys.executable, './scripts/bert/run_pretraining.py',
+                                     '--data', './scripts/bert/sample_text.txt',
+                                     '--data_eval', './scripts/bert/sample_text.txt'] +
+                                     arguments + raw_txt_arguments)
     time.sleep(5)
-
-@pytest.mark.serial
-@pytest.mark.gpu
-@pytest.mark.remote_required
-@pytest.mark.integration
-def test_bert_pretrain_hvd():
-    # test data creation
-    process = subprocess.check_call([sys.executable, './scripts/bert/create_pretraining_data.py',
-                                     '--input_file', './scripts/bert/sample_text.txt',
-                                     '--output_dir', 'test/bert/data',
-                                     '--dataset_name', 'book_corpus_wiki_en_uncased',
-                                     '--max_seq_length', '128',
-                                     '--max_predictions_per_seq', '20',
-                                     '--dupe_factor', '5',
-                                     '--masked_lm_prob', '0.15',
-                                     '--short_seq_prob', '0.1',
-                                     '--verbose'])
-    try:
-        # Test only if horovod is present
-        import horovod.mxnet as hvd
-        arguments = ['--log_interval', '2',
-                     '--batch_size_eval', '8', '--ckpt_dir', './test/bert/ckpt',
-                     '--num_steps', '20', '--num_buckets', '1', '--backend', 'horovod']
-        # test training
-        process = subprocess.check_call([sys.executable, './scripts/bert/run_pretraining.py',
-                                         '--dtype', 'float32',
-                                         '--data', './test/bert/data/*.npz',
-                                         '--data_eval', './test/bert/data/*.npz',
-                                         '--batch_size', '32',
-                                         '--lr', '2e-5', '--eval_use_npz',
-                                         '--warmup_ratio', '0.5',
-                                         '--pretrained'] + arguments)
-        # test training with raw data
-        process = subprocess.check_call([sys.executable, './scripts/bert/run_pretraining.py',
-                                         '--dtype', 'float32',
-                                         '--raw',
-                                         '--max_seq_length', '128',
-                                         '--max_predictions_per_seq', '20',
-                                         '--masked_lm_prob', '0.15',
-                                         '--short_seq_prob', '0.1',
-                                         '--data', './scripts/bert/sample_text.txt',
-                                         '--data_eval', './scripts/bert/sample_text.txt',
-                                         '--batch_size', '32',
-                                         '--lr', '2e-5',
-                                         '--warmup_ratio', '0.5',
-                                         '--pretrained'] + arguments)
-
-        # test evaluation
-        process = subprocess.check_call([sys.executable, './scripts/bert/run_pretraining.py',
-                                         '--dtype', 'float32',
-                                         '--data_eval', './test/bert/data/*.npz',
-                                         '--eval_use_npz', '--pretrained'] + arguments)
-
-        # test mixed precision training and use-avg-len
-        from mxnet.ndarray.contrib import mp_adamw_update
-        process = subprocess.check_call([sys.executable, './scripts/bert/run_pretraining.py',
-                                         '--data', './test/bert/data/*.npz',
-                                         '--data_eval', './test/bert/data/*.npz',
-                                         '--batch_size', '4096',
-                                         '--use_avg_len',
-                                         '--lr', '2e-5',
-                                         '--warmup_ratio', '0.5',
-                                         '--pretrained'] + arguments)
-        time.sleep(5)
-    except ImportError:
-        print("The test expects master branch of MXNet and Horovod. Skipped now.")
 
 @pytest.mark.serial
 @pytest.mark.gpu
