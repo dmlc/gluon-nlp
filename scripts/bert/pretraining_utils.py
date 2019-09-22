@@ -19,10 +19,8 @@
 import time
 import os
 import logging
-import argparse
 import random
 import multiprocessing
-import functools
 
 import numpy as np
 import mxnet as mx
