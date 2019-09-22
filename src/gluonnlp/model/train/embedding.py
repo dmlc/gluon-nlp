@@ -1,5 +1,3 @@
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -30,7 +28,6 @@ import numpy as np
 from mxnet import cpu, nd
 from mxnet.gluon import Block, HybridBlock
 
-from ...base import _str_types
 from ...vocab.subwords import create_subword_function
 
 
@@ -154,7 +151,7 @@ class CSREmbeddingModel(EmbeddingModel, HybridBlock):
             (matrix) of shape=(len(tokens), vec_len).
         """
         squeeze = False
-        if isinstance(tokens, _str_types):
+        if isinstance(tokens, str):
             tokens = [tokens]
             squeeze = True
 
@@ -389,7 +386,7 @@ class FasttextEmbeddingModel(EmbeddingModel, HybridBlock):
             (matrix) of shape=(len(tokens), vec_len).
         """
         squeeze = False
-        if isinstance(tokens, _str_types):
+        if isinstance(tokens, str):
             tokens = [tokens]
             squeeze = True
 

@@ -13,3 +13,4 @@ Package Reference
    loss
    initializer
    optimizer
+   utils

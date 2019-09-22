@@ -1,5 +1,3 @@
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -16,7 +14,6 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-from __future__ import print_function
 
 import os
 import sys
@@ -77,8 +74,6 @@ def test_pad_sequence():
                             assert_allclose(ret_l, gt_npy)
 
 
-@pytest.mark.skipif(sys.version_info < (3, 0),
-                    reason="requires python3 or higher")
 def test_moses_tokenizer():
     tokenizer = t.SacreMosesTokenizer()
     text = u"Introducing Gluon: An Easy-to-Use Programming Interface for Flexible Deep Learning."
@@ -103,8 +98,6 @@ def test_spacy_tokenizer():
     assert len(ret) > 0
 
 
-@pytest.mark.skipif(sys.version_info < (3, 0),
-                    reason="requires python3 or higher")
 def test_moses_detokenizer():
     detokenizer = t.SacreMosesDetokenizer(return_str=False)
     text = ['Introducing', 'Gluon', ':', 'An', 'Easy-to-Use', 'Programming',

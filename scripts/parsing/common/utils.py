@@ -1,5 +1,3 @@
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -33,7 +31,7 @@ from .data import ParserVocabulary
 from .tarjan import Tarjan
 
 
-class Progbar(object):
+class Progbar:
     """Progbar class copied from keras (https://github.com/fchollet/keras/)
 
     Displays a progress bar.

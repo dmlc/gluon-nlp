@@ -8,8 +8,6 @@ Kim, Y. (2014). Convolutional neural networks for sentence classification.
 arXiv preprint arXiv:1408.5882.
 """
 
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -35,10 +33,11 @@ import numpy as np
 import mxnet as mx
 from mxnet import nd, gluon, autograd
 from mxnet.gluon.data import DataLoader
-
+import gluonnlp
 import process_data
 import text_cnn
 
+gluonnlp.utils.check_version('0.7.0')
 
 np.random.seed(3435)
 random.seed(3435)

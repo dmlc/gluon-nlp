@@ -3,9 +3,11 @@ Bidirectional Encoder Representations from Transformers
 
 :download:`Download scripts </model_zoo/bert.zip>`
 
+
 Reference: Devlin, Jacob, et al. "`Bert: Pre-training of deep bidirectional transformers for language understanding. <https://arxiv.org/abs/1810.04805>`_" arXiv preprint arXiv:1810.04805 (2018).
 
-Note: BERT model requires `nightly version of MXNet <https://mxnet.incubator.apache.org/versions/master/install/index.html?version=master&platform=Linux&language=Python&processor=CPU>`__. 
+BERT Model Zoo
+~~~~~~~~~~~~~~
 
 The following pre-trained BERT models are available from the **gluonnlp.model.get_model** API:
 
@@ -45,8 +47,63 @@ The following pre-trained BERT models are available from the **gluonnlp.model.ge
 
 where **bert_12_768_12** refers to the BERT BASE model, and **bert_24_1024_16** refers to the BERT LARGE model.
 
-BERT for Sentence Classification
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. code-block:: python
+
+    import gluonnlp as nlp; import mxnet as mx;
+    model, vocab = nlp.model.get_model('bert_12_768_12', dataset_name='book_corpus_wiki_en_uncased', use_classifier=False);
+    tokenizer = nlp.data.BERTTokenizer(vocab, lower=True);
+    transform = nlp.data.BERTSentenceTransform(tokenizer, max_seq_length=512, pair=False, pad=False);
+    sample = transform(['Hello world!']);
+    words, valid_len, segments = mx.nd.array([sample[0]]), mx.nd.array([sample[1]]), mx.nd.array([sample[2]]);
+    seq_encoding, cls_encoding = model(words, segments, valid_len);
+
+
+The pretrained parameters for dataset_name
+'openwebtext_book_corpus_wiki_en_uncased' were obtained by running the GluonNLP
+BERT pre-training script on OpenWebText.
+
+The pretrained parameters for dataset_name 'scibert_scivocab_uncased',
+'scibert_scivocab_cased', 'scibert_basevocab_uncased', 'scibert_basevocab_cased'
+were obtained by converting the parameters published by "Beltagy, I., Cohan, A.,
+& Lo, K. (2019). Scibert: Pretrained contextualized embeddings for scientific
+text. arXiv preprint `arXiv:1903.10676 <https://arxiv.org/abs/1903.10676>`_."
+
+The pretrained parameters for dataset_name 'biobert_v1.0_pmc',
+'biobert_v1.0_pubmed', 'biobert_v1.0_pubmed_pmc', 'biobert_v1.1_pubmed' were
+obtained by converting the parameters published by "Lee, J., Yoon, W., Kim, S.,
+Kim, D., Kim, S., So, C. H., & Kang, J. (2019). Biobert: pre-trained biomedical
+language representation model for biomedical text mining. arXiv preprint
+`arXiv:1901.08746 <https://arxiv.org/abs/1901.08746>`_."
+
+The pretrained parameters for dataset_name 'clinicalbert' were obtained by
+converting the parameters published by "Huang, K., Altosaar, J., & Ranganath, R.
+(2019). ClinicalBERT: Modeling Clinical Notes and Predicting Hospital
+Readmission. arXiv preprint `arXiv:1904.05342
+<https://arxiv.org/abs/1904.05342>`_."
+
+Additionally, GluonNLP supports the "`RoBERTa <https://arxiv.org/abs/1907.11692>`_" model:
+
++-----------------------------------------+-------------------+--------------------+
+|                                         | roberta_12_768_12 | roberta_24_1024_16 |
++=========================================+===================+====================+
+| openwebtext_ccnews_stories_books_cased  | ✓                 | ✓                  |
++-----------------------------------------+-------------------+--------------------+
+
+.. code-block:: python
+
+    import gluonnlp as nlp; import mxnet as mx;
+    model, vocab = nlp.model.get_model('roberta_12_768_12', dataset_name='openwebtext_ccnews_stories_books_cased');
+    tokenizer = nlp.data.GPT2BPETokenizer();
+    text = [vocab.bos_token] + tokenizer('Hello world!') + [vocab.eos_token];
+    seq_encoding = model(mx.nd.array([vocab[text]]))
+
+.. hint::
+
+   The pre-training, fine-tunining and export scripts are available `here. </_downloads/bert.zip>`__
+
+
+Sentence Classification
+~~~~~~~~~~~~~~~~~~~~~~~
 
 GluonNLP provides the following example script to fine-tune sentence classification with pre-trained
 BERT model.
@@ -70,8 +127,8 @@ To enable mixed precision training with float16, set `--dtype` argument to `floa
 
 .. editing URL for the following table: https://tinyurl.com/y5rrowj3
 
-BERT for Question Answering on SQuAD
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Question Answering on SQuAD
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 +---------+-----------------------------------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------+
 | Dataset | SQuAD 1.1                                                                                                                               | SQuAD 1.1                                                                                                                                | SQuAD 2.0                                                                                                                                |
@@ -105,12 +162,18 @@ To get the score of the dev data, you need to download the dev dataset (`dev-v2.
     $ python evaluate-v2.0.py dev-v2.0.json predictions.json
 
 
-BERT Pre-training
-~~~~~~~~~~~~~~~~~
+Pre-training from Scratch
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
 We also provide scripts for pre-training BERT with masked language modeling and and next sentence prediction.
 
 The pre-training data format expects: (1) One sentence per line. These should ideally be actual sentences, not entire paragraphs or arbitrary spans of text for the "next sentence prediction" task. (2) Blank lines between documents. You can find a sample pre-training text with 3 documents `here <https://github.com/dmlc/gluon-nlp/blob/master/scripts/bert/sample_text.txt>`__. You can perform sentence segmentation with an off-the-shelf NLP toolkit such as NLTK.
+
+
+.. hint::
+
+   You can download pre-processed English wikipedia dataset `here. <https://apache-mxnet.s3-accelerate.dualstack.amazonaws.com/gluon/dataset/enwiki-197b5d8d.zip>`__
+
 
 Pre-requisite
 +++++++++++++
@@ -162,7 +225,7 @@ You can `train <//github.com/google/sentencepiece/tree/v0.1.82/python#model-trai
 .. code-block:: python
 
     import sentencepiece as spm
-    spm.SentencePieceTrainer.Train('--input=a.txt,b.txt --unk_id=0 --pad_id=1 --model_prefix=my_vocab --vocab_size=30000 --model_type BPE')
+    spm.SentencePieceTrainer.Train('--input=a.txt,b.txt --unk_id=0 --pad_id=3 --model_prefix=my_vocab --vocab_size=30000 --model_type=BPE')
 
 To use sentencepiece vocab for pre-training, please set --sentencepiece=my_vocab.model when using run_pretraining_hvd.py.
 
@@ -192,8 +255,8 @@ Alternatively, if horovod is not available, you could run pre-training with the 
 
 The BERT base model produced by gluonnlp pre-training script (`log <https://raw.githubusercontent.com/dmlc/web-data/master/gluonnlp/logs/bert/bert_base_pretrain.log>`__) achieves 83.6% on MNLI-mm, 93% on SST-2, 87.99% on MRPC and 80.99/88.60 on SQuAD 1.1 validation set on the books corpus and English wikipedia dataset.
 
-BERT for Named Entity Recognition
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Named Entity Recognition
+~~~~~~~~~~~~~~~~~~~~~~~~
 
 GluonNLP provides training and prediction script for named entity recognition models.
 
@@ -223,14 +286,14 @@ This achieves Test F1 from `91.5` to `92.2` (`log <https://github.com/dmlc/web-d
 Export BERT for Deployment
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Current export/export.py support exporting BERT models. Supported values for --task argument include classification, regression and question_answering.
+Current export.py support exporting BERT models. Supported values for --task argument include classification, regression and question answering.
 
 .. code-block:: console
 
-    $ python export/export.py --task classification --model_parameters /path/to/saved/ckpt.params --output_dir /path/to/output/dir/ --seq_length 128
+    $ python export.py --task classification --model_parameters /path/to/saved/ckpt.params --output_dir /path/to/output/dir/ --seq_length 128
 
 This will export the BERT model for classification to a symbol.json file, saved to the directory specified by --output_dir.
-The --model_parameters argument is optional. If not set, the .params file saved in the output directory will be randomly intialized parameters.
+The --model_parameters argument is optional. If not set, the .params file saved in the output directory will be randomly initialized parameters.
 
 BERT for Sentence or Tokens Embedding
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

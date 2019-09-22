@@ -1,5 +1,3 @@
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -23,7 +21,7 @@ from mxnet.metric import check_label_shapes
 
 __all__ = ['EvalMetric', 'MaskedAccuracy']
 
-class EvalMetric(object):
+class EvalMetric:
     """Base class for all evaluation metrics.
 
     .. note::

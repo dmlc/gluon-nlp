@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 # documentation build configuration file, created by
 # sphinx-quickstart on Thu Jul 23 19:40:08 2015.
 #
@@ -51,6 +49,7 @@ extensions = [
     'sphinx.ext.viewcode',
     'sphinx.ext.intersphinx',
     'sphinx.ext.napoleon',
+    'sphinx_autodoc_typehints',
     'sphinx.ext.mathjax',
     'sphinx_gallery.gen_gallery',
     'nbsphinx',
@@ -210,7 +209,7 @@ htmlhelp_basename = project + 'doc'
 
 intersphinx_mapping = {
     'python': ('https://docs.python.org/{.major}'.format(sys.version_info), None),
-    'mxnet': ('https://mxnet.apache.org/', None),
+    'mxnet': ('https://beta.mxnet.io/', None),
     'numpy': ('http://docs.scipy.org/doc/numpy/', None),
     'scipy': ('http://docs.scipy.org/doc/scipy/reference', None),
     'matplotlib': ('http://matplotlib.org/', None),
@@ -253,6 +252,7 @@ sphinx_gallery_conf = {
 
 # Napoleon settings
 napoleon_use_ivar = True
+napoleon_use_param = True  # Required for compatibility with sphinx-autodoc-typehints
 
 # linkcheck settings
 import multiprocessing

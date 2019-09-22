@@ -1,5 +1,3 @@
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -17,8 +15,6 @@
 # specific language governing permissions and limitations
 # under the License.
 """Implements the beam search sampler."""
-from __future__ import absolute_import
-from __future__ import print_function
 
 __all__ = ['BeamSearchScorer', 'BeamSearchSampler', 'HybridBeamSearchSampler', 'SequenceSampler']
 
@@ -448,7 +444,7 @@ class _SamplingStepUpdate(HybridBlock):
                chosen_word_ids, beam_alive_mask, new_states
 
 
-class BeamSearchSampler(object):
+class BeamSearchSampler:
     r"""Draw samples from the decoder by beam search.
 
     Parameters
@@ -715,7 +711,7 @@ class HybridBeamSearchSampler(HybridBlock):
             F.contrib.cond(F.sum(new_beam_alive_mask) == 0, _then_func, _else_func)
         return new_samples, new_scores, new_new_valid_length
 
-class SequenceSampler(object):
+class SequenceSampler:
     r"""Draw samples from the decoder according to the step-wise distribution.
 
     Parameters

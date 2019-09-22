@@ -1,5 +1,3 @@
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -21,12 +19,13 @@ into batches for fast processing."""
 __all__ = ['Stack', 'Pad', 'Tuple', 'List']
 
 import warnings
+import math
 
 import numpy as np
 import mxnet as mx
 
 
-def _pad_arrs_to_max_length(arrs, pad_axis, pad_val, use_shared_mem, dtype):
+def _pad_arrs_to_max_length(arrs, pad_axis, pad_val, use_shared_mem, dtype, round_to=None):
     """Inner Implementation of the Pad batchify
 
     Parameters
@@ -51,6 +50,8 @@ def _pad_arrs_to_max_length(arrs, pad_axis, pad_val, use_shared_mem, dtype):
 
     original_length = [ele.shape[pad_axis] for ele in arrs]
     max_size = max(original_length)
+    if round_to is not None:
+        max_size = round_to * math.ceil(max_size / round_to)
 
     ret_shape = list(arrs[0].shape)
     ret_shape[pad_axis] = max_size
@@ -93,7 +94,7 @@ def _stack_arrs(arrs, use_shared_mem, dtype):
             return mx.nd.array(out, dtype=dtype)
 
 
-class Stack(object):
+class Stack:
     r"""Stack the input data samples to construct the batch.
 
     The N input samples must have the same shape/length and will be stacked to construct a batch.
@@ -157,7 +158,7 @@ class Stack(object):
         return _stack_arrs(data, True, self._dtype)
 
 
-class Pad(object):
+class Pad:
     """Return a callable that pads and stacks data.
 
     Parameters
@@ -173,6 +174,8 @@ class Pad(object):
         Whether to return the valid length in the output.
     dtype : str or numpy.dtype, default None
         The value type of the output. If it is set to None, the input data type is used.
+    round_to : int, default None
+        If specified, the padded dimension will be rounded to be multiple of this argument.
 
     Examples
     --------
@@ -213,7 +216,7 @@ class Pad(object):
       [ 1  2 -1 -1]]]
     <NDArray 2x2x4 @cpu_shared(0)>
     """
-    def __init__(self, axis=0, pad_val=None, ret_length=False, dtype=None):
+    def __init__(self, axis=0, pad_val=None, ret_length=False, dtype=None, round_to=None):
         self._axis = axis
         assert isinstance(axis, int), 'axis must be an integer! ' \
                                       'Received axis=%s, type=%s.' % (str(axis),
@@ -222,6 +225,7 @@ class Pad(object):
         self._ret_length = ret_length
         self._dtype = dtype
         self._warned = False
+        self._round_to = round_to
 
         if pad_val is None:
             warnings.warn(
@@ -266,7 +270,8 @@ class Pad(object):
         if isinstance(data[0], (mx.nd.NDArray, np.ndarray, list)):
             padded_arr, original_length = _pad_arrs_to_max_length(data, self._axis,
                                                                   self._pad_val, True,
-                                                                  self._dtype)
+                                                                  self._dtype,
+                                                                  round_to=self._round_to)
             if self._ret_length:
                 return padded_arr, original_length
             else:
@@ -275,7 +280,7 @@ class Pad(object):
             raise NotImplementedError
 
 
-class Tuple(object):
+class Tuple:
     """Wrap multiple batchify functions together. The input functions will be applied
     to the corresponding input fields.
 
@@ -342,7 +347,7 @@ class Tuple(object):
             ret.append(ele_fn([ele[i] for ele in data]))
         return tuple(ret)
 
-class List(object):
+class List:
     """Simply forward the list of input data.
 
     This is particularly useful when the Dataset contains textual data

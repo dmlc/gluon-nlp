@@ -15,6 +15,8 @@ import gluonnlp as nlp
 import numpy as np
 from scipy import stats
 
+nlp.utils.check_version('0.7.0')
+
 # context = mx.cpu()  # Enable this to run on CPU
 context = mx.gpu(0)  # Enable this to run on GPU
 ```

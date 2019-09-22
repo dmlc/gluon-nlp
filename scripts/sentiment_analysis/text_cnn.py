@@ -1,5 +1,3 @@
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -22,6 +20,8 @@ import mxnet as mx
 from mxnet import gluon
 from mxnet.gluon import HybridBlock
 import gluonnlp as nlp
+
+nlp.utils.check_version('0.7.0')
 
 class SentimentNet(HybridBlock):
     """Network for sentiment analysis."""
@@ -71,7 +71,7 @@ def init(textCNN, vocab, model_mode, context):
         textCNN.embedding.weight.set_data(vocab.embedding.idx_to_vec)
     if model_mode == 'multichannel':
         textCNN.embedding_extend.weight.set_data(vocab.embedding.idx_to_vec)
-    if model_mode == 'static' or model_mode == 'multichannel':
+    if model_mode in ('static', 'multichannel'):
         # Parameters of textCNN.embedding are not updated during training.
         textCNN.embedding.collect_params().setattr('grad_req', 'null')
     trainer = gluon.Trainer(textCNN.collect_params(), 'adadelta', {'rho':0.95, 'clip_gradient':3})

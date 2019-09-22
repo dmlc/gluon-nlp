@@ -1,5 +1,3 @@
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -188,7 +186,7 @@ def load_segment(file_path, bert_tokenizer):
     return subword_sentences
 
 
-class BERTTaggingDataset(object):
+class BERTTaggingDataset:
     """
 
     Parameters

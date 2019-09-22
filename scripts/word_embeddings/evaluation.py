@@ -1,5 +1,3 @@
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -39,7 +37,7 @@ def add_parameters(parser):
     """Add evaluation specific parameters to parser."""
     group = parser.add_argument_group('Evaluation arguments')
 
-    group.add_argument('--eval-batch-size', type=int, default=1024)
+    group.add_argument('--eval-batch-size', type=int, default=512)
 
     # Datasets
     group.add_argument(

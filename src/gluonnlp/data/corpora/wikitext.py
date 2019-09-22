@@ -1,5 +1,3 @@
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -79,7 +77,7 @@ class WikiText2(_WikiText):
     WikiText2 is implemented as CorpusDataset with the default flatten=True.
 
     From
-    https://www.salesforce.com/products/einstein/ai-research/the-wikitext-dependency-language-modeling-dataset/
+    https://blog.einstein.ai/the-wikitext-long-term-dependency-language-modeling-dataset/
 
     License: Creative Commons Attribution-ShareAlike
 
@@ -166,7 +164,7 @@ class WikiText103(_WikiText):
     WikiText103 is implemented as CorpusDataset with the default flatten=True.
 
     From
-    https://www.salesforce.com/products/einstein/ai-research/the-wikitext-dependency-language-modeling-dataset/
+    https://blog.einstein.ai/the-wikitext-long-term-dependency-language-modeling-dataset/
 
     License: Creative Commons Attribution-ShareAlike
 
@@ -254,7 +252,7 @@ class WikiText2Raw(_WikiText):
     WikiText2Raw is implemented as CorpusDataset with the default flatten=True.
 
     From Salesforce research:
-    https://einstein.ai/research/the-wikitext-long-term-dependency-language-modeling-dataset
+    https://blog.einstein.ai/the-wikitext-long-term-dependency-language-modeling-dataset/
 
     License: Creative Commons Attribution-ShareAlike
 
@@ -341,7 +339,7 @@ class WikiText103Raw(_WikiText):
     WikiText103Raw is implemented as CorpusDataset with the default flatten=True.
 
     From Salesforce research:
-    https://einstein.ai/research/the-wikitext-long-term-dependency-language-modeling-dataset
+    https://blog.einstein.ai/the-wikitext-long-term-dependency-language-modeling-dataset/
 
     License: Creative Commons Attribution-ShareAlike
 

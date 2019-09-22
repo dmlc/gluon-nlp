@@ -1,4 +1,3 @@
-# coding=utf-8
 # Copyright 2018 The Google AI Language Team Authors and DMLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,14 +13,13 @@
 # limitations under the License.
 """BERT dataset transform."""
 
-from __future__ import absolute_import
 
 __all__ = ['BERTDatasetTransform']
 
 import numpy as np
 from gluonnlp.data import BERTSentenceTransform
 
-class BERTDatasetTransform(object):
+class BERTDatasetTransform:
     """Dataset transformation for BERT-style sentence classification or regression.
 
     Parameters

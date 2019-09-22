@@ -1,5 +1,3 @@
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -27,7 +25,7 @@ from scripts.parsing.common.k_means import KMeans
 from .savable import Savable
 
 
-class ConllWord(object):
+class ConllWord:
     """CoNLL format template, see http://anthology.aclweb.org/W/W06/W06-2920.pdf
 
     Parameters
@@ -76,7 +74,7 @@ class ConllWord(object):
         return '\t'.join(['_' if v is None else v for v in values])
 
 
-class ConllSentence(object):
+class ConllSentence:
     """A list of ConllWord
 
     Parameters
@@ -365,7 +363,7 @@ class ParserVocabulary(Savable):
         return len(self._id2rel)
 
 
-class DataLoader(object):
+class DataLoader:
     """
     Load CoNLL data
     Adopted from https://github.com/jcyk/Dynet-Biaffine-dependency-parser with some modifications

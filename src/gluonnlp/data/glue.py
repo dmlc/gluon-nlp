@@ -1,5 +1,3 @@
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -657,7 +655,7 @@ class GlueMRPC(TSVDataset):
         download(self._repo_dir() + raw_name, path=raw_path, sha1_hash=raw_hash)
         data_path = os.path.join(self._root, data_name)
 
-        if segment == 'train' or segment == 'dev':
+        if segment in ('train', 'dev'):
             if os.path.isfile(data_path) and check_sha1(data_path, data_hash):
                 return
 

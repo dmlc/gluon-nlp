@@ -1,5 +1,3 @@
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -254,14 +252,16 @@ class NumpyDataset(ArrayDataset):
     ----------
     filename : str
         Path to the .npy or .npz file.
+    kwargs
+        Keyword arguments are passed to np.load.
 
     Properties
     ----------
     keys: list of str or None
         The list of keys loaded from the .npz file.
     """
-    def __init__(self, filename):
-        arrs = np.load(filename)
+    def __init__(self, filename, **kwargs):
+        arrs = np.load(filename, **kwargs)
         keys = None
         data = []
         if filename.endswith('.npy'):

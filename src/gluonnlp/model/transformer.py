@@ -1,5 +1,3 @@
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -81,6 +79,10 @@ class BasePositionwiseFFN(HybridBlock):
     use_bert_layer_norm : bool, default False.
         Whether to use the BERT-stype layer norm implemented in Tensorflow, where
         epsilon is added inside the square root. Set to True for pre-trained BERT model.
+    ffn1_dropout : bool, default False
+        If True, apply dropout both after the first and second Positionwise
+        Feed-Forward Neural Network layers. If False, only apply dropout after
+        the second.
     prefix : str, default None
         Prefix for name of `Block`s
         (and name of weight if params is `None`).
@@ -96,14 +98,17 @@ class BasePositionwiseFFN(HybridBlock):
     Outputs:
         - **outputs** : output encoding of shape (batch_size, length, C_out).
     """
+
     def __init__(self, units=512, hidden_size=2048, dropout=0.0, use_residual=True,
                  weight_initializer=None, bias_initializer='zeros', activation='relu',
-                 use_bert_layer_norm=False, prefix=None, params=None, layer_norm_eps=None):
+                 use_bert_layer_norm=False, ffn1_dropout=False, prefix=None, params=None,
+                 layer_norm_eps=None):
         super(BasePositionwiseFFN, self).__init__(prefix=prefix, params=params)
         self._hidden_size = hidden_size
         self._units = units
         self._use_residual = use_residual
         self._dropout = dropout
+        self._ffn1_dropout = ffn1_dropout
         with self.name_scope():
             self.ffn_1 = nn.Dense(units=hidden_size, flatten=False,
                                   weight_initializer=weight_initializer,
@@ -146,6 +151,8 @@ class BasePositionwiseFFN(HybridBlock):
         outputs = self.ffn_1(inputs)
         if self.activation:
             outputs = self.activation(outputs)
+        if self._dropout and self._ffn1_dropout:
+            outputs = self.dropout_layer(outputs)
         outputs = self.ffn_2(outputs)
         if self._dropout:
             outputs = self.dropout_layer(outputs)
@@ -360,6 +367,8 @@ class BaseTransformerEncoder(HybridBlock, Seq2SeqEncoder):
         self._scaled = scaled
         self._use_layer_norm_before_dropout = use_layer_norm_before_dropout
         self._scale_embed = scale_embed
+        self._dtype = 'float32'
+
         with self.name_scope():
             if dropout:
                 self.dropout_layer = nn.Dropout(rate=dropout)
@@ -401,17 +410,22 @@ class BaseTransformerEncoder(HybridBlock, Seq2SeqEncoder):
                     activation=activation,
                     layer_norm_eps=layer_norm_eps)
 
+    def cast(self, dtype):
+        """Cast the data type of the parameters"""
+        self._dtype = dtype
+        super(BaseTransformerEncoder, self).cast(dtype)
 
-    def __call__(self, inputs, states=None, valid_length=None): #pylint: disable=arguments-differ
-        """Encoder the inputs given the states and valid sequence length.
+    def __call__(self, inputs, states=None, valid_length=None):
+        #pylint: disable=arguments-differ, dangerous-default-value
+        """Encode the inputs given the states and valid sequence length.
 
         Parameters
         ----------
-        inputs : NDArray
+        inputs : NDArray or Symbol
             Input sequence. Shape (batch_size, length, C_in)
-        states : list of NDArrays or None
+        states : list of NDArrays or Symbols
             Initial states. The list of initial states and masks
-        valid_length : NDArray or None
+        valid_length : NDArray or Symbol
             Valid lengths of each sequence. This is usually used when part of sequence has
             been padded. Shape (batch_size,)
 
@@ -423,66 +437,48 @@ class BaseTransformerEncoder(HybridBlock, Seq2SeqEncoder):
             - outputs of the transformer encoder. Shape (batch_size, length, C_out)
             - additional_outputs of all the transformer encoder
         """
+        # XXX Temporary hack for hybridization as hybridblock does not support None inputs
+        valid_length = [] if valid_length is None else valid_length
+        states = [] if states is None else states
         return super(BaseTransformerEncoder, self).__call__(inputs, states, valid_length)
 
-    def forward(self, inputs, states=None, valid_length=None, steps=None): # pylint: disable=arguments-differ
-        """
-
-        Parameters
-        ----------
-        inputs : NDArray, Shape(batch_size, length, C_in)
-        states : list of NDArray
-        valid_length : NDArray
-        steps : NDArray
-            Stores value [0, 1, ..., length].
-            It is used for lookup in positional encoding matrix
-
-        Returns
-        -------
-        outputs : NDArray
-            The output of the encoder. Shape is (batch_size, length, C_out)
-        additional_outputs : list
-            Either be an empty list or contains the attention weights in this step.
-            The attention weights will have shape (batch_size, length, length) or
-            (batch_size, num_heads, length, length)
-
-        """
-        length = inputs.shape[1]
-        if valid_length is not None:
-            arange = mx.nd.arange(length, ctx=valid_length.context, dtype=valid_length.dtype)
-            mask = mx.nd.broadcast_lesser(
-                arange.reshape((1, -1)),
-                valid_length.reshape((-1, 1)))
-            mask = mx.nd.broadcast_axes(mx.nd.expand_dims(mask, axis=1), axis=1, size=length)
-            if states is None:
-                states = [mask]
-            else:
-                states.append(mask)
-        if self._scale_embed:
-            inputs = inputs * math.sqrt(inputs.shape[-1])
-        steps = mx.nd.arange(length, ctx=inputs.context)
-        if states is None:
-            states = [steps]
+    def _arange_like(self, F, inputs, axis):
+        """Helper function to generate indices of a range"""
+        if F == mx.ndarray:
+            seq_len = inputs.shape[axis]
+            arange = F.arange(seq_len, dtype=inputs.dtype, ctx=inputs.context)
         else:
-            states.append(steps)
-        if valid_length is not None:
-            step_output, additional_outputs =\
-                super(BaseTransformerEncoder, self).forward(inputs, states, valid_length)
-        else:
-            step_output, additional_outputs =\
-                super(BaseTransformerEncoder, self).forward(inputs, states)
-        return step_output, additional_outputs
+            input_axis = inputs.slice(begin=(0, 0, 0), end=(1, None, 1)).reshape((-1))
+            zeros = F.zeros_like(input_axis)
+            arange = F.arange(start=0, repeat=1, step=1,
+                              infer_range=True, dtype=self._dtype)
+            arange = F.elemwise_add(arange, zeros)
+        return arange
+
 
     def hybrid_forward(self, F, inputs, states=None, valid_length=None, position_weight=None):
         # pylint: disable=arguments-differ
-        """
+        """Encode the inputs given the states and valid sequence length.
 
         Parameters
         ----------
-        inputs : NDArray or Symbol, Shape(batch_size, length, C_in)
-        states : list of NDArray or Symbol
+        inputs : NDArray or Symbol
+            Input sequence. Shape (batch_size, length, C_in)
+        states : list of NDArrays or Symbols
+            Initial states. The list of initial states and masks
         valid_length : NDArray or Symbol
+            Valid lengths of each sequence. This is usually used when part of sequence has
+            been padded. Shape (batch_size,)
         position_weight : NDArray or Symbol
+            The weight of positional encoding. Shape (max_len, C_in).
+
+        Returns
+        -------
+        encoder_outputs: list
+            Outputs of the encoder. Contains:
+
+            - outputs of the transformer encoder. Shape (batch_size, length, C_out)
+            - additional_outputs of all the transformer encoder
 
         Returns
         -------
@@ -496,9 +492,36 @@ class BaseTransformerEncoder(HybridBlock, Seq2SeqEncoder):
             (batch_size, num_heads, length, length)
 
         """
+        # XXX Temporary hack for hybridization as hybridblock does not support None inputs
+        if isinstance(valid_length, list) and len(valid_length) == 0:
+            valid_length = None
+        if isinstance(states, list) and len(states) == 0:
+            states = None
+
+        steps = self._arange_like(F, inputs, axis=1)
+        if valid_length is not None:
+            ones = F.ones_like(steps)
+            mask = F.broadcast_lesser(F.reshape(steps, shape=(1, -1)),
+                                      F.reshape(valid_length, shape=(-1, 1)))
+            mask = F.broadcast_mul(F.expand_dims(mask, axis=1),
+                                   F.broadcast_mul(ones, F.reshape(ones, shape=(-1, 1))))
+            if states is None:
+                states = [mask]
+            else:
+                states.append(mask)
+
+        if self._scale_embed:
+            # XXX: input.shape[-1] and self._units are expected to be the same
+            inputs = inputs * math.sqrt(self._units)
+
+        if states is None:
+            states = [steps]
+        else:
+            states.append(steps)
+
         if states is not None:
             steps = states[-1]
-            # Positional Encoding
+            # positional encoding
             positional_embed = F.Embedding(steps, position_weight, self._max_length, self._units)
             inputs = F.broadcast_add(inputs, F.expand_dims(positional_embed, axis=0))
         if self._dropout:
@@ -559,6 +582,10 @@ class PositionwiseFFN(BasePositionwiseFFN):
         Dropout probability for the output
     use_residual : bool
         Add residual connection between the input and the output
+    ffn1_dropout : bool, default False
+        If True, apply dropout both after the first and second Positionwise
+        Feed-Forward Neural Network layers. If False, only apply dropout after
+        the second.
     weight_initializer : str or Initializer
         Initializer for the input weights matrix, used for the linear
         transformation of the inputs.
@@ -579,17 +606,25 @@ class PositionwiseFFN(BasePositionwiseFFN):
     Outputs:
         - **outputs** : output encoding of shape (batch_size, length, C_out).
     """
+
     def __init__(self, units=512, hidden_size=2048, dropout=0.0, use_residual=True,
-                 weight_initializer=None, bias_initializer='zeros',
-                 prefix=None, params=None, activation='relu', layer_norm_eps=None):
-        super(PositionwiseFFN, self).__init__(units=units, hidden_size=hidden_size,
-                                              dropout=dropout, use_residual=use_residual,
-                                              weight_initializer=weight_initializer,
-                                              bias_initializer=bias_initializer,
-                                              prefix=prefix, params=params,
-                                              # extra configurations for transformer
-                                              activation=activation, use_bert_layer_norm=False,
-                                              layer_norm_eps=layer_norm_eps)
+                 ffn1_dropout=False, weight_initializer=None, bias_initializer='zeros', prefix=None,
+                 params=None, activation='relu', layer_norm_eps=None):
+        super(PositionwiseFFN, self).__init__(
+            units=units,
+            hidden_size=hidden_size,
+            dropout=dropout,
+            use_residual=use_residual,
+            weight_initializer=weight_initializer,
+            bias_initializer=bias_initializer,
+            prefix=prefix,
+            params=params,
+            # extra configurations for transformer
+            activation=activation,
+            use_bert_layer_norm=False,
+            layer_norm_eps=layer_norm_eps,
+            ffn1_dropout=ffn1_dropout)
+
 
 class TransformerEncoderCell(BaseTransformerEncoderCell):
     """Structure of the Transformer Encoder Cell.
@@ -756,7 +791,7 @@ class TransformerDecoderCell(HybridBlock):
         transformation of the inputs.
     bias_initializer : str or Initializer
         Initializer for the bias vector.
-    prefix : str, default 'rnn_'
+    prefix : str, default None
         Prefix for name of `Block`s
         (and name of weight if params is `None`).
     params : Parameter or None

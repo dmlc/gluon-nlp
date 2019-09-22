@@ -1,5 +1,3 @@
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -33,7 +31,7 @@ from scripts.parsing.parser.biaffine_parser import BiaffineParser
 from scripts.parsing.parser.evaluate import evaluate_official_script
 
 
-class DepParser(object):
+class DepParser:
     """User interfaces for biaffine dependency parser.
 
     It wraps a biaffine model inside, provides training, evaluating and parsing.

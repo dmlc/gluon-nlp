@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
-
 # Copyright 2016 Timothy Dozat
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,7 +19,7 @@ from collections import Counter
 import numpy as np
 
 
-class KMeans(object):
+class KMeans:
     """
     Cluster sentences by their lengths
 
@@ -101,7 +99,6 @@ class KMeans(object):
         # print('%d) Final splits: %s; Final mass: %d' % (i, self._splits, self.get_mass()))
 
         self._reindex()
-        return
 
     def _recenter(self):
         """

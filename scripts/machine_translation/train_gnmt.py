@@ -15,8 +15,6 @@ This example shows how to implement the GNMT model with Gluon NLP Toolkit.
 }
 """
 
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -56,6 +54,8 @@ import dataprocessor
 np.random.seed(100)
 random.seed(100)
 mx.random.seed(10000)
+
+nlp.utils.check_version('0.7.0')
 
 parser = argparse.ArgumentParser(description='Neural Machine Translation Example.'
                                              'We train the Google NMT model')

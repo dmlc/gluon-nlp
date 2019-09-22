@@ -6,6 +6,7 @@ In this notebook, we will show how to use Transformer introduced in [1] and eval
 
 We start with some usual preparation such as importing libraries and setting the environment.
 
+
 ### Load MXNet and GluonNLP
 
 ```{.python .input}
@@ -17,6 +18,7 @@ import numpy as np
 import mxnet as mx
 from mxnet import gluon
 import gluonnlp as nlp
+nlp.utils.check_version('0.7.0')
 ```
 
 ### Setup the environment
@@ -224,7 +226,7 @@ import utils
 
 print('Translate the following English sentence into German:')
 
-sample_src_seq = 'We love language.'
+sample_src_seq = 'We love language .'
 
 print('[\'' + sample_src_seq + '\']')
 

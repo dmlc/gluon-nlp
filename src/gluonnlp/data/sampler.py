@@ -1,5 +1,3 @@
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -71,7 +69,7 @@ def _bucket_stats(bucket_sample_ids, seq_lengths):
     return (bucket_average_lengths, bucket_length_stds)
 
 
-class BucketScheme(object):
+class BucketScheme:
     r"""Base class for generating bucket keys."""
     def __call__(self, max_lengths, min_lengths, num_buckets):
         """Generate bucket keys based on the lengths of sequences and number of buckets.

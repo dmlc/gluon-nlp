@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
-
 # Copyright 2016 Timothy Dozat
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -78,7 +76,6 @@ class Tarjan:
             w = stack.pop()
             self._onstack[w] = False
             self._SCCs[-1].add(w)
-        return
 
     # ======================
     @property

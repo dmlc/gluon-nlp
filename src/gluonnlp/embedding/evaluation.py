@@ -1,5 +1,3 @@
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -32,12 +30,10 @@ __all__ = [
 
 class _WordEmbeddingEvaluationFunction(HybridBlock):  # pylint: disable=abstract-method
     """Base class for word embedding evaluation functions."""
-    pass
 
 
 class WordEmbeddingSimilarityFunction(_WordEmbeddingEvaluationFunction):  # pylint: disable=abstract-method
     """Base class for word embedding similarity functions."""
-    pass
 
 
 class WordEmbeddingAnalogyFunction(_WordEmbeddingEvaluationFunction):  # pylint: disable=abstract-method
@@ -52,7 +48,6 @@ class WordEmbeddingAnalogyFunction(_WordEmbeddingEvaluationFunction):  # pylint:
     eps : float, optional, default=1e-10
         A small constant for numerical stability.
     """
-    pass
 
 
 ###############################################################################

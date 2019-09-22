@@ -1,5 +1,3 @@
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -18,12 +16,9 @@
 # under the License.
 
 """Utility classes and functions. They help organize and keep statistics of datasets."""
-from __future__ import absolute_import, print_function
-
 import collections
 import errno
 import os
-import sys
 import tarfile
 import zipfile
 import time
@@ -38,6 +33,7 @@ __all__ = [
     'Counter', 'count_tokens', 'concat_sequence', 'slice_sequence', 'train_valid_split',
     'line_splitter', 'whitespace_splitter', 'Splitter'
 ]
+
 
 class Counter(collections.Counter):  # pylint: disable=abstract-method
     """Counter class for keeping token frequencies."""
@@ -225,6 +221,8 @@ _vocab_sha1 = {'wikitext-2': 'be36dc5238c2e7d69720881647ab72eb506d0131',
                'book_corpus_wiki_en_uncased': 'a66073971aa0b1a262453fe51342e57166a8abcf',
                'openwebtext_book_corpus_wiki_en_uncased':
                'a66073971aa0b1a262453fe51342e57166a8abcf',
+               'openwebtext_ccnews_stories_books_cased':
+               '2b804f8f90f9f93c07994b703ce508725061cf43',
                'wiki_multilingual_cased': '0247cb442074237c38c62021f36b7a4dbd2e55f7',
                'wiki_cn_cased': 'ddebd8f3867bca5a61023f73326fb125cf12b4f5',
                'wiki_multilingual_uncased': '2b2514cc539047b9179e9d98a4e68c36db05c97a',
@@ -275,7 +273,10 @@ def train_valid_split(dataset, valid_ratio=0.05):
 
 def short_hash(name):
     if name not in _vocab_sha1:
-        raise ValueError('Vocabulary for {name} is not available.'.format(name=name))
+        vocabs = list(_vocab_sha1.keys())
+        raise ValueError('Vocabulary for {name} is not available. '
+                         'Hosted vocabularies include: {vocabs}'.format(name=name,
+                                                                        vocabs=vocabs))
     return _vocab_sha1[name][:8]
 
 
@@ -406,7 +407,7 @@ def whitespace_splitter(s):
     return s.split()
 
 
-class Splitter(object):
+class Splitter:
     """Split a string based on a separator.
 
     Parameters
@@ -432,35 +433,3 @@ class Splitter(object):
             List of strings. Obtained by calling s.split(separator).
         """
         return s.split(self._separator)
-
-
-def _convert_to_unicode(text):
-    """Converts `text` to Unicode.
-
-    Parameters
-    ----------
-    text : str or bytes
-        text to be converted to unicode
-
-    Returns
-    -------
-    str
-        unicode string
-    """
-    py_version = sys.version_info[0]
-    if py_version == 3:
-        if isinstance(text, str):
-            return text
-        elif isinstance(text, bytes):
-            return text.decode('utf-8', 'ignore')
-        else:
-            raise ValueError('Unsupported string type: %s' % (type(text)))
-    elif py_version == 2:
-        if isinstance(text, str):
-            return text.decode('utf-8', 'ignore')
-        elif isinstance(text, unicode):  # noqa: F821
-            return text
-        else:
-            raise ValueError('Unsupported string type: %s' % (type(text)))
-    else:
-        raise ValueError('Not running on Python2 or Python 3?')

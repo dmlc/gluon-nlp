@@ -1,5 +1,3 @@
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -16,7 +14,13 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+"""Utilities for Language Models based on the Transformer architecture."""
 
-# pylint: disable=wildcard-import
-"""Hybrid BERT for deployment."""
-from . import hybrid_bert
+from .attention_cell import *
+from .embedding import *
+from .softmax import *
+from .transformer import *
+from .model import *
+
+__all__ = attention_cell.__all__ + embedding.__all__ + softmax.__all__ + \
+    transformer.__all__ + model.__all__

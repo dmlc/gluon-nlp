@@ -1,5 +1,3 @@
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -20,8 +18,6 @@
 # pylint: disable=consider-iterating-dictionary, too-many-lines
 
 """Text token embedding."""
-from __future__ import absolute_import
-from __future__ import print_function
 
 __all__ = [
     'register', 'create', 'list_sources', 'TokenEmbedding', 'GloVe',
@@ -142,7 +138,7 @@ def list_sources(embedding_name=None):
                 for embedding_name, embedding_cls in registry.get_registry(TokenEmbedding).items()}
 
 
-class TokenEmbedding(object):
+class TokenEmbedding:
     """Token embedding base class.
 
     To load token embedding from an externally hosted pre-trained token embedding file, such as
@@ -724,10 +720,9 @@ class TokenEmbedding(object):
                                     ' unknown token, please explicitly include "{}" as the '
                                     '`unknown_token` in `tokens`. This is to avoid unintended '
                                     'updates.').format(token, self.unknown_token))
-                else:
-                    raise KeyError(('Token "{}" is unknown. Updating the embedding vector for an '
-                                    'unknown token is not allowed because `unknown_token` is not '
-                                    'specified.').format(token))
+                raise KeyError(('Token "{}" is unknown. Updating the embedding vector for an '
+                                'unknown token is not allowed because `unknown_token` is not '
+                                'specified.').format(token))
 
         self._idx_to_vec[nd.array(indices)] = new_embedding
 
@@ -743,10 +738,10 @@ class TokenEmbedding(object):
         """
         embedding_name = cls.__name__.lower()
         if source not in source_file_hash:
-            raise KeyError('Cannot find pre-trained source {} for token embedding {}. '
-                           'Valid pre-trained file names for embedding {}: {}'.format(
-                               source, embedding_name, embedding_name,
-                               ', '.join(source_file_hash.keys())))
+            raise KeyError('Cannot find pre-trained source {source} for token embedding {name}. '
+                           'Valid pre-trained file names for embedding {name}: {values}'.format(
+                               source=source, name=embedding_name,
+                               values=', '.join(source_file_hash.keys())))
 
     @staticmethod
     def from_file(file_path, elem_delim=' ', encoding=ENCODING, **kwargs):

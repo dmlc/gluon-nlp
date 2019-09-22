@@ -1,5 +1,3 @@
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -22,7 +20,7 @@
 
 __all__ = ['ELMoCharVocab']
 
-class ELMoCharVocab(object):
+class ELMoCharVocab:
     r"""ELMo special character vocabulary
 
     The vocab aims to map individual tokens to sequences of character ids, compatible with ELMo.
