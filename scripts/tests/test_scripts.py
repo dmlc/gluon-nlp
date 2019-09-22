@@ -237,6 +237,14 @@ def test_bert_pretrain(backend):
                                      '--masked_lm_prob', '0.15',
                                      '--short_seq_prob', '0',
                                      '--verbose'])
+    arguments = ['--log_interval', '2',
+                 '--lr', '2e-5', '--warmup_ratio', '0.5',
+                 '--total_batch_size', '32', '--total_batch_size_eval', '8',
+                 '--ckpt_dir', './test/bert/ckpt',
+                 '--num_steps', '20', '--num_buckets', '1',
+                 '--pretrained',
+                 '--comm_backend', backend]
+
     if backend == 'horovod':
         try:
             # Test only if horovod is present
@@ -244,14 +252,9 @@ def test_bert_pretrain(backend):
         except ImportError:
             print("The test expects master branch of MXNet and Horovod. Skipped now.")
             return
+    elif backend == 'device':
+        arguments += ['--gpus', '0']
 
-    arguments = ['--log_interval', '2',
-                 '--lr', '2e-5', '--warmup_ratio', '0.5',
-                 '--total_batch_size', '32', '--total_batch_size_eval', '8',
-                 '--ckpt_dir', './test/bert/ckpt',
-                 '--num_steps', '20', '--num_buckets', '1',
-                 '--pretrained',
-                 '--comm_backend', 'horovod']
     # test training with npz data, float32
     process = subprocess.check_call([sys.executable, './scripts/bert/run_pretraining.py',
                                      '--dtype', 'float32',

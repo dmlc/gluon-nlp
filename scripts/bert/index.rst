@@ -208,15 +208,14 @@ You can use the following command to run pre-training with 2 hosts, 8 GPUs each:
              --lr 1e-4 --total_batch_size 256 --accumulate 1 --use_avg_len --raw --comm_backend horovod
 
 If you see out-of-memory error, try increasing --accumulate for gradient accumulation.
+
 When multiple hosts are present, please make sure you can ssh to these nodes without password.
 
-Alternatively, if horovod is not available, you could run pre-training with the MXNet native parameter server by setting ??
+Alternatively, if horovod is not available, you could run pre-training with the MXNet native parameter server by setting --comm_backend and --gpus.
 
 .. code-block:: console
 
-    $ MXNET_SAFE_ACCUMULATION=1 python run_pretraining.py --data '/path/to/generated/train/*.npz' --data_eval '/path/to/generated/dev/*.npz' ...
-
- by setting --comm_backend device or --comm_backend dist_device
+    $ MXNET_SAFE_ACCUMULATION=1 python run_pretraining.py --comm_backend device --gpus 0,1,2,3,4,5,6,7 ...
 
 Custom Vocabulary
 +++++++++++++++++
@@ -236,7 +235,7 @@ You can `train <//github.com/google/sentencepiece/tree/v0.1.82/python#model-trai
     import sentencepiece as spm
     spm.SentencePieceTrainer.Train('--input=a.txt,b.txt --unk_id=0 --pad_id=3 --model_prefix=my_vocab --vocab_size=30000 --model_type=BPE')
 
-To use sentencepiece vocab for pre-training, please set --sentencepiece=my_vocab.model when using run_pretraining_hvd.py.
+To use sentencepiece vocab for pre-training, please set --sentencepiece=my_vocab.model when using run_pretraining.py.
 
 Improve Training Speed
 ++++++++++++++++++++++

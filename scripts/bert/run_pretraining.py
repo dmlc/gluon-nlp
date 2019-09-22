@@ -132,7 +132,9 @@ parser.add_argument('--num_data_workers', type=int, default=8,
 parser.add_argument('--comm_backend', type=str, default='device',
                     choices=['horovod', 'dist_sync_device', 'device'],
                     help='Communication backend.')
-
+parser.add_argument('--gpus', type=str, default=None,
+                    help='List of gpus to run when device or dist_sync_device is used for '
+                         'communication, e.g. 0 or 0,2,5. empty means using cpu.')
 args = parser.parse_args()
 
 # logging
@@ -198,8 +200,8 @@ def init_comm(backend):
         rank = store.rank
         local_rank = 0
         is_master_node = rank == local_rank
-        ctxs = os.environ.get('NVIDIA_VISIBLE_DEVICES', '0')
-        ctxs = [mx.gpu(int(ctx)) for ctx in ctxs.split(',')]
+        ctxs = [mx.cpu()] if args.gpus is None or args.gpus == '' else \
+               [mx.gpu(int(x)) for x in args.gpus.split(',')]
     return store, num_workers, rank, local_rank, is_master_node, ctxs
 
 backend = args.comm_backend
