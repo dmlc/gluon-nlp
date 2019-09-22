@@ -1,5 +1,3 @@
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -49,8 +47,9 @@ import numpy as np
 
 import evaluation
 import gluonnlp as nlp
-from gluonnlp.base import _str_types
 from utils import get_context, print_time
+
+nlp.utils.check_version('0.7.0')
 
 os.environ['MXNET_GPU_MEM_POOL_TYPE'] = 'Round'
 
@@ -254,7 +253,7 @@ class GloVe(nlp.model.train.EmbeddingModel, mx.gluon.HybridBlock):
             (matrix) of shape=(len(tokens), vec_len).
         """
         squeeze = False
-        if isinstance(tokens, _str_types):
+        if isinstance(tokens, str):
             tokens = [tokens]
             squeeze = True
 
@@ -283,12 +282,7 @@ def train(args):
 
     optimizer_kwargs = dict(learning_rate=args.lr, eps=args.adagrad_eps)
     params = list(model.collect_params().values())
-    try:
-        trainer = mx.gluon.Trainer(params, 'groupadagrad', optimizer_kwargs)
-    except ValueError:
-        logging.warning('MXNet <= v1.3 does not contain '
-                        'GroupAdaGrad support. Falling back to AdaGrad')
-        trainer = mx.gluon.Trainer(params, 'adagrad', optimizer_kwargs)
+    trainer = mx.gluon.Trainer(params, 'groupadagrad', optimizer_kwargs)
 
     index_dtype = 'int32'
     if counts.shape[0] >= np.iinfo(np.int32).max:

@@ -1,5 +1,3 @@
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -129,8 +127,9 @@ class CorpusBPTTBatchify:
         mxnet.gluon.data.Dataset
             Batches of numericalized samples such that the recurrent states
             from last batch connects with the current batch for each sample.
-            Each element of the Dataset is a tuple of data and label arrays for
-            BPTT. They are of shape (seq_len, batch_size) respectively.
+            Each element of the Dataset is a tuple of size 2, specifying the
+            data and label for BPTT respectively. Both items are of the same
+            shape (seq_len, batch_size).
         """
         if self._last_batch == 'keep':
             coded = self._vocab[list(corpus)]

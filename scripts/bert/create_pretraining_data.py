@@ -1,4 +1,3 @@
-# coding=utf-8
 # Copyright 2018 The Google AI Language Team Authors and DMLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,9 +13,6 @@
 # limitations under the License.
 """Create masked LM/next sentence masked_lm examples for BERT."""
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
 import argparse
 import logging

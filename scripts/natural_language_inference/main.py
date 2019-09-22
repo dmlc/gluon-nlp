@@ -1,5 +1,3 @@
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -50,6 +48,7 @@ from utils import logging_config
 
 logger = logging.getLogger('nli')
 
+nlp.utils.check_version('0.7.0')
 
 def parse_args():
     """

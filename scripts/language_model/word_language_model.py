@@ -15,8 +15,6 @@ We implement the AWD LSTM language model proposed in the following work.
 }
 """
 
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -46,6 +44,7 @@ import gluonnlp as nlp
 curr_path = os.path.dirname(os.path.abspath(os.path.expanduser(__file__)))
 sys.path.append(os.path.join(curr_path, '..', '..'))
 
+nlp.utils.check_version('0.7.0')
 
 parser = argparse.ArgumentParser(description=
                                  'MXNet Autograd RNN/LSTM Language Model on Wikitext-2.')

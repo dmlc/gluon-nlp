@@ -1,5 +1,3 @@
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -25,5 +23,6 @@ from . import (parallel, parameter, files)
 from .parallel import *
 from .parameter import *
 from .files import *
+from .version import *
 
-__all__ = parallel.__all__ + parameter.__all__ + files.__all__
+__all__ = parallel.__all__ + parameter.__all__ + files.__all__ + version.__all__

@@ -25,6 +25,7 @@ import mxnet as mx
 from mxnet import nd, gluon, autograd
 
 import gluonnlp as nlp
+nlp.utils.check_version('0.7.0')
 
 random.seed(123)
 np.random.seed(123)

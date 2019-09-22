@@ -283,4 +283,4 @@ based on sort_key and then batched.
     >>>                                                     shuffle=True)
 
 More details about the training using pre-trained language model and bucketing can be found in the
-`sentiment analysis tutorial </examples/sentiment_analysis/sentiment_analysis.ipynb>`_.
+`sentiment analysis tutorial </examples/sentiment_analysis/sentiment_analysis.html>`_.

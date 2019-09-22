@@ -47,3 +47,24 @@ obtain BLEU=27.05 with ``--bleu 13a``, BLEU=27.81 with ``--bleu intl``, and BLEU
 The pre-trained model can be downloaded from http://apache-mxnet.s3-accelerate.dualstack.amazonaws.com/gluon/models/transformer_en_de_512_WMT2014-e25287c5.zip.
 
 For the users from China, it might be faster with this link instead: https://apache-mxnet.s3.cn-north-1.amazonaws.com.cn/gluon/models/transformer_en_de_512_WMT2014-e25287c5.zip.
+
+
+Use the following commands to inference the Transformer model on the WMT14 test dataset for English to German translation.
+
+.. code-block:: console
+    
+    $ python inference_transformer.py --dataset WMT2014BPE 
+                            --src_lang en \
+                            --tgt_lang de \
+                            --batch_size 2700 \
+                            --scaled --average_start 5 \
+                            --num_buckets 20 \
+                            --bucket_scheme exp \
+                            --bleu 13a \
+                            --log_interval 10 \
+                            --model_parameter PATH/TO/valid_best.params
+
+Before inference, you should do a complete training at least one time to get the pre-trained model, or you can get the pre-trained model from http://apache-mxnet.s3-accelerate.dualstack.amazonaws.com/gluon/models/transformer_en_de_512_WMT2014-e25287c5.zip.
+
+For the users from China, it might be faster with this link instead: https://apache-mxnet.s3.cn-north-1.amazonaws.com.cn/gluon/models/transformer_en_de_512_WMT2014-e25287c5.zip.
+
