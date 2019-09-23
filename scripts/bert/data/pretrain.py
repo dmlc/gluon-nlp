@@ -19,8 +19,6 @@
 """Dataset for pre-training. """
 import logging
 
-import mxnet as mx
-
 import gluonnlp as nlp
 from gluonnlp.data.batchify import Tuple, Stack, Pad
 try:
