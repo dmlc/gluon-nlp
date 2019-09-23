@@ -20,8 +20,6 @@
 __all__ = ['CacheCell']
 
 import mxnet as mx
-
-from mxnet import nd
 from mxnet.gluon import HybridBlock
 
 class CacheCell(HybridBlock):
@@ -128,7 +126,8 @@ class CacheCell(HybridBlock):
         """
         # XXX Temporary hack for hybridization as hybridblock does not support None inputs
         begin_state = [] if begin_state is None else begin_state
-        return super(CacheCell, self).__call__(inputs, target, next_word_history, cache_history, begin_state)
+        return super(CacheCell, self).__call__(inputs, target, next_word_history,
+                                               cache_history, begin_state)
 
 
     def hybrid_forward(self, F, inputs, target, next_word_history, cache_history, begin_state=None):
