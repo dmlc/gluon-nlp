@@ -32,7 +32,7 @@ def check_version(min_version, warning_only=False):
     """
     from .. import __version__
     from packaging.version import parse
-    bad_version = parse(__version__) < parse(min_version)
+    bad_version = parse(__version__.replace('.dev', '')) < parse(min_version)
     if bad_version:
         msg = 'Installed GluonNLP version (%s) does not satisfy the ' \
               'minimum required version (%s)'%(__version__, min_version)

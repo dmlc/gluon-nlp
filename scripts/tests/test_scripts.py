@@ -363,8 +363,8 @@ def test_pretrain_hvd():
 # STS-B inference (regression task)
 @pytest.mark.parametrize('dataset', ['MNLI', 'STS-B'])
 def test_finetune_inference(dataset):
-    arguments = ['--log_interval', '100', '--epsilon', '1e-8', '--optimizer',
-                 'adam', '--gpu', '0', '--max_len', '80', '--only_inference']
+    arguments = ['--log_interval', '100', '--epsilon', '1e-8',
+                 '--gpu', '0', '--max_len', '80', '--only_inference']
     process = subprocess.check_call([sys.executable, './scripts/bert/finetune_classifier.py',
                                      '--task_name', dataset] + arguments)
     time.sleep(5)
