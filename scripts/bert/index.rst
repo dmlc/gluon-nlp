@@ -50,7 +50,7 @@ where **bert_12_768_12** refers to the BERT BASE model, and **bert_24_1024_16** 
 .. code-block:: python
 
     import gluonnlp as nlp; import mxnet as mx;
-    model, vocab = nlp.model.get_model('bert_12_768_12', dataset_name='book_corpus_wiki_en_uncased', use_classifier=False);
+    model, vocab = nlp.model.get_model('bert_12_768_12', dataset_name='book_corpus_wiki_en_uncased', use_classifier=False, use_decoder=False);
     tokenizer = nlp.data.BERTTokenizer(vocab, lower=True);
     transform = nlp.data.BERTSentenceTransform(tokenizer, max_seq_length=512, pair=False, pad=False);
     sample = transform(['Hello world!']);
@@ -108,9 +108,9 @@ Sentence Classification
 GluonNLP provides the following example script to fine-tune sentence classification with pre-trained
 BERT model.
 
-For all model settings above, we set learing rate = 2e-5, optimizer = bertadam, model = bert_12_768_12. Other tasks can be modeled with `--task_name` parameter.
-
 To enable mixed precision training with float16, set `--dtype` argument to `float16`.
+
+Results using `bert_12_768_12`:
 
 .. editing URL for the following table: https://tinyurl.com/y4n8q84w
 
@@ -124,6 +124,19 @@ To enable mixed precision training with float16, set `--dtype` argument to `floa
 | Command             | `command <https://raw.githubusercontent.com/dmlc/web-data/master/gluonnlp/logs/bert/finetuned_mrpc.sh>`__    | `command <https://raw.githubusercontent.com/dmlc/web-data/master/gluonnlp/logs/bert/finetuned_rte.sh>`__    | `command <https://raw.githubusercontent.com/dmlc/web-data/master/gluonnlp/logs/bert/finetuned_sst.sh>`__    | `command <https://raw.githubusercontent.com/dmlc/web-data/master/gluonnlp/logs/bert/finetuned_mnli.sh>`__    | `command <https://raw.githubusercontent.com/dmlc/web-data/master/gluonnlp/logs/bert/finetuned_xnli.sh>`__    |
 +---------------------+--------------------------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------+
 
+Results using `roberta_12_768_12`:
+
+.. editing URL for the following table: https://www.shorturl.at/cjAO7
+
++---------------------+------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------+
+| Dataset             | SST-2                                                                                                | MNLI-M/MM                                                                                                        |
++=====================+======================================================================================================+==================================================================================================================+
+| Validation Accuracy | 95.3%                                                                                                | 87.69%, 87.23%                                                                                                   |
++---------------------+------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------+
+| Log                 | `log  <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/roberta/finetuned_sst.log>`__      | `log <https://raw.githubusercontent.com/dmlc/web-data/master/gluonnlp/logs/roberta/mnli_1e-5-32.log>`__          |
++---------------------+------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------+
+| Command             | `command <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/roberta/finetuned_sst.sh>`__    | `command  <https://raw.githubusercontent.com/dmlc/web-data/master/gluonnlp/logs/roberta/finetuned_mnli.sh>`__    |
++---------------------+------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------+
 
 .. editing URL for the following table: https://tinyurl.com/y5rrowj3
 
