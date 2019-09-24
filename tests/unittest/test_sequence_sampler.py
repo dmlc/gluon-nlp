@@ -53,8 +53,6 @@ def test_sequence_sampler(top_k):
         true_dist = dist.softmax().asnumpy()
     assert_allclose(true_dist, np.array(emp_dist), atol=0.01, rtol=0.1)
 
-# temporarily disabled model.HybridBeamSearchSampler test
-# due to https://github.com/dmlc/gluon-nlp/issues/706
 @pytest.mark.seed(1)
 @pytest.mark.parametrize('hybridize', [False, True])
 @pytest.mark.parametrize('sampler_cls', [model.BeamSearchSampler, model.HybridBeamSearchSampler])
