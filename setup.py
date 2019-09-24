@@ -58,6 +58,7 @@ setup(
         'extras': [
             'spacy',
             'nltk',
+            'sacremoses',
             'scipy',
             'numba>=0.40.1',
             'jieba',
