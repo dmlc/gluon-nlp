@@ -38,8 +38,8 @@ import zipfile
 from typing import List, Optional
 
 import mxnet as mx
-import numpy as np
 from mxnet.gluon.utils import _get_repo_url, check_sha1, download
+import numpy as np
 
 from ..base import get_home_dir
 from .utils import _extract_archive
