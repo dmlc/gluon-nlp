@@ -273,8 +273,8 @@ def test_bert_pretrain(backend):
 # STS-B inference (regression task)
 @pytest.mark.parametrize('dataset', ['MNLI', 'STS-B'])
 def test_finetune_inference(dataset):
-    arguments = ['--log_interval', '100', '--epsilon', '1e-8', '--optimizer',
-                 'adam', '--gpu', '0', '--max_len', '80', '--only_inference']
+    arguments = ['--log_interval', '100', '--epsilon', '1e-8',
+                 '--gpu', '0', '--max_len', '80', '--only_inference']
     process = subprocess.check_call([sys.executable, './scripts/bert/finetune_classifier.py',
                                      '--task_name', dataset] + arguments)
     time.sleep(5)
@@ -285,8 +285,8 @@ def test_finetune_inference(dataset):
 @pytest.mark.integration
 @pytest.mark.parametrize('dataset', ['XNLI', 'ChnSentiCorp'])
 def test_finetune_chinese_inference(dataset):
-    arguments = ['--log_interval', '100', '--epsilon', '1e-8', '--optimizer',
-                 'adam', '--gpu', '0', '--max_len', '80', '--only_inference']
+    arguments = ['--log_interval', '100', '--epsilon', '1e-8',
+                 '--gpu', '0', '--max_len', '80', '--only_inference']
     process = subprocess.check_call([sys.executable, './scripts/bert/finetune_classifier.py',
                                      '--task_name', dataset] + arguments)
     time.sleep(5)
@@ -295,23 +295,21 @@ def test_finetune_chinese_inference(dataset):
 @pytest.mark.gpu
 @pytest.mark.remote_required
 @pytest.mark.integration
+@pytest.mark.parametrize('early_stop', [None, 2])
+@pytest.mark.parametrize('bert_model', ['bert_12_768_12', 'roberta_12_768_12'])
 @pytest.mark.parametrize('dataset', ['WNLI'])
 @pytest.mark.parametrize('dtype', ['float32', 'float16'])
-def test_finetune_train(dataset, dtype):
-    arguments = ['--log_interval', '100', '--epsilon', '1e-8', '--optimizer',
-                 'adam', '--gpu', '0', '--epochs', '2', '--dtype', dtype]
-    try:
-        # TODO(haibin) update test once MXNet 1.5 is released.
-        from mxnet.ndarray.contrib import adamw_update
-        # WNLI training with bert_adam
-        process = subprocess.check_call([sys.executable, './scripts/bert/finetune_classifier.py',
-                                         '--task_name', dataset,
-                                         '--optimizer', 'bertadam'] + arguments)
-    except ImportError:
-        # WNLI training with adam
-        process = subprocess.check_call([sys.executable, './scripts/bert/finetune_classifier.py',
-                                         '--task_name', dataset,
-                                         '--optimizer', 'adam'] + arguments)
+def test_finetune_train(early_stop, bert_model, dataset, dtype):
+    epochs = early_stop + 2 if early_stop else 2
+    arguments = ['--log_interval', '100', '--epsilon', '1e-8',
+                 '--task_name', dataset, '--bert_model', bert_model,
+                 '--gpu', '0', '--epochs', str(epochs), '--dtype', dtype]
+    if early_stop is not None:
+        arguments += ['--early_stop', str(early_stop)]
+    if 'roberta' in bert_model:
+        arguments += ['--bert_dataset', 'openwebtext_ccnews_stories_books_cased']
+    process = subprocess.check_call([sys.executable, './scripts/bert/finetune_classifier.py'] +
+                                    arguments)
 
 @pytest.mark.serial
 @pytest.mark.integration

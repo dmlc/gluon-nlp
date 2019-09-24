@@ -41,7 +41,7 @@ import random
 import numpy as np
 import mxnet as mx
 import gluonnlp as nlp
-from bert import data, model
+from bert import data
 
 nlp.utils.check_version('0.8.1')
 ```
@@ -109,7 +109,7 @@ The `BERTClassifier` class uses a BERT base model to encode sentence
 representation, followed by a `nn.Dense` layer for classification.
 
 ```{.python .input}
-bert_classifier = model.classification.BERTClassifier(bert_base, num_classes=2, dropout=0.1)
+bert_classifier = nlp.model.BERTClassifier(bert_base, num_classes=2, dropout=0.1)
 # only need to initialize the classifier layer.
 bert_classifier.classifier.initialize(init=mx.init.Normal(0.02), ctx=ctx)
 bert_classifier.hybridize(static_alloc=True)

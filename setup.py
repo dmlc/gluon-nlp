@@ -59,7 +59,7 @@ setup(
             'spacy',
             'nltk==3.2.5',
             'scipy',
-            'numba>=0.40.1',
+            'numba>=0.45',
             'jieba',
             'sentencepiece',
             'boto3',
