@@ -245,14 +245,7 @@ def test_bert_pretrain(backend):
                  '--pretrained',
                  '--comm_backend', backend]
 
-    if backend == 'horovod':
-        try:
-            # Test only if horovod is present
-            import horovod.mxnet as hvd
-        except ImportError:
-            print("The test expects master branch of MXNet and Horovod. Skipped now.")
-            return
-    elif backend == 'device':
+    if backend == 'device':
         arguments += ['--gpus', '0']
 
     # test training with npz data, float32
