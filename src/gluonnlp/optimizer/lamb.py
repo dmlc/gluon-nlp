@@ -18,8 +18,8 @@
 """LAMB optimizer"""
 
 from mxnet.optimizer import Optimizer, register
-from mxnet.ndarray import zeros, ones_like, NDArray
-from mxnet.ndarray import square, power, sqrt, maximum, minimum, clip, where
+from mxnet.ndarray import zeros, NDArray
+from mxnet.ndarray import square, power, sqrt, maximum, minimum, clip
 
 __all__ = ['LAMB']
 
@@ -103,34 +103,25 @@ class LAMB(Optimizer):
             grad = clip(grad, -self.clip_gradient, self.clip_gradient)
 
         mean, var = state
-        mean *= self.beta1
-        mean += (1. - self.beta1) * grad
-        var *= self.beta2
-        var += (1. - self.beta2) * square(grad)
+        mean[:] = self.beta1 * mean + (1. - self.beta1) * grad
+        var[:] = self.beta2 * var + (1. - self.beta2) * square(grad)
 
         r1 = weight.norm()
         if not self.bias_correction:
             r1 = minimum(maximum(r1, self.lower_bound), self.upper_bound)
             g = mean / (sqrt(var) + self.epsilon) + wd * weight
+
         else:
-            # apply bias correction
+            # execution bias correction
             mean_hat = mean / (1. - power(self.beta1, t))
             var_hat = var / (1. - power(self.beta2, t))
-            var_hat += self.epsilon
-            var_hat[:] = sqrt(var_hat)
-            mean_hat /= var_hat
-            mean_hat += wd * weight
-            g = mean_hat
+            g = mean_hat / sqrt(var_hat + self.epsilon) + wd * weight
 
         r2 = g.norm()
 
         # calculate lamb_trust_ratio
-        ratio = r1 / r2
-        # becomes NaN if ratio == NaN or 0, otherwise 0
-        nan_or_zero = 1 - ratio / ratio
-        r = where(nan_or_zero, ones_like(ratio), ratio)
+        r = 1. if r1 == 0. or r2 == 0. else r1 / r2
         lr *= r
 
         # update weight
-        g *= lr
-        weight[:] -= g
+        weight[:] -= lr * g
