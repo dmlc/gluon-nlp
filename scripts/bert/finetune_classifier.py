@@ -44,10 +44,9 @@ import numpy as np
 import mxnet as mx
 from mxnet import gluon
 import gluonnlp as nlp
-from gluonnlp.model import get_model
 from gluonnlp.data import BERTTokenizer
+from gluonnlp.model import BERTClassifier, RoBERTaClassifier
 
-from model.classification import BERTClassifier, BERTRegression
 from data.classification import MRPCTask, QQPTask, RTETask, STSBTask, SSTTask
 from data.classification import QNLITask, CoLATask, MNLITask, WNLITask, XNLITask
 from data.classification import LCQMCTask, ChnSentiCorpTask
@@ -85,11 +84,6 @@ parser.add_argument(
     type=int,
     default=8,
     help='Batch size for dev set and test set')
-parser.add_argument(
-    '--optimizer',
-    type=str,
-    default='bertadam',
-    help='Optimization algorithm')
 parser.add_argument(
     '--lr',
     type=float,
@@ -140,17 +134,17 @@ parser.add_argument(
     '--bert_model',
     type=str,
     default='bert_12_768_12',
-    help='The name of pre-trained BERT model to fine-tune'
-    '(bert_24_1024_16 and bert_12_768_12).')
+    choices=['bert_12_768_12', 'bert_24_1024_16', 'roberta_12_768_12', 'roberta_24_1024_16'],
+    help='The name of pre-trained BERT model to fine-tune')
 parser.add_argument(
     '--bert_dataset',
     type=str,
     default='book_corpus_wiki_en_uncased',
-    help='The dataset BERT pre-trained with.'
-    'Options include \'book_corpus_wiki_en_cased\', \'book_corpus_wiki_en_uncased\''
-    'for both bert_24_1024_16 and bert_12_768_12.'
-    '\'wiki_cn_cased\', \'wiki_multilingual_uncased\' and \'wiki_multilingual_cased\''
-    'for bert_12_768_12 only.')
+    choices=['book_corpus_wiki_en_uncased', 'book_corpus_wiki_en_cased',
+             'openwebtext_book_corpus_wiki_en_uncased', 'wiki_multilingual_uncased',
+             'wiki_multilingual_cased', 'wiki_cn_cased',
+             'openwebtext_ccnews_stories_books_cased'],
+    help='The dataset BERT pre-trained with.')
 parser.add_argument(
     '--pretrained_bert_parameters',
     type=str,
@@ -178,6 +172,12 @@ parser.add_argument(
     default='float32',
     choices=['float32', 'float16'],
     help='The data type for training.')
+parser.add_argument(
+    '--early_stop',
+    type=int,
+    default=None,
+    help='Whether to perform early stopping based on the metric on dev set. '
+         'The provided value is the patience. ')
 
 args = parser.parse_args()
 
@@ -193,8 +193,8 @@ epsilon = args.epsilon
 accumulate = args.accumulate
 log_interval = args.log_interval * accumulate if accumulate else args.log_interval
 if accumulate:
-    logging.info('Using gradient accumulation. Effective batch size = %d',
-                 accumulate * batch_size)
+    logging.info('Using gradient accumulation. Effective batch size = ' \
+                 'batch_size * accumulate = %d', accumulate * batch_size)
 
 # random seed
 np.random.seed(args.seed)
@@ -234,28 +234,41 @@ if only_inference and not model_parameters:
 
 get_pretrained = not (pretrained_bert_parameters is not None
                       or model_parameters is not None)
-bert, vocabulary = get_model(
-    name=model_name,
-    dataset_name=dataset,
-    pretrained=get_pretrained,
-    ctx=ctx,
-    use_pooler=True,
-    use_decoder=False,
-    use_classifier=False)
 
-if not task.class_labels:
-    # STS-B is a regression task.
-    # STSBTask().class_labels returns None
-    model = BERTRegression(bert, dropout=0.1)
-    if not model_parameters:
-        model.regression.initialize(init=mx.init.Normal(0.02), ctx=ctx)
+use_roberta = 'roberta' in model_name
+get_model_params = {
+    'name' : model_name,
+    'dataset_name' : dataset,
+    'pretrained' : get_pretrained,
+    'ctx' : ctx,
+    'use_decoder' : False,
+    'use_classifier' : False,
+}
+# RoBERTa does not contain parameters for sentence pair classification
+if not use_roberta:
+    get_model_params['use_pooler'] = True
+
+bert, vocabulary = nlp.model.get_model(**get_model_params)
+
+# initialize the rest of the parameters
+initializer = mx.init.Normal(0.02)
+# STS-B is a regression task.
+# STSBTask().class_labels returns None
+do_regression = not task.class_labels
+if do_regression:
+    num_classes = 1
     loss_function = gluon.loss.L2Loss()
 else:
-    model = BERTClassifier(
-        bert, dropout=0.1, num_classes=len(task.class_labels))
-    if not model_parameters:
-        model.classifier.initialize(init=mx.init.Normal(0.02), ctx=ctx)
+    num_classes = len(task.class_labels)
     loss_function = gluon.loss.SoftmaxCELoss()
+# reuse the BERTClassifier class with num_classes=1 for regression
+if use_roberta:
+    model = RoBERTaClassifier(bert, dropout=0.0, num_classes=num_classes)
+else:
+    model = BERTClassifier(bert, dropout=0.1, num_classes=num_classes)
+# initialize classifier
+if not model_parameters:
+    model.classifier.initialize(init=initializer, ctx=ctx)
 
 # load checkpointing
 output_dir = args.output_dir
@@ -274,15 +287,19 @@ loss_function.hybridize(static_alloc=True)
 
 # data processing
 do_lower_case = 'uncased' in dataset
-bert_tokenizer = BERTTokenizer(vocabulary, lower=do_lower_case)
+if use_roberta:
+    bert_tokenizer = nlp.data.GPT2BPETokenizer()
+else:
+    bert_tokenizer = BERTTokenizer(vocabulary, lower=do_lower_case)
 
-def preprocess_data(tokenizer, task, batch_size, dev_batch_size, max_len, pad=False):
+def preprocess_data(tokenizer, task, batch_size, dev_batch_size, max_len, vocab, pad=False):
     """Train/eval Data preparation function."""
     pool = multiprocessing.Pool()
 
     # transformation for data train and dev
     label_dtype = 'float32' if not task.class_labels else 'int32'
     trans = BERTDatasetTransform(tokenizer, max_len,
+                                 vocab=vocab,
                                  class_labels=task.class_labels,
                                  label_alias=task.label_alias,
                                  pad=pad, pair=task.is_pair,
@@ -334,6 +351,7 @@ def preprocess_data(tokenizer, task, batch_size, dev_batch_size, max_len, pad=Fa
         nlp.data.batchify.Pad(axis=0, pad_val=0))
     # transform for data test
     test_trans = BERTDatasetTransform(tokenizer, max_len,
+                                      vocab=vocab,
                                       class_labels=None,
                                       pad=pad, pair=task.is_pair,
                                       has_label=False)
@@ -357,7 +375,7 @@ def preprocess_data(tokenizer, task, batch_size, dev_batch_size, max_len, pad=Fa
 # Get the loader.
 logging.info('processing dataset...')
 train_data, dev_data_list, test_data_list, num_train_examples = preprocess_data(
-    bert_tokenizer, task, batch_size, dev_batch_size, args.max_len, args.pad)
+    bert_tokenizer, task, batch_size, dev_batch_size, args.max_len, vocabulary, args.pad)
 
 
 def test(loader_test, segment):
@@ -367,10 +385,13 @@ def test(loader_test, segment):
     tic = time.time()
     results = []
     for _, seqs in enumerate(loader_test):
-        input_ids, valid_length, type_ids = seqs
-        out = model(input_ids.as_in_context(ctx),
-                    type_ids.as_in_context(ctx),
-                    valid_length.astype('float32').as_in_context(ctx))
+        input_ids, valid_length, segment_ids = seqs
+        input_ids = input_ids.as_in_context(ctx)
+        valid_length = valid_length.as_in_context(ctx).astype('float32')
+        if use_roberta:
+            out = model(input_ids, valid_length)
+        else:
+            out = model(input_ids, segment_ids.as_in_context(ctx), valid_length)
         if not task.class_labels:
             # regression task
             for result in out.asnumpy().reshape(-1).tolist():
@@ -428,16 +449,8 @@ def train(metric):
 
     all_model_params = model.collect_params()
     optimizer_params = {'learning_rate': lr, 'epsilon': epsilon, 'wd': 0.01}
-    try:
-        trainer = gluon.Trainer(all_model_params, args.optimizer,
-                                optimizer_params, update_on_kvstore=False)
-    except ValueError as e:
-        print(e)
-        warnings.warn(
-            'AdamW optimizer is not found. Please consider upgrading to '
-            'mxnet>=1.5.0. Now the original Adam optimizer is used instead.')
-        trainer = gluon.Trainer(all_model_params, 'adam',
-                                optimizer_params, update_on_kvstore=False)
+    trainer = gluon.Trainer(all_model_params, 'bertadam',
+                            optimizer_params, update_on_kvstore=False)
     if args.dtype == 'float16':
         amp.init_trainer(trainer)
 
@@ -459,9 +472,14 @@ def train(metric):
             p.grad_req = 'add'
     # track best eval score
     metric_history = []
+    best_metric = None
+    patience = args.early_stop
 
     tic = time.time()
     for epoch_id in range(args.epochs):
+        if args.early_stop and patience == 0:
+            logging.info('Early stopping at epoch %d', epoch_id)
+            break
         if not only_inference:
             metric.reset()
             step_loss = 0
@@ -480,11 +498,15 @@ def train(metric):
 
                 # forward and backward
                 with mx.autograd.record():
-                    input_ids, valid_length, type_ids, label = seqs
-                    out = model(
-                        input_ids.as_in_context(ctx), type_ids.as_in_context(ctx),
-                        valid_length.astype('float32').as_in_context(ctx))
-                    ls = loss_function(out, label.as_in_context(ctx)).mean()
+                    input_ids, valid_length, segment_ids, label = seqs
+                    input_ids = input_ids.as_in_context(ctx)
+                    valid_length = valid_length.as_in_context(ctx).astype('float32')
+                    label = label.as_in_context(ctx)
+                    if use_roberta:
+                        out = model(input_ids, valid_length)
+                    else:
+                        out = model(input_ids, segment_ids.as_in_context(ctx), valid_length)
+                    ls = loss_function(out, label).mean()
                     if args.dtype == 'float16':
                         with amp.scale_loss(ls, trainer) as scaled_loss:
                             mx.autograd.backward(scaled_loss)
@@ -512,6 +534,12 @@ def train(metric):
         # inference on dev data
         for segment, dev_data in dev_data_list:
             metric_nm, metric_val = evaluate(dev_data, metric, segment)
+            if best_metric is None or metric_val >= best_metric:
+                best_metric = metric_val
+                patience = args.early_stop
+            else:
+                if args.early_stop is not None:
+                    patience -= 1
             metric_history.append((epoch_id, metric_nm, metric_val))
 
         if not only_inference:
@@ -548,11 +576,15 @@ def evaluate(loader_dev, metric, segment):
     step_loss = 0
     tic = time.time()
     for batch_id, seqs in enumerate(loader_dev):
-        input_ids, valid_len, type_ids, label = seqs
-        out = model(
-            input_ids.as_in_context(ctx), type_ids.as_in_context(ctx),
-            valid_len.astype('float32').as_in_context(ctx))
-        ls = loss_function(out, label.as_in_context(ctx)).mean()
+        input_ids, valid_length, segment_ids, label = seqs
+        input_ids = input_ids.as_in_context(ctx)
+        valid_length = valid_length.as_in_context(ctx).astype('float32')
+        label = label.as_in_context(ctx)
+        if use_roberta:
+            out = model(input_ids, valid_length)
+        else:
+            out = model(input_ids, segment_ids.as_in_context(ctx), valid_length)
+        ls = loss_function(out, label).mean()
 
         step_loss += ls.asscalar()
         metric.update([label], [out])

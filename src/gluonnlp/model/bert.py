@@ -18,7 +18,8 @@
 # pylint: disable=too-many-lines
 
 __all__ = ['BERTModel', 'RoBERTaModel', 'BERTEncoder', 'BERTEncoderCell', 'BERTPositionwiseFFN',
-           'BERTLayerNorm', 'bert_12_768_12', 'bert_24_1024_16',
+           'BERTLayerNorm', 'BERTClassifier', 'RoBERTaClassifier',
+           'bert_12_768_12', 'bert_24_1024_16',
            'ernie_12_768_12', 'roberta_12_768_12', 'roberta_24_1024_16']
 
 import os
@@ -579,7 +580,8 @@ class RoBERTaModel(BERTModel):
 
     def __init__(self, encoder, vocab_size=None, units=None,
                  embed_size=None, embed_dropout=0.0, embed_initializer=None,
-                 word_embed=None, use_decoder=True, prefix=None, params=None):
+                 word_embed=None, use_decoder=True,
+                 prefix=None, params=None):
         super(RoBERTaModel, self).__init__(encoder, vocab_size=vocab_size,
                                            token_type_vocab_size=None, units=units,
                                            embed_size=embed_size, embed_dropout=embed_dropout,
@@ -601,6 +603,174 @@ class RoBERTaModel(BERTModel):
         return super(RoBERTaModel, self).__call__(inputs, [], valid_length=valid_length,
                                                   masked_positions=masked_positions)
 
+
+class BERTClassifier(HybridBlock):
+    """Model for sentence (pair) classification task with BERT.
+
+    The model feeds token ids and token type ids into BERT to get the
+    pooled BERT sequence representation, then apply a Dense layer for
+    classification.
+
+    Parameters
+    ----------
+    bert: BERTModel
+        Bidirectional encoder with transformer.
+    num_classes : int, default is 2
+        The number of target classes.
+    dropout : float or None, default 0.0.
+        Dropout probability for the bert output.
+    prefix : str or None
+        See document of `mx.gluon.Block`.
+    params : ParameterDict or None
+        See document of `mx.gluon.Block`.
+    """
+
+    def __init__(self, bert, num_classes=2, dropout=0.0,
+                 prefix=None, params=None):
+        super(BERTClassifier, self).__init__(prefix=prefix, params=params)
+        self.bert = bert
+        with self.name_scope():
+            self.classifier = nn.HybridSequential(prefix=prefix)
+            if dropout:
+                self.classifier.add(nn.Dropout(rate=dropout))
+            self.classifier.add(nn.Dense(units=num_classes))
+
+    def __call__(self, inputs, token_types, valid_length=None):
+        # pylint: disable=dangerous-default-value, arguments-differ
+        """Generate the unnormalized score for the given the input sequences.
+
+        Parameters
+        ----------
+        inputs : NDArray or Symbol, shape (batch_size, seq_length)
+            Input words for the sequences.
+        token_types : NDArray or Symbol, shape (batch_size, seq_length)
+            Token types for the sequences, used to indicate whether the word belongs to the
+            first sentence or the second one.
+        valid_length : NDArray or Symbol, or None, shape (batch_size)
+            Valid length of the sequence. This is used to mask the padded tokens.
+
+        Returns
+        -------
+        outputs : NDArray or Symbol
+            Shape (batch_size, num_classes)
+        """
+        # XXX Temporary hack for hybridization as hybridblock does not support None inputs
+        valid_length = [] if valid_length is None else valid_length
+        return super(BERTClassifier, self).__call__(inputs, token_types, valid_length)
+
+    def hybrid_forward(self, F, inputs, token_types, valid_length=None):
+        # pylint: disable=arguments-differ
+        """Generate the unnormalized score for the given the input sequences.
+
+        Parameters
+        ----------
+        inputs : NDArray or Symbol, shape (batch_size, seq_length)
+            Input words for the sequences.
+        token_types : NDArray or Symbol, shape (batch_size, seq_length)
+            Token types for the sequences, used to indicate whether the word belongs to the
+            first sentence or the second one.
+        valid_length : NDArray or None, shape (batch_size)
+            Valid length of the sequence. This is used to mask the padded tokens.
+
+        Returns
+        -------
+        outputs : NDArray
+            Shape (batch_size, num_classes)
+        """
+        # XXX Temporary hack for hybridization as hybridblock does not support None
+        if isinstance(valid_length, list) and len(valid_length) == 0:
+            valid_length = None
+        _, pooler_out = self.bert(inputs, token_types, valid_length)
+        return self.classifier(pooler_out)
+
+class RoBERTaClassifier(HybridBlock):
+    """Model for sentence (pair) classification task with BERT.
+
+    The model feeds token ids and token type ids into BERT to get the
+    pooled BERT sequence representation, then apply a Dense layer for
+    classification.
+
+    Parameters
+    ----------
+    bert: RoBERTaModel
+        The RoBERTa model.
+    num_classes : int, default is 2
+        The number of target classes.
+    dropout : float or None, default 0.0.
+        Dropout probability for the bert output.
+    prefix : str or None
+        See document of `mx.gluon.Block`.
+    params : ParameterDict or None
+        See document of `mx.gluon.Block`.
+
+    Inputs:
+        - **inputs**: input sequence tensor, shape (batch_size, seq_length)
+        - **valid_length**: optional tensor of input sequence valid lengths.
+            Shape (batch_size, num_classes).
+
+    Outputs:
+        - **output**: Regression output, shape (batch_size, num_classes)
+    """
+
+    def __init__(self, roberta, num_classes=2, dropout=0.0,
+                 prefix=None, params=None):
+        super(RoBERTaClassifier, self).__init__(prefix=prefix, params=params)
+        self.roberta = roberta
+        self._units = roberta._units
+        with self.name_scope():
+            self.classifier = nn.HybridSequential(prefix=prefix)
+            if dropout:
+                self.classifier.add(nn.Dropout(rate=dropout))
+            self.classifier.add(nn.Dense(units=self._units, activation='tanh'))
+            if dropout:
+                self.classifier.add(nn.Dropout(rate=dropout))
+            self.classifier.add(nn.Dense(units=num_classes))
+
+    def __call__(self, inputs, valid_length=None):
+        # pylint: disable=dangerous-default-value, arguments-differ
+        """Generate the unnormalized score for the given the input sequences.
+
+        Parameters
+        ----------
+        inputs : NDArray or Symbol, shape (batch_size, seq_length)
+            Input words for the sequences.
+        valid_length : NDArray or Symbol, or None, shape (batch_size)
+            Valid length of the sequence. This is used to mask the padded tokens.
+
+        Returns
+        -------
+        outputs : NDArray or Symbol
+            Shape (batch_size, num_classes)
+        """
+        # XXX Temporary hack for hybridization as hybridblock does not support None inputs
+        valid_length = [] if valid_length is None else valid_length
+        return super(RoBERTaClassifier, self).__call__(inputs, valid_length)
+
+    def hybrid_forward(self, F, inputs, valid_length=None):
+        # pylint: disable=arguments-differ
+        """Generate the unnormalized score for the given the input sequences.
+
+        Parameters
+        ----------
+        inputs : NDArray or Symbol, shape (batch_size, seq_length)
+            Input words for the sequences.
+        valid_length : NDArray or Symbol, or None, shape (batch_size)
+            Valid length of the sequence. This is used to mask the padded tokens.
+
+        Returns
+        -------
+        outputs : NDArray or Symbol
+            Shape (batch_size, num_classes)
+        """
+        # XXX Temporary hack for hybridization as hybridblock does not support None
+        if isinstance(valid_length, list) and len(valid_length) == 0:
+            valid_length = None
+
+        seq_out = self.roberta(inputs, valid_length)
+        assert not isinstance(seq_out, (tuple, list)), 'Expected one output from RoBERTaModel'
+        outputs = seq_out.slice(begin=(0, 0, 0), end=(None, 1, None))
+        outputs = outputs.reshape(shape=(-1, self._units))
+        return self.classifier(outputs)
 
 ###############################################################################
 #                               GET MODEL                                     #
@@ -947,7 +1117,8 @@ def roberta_24_1024_16(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cp
     """
     return get_roberta_model(model_name='roberta_24_1024_16', vocab=vocab,
                              dataset_name=dataset_name, pretrained=pretrained, ctx=ctx,
-                             use_decoder=use_decoder, root=root, **kwargs)
+                             use_decoder=use_decoder,
+                             root=root, **kwargs)
 
 def ernie_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
                     root=os.path.join(get_home_dir(), 'models'), use_pooler=True, use_decoder=True,
@@ -997,8 +1168,9 @@ def ernie_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu()
 
 
 def get_roberta_model(model_name=None, dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
-                      use_decoder=True, output_attention=False, output_all_encodings=False,
-                      root=os.path.join(get_home_dir(), 'models'), **kwargs):
+                      use_decoder=True, output_attention=False,
+                      output_all_encodings=False, root=os.path.join(get_home_dir(), 'models'),
+                      **kwargs):
     """Any RoBERTa pretrained model.
 
     Parameters
