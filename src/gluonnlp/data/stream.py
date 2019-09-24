@@ -377,8 +377,9 @@ class PrefetchingStream(DataStream):
 
     def __iter__(self):
         seed = random.getrandbits(32)
-        np_seed = np.random.randint(0, np.iinfo(np.int_).max)
-        mx_seed = int(mx.nd.random.uniform(0, np.iinfo(np.int_).max).asscalar())
+        # TODO should be possible to change to 64 bit in MXNet 1.6 (uses int64 by default?)
+        np_seed = np.random.randint(0, np.iinfo(np.int32).max)
+        mx_seed = int(mx.nd.random.uniform(0, np.iinfo(np.int32).max).asscalar())
         if self._multiprocessing:
             return _ProcessPrefetcher(self._stream, self._num_prefetch,
                                       seed=seed, np_seed=np_seed,
