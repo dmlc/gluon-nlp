@@ -45,7 +45,7 @@ except ImportError:
 
 from fp16_utils import FP16Trainer
 from pretraining_utils import get_model_loss, get_pretrain_data_npz, get_dummy_dataloader
-from pretraining_utils import split_and_load, log, evaluate
+from pretraining_utils import split_and_load, log, log_noacc, evaluate
 from pretraining_utils import save_parameters, save_states, profile
 from pretraining_utils import get_pretrain_data_text, generate_dev_set
 
@@ -84,6 +84,8 @@ parser.add_argument('--lr', type=float, default=1e-4, help='Learning rate')
 parser.add_argument('--warmup_ratio', type=float, default=0.01,
                     help='ratio of warmup steps used in NOAM\'s stepsize schedule')
 parser.add_argument('--dtype', type=str, default='float16', help='data dtype')
+parser.add_argument('--no_compute_acc', action='store_true',
+                    help='skip accuracy metric computation during training')
 # validation
 parser.add_argument('--eval_interval', type=int, default=50000, help='Evaluation interval')
 parser.add_argument('--total_batch_size_eval', type=int, default=256,
@@ -95,9 +97,8 @@ parser.add_argument('--data_eval', type=str, required=True,
 parser.add_argument('--eval_use_npz', action='store_true',
                     help='Set to True if --data_eval provides npz files instead of raw text files')
 # debugging
-parser.add_argument('--dummy_data_len', type=int, default=None,
-                    help='If provided, a data batch of target sequence length is '
-                         'used. For benchmarking purpuse only.')
+parser.add_argument('--synthetic_data', action='store_true',
+                    help='If provided, synthetic data is used for training')
 parser.add_argument('--verbose', action='store_true', help='verbose logging')
 parser.add_argument('--profile', type=str, default=None,
                     help='output profiling result to the provided file path')
@@ -274,10 +275,6 @@ def train(data_train, data_eval, model):
     logging.debug('Training started')
 
     # create dummy data loader if needed
-    if args.dummy_data_len:
-        target_shape = (batch_size, args.dummy_data_len)
-        data_train = get_dummy_dataloader(data_train, target_shape)
-
     parallel_model = DataParallelBERT(model, trainer=fp16_trainer)
     num_ctxes = len(ctxs)
     parallel = nlp.utils.Parallel(num_ctxes if num_ctxes > 1 else 0, parallel_model)
@@ -326,18 +323,27 @@ def train(data_train, data_eval, model):
             # update
             if (batch_num + 1) % accumulate == 0:
                 fp16_trainer.step(1, max_norm=1.0 * num_workers)
-            nsp_metric.update(ns_label_list, ns_pred_list)
-            mlm_metric.update(mask_label_list, mask_pred_list, mask_weight_list)
+            # update metrics
+            if args.no_compute_acc:
+                mask_pred_list[0].wait_to_read()
+            else:
+                nsp_metric.update(ns_label_list, ns_pred_list)
+                mlm_metric.update(mask_label_list, mask_pred_list, mask_weight_list)
 
             # logging
             if (step_num + 1) % (args.log_interval) == 0 and (batch_num + 1) % accumulate == 0:
-                log(begin_time, running_num_tks, running_mlm_loss / accumulate,
-                    running_nsp_loss / accumulate, step_num, mlm_metric, nsp_metric,
-                    trainer, args.log_interval)
+                if args.no_compute_acc:
+                    log_noacc(begin_time, running_num_tks, running_mlm_loss / accumulate,
+                              running_nsp_loss / accumulate, step_num,
+                              trainer, args.log_interval)
+                else:
+                    log(begin_time, running_num_tks, running_mlm_loss / accumulate,
+                        running_nsp_loss / accumulate, step_num, mlm_metric, nsp_metric,
+                        trainer, args.log_interval)
+                    mlm_metric.reset_local()
+                    nsp_metric.reset_local()
                 begin_time = time.time()
                 running_mlm_loss = running_nsp_loss = running_num_tks = 0
-                mlm_metric.reset_local()
-                nsp_metric.reset_local()
 
             # saving checkpoints
             if (step_num + 1) % args.ckpt_interval == 0 and (batch_num + 1) % accumulate == 0:
@@ -413,13 +419,17 @@ if __name__ == '__main__':
         else:
             get_dataset_fn = get_pretrain_data_npz
 
-        num_parts = 1 if args.dummy_data_len else num_workers
-        part_idx = 0 if args.dummy_data_len else rank
-        shuffle = True
-        data_train = get_dataset_fn(args.data, batch_size,
-                                    len(ctxs), shuffle, args.num_buckets, vocab,
-                                    num_parts=num_parts, part_idx=part_idx,
-                                    num_workers=args.num_data_workers)
+        if args.synthetic_data:
+            data_train = get_dummy_dataloader(batch_size, args.max_seq_length,
+                                              args.max_predictions_per_seq)
+        else:
+            num_parts = 1 if args.dummy_data_len else num_workers
+            part_idx = 0 if args.dummy_data_len else rank
+            shuffle = True
+            data_train = get_dataset_fn(args.data, batch_size,
+                                        len(ctxs), shuffle, args.num_buckets, vocab,
+                                        num_parts=num_parts, part_idx=part_idx,
+                                        num_workers=args.num_data_workers)
         train(data_train, data_eval, model)
     if data_eval:
         # eval data is always based on a fixed npz file.

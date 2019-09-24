@@ -229,16 +229,8 @@ def get_pretrain_data_npz(data, batch_size, num_ctxes, shuffle, num_buckets,
     return dataloader
 
 
-def get_dummy_dataloader(dataloader, target_shape):
+def get_dummy_dataloader(batch_size, seq_len, max_predict):
     """Return a dummy data loader which returns a fixed data batch of target shape"""
-    data_iter = enumerate(dataloader)
-    _, data_batch = next(data_iter)
-    logging.debug('Searching target batch shape: %s', target_shape)
-    while data_batch[0].shape != target_shape:
-        logging.debug('Skip batch with shape %s', data_batch[0].shape)
-        _, data_batch = next(data_iter)
-    logging.debug('Found target dummy batch.')
-
     class DummyIter():
         def __init__(self, batch):
             self._batch = batch
@@ -246,8 +238,15 @@ def get_dummy_dataloader(dataloader, target_shape):
         def __iter__(self):
             while True:
                 yield self._batch
-
+    data_batch = ((mx.nd.zeros((batch_size, seq_len)),
+                   mx.nd.zeros((batch_size, max_predict)),
+                   mx.nd.zeros((batch_size, max_predict)),
+                   mx.nd.zeros((batch_size, max_predict)),
+                   mx.nd.ones((batch_size,)) * seq_len,
+                   mx.nd.zeros((batch_size, seq_len)),
+                   mx.nd.ones((batch_size,)) * seq_len))
     return DummyIter(data_batch)
+
 
 def save_parameters(step_num, model, ckpt_dir):
     """Save the model parameter, marked by step_num."""
@@ -260,6 +259,21 @@ def save_states(step_num, trainer, ckpt_dir, local_rank=0):
     trainer_path = os.path.join(ckpt_dir, '%07d.states.%02d'%(step_num, local_rank))
     logging.info('[step %d] Saving trainer states to %s.', step_num, trainer_path)
     nlp.utils.save_states(trainer, trainer_path)
+
+def log_noacc(begin_time, running_num_tks, running_mlm_loss, running_nsp_loss, step_num,
+              trainer, log_interval):
+    """Log training progress."""
+    end_time = time.time()
+    duration = end_time - begin_time
+    throughput = running_num_tks / duration / 1000.0
+    running_mlm_loss = running_mlm_loss / log_interval
+    running_nsp_loss = running_nsp_loss / log_interval
+    lr = trainer.learning_rate if trainer else 0
+    # pylint: disable=line-too-long
+    logging.info('[step {}]\tmlm_loss={:7.5f}\tnsp_loss={:5.2f}\tthroughput={:.1f}K tks/s\tlr={:.7f} time={:.2f}, latency={:.1f} ms/batch'
+                 .format(step_num, running_mlm_loss.asscalar(), running_nsp_loss.asscalar(),
+                         throughput.asscalar(), lr, duration, duration*1000/log_interval))
+    # pylint: enable=line-too-long
 
 def log(begin_time, running_num_tks, running_mlm_loss, running_nsp_loss, step_num,
         mlm_metric, nsp_metric, trainer, log_interval):
