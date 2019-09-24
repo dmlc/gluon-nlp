@@ -433,12 +433,10 @@ if __name__ == '__main__':
             data_train = get_dummy_dataloader(batch_size, args.max_seq_length,
                                               args.max_predictions_per_seq)
         else:
-            num_parts = 1 if args.dummy_data_len else num_workers
-            part_idx = 0 if args.dummy_data_len else rank
             shuffle = True
             data_train = get_dataset_fn(args.data, batch_size,
                                         len(ctxs), shuffle, args.num_buckets, vocab,
-                                        num_parts=num_parts, part_idx=part_idx,
+                                        num_parts=num_workers, part_idx=rank,
                                         num_workers=args.num_data_workers)
         train(data_train, data_eval, model)
     if data_eval:
