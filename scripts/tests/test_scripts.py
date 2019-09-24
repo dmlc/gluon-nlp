@@ -405,7 +405,7 @@ def test_finetune_train(early_stop, bert_model, dataset, dtype):
 @pytest.mark.integration
 @pytest.mark.parametrize('task', ['classification', 'regression', 'question_answering'])
 def test_export(task):
-    process = subprocess.check_call([sys.executable, './scripts/bert/export/export.py',
+    process = subprocess.check_call([sys.executable, './scripts/bert/export.py',
                                      '--task', task])
 
 @pytest.mark.serial
