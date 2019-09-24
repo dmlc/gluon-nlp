@@ -280,7 +280,12 @@ def train(data_train, data_eval, model):
     parallel = nlp.utils.Parallel(num_ctxes if num_ctxes > 1 else 0, parallel_model)
 
     while step_num < num_train_steps:
-        for _, data_batch in enumerate(data_train):
+
+        data_train_iter = iter(data_train)
+        end_of_batch = False
+        next_data_batch = next(data_train_iter)
+        while not end_of_batch:
+            data_batch = next_data_batch
             if step_num >= num_train_steps:
                 break
             if batch_num % accumulate == 0:
@@ -319,6 +324,11 @@ def train(data_train, data_eval, model):
                     running_mlm_loss += ls1.as_in_context(mx.cpu()) / len(ctxs)
                     running_nsp_loss += ls2.as_in_context(mx.cpu()) / len(ctxs)
                     running_num_tks += valid_length.sum().as_in_context(mx.cpu())
+            # pre fetch next batch
+            try:
+                next_data_batch = next(data_train_iter)
+            except StopIteration:
+                end_of_batch = True
 
             # update
             if (batch_num + 1) % accumulate == 0:
