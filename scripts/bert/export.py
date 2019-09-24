@@ -203,6 +203,7 @@ def infer(batch, prefix):
     imported_net(inputs, token_types, valid_length)
     mx.nd.waitall()
 
+    # benchmark speed after warmup
     tic = time.time()
     num_trials = 10
     for _ in range(num_trials):
