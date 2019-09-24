@@ -1221,8 +1221,10 @@ class BERTSentenceTransform:
         Tokenizer for the sentences.
     max_seq_length : int.
         Maximum sequence length of the sentences.
-    vocab : Vocab or BERTVocab
-        The vocabulary.
+    vocab : Vocab
+        The vocabulary which has cls_token and sep_token registered.
+        If vocab.cls_token is not present, vocab.bos_token is used instead.
+        If vocab.sep_token is not present, vocab.eos_token is used instead.
     pad : bool, default True
         Whether to pad the sentences to maximum length.
     pair : bool, default True
@@ -1235,13 +1237,14 @@ class BERTSentenceTransform:
         self._pad = pad
         self._pair = pair
         self._vocab = self._tokenizer.vocab if vocab is None else vocab
-        from ..vocab import BERTVocab
-        if isinstance(self._vocab, BERTVocab):
+        # RoBERTa does not register CLS token and SEP token
+        if hasattr(self._vocab, 'cls_token'):
             self._cls_token = self._vocab.cls_token
+        else:
+            self._cls_token = self._vocab.bos_token
+        if hasattr(self._vocab, 'sep_token'):
             self._sep_token = self._vocab.sep_token
         else:
-            # RoBERTa does not register CLS token and SEP token
-            self._cls_token = self._vocab.bos_token
             self._sep_token = self._vocab.eos_token
         self._padding_token = self._vocab.padding_token
 
@@ -1280,6 +1283,9 @@ class BERTSentenceTransform:
             text_a: '[CLS] the dog is hairy . [SEP]'
             type_ids: 0     0   0   0  0     0 0
             valid_length: 7
+
+        If vocab.cls_token and vocab.sep_token are not present,
+        vocab.bos_token and vocab.eos_token are used instead.
 
         Parameters
         ----------
