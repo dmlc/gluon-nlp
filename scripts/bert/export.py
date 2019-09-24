@@ -197,7 +197,6 @@ def infer(prefix):
     inputs = inputs.reshape(shape=(test_batch_size, seq_length + 10))
     token_types = mx.nd.zeros_like(inputs)
     valid_length = mx.nd.arange(test_batch_size)
-    batch = inputs, token_types, valid_length
 
     # run forward inference
     imported_net(inputs, token_types, valid_length)
