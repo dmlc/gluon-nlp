@@ -183,7 +183,7 @@ def export(batch, prefix):
     assert os.path.isfile(prefix + '-symbol.json')
     assert os.path.isfile(prefix + '-0000.params')
 
-def infer(batch, prefix):
+def infer(prefix):
     """Evaluate the model on a mini-batch."""
     log.info('Start inference ... ')
 
@@ -220,4 +220,4 @@ def infer(batch, prefix):
 if __name__ == '__main__':
     prefix = os.path.join(args.output_dir, args.task)
     export(batch, prefix)
-    infer(batch, prefix)
+    infer(prefix)
