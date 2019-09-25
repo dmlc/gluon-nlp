@@ -32,11 +32,11 @@ import pytorch_transformers
 
 
 def compare_xlnet(args):
-    model_p = pytorch_transformers.XLNetModel.from_pretrained(
-        'xlnet-base-cased' if args.model_name == 'xlnet_cased_L-12_H-768_A-12' else
-        'xlnet-large-cased', dropout=0)
-    model_p.attentions = False  # no change of default
-    model_p.output_hidden_states = True
+    model_p = pytorch_transformers.XLNetLMHeadModel.from_pretrained(
+        'xlnet-base-cased'
+        if args.model_name == 'xlnet_cased_L-12_H-768_A-12' else 'xlnet-large-cased', dropout=0)
+    model_p.transformer.attentions = False  # no change of default
+    model_p.transformer.output_hidden_states = True
 
     if args.model_name == 'xlnet_cased_L-12_H-768_A-12':
         kwargs = {
@@ -61,7 +61,8 @@ def compare_xlnet(args):
         vocab = nlp.Vocab.from_json(f.read())
     ctx = mx.cpu()
     assert kwargs['vocab_size'] == len(vocab)
-    model = XLNet(clamp_len=model_p.clamp_len if model_p.clamp_len > 0 else None, **kwargs)
+    clamp_len = model_p.transformer.clamp_len if model_p.transformer.clamp_len > 0 else None
+    model = XLNet(clamp_len=clamp_len, **kwargs)
     model.initialize(ctx=ctx)
     model.load_parameters(args.gluon_parameter_file, ignore_extra=False)
     model.hybridize()
@@ -84,7 +85,7 @@ def compare_xlnet(args):
 
     x_p = torch.tensor(x.asnumpy(), dtype=torch.long)
     mems_p = [torch.tensor(mems_i.transpose((1, 0, 2)).asnumpy()) for mems_i in mems]
-    output_p, new_mems_p, hids_p = model_p(x_p, token_type_ids, mems=mems_p)
+    output_p, new_mems_p, hids_p = model_p(x_p, token_type_ids=token_type_ids, mems=mems_p)
 
     for i in range(kwargs['num_layers']):
         a, b = new_mems[i][:, -qlen:].asnumpy(), hids_p[i].detach().numpy()
