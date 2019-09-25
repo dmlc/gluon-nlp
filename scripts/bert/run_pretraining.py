@@ -131,7 +131,7 @@ parser.add_argument('--num_data_workers', type=int, default=8,
                     help='Number of workers to pre-process data.')
 # communication
 parser.add_argument('--comm_backend', type=str, default='device',
-                    choices=['horovod', 'dist_sync_device', 'device'],
+                    choices=['horovod', 'dist_sync_device', 'device', 'byteps'],
                     help='Communication backend.')
 parser.add_argument('--gpus', type=str, default=None,
                     help='List of gpus to run when device or dist_sync_device is used for '
@@ -192,6 +192,19 @@ def init_comm(backend):
         num_workers = hvd.size()
         rank = hvd.rank()
         local_rank = hvd.local_rank()
+        is_master_node = rank == local_rank
+        ctxs = [mx.gpu(local_rank)]
+    elif backend == 'byteps':
+        try:
+            import byteps.mxnet as bps
+        except ImportError:
+            logging.info('BytePS must be installed.')
+            exit()
+        bps.init()
+        store = None
+        num_workers = bps.size()
+        rank = bps.rank()
+        local_rank = bps.local_rank()
         is_master_node = rank == local_rank
         ctxs = [mx.gpu(local_rank)]
     else:
