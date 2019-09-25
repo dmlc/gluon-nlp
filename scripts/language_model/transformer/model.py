@@ -168,19 +168,20 @@ def xlnet_cased_l12_h768_a12(dataset_name: Optional[str] = None, vocab: Optional
     XLNet, gluonnlp.Vocab
     """
 
-    kwargs = {
+    kwargs.update(**{
         'hidden_size': 3072,
         'units': 768,
         'activation': 'gelu',
         'num_heads': 12,
         'num_layers': 12,
-    }
+    })
     if vocab is None:
         vocab = _load_vocab('xlnet_' + dataset_name, vocab, root)
     net = XLNet(vocab_size=len(vocab), **kwargs)
     if pretrained:
         _load_pretrained_params(net=net, model_name='xlnet_cased_l12_h768_a12',
-                                dataset_name=dataset_name, root=root, ctx=ctx)
+                                dataset_name=dataset_name, root=root, ctx=ctx,
+                                ignore_extra=not kwargs.get('use_decoder', True))
     return net, vocab
 
 
@@ -230,5 +231,6 @@ def xlnet_cased_l24_h1024_a16(dataset_name: Optional[str] = None, vocab: Optiona
     net = XLNet(vocab_size=len(vocab), **kwargs)
     if pretrained:
         _load_pretrained_params(net=net, model_name='xlnet_cased_l24_h1024_a16',
-                                dataset_name=dataset_name, root=root, ctx=ctx)
+                                dataset_name=dataset_name, root=root, ctx=ctx,
+                                ignore_extra=not kwargs.get('use_decoder', True))
     return net, vocab
