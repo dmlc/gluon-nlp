@@ -37,8 +37,8 @@ __all__ = ['get_model']
 model_store._model_sha1.update({
     name: checksum
     for checksum, name in [
-        ('72a88675d6197ef619c86f0813534cbb35aa5552', 'xlnet_cased_l12_h768_a12_126gb'),
-        ('c86eb2e94b8bc50de3a26bcf53e1d4f66c557b2c', 'xlnet_cased_l24_h1024_a16_126gb'),
+        ('ca7a092186ec3f42ef25590a872450409faaa84f', 'xlnet_cased_l12_h768_a12_126gb'),
+        ('ceae74798c1577bcf5ffb3c46b73b056a5ead786', 'xlnet_cased_l24_h1024_a16_126gb'),
     ]
 })
 
