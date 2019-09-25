@@ -490,8 +490,8 @@ class _BaseXLNet(mx.gluon.HybridBlock):
     def __init__(self, vocab_size, num_layers=2, units=128, hidden_size=2048, num_heads=4,
                  activation='gelu', two_stream: bool = False, scaled=True, dropout=0.0,
                  attention_dropout=0.0, use_residual=True, clamp_len: typing.Optional[int] = None,
-                 weight_initializer=None, bias_initializer='zeros', scale_embed=True, prefix=None,
-                 params=None):
+                 scale_embed=True, use_decoder=True, tie_decoder_weight=True,
+                 weight_initializer=None, bias_initializer='zeros', prefix=None, params=None):
         super().__init__(prefix=prefix, params=params)
         assert units % num_heads == 0, 'In TransformerDecoder, the units should be divided ' \
                                        'exactly by the number of heads. Received units={}, ' \
@@ -525,6 +525,10 @@ class _BaseXLNet(mx.gluon.HybridBlock):
                               weight_initializer=weight_initializer,
                               bias_initializer=bias_initializer, dropout=dropout, scaled=scaled,
                               use_residual=use_residual, prefix='transformer%d_' % i))
+            if use_decoder:
+                self.decoder = nn.Dense(
+                    vocab_size, flatten=False,
+                    params=self.word_embed.params if tie_decoder_weight else None)
 
     def hybrid_forward(self, F, step_input, segments, mask, pos_seq, mems):  #pylint: disable=arguments-differ
         if self._clamp_len:
@@ -546,6 +550,8 @@ class _BaseXLNet(mx.gluon.HybridBlock):
         if self._dropout:
             core_out = self.dropout_layer(core_out)
 
+        if hasattr(self, 'decoder'):
+            return self.decoder(core_out), hids
         return core_out, hids
 
     def begin_mems(self, batch_size, mem_len, context):
@@ -587,13 +593,10 @@ class XLNet((mx.gluon.Block)):
     use_residual : bool
     output_attention: bool
         Whether to output the attention weights
-    tie_input_output_embeddings : boolean, default False
-        If True, tie embedding parameters for all clusters between
-        AdaptiveEmbedding and AdaptiveLogSoftmaxWithLoss.
-    tie_input_output_projections : List[boolean] or None, default None
-        If not None, tie projection parameters for the specified clusters
-        between AdaptiveEmbedding and AdaptiveLogSoftmaxWithLoss. The number of
-        clusters is `len(tie_input_output_projections) == len(cutoffs) + 1`.
+    use_decoder : bool, default True
+        Whether to include the decoder for language model prediction.
+    tie_decoder_weight : bool, default True
+        Whether to tie the decoder weight with the input embeddings
     weight_initializer : str or Initializer
         Initializer for the input weights matrix, used for the linear
         transformation of the inputs.

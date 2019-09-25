@@ -96,9 +96,14 @@ def set_params(model, tf_tensors, kwargs, tie_r):
         tf_param = tf_tensors.pop('model/transformer/layer_{}/ff/layer_2/bias'.format(layer_i))
         ffn.ffn_2.bias.set_data(mx.nd.array(tf_param))
 
+    if 'model/lm_loss/weight' in tf_tensors:
+        tf_param = tf_tensors.pop('model/lm_loss/weight')
+        model._net.decoder.weight.set_data(tf_param)
+    tf_param = tf_tensors.pop('model/lm_loss/bias')
+    model._net.decoder.bias.set_data(tf_param)
+
     # TODO two-stream attention for pre-training will be implemented later
     del tf_tensors['model/transformer/mask_emb/mask_emb']
-    del tf_tensors['model/lm_loss/bias']
     assert len(tf_tensors.keys()) == 0
 
 
@@ -130,6 +135,9 @@ def convert_xlnet(args):
     # Load TF model
     tf_checkpoint_file = os.path.expanduser(os.path.join(args.model_dir, 'xlnet_model.ckpt'))
     tf_tensors = read_tf_checkpoint(tf_checkpoint_file)
+
+    # Update kwargs
+    kwargs['tie_decoder_weight'] = 'model/lm_loss/weight' not in tf_tensors
 
     # Initialize Gluon model
     model = XLNet(**kwargs)
