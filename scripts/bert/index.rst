@@ -218,7 +218,7 @@ You can use the following command to run pre-training with 2 hosts, 8 GPUs each:
              -x MXNET_SAFE_ACCUMULATION=1 --tag-output \
              python run_pretraining.py --data='folder1/*.txt,folder2/*.txt,' \
              --data_eval='dev_folder/*.txt,' --num_steps 1000000 \
-             --lr 1e-4 --total_batch_size 256 --accumulate 1 --use_avg_len --raw --comm_backend horovod
+             --lr 1e-4 --total_batch_size 256 --accumulate 1 --raw --comm_backend horovod
 
 If you see out-of-memory error, try increasing --accumulate for gradient accumulation.
 
@@ -229,6 +229,8 @@ Alternatively, if horovod is not available, you could run pre-training with the 
 .. code-block:: console
 
     $ MXNET_SAFE_ACCUMULATION=1 python run_pretraining.py --comm_backend device --gpus 0,1,2,3,4,5,6,7 ...
+
+The BERT base model produced by gluonnlp pre-training script (`log <https://raw.githubusercontent.com/dmlc/web-data/master/gluonnlp/logs/bert/bert_base_pretrain.log>`__) achieves 83.6% on MNLI-mm, 93% on SST-2, 87.99% on MRPC and 80.99/88.60 on SQuAD 1.1 validation set on the books corpus and English wikipedia dataset.
 
 Custom Vocabulary
 +++++++++++++++++
@@ -250,25 +252,6 @@ You can `train <//github.com/google/sentencepiece/tree/v0.1.82/python#model-trai
 
 To use sentencepiece vocab for pre-training, please set --sentencepiece=my_vocab.model when using run_pretraining.py.
 
-Improve Training Speed
-++++++++++++++++++++++
-
-The `create_pretraining_data.py` file generates pre-training data from raw text documents, stored as npz files. They help reduce data loading overhead and improves training speed.
-
-.. code-block:: console
-
-    $ python create_pretraining_data.py --input_file folder1/*.txt,folder2/*.txt --output_dir out --dataset_name book_corpus_wiki_en_uncased --dupe_factor 10 --num_workers $(nproc)
-
-Optionally, if you are using a custom sentencepiece vocab to generate pre-training data, please set --sentencepiece=my_vocab.model.
-
-To use the generated npz files for pre-training, remove the **--raw** argument, and update the argument for **--data** and **--data_eval** with the paths to the npz files when using run_pretraining.py:
-
-.. code-block:: console
-
-    $ MXNET_SAFE_ACCUMULATION=1 python run_pretraining.py --data '/path/to/generated/train/*.npz' --data_eval '/path/to/generated/dev/*.npz' ...
-
-
-The BERT base model produced by gluonnlp pre-training script (`log <https://raw.githubusercontent.com/dmlc/web-data/master/gluonnlp/logs/bert/bert_base_pretrain.log>`__) achieves 83.6% on MNLI-mm, 93% on SST-2, 87.99% on MRPC and 80.99/88.60 on SQuAD 1.1 validation set on the books corpus and English wikipedia dataset.
 
 Named Entity Recognition
 ~~~~~~~~~~~~~~~~~~~~~~~~
