@@ -624,7 +624,8 @@ class XLNet((mx.gluon.Block)):
         step_input : NDArray or Symbol
             Input of shape [batch_size, length]
         segments : NDArray or Symbol
-            Segments of shape [batch_size, query_length, key_length]
+            One-hot vector for segments of shape [batch_size, query_length,
+            key_length, 2]
         mems : List of NDArray or Symbol, optional
             Optional memory from previous forward passes containing
             `num_layers` `NDArray`s or `Symbol`s each of shape [batch_size,
