@@ -502,6 +502,7 @@ class _BaseXLNet(mx.gluon.HybridBlock):
         self._clamp_len = clamp_len
         with self.name_scope():
             self.word_embed = nn.Embedding(vocab_size, units)
+            self.mask_embed = self.params.get('mask_embed', shape=(1, 1, units))
             self.pos_embed = PositionalEmbedding(units)
             if dropout:
                 self.dropout_layer = nn.Dropout(rate=dropout)
@@ -522,11 +523,12 @@ class _BaseXLNet(mx.gluon.HybridBlock):
                     vocab_size, flatten=False,
                     params=self.word_embed.params if tie_decoder_weight else None)
 
-    def hybrid_forward(self, F, step_input, segments, mask, pos_seq, mems):  #pylint: disable=arguments-differ
+    def hybrid_forward(self, F, step_input, segments, mask, pos_seq, mems, mask_embed):  #pylint: disable=arguments-differ
         if self._clamp_len:
             pos_seq = F.clip(pos_seq, a_min=0, a_max=self._clamp_len)
 
-        core_out = self.word_embed(step_input)
+        # Force use mask_embed in a noop to make HybridBlock happy
+        core_out = F.broadcast_add(self.word_embed(step_input), 0 * mask_embed)
         pos_emb = self.pos_embed(pos_seq)
 
         if self._dropout:

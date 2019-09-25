@@ -39,6 +39,9 @@ def set_params(model, tf_tensors, kwargs, tie_r):
     # Embedding
     tf_param = tf_tensors.pop('model/transformer/word_embedding/lookup_table')
     model._net.word_embed.weight.set_data(mx.nd.array(tf_param))
+    tf_param = tf_tensors.pop('model/transformer/mask_emb/mask_emb')
+    model._net.mask_embed.set_data(mx.nd.array(tf_param))
+
     tf_rel_segment_emb = tf_tensors.pop('model/transformer/seg_embed')
 
     tf_r_r_bias = tf_tensors.pop('model/transformer/r_r_bias')
@@ -102,8 +105,6 @@ def set_params(model, tf_tensors, kwargs, tie_r):
     tf_param = tf_tensors.pop('model/lm_loss/bias')
     model._net.decoder.bias.set_data(tf_param)
 
-    # TODO two-stream attention for pre-training will be implemented later
-    del tf_tensors['model/transformer/mask_emb/mask_emb']
     assert len(tf_tensors.keys()) == 0
 
 
@@ -142,7 +143,7 @@ def convert_xlnet(args):
     # Initialize Gluon model
     model = XLNet(**kwargs)
     model.initialize(init=mx.init.Normal(0.02))
-    # model.hybridize()
+    model.hybridize()
 
     # Shape inference based on forward pass
     batch_size, qlen, mlen = 2, 16, 100
