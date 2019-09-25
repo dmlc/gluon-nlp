@@ -212,8 +212,8 @@ class Vocab:
         for depr_pos_arg, name, indicator, value in combs:
             if depr_pos_arg != indicator:
                 warnings.warn(
-                    'Specifying `{n}` as positional argument is deprecated and support will be removed. '
-                    'Please specify `{n}` as keyword argument instead, '
+                    'Specifying `{n}` as positional argument is deprecated and '
+                    'support will be removed. Please specify `{n}` as keyword argument instead, '
                     'for example `Vocab(counter, {n}={v})`'.format(n=name, v=depr_pos_arg),
                     DeprecationWarning)
                 # Store positional argument value in kwargs

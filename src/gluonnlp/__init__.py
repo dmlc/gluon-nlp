@@ -19,7 +19,6 @@
 """NLP toolkit."""
 
 import warnings
-warnings.filterwarnings(module='gluonnlp', action='default', category=DeprecationWarning)
 
 from . import loss
 from . import data
@@ -44,3 +43,5 @@ __all__ = ['data',
            'optimizer',
            'utils',
            'metric']
+
+warnings.filterwarnings(module='gluonnlp', action='default', category=DeprecationWarning)
