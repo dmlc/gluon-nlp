@@ -112,7 +112,10 @@ class LAMB(Optimizer):
         r1 = weight.norm()
         if not self.bias_correction:
             r1 = minimum(maximum(r1, self.lower_bound), self.upper_bound)
-            g = mean / (sqrt(var) + self.epsilon) + wd * weight
+            sqrt_var = sqrt(var)
+            sqrt_var += self.epsilon
+            g = mean / sqrt_var
+            g += wd * weight
         else:
             # apply bias correction
             mean_hat = mean / (1. - power(self.beta1, t))
