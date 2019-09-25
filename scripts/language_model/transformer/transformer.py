@@ -178,7 +178,7 @@ class _BaseTransformerXL(mx.gluon.HybridBlock):
                  project_same_dim: bool = True, tie_input_output_embeddings: bool = False,
                  tie_input_output_projections: typing.Optional[typing.List[bool]] = None,
                  output_attention=False, weight_initializer=None, bias_initializer='zeros',
-                 scale_embed=True, prefix=None, params=None):
+                 prefix=None, params=None):
         super().__init__(prefix=prefix, params=params)
         assert units % num_heads == 0, 'In TransformerDecoder, the units should be divided ' \
                                        'exactly by the number of heads. Received units={}, ' \
@@ -200,8 +200,6 @@ class _BaseTransformerXL(mx.gluon.HybridBlock):
             # AdaptiveLogSoftmaxWithLoss used with targets
             raise NotImplementedError()
         self._output_attention = output_attention
-        self._scaled = scaled
-        self._scale_embed = scale_embed
         with self.name_scope():
             if embed_cutoffs is not None and embed_div_val != 1:
                 self.embedding = AdaptiveEmbedding(vocab_size=vocab_size, embed_size=embed_size,
@@ -335,8 +333,6 @@ class TransformerXL(mx.gluon.Block):
         transformation of the inputs.
     bias_initializer : str or Initializer
         Initializer for the bias vector.
-    scale_embed : bool, default True
-        Scale the input embeddings by sqrt(embed_size).
     prefix : str, default 'rnn_'
         Prefix for name of `Block`s
         (and name of weight if params is `None`).
@@ -490,8 +486,8 @@ class _BaseXLNet(mx.gluon.HybridBlock):
     def __init__(self, vocab_size, num_layers=2, units=128, hidden_size=2048, num_heads=4,
                  activation='gelu', two_stream: bool = False, scaled=True, dropout=0.0,
                  attention_dropout=0.0, use_residual=True, clamp_len: typing.Optional[int] = None,
-                 scale_embed=True, use_decoder=True, tie_decoder_weight=True,
-                 weight_initializer=None, bias_initializer='zeros', prefix=None, params=None):
+                 use_decoder=True, tie_decoder_weight=True, weight_initializer=None,
+                 bias_initializer='zeros', prefix=None, params=None):
         super().__init__(prefix=prefix, params=params)
         assert units % num_heads == 0, 'In TransformerDecoder, the units should be divided ' \
                                        'exactly by the number of heads. Received units={}, ' \
@@ -506,8 +502,6 @@ class _BaseXLNet(mx.gluon.HybridBlock):
         self._dropout = dropout
         self._use_residual = use_residual
         self._clamp_len = clamp_len
-        self._scaled = scaled
-        self._scale_embed = scale_embed
         with self.name_scope():
             self.word_embed = nn.Embedding(vocab_size, units)
             self.pos_embed = PositionalEmbedding(units)
@@ -591,8 +585,6 @@ class XLNet((mx.gluon.Block)):
         in multi-head attention
     dropout : float
     use_residual : bool
-    output_attention: bool
-        Whether to output the attention weights
     use_decoder : bool, default True
         Whether to include the decoder for language model prediction.
     tie_decoder_weight : bool, default True
@@ -602,14 +594,10 @@ class XLNet((mx.gluon.Block)):
         transformation of the inputs.
     bias_initializer : str or Initializer
         Initializer for the bias vector.
-    scale_embed : bool, default True
-        Scale the input embeddings by sqrt(embed_size).
     prefix : str, default 'rnn_'
-        Prefix for name of `Block`s
-        (and name of weight if params is `None`).
+        Prefix for name of `Block`s (and name of weight if params is `None`).
     params : Parameter or None
-        Container for weight sharing between cells.
-        Created if `None`.
+        Container for weight sharing between cells. Created if `None`.
 
     """
 
@@ -644,8 +632,9 @@ class XLNet((mx.gluon.Block)):
 
         Returns
         -------
-        softmax_output : NDArray or Symbol
-            Negative log likelihood of targets with shape [batch_size, length]
+        output : NDArray or Symbol
+            For XLNet(..., use_decoder=True), logits. Otherwise output of last
+            XLNetCell layer.
         mems : List of NDArray or Symbol
             List containing `num_layers` `NDArray`s or `Symbol`s each of shape
             [batch_size, mem_len, units] representing the mememory states at
