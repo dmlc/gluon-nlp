@@ -21,11 +21,43 @@
 __all__ = ['PositionalEmbeddingMultiHeadAttentionCell']
 
 import math
+import numpy as np
 
 import mxnet as mx
 
-from gluonnlp.model.attention_cell import _masked_softmax
+def _masked_softmax(F, att_score, mask, dtype):
+    """Ignore the masked elements when calculating the softmax
 
+    Parameters
+    ----------
+    F : symbol or ndarray
+    att_score : Symborl or NDArray
+        Shape (batch_size, query_length, memory_length)
+    mask : Symbol or NDArray or None
+        Shape (batch_size, query_length, memory_length)
+    Returns
+    -------
+    att_weights : Symborl or NDArray
+        Shape (batch_size, query_length, memory_length)
+    """
+    if mask is not None:
+        # Fill in the masked scores with a very small value
+        neg = -1e18
+        if np.dtype(dtype) == np.float16:
+            neg = -1e4
+        else:
+            try:
+                # if AMP (automatic mixed precision) is enabled, -1e18 will cause NaN.
+                from mxnet.contrib import amp
+                if amp.amp._amp_initialized:
+                    neg = -1e4
+            except ImportError:
+                pass
+        att_score = F.where(mask, att_score, neg * F.ones_like(att_score))
+        att_weights = F.softmax(att_score, axis=-1) * mask
+    else:
+        att_weights = F.softmax(att_score, axis=-1)
+    return att_weights
 
 class PositionalEmbeddingMultiHeadAttentionCell(mx.gluon.HybridBlock):
     """Multi-head Attention Cell with positional embeddings.
