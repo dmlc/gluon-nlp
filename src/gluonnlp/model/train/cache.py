@@ -1,5 +1,3 @@
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -20,11 +18,9 @@
 __all__ = ['CacheCell']
 
 import mxnet as mx
+from mxnet.gluon import HybridBlock
 
-from mxnet import nd
-from mxnet.gluon import Block
-
-class CacheCell(Block):
+class CacheCell(HybridBlock):
     r"""Cache language model.
 
     We implement the neural cache language model proposed in the following work::
@@ -96,66 +92,106 @@ class CacheCell(Block):
         """
         return self.lm_model.begin_state(*args, **kwargs)
 
-
-    def forward(self, inputs, target, next_word_history, cache_history, begin_state=None): # pylint: disable=arguments-differ
+    def __call__(self, inputs, target, next_word_history, cache_history, begin_state=None):
+        # pylint: disable=arguments-differ
         """Defines the forward computation for cache cell. Arguments can be either
         :py:class:`NDArray` or :py:class:`Symbol`.
 
         Parameters
         ----------
-        inputs: NDArray
+        inputs: NDArray or Symbol
             The input data
-        target: NDArray
+        target: NDArray or Symbol
             The label
-        next_word_history: NDArray
+        next_word_history: NDArray or Symbol
             The next word in memory
-        cache_history: NDArray
+        cache_history: NDArray or Symbol
             The hidden state in cache history
-
+        begin_state: list of NDArray or Symbol, optional
+            The begin states.
 
         Returns
         --------
-        out: NDArray
+        out: NDArray or Symbol
             The linear interpolation of the cache language model
             with the regular word-level language model
-        next_word_history: NDArray
+        next_word_history: NDArray or Symbol
             The next words to be kept in the memory for look up
             (size is equal to the window size)
-        cache_history: NDArray
+        cache_history: NDArray or Symbol
             The hidden states to be kept in the memory for look up
             (size is equal to the window size)
         """
-        output, hidden, encoder_hs, _ = \
-            super(self.lm_model.__class__, self.lm_model).\
-                forward(inputs, begin_state)
+        # XXX Temporary hack for hybridization as hybridblock does not support None inputs
+        begin_state = [] if begin_state is None else begin_state
+        return super(CacheCell, self).__call__(inputs, target, next_word_history,
+                                               cache_history, begin_state)
+
+
+    def hybrid_forward(self, F, inputs, target, next_word_history, cache_history, begin_state=None):
+        # pylint: disable=arguments-differ
+        """Defines the forward computation for cache cell. Arguments can be either
+        :py:class:`NDArray` or :py:class:`Symbol`.
+
+        Parameters
+        ----------
+        inputs: NDArray or Symbol
+            The input data
+        target: NDArray or Symbol
+            The label
+        next_word_history: NDArray or Symbol
+            The next word in memory
+        cache_history: NDArray or Symbol
+            The hidden state in cache history
+        begin_state: list of NDArray or Symbol, optional
+            The begin states.
+
+        Returns
+        --------
+        out: NDArray or Symbol
+            The linear interpolation of the cache language model
+            with the regular word-level language model
+        next_word_history: NDArray or Symbol
+            The next words to be kept in the memory for look up
+            (size is equal to the window size)
+        cache_history: NDArray or Symbol
+            The hidden states to be kept in the memory for look up
+            (size is equal to the window size)
+        """
+        # XXX Temporary hack for hybridization as hybridblock does not support None inputs
+        if isinstance(begin_state, list) and len(begin_state) == 0:
+            begin_state = None
+
+        output, hidden, encoder_hs, _ = super(self.lm_model.__class__, self.lm_model).\
+                                        hybrid_forward(F, inputs, begin_state)
         encoder_h = encoder_hs[-1].reshape(-3, -2)
         output = output.reshape(-1, self._vocab_size)
 
         start_idx = len(next_word_history) \
             if next_word_history is not None else 0
-        next_word_history = nd.concat(*[nd.one_hot(t[0], self._vocab_size, on_value=1, off_value=0)
-                                        for t in target], dim=0) if next_word_history is None \
-            else nd.concat(next_word_history,
-                           nd.concat(*[nd.one_hot(t[0], self._vocab_size, on_value=1, off_value=0)
-                                       for t in target], dim=0), dim=0)
+        next_word_history = F.concat(*[F.one_hot(t[0], self._vocab_size, on_value=1, off_value=0)
+                                       for t in target], dim=0) if next_word_history is None \
+            else F.concat(next_word_history,
+                          F.concat(*[F.one_hot(t[0], self._vocab_size, on_value=1, off_value=0)
+                                     for t in target], dim=0), dim=0)
         cache_history = encoder_h if cache_history is None \
-            else nd.concat(cache_history, encoder_h, dim=0)
+            else F.concat(cache_history, encoder_h, dim=0)
 
         out = None
-        softmax_output = nd.softmax(output)
+        softmax_output = F.softmax(output)
         for idx, vocab_L in enumerate(softmax_output):
             joint_p = vocab_L
             if start_idx + idx > self._window:
                 valid_next_word = next_word_history[start_idx + idx - self._window:start_idx + idx]
                 valid_cache_history = cache_history[start_idx + idx - self._window:start_idx + idx]
-                logits = nd.dot(valid_cache_history, encoder_h[idx])
-                cache_attn = nd.softmax(self._theta * logits).reshape(-1, 1)
+                logits = F.dot(valid_cache_history, encoder_h[idx])
+                cache_attn = F.softmax(self._theta * logits).reshape(-1, 1)
                 cache_dist = (cache_attn.broadcast_to(valid_next_word.shape)
                               * valid_next_word).sum(axis=0)
                 joint_p = self._lambdas * cache_dist + (1 - self._lambdas) * vocab_L
 
             out = joint_p[target[idx]] if out is None \
-                else nd.concat(out, joint_p[target[idx]], dim=0)
+                else F.concat(out, joint_p[target[idx]], dim=0)
         next_word_history = next_word_history[-self._window:]
         cache_history = cache_history[-self._window:]
         return out, next_word_history, cache_history, hidden

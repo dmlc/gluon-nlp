@@ -36,6 +36,7 @@ setup(
     # Metadata
     name='gluonnlp',
     version=VERSION,
+    python_requires='>=3.6',
     author='Gluon NLP Toolkit Contributors',
     author_email='mxnet-gluon@amazon.com',
     url='https://github.com/dmlc/gluon-nlp',
@@ -58,7 +59,7 @@ setup(
             'spacy',
             'nltk==3.2.5',
             'scipy',
-            'numba>=0.40.1',
+            'numba>=0.45',
             'jieba',
             'sentencepiece',
             'boto3',

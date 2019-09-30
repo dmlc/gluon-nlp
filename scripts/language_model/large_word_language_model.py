@@ -17,8 +17,6 @@ We implement the LSTM 2048-512 language model proposed in the following work.
 
 """
 
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -50,6 +48,8 @@ from sampler import LogUniformSampler
 
 curr_path = os.path.dirname(os.path.abspath(os.path.expanduser(__file__)))
 sys.path.append(os.path.join(curr_path, '..', '..'))
+
+nlp.utils.check_version('0.7.0')
 
 ###############################################################################
 # Arg parser

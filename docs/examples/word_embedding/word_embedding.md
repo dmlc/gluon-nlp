@@ -37,6 +37,7 @@ from mxnet import gluon
 from mxnet import nd
 import gluonnlp as nlp
 import re
+nlp.utils.check_version('0.7.0')
 ```
 
 ## Creating Vocabulary with Word Embeddings

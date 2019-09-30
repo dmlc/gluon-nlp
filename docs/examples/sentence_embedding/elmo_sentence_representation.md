@@ -26,6 +26,7 @@ import io
 import mxnet as mx
 from mxnet import gluon
 import gluonnlp as nlp
+nlp.utils.check_version('0.7.0')
 ```
 
 ## Preprocess the data

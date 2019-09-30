@@ -1,5 +1,3 @@
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -516,6 +514,9 @@ class SplitSampler(Sampler):
       The index of the part to read from
     """
     def __init__(self, length, num_parts=1, part_index=0):
+        assert length >= num_parts, \
+            'Length (%d) must be greater than or equal to the number of partitions (%d).'%\
+            (length, num_parts)
         # Compute the length of each partition
         part_len = length // num_parts
         # Compute the start index for this partition
