@@ -225,6 +225,8 @@ def test_bert_embedding(use_pretrained):
 @pytest.mark.remote_required
 @pytest.mark.integration
 @pytest.mark.parametrize('backend', ['horovod', 'device'])
+@pytest.mark.skipif(datetime.date.today() < datetime.date(2019, 10, 7),
+                    reason="mxnet 1.5.1 pip release incompatible with horovod")
 def test_bert_pretrain(backend):
     # test data creation
     process = subprocess.check_call([sys.executable, './scripts/bert/create_pretraining_data.py',
