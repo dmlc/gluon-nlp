@@ -110,7 +110,7 @@ parser.add_argument('--log_interval', type=int, default=100, metavar='N',
 parser.add_argument('--save_dir', type=str, default='transformer_out',
                     help='directory path to save the final model and training log')
 parser.add_argument('--gpu', type=int,
-                    help='gpu id, e.g. 0 or 1. empty means using cpu.')
+                    help='gpu id, e.g. 0 or 1. Unspecified means using cpu.')
 parser.add_argument('--model_parameter', type=str, default=' ', required=True,
                     help='model parameter for inference, must be provided.')
 
@@ -137,8 +137,7 @@ data_train_lengths, data_val_lengths, data_test_lengths = [dataprocessor.get_dat
 detokenizer = nlp.data.SacreMosesDetokenizer()
 
 # model prepare
-ctx = [mx.cpu()] if args.gpu is None or args.gpu == '' else \
-    [mx.gpu(x)]
+ctx = [mx.cpu()] if args.gpu is None else [mx.gpu(args.gpu)]
 
 if args.src_max_len <= 0 or args.tgt_max_len <= 0:
     max_len = np.max(
