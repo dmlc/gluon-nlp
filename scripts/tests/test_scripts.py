@@ -195,7 +195,7 @@ def test_transformer(bleu):
                                      '--bleu', '13a', 
                                      '--log_interval', '10', 
                                      '--model_parameter', './scripts/machine_translation/transformer_en_de_u512/valid_best.params', 
-                                     '--gpus', '0'
+                                     '--gpu', '0'
                                      ])
     time.sleep(5)
 
