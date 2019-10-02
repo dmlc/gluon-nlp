@@ -135,7 +135,8 @@ class _EmbeddingCenterContextBatchify(DataStream):
         if isinstance(self._sentences[0][0], str):
             sentences = [np.asarray(s, dtype='O') for s in self._sentences]
         else:
-            sentences = [np.asarray(s) for s in self._sentences]
+            dtype = type(self._sentences[0][0])
+            sentences = [np.asarray(s, dtype=dtype) for s in self._sentences]
 
         if self._shuffle:
             random.shuffle(sentences)
