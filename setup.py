@@ -63,6 +63,7 @@ setup(
             'jieba',
             'sentencepiece',
             'boto3',
+            'tqdm',
         ],
         'dev': [
             'pytest',
