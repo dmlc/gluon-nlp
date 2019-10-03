@@ -85,15 +85,18 @@ def test_center_context_batchify(cbow, dtype, weight_dtype, index_dtype):
 @pytest.mark.parametrize('dtype', [np.float64, np.float32, np.float16, np.float64, np.int64, str])
 @pytest.mark.parametrize('weight_dtype', [np.float64, np.float32, np.float16])
 @pytest.mark.parametrize('index_dtype', [np.int64, np.int32])
-def test_center_context_batchify_robustness(cbow, dtype, weight_dtype, index_dtype):
+@pytest.mark.parametrize('emptyatbegin', [True, False])
+def test_center_context_batchify_robustness(cbow, dtype, weight_dtype, index_dtype, emptyatbegin):
     batchify = nlp.data.batchify.EmbeddingCenterContextBatchify(
         batch_size=3, window_size=1, cbow=cbow, weight_dtype=weight_dtype,
         index_dtype=index_dtype)
 
     if dtype != str:
-        samples = batchify([np.arange(5, dtype=dtype), []])
+        samples = np.arange(5, dtype=dtype)
     else:
-        samples = batchify([[str(i) for i in range(5)], []])
+        samples = [str(i) for i in range(5)]
+    samples = [[], samples] if emptyatbegin else [samples, []]
+    samples = batchify(samples)
     center, context = next(iter(samples))
     (contexts_data, contexts_row, contexts_col) = context
     assert center.dtype == dtype if dtype != str else center.dtype == 'O'

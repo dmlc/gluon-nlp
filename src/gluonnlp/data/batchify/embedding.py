@@ -133,10 +133,11 @@ class _EmbeddingCenterContextBatchify(DataStream):
                 'with numba, but numba is not installed. '
                 'Consider "pip install numba" for significant speed-ups.')
 
-        if isinstance(self._sentences[0][0], str):
+        firstelement = next(itertools.chain.from_iterable(self._sentences))
+        if isinstance(firstelement, str):
             sentences = [np.asarray(s, dtype='O') for s in self._sentences]
         else:
-            dtype = type(next(itertools.chain.from_iterable(self._sentences)))
+            dtype = type(firstelement)
             sentences = [np.asarray(s, dtype=dtype) for s in self._sentences]
 
         if self._shuffle:
