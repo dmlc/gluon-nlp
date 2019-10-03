@@ -64,6 +64,7 @@ setup(
             'sentencepiece',
             'boto3',
             'tqdm',
+            'sacremoses',
         ],
         'dev': [
             'pytest',
