@@ -62,6 +62,7 @@ Use the following commands to inference the Transformer model on the WMT14 test 
                             --bucket_scheme exp \
                             --bleu 13a \
                             --log_interval 10 \
+                            --gpu 0 \
                             --model_parameter PATH/TO/valid_best.params
 
 Before inference, you should do a complete training at least one time to get the pre-trained model, or you can get the pre-trained model from http://apache-mxnet.s3-accelerate.dualstack.amazonaws.com/gluon/models/transformer_en_de_512_WMT2014-e25287c5.zip.
