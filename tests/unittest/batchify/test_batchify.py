@@ -1,5 +1,6 @@
 import numpy as np
 from numpy.testing import assert_allclose
+from collections import namedtuple
 import mxnet as mx
 from gluonnlp.data import batchify
 
@@ -10,6 +11,50 @@ def test_list():
     data = [object() for _ in range(5)]
     passthrough = batchify.List()(data)
     assert passthrough == data
+
+TestNamedTuple = namedtuple('TestNamedTuple', ['data', 'label'])
+
+
+def test_named_tuple():
+    a = TestNamedTuple([1, 2, 3, 4], 0)
+    b = TestNamedTuple([5, 7], 1)
+    c = TestNamedTuple([1, 2, 3, 4, 5, 6, 7], 0)
+    with pytest.raises(ValueError):
+        wrong_batchify_fn = batchify.NamedTuple(TestNamedTuple, {'data0': batchify.Pad(), 'label': batchify.Stack()})
+    with pytest.raises(ValueError):
+        wrong_batchify_fn = batchify.NamedTuple(TestNamedTuple, [batchify.Pad(), batchify.Stack(), batchify.Stack()])
+    with pytest.raises(ValueError):
+        wrong_batchify_fn = batchify.NamedTuple(TestNamedTuple, (batchify.Pad(),))
+    with pytest.raises(ValueError):
+        wrong_batchify_fn = batchify.NamedTuple(TestNamedTuple, [1, 2])
+    for batchify_fn in [batchify.NamedTuple(TestNamedTuple, {'data': batchify.Pad(), 'label': batchify.Stack()}),
+                        batchify.NamedTuple(TestNamedTuple, [batchify.Pad(), batchify.Stack()]),
+                        batchify.NamedTuple(TestNamedTuple, (batchify.Pad(), batchify.Stack()))]:
+        sample = batchify_fn([a, b, c])
+        gt_data = batchify.Pad()([a[0], b[0], c[0]])
+        gt_label = batchify.Stack()([a[1], b[1], c[1]])
+        assert isinstance(sample, TestNamedTuple)
+        assert_allclose(sample.data.asnumpy(), gt_data.asnumpy())
+        assert_allclose(sample.label.asnumpy(), gt_label.asnumpy())
+        with pytest.raises(ValueError):
+            batchify_fn([1, 2, 3])
+
+
+def test_dict():
+    a = {'data': [1, 2, 3, 4], 'label': 0}
+    b = {'data': [5, 7], 'label': 1}
+    c = {'data': [1, 2, 3, 4, 5, 6, 7], 'label': 0}
+    with pytest.raises(ValueError):
+        wrong_batchify_fn = batchify.Dict([batchify.Pad(), batchify.Stack()])
+    with pytest.raises(ValueError):
+        wrong_batchify_fn = batchify.NamedTuple(TestNamedTuple, {'a': 1, 'b': 2})
+    batchify_fn = batchify.Dict({'data': batchify.Pad(), 'label': batchify.Stack()})
+    sample = batchify_fn([a, b, c])
+    gt_data = batchify.Pad()([a['data'], b['data'], c['data']])
+    gt_label = batchify.Stack()([a['label'], b['label'], c['label']])
+    assert isinstance(sample, dict)
+    assert_allclose(sample['data'].asnumpy(), gt_data.asnumpy())
+    assert_allclose(sample['label'].asnumpy(), gt_label.asnumpy())
 
 
 def test_pad():
