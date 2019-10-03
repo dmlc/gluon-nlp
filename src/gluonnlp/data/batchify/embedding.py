@@ -18,6 +18,7 @@
 
 __all__ = ['EmbeddingCenterContextBatchify']
 
+import itertools
 import logging
 import random
 
@@ -135,7 +136,7 @@ class _EmbeddingCenterContextBatchify(DataStream):
         if isinstance(self._sentences[0][0], str):
             sentences = [np.asarray(s, dtype='O') for s in self._sentences]
         else:
-            dtype = type(self._sentences[0][0])
+            dtype = type(next(itertools.chain.from_iterable(self._sentences)))
             sentences = [np.asarray(s, dtype=dtype) for s in self._sentences]
 
         if self._shuffle:
