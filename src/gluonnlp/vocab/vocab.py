@@ -90,26 +90,20 @@ class Vocab:
     Deprecated Parameters
     ---------------------
     deprecated_padding_token
-        The representation for the special token of padding token.
-        Default: '<pad>'
-        .. deprecated:: 0.9
-            Specifying padding_token as positional argument is deprecated and
-            support will be removed. Specify it as keyword argument instead
-            (see documentation of **kwargs above)
+        The representation for the special token of padding token. Default:
+        '<pad>'. Specifying padding_token as positional argument is deprecated
+        and support will be removed. Specify it as keyword argument instead
+        (see documentation of **kwargs above)
     deprecated_bos_token
-        The representation for the special token of beginning-of-sequence token.
-        Default: '<bos>'
-        .. deprecated:: 0.9
-            Specifying bos_token as positional argument is deprecated and
-            support will be removed. Specify it as keyword argument instead
-            (see documentation of **kwargs above)
+        The representation for the special token of beginning-of-sequence
+        token. Default: '<bos>'. Specifying bos_token as positional argument is
+        deprecated and support will be removed. Specify it as keyword argument
+        instead (see documentation of **kwargs above)
     deprecated_eos_token
         The representation for the special token of end-of-sequence token.
-        Default: '<eos>'
-        .. deprecated:: 0.9
-            Specifying eos_token as positional argument is deprecated and
-            support will be removed. Specify it as keyword argument instead
-            (see documentation of **kwargs above)
+        Default: '<eos>'. Specifying eos_token as positional argument is
+        deprecated and support will be removed. Specify it as keyword argument
+        instead (see documentation of **kwargs above)
 
     Attributes
     ----------
