@@ -57,7 +57,8 @@ setup(
     extras_require={
         'extras': [
             'spacy',
-            'nltk==3.2.5',
+            'nltk',
+            'sacremoses',
             'scipy',
             'numba>=0.45',
             'jieba',
