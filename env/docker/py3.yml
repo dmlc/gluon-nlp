@@ -1,7 +1,7 @@
 channels:
   - conda-forge
 dependencies:
-  - python=3.6
+  - python=3.5
   - pip=18.1
   - perl
   - pylint=1.9.2
