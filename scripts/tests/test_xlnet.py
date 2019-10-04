@@ -27,7 +27,7 @@ from ..language_model.transformer import get_model
 @pytest.mark.parametrize('hybridize', [True, False])
 @pytest.mark.parametrize('modelname', ['xlnet_cased_l12_h768_a12', 'xlnet_cased_l24_h1024_a16'])
 def test_xlnet_pretrained(modelname, hybridize, use_decoder):
-    model, vocab = get_model(modelname, dataset_name='126gb', use_decoder=use_decoder)
+    model, vocab, tokenizer = get_model(modelname, dataset_name='126gb', use_decoder=use_decoder)
     if hybridize:
         model.hybridize()
 
@@ -38,3 +38,5 @@ def test_xlnet_pretrained(modelname, hybridize, use_decoder):
 
     output, new_mems = model(x, segments, mems)
     mx.nd.waitall()
+
+    assert tokenizer('hello') == ['▁hello']
