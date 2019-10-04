@@ -26,6 +26,7 @@ from mxnet import ndarray as nd
 from mxnet.test_utils import *
 
 import gluonnlp as nlp
+from gluonnlp.base import get_home_dir
 
 
 @pytest.fixture
@@ -805,7 +806,8 @@ def test_download_embed():
                                     '29b9a6511cf4b5aae293c44a9ec1365b74f2a2f8')}
         namespace = 'test'
 
-        def __init__(self, embedding_root='embedding', init_unknown_vec=nd.zeros, **kwargs):
+        def __init__(self, embedding_root=os.path.join(get_home_dir(), 'embedding'),
+                     init_unknown_vec=nd.zeros, **kwargs):
             source = 'embedding_test'
             Test._check_source(self.source_file_hash, source)
 
@@ -824,7 +826,7 @@ def test_download_embed():
                                               idx_to_vec=idx_to_vec,
                                               **kwargs)
 
-    test_embed = nlp.embedding.create('test', embedding_root='tests/data/embedding')
+    test_embed = nlp.embedding.create('test')
     assert_almost_equal(test_embed['hello'].asnumpy(), (nd.arange(5) + 1).asnumpy())
     assert_almost_equal(test_embed['world'].asnumpy(), (nd.arange(5) + 6).asnumpy())
     assert_almost_equal(test_embed['<unk>'].asnumpy(), nd.zeros((5,)).asnumpy())
@@ -882,8 +884,7 @@ def test_token_embedding_from_serialized_file(tmpdir):
 @pytest.mark.remote_required
 def test_token_embedding_from_file_S3_with_custom_unknown_token(unknown_token):
     nlp.embedding.create('glove', source='glove.6B.50d',
-                         unknown_token=unknown_token,
-                         embedding_root='tests/data/embedding')
+                         unknown_token=unknown_token)
 
 
 @pytest.mark.parametrize('load_ngrams', [True, False])
@@ -891,8 +892,7 @@ def test_token_embedding_from_file_S3_with_custom_unknown_token(unknown_token):
 @pytest.mark.remote_required
 def test_token_embedding_from_S3_fasttext_with_ngrams(load_ngrams):
     embed = nlp.embedding.create('fasttext', source='wiki.simple',
-                                 load_ngrams=load_ngrams, unknown_token=None,
-                                 embedding_root='tests/data/embedding')
+                                 load_ngrams=load_ngrams, unknown_token=None)
 
     if load_ngrams:
         embed['$$$unknownword$$$']
@@ -1043,7 +1043,7 @@ def test_token_embedding_serialization():
                                     '29b9a6511cf4b5aae293c44a9ec1365b74f2a2f8')}
         namespace = 'test'
 
-        def __init__(self, embedding_root='tests/data/embedding', **kwargs):
+        def __init__(self, embedding_root=os.path.join(get_home_dir(), 'embedding'), **kwargs):
             source = 'embedding_test'
             Test._check_source(self.source_file_hash, source)
 
@@ -1065,7 +1065,7 @@ def test_token_embedding_serialization():
                                        **kwargs)
 
 
-    emb = nlp.embedding.create('test', embedding_root='tests/data/embedding')
+    emb = nlp.embedding.create('test')
 
     # Test uncompressed serialization
     file_path = os.path.join('tests', 'data', 'embedding', 'embeddings.npz')
@@ -1112,9 +1112,7 @@ def test_word_embedding_similarity_evaluation_models(similarity_function):
 
     counter = nlp.data.utils.Counter(w for wpair in dataset for w in wpair[:2])
     vocab = nlp.vocab.Vocab(counter)
-    vocab.set_embedding(
-        nlp.embedding.create('fasttext', source='wiki.simple',
-                             embedding_root='tests/data/embedding'))
+    vocab.set_embedding(nlp.embedding.create('fasttext', source='wiki.simple'))
 
     data = [[vocab[d[0]], vocab[d[1]], d[2]] for d in dataset]
     words1, words2, scores = zip(*data)
@@ -1140,8 +1138,7 @@ def test_word_embedding_analogy_evaluation_models(analogy_function):
     dataset = nlp.data.GoogleAnalogyTestSet()
     dataset = [d for i, d in enumerate(dataset) if i < 10]
 
-    embedding = nlp.embedding.create('fasttext', source='wiki.simple',
-                                     embedding_root='tests/data/embedding')
+    embedding = nlp.embedding.create('fasttext', source='wiki.simple')
     counter = nlp.data.utils.Counter(embedding.idx_to_token)
     vocab = nlp.vocab.Vocab(counter)
     vocab.set_embedding(embedding)

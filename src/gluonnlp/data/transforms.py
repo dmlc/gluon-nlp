@@ -306,7 +306,7 @@ class SpacyTokenizer:
 'zur', 'Verf\xfcgung', '.']
     """
 
-    def __init__(self, lang='en'):
+    def __init__(self, lang='en_core_web_sm'):
         try:
             import spacy
             from pkg_resources import parse_version

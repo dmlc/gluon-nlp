@@ -17,19 +17,22 @@
 
 """Test models that are not in API yet."""
 
-import pytest
-import numpy as np
-import numpy.testing as npt
+import os
 
 import mxnet as mx
+import numpy as np
+import numpy.testing as npt
+import pytest
 from mxnet.gluon.utils import _get_repo_url, download
 
-from gluonnlp.data.transforms import GPT2BPETokenizer, GPT2BPEDetokenizer
+from gluonnlp.data.transforms import GPT2BPEDetokenizer, GPT2BPETokenizer
+
 from ..text_generation.model import get_model
+
 
 @pytest.mark.remote_required
 @pytest.mark.parametrize('model_name', ['gpt2_117m', 'gpt2_345m'])
-def test_pretrained_gpt2(model_name):
+def test_pretrained_gpt2(model_name, tmp_path):
     sentence = ' natural language processing tools such as gluonnlp and torchtext'
     model, vocab = get_model(model_name, dataset_name='openai_webtext')
     tokenizer = GPT2BPETokenizer()
@@ -41,7 +44,7 @@ def test_pretrained_gpt2(model_name):
             short_hash=true_data_hash[model_name][:8])
     url_format = '{repo_url}gluon/dataset/test/{file_name}'
     repo_url = _get_repo_url()
-    path = 'tests/data/{}'.format(file_name)
+    path = os.path.join(str(tmp_path), file_name)
     download(url_format.format(repo_url=repo_url, file_name=file_name),
              path=path,
              sha1_hash=true_data_hash[model_name])
